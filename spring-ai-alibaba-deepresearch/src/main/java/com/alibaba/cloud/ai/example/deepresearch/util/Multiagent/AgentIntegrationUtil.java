@@ -17,10 +17,10 @@
 package com.alibaba.cloud.ai.example.deepresearch.util.Multiagent;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentDispatcherService;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.QuestionClassifierService;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SearchPlatformSelectionService;
-import com.alibaba.cloud.ai.example.deepresearch.service.mutiagent.SmartAgentSelectionHelperService;
+import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SmartAgentDispatcherService;
+import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.QuestionClassifierService;
+import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SearchPlatformSelectionService;
+import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SmartAgentSelectionHelperService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

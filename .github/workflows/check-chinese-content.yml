@@ -1,0 +1,80 @@
+# Copyright 2024-2026 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Check Chinese Content in Jmanus
+
+on:
+  pull_request:
+    paths:
+      - 'spring-ai-alibaba-jmanus/src/main/java/**/*.java'
+
+jobs:
+  check-chinese-content:
+    runs-on: ubuntu-latest
+    name: Check for Chinese content in Java files
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Check Chinese content in Jmanus Java files
+        run: |
+          cd spring-ai-alibaba-jmanus
+          echo "🔍 Checking for Chinese content in Java files..."
+          echo ""
+
+          if python scripts/check-chinese-content.py --dir src/main/java --fail-on-found; then
+            echo "✅ No Chinese content found - Check passed!"
+          else
+            echo ""
+            echo "## 🚨 Chinese Content Detected"
+            echo ""
+            echo "Chinese content has been detected in Java files under spring-ai-alibaba-jmanus/src/main/java directory."
+            echo ""
+            echo "### Detailed Check Results:"
+            python scripts/check-chinese-content.py --dir src/main/java
+            echo ""
+            echo "### Modification Suggestions:"
+            echo ""
+            echo "1. **Chinese Comments** → Change to English Comments"
+            echo "   Example:"
+            echo "   // ❌ Incorrect: // 这是一个用户服务类"
+            echo "   // ✅ Correct:   // This is a user service class"
+            echo ""
+            echo "2. **Chinese Strings** → Extract to resource files or use English"
+            echo "   Example:"
+            echo "   // ❌ Incorrect: throw new RuntimeException(\"用户不存在\");"
+            echo "   // ✅ Correct:   throw new RuntimeException(\"User not found\");"
+            echo ""
+            echo "3. **Chinese Identifiers** → Change to English Identifiers"
+            echo "   Example:"
+            echo "   // ❌ Incorrect: String 用户名 = \"admin\";"
+            echo "   // ✅ Correct:   String username = \"admin\";"
+            echo ""
+            echo "### Why Avoid Chinese Content?"
+            echo ""
+            echo "- 🌍 Internationalization Friendly: Facilitates project internationalization"
+            echo "- 🔧 Development Environment Compatibility: Avoids encoding issues"
+            echo "- 👥 Team Collaboration: Enables international team members to understand code"
+            echo "- 📚 Code Standards: Follows open source project best practices"
+            echo ""
+            echo "❌ Please modify the relevant files and resubmit."
+            exit 1
+          fi

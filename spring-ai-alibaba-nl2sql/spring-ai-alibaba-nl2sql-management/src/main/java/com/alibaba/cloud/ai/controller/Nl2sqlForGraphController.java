@@ -47,6 +47,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
+import static com.alibaba.cloud.ai.constant.Constant.DATA_SET_ID;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.RESULT;
 
@@ -74,7 +75,7 @@ public class Nl2sqlForGraphController {
 	}
 
 	@GetMapping("/search")
-	public String search(@RequestParam String query) throws Exception {
+	public String search(@RequestParam String query, @RequestParam String agentId) throws Exception {
 		// 初始化向量
 		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
 		schemaInitRequest.setDbConfig(dbConfig);
@@ -82,7 +83,7 @@ public class Nl2sqlForGraphController {
 			.setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
 		simpleVectorStoreService.schema(schemaInitRequest);
 
-		Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query));
+		Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query, DATA_SET_ID, agentId));
 		OverAllState overAllState = invoke.get();
 		return overAllState.value(RESULT).get().toString();
 	}
@@ -126,7 +127,11 @@ public class Nl2sqlForGraphController {
 					e.printStackTrace();
 					throw new CompletionException(e);
 				}
-			}).thenAccept(v -> sink.tryEmitComplete()).exceptionally(e -> {
+			}).thenAccept(v -> {
+				// 发送完成事件
+				sink.tryEmitNext(ServerSentEvent.builder("complete").event("complete").build());
+				sink.tryEmitComplete();
+			}).exceptionally(e -> {
 				logger.error("Error in stream processing", e);
 				sink.tryEmitError(e);
 				return null;

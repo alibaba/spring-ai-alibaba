@@ -45,7 +45,8 @@ public class McpController {
 	@Autowired
 	private McpService mcpService;
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	/**
 	 * List All MCP Server
@@ -54,33 +55,33 @@ public class McpController {
 	@GetMapping("/list")
 	public ResponseEntity<List<McpConfigVO>> list() {
 		List<McpConfigEntity> entities = mcpService.getMcpServers();
-		List<McpConfigVO> vos = McpConfigVO.fromEntities(entities);
+		List<McpConfigVO> vos = McpConfigVO.fromEntities(entities, objectMapper);
 		return ResponseEntity.ok(vos);
 	}
 
 	/**
-	 * 批量导入MCP服务器（JSON方式）
-	 * @param requestVO 批量导入请求VO
+	 * Batch import MCP servers (JSON method)
+	 * @param requestVO Batch import request VO
 	 */
 	@PostMapping("/batch-import")
 	public ResponseEntity<String> batchImportMcpServers(@RequestBody McpServersRequestVO requestVO) throws IOException {
-		// 验证请求数据
+		// Validate request data
 		if (!requestVO.isValid()) {
 			return ResponseEntity.badRequest().body("Invalid JSON format");
 		}
 
-		// 标准化JSON格式
+		// Standardize JSON format
 		String configJson = requestVO.getNormalizedConfigJson();
 		logger.info("Batch importing {} MCP servers", requestVO.getServerCount());
 
-		// 直接使用新的推荐方法
+		// Use new recommended method directly
 		mcpService.saveMcpServers(configJson);
 		return ResponseEntity.ok("Successfully imported " + requestVO.getServerCount() + " MCP servers");
 	}
 
 	/**
-	 * 单个MCP服务器操作（新增/更新）
-	 * @param requestVO 单个MCP服务器请求VO
+	 * Single MCP server operation (add/update)
+	 * @param requestVO Single MCP server request VO
 	 */
 	@PostMapping("/server")
 	public ResponseEntity<String> saveMcpServer(@RequestBody McpServerRequestVO requestVO) throws IOException {
@@ -88,28 +89,28 @@ public class McpController {
 				requestVO.getMcpServerName());
 
 		try {
-			// 直接使用新的推荐方法
+			// Use new recommended method directly
 			mcpService.saveMcpServer(requestVO);
 			return ResponseEntity.ok("MCP server " + (requestVO.isUpdate() ? "updated" : "added") + " successfully");
 		}
 		catch (IllegalArgumentException e) {
-			// 检查是否是重复名称错误
+			// Check if it's a duplicate name error
 			if (e.getMessage().contains("already exists")) {
 				logger.warn("MCP server with name '{}' already exists", requestVO.getMcpServerName());
 				return ResponseEntity.badRequest()
 					.body("MCP server with name '" + requestVO.getMcpServerName() + "' already exists");
 			}
-			// 检查是否是未找到错误
+			// Check if it's a not found error
 			if (e.getMessage().contains("not found")) {
 				logger.error("MCP server not found with id: {}", requestVO.getId(), e);
 				return ResponseEntity.notFound().build();
 			}
-			// 检查是否是验证错误
-			if (e.getMessage().contains("MCP服务器配置验证失败")) {
+			// Check if it's a validation error
+			if (e.getMessage().contains("MCP server configuration validation failed")) {
 				logger.warn("Validation failed for MCP server '{}': {}", requestVO.getMcpServerName(), e.getMessage());
 				return ResponseEntity.badRequest().body(e.getMessage());
 			}
-			// 其他参数错误
+			// Other parameter errors
 			logger.error("Invalid argument for MCP server operation: {}", e.getMessage(), e);
 			return ResponseEntity.badRequest().body("Invalid argument: " + e.getMessage());
 		}

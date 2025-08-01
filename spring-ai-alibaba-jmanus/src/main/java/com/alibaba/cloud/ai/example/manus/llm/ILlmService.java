@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.manus.llm;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.model.ChatModel;
 
 /**
  * LLM service interface, providing chat client and memory management functionality
@@ -70,16 +69,23 @@ public interface ILlmService {
 	ChatClient getFinalizeChatClient();
 
 	/**
-	 * Get chat model
-	 * @return ChatModel
-	 */
-	ChatModel getChatModel();
-
-	/**
 	 * Get conversation memory
 	 * @param maxMessages maximum number of messages
 	 * @return ChatMemory
 	 */
 	ChatMemory getConversationMemory(Integer maxMessages);
+
+	/**
+	 * Get chat client by model ID
+	 * @param modelId model ID
+	 * @return ChatClient
+	 */
+	ChatClient getChatClientByModelId(Long modelId);
+
+	/**
+	 * Get default chat client based on configuration
+	 * @return ChatClient
+	 */
+	ChatClient getDefaultChatClient();
 
 }

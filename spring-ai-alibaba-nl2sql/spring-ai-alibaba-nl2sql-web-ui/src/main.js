@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
+
+// 引入全局样式
+import './styles/global.css'
 
 // 引入页面组件
 import Home from './views/Home.vue'
@@ -25,24 +27,22 @@ import BusinessKnowledge from './views/BusinessKnowledge.vue'
 import BusinessKnowledgeSimple from './views/BusinessKnowledgeSimple.vue'
 import SemanticModel from './views/SemanticModel.vue'
 import SemanticModelSimple from './views/SemanticModelSimple.vue'
-import TestPage from './views/TestPage.vue'
+import AgentList from './views/AgentList.vue'
+import AgentDetail from './views/AgentDetail.vue'
+import CreateAgent from './views/CreateAgent.vue'
+import AgentWorkspace from './views/AgentWorkspace.vue'
 
 // 创建路由
 const routes = [
   {
     path: '/',
     name: 'Home',
-    component: Home  // 恢复使用完整版本
+    component: AgentList  // 默认显示智能体列表
   },
   {
     path: '/home-full',
     name: 'HomeFull',
     component: Home
-  },
-  {
-    path: '/test',
-    name: 'TestPage',
-    component: TestPage
   },
   {
     path: '/nl2sql',
@@ -58,6 +58,31 @@ const routes = [
     path: '/semantic-model',
     name: 'SemanticModel',
     component: SemanticModel
+  },
+  // 智能体相关路由
+  {
+    path: '/agent',
+    redirect: '/agents'  // 重定向到智能体列表
+  },
+  {
+    path: '/agents',
+    name: 'AgentList',
+    component: AgentList
+  },
+  {
+    path: '/agent/create',
+    name: 'CreateAgent',
+    component: CreateAgent
+  },
+  {
+    path: '/agent/:id',
+    name: 'AgentDetail',
+    component: AgentDetail
+  },
+  {
+    path: '/workspace',
+    name: 'AgentWorkspace',
+    component: AgentWorkspace
   },
   // 简化版本的测试路由
   {

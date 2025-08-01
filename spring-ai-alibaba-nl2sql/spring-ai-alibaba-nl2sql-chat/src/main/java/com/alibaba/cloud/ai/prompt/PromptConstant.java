@@ -70,12 +70,24 @@ public class PromptConstant {
 		return new PromptTemplate(PromptLoader.loadPrompt("sql-error-fixer"));
 	}
 
-	public static PromptTemplate getPythonExecutorPromptTemplate() {
-		return new PromptTemplate(PromptLoader.loadPrompt("python-executor"));
+	public static PromptTemplate getPythonGeneratorPromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("python-generator"));
+	}
+
+	public static PromptTemplate getPythonAnalyzePromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("python-analyze"));
 	}
 
 	public static PromptTemplate getQuestionExpansionPromptTemplate() {
 		return new PromptTemplate(PromptLoader.loadPrompt("question-expansion"));
+	}
+
+	public static PromptTemplate getBusinessKnowledgePromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("business-knowledge"));
+	}
+
+	public static PromptTemplate getSemanticModelPromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("semantic-model"));
 	}
 
 	// 兼容性方法，保持向后兼容

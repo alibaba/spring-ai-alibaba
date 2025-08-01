@@ -37,6 +37,8 @@ import java.util.List;
 
 public class DriverWrapper {
 
+	private final ObjectMapper objectMapper;
+
 	private static final Logger log = LoggerFactory.getLogger(DriverWrapper.class);
 
 	private Playwright playwright;
@@ -48,8 +50,6 @@ public class DriverWrapper {
 	private InteractiveElementRegistry interactiveElementRegistry;
 
 	private final Path cookiePath;
-
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	// Mixin class for Playwright Cookie deserialization
 	abstract static class PlaywrightCookieMixin {
@@ -78,17 +78,18 @@ public class DriverWrapper {
 
 	}
 
-	static {
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-		// Register the mixin for Playwright Cookie class
-		objectMapper.addMixIn(Cookie.class, PlaywrightCookieMixin.class);
-	}
+	// Move ObjectMapper configuration to constructor
 
-	public DriverWrapper(Playwright playwright, Browser browser, Page currentPage, String cookieDir) {
+	public DriverWrapper(Playwright playwright, Browser browser, Page currentPage, String cookieDir,
+			ObjectMapper objectMapper) {
 		this.playwright = playwright;
 		this.currentPage = currentPage;
 		this.browser = browser;
 		this.interactiveElementRegistry = new InteractiveElementRegistry();
+		this.objectMapper = objectMapper;
+		// Configure ObjectMapper
+		this.objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+		this.objectMapper.addMixIn(Cookie.class, PlaywrightCookieMixin.class);
 
 		if (cookieDir == null || cookieDir.trim().isEmpty()) {
 			this.cookiePath = Paths.get("playwright-cookies-default.json");

@@ -20,11 +20,14 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntit
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.IDynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.planning.executor.DirectResponseExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.MapReducePlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -51,13 +54,17 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 
 	private final ManusProperties manusProperties;
 
+	private final ObjectMapper objectMapper;
+
 	public PlanExecutorFactory(IDynamicAgentLoader dynamicAgentLoader, ILlmService llmService,
-			AgentService agentService, PlanExecutionRecorder recorder, ManusProperties manusProperties) {
+			AgentService agentService, PlanExecutionRecorder recorder, ManusProperties manusProperties,
+			ObjectMapper objectMapper) {
 		this.dynamicAgentLoader = dynamicAgentLoader;
 		this.llmService = llmService;
 		this.agentService = agentService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
+		this.objectMapper = objectMapper;
 	}
 
 	/**
@@ -69,6 +76,12 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 	public PlanExecutorInterface createExecutor(PlanInterface plan) {
 		if (plan == null) {
 			throw new IllegalArgumentException("Plan cannot be null");
+		}
+
+		// Check if this is a direct response plan first
+		if (plan.isDirectResponse()) {
+			log.info("Creating direct response executor for plan: {}", plan.getCurrentPlanId());
+			return createDirectResponseExecutor();
 		}
 
 		String planType = plan.getPlanType();
@@ -100,13 +113,23 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 	}
 
 	/**
+	 * Create a direct response executor for handling direct response plans
+	 * @return DirectResponseExecutor instance for direct response plans
+	 */
+	private PlanExecutorInterface createDirectResponseExecutor() {
+		log.debug("Creating direct response executor");
+		List<DynamicAgentEntity> agents = dynamicAgentLoader.getAllAgents();
+		return new DirectResponseExecutor(agents, recorder, agentService, llmService, manusProperties);
+	}
+
+	/**
 	 * Create an advanced plan executor for MapReduce execution
 	 * @return MapReducePlanExecutor instance for advanced plans
 	 */
 	private PlanExecutorInterface createAdvancedExecutor() {
 		log.debug("Creating advanced MapReduce plan executor");
 		List<DynamicAgentEntity> agents = dynamicAgentLoader.getAllAgents();
-		return new MapReducePlanExecutor(agents, recorder, agentService, llmService, manusProperties);
+		return new MapReducePlanExecutor(agents, recorder, agentService, llmService, manusProperties, objectMapper);
 	}
 
 	/**
@@ -114,7 +137,7 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 	 * @return Array of supported plan type strings
 	 */
 	public String[] getSupportedPlanTypes() {
-		return new String[] { "simple", "advanced" };
+		return new String[] { "simple", "advanced", "direct" };
 	}
 
 	/**
@@ -127,7 +150,7 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 			return false;
 		}
 		String normalizedType = planType.toLowerCase();
-		return "simple".equals(normalizedType) || "advanced".equals(normalizedType);
+		return "simple".equals(normalizedType) || "advanced".equals(normalizedType) || "direct".equals(normalizedType);
 	}
 
 	/**
@@ -146,6 +169,7 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 		return switch (planType.toLowerCase()) {
 			case "simple" -> createSimpleExecutor();
 			case "advanced" -> createAdvancedExecutor();
+			case "direct" -> createDirectResponseExecutor();
 			default -> {
 				log.warn("Unknown explicit plan type: {}, defaulting to simple executor", planType);
 				yield createSimpleExecutor();

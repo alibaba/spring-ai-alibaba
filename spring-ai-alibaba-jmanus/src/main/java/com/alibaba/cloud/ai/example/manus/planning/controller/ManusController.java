@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.controller;
 
+import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
+import com.alibaba.cloud.ai.example.manus.event.PlanExceptionEvent;
+import com.alibaba.cloud.ai.example.manus.exception.PlanException;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
@@ -26,7 +29,8 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,14 +42,17 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/executor")
-public class ManusController {
+public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	private static final Logger logger = LoggerFactory.getLogger(ManusController.class);
 
 	private final ObjectMapper objectMapper;
+
+	private final Cache<String, Throwable> exceptionCache;
 
 	@Autowired
 	@Lazy
@@ -67,6 +74,8 @@ public class ManusController {
 		this.objectMapper.registerModule(new JavaTimeModule());
 		// Ensure pretty printing is disabled by default for compact JSON
 		// this.objectMapper.disable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT);
+		// 10minutes timeout for plan exception
+		this.exceptionCache = CacheBuilder.newBuilder().expireAfterWrite(10, TimeUnit.MINUTES).build();
 	}
 
 	/**
@@ -78,7 +87,7 @@ public class ManusController {
 	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, String> request) {
 		String query = request.get("query");
 		if (query == null || query.trim().isEmpty()) {
-			return ResponseEntity.badRequest().body(Map.of("error", "查询内容不能为空"));
+			return ResponseEntity.badRequest().body(Map.of("error", "Query content cannot be empty"));
 		}
 		ExecutionContext context = new ExecutionContext();
 		context.setUserRequest(query);
@@ -87,6 +96,7 @@ public class ManusController {
 		context.setCurrentPlanId(planId);
 		context.setRootPlanId(planId);
 		context.setNeedSummary(true);
+
 		// Get or create planning flow
 		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(planId);
 
@@ -105,7 +115,7 @@ public class ManusController {
 		Map<String, Object> response = new HashMap<>();
 		response.put("planId", planId);
 		response.put("status", "processing");
-		response.put("message", "任务已提交，正在处理中");
+		response.put("message", "Task submitted, processing");
 
 		return ResponseEntity.ok(response);
 	}
@@ -117,6 +127,10 @@ public class ManusController {
 	 */
 	@GetMapping("/details/{planId}")
 	public synchronized ResponseEntity<?> getExecutionDetails(@PathVariable("planId") String planId) {
+		Throwable throwable = this.exceptionCache.getIfPresent(planId);
+		if (throwable != null) {
+			throw new PlanException(throwable);
+		}
 		PlanExecutionRecord planRecord = planExecutionRecorder.getRootPlanExecutionRecord(planId);
 
 		if (planRecord == null) {
@@ -162,7 +176,7 @@ public class ManusController {
 
 		try {
 			planExecutionRecorder.removeExecutionRecord(planId);
-			return ResponseEntity.ok(Map.of("message", "执行记录已成功删除", "planId", planId));
+			return ResponseEntity.ok(Map.of("message", "Execution record successfully deleted", "planId", planId));
 		}
 		catch (Exception e) {
 			return ResponseEntity.internalServerError()
@@ -179,7 +193,7 @@ public class ManusController {
 	@PostMapping("/submit-input/{planId}")
 	public ResponseEntity<Map<String, Object>> submitUserInput(@PathVariable("planId") String planId,
 			@RequestBody Map<String, String> formData) { // Changed formData to
-															// Map<String, String>
+		// Map<String, String>
 		try {
 			logger.info("Received user input for plan {}: {}", planId, formData);
 			boolean success = userInputService.submitUserInputs(planId, formData);
@@ -208,6 +222,11 @@ public class ManusController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body(Map.of("error", "An unexpected error occurred.", "planId", planId));
 		}
+	}
+
+	@Override
+	public void onEvent(PlanExceptionEvent event) {
+		this.exceptionCache.put(event.getPlanId(), event.getThrowable());
 	}
 
 }

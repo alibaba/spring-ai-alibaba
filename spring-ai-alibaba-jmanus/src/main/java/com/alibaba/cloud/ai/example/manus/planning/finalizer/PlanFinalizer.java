@@ -100,7 +100,8 @@ public class PlanFinalizer {
 
 			// Use streaming response handler for summary generation
 			Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
-			String summary = streamingResponseHandler.processStreamingTextResponse(responseFlux, "Summary generation");
+			String summary = streamingResponseHandler.processStreamingTextResponse(responseFlux, "Summary generation",
+					context.getCurrentPlanId());
 			context.setResultSummary(summary);
 
 			recordPlanCompletion(context, summary);
@@ -131,6 +132,54 @@ public class PlanFinalizer {
 		Long thinkActRecordId = context.getThinkActRecordId();
 
 		recorder.recordPlanCompletion(currentPlanId, rootPlanId, thinkActRecordId, summary);
+	}
+
+	/**
+	 * Generate direct LLM response for simple requests
+	 * @param context execution context containing the user request
+	 */
+	public void generateDirectResponse(ExecutionContext context) {
+		if (context == null || context.getUserRequest() == null) {
+			throw new IllegalArgumentException("ExecutionContext or user request cannot be null");
+		}
+
+		String userRequest = context.getUserRequest();
+		log.info("Generating direct response for user request: {}", userRequest);
+
+		try {
+			// Create a simple prompt for direct response
+			Message directMessage = promptService.createUserMessage(PromptEnum.DIRECT_RESPONSE.getPromptName(),
+					Map.of("userRequest", userRequest));
+
+			Prompt prompt = new Prompt(List.of(directMessage));
+			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
+
+			if (context.isUseMemory()) {
+				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
+				requestSpec.advisors(MessageChatMemoryAdvisor
+					.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
+					.build());
+			}
+
+			// Use streaming response handler for direct response generation
+			Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
+			String directResponse = streamingResponseHandler.processStreamingTextResponse(responseFlux,
+					"Direct response", context.getCurrentPlanId());
+			context.setResultSummary(directResponse);
+
+			recordPlanCompletion(context, directResponse);
+			log.info("Generated direct response: {}", directResponse);
+
+		}
+		catch (Exception e) {
+			log.error("Error generating direct response for request: {}", userRequest, e);
+			throw new RuntimeException("Failed to generate direct response", e);
+		}
+		finally {
+			if (context.getPlan() != null) {
+				llmService.clearConversationMemory(context.getPlan().getCurrentPlanId());
+			}
+		}
 	}
 
 }

@@ -16,8 +16,6 @@
 
 package com.alibaba.cloud.ai.example.manus.dynamic.prompt.service;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.repository.PromptRepository;
-import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,21 +25,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class PromptDataInitializer implements CommandLineRunner, IPromptDataInitializer {
 
-	private final PromptRepository promptRepository;
-
-	private final PromptLoader promptLoader;
-
-	private PromptInitializationService promptInitializationService;
+	private final PromptInitializationService promptInitializationService;
 
 	@Value("${namespace.value}")
 	private String namespace;
 
 	private static final Logger log = LoggerFactory.getLogger(PromptDataInitializer.class);
 
-	public PromptDataInitializer(PromptRepository promptRepository, PromptLoader promptLoader,
-			PromptInitializationService promptInitializationService) {
-		this.promptRepository = promptRepository;
-		this.promptLoader = promptLoader;
+	public PromptDataInitializer(PromptInitializationService promptInitializationService) {
 		this.promptInitializationService = promptInitializationService;
 	}
 

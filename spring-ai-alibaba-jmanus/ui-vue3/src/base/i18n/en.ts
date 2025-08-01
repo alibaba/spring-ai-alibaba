@@ -22,6 +22,47 @@ const words: I18nType = {
   backHome: 'Back to Home',
   noPageTip: 'The page you are looking for does not exist.',
 
+  // Initialization page
+  init: {
+    welcome: 'Welcome to JManus',
+    welcomeStep: 'Welcome to JManus',
+    description: 'To get started, you need to configure an LLM service to enable AI features. You can choose Alibaba Cloud DashScope or configure any OpenAI-compatible API service.',
+    languageStepDescription: 'Please select your language preference, which will be used as the default interface language.',
+    stepLanguage: 'Language',
+    stepModel: 'Model Setup',
+    selectLanguageLabel: 'Select Language',
+    continueToModel: 'Continue to Model Setup',
+    back: 'Back',
+    configModeLabel: 'Configuration Mode',
+    dashscopeMode: 'Alibaba Cloud DashScope (Recommended)',
+    dashscopeModeDesc: 'Use Alibaba Cloud DashScope service, just provide API key to get started quickly',
+    customMode: 'Custom OpenAI Compatible Service',
+    customModeDesc: 'Configure any OpenAI API compatible service, such as Ollama, LocalAI, etc.',
+    apiKeyLabel: 'DashScope API Key',
+    apiKeyPlaceholder: 'Enter your API key',
+    apiKeyHint: 'You can get your API key from Alibaba Cloud Bailian Console.',
+    getApiKey: 'Get API Key',
+    baseUrlLabel: 'API Base URL',
+    baseUrlPlaceholder: 'https://api.openai.com or your custom URL',
+    baseUrlHint: 'OpenAI compatible API base URL, e.g. http://localhost:11434',
+    customApiKeyLabel: 'API Key',
+    customApiKeyPlaceholder: 'Enter your API key',
+    modelNameLabel: 'Model Name',
+    modelNamePlaceholder: 'gpt-4.1 or your model name',
+    modelNameHint: 'Enter the model name you want to use, e.g. gemini-2.5-pro, gpt-4.1, etc.',
+    modelDisplayNameLabel: 'Model Display Name (Optional)',
+    modelDisplayNamePlaceholder: 'Display name for the model',
+    saveAndContinue: 'Save and Continue',
+    saving: 'Saving...',
+    apiKeyRequired: 'API key is required',
+    baseUrlRequired: 'API base URL is required',
+    modelNameRequired: 'Model name is required',
+    saveFailed: 'Failed to save configuration',
+    networkError: 'Network error, please check your internet connection',
+    successMessage: 'Configuration saved successfully! Redirecting to home page...',
+    restartRequired: 'API key saved successfully! The application needs to be restarted for the configuration to take effect.\n\nClick "OK" to restart now, or "Cancel" to restart manually later.',
+  },
+
   // Common buttons and actions
   common: {
     cancel: 'Cancel',
@@ -73,6 +114,8 @@ const words: I18nType = {
     parameters: 'Parameters',
     thinking: 'Thinking',
     input: 'Input',
+    total: 'Total',
+    loadFailed: 'Load Failed',
   },
 
   // Configuration related
@@ -118,6 +161,7 @@ const words: I18nType = {
       agents: 'Multi - Agent',
       infiniteContext: 'Infinite Context',
       filesystem: 'File System',
+      mcpServiceLoader: 'MCP Service Loader',
     },
     // Agent configuration page
     agentConfig: {
@@ -207,6 +251,19 @@ const words: I18nType = {
       availableModels: 'Available Models',
       searchModels: 'Search models...',
       getModelsCount: 'Found {count} available models',
+      default: 'Default',
+      setAsDefault: 'Set as Default',
+      currentDefault: 'Current Default',
+      setDefaultSuccess: 'Model set as default successfully',
+      setDefaultFailed: 'Failed to set model as default',
+      validatingBeforeSave: 'Validating API key before saving...',
+      validationFailedCannotSave: 'API key validation failed, cannot save',
+      temperature: 'Temperature',
+      temperaturePlaceholder: 'Leave empty to use model default',
+      topP: 'Top P',
+      topPPlaceholder: 'Leave empty to use model default',
+      headers: 'Headers',
+      headersPlaceholder: 'Request headers (JSON format)',
     },
     // MCP configuration page
     mcpConfig: {
@@ -338,6 +395,11 @@ const words: I18nType = {
       fileSystem: {
         allowExternalAccess: 'Whether to allow file operations beyond the working directory',
       },
+      mcpServiceLoader: {
+        connectionTimeoutSeconds: 'MCP connection timeout (seconds)',
+        maxRetryCount: 'MCP connection max retry count',
+        maxConcurrentConnections: 'MCP max concurrent connections',
+      },
       systemSettings: {
         systemName: 'System Name',
         language: 'Language',
@@ -409,6 +471,15 @@ const words: I18nType = {
       exportFailed: 'Failed to export configuration',
       importSuccess: 'Configuration imported successfully',
       importFailed: 'Failed to import configuration',
+      resetToLanguageDefault: 'Reset to Language Default',
+      selectLanguage: 'Select Language',
+      resetToLanguageDefaultSuccess: 'Reset to language default successfully',
+      resetToLanguageDefaultFailed: 'Failed to reset to language default',
+      resetLanguageWarning: 'This will overwrite current content with the default version of selected language',
+      batchSwitchLanguage: 'Batch Switch Language',
+      batchSwitchLanguageSuccess: 'Batch language switch successful',
+      batchSwitchLanguageFailed: 'Failed to batch switch language',
+      batchSwitchLanguageWarning: 'This will overwrite all prompt content and descriptions with the default version of selected language',
     },
     namespaceConfig: {
       title: 'Namespace Configuration',
@@ -459,6 +530,21 @@ const words: I18nType = {
     saveFailed: 'Failed to save agent',
     deleteSuccess: 'Agent deleted successfully',
     deleteFailed: 'Failed to delete agent',
+    // Multi-language support
+    multiLanguage: {
+      title: 'Agent Multi-Language Management',
+      resetAll: 'Reset All Agents',
+      resetAllConfirm: 'Reset All Agents Confirmation',
+      resetAllWarning: 'This operation will delete all existing agent configurations and reload the specified language version. This action cannot be undone!',
+      selectLanguage: 'Select Language',
+      resetSuccess: 'All agents have been reset to the specified language version',
+      resetFailed: 'Failed to reset agents',
+      currentLanguage: 'Current Language',
+      supportedLanguages: 'Supported Languages',
+      resetInProgress: 'Resetting agents...',
+      confirmReset: 'Confirm Reset',
+      cancel: 'Cancel',
+    },
   },
   // Model Configuration
   model: {
@@ -587,7 +673,7 @@ const words: I18nType = {
 
   // Input component
   input: {
-    placeholder: 'Send a message to JTaskPilot',
+    placeholder: 'Send a message to JManus',
     send: 'Send',
     planMode: 'PLAN-ACT Template Mode',
     waiting: 'Waiting for task completion...',
@@ -737,6 +823,7 @@ const words: I18nType = {
   // Time related
   time: {
     now: 'Just now',
+    unknown: 'Unknown time',
     minuteAgo: '{count} minutes ago',
     hourAgo: '{count} hours ago',
     dayAgo: '{count} days ago',
@@ -776,7 +863,7 @@ const words: I18nType = {
 
   // Home page
   home: {
-    welcomeTitle: 'Welcome to JTaskPilot!',
+    welcomeTitle: 'Welcome to JManus!',
     welcomeSubtitle:
       'Your Java AI intelligent assistant, helping you build and complete various tasks.',
     tagline: 'Java AI Agent',

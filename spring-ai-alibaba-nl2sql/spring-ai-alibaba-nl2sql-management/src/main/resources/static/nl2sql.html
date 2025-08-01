@@ -15,6 +15,7 @@
         :root {
             --primary-color: #1890ff;
             --secondary-color: #52c41a;
+            --tertiary-color: #fadb14;
             --background-color: #f5f8fa;
             --card-bg: #ffffff;
             --text-color: #333333;
@@ -174,6 +175,34 @@
             border-top-color: white;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+        }
+
+        .nl2sql-button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--tertiary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nl2sql-button:hover {
+            background-color: #ffa040;
+        }
+
+        .nl2sql-button:active {
+            background-color: #e7f82d;
+        }
+
+        .nl2sql-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
 
         .result-container {
@@ -484,6 +513,7 @@
             }
 
             .search-button,
+            .nl2sql-button,
             .init-button {
                 width: 100%;
                 justify-content: center;
@@ -835,6 +865,9 @@
             <button id="search" class="search-button">
                 <i class="bi bi-search"></i> 查询
             </button>
+            <button id="nl2sql" class="nl2sql-button">
+                <i class="bi bi-nl2sql"></i> NL2SQL
+            </button>
             <button id="init" class="init-button">
                 <i class="bi bi-database-add"></i> 初始化数据源
             </button>
@@ -869,6 +902,7 @@
         const queryInput = document.getElementById('query');
         const searchButton = document.getElementById('search');
         const initButton = document.getElementById('init');
+        const nl2sqlButton = document.getElementById('nl2sql');
         const resultsDiv = document.getElementById('results');
         const statusDiv = document.getElementById('status');
         // const exampleQueries = document.querySelectorAll('.example-query'); // 不再需要，使用事件委托
@@ -1034,14 +1068,26 @@
 
         // --- Initialization Functions ---
 
+        function disableButtons() {
+            queryInput.disabled = true;
+            searchButton.disabled = true;
+            nl2sqlButton.disabled = true;
+            initButton.disabled = true;
+        }
+
+        function enableButtons() {
+            queryInput.disabled = false;
+            searchButton.disabled = false;
+            nl2sqlButton.disabled = false;
+            initButton.disabled = false;
+        }
+
         function setUIState(initializing) {
             isInitializing = initializing;
             
             if (initializing) {
                 // 禁用所有操作按钮
-                queryInput.disabled = true;
-                searchButton.disabled = true;
-                initButton.disabled = true;
+                disableButtons();
                 initButton.classList.add('loading');
                 initButton.innerHTML = '<span style="opacity: 0;">初始化数据源</span>';
                 
@@ -1049,9 +1095,7 @@
                 statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div> 正在初始化数据源...</div>';
             } else {
                 // 恢复操作，查询功能始终可用
-                queryInput.disabled = false;
-                searchButton.disabled = false;
-                initButton.disabled = false;
+                enableButtons();
                 initButton.classList.remove('loading');
                 
                 if (isInitialized) {
@@ -1262,7 +1306,9 @@
                 'schema_deep_recall': { title: 'Schema深度召回', icon: 'bi bi-database-fill-gear' },
                 'sql': { title: '生成的SQL', icon: 'bi bi-code-square' },
                 'execute_sql': { title: '执行SQL', icon: 'bi bi-play-circle' },
-                'python_analysis': { title: 'Python分析执行', icon: 'bi bi-code-slash' },
+                'python_generate': { title: 'Python代码生成', icon: 'bi bi-code-slash' },
+                'python_execute': { title: 'Python代码执行', icon: 'bi bi-code-slash' },
+                'python_analysis': { title: 'Python结果执行', icon: 'bi bi-code-slash' },
                 'validation': { title: '校验', icon: 'bi bi-check-circle' },
                 'output_report': { title: '输出报告', icon: 'bi bi-file-earmark-text' },
                 'explanation': { title: '解释说明', icon: 'bi bi-info-circle' },
@@ -1429,6 +1475,7 @@
                 eventSource.close();
             }
 
+            disableButtons();
             initUI();
             streamState = { status: '', rewrite: '', sql: '', explanation: '', result: '', keyword_extract: '', plan_generation: '' };
             statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div> 正在处理...</div>';
@@ -1536,6 +1583,7 @@
                 console.error('EventSource error:', err);
                 statusDiv.innerHTML = '<span class="badge badge-error">连接错误</span>';
                 eventSource.close();
+                enableButtons();
             };
 
             eventSource.addEventListener('complete', function (e) {
@@ -1543,13 +1591,65 @@
                 const typingCursor = document.getElementById('typing-cursor');
                 if (typingCursor) typingCursor.style.display = 'none';
                 eventSource.close();
+                enableButtons();
             });
+        };
+
+        const performNl2Sql = async () => {
+            // 检查是否正在初始化
+            if (isInitializing) {
+                alert('正在初始化数据源，请等待完成后再进行查询');
+                return;
+            }
+
+            const query = queryInput.value;
+            if (!query) {
+                alert('请输入查询内容');
+                return;
+            }
+
+            // 如果未初始化，给出提示但仍允许查询（可能后端有默认数据源）
+            if (!isInitialized) {
+                console.warn('数据源未初始化，使用默认配置进行查询');
+            }
+
+            disableButtons();
+            initUI();
+            statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div> 正在处理...</div>';
+
+            // 进行请求
+            const baseUrl = '/nl2sql/nl2sql';
+            const params = {
+                query: query
+            };
+            const queryString = new URLSearchParams(params).toString();
+            const url = `${baseUrl}?${queryString}`;
+
+            try {
+                const response = await fetch(url);
+                const result = await response.text();
+                if(!response.ok) {
+                    console.error('Error:', result);
+                    statusDiv.innerHTML = '<span class="badge badge-error">连接错误</span>';
+                } else {
+                    statusDiv.innerHTML = '<span class="badge badge-success">生成完成</span>';
+                    const typingCursor = document.getElementById('typing-cursor');
+                    if (typingCursor) typingCursor.style.display = 'none';
+                    console.log("Sql Result: ", result)
+                    createNewSection("sql", result);
+                }
+            } catch (error) {
+                console.error("Error: ", error);
+                statusDiv.innerHTML = '<span class="badge badge-error">连接错误</span>';
+            }
+            enableButtons();
         };
 
         // --- Event Listeners ---
 
         searchButton.addEventListener('click', performSearch);
         initButton.addEventListener('click', initializeDataSource);
+        nl2sqlButton.addEventListener('click', performNl2Sql);
         queryInput.addEventListener('keyup', (event) => {
             if (event.key === 'Enter') performSearch();
         });

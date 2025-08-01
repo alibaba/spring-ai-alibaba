@@ -26,21 +26,24 @@ import org.springframework.ai.openai.api.OpenAiApi;
 
 public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 
+	private final ObjectMapper objectMapper;
+
 	private static final Logger log = LoggerFactory.getLogger(CronTool.class);
 
 	private final CronService cronService;
 
-	public CronTool(CronService cronService) {
+	public CronTool(CronService cronService, ObjectMapper objectMapper) {
 		this.cronService = cronService;
+		this.objectMapper = objectMapper;
 	}
 
 	public static class CronToolInput {
 
-		private String cronName; // 任务名称
+		private String cronName; // Task name
 
-		private String cronTime; // 定时时间
+		private String cronTime; // Scheduled time
 
-		private String planDesc; // 计划描述
+		private String planDesc; // Plan description
 
 		CronToolInput() {
 		}
@@ -83,15 +86,15 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 				"properties": {
 					"cronName": {
 						"type": "string",
-						"description": "定时任务名称"
+						"description": "Scheduled task name"
 					},
 					"cronTime": {
 						"type": "string",
-						"description": "cron格式的任务定时执行的时间(六位)，例如：0 0 0/2 * * ?"
+						"description": "Cron format task scheduled execution time (6 digits), example: 0 0 0/2 * * ?"
 					},
 					"planDesc": {
 						"type": "string",
-						"description": "要执行的任务内容，不能包含时间相关信息"
+						"description": "Task content to execute, cannot contain time-related information"
 					}
 				},
 				"required": ["cronTime","originTime","planDesc"]
@@ -101,7 +104,7 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 	private final String name = "cron_tool";
 
 	private final String description = """
-			    定时任务工具，能存储定时任务到db中。
+			    Scheduled task tool that can store scheduled tasks to database.
 			""";
 
 	public OpenAiApi.FunctionTool getToolDefinition() {
@@ -110,25 +113,24 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 		return functionTool;
 	}
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
-
 	@Override
 	public ToolExecuteResult run(CronToolInput input) {
 		try {
 			log.info("cron input:{}", objectMapper.writeValueAsString(input));
 
-			// 创建CronConfig对象
+			// Create CronConfig object
 			CronConfig cronConfig = new CronConfig();
 			cronConfig.setCronName(input.getCronName());
 			cronConfig.setCronTime(input.getCronTime());
 			cronConfig.setPlanDesc(input.getPlanDesc());
 			cronConfig.setStatus(0);
 
-			// 保存到数据库
+			// Save to database
 			CronConfig savedConfig = cronService.createCronTask(cronConfig);
 
-			String result = String.format("OK 写入定时任务成功，任务ID: %d, 描述: %s, 定时时间: %s", savedConfig.getId(),
-					savedConfig.getPlanDesc(), savedConfig.getCronTime());
+			String result = String.format(
+					"OK Scheduled task created successfully, Task ID: %d, Description: %s, Schedule time: %s",
+					savedConfig.getId(), savedConfig.getPlanDesc(), savedConfig.getCronTime());
 			return new ToolExecuteResult(objectMapper.writeValueAsString(result));
 		}
 		catch (Exception e) {
@@ -165,7 +167,7 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 	@Override
 	public String getCurrentToolStateString() {
 		return String.format("""
-				写入定时任务状态： %s
+				Write scheduled task status: %s
 				""", "yes");
 	}
 

@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +42,9 @@ public class McpConfigVO {
 
 	private List<String> toolNames; // Add tool name list for frontend display
 
-	// 新增字段化属性
+	private final ObjectMapper objectMapper;
+
+	// New field-based properties
 	private String command;
 
 	private String url;
@@ -52,24 +55,35 @@ public class McpConfigVO {
 
 	private McpConfigStatus status;
 
+	/**
+	 * Default constructor for Jackson deserialization
+	 */
 	public McpConfigVO() {
+		this.objectMapper = new ObjectMapper();
+		this.toolNames = new ArrayList<>();
 	}
 
-	public McpConfigVO(McpConfigEntity entity) {
+	public McpConfigVO(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+		this.toolNames = new ArrayList<>();
+	}
+
+	public McpConfigVO(McpConfigEntity entity, ObjectMapper objectMapper) {
 		this.id = entity.getId();
 		this.mcpServerName = entity.getMcpServerName();
 		this.connectionType = entity.getConnectionType();
 		this.connectionConfig = entity.getConnectionConfig();
 		this.status = entity.getStatus();
+		this.objectMapper = objectMapper;
 		this.toolNames = new ArrayList<>(); // Initialize as empty list, may need to get
 											// from other places in actual use
 
-		// 解析connectionConfig到字段化属性
+		// Parse connectionConfig to field-based properties
 		parseConnectionConfig();
 	}
 
 	/**
-	 * 解析connectionConfig JSON到字段化属性
+	 * Parse connectionConfig JSON to field-based properties
 	 */
 	private void parseConnectionConfig() {
 		if (connectionConfig == null || connectionConfig.trim().isEmpty()) {
@@ -77,44 +91,45 @@ public class McpConfigVO {
 		}
 
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
+
+			objectMapper.registerModule(new JavaTimeModule());
 			JsonNode configNode = objectMapper.readTree(connectionConfig);
 
-			// 解析command
+			// Parse command
 			if (configNode.has("command")) {
 				this.command = configNode.get("command").asText();
 			}
 
-			// 解析url
+			// Parse url
 			if (configNode.has("url")) {
 				this.url = configNode.get("url").asText();
 			}
 
-			// 解析args
+			// Parse args
 			if (configNode.has("args")) {
 				this.args = objectMapper.readValue(configNode.get("args").toString(),
-						new ObjectMapper().getTypeFactory().constructCollectionType(List.class, String.class));
+						objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
 			}
 
-			// 解析env
+			// Parse env
 			if (configNode.has("env")) {
 				this.env = objectMapper.readValue(configNode.get("env").toString(),
-						new ObjectMapper().getTypeFactory().constructMapType(Map.class, String.class, String.class));
+						objectMapper.getTypeFactory().constructMapType(Map.class, String.class, String.class));
 			}
 
 		}
 		catch (JsonProcessingException e) {
-			// 如果解析失败，保持字段为空
+			// If parsing fails, keep fields empty
 			System.err.println("Failed to parse connectionConfig: " + e.getMessage());
 		}
 	}
 
-	// Static method to convert VO list to entity list
-	public static List<McpConfigVO> fromEntities(List<McpConfigEntity> entities) {
+	// Static method to convert VO list to entity list, add ObjectMapper parameter
+	public static List<McpConfigVO> fromEntities(List<McpConfigEntity> entities, ObjectMapper objectMapper) {
 		List<McpConfigVO> vos = new ArrayList<>();
 		if (entities != null) {
 			for (McpConfigEntity entity : entities) {
-				vos.add(new McpConfigVO(entity));
+				vos.add(new McpConfigVO(entity, objectMapper));
 			}
 		}
 		return vos;
@@ -161,7 +176,7 @@ public class McpConfigVO {
 		this.toolNames = toolNames;
 	}
 
-	// 新增字段的getter和setter
+	// Getter and setter for new fields
 	public String getCommand() {
 		return command;
 	}

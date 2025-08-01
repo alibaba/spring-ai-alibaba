@@ -18,8 +18,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.po;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "prompt", uniqueConstraints = {
-		@UniqueConstraint(columnNames = { "namespace", "prompt_name" }, name = "unique_namespace_prompt_name") })
+@Table(name = "prompt", uniqueConstraints = { @UniqueConstraint(columnNames = { "namespace", "prompt_name" }) })
 public class PromptEntity {
 
 	@Id
@@ -44,7 +43,6 @@ public class PromptEntity {
 	@Column(name = "prompt_description", nullable = false, length = 1024)
 	private String promptDescription;
 
-	@Lob
 	@Column(name = "prompt_content", columnDefinition = "TEXT", nullable = false)
 	private String promptContent;
 

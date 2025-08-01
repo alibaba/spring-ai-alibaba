@@ -16,19 +16,20 @@
 package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
 /**
- * 计划类型枚举
+ * Plan type enumeration
  */
 public enum PlanType {
 
 	/**
-	 * 传统的简单执行计划
+	 * Traditional simple execution plan
 	 */
-	SIMPLE("简单计划", "适用于基本的任务执行，步骤按顺序进行"),
+	SIMPLE("Simple Plan", "Suitable for basic task execution with sequential steps"),
 
 	/**
-	 * MapReduce模式的执行计划
+	 * MapReduce mode execution plan
 	 */
-	MAPREDUCE("MapReduce计划", "适用于复杂的分布式任务，支持并行处理和结果聚合");
+	MAPREDUCE("MapReduce Plan",
+			"Suitable for complex distributed tasks with parallel processing and result aggregation");
 
 	private final String displayName;
 

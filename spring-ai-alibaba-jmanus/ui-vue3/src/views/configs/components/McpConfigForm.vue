@@ -19,7 +19,6 @@
         :options="connectionTypes"
         :placeholder="t('config.mcpConfig.connectionTypePlaceholder')"
         :dropdown-title="t('config.mcpConfig.connectionTypePlaceholder')"
-        icon="carbon:connection"
       />
     </div>
 
@@ -70,11 +69,45 @@
         rows="3"
       />
     </div>
+
+    <!-- 使用说明 -->
+    <div class="usage-instructions">
+      <div class="instructions-header">
+        <Icon icon="carbon:information" class="instructions-icon" />
+        <h4>使用说明</h4>
+      </div>
+      <div class="instructions-content">
+        <ol class="instructions-list">
+          <li>
+            <strong>获取MCP服务列表</strong>
+            <ul>
+              <li>可以在<code>mcp.higress.ai</code>，<code>mcp.so</code>,<code>modelscope.cn</code>上查找可用的MCP服务</li>
+              <li>如果需要批量配置MCP服务，可以使用右上角的全部导入功能</li>
+            </ul>
+          </li>
+          <li>
+            <strong>配置MCP服务</strong>
+            <ul>
+              <li>填写服务名称:</li>
+              <li>选择连接类型:本地选择 <code>STUDIO</code> 以及输入 Command、Args和Env。远程选择 <code>SSE</code> 或 <code>STREAMING</code> 以及输入 URL</li>
+              <li>点击保存按钮完成MCP配置，MCP工具将自动注册到系统中</li>
+            </ul>
+          </li>
+          <li>
+            <strong>配置Agent使用</strong>
+            <ul>
+              <li>在Agent配置页面创建新的Agent，为Agent添加刚配置的MCP服务，这样可以减少工具冲突，提高Agent选择工具的准确性</li>
+            </ul>
+          </li>
+        </ol>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { Icon } from '@iconify/vue'
 import CustomSelect from '@/components/select/index.vue'
 
 const { t } = useI18n()
@@ -103,9 +136,9 @@ const emit = defineEmits<{
 
 // 连接类型选项
 const connectionTypes = [
-  { id: 'STUDIO', name: 'STUDIO', icon: 'carbon:plug' },
-  { id: 'SSE', name: 'SSE', icon: 'carbon:plug' },
-  { id: 'STREAMING', name: 'STREAMING', icon: 'carbon:plug' }
+  { id: 'STUDIO', name: 'STUDIO' },
+  { id: 'SSE', name: 'SSE' },
+  { id: 'STREAMING', name: 'STREAMING' }
 ]
 
 // 处理输入事件
@@ -184,5 +217,141 @@ const handleConnectionTypeUpdate = (value: string | null) => {
 .config-input::placeholder,
 .config-textarea::placeholder {
   color: rgba(255, 255, 255, 0.4);
+}
+
+/* 使用说明样式 */
+.usage-instructions {
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(102, 126, 234, 0.5);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.usage-instructions::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(102, 126, 234, 0.8);
+  border-radius: 8px 8px 0 0;
+}
+
+.instructions-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.instructions-icon {
+  font-size: 16px;
+  color: #667eea;
+}
+
+.instructions-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.instructions-content {
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.instructions-list {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.instructions-list > li {
+  margin-bottom: 12px;
+  position: relative;
+  padding-left: 4px;
+}
+
+.instructions-list > li::marker {
+  color: #667eea;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.instructions-list > li:last-child {
+  margin-bottom: 0;
+}
+
+.instructions-list strong {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.instructions-list ul {
+  margin: 6px 0 0 0;
+  padding-left: 16px;
+  list-style-type: disc;
+}
+
+.instructions-list ul li {
+  margin-bottom: 3px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.instructions-list ul li strong {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  display: inline;
+  margin-bottom: 0;
+}
+
+.instructions-list code {
+  background: rgba(102, 126, 234, 0.15);
+  color: #a8b3ff;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .usage-instructions {
+    margin-top: 20px;
+    padding: 12px;
+  }
+  
+  .instructions-header h4 {
+    font-size: 15px;
+  }
+  
+  .instructions-content {
+    font-size: 13px;
+  }
+  
+  .instructions-list {
+    padding-left: 12px;
+  }
+  
+  .instructions-list > li {
+    margin-bottom: 10px;
+  }
+  
+  .instructions-list ul li {
+    font-size: 12px;
+  }
 }
 </style> 

@@ -19,7 +19,8 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * 执行计划抽象基类 包含所有执行计划类型的共同属性和基本实现
+ * Abstract execution plan base class containing common properties and basic
+ * implementations for all execution plan types
  */
 public abstract class AbstractExecutionPlan implements PlanInterface {
 
@@ -28,18 +29,18 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	protected String rootPlanId;
 
 	/**
-	 * 计划标题
+	 * Plan title
 	 */
 	protected String title;
 
 	/**
-	 * 规划思考过程
+	 * Planning thinking process
 	 */
 	@JsonIgnore
 	protected String planningThinking;
 
 	/**
-	 * 执行参数
+	 * Execution parameters
 	 */
 	@JsonIgnore
 	protected String executionParams;
@@ -47,16 +48,16 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	private String userRequest;
 
 	/**
-	 * 默认构造函数
+	 * Default constructor
 	 */
 	public AbstractExecutionPlan() {
 		this.executionParams = "";
 	}
 
 	/**
-	 * 带参数的构造函数
-	 * @param planId 计划ID
-	 * @param title 计划标题
+	 * Constructor with parameters
+	 * @param planId Plan ID
+	 * @param title Plan title
 	 */
 	public AbstractExecutionPlan(String currentPlanId, String rootPlanId, String title) {
 		this();
@@ -65,7 +66,7 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 		this.title = title;
 	}
 
-	// PlanInterface 基本属性的实现
+	// Implementation of PlanInterface basic properties
 
 	@Override
 	public String getCurrentPlanId() {
@@ -125,52 +126,53 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 		this.executionParams = executionParams != null ? executionParams : "";
 	}
 
-	// 抽象方法 - 子类必须实现
+	// Abstract methods - must be implemented by subclasses
 
 	/**
-	 * 获取所有执行步骤的扁平列表
-	 * @return 所有执行步骤
+	 * Get flat list of all execution steps
+	 * @return All execution steps
 	 */
 	@Override
 	public abstract List<ExecutionStep> getAllSteps();
 
 	/**
-	 * 获取总步骤数量
-	 * @return 总步骤数
+	 * Get total step count
+	 * @return Total step count
 	 */
 	@Override
 	public abstract int getTotalStepCount();
 
 	/**
-	 * 添加执行步骤
-	 * @param step 执行步骤
+	 * Add execution step
+	 * @param step Execution step
 	 */
 	@Override
 	public abstract void addStep(ExecutionStep step);
 
 	/**
-	 * 移除执行步骤
-	 * @param step 执行步骤
+	 * Remove execution step
+	 * @param step Execution step
 	 */
 	@Override
 	public abstract void removeStep(ExecutionStep step);
 
 	/**
-	 * 检查计划是否为空
-	 * @return 如果计划为空则返回true
+	 * Check if plan is empty
+	 * @return Return true if plan is empty
 	 */
 	@Override
 	public abstract boolean isEmpty();
 
 	/**
-	 * 获取计划执行状态的字符串格式
-	 * @param onlyCompletedAndFirstInProgress 当为true时，只输出所有已完成的步骤和第一个进行中的步骤
-	 * @return 计划状态字符串
+	 * Get string format of plan execution status
+	 * @param onlyCompletedAndFirstInProgress When true, only output all completed steps
+	 * and first in-progress step
+	 * @return Plan status string
 	 */
 	@Override
 	public abstract String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress);
 
-	// 通用实现方法
+	// Common implementation methods
 
 	@Override
 	public void clear() {
@@ -180,23 +182,39 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	}
 
 	/**
-	 * 获取用户请求
-	 * @return 用户请求字符串
+	 * Get user request
+	 * @return User request string
 	 */
 	public String getUserRequest() {
 		return userRequest;
 	}
 
 	/**
-	 * 设置用户请求
-	 * @param userRequest 用户请求字符串
+	 * Set user request
+	 * @param userRequest User request string
 	 */
 	public void setUserRequest(String userRequest) {
 		this.userRequest = userRequest;
 	}
 
 	/**
-	 * 清空步骤的抽象方法 子类需要实现具体的步骤清空逻辑
+	 * Whether it's direct feedback mode
+	 */
+	protected boolean directResponse = false;
+
+	@Override
+	public boolean isDirectResponse() {
+		return directResponse;
+	}
+
+	@Override
+	public void setDirectResponse(boolean directResponse) {
+		this.directResponse = directResponse;
+	}
+
+	/**
+	 * Abstract method to clear steps. Subclasses need to implement specific step clearing
+	 * logic
 	 */
 	protected abstract void clearSteps();
 

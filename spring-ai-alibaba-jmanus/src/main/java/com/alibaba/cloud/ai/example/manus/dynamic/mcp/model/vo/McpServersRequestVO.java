@@ -20,19 +20,33 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * 批量MCP服务器导入请求VO（JSON方式） 用于批量导入MCP服务器配置
+ * Batch MCP server import request VO (JSON method) for batch importing MCP server
+ * configurations
  */
 public class McpServersRequestVO {
 
+	private final ObjectMapper objectMapper;
+
 	/**
-	 * 完整的JSON配置 格式：{"mcpServers": {"server-name": {"command": "...", "args": [...],
-	 * "env": {...}}}}
+	 * Default constructor for Jackson deserialization
+	 */
+	public McpServersRequestVO() {
+		this.objectMapper = new ObjectMapper();
+	}
+
+	public McpServersRequestVO(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
+
+	/**
+	 * Complete JSON configuration format: {"mcpServers": {"server-name": {"command":
+	 * "...", "args": [...], "env": {...}}}}
 	 */
 	@JsonProperty("configJson")
 	private String configJson;
 
 	/**
-	 * 是否覆盖现有配置
+	 * Whether to override existing configuration
 	 */
 	@JsonProperty("overwrite")
 	private boolean overwrite = false;
@@ -55,8 +69,8 @@ public class McpServersRequestVO {
 	}
 
 	/**
-	 * 验证JSON格式是否有效
-	 * @return true表示有效，false表示无效
+	 * Validate if JSON format is valid
+	 * @return true if valid, false if invalid
 	 */
 	public boolean isValidJson() {
 		if (configJson == null || configJson.trim().isEmpty()) {
@@ -64,21 +78,20 @@ public class McpServersRequestVO {
 		}
 
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(configJson);
 
-			// 检查是否包含mcpServers字段
+			// Check if contains mcpServers field
 			if (!jsonNode.has("mcpServers")) {
 				return false;
 			}
 
-			// 检查mcpServers是否为对象
+			// Check if mcpServers is an object
 			JsonNode mcpServersNode = jsonNode.get("mcpServers");
 			if (!mcpServersNode.isObject()) {
 				return false;
 			}
 
-			// 检查是否至少有一个服务器配置
+			// Check if has at least one server configuration
 			if (mcpServersNode.size() == 0) {
 				return false;
 			}
@@ -91,8 +104,8 @@ public class McpServersRequestVO {
 	}
 
 	/**
-	 * 获取服务器配置数量
-	 * @return 服务器数量
+	 * Get server configuration count
+	 * @return Server count
 	 */
 	public int getServerCount() {
 		if (!isValidJson()) {
@@ -100,7 +113,6 @@ public class McpServersRequestVO {
 		}
 
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(configJson);
 			JsonNode mcpServersNode = jsonNode.get("mcpServers");
 			return mcpServersNode.size();
@@ -111,8 +123,8 @@ public class McpServersRequestVO {
 	}
 
 	/**
-	 * 获取服务器名称列表
-	 * @return 服务器名称数组
+	 * Get server name list
+	 * @return Server name array
 	 */
 	public String[] getServerNames() {
 		if (!isValidJson()) {
@@ -120,7 +132,6 @@ public class McpServersRequestVO {
 		}
 
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(configJson);
 			JsonNode mcpServersNode = jsonNode.get("mcpServers");
 
@@ -138,8 +149,9 @@ public class McpServersRequestVO {
 	}
 
 	/**
-	 * 标准化JSON格式 如果输入的是短格式JSON，自动转换为完整格式
-	 * @return 标准化后的JSON字符串
+	 * Normalize JSON format. If input is short format JSON, automatically convert to
+	 * complete format
+	 * @return Normalized JSON string
 	 */
 	public String getNormalizedConfigJson() {
 		if (configJson == null || configJson.trim().isEmpty()) {
@@ -147,15 +159,14 @@ public class McpServersRequestVO {
 		}
 
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(configJson);
 
-			// 如果已经包含mcpServers字段，直接返回
+			// If already contains mcpServers field, return directly
 			if (jsonNode.has("mcpServers")) {
 				return configJson;
 			}
 
-			// 如果是短格式JSON，转换为完整格式
+			// If it's short format JSON, convert to complete format
 			StringBuilder fullJsonBuilder = new StringBuilder();
 			fullJsonBuilder.append("{\n  \"mcpServers\": ");
 			fullJsonBuilder.append(configJson);
@@ -164,14 +175,14 @@ public class McpServersRequestVO {
 			return fullJsonBuilder.toString();
 		}
 		catch (Exception e) {
-			// 如果解析失败，返回原始JSON
+			// If parsing fails, return original JSON
 			return configJson;
 		}
 	}
 
 	/**
-	 * 验证请求数据是否有效
-	 * @return true表示有效，false表示无效
+	 * Validate if request data is valid
+	 * @return true if valid, false if invalid
 	 */
 	public boolean isValid() {
 		return isValidJson();

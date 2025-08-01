@@ -54,8 +54,8 @@ let isLoading = false
 const llmStreamCache = new Map<string, { item: ThoughtChainItem, content: string }>()
 // 从messageStore 拿出消息，然后进行解析并且渲染
 const items = computed(() => {
+    console.log('computed',props.convId, messageStore.history[props.convId])
     // 思维链显示的列表
-
     const array: ThoughtChainProps['items'] = []
     if(!props.convId || !messageStore.history[props.convId]){
       return array

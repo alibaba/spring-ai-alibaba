@@ -15,7 +15,25 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.model.service;
 
-import cn.hutool.core.util.StrUtil;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
@@ -28,20 +46,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ValidationResul
 import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelRepository;
 import com.alibaba.cloud.ai.example.manus.event.JmanusEventPublisher;
 import com.alibaba.cloud.ai.example.manus.event.ModelChangeEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import cn.hutool.core.util.StrUtil;
 
 @Service
 public class ModelServiceImpl implements ModelService {
@@ -84,8 +90,12 @@ public class ModelServiceImpl implements ModelService {
 			}
 
 			DynamicModelEntity entity = new DynamicModelEntity();
-			entity.setAllowChange(true);
 			updateEntityFromConfig(entity, config);
+
+			if (config.getIsDefault() != null && config.getIsDefault()) {
+				clearOtherDefaultModels();
+			}
+
 			entity = repository.save(entity);
 			publisher.publish(new ModelChangeEvent(entity));
 			log.info("Successfully created new Model: {}", config.getModelName());
@@ -111,15 +121,16 @@ public class ModelServiceImpl implements ModelService {
 	public ModelConfig updateModel(ModelConfig config) {
 		DynamicModelEntity entity = repository.findById(config.getId())
 			.orElseThrow(() -> new IllegalArgumentException("Model not found: " + config.getId()));
+
+		if (config.getIsDefault() != null && config.getIsDefault()) {
+			clearOtherDefaultModels();
+		}
+
 		updateEntityFromConfig(entity, config);
 		return updateModel(entity);
 	}
 
 	public ModelConfig updateModel(DynamicModelEntity entity) {
-		// 如果不允许修改，则返回原有数据
-		if (!entity.isAllowChange()) {
-			throw new UnsupportedOperationException("Not supported yet.");
-		}
 		entity = repository.save(entity);
 		publisher.publish(new ModelChangeEvent(entity));
 		return entity.mapToModelConfig();
@@ -127,84 +138,80 @@ public class ModelServiceImpl implements ModelService {
 
 	@Override
 	public void deleteModel(String id) {
-		DynamicModelEntity entity = repository.findById(Long.parseLong(id))
-			.orElseThrow(() -> new IllegalArgumentException("Model not found: " + id));
-		// 如果不允许修改，则返回原有数据
-		if (entity.isAllowChange()) {
-			List<DynamicAgentEntity> allByModel = agentRepository
-				.findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
-			if (allByModel != null && !allByModel.isEmpty()) {
-				allByModel.forEach(dynamicAgentEntity -> dynamicAgentEntity.setModel(null));
-				agentRepository.saveAll(allByModel);
-			}
-			repository.deleteById(Long.parseLong(id));
+		if (agentRepository.count() == 1) {
+			throw new IllegalArgumentException("Cannot clear all models");
 		}
-		else {
-			throw new UnsupportedOperationException("Not supported yet.");
+		List<DynamicAgentEntity> allByModel = agentRepository
+			.findAllByModel(new DynamicModelEntity(Long.parseLong(id)));
+		if (allByModel != null && !allByModel.isEmpty()) {
+			allByModel.forEach(dynamicAgentEntity -> dynamicAgentEntity.setModel(null));
+			agentRepository.saveAll(allByModel);
 		}
+		repository.deleteById(Long.parseLong(id));
 	}
 
 	@Override
 	public ValidationResult validateConfig(String baseUrl, String apiKey) {
-		log.info("开始验证模型配置 - Base URL: {}, API Key: {}", baseUrl, maskApiKey(apiKey));
+		log.info("Starting model configuration validation - Base URL: {}, API Key: {}", baseUrl, maskApiKey(apiKey));
 
 		ValidationResult result = new ValidationResult();
 
 		try {
-			// 1. 验证Base URL格式
-			log.debug("验证Base URL格式: {}", baseUrl);
+			// 1. Validate Base URL format
+			log.debug("Validating Base URL format: {}", baseUrl);
 			if (!isValidBaseUrl(baseUrl)) {
-				log.warn("Base URL格式验证失败: {}", baseUrl);
+				log.warn("Base URL format validation failed: {}", baseUrl);
 				result.setValid(false);
-				result.setMessage("Base URL格式不正确");
+				result.setMessage("Base URL format is incorrect");
 				return result;
 			}
-			log.debug("Base URL格式验证通过");
+			log.debug("Base URL format validation passed");
 
-			// 2. 验证API Key格式
-			log.debug("验证API Key格式");
+			// 2. Validate API Key format
+			log.debug("Validating API Key format");
 			if (!isValidApiKey(apiKey)) {
-				log.warn("API Key格式验证失败");
+				log.warn("API Key format validation failed");
 				result.setValid(false);
-				result.setMessage("API Key格式不正确");
+				result.setMessage("API Key format is incorrect");
 				return result;
 			}
-			log.debug("API Key格式验证通过");
+			log.debug("API Key format validation passed");
 
-			// 3. 调用第三方API验证
-			log.info("开始调用第三方API验证配置");
+			// 3. Call third-party API for validation
+			log.info("Starting third-party API validation");
 			List<AvailableModel> models = callThirdPartyApi(baseUrl, apiKey);
 
 			result.setValid(true);
-			result.setMessage("验证成功");
+			result.setMessage("Validation successful");
 			result.setAvailableModels(models);
 
-			log.info("第三方API验证成功，获取到 {} 个可用模型", models.size());
+			log.info("Third-party API validation successful, obtained {} available models", models.size());
 
 		}
 		catch (AuthenticationException e) {
-			log.error("API Key认证失败: {}", e.getMessage());
+			log.error("API Key authentication failed: {}", e.getMessage());
 			result.setValid(false);
-			result.setMessage("API Key无效或已过期");
+			result.setMessage("API Key is invalid or expired");
 		}
 		catch (NetworkException e) {
-			log.error("网络连接验证失败: {}", e.getMessage());
+			log.error("Network connection validation failed: {}", e.getMessage());
 			result.setValid(false);
-			result.setMessage("网络连接失败，请检查Base URL");
+			result.setMessage("Network connection failed, please check Base URL");
 		}
 		catch (RateLimitException e) {
-			log.error("请求频率限制: {}", e.getMessage());
+			log.error("Request rate limit: {}", e.getMessage());
 			result.setValid(false);
-			result.setMessage("请求频率过高，请稍后重试");
+			result.setMessage("Request rate too high, please try again later");
 		}
 		catch (Exception e) {
-			log.error("验证过程中发生未知异常: {}", e.getMessage(), e);
+			log.error("Unknown exception occurred during validation: {}", e.getMessage(), e);
 			result.setValid(false);
-			result.setMessage("验证失败: " + e.getMessage());
+			result.setMessage("Validation failed: " + e.getMessage());
 		}
 
-		log.info("模型配置验证完成 - {}", result.isValid() ? "成功" : "失败");
-		log.info("模型配置验证结果 - 有效: {}, 消息: {}", result.isValid(), result.getMessage());
+		log.info("Model configuration validation completed - {}", result.isValid() ? "Success" : "Failed");
+		log.info("Model configuration validation result - Valid: {}, Message: {}", result.isValid(),
+				result.getMessage());
 
 		return result;
 	}
@@ -213,18 +220,19 @@ public class ModelServiceImpl implements ModelService {
 		try {
 			URL url = new URL(baseUrl);
 			boolean isValid = "http".equals(url.getProtocol()) || "https".equals(url.getProtocol());
-			log.debug("Base URL验证结果: {} - 协议: {}, 主机: {}", isValid, url.getProtocol(), url.getHost());
+			log.debug("Base URL validation result: {} - Protocol: {}, Host: {}", isValid, url.getProtocol(),
+					url.getHost());
 			return isValid;
 		}
 		catch (MalformedURLException e) {
-			log.debug("Base URL格式无效: {} - 错误: {}", baseUrl, e.getMessage());
+			log.debug("Base URL format invalid: {} - Error: {}", baseUrl, e.getMessage());
 			return false;
 		}
 	}
 
 	private boolean isValidApiKey(String apiKey) {
 		boolean isValid = apiKey != null && !apiKey.trim().isEmpty() && apiKey.length() >= 10;
-		log.debug("API Key验证结果: {} - 长度: {}", isValid, apiKey != null ? apiKey.length() : 0);
+		log.debug("API Key validation result: {} - Length: {}", isValid, apiKey != null ? apiKey.length() : 0);
 		return isValid;
 	}
 
@@ -236,86 +244,90 @@ public class ModelServiceImpl implements ModelService {
 	}
 
 	private List<AvailableModel> callThirdPartyApi(String baseUrl, String apiKey) {
-		log.debug("开始调用第三方API - URL: {}", baseUrl);
+		log.debug("Starting third-party API call - URL: {}", baseUrl);
 
 		RestTemplate restTemplate = new RestTemplate();
 
-		// 设置请求头
+		// Set request headers
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Authorization", "Bearer " + apiKey);
 		headers.set("Content-Type", "application/json");
 
-		log.debug("设置请求头 - Content-Type: application/json, Authorization: Bearer {}", maskApiKey(apiKey));
+		log.debug("Setting request headers - Content-Type: application/json, Authorization: Bearer {}",
+				maskApiKey(apiKey));
 
-		// 构建请求URL
+		// Build request URL
 		String requestUrl = baseUrl + "/v1/models";
-		log.info("发送HTTP请求到: {}", requestUrl);
+		log.info("Sending HTTP request to: {}", requestUrl);
 
 		try {
 			long startTime = System.currentTimeMillis();
-			// 发送GET请求
-			ResponseEntity<Map> response = restTemplate.getForEntity(requestUrl, Map.class);
+			// Create HttpEntity to wrap request headers
+			HttpEntity<String> entity = new HttpEntity<>(headers);
+			// Send GET request with HttpEntity containing headers
+			ResponseEntity<Map> response = restTemplate.exchange(requestUrl, HttpMethod.GET, entity, Map.class);
 			long endTime = System.currentTimeMillis();
 
-			log.info("HTTP请求完成 - 状态码: {}, 耗时: {}ms", response.getStatusCodeValue(), endTime - startTime);
+			log.info("HTTP request completed - Status code: {}, Duration: {}ms", response.getStatusCodeValue(),
+					endTime - startTime);
 
-			// 解析响应
+			// Parse response
 			List<AvailableModel> models = parseModelsResponse(response.getBody());
-			log.info("成功解析响应，获取到 {} 个模型", models.size());
+			log.info("Successfully parsed response, obtained {} models", models.size());
 
 			return models;
 
 		}
 		catch (Exception e) {
-			log.error("API调用失败: {}", e.getMessage(), e);
-			throw new NetworkException("API调用失败: " + e.getMessage(), e);
+			log.error("API call failed: {}", e.getMessage(), e);
+			throw new NetworkException("API call failed: " + e.getMessage(), e);
 		}
 	}
 
 	private List<AvailableModel> parseModelsResponse(Map response) {
-		log.debug("开始解析API响应: {}", response);
+		log.debug("Starting to parse API response: {}", response);
 
 		List<AvailableModel> models = new ArrayList<>();
 
 		if (response == null) {
-			log.warn("响应为空");
+			log.warn("Response is empty");
 			return models;
 		}
 
-		// 尝试解析标准OpenAI格式: {"data": [...]}
+		// Try to parse standard OpenAI format: {"data": [...]}
 		Object data = response.get("data");
 		if (data instanceof List) {
 			List<Map> modelList = (List<Map>) data;
-			log.debug("找到响应数据，包含 {} 个模型", modelList.size());
+			log.debug("Found response data containing {} models", modelList.size());
 
 			for (int i = 0; i < modelList.size(); i++) {
 				Map modelData = modelList.get(i);
-				log.debug("解析第 {} 个模型数据: {}", i + 1, modelData);
+				log.debug("Parsing model data #{}: {}", i + 1, modelData);
 
 				String modelId = (String) modelData.get("id");
 				String modelName = (String) modelData.get("name");
 				String description = (String) modelData.get("description");
 
-				// 如果没有name字段，使用id作为显示名称
+				// If no name field, use id as display name
 				if (modelName == null) {
 					modelName = modelId;
 				}
 
-				// 如果没有description字段，使用默认描述
+				// If no description field, use default description
 				if (description == null) {
-					description = "模型ID: " + modelId;
+					description = "Model ID: " + modelId;
 				}
 
-				log.debug("解析模型 - ID: {}, 名称: {}, 描述: {}", modelId, modelName, description);
+				log.debug("Parsing model - ID: {}, Name: {}, Description: {}", modelId, modelName, description);
 
 				models.add(new AvailableModel(modelId, modelName, description));
 			}
 		}
 		else {
-			log.warn("响应格式不符合预期，data字段不是数组类型");
+			log.warn("Response format does not meet expectations, data field is not array type");
 		}
 
-		log.info("成功解析响应，获取到 {} 个可用模型", models.size());
+		log.info("Successfully parsed response, obtained {} available models", models.size());
 		return models;
 	}
 
@@ -328,6 +340,50 @@ public class ModelServiceImpl implements ModelService {
 		entity.setModelName(config.getModelName());
 		entity.setModelDescription(config.getModelDescription());
 		entity.setType(config.getType());
+		if (config.getIsDefault() != null) {
+			entity.setIsDefault(config.getIsDefault());
+		}
+		entity.setTemperature(config.getTemperature());
+		entity.setTopP(config.getTopP());
+	}
+
+	@Override
+	@Transactional
+	public void setDefaultModel(Long modelId) {
+		log.info("Set model: {} as default", modelId);
+
+		List<DynamicModelEntity> allModels = repository.findAll();
+		for (DynamicModelEntity model : allModels) {
+			if (model.getIsDefault()) {
+				model.setIsDefault(false);
+				repository.save(model);
+				log.info("Cancel {} model as default", model.getId());
+			}
+		}
+
+		Optional<DynamicModelEntity> targetModel = repository.findById(modelId);
+		if (targetModel.isPresent()) {
+			DynamicModelEntity model = targetModel.get();
+			model.setIsDefault(true);
+			repository.save(model);
+			log.info("Set {} as default", modelId);
+			publisher.publish(new ModelChangeEvent(model));
+		}
+		else {
+			log.error("Cannot find {} model", modelId);
+			throw new RuntimeException("Model not present");
+		}
+	}
+
+	private void clearOtherDefaultModels() {
+		List<DynamicModelEntity> allModels = repository.findAll();
+		for (DynamicModelEntity model : allModels) {
+			if (model.getIsDefault()) {
+				model.setIsDefault(false);
+				repository.save(model);
+				log.info("Cancel {} model as default", model.getId());
+			}
+		}
 	}
 
 }
