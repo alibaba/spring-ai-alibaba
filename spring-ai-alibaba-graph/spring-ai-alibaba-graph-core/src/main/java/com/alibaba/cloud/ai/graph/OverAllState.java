@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -72,8 +73,8 @@ import static java.util.Optional.ofNullable;
  * status.</li>
  * </ul>
  *
- * <h2>Thread Safety</h2> This class is not thread-safe. External synchronization is
- * required if accessed concurrently.
+ * <h2>Thread Safety</h2> This class is thread-safe. Internal state maps use
+ * ConcurrentHashMap to ensure safe concurrent access across multiple threads.
  *
  * @author disaster
  * @since 1.0.0.1
@@ -128,7 +129,14 @@ public final class OverAllState implements Serializable {
 	 * @return the optional
 	 */
 	public Optional<OverAllState> snapShot() {
-		return Optional.of(new OverAllState(new HashMap<>(this.data), new HashMap<>(this.keyStrategies), this.resume));
+		ConcurrentHashMap<String, Object> clonedData = new ConcurrentHashMap<>();
+		// Filter out null values since ConcurrentHashMap doesn't allow them
+		this.data.entrySet()
+			.stream()
+			.filter(entry -> entry.getValue() != null)
+			.forEach(entry -> clonedData.put(entry.getKey(), entry.getValue()));
+
+		return Optional.of(new OverAllState(clonedData, new ConcurrentHashMap<>(this.keyStrategies), this.resume));
 	}
 
 	/**
@@ -136,8 +144,8 @@ public final class OverAllState implements Serializable {
 	 * @param resume the is resume
 	 */
 	public OverAllState(boolean resume) {
-		this.data = new HashMap<>();
-		this.keyStrategies = new HashMap<>();
+		this.data = new ConcurrentHashMap<>();
+		this.keyStrategies = new ConcurrentHashMap<>();
 		this.resume = resume;
 	}
 
@@ -146,8 +154,15 @@ public final class OverAllState implements Serializable {
 	 * @param data the data
 	 */
 	public OverAllState(Map<String, Object> data) {
-		this.data = new HashMap<>(data);
-		this.keyStrategies = new HashMap<>();
+		this.data = new ConcurrentHashMap<>();
+		if (data != null) {
+			// Filter out null values since ConcurrentHashMap doesn't allow them
+			data.entrySet()
+				.stream()
+				.filter(entry -> entry.getValue() != null)
+				.forEach(entry -> this.data.put(entry.getKey(), entry.getValue()));
+		}
+		this.keyStrategies = new ConcurrentHashMap<>();
 		this.resume = false;
 	}
 
@@ -155,8 +170,8 @@ public final class OverAllState implements Serializable {
 	 * Instantiates a new Over all state.
 	 */
 	public OverAllState() {
-		this.data = new HashMap<>();
-		this.keyStrategies = new HashMap<>();
+		this.data = new ConcurrentHashMap<>();
+		this.keyStrategies = new ConcurrentHashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = false;
 	}
