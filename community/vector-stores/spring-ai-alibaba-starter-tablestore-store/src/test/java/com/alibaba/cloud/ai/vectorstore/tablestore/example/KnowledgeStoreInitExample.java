@@ -28,7 +28,7 @@ public class KnowledgeStoreInitExample {
 
 	public void example() {
 		/*
-		 * 初始化TableStore客户端
+		 * Initialize TableStore client
 		 */
 		String endPoint = "your endPoint";
 		String instanceName = "your instanceName";
@@ -37,10 +37,10 @@ public class KnowledgeStoreInitExample {
 		SyncClient client = new SyncClient(endPoint, accessKeyId, accessKeySecret, instanceName);
 
 		/*
-		 * 初始化 KnowledgeStore
+		 * Initialize KnowledgeStore
 		 */
 
-		// 定义哪些额外的meta字段定义到多元索引中，这样使用多元索引可以搜索这些字段。
+		// Define which additional meta fields to define in the secondary index, so that the secondary index can search these fields.
 		List<FieldSchema> extraMetaDataIndexSchema = Arrays.asList(
 				new FieldSchema("meta_example_string", FieldType.KEYWORD),
 				new FieldSchema("meta_example_text_1", FieldType.TEXT).setAnalyzer(FieldSchema.Analyzer.MaxWord),
@@ -60,20 +60,20 @@ public class KnowledgeStoreInitExample {
 		 */
 		boolean enableMultiTenant = true;
 
-		// 如需自定义其它参数，可以自己通过builder选择自己需要的
+		// If you need to customize other parameters, you can choose what you need through builder.
 		KnowledgeStoreImpl store = KnowledgeStoreImpl.builder()
 			.client(client)
 			.metadataSchema(extraMetaDataIndexSchema)
-			.embeddingDimension(512) // 向量维度必须设置。
-										// 通常情况下选择Embedding模型的维度在512~1024之间。太高维度会增加检索时间，带来的边际收益会下降。
-			.embeddingMetricType(VectorMetricType.DOT_PRODUCT) // 向量检索评分公式，这里以内积为例。
-			.enableMultiTenant(enableMultiTenant) // 该参数必须设置
+			.embeddingDimension(512) // Vector dimension must be set.
+										// Typically choose Embedding model dimensions between 512~1024. Higher dimensions will increase retrieval time with diminishing marginal returns.
+			.embeddingMetricType(VectorMetricType.DOT_PRODUCT) // Vector retrieval scoring formula, here using inner product as example.
+			.enableMultiTenant(enableMultiTenant) // This parameter must be set.
 			.build();
 
-		// 初始化表(表和多元索引会自动创建)
+		// Initialize table (table and secondary index will be created automatically)
 		store.initTable();
 
-		// 删除表和索引(方便测试期间使用)
+		// Delete table and index (for testing convenience)
 		store.deleteTableAndIndex();
 	}
 
