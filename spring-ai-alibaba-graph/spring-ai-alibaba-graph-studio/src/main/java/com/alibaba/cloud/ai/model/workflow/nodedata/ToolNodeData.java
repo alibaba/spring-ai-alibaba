@@ -102,7 +102,6 @@ public class ToolNodeData extends NodeData {
 		return this;
 	}
 
-	
 	public String getToolName() {
 		return toolName;
 	}
