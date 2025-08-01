@@ -131,18 +131,18 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					},
 					"file_path": {
 					  "type": "string",
-					  "description": "要创建的表格文件路径（相对路径）"
+					  "description": "Path to the table file to be created (relative path)"
 					},
 					"sheet_name": {
 					  "type": "string",
-					  "description": "工作表名称"
+					  "description": "Worksheet name"
 					},
 					"headers": {
 					  "type": "array",
 					  "items": {
 						"type": "string"
 					  },
-					  "description": "表头列表（不包括ID列，ID列会自动添加）"
+					  "description": "List of headers (excluding ID column, which will be added automatically)"
 					}
 				  },
 				  "required": ["action", "file_path", "headers"],
@@ -157,7 +157,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					},
 					"file_path": {
 					  "type": "string",
-					  "description": "表格文件路径"
+					  "description": "Path to the table file"
 					}
 				  },
 				  "required": ["action", "file_path"],
@@ -172,7 +172,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					},
 					"file_path": {
 					  "type": "string",
-					  "description": "表格文件路径"
+					  "description": "Path to the table file"
 					},
 					"multiple_rows_data": {
 					  "type": "array",
@@ -182,7 +182,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 						  "type": "string"
 						}
 					  },
-					  "description": "要写入的多行数据列表，每行数据必须与表头数量一致"
+					  "description": "List of multiple rows data to write, each row data must match the number of headers"
 					}
 				  },
 				  "required": ["action", "file_path", "multiple_rows_data"],
@@ -197,14 +197,14 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					},
 					"file_path": {
 					  "type": "string",
-					  "description": "表格文件路径"
+					  "description": "Path to the table file"
 					},
 					"keywords": {
 					  "type": "array",
 					  "items": {
 						"type": "string"
 					  },
-					  "description": "搜索关键词列表"
+					  "description": "List of search keywords"
 					}
 				  },
 				  "required": ["action", "file_path", "keywords"],
@@ -219,14 +219,14 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					},
 					"file_path": {
 					  "type": "string",
-					  "description": "要删除行的表格文件路径"
+					  "description": "Path to the table file from which rows will be deleted"
 					},
 					"row_indices": {
 					  "type": "array",
 					  "items": {
 						"type": "integer"
 					  },
-					  "description": "要删除的行索引列表（从0开始）"
+					  "description": "List of row indices to delete (starting from 0)"
 					}
 				  },
 				  "required": ["action", "file_path", "row_indices"],
@@ -239,19 +239,19 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 	private static final String TOOL_NAME = "table_processor";
 
 	private final String TOOL_DESCRIPTION = """
-			表格处理工具，用于创建和操作表格文件（支持Excel和CSV格式）。
-			支持的操作：
-			- create_table: 创建新表格，接受文件路径、工作表名和表头列表作为参数，自动添加ID列为第一列
-			- get_structure: 获取表格结构（表头信息）
-			- write_multiple_rows: 将多行数据写入表格，要求每行数据列数与表头一致
-			- search_rows: 根据关键词组在表格中查找匹配行
-			- delete_rows: 根据行索引列表删除指定行
+			Table processing tool for creating and operating table files (supporting Excel and CSV formats).
+			Supported operations:
+			- create_table: Create a new table, accepting file path, worksheet name, and headers list as parameters, automatically adding ID column as the first column
+			- get_structure: Get table structure (header information)
+			- write_multiple_rows: Write multiple rows of data to the table, requiring the number of data columns to match the headers
+			- search_rows: Search for matching rows in the table based on keyword groups
+			- delete_rows: Delete specified rows based on row index list
 
-			注意事项：
-			1. 文件路径应使用相对路径，使用绝对路径会报错
-			2. 所有内容都以字符串形式处理
-			3. ID列会自动作为第一列添加到表格中
-			4. 写入数据时，数据列数必须与表头列数一致，否则会返回错误提示
+			Important notes:
+			1. File paths should use relative paths, using absolute paths will cause errors
+			2. All content is processed as strings
+			3. ID column will be automatically added as the first column in the table
+			4. When writing data, the number of data columns must match the number of header columns, otherwise an error message will be returned
 			""";
 
 	public OpenAiApi.FunctionTool getToolDefinition() {
@@ -263,7 +263,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 
 
 	/**
-	 * 执行表格处理操作，接受强类型输入对象
+	 * Execute table processing operations with strongly typed input object
 	 */
 	@Override
 	public ToolExecuteResult run(TableInput input) {
@@ -275,10 +275,10 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 
 			// Basic parameter validation
 			if (action == null) {
-				return new ToolExecuteResult("错误：action参数是必需的");
+				return new ToolExecuteResult("Error: action parameter is required");
 			}
 			if (filePath == null) {
-				return new ToolExecuteResult("错误：file_path参数是必需的");
+				return new ToolExecuteResult("Error: file_path parameter is required");
 			}
 
 			return switch (action) {
@@ -287,7 +287,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					String tableName = input.getTableName();
 
 					if (headers == null) {
-						yield new ToolExecuteResult("错误：create_table操作需要headers参数");
+						yield new ToolExecuteResult("Error: headers parameter is required for create_table operation");
 					}
 
 					yield createTable(planId, filePath, tableName, headers);
@@ -297,7 +297,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					// Get data as 2D array
 					List<List<String>> multipleRows = input.getMultipleRowsData();
 					if (multipleRows == null) {
-						yield new ToolExecuteResult("错误：write_multiple_rows操作需要multiple_rows_data参数（二维数组格式）");
+						yield new ToolExecuteResult("Error: multiple_rows_data parameter (2D array format) is required for write_multiple_rows operation");
 					}
 
 					yield writeMultipleRowsToTable(planId, filePath, multipleRows);
@@ -306,7 +306,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					List<String> keywords = input.getKeywords();
 
 					if (keywords == null) {
-						yield new ToolExecuteResult("错误：search_rows操作需要keywords参数");
+						yield new ToolExecuteResult("Error: keywords parameter is required for search_rows operation");
 					}
 
 					yield searchRows(planId, filePath, keywords);
@@ -315,7 +315,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					List<Integer> rowIndices = input.getRowIndices();
 
 					if (rowIndices == null) {
-						yield new ToolExecuteResult("错误：delete_rows操作需要row_indices参数");
+						yield new ToolExecuteResult("Error: row_indices parameter is required for delete_rows operation");
 					}
 
 					yield deleteRowsByList(planId, filePath, rowIndices);
@@ -323,7 +323,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 				default -> {
 					tableProcessingService.updateFileState(planId, filePath, "Error: Unknown action");
 					yield new ToolExecuteResult(
-							"未知操作: " + action + "。支持的操作: create_table, get_structure, write_multiple_rows, search_rows, delete_rows");
+							"Unknown operation: " + action + ". Supported operations: create_table, get_structure, write_multiple_rows, search_rows, delete_rows");
 				}
 			};
 		}
@@ -331,7 +331,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 			String planId = this.currentPlanId;
 			tableProcessingService.updateFileState(planId, tableProcessingService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());
-			return new ToolExecuteResult("工具执行失败: " + e.getMessage());
+			return new ToolExecuteResult("Tool execution failed: " + e.getMessage());
 		}
 	}
 
@@ -340,15 +340,15 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 			// Check file type
 			if (!tableProcessingService.isSupportedFileType(filePath)) {
 				tableProcessingService.updateFileState(planId, filePath, "Error: Unsupported file type");
-				return new ToolExecuteResult("不支持的文件类型。仅支持Excel(.xlsx,.xls)和CSV(.csv)文件。");
+				return new ToolExecuteResult("Unsupported file type. Only Excel (.xlsx, .xls) and CSV (.csv) files are supported.");
 			}
 
 			tableProcessingService.createTable(planId, filePath, tableName, headers);
-			return new ToolExecuteResult("表格创建成功: " + filePath);
+			return new ToolExecuteResult("Table created successfully: " + filePath);
 		}
 		catch (IOException e) {
 			tableProcessingService.updateFileState(planId, filePath, "Error: " + e.getMessage());
-			return new ToolExecuteResult("创建表格失败: " + e.getMessage());
+			return new ToolExecuteResult("Failed to create table: " + e.getMessage());
 		}
 	}
 
@@ -356,22 +356,22 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 		try {
 			List<String> headers = tableProcessingService.getTableStructure(planId, filePath);
 			tableProcessingService.updateFileState(planId, filePath, "Success: Retrieved table structure");
-			return new ToolExecuteResult("表头信息: " + headers.toString());
+			return new ToolExecuteResult("Header information: " + headers.toString());
 		}
 		catch (IOException e) {
 			tableProcessingService.updateFileState(planId, filePath, "Error: " + e.getMessage());
-			return new ToolExecuteResult("获取表结构失败: " + e.getMessage());
+			return new ToolExecuteResult("Failed to get table structure: " + e.getMessage());
 		}
 	}
 
 	private ToolExecuteResult writeMultipleRowsToTable(String planId, String filePath, List<List<String>> data) {
 		try {
 			tableProcessingService.writeMultipleRowsToTable(planId, filePath, data);
-			return new ToolExecuteResult("多行数据写入成功");
+			return new ToolExecuteResult("Multiple rows data written successfully");
 		}
 		catch (IOException e) {
 			tableProcessingService.updateFileState(planId, filePath, "Error: " + e.getMessage());
-			return new ToolExecuteResult("写入多行数据失败: " + e.getMessage());
+			return new ToolExecuteResult("Failed to write multiple rows data: " + e.getMessage());
 		}
 	}
 
@@ -380,30 +380,30 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 			List<List<String>> matchingRows = tableProcessingService.searchRows(planId, filePath, keywords);
 			tableProcessingService.updateFileState(planId, filePath, "Success: Rows searched");
 			if (matchingRows.isEmpty()) {
-				return new ToolExecuteResult("未找到匹配的行");
+				return new ToolExecuteResult("No matching rows found");
 			}
 			else {
-				StringBuilder result = new StringBuilder("找到匹配的行:\n");
+				StringBuilder result = new StringBuilder("Found matching rows:\n");
 				for (int i = 0; i < matchingRows.size(); i++) {
-					result.append(String.format("第%d行: %s\n", i + 1, matchingRows.get(i).toString()));
+					result.append(String.format("Row %d: %s\n", i + 1, matchingRows.get(i).toString()));
 				}
 				return new ToolExecuteResult(result.toString());
 			}
 		}
 		catch (IOException e) {
 			tableProcessingService.updateFileState(planId, filePath, "Error: " + e.getMessage());
-			return new ToolExecuteResult("搜索行失败: " + e.getMessage());
+			return new ToolExecuteResult("Failed to search rows: " + e.getMessage());
 		}
 	}
 
 	private ToolExecuteResult deleteRowsByList(String planId, String filePath, List<Integer> rowIndices) {
 		try {
 			tableProcessingService.deleteRowsByList(planId, filePath, rowIndices);
-			return new ToolExecuteResult("删除成功，已删除" + rowIndices.size() + "行");
+			return new ToolExecuteResult("Deletion successful, " + rowIndices.size() + " rows deleted");
 		}
 		catch (IOException e) {
 			tableProcessingService.updateFileState(planId, filePath, "Error: " + e.getMessage());
-			return new ToolExecuteResult("删除行失败: " + e.getMessage());
+			return new ToolExecuteResult("Failed to delete rows: " + e.getMessage());
 		}
 	}
 

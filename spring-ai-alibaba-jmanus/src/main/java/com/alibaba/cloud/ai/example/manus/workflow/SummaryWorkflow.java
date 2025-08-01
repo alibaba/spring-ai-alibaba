@@ -67,14 +67,15 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 	 * @param content File content
 	 * @param queryKey Query keywords
 	 * @param thinkActRecordId Think-act record ID for sub-plan execution tracking
+	 * @param outputFormatSpecification A file used to describe in what format the data should be stored (default is an excel table), the table header of this file is the specification description
 	 * @return Future of summarization result
 	 */
 	public CompletableFuture<String> executeSummaryWorkflow(String parentPlanId, String fileName, String content,
-			String queryKey, Long thinkActRecordId, String terminateColumnsString) {
+			String queryKey, Long thinkActRecordId, String outputFormatSpecification) {
 
 		// 1. Build MapReduce execution plan using caller's planId
 		MapReduceExecutionPlan executionPlan = buildSummaryExecutionPlan(parentPlanId, fileName, content, queryKey,
-				terminateColumnsString);
+				outputFormatSpecification);
 
 		// 2. Execute plan directly, passing thinkActRecordId
 		return executeMapReducePlanWithContext(parentPlanId, executionPlan, thinkActRecordId);
@@ -88,9 +89,10 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 	 * @param content File content (not directly used yet, but kept as extension
 	 * parameter)
 	 * @param queryKey Query keywords
+	 * @param outputFormatSpecification A file used to describe in what format the data should be stored (default is an excel table), the table header of this file is the specification description
 	 */
 	private MapReduceExecutionPlan buildSummaryExecutionPlan(String parentPlanId, String fileName, String content,
-			String queryKey, String terminateColumnsString) {
+			String queryKey, String outputFormatSpecification) {
 
 		try {
 			// Use caller-provided planId instead of generating a new one
@@ -100,17 +102,17 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 			String planJson = String.format(getSummaryPlanTemplate(), parentPlanId, // Plan
 																					// ID
 					fileName, // dataPreparedSteps file name
-					terminateColumnsString, // dataPreparedSteps terminateColumns
+					outputFormatSpecification, // dataPreparedSteps output format specification
 					queryKey, // mapSteps query key
-					terminateColumnsString, // mapSteps terminateColumns
-					terminateColumnsString, // reduceSteps terminateColumns
-					terminateColumnsString // postProcessSteps terminateColumns (will auto
+					outputFormatSpecification, // mapSteps output format specification
+					outputFormatSpecification, // reduceSteps output format specification
+					outputFormatSpecification // postProcessSteps output format specification (will auto
 											// add fileURL)
 			);
 
 			// Parse JSON to MapReduceExecutionPlan object
 			MapReduceExecutionPlan plan = objectMapper.readValue(planJson, MapReduceExecutionPlan.class);
-			// terminateColumns are configured directly in JSON template, no need to set
+			// Output format specifications are configured directly in JSON template, no need to set
 			// here
 
 			return plan;
