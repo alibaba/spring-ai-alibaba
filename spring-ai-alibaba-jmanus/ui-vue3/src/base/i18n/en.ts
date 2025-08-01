@@ -655,8 +655,8 @@ const words: I18nType = {
 
   // Chat component
   chat: {
-    botName: 'TaskPilot:',
-    thinkingLabel: 'TaskPilot Thinking/Processing',
+    botName: 'JManus:',
+    thinkingLabel: 'JManus Thinking/Processing',
     processing: 'Processing...',
     step: 'Step',
     stepNumber: 'Step {number}',

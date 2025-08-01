@@ -30,7 +30,7 @@
 
           <!-- Three-part structure of assistant message -->
           <div v-else class="assistant-message">
-            <!-- 1. TaskPilot Thinking/Processing Section - Only displayed when there is processing content -->
+            <!-- 1. JManus Thinking/Processing Section - Only displayed when there is processing content -->
             <div
               class="thinking-section"
               v-if="
@@ -285,7 +285,7 @@
               </div>
             </div>
 
-            <!-- 2. TaskPilot Final Response Section - Independent humanized dialogue unit -->
+            <!-- 2. JManus Final Response Section - Independent humanized dialogue unit -->
             <div class="response-section">
               <div class="response-header">
                 <div class="response-avatar">
@@ -1446,7 +1446,7 @@ defineExpose({
 }
 
 .assistant-message {
-  /* 1. TaskPilot Thinking/Processing Section Style */
+  /* 1. JManus Thinking/Processing Section Style */
   .thinking-section {
     margin-bottom: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1522,7 +1522,7 @@ defineExpose({
     }
   }
 
-  /* 2. TaskPilot Final Response Section Style - Simulate Human Conversation Unit */
+  /* 2. JManus Final Response Section Style - Simulate Human Conversation Unit */
   .response-section {
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 18px;
