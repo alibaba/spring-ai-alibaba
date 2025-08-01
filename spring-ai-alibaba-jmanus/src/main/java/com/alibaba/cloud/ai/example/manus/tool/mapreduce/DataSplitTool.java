@@ -21,6 +21,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
@@ -83,8 +86,8 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 		@com.fasterxml.jackson.annotation.JsonProperty("file_path")
 		private String filePath;
 
-		@com.fasterxml.jackson.annotation.JsonProperty("terminate_columns")
-		private List<String> terminateColumns;
+		@com.fasterxml.jackson.annotation.JsonProperty("output_file_path")
+		private String outputFilePath;
 
 		public DataSplitInput() {
 		}
@@ -97,14 +100,13 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			this.filePath = filePath;
 		}
 
-		public List<String> getTerminateColumns() {
-			return terminateColumns;
+		public String getOutputFilePath() {
+			return outputFilePath;
 		}
 
-		public void setTerminateColumns(List<String> terminateColumns) {
-			this.terminateColumns = terminateColumns;
+		public void setOutputFilePath(String outputFilePath) {
+			this.outputFilePath = outputFilePath;
 		}
-
 	}
 
 	private static final String TOOL_NAME = "data_split_tool";
@@ -129,12 +131,9 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			            "type": "string",
 			            "description": "File or folder path to process"
 			        },
-			        "terminate_columns": {
-			            "type": "array",
-			            "items": {
-			                "type": "string"
-			            },
-			            "description": "Column names for termination results, used for structured output"
+			        "output_file_path": {
+			            "type": "string",
+			            "description": "Target output file path for table data"
 			        }
 			    },
 			    "required": ["file_path"],
@@ -213,7 +212,7 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 				return new ToolExecuteResult("Error: file_path parameter is required");
 			}
 
-			return processFileOrDirectory(filePath);
+			return processFileOrDirectory(filePath, input);
 
 		}
 		catch (Exception e) {
@@ -225,7 +224,7 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	/**
 	 * Process complete workflow for file or directory: validate existence -> split data
 	 */
-	private ToolExecuteResult processFileOrDirectory(String filePath) {
+	private ToolExecuteResult processFileOrDirectory(String filePath, DataSplitInput input) {
 		try {
 			// Ensure planId exists, use default if empty
 			if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
@@ -325,9 +324,20 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 				sharedStateManager.setSplitResults(currentPlanId, allTaskDirs);
 			}
 
-			// Generate concise return result
+			// Generate concise return result with table header information if it's a table file
 			StringBuilder result = new StringBuilder();
-			result.append("File splitting successful");
+			result.append("Split successful");
+			
+			// If it's a table file, try to get header information
+			if (isFile && isTableFile(filePath) && input.getOutputFilePath() != null) {
+				// Try to get table structure from the input file
+				String headerInfo = getTableStructure(filePath);
+				if (headerInfo != null) {
+					result.append(", subsequent processes should use header structure: ").append(headerInfo).append(" for structured output");
+					result.append(", target output table file name is ").append(input.getOutputFilePath());
+				}
+			}
+			
 			result.append(", created ").append(allTaskDirs.size()).append(" task directories");
 
 			String resultStr = result.toString();
@@ -345,6 +355,55 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			String error = "Processing failed: " + e.getMessage();
 			log.error(error, e);
 			return new ToolExecuteResult(error);
+		}
+	}
+
+	/**
+	 * Get table structure (header information) from a table file
+	 * @param filePath Path to the table file
+	 * @return Header information as string, or null if failed
+	 */
+	private String getTableStructure(String filePath) {
+		try {
+			Path path = Paths.get(filePath);
+			if (!Files.exists(path)) {
+				log.warn("Table file does not exist: {}", filePath);
+				return null;
+			}
+
+			// For CSV files, read the first line as headers
+			if (filePath.toLowerCase().endsWith(".csv")) {
+				try (BufferedReader reader = Files.newBufferedReader(path)) {
+					String headerLine = reader.readLine();
+					if (headerLine != null) {
+						// Parse CSV header line
+						String[] headers = headerLine.split(",");
+						return Arrays.toString(headers);
+					}
+				}
+			}
+			// For TSV files, read the first line as headers
+			else if (filePath.toLowerCase().endsWith(".tsv")) {
+				try (BufferedReader reader = Files.newBufferedReader(path)) {
+					String headerLine = reader.readLine();
+					if (headerLine != null) {
+						// Parse TSV header line
+						String[] headers = headerLine.split("\t");
+						return Arrays.toString(headers);
+					}
+				}
+			}
+			// For Excel files, we would need Apache POI library which may not be available
+			// In this case, we just return a generic message
+			else if (filePath.toLowerCase().endsWith(".xls") || filePath.toLowerCase().endsWith(".xlsx")) {
+				return "[Excel headers - use TableProcessorTool to get actual headers]";
+			}
+			
+			return null;
+		}
+		catch (Exception e) {
+			log.warn("Failed to get table structure for file: {}", filePath, e);
+			return null;
 		}
 	}
 
@@ -480,6 +539,15 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 				|| lowercaseFileName.endsWith(".log") || lowercaseFileName.endsWith(".json")
 				|| lowercaseFileName.endsWith(".xml") || lowercaseFileName.endsWith(".yaml")
 				|| lowercaseFileName.endsWith(".yml") || lowercaseFileName.endsWith(".md");
+	}
+
+	/**
+	 * Check if file is a table file
+	 */
+	private boolean isTableFile(String fileName) {
+		String lowercaseFileName = fileName.toLowerCase();
+		return lowercaseFileName.endsWith(".csv") || lowercaseFileName.endsWith(".tsv")
+				|| lowercaseFileName.endsWith(".xls") || lowercaseFileName.endsWith(".xlsx");
 	}
 
 	@Override
