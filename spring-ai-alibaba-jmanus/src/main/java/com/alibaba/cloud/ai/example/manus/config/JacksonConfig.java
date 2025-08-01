@@ -40,15 +40,15 @@ public class JacksonConfig {
 	}
 
 	/**
-	 * 修复 Spring AI 多个工具类的 ObjectMapper JavaTimeModule 类加载器问题
-	 * 参考：https://github.com/spring-projects/spring-ai/issues/2921
+	 * Fix Spring AI multiple tool classes ObjectMapper JavaTimeModule class loader issue
+	 * Reference: https://github.com/spring-projects/spring-ai/issues/2921
 	 */
 	@PostConstruct
 	public void fixSpringAiObjectMappers() {
-		// 修复 ModelOptionsUtils.OBJECT_MAPPER
+		// Fix ModelOptionsUtils.OBJECT_MAPPER
 		fixObjectMapperInClass("org.springframework.ai.model.ModelOptionsUtils", "OBJECT_MAPPER");
 
-		// 修复 JsonParser.OBJECT_MAPPER
+		// Fix JsonParser.OBJECT_MAPPER
 		fixObjectMapperInClass("org.springframework.ai.util.json.JsonParser", "OBJECT_MAPPER");
 	}
 

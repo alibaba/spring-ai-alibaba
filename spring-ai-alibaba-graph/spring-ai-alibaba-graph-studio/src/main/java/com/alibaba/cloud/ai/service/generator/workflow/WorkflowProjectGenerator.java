@@ -317,7 +317,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		// construct a list of node types
 		Map<String, String> nodeTypeToClass = Map.ofEntries(
 				Map.entry(NodeType.ANSWER.difyValue(), "com.alibaba.cloud.ai.graph.node.AnswerNode"),
-				Map.entry(NodeType.CODE.difyValue(), "com.alibaba.cloud.ai.graph.node.CodeNode"),
+				Map.entry(NodeType.CODE.difyValue(), "com.alibaba.cloud.ai.graph.node.code.CodeExecutorNodeAction;"),
 				Map.entry(NodeType.LLM.difyValue(), "com.alibaba.cloud.ai.graph.node.LlmNode"),
 				Map.entry(NodeType.BRANCH.value(), "com.alibaba.cloud.ai.graph.node.BranchNode"),
 				Map.entry(NodeType.DOC_EXTRACTOR.difyValue(), "com.alibaba.cloud.ai.graph.node.DocumentExtractorNode"),

@@ -18,6 +18,8 @@ package com.alibaba.cloud.ai.example.manus.dynamic.prompt.service;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.po.PromptEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.vo.PromptVO;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.repository.PromptRepository;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
+import com.alibaba.cloud.ai.example.manus.prompt.PromptLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
@@ -38,13 +40,16 @@ public class PromptServiceImpl implements PromptService {
 
 	private final PromptRepository promptRepository;
 
+	private final PromptLoader promptLoader;
+
 	@Value("${namespace.value}")
 	private String namespace;
 
 	private static final Logger log = LoggerFactory.getLogger(PromptDataInitializer.class);
 
-	public PromptServiceImpl(PromptRepository promptRepository) {
+	public PromptServiceImpl(PromptRepository promptRepository, PromptLoader promptLoader) {
 		this.promptRepository = promptRepository;
+		this.promptLoader = promptLoader;
 	}
 
 	@Override
@@ -68,6 +73,15 @@ public class PromptServiceImpl implements PromptService {
 	public PromptVO getById(Long id) {
 		PromptEntity entity = promptRepository.findById(id)
 			.orElseThrow(() -> new IllegalArgumentException("Prompt not found: " + id));
+		return mapToPromptVO(entity);
+	}
+
+	@Override
+	public PromptVO getPromptByName(String promptName) {
+		PromptEntity entity = promptRepository.findByNamespaceAndPromptName(namespace, promptName);
+		if (entity == null) {
+			throw new IllegalArgumentException("Prompt not found: " + promptName);
+		}
 		return mapToPromptVO(entity);
 	}
 
@@ -127,12 +141,6 @@ public class PromptServiceImpl implements PromptService {
 		promptRepository.deleteById(id);
 	}
 
-	/**
-	 * Create system prompt template message
-	 * @param promptName Prompt Name
-	 * @param variables Variable mapping
-	 * @return Prompt template message
-	 */
 	@Override
 	public Message createSystemMessage(String promptName, Map<String, Object> variables) {
 		PromptEntity promptEntity = promptRepository.findByNamespaceAndPromptName(namespace, promptName);
@@ -144,12 +152,6 @@ public class PromptServiceImpl implements PromptService {
 		return template.createMessage(variables != null ? variables : Map.of());
 	}
 
-	/**
-	 * Create user prompt template message
-	 * @param promptName Prompt Name
-	 * @param variables Variable mapping
-	 * @return Prompt template message
-	 */
 	@Override
 	public Message createUserMessage(String promptName, Map<String, Object> variables) {
 		PromptEntity promptEntity = promptRepository.findByNamespaceAndPromptName(namespace, promptName);
@@ -175,7 +177,6 @@ public class PromptServiceImpl implements PromptService {
 		else if (MessageType.SYSTEM.name().equals(promptEntity.getMessageType())) {
 			SystemPromptTemplate template = new SystemPromptTemplate(promptEntity.getPromptContent());
 			return template.createMessage(variables != null ? variables : Map.of());
-
 		}
 		else if (MessageType.ASSISTANT.name().equals(promptEntity.getMessageType())) {
 			AssistantPromptTemplate template = new AssistantPromptTemplate(promptEntity.getPromptContent());
@@ -184,7 +185,6 @@ public class PromptServiceImpl implements PromptService {
 		else {
 			throw new IllegalArgumentException("Prompt message type not support : " + promptEntity.getMessageType());
 		}
-
 	}
 
 	/**
@@ -195,15 +195,72 @@ public class PromptServiceImpl implements PromptService {
 	 */
 	@Override
 	public String renderPrompt(String promptName, Map<String, Object> variables) {
-		log.info("Current namespace: {}", namespace); // 添加这行来打印 namespace
 		PromptEntity promptEntity = promptRepository.findByNamespaceAndPromptName(namespace, promptName);
 		if (promptEntity == null) {
 			throw new IllegalArgumentException("Prompt not found: " + promptName);
 		}
 
-		log.info(promptName + " prompt content: {}", promptEntity.getPromptContent());
 		PromptTemplate template = new PromptTemplate(promptEntity.getPromptContent());
 		return template.render(variables != null ? variables : Map.of());
+	}
+
+	@Override
+	public String[] getSupportedLanguages() {
+		return PromptEnum.getSupportedLanguages();
+	}
+
+	@Override
+	public void importSpecificPromptFromLanguage(String promptName, String language) {
+		log.info("Starting to reset prompt: {} to language default: {}", promptName, language);
+
+		PromptEnum promptEnum = null;
+		for (PromptEnum pe : PromptEnum.values()) {
+			if (pe.getPromptName().equals(promptName)) {
+				promptEnum = pe;
+				break;
+			}
+		}
+
+		if (promptEnum == null) {
+			throw new IllegalArgumentException("Unknown prompt: " + promptName);
+		}
+
+		PromptEntity entity = promptRepository.findByNamespaceAndPromptName(namespace, promptName);
+		if (entity != null) {
+			String promptPath = promptEnum.getPromptPathForLanguage(language);
+			String newContent = promptLoader.loadPrompt(promptPath);
+
+			if (!newContent.isEmpty()) {
+				entity.setPromptContent(newContent);
+				entity.setPromptDescription(promptEnum.getPromptDescriptionForLanguage(language));
+				promptRepository.save(entity);
+
+				log.info("Successfully reset prompt: {} to language default: {}", promptName, language);
+			}
+			else {
+				throw new RuntimeException(
+						"Empty content loaded for prompt: " + promptName + " from language: " + language);
+			}
+		}
+		else {
+			throw new IllegalArgumentException("Prompt not found in database: " + promptName);
+		}
+	}
+
+	@Override
+	public void importAllPromptsFromLanguage(String language) {
+		log.info("Starting to reset all prompts to language default: {}", language);
+
+		for (PromptEnum promptEnum : PromptEnum.values()) {
+			try {
+				importSpecificPromptFromLanguage(promptEnum.getPromptName(), language);
+			}
+			catch (Exception e) {
+				log.error("Failed to reset prompt: {} to language: {}", promptEnum.getPromptName(), language, e);
+			}
+		}
+
+		log.info("Completed resetting all prompts to language default: {}", language);
 	}
 
 	private PromptVO mapToPromptVO(PromptEntity entity) {

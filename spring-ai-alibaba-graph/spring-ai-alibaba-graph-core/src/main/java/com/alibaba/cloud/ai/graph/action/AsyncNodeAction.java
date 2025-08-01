@@ -53,16 +53,14 @@ public interface AsyncNodeAction extends Function<OverAllState, CompletableFutur
 	static AsyncNodeAction node_async(NodeAction syncAction) {
 		return state -> {
 			Context context = Context.current();
-			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
-			try {
-				// context.wrap(() -> result.complete(syncAction.apply(state)));
-				result.complete(syncAction.apply(state));
-			}
-			catch (Exception e) {
-				// context.wrap(() -> result.completeExceptionally(e));
-				result.completeExceptionally(e);
-			}
-			return result;
+			return CompletableFuture.supplyAsync(context.wrapSupplier(() -> {
+				try {
+					return syncAction.apply(state);
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}), AsyncNodeAction.BOUNDED_ELASTIC_EXECUTOR);
 		};
 	}
 

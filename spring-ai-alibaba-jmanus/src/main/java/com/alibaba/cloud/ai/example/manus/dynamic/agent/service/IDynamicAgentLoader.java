@@ -27,16 +27,16 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntit
 public interface IDynamicAgentLoader {
 
 	/**
-	 * 加载Agent
-	 * @param agentName Agent名称
-	 * @param initialAgentSetting 初始Agent设置
-	 * @return 动态Agent
+	 * Load Agent
+	 * @param agentName Agent name
+	 * @param initialAgentSetting Initial Agent settings
+	 * @return Dynamic Agent
 	 */
 	DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting);
 
 	/**
-	 * 获取所有Agent
-	 * @return Agent实体列表
+	 * Get all Agents
+	 * @return List of Agent entities
 	 */
 	List<DynamicAgentEntity> getAllAgents();
 

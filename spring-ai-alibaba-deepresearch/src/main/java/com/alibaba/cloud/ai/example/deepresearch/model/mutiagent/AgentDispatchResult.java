@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.model.mutiagent;
+package com.alibaba.cloud.ai.example.deepresearch.model.multiagent;
 
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.springframework.ai.chat.client.ChatClient;

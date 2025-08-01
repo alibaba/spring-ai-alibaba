@@ -95,7 +95,7 @@ public class GetDatasourceInfoAction extends AbstractDatabaseAction {
 			log.error("GetDatasourceInfoAction failed with exception, datasourceName={}, error={}", datasourceName,
 					e.getMessage(), e);
 			return new ToolExecuteResult("Datasource: " + (datasourceName != null ? datasourceName : "default")
-					+ "\n获取数据源信息时出错: " + e.getMessage());
+					+ "\nError getting data source information: " + e.getMessage());
 		}
 	}
 

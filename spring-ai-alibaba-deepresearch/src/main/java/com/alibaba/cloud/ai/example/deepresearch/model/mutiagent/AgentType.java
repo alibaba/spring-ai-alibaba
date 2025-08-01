@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.model.mutiagent;
+package com.alibaba.cloud.ai.example.deepresearch.model.multiagent;
 
 /**
  * Agent类型枚举，定义不同类型的研究Agent

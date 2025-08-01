@@ -15,33 +15,35 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums;
 
+import com.alibaba.cloud.ai.example.manus.prompt.PromptDescriptionLoader;
 import org.springframework.ai.chat.messages.MessageType;
 
 public enum PromptEnum {
 
-	// LLL_FINALIZE_SYSTEM("LLL_FINALIZE_SYSTEM", MessageType.SYSTEM, PromptType.LLM,
-	// true, "用来做最终总结的prompt，对应任务结束以后告知用户的那个动作", "llm/finalize-system.txt"),
-	// LLL_MANUS_SYSTEM("LLL_MANUS_SYSTEM", MessageType.SYSTEM, PromptType.LLM, true,
-	// "用来做开始的用户任务分解用的prompt", "llm/manus-system.txt"),
-	// LLL_PLANNING_SYSTEM("LLL_PLANNING_SYSTEM", MessageType.SYSTEM, PromptType.LLM,
-	// true, "", "llm/planning-system.txt"),
 	PLANNING_PLAN_CREATION("PLANNING_PLAN_CREATION", MessageType.SYSTEM, PromptType.PLANNING, true,
-			"构建执行计划的Prompt，如果分解任务做的不好，调这个 / Prompt for building execution plans, adjust this if task decomposition is not working well",
 			"planning/plan-creation.txt"),
 	AGENT_CURRENT_STEP_ENV("AGENT_CURRENT_STEP_ENV", MessageType.USER, PromptType.AGENT, true,
-			"用来定义当前的环境信息，对应agent从过去调用的所有函数的结果，也就是当前的环境信息，因为要存到agent里面所以单独有一个项 / Defines current environment information, corresponding to results from all functions called by agent in the past, stored separately in agent",
 			"agent/current-step-env.txt"),
-	AGENT_STEP_EXECUTION("AGENT_STEP_EXECUTION", MessageType.USER, PromptType.AGENT, true,
-			"每个agent执行步骤时候都会给agent的上下文信息，大部分的变量不要调（因为都是预制的），可以调整一些对他的建议，一个重点的agent步骤执行prompt / Context information given to agent during each execution step, most variables are preset and shouldn't be changed, can adjust some suggestions, a key agent step execution prompt",
-			"agent/step-execution.txt"),
-
+	AGENT_STEP_EXECUTION("AGENT_STEP_EXECUTION", MessageType.USER, PromptType.AGENT, true, "agent/step-execution.txt"),
 	PLANNING_PLAN_FINALIZER("PLANNING_PLAN_FINALIZER", MessageType.USER, PromptType.PLANNING, true,
-			"用来做最终总结的prompt，对应任务结束以后告知用户的那个动作，已合并用户请求信息 / Prompt for final summary, corresponds to the action of informing users after task completion, merged with user request information",
 			"planning/plan-finalizer.txt"),
-
-	DIRECT_RESPONSE("DIRECT_RESPONSE", MessageType.USER, PromptType.PLANNING, true,
-			"用于直接反馈模式的prompt，当用户请求无需复杂规划时直接返回结果 / Prompt for direct response mode, directly returns results when user requests don't need complex planning",
-			"planning/direct-response.txt");
+	DIRECT_RESPONSE("DIRECT_RESPONSE", MessageType.USER, PromptType.PLANNING, true, "planning/direct-response.txt"),
+	AGENT_STUCK_ERROR("AGENT_STUCK_ERROR", MessageType.SYSTEM, PromptType.AGENT, true, "agent/stuck-error.txt"),
+	SUMMARY_PLAN_TEMPLATE("SUMMARY_PLAN_TEMPLATE", MessageType.SYSTEM, PromptType.PLANNING, true,
+			"workflow/summary-plan-template.txt"),
+	MAPREDUCE_TOOL_DESCRIPTION("MAPREDUCE_TOOL_DESCRIPTION", MessageType.SYSTEM, PromptType.AGENT, true,
+			"tool/mapreduce-tool-description.txt"),
+	MAPREDUCE_TOOL_PARAMETERS("MAPREDUCE_TOOL_PARAMETERS", MessageType.SYSTEM, PromptType.AGENT, true,
+			"tool/mapreduce-tool-parameters.txt"),
+	AGENT_DEBUG_DETAIL_OUTPUT("AGENT_DEBUG_DETAIL_OUTPUT", MessageType.SYSTEM, PromptType.AGENT, true,
+			"agent/debug-detail-output.txt"),
+	AGENT_NORMAL_OUTPUT("AGENT_NORMAL_OUTPUT", MessageType.SYSTEM, PromptType.AGENT, true, "agent/normal-output.txt"),
+	AGENT_PARALLEL_TOOL_CALLS_RESPONSE("AGENT_PARALLEL_TOOL_CALLS_RESPONSE", MessageType.SYSTEM, PromptType.AGENT, true,
+			"agent/parallel-tool-calls-response.txt"),
+	FORM_INPUT_TOOL_DESCRIPTION("FORM_INPUT_TOOL_DESCRIPTION", MessageType.SYSTEM, PromptType.AGENT, true,
+			"tool/form-input-tool-description.txt"),
+	FORM_INPUT_TOOL_PARAMETERS("FORM_INPUT_TOOL_PARAMETERS", MessageType.SYSTEM, PromptType.AGENT, true,
+			"tool/form-input-tool-parameters.txt");
 
 	private String promptName;
 
@@ -51,18 +53,45 @@ public enum PromptEnum {
 
 	private Boolean builtIn;
 
-	private String promptDescription;
-
 	private String promptPath;
 
-	PromptEnum(String promptName, MessageType messageType, PromptType type, Boolean builtIn, String promptDescription,
-			String promptPath) {
+	public static final String[] SUPPORTED_LANGUAGES = { "zh", "en" };
+
+	private static PromptDescriptionLoader descriptionLoader;
+
+	PromptEnum(String promptName, MessageType messageType, PromptType type, Boolean builtIn, String promptPath) {
 		this.promptName = promptName;
 		this.messageType = messageType;
 		this.type = type;
 		this.builtIn = builtIn;
-		this.promptDescription = promptDescription;
 		this.promptPath = promptPath;
+	}
+
+	public String getPromptPathForLanguage(String language) {
+		if (language == null || language.trim().isEmpty()) {
+			language = "en"; // Default to English
+		}
+		return language + "/" + this.promptPath;
+	}
+
+	public String getPromptDescriptionForLanguage(String language) {
+		if (descriptionLoader == null) {
+			// Fallback to empty string if loader is not initialized
+			return "";
+		}
+		return descriptionLoader.loadDescription(this.promptName, language);
+	}
+
+	public static String[] getSupportedLanguages() {
+		return SUPPORTED_LANGUAGES.clone();
+	}
+
+	/**
+	 * Set the description loader for loading descriptions from files
+	 * @param loader the PromptDescriptionLoader instance
+	 */
+	public static void setDescriptionLoader(PromptDescriptionLoader loader) {
+		descriptionLoader = loader;
 	}
 
 	public String getPromptName() {
@@ -111,14 +140,6 @@ public enum PromptEnum {
 
 	public void setBuiltIn(boolean builtIn) {
 		this.builtIn = builtIn;
-	}
-
-	public String getPromptDescription() {
-		return promptDescription;
-	}
-
-	public void setPromptDescription(String promptDescription) {
-		this.promptDescription = promptDescription;
 	}
 
 }

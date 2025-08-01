@@ -23,10 +23,10 @@ import com.alibaba.cloud.ai.example.manus.tool.database.DatabaseRequest;
 public abstract class AbstractDatabaseAction {
 
 	/**
-	 * 执行数据库操作
-	 * @param request 请求参数
-	 * @param dataSourceService 数据源服务
-	 * @return 执行结果
+	 * Execute database operation
+	 * @param request Request parameters
+	 * @param dataSourceService Data source service
+	 * @return Execution result
 	 */
 	public abstract ToolExecuteResult execute(DatabaseRequest request, DataSourceService dataSourceService);
 

@@ -92,7 +92,7 @@ public class ModelController {
 		catch (Exception e) {
 			ValidationResult errorResult = new ValidationResult();
 			errorResult.setValid(false);
-			errorResult.setMessage("验证失败: " + e.getMessage());
+			errorResult.setMessage("Validation failed: " + e.getMessage());
 			return ResponseEntity.ok(errorResult);
 		}
 	}

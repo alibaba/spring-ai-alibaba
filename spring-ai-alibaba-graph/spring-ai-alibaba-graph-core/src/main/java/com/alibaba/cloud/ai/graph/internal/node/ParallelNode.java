@@ -16,60 +16,74 @@
 
 package com.alibaba.cloud.ai.graph.internal.node;
 
+import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.internal.reactive.GeneratorSubscriber;
+import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.Function;
 
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 public class ParallelNode extends Node {
 
 	public static final String PARALLEL_PREFIX = "__PARALLEL__";
 
-	record AsyncParallelNodeAction(List<AsyncNodeActionWithConfig> actions,
-			Map<String, KeyStrategy> channels) implements AsyncNodeActionWithConfig {
+	public static String formatNodeId(String nodeId) {
+		return format("%s(%s)", PARALLEL_PREFIX, requireNonNull(nodeId, "nodeId cannot be null!"));
+	}
+
+	public record AsyncParallelNodeAction(String nodeId, List<AsyncNodeActionWithConfig> actions,
+			Map<String, KeyStrategy> channels, CompileConfig compileConfig) implements AsyncNodeActionWithConfig {
 
 		@Override
 		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
 			// 使用线程安全的ConcurrentHashMap来避免并发问题
 			Map<String, Object> partialMergedStates = new java.util.concurrent.ConcurrentHashMap<>();
 			Map<String, Object> asyncGenerators = new java.util.concurrent.ConcurrentHashMap<>();
-			var futures = actions.stream().map(action -> action.apply(state, config).thenApply(partialState -> {
-				partialState.forEach((key, value) -> {
-					if (value instanceof AsyncGenerator<?> || value instanceof GeneratorSubscriber) {
-						((List) asyncGenerators.computeIfAbsent(key, k -> new ArrayList<>())).add(value);
-					}
-					else {
-						// 修复：使用KeyStrategy正确合并状态，而不是直接覆盖
-						KeyStrategy strategy = channels.get(key);
-						if (strategy != null) {
-							// 使用原子操作来确保线程安全
-							partialMergedStates.compute(key, (k, existingValue) -> {
-								return strategy.apply(existingValue, value);
-							});
+			var futures = actions.stream().map((Function<AsyncNodeActionWithConfig, Object>) action -> {
+				LifeListenerUtil.processListenersLIFO(this.nodeId,
+						new LinkedBlockingDeque<>(this.compileConfig.lifecycleListeners()), state.data(), config,
+						NODE_AFTER, null);
+				return action.apply(state, config).thenApply(partialState -> {
+					partialState.forEach((key, value) -> {
+						if (value instanceof AsyncGenerator<?> || value instanceof GeneratorSubscriber) {
+							((List) asyncGenerators.computeIfAbsent(key, k -> new ArrayList<>())).add(value);
 						}
 						else {
-							// 如果没有配置KeyStrategy，使用默认的替换策略
-							partialMergedStates.put(key, value);
+							// 修复：使用KeyStrategy正确合并状态，而不是直接覆盖
+							KeyStrategy strategy = channels.get(key);
+							if (strategy != null) {
+								// 使用原子操作来确保线程安全
+								partialMergedStates.compute(key,
+										(k, existingValue) -> strategy.apply(existingValue, value));
+							}
+							else {
+								// 如果没有配置KeyStrategy，使用默认的替换策略
+								partialMergedStates.put(key, value);
+							}
 						}
-					}
-				});
-				// 移除这行：不在每个并行节点完成后立即更新状态
-				// state.updateState(partialMergedStates);
-				return action;
-			}))
-				// .map( future -> supplyAsync(future::join) )
-				.toList()
-				.toArray(new CompletableFuture[0]);
+					});
+					// 移除这行：不在每个并行节点完成后立即更新状态
+					// state.updateState(partialMergedStates);
+					return action;
+				})
+					.whenComplete((asyncNodeActionWithConfig, throwable) -> LifeListenerUtil.processListenersLIFO(
+							this.nodeId, new LinkedBlockingDeque<>(this.compileConfig.lifecycleListeners()),
+							state.data(), config, NODE_AFTER, throwable));
+			}).toList().toArray(new CompletableFuture[0]);
 			return CompletableFuture.allOf(futures).thenApply((p) -> {
 				// 在所有并行节点完成后，统一更新状态
 				if (!CollectionUtils.isEmpty(partialMergedStates)) {
@@ -81,8 +95,11 @@ public class ParallelNode extends Node {
 
 	}
 
-	public ParallelNode(String id, List<AsyncNodeActionWithConfig> actions, Map<String, KeyStrategy> channels) {
-		super(format("%s(%s)", PARALLEL_PREFIX, id), (config) -> new AsyncParallelNodeAction(actions, channels));
+	public ParallelNode(String id, List<AsyncNodeActionWithConfig> actions, Map<String, KeyStrategy> channels,
+			CompileConfig compileConfig) {
+		super(format("%s(%s)", PARALLEL_PREFIX, id),
+				(config) -> new AsyncParallelNodeAction(format("%s(%s)", PARALLEL_PREFIX, id), actions, channels,
+						compileConfig));
 	}
 
 	@Override

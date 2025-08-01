@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static java.util.Optional.ofNullable;
+
 public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 
 	/**
@@ -26,11 +28,33 @@ public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 	 * @param key given metadata key
 	 * @return metadata value for key if any
 	 */
-	Optional<Object> getMetadata(String key);
+	Optional<Object> metadata(String key);
+
+	/**
+	 * return metadata value for key
+	 * @param key given metadata key
+	 * @return metadata value for key if any
+	 * @deprecated use {@link #metadata(String)} instead
+	 */
+	@Deprecated(forRemoval = true)
+	default Optional<Object> getMetadata(String key) {
+		return metadata(key);
+	};
 
 	class Builder<B extends Builder<B>> {
 
-		protected Map<String, Object> metadata;
+		private Map<String, Object> metadata;
+
+		public Map<String, Object> metadata() {
+			return ofNullable(metadata).map(Map::copyOf).orElseGet(Map::of);
+		}
+
+		protected Builder() {
+		}
+
+		protected Builder(Map<String, Object> metadata) {
+			this.metadata = metadata;
+		}
 
 		@SuppressWarnings("unchecked")
 		public B addMetadata(String key, Object value) {

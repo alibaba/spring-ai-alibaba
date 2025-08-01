@@ -114,6 +114,8 @@ const words: I18nType = {
     parameters: 'Parameters',
     thinking: 'Thinking',
     input: 'Input',
+    total: 'Total',
+    loadFailed: 'Load Failed',
   },
 
   // Configuration related
@@ -159,6 +161,7 @@ const words: I18nType = {
       agents: 'Multi - Agent',
       infiniteContext: 'Infinite Context',
       filesystem: 'File System',
+      mcpServiceLoader: 'MCP Service Loader',
     },
     // Agent configuration page
     agentConfig: {
@@ -392,6 +395,11 @@ const words: I18nType = {
       fileSystem: {
         allowExternalAccess: 'Whether to allow file operations beyond the working directory',
       },
+      mcpServiceLoader: {
+        connectionTimeoutSeconds: 'MCP connection timeout (seconds)',
+        maxRetryCount: 'MCP connection max retry count',
+        maxConcurrentConnections: 'MCP max concurrent connections',
+      },
       systemSettings: {
         systemName: 'System Name',
         language: 'Language',
@@ -463,6 +471,15 @@ const words: I18nType = {
       exportFailed: 'Failed to export configuration',
       importSuccess: 'Configuration imported successfully',
       importFailed: 'Failed to import configuration',
+      resetToLanguageDefault: 'Reset to Language Default',
+      selectLanguage: 'Select Language',
+      resetToLanguageDefaultSuccess: 'Reset to language default successfully',
+      resetToLanguageDefaultFailed: 'Failed to reset to language default',
+      resetLanguageWarning: 'This will overwrite current content with the default version of selected language',
+      batchSwitchLanguage: 'Batch Switch Language',
+      batchSwitchLanguageSuccess: 'Batch language switch successful',
+      batchSwitchLanguageFailed: 'Failed to batch switch language',
+      batchSwitchLanguageWarning: 'This will overwrite all prompt content and descriptions with the default version of selected language',
     },
     namespaceConfig: {
       title: 'Namespace Configuration',
@@ -513,6 +530,21 @@ const words: I18nType = {
     saveFailed: 'Failed to save agent',
     deleteSuccess: 'Agent deleted successfully',
     deleteFailed: 'Failed to delete agent',
+    // Multi-language support
+    multiLanguage: {
+      title: 'Agent Multi-Language Management',
+      resetAll: 'Reset All Agents',
+      resetAllConfirm: 'Reset All Agents Confirmation',
+      resetAllWarning: 'This operation will delete all existing agent configurations and reload the specified language version. This action cannot be undone!',
+      selectLanguage: 'Select Language',
+      resetSuccess: 'All agents have been reset to the specified language version',
+      resetFailed: 'Failed to reset agents',
+      currentLanguage: 'Current Language',
+      supportedLanguages: 'Supported Languages',
+      resetInProgress: 'Resetting agents...',
+      confirmReset: 'Confirm Reset',
+      cancel: 'Cancel',
+    },
   },
   // Model Configuration
   model: {
@@ -641,7 +673,7 @@ const words: I18nType = {
 
   // Input component
   input: {
-    placeholder: 'Send a message to JTaskPilot',
+    placeholder: 'Send a message to JManus',
     send: 'Send',
     planMode: 'PLAN-ACT Template Mode',
     waiting: 'Waiting for task completion...',
@@ -831,7 +863,7 @@ const words: I18nType = {
 
   // Home page
   home: {
-    welcomeTitle: 'Welcome to JTaskPilot!',
+    welcomeTitle: 'Welcome to JManus!',
     welcomeSubtitle:
       'Your Java AI intelligent assistant, helping you build and complete various tasks.',
     tagline: 'Java AI Agent',
