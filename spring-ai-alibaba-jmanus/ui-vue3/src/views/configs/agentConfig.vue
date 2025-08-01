@@ -473,103 +473,103 @@ const loadData = async () => {
       await selectAgent(normalizedAgents[0])
     }
   } catch (err: any) {
-    console.error('加载数据失败:', err)
+    console.error('Failed to load data:', err)
     showMessage(t('config.agentConfig.loadDataFailed') + ': ' + err.message, 'error')
 
     // Provide demo data as a fallback
     const demoTools = [
       {
         key: 'search-web',
-        name: '网络搜索',
-        description: '在互联网上搜索信息',
+        name: 'Web Search',
+        description: 'Search for information on the internet',
         enabled: true,
-        serviceGroup: '搜索服务',
+        serviceGroup: 'Search Services',
       },
       {
         key: 'search-local',
-        name: '本地搜索',
-        description: '在本地文件中搜索内容',
+        name: 'Local Search',
+        description: 'Search content in local files',
         enabled: true,
-        serviceGroup: '搜索服务',
+        serviceGroup: 'Search Services',
       },
       {
         key: 'file-read',
-        name: '读取文件',
-        description: '读取本地或远程文件内容',
+        name: 'Read File',
+        description: 'Read local or remote file content',
         enabled: true,
-        serviceGroup: '文件服务',
+        serviceGroup: 'File Services',
       },
       {
         key: 'file-write',
-        name: '写入文件',
-        description: '创建或修改文件内容',
+        name: 'Write File',
+        description: 'Create or modify file content',
         enabled: true,
-        serviceGroup: '文件服务',
+        serviceGroup: 'File Services',
       },
       {
         key: 'file-delete',
-        name: '删除文件',
-        description: '删除指定的文件',
+        name: 'Delete File',
+        description: 'Delete specified file',
         enabled: false,
-        serviceGroup: '文件服务',
+        serviceGroup: 'File Services',
       },
       {
         key: 'calculator',
-        name: '计算器',
-        description: '执行数学计算',
+        name: 'Calculator',
+        description: 'Perform mathematical calculations',
         enabled: true,
-        serviceGroup: '计算服务',
+        serviceGroup: 'Computing Services',
       },
       {
         key: 'code-execute',
-        name: '代码执行',
-        description: '执行Python或JavaScript代码',
+        name: 'Code Execution',
+        description: 'Execute Python or JavaScript code',
         enabled: true,
-        serviceGroup: '计算服务',
+        serviceGroup: 'Computing Services',
       },
       {
         key: 'weather',
-        name: '天气查询',
-        description: '获取指定地区的天气信息',
+        name: 'Weather Query',
+        description: 'Get weather information for specified regions',
         enabled: true,
-        serviceGroup: '信息服务',
+        serviceGroup: 'Information Services',
       },
       {
         key: 'currency',
-        name: '汇率查询',
-        description: '查询货币汇率信息',
+        name: 'Exchange Rate Query',
+        description: 'Query currency exchange rate information',
         enabled: true,
-        serviceGroup: '信息服务',
+        serviceGroup: 'Information Services',
       },
       {
         key: 'email',
-        name: '发送邮件',
-        description: '发送电子邮件',
+        name: 'Send Email',
+        description: 'Send electronic mail',
         enabled: false,
-        serviceGroup: '通信服务',
+        serviceGroup: 'Communication Services',
       },
       {
         key: 'sms',
-        name: '发送短信',
-        description: '发送短信消息',
+        name: 'Send SMS',
+        description: 'Send SMS messages',
         enabled: false,
-        serviceGroup: '通信服务',
+        serviceGroup: 'Communication Services',
       },
     ]
 
     const demoAgents = [
       {
         id: 'demo-1',
-        name: '通用助手',
-        description: '一个能够处理各种任务的智能助手',
+        name: 'General Assistant',
+        description: 'An intelligent assistant capable of handling various tasks',
         nextStepPrompt:
           'You are a helpful assistant that can answer questions and help with various tasks. What would you like me to help you with next?',
         availableTools: ['search-web', 'calculator', 'weather'],
       },
       {
         id: 'demo-2',
-        name: '数据分析师',
-        description: '专门用于数据分析和可视化的Agent',
+        name: 'Data Analyst',
+        description: 'Agent specialized in data analysis and visualization',
         nextStepPrompt:
           'You are a data analyst assistant specialized in analyzing data and creating visualizations. Please provide the data you would like me to analyze.',
         availableTools: ['file-read', 'file-write', 'calculator', 'code-execute'],
@@ -598,7 +598,7 @@ const selectAgent = async (agent: Agent) => {
     }
     chooseModel.value = detailedAgent.model ?? null
   } catch (err: any) {
-    console.error('加载Agent详情失败:', err)
+    console.error('Failed to load Agent details:', err)
     showMessage(t('config.agentConfig.loadDetailsFailed') + ': ' + err.message, 'error')
     // Use basic information as a fallback
     selectedAgent.value = {
@@ -768,7 +768,7 @@ const handleExport = () => {
 // Multi-language management methods
 const getLanguageLabel = (lang: string): string => {
   const labels: Record<string, string> = {
-    'zh': '中文',
+    'zh': t('language.zh'),
     'en': 'English'
   }
   return labels[lang] || lang
@@ -1242,7 +1242,7 @@ watch(
   }
 }
 
-/* 弹窗样式 */
+/* Modal styles */
 .modal-form {
   display: flex;
   flex-direction: column;
@@ -1298,7 +1298,7 @@ watch(
   }
 }
 
-/* 提示消息 */
+/* Toast messages */
 .error-toast,
 .success-toast {
   position: fixed;
