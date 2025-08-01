@@ -39,8 +39,22 @@
         </div>
         
         <!-- 结果展示 -->
-        <div v-else id="debug-results-container">
-          <!-- 动态生成的结果区块将在这里显示 -->
+        <div v-else class="debug-results-container">
+          <!-- 流式结果区块 - 使用与 AgentWorkspace.vue 相同的结构 -->
+          <div v-for="section in streamingSections" :key="section.id" class="agent-response-block">
+            <div class="agent-response-title">
+              <i :class="section.icon"></i> {{ section.title }}
+              <button 
+                v-if="section.type === 'sql'" 
+                class="copy-button" 
+                @click="copyToClipboard(section.rawContent)"
+                title="复制SQL"
+              >
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+            <div class="agent-response-content" v-html="section.content"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -59,8 +73,8 @@
         >
         <button 
           class="debug-button" 
-          :disabled="isDebugging || isInitializing || !debugQuery.trim()"
-          @click="startDebug"
+          :disabled="isDebugging"
+          @click="handleDebugClick"
         >
           <i class="bi bi-play-circle" v-if="!isDebugging"></i>
           <div class="spinner" v-else></div>
@@ -145,11 +159,6 @@
                   </option>
                 </select>
               </div>
-              <div class="form-group">
-                <label>数据库Schema</label>
-                <input type="text" v-model="schemaInitForm.schema" class="form-control" 
-                       placeholder="请输入数据库Schema名称">
-              </div>
             </div>
             
             <div class="form-group" v-if="schemaInitForm.selectedDatasource">
@@ -223,7 +232,7 @@ export default {
   },
   setup(props) {
     // 响应式数据
-    const debugQuery = ref('')
+    const debugQuery = ref('查询用户总数')
     const isDebugging = ref(false)
     const isInitializing = ref(false)
     const isInitialized = ref(false)
@@ -232,6 +241,10 @@ export default {
     const debugInput = ref(null)
     const resultContainer = ref(null)
     const exampleQueries = ref([])
+    const streamingSections = ref([])
+    
+    // EventSource实例引用
+    let currentEventSource = null
 
     // 获取状态样式类
     const getStatusClass = () => {
@@ -258,37 +271,396 @@ export default {
       return '检查初始化状态'
     }
 
-    // 开始调试
-    const startDebug = async () => {
-      if (!debugQuery.value.trim() || isDebugging.value) return
+    // 处理调试按钮点击
+    const handleDebugClick = () => {
+      console.log('=== 调试按钮被点击 ===')
+      if (isDebugging.value) return
+      
+      if (!debugQuery.value || !debugQuery.value.trim()) {
+        debugQuery.value = '查询用户总数'
+      }
+      
+      startDebug()
+    }
+
+    // 完全使用 AgentWorkspace.vue 的流式数据处理逻辑
+    const startDebug = () => {
+      console.log('=== startDebug 函数被调用 ===')
+      
+      if (!debugQuery.value.trim() || isDebugging.value) {
+        return
+      }
+
+      // 清理之前的EventSource连接
+      if (currentEventSource) {
+        currentEventSource.close()
+        currentEventSource = null
+      }
+
+      isDebugging.value = true
+      debugStatus.value = '正在连接...'
+      hasResults.value = true
+      streamingSections.value = []
 
       try {
-        isDebugging.value = true
-        debugStatus.value = '正在处理中...'
-        hasResults.value = true
+        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(debugQuery.value)}&agentId=${props.agentId}`)
+        currentEventSource = eventSource
+        
+        // 使用与 AgentWorkspace.vue 完全相同的流式数据处理逻辑
+        const streamState = {
+            contentByType: {},
+            typeOrder: [],
+        }
 
-        // 简单的模拟调试过程
-        setTimeout(() => {
-          debugStatus.value = '调试完成'
+        const typeMapping = {
+          'status': { title: '当前状态', icon: 'bi bi-activity' },
+          'rewrite': { title: '需求理解', icon: 'bi bi-pencil-square' },
+          'keyword_extract': { title: '关键词提取', icon: 'bi bi-key' },
+          'plan_generation': { title: '计划生成', icon: 'bi bi-diagram-3' },
+          'schema_recall': { title: 'Schema初步召回', icon: 'bi bi-database-gear' },
+          'schema_deep_recall': { title: 'Schema深度召回', icon: 'bi bi-database-fill-gear' },
+          'sql': { title: '生成的SQL', icon: 'bi bi-code-square' },
+          'execute_sql': { title: '执行SQL', icon: 'bi bi-play-circle' },
+          'python_analysis': { title: 'Python分析执行', icon: 'bi bi-code-slash' },
+          'validation': { title: '校验', icon: 'bi bi-check-circle' },
+          'output_report': { title: '输出报告', icon: 'bi bi-file-earmark-text' },
+          'explanation': { title: '解释说明', icon: 'bi bi-info-circle' },
+          'result': { title: '查询结果', icon: 'bi bi-table' },
+          'error': { title: '解析错误', icon: 'bi bi-exclamation-triangle' }
+        }
+
+        const updateDisplay = () => {
+            // 清空现有数据
+            streamingSections.value = []
+            
+            // 按顺序重建所有section
+            for (const type of streamState.typeOrder) {
+                const typeInfo = typeMapping[type] || { title: type, icon: 'bi bi-file-text' }
+                const content = streamState.contentByType[type] || ''
+                const formattedContent = formatContentByType(type, content)
+                
+                streamingSections.value.push({
+                    id: `${type}-${Date.now()}`,
+                    type,
+                    title: typeInfo.title,
+                    icon: typeInfo.icon,
+                    content: formattedContent,
+                    rawContent: content,
+                    timestamp: new Date().toLocaleTimeString()
+                })
+            }
+            
+            console.log('更新显示，当前section数量:', streamingSections.value.length)
+        }
+
+        eventSource.onmessage = (event) => {
+            let chunk
+            let actualType
+            let actualData
+            
+            try {
+                // 使用与 AgentWorkspace.vue 相同的解析逻辑
+                let parsedData = JSON.parse(event.data)
+                
+                // 如果第一次解析结果还是字符串，再解析一次
+                if (typeof parsedData === 'string') {
+                    chunk = JSON.parse(parsedData)
+                } else {
+                    chunk = parsedData
+                }
+
+                // 直接提取type和data，使用方括号语法
+                actualType = chunk['type']
+                actualData = chunk['data']
+
+                // 处理嵌套JSON的情况
+                if (actualType === 'explanation' && typeof actualData === 'string') {
+                    try {
+                        const innerChunk = JSON.parse(actualData)
+                        if (innerChunk.type && innerChunk.data !== undefined) {
+                            actualType = innerChunk.type
+                            actualData = innerChunk.data
+                        }
+                    } catch (e) {
+                        // 如果内层解析失败，保持原来的值
+                    }
+                }
+
+            } catch (e) {
+                console.error('JSON解析失败:', e, event.data)
+                return
+            }
+
+            if (actualType && actualData !== undefined && actualData !== null) {
+                // 对数据进行预处理
+                let processedData = actualData
+                
+                // 只对SQL类型进行Markdown代码块标记的预清理
+                if (actualType === 'sql' && typeof actualData === 'string') {
+                    processedData = actualData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim()
+                }
+                
+                // 累积数据到对应的类型
+                if (!streamState.contentByType.hasOwnProperty(actualType)) {
+                    streamState.typeOrder.push(actualType)
+                    streamState.contentByType[actualType] = ''
+                }
+                
+                if (processedData) {
+                    streamState.contentByType[actualType] += processedData
+                }
+                
+                updateDisplay()
+            } else {
+                console.warn('Missing type or data:', {
+                    type: actualType,
+                    data: actualData,
+                    originalChunk: chunk
+                })
+            }
+        }
+
+        eventSource.addEventListener('complete', () => {
+          console.log('流式输出完成')
           isDebugging.value = false
+          debugStatus.value = '调试完成'
+          eventSource.close()
+        })
+
+        eventSource.onerror = (error) => {
+          console.error('流式连接错误:', error)
+          isDebugging.value = false
+          debugStatus.value = '连接出错'
           
-          // 显示简单结果
-          const container = document.getElementById('debug-results-container')
-          if (container) {
-            container.innerHTML = `<div style="padding: 1rem; background: #f0f8ff; border-radius: 6px; margin: 1rem 0;">
-              <h4>调试结果</h4>
-              <p>问题: ${debugQuery.value}</p>
-              <p>状态: 调试完成</p>
-            </div>`
+          if (eventSource.readyState === EventSource.CLOSED) {
+            console.log('EventSource 连接已正常关闭')
+          } else {
+            streamingSections.value.push({
+              id: 'error-section',
+              type: 'error',
+              title: '连接错误',
+              icon: 'bi bi-exclamation-triangle',
+              content: '<div class="error-content">连接失败，请检查后端服务是否正在运行</div>'
+            })
           }
-        }, 2000)
+          
+          eventSource.close()
+        }
 
       } catch (error) {
-        console.error('启动调试失败:', error)
-        debugStatus.value = '启动调试失败: ' + error.message
+        console.error('发送消息失败:', error)
         isDebugging.value = false
+        debugStatus.value = '发送失败'
       }
     }
+
+    // 使用与 AgentWorkspace.vue 相同的内容格式化逻辑
+    const formatContentByType = (type, data) => {
+        if (data === null || data === undefined) return '';
+
+        if (type === 'sql') {
+            let cleanedData = data.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
+            return `<pre><code class="language-sql">${cleanedData}</code></pre>`;
+        } 
+        
+        if (type === 'result') {
+            return convertJsonToHTMLTable(data);
+        }
+
+        // 处理其他类型的数据
+        let processedData = data;
+        if (typeof data === 'string') {
+            // 检查数据是否包含多个JSON对象连接在一起
+            const jsonPattern = /\{"[^"]+":"[^"]*"[^}]*\}/g;
+            const jsonMatches = data.match(jsonPattern);
+            
+            if (jsonMatches && jsonMatches.length > 1) {
+                // 多个JSON对象，分别解析并提取data字段
+                let extractedContent = [];
+                jsonMatches.forEach(jsonStr => {
+                    try {
+                        const jsonObj = JSON.parse(jsonStr);
+                        if (jsonObj.data) {
+                            extractedContent.push(jsonObj.data.replace(/\\n/g, '\n'));
+                        }
+                    } catch (e) {
+                        extractedContent.push(jsonStr);
+                    }
+                });
+                processedData = extractedContent.join('');
+            } else {
+                // 单个JSON对象或普通文本
+                try {
+                    const jsonData = JSON.parse(data);
+                    if (jsonData && typeof jsonData === 'object') {
+                        if (jsonData.data) {
+                            processedData = jsonData.data;
+                        } else {
+                            processedData = JSON.stringify(jsonData, null, 2);
+                        }
+                    }
+                } catch (e) {
+                    // 不是JSON，保持原始数据
+                    processedData = data;
+                }
+            }
+        }
+
+        // 检查是否是Markdown格式
+        if (isMarkdown(processedData)) {
+            return renderMarkdown(processedData);
+        } else {
+            // 检查内容是否包含SQL代码块
+            const sqlCodeBlockRegex = /```\s*sql?\s*([\s\S]*?)```/gi;
+            const sqlMatches = processedData.match(sqlCodeBlockRegex);
+            
+            if (sqlMatches && sqlMatches.length > 0) {
+                // 包含SQL代码块，进行特殊处理
+                let htmlContent = processedData;
+                
+                // 替换每个SQL代码块为高亮显示
+                htmlContent = htmlContent.replace(sqlCodeBlockRegex, (match, sqlContent) => {
+                    let cleanedSQL = sqlContent.trim();
+                    return `<pre><code class="language-sql">${cleanedSQL}</code></pre>`;
+                });
+                
+                // 处理剩余的文本（将换行转换为<br>）
+                return htmlContent.replace(/\n/g, '<br>');
+            } else {
+                return processedData.toString().replace(/\n/g, '<br>');
+            }
+        }
+    };
+
+    // 检测Markdown格式的辅助函数
+    const isMarkdown = (text) => {
+        if (!text || typeof text !== 'string') return false;
+        
+        // 检测常见的Markdown语法
+        const markdownPatterns = [
+            /^#{1,6}\s+.+/m,           // 标题 # ## ###
+            /\*\*[^*]+\*\*/,           // 粗体 **text**
+            /\*[^*]+\*/,               // 斜体 *text*
+            /`[^`]+`/,                 // 行内代码 `code`
+            /```[\s\S]*?```/,          // 代码块 ```code```
+            /^\s*[-*+]\s+/m,           // 无序列表 - * +
+            /^\s*\d+\.\s+/m,           // 有序列表 1. 2.
+            /^\s*>\s+/m,               // 引用 >
+            /\[.+\]\(.+\)/,            // 链接 [text](url)
+            /^\s*\|.+\|/m,             // 表格 |col1|col2|
+            /^---+$/m                  // 分隔线 ---
+        ];
+        
+        return markdownPatterns.some(pattern => pattern.test(text));
+    };
+
+    // 渲染Markdown的辅助函数
+    const renderMarkdown = (text) => {
+        if (!text || typeof text !== 'string') return '';
+        
+        let html = text;
+        
+        // 首先处理代码块（三个反引号），避免被行内代码处理干扰
+        html = html.replace(/```(\w+)?\s*([\s\S]*?)```/g, (match, lang, code) => {
+            const language = lang || 'text';
+            let highlightedCode = code.trim();
+            
+            // 如果是SQL代码，进行语法高亮
+            if (language.toLowerCase() === 'sql') {
+                // 这里可以添加SQL语法高亮逻辑
+                highlightedCode = code.trim();
+            }
+            
+            return `<pre><code class="language-${language}">${highlightedCode}</code></pre>`;
+        });
+        
+        // 处理标题
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+        
+        // 处理粗体和斜体
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // 处理行内代码（单个反引号）- 在代码块处理之后
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        // 处理无序列表
+        html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
+        html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+        
+        // 处理有序列表
+        html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
+        
+        // 处理Markdown表格
+        html = html.replace(/(\|[^|\r\n]*\|[^|\r\n]*\|[^\r\n]*\r?\n\|[-:\s|]*\|[^\r\n]*\r?\n(?:\|[^|\r\n]*\|[^\r\n]*\r?\n?)*)/gm, (match) => {
+            return convertMarkdownTableToHTML(match);
+        });
+        
+        // 处理链接
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        
+        // 处理换行
+        html = html.replace(/\n/g, '<br>');
+        
+        return `<div class="markdown-content">${html}</div>`;
+    };
+
+    // 转换Markdown表格为HTML表格
+    const convertMarkdownTableToHTML = (markdownTable) => {
+        if (!markdownTable) return '';
+        const lines = markdownTable.trim().split('\n');
+        if (lines.length < 2 || !lines[1].includes('---')) return markdownTable;
+
+        const headers = lines[0].split('|').map(h => h.trim()).filter(Boolean);
+        let html = '<table class="dynamic-table"><thead><tr>';
+        headers.forEach(header => { 
+            html += `<th>${header}</th>` 
+        });
+        html += '</tr></thead><tbody>';
+
+        for (let i = 2; i < lines.length; i++) {
+            const rowCells = lines[i].split('|').map(c => c.trim()).filter(Boolean);
+            if (rowCells.length > 0) {
+                html += '<tr>';
+                for (let j = 0; j < headers.length; j++) {
+                    html += `<td>${rowCells[j] || ''}</td>`;
+                }
+                html += '</tr>';
+            }
+        }
+        html += '</tbody></table>';
+        return html;
+    };
+
+    const convertJsonToHTMLTable = (jsonString) => {
+        try {
+            const data = JSON.parse(jsonString);
+            if (!data || !Array.isArray(data.columns) || !Array.isArray(data.data)) {
+                return `<pre><code>${JSON.stringify(data, null, 2)}</code></pre>`;
+            }
+
+            let html = '<table class="dynamic-table"><thead><tr>';
+            data.columns.forEach(header => {
+                html += `<th>${header}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            data.data.forEach(row => {
+                html += '<tr>';
+                data.columns.forEach((col, i) => {
+                    html += `<td>${row[i] || ''}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            return html;
+        } catch (e) {
+            return `<pre><code>${jsonString}</code></pre>`;
+        }
+    };
 
     // 初始化数据源
     const initializeDataSource = async () => {
@@ -298,7 +670,6 @@ export default {
         isInitializing.value = true
         debugStatus.value = '正在检查初始化状态...'
 
-        // 模拟检查过程
         setTimeout(() => {
           isInitialized.value = true
           debugStatus.value = '数据源已初始化，可以开始调试'
@@ -325,8 +696,7 @@ export default {
     
     // 表单数据
     const schemaInitForm = reactive({
-      selectedDatasource: '',
-      schema: ''
+      selectedDatasource: ''
     })
     
     // 数据源和表相关
@@ -345,43 +715,44 @@ export default {
     
     const canInitialize = computed(() => {
       return schemaInitForm.selectedDatasource && 
-             schemaInitForm.schema && 
              selectedTables.value.length > 0
     })
 
-    // 打开模态框
+    // 模态框相关函数
     const openSchemaInitModal = async () => {
       showSchemaInitModal.value = true
       await loadAvailableDatasources()
       await getSchemaStatistics()
     }
     
-    // 关闭模态框
     const closeSchemaInitModal = () => {
       showSchemaInitModal.value = false
       showConfigForm.value = false
     }
     
-    // 加载可用数据源
+    // 数据源相关函数
     const loadAvailableDatasources = async () => {
       try {
-        // TODO: 调用实际的API获取数据源列表
-        // const response = await fetch('/api/datasources')
-        // const data = await response.json()
-        // availableDatasources.value = data
+        const response = await fetch(`/api/agent/${props.agentId}/schema/datasources`)
         
-        // 临时使用模拟数据
-        availableDatasources.value = [
-          { id: 1, name: 'MySQL主库', type: 'mysql' },
-          { id: 2, name: 'PostgreSQL数据仓库', type: 'postgresql' },
-          { id: 3, name: 'Oracle生产库', type: 'oracle' }
-        ]
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          availableDatasources.value = result.data || []
+        } else {
+          console.error('获取数据源失败:', result.message)
+          availableDatasources.value = []
+        }
       } catch (error) {
         console.error('加载数据源失败:', error)
+        availableDatasources.value = []
       }
     }
     
-    // 获取数据源类型文本
     const getDatasourceTypeText = (type) => {
       const typeMap = {
         mysql: 'MySQL',
@@ -392,7 +763,6 @@ export default {
       return typeMap[type] || type
     }
     
-    // 数据源变化处理
     const onDatasourceChange = () => {
       availableTables.value = []
       selectedTables.value = []
@@ -400,160 +770,163 @@ export default {
         loadTables()
       }
     }
-    
-    // 加载表列表
+
     const loadTables = async () => {
       if (!schemaInitForm.selectedDatasource) return
       
       try {
-        // 模拟表列表加载
-        availableTables.value = [
-          'users', 'orders', 'products', 'categories',
-          'order_items', 'payments', 'reviews', 'inventory'
-        ]
-      } catch (error) {
-        console.error('加载表列表失败:', error)
-      }
-    }
-    
-    // 全选表
-    const selectAllTables = () => {
-      selectedTables.value = [...filteredTables.value]
-    }
-    
-    // 清空选择
-    const clearAllTables = () => {
-      selectedTables.value = []
-    }
-    
-    // 初始化Schema
-    const initializeSchema = async () => {
-      if (!canInitialize.value || schemaInitializing.value) return
-      
-      try {
-        schemaInitializing.value = true
-        
-        // 构建请求数据
-        const requestData = {
-          dbConfig: {
-            id: schemaInitForm.selectedDatasource.id,
-            name: schemaInitForm.selectedDatasource.name,
-            type: schemaInitForm.selectedDatasource.type
-          },
-          schema: schemaInitForm.schema,
-          tables: selectedTables.value
-        }
-        
-        // 调用后端API
-        const response = await fetch(`/api/agent/${props.agentId}/schema/init`, {
+        const response = await fetch(`/api/agent/${props.agentId}/schema/tables`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(requestData)
+          body: JSON.stringify({
+            datasourceId: schemaInitForm.selectedDatasource.id
+          })
         })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          availableTables.value = result.data || []
+        } else {
+          console.error('获取表列表失败:', result.message)
+          availableTables.value = []
+        }
+      } catch (error) {
+        console.error('加载表列表失败:', error)
+        availableTables.value = []
+      }
+    }
+    
+    const selectAllTables = () => {
+      selectedTables.value = [...filteredTables.value]
+    }
+    
+    const clearAllTables = () => {
+      selectedTables.value = []
+    }
+    
+    const initializeSchema = async () => {
+      if (schemaInitializing.value || !canInitialize.value) return
+      
+      try {
+        schemaInitializing.value = true
+        
+        const response = await fetch(`/api/agent/${props.agentId}/schema/initialize`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            datasourceId: schemaInitForm.selectedDatasource.id,
+            tables: selectedTables.value
+          })
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         
         const result = await response.json()
         
         if (result.success) {
           isInitialized.value = true
-          schemaStatistics.value = {
-            agentId: props.agentId,
-            documentCount: result.tablesCount * 10, // 估算文档数量
-            lastUpdated: new Date().toLocaleString()
-          }
-          
-          debugStatus.value = '信息源初始化完成'
-          setTimeout(() => {
-            debugStatus.value = ''
-          }, 3000)
-          
           showConfigForm.value = false
+          await getSchemaStatistics()
         } else {
-          throw new Error(result.message || '初始化失败')
+          console.error('初始化失败:', result.message)
+          alert('初始化失败: ' + result.message)
         }
-        
       } catch (error) {
-        console.error('初始化失败:', error)
-        debugStatus.value = '初始化失败: ' + error.message
+        console.error('初始化Schema失败:', error)
+        alert('初始化失败，请检查网络连接')
       } finally {
         schemaInitializing.value = false
       }
     }
     
-    // 获取统计信息
     const getSchemaStatistics = async () => {
       try {
         const response = await fetch(`/api/agent/${props.agentId}/schema/statistics`)
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
         const result = await response.json()
         
         if (result.success) {
-          schemaStatistics.value = {
-            agentId: props.agentId,
-            documentCount: result.data.documentCount || 0,
-            hasData: result.data.hasData,
-            lastUpdated: new Date().toLocaleString()
-          }
-          isInitialized.value = result.data.hasData
+          schemaStatistics.value = result.data
+          isInitialized.value = result.data && result.data.documentCount > 0
         } else {
           console.error('获取统计信息失败:', result.message)
+          schemaStatistics.value = null
+          isInitialized.value = false
         }
       } catch (error) {
         console.error('获取统计信息失败:', error)
-        // 如果API调用失败，使用默认值
         schemaStatistics.value = null
         isInitialized.value = false
       }
     }
     
-    // 清空Schema数据
     const clearSchemaData = async () => {
       if (!confirm('确定要清空所有Schema数据吗？此操作不可恢复。')) return
       
       try {
-        // 调用后端API清空数据
         const response = await fetch(`/api/agent/${props.agentId}/schema/clear`, {
           method: 'DELETE'
         })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         
         const result = await response.json()
         
         if (result.success) {
           isInitialized.value = false
           schemaStatistics.value = null
-          debugStatus.value = 'Schema数据已清空'
-          
-          setTimeout(() => {
-            debugStatus.value = ''
-          }, 3000)
+          selectedTables.value = []
         } else {
-          throw new Error(result.message || '清空失败')
+          console.error('清空数据失败:', result.message)
+          alert('清空数据失败: ' + result.message)
         }
-        
       } catch (error) {
-        console.error('清空数据失败:', error)
-        debugStatus.value = '清空失败: ' + error.message
+        console.error('清空Schema数据失败:', error)
+        alert('清空数据失败，请检查网络连接')
       }
     }
     
-    // 切换配置表单显示
     const toggleConfigForm = () => {
       showConfigForm.value = !showConfigForm.value
     }
 
-    // 组件挂载时的初始化
-    onMounted(async () => {
-      // 加载示例问题
-      exampleQueries.value = [
-        '查询用户总数',
-        '显示最近一周的订单统计',
-        '分析销售趋势'
-      ]
+    // 其他辅助函数
+    const copyToClipboard = (text) => {
+      navigator.clipboard.writeText(text).then(() => {
+        console.log('复制成功')
+      }).catch(err => {
+        console.error('复制失败:', err)
+      })
+    }
+
+    // 组件销毁时清理EventSource
+    onUnmounted(() => {
+      if (currentEventSource) {
+        currentEventSource.close()
+        currentEventSource = null
+      }
     })
 
-    // 组件卸载时清理资源
-    onUnmounted(() => {
-      // 清理资源
+    // 初始检查状态
+    onMounted(() => {
+      initializeDataSource()
     })
 
     return {
@@ -566,13 +939,14 @@ export default {
       debugInput,
       resultContainer,
       exampleQueries,
+      streamingSections,
       getStatusClass,
-      getInitButtonText,
       useExampleQuery,
+      getInitButtonText,
+      handleDebugClick,
       startDebug,
       initializeDataSource,
-      openSchemaInitModal,
-      closeSchemaInitModal,
+      copyToClipboard,
       showSchemaInitModal,
       showConfigForm,
       schemaInitializing,
@@ -584,6 +958,8 @@ export default {
       tableSearchKeyword,
       filteredTables,
       canInitialize,
+      openSchemaInitModal,
+      closeSchemaInitModal,
       loadAvailableDatasources,
       getDatasourceTypeText,
       onDatasourceChange,
@@ -1199,55 +1575,369 @@ export default {
   animation: spin 1s linear infinite;
 }
 
-@media (max-width: 768px) {
-  .input-container {
-    flex-direction: column;
-  }
+/* 调试结果样式 */
+.debug-result-item {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
 
-  .debug-button, .init-button, .schema-init-button {
-    width: 100%;
-  }
+.result-header-info {
+  background: #f8f9fa;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-  .example-queries {
-    flex-direction: column;
-    align-items: center;
-  }
+.result-timestamp {
+  font-size: 0.85rem;
+  color: #666;
+}
 
-  .example-query {
-    width: 100%;
-    max-width: 300px;
-    text-align: center;
-  }
+.result-type {
+  font-size: 0.85rem;
+  color: #1890ff;
+  font-weight: 500;
+}
 
-  .modal-dialog {
-    width: 95%;
-    max-height: 95vh;
-  }
+.result-question {
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
 
-  .form-row {
-    grid-template-columns: 1fr;
-  }
+.question-label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
 
-  .table-grid {
-    grid-template-columns: 1fr;
-  }
+.question-content {
+  color: #666;
+  line-height: 1.5;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
 
-  .table-search {
-    flex-direction: column;
-    align-items: stretch;
-  }
+.result-answer {
+  padding: 1rem;
+}
 
-  .table-actions {
-    justify-content: center;
-  }
+.answer-label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.75rem;
+}
 
-  .stats-info {
-    flex-direction: column;
-    gap: 1rem;
-  }
+.answer-content {
+  color: #444;
+  line-height: 1.6;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
 
-  .modal-footer {
-    flex-wrap: wrap;
-  }
+.answer-content p {
+  margin-bottom: 0.75rem;
+}
+
+.answer-content ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.answer-content li {
+  margin-bottom: 0.25rem;
+}
+
+/* nl2sql.html样式兼容 */
+.result-section {
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  background: #f8f9fa;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e8e8e8;
+  font-weight: 500;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.section-title i {
+  color: #1890ff;
+  font-size: 1rem;
+}
+
+.section-content {
+  padding: 1rem;
+  line-height: 1.6;
+}
+
+.copy-button {
+  background: #f0f8ff;
+  border: 1px solid #d6e4ff;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #1890ff;
+  transition: all 0.2s;
+}
+
+.copy-button:hover {
+  background: #1890ff;
+  color: white;
+}
+
+/* 流式数据展示样式 - 与 AgentWorkspace.vue 保持一致 */
+.agent-response-block {
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.agent-response-title {
+  background: #f8f9fa;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e8e8e8;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.agent-response-title i {
+  margin-right: 0.5rem;
+  color: #1890ff;
+}
+
+.agent-response-content {
+  padding: 1rem;
+  line-height: 1.6;
+}
+
+.agent-response-content pre {
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  overflow-x: auto;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9rem;
+}
+
+.agent-response-content code {
+  background: #f6f8fa;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9rem;
+}
+
+.agent-response-content pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.debug-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.debug-table th,
+.debug-table td {
+  border: 1px solid #e8e8e8;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.debug-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.debug-table tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.debug-table tr:hover {
+  background: #f0f7ff;
+}
+
+.error-content {
+  color: #ff4d4f;
+  padding: 1rem;
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+}
+
+/* dynamic-table 样式 - 与 AgentWorkspace.vue 保持一致 */
+:deep(.dynamic-table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+:deep(.dynamic-table th),
+:deep(.dynamic-table td) {
+  border: 1px solid #e8e8e8;
+  padding: 0.75rem;
+  text-align: left;
+  word-wrap: break-word;
+}
+
+:deep(.dynamic-table th) {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+:deep(.dynamic-table tr:nth-child(even)) {
+  background: #fafafa;
+}
+
+:deep(.dynamic-table tr:hover) {
+  background: #f0f7ff;
+}
+
+:deep(.dynamic-table tbody tr:last-child td) {
+  border-bottom: none;
+}
+
+/* Markdown 内容样式 */
+:deep(.markdown-content) {
+  line-height: 1.7;
+  color: #333;
+}
+
+:deep(.markdown-content h1),
+:deep(.markdown-content h2),
+:deep(.markdown-content h3) {
+  margin: 1.5rem 0 1rem 0;
+  color: #2c3e50;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+:deep(.markdown-content h1) {
+  font-size: 1.8rem;
+  border-bottom: 2px solid #e8e8e8;
+  padding-bottom: 0.5rem;
+}
+
+:deep(.markdown-content h2) {
+  font-size: 1.5rem;
+  border-bottom: 1px solid #e8e8e8;
+  padding-bottom: 0.3rem;
+}
+
+:deep(.markdown-content h3) {
+  font-size: 1.3rem;
+}
+
+:deep(.markdown-content p) {
+  margin: 0.8rem 0;
+}
+
+:deep(.markdown-content ul),
+:deep(.markdown-content ol) {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+:deep(.markdown-content li) {
+  margin: 0.3rem 0;
+}
+
+:deep(.markdown-content code) {
+  background: #f6f8fa;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.85rem;
+  color: #e83e8c;
+}
+
+:deep(.markdown-content pre) {
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+:deep(.markdown-content pre code) {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+:deep(.markdown-content a) {
+  color: #1890ff;
+  text-decoration: none;
+}
+
+:deep(.markdown-content a:hover) {
+  text-decoration: underline;
+}
+
+:deep(.markdown-content strong) {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+:deep(.markdown-content em) {
+  font-style: italic;
+  color: #666;
+}
+
+:deep(.markdown-content table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+:deep(.markdown-content table th),
+:deep(.markdown-content table td) {
+  border: 1px solid #e8e8e8;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+:deep(.markdown-content table th) {
+  background: #f8f9fa;
+  font-weight: 600;
 }
 </style>

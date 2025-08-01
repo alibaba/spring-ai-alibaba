@@ -311,6 +311,10 @@
                       <button class="btn btn-sm btn-outline" @click="batchToggleStatus(false)">批量禁用</button>
                       <button class="btn btn-sm btn-danger" @click="batchDeleteModels">批量删除</button>
                     </div>
+                    <button class="btn btn-success" @click="openSchemaInitModal">
+                      <i class="bi bi-database-gear"></i>
+                      初始化信息源
+                    </button>
                     <button class="btn btn-primary" @click="showCreateModelModal = true">
                       <i class="bi bi-plus"></i>
                       添加模型
@@ -825,6 +829,122 @@
       </div>
     </div>
 
+    <!-- 初始化信息源模态框 -->
+    <div v-if="showSchemaInitModal" class="modal-overlay" @click="closeSchemaInitModal">
+      <div class="modal-dialog schema-init-modal" @click.stop>
+        <div class="modal-header">
+          <h3>初始化信息源</h3>
+          <button class="close-btn" @click="closeSchemaInitModal">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="initializeSchema">
+            <div class="form-group">
+              <label class="form-label">选择数据源 *</label>
+              <select 
+                v-model="schemaInitForm.selectedDatasource" 
+                class="form-control" 
+                required
+                @change="onDatasourceChange"
+              >
+                <option value="">请选择数据源</option>
+                <option 
+                  v-for="agentDatasource in agentDatasourceList" 
+                  :key="agentDatasource.datasource.id"
+                  :value="agentDatasource.datasource"
+                >
+                  {{ agentDatasource.datasource.name }} ({{ getDatasourceTypeText(agentDatasource.datasource.type) }})
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group" v-if="schemaInitForm.selectedDatasource">
+              <label class="form-label">选择表 *</label>
+              <div class="table-selection-container">
+                <div class="table-search">
+                  <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input 
+                      type="text" 
+                      v-model="tableSearchKeyword" 
+                      placeholder="搜索表名..."
+                      class="form-control"
+                    >
+                  </div>
+                  <div class="table-actions">
+                    <button type="button" class="btn btn-sm btn-outline" @click="selectAllTables">全选</button>
+                    <button type="button" class="btn btn-sm btn-outline" @click="clearAllTables">清空</button>
+                  </div>
+                </div>
+                
+                <div class="table-list" v-if="availableTables.length > 0">
+                  <div class="table-count">
+                    共 {{ filteredTables.length }} 个表，已选择 {{ selectedTables.length }} 个
+                  </div>
+                  <div class="table-items">
+                    <label 
+                      v-for="table in filteredTables" 
+                      :key="table"
+                      class="table-item"
+                    >
+                      <input 
+                        type="checkbox" 
+                        :value="table" 
+                        v-model="selectedTables"
+                        class="table-checkbox"
+                      >
+                      <span class="table-name">{{ table }}</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <div v-else-if="schemaInitForm.selectedDatasource" class="loading-tables">
+                  <i class="bi bi-arrow-clockwise spin"></i>
+                  正在加载表列表...
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group" v-if="schemaStatistics">
+              <label class="form-label">当前统计信息</label>
+              <div class="statistics-info">
+                <div class="stat-item">
+                  <span class="stat-label">已初始化表数量:</span>
+                  <span class="stat-value">{{ schemaStatistics.tableCount || 0 }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">字段总数:</span>
+                  <span class="stat-value">{{ schemaStatistics.fieldCount || 0 }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">最后更新时间:</span>
+                  <span class="stat-value">{{ formatDateTime(schemaStatistics.lastUpdateTime) || '未知' }}</span>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeSchemaInitModal">取消</button>
+          <button type="button" class="btn btn-danger" @click="clearSchemaData" v-if="schemaStatistics">
+            <i class="bi bi-trash"></i>
+            清空数据
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-primary" 
+            @click="initializeSchema"
+            :disabled="!canInitialize"
+          >
+            <i class="bi bi-database-gear" v-if="!schemaInitializing"></i>
+            <i class="bi bi-arrow-clockwise spin" v-else></i>
+            {{ schemaInitializing ? '初始化中...' : '开始初始化' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 业务知识创建/编辑模态框 -->
     <div v-if="showCreateKnowledgeModal" class="modal-overlay" @click="closeBusinessKnowledgeModal">
       <div class="modal-dialog" @click.stop>
@@ -1012,9 +1132,9 @@ export default {
     const testResultMessage = ref('')
     
     // 初始化信息源相关数据
+    const showSchemaInitModal = ref(false)
     const schemaInitForm = reactive({
-      selectedDatasource: null,
-      schema: ''
+      selectedDatasource: null
     })
     const availableTables = ref([])
     const selectedTables = ref([])
@@ -1050,6 +1170,24 @@ export default {
 
     const goToHome = () => {
       router.push('/')
+    }
+
+    // 更新智能体信息
+    const updateAgent = async () => {
+      try {
+        await agentApi.update(agent.id, {
+          name: agent.name,
+          description: agent.description,
+          status: agent.status,
+          prompt: agent.prompt,
+          category: agent.category,
+          tags: agent.tags
+        })
+        showMessage('更新成功', 'success')
+      } catch (error) {
+        console.error('更新智能体失败:', error)
+        showMessage('更新失败：' + (error.message || '未知错误'), 'error')
+      }
     }
     
     const loadAgentDetail = async () => {
@@ -1382,38 +1520,48 @@ export default {
     }
     
     // 初始化信息源相关方法
-    const onDatasourceChange = () => {
+    const openSchemaInitModal = async () => {
+      showSchemaInitModal.value = true
+      // 重置表单
+      schemaInitForm.selectedDatasource = null
+      availableTables.value = []
+      selectedTables.value = []
+      tableSearchKeyword.value = ''
+      
+      // 加载智能体的数据源列表
+      await loadDatasources()
+      // 获取当前统计信息
+      await getSchemaStatistics()
+    }
+
+    const closeSchemaInitModal = () => {
+      showSchemaInitModal.value = false
+      schemaInitForm.selectedDatasource = null
+      availableTables.value = []
+      selectedTables.value = []
+      tableSearchKeyword.value = ''
+    }
+
+    const onDatasourceChange = async () => {
       if (schemaInitForm.selectedDatasource) {
-        // 自动填充schema名称
-        const url = schemaInitForm.selectedDatasource.connectionUrl
-        const match = url.match(/\/([^?]+)/)
-        if (match) {
-          schemaInitForm.schema = match[1]
-        }
         // 清空之前的表选择
         availableTables.value = []
         selectedTables.value = []
         // 自动加载表列表
-        loadTables()
+        await loadTables()
       }
     }
     
     const loadTables = async () => {
-      if (!schemaInitForm.selectedDatasource || !schemaInitForm.schema) {
-        showMessage('请先选择数据源和Schema', 'warning')
+      if (!schemaInitForm.selectedDatasource) {
+        showMessage('请先选择数据源', 'warning')
         return
       }
       
       try {
-        // 这里需要调用后端API获取表列表
-        // 暂时使用模拟数据
-        const response = await fetch(`/api/datasource/${schemaInitForm.selectedDatasource.id}/tables?schema=${schemaInitForm.schema}`)
-        if (response.ok) {
-          const tables = await response.json()
-          availableTables.value = tables || []
-        } else {
-          throw new Error('获取表列表失败')
-        }
+        // 使用API工具类获取表列表
+        const tables = await datasourceApi.getTables(schemaInitForm.selectedDatasource.id)
+        availableTables.value = tables || []
       } catch (error) {
         console.error('加载表列表失败:', error)
         showMessage('加载表列表失败: ' + error.message, 'error')
@@ -1441,7 +1589,6 @@ export default {
     
     const canInitialize = computed(() => {
       return schemaInitForm.selectedDatasource && 
-             schemaInitForm.schema && 
              selectedTables.value.length > 0 && 
              !schemaInitializing.value
     })
@@ -1459,8 +1606,7 @@ export default {
           dbConfig: {
             url: schemaInitForm.selectedDatasource.connectionUrl,
             username: schemaInitForm.selectedDatasource.username,
-            password: schemaInitForm.selectedDatasource.password,
-            schema: schemaInitForm.schema
+            password: schemaInitForm.selectedDatasource.password
           },
           tables: selectedTables.value
         }
@@ -1479,6 +1625,10 @@ export default {
           showMessage(`信息源初始化成功！已处理 ${result.tablesCount} 个表`, 'success')
           // 自动获取统计信息
           await getSchemaStatistics()
+          // 重新加载语义模型列表
+          await loadSemanticModels()
+          // 关闭模态框
+          closeSchemaInitModal()
         } else {
           throw new Error(result.message || '初始化失败')
         }
@@ -1498,14 +1648,13 @@ export default {
         if (result.success) {
           schemaStatistics.value = result.data
         } else {
-          throw new Error(result.message || '获取统计信息失败')
+          console.warn('获取统计信息失败:', result.message)
         }
       } catch (error) {
         console.error('获取统计信息失败:', error)
-        showMessage('获取统计信息失败: ' + error.message, 'error')
       }
     }
-    
+
     const clearSchemaData = async () => {
       if (!confirm('确定要清空所有向量数据吗？此操作不可恢复。')) {
         return
@@ -1515,11 +1664,14 @@ export default {
         const response = await fetch(`/api/agent/${agent.id}/schema/clear`, {
           method: 'DELETE'
         })
+        
         const result = await response.json()
         
         if (result.success) {
           showMessage('向量数据清空成功', 'success')
           schemaStatistics.value = null
+          // 重新加载语义模型列表
+          await loadSemanticModels()
         } else {
           throw new Error(result.message || '清空失败')
         }
@@ -1529,12 +1681,77 @@ export default {
       }
     }
     
+    // 业务知识相关方法
+    const editBusinessKnowledge = (knowledge) => {
+      isEditingBusinessKnowledge.value = true
+      editingBusinessKnowledgeId.value = knowledge.id
+      businessKnowledgeForm.businessTerm = knowledge.businessTerm || ''
+      businessKnowledgeForm.description = knowledge.description || ''
+      businessKnowledgeForm.synonyms = knowledge.synonyms || ''
+      businessKnowledgeForm.datasetId = knowledge.datasetId || ''
+      businessKnowledgeForm.defaultRecall = knowledge.defaultRecall || false
+      showCreateKnowledgeModal.value = true
+    }
+
+    const deleteBusinessKnowledge = async (id) => {
+      if (confirm('确定要删除这个业务知识吗？')) {
+        try {
+          await businessKnowledgeApi.delete(id)
+          showMessage('删除成功', 'success')
+          await loadBusinessKnowledge()
+        } catch (error) {
+          console.error('删除业务知识失败:', error)
+          showMessage('删除失败：' + (error.message || '未知错误'), 'error')
+        }
+      }
+    }
+
+    const closeBusinessKnowledgeModal = () => {
+      showCreateKnowledgeModal.value = false
+      isEditingBusinessKnowledge.value = false
+      editingBusinessKnowledgeId.value = null
+      // 重置表单
+      businessKnowledgeForm.businessTerm = ''
+      businessKnowledgeForm.description = ''
+      businessKnowledgeForm.synonyms = ''
+      businessKnowledgeForm.datasetId = ''
+      businessKnowledgeForm.defaultRecall = true
+    }
+
+    const saveBusinessKnowledge = async () => {
+      try {
+        const knowledgeData = {
+          agentId: agent.id,
+          businessTerm: businessKnowledgeForm.businessTerm.trim(),
+          description: businessKnowledgeForm.description.trim(),
+          synonyms: businessKnowledgeForm.synonyms.trim() || null,
+          datasetId: businessKnowledgeForm.datasetId.trim() || null,
+          defaultRecall: businessKnowledgeForm.defaultRecall
+        }
+
+        if (isEditingBusinessKnowledge.value) {
+          // 更新业务知识
+          await businessKnowledgeApi.update(editingBusinessKnowledgeId.value, knowledgeData)
+          showMessage('更新成功', 'success')
+        } else {
+          // 创建业务知识
+          await businessKnowledgeApi.createForAgent(agent.id, knowledgeData)
+          showMessage('创建成功', 'success')
+        }
+        
+        closeBusinessKnowledgeModal()
+        await loadBusinessKnowledge()
+      } catch (error) {
+        console.error('保存业务知识失败:', error)
+        showMessage('保存失败：' + (error.message || '未知错误'), 'error')
+      }
+    }
+
     // 预设问题相关方法
     const loadPresetQuestions = async () => {
       try {
         const questions = await presetQuestionApi.getByAgentId(agent.id)
-        presetQuestions.value = questions.map(q => ({ question: q.question }))
-        console.log('预设问题加载成功:', questions)
+        presetQuestions.value = questions || []
       } catch (error) {
         console.error('加载预设问题失败:', error)
         presetQuestions.value = []
@@ -1545,6 +1762,8 @@ export default {
     const addPresetQuestion = () => {
       presetQuestions.value.push({ question: '' })
     }
+
+
 
     // 移除预设问题
     const removePresetQuestion = (index) => {
@@ -1625,103 +1844,7 @@ export default {
       }
       return statusMap[testStatus] || testStatus
     }
-    
-    const updateAgent = async () => {
-      try {
-        // 准备提交的数据，过滤掉只读字段
-        const updateData = {
-          name: agent.name,
-          description: agent.description,
-          status: agent.status,
-          category: agent.category,
-          tags: agent.tags,
-          prompt: agent.prompt || '',
-          adminId: agent.adminId || null
-        }
-        
-        const response = await agentApi.update(agent.id, updateData)
-        console.log('更新响应:', response)
-        alert('更新成功')
-        
-        // 重新加载智能体详情以获取最新的更新时间
-        await loadAgentDetail()
-      } catch (error) {
-        console.error('更新智能体失败:', error)
-        alert('更新失败：' + (error.message || '未知错误'))
-      }
-    }
-    
-    const editBusinessKnowledge = (knowledge) => {
-      // 设置编辑模式并填充表单
-      isEditingBusinessKnowledge.value = true
-      editingBusinessKnowledgeId.value = knowledge.id
-      businessKnowledgeForm.businessTerm = knowledge.businessTerm || ''
-      businessKnowledgeForm.description = knowledge.description || ''
-      businessKnowledgeForm.synonyms = knowledge.synonyms || ''
-      businessKnowledgeForm.datasetId = knowledge.datasetId || ''
-      businessKnowledgeForm.defaultRecall = knowledge.defaultRecall !== false
-      showCreateKnowledgeModal.value = true
-    }
-    
-    const deleteBusinessKnowledge = async (id) => {
-      if (confirm('确定要删除这条业务知识吗？')) {
-        try {
-          await businessKnowledgeApi.delete(id)
-          await loadBusinessKnowledge()
-          showMessage('删除成功', 'success')
-        } catch (error) {
-          console.error('删除业务知识失败:', error)
-          showMessage('删除失败：' + (error.message || '未知错误'), 'error')
-        }
-      }
-    }
-    
-    const closeBusinessKnowledgeModal = () => {
-      showCreateKnowledgeModal.value = false
-      isEditingBusinessKnowledge.value = false
-      editingBusinessKnowledgeId.value = null
-      // 重置表单
-      businessKnowledgeForm.businessTerm = ''
-      businessKnowledgeForm.description = ''
-      businessKnowledgeForm.synonyms = ''
-      businessKnowledgeForm.datasetId = ''
-      businessKnowledgeForm.defaultRecall = true
-    }
-    
-    const saveBusinessKnowledge = async () => {
-      try {
-        // 验证必填字段
-        if (!businessKnowledgeForm.businessTerm || !businessKnowledgeForm.description) {
-          showMessage('请填写必填字段', 'warning')
-          return
-        }
-        
-        const knowledgeData = {
-          businessTerm: businessKnowledgeForm.businessTerm,
-          description: businessKnowledgeForm.description,
-          synonyms: businessKnowledgeForm.synonyms,
-          datasetId: businessKnowledgeForm.datasetId,
-          defaultRecall: businessKnowledgeForm.defaultRecall,
-          agentId: agent.id
-        }
-        
-        if (isEditingBusinessKnowledge.value) {
-          // 更新业务知识
-          await businessKnowledgeApi.update(editingBusinessKnowledgeId.value, knowledgeData)
-          showMessage('更新成功', 'success')
-        } else {
-          // 创建业务知识
-          await businessKnowledgeApi.createForAgent(agent.id, knowledgeData)
-          showMessage('创建成功', 'success')
-        }
-        
-        closeBusinessKnowledgeModal()
-        await loadBusinessKnowledge()
-      } catch (error) {
-        console.error('保存业务知识失败:', error)
-        showMessage('保存失败：' + (error.message || '未知错误'), 'error')
-      }
-    }
+
     
     const editModel = (model) => {
       isEditingModel.value = true
@@ -1893,6 +2016,10 @@ export default {
       }
       return statusMap[status] || status
     }
+
+
+
+
     
     // 格式化日期
     const formatDate = (dateString) => {
@@ -1918,7 +2045,8 @@ export default {
         second: '2-digit'
       })
     }
-    
+
+
     // 生命周期
     onMounted(async () => {
       await loadAgentDetail()
@@ -1968,12 +2096,9 @@ export default {
       tableSearchKeyword,
       schemaInitializing,
       schemaStatistics,
-      filteredTables,
-      canInitialize,
       // 方法
       setActiveTab,
       goBack,
-      goToAgentList,
       updateAgent,
       editBusinessKnowledge,
       deleteBusinessKnowledge,
@@ -2029,13 +2154,18 @@ export default {
       savePresetQuestions,
       loadPresetQuestions,
       // 初始化信息源方法
+      showSchemaInitModal,
+      openSchemaInitModal,
+      closeSchemaInitModal,
       onDatasourceChange,
       loadTables,
       selectAllTables,
       clearAllTables,
       initializeSchema,
       getSchemaStatistics,
-      clearSchemaData
+      clearSchemaData,
+      filteredTables,
+      canInitialize
     }
   }
 }
@@ -3562,5 +3692,219 @@ export default {
 .question-actions .btn {
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
+}
+
+
+.schema-init-modal {
+  max-width: 800px;
+  width: 90%;
+}
+
+.schema-init-modal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.table-selection-container {
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.table-search {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.table-search .search-box {
+  flex: 1;
+  position: relative;
+}
+
+.table-search .search-box i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  z-index: 1;
+}
+
+.table-search .search-box input {
+  padding-left: 36px;
+  width: 100%;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.table-count {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f0f8ff;
+  border-radius: 4px;
+  border-left: 3px solid #1890ff;
+}
+
+.table-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.table-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.table-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.table-item:hover {
+  background: #f0f8ff;
+  border-color: #1890ff;
+}
+
+.table-item input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.table-name {
+  flex: 1;
+  font-weight: 500;
+  color: #333;
+}
+
+.loading-tables {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 14px;
+}
+
+.loading-tables i {
+  font-size: 20px;
+  margin-right: 8px;
+  color: #1890ff;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.statistics-info {
+  background: #f9f9f9;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.stat-item:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  font-weight: 500;
+  color: #666;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: #333;
+}
+
+/* 按钮样式增强 */
+.btn-success {
+  background: linear-gradient(135deg, #52c41a, #73d13d);
+  border-color: #52c41a;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, #389e0d, #52c41a);
+  border-color: #389e0d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+}
+
+.btn-success i {
+  margin-right: 6px;
+}
+
+/* 表格滚动条样式 */
+.table-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.table-list::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+.table-list::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.table-list::-webkit-scrollbar-thumb:hover {
+  background: #1890ff;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .schema-init-modal {
+    width: 95%;
+    max-width: none;
+  }
+  
+  .table-search {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .table-items {
+    grid-template-columns: 1fr;
+  }
+  
+  .table-actions {
+    justify-content: center;
+  }
 }
 </style>

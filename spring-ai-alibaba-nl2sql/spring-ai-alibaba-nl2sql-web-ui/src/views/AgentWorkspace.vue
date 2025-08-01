@@ -1100,6 +1100,9 @@ export default {
   border-radius: 4px 18px 18px 18px;
   max-width: 80%;
   word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
   line-height: 1.6;
 }
 
@@ -1220,6 +1223,7 @@ export default {
   word-wrap: break-word;
   word-break: break-word;
   overflow-wrap: break-word;
+  white-space: pre-wrap;
   background-color: #f9f9f9;
   padding: 1rem;
   border: 1px solid #e8e8e8;
@@ -1235,9 +1239,10 @@ export default {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 0.9rem;
   line-height: 1.5;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100%;
 }
 
 :deep(code) {
@@ -1279,6 +1284,8 @@ export default {
   word-wrap: break-word;
   word-break: break-word;
   overflow-wrap: break-word;
+  white-space: pre-wrap;
+  max-width: 100%;
 }
 
 :deep(.markdown-content h1),
@@ -1625,12 +1632,14 @@ export default {
 }
 
 /* 智能体响应块样式 */
-.agent-response-block {
-  margin-bottom: var(--space-lg);
-  border: 1px solid var(--border-tertiary);
-  border-radius: var(--radius-md);
+:deep(.agent-response-block) {
+  margin-bottom: 1rem;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
   overflow: hidden;
-  background: var(--bg-tertiary);
+  background: #fafafa;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .agent-response-block:last-child {
@@ -2081,3 +2090,77 @@ export default {
   background: var(--text-tertiary);
 }
 </style>
+
+/* 修复聊天框显示问题 - 确保内容竖着显示 */
+:deep(.agent-response-content) {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: pre-wrap !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+:deep(.agent-response-content *) {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+}
+
+/* 确保消息内容正确换行 */
+.agent-message .message-content {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: pre-wrap !important;
+  max-width: 80% !important;
+  box-sizing: border-box !important;
+}
+
+/* 修复代码块显示 */
+:deep(pre) {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+}
+
+:deep(code) {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+/* 修复表格显示 */
+:deep(.dynamic-table) {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+:deep(.dynamic-table th),
+:deep(.dynamic-table td) {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 200px !important;
+}
+
+/* 修复Markdown内容显示 */
+:deep(.markdown-content) {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: pre-wrap !important;
+  max-width: 100% !important;
+}
+
+:deep(.markdown-content p),
+:deep(.markdown-content div),
+:deep(.markdown-content span) {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+}
