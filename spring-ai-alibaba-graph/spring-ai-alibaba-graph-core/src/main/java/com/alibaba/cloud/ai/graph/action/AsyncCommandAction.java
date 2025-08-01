@@ -17,23 +17,24 @@ package com.alibaba.cloud.ai.graph.action;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import io.opentelemetry.context.Context;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
-import io.opentelemetry.context.Context;
 
 public interface AsyncCommandAction extends BiFunction<OverAllState, RunnableConfig, CompletableFuture<Command>> {
 
 	static AsyncCommandAction node_async(CommandAction syncAction) {
 		return (state, config) -> {
 			Context context = Context.current();
-			return CompletableFuture.supplyAsync(context.wrapSupplier(() -> {
-				try {
-					return syncAction.apply(state, config);
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			}), AsyncNodeAction.BOUNDED_ELASTIC_EXECUTOR);
+			var result = new CompletableFuture<Command>();
+			try {
+				result.complete(syncAction.apply(state, config));
+			}
+			catch (Exception e) {
+				result.completeExceptionally(e);
+			}
+			return result;
 		};
 	}
 

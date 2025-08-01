@@ -1,4 +1,4 @@
-<!-- 
+<!--
  * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,13 +19,13 @@
     <div class="config-header">
       <div class="config-title">
         <Icon icon="carbon:settings" width="24" />
-        <span>计划模板配置</span>
+        <span>{{ $t('planTemplate.title') }}</span>
       </div>
       <div class="template-info" v-if="currentTemplate">
-        <span class="template-name">{{ currentTemplate.title || '未命名计划' }}</span>
+        <span class="template-name">{{ currentTemplate.title || $t('sidebar.unnamedPlan') }}</span>
         <span class="template-id">ID: {{ currentTemplate.id }}</span>
       </div>
-      <button class="close-btn" @click="handleClose" title="关闭配置">
+      <button class="close-btn" @click="handleClose" :title="$t('modal.close')">
         <Icon icon="carbon:close" width="20" />
       </button>
     </div>
@@ -36,33 +36,33 @@
       <div class="config-section json-editor-section">
         <div class="section-header">
           <Icon icon="carbon:code" width="20" />
-          <span>JSON 计划模板</span>
+          <span>{{ $t('sidebar.jsonTemplate') }}</span>
           <div class="section-actions">
-            <button 
+            <button
               class="btn btn-secondary"
               @click="handleRollback"
               :disabled="!canRollback"
-              title="回滚到上一个版本"
+              :title="$t('sidebar.rollback')"
             >
               <Icon icon="carbon:undo" width="16" />
-              回滚
+              {{ $t('sidebar.rollback') }}
             </button>
-            <button 
+            <button
               class="btn btn-secondary"
               @click="handleRestore"
               :disabled="!canRestore"
-              title="恢复到下一个版本"
+              :title="$t('sidebar.restore')"
             >
               <Icon icon="carbon:redo" width="16" />
-              恢复
+              {{ $t('sidebar.restore') }}
             </button>
-            <button 
+            <button
               class="btn btn-primary"
               @click="handleSaveTemplate"
               :disabled="isGenerating || isExecuting || !currentTemplate"
             >
               <Icon icon="carbon:save" width="16" />
-              保存模板
+              {{ $t('planTemplate.saveTemplate') }}
             </button>
           </div>
         </div>
@@ -71,7 +71,7 @@
             ref="jsonEditor"
             v-model="jsonContent"
             class="json-editor"
-            placeholder="在此输入 JSON 计划模板内容..."
+            :placeholder="$t('sidebar.jsonPlaceholder')"
             @input="onJsonContentChange"
           ></textarea>
         </div>
@@ -81,39 +81,39 @@
       <div class="config-section generator-section">
         <div class="section-header">
           <Icon icon="carbon:generate" width="20" />
-          <span>计划生成器</span>
+          <span>{{ $t('sidebar.planGenerator') }}</span>
         </div>
         <div class="generator-container">
           <div class="input-group">
-            <label for="prompt-input">生成提示</label>
+            <label for="prompt-input">{{ $t('planTemplate.prompt') }}</label>
             <textarea
               id="prompt-input"
               v-model="generatorPrompt"
               class="prompt-input"
-              placeholder="描述您想要生成的计划..."
+              :placeholder="$t('planTemplate.promptPlaceholder')"
               rows="3"
             ></textarea>
           </div>
           <div class="generator-actions">
-            <button 
+            <button
               class="btn btn-primary btn-generate"
               @click="handleGeneratePlan"
               :disabled="isGenerating || !generatorPrompt.trim()"
             >
-              <Icon 
-                :icon="isGenerating ? 'carbon:circle-dash' : 'carbon:generate'" 
-                width="16" 
+              <Icon
+                :icon="isGenerating ? 'carbon:circle-dash' : 'carbon:generate'"
+                width="16"
                 :class="{ spinning: isGenerating }"
               />
-              {{ isGenerating ? '生成中...' : '生成计划' }}
+              {{ isGenerating ? $t('planTemplate.generating') : $t('planTemplate.generate') }}
             </button>
-            <button 
+            <button
               class="btn btn-secondary"
               @click="handleUpdatePlan"
               :disabled="isGenerating || !generatorPrompt.trim() || !currentTemplate"
             >
               <Icon icon="carbon:edit" width="16" />
-              更新计划
+              {{ $t('planTemplate.updatePlan') }}
             </button>
           </div>
         </div>
@@ -123,42 +123,42 @@
       <div class="config-section execution-section">
         <div class="section-header">
           <Icon icon="carbon:play" width="20" />
-          <span>计划执行</span>
+          <span>{{ $t('planTemplate.execution') }}</span>
         </div>
         <div class="execution-container">
           <div class="input-group">
-            <label for="params-input">执行参数</label>
+            <label for="params-input">{{ $t('planTemplate.executionParams') }}</label>
             <textarea
               id="params-input"
               v-model="executionParams"
               class="params-input"
-              placeholder="输入执行参数（可选）..."
+              :placeholder="$t('planTemplate.executionParamsPlaceholder')"
               rows="2"
             ></textarea>
-            <button 
+            <button
               class="btn btn-link clear-params-btn"
               @click="clearExecutionParams"
-              title="清空参数"
+              :title="$t('planTemplate.clearParams')"
             >
               <Icon icon="carbon:close" width="14" />
             </button>
           </div>
           <div class="api-info">
-            <label>API 调用地址</label>
+            <label>{{ $t('planTemplate.apiUrl') }}</label>
             <div class="api-url">{{ apiUrl }}</div>
           </div>
           <div class="execution-actions">
-            <button 
+            <button
               class="btn btn-success btn-execute"
               @click="handleExecutePlan"
               :disabled="isExecuting || isGenerating || !currentTemplate"
             >
-              <Icon 
-                :icon="isExecuting ? 'carbon:circle-dash' : 'carbon:play'" 
-                width="16" 
+              <Icon
+                :icon="isExecuting ? 'carbon:circle-dash' : 'carbon:play'"
+                width="16"
                 :class="{ spinning: isExecuting }"
               />
-              {{ isExecuting ? '执行中...' : '执行计划' }}
+              {{ isExecuting ? $t('planTemplate.executing') : $t('planTemplate.execute') }}
             </button>
           </div>
         </div>
@@ -169,6 +169,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import type { PlanTemplate } from '@/types/plan-template'
@@ -189,6 +190,8 @@ const emit = defineEmits<{
   jsonContentChanged: [{ content: string }]
   configClosed: []
 }>()
+
+const { t } = useI18n()
 
 // Reactive state
 const currentTemplate = ref<PlanTemplate | null>(props.template)
@@ -235,12 +238,12 @@ const loadTemplateData = async (template: PlanTemplate) => {
     // Load versions
     const versionsResponse = await PlanActApiService.getPlanVersions(template.id)
     planVersions.value = versionsResponse.versions || []
-    
+
     if (planVersions.value.length > 0) {
       const latestContent = planVersions.value[planVersions.value.length - 1]
       jsonContent.value = latestContent
       currentVersionIndex.value = planVersions.value.length - 1
-      
+
       // Parse and set prompt from JSON if available
       try {
         const parsed = JSON.parse(latestContent)
@@ -251,11 +254,11 @@ const loadTemplateData = async (template: PlanTemplate) => {
           executionParams.value = parsed.params
         }
       } catch {
-        console.warn('无法解析JSON内容获取提示信息')
+        console.warn('Unable to parse JSON content to get prompt information')
       }
     }
   } catch (error: any) {
-    console.error('加载模板数据失败:', error)
+    console.error('Failed to load template data:', error)
   }
 }
 
@@ -288,10 +291,10 @@ const handleRestore = () => {
 
 const handleSaveTemplate = async () => {
   if (!currentTemplate.value) return
-  
+
   const content = jsonContent.value.trim()
   if (!content) {
-    alert('内容不能为空')
+    alert(t('validation.required'))
     return
   }
 
@@ -299,26 +302,26 @@ const handleSaveTemplate = async () => {
     // Validate JSON
     JSON.parse(content)
   } catch (error: any) {
-    alert('JSON 格式无效，请修正后再保存\n错误: ' + error.message)
+    alert(`${t('planTemplate.invalidJson')}\n${t('common.error')}: ${error.message}`)
     return
   }
 
   try {
     const result = await PlanActApiService.savePlanTemplate(currentTemplate.value.id, content)
-    
+
     if (result.duplicate) {
-      alert(`保存完成：${result.message}\n\n当前版本数：${result.versionCount}`)
+      alert(t('sidebar.saveCompleted', { message: result.message, versionCount: result.versionCount }))
     } else if (result.saved) {
       saveToVersionHistory(content)
-      alert(`保存成功：${result.message}\n\n当前版本数：${result.versionCount}`)
+      alert(t('sidebar.saveSuccess', { message: result.message, versionCount: result.versionCount }))
     } else {
-      alert(`保存状态：${result.message}`)
+      alert(t('sidebar.saveStatus', { message: result.message }))
     }
-    
+
     emit('templateSaved', { templateId: currentTemplate.value.id, content })
   } catch (error: any) {
-    console.error('保存模板失败:', error)
-    alert('保存模板失败: ' + error.message)
+    console.error('Failed to save template:', error)
+    alert(`${t('sidebar.saveFailed')}: ${error.message}`)
   }
 }
 
@@ -330,24 +333,24 @@ const handleGeneratePlan = async () => {
   try {
     const existingJson = jsonContent.value.trim() || undefined
     const response = await PlanActApiService.generatePlan(prompt, existingJson)
-    
+
     if (response.planJson) {
       jsonContent.value = response.planJson
       saveToVersionHistory(response.planJson)
-      
+
       // Update current template if this creates a new one
       if (response.planTemplateId && !currentTemplate.value) {
         currentTemplate.value = {
           id: response.planTemplateId,
-          title: response.title ?? '新生成的计划',
+          title: response.title ?? t('sidebar.newTemplateName'),
           description: prompt,
           createTime: new Date().toISOString()
         }
       }
     }
   } catch (error: any) {
-    console.error('生成计划失败:', error)
-    alert('生成计划失败: ' + error.message)
+    console.error('Failed to generate plan:', error)
+    alert(`${t('sidebar.generateFailed')}: ${error.message}`)
   } finally {
     isGenerating.value = false
   }
@@ -355,7 +358,7 @@ const handleGeneratePlan = async () => {
 
 const handleUpdatePlan = async () => {
   if (!currentTemplate.value) return
-  
+
   const prompt = generatorPrompt.value.trim()
   if (!prompt) return
 
@@ -363,18 +366,18 @@ const handleUpdatePlan = async () => {
   try {
     const existingJson = jsonContent.value.trim() || undefined
     const response = await PlanActApiService.updatePlanTemplate(
-      currentTemplate.value.id, 
-      prompt, 
+      currentTemplate.value.id,
+      prompt,
       existingJson
     )
-    
+
     if (response.planJson) {
       jsonContent.value = response.planJson
       saveToVersionHistory(response.planJson)
     }
   } catch (error: any) {
-    console.error('更新计划失败:', error)
-    alert('更新计划失败: ' + error.message)
+    console.error('Failed to update plan:', error)
+    alert(`${t('sidebar.updateFailed')}: ${error.message}`)
   } finally {
     isGenerating.value = false
   }
@@ -387,14 +390,14 @@ const handleExecutePlan = async () => {
   try {
     const params = executionParams.value.trim() || undefined
     const response = await PlanActApiService.executePlan(currentTemplate.value.id, params)
-    
-    const query = `执行计划模板: ${currentTemplate.value.title ?? currentTemplate.value.id}`
+
+    const query = `${t('planTemplate.executePlanTemplate')}: ${currentTemplate.value.title ?? currentTemplate.value.id}`
     emit('planExecuted', { planId: response.planId, query })
-    
-    console.log('计划执行成功:', response)
+
+    console.log('Plan execution successful:', response)
   } catch (error: any) {
-    console.error('执行计划失败:', error)
-    alert('执行计划失败: ' + error.message)
+    console.error('Failed to execute plan:', error)
+    alert(`${t('sidebar.executeFailed')}: ${error.message}`)
   } finally {
     isExecuting.value = false
   }

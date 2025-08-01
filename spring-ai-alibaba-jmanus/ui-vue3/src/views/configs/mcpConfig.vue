@@ -1,4 +1,4 @@
-<!-- 
+<!--
  * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,7 @@
     </template>
 
     <template #actions>
-      <!-- 全局操作按钮 -->
+      <!-- Global action buttons -->
       <div class="global-actions">
         <div class="json-actions">
           <button class="action-btn" @click="startJsonImport">
@@ -64,8 +64,8 @@
             <div class="server-card-header">
               <span class="server-name">{{ server.mcpServerName }}</span>
               <div class="server-status-toggle" @click.stop="toggleServerStatus(server)">
-                <div 
-                  class="status-toggle" 
+                <div
+                  class="status-toggle"
                   :class="{ 'enabled': server.status === 'ENABLE' }"
                 >
                   <div class="toggle-thumb"></div>
@@ -110,7 +110,7 @@
           <p>{{ searchQuery ? t('config.notFound') : t('config.mcpConfig.noServers') }}</p>
         </div>
 
-        <!-- 新增配置按钮 -->
+        <!-- Add configuration button -->
         <div class="add-config-button-container">
           <button class="add-btn" @click="startAddConfig">
             <Icon icon="carbon:add" />
@@ -143,7 +143,7 @@
         </div>
       </div>
 
-      <!-- 新增配置表单面板 -->
+      <!-- Add configuration form panel -->
       <div v-else-if="showAddForm" class="server-detail">
         <div class="detail-header">
           <h3>{{ t('config.mcpConfig.newMcpConfig') }}</h3>
@@ -168,7 +168,7 @@
         </div>
       </div>
 
-                  <!-- JSON导入表单面板 -->
+                  <!-- JSON import form panel -->
             <div v-else-if="showJsonImport" class="server-detail">
               <div class="detail-header">
                 <h3>{{ t('config.mcpConfig.importAll') }}</h3>
@@ -205,9 +205,9 @@
           <span class="json-status" :class="{ 'valid': isJsonValid, 'invalid': !isJsonValid && jsonEditorContent.trim() }">
             {{ getJsonStatusText() }}
           </span>
-          <button 
-            v-if="jsonEditorContent.trim()" 
-            @click="formatJson" 
+          <button
+            v-if="jsonEditorContent.trim()"
+            @click="formatJson"
             class="format-btn"
             :disabled="!isJsonValid"
           >
@@ -253,17 +253,17 @@ import MonacoEditor from '@/components/MonacoEditor.vue'
 import ConfigPanel from './components/configPanel.vue'
 import Modal from '@/components/modal/index.vue'
 import { Icon } from '@iconify/vue'
-import McpConfigForm from './components/McpConfigForm.vue' // 引入新的表单组件
+import McpConfigForm from './components/McpConfigForm.vue' // Import new form component
 import JsonImportPanel from './components/JsonImportPanel.vue'
 import { useMcpConfigForm } from '@/composables/useMcpConfigForm'
 import { useMessage } from '@/composables/useMessage'
 import { useRequest } from '@/composables/useRequest'
 import type { McpServerSaveRequest, JsonValidationResult } from '@/types/mcp'
 
-// 扩展McpServer接口以包含UI字段
+// Extend McpServer interface to include UI fields
 interface ExtendedMcpServer extends McpServer {
-  args?: string // 前端显示为JSON字符串
-  env?: string // 前端显示为JSON字符串
+  args?: string // Frontend display as JSON string
+  env?: string // Frontend display as JSON string
   url?: string
   command?: string
 }
@@ -271,12 +271,12 @@ interface ExtendedMcpServer extends McpServer {
 // Internationalization
 const { t } = useI18n()
 
-// 使用组合式函数
+// Use composition functions
 const { configForm, resetForm, populateFormFromServer, validateForm, handleConnectionTypeChange } = useMcpConfigForm()
 const { message, showMessage } = useMessage()
 const { loading } = useRequest()
 
-// 响应式数据
+// Reactive data
 const servers = ref<McpServer[]>([])
 const selectedServer = ref<McpServer | null>(null)
 const showDeleteModal = ref(false)
@@ -307,7 +307,7 @@ const filteredMcpServers = computed(() => {
   )
 })
 
-// 获取服务器配置值的辅助函数
+// Helper function to get server configuration values
 const getServerConfigValue = (server: McpServer, field: 'command' | 'url' | 'args' | 'env'): string => {
   try {
     const config = JSON.parse(server.connectionConfig)
@@ -332,7 +332,7 @@ const getServerConfigValue = (server: McpServer, field: 'command' | 'url' | 'arg
         return ''
     }
   } catch (error) {
-    // 如果解析失败，尝试使用字段化数据
+    // If parsing fails, try to use field data
     const extendedServer = server as ExtendedMcpServer
     switch (field) {
       case 'command':
@@ -354,13 +354,13 @@ const getServerConfigValue = (server: McpServer, field: 'command' | 'url' | 'arg
 // Select a server
 const selectServer = (server: McpServer) => {
   selectedServer.value = { ...server }
-  showAddForm.value = false // 隐藏新增表单
-  showJsonImport.value = false // 隐藏JSON导入表单
+  showAddForm.value = false // Hide add form
+  showJsonImport.value = false // Hide JSON import form
 }
 
 
 
-// 处理JSON保存
+// Handle JSON save
 const handleJsonSave = () => {
   if (!jsonEditorContent.value.trim()) {
     showMessage(t('config.mcpConfig.jsonConfigEmpty'), 'error')
@@ -369,15 +369,15 @@ const handleJsonSave = () => {
 
   try {
     const parsed = JSON.parse(jsonEditorContent.value)
-    
+
     if (isJsonModalForEdit.value && selectedServer.value) {
-              // 编辑模式：更新选中的服务器
+              // Edit mode: update selected server
         selectedServer.value.connectionConfig = JSON.stringify(parsed, null, 2)
     } else {
-      // 新建模式：创建新服务器
+      // Create mode: create new server
       handleAddServerFromJson(parsed)
     }
-    
+
     showJsonModal.value = false
     showMessage(t('config.mcpConfig.jsonConfigSaved'), 'success')
   } catch (error) {
@@ -385,12 +385,12 @@ const handleJsonSave = () => {
   }
 }
 
-// 从JSON创建新服务器
+// Create new server from JSON
 const handleAddServerFromJson = async (serverData: any) => {
   try {
     loading.value = true
     const result = await McpApiService.importMcpServers(serverData)
-    
+
     if (result.success) {
       showMessage(t('config.mcpConfig.addSuccess'))
       await loadMcpServers()
@@ -398,7 +398,7 @@ const handleAddServerFromJson = async (serverData: any) => {
       showMessage(result.message, 'error')
     }
   } catch (error) {
-    console.error('添加MCP服务器失败:', error)
+    console.error('Failed to add MCP server:', error)
     showMessage(t('config.mcpConfig.addFailed'), 'error')
   } finally {
     loading.value = false
@@ -426,16 +426,16 @@ const handleDeleteServer = async () => {
       showMessage(result.message || t('config.mcpConfig.deleteFailed'), 'error')
     }
   } catch (error) {
-    console.error('删除MCP服务器失败:', error)
+    console.error('Failed to delete MCP server:', error)
     showMessage(t('config.mcpConfig.deleteFailed'), 'error')
   } finally {
     loading.value = false
   }
 }
 
-// 处理保存
+// Handle save
 const handleSave = async () => {
-  // 使用表单验证
+  // Use form validation
   const validation = validateForm()
   if (!validation.isValid) {
     showMessage(validation.errors[0], 'error')
@@ -443,7 +443,7 @@ const handleSave = async () => {
   }
 
   try {
-    // 构建请求数据
+    // Build request data
     const requestData: McpServerSaveRequest = {
       connectionType: configForm.connectionType,
       mcpServerName: configForm.mcpServerName,
@@ -454,9 +454,9 @@ const handleSave = async () => {
       requestData.command = configForm.command
       if (configForm.args?.trim()) {
         try {
-          // 将多行字符串转换为数组
+          // Convert multi-line string to array
           const argsArray = configForm.args.split('\n').filter(arg => arg.trim())
-          // 校验每个元素都是字符串
+          // Validate that each element is a string
           if (!argsArray.every(arg => typeof arg === 'string')) {
             showMessage(t('config.mcpConfig.argsStringError'), 'error')
             return
@@ -469,10 +469,10 @@ const handleSave = async () => {
       }
       if (configForm.env?.trim()) {
         try {
-          // 将多行key:value转换为对象
+          // Convert multi-line key:value to object
           const envLines = configForm.env.split('\n').filter(line => line.trim())
           const envObj: Record<string, string> = {}
-          
+
           for (const line of envLines) {
             const colonIndex = line.indexOf(':')
             if (colonIndex > 0) {
@@ -483,13 +483,13 @@ const handleSave = async () => {
               }
             }
           }
-          
-          // 校验每个value都是字符串
+
+          // Validate that each value is a string
           if (!Object.values(envObj).every(value => typeof value === 'string')) {
             showMessage(t('config.mcpConfig.envStringError'), 'error')
             return
           }
-          
+
           requestData.env = envObj
         } catch {
           showMessage(t('config.mcpConfig.envFormatError'), 'error')
@@ -500,19 +500,19 @@ const handleSave = async () => {
       requestData.url = configForm.url
     }
 
-    // 如果是编辑模式，添加ID
+    // If edit mode, add ID
     if (selectedServer.value?.id) {
       requestData.id = selectedServer.value.id
     }
 
-    // 使用统一的保存方法
+    // Use unified save method
     const result = await McpApiService.saveMcpServer(requestData)
 
     if (result.success) {
       showMessage(selectedServer.value?.id ? t('config.mcpConfig.updateSuccess') : t('config.mcpConfig.addSuccess'), 'success')
       await loadMcpServers()
       if (!selectedServer.value?.id) {
-        // 新增成功后重置表单
+        // Reset form after successful addition
         resetForm()
         showAddForm.value = false
       }
@@ -520,7 +520,7 @@ const handleSave = async () => {
       showMessage(result.message || t('config.mcpConfig.operationFailed'), 'error')
     }
   } catch (error) {
-    console.error('保存失败:', error)
+    console.error('Save failed:', error)
     showMessage(t('config.mcpConfig.saveFailed'), 'error')
   }
 }
@@ -539,17 +539,17 @@ const validateJson = () => {
   try {
     const parsed = JSON.parse(jsonText)
     const validationResult = validateMcpConfig(parsed)
-    
+
     if (validationResult.isValid) {
-      // 验证通过后，应用配置统一化并更新编辑器内容
+      // After validation passes, apply configuration normalization and update editor content
       const normalizedConfig = normalizeMcpConfig(parsed)
       const normalizedJson = JSON.stringify(normalizedConfig, null, 2)
-      
-      // 只有当统一化后的JSON与原始JSON不同时才更新
+
+      // Only update when normalized JSON differs from original JSON
       if (normalizedJson !== jsonText) {
         jsonEditorContent.value = normalizedJson
       }
-      
+
       isJsonValid.value = true
       validationErrors.value = []
     } else {
@@ -561,8 +561,8 @@ const validateJson = () => {
     }
   } catch (error) {
     isJsonValid.value = false
-    
-    // 提供更具体的JSON语法错误信息
+
+    // Provide more specific JSON syntax error information
     let errorMessage = t('config.mcpConfig.invalidJson')
     if (error instanceof SyntaxError) {
       const message = error.message
@@ -578,7 +578,7 @@ const validateJson = () => {
         errorMessage = t('config.mcpConfig.jsonSyntaxErrorWithMessage', { message })
       }
     }
-    
+
     validationErrors.value = [errorMessage]
     showMessage(errorMessage, 'error')
   }
@@ -587,7 +587,7 @@ const validateJson = () => {
 // Validate MCP configuration structure
 const validateMcpConfig = (config: any): { isValid: boolean; errors?: string[] } => {
   const errors: string[] = []
-  
+
   // Check if config has mcpServers property
   if (!config.mcpServers || typeof config.mcpServers !== 'object') {
     errors.push(t('config.mcpConfig.missingMcpServers'))
@@ -596,7 +596,7 @@ const validateMcpConfig = (config: any): { isValid: boolean; errors?: string[] }
   }
 
   const servers = config.mcpServers
-  
+
   // Validate each server configuration
   for (const [serverId, serverConfig] of Object.entries(servers)) {
     if (typeof serverConfig !== 'object' || serverConfig === null) {
@@ -605,7 +605,7 @@ const validateMcpConfig = (config: any): { isValid: boolean; errors?: string[] }
     }
 
     const server = serverConfig as any
-    
+
     // Check required fields - name field is optional, so we skip validation
 
     // Validate based on whether command exists
@@ -621,15 +621,15 @@ const validateMcpConfig = (config: any): { isValid: boolean; errors?: string[] }
           }
         }
       }
-      
-      // 1.1 增强env校验逻辑：可以没有env，有env的话可以允许env:[]为空
+
+      // 1.1 Enhanced env validation logic: can have no env, if env exists, allow empty env:[]
       if (server.env !== undefined) {
         if (server.env !== null && typeof server.env !== 'object') {
           errors.push(t('config.mcpConfig.invalidEnv', { serverId }))
         } else if (server.env !== null && Array.isArray(server.env)) {
-          // env是数组的情况，允许空数组
+          // env is array case, allow empty array
           if (server.env.length > 0) {
-            // 如果数组不为空，检查每个元素是否为字符串
+            // If array is not empty, check if each element is a string
             for (let i = 0; i < server.env.length; i++) {
               if (typeof server.env[i] !== 'string') {
                 errors.push(t('config.mcpConfig.invalidEnvType', { serverId, index: i }))
@@ -637,7 +637,7 @@ const validateMcpConfig = (config: any): { isValid: boolean; errors?: string[] }
             }
           }
         } else if (server.env !== null && !Array.isArray(server.env)) {
-          // env是对象的情况，检查每个值是否为字符串
+          // env is object case, check if each value is a string
           for (const [key, value] of Object.entries(server.env)) {
             if (typeof value !== 'string') {
               errors.push(t('config.mcpConfig.invalidEnvType', { serverId, key }))
@@ -645,25 +645,25 @@ const validateMcpConfig = (config: any): { isValid: boolean; errors?: string[] }
           }
         }
       }
-      // 如果没有env字段，则跳过校验（允许没有env）
+      // If no env field, skip validation (allow no env)
     } else {
-      // If no command, validate url or baseUrl - 必须有一个
+      // If no command, validate url or baseUrl - must have one
       const hasUrl = server.url && typeof server.url === 'string'
       const hasBaseUrl = server.baseUrl && typeof server.baseUrl === 'string'
-      
+
       if (!hasUrl && !hasBaseUrl) {
         errors.push(t('config.mcpConfig.missingUrlField', { serverId }))
         errors.push(t('config.mcpConfig.urlFieldTip'))
       } else {
-        // 2. 校验url或baseUrl格式
+        // 2. Validate url or baseUrl format
         const urlToValidate = hasUrl ? server.url : server.baseUrl
         try {
           new URL(urlToValidate)
         } catch {
           errors.push(t('config.mcpConfig.invalidUrl', { serverId }))
         }
-        
-        // 3. 统一使用url字段：如果配置中使用的是baseUrl，转换为url
+
+        // 3. Unify url field usage: if baseUrl is used in config, convert to url
         if (hasBaseUrl && !hasUrl) {
           server.url = server.baseUrl
           delete server.baseUrl
@@ -685,7 +685,7 @@ const formatJson = () => {
     const jsonText = jsonEditorContent.value
     const parsed = JSON.parse(jsonText)
     const formatted = JSON.stringify(parsed, null, 2)
-    
+
     jsonEditorContent.value = formatted
     validateJson()
   } catch (error) {
@@ -693,7 +693,7 @@ const formatJson = () => {
   }
 }
 
-// 统一处理MCP配置中的url字段
+// Unify url field handling in MCP configuration
 const normalizeMcpConfig = (config: any): any => {
   if (!config.mcpServers) {
     return config
@@ -706,17 +706,17 @@ const normalizeMcpConfig = (config: any): any => {
     const server = serverConfig as any
     const normalizedServer = { ...server }
 
-    // 如果没有command，处理url/baseUrl统一化
+    // If no command, handle url/baseUrl unification
     if (!server.command) {
       const hasUrl = server.url && typeof server.url === 'string'
       const hasBaseUrl = server.baseUrl && typeof server.baseUrl === 'string'
-      
+
       if (hasBaseUrl && !hasUrl) {
-        // 如果只有baseUrl，转换为url
+        // If only baseUrl exists, convert to url
         normalizedServer.url = server.baseUrl
         delete normalizedServer.baseUrl
       } else if (!hasUrl && !hasBaseUrl) {
-        // 如果既没有url也没有baseUrl，保持原样（让校验函数处理错误）
+        // If neither url nor baseUrl exists, keep as is (let validation function handle error)
         console.warn(t('config.mcpConfig.serverConfigWarning', { serverId }))
       }
     }
@@ -733,7 +733,7 @@ const getJsonStatusText = (): string => {
   if (!jsonText) {
     return t('config.mcpConfig.jsonStatusEmpty')
   }
-  
+
   if (isJsonValid.value) {
     return t('config.mcpConfig.jsonStatusValid')
   } else {
@@ -752,13 +752,13 @@ const loadMcpServers = async () => {
   try {
     loading.value = true
     servers.value = await McpApiService.getAllMcpServers()
-    
-    // 如果有服务器列表且当前没有选中的服务器，自动选择第一个
+
+    // If there are servers and no currently selected server, auto-select the first one
     if (servers.value.length > 0 && !selectedServer.value && !showAddForm.value && !showJsonImport.value) {
       selectServer(servers.value[0])
     }
   } catch (error) {
-    console.error('加载MCP服务器列表失败:', error)
+    console.error('Failed to load MCP server list:', error)
     showMessage(t('config.basicConfig.loadConfigFailed'), 'error')
   } finally {
     loading.value = false
@@ -769,39 +769,39 @@ const loadMcpServers = async () => {
 
 
 
-// 切换服务器状态
+// Toggle server status
 const toggleServerStatus = async (server: McpServer) => {
   try {
     loading.value = true
     let result: any
-    
-    // 根据当前状态决定要执行的操作
-    // 如果当前是启用状态，点击后要禁用
-    // 如果当前是禁用状态，点击后要启用
+
+    // Determine operation to execute based on current status
+    // If currently enabled, disable after click
+    // If currently disabled, enable after click
     if (server.status === 'ENABLE') {
-      // 当前是启用状态，点击后要禁用
+      // Currently enabled, disable after click
       result = await McpApiService.disableMcpServer(server.id)
     } else {
-      // 当前是禁用状态，点击后要启用
+      // Currently disabled, enable after click
       result = await McpApiService.enableMcpServer(server.id)
     }
-    
+
     if (result.success) {
-      // 更新本地状态
+      // Update local status
       server.status = server.status === 'ENABLE' ? 'DISABLE' : 'ENABLE'
       showMessage(result.message || t('config.mcpConfig.statusToggleSuccess'))
     } else {
       showMessage(result.message || t('config.mcpConfig.statusToggleFailed'), 'error')
     }
   } catch (error) {
-    console.error('状态切换失败:', error)
+    console.error('Status toggle failed:', error)
     showMessage(t('config.mcpConfig.statusToggleFailed'), 'error')
   } finally {
     loading.value = false
   }
 }
 
-// 开始新增配置
+// Start adding new configuration
 const startAddConfig = () => {
   selectedServer.value = null
   showAddForm.value = true
@@ -809,12 +809,12 @@ const startAddConfig = () => {
   resetNewConfig()
 }
 
-// 重置新增配置
+// Reset new configuration
 const resetNewConfig = () => {
   resetForm()
 }
 
-// 开始JSON导入
+// Start JSON import
 const startJsonImport = () => {
   showJsonImport.value = true
   selectedServer.value = null
@@ -824,7 +824,7 @@ const startJsonImport = () => {
   validationErrors.value = []
 }
 
-// 取消JSON导入
+// Cancel JSON import
 const cancelJsonImport = () => {
   showJsonImport.value = false
   selectedServer.value = null
@@ -834,7 +834,7 @@ const cancelJsonImport = () => {
   validationErrors.value = []
 }
 
-// 监听selectedServer变化，填充configForm
+// Watch selectedServer changes, populate configForm
 watch(selectedServer, (newServer) => {
   if (newServer) {
     populateFormFromServer(newServer)
@@ -855,27 +855,27 @@ const handleDelete = () => {
   showDeleteModal.value = true
 }
 
-// 导出所有配置
+// Export all configurations
 const exportAllConfigs = async () => {
   try {
     loading.value = true
     const servers = await McpApiService.getAllMcpServers()
-    
-    // 构建导出数据
+
+    // Build export data
     const exportData: { mcpServers: Record<string, any> } = {
       mcpServers: {}
     }
-    
+
     servers.forEach(server => {
       try {
         const config = JSON.parse(server.connectionConfig)
         exportData.mcpServers[server.mcpServerName] = config
       } catch (error) {
-        console.error(`解析服务器配置失败: ${server.mcpServerName}`, error)
+        console.error(`Failed to parse server configuration: ${server.mcpServerName}`, error)
       }
     })
-    
-    // 创建并下载文件
+
+    // Create and download file
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -885,23 +885,23 @@ const exportAllConfigs = async () => {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    
+
     showMessage(t('config.mcpConfig.exportSuccess'))
   } catch (error) {
-    console.error('导出MCP服务器失败:', error)
+    console.error('Failed to export MCP servers:', error)
     showMessage(t('config.mcpConfig.exportFailed'), 'error')
   } finally {
     loading.value = false
   }
 }
 
-// 处理JSON校验结果变化
+// Handle JSON validation result changes
 const handleJsonValidationChange = (result: JsonValidationResult) => {
   isJsonValid.value = result.isValid
   validationErrors.value = result.errors || []
 }
 
-// 处理JSON导入
+// Handle JSON import
 const handleJsonImport = async () => {
   if (!jsonEditorContent.value.trim()) {
     showMessage(t('config.mcpConfig.jsonConfigEmpty'), 'error')
@@ -932,7 +932,7 @@ const handleJsonImport = async () => {
   }
 }
 
-// 获取连接类型图标
+// Get connection type icon
 const getConnectionTypeIcon = (type: string) => {
   switch (type) {
     case 'STUDIO':
@@ -1265,7 +1265,7 @@ const getConnectionTypeIcon = (type: string) => {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   padding: 8px 12px;
-  max-height: 120px; /* 减少最大高度 */
+  max-height: 120px; /* Reduce max height */
   overflow-y: auto;
   overflow-x: auto;
 }
@@ -1273,14 +1273,14 @@ const getConnectionTypeIcon = (type: string) => {
 .config-preview {
   margin: 0;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 10px; /* 减小字体大小 */
+  font-size: 10px; /* Reduce font size */
   line-height: 1.3;
   color: rgba(255, 255, 255, 0.9);
   white-space: pre-wrap;
   word-break: break-all;
 }
 
-/* JSON语法高亮 */
+/* JSON syntax highlighting */
 .config-preview .json-key {
   color: #90caf9;
 }
@@ -1671,11 +1671,11 @@ const getConnectionTypeIcon = (type: string) => {
   border-radius: 8px;
   color: white;
   font-weight: 500;
-  z-index: 9999; /* 提高z-index确保在最上层 */
+  z-index: 9999; /* Increase z-index to ensure top layer */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  max-width: 400px; /* 限制最大宽度 */
-  word-wrap: break-word; /* 允许文字换行 */
-  white-space: pre-line; /* 保持换行符 */
+  max-width: 400px; /* Limit max width */
+  word-wrap: break-word; /* Allow text wrapping */
+  white-space: pre-line; /* Preserve line breaks */
   line-height: 1.4;
 }
 
@@ -1721,13 +1721,13 @@ const getConnectionTypeIcon = (type: string) => {
   }
 }
 
-/* 宽模态框样式 */
+/* Wide modal styles */
 .wide-modal {
   width: 80vw !important;
   max-width: 1200px !important;
 }
 
-/* 表单行布局 */
+/* Form row layout */
 .form-row {
   display: flex;
   gap: 20px;
@@ -1738,7 +1738,7 @@ const getConnectionTypeIcon = (type: string) => {
   flex: 1;
 }
 
-/* 窄输入框样式 */
+/* Narrow input styles */
 .narrow-input {
   width: 70%;
 }
@@ -1748,7 +1748,7 @@ const getConnectionTypeIcon = (type: string) => {
   width: 100%;
 }
 
-/* 状态切换组件样式 */
+/* Status toggle component styles */
 .status-toggle-container {
   display: flex;
   align-items: center;
@@ -1795,7 +1795,7 @@ const getConnectionTypeIcon = (type: string) => {
   user-select: none;
 }
 
-/* 服务器卡片中的状态切换样式 */
+/* Status toggle styles in server card */
 .server-status-toggle {
   display: flex;
   align-items: center;
@@ -1867,7 +1867,7 @@ const getConnectionTypeIcon = (type: string) => {
     width: 100%;
   }
 
-  /* 新增配置表单响应式样式 */
+  /* Add configuration form responsive styles */
   .server-detail {
     padding: 16px;
   }
@@ -1895,7 +1895,7 @@ const getConnectionTypeIcon = (type: string) => {
   }
 }
 
-/* JSON导入相关样式 */
+/* JSON import related styles */
 .json-actions {
   display: flex;
   gap: 8px;
@@ -1943,12 +1943,12 @@ const getConnectionTypeIcon = (type: string) => {
   margin-bottom: 0;
 }
 
-/* TabPanel相关样式 */
+/* TabPanel related styles */
 .json-tab-panel {
   margin-top: 8px;
 }
 
-/* 配置示例相关样式 */
+/* Configuration example related styles */
 .example-json {
   margin: 0;
   padding: 12px;
@@ -1969,7 +1969,7 @@ const getConnectionTypeIcon = (type: string) => {
   font-size: inherit;
 }
 
-/* JSON语法高亮 */
+/* JSON syntax highlighting */
 .example-json .string { color: #a78bfa; }
 .example-json .number { color: #fbbf24; }
 .example-json .boolean { color: #f87171; }

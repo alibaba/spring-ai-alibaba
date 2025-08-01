@@ -96,7 +96,7 @@
         </button>
       </div>
 
-      <!-- prompt详情 -->
+      <!-- Prompt details -->
       <div class="prompt-detail" v-if="selectedPrompt">
         <div class="detail-header">
           <h3>{{ selectedPrompt.promptName }}</h3>
@@ -289,7 +289,7 @@
           <label>{{ t('config.promptConfig.selectLanguage') }}</label>
           <select v-model="selectedImportLanguage" class="language-select-modal">
             <option v-for="lang in supportedLanguages" :key="lang" :value="lang">
-              {{ lang === 'zh' ? '中文' : 'English' }}
+              {{ lang === 'zh' ? t('language.zh') : t('language.en') }}
             </option>
           </select>
         </div>
@@ -307,7 +307,7 @@
           <label>{{ t('config.promptConfig.selectLanguage') }}</label>
           <select v-model="selectedBatchLanguage" class="language-select-modal">
             <option v-for="lang in supportedLanguages" :key="lang" :value="lang">
-              {{ lang === 'zh' ? '中文' : 'English' }}
+              {{ lang === 'zh' ? t('language.zh') : t('language.en') }}
             </option>
           </select>
         </div>
@@ -392,7 +392,7 @@ const loadData = async () => {
     }
     prompts.splice(0, prompts.length, ...loadedPrompts)
   } catch (err: any) {
-    console.error('加载数据失败:', err)
+    console.error('Failed to load data:', err)
     error(t('config.promptConfig.loadDataFailed') + ': ' + err.message)
   } finally {
     loading.value = false
@@ -452,7 +452,7 @@ const selectPrompt = async (prompt: Prompt) => {
       ...detailedPrompt,
     }
   } catch (err: any) {
-    console.error('加载Prompt详情失败:', err)
+    console.error('Failed to load Prompt details:', err)
     error(t('config.promptConfig.loadDetailsFailed') + ': ' + err.message)
     // base pormpt
     selectedPrompt.value = {
@@ -552,7 +552,7 @@ const showDeleteConfirm = () => {
   showDeleteModal.value = true
 }
 
-// 重置当前 prompt 为指定语言的默认值
+// Reset current prompt to default value of specified language
 const handleImportFromLanguage = async () => {
   if (!selectedPrompt.value) return
 
@@ -564,28 +564,28 @@ const handleImportFromLanguage = async () => {
     showImportLanguageModal.value = false
     success(t('config.promptConfig.resetToLanguageDefaultSuccess'))
 
-    // 重新加载所有 prompt 列表以显示新的描述
+    // Reload all prompt list to display new descriptions
     await loadData()
   } catch (err: any) {
     error(t('config.promptConfig.resetToLanguageDefaultFailed') + ': ' + err.message)
   }
 }
 
-// 批量切换所有 prompt 为指定语言
+// Batch switch all prompts to specified language
 const handleBatchSwitchLanguage = async () => {
   try {
     await PromptApiService.importAllPromptsFromLanguage(selectedBatchLanguage.value)
     showBatchLanguageModal.value = false
     success(t('config.promptConfig.batchSwitchLanguageSuccess'))
 
-    // 重新加载所有 prompt 列表以显示新的描述
+    // Reload all prompt list to display new descriptions
     await loadData()
   } catch (err: any) {
     error(t('config.promptConfig.batchSwitchLanguageFailed') + ': ' + err.message)
   }
 }
 
-// 加载支持的语言
+// Load supported languages
 const loadSupportedLanguages = async () => {
   try {
     const languages = await PromptApiService.getSupportedLanguages()
@@ -1006,7 +1006,7 @@ watch(
   }
 }
 
-/* 弹窗样式 */
+/* Modal styles */
 .modal-form {
   display: flex;
   flex-direction: column;

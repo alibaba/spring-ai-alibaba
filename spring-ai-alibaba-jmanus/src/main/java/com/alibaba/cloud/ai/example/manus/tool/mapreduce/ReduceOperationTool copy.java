@@ -38,7 +38,7 @@
 
 // private static final Logger log = LoggerFactory.getLogger(ReduceOperationTool.class);
 
-// // ==================== 配置常量 ====================
+// // ==================== Configuration Constants ====================
 
 // /**
 // * Supported operation type: get file lines from root plan
@@ -168,7 +168,7 @@
 // },
 // "start_line": {
 // "type": "integer",
-// "description": "起始行号，默认为1，从该行开始读取到文件末尾"
+// "description": "Starting line number, default is 1, read from this line to end of file"
 // }
 // },
 // "required": ["action"],
@@ -183,7 +183,7 @@
 // },
 // "content": {
 // "type": "string",
-// "description": "要追加的内容"
+// "description": "Content to append"
 // }
 // },
 // "required": ["action", "content"],
@@ -198,11 +198,11 @@
 // },
 // "source_text": {
 // "type": "string",
-// "description": "要被替换的文本"
+// "description": "Text to be replaced"
 // },
 // "target_text": {
 // "type": "string",
-// "description": "替换后的文本"
+// "description": "Replacement text"
 // }
 // },
 // "required": ["action", "source_text", "target_text"],
@@ -216,7 +216,7 @@
 
 // private ManusProperties manusProperties;
 
-// // 共享状态管理器，用于管理多个Agent实例间的共享状态
+// // Shared state manager for managing shared state between multiple Agent instances
 // private MapReduceSharedStateManager sharedStateManager;
 
 // public ReduceOperationTool(String planId, ManusProperties manusProperties,
@@ -229,7 +229,7 @@
 // }
 
 // /**
-// * 设置共享状态管理器
+// * Set shared state manager
 // */
 // public void setSharedStateManager(MapReduceSharedStateManager sharedStateManager) {
 // this.sharedStateManager = sharedStateManager;

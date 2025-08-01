@@ -28,7 +28,7 @@ import org.springframework.web.reactive.result.method.annotation.ResponseEntityE
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 	/**
-	 * 处理计划异常
+	 * Handle plan exceptions
 	 */
 	@ExceptionHandler(PlanException.class)
 	public ResponseEntity handlePlanException(PlanException ex) {
@@ -36,7 +36,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	}
 
 	/**
-	 * 处理所有未捕获的异常
+	 * Handle all uncaught exceptions
 	 */
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity handleGlobalException(Exception ex) {

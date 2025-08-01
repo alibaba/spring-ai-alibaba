@@ -25,68 +25,68 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerRequestVO;
 
 /**
- * MCP服务接口（重构后） 定义了MCP服务的核心业务方法
+ * MCP service interface (refactored) defining core business methods for MCP services
  */
 public interface IMcpService {
 
 	/**
-	 * 批量保存MCP服务器配置
-	 * @param configJson MCP配置JSON字符串
-	 * @return 配置实体列表
-	 * @throws IOException IO异常
+	 * Batch save MCP server configurations
+	 * @param configJson MCP configuration JSON string
+	 * @return Configuration entity list
+	 * @throws IOException IO exception
 	 */
 	List<McpConfigEntity> saveMcpServers(String configJson) throws IOException;
 
 	/**
-	 * 保存单个MCP服务器配置
-	 * @param requestVO MCP服务器表单请求
-	 * @return 配置实体
-	 * @throws IOException IO异常
+	 * Save single MCP server configuration
+	 * @param requestVO MCP server form request
+	 * @return Configuration entity
+	 * @throws IOException IO exception
 	 */
 	McpConfigEntity saveMcpServer(McpServerRequestVO requestVO) throws IOException;
 
 	/**
-	 * 删除MCP服务器
-	 * @param id MCP服务器ID
+	 * Delete MCP server
+	 * @param id MCP server ID
 	 */
 	void removeMcpServer(long id);
 
 	/**
-	 * 删除MCP服务器
-	 * @param mcpServerName MCP服务器名称
+	 * Delete MCP server
+	 * @param mcpServerName MCP server name
 	 */
 	void removeMcpServer(String mcpServerName);
 
 	/**
-	 * 获取所有MCP服务器配置
-	 * @return MCP配置实体列表
+	 * Get all MCP server configurations
+	 * @return MCP configuration entity list
 	 */
 	List<McpConfigEntity> getMcpServers();
 
 	/**
-	 * 根据ID查找MCP配置
-	 * @param id MCP配置ID
-	 * @return 可选的MCP配置实体
+	 * Find MCP configuration by ID
+	 * @param id MCP configuration ID
+	 * @return Optional MCP configuration entity
 	 */
 	Optional<McpConfigEntity> findById(Long id);
 
 	/**
-	 * 获取MCP服务实体列表
-	 * @param planId 计划ID
-	 * @return MCP服务实体列表
+	 * Get MCP service entity list
+	 * @param planId Plan ID
+	 * @return MCP service entity list
 	 */
 	List<McpServiceEntity> getFunctionCallbacks(String planId);
 
 	/**
-	 * 关闭指定计划的MCP服务
-	 * @param planId 计划ID
+	 * Close MCP services for specified plan
+	 * @param planId Plan ID
 	 */
 	void close(String planId);
 
 	/**
-	 * 更新MCP服务器状态
-	 * @param id MCP服务器ID
-	 * @param status 目标状态
+	 * Update MCP server status
+	 * @param id MCP server ID
+	 * @param status Target status
 	 * @return true if updated successfully, false otherwise
 	 */
 	boolean updateMcpServerStatus(Long id, McpConfigStatus status);

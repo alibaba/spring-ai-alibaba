@@ -46,8 +46,8 @@ public class PromptInitializationService {
 	}
 
 	/**
-	 * 如果不存在则创建提示模板
-	 * @param namespace 命名空间
+	 * Create prompt templates if they don't exist
+	 * @param namespace Namespace
 	 */
 	public void initializePromptsForNamespace(String namespace) {
 		String defaultLanguage = "en";
@@ -63,24 +63,17 @@ public class PromptInitializationService {
 	}
 
 	/**
-	 * 碰到 could not execute statement [Unique index or primary key violation:
+	 * The error "could not execute statement [Unique index or primary key violation:
 	 * "public.unique_prompt_name_INDEX_C ON public.prompt(prompt_name NULLS FIRST) VALUES
-	 * ( 'PLANNING_PLAN_CREATION' )"; SQL statement: 是因为，老的约束是
-	 * 针对prompt_name的唯一约束，而新的约束是针对namespace和prompt_name的唯一约束. jpa无法处理这种情况，所以需要你删除一下
-	 * prompt表， 然后 重启应用，他会自动处理 。
-	 *
-	 * english ver : The error "could not execute statement [Unique index or primary key
-	 * violation: "public.unique_prompt_name_INDEX_C ON public.prompt(prompt_name NULLS
-	 * FIRST) VALUES ( 'PLANNING_PLAN_CREATION' )"; SQL statement:" occurs because the old
-	 * constraint was a unique constraint on prompt_name, while the new constraint is a
-	 * unique constraint on both namespace and prompt_name. JPA cannot handle this
-	 * situation, so you need to delete the prompt table and restart the application,
-	 * which will automatically handle it.
-	 *
-	 *
+	 * ( 'PLANNING_PLAN_CREATION' )"; SQL statement:" occurs because the old constraint
+	 * was a unique constraint on prompt_name, while the new constraint is a unique
+	 * constraint on both namespace and prompt_name. JPA cannot handle this situation, so
+	 * you need to delete the prompt table and restart the application, which will
+	 * automatically handle it.
 	 */
 	private void createPromptIfNotExists(String namespace, PromptEnum prompt, String language) {
-		// 开启事务为了兼容postgres数据库的大型对象无法被使用在自动确认事物交易模式问题
+		// Start transaction to handle PostgreSQL large object compatibility issues in
+		// auto-commit mode
 		DefaultTransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
 		TransactionStatus transaction = transactionManager.getTransaction(transactionDefinition);
 		PromptEntity promptEntity = null;

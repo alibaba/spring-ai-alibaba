@@ -18,44 +18,44 @@ import type { CronConfig } from '@/types/cron-task'
 import { CronApiService } from '@/api/cron-api-service'
 
 /**
- * CronTask 工具函数集合
- * 提供定时任务相关的通用功能
+ * CronTask utility functions collection
+ * Provides common functionality related to scheduled tasks
  */
 export const CronTaskUtils = {
   /**
-   * 验证 Cron 表达式格式
-   * @param cronExpr Cron 表达式
-   * @returns 是否有效
+   * Validate Cron expression format
+   * @param cronExpr Cron expression
+   * @returns Whether it's valid
    */
   validateCronExpression(cronExpr: string): boolean {
-    // 简单验证：检查是否有 5-6 个由空格分隔的部分
+    // Simple validation: check if there are 5-6 space-separated parts
     const parts = cronExpr.trim().split(/\s+/)
     return parts.length >= 5 && parts.length <= 6
   },
 
   /**
-   * 格式化时间
-   * @param timeString 时间字符串
-   * @returns 格式化后的时间字符串
+   * Format time
+   * @param timeString Time string
+   * @returns Formatted time string
    */
   formatTime(timeString: string): string {
     return new Date(timeString).toLocaleString()
   },
 
   /**
-   * 保存定时任务
-   * @param task 任务对象
-   * @returns 保存结果
+   * Save scheduled task
+   * @param task Task object
+   * @returns Save result
    */
   async saveTask(task: CronConfig): Promise<CronConfig> {
     try {
       let result: CronConfig
 
       if (task.id) {
-        // 更新现有任务
+        // Update existing task
         result = await CronApiService.updateCronTask(Number(task.id), task)
       } else {
-        // 创建新任务
+        // Create new task
         result = await CronApiService.createCronTask(task)
       }
 
@@ -67,8 +67,8 @@ export const CronTaskUtils = {
   },
 
   /**
-   * 删除定时任务
-   * @param taskId 任务ID
+   * Delete scheduled task
+   * @param taskId Task ID
    */
   async deleteTask(taskId: string | number): Promise<void> {
     try {
@@ -80,9 +80,9 @@ export const CronTaskUtils = {
   },
 
   /**
-   * 切换任务状态
-   * @param task 任务对象
-   * @returns 更新后的任务
+   * Toggle task status
+   * @param task Task object
+   * @returns Updated task
    */
   async toggleTaskStatus(task: CronConfig): Promise<CronConfig> {
     if (!task.id) {
@@ -94,17 +94,17 @@ export const CronTaskUtils = {
   },
 
   /**
-   * 准备任务执行数据
-   * @param task 任务对象
-   * @returns 执行数据对象
+   * Prepare task execution data
+   * @param task Task object
+   * @returns Execution data object
    */
   prepareTaskExecution(task: CronConfig): { useTemplate: boolean; planData?: any; taskContent?: string } {
     if (task.planTemplateId) {
-      // 使用模板执行
+      // Execute using template
       return {
         useTemplate: true,
         planData: {
-          title: task.cronName || '定时任务执行',
+          title: task.cronName || 'Scheduled Task Execution',
           planData: {
             id: task.planTemplateId,
             planTemplateId: task.planTemplateId,
@@ -114,7 +114,7 @@ export const CronTaskUtils = {
         }
       }
     } else {
-      // 直接执行任务内容
+      // Execute task content directly
       return {
         useTemplate: false,
         taskContent: task.planDesc || task.cronName || ''
