@@ -179,7 +179,8 @@ class ElasticsearchChatMemoryRepositoryIT {
 		var results = chatMemoryRepository.findByConversationId(conversationId);
 
 		assertThat(results.size()).isEqualTo(messages.size());
-		// Modify assertions to use list size and content comparison instead of direct object comparison
+		// Modify assertions to use list size and content comparison instead of direct
+		// object comparison
 		assertThat(results.size()).isEqualTo(messages.size());
 		for (int i = 0; i < messages.size(); i++) {
 			assertThat(results.get(i).getText()).isEqualTo(messages.get(i).getText());
@@ -248,7 +249,8 @@ class ElasticsearchChatMemoryRepositoryIT {
 		// Verify only the last 3 messages are retained
 		savedMessages = chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(savedMessages.size()).isEqualTo(3);
-		// Since sorting may not be completely reliable, check existence rather than exact position
+		// Since sorting may not be completely reliable, check existence rather than exact
+		// position
 		boolean foundMessage2 = false;
 		boolean foundMessage3 = false;
 		boolean foundMessage4 = false;
