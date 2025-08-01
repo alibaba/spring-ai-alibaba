@@ -54,7 +54,7 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 		@com.fasterxml.jackson.annotation.JsonProperty("query_key")
 		private String queryKey;
 
-		@com.fasterxml.jackson.annotation.JsonProperty("output_format_specification")
+		@com.fasterxml.jackson.annotation.JsonProperty("outputFormatSpecification")
 		private String outputFormatSpecification;
 
 		@com.fasterxml.jackson.annotation.JsonProperty("start_line")
