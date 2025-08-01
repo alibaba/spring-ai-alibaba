@@ -1,0 +1,10 @@
+{
+    "type": "object",
+    "properties": {
+        "code": {
+            "type": "string",
+            "description": "要执行的Python代码。"
+        }
+    },
+    "required": ["code"]
+}

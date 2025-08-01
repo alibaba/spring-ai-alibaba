@@ -23,6 +23,7 @@ import java.util.List;
 
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 
 import org.slf4j.Logger;
@@ -81,39 +82,14 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 
 	private final UnifiedDirectoryManager directoryManager;
 
-	public FileMergeTool(UnifiedDirectoryManager directoryManager) {
+	private final ToolPromptManager toolPromptManager;
+
+	public FileMergeTool(UnifiedDirectoryManager directoryManager, ToolPromptManager toolPromptManager) {
 		this.directoryManager = directoryManager;
+		this.toolPromptManager = toolPromptManager;
 	}
 
 	private static final String TOOL_NAME = "file_merge_tool";
-
-	private static final String TOOL_DESCRIPTION = """
-			File merge tool for merging single files into specified target folders.
-			Each call merges one file to the target folder, supports fuzzy filename matching.
-			""";
-
-	private static final String PARAMETERS = """
-			{
-				"type": "object",
-				"properties": {
-					"action": {
-						"type": "string",
-						"enum": ["merge_file"],
-						"description": "Operation type, currently supports merge_file"
-					},
-					"file_name": {
-						"type": "string",
-						"description": "Filename to merge (supports fuzzy matching)"
-					},
-					"target_folder": {
-						"type": "string",
-						"description": "Target folder path where the file will be copied"
-					}
-				},
-				"required": ["action", "file_name", "target_folder"],
-				"additionalProperties": false
-			}
-			""";
 
 	@Override
 	public String getName() {
@@ -122,12 +98,12 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 
 	@Override
 	public String getDescription() {
-		return TOOL_DESCRIPTION;
+		return toolPromptManager.getToolDescription("file_merge_tool");
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return toolPromptManager.getToolParameters("file_merge_tool");
 	}
 
 	@Override
@@ -138,12 +114,6 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 	@Override
 	public String getServiceGroup() {
 		return "default-service-group";
-	}
-
-	public static OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(TOOL_DESCRIPTION, TOOL_NAME,
-				PARAMETERS);
-		return new OpenAiApi.FunctionTool(function);
 	}
 
 	/**
