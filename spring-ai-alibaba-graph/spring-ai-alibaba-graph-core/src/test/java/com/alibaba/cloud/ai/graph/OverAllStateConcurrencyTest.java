@@ -32,23 +32,19 @@ class OverAllStateConcurrencyTest {
 
 	@Test
 	void testConcurrentStateIsolation() throws InterruptedException {
-		
+
 		OverAllState state1 = new OverAllState();
 		OverAllState state2 = new OverAllState();
 
-		
 		state1.registerKeyAndStrategy("testKey", new ReplaceStrategy());
 		state2.registerKeyAndStrategy("testKey", new ReplaceStrategy());
 
-		
 		state1.input(Map.of("testKey", "request1_value"));
 		state2.input(Map.of("testKey", "request2_value"));
 
-		
 		assertEquals("request1_value", state1.value("testKey").orElse(null));
 		assertEquals("request2_value", state2.value("testKey").orElse(null));
 
-		
 		OverAllState snapshot1 = state1.snapShot().get();
 		OverAllState snapshot2 = state2.snapShot().get();
 
@@ -67,7 +63,6 @@ class OverAllStateConcurrencyTest {
 
 		state.registerKeyAndStrategy("counter", new ReplaceStrategy());
 
-		
 		for (int i = 0; i < threadCount; i++) {
 			final int threadId = i;
 			executor.submit(() -> {
@@ -76,7 +71,6 @@ class OverAllStateConcurrencyTest {
 						String value = "thread_" + threadId + "_update_" + j;
 						state.input(Map.of("counter", value));
 
-						
 						String currentValue = state.value("counter", "");
 						if (currentValue.contains("thread_" + threadId)) {
 							successCount.incrementAndGet();
@@ -93,7 +87,6 @@ class OverAllStateConcurrencyTest {
 		assertTrue(latch.await(30, TimeUnit.SECONDS));
 		executor.shutdown();
 
-		
 		String finalValue = state.value("counter", "");
 		assertNotNull(finalValue);
 		assertTrue(finalValue.startsWith("thread_"));
@@ -102,7 +95,7 @@ class OverAllStateConcurrencyTest {
 
 	@Test
 	void testCloneStateIsolation() {
-		
+
 		Map<String, KeyStrategy> keyStrategies = new ConcurrentHashMap<>();
 		keyStrategies.put("testKey", new ReplaceStrategy());
 
@@ -112,17 +105,14 @@ class OverAllStateConcurrencyTest {
 		Map<String, Object> data2 = new ConcurrentHashMap<>();
 		data2.put("testKey", "data2_value");
 
-		
 		OverAllState clonedState1 = new OverAllState(new ConcurrentHashMap<>(data1),
 				new ConcurrentHashMap<>(keyStrategies), false);
 		OverAllState clonedState2 = new OverAllState(new ConcurrentHashMap<>(data2),
 				new ConcurrentHashMap<>(keyStrategies), false);
 
-		
 		assertEquals("data1_value", clonedState1.value("testKey").orElse(null));
 		assertEquals("data2_value", clonedState2.value("testKey").orElse(null));
 
-		
 		clonedState1.input(Map.of("testKey", "modified_data1"));
 
 		assertEquals("modified_data1", clonedState1.value("testKey").orElse(null));
@@ -134,14 +124,11 @@ class OverAllStateConcurrencyTest {
 		OverAllState state1 = new OverAllState();
 		OverAllState state2 = new OverAllState();
 
-		
 		state1.registerKeyAndStrategy("customKey", new ReplaceStrategy());
 
-		
 		assertTrue(state1.containStrategy("customKey"));
 		assertFalse(state2.containStrategy("customKey"));
 
-		
 		assertTrue(state1.containStrategy(OverAllState.DEFAULT_INPUT_KEY));
 		assertTrue(state2.containStrategy(OverAllState.DEFAULT_INPUT_KEY));
 	}
