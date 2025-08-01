@@ -249,30 +249,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 			return new ToolExecuteResult("Error: data parameter is required when has_value is true");
 		}
 		
-		// Validate each row
-		for (int i = 0; i < data.size(); i++) {
-			List<Object> row = data.get(i);
-			if (row == null || row.isEmpty()) {
-				String error = String.format("""
-						Data structure inconsistent!
-						Expected column count: %d
-						Actual column count for row %d: %d
-
-						**Required data structure:**
-						Each row must contain: [%s]
-
-						Example format:
-						[
-						  ["%s Example1", "%s Example1"],
-						  ["%s Example2", "%s Example2"]
-						]
-						""", expectedColumnCount, i + 1, row.size(), String.join(", ", terminateColumns),
-						terminateColumns.get(0), terminateColumns.size() > 1 ? terminateColumns.get(1) : "data",
-						terminateColumns.get(0), terminateColumns.size() > 1 ? terminateColumns.get(1) : "data");
-				return new ToolExecuteResult(error);
-			}
-		}
-		
 		return null; // Validation passed
 	}
 
