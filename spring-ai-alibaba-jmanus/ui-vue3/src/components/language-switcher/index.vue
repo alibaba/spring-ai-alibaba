@@ -105,7 +105,7 @@ const selectLanguage = async (lang: string) => {
     showDropdown.value = false
   } catch (error) {
     console.error('Failed to change language:', error)
-    // 即使失败也关闭下拉菜单
+    // Close dropdown even if failed
     showDropdown.value = false
   } finally {
     isChangingLanguage.value = false
