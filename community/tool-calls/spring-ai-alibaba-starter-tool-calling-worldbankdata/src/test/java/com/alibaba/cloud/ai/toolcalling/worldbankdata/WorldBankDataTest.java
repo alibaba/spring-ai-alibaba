@@ -37,15 +37,13 @@ public class WorldBankDataTest {
 	@DisplayName("Tool-Calling Test - Specific Implementation")
 	public void testWorldBankDataService() {
 		// Test with a popular indicator - GDP Current US$
-		var resp = worldBankDataService.apply(
-				WorldBankDataService.Request.simpleQuery("NY.GDP.MKTP.CD"));
+		var resp = worldBankDataService.apply(WorldBankDataService.Request.simpleQuery("NY.GDP.MKTP.CD"));
 		assert resp != null && resp.results() != null;
 		log.info("GDP Data results: " + resp.results());
 
 		// Test with country specific query
-		var chinaPopResp = worldBankDataService.apply(
-				new WorldBankDataService.Request("中国人口", "CHN", "SP.POP.TOTL", 
-						"2020:2023", "data", 1, 5, null));
+		var chinaPopResp = worldBankDataService
+			.apply(new WorldBankDataService.Request("中国人口", "CHN", "SP.POP.TOTL", "2020:2023", "data", 1, 5, null));
 		assert chinaPopResp != null && chinaPopResp.results() != null;
 		log.info("China Population results: " + chinaPopResp.results());
 	}
@@ -72,14 +70,12 @@ public class WorldBankDataTest {
 	@DisplayName("Country Code Detection Test")
 	public void testCountryCodeDetection() {
 		// Test automatic country code detection
-		var usaResp = worldBankDataService.apply(
-				WorldBankDataService.Request.simpleQuery("USA"));
+		var usaResp = worldBankDataService.apply(WorldBankDataService.Request.simpleQuery("USA"));
 		assert usaResp != null && usaResp.results() != null;
 		log.info("USA country info: " + usaResp.results());
 
 		// Test with China
-		var chnResp = worldBankDataService.apply(
-				WorldBankDataService.Request.simpleQuery("CHN"));
+		var chnResp = worldBankDataService.apply(WorldBankDataService.Request.simpleQuery("CHN"));
 		assert chnResp != null && chnResp.results() != null;
 		log.info("China country info: " + chnResp.results());
 	}
@@ -88,16 +84,14 @@ public class WorldBankDataTest {
 	@DisplayName("Indicator Code Detection Test")
 	public void testIndicatorCodeDetection() {
 		// Test automatic indicator code detection
-		var gdpResp = worldBankDataService.apply(
-				WorldBankDataService.Request.simpleQuery("NY.GDP.MKTP.CD"));
+		var gdpResp = worldBankDataService.apply(WorldBankDataService.Request.simpleQuery("NY.GDP.MKTP.CD"));
 		assert gdpResp != null && gdpResp.results() != null;
 		log.info("GDP indicator results: " + gdpResp.results());
 
 		// Test with another indicator
-		var popResp = worldBankDataService.apply(
-				WorldBankDataService.Request.simpleQuery("SP.POP.TOTL"));
+		var popResp = worldBankDataService.apply(WorldBankDataService.Request.simpleQuery("SP.POP.TOTL"));
 		assert popResp != null && popResp.results() != null;
 		log.info("Population indicator results: " + popResp.results());
 	}
 
-} 
+}

@@ -33,15 +33,12 @@ public class WorldBankDataAutoConfiguration {
 	@Bean(name = WorldBankDataConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("World Bank Development Data Search Service")
-	public WorldBankDataService worldBankDataService(JsonParseTool jsonParseTool,
-			WorldBankDataProperties properties) {
+	public WorldBankDataService worldBankDataService(JsonParseTool jsonParseTool, WorldBankDataProperties properties) {
 		return new WorldBankDataService(
-				WebClientTool.builder(jsonParseTool, properties)
-						.httpHeadersConsumer(httpHeaders -> {
-							httpHeaders.add("Accept", "application/json");
-							httpHeaders.add("User-Agent", "Spring-AI-Alibaba-WorldBankData/1.0");
-						}).build(),
-				jsonParseTool, properties);
+				WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(httpHeaders -> {
+					httpHeaders.add("Accept", "application/json");
+					httpHeaders.add("User-Agent", "Spring-AI-Alibaba-WorldBankData/1.0");
+				}).build(), jsonParseTool, properties);
 	}
 
-} 
+}

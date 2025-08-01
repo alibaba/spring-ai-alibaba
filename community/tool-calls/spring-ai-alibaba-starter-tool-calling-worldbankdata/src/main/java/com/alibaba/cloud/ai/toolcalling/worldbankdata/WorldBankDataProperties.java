@@ -19,9 +19,8 @@ import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * World Bank Data API configuration properties.
- * The World Bank API provides free access to development data without authentication.
- * Base URL: https://api.worldbank.org/v2
+ * World Bank Data API configuration properties. The World Bank API provides free access
+ * to development data without authentication. Base URL: https://api.worldbank.org/v2
  *
  * @author Makoto
  */
@@ -84,4 +83,4 @@ public class WorldBankDataProperties extends CommonToolCallProperties {
 		this.language = language;
 	}
 
-} 
+}
