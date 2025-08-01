@@ -15,21 +15,21 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.textOperator;
 
-import java.io.*;
-import java.nio.channels.FileChannel;
-import java.nio.file.*;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
+import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
-import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.openai.api.OpenAiApi;
+
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Map;
 
 public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFileInput> {
 

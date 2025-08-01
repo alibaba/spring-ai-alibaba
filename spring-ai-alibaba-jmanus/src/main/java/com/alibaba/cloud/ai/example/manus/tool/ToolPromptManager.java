@@ -19,11 +19,6 @@ import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tool Prompt Manager that manages tool descriptions and parameters using PromptService

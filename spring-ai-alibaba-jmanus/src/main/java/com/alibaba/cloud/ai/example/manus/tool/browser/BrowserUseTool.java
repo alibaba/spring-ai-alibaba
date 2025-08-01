@@ -22,18 +22,18 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ClickByElementAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.CloseTabAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ExecuteJsAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetHtmlAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetTextAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.InputTextAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.KeyEnterAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.NavigateAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.NewTabAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.RefreshAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ScreenShotAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ScrollAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.SwitchTabAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,11 +41,9 @@ import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-
-import org.springframework.ai.openai.api.OpenAiApi;
 
 public class BrowserUseTool extends AbstractBaseTool<BrowserRequestVO> {
 
