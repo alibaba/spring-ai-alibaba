@@ -34,6 +34,7 @@
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
 
+        <memory.version>1.0.0.3-SNAPSHOT</memory.version>
 
     </properties>
 
@@ -254,6 +255,13 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <!-- support memory -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-autoconfigure-memory</artifactId>
+            <version>${memory.version}</version>
         </dependency>
     </dependencies>
 

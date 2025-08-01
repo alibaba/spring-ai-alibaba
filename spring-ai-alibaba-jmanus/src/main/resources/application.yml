@@ -32,6 +32,14 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  ai:
+    memory:
+      postgres: true
+    chat:
+      memory:
+        repository:
+          jdbc:
+            postgres: dahua_test
 
 logging:
   file:

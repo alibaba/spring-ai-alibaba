@@ -88,6 +88,7 @@ public class PlanTemplateController {
 		String query = request.get("query");
 		String existingJson = request.get("existingJson"); // Get possible existing JSON
 															// data
+		String memoryId = request.get("memoryId");
 
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Plan description cannot be empty"));
@@ -115,6 +116,7 @@ public class PlanTemplateController {
 		context.setRootPlanId(planTemplateId);
 		context.setNeedSummary(false); // We don't need to generate a summary, because we
 										// only need the plan
+		context.setMemoryId(memoryId);
 
 		// Get planning flow
 		PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(planTemplateId);
@@ -453,6 +455,7 @@ public class PlanTemplateController {
 		String planId = request.get("planId");
 		String query = request.get("query");
 		String existingJson = request.get("existingJson"); // Get possible existing JSON
+		String memoryId = request.get("memoryId");
 
 		if (planId == null || planId.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Plan template ID cannot be empty"));
@@ -489,6 +492,7 @@ public class PlanTemplateController {
 		context.setRootPlanId(planId);
 		context.setNeedSummary(false); // We don't need to generate a summary, because we
 										// only need the plan
+		context.setMemoryId(memoryId);
 
 		// Get planning flow
 		PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(planId);

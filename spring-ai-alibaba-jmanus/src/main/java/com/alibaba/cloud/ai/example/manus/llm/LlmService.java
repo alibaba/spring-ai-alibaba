@@ -90,6 +90,9 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	@Autowired
 	private DynamicModelRepository dynamicModelRepository;
 
+	@Autowired
+	private
+
 	public LlmService() {
 	}
 
@@ -290,7 +293,7 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	@Override
 	public ChatMemory getConversationMemory(Integer maxMessages) {
 		if (conversationMemory == null) {
-			conversationMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
+			conversationMemory = MessageWindowChatMemory.builder().chatMemoryRepository().maxMessages(maxMessages).build();
 		}
 		return conversationMemory;
 	}
