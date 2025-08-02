@@ -20,7 +20,7 @@ package com.alibaba.cloud.ai.dto;
  */
 public class SemanticModelDTO {
 
-	private String datasetId; // 数据集ID
+	private String agentId; // 数据集ID
 
 	private String originalFieldName; // 原始字段名
 
@@ -41,10 +41,10 @@ public class SemanticModelDTO {
 	public SemanticModelDTO() {
 	}
 
-	public SemanticModelDTO(String datasetId, String originalFieldName, String agentFieldName, String fieldSynonyms,
+	public SemanticModelDTO(String agentId, String originalFieldName, String agentFieldName, String fieldSynonyms,
 			String fieldDescription, Boolean defaultRecall, Boolean enabled, String fieldType,
 			String originalDescription) {
-		this.datasetId = datasetId;
+		this.agentId = agentId;
 		this.originalFieldName = originalFieldName;
 		this.agentFieldName = agentFieldName;
 		this.fieldSynonyms = fieldSynonyms;
@@ -56,12 +56,12 @@ public class SemanticModelDTO {
 	}
 
 	// Getters and Setters
-	public String getDatasetId() {
-		return datasetId;
+	public String getAgentId() {
+		return agentId;
 	}
 
-	public void setDatasetId(String datasetId) {
-		this.datasetId = datasetId;
+	public void setAgentId(String agentId) {
+		this.agentId = agentId;
 	}
 
 	public String getOriginalFieldName() {
