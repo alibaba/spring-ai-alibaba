@@ -32,8 +32,8 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * Map output recording tool for MapReduce workflow Responsible for recording Map stage
- * processing results and task status management
+ * Map output recording tool for MapReduce workflow. 
+ * Responsible for recording Map stage processing results and task status management.
  */
 public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput> implements TerminableTool {
 
@@ -42,22 +42,22 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	// ==================== Configuration Constants ====================
 
 	/**
-	 * Task directory name All tasks are stored under this directory
+	 * Task directory name. All tasks are stored under this directory.
 	 */
 	private static final String TASKS_DIRECTORY_NAME = "tasks";
 
 	/**
-	 * Task status file name Stores task execution status information
+	 * Task status file name. Stores task execution status information.
 	 */
 	private static final String TASK_STATUS_FILE_NAME = "status.json";
 
 	/**
-	 * Task output file name Stores results after Map stage processing completion
+	 * Task output file name. Stores results after Map stage processing completion.
 	 */
 	private static final String TASK_OUTPUT_FILE_NAME = "output.md";
 
 	/**
-	 * Task input file name Stores document fragment content after splitting
+	 * Task input file name. Stores document fragment content after splitting.
 	 */
 	private static final String TASK_INPUT_FILE_NAME = "input.md";
 
@@ -72,7 +72,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 		@com.fasterxml.jackson.annotation.JsonProperty("task_id")
 		private String taskId;
 
-		private List<List<Object>> data;
+		private String data;
 
 		@com.fasterxml.jackson.annotation.JsonProperty("has_value")
 		private boolean hasValue;
@@ -88,11 +88,11 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 			this.taskId = taskId;
 		}
 
-		public List<List<Object>> getData() {
+		public String getData() {
 			return data;
 		}
 
-		public void setData(List<List<Object>> data) {
+		public void setData(String data) {
 			this.data = data;
 		}
 
@@ -111,15 +111,16 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	private static String getToolDescription() {
 		String baseDescription = """
 				Map output recording tool for MapReduce workflow.
-				接受 Map 阶段处理完成后的内容，自动生成文件名并创建输出文件。
-				记录任务状态并管理结构化数据输出。
+				Accepts content after Map stage processing is completed, automatically generates file names and creates output files.
+				Records task status and manages structured data output.
 
-				**重要参数说明：**
-				- task_id: 字符串，任务ID标识符，用于标识当前正在处理的Map任务（必需）
-				- has_value: 布尔值，表示是否有有效数据
-				  - 如果没有找到任何有效数据，设置为 false
-				  - 如果有数据需要输出，设置为 true
-				- data: 当 has_value 为 true 时必须提供数据
+				**Important parameter description:**
+				- task_id: String, task ID identifier, used to identify the currently processing Map task (required)
+				- has_value: Boolean, indicates whether there is valid data
+				  - Set to false if no valid data is found
+				  - Set to true if there is data to output
+				- data: Data must be provided when has_value is true. You need to output information in a structured manner as required by the return data, in markdown format.
+
 				""";
 
 		return baseDescription;
@@ -146,11 +147,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 				            "description": "Whether there is valid data. Set to false if no valid data is found, set to true when there is data"
 				        },
 				        "data": {
-				            "type": "array",
-				            "items": {
-				                "type": "array",
-				                "items": {"type": "string"}
-				            },
+				            "type": "string",
 				            "description": "%s (only required when has_value is true)"
 				        }
 				    },
@@ -240,15 +237,13 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 		log.info("MapOutputTool input: taskId={}, hasValue={}", input.getTaskId(), input.isHasValue());
 		try {
 			String taskId = input.getTaskId();
-			List<List<Object>> data = input.getData();
+			String data = input.getData();
 			boolean hasValue = input.isHasValue();
 
 			// Validate taskId
 			if (taskId == null || taskId.trim().isEmpty()) {
 				return new ToolExecuteResult("Error: task_id parameter is required");
 			}
-
-			
 
 			// Check hasValue logic
 			if (hasValue) {
@@ -277,18 +272,16 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	 * @param data the data rows
 	 * @return formatted string representation of the structured data
 	 */
-	private String formatStructuredData(List<List<Object>> data) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("Data:\n");
-		for (List<Object> row : data) {
-			sb.append("  ").append(row).append("\n");
+	private String formatStructuredData(String data) {
+		if (data == null || data.isEmpty()) {
+			return "";
 		}
-		return sb.toString();
+		return data;
 	}
 
 	/**
-	 * Record Map task output result with completed status by default Task ID is provided
-	 * as parameter instead of being obtained from the current execution context
+	 * Record Map task output result with completed status by default. Task ID is provided
+	 * as parameter instead of being obtained from the current execution context.
 	 */
 	private ToolExecuteResult recordMapTaskOutput(String content, String taskId) {
 		try {

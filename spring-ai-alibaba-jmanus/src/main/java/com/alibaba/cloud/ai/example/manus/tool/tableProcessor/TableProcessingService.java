@@ -249,6 +249,15 @@ public class TableProcessingService implements ITableProcessingService {
 			throw new IOException("Absolute path is not allowed: " + filePath);
 		}
 
+		// Check if headers contain "ID" (case-insensitive)
+		if (headers != null) {
+			for (String header : headers) {
+				if ("ID".equalsIgnoreCase(header)) {
+					throw new IOException("ID is a reserved column name and cannot be used as a header. Please use a different column name.");
+				}
+			}
+		}
+
 		Path absolutePath = validateFilePath(planId, filePath);
 
 		// Ensure parent directory exists
@@ -321,10 +330,22 @@ public class TableProcessingService implements ITableProcessingService {
 				return fallbackReadHeaders(absolutePath);
 			}
 			
+			// Remove ID column from returned headers if it exists and is the first column
+			if (!headers.isEmpty() && "ID".equals(headers.get(0))) {
+				return new ArrayList<>(headers.subList(1, headers.size()));
+			}
+			
 			return headers;
 		} catch (Exception e) {
 			log.warn("Failed to read headers using listener, trying fallback method: {}", e.getMessage());
-			return fallbackReadHeaders(absolutePath);
+			List<String> headers = fallbackReadHeaders(absolutePath);
+			
+			// Remove ID column from returned headers if it exists and is the first column
+			if (!headers.isEmpty() && "ID".equals(headers.get(0))) {
+				return new ArrayList<>(headers.subList(1, headers.size()));
+			}
+			
+			return headers;
 		}
 	}
 
@@ -395,18 +416,46 @@ public class TableProcessingService implements ITableProcessingService {
 		// Process data based on whether ID column exists
 		List<String> dataToWrite;
 		if (hasIdColumn) {
-			// Auto-generate ID as the first column
-			String nextId = String.valueOf(existingData.size());
-			dataToWrite = new ArrayList<>();
-			dataToWrite.add(nextId);
-			dataToWrite.addAll(data);
+			// Check if the first element in data is a valid ID for update
+			if (!data.isEmpty() && isNumeric(data.get(0))) {
+				String idToUpdate = data.get(0);
+				List<String> updatedData = new ArrayList<>();
+				updatedData.add(idToUpdate); // Add ID as first column
+				updatedData.addAll(data.subList(1, data.size())); // Add remaining data
+				
+				// Try to find and update existing row with this ID
+				boolean updated = false;
+				for (int i = 0; i < existingData.size(); i++) {
+					List<String> row = existingData.get(i);
+					if (row.size() > 0 && idToUpdate.equals(row.get(0))) {
+						existingData.set(i, updatedData);
+						updated = true;
+						break;
+					}
+				}
+				
+				// If not found, add as new row with specified ID
+				if (!updated) {
+					existingData.add(updatedData);
+				}
+				
+				dataToWrite = null; // We've already handled adding the data
+			} else {
+				// Auto-generate ID as the first column
+				String nextId = String.valueOf(existingData.size() > 0 ? existingData.size() - 1 : 0);
+				dataToWrite = new ArrayList<>();
+				dataToWrite.add(nextId);
+				dataToWrite.addAll(data);
+			}
 		} else {
 			// No ID column, use data as is
 			dataToWrite = new ArrayList<>(data);
 		}
 
-		// Add new data
-		existingData.add(dataToWrite);
+		// Add new data if not already handled
+		if (dataToWrite != null) {
+			existingData.add(dataToWrite);
+		}
 
 		// Write all data back
 		String sheetName = getSheetName(absolutePath);
@@ -467,20 +516,44 @@ public class TableProcessingService implements ITableProcessingService {
 		// Read existing data
 		List<List<String>> existingData = readAllData(planId, filePath);
 
-		// Add new data rows
-		for (List<String> row : data) {
-			List<String> dataToWrite;
-			if (hasIdColumn) {
-				// Auto-generate ID as the first column
-				String nextId = String.valueOf(existingData.size());
-				dataToWrite = new ArrayList<>();
-				dataToWrite.add(nextId);
-				dataToWrite.addAll(row);
-			} else {
-				// No ID column, use data as is
-				dataToWrite = new ArrayList<>(row);
+		// Process data rows
+		if (hasIdColumn) {
+			// Handle rows with potential ID updates
+			for (List<String> row : data) {
+				if (!row.isEmpty() && isNumeric(row.get(0))) {
+					// Row contains an ID, try to update
+					String idToUpdate = row.get(0);
+					List<String> updatedData = new ArrayList<>();
+					updatedData.add(idToUpdate); // Add ID as first column
+					updatedData.addAll(row.subList(1, row.size())); // Add remaining data
+					
+					// Try to find and update existing row with this ID
+					boolean updated = false;
+					for (int i = 0; i < existingData.size(); i++) {
+						List<String> existingRow = existingData.get(i);
+						if (existingRow.size() > 0 && idToUpdate.equals(existingRow.get(0))) {
+							existingData.set(i, updatedData);
+							updated = true;
+							break;
+						}
+					}
+					
+					// If not found, add as new row
+					if (!updated) {
+						existingData.add(updatedData);
+					}
+				} else {
+					// No ID specified, generate one
+					String nextId = String.valueOf(existingData.size() > 0 ? existingData.size() - 1 : 0);
+					List<String> dataToWrite = new ArrayList<>();
+					dataToWrite.add(nextId);
+					dataToWrite.addAll(row);
+					existingData.add(dataToWrite);
+				}
 			}
-			existingData.add(dataToWrite);
+		} else {
+			// No ID column, add rows as is
+			existingData.addAll(data);
 		}
 
 		// Write all data back
@@ -644,6 +717,14 @@ public class TableProcessingService implements ITableProcessingService {
 			.collect(Collectors.toList());
 			
 		log.debug("Converted data size: {}", result.size());
+		
+		// If the first column is ID, remove it from all rows
+		if (!result.isEmpty() && !result.get(0).isEmpty() && "ID".equals(result.get(0).get(0))) {
+			return result.stream()
+				.map(row -> row.subList(1, row.size())) // Remove first column (ID)
+				.collect(Collectors.toList());
+		}
+		
 		return result;
 	}
 
@@ -672,6 +753,23 @@ public class TableProcessingService implements ITableProcessingService {
 		currentFilePaths.remove(planId);
 
 		log.info("Cleaned up table processing resources for plan: {}", planId);
+	}
+
+	/**
+	 * Check if a string is numeric
+	 * @param str the string to check
+	 * @return true if the string is numeric, false otherwise
+	 */
+	private boolean isNumeric(String str) {
+		if (str == null || str.isEmpty()) {
+			return false;
+		}
+		try {
+			Integer.parseInt(str);
+			return true;
+		} catch (NumberFormatException e) {
+			return false;
+		}
 	}
 
 }
