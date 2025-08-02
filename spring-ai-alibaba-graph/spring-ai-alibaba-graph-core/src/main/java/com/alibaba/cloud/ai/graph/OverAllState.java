@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -72,8 +73,8 @@ import static java.util.Optional.ofNullable;
  * status.</li>
  * </ul>
  *
- * <h2>Thread Safety</h2> This class is not thread-safe. External synchronization is
- * required if accessed concurrently.
+ * <h2>Thread Safety</h2> This class is thread-safe. Internal state maps use
+ * ConcurrentHashMap to ensure safe concurrent access across multiple threads.
  *
  * @author disaster
  * @since 1.0.0.1
@@ -117,6 +118,12 @@ public final class OverAllState implements Serializable {
 	public static final String DEFAULT_INPUT_KEY = "input";
 
 	/**
+	 * Set to track keys that have null values, since ConcurrentHashMap doesn't allow null
+	 * values.
+	 */
+	private final Set<String> nullValueKeys;
+
+	/**
 	 * Reset.
 	 */
 	public void reset() {
@@ -128,7 +135,12 @@ public final class OverAllState implements Serializable {
 	 * @return the optional
 	 */
 	public Optional<OverAllState> snapShot() {
-		return Optional.of(new OverAllState(new HashMap<>(this.data), new HashMap<>(this.keyStrategies), this.resume));
+		OverAllState snapshot = new OverAllState(this.resume);
+		// Register all key strategies
+		snapshot.registerKeyAndStrategy(this.keyStrategies);
+		// Input all data including null values
+		snapshot.input(this.data());
+		return Optional.of(snapshot);
 	}
 
 	/**
@@ -136,8 +148,9 @@ public final class OverAllState implements Serializable {
 	 * @param resume the is resume
 	 */
 	public OverAllState(boolean resume) {
-		this.data = new HashMap<>();
-		this.keyStrategies = new HashMap<>();
+		this.data = new ConcurrentHashMap<>();
+		this.keyStrategies = new ConcurrentHashMap<>();
+		this.nullValueKeys = ConcurrentHashMap.newKeySet();
 		this.resume = resume;
 	}
 
@@ -146,8 +159,20 @@ public final class OverAllState implements Serializable {
 	 * @param data the data
 	 */
 	public OverAllState(Map<String, Object> data) {
-		this.data = new HashMap<>(data);
-		this.keyStrategies = new HashMap<>();
+		this.data = new ConcurrentHashMap<>();
+		this.nullValueKeys = ConcurrentHashMap.newKeySet();
+		if (data != null) {
+			// Separate null and non-null values
+			data.entrySet().forEach(entry -> {
+				if (entry.getValue() != null) {
+					this.data.put(entry.getKey(), entry.getValue());
+				}
+				else {
+					this.nullValueKeys.add(entry.getKey());
+				}
+			});
+		}
+		this.keyStrategies = new ConcurrentHashMap<>();
 		this.resume = false;
 	}
 
@@ -155,8 +180,9 @@ public final class OverAllState implements Serializable {
 	 * Instantiates a new Over all state.
 	 */
 	public OverAllState() {
-		this.data = new HashMap<>();
-		this.keyStrategies = new HashMap<>();
+		this.data = new ConcurrentHashMap<>();
+		this.keyStrategies = new ConcurrentHashMap<>();
+		this.nullValueKeys = ConcurrentHashMap.newKeySet();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = false;
 	}
@@ -168,8 +194,9 @@ public final class OverAllState implements Serializable {
 	 * @param resume the resume
 	 */
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume) {
-		this.data = data;
-		this.keyStrategies = keyStrategies;
+		this.data = new ConcurrentHashMap<>(data);
+		this.keyStrategies = new ConcurrentHashMap<>(keyStrategies);
+		this.nullValueKeys = ConcurrentHashMap.newKeySet();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = resume;
 	}
@@ -277,7 +304,16 @@ public final class OverAllState implements Serializable {
 
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
 		input.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
-			this.data.put(key, keyStrategies.get(key).apply(value(key, null), input.get(key)));
+			Object newValue = keyStrategies.get(key).apply(value(key, null), input.get(key));
+			if (newValue != null) {
+				this.data.put(key, newValue);
+				this.nullValueKeys.remove(key); // Remove from null keys if value is now
+												// non-null
+			}
+			else {
+				this.data.remove(key); // Remove from data if value is null
+				this.nullValueKeys.add(key); // Add to null keys
+			}
 		});
 		return this;
 	}
@@ -480,7 +516,12 @@ public final class OverAllState implements Serializable {
 	 * @return the map
 	 */
 	public final Map<String, Object> data() {
-		return unmodifiableMap(data);
+		Map<String, Object> combined = new HashMap<>(this.data);
+		// Add null value keys back to the map
+		for (String nullKey : nullValueKeys) {
+			combined.put(nullKey, null);
+		}
+		return unmodifiableMap(combined);
 	}
 
 	/**

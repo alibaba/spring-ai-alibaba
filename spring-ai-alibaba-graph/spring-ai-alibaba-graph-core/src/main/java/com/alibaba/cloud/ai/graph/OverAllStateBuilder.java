@@ -20,6 +20,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A builder class for constructing {@link OverAllState} instances with a fluent API.
@@ -148,7 +149,8 @@ public class OverAllStateBuilder {
 	 * @return A new OverAllState instance with the configured settings
 	 */
 	public OverAllState build() {
-		OverAllState state = new OverAllState(new HashMap<>(data), new HashMap<>(keyStrategies), resume);
+		OverAllState state = new OverAllState(new ConcurrentHashMap<>(data), new ConcurrentHashMap<>(keyStrategies),
+				resume);
 		// If no input key is registered, apply the default key and replace strategy
 		if (!state.containStrategy(OverAllState.DEFAULT_INPUT_KEY)) {
 			state.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());

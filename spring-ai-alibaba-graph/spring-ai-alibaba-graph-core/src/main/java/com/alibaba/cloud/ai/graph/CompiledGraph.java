@@ -39,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -396,8 +395,16 @@ public class CompiledGraph {
 	 * @param data the data
 	 * @return the over all state
 	 */
-	OverAllState cloneState(Map<String, Object> data) throws IOException, ClassNotFoundException {
-		return stateGraph.getStateSerializer().cloneObject(data);
+	OverAllState cloneState(Map<String, Object> data) {
+		// Simple approach: filter out null values for ConcurrentHashMap compatibility
+		Map<String, Object> filteredData = new HashMap<>();
+		if (data != null) {
+			data.entrySet()
+				.stream()
+				.filter(entry -> entry.getValue() != null)
+				.forEach(entry -> filteredData.put(entry.getKey(), entry.getValue()));
+		}
+		return new OverAllState(filteredData, keyStrategyMap, false);
 	}
 
 	/**
@@ -676,7 +683,15 @@ public class CompiledGraph {
 		 * @return the over all state
 		 */
 		OverAllState cloneState(Map<String, Object> data) {
-			return new OverAllState(data, keyStrategyMap, overAllState.isResume());
+			// Simple approach: filter out null values for ConcurrentHashMap compatibility
+			Map<String, Object> filteredData = new HashMap<>();
+			if (data != null) {
+				data.entrySet()
+					.stream()
+					.filter(entry -> entry.getValue() != null)
+					.forEach(entry -> filteredData.put(entry.getKey(), entry.getValue()));
+			}
+			return new OverAllState(filteredData, keyStrategyMap, overAllState.isResume());
 		}
 
 		/**
