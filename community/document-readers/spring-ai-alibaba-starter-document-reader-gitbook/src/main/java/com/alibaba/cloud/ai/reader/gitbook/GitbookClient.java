@@ -200,7 +200,7 @@ public class GitbookClient {
 	}
 
 	/**
-	 * 构建标题路径
+	 * Build title path
 	 */
 	private String buildTitle(String prevTitle, String currentTitle) {
 		return prevTitle + " > " + currentTitle;
