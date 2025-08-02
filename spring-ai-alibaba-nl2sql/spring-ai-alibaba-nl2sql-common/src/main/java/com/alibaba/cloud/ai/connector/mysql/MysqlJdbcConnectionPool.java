@@ -25,7 +25,7 @@ import static com.alibaba.cloud.ai.enums.ErrorCodeEnum.PASSWORD_ERROR_28000;
 import static com.alibaba.cloud.ai.enums.ErrorCodeEnum.DATABASE_NOT_EXIST_42000;
 import static com.alibaba.cloud.ai.enums.ErrorCodeEnum.OTHERS;
 
-@Service
+@Service("mysqlJdbcConnectionPool")
 public class MysqlJdbcConnectionPool extends AbstractDBConnectionPool {
 
 	private final static String DRIVER = "com.mysql.cj.jdbc.Driver";
