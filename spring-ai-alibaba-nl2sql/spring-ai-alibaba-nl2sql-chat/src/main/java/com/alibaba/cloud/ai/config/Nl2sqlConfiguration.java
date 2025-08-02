@@ -59,6 +59,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
 import static com.alibaba.cloud.ai.constant.Constant.BUSINESS_KNOWLEDGE;
 import static com.alibaba.cloud.ai.constant.Constant.COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.DATA_SET_ID;
@@ -154,6 +155,8 @@ public class Nl2sqlConfiguration {
 			keyStrategyHashMap.put(INPUT_KEY, new ReplaceStrategy());
 			// 数据集ID
 			keyStrategyHashMap.put(DATA_SET_ID, new ReplaceStrategy());
+			// 智能体ID
+			keyStrategyHashMap.put(AGENT_ID, new ReplaceStrategy());
 			// 业务知识
 			keyStrategyHashMap.put(BUSINESS_KNOWLEDGE, new ReplaceStrategy());
 			// 语义模型
