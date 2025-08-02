@@ -1,0 +1,55 @@
+# MCP Gateway 完整协议支持配置示例
+# 此配置启用 SSE 和 Streamable HTTP 两种协议
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: mcp-gateway
+
+  # Spring AI MCP Server 配置
+  ai:
+    mcp:
+      server:
+        name: mcp-gateway
+        version: 1.0.0
+        type: ASYNC
+        # SSE 端点配置
+        sse-endpoint: /sse
+        sse-message-endpoint: /mcp
+        capabilities:
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
+    alibaba:
+      mcp:
+        gateway:
+          enabled: true
+          registry: nacos
+          # Streamable HTTP 配置
+          streamable:
+            enabled: true
+            endpoint: /streamable
+            protocol-version: "2025-06-18"
+        nacos:
+          serverAddr: localhost:8848
+          namespace: public
+          username: nacos
+          password: nacos
+
+# 日志配置
+logging:
+  level:
+    com.alibaba.cloud.ai.mcp.gateway: DEBUG
+    com.alibaba.cloud.ai.autoconfigure.mcp.gateway: DEBUG
+    org.springframework.ai: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+# 说明：
+# 1. SSE 协议端点: http://localhost:8080/sse/mcp
+# 2. Streamable HTTP 协议端点: http://localhost:8080/sse/streamable
+# 3. 两种协议都支持工具调用、资源管理、提示处理、补全功能
+# 4. SSE 使用协议版本: 2025-03-26 (Spring AI 默认)
+# 5. Streamable HTTP 使用协议版本: 2025-06-18
