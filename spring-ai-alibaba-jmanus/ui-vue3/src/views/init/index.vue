@@ -52,8 +52,8 @@
               <span class="language-content">
                 <span class="language-flag">🇨🇳</span>
                 <span class="language-text">
-                  <strong>中文</strong>
-                  <small>简体中文</small>
+                  <strong>{{ $t('language.zh') }}</strong>
+                  <small>{{ $t('init.simplifiedChinese') }}</small>
                 </span>
               </span>
             </label>
@@ -267,7 +267,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { LlmCheckService } from '@/utils/llm-check'
-import { changeLanguage, LOCAL_STORAGE_LOCALE } from '@/base/i18n'
+import { changeLanguageWithAgentReset, LOCAL_STORAGE_LOCALE } from '@/base/i18n'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -308,14 +308,14 @@ const goToNextStep = async () => {
     try {
       loading.value = true
 
-      // 使用统一的changeLanguage函数来切换语言，这会同时更新前端和后端
-      await changeLanguage(selectedLanguage.value)
+      // Use changeLanguageWithAgentReset function to switch language and reset agents
+      await changeLanguageWithAgentReset(selectedLanguage.value)
 
       // Move to next step
       currentStep.value = 2
     } catch (err: any) {
       console.warn('Failed to switch language:', err)
-      // 即使语言切换失败，也继续到下一步，不阻断用户流程
+      // Continue to next step even if language switch fails, don't block user flow
       currentStep.value = 2
     } finally {
       loading.value = false

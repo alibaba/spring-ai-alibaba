@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.tool.bash;
 
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
+import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,11 +26,11 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.ai.openai.api.OpenAiApi;
-
 public class Bash extends AbstractBaseTool<Bash.BashInput> {
 
 	private final ObjectMapper objectMapper;
+
+	private final ToolPromptManager toolPromptManager;
 
 	private static final Logger log = LoggerFactory.getLogger(Bash.class);
 
@@ -65,40 +66,13 @@ public class Bash extends AbstractBaseTool<Bash.BashInput> {
 	// Add operating system information
 	private static final String osName = System.getProperty("os.name");
 
-	private static String PARAMETERS = """
-			{
-				"type": "object",
-				"properties": {
-					"command": {
-						"type": "string",
-						"description": "The bash command to execute. Can be empty to view additional logs when previous exit code is `-1`. Can be `ctrl+c` to interrupt the currently running process."
-					}
-				},
-				"required": ["command"]
-			}
-			""";
-
 	private final String name = "bash";
 
-	private final String description = String.format(
-			"""
-					Execute bash commands in terminal (current OS: %s).
-						* Long-running commands: For commands that may run indefinitely, they should be run in background with output redirected to file, e.g.: command = `python3 app.py > server.log 2>&1 &`.
-						* Interactive commands: If bash command returns exit code `-1`, this means the process is not yet complete. Assistant must send a second terminal call with empty `command` (this will retrieve any additional logs), or can send additional text (set `command` to text) to the running process's STDIN, or can send command=`ctrl+c` to interrupt the process.
-						* Timeout handling: If command execution result shows "Command timed out. Sending SIGINT to the process", assistant should try to re-run the command in background.
-
-					""",
-			osName);
-
-	public OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
-		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
-		return functionTool;
-	}
-
-	public Bash(UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper) {
+	public Bash(UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper,
+			ToolPromptManager toolPromptManager) {
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.objectMapper = objectMapper;
+		this.toolPromptManager = toolPromptManager;
 	}
 
 	private String lastCommand = "";
@@ -137,12 +111,12 @@ public class Bash extends AbstractBaseTool<Bash.BashInput> {
 
 	@Override
 	public String getDescription() {
-		return description;
+		return toolPromptManager.getToolDescription("bash", osName);
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return toolPromptManager.getToolParameters("bash");
 	}
 
 	@Override

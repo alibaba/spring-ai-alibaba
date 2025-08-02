@@ -61,6 +61,7 @@ const words: I18nType = {
     networkError: '网络错误，请检查您的网络连接',
     successMessage: '配置保存成功！正在跳转到主页面...',
     restartRequired: 'API密钥已保存成功！为了使配置生效，需要重启应用程序。\n\n点击"确定"立即重启，点击"取消"稍后手动重启。',
+    simplifiedChinese: '简体中文',
   },
 
   // 通用按钮和操作
@@ -77,8 +78,17 @@ const words: I18nType = {
     update: '更新',
     submit: '提交',
     clear: '清空',
+    submitFailed: '提交失败',
+    unknownError: '未知错误',
     search: '搜索',
     loading: '加载中...',
+    parameters: '参数',
+  },
+
+  // 语言
+  language: {
+    zh: '中文',
+    en: 'English',
     success: '成功',
     error: '错误',
     warning: '警告',
@@ -115,6 +125,9 @@ const words: I18nType = {
     thinking: '思考',
     input: '输入',
     actions: '操作',
+    total: '总计',
+    loadFailed: '加载失败',
+    switch: '切换语言',
   },
 
   // 配置相关
@@ -325,6 +338,18 @@ const words: I18nType = {
       newMcpConfig: '新建MCP配置',
       importAll: '全部导入',
       exportAll: '全部导出',
+      mcpName: 'MCP名称',
+      usageInstructions: '使用说明',
+      getMcpServiceList: '获取MCP服务列表',
+      findMcpServices: '可以在mcp.higress.ai，mcp.so，modelscope.cn上查找可用的MCP服务',
+      batchImportTip: '如果需要批量配置MCP服务，可以使用右上角的全部导入功能',
+      configureMcpService: '配置MCP服务',
+      fillServiceName: '填写服务名称',
+      selectConnectionType: '选择连接类型:本地选择 STUDIO 以及输入 Command、Args和Env。远程选择 SSE 或 STREAMING 以及输入 URL',
+      clickSaveToComplete: '点击保存按钮完成MCP配置，MCP工具将自动注册到系统中',
+      configureAgentUsage: '配置Agent使用',
+      createAgentTip: '在Agent配置页面创建新的Agent，为Agent添加刚配置的MCP服务，这样可以减少工具冲突，提高Agent选择工具的准确性',
+      copyJsonConfig: '把完整的JSON配置复制到上面的输入框(可以参考配置示例)，然后点击导入',
       command: 'Command',
       args: 'Args',
       env: 'Env',
@@ -527,6 +552,21 @@ const words: I18nType = {
     saveFailed: 'Agent保存失败',
     deleteSuccess: 'Agent删除成功',
     deleteFailed: 'Agent删除失败',
+    // 多语言支持
+    multiLanguage: {
+      title: 'Agent多语言管理',
+      resetAll: '重置所有Agent',
+      resetAllConfirm: '重置所有Agent确认',
+      resetAllWarning: '此操作将删除所有现有Agent配置并重新加载指定语言版本。此操作不可恢复！',
+      selectLanguage: '选择语言',
+      resetSuccess: '所有Agent已重置为指定语言版本',
+      resetFailed: '重置Agent失败',
+      currentLanguage: '当前语言',
+      supportedLanguages: '支持的语言',
+      resetInProgress: '正在重置Agent...',
+      confirmReset: '确认重置',
+      cancel: '取消',
+    },
   },
 
   // Model 配置
@@ -577,12 +617,14 @@ const words: I18nType = {
     executionFailed: '执行失败',
     generationSuccess: '生成成功',
     generationFailed: '生成失败',
+    invalidJson: 'JSON 格式无效，请修正后再保存',
+    executePlanTemplate: '执行计划模板',
   },
 
   // 聊天组件
   chat: {
-    botName: 'TaskPilot:',
-    thinkingLabel: 'TaskPilot 思考/处理',
+    botName: 'JManus:',
+    thinkingLabel: 'JManus 思考/处理',
     processing: '处理中...',
     step: '步骤',
     stepNumber: '步骤 {number}',
@@ -620,6 +662,14 @@ const words: I18nType = {
     formatError: '请求格式可能有些问题，能否请您重新表述一下您的需求？',
     unknownError: '处理您的请求时遇到了一些问题，请稍后再试',
     thinkingOutput: '思考输出',
+    defaultResponse: '我明白了，还有什么我可以帮您的吗？',
+    anythingElse: '还有什么需要我帮助的吗？',
+    okayDone: '好的，{text}',
+    ifOtherQuestions: '如果您还有其他问题，请随时告诉我',
+    hopeHelpful: '希望这个回答对您有帮助！',
+    great: '很好！',
+    ifOtherHelp: '如果您还有其他需要帮助的地方，请随时告诉我',
+    completedRequest: '我已经完成了您的请求：{result}'
   },
 
   // 输入组件
@@ -627,9 +677,10 @@ const words: I18nType = {
     placeholder: '向 JManus 发送消息',
     send: '发送',
     planMode: 'PLAN-ACT计划模式',
-    waiting: '等待任务完成...',
+    waiting: '等待用户输入...',
     maxLength: '最大长度',
     charactersRemaining: '剩余字符',
+    attachFile: '附加文件',
   },
 
   // 侧边栏
@@ -702,6 +753,25 @@ const words: I18nType = {
     defaultExecutionPlanTitle: '执行计划',
   },
 
+  // 工具选择
+  toolSelection: {
+    title: '选择工具',
+    searchPlaceholder: '搜索工具...',
+    sortByGroup: '按服务组排序',
+    sortByName: '按名称排序',
+    sortByStatus: '按启用状态排序',
+    summary: '共 {groups} 个服务组，{tools} 个工具 (已选择 {selected} 个)',
+    enableAll: '启用全部',
+    noToolsFound: '没有找到工具'
+  },
+
+  // 直接执行页面
+  direct: {
+    planTemplateIdNotFound: '没有找到计划模板ID',
+    executionFailedNoPlanId: '执行计划失败：未返回有效的计划ID',
+    executionFailed: '执行计划失败'
+  },
+
   // 模态框
   modal: {
     close: '关闭',
@@ -728,12 +798,9 @@ const words: I18nType = {
     resetFontSize: '重置字体大小',
   },
 
-  // 语言切换
-  language: {
-    switch: '切换语言',
-    current: '当前语言',
-    zh: '中文',
-    en: 'English',
+  // 验证
+  validation: {
+    required: '内容不能为空',
   },
 
   // 主题
@@ -754,20 +821,6 @@ const words: I18nType = {
     networkErrorDescription: '网络连接失败，请检查您的网络设置',
     backToHome: '返回首页',
     retry: '重试',
-  },
-
-  // 表单验证
-  validation: {
-    required: '此字段为必填项',
-    email: '请输入有效的邮箱地址',
-    phone: '请输入有效的手机号码',
-    url: '请输入有效的网址',
-    minLength: '至少需要 {min} 个字符',
-    maxLength: '最多只能输入 {max} 个字符',
-    min: '值不能小于 {min}',
-    max: '值不能大于 {max}',
-    pattern: '格式不正确',
-    confirmation: '两次输入不一致',
   },
 
   // 时间相关
@@ -833,11 +886,21 @@ const words: I18nType = {
         title: '查询一个人的信息',
         description: '查询 沈询 阿里的所有信息（用于展示无限上下文能力）',
         prompt: '用浏览器，基于百度，查询计划',
+        planTitle: '查询 沈询 阿里的所有信息（用于展示无限上下文能力）',
+        step1: '[BROWSER_AGENT] 通过 百度 查询 沈询 阿里 ， 获取第一页的html 百度数据，合并聚拢 到 html_data 的目录里',
+        step1Output: '存放的目录路径',
+        step2: '[BROWSER_AGENT] 从 html_data 目录中找到所有的有效关于沈询 阿里 的网页链接，输出到 link.md里面',
+        step2Output: 'url地址，说明',
       },
       ainovel: {
         title: 'AI小说创作',
         description: '人工智能逐步击败人类主题小说（用于展示超长内容的输出）',
         prompt: '创建一个关于人工智能逐步击败人类的小说，包含10个章节',
+        planTitle: '人工智能逐步击败人类小说创作计划',
+        step1: '[TEXT_FILE_AGENT] 创建小说的大标题和子章节标题的文件,期望是一有10个子章节的的小说，提纲输出到novel.md里，每一个子章节用二级标题，在当前步骤只需要写章节的标题即可,小说的大标题是《人工智能逐步击败人类》',
+        step1Output: '文件的名字',
+        step2: '[TEXT_FILE_AGENT] 从novel.md文件获取子标题信息，然后依次完善每一个章节的具体内容，每个轮次只完善一个子章节的内容，用replace来更新内容，每个章节要求有3000字的内容，不要每更新一个章节就查询一下文档的全部内容',
+        step2Output: '文件的名字',
       },
     },
   },
@@ -868,11 +931,15 @@ const words: I18nType = {
     stepName: '步骤名称',
     noExecutionInfo: '该步骤暂无详细执行信息',
     subPlan: '子执行计划',
-    // 步骤状态
+    subStep: '子步骤',
+    subPlanId: '子计划ID',
+    title: '标题',
+    stepNumber: '步骤 {number}',
     status: {
+      label: '状态',
       completed: '已完成',
       executing: '执行中',
-      waiting: '等待执行',
+      pending: '待执行'
     },
     // Tab 标签
     tabs: {
@@ -907,13 +974,6 @@ const words: I18nType = {
     },
     // 默认步骤标题
     defaultStepTitle: '步骤 {number}',
-  },
-
-  // 直接页面
-  direct: {
-    configuration: '配置',
-    panelResizeHint: '拖拽调整面板大小，双击重置',
-    aboutExecutionDetails: '关于集成执行详情',
   },
 
   // 定时任务

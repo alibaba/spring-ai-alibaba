@@ -159,7 +159,7 @@
                       </div>
                     </div>
 
-                    <!-- 子执行计划部分 - 新增功能 -->
+                    <!-- Sub execution plan section - new feature -->
                     <div v-if="tas.subPlanExecutionRecord" class="sub-plan-section">
                       <h5>
                         <Icon icon="carbon:tree-view"/>
@@ -168,11 +168,11 @@
                       <div class="sub-plan-content">
                         <div class="sub-plan-header">
                           <div class="sub-plan-info">
-                            <span class="label">子计划ID:</span>
+                            <span class="label">{{ $t('rightPanel.subPlanId') }}:</span>
                             <span class="value">{{ tas.subPlanExecutionRecord.currentPlanId }}</span>
                           </div>
                           <div class="sub-plan-info" v-if="tas.subPlanExecutionRecord.title">
-                            <span class="label">标题:</span>
+                            <span class="label">{{ $t('rightPanel.title') }}:</span>
                             <span class="value">{{ tas.subPlanExecutionRecord.title }}</span>
                           </div>
                           <div class="sub-plan-status">
@@ -183,7 +183,7 @@
                             />
                             <Icon icon="carbon:in-progress" v-else class="status-icon progress"/>
                             <span class="status-text">
-                            {{ tas.subPlanExecutionRecord.completed ? '已完成' : '执行中' }}
+                            {{ tas.subPlanExecutionRecord.completed ? $t('rightPanel.status.completed') : $t('rightPanel.status.executing') }}
                           </span>
                           </div>
                         </div>
@@ -216,23 +216,23 @@
                     <span class="value">{{
                         selectedStep.title ||
                         selectedStep.description ||
-                        `步骤 ${selectedStep.index + 1}`
+                        $t('rightPanel.stepNumber', { number: selectedStep.index + 1 })
                       }}</span>
                   </div>
                   <div class="info-item" v-if="selectedStep.description">
-                    <span class="label">描述:</span>
+                    <span class="label">{{ $t('rightPanel.description') }}:</span>
                     <span class="value">{{ selectedStep.description }}</span>
                   </div>
                   <div class="info-item">
-                    <span class="label">状态:</span>
+                    <span class="label">{{ $t('rightPanel.status.label') }}:</span>
                     <span class="value" :class="{
                     'status-completed': selectedStep.completed,
                     'status-current': selectedStep.current,
                     'status-pending': !selectedStep.completed && !selectedStep.current
                   }">
                     {{
-                        selectedStep.completed ? '已完成' :
-                            selectedStep.current ? '执行中' : '待执行'
+                        selectedStep.completed ? $t('rightPanel.status.completed') :
+                            selectedStep.current ? $t('rightPanel.status.executing') : $t('rightPanel.status.pending')
                       }}
                   </span>
                   </div>
@@ -293,7 +293,7 @@ interface StepSelectionContext {
   planId: string
   stepIndex: number
   rootPlanId?: string    // For sub-plan steps, reference to root plan
-  subPlanId?: string     // For sub-plan steps  
+  subPlanId?: string     // For sub-plan steps
   subStepIndex?: number  // For sub-plan steps
   isSubPlan: boolean     // Flag to indicate if this is a sub-plan step
 }
@@ -361,26 +361,28 @@ const stepStatusText = computed(() => {
  *
  * ================================================================================
  *
- * 右侧面板组件外部刷新控制的主要方法。
+ * Main method for external refresh control of the right panel component.
  *
- * 使用方式：
- * 此方法应由外部组件（通常是 Direct 组件）调用，用于触发计划进度显示和步骤详情的刷新。
- * 它作为基于计划执行变化更新组件状态的主要入口点。
+ * Usage:
+ * This method should be called by external components (usually the Direct component) to trigger
+ * refresh of plan progress display and step details.
+ * It serves as the main entry point for updating component state based on plan execution changes.
  *
- * 刷新逻辑：
- * 1. 验证提供的 rootPlanId 是否与当前显示的计划匹配
- * 2. 更新计划进度信息（当前步骤 vs 总步骤数）
- * 3. 如果当前有选中的步骤且属于提供的 rootPlanId：
- *    - 重新获取最新的计划执行数据
- *    - 刷新步骤详情显示并更新信息
- *    - 如果用户之前在底部，则自动滚动显示最新内容
+ * Refresh logic:
+ * 1. Verify that the provided rootPlanId matches the currently displayed plan
+ * 2. Update plan progress information (current step vs total steps)
+ * 3. If there is a currently selected step belonging to the provided rootPlanId:
+ *    - Re-fetch the latest plan execution data
+ *    - Refresh step details display and update information
+ *    - Auto-scroll to show latest content if user was previously at bottom
  *
- * 关键设计原则：
- * 此组件不维护内部自动刷新定时器。相反，它完全依赖于对此方法的外部调用来进行更新。
- * 这使得父组件可以完全控制何时以及多频繁地进行刷新。
+ * Key design principle:
+ * This component does not maintain internal auto-refresh timers. Instead, it relies entirely
+ * on external calls to this method for updates.
+ * This allows parent components to have complete control over when and how frequently to refresh.
  *
- * 一致性检查：
- * 只允许对当前显示的计划进行更新，以防止冲突的更新操作。
+ * Consistency check:
+ * Only allows updates to the currently displayed plan to prevent conflicting update operations.
  *
  * @param rootPlanId - The ID of the root plan execution to refresh
  */
@@ -584,7 +586,7 @@ const displayStepDetails = (
     title: typeof step === 'string'
       ? step
       : (step as any).title || (step as any).description || (step as any).name ||
-        `${isSubPlan ? '子' : ''}步骤 ${stepIndex + 1}`,
+        `${isSubPlan ? 'Sub ' : ''}Step ${stepIndex + 1}`,
     description: typeof step === 'string' ? step : (step as any).description || step,
     completed: isStepCompleted,
     current: isCurrent,
@@ -770,7 +772,7 @@ const initScrollListener = () => {
 // Lifecycle - initialization on mount
 onMounted(() => {
   console.log('[RightPanel] Component mounted')
-  // 使用nextTick确保DOM已渲染
+  // Use nextTick to ensure DOM is rendered
   nextTick(() => {
     initScrollListener()
   })
@@ -823,25 +825,25 @@ defineExpose({
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 确保flex子项可以收缩 */
+  min-height: 0; /* Ensure flex items can shrink */
 }
 
-/* 步骤详情样式 */
+/* Step details styles */
 .step-details {
   flex: 1;
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 确保flex子项可以收缩 */
+  min-height: 0; /* Ensure flex items can shrink */
 }
 
-/* 固定在顶部的步骤基本信息 */
+/* Fixed step basic information at top */
 .step-info-fixed {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(41, 42, 45, 0.95); /* 半透明背景，保持一定透明度 */
-  backdrop-filter: blur(10px); /* 背景模糊效果 */
+  background: rgba(41, 42, 45, 0.95); /* Semi-transparent background with some transparency */
+  backdrop-filter: blur(10px); /* Background blur effect */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 20px;
   margin: 0 20px;
@@ -861,12 +863,12 @@ defineExpose({
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 20px 20px; /* 移除顶部padding，因为固定头部已有padding */
+  padding: 0 20px 20px; /* Remove top padding since fixed header already has padding */
   margin: 0 20px 20px;
   background: rgba(255, 255, 255, 0.01);
-  border-radius: 0 0 8px 8px; /* 调整圆角，与固定头部配合 */
+  border-radius: 0 0 8px 8px; /* Adjust border radius to match fixed header */
 
-  /* 自定义滚动条样式 */
+  /* Custom scrollbar styles */
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -886,7 +888,7 @@ defineExpose({
   }
 }
 
-/* 步骤信息样式 - 用于固定顶部 */
+/* Step information styles - for fixed top */
 .agent-info {
   margin-bottom: 16px;
 
@@ -1109,7 +1111,7 @@ defineExpose({
 }
 
 .think-act-steps {
-  margin-top: 20px; /* 增加顶部间距，因为现在没有固定头部的步骤信息 */
+  margin-top: 20px; /* Increase top spacing since there's no fixed header step info now */
 
   h4 {
     color: #ffffff;
@@ -1229,7 +1231,7 @@ defineExpose({
     }
   }
 
-  /* 子计划样式 */
+  /* Sub plan styles */
   .sub-plan-content {
     .sub-plan-header {
       background: rgba(102, 126, 234, 0.1);
@@ -1319,7 +1321,7 @@ defineExpose({
   }
 }
 
-/* 滚动到底部按钮 */
+/* Scroll to bottom button */
 .scroll-to-bottom-btn {
   position: fixed;
   bottom: 40px;
@@ -1350,7 +1352,7 @@ defineExpose({
   }
 }
 
-/* 滚动按钮过渡动画 */
+/* Scroll button transition animation */
 .scroll-button-enter-active,
 .scroll-button-leave-active {
   transition: all 0.3s ease;

@@ -15,26 +15,29 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.cron;
 
-import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
-import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.service.CronService;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.vo.CronConfig;
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
+import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.openai.api.OpenAiApi;
 
 public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 
 	private final ObjectMapper objectMapper;
 
+	private final ToolPromptManager toolPromptManager;
+
 	private static final Logger log = LoggerFactory.getLogger(CronTool.class);
 
 	private final CronService cronService;
 
-	public CronTool(CronService cronService, ObjectMapper objectMapper) {
+	public CronTool(CronService cronService, ObjectMapper objectMapper, ToolPromptManager toolPromptManager) {
 		this.cronService = cronService;
 		this.objectMapper = objectMapper;
+		this.toolPromptManager = toolPromptManager;
 	}
 
 	public static class CronToolInput {
@@ -80,38 +83,7 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 
 	}
 
-	private static String PARAMETERS = """
-			{
-				"type": "object",
-				"properties": {
-					"cronName": {
-						"type": "string",
-						"description": "Scheduled task name"
-					},
-					"cronTime": {
-						"type": "string",
-						"description": "Cron format task scheduled execution time (6 digits), example: 0 0 0/2 * * ?"
-					},
-					"planDesc": {
-						"type": "string",
-						"description": "Task content to execute, cannot contain time-related information"
-					}
-				},
-				"required": ["cronTime","originTime","planDesc"]
-			}
-			""";
-
 	private final String name = "cron_tool";
-
-	private final String description = """
-			    Scheduled task tool that can store scheduled tasks to database.
-			""";
-
-	public OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
-		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
-		return functionTool;
-	}
 
 	@Override
 	public ToolExecuteResult run(CronToolInput input) {
@@ -146,12 +118,12 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 
 	@Override
 	public String getDescription() {
-		return description;
+		return toolPromptManager.getToolDescription("cron_tool");
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return toolPromptManager.getToolParameters("cron_tool");
 	}
 
 	@Override
