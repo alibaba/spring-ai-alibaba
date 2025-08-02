@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatche
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ProfessionalKbDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.RewriteAndMultiQueryDispatcher;
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.UserFileRagDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
 
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
@@ -99,6 +98,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private ChatClient reporterAgent;
+
+	@Autowired
+	private ChatClient backgroundAgent;
 
 	@Autowired
 	private ChatClient coordinatorAgent;
@@ -231,9 +233,9 @@ public class DeepResearchConfiguration {
 			.addNode("rewrite_multi_query",
 					node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryChatClientBuilder)))
 			.addNode("background_investigator",
-					node_async(
-							new BackgroundInvestigationNode(jinaCrawlerService, infoCheckService, searchFilterService,
-									questionClassifierService, searchPlatformSelectionService, smartAgentProperties)))
+					node_async(new BackgroundInvestigationNode(jinaCrawlerService, infoCheckService,
+							searchFilterService, questionClassifierService, searchPlatformSelectionService,
+							smartAgentProperties, backgroundAgent)))
 			.addNode("user_file_rag", createUserFileRagNode())
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("professional_kb_decision",
@@ -254,8 +256,7 @@ public class DeepResearchConfiguration {
 			.addConditionalEdges("rewrite_multi_query", edge_async(new RewriteAndMultiQueryDispatcher()),
 					Map.of("background_investigator", "background_investigator", "user_file_rag", "user_file_rag",
 							"planner", "planner", END, END))
-			.addConditionalEdges("background_investigator", edge_async(new UserFileRagDispatcher()),
-					Map.of("user_file_rag", "user_file_rag", "planner", "planner", END, END))
+			.addEdge("background_investigator", "reporter")
 			.addEdge("user_file_rag", "planner")
 			.addEdge("planner", "information")
 			.addConditionalEdges("information", edge_async(new InformationDispatcher()),

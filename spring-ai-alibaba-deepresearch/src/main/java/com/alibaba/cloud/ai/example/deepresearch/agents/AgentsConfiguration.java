@@ -49,6 +49,9 @@ public class AgentsConfiguration {
 	@Value("classpath:prompts/coder.md")
 	private Resource coderPrompt;
 
+	@Value("classpath:prompts/background.md")
+	private Resource backgroundPrompt;
+
 	@Value("classpath:prompts/buildInteractiveHtmlPrompt.md")
 	private Resource interactionPrompt;
 
@@ -111,6 +114,17 @@ public class AgentsConfiguration {
 			AgentType agentType) {
 		return builder.defaultSystem(AgentPromptTemplateUtil.buildCompletePrompt(agentType))
 			.defaultToolCallbacks(getMcpToolCallbacks(agentName));
+	}
+
+	/**
+	 * Create Background Agent ChatClient Bean
+	 * @param backgroundChatClientBuilder ChatClientBuilder
+	 * @return ChatClient
+	 */
+	@Bean
+	public ChatClient backgroundAgent(ChatClient.Builder backgroundChatClientBuilder) {
+		var builder = backgroundChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(backgroundPrompt));
+		return builder.build();
 	}
 
 	/**
