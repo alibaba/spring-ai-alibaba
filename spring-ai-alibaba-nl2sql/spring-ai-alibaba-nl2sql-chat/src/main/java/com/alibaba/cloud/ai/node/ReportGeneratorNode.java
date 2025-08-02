@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.model.execution.ExecutionStep;
 import com.alibaba.cloud.ai.model.execution.Plan;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
+import com.alibaba.cloud.ai.service.UserPromptConfigService;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
@@ -60,10 +61,13 @@ public class ReportGeneratorNode implements NodeAction {
 
 	private final BeanOutputConverter<Plan> converter;
 
-	public ReportGeneratorNode(ChatClient.Builder chatClientBuilder) {
+	private final UserPromptConfigService promptConfigService;
+
+	public ReportGeneratorNode(ChatClient.Builder chatClientBuilder, UserPromptConfigService promptConfigService) {
 		this.chatClient = chatClientBuilder.build();
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
 		});
+		this.promptConfigService = promptConfigService;
 	}
 
 	@Override
@@ -132,9 +136,14 @@ public class ReportGeneratorNode implements NodeAction {
 		// Build analysis steps and data results description
 		String analysisStepsAndData = buildAnalysisStepsAndData(plan, executionResults);
 
-		// Use PromptHelper to build report generation prompt
-		String reportPrompt = PromptHelper.buildReportGeneratorPrompt(userRequirementsAndPlan, analysisStepsAndData,
-				summaryAndRecommendations);
+		// Get custom prompt content if available
+		String customPrompt = promptConfigService.getCustomPromptContent("report-generator");
+
+		// Use PromptHelper to build report generation prompt with custom prompt support
+		String reportPrompt = PromptHelper.buildReportGeneratorPromptWithCustom(userRequirementsAndPlan,
+				analysisStepsAndData, summaryAndRecommendations, customPrompt);
+
+		logger.info("Using {} prompt for report generation", customPrompt != null ? "custom" : "default");
 
 		return chatClient.prompt().user(reportPrompt).stream().chatResponse();
 	}
