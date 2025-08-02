@@ -22,6 +22,6 @@ nextStepPrompt: |
 
   To extract content from existing text files or documents, please use the text_file_operator or inner_storage_content_tool.
 
-  Note: 
+  Note:
   - When specifying the path for generating the PPT, do not use an absolute address.
   - Please return the path of the generated PPT file to the user.
