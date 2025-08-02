@@ -98,8 +98,8 @@ public class Nl2sqlForGraphController {
 	}
 
 	@GetMapping(value = "/stream/search", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-	public Flux<ServerSentEvent<String>> streamSearch(@RequestParam String query, @RequestParam String agentId, HttpServletResponse response)
-			throws Exception {
+	public Flux<ServerSentEvent<String>> streamSearch(@RequestParam String query, @RequestParam String agentId,
+			HttpServletResponse response) throws Exception {
 		// 设置SSE相关的HTTP头
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("text/event-stream");
@@ -126,13 +126,16 @@ public class Nl2sqlForGraphController {
 							if (chunk != null && !chunk.trim().isEmpty()) {
 								logger.debug("Emitting chunk: {}", chunk);
 								// 确保chunk是有效的JSON
-								ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(chunk)).build();
+								ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(chunk))
+									.build();
 								sink.tryEmitNext(event);
 							}
 							else {
-								logger.warn("ReceFenerator: mapResult called, finalResultived null or empty chunk from streaming output");
+								logger.warn(
+										"ReceFenerator: mapResult called, finalResultived null or empty chunk from streaming output");
 							}
-						} else {
+						}
+						else {
 							logger.debug("Non-streaming output received: {}", output);
 						}
 					}
@@ -152,7 +155,8 @@ public class Nl2sqlForGraphController {
 					sink.tryEmitComplete();
 					return null;
 				});
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				logger.error("Error starting stream processing: ", e);
 				sink.tryEmitError(e);
 			}

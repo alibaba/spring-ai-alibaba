@@ -1,37 +1,38 @@
 <template>
-  <div class="agent-debug-panel">
+  <div class="agent-debug-panel" style="padding: 1.5rem; height: calc(100vh - 120px); display: flex; flex-direction: column; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); gap: 1.5rem;">
     <!-- 调试头部 -->
-    <div class="debug-header">
-      <h2>智能体调试</h2>
-      <p class="debug-subtitle">测试智能体的响应能力和配置正确性</p>
+    <div class="debug-header" style="background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+      <h2 style="font-size: 1.8rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">智能体调试</h2>
+      <p class="debug-subtitle" style="color: #64748b; font-size: 1rem; margin: 0; font-weight: 500;">测试智能体的响应能力和配置正确性</p>
     </div>
 
     <!-- 调试结果区域 -->
-    <div class="debug-result-section">
-      <div class="result-header">
-        <div class="result-title">
-          <i class="bi bi-terminal"></i>
+    <div class="debug-result-section" style="background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); overflow: hidden; flex: 1; display: flex; flex-direction: column; border: 1px solid #e2e8f0;">
+      <div class="result-header" style="padding: 1.5rem 2rem; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+        <div class="result-title" style="font-size: 1.2rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 0.75rem;">
+          <i class="bi bi-terminal" style="color: #3b82f6; font-size: 1.3rem;"></i>
           调试结果
         </div>
         <div class="result-status" v-if="debugStatus">
-          <span class="badge" :class="getStatusClass()">{{ debugStatus }}</span>
+          <span class="badge" :class="getStatusClass()" style="padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">{{ debugStatus }}</span>
         </div>
       </div>
-      <div class="result-content" ref="resultContainer">
+      <div class="result-content" ref="resultContainer" style="flex: 1; overflow-y: auto; background: #fafbfc;">
         <!-- 空状态 -->
-        <div v-if="!hasResults" class="empty-state">
-          <div class="empty-icon">
+        <div v-if="!hasResults" class="empty-state" style="text-align: center; padding: 4rem 2rem; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border-radius: 20px; margin: 2rem; border: 2px dashed #cbd5e1;">
+          <div class="empty-icon" style="font-size: 4rem; margin-bottom: 2rem; color: #94a3b8;">
             <i class="bi bi-chat-square-text"></i>
           </div>
-          <div class="empty-text">
+          <div class="empty-text" style="font-size: 1.2rem; margin-bottom: 2.5rem; color: #475569; font-weight: 600;">
             输入测试问题，查看智能体的响应结果
           </div>
-          <div class="example-queries" v-if="exampleQueries.length > 0">
+          <div class="example-queries" v-if="exampleQueries.length > 0" style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; max-width: 800px; margin: 0 auto;">
             <div 
               class="example-query" 
               v-for="example in exampleQueries" 
               :key="example"
               @click="useExampleQuery(example)"
+              style="padding: 1rem 1.5rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); font-size: 0.95rem;"
             >
               {{ example }}
             </div>
@@ -39,29 +40,47 @@
         </div>
         
         <!-- 结果展示 -->
-        <div v-else class="debug-results-container">
+        <div v-else class="debug-results-container" style="padding: 1.25rem; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); min-height: 300px;">
           <!-- 流式结果区块 - 使用与 AgentWorkspace.vue 相同的结构 -->
-          <div v-for="section in streamingSections" :key="section.id" class="agent-response-block">
-            <div class="agent-response-title">
-              <i :class="section.icon"></i> {{ section.title }}
-              <button 
-                v-if="section.type === 'sql'" 
-                class="copy-button" 
-                @click="copyToClipboard(section.rawContent)"
-                title="复制SQL"
-              >
-                <i class="bi bi-clipboard"></i>
-              </button>
+          <div v-for="section in streamingSections" :key="section.id" 
+               class="agent-response-block" 
+               :data-type="section.type"
+               :class="{ 'loading': section.isLoading }"
+               style="margin-bottom: 1.5rem; border-radius: 12px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0; overflow: hidden; background: white;">
+            <div class="agent-response-title" style="padding: 0.5rem 1rem !important; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important; border-bottom: 1px solid #e2e8f0 !important; display: flex !important; justify-content: space-between !important; align-items: center !important; min-height: auto !important; height: auto !important; line-height: 1.2 !important;">
+              <div class="title-left" style="display: flex !important; align-items: center !important; gap: 0.5rem !important;">
+                <i :class="section.icon" style="color: #3b82f6 !important; font-size: 0.9rem !important;"></i> 
+                <span class="title-text" style="font-weight: 600 !important; color: #1e293b !important; font-size: 0.85rem !important; line-height: 1.2 !important; margin: 0 !important;">{{ section.title }}</span>
+                <span v-if="section.isLoading" class="loading-indicator">
+                  <i class="bi bi-three-dots loading-dots" style="color: #3b82f6;"></i>
+                </span>
+              </div>
+              <div class="title-actions" style="display: flex !important; align-items: center !important; gap: 0.5rem !important;">
+                <button 
+                  v-if="section.type === 'sql'" 
+                  class="copy-button" 
+                  @click="copyToClipboard(section.rawContent)"
+                  title="复制SQL"
+                  style="background: #3b82f6 !important; color: white !important; border: none !important; padding: 0.25rem 0.5rem !important; border-radius: 4px !important; cursor: pointer !important; transition: all 0.2s ease !important; font-size: 0.75rem !important; line-height: 1 !important;"
+                >
+                  <i class="bi bi-clipboard" style="font-size: 0.75rem !important;"></i>
+                </button>
+                <span v-if="section.timestamp" class="timestamp" style="font-size: 0.65rem !important; color: #64748b !important; background: #f1f5f9 !important; padding: 0.1rem 0.4rem !important; border-radius: 8px !important; line-height: 1.2 !important;">
+                  {{ formatTime(section.timestamp) }}
+                </span>
+              </div>
             </div>
-            <div class="agent-response-content" v-html="section.content"></div>
+            <div class="agent-response-content" 
+                 v-html="section.content" 
+                 style="padding: 1rem !important; font-size: 0.9rem !important; line-height: 1.6 !important; color: #374151 !important; background: white !important; min-height: 30px !important;"></div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 调试输入区域 -->
-    <div class="debug-input-section">
-      <div class="input-container">
+    <div class="debug-input-section" style="background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+      <div class="input-container" style="display: flex; gap: 1rem; align-items: center;">
         <input 
           type="text" 
           v-model="debugQuery" 
@@ -70,11 +89,13 @@
           :disabled="isDebugging || isInitializing"
           @keyup.enter="startDebug"
           ref="debugInput"
+          style="flex: 1; padding: 1.2rem 1.5rem; font-size: 1.05rem; border: 1px solid #e2e8f0; border-radius: 12px; outline: none; background: #fafbfc; color: #1e293b; transition: all 0.3s ease;"
         >
         <button 
           class="debug-button" 
           :disabled="isDebugging"
           @click="handleDebugClick"
+          style="padding: 1.2rem 2rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border: none; border-radius: 12px; font-size: 1.05rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem; min-width: 140px; justify-content: center; font-weight: 600; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);"
         >
           <i class="bi bi-play-circle" v-if="!isDebugging"></i>
           <div class="spinner" v-else></div>
@@ -84,6 +105,7 @@
           class="schema-init-button" 
           :disabled="isDebugging || isInitializing"
           @click="openSchemaInitModal"
+          style="padding: 1.2rem 1.8rem; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; border-radius: 12px; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem; font-weight: 600; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);"
         >
           <i class="bi bi-database-gear"></i>
           初始化信息源
@@ -93,6 +115,7 @@
           :disabled="isInitializing || isDebugging"
           :class="{ loading: isInitializing }"
           @click="initializeDataSource"
+          style="padding: 1.2rem 1.8rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem; font-weight: 600; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);"
         >
           <i class="bi bi-database-add" v-if="!isInitializing && !isInitialized"></i>
           <i class="bi bi-check-circle" v-if="!isInitializing && isInitialized"></i>
@@ -346,7 +369,8 @@ export default {
                     icon: typeInfo.icon,
                     content: formattedContent,
                     rawContent: content,
-                    timestamp: new Date().toLocaleTimeString()
+                    timestamp: Date.now(),
+                    isLoading: !content || content.trim() === ''
                 })
             }
             
@@ -440,7 +464,9 @@ export default {
               type: 'error',
               title: '连接错误',
               icon: 'bi bi-exclamation-triangle',
-              content: '<div class="error-content">连接失败，请检查后端服务是否正在运行</div>'
+              content: '<div class="error-content">连接失败，请检查后端服务是否正在运行</div>',
+              timestamp: Date.now(),
+              isLoading: false
             })
           }
           
@@ -907,6 +933,18 @@ export default {
       showConfigForm.value = !showConfigForm.value
     }
 
+    // 格式化时间
+    const formatTime = (timestamp) => {
+      if (!timestamp) return ''
+      const date = new Date(timestamp)
+      return date.toLocaleTimeString('zh-CN', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+      })
+    }
+
     // 其他辅助函数
     const copyToClipboard = (text) => {
       navigator.clipboard.writeText(text).then(() => {
@@ -947,6 +985,7 @@ export default {
       startDebug,
       initializeDataSource,
       copyToClipboard,
+      formatTime,
       showSchemaInitModal,
       showConfigForm,
       schemaInitializing,
@@ -974,58 +1013,67 @@ export default {
   }
 }
 </script>
-<style scoped>
+<style>
 .agent-debug-panel {
-  padding: 0;
+  padding: 1rem;
   height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  gap: 1rem;
 }
 
 .debug-header {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
   flex-shrink: 0;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
 }
 
 .debug-header h2 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #333;
+  color: #1e293b;
   margin-bottom: 0.5rem;
 }
 
 .debug-subtitle {
-  color: #666;
+  color: #64748b;
   font-size: 0.95rem;
   margin: 0;
 }
 
 .debug-result-section {
   background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   flex: 1;
   display: flex;
   flex-direction: column;
+  border: 1px solid #e2e8f0;
 }
 
 .result-header {
   padding: 1rem 1.5rem;
-  background-color: #fafafa;
-  border-bottom: 1px solid #e8e8e8;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .result-title {
   font-size: 1.1rem;
-  font-weight: 500;
-  color: #333;
+  font-weight: 600;
+  color: #1e293b;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .result-status .badge {
@@ -1057,25 +1105,78 @@ export default {
 
 .result-content {
   flex: 1;
-  padding: 1.5rem;
+  padding: 0;
   overflow-y: auto;
+  background: #fafbfc;
+}
+
+.debug-results-container {
+  padding: 2rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-height: 100%;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f1f5f9 100%);
+  border-radius: 16px;
+  position: relative;
+}
+
+.debug-results-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+  border-radius: 16px;
+  pointer-events: none;
 }
 
 .empty-state {
   text-align: center;
-  padding: 3rem 1rem;
-  color: #999;
+  padding: 4rem 2rem;
+  color: #64748b;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 20px;
+  margin: 2rem;
+  border: 2px dashed #cbd5e1;
+  position: relative;
+  overflow: hidden;
+}
+
+.empty-state::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
 }
 
 .empty-icon {
   font-size: 4rem;
-  margin-bottom: 1rem;
-  color: #ddd;
+  margin-bottom: 1.5rem;
+  color: #cbd5e1;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .empty-text {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   margin-bottom: 2rem;
+  color: #475569;
+  font-weight: 500;
 }
 
 .example-queries {
@@ -1083,105 +1184,127 @@ export default {
   flex-wrap: wrap;
   gap: 0.75rem;
   justify-content: center;
-  max-width: 600px;
+  max-width: 700px;
   margin: 0 auto;
 }
 
 .example-query {
-  padding: 0.5rem 1rem;
-  background: #f0f8ff;
-  border: 1px solid #d6e4ff;
-  border-radius: 20px;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 25px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   font-size: 0.9rem;
-  color: #1890ff;
+  color: #0369a1;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(3, 105, 161, 0.1);
 }
 
 .example-query:hover {
-  background: #1890ff;
+  background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+  box-shadow: 0 6px 20px rgba(3, 105, 161, 0.3);
+  border-color: #0284c7;
 }
 
 .debug-input-section {
-  margin-top: 1.5rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  margin-top: 0;
   margin-bottom: 0;
 }
 
 .input-container {
   display: flex;
-  gap: 0.75rem;
+  gap: 1rem;
   align-items: center;
 }
 
 .debug-input {
   flex: 1;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.25rem;
   font-size: 1rem;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  transition: all 0.3s;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  transition: all 0.3s ease;
   outline: none;
+  background: #fafbfc;
+  color: #1e293b;
 }
 
 .debug-input:focus {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: #ffffff;
 }
 
 .debug-input:disabled {
-  background-color: #f5f5f5;
-  color: #999;
+  background-color: #f1f5f9;
+  color: #94a3b8;
   cursor: not-allowed;
-  border-color: #ddd;
+  border-color: #e2e8f0;
 }
 
 .debug-button {
-  padding: 0.75rem 1.5rem;
-  background-color: #1890ff;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  min-width: 120px;
+  min-width: 130px;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .debug-button:hover:not(:disabled) {
-  background-color: #40a9ff;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
 }
 
 .debug-button:disabled {
-  background-color: #ccc;
+  background: #e2e8f0;
+  color: #94a3b8;
   cursor: not-allowed;
   opacity: 0.6;
+  transform: none;
+  box-shadow: none;
 }
 
 .schema-init-button {
-  padding: 0.75rem 1.5rem;
-  background-color: #722ed1;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  min-width: 140px;
+  min-width: 150px;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
 }
 
 .schema-init-button:hover:not(:disabled) {
-  background-color: #9254de;
+  background: linear-gradient(135deg, #5b21b6 0%, #4c1d95 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
 }
 
 .schema-init-button:disabled {
@@ -1700,244 +1823,248 @@ export default {
   color: white;
 }
 
-/* 流式数据展示样式 - 与 AgentWorkspace.vue 保持一致 */
+/* 流式数据展示样式 - 现代化版本 */
 .agent-response-block {
-  background: white;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  margin-bottom: 1rem;
+  display: block !important;
+  width: 100% !important;
+  margin-bottom: 1.5rem !important;
+  border: none;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  max-width: 100%;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.agent-response-block::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+  border-radius: 16px 16px 0 0;
+}
+
+.agent-response-block:last-child {
+  margin-bottom: 0;
+}
+
+.agent-response-block:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-3px);
 }
 
 .agent-response-title {
-  background: #f8f9fa;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e8e8e8;
-  font-weight: 600;
-  color: #333;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  min-height: auto;
+  height: auto;
+  box-sizing: border-box;
+  position: relative;
+  margin-top: 0;
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+.agent-response-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.title-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.title-text {
+  font-weight: 600;
+  color: #1e293b;
+  letter-spacing: 0.025em;
+}
+
+.title-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.timestamp {
+  font-size: 0.75rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.loading-dots {
+  color: #3b82f6;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.copy-button {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.375rem 0.75rem;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.copy-button:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
+  color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
 }
 
 .agent-response-title i {
-  margin-right: 0.5rem;
-  color: #1890ff;
+  color: #3b82f6;
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
 .agent-response-content {
+  display: block !important;
+  width: 100% !important;
   padding: 1rem;
+  font-size: 0.9rem;
   line-height: 1.6;
+  color: #475569;
+  background: #ffffff;
+  min-height: auto;
+  box-sizing: border-box;
+  position: relative;
 }
 
-.agent-response-content pre {
-  background: #f6f8fa;
-  border: 1px solid #e1e4e8;
-  border-radius: 6px;
-  padding: 1rem;
-  margin: 0.5rem 0;
-  overflow-x: auto;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: 0.9rem;
+.agent-response-content::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, transparent 0%, rgba(59, 130, 246, 0.1) 50%, transparent 100%);
 }
 
-.agent-response-content code {
-  background: #f6f8fa;
-  padding: 0.2rem 0.4rem;
-  border-radius: 3px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: 0.9rem;
-}
-
-.agent-response-content pre code {
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-}
-
-.debug-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-  margin: 0.5rem 0;
-}
-
-.debug-table th,
-.debug-table td {
-  border: 1px solid #e8e8e8;
-  padding: 0.5rem 0.75rem;
-  text-align: left;
-}
-
-.debug-table th {
-  background: #f8f9fa;
-  font-weight: 600;
-  color: #333;
-}
-
-.debug-table tr:nth-child(even) {
-  background: #fafafa;
-}
-
-.debug-table tr:hover {
-  background: #f0f7ff;
-}
-
-.error-content {
-  color: #ff4d4f;
-  padding: 1rem;
-  background: #fff2f0;
-  border: 1px solid #ffccc7;
-  border-radius: 6px;
-  margin: 0.5rem 0;
-}
-
-/* dynamic-table 样式 - 与 AgentWorkspace.vue 保持一致 */
-:deep(.dynamic-table) {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1rem 0;
-  font-size: 0.9rem;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-:deep(.dynamic-table th),
-:deep(.dynamic-table td) {
-  border: 1px solid #e8e8e8;
-  padding: 0.75rem;
-  text-align: left;
-  word-wrap: break-word;
-}
-
-:deep(.dynamic-table th) {
-  background: #f8f9fa;
-  font-weight: 600;
-  color: #333;
-  border-bottom: 2px solid #e8e8e8;
-}
-
-:deep(.dynamic-table tr:nth-child(even)) {
-  background: #fafafa;
-}
-
-:deep(.dynamic-table tr:hover) {
-  background: #f0f7ff;
-}
-
-:deep(.dynamic-table tbody tr:last-child td) {
-  border-bottom: none;
-}
-
-/* Markdown 内容样式 */
-:deep(.markdown-content) {
-  line-height: 1.7;
-  color: #333;
-}
-
-:deep(.markdown-content h1),
-:deep(.markdown-content h2),
-:deep(.markdown-content h3) {
-  margin: 1.5rem 0 1rem 0;
-  color: #2c3e50;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-:deep(.markdown-content h1) {
-  font-size: 1.8rem;
-  border-bottom: 2px solid #e8e8e8;
-  padding-bottom: 0.5rem;
-}
-
-:deep(.markdown-content h2) {
-  font-size: 1.5rem;
-  border-bottom: 1px solid #e8e8e8;
-  padding-bottom: 0.3rem;
-}
-
-:deep(.markdown-content h3) {
-  font-size: 1.3rem;
-}
-
-:deep(.markdown-content p) {
-  margin: 0.8rem 0;
-}
-
-:deep(.markdown-content ul),
-:deep(.markdown-content ol) {
-  margin: 1rem 0;
-  padding-left: 1.5rem;
-}
-
-:deep(.markdown-content li) {
-  margin: 0.3rem 0;
-}
-
-:deep(.markdown-content code) {
-  background: #f6f8fa;
-  padding: 0.2rem 0.4rem;
-  border-radius: 3px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: 0.85rem;
-  color: #e83e8c;
-}
-
-:deep(.markdown-content pre) {
-  background: #f6f8fa;
-  border: 1px solid #e1e4e8;
-  border-radius: 6px;
-  padding: 1rem;
-  margin: 1rem 0;
-  overflow-x: auto;
-}
-
-:deep(.markdown-content pre code) {
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  color: inherit;
-  font-size: 0.9rem;
-}
-
-:deep(.markdown-content a) {
-  color: #1890ff;
-  text-decoration: none;
-}
-
-:deep(.markdown-content a:hover) {
-  text-decoration: underline;
-}
-
-:deep(.markdown-content strong) {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-:deep(.markdown-content em) {
+.agent-response-content:empty::after {
+  content: '🔄 正在分析处理中，请稍候...';
+  color: #6b7280;
   font-style: italic;
-  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 4rem;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-radius: 12px;
+  border: 2px dashed #d1d5db;
+  margin: 1rem 0;
 }
 
-:deep(.markdown-content table) {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1rem 0;
+/* 内容文本样式优化 */
+.agent-response-content p {
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: #374151;
+}
+
+.agent-response-content ul {
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.agent-response-content li {
+  margin-bottom: 0.5rem;
+  color: #374151;
+  line-height: 1.7;
+}
+
+.agent-response-content strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.agent-response-content em {
+  font-style: italic;
+  color: #6b7280;
+}
+
+/* 特殊内容样式 */
+.agent-response-content .status-text {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 20px;
+  color: #0369a1;
+  font-weight: 500;
+  margin: 0.5rem 0;
   font-size: 0.9rem;
 }
 
-:deep(.markdown-content table th),
-:deep(.markdown-content table td) {
-  border: 1px solid #e8e8e8;
-  padding: 0.75rem;
-  text-align: left;
+.agent-response-content .keyword-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 15px;
+  color: #92400e;
+  font-weight: 500;
+  margin: 0.25rem 0.25rem 0.25rem 0;
+  font-size: 0.85rem;
 }
 
-:deep(.markdown-content table th) {
-  background: #f8f9fa;
-  font-weight: 600;
+/* 加载状态内容美化 */
+.agent-response-content:empty::after {
+  content: '🔄 正在分析处理中，请稍候...';
+  color: #6b7280;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 4rem;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-radius: 12px;
+  border: 2px dashed #d1d5db;
+  margin: 1rem 0;
 }
 </style>

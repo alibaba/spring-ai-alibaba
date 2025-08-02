@@ -139,20 +139,22 @@ public class AgentService {
 		try {
 			// 删除数据库中的智能体记录
 			jdbcTemplate.update(DELETE, id);
-			
+
 			// 同时清理智能体的向量数据
 			if (agentVectorService != null) {
 				try {
 					agentVectorService.deleteAllVectorDataForAgent(id);
 					log.info("Successfully deleted vector data for agent: {}", id);
-				} catch (Exception vectorException) {
+				}
+				catch (Exception vectorException) {
 					log.warn("Failed to delete vector data for agent: {}, error: {}", id, vectorException.getMessage());
 					// 向量数据删除失败不影响主流程
 				}
 			}
-			
+
 			log.info("Successfully deleted agent: {}", id);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Failed to delete agent: {}", id, e);
 			throw e;
 		}

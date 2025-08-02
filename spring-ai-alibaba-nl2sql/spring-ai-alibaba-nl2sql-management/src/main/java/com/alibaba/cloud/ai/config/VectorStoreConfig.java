@@ -22,19 +22,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 向量存储配置类
- * 确保AgentVectorStoreManager在管理模块中可用
+ * 向量存储配置类 确保AgentVectorStoreManager在管理模块中可用
  */
 @Configuration
 public class VectorStoreConfig {
 
-    /**
-     * 创建AgentVectorStoreManager Bean
-     * 如果chat模块中已经存在，则不会重复创建
-     */
-    @Bean
-    @ConditionalOnMissingBean
-    public AgentVectorStoreManager agentVectorStoreManager(EmbeddingModel embeddingModel) {
-        return new AgentVectorStoreManager(embeddingModel);
-    }
+	/**
+	 * 创建AgentVectorStoreManager Bean 如果chat模块中已经存在，则不会重复创建
+	 */
+	@Bean
+	@ConditionalOnMissingBean
+	public AgentVectorStoreManager agentVectorStoreManager(EmbeddingModel embeddingModel) {
+		return new AgentVectorStoreManager(embeddingModel);
+	}
+
 }

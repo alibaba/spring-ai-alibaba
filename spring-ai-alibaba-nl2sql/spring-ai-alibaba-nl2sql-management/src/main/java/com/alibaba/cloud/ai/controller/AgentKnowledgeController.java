@@ -134,16 +134,18 @@ public class AgentKnowledgeController {
 
 			// 创建知识到数据库
 			AgentKnowledge createdKnowledge = agentKnowledgeService.createKnowledge(knowledge);
-			
+
 			// 如果知识内容不为空且状态为active，则添加到向量库
-			if (createdKnowledge.getContent() != null && !createdKnowledge.getContent().trim().isEmpty() 
+			if (createdKnowledge.getContent() != null && !createdKnowledge.getContent().trim().isEmpty()
 					&& "active".equals(createdKnowledge.getStatus())) {
 				try {
-					agentVectorService.addKnowledgeToVector(Long.valueOf(createdKnowledge.getAgentId()), createdKnowledge);
+					agentVectorService.addKnowledgeToVector(Long.valueOf(createdKnowledge.getAgentId()),
+							createdKnowledge);
 					// 更新嵌入状态为已完成
 					createdKnowledge.setEmbeddingStatus("completed");
 					agentKnowledgeService.updateKnowledge(createdKnowledge.getId(), createdKnowledge);
-				} catch (Exception vectorException) {
+				}
+				catch (Exception vectorException) {
 					// 向量存储失败，更新嵌入状态为失败
 					createdKnowledge.setEmbeddingStatus("failed");
 					agentKnowledgeService.updateKnowledge(createdKnowledge.getId(), createdKnowledge);
@@ -151,7 +153,7 @@ public class AgentKnowledgeController {
 					response.put("vectorWarning", "知识已保存，但向量化失败：" + vectorException.getMessage());
 				}
 			}
-			
+
 			response.put("success", true);
 			response.put("data", createdKnowledge);
 			response.put("message", "知识创建成功");
@@ -196,31 +198,37 @@ public class AgentKnowledgeController {
 				// 处理向量存储的更新
 				try {
 					Long agentId = Long.valueOf(updatedKnowledge.getAgentId());
-					
+
 					// 如果内容有变化或状态变为active，需要重新向量化
-					boolean contentChanged = !java.util.Objects.equals(originalKnowledge.getContent(), updatedKnowledge.getContent());
-					boolean statusChangedToActive = !"active".equals(originalKnowledge.getStatus()) && "active".equals(updatedKnowledge.getStatus());
-					boolean statusChangedFromActive = "active".equals(originalKnowledge.getStatus()) && !"active".equals(updatedKnowledge.getStatus());
-					
+					boolean contentChanged = !java.util.Objects.equals(originalKnowledge.getContent(),
+							updatedKnowledge.getContent());
+					boolean statusChangedToActive = !"active".equals(originalKnowledge.getStatus())
+							&& "active".equals(updatedKnowledge.getStatus());
+					boolean statusChangedFromActive = "active".equals(originalKnowledge.getStatus())
+							&& !"active".equals(updatedKnowledge.getStatus());
+
 					if (statusChangedFromActive) {
 						// 状态从active变为其他，删除向量数据
 						agentVectorService.deleteKnowledgeFromVector(agentId, id);
 						updatedKnowledge.setEmbeddingStatus("pending");
-					} else if ((contentChanged || statusChangedToActive) && "active".equals(updatedKnowledge.getStatus()) 
-							&& updatedKnowledge.getContent() != null && !updatedKnowledge.getContent().trim().isEmpty()) {
+					}
+					else if ((contentChanged || statusChangedToActive) && "active".equals(updatedKnowledge.getStatus())
+							&& updatedKnowledge.getContent() != null
+							&& !updatedKnowledge.getContent().trim().isEmpty()) {
 						// 内容变化或状态变为active，重新向量化
 						agentVectorService.deleteKnowledgeFromVector(agentId, id); // 先删除旧的
 						agentVectorService.addKnowledgeToVector(agentId, updatedKnowledge); // 再添加新的
 						updatedKnowledge.setEmbeddingStatus("completed");
 						agentKnowledgeService.updateKnowledge(id, updatedKnowledge); // 更新嵌入状态
 					}
-				} catch (Exception vectorException) {
+				}
+				catch (Exception vectorException) {
 					// 向量存储操作失败，更新嵌入状态为失败
 					updatedKnowledge.setEmbeddingStatus("failed");
 					agentKnowledgeService.updateKnowledge(id, updatedKnowledge);
 					response.put("vectorWarning", "知识已更新，但向量化失败：" + vectorException.getMessage());
 				}
-				
+
 				response.put("success", true);
 				response.put("data", updatedKnowledge);
 				response.put("message", "知识更新成功");
@@ -262,11 +270,12 @@ public class AgentKnowledgeController {
 				try {
 					Long agentId = Long.valueOf(knowledge.getAgentId());
 					agentVectorService.deleteKnowledgeFromVector(agentId, id);
-				} catch (Exception vectorException) {
+				}
+				catch (Exception vectorException) {
 					// 向量删除失败，记录警告但不影响主流程
 					response.put("vectorWarning", "知识已删除，但向量数据删除失败：" + vectorException.getMessage());
 				}
-				
+
 				response.put("success", true);
 				response.put("message", "知识删除成功");
 				return ResponseEntity.ok(response);
