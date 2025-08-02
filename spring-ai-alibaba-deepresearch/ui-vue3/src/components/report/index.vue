@@ -54,7 +54,6 @@ let isLoading = false
 const llmStreamCache = new Map<string, { item: ThoughtChainItem, content: string }>()
 // 从messageStore 拿出消息，然后进行解析并且渲染
 const items = computed(() => {
-    console.log('computed',props.convId, messageStore.history[props.convId])
     // 思维链显示的列表
     const array: ThoughtChainProps['items'] = []
     if(!props.convId || !messageStore.history[props.convId]){
@@ -202,14 +201,17 @@ const processJsonNode = (node: any) => {
         title = node.displayTitle
         description = node.content
         break
-
+      case 'coordinator':
+        title = node.displayTitle
+        description = '当前是否启动研究模式:' + node.content
+        break
 
       case 'rewrite_multi_query':
         title = node.displayTitle
         description = '优化查询以获得更好的搜索结果'
         if(node.content?.optimize_queries && Array.isArray(node.content.optimize_queries)) {
           const queries = node.content.optimize_queries
-          const markdownContent = queries.map((query, index) => `${index + 1}. ${query}`).join('\n')
+          const markdownContent = queries.map((query: any, index: number) => `${index + 1}. ${query}`).join('\n')
           content = h(MD, { content: markdownContent })
         }
         break
@@ -219,7 +221,7 @@ const processJsonNode = (node: any) => {
         description = '正在收集和分析背景信息'
         if(node.siteInformation && Array.isArray(node.siteInformation)) {
           const results = node.siteInformation
-          const markdownContent = results.map((result, index) => {
+          const markdownContent = results.map((result: any, index: number) => {
             const { title, url, content, icon, weight } = result
             return `### ${index + 1}. [${title}](${url})\n\n**权重:** ${weight}\n\n**内容摘要:** ${content}\n\n**来源:** ![favicon](${icon}) [${url}](${url})\n\n---\n`
           }).join('\n')
@@ -229,7 +231,13 @@ const processJsonNode = (node: any) => {
 
       case 'planner':
         title = node.displayTitle
-        description = '准备规划研究内容'
+        const json = JSON.parse(node.content)
+        description = json.title
+        const stepsContent= json.steps.map((step: any, index: number) => {
+          const { title, description} = step
+          return `### ${index + 1}. ${title}\n\n${description}\n\n---\n`
+        }).join('\n')
+        content = h(MD, { content: stepsContent })
         break
 
       case 'human_feedback':

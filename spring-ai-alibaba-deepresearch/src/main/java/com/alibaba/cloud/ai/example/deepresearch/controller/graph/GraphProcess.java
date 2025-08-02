@@ -139,6 +139,7 @@ public class GraphProcess {
 		// 不同节点给前端的内容不一样
 		content = switch (nodeEnum) {
 			case START -> output.state().data().get("query");
+			case COORDINATOR -> output.state().data().get("deep_research");
 			case REWRITE_MULTI_QUERY, HUMAN_FEEDBACK, END -> output.state().data();
 			case PLANNER -> output.state().data().get("planner_content");
 			case RESEARCH_TEAM -> {

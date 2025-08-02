@@ -65,6 +65,11 @@ export const useConversationStore = () =>
           }
         }
       },
+      clearAll() {
+        this.conversations = []
+        this.current = -1
+        this.editKey = null
+      },
     },
     persist: true,
   })()

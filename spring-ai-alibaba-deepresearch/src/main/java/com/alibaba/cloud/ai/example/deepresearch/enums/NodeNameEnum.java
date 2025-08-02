@@ -21,7 +21,7 @@ package com.alibaba.cloud.ai.example.deepresearch.enums;
  */
 public enum NodeNameEnum {
 
-	START("__START__", "开始"), END("__END__", "结束"), COORDINATOR("coordinator", ""),
+	START("__START__", "开始"), END("__END__", "结束"), COORDINATOR("coordinator", "意图识别"),
 	REWRITE_MULTI_QUERY("rewrite_multi_query", "查询问题相关信息"), BACKGROUND_INVESTIGATOR("background_investigator", "背景调查"),
 	PLANNER("planner", "研究计划"), INFORMATION("information", ""), HUMAN_FEEDBACK("human_feedback", "人工反馈"),
 	RESEARCH_TEAM("research_team", "等待并行节点执行完成"), PARALLEL_EXECUTOR("parallel_executor", ""),
