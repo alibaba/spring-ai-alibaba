@@ -21,15 +21,13 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.tool.tableProcessor.TableProcessingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,29 +81,29 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	 */
 	public static class DataSplitInput {
 
-		@com.fasterxml.jackson.annotation.JsonProperty("file_path")
-		private String filePath;
+		@com.fasterxml.jackson.annotation.JsonProperty("input_file_to_split")
+		private String inputFileToSplit;
 
-		@com.fasterxml.jackson.annotation.JsonProperty("output_file_path")
-		private String outputFilePath;
+		@com.fasterxml.jackson.annotation.JsonProperty("output_file")
+		private String outputFile;
 
 		public DataSplitInput() {
 		}
 
-		public String getFilePath() {
-			return filePath;
+		public String getInputFileToSplit() {
+			return inputFileToSplit;
 		}
 
-		public void setFilePath(String filePath) {
-			this.filePath = filePath;
+		public void setInputFileToSplit(String inputFileToSplit) {
+			this.inputFileToSplit = inputFileToSplit;
 		}
 
-		public String getOutputFilePath() {
-			return outputFilePath;
+		public String getOutputFile() {
+			return outputFile;
 		}
 
-		public void setOutputFilePath(String outputFilePath) {
-			this.outputFilePath = outputFilePath;
+		public void setOutputFile(String outputFile) {
+			this.outputFile = outputFile;
 		}
 	}
 
@@ -127,16 +125,16 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			{
 			    "type": "object",
 			    "properties": {
-			        "file_path": {
+			        "input_file_to_split": {
 			            "type": "string",
-			            "description": "File or folder path to process"
+			            "description": "Input file or folder path to be split"
 			        },
-			        "output_file_path": {
+			        "output_file": {
 			            "type": "string",
-			            "description": "Target output file path for table data"
+			            "description": "Target output file name for table data"
 			        }
 			    },
-			    "required": ["file_path"],
+			    "required": ["input_file_to_split"],
 			    "additionalProperties": false
 			}
 			""";
@@ -152,14 +150,17 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	private volatile boolean splitCompleted = false;
 
 	private final ObjectMapper objectMapper;
+	
+	private final TableProcessingService tableProcessingService;
 
 	public DataSplitTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager,
-			UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper) {
+			UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper, TableProcessingService tableProcessingService) {
 		this.currentPlanId = planId;
 		this.manusProperties = manusProperties;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
 		this.objectMapper = objectMapper;
+		this.tableProcessingService = tableProcessingService;
 	}
 
 	/**
@@ -205,14 +206,14 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	 */
 	@Override
 	public ToolExecuteResult run(DataSplitInput input) {
-		log.info("DataSplitTool input: filePath={}", input.getFilePath());
+		log.info("DataSplitTool input: inputFileToSplit={}, outputFile={}", input.getInputFileToSplit(), input.getOutputFile());
 		try {
-			String filePath = input.getFilePath();
-			if (filePath == null) {
-				return new ToolExecuteResult("Error: file_path parameter is required");
+			String inputFileToSplit = input.getInputFileToSplit();
+			if (inputFileToSplit == null) {
+				return new ToolExecuteResult("Error: input_file_to_split parameter is required");
 			}
 
-			return processFileOrDirectory(filePath, input);
+			return processFileOrDirectory(inputFileToSplit, input.getOutputFile());
 
 		}
 		catch (Exception e) {
@@ -224,7 +225,7 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	/**
 	 * Process complete workflow for file or directory: validate existence -> split data
 	 */
-	private ToolExecuteResult processFileOrDirectory(String filePath, DataSplitInput input) {
+	private ToolExecuteResult processFileOrDirectory(String inputFileToSplit, String outputFile) {
 		try {
 			// Ensure planId exists, use default if empty
 			if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
@@ -240,10 +241,10 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			boolean foundInInnerStorage = false;
 
 			// First, try to find file in inner storage directory
-			if (!Paths.get(filePath).isAbsolute()) {
+			if (!Paths.get(inputFileToSplit).isAbsolute()) {
 				// Check in inner storage first
 				Path planDir = getPlanDirectory(rootPlanId);
-				Path innerStoragePath = planDir.resolve(filePath);
+				Path innerStoragePath = planDir.resolve(inputFileToSplit);
 
 				if (Files.exists(innerStoragePath)) {
 					path = innerStoragePath;
@@ -254,13 +255,13 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 
 			// If not found in inner storage, try working directory
 			if (path == null) {
-				if (Paths.get(filePath).isAbsolute()) {
+				if (Paths.get(inputFileToSplit).isAbsolute()) {
 					// If absolute path, use directly
-					path = Paths.get(filePath);
+					path = Paths.get(inputFileToSplit);
 				}
 				else {
 					// If relative path, resolve based on working directory
-					path = Paths.get(workingDirectoryPath).resolve(filePath);
+					path = Paths.get(workingDirectoryPath).resolve(inputFileToSplit);
 				}
 				log.info("Checking file in working directory: {}", path.toAbsolutePath());
 			}
@@ -270,7 +271,7 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 					// Also check if file exists in inner storage and provide helpful
 					// message
 					Path planDir = getPlanDirectory(currentPlanId);
-					Path innerStoragePath = planDir.resolve(filePath);
+					Path innerStoragePath = planDir.resolve(inputFileToSplit);
 					if (Files.exists(innerStoragePath)) {
 						errorMsg += "\nNote: File exists in inner storage at: "
 								+ innerStoragePath.toAbsolutePath().toString();
@@ -329,12 +330,17 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			result.append("Split successful");
 			
 			// If it's a table file, try to get header information
-			if (isFile && isTableFile(filePath) && input.getOutputFilePath() != null) {
-				// Try to get table structure from the input file
-				String headerInfo = getTableStructure(filePath);
-				if (headerInfo != null) {
-					result.append(", subsequent processes should use header structure: ").append(headerInfo).append(" for structured output");
-					result.append(", target output table file name is ").append(input.getOutputFilePath());
+			// First check if outputFile is not null and is a regular file
+			if (outputFile != null) {
+				Path planDir = unifiedDirectoryManager.getRootPlanDirectory(rootPlanId);
+				Path outputPath = planDir.resolve(outputFile);
+				if (Files.exists(outputPath) && Files.isRegularFile(outputPath) && isTableFile(outputFile)) {
+					// Try to get table structure from the output file
+					String headerInfo = getTableStructure(outputPath);
+					if (headerInfo != null) {
+						result.append(", subsequent processes should use header structure: ").append(headerInfo).append(" for structured output");
+						result.append(", target output table file name is ").append(outputFile);
+					}
 				}
 			}
 			
@@ -360,20 +366,21 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 
 	/**
 	 * Get table structure (header information) from a table file
-	 * @param filePath Path to the table file
+	 * @param outputPath Path to the table file
 	 * @return Header information as string, or null if failed
 	 */
-	private String getTableStructure(String filePath) {
+	private String getTableStructure(Path outputPath) {
 		try {
-			Path path = Paths.get(filePath);
-			if (!Files.exists(path)) {
-				log.warn("Table file does not exist: {}", filePath);
+			if (!Files.exists(outputPath)) {
+				log.warn("Table file does not exist: {}", outputPath);
 				return null;
 			}
 
+			String fileName = outputPath.getFileName().toString();
+			
 			// For CSV files, read the first line as headers
-			if (filePath.toLowerCase().endsWith(".csv")) {
-				try (BufferedReader reader = Files.newBufferedReader(path)) {
+			if (fileName.toLowerCase().endsWith(".csv")) {
+				try (BufferedReader reader = Files.newBufferedReader(outputPath)) {
 					String headerLine = reader.readLine();
 					if (headerLine != null) {
 						// Parse CSV header line
@@ -383,8 +390,8 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 				}
 			}
 			// For TSV files, read the first line as headers
-			else if (filePath.toLowerCase().endsWith(".tsv")) {
-				try (BufferedReader reader = Files.newBufferedReader(path)) {
+			else if (fileName.toLowerCase().endsWith(".tsv")) {
+				try (BufferedReader reader = Files.newBufferedReader(outputPath)) {
 					String headerLine = reader.readLine();
 					if (headerLine != null) {
 						// Parse TSV header line
@@ -393,16 +400,27 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 					}
 				}
 			}
-			// For Excel files, we would need Apache POI library which may not be available
-			// In this case, we just return a generic message
-			else if (filePath.toLowerCase().endsWith(".xls") || filePath.toLowerCase().endsWith(".xlsx")) {
-				return "[Excel headers - use TableProcessorTool to get actual headers]";
+			// For Excel files, use TableProcessingService to get actual headers
+			else if (fileName.toLowerCase().endsWith(".xls") || fileName.toLowerCase().endsWith(".xlsx")) {
+				try {
+					// Convert absolute path to relative path for tableProcessingService
+					Path planDir = unifiedDirectoryManager.getRootPlanDirectory(rootPlanId);
+					String relativePath = planDir.relativize(outputPath).toString();
+					
+					List<String> headers = tableProcessingService.getTableStructure(rootPlanId, relativePath);
+					tableProcessingService.updateFileState(rootPlanId, relativePath, "Success: Retrieved table structure");
+					return headers.toString();
+				}
+				catch (IOException e) {
+					tableProcessingService.updateFileState(rootPlanId, fileName, "Error: " + e.getMessage());
+					return "[Excel headers - failed to extract: " + e.getMessage() + "]";
+				}
 			}
 			
 			return null;
 		}
 		catch (Exception e) {
-			log.warn("Failed to get table structure for file: {}", filePath, e);
+			log.warn("Failed to get table structure for file: {}", outputPath, e);
 			return null;
 		}
 	}

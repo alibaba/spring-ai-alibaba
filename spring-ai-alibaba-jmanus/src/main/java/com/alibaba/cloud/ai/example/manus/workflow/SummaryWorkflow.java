@@ -89,25 +89,25 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 	 * @param content File content (not directly used yet, but kept as extension
 	 * parameter)
 	 * @param queryKey Query keywords
+	 * @param outputFileName Output file name
 	 * @param outputFormatSpecification A file used to describe in what format the data should be stored (default is an excel table), the table header of this file is the specification description
 	 */
 	private MapReduceExecutionPlan buildSummaryExecutionPlan(String parentPlanId, String fileName, String content,
-			String queryKey, String outputFormatSpecification) {
+			String queryKey,  String outputFormatSpecification) {
 
 		try {
 			// Use caller-provided planId instead of generating a new one
 			logger.info("Building summary execution plan with provided planId: {}", parentPlanId);
 
 			// Generate plan JSON using template from PromptService
-			String planJson = String.format(getSummaryPlanTemplate(), parentPlanId, // Plan
-																					// ID
+			String planJson = String.format(getSummaryPlanTemplate(), parentPlanId, // Plan ID
 					fileName, // dataPreparedSteps file name
+					outputFormatSpecification, // dataPreparedSteps output file name
 					outputFormatSpecification, // dataPreparedSteps output format specification
 					queryKey, // mapSteps query key
 					outputFormatSpecification, // mapSteps output format specification
 					outputFormatSpecification, // reduceSteps output format specification
-					outputFormatSpecification // postProcessSteps output format specification (will auto
-											// add fileURL)
+					outputFormatSpecification // postProcessSteps output format specification (will auto add fileURL)
 			);
 
 			// Parse JSON to MapReduceExecutionPlan object
