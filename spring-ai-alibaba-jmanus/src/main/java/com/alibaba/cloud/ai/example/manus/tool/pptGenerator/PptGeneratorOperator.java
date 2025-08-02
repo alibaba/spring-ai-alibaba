@@ -71,7 +71,7 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 			input.setOutputPath(resultPath);
 
 			// Update the file state to processing.
-			pptGeneratorService.updateFileState(planId, resultPath, "Processing: 正在生成PPT文件");
+			pptGeneratorService.updateFileState(planId, resultPath, "Processing: Generating PPT file");
 
 			String path = pptGeneratorService.createPpt(input);
 
