@@ -1,0 +1,19 @@
+{
+    "type": "object",
+    "properties": {
+        "has_value": {
+            "type": "boolean",
+            "description": "Whether there is valid data to write. Set to false if no valid data is found, set to true when there is data"
+        },
+        "data": {
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": {"type": "string"}
+            },
+            "description": "data row list (only required when has_value is true)"
+        }
+    },
+    "required": ["has_value"],
+    "additionalProperties": false
+}

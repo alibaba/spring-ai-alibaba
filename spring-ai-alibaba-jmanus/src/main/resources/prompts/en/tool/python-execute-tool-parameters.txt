@@ -1,0 +1,10 @@
+{
+    "type": "object",
+    "properties": {
+        "code": {
+            "type": "string",
+            "description": "The Python code to execute."
+        }
+    },
+    "required": ["code"]
+}

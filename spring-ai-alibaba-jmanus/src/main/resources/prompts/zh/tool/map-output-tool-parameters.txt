@@ -1,0 +1,23 @@
+{
+    "type": "object",
+    "properties": {
+        "task_id": {
+            "type": "string",
+            "description": "用于标识当前正在处理的Map任务的任务ID标识符"
+        },
+        "has_value": {
+            "type": "boolean",
+            "description": "是否有有效数据。如果没有找到有效数据设置为false，有数据时设置为true"
+        },
+        "data": {
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": {"type": "string"}
+            },
+            "description": "数据行列表（仅在has_value为true时需要）"
+        }
+    },
+    "required": ["task_id", "has_value"],
+    "additionalProperties": false
+}

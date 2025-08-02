@@ -19,8 +19,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 /**
- * Configuration properties for OceanBase Vector Store. 自然语言相关的属性，用于配置
- * OceanBaseVecotrStore 以确保正确的初始化和运行。
+ * Configuration properties for OceanBase Vector Store. Natural language related
+ * properties for configuring OceanBaseVecotrStore to ensure proper initialization and
+ * operation.
  *
  * @author xxsc0529
  */
@@ -35,7 +36,7 @@ public class OceanBaseVectorStoreProperties {
 
 	private final String password;
 
-	private final String tableName; // 数据表名
+	private final String tableName; // Table name
 
 	private Integer defaultTopK = -1;
 

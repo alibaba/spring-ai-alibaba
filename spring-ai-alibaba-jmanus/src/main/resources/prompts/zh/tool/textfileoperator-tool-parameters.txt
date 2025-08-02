@@ -1,0 +1,84 @@
+{
+    "oneOf": [
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "replace"
+                },
+                "file_path": {
+                    "type": "string",
+                    "description": "要操作的文件路径"
+                },
+                "source_text": {
+                    "type": "string",
+                    "description": "要被替换的文本"
+                },
+                "target_text": {
+                    "type": "string",
+                    "description": "替换文本"
+                }
+            },
+            "required": ["action", "file_path", "source_text", "target_text"],
+            "additionalProperties": false
+        },
+        {
+           "type": "object",
+           "properties": {
+               "action": {
+                   "type": "string",
+                   "const": "get_text"
+               },
+               "file_path": {
+                   "type": "string",
+                   "description": "要读取的文件路径"
+               },
+               "start_line": {
+                   "type": "integer",
+                   "description": "起始行号（从1开始）"
+               },
+               "end_line": {
+                   "type": "integer",
+                   "description": "结束行号（包含）。注意：每次调用最多500行，如需更多内容请使用多次调用"
+               }
+           },
+           "required": ["action", "file_path", "start_line", "end_line"],
+           "additionalProperties": false
+       },
+       {
+           "type": "object",
+           "properties": {
+               "action": {
+                   "type": "string",
+                   "const": "get_all_text"
+               },
+               "file_path": {
+                   "type": "string",
+                   "description": "要读取全部内容的文件路径。注意：如果文件过长，内容将存储在临时文件中并返回文件路径"
+               }
+           },
+           "required": ["action", "file_path"],
+           "additionalProperties": false
+       },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "append"
+                },
+                "file_path": {
+                    "type": "string",
+                    "description": "要操作的文件路径"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "要追加到文件的内容"
+                }
+            },
+            "required": ["action", "file_path", "content"],
+            "additionalProperties": false
+        }
+    ]
+}
