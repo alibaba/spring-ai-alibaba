@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.model.workflow.NodeData;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * NodeData for ToolNode, in addition to the original llmResponseKey, outputKey,
@@ -35,6 +36,27 @@ public class ToolNodeData extends NodeData {
 	private List<String> toolNames;
 
 	private List<String> toolCallbacks;
+
+	// Additional Dify-specific fields
+	private String toolName;
+
+	private String toolDescription;
+
+	private String toolLabel;
+
+	private String providerId;
+
+	private String providerName;
+
+	private String providerType;
+
+	private Map<String, Object> toolParameters;
+
+	private Map<String, Object> toolConfigurations;
+
+	private Boolean isTeamAuthorization;
+
+	private Object outputSchema;
 
 	public ToolNodeData() {
 		super(Collections.emptyList(), Collections.emptyList());
@@ -77,6 +99,96 @@ public class ToolNodeData extends NodeData {
 
 	public ToolNodeData setToolCallbacks(List<String> toolCallbacks) {
 		this.toolCallbacks = toolCallbacks;
+		return this;
+	}
+
+	public String getToolName() {
+		return toolName;
+	}
+
+	public ToolNodeData setToolName(String toolName) {
+		this.toolName = toolName;
+		return this;
+	}
+
+	public String getToolDescription() {
+		return toolDescription;
+	}
+
+	public ToolNodeData setToolDescription(String toolDescription) {
+		this.toolDescription = toolDescription;
+		return this;
+	}
+
+	public String getToolLabel() {
+		return toolLabel;
+	}
+
+	public ToolNodeData setToolLabel(String toolLabel) {
+		this.toolLabel = toolLabel;
+		return this;
+	}
+
+	public String getProviderId() {
+		return providerId;
+	}
+
+	public ToolNodeData setProviderId(String providerId) {
+		this.providerId = providerId;
+		return this;
+	}
+
+	public String getProviderName() {
+		return providerName;
+	}
+
+	public ToolNodeData setProviderName(String providerName) {
+		this.providerName = providerName;
+		return this;
+	}
+
+	public String getProviderType() {
+		return providerType;
+	}
+
+	public ToolNodeData setProviderType(String providerType) {
+		this.providerType = providerType;
+		return this;
+	}
+
+	public Map<String, Object> getToolParameters() {
+		return toolParameters;
+	}
+
+	public ToolNodeData setToolParameters(Map<String, Object> toolParameters) {
+		this.toolParameters = toolParameters;
+		return this;
+	}
+
+	public Map<String, Object> getToolConfigurations() {
+		return toolConfigurations;
+	}
+
+	public ToolNodeData setToolConfigurations(Map<String, Object> toolConfigurations) {
+		this.toolConfigurations = toolConfigurations;
+		return this;
+	}
+
+	public Boolean getIsTeamAuthorization() {
+		return isTeamAuthorization;
+	}
+
+	public ToolNodeData setIsTeamAuthorization(Boolean isTeamAuthorization) {
+		this.isTeamAuthorization = isTeamAuthorization;
+		return this;
+	}
+
+	public Object getOutputSchema() {
+		return outputSchema;
+	}
+
+	public ToolNodeData setOutputSchema(Object outputSchema) {
+		this.outputSchema = outputSchema;
 		return this;
 	}
 
