@@ -1,0 +1,27 @@
+# MCP 工具配置示例
+mcp:
+  tools:
+    # 是否启用自动发现
+    auto-discover: true
+    
+    # 要扫描的包路径
+    packages:
+      - "com.alibaba.cloud.ai.example.manus.tool"
+      - "com.alibaba.cloud.ai.example.manus.tool.database"
+      - "com.alibaba.cloud.ai.example.manus.inhouse.tool.calculator"
+      - "com.alibaba.cloud.ai.example.manus.inhouse.tool.echo"
+      - "com.alibaba.cloud.ai.example.manus.inhouse.tool.ping"
+    
+    # 要排除的包路径
+    excluded:
+      - "com.alibaba.cloud.ai.example.manus.tool.internal"
+      - "com.alibaba.cloud.ai.example.manus.tool.test"
+    
+    # 是否启用调试日志
+    debug: false
+
+# 日志配置
+logging:
+  level:
+    com.alibaba.cloud.ai.example.manus.inhouse.registry.McpToolRegistry: INFO
+    com.alibaba.cloud.ai.example.manus.tool: DEBUG 

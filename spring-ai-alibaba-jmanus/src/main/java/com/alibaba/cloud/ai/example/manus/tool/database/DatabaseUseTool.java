@@ -30,7 +30,8 @@ import com.alibaba.cloud.ai.example.manus.tool.database.action.GetTableMetaActio
 import com.alibaba.cloud.ai.example.manus.tool.database.action.GetDatasourceInfoAction;
 
 import java.util.Map;
-
+import org.springframework.stereotype.Component;
+@Component
 public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 
 	private static final Logger log = LoggerFactory.getLogger(DatabaseUseTool.class);

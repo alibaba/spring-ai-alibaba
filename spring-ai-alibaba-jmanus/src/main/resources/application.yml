@@ -33,11 +33,44 @@ spring:
       hibernate:
         format_sql: true
 
+  # Spring AI 配置
+  ai:
+    # 禁用 Spring AI 的自动配置，避免 ChatModel 相关错误
+    autoconfigure:
+      exclude:
+        - org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration
+
+# MCP 工具配置
+mcp:
+  tools:
+    # 是否启用自动发现
+    auto-discover: true
+    
+    # 要扫描的包路径
+    packages:
+      - "com.alibaba.cloud.ai.example.manus.tool"
+      - "com.alibaba.cloud.ai.example.manus.tool.database"
+      - "com.alibaba.cloud.ai.example.manus.inhouse.tool.calculator"
+      - "com.alibaba.cloud.ai.example.manus.inhouse.tool.echo"
+      - "com.alibaba.cloud.ai.example.manus.inhouse.tool.ping"
+    
+    # 要排除的包路径
+    excluded:
+      - "com.alibaba.cloud.ai.example.manus.tool.internal"
+      - "com.alibaba.cloud.ai.example.manus.tool.test"
+    
+    # 是否启用调试日志
+    debug: false
+
+# 日志配置
 logging:
   file:
     name: ./logs/info.log
   level:
     root: INFO
+    com.alibaba.cloud.ai.example.manus.inhouse.registry.McpToolRegistry: INFO
+    com.alibaba.cloud.ai.example.manus.tool: DEBUG
+    com.alibaba.cloud.ai.example.manus.inhouse.tool: DEBUG
 
 namespace:
   value: default
