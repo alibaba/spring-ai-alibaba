@@ -48,6 +48,7 @@ import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.service.business.BusinessKnowledgeRecallService;
 import com.alibaba.cloud.ai.service.semantic.SemanticModelRecallService;
 import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
+import com.alibaba.cloud.ai.service.UserPromptConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -145,6 +146,9 @@ public class Nl2sqlConfiguration {
 	@Autowired
 	private BusinessKnowledgeRecallService businessKnowledgeRecallService;
 
+	@Autowired
+	private UserPromptConfigService promptConfigService;
+
 	@Bean
 	public StateGraph nl2sqlGraph(ChatClient.Builder chatClientBuilder) throws GraphStateException {
 
@@ -216,7 +220,7 @@ public class Nl2sqlConfiguration {
 					node_async(new PythonGenerateNode(codeExecutorProperties, chatClientBuilder)))
 			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(codePoolExecutor)))
 			.addNode(PYTHON_ANALYZE_NODE, node_async(new PythonAnalyzeNode(chatClientBuilder)))
-			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder)))
+			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder, promptConfigService)))
 			.addNode(SEMANTIC_CONSISTENCY_NODE, node_async(new SemanticConsistencyNode(nl2SqlService)));
 
 		stateGraph.addEdge(START, QUERY_REWRITE_NODE)
