@@ -1,0 +1,50 @@
+{
+    "oneOf": [
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "create"
+                },
+                "output_path": {
+                    "type": "string",
+                    "description": "Path to save the generated PPT file"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Title of the PPT"
+                },
+                "subtitle": {
+                    "type": "string",
+                    "description": "Subtitle of the PPT (optional)"
+                },
+                "slide_contents": {
+                    "type": "array",
+                    "description": "List of slide contents (optional)",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "title": {
+                                "type": "string",
+                                "description": "Slide title"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "Slide content"
+                            },
+                            "image_path": {
+                                "type": "string",
+                                "description": "Image path in the slide (optional)"
+                            }
+                        },
+                        "required": ["title", "content"],
+                        "additionalProperties": false
+                    }
+                }
+            },
+            "required": ["action", "output_path", "title"],
+            "additionalProperties": false
+        }
+    ]
+}
