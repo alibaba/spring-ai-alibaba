@@ -15,7 +15,7 @@
 */
 
 ### 1. 保存报告生成器自定义配置
-POST http://localhost:8080/api/prompt-config/save
+POST http://localhost:8065/api/prompt-config/save
 Content-Type: application/json
 
 {
@@ -28,19 +28,19 @@ Content-Type: application/json
 }
 
 ### 2. 获取所有配置列表
-GET http://localhost:8080/api/prompt-config/list
+GET http://localhost:8065/api/prompt-config/list
 
 ### 3. 根据类型获取配置
-GET http://localhost:8080/api/prompt-config/list-by-type/report-generator
+GET http://localhost:8065/api/prompt-config/list-by-type/report-generator
 
 ### 4. 获取当前启用的配置
-GET http://localhost:8080/api/prompt-config/active/report-generator
+GET http://localhost:8065/api/prompt-config/active/report-generator
 
 ### 5. 获取支持的提示词类型
-GET http://localhost:8080/api/prompt-config/types
+GET http://localhost:8065/api/prompt-config/types
 
 ### 6. 保存财务分析模板
-POST http://localhost:8080/api/prompt-config/save
+POST http://localhost:8065/api/prompt-config/save
 Content-Type: application/json
 
 {
@@ -53,19 +53,19 @@ Content-Type: application/json
 }
 
 ### 7. 启用指定配置（需要替换{id}为实际的配置ID）
-POST http://localhost:8080/api/prompt-config/{id}/enable
+POST http://localhost:8065/api/prompt-config/{id}/enable
 
 ### 8. 禁用指定配置（需要替换{id}为实际的配置ID）
-POST http://localhost:8080/api/prompt-config/{id}/disable
+POST http://localhost:8065/api/prompt-config/{id}/disable
 
 ### 9. 获取指定配置详情（需要替换{id}为实际的配置ID）
-GET http://localhost:8080/api/prompt-config/{id}
+GET http://localhost:8065/api/prompt-config/{id}
 
 ### 10. 删除指定配置（需要替换{id}为实际的配置ID）
-DELETE http://localhost:8080/api/prompt-config/{id}
+DELETE http://localhost:8065/api/prompt-config/{id}
 
 ### 11. 测试NL2SQL查询 - 验证自定义提示词效果
-POST http://localhost:8080/simpleChat
+POST http://localhost:8065/simpleChat
 Content-Type: application/json
 
 "查询上月销售额前10的产品"
