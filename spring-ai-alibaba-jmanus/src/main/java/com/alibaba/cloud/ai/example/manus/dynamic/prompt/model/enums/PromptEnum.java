@@ -94,10 +94,10 @@ public enum PromptEnum {
 			"tool/doc-loader-tool-parameters.txt"),
 
 	// File Merge Tool
-	FILE_MERGE_TOOL_DESCRIPTION("FILE_MERGE_TOOL_DESCRIPTION", MessageType.SYSTEM, PromptType.TOOL_DESCRIPTION, true,
-			"tool/file-merge-tool-description.txt"),
-	FILE_MERGE_TOOL_PARAMETERS("FILE_MERGE_TOOL_PARAMETERS", MessageType.SYSTEM, PromptType.TOOL_PARAMETER, true,
-			"tool/file-merge-tool-parameters.txt"),
+	FILE_MERGE_TOOL_TOOL_DESCRIPTION("FILE_MERGE_TOOL_TOOL_DESCRIPTION", MessageType.SYSTEM,
+			PromptType.TOOL_DESCRIPTION, true, "tool/file-merge-tool-description.txt"),
+	FILE_MERGE_TOOL_TOOL_PARAMETERS("FILE_MERGE_TOOL_TOOL_PARAMETERS", MessageType.SYSTEM, PromptType.TOOL_PARAMETER,
+			true, "tool/file-merge-tool-parameters.txt"),
 
 	// Data Split Tool
 	DATA_SPLIT_TOOL_DESCRIPTION("DATA_SPLIT_TOOL_DESCRIPTION", MessageType.SYSTEM, PromptType.TOOL_DESCRIPTION, true,
@@ -127,7 +127,13 @@ public enum PromptEnum {
 	TERMINATE_TOOL_DESCRIPTION("TERMINATE_TOOL_DESCRIPTION", MessageType.SYSTEM, PromptType.TOOL_DESCRIPTION, true,
 			"tool/terminate-tool-description.txt"),
 	TERMINATE_TOOL_PARAMETERS("TERMINATE_TOOL_PARAMETERS", MessageType.SYSTEM, PromptType.TOOL_PARAMETER, true,
-			"tool/terminate-tool-parameters.txt");
+			"tool/terminate-tool-parameters.txt"),
+
+	// PPT Generator Tool
+	PPTGENERATOROPERATOR_TOOL_DESCRIPTION("PPTGENERATOROPERATOR_TOOL_DESCRIPTION", MessageType.SYSTEM,
+			PromptType.TOOL_DESCRIPTION, true, "tool/ppt-generator-operator-tool-description.txt"),
+	PPTGENERATOROPERATOR_TOOL_PARAMETERS("PPTGENERATOROPERATOR_TOOL_PARAMETERS", MessageType.SYSTEM,
+			PromptType.TOOL_PARAMETER, true, "tool/ppt-generator-operator-tool-parameters.txt");
 
 	private String promptName;
 
