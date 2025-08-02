@@ -1559,9 +1559,20 @@ export default {
       }
       
       try {
-        // 使用API工具类获取表列表
-        const tables = await datasourceApi.getTables(schemaInitForm.selectedDatasource.id)
-        availableTables.value = tables || []
+        // 使用智能体Schema接口获取表列表
+        const response = await fetch(`/api/agent/${agent.id}/schema/datasources/${schemaInitForm.selectedDatasource.id}/tables`)
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          availableTables.value = result.data || []
+        } else {
+          throw new Error(result.message || '获取表列表失败')
+        }
       } catch (error) {
         console.error('加载表列表失败:', error)
         showMessage('加载表列表失败: ' + error.message, 'error')
@@ -1603,11 +1614,7 @@ export default {
         schemaInitializing.value = true
         
         const initRequest = {
-          dbConfig: {
-            url: schemaInitForm.selectedDatasource.connectionUrl,
-            username: schemaInitForm.selectedDatasource.username,
-            password: schemaInitForm.selectedDatasource.password
-          },
+          datasourceId: schemaInitForm.selectedDatasource.id,
           tables: selectedTables.value
         }
         

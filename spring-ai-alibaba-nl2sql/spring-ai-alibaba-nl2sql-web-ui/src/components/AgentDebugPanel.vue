@@ -801,15 +801,7 @@ export default {
       if (!schemaInitForm.selectedDatasource) return
       
       try {
-        const response = await fetch(`/api/agent/${props.agentId}/schema/tables`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            datasourceId: schemaInitForm.selectedDatasource.id
-          })
-        })
+        const response = await fetch(`/api/agent/${props.agentId}/schema/datasources/${schemaInitForm.selectedDatasource.id}/tables`)
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -843,7 +835,7 @@ export default {
       try {
         schemaInitializing.value = true
         
-        const response = await fetch(`/api/agent/${props.agentId}/schema/initialize`, {
+        const response = await fetch(`/api/agent/${props.agentId}/schema/init`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

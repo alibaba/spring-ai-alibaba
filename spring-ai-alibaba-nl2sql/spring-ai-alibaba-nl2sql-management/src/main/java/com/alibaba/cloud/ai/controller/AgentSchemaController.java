@@ -209,12 +209,12 @@ public class AgentSchemaController {
 	 */
 	@GetMapping("/datasources/{datasourceId}/tables")
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> getDatasourceTables(@PathVariable Long agentId,
+	public ResponseEntity<Map<String, Object>> getDatasourceTables(
 			@PathVariable Integer datasourceId) {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
-			log.info("Getting tables for agent: {}, datasource: {}", agentId, datasourceId);
+			log.info("Getting tables for datasource: {}", datasourceId);
 
 			List<String> tables = agentVectorService.getDatasourceTables(datasourceId);
 
