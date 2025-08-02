@@ -43,6 +43,7 @@ jobs:
             release
             test
             style
+            community
           scopes: |
             core
             vector-stores
