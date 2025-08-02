@@ -65,6 +65,7 @@ public class CoordinatorNode implements NodeAction {
 		ChatResponse response = coordinatorAgent.prompt().messages(messages).call().chatResponse();
 
 		String nextStep = END;
+		boolean deepResearch = false;
 		Map<String, Object> updated = new HashMap<>();
 
 		// 获取 assistant 消息内容
@@ -74,6 +75,7 @@ public class CoordinatorNode implements NodeAction {
 		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
 			logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
 			nextStep = "rewrite_multi_query";
+			deepResearch = true;
 		}
 		else {
 			logger.warn("❌ 未触发工具调用");
@@ -81,6 +83,7 @@ public class CoordinatorNode implements NodeAction {
 			updated.put("output", assistantMessage.getText());
 		}
 		updated.put("coordinator_next_node", nextStep);
+		updated.put("deep_research", deepResearch);
 		return updated;
 	}
 
