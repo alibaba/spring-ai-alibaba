@@ -47,10 +47,11 @@ public class TripAdvisorService
 	private final JsonParseTool jsonParseTool;
 
 	private final WebClientTool webClientTool;
-	
+
 	private final TripAdvisorProperties properties;
 
-	public TripAdvisorService(JsonParseTool jsonParseTool, WebClientTool webClientTool, TripAdvisorProperties properties) {
+	public TripAdvisorService(JsonParseTool jsonParseTool, WebClientTool webClientTool,
+			TripAdvisorProperties properties) {
 		this.jsonParseTool = jsonParseTool;
 		this.webClientTool = webClientTool;
 		this.properties = properties;
@@ -84,7 +85,8 @@ public class TripAdvisorService
 					params.add("currency", request.currency());
 				}
 				responseData = webClientTool.get(endpoint, params).block();
-			} else if (StringUtils.hasText(request.searchQuery())) {
+			}
+			else if (StringUtils.hasText(request.searchQuery())) {
 				// Search locations
 				endpoint = "location/search";
 				MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
@@ -112,7 +114,8 @@ public class TripAdvisorService
 					params.add("language", request.language());
 				}
 				responseData = webClientTool.get(endpoint, params).block();
-			} else {
+			}
+			else {
 				return Response.errorResponse("Either locationId or searchQuery must be provided");
 			}
 
@@ -127,50 +130,39 @@ public class TripAdvisorService
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonClassDescription("This is the parameter entity class for TripAdvisorService; values must be strictly populated according to field requirements.")
-	public record Request(
-			@JsonProperty(value = "api_key", required = true) 
-			@JsonPropertyDescription("The API key for TripAdvisor Content API authentication.") 
-			String apiKey,
-			
-			@JsonProperty(value = "location_id") 
-			@JsonPropertyDescription("The unique TripAdvisor location ID to get details for. Use this for location details requests.") 
-			String locationId,
-			
-			@JsonProperty(value = "search_query") 
-			@JsonPropertyDescription("The search query string to find locations. Use this for search requests.") 
-			String searchQuery,
-			
-			@JsonProperty(value = "category") 
-			@JsonPropertyDescription("The category to filter search results. Options: hotels, attractions, restaurants, geos") 
-			String category,
-			
-			@JsonProperty(value = "phone") 
-			@JsonPropertyDescription("The phone number to search for.") 
-			String phone,
-			
-			@JsonProperty(value = "address") 
-			@JsonPropertyDescription("The address to search for.") 
-			String address,
-			
-			@JsonProperty(value = "lat_long") 
-			@JsonPropertyDescription("The latitude and longitude coordinates in format 'lat,long' to search around.") 
-			String latLong,
-			
-			@JsonProperty(value = "radius") 
-			@JsonPropertyDescription("The search radius when using latLong. Default is 25.") 
-			String radius,
-			
-			@JsonProperty(value = "radius_unit") 
-			@JsonPropertyDescription("The unit for the search radius. Options: km, mi. Default is km.") 
-			String radiusUnit,
-			
-			@JsonProperty(value = "language") 
-			@JsonPropertyDescription("The language code for localized content. Examples: en, zh, fr, de, es, it, ja") 
-			String language,
-			
-			@JsonProperty(value = "currency") 
-			@JsonPropertyDescription("The currency code for price information. Examples: USD, EUR, GBP, CNY") 
-			String currency) implements Serializable, SearchService.Request {
+	public record Request(@JsonProperty(value = "api_key",
+			required = true) @JsonPropertyDescription("The API key for TripAdvisor Content API authentication.") String apiKey,
+
+			@JsonProperty(
+					value = "location_id") @JsonPropertyDescription("The unique TripAdvisor location ID to get details for. Use this for location details requests.") String locationId,
+
+			@JsonProperty(
+					value = "search_query") @JsonPropertyDescription("The search query string to find locations. Use this for search requests.") String searchQuery,
+
+			@JsonProperty(
+					value = "category") @JsonPropertyDescription("The category to filter search results. Options: hotels, attractions, restaurants, geos") String category,
+
+			@JsonProperty(value = "phone") @JsonPropertyDescription("The phone number to search for.") String phone,
+
+			@JsonProperty(value = "address") @JsonPropertyDescription("The address to search for.") String address,
+
+			@JsonProperty(
+					value = "lat_long") @JsonPropertyDescription("The latitude and longitude coordinates in format 'lat,long' to search around.") String latLong,
+
+			@JsonProperty(
+					value = "radius") @JsonPropertyDescription("The search radius when using latLong. Default is 25.") String radius,
+
+			@JsonProperty(
+					value = "radius_unit") @JsonPropertyDescription("The unit for the search radius. Options: km, mi. Default is km.") String radiusUnit,
+
+			@JsonProperty(
+					value = "language") @JsonPropertyDescription("The language code for localized content. Examples: en, zh, fr, de, es, it, ja") String language,
+
+			@JsonProperty(
+					value = "currency") @JsonPropertyDescription("The currency code for price information. Examples: USD, EUR, GBP, CNY") String currency)
+			implements
+				Serializable,
+				SearchService.Request {
 
 		public static Request locationDetails(String apiKey, String locationId) {
 			return new Request(apiKey, locationId, null, null, null, null, null, null, null, "en", "USD");
@@ -187,81 +179,57 @@ public class TripAdvisorService
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	public record Response(
-			@JsonProperty("location_id") String locationId,
-			@JsonProperty("name") String name,
-			@JsonProperty("web_url") String webUrl,
-			@JsonProperty("address_obj") AddressInfo addressObj,
-			@JsonProperty("ancestors") List<AncestorInfo> ancestors,
-			@JsonProperty("latitude") String latitude,
-			@JsonProperty("longitude") String longitude,
-			@JsonProperty("rating") String rating,
-			@JsonProperty("rating_image_url") String ratingImageUrl,
-			@JsonProperty("num_reviews") String numReviews,
-			@JsonProperty("photo_count") String photoCount,
-			@JsonProperty("write_review") String writeReview,
-			@JsonProperty("location_string") String locationString,
-			@JsonProperty("price_level") String priceLevel,
+	public record Response(@JsonProperty("location_id") String locationId, @JsonProperty("name") String name,
+			@JsonProperty("web_url") String webUrl, @JsonProperty("address_obj") AddressInfo addressObj,
+			@JsonProperty("ancestors") List<AncestorInfo> ancestors, @JsonProperty("latitude") String latitude,
+			@JsonProperty("longitude") String longitude, @JsonProperty("rating") String rating,
+			@JsonProperty("rating_image_url") String ratingImageUrl, @JsonProperty("num_reviews") String numReviews,
+			@JsonProperty("photo_count") String photoCount, @JsonProperty("write_review") String writeReview,
+			@JsonProperty("location_string") String locationString, @JsonProperty("price_level") String priceLevel,
 			@JsonProperty("category") CategoryInfo category,
-			@JsonProperty("subcategory") List<CategoryInfo> subcategory,
-			@JsonProperty("awards") List<AwardInfo> awards,
-			@JsonProperty("ranking_data") RankingInfo rankingData,
-			@JsonProperty("see_all_photos") String seeAllPhotos,
+			@JsonProperty("subcategory") List<CategoryInfo> subcategory, @JsonProperty("awards") List<AwardInfo> awards,
+			@JsonProperty("ranking_data") RankingInfo rankingData, @JsonProperty("see_all_photos") String seeAllPhotos,
 			@JsonProperty("data") List<LocationSearchResult> data,
 			@JsonProperty("error") String error) implements SearchService.Response {
 
 		@JsonIgnoreProperties(ignoreUnknown = true)
-		public record AddressInfo(
-				@JsonProperty("street1") String street1,
-				@JsonProperty("street2") String street2,
-				@JsonProperty("city") String city,
-				@JsonProperty("state") String state,
-				@JsonProperty("country") String country,
-				@JsonProperty("postalcode") String postalcode,
+		public record AddressInfo(@JsonProperty("street1") String street1, @JsonProperty("street2") String street2,
+				@JsonProperty("city") String city, @JsonProperty("state") String state,
+				@JsonProperty("country") String country, @JsonProperty("postalcode") String postalcode,
 				@JsonProperty("address_string") String addressString) {
 		}
 
 		@JsonIgnoreProperties(ignoreUnknown = true)
-		public record AncestorInfo(
-				@JsonProperty("location_id") String locationId,
-				@JsonProperty("name") String name,
-				@JsonProperty("level") String level,
-				@JsonProperty("abbrv") String abbrv) {
+		public record AncestorInfo(@JsonProperty("location_id") String locationId, @JsonProperty("name") String name,
+				@JsonProperty("level") String level, @JsonProperty("abbrv") String abbrv) {
 		}
 
 		@JsonIgnoreProperties(ignoreUnknown = true)
-		public record CategoryInfo(
-				@JsonProperty("name") String name,
+		public record CategoryInfo(@JsonProperty("name") String name,
 				@JsonProperty("localized_name") String localizedName) {
 		}
 
 		@JsonIgnoreProperties(ignoreUnknown = true)
-		public record AwardInfo(
-				@JsonProperty("award_type") String awardType,
-				@JsonProperty("year") String year,
+		public record AwardInfo(@JsonProperty("award_type") String awardType, @JsonProperty("year") String year,
 				@JsonProperty("display_name") String displayName) {
 		}
 
 		@JsonIgnoreProperties(ignoreUnknown = true)
-		public record RankingInfo(
-				@JsonProperty("ranking") String ranking,
+		public record RankingInfo(@JsonProperty("ranking") String ranking,
 				@JsonProperty("ranking_out_of") String rankingOutOf,
 				@JsonProperty("ranking_string") String rankingString,
 				@JsonProperty("geo_location_name") String geoLocationName) {
 		}
 
 		@JsonIgnoreProperties(ignoreUnknown = true)
-		public record LocationSearchResult(
-				@JsonProperty("location_id") String locationId,
-				@JsonProperty("name") String name,
-				@JsonProperty("address_obj") AddressInfo addressObj,
-				@JsonProperty("rating") String rating,
-				@JsonProperty("num_reviews") String numReviews) {
+		public record LocationSearchResult(@JsonProperty("location_id") String locationId,
+				@JsonProperty("name") String name, @JsonProperty("address_obj") AddressInfo addressObj,
+				@JsonProperty("rating") String rating, @JsonProperty("num_reviews") String numReviews) {
 		}
 
 		public static Response errorResponse(String errorMsg) {
-			return new Response(null, null, null, null, null, null, null, null, null, 
-					null, null, null, null, null, null, null, null, null, null, null, errorMsg);
+			return new Response(null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+					null, null, null, null, null, null, errorMsg);
 		}
 
 		@Override
@@ -269,9 +237,8 @@ public class TripAdvisorService
 			if (this.data() != null && !this.data().isEmpty()) {
 				return new SearchResult(this.data()
 					.stream()
-					.map(item -> new SearchService.SearchContent(item.name(), 
-						"Rating: " + item.rating() + ", Reviews: " + item.numReviews(), 
-						item.locationId(), null))
+					.map(item -> new SearchService.SearchContent(item.name(),
+							"Rating: " + item.rating() + ", Reviews: " + item.numReviews(), item.locationId(), null))
 					.toList());
 			}
 			return new SearchResult(List.of());

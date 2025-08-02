@@ -44,14 +44,16 @@ public class TripAdvisorServiceTest {
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	public void locationDetailsTest() {
 		String apiKey = System.getenv(TripAdvisorConstants.API_KEY_ENV);
-		var request = TripAdvisorService.Request.locationDetails(apiKey, "89575"); // Boston Harbor Hotel
+		var request = TripAdvisorService.Request.locationDetails(apiKey, "89575"); // Boston
+																					// Harbor
+																					// Hotel
 		var response = tripAdvisorService.apply(request);
-		
+
 		assert response != null;
 		assert response.error() == null : "API returned error: " + response.error();
 		assert response.name() != null : "Location name should not be null";
 		assert response.locationId() != null : "Location ID should not be null";
-		
+
 		log.info("Location Details: " + response.name() + " (ID: " + response.locationId() + ")");
 		log.info("Rating: " + response.rating() + " (" + response.numReviews() + " reviews)");
 		log.info("Address: " + (response.addressObj() != null ? response.addressObj().addressString() : "N/A"));
@@ -65,15 +67,14 @@ public class TripAdvisorServiceTest {
 		String apiKey = System.getenv(TripAdvisorConstants.API_KEY_ENV);
 		var request = TripAdvisorService.Request.searchLocations(apiKey, "Times Square New York");
 		var response = tripAdvisorService.apply(request);
-		
+
 		assert response != null;
 		assert response.error() == null : "API returned error: " + response.error();
 		assert response.data() != null && !response.data().isEmpty() : "Search should return results";
-		
+
 		log.info("Search Results Count: " + response.data().size());
 		response.data().forEach(result -> {
-			log.info("Found: " + result.name() + " (ID: " + result.locationId() + 
-					", Rating: " + result.rating() + ")");
+			log.info("Found: " + result.name() + " (ID: " + result.locationId() + ", Rating: " + result.rating() + ")");
 		});
 	}
 
@@ -83,15 +84,14 @@ public class TripAdvisorServiceTest {
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	public void hotelSearchTest() {
 		String apiKey = System.getenv(TripAdvisorConstants.API_KEY_ENV);
-		var request = new TripAdvisorService.Request(apiKey, null, "Boston hotels", "hotels", 
-				null, null, null, null, null, "en", "USD");
+		var request = new TripAdvisorService.Request(apiKey, null, "Boston hotels", "hotels", null, null, null, null,
+				null, "en", "USD");
 		var response = tripAdvisorService.apply(request);
-		
+
 		assert response != null;
 		assert response.error() == null : "API returned error: " + response.error();
-		
-		log.info("Hotel Search Results: " + 
-				(response.data() != null ? response.data().size() : "0") + " hotels found");
+
+		log.info("Hotel Search Results: " + (response.data() != null ? response.data().size() : "0") + " hotels found");
 	}
 
 	@Test
@@ -100,15 +100,15 @@ public class TripAdvisorServiceTest {
 			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	public void restaurantSearchTest() {
 		String apiKey = System.getenv(TripAdvisorConstants.API_KEY_ENV);
-		var request = new TripAdvisorService.Request(apiKey, null, "Italian restaurants Manhattan", 
-				"restaurants", null, null, null, null, null, "en", "USD");
+		var request = new TripAdvisorService.Request(apiKey, null, "Italian restaurants Manhattan", "restaurants", null,
+				null, null, null, null, "en", "USD");
 		var response = tripAdvisorService.apply(request);
-		
+
 		assert response != null;
 		assert response.error() == null : "API returned error: " + response.error();
-		
-		log.info("Restaurant Search Results: " + 
-				(response.data() != null ? response.data().size() : "0") + " restaurants found");
+
+		log.info("Restaurant Search Results: " + (response.data() != null ? response.data().size() : "0")
+				+ " restaurants found");
 	}
 
 	@Test
