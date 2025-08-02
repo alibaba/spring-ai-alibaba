@@ -53,18 +53,19 @@ class McpToolTest {
 	}
 
 	@Test
-	void testGetName_WithServerName_ShouldReturnPrefixedName() {
+	void testGetName_WithServerName_ShouldReturnPrefixedNameWithInstanceId() {
 
 		String serverName = "test-server";
 		String originalToolName = "search";
-		String expectedPrefixedName = "test-server_tools_search";
 
 		when(toolDefinition.name()).thenReturn(originalToolName);
 
 		McpTool mcpTool = new McpTool(toolCallback, serverName, "plan-1", mcpStateHolderService,
 				smartContentSavingService, objectMapper);
 
-		assertEquals(expectedPrefixedName, mcpTool.getName());
+		String actualName = mcpTool.getName();
+		assertTrue(actualName.startsWith("test-server_tools_search_"));
+		assertTrue(actualName.matches("test-server_tools_search_\\d+"));
 	}
 
 	@Test
@@ -120,9 +121,13 @@ class McpToolTest {
 		McpTool mcpTool2 = new McpTool(toolCallback, "server-2", "plan-1", mcpStateHolderService,
 				smartContentSavingService, objectMapper);
 
-		assertEquals("server-1_tools_search", mcpTool1.getName());
-		assertEquals("server-2_tools_search", mcpTool2.getName());
-		assertNotEquals(mcpTool1.getName(), mcpTool2.getName());
+		String name1 = mcpTool1.getName();
+		String name2 = mcpTool2.getName();
+
+		// Both should have different prefixes and instance IDs
+		assertTrue(name1.startsWith("server-1_tools_search_"));
+		assertTrue(name2.startsWith("server-2_tools_search_"));
+		assertNotEquals(name1, name2);
 	}
 
 	@Test
@@ -130,14 +135,52 @@ class McpToolTest {
 
 		String serverName = "my-complex-server-name";
 		String originalToolName = "complex_tool_name";
-		String expectedPrefixedName = "my-complex-server-name_tools_complex_tool_name";
 
 		when(toolDefinition.name()).thenReturn(originalToolName);
 
 		McpTool mcpTool = new McpTool(toolCallback, serverName, "plan-1", mcpStateHolderService,
 				smartContentSavingService, objectMapper);
 
-		assertEquals(expectedPrefixedName, mcpTool.getName());
+		String actualName = mcpTool.getName();
+		// Should start with the expected prefix and end with instance ID
+		assertTrue(actualName.startsWith("my-complex-server-name_tools_complex_tool_name_"));
+		assertTrue(actualName.matches("my-complex-server-name_tools_complex_tool_name_\\d+"));
+	}
+
+	@Test
+	void testGetName_SameServerSameToolName_ShouldHaveDifferentInstanceIds() {
+
+		String serverName = "cmapi011178";
+		String originalToolName = "search";
+
+		when(toolDefinition.name()).thenReturn(originalToolName);
+
+		// Create multiple tools with same server and tool name
+		McpTool mcpTool1 = new McpTool(toolCallback, serverName, "plan-1", mcpStateHolderService,
+				smartContentSavingService, objectMapper);
+		McpTool mcpTool2 = new McpTool(toolCallback, serverName, "plan-1", mcpStateHolderService,
+				smartContentSavingService, objectMapper);
+		McpTool mcpTool3 = new McpTool(toolCallback, serverName, "plan-1", mcpStateHolderService,
+				smartContentSavingService, objectMapper);
+
+		String name1 = mcpTool1.getName();
+		String name2 = mcpTool2.getName();
+		String name3 = mcpTool3.getName();
+
+		// All should have same prefix but different instance IDs
+		assertTrue(name1.startsWith("cmapi011178_tools_search_"));
+		assertTrue(name2.startsWith("cmapi011178_tools_search_"));
+		assertTrue(name3.startsWith("cmapi011178_tools_search_"));
+
+		// All names should be different
+		assertNotEquals(name1, name2);
+		assertNotEquals(name2, name3);
+		assertNotEquals(name1, name3);
+
+		// Verify instance IDs are incremental
+		assertTrue(name1.matches("cmapi011178_tools_search_\\d+"));
+		assertTrue(name2.matches("cmapi011178_tools_search_\\d+"));
+		assertTrue(name3.matches("cmapi011178_tools_search_\\d+"));
 	}
 
 	@Test

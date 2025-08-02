@@ -40,6 +40,9 @@ public class McpTool extends AbstractBaseTool<Map<String, Object>> {
 
 	private final String prefixedToolName;
 
+	// Static counter to ensure unique names for tools with same name from same server
+	private static volatile int toolInstanceCounter = 0;
+
 	public McpTool(ToolCallback toolCallback, String serviceNameString, String planId,
 			McpStateHolderService mcpStateHolderService, ISmartContentSavingService smartContentSavingService,
 			ObjectMapper objectMapper) {
@@ -56,8 +59,9 @@ public class McpTool extends AbstractBaseTool<Map<String, Object>> {
 		if (serverName == null || serverName.trim().isEmpty()) {
 			return toolName;
 		}
-		// Use the same format as other MCP components: serverName_tools_toolName
-		return serverName + "_tools_" + toolName;
+		synchronized (McpTool.class) {
+			return serverName + "_tools_" + toolName + "_" + (++toolInstanceCounter);
+		}
 	}
 
 	@Override
