@@ -38,6 +38,11 @@ public class McpTool extends AbstractBaseTool<Map<String, Object>> {
 
 	private ISmartContentSavingService smartContentSavingService;
 
+	private final String prefixedToolName;
+
+	// Static counter to ensure unique names for tools with same name from same server
+	private static volatile int toolInstanceCounter = 0;
+
 	public McpTool(ToolCallback toolCallback, String serviceNameString, String planId,
 			McpStateHolderService mcpStateHolderService, ISmartContentSavingService smartContentSavingService,
 			ObjectMapper objectMapper) {
@@ -47,11 +52,21 @@ public class McpTool extends AbstractBaseTool<Map<String, Object>> {
 		this.currentPlanId = planId;
 		this.mcpStateHolderService = mcpStateHolderService;
 		this.smartContentSavingService = smartContentSavingService;
+		this.prefixedToolName = generatePrefixedToolName(serviceNameString, toolCallback.getToolDefinition().name());
+	}
+
+	private String generatePrefixedToolName(String serverName, String toolName) {
+		if (serverName == null || serverName.trim().isEmpty()) {
+			return toolName;
+		}
+		synchronized (McpTool.class) {
+			return serverName + "_tools_" + toolName + "_" + (++toolInstanceCounter);
+		}
 	}
 
 	@Override
 	public String getName() {
-		return toolCallback.getToolDefinition().name();
+		return prefixedToolName;
 	}
 
 	@Override
