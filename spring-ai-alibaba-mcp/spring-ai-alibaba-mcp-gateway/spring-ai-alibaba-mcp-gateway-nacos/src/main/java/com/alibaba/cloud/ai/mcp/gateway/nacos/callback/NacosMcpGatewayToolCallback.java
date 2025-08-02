@@ -38,6 +38,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.InitializeResult;
@@ -117,8 +119,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			if (!argsNode.isMissingNode() && argsNode.isArray() && argsNode.size() > 0) {
 				processedArgs = processArguments(argsNode, args);
 				logger.info("[processToolRequest] processedArgs from args: {}", processedArgs);
-			}
-			else if (!toolConfig.path("inputSchema").isMissingNode() && toolConfig.path("inputSchema").isObject()) {
+			} else if (!toolConfig.path("inputSchema").isMissingNode() && toolConfig.path("inputSchema").isObject()) {
 				// 从 inputSchema.properties 解析参数
 				JsonNode properties = toolConfig.path("inputSchema").path("properties");
 				if (properties.isObject()) {
@@ -129,14 +130,12 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 						}
 					});
 					logger.info("[processToolRequest] processedArgs from inputSchema: {}", processedArgs);
-				}
-				else {
+				} else {
 					processedArgs = args;
 					logger.info("[processToolRequest] inputSchema.properties missing, use original args: {}",
 							processedArgs);
 				}
-			}
-			else {
+			} else {
 				processedArgs = args;
 				logger.info("[processToolRequest] no args or inputSchema, use original args: {}", processedArgs);
 			}
@@ -154,8 +153,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			// 验证HTTP方法
 			try {
 				HttpMethod.valueOf(method.toUpperCase());
-			}
-			catch (IllegalArgumentException e) {
+			} catch (IllegalArgumentException e) {
 				return Mono.error(new IllegalArgumentException("Invalid HTTP method: " + method));
 			}
 
@@ -166,12 +164,11 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			// 构建并执行请求
 			return buildAndExecuteRequest(client, requestTemplate, toolConfig.path("responseTemplate"), processedArgs,
 					baseUrl)
-				.onErrorResume(e -> {
-					logger.error("Failed to execute tool request: {}", e.getMessage(), e);
-					return Mono.error(new RuntimeException("Tool execution failed: " + e.getMessage(), e));
-				});
-		}
-		catch (Exception e) {
+					.onErrorResume(e -> {
+						logger.error("Failed to execute tool request: {}", e.getMessage(), e);
+						return Mono.error(new RuntimeException("Tool execution failed: " + e.getMessage(), e));
+					});
+		} catch (Exception e) {
 			logger.error("Failed to process tool request", e);
 			return Mono.error(new RuntimeException("Failed to process tool request: " + e.getMessage(), e));
 		}
@@ -188,16 +185,15 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				String name = argDef.path("name").asText();
 				boolean required = argDef.path("required").asBoolean(false);
 				Object defaultValue = argDef.has("default")
-						? objectMapper.convertValue(argDef.path("default"), Object.class) : null;
+						? objectMapper.convertValue(argDef.path("default"), Object.class)
+						: null;
 
 				// 检查参数
 				if (providedArgs.containsKey(name)) {
 					processedArgs.put(name, providedArgs.get(name));
-				}
-				else if (defaultValue != null) {
+				} else if (defaultValue != null) {
 					processedArgs.put(name, defaultValue);
-				}
-				else if (required) {
+				} else if (required) {
 					throw new IllegalArgumentException("Required argument missing: " + name);
 				}
 			}
@@ -223,7 +219,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 
 		// 构建请求
 		WebClient.RequestBodySpec requestBodySpec = client.method(httpMethod)
-			.uri(builder -> RequestTemplateParser.buildUri(builder, processedUrl, info, args));
+				.uri(builder -> RequestTemplateParser.buildUri(builder, processedUrl, info, args));
 
 		// 添加请求头
 		RequestTemplateParser.addHeaders(requestBodySpec, info.headers, args, this::processTemplateString);
@@ -238,18 +234,18 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 		logger.info("[buildAndExecuteRequest] final request: method={} url={} args={}", method, fullUrl, args);
 
 		return headersSpec.retrieve()
-			.onStatus(status -> status.is4xxClientError(),
-					response -> Mono.error(new RuntimeException("Client error: " + response.statusCode())))
-			.onStatus(status -> status.is5xxServerError(),
-					response -> Mono.error(new RuntimeException("Server error: " + response.statusCode())))
-			.bodyToMono(String.class)
-			.timeout(getTimeoutDuration()) // 使用配置的超时时间
-			.doOnNext(responseBody -> logger.info("[buildAndExecuteRequest] received responseBody: {}", responseBody))
-			.map(responseBody -> processResponse(responseBody, responseTemplate, args))
-			.onErrorResume(e -> {
-				logger.error("[buildAndExecuteRequest] Request failed: {}", e.getMessage(), e);
-				return Mono.error(new RuntimeException("HTTP request failed: " + e.getMessage(), e));
-			});
+				.onStatus(status -> status.is4xxClientError(),
+						response -> Mono.error(new RuntimeException("Client error: " + response.statusCode())))
+				.onStatus(status -> status.is5xxServerError(),
+						response -> Mono.error(new RuntimeException("Server error: " + response.statusCode())))
+				.bodyToMono(String.class)
+				.timeout(getTimeoutDuration()) // 使用配置的超时时间
+				.doOnNext(responseBody -> logger.info("[buildAndExecuteRequest] received responseBody: {}", responseBody))
+				.map(responseBody -> processResponse(responseBody, responseTemplate, args))
+				.onErrorResume(e -> {
+					logger.error("[buildAndExecuteRequest] Request failed: {}", e.getMessage(), e);
+					return Mono.error(new RuntimeException("HTTP request failed: " + e.getMessage(), e));
+				});
 	}
 
 	/**
@@ -265,8 +261,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				result = ResponseTemplateParser.parse(responseBody, bodyTemplate);
 				logger.info("[processResponse] ResponseTemplateParser result: {}", result);
 				return result;
-			}
-			else if (responseTemplate.has("prependBody") || responseTemplate.has("appendBody")) {
+			} else if (responseTemplate.has("prependBody") || responseTemplate.has("appendBody")) {
 				String prependText = responseTemplate.path("prependBody").asText("");
 				String appendText = responseTemplate.path("appendBody").asText("");
 				result = processTemplateString(prependText, args) + responseBody
@@ -298,22 +293,18 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				// 特殊处理{{.}}，输出data唯一值或整个data
 				if (data != null && data.size() == 1) {
 					replacement = String.valueOf(data.values().iterator().next());
-				}
-				else if (data != null && !data.isEmpty()) {
+				} else if (data != null && !data.isEmpty()) {
 					replacement = data.toString();
-				}
-				else {
+				} else {
 					replacement = "";
 				}
-			}
-			else {
+			} else {
 				Object value = data != null ? data.get(variable) : null;
 				if (value == null) {
 					logger.warn("[processTemplateString] Variable '{}' not found in data, using empty string",
 							variable);
 					replacement = "";
-				}
-				else {
+				} else {
 					replacement = value.toString();
 				}
 			}
@@ -359,8 +350,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				try {
 					args = objectMapper.readValue(input, Map.class);
 					logger.info("[call] parsed args: {}", args);
-				}
-				catch (Exception e) {
+				} catch (Exception e) {
 					logger.error("[call] Failed to parse input to args", e);
 					// 如果解析失败，尝试作为单个参数处理
 					args.put("input", input);
@@ -380,23 +370,23 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				}
 
 				return handleHttpHttpsProtocol(args, remoteServerConfig, protocol);
-			}
-			else if ("mcp-sse".equalsIgnoreCase(protocol)) {
+			} else if ("mcp-sse".equalsIgnoreCase(protocol)) {
 				McpServerRemoteServiceConfig remoteServerConfig = this.toolDefinition.getRemoteServerConfig();
 				if (remoteServerConfig == null) {
 					throw new IllegalStateException("Remote server config is null");
 				}
 				return handleMcpStreamProtocol(args, remoteServerConfig, protocol);
-			}
-			else if ("mcp-streamable".equalsIgnoreCase(protocol)) {
-				return "Error: Unsupported protocol " + protocol;
-			}
-			else {
+			} else if ("mcp-streamable".equalsIgnoreCase(protocol)) {
+				McpServerRemoteServiceConfig remoteServerConfig = this.toolDefinition.getRemoteServerConfig();
+				if (remoteServerConfig == null) {
+					throw new IllegalStateException("Remote server config is null");
+				}
+				return handleMcpStreamableProtocol(args, remoteServerConfig, protocol);
+			} else {
 				logger.error("[call] Unsupported protocol: {}", protocol);
 				return "Error: Unsupported protocol " + protocol;
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("[call] Unexpected error occurred", e);
 			return "Error: " + e.getMessage();
 		}
@@ -425,8 +415,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 					try {
 						logger.info("[handleHttpHttpsProtocol] json-go-template: {}",
 								objectMapper.writeValueAsString(jsonGoTemplate));
-					}
-					catch (JsonProcessingException e) {
+					} catch (JsonProcessingException e) {
 						logger.error("[handleHttpHttpsProtocol] Failed to serialize json-go-template", e);
 					}
 					try {
@@ -435,23 +424,19 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 						logger.info("[handleHttpHttpsProtocol] configJson: {} args: {} baseUrl: {}", configJson, args,
 								baseUrl);
 						return processToolRequest(configJson, args, baseUrl).block();
-					}
-					catch (Exception e) {
+					} catch (Exception e) {
 						logger.error("Failed to execute tool request", e);
 						return "Error: " + e.getMessage();
 					}
-				}
-				else {
+				} else {
 					logger.warn("[handleHttpHttpsProtocol] json-go-template not found in templates");
 					return "Error: json-go-template not found in tool configuration";
 				}
-			}
-			else {
+			} else {
 				logger.warn("[handleHttpHttpsProtocol] templates not found in toolsMeta");
 				return "Error: templates not found in tool metadata";
 			}
-		}
-		else {
+		} else {
 			logger.error("[handleHttpHttpsProtocol] serviceRef is null");
 			return "Error: service reference is null";
 		}
@@ -476,8 +461,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			String baseUrl;
 			if ("mcp-sse".equalsIgnoreCase(protocol)) {
 				baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
-			}
-			else {
+			} else {
 				// mcp-streamable 或其他协议
 				baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 			}
@@ -497,8 +481,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				String toolName;
 				if (toolDefinitionName.contains("_tools_")) {
 					toolName = toolDefinitionName.substring(toolDefinitionName.lastIndexOf("_tools_") + 7);
-				}
-				else {
+				} else {
 					// 如果没有 _tools_ 分隔符，使用整个名称
 					toolName = toolDefinitionName;
 				}
@@ -514,7 +497,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				}
 
 				HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl)
-					.sseEndpoint(sseEndpoint);
+						.sseEndpoint(sseEndpoint);
 
 				// 添加自定义请求头（如果需要）
 				// 这里可以根据需要添加认证头等
@@ -543,37 +526,139 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 						// 兼容TextContent的text字段
 						if (first instanceof TextContent textContent) {
 							return textContent.text();
-						}
-						else if (first instanceof Map<?, ?> map && map.containsKey("text")) {
+						} else if (first instanceof Map<?, ?> map && map.containsKey("text")) {
 							return map.get("text").toString();
-						}
-						else {
+						} else {
 							return first.toString();
 						}
-					}
-					else {
+					} else {
 						return content != null ? content.toString() : "No content returned";
 					}
-				}
-				finally {
+				} finally {
 					// 清理资源
 					try {
 						if (client != null) {
 							client.close();
 						}
-					}
-					catch (Exception e) {
+					} catch (Exception e) {
 						logger.warn("[handleMcpStreamProtocol] Failed to close MCP client", e);
 					}
 				}
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				logger.error("[handleMcpStreamProtocol] MCP call failed:", e);
 				return "Error: MCP call failed - " + e.getMessage();
 			}
-		}
-		else {
+		} else {
 			logger.error("[handleMcpStreamProtocol] serviceRef is null");
+			return "Error: service reference is null";
+		}
+	}
+
+	/**
+	 * 处理MCP Streamable HTTP协议的工具调用
+	 */
+	private String handleMcpStreamableProtocol(Map<String, Object> args,
+			McpServerRemoteServiceConfig remoteServerConfig, String protocol) throws NacosException {
+		McpServiceRef serviceRef = remoteServerConfig.getServiceRef();
+		if (serviceRef != null) {
+			McpEndpointInfo mcpEndpointInfo = nacosMcpOperationService.selectEndpoint(serviceRef);
+			if (mcpEndpointInfo == null) {
+				throw new RuntimeException("No available endpoint found for service: " + serviceRef.getServiceName());
+			}
+
+			logger.info("[handleMcpStreamableProtocol] Tool callback instance: {}",
+					JacksonUtils.toJson(mcpEndpointInfo));
+			String exportPath = remoteServerConfig.getExportPath();
+
+			// 构建基础URL
+			String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
+
+			// 构建streamable endpoint
+			String streamableEndpoint = "/streamable";
+			if (exportPath != null && !exportPath.isEmpty()) {
+				streamableEndpoint = exportPath;
+			}
+
+			logger.info(
+					"[handleMcpStreamableProtocol] Processing {} protocol with args: {} and baseUrl: {} endpoint: {}",
+					protocol, args, baseUrl, streamableEndpoint);
+
+			try {
+				// 获取工具名称
+				String toolDefinitionName = this.toolDefinition.name();
+				if (toolDefinitionName == null || toolDefinitionName.isEmpty()) {
+					throw new RuntimeException("Tool definition name is not available");
+				}
+
+				String toolName;
+				if (toolDefinitionName.contains("_tools_")) {
+					toolName = toolDefinitionName.substring(toolDefinitionName.lastIndexOf("_tools_") + 7);
+				} else {
+					toolName = toolDefinitionName;
+				}
+
+				if (toolName.isEmpty()) {
+					throw new RuntimeException("Extracted tool name is empty");
+				}
+
+				// 使用WebClient构建streamable传输层
+				WebClient.Builder webClientBuilder = this.webClientBuilder.clone()
+						.baseUrl(baseUrl)
+						.defaultHeader("Accept", "application/json, text/event-stream")
+						.defaultHeader("Content-Type", "application/json")
+						.defaultHeader("MCP-Protocol-Version", "2025-06-18"); // Streamable
+				// HTTP协议版本
+
+				// 创建MCP同步客户端，使用Streamable HTTP传输
+				HttpClientStreamableHttpTransport.Builder transportBuilder = HttpClientStreamableHttpTransport.builder()
+						.webClient(webClientBuilder.build())
+						.endpoint(streamableEndpoint);
+
+				HttpClientStreamableHttpTransport transport = transportBuilder.build();
+				McpSyncClient client = McpClient.sync(transport).build();
+
+				try {
+					// 初始化客户端
+					InitializeResult initializeResult = client.initialize();
+					logger.info("[handleMcpStreamableProtocol] MCP Client initialized: {}", initializeResult);
+
+					// 调用工具
+					McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, args);
+					logger.info("[handleMcpStreamableProtocol] CallToolRequest: {}", request);
+
+					CallToolResult result = client.callTool(request);
+					logger.info("[handleMcpStreamableProtocol] tool call result: {}", result);
+
+					// 处理结果
+					Object content = result.content();
+					if (content instanceof List<?> list && !CollectionUtils.isEmpty(list)) {
+						Object first = list.get(0);
+						if (first instanceof TextContent textContent) {
+							return textContent.text();
+						} else if (first instanceof Map<?, ?> map && map.containsKey("text")) {
+							return map.get("text").toString();
+						} else {
+							return first.toString();
+						}
+					} else {
+						return content != null ? content.toString() : "No content returned";
+					}
+				} finally {
+					// 清理资源
+					try {
+						if (client != null) {
+							client.close();
+						}
+					} catch (Exception e) {
+						logger.warn("[handleMcpStreamableProtocol] Failed to close MCP client", e);
+					}
+				}
+			} catch (Exception e) {
+				logger.error("[handleMcpStreamableProtocol] MCP streamable call failed:", e);
+				return "Error: MCP streamable call failed - " + e.getMessage();
+			}
+		} else {
+			logger.error("[handleMcpStreamableProtocol] serviceRef is null");
 			return "Error: service reference is null";
 		}
 	}
