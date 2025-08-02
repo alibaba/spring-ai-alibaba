@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
+import com.alibaba.cloud.ai.vectorstore.SimpleVectorStoreEnhanced;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +53,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 	private static final Logger log = LoggerFactory.getLogger(SimpleVectorStoreService.class);
 
-	private final SimpleVectorStore vectorStore;
+	private final SimpleVectorStoreEnhanced vectorStore;
 
 	private final Gson gson;
 
@@ -72,7 +72,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
 		this.embeddingModel = embeddingModel;
-		this.vectorStore = SimpleVectorStore.builder(embeddingModel).build();
+		this.vectorStore = SimpleVectorStoreEnhanced.builder(embeddingModel);
 		log.info("SimpleVectorStoreService initialized successfully");
 	}
 
@@ -96,11 +96,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			.setSchema(dbConfig.getSchema())
 			.setTables(schemaInitRequest.getTables());
 
-		DeleteRequest deleteRequest = new DeleteRequest();
-		deleteRequest.setVectorType("column");
-		// deleteDocuments(deleteRequest);
-		deleteRequest.setVectorType("table");
-		// deleteDocuments(deleteRequest);
+		deleteDocumentsByVectorTypes("column", "table");
 
 		log.debug("Fetching foreign keys from database");
 		List<ForeignKeyInfoBO> foreignKeyInfoBOS = dbAccessor.showForeignKeys(dbConfig, dqp);
@@ -237,27 +233,16 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		try {
 			if (deleteRequest.getId() != null && !deleteRequest.getId().isEmpty()) {
 				log.debug("Deleting documents by ID: {}", deleteRequest.getId());
-				vectorStore.delete(Arrays.asList("comment_count"));
-				log.info("Successfully deleted documents by ID");
+				vectorStore.delete(Arrays.asList(deleteRequest.getId()));
+				log.info("Successfully deleted documents by ID: {}", deleteRequest.getId());
 			}
 			else if (deleteRequest.getVectorType() != null && !deleteRequest.getVectorType().isEmpty()) {
 				log.debug("Deleting documents by vectorType: {}", deleteRequest.getVectorType());
+				// 使用向量存储的doDelete方法，直接按vectorType删除
 				FilterExpressionBuilder b = new FilterExpressionBuilder();
 				Filter.Expression expression = b.eq("vectorType", deleteRequest.getVectorType()).build();
-				List<Document> documents = vectorStore
-					.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
-						.topK(Integer.MAX_VALUE)
-						.filterExpression(expression)
-						.build());
-				if (documents != null && !documents.isEmpty()) {
-					log.info("Found {} documents to delete with vectorType: {}", documents.size(),
-							deleteRequest.getVectorType());
-					vectorStore.delete(documents.stream().map(Document::getId).toList());
-					log.info("Successfully deleted {} documents", documents.size());
-				}
-				else {
-					log.info("No documents found to delete with vectorType: {}", deleteRequest.getVectorType());
-				}
+				vectorStore.doDelete(expression);
+				log.info("Successfully deleted documents with vectorType: {}", deleteRequest.getVectorType());
 			}
 			else {
 				log.warn("Invalid delete request: either id or vectorType must be specified");
@@ -269,6 +254,37 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			log.error("Failed to delete documents: {}", e.getMessage(), e);
 			throw new Exception("Failed to delete collection data by filterExpression: " + e.getMessage(), e);
 		}
+	}
+
+	/**
+	 * 重载方法：直接按 vectorType 删除文档
+	 * @param vectorType 要删除的向量类型
+	 * @return 删除是否成功
+	 * @throws Exception 删除失败时抛出异常
+	 */
+	public Boolean deleteDocumentsByVectorType(String vectorType) throws Exception {
+		log.info("Deleting documents by vectorType: {}", vectorType);
+
+		DeleteRequest deleteRequest = new DeleteRequest();
+		deleteRequest.setVectorType(vectorType);
+		return deleteDocuments(deleteRequest);
+	}
+
+	/**
+	 * 批量删除多种 vectorType 的文档
+	 * @param vectorTypes 要删除的向量类型列表
+	 * @return 删除是否成功
+	 * @throws Exception 删除失败时抛出异常
+	 */
+	public Boolean deleteDocumentsByVectorTypes(String... vectorTypes) throws Exception {
+		log.info("Batch deleting documents for vectorTypes: {}", Arrays.toString(vectorTypes));
+
+		for (String vectorType : vectorTypes) {
+			deleteDocumentsByVectorType(vectorType);
+		}
+
+		log.info("Batch deletion completed for {} vectorTypes", vectorTypes.length);
+		return true;
 	}
 
 	/**
