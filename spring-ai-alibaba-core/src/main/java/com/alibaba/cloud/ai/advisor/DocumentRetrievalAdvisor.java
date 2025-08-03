@@ -18,9 +18,6 @@ package com.alibaba.cloud.ai.advisor;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
@@ -40,8 +37,6 @@ import org.springframework.util.Assert;
  * @since 1.0.0-M2
  */
 public class DocumentRetrievalAdvisor implements BaseAdvisor {
-
-	private static final Logger logger = LoggerFactory.getLogger(DocumentRetrievalAdvisor.class);
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
 			{query}

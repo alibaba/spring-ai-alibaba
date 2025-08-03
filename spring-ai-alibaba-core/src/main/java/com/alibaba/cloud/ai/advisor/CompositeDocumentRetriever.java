@@ -29,7 +29,7 @@ import org.springframework.util.Assert;
 /**
  * Composite document retriever that combines multiple document retrievers.
  *
- * @author yuanci.ytb
+ * @author mengnankkkk
  * @since 1.0.0-M2
  */
 public class CompositeDocumentRetriever implements DocumentRetriever {
@@ -38,7 +38,7 @@ public class CompositeDocumentRetriever implements DocumentRetriever {
 
 	private final List<DocumentRetriever> retrievers;
 
-	private final int maxResultsPerRetriever;
+	private final Integer maxResultsPerRetriever;
 
 	private final ResultMergeStrategy mergeStrategy;
 
@@ -56,11 +56,11 @@ public class CompositeDocumentRetriever implements DocumentRetriever {
 		this(retrievers, 10, ResultMergeStrategy.SCORE_BASED);
 	}
 
-	public CompositeDocumentRetriever(List<DocumentRetriever> retrievers, int maxResultsPerRetriever) {
+	public CompositeDocumentRetriever(List<DocumentRetriever> retrievers, Integer maxResultsPerRetriever) {
 		this(retrievers, maxResultsPerRetriever, ResultMergeStrategy.SCORE_BASED);
 	}
 
-	public CompositeDocumentRetriever(List<DocumentRetriever> retrievers, int maxResultsPerRetriever,
+	public CompositeDocumentRetriever(List<DocumentRetriever> retrievers, Integer maxResultsPerRetriever,
 			ResultMergeStrategy mergeStrategy) {
 		Assert.notNull(retrievers, "Retrievers list must not be null!");
 		Assert.isTrue(!retrievers.isEmpty(), "Retrievers list must not be empty!");
@@ -121,18 +121,14 @@ public class CompositeDocumentRetriever implements DocumentRetriever {
 			}
 		}
 
-		List<Document> result = new ArrayList<>();
-		int maxSize = allResults.stream().mapToInt(List::size).max().orElse(0);
+		Integer maxSize = allResults.stream().mapToInt(List::size).max().orElse(0);
 
-		for (int i = 0; i < maxSize; i++) {
-			for (List<Document> documents : allResults) {
-				if (i < documents.size()) {
-					result.add(documents.get(i));
-				}
-			}
-		}
-
-		return result;
+		return java.util.stream.IntStream.range(0, maxSize)
+			.boxed()
+			.flatMap(i -> allResults.stream()
+				.filter(documents -> i < documents.size())
+				.map(documents -> documents.get(i)))
+			.collect(Collectors.toList());
 	}
 
 	private List<Document> mergeResults(List<Document> documents) {
@@ -161,9 +157,12 @@ public class CompositeDocumentRetriever implements DocumentRetriever {
 
 		private List<DocumentRetriever> retrievers = new ArrayList<>();
 
-		private int maxResultsPerRetriever = 10;
+		private Integer maxResultsPerRetriever = 10;
 
 		private ResultMergeStrategy mergeStrategy = ResultMergeStrategy.SCORE_BASED;
+
+		private Builder() {
+		}
 
 		public Builder addRetriever(DocumentRetriever retriever) {
 			if (retriever != null) {
@@ -179,7 +178,7 @@ public class CompositeDocumentRetriever implements DocumentRetriever {
 			return this;
 		}
 
-		public Builder maxResultsPerRetriever(int maxResultsPerRetriever) {
+		public Builder maxResultsPerRetriever(Integer maxResultsPerRetriever) {
 			this.maxResultsPerRetriever = maxResultsPerRetriever;
 			return this;
 		}
