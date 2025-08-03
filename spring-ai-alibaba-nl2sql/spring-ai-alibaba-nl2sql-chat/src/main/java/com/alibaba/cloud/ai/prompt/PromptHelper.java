@@ -226,16 +226,6 @@ public class PromptHelper {
 		params.put("sql", sql);
 		return PromptConstant.SEMANTIC_CONSISTENCY_PROMPT_TEMPLATE.render(params);
 	}
-
-	public static String buildReportGeneratorPrompt(String userRequirementsAndPlan, String analysisStepsAndData,
-			String summaryAndRecommendations) {
-		Map<String, Object> params = new HashMap<>();
-		params.put("user_requirements_and_plan", userRequirementsAndPlan);
-		params.put("analysis_steps_and_data", analysisStepsAndData);
-		params.put("summary_and_recommendations", summaryAndRecommendations);
-		return PromptConstant.getReportGeneratorPromptTemplate().render(params);
-	}
-
 	/**
 	 * 构建带自定义提示词的报告生成提示词
 	 * @param userRequirementsAndPlan 用户需求和计划
