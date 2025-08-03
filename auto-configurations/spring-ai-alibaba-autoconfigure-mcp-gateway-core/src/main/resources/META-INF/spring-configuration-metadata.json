@@ -63,6 +63,12 @@
       "description": "Protocol version for Streamable HTTP transport.",
       "sourceType": "com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayProperties$StreamableConfig",
       "defaultValue": "2025-06-18"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.gateway.message-endpoint",
+      "type": "java.lang.String",
+      "description": "Message endpoint for MCP Gateway.",
+      "defaultValue": "/mcp/message"
     }
   ],
   "hints": []

@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.transport.HttpServletStreamableServerTransportProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
+import org.springframework.ai.mcp.server.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -37,7 +37,7 @@ import org.springframework.context.annotation.Bean;
  *
  * @author aias00
  */
-@AutoConfiguration
+@AutoConfiguration(before = McpServerAutoConfiguration.class)
 @ConditionalOnClass({ HttpServletStreamableServerTransportProvider.class })
 @ConditionalOnProperty(name = "spring.ai.alibaba.mcp.gateway.streamable.enabled", havingValue = "true",
 		matchIfMissing = false)
@@ -48,14 +48,12 @@ public class McpGatewayStreamableServerAutoConfiguration {
 	/**
 	 * Creates a Streamable HTTP server transport provider for the MCP Gateway.
 	 * @param objectMapper ObjectMapper for JSON serialization/deserialization
-	 * @param properties MCP Server properties
 	 * @param gatewayProperties Gateway properties
 	 * @return HttpServletStreamableServerTransportProvider
 	 */
 	@Bean
 	public HttpServletStreamableServerTransportProvider gatewayStreamableTransportProvider(
-			ObjectProvider<ObjectMapper> objectMapper, McpServerProperties properties,
-			McpGatewayProperties gatewayProperties) {
+			ObjectProvider<ObjectMapper> objectMapper, McpGatewayProperties gatewayProperties) {
 
 		log.info("Configuring MCP Gateway Streamable HTTP transport provider");
 
@@ -78,13 +76,12 @@ public class McpGatewayStreamableServerAutoConfiguration {
 	/**
 	 * Creates a servlet registration for Streamable HTTP MCP endpoints.
 	 * @param streamableTransportProvider Streamable HTTP transport provider
-	 * @param properties MCP Server properties
 	 * @param gatewayProperties Gateway properties
 	 * @return ServletRegistrationBean for Streamable HTTP MCP endpoints
 	 */
 	@Bean
 	public ServletRegistrationBean<HttpServletStreamableServerTransportProvider> gatewayStreamableMcpServletRegistration(
-			HttpServletStreamableServerTransportProvider streamableTransportProvider, McpServerProperties properties,
+			HttpServletStreamableServerTransportProvider streamableTransportProvider,
 			McpGatewayProperties gatewayProperties) {
 
 		log.info("Configuring MCP Gateway Streamable HTTP servlet registration");

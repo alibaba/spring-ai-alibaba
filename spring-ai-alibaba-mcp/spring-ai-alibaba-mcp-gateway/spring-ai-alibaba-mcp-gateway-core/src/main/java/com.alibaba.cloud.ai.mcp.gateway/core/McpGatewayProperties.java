@@ -29,6 +29,8 @@ public class McpGatewayProperties {
 
 	private String registry = "nacos";
 
+	private String messageEndpoint = "/mcp/message";
+
 	private SseConfig sse = new SseConfig();
 
 	private StreamableConfig streamable = new StreamableConfig();
@@ -115,6 +117,14 @@ public class McpGatewayProperties {
 
 	public void setRegistry(final String registry) {
 		this.registry = registry;
+	}
+
+	public String getMessageEndpoint() {
+		return messageEndpoint;
+	}
+
+	public void setMessageEndpoint(String messageEndpoint) {
+		this.messageEndpoint = messageEndpoint;
 	}
 
 	public SseConfig getSse() {

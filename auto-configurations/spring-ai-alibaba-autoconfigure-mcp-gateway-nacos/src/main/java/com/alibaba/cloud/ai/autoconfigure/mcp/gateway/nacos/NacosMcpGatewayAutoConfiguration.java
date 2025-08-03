@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.autoconfigure.mcp.gateway.nacos;
 
-import com.alibaba.cloud.ai.autoconfigure.mcp.gateway.McpGatewayAutoConfiguration;
+import com.alibaba.cloud.ai.autoconfigure.mcp.gateway.McpGatewayServerAutoConfiguration;
 import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolManager;
 import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolsInitializer;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
@@ -29,9 +29,9 @@ import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.nacos.api.exception.NacosException;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpSyncServer;
+import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.mcp.server.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -46,7 +46,7 @@ import java.util.Properties;
  * @author aias00
  */
 @EnableConfigurationProperties({ NacosMcpGatewayProperties.class, NacosMcpProperties.class, McpServerProperties.class })
-@AutoConfiguration(after = { McpServerAutoConfiguration.class, McpGatewayAutoConfiguration.class })
+@AutoConfiguration(after = { McpGatewayServerAutoConfiguration.class })
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.mcp.gateway", name = "registry", havingValue = "nacos",
 		matchIfMissing = true)
 public class NacosMcpGatewayAutoConfiguration {
@@ -79,7 +79,7 @@ public class NacosMcpGatewayAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnBean(McpAsyncServer.class)
+	@ConditionalOnBean(HttpServletSseServerTransportProvider.class)
 	@ConditionalOnMissingBean(McpGatewayToolManager.class)
 	public McpGatewayToolManager nacosMcpGatewayAsyncToolsProvider(final McpAsyncServer mcpAsyncServer) {
 		return new NacosMcpAsyncGatewayToolsProvider(mcpAsyncServer);

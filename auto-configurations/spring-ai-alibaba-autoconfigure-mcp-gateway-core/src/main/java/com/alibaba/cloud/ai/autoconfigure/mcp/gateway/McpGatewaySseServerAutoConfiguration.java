@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
+import org.springframework.ai.mcp.server.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -37,7 +37,7 @@ import org.springframework.context.annotation.Bean;
  *
  * @author aias00
  */
-@AutoConfiguration
+@AutoConfiguration(before = McpServerAutoConfiguration.class)
 @ConditionalOnClass({ HttpServletSseServerTransportProvider.class })
 @ConditionalOnProperty(name = "spring.ai.alibaba.mcp.gateway.sse.enabled", havingValue = "true", matchIfMissing = true)
 public class McpGatewaySseServerAutoConfiguration {
@@ -47,13 +47,12 @@ public class McpGatewaySseServerAutoConfiguration {
 	/**
 	 * Creates an SSE server transport provider for the MCP Gateway.
 	 * @param objectMapper ObjectMapper for JSON serialization/deserialization
-	 * @param properties MCP Server properties
 	 * @param gatewayProperties Gateway properties
 	 * @return HttpServletSseServerTransportProvider
 	 */
 	@Bean
 	public HttpServletSseServerTransportProvider gatewaySseTransportProvider(ObjectProvider<ObjectMapper> objectMapper,
-			McpServerProperties properties, McpGatewayProperties gatewayProperties) {
+			McpGatewayProperties gatewayProperties) {
 
 		log.info("Configuring MCP Gateway SSE transport provider");
 
@@ -62,6 +61,7 @@ public class McpGatewaySseServerAutoConfiguration {
 
 		HttpServletSseServerTransportProvider.Builder builder = HttpServletSseServerTransportProvider.builder()
 			.objectMapper(objectMapper.getIfAvailable(ObjectMapper::new))
+			.messageEndpoint(gatewayProperties.getMessageEndpoint())
 			.sseEndpoint(endpoint);
 
 		HttpServletSseServerTransportProvider provider = builder.build();
@@ -74,14 +74,12 @@ public class McpGatewaySseServerAutoConfiguration {
 	/**
 	 * Creates a servlet registration for SSE MCP endpoints.
 	 * @param sseTransportProvider SSE transport provider
-	 * @param properties MCP Server properties
 	 * @param gatewayProperties Gateway properties
 	 * @return ServletRegistrationBean for SSE MCP endpoints
 	 */
 	@Bean
 	public ServletRegistrationBean<HttpServletSseServerTransportProvider> gatewaySseMcpServletRegistration(
-			HttpServletSseServerTransportProvider sseTransportProvider, McpServerProperties properties,
-			McpGatewayProperties gatewayProperties) {
+			HttpServletSseServerTransportProvider sseTransportProvider, McpGatewayProperties gatewayProperties) {
 
 		log.info("Configuring MCP Gateway SSE servlet registration");
 

@@ -47,7 +47,7 @@
             <artifactId>spring-ai-starter-mcp-server</artifactId>
             <optional>true</optional>
         </dependency>
-
+       
         <!-- Jackson Annotations -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -65,6 +65,7 @@
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
