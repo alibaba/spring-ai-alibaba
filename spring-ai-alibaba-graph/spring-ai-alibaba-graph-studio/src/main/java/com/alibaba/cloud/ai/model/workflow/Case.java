@@ -23,7 +23,7 @@ public class Case {
 
 	private String id;
 
-	private String logicalOperator;
+	private LogicalOperatorType logicalOperator;
 
 	private List<Condition> conditions;
 
@@ -36,11 +36,11 @@ public class Case {
 		return this;
 	}
 
-	public String getLogicalOperator() {
+	public LogicalOperatorType getLogicalOperator() {
 		return logicalOperator;
 	}
 
-	public Case setLogicalOperator(String logicalOperator) {
+	public Case setLogicalOperator(LogicalOperatorType logicalOperator) {
 		this.logicalOperator = logicalOperator;
 		return this;
 	}
@@ -60,8 +60,7 @@ public class Case {
 
 		private String varType;
 
-		// TODO comparison operator enum
-		private String comparisonOperator;
+		private ComparisonOperatorType comparisonOperator;
 
 		private VariableSelector variableSelector;
 
@@ -83,11 +82,11 @@ public class Case {
 			return this;
 		}
 
-		public String getComparisonOperator() {
+		public ComparisonOperatorType getComparisonOperator() {
 			return comparisonOperator;
 		}
 
-		public Condition setComparisonOperator(String comparisonOperator) {
+		public Condition setComparisonOperator(ComparisonOperatorType comparisonOperator) {
 			this.comparisonOperator = comparisonOperator;
 			return this;
 		}
