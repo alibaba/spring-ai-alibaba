@@ -1,3 +1,18 @@
+<!--
+ * Copyright 2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
 <template>
   <div class="agent-debug-panel" style="padding: 1.5rem; height: calc(100vh - 120px); display: flex; flex-direction: column; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); gap: 1.5rem;">
     <!-- 调试头部 -->
@@ -27,9 +42,9 @@
             输入测试问题，查看智能体的响应结果
           </div>
           <div class="example-queries" v-if="exampleQueries.length > 0" style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; max-width: 800px; margin: 0 auto;">
-            <div 
-              class="example-query" 
-              v-for="example in exampleQueries" 
+            <div
+              class="example-query"
+              v-for="example in exampleQueries"
               :key="example"
               @click="useExampleQuery(example)"
               style="padding: 1rem 1.5rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); font-size: 0.95rem;"
@@ -38,27 +53,27 @@
             </div>
           </div>
         </div>
-        
+
         <!-- 结果展示 -->
         <div v-else class="debug-results-container" style="padding: 1.25rem; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); min-height: 300px;">
           <!-- 流式结果区块 - 使用与 AgentWorkspace.vue 相同的结构 -->
-          <div v-for="section in streamingSections" :key="section.id" 
-               class="agent-response-block" 
+          <div v-for="section in streamingSections" :key="section.id"
+               class="agent-response-block"
                :data-type="section.type"
                :class="{ 'loading': section.isLoading }"
                style="margin-bottom: 1.5rem; border-radius: 12px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0; overflow: hidden; background: white;">
             <div class="agent-response-title" style="padding: 0.5rem 1rem !important; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important; border-bottom: 1px solid #e2e8f0 !important; display: flex !important; justify-content: space-between !important; align-items: center !important; min-height: auto !important; height: auto !important; line-height: 1.2 !important;">
               <div class="title-left" style="display: flex !important; align-items: center !important; gap: 0.5rem !important;">
-                <i :class="section.icon" style="color: #3b82f6 !important; font-size: 0.9rem !important;"></i> 
+                <i :class="section.icon" style="color: #3b82f6 !important; font-size: 0.9rem !important;"></i>
                 <span class="title-text" style="font-weight: 600 !important; color: #1e293b !important; font-size: 0.85rem !important; line-height: 1.2 !important; margin: 0 !important;">{{ section.title }}</span>
                 <span v-if="section.isLoading" class="loading-indicator">
                   <i class="bi bi-three-dots loading-dots" style="color: #3b82f6;"></i>
                 </span>
               </div>
               <div class="title-actions" style="display: flex !important; align-items: center !important; gap: 0.5rem !important;">
-                <button 
-                  v-if="section.type === 'sql'" 
-                  class="copy-button" 
+                <button
+                  v-if="section.type === 'sql'"
+                  class="copy-button"
                   @click="copyToClipboard(section.rawContent)"
                   title="复制SQL"
                   style="background: #3b82f6 !important; color: white !important; border: none !important; padding: 0.25rem 0.5rem !important; border-radius: 4px !important; cursor: pointer !important; transition: all 0.2s ease !important; font-size: 0.75rem !important; line-height: 1 !important;"
@@ -70,8 +85,8 @@
                 </span>
               </div>
             </div>
-            <div class="agent-response-content" 
-                 v-html="section.content" 
+            <div class="agent-response-content"
+                 v-html="section.content"
                  style="padding: 1rem !important; font-size: 0.9rem !important; line-height: 1.6 !important; color: #374151 !important; background: white !important; min-height: 30px !important;"></div>
           </div>
         </div>
@@ -81,18 +96,18 @@
     <!-- 调试输入区域 -->
     <div class="debug-input-section" style="background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
       <div class="input-container" style="display: flex; gap: 1rem; align-items: center;">
-        <input 
-          type="text" 
-          v-model="debugQuery" 
-          class="debug-input" 
+        <input
+          type="text"
+          v-model="debugQuery"
+          class="debug-input"
           placeholder="请输入测试问题..."
           :disabled="isDebugging || isInitializing"
           @keyup.enter="startDebug"
           ref="debugInput"
           style="flex: 1; padding: 1.2rem 1.5rem; font-size: 1.05rem; border: 1px solid #e2e8f0; border-radius: 12px; outline: none; background: #fafbfc; color: #1e293b; transition: all 0.3s ease;"
         >
-        <button 
-          class="debug-button" 
+        <button
+          class="debug-button"
           :disabled="isDebugging"
           @click="handleDebugClick"
           style="padding: 1.2rem 2rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border: none; border-radius: 12px; font-size: 1.05rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem; min-width: 140px; justify-content: center; font-weight: 600; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);"
@@ -101,8 +116,8 @@
           <div class="spinner" v-else></div>
           {{ isDebugging ? '调试中...' : '开始调试' }}
         </button>
-        <button 
-          class="schema-init-button" 
+        <button
+          class="schema-init-button"
           :disabled="isDebugging || isInitializing"
           @click="openSchemaInitModal"
           style="padding: 1.2rem 1.8rem; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; border-radius: 12px; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem; font-weight: 600; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);"
@@ -110,8 +125,8 @@
           <i class="bi bi-database-gear"></i>
           初始化信息源
         </button>
-        <button 
-          class="init-button" 
+        <button
+          class="init-button"
           :disabled="isInitializing || isDebugging"
           :class="{ loading: isInitializing }"
           @click="initializeDataSource"
@@ -154,7 +169,7 @@
                 </div>
               </div>
             </div>
-            
+
             <!-- 统计信息 -->
             <div class="stats-info" v-if="schemaStatistics && isInitialized">
               <div class="stat-item">
@@ -175,15 +190,15 @@
                 <label>选择数据源</label>
                 <select v-model="schemaInitForm.selectedDatasource" class="form-control" @change="onDatasourceChange">
                   <option value="">请选择数据源</option>
-                  <option v-for="ds in availableDatasources" 
-                          :key="ds.id" 
+                  <option v-for="ds in availableDatasources"
+                          :key="ds.id"
                           :value="ds">
                     {{ ds.name }} ({{ getDatasourceTypeText(ds.type) }})
                   </option>
                 </select>
               </div>
             </div>
-            
+
             <div class="form-group" v-if="schemaInitForm.selectedDatasource">
               <label>选择表 ({{ selectedTables.length }} 个已选择)</label>
               <div class="table-selection">
@@ -220,7 +235,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="closeSchemaInitModal">取消</button>
-          <button type="button" class="btn btn-primary" @click="initializeSchema" 
+          <button type="button" class="btn btn-primary" @click="initializeSchema"
                   :disabled="!canInitialize || schemaInitializing" v-if="!isInitialized || showConfigForm">
             <i class="bi bi-database-add" v-if="!schemaInitializing"></i>
             <i class="bi bi-arrow-repeat spin" v-else></i>
@@ -265,7 +280,7 @@ export default {
     const resultContainer = ref(null)
     const exampleQueries = ref([])
     const streamingSections = ref([])
-    
+
     // EventSource实例引用
     let currentEventSource = null
 
@@ -298,18 +313,18 @@ export default {
     const handleDebugClick = () => {
       console.log('=== 调试按钮被点击 ===')
       if (isDebugging.value) return
-      
+
       if (!debugQuery.value || !debugQuery.value.trim()) {
         debugQuery.value = '查询用户总数'
       }
-      
+
       startDebug()
     }
 
     // 完全使用 AgentWorkspace.vue 的流式数据处理逻辑
     const startDebug = () => {
       console.log('=== startDebug 函数被调用 ===')
-      
+
       if (!debugQuery.value.trim() || isDebugging.value) {
         return
       }
@@ -328,7 +343,7 @@ export default {
       try {
         const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(debugQuery.value)}&agentId=${props.agentId}`)
         currentEventSource = eventSource
-        
+
         // 使用与 AgentWorkspace.vue 完全相同的流式数据处理逻辑
         const streamState = {
             contentByType: {},
@@ -355,13 +370,13 @@ export default {
         const updateDisplay = () => {
             // 清空现有数据
             streamingSections.value = []
-            
+
             // 按顺序重建所有section
             for (const type of streamState.typeOrder) {
                 const typeInfo = typeMapping[type] || { title: type, icon: 'bi bi-file-text' }
                 const content = streamState.contentByType[type] || ''
                 const formattedContent = formatContentByType(type, content)
-                
+
                 streamingSections.value.push({
                     id: `${type}-${Date.now()}`,
                     type,
@@ -373,7 +388,7 @@ export default {
                     isLoading: !content || content.trim() === ''
                 })
             }
-            
+
             console.log('更新显示，当前section数量:', streamingSections.value.length)
         }
 
@@ -381,11 +396,11 @@ export default {
             let chunk
             let actualType
             let actualData
-            
+
             try {
                 // 使用与 AgentWorkspace.vue 相同的解析逻辑
                 let parsedData = JSON.parse(event.data)
-                
+
                 // 如果第一次解析结果还是字符串，再解析一次
                 if (typeof parsedData === 'string') {
                     chunk = JSON.parse(parsedData)
@@ -418,22 +433,22 @@ export default {
             if (actualType && actualData !== undefined && actualData !== null) {
                 // 对数据进行预处理
                 let processedData = actualData
-                
+
                 // 只对SQL类型进行Markdown代码块标记的预清理
                 if (actualType === 'sql' && typeof actualData === 'string') {
                     processedData = actualData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim()
                 }
-                
+
                 // 累积数据到对应的类型
                 if (!streamState.contentByType.hasOwnProperty(actualType)) {
                     streamState.typeOrder.push(actualType)
                     streamState.contentByType[actualType] = ''
                 }
-                
+
                 if (processedData) {
                     streamState.contentByType[actualType] += processedData
                 }
-                
+
                 updateDisplay()
             } else {
                 console.warn('Missing type or data:', {
@@ -455,7 +470,7 @@ export default {
           console.error('流式连接错误:', error)
           isDebugging.value = false
           debugStatus.value = '连接出错'
-          
+
           if (eventSource.readyState === EventSource.CLOSED) {
             console.log('EventSource 连接已正常关闭')
           } else {
@@ -469,7 +484,7 @@ export default {
               isLoading: false
             })
           }
-          
+
           eventSource.close()
         }
 
@@ -487,8 +502,8 @@ export default {
         if (type === 'sql') {
             let cleanedData = data.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
             return `<pre><code class="language-sql">${cleanedData}</code></pre>`;
-        } 
-        
+        }
+
         if (type === 'result') {
             return convertJsonToHTMLTable(data);
         }
@@ -499,7 +514,7 @@ export default {
             // 检查数据是否包含多个JSON对象连接在一起
             const jsonPattern = /\{"[^"]+":"[^"]*"[^}]*\}/g;
             const jsonMatches = data.match(jsonPattern);
-            
+
             if (jsonMatches && jsonMatches.length > 1) {
                 // 多个JSON对象，分别解析并提取data字段
                 let extractedContent = [];
@@ -539,17 +554,17 @@ export default {
             // 检查内容是否包含SQL代码块
             const sqlCodeBlockRegex = /```\s*sql?\s*([\s\S]*?)```/gi;
             const sqlMatches = processedData.match(sqlCodeBlockRegex);
-            
+
             if (sqlMatches && sqlMatches.length > 0) {
                 // 包含SQL代码块，进行特殊处理
                 let htmlContent = processedData;
-                
+
                 // 替换每个SQL代码块为高亮显示
                 htmlContent = htmlContent.replace(sqlCodeBlockRegex, (match, sqlContent) => {
                     let cleanedSQL = sqlContent.trim();
                     return `<pre><code class="language-sql">${cleanedSQL}</code></pre>`;
                 });
-                
+
                 // 处理剩余的文本（将换行转换为<br>）
                 return htmlContent.replace(/\n/g, '<br>');
             } else {
@@ -561,7 +576,7 @@ export default {
     // 检测Markdown格式的辅助函数
     const isMarkdown = (text) => {
         if (!text || typeof text !== 'string') return false;
-        
+
         // 检测常见的Markdown语法
         const markdownPatterns = [
             /^#{1,6}\s+.+/m,           // 标题 # ## ###
@@ -576,60 +591,60 @@ export default {
             /^\s*\|.+\|/m,             // 表格 |col1|col2|
             /^---+$/m                  // 分隔线 ---
         ];
-        
+
         return markdownPatterns.some(pattern => pattern.test(text));
     };
 
     // 渲染Markdown的辅助函数
     const renderMarkdown = (text) => {
         if (!text || typeof text !== 'string') return '';
-        
+
         let html = text;
-        
+
         // 首先处理代码块（三个反引号），避免被行内代码处理干扰
         html = html.replace(/```(\w+)?\s*([\s\S]*?)```/g, (match, lang, code) => {
             const language = lang || 'text';
             let highlightedCode = code.trim();
-            
+
             // 如果是SQL代码，进行语法高亮
             if (language.toLowerCase() === 'sql') {
                 // 这里可以添加SQL语法高亮逻辑
                 highlightedCode = code.trim();
             }
-            
+
             return `<pre><code class="language-${language}">${highlightedCode}</code></pre>`;
         });
-        
+
         // 处理标题
         html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
         html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
         html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-        
+
         // 处理粗体和斜体
         html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        
+
         // 处理行内代码（单个反引号）- 在代码块处理之后
         html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-        
+
         // 处理无序列表
         html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
         html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-        
+
         // 处理有序列表
         html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
-        
+
         // 处理Markdown表格
         html = html.replace(/(\|[^|\r\n]*\|[^|\r\n]*\|[^\r\n]*\r?\n\|[-:\s|]*\|[^\r\n]*\r?\n(?:\|[^|\r\n]*\|[^\r\n]*\r?\n?)*)/gm, (match) => {
             return convertMarkdownTableToHTML(match);
         });
-        
+
         // 处理链接
         html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
-        
+
         // 处理换行
         html = html.replace(/\n/g, '<br>');
-        
+
         return `<div class="markdown-content">${html}</div>`;
     };
 
@@ -641,8 +656,8 @@ export default {
 
         const headers = lines[0].split('|').map(h => h.trim()).filter(Boolean);
         let html = '<table class="dynamic-table"><thead><tr>';
-        headers.forEach(header => { 
-            html += `<th>${header}</th>` 
+        headers.forEach(header => {
+            html += `<th>${header}</th>`
         });
         html += '</tr></thead><tbody>';
 
@@ -700,7 +715,7 @@ export default {
           isInitialized.value = true
           debugStatus.value = '数据源已初始化，可以开始调试'
           isInitializing.value = false
-          
+
           setTimeout(() => {
             debugStatus.value = ''
           }, 3000)
@@ -719,28 +734,28 @@ export default {
     const showConfigForm = ref(false)
     const schemaInitializing = ref(false)
     const schemaStatistics = ref(null)
-    
+
     // 表单数据
     const schemaInitForm = reactive({
       selectedDatasource: ''
     })
-    
+
     // 数据源和表相关
     const availableDatasources = ref([])
     const availableTables = ref([])
     const selectedTables = ref([])
     const tableSearchKeyword = ref('')
-    
+
     // 计算属性
     const filteredTables = computed(() => {
       if (!tableSearchKeyword.value) return availableTables.value
-      return availableTables.value.filter(table => 
+      return availableTables.value.filter(table =>
         table.toLowerCase().includes(tableSearchKeyword.value.toLowerCase())
       )
     })
-    
+
     const canInitialize = computed(() => {
-      return schemaInitForm.selectedDatasource && 
+      return schemaInitForm.selectedDatasource &&
              selectedTables.value.length > 0
     })
 
@@ -750,23 +765,23 @@ export default {
       await loadAvailableDatasources()
       await getSchemaStatistics()
     }
-    
+
     const closeSchemaInitModal = () => {
       showSchemaInitModal.value = false
       showConfigForm.value = false
     }
-    
+
     // 数据源相关函数
     const loadAvailableDatasources = async () => {
       try {
         const response = await fetch(`/api/agent/${props.agentId}/schema/datasources`)
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
-        
+
         const result = await response.json()
-        
+
         if (result.success) {
           availableDatasources.value = result.data || []
         } else {
@@ -778,17 +793,17 @@ export default {
         availableDatasources.value = []
       }
     }
-    
+
     const getDatasourceTypeText = (type) => {
       const typeMap = {
         mysql: 'MySQL',
-        postgresql: 'PostgreSQL', 
+        postgresql: 'PostgreSQL',
         oracle: 'Oracle',
         sqlserver: 'SQL Server'
       }
       return typeMap[type] || type
     }
-    
+
     const onDatasourceChange = () => {
       availableTables.value = []
       selectedTables.value = []
@@ -799,16 +814,16 @@ export default {
 
     const loadTables = async () => {
       if (!schemaInitForm.selectedDatasource) return
-      
+
       try {
         const response = await fetch(`/api/agent/${props.agentId}/schema/datasources/${schemaInitForm.selectedDatasource.id}/tables`)
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
-        
+
         const result = await response.json()
-        
+
         if (result.success) {
           availableTables.value = result.data || []
         } else {
@@ -820,21 +835,21 @@ export default {
         availableTables.value = []
       }
     }
-    
+
     const selectAllTables = () => {
       selectedTables.value = [...filteredTables.value]
     }
-    
+
     const clearAllTables = () => {
       selectedTables.value = []
     }
-    
+
     const initializeSchema = async () => {
       if (schemaInitializing.value || !canInitialize.value) return
-      
+
       try {
         schemaInitializing.value = true
-        
+
         const response = await fetch(`/api/agent/${props.agentId}/schema/init`, {
           method: 'POST',
           headers: {
@@ -845,13 +860,13 @@ export default {
             tables: selectedTables.value
           })
         })
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
-        
+
         const result = await response.json()
-        
+
         if (result.success) {
           isInitialized.value = true
           showConfigForm.value = false
@@ -867,17 +882,17 @@ export default {
         schemaInitializing.value = false
       }
     }
-    
+
     const getSchemaStatistics = async () => {
       try {
         const response = await fetch(`/api/agent/${props.agentId}/schema/statistics`)
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
-        
+
         const result = await response.json()
-        
+
         if (result.success) {
           schemaStatistics.value = result.data
           isInitialized.value = result.data && result.data.documentCount > 0
@@ -892,21 +907,21 @@ export default {
         isInitialized.value = false
       }
     }
-    
+
     const clearSchemaData = async () => {
       if (!confirm('确定要清空所有Schema数据吗？此操作不可恢复。')) return
-      
+
       try {
         const response = await fetch(`/api/agent/${props.agentId}/schema/clear`, {
           method: 'DELETE'
         })
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
-        
+
         const result = await response.json()
-        
+
         if (result.success) {
           isInitialized.value = false
           schemaStatistics.value = null
@@ -920,7 +935,7 @@ export default {
         alert('清空数据失败，请检查网络连接')
       }
     }
-    
+
     const toggleConfigForm = () => {
       showConfigForm.value = !showConfigForm.value
     }
@@ -929,11 +944,11 @@ export default {
     const formatTime = (timestamp) => {
       if (!timestamp) return ''
       const date = new Date(timestamp)
-      return date.toLocaleTimeString('zh-CN', { 
-        hour12: false, 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit' 
+      return date.toLocaleTimeString('zh-CN', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
       })
     }
 
@@ -1119,7 +1134,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
   border-radius: 16px;

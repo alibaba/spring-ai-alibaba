@@ -57,18 +57,18 @@ public class SemanticModelDTO {
 		this.originalDescription = originalDescription;
 	}
 
-    public SemanticModelDTO(String originalFieldName, String agentFieldName, String fieldSynonyms,
-                            String fieldDescription, String fieldType, String originalDescription, Boolean defaultRecall,
-                            Boolean enabled) {
-        this.originalFieldName = originalFieldName;
-        this.agentFieldName = agentFieldName;
-        this.fieldSynonyms = fieldSynonyms;
-        this.fieldDescription = fieldDescription;
-        this.fieldType = fieldType;
-        this.originalDescription = originalDescription;
-        this.defaultRecall = defaultRecall;
-        this.enabled = enabled;
-    }
+	public SemanticModelDTO(String originalFieldName, String agentFieldName, String fieldSynonyms,
+			String fieldDescription, String fieldType, String originalDescription, Boolean defaultRecall,
+			Boolean enabled) {
+		this.originalFieldName = originalFieldName;
+		this.agentFieldName = agentFieldName;
+		this.fieldSynonyms = fieldSynonyms;
+		this.fieldDescription = fieldDescription;
+		this.fieldType = fieldType;
+		this.originalDescription = originalDescription;
+		this.defaultRecall = defaultRecall;
+		this.enabled = enabled;
+	}
 
 	// Getters and Setters
 	public String getAgentId() {
@@ -78,14 +78,15 @@ public class SemanticModelDTO {
 	public void setAgentId(String agentId) {
 		this.agentId = agentId;
 	}
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	// Getters and Setters
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
 
 	public String getOriginalFieldName() {
 		return originalFieldName;

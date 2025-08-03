@@ -209,8 +209,7 @@ public class AgentSchemaController {
 	 */
 	@GetMapping("/datasources/{datasourceId}/tables")
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> getDatasourceTables(
-			@PathVariable Integer datasourceId) {
+	public ResponseEntity<Map<String, Object>> getDatasourceTables(@PathVariable Integer datasourceId) {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
