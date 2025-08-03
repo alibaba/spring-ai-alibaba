@@ -84,8 +84,8 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 		@com.fasterxml.jackson.annotation.JsonProperty("input_file_to_split")
 		private String inputFileToSplit;
 
-		@com.fasterxml.jackson.annotation.JsonProperty("output_file")
-		private String outputFile;
+		@com.fasterxml.jackson.annotation.JsonProperty("expected_output_fields")
+		private java.util.List<String> expectedOutputFields;
 
 		public DataSplitInput() {
 		}
@@ -98,12 +98,12 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			this.inputFileToSplit = inputFileToSplit;
 		}
 
-		public String getOutputFile() {
-			return outputFile;
+		public java.util.List<String> getExpectedOutputFields() {
+			return expectedOutputFields;
 		}
 
-		public void setOutputFile(String outputFile) {
-			this.outputFile = outputFile;
+		public void setExpectedOutputFields(java.util.List<String> expectedOutputFields) {
+			this.expectedOutputFields = expectedOutputFields;
 		}
 	}
 
@@ -129,9 +129,12 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			            "type": "string",
 			            "description": "Input file or folder path to be split"
 			        },
-			        "output_file": {
-			            "type": "string",
-			            "description": "Target output file name for table data"
+			        "expected_output_fields": {
+			            "type": "array",
+			            "description": "List of expected output field names",
+			            "items": {
+			                "type": "string"
+			            }
 			        }
 			    },
 			    "required": ["input_file_to_split"],
@@ -206,14 +209,14 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	 */
 	@Override
 	public ToolExecuteResult run(DataSplitInput input) {
-		log.info("DataSplitTool input: inputFileToSplit={}, outputFile={}", input.getInputFileToSplit(), input.getOutputFile());
+		log.info("DataSplitTool input: inputFileToSplit={}, expectedOutputFields={}", input.getInputFileToSplit(), input.getExpectedOutputFields());
 		try {
 			String inputFileToSplit = input.getInputFileToSplit();
 			if (inputFileToSplit == null) {
 				return new ToolExecuteResult("Error: input_file_to_split parameter is required");
 			}
 
-			return processFileOrDirectory(inputFileToSplit, input.getOutputFile());
+			return processFileOrDirectory(inputFileToSplit, input.getExpectedOutputFields());
 
 		}
 		catch (Exception e) {
@@ -225,7 +228,7 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	/**
 	 * Process complete workflow for file or directory: validate existence -> split data
 	 */
-	private ToolExecuteResult processFileOrDirectory(String inputFileToSplit, String outputFile) {
+	private ToolExecuteResult processFileOrDirectory(String inputFileToSplit, java.util.List<String> expectedOutputFields) {
 		try {
 			// Ensure planId exists, use default if empty
 			if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
@@ -329,19 +332,9 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			StringBuilder result = new StringBuilder();
 			result.append("Split successful");
 			
-			// If it's a table file, try to get header information
-			// First check if outputFile is not null and is a regular file
-			if (outputFile != null) {
-				Path planDir = unifiedDirectoryManager.getRootPlanDirectory(rootPlanId);
-				Path outputPath = planDir.resolve(outputFile);
-				if (Files.exists(outputPath) && Files.isRegularFile(outputPath) && isTableFile(outputFile)) {
-					// Try to get table structure from the output file
-					String headerInfo = getTableStructure(outputPath);
-					if (headerInfo != null) {
-						result.append(", subsequent processes should use header structure: ").append(headerInfo).append(" for structured output");
-						result.append(", target output table file name is ").append(outputFile);
-					}
-				}
+			// If expectedOutputFields is provided, include information about it
+			if (expectedOutputFields != null && !expectedOutputFields.isEmpty()) {
+				result.append(", expected output fields: ").append(expectedOutputFields);
 			}
 			
 			result.append(", created ").append(allTaskDirs.size()).append(" task directories");
@@ -364,66 +357,6 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 		}
 	}
 
-	/**
-	 * Get table structure (header information) from a table file
-	 * @param outputPath Path to the table file
-	 * @return Header information as string, or null if failed
-	 */
-	private String getTableStructure(Path outputPath) {
-		try {
-			if (!Files.exists(outputPath)) {
-				log.warn("Table file does not exist: {}", outputPath);
-				return null;
-			}
-
-			String fileName = outputPath.getFileName().toString();
-			
-			// For CSV files, read the first line as headers
-			if (fileName.toLowerCase().endsWith(".csv")) {
-				try (BufferedReader reader = Files.newBufferedReader(outputPath)) {
-					String headerLine = reader.readLine();
-					if (headerLine != null) {
-						// Parse CSV header line
-						String[] headers = headerLine.split(",");
-						return Arrays.toString(headers);
-					}
-				}
-			}
-			// For TSV files, read the first line as headers
-			else if (fileName.toLowerCase().endsWith(".tsv")) {
-				try (BufferedReader reader = Files.newBufferedReader(outputPath)) {
-					String headerLine = reader.readLine();
-					if (headerLine != null) {
-						// Parse TSV header line
-						String[] headers = headerLine.split("\t");
-						return Arrays.toString(headers);
-					}
-				}
-			}
-			// For Excel files, use TableProcessingService to get actual headers
-			else if (fileName.toLowerCase().endsWith(".xls") || fileName.toLowerCase().endsWith(".xlsx")) {
-				try {
-					// Convert absolute path to relative path for tableProcessingService
-					Path planDir = unifiedDirectoryManager.getRootPlanDirectory(rootPlanId);
-					String relativePath = planDir.relativize(outputPath).toString();
-					
-					List<String> headers = tableProcessingService.getTableStructure(rootPlanId, relativePath);
-					tableProcessingService.updateFileState(rootPlanId, relativePath, "Success: Retrieved table structure");
-					return headers.toString();
-				}
-				catch (IOException e) {
-					tableProcessingService.updateFileState(rootPlanId, fileName, "Error: " + e.getMessage());
-					return "[Excel headers - failed to extract: " + e.getMessage() + "]";
-				}
-			}
-			
-			return null;
-		}
-		catch (Exception e) {
-			log.warn("Failed to get table structure for file: {}", outputPath, e);
-			return null;
-		}
-	}
 
 	/**
 	 * Split results class
