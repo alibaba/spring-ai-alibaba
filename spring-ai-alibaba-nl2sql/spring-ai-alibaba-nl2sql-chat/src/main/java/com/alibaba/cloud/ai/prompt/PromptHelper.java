@@ -226,6 +226,7 @@ public class PromptHelper {
 		params.put("sql", sql);
 		return PromptConstant.SEMANTIC_CONSISTENCY_PROMPT_TEMPLATE.render(params);
 	}
+
 	/**
 	 * 构建带自定义提示词的报告生成提示词
 	 * @param userRequirementsAndPlan 用户需求和计划
