@@ -41,8 +41,11 @@ public class PromptConfigController {
 
 	private static final Logger logger = LoggerFactory.getLogger(PromptConfigController.class);
 
-	@Autowired
 	private UserPromptConfigService promptConfigService;
+
+	public PromptConfigController() {
+		this.promptConfigService = new UserPromptConfigService();
+	}
 
 	/**
 	 * 创建或更新提示词配置

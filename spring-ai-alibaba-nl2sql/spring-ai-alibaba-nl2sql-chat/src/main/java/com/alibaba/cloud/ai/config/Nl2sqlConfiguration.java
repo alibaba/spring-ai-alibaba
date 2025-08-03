@@ -52,7 +52,6 @@ import com.alibaba.cloud.ai.service.UserPromptConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -119,35 +118,41 @@ public class Nl2sqlConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(Nl2sqlConfiguration.class);
 
-	@Autowired
-	@Qualifier("nl2SqlServiceImpl")
 	private BaseNl2SqlService nl2SqlService;
 
-	@Autowired
-	@Qualifier("schemaServiceImpl")
 	private BaseSchemaService schemaService;
 
-	@Autowired
-	@Qualifier("mysqlAccessor")
 	private Accessor dbAccessor;
 
-	@Autowired
 	private DbConfig dbConfig;
 
-	@Autowired
 	private CodeExecutorProperties codeExecutorProperties;
 
-	@Autowired
 	private CodePoolExecutorService codePoolExecutor;
 
-	@Autowired
 	private SemanticModelRecallService semanticModelRecallService;
 
-	@Autowired
 	private BusinessKnowledgeRecallService businessKnowledgeRecallService;
 
-	@Autowired
 	private UserPromptConfigService promptConfigService;
+
+	public Nl2sqlConfiguration(@Qualifier("nl2SqlServiceImpl") BaseNl2SqlService nl2SqlService,
+			@Qualifier("schemaServiceImpl") BaseSchemaService schemaService,
+			@Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig,
+			CodeExecutorProperties codeExecutorProperties, CodePoolExecutorService codePoolExecutor,
+			SemanticModelRecallService semanticModelRecallService,
+			BusinessKnowledgeRecallService businessKnowledgeRecallService,
+			UserPromptConfigService promptConfigService) {
+		this.nl2SqlService = nl2SqlService;
+		this.schemaService = schemaService;
+		this.dbAccessor = dbAccessor;
+		this.dbConfig = dbConfig;
+		this.codeExecutorProperties = codeExecutorProperties;
+		this.codePoolExecutor = codePoolExecutor;
+		this.semanticModelRecallService = semanticModelRecallService;
+		this.businessKnowledgeRecallService = businessKnowledgeRecallService;
+		this.promptConfigService = promptConfigService;
+	}
 
 	@Bean
 	public StateGraph nl2sqlGraph(ChatClient.Builder chatClientBuilder) throws GraphStateException {
