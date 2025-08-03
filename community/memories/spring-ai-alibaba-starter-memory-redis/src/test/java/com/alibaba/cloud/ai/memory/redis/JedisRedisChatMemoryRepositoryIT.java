@@ -164,7 +164,7 @@ class JedisRedisChatMemoryRepositoryIT {
 		assertThat(savedMessages.size()).isEqualTo(messages.size());
 
 		// Perform cleanup operation, set max limit to 3, delete count to 2
-        JedisRedisChatMemoryRepository redisRepository = (JedisRedisChatMemoryRepository) chatMemoryRepository;
+		JedisRedisChatMemoryRepository redisRepository = (JedisRedisChatMemoryRepository) chatMemoryRepository;
 		redisRepository.clearOverLimit(conversationId, 3, 2);
 
 		// Verify only the last 3 messages are retained
