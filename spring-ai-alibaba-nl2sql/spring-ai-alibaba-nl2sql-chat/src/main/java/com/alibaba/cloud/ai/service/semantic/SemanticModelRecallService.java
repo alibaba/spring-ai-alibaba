@@ -25,8 +25,9 @@ import java.util.List;
 @Service
 public class SemanticModelRecallService {
 
-	private static final String FIELD_GET_BY_AGENT_IDS = """
+	private static final String FIELD_GET_BY_DATASET_IDS = """
 			SELECT
+			    agent_id,
 				field_name,
 				synonyms,
 				origin_name,
@@ -34,8 +35,7 @@ public class SemanticModelRecallService {
 				origin_description,
 				type,
 				is_recall,
-				status,
-				agent_id
+				status
 			FROM semantic_model WHERE agent_id = ? AND status = 1 AND is_recall = 1
 			""";
 
@@ -46,20 +46,13 @@ public class SemanticModelRecallService {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	// 根据智能体ID获取语义模型
-	public List<SemanticModelDTO> getFieldByAgentId(Long agentId) {
-		return this.jdbcTemplate.query(FIELD_GET_BY_AGENT_IDS, new Object[] { agentId }, (rs, rowNum) -> {
-			SemanticModelDTO model = new SemanticModelDTO();
-			model.setAgentId(rs.getObject("agent_id", Long.class));
-			model.setOriginalFieldName(rs.getString("origin_name"));
-			model.setAgentFieldName(rs.getString("field_name"));
-			model.setFieldSynonyms(rs.getString("synonyms"));
-			model.setFieldDescription(rs.getString("description"));
-			model.setDefaultRecall(rs.getObject("is_recall", Boolean.class));
-			model.setEnabled(rs.getObject("status", Boolean.class));
-			model.setFieldType(rs.getString("type"));
-			model.setOriginalDescription(rs.getString("origin_description"));
-			return model;
+	// 根据data_set_id获取智能体字段
+	public List<SemanticModelDTO> getFieldByDataSetId(String dataSetId) {
+		return this.jdbcTemplate.query(FIELD_GET_BY_DATASET_IDS, new Object[] { dataSetId }, (rs, rowNum) -> {
+			return new SemanticModelDTO(rs.getString("agent_id"), rs.getString("origin_name"),
+					rs.getString("field_name"), rs.getString("synonyms"), rs.getString("description"),
+					rs.getObject("is_recall", boolean.class), rs.getObject("status", boolean.class),
+					rs.getString("type"), rs.getString("origin_description"));
 		});
 	}
 

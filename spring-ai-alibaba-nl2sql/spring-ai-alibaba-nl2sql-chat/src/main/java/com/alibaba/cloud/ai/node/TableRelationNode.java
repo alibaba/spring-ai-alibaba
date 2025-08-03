@@ -106,7 +106,7 @@ public class TableRelationNode implements NodeAction {
 
 		// Extract business knowledge and semantic model
 		List<BusinessKnowledgeDTO> businessKnowledges = businessKnowledgeRecallService.getFieldByDataSetId(dataSetId);
-		List<SemanticModelDTO> semanticModel = semanticModelRecallService.getFieldByAgentId(agentId);
+		List<SemanticModelDTO> semanticModel = semanticModelRecallService.getFieldByDataSetId(String.valueOf(agentId));
 		// load prompt template
 		String businessKnowledgePrompt = buildBusinessKnowledgePrompt(businessKnowledges);
 		String semanticModelPrompt = buildSemanticModelPrompt(semanticModel);
