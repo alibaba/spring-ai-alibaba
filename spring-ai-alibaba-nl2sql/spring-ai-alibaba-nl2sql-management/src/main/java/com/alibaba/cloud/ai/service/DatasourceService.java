@@ -23,6 +23,8 @@ import com.alibaba.cloud.ai.entity.Datasource;
 import com.alibaba.cloud.ai.entity.AgentDatasource;
 import com.alibaba.cloud.ai.enums.ErrorCodeEnum;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -45,6 +47,8 @@ import java.util.Map;
  */
 @Service
 public class DatasourceService {
+
+	private static final Logger log = LoggerFactory.getLogger(DatasourceService.class);
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
@@ -176,7 +180,7 @@ public class DatasourceService {
 		try {
 			// ping测试
 			boolean connectionSuccess = realConnectionTest(datasource);
-			System.out.println("Ping测试结果：" + connectionSuccess);
+			log.info(datasource.getName() + " test connection result: " + connectionSuccess);
 			// 更新测试状态
 			updateTestStatus(id, connectionSuccess ? "success" : "failed");
 
@@ -184,6 +188,7 @@ public class DatasourceService {
 		}
 		catch (Exception e) {
 			updateTestStatus(id, "failed");
+			log.error("Error testing connection for datasource ID " + id + ": " + e.getMessage(), e);
 			return false;
 		}
 	}
