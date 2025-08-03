@@ -21,108 +21,16 @@ package com.alibaba.cloud.ai.dto;
  *
  * @author Makoto
  */
-public class PromptConfigDTO {
-
-	/**
-	 * 配置ID（更新时需要）
-	 */
-	private String id;
-
-	/**
-	 * 配置名称
-	 */
-	private String name;
-
-	/**
-	 * 提示词类型
-	 */
-	private String promptType;
-
-	/**
-	 * 用户自定义的系统提示词内容
-	 */
-	private String systemPrompt;
-
-	/**
-	 * 是否启用该配置
-	 */
-	private Boolean enabled;
-
-	/**
-	 * 配置描述
-	 */
-	private String description;
-
-	/**
-	 * 创建者
-	 */
-	private String creator;
-
-	// Constructors
-	public PromptConfigDTO() {
-	}
-
+public record PromptConfigDTO(String id, // 配置ID（更新时需要）
+		String name, // 配置名称
+		String promptType, // 提示词类型
+		String systemPrompt, // 用户自定义的系统提示词内容
+		Boolean enabled, // 是否启用该配置
+		String description, // 配置描述
+		String creator // 创建者
+) {
 	public PromptConfigDTO(String promptType, String systemPrompt) {
-		this.promptType = promptType;
-		this.systemPrompt = systemPrompt;
-		this.enabled = true;
-	}
-
-	// Getters and Setters
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getPromptType() {
-		return promptType;
-	}
-
-	public void setPromptType(String promptType) {
-		this.promptType = promptType;
-	}
-
-	public String getSystemPrompt() {
-		return systemPrompt;
-	}
-
-	public void setSystemPrompt(String systemPrompt) {
-		this.systemPrompt = systemPrompt;
-	}
-
-	public Boolean getEnabled() {
-		return enabled;
-	}
-
-	public void setEnabled(Boolean enabled) {
-		this.enabled = enabled;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
-	public String getCreator() {
-		return creator;
-	}
-
-	public void setCreator(String creator) {
-		this.creator = creator;
+		this(null, null, promptType, systemPrompt, true, null, null);
 	}
 
 	@Override
@@ -132,4 +40,38 @@ public class PromptConfigDTO {
 				+ '}';
 	}
 
+	@Override
+	public String id() {
+		return id;
+	}
+
+	@Override
+	public String creator() {
+		return creator;
+	}
+
+	@Override
+	public String name() {
+		return name;
+	}
+
+	@Override
+	public String promptType() {
+		return promptType;
+	}
+
+	@Override
+	public String systemPrompt() {
+		return systemPrompt;
+	}
+
+	@Override
+	public Boolean enabled() {
+		return enabled;
+	}
+
+	@Override
+	public String description() {
+		return description;
+	}
 }

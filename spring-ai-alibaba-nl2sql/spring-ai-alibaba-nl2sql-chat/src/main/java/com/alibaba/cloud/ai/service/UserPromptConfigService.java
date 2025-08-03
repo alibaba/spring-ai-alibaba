@@ -55,25 +55,25 @@ public class UserPromptConfigService {
 		logger.info("保存或更新提示词配置：{}", configDTO);
 
 		UserPromptConfig config;
-		if (configDTO.getId() != null && configStorage.containsKey(configDTO.getId())) {
+		if (configDTO.id() != null && configStorage.containsKey(configDTO.id())) {
 			// 更新现有配置
-			config = configStorage.get(configDTO.getId());
-			config.setName(configDTO.getName());
-			config.setSystemPrompt(configDTO.getSystemPrompt());
-			config.setEnabled(configDTO.getEnabled());
-			config.setDescription(configDTO.getDescription());
+			config = configStorage.get(configDTO.id());
+			config.setName(configDTO.name());
+			config.setSystemPrompt(configDTO.systemPrompt());
+			config.setEnabled(configDTO.enabled());
+			config.setDescription(configDTO.description());
 			config.setUpdateTime(LocalDateTime.now());
 		}
 		else {
 			// 创建新配置
 			config = new UserPromptConfig();
 			config.setId(UUID.randomUUID().toString());
-			config.setName(configDTO.getName());
-			config.setPromptType(configDTO.getPromptType());
-			config.setSystemPrompt(configDTO.getSystemPrompt());
-			config.setEnabled(configDTO.getEnabled());
-			config.setDescription(configDTO.getDescription());
-			config.setCreator(configDTO.getCreator());
+			config.setName(configDTO.name());
+			config.setPromptType(configDTO.promptType());
+			config.setSystemPrompt(configDTO.systemPrompt());
+			config.setEnabled(configDTO.enabled());
+			config.setDescription(configDTO.description());
+			config.setCreator(configDTO.creator());
 		}
 
 		configStorage.put(config.getId(), config);
