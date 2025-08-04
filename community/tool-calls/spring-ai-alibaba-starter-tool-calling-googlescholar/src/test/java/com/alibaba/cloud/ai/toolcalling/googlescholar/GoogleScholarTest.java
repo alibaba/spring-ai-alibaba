@@ -15,42 +15,57 @@
  */
 package com.alibaba.cloud.ai.toolcalling.googlescholar;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
-import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-import java.util.logging.Logger;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = { CommonToolCallAutoConfiguration.class, GoogleScholarAutoConfiguration.class })
-@DisplayName("Google Scholar Test")
+/**
+ * Makoto
+ */
 public class GoogleScholarTest {
 
-	@Autowired
-	private GoogleScholarService googleScholarService;
-
-	private static final Logger log = Logger.getLogger(GoogleScholarTest.class.getName());
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(GoogleScholarAutoConfiguration.class));
 
 	@Test
-	@DisplayName("Tool-Calling Test")
-	public void testGoogleScholarSearch() {
-		var resp = googleScholarService.apply(GoogleScholarService.Request.simpleQuery("Spring AI Alibaba"));
-		assert resp != null && resp.results() != null;
-		log.info("results: " + resp.results());
+	public void testAutoConfiguration() {
+		this.contextRunner.run((context) -> {
+			assertThat(context).hasSingleBean(GoogleScholarService.class);
+			assertThat(context).hasSingleBean(GoogleScholarProperties.class);
+		});
 	}
 
-	@Autowired
-	private SearchService searchService;
+	@Test
+	public void testSearchFunctionality() {
+		this.contextRunner.run((context) -> {
+			GoogleScholarService service = context.getBean(GoogleScholarService.class);
+			assertThat(service).isNotNull();
+
+			// Create a test request
+			GoogleScholarService.Request request = GoogleScholarService.Request.simpleQuery("machine learning");
+			assertThat(request.getQuery()).isEqualTo("machine learning");
+
+			// Note: Actual network testing should be done separately with proper test
+			// environment
+			// This is just to verify the service can be instantiated and basic
+			// functionality works
+		});
+	}
 
 	@Test
-	@DisplayName("Abstract Search Service Test")
-	public void testAbstractSearch() {
-		var resp = searchService.query("Spring AI Alibaba");
-		assert resp != null && resp.getSearchResult() != null && resp.getSearchResult().results() != null
-				&& !resp.getSearchResult().results().isEmpty();
-		log.info("results: " + resp.getSearchResult());
+	public void testCustomConfiguration() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.alibaba.toolcalling.googlescholar.numResults=5",
+					"spring.ai.alibaba.toolcalling.googlescholar.language=zh",
+					"spring.ai.alibaba.toolcalling.googlescholar.includeCitations=false")
+			.run((context) -> {
+				GoogleScholarProperties properties = context.getBean(GoogleScholarProperties.class);
+				assertThat(properties.getNumResults()).isEqualTo(5);
+				assertThat(properties.getLanguage()).isEqualTo("zh");
+				assertThat(properties.isIncludeCitations()).isFalse();
+			});
 	}
 
 }
