@@ -1,0 +1,12 @@
+Tool for creating and generating PPT files.
+
+Supported operations:
+- create: Create a new PPT file, requires output_path and title parameters, subtitle and slide_contents are optional
+
+Supported PPT file types:
+- .pptx
+- .ppt
+
+When creating PPT, you can set:
+- Title and subtitle
+- Multiple slides, each slide can contain title, content and image path

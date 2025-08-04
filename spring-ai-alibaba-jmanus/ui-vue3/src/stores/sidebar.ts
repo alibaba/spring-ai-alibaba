@@ -50,19 +50,19 @@ export class SidebarStore {
     if (!dateValue) {
       return new Date()
     }
-    
-    // 如果是数组格式 [year, month, day, hour, minute, second, nanosecond]
+
+    // If array format [year, month, day, hour, minute, second, nanosecond]
     if (Array.isArray(dateValue) && dateValue.length >= 6) {
-      // JavaScript Date 构造函数中月份是从0开始的，所以需要减1
+      // JavaScript Date constructor months start from 0, so subtract 1
       return new Date(dateValue[0], dateValue[1] - 1, dateValue[2], dateValue[3], dateValue[4], dateValue[5], Math.floor(dateValue[6] / 1000000))
     }
-    
-    // 如果是字符串格式，直接解析
+
+    // If string format, parse directly
     if (typeof dateValue === 'string') {
       return new Date(dateValue)
     }
-    
-    // 其他情况返回当前时间
+
+    // Return current time for other cases
     return new Date()
   }
 
@@ -89,7 +89,7 @@ export class SidebarStore {
   if (!this.selectedTemplate) return ''
   const baseUrl = `/api/plan-template/execute/${this.selectedTemplate.id}`
   const params = this.executionParams.trim()
-  // GET 方式，参数名为 allParams
+  // GET method, parameter name is allParams
   return params ? `${baseUrl}?allParams=${encodeURIComponent(params)}` : baseUrl
   }
 
@@ -335,10 +335,10 @@ export class SidebarStore {
           planId: this.selectedTemplate.id,
           title: this.selectedTemplate.title ?? i18n.global.t('sidebar.defaultExecutionPlanTitle'),
           steps: [
-            { stepRequirement: '[BROWSER_AGENT] 访问百度搜索阿里巴巴的最新股价' },
-            { stepRequirement: '[DEFAULT_AGENT] 提取和整理搜索结果中的股价信息' },
-            { stepRequirement: '[TEXT_FILE_AGENT] 创建一个文本文件记录查询结果' },
-            { stepRequirement: '[DEFAULT_AGENT] 向用户报告查询结果' },
+            { stepRequirement: '[BROWSER_AGENT] Visit Baidu to search for Alibaba\'s latest stock price' },
+            { stepRequirement: '[DEFAULT_AGENT] Extract and organize stock price information from search results' },
+            { stepRequirement: '[TEXT_FILE_AGENT] Create a text file to record query results' },
+            { stepRequirement: '[DEFAULT_AGENT] Report query results to user' },
           ],
         }
       }

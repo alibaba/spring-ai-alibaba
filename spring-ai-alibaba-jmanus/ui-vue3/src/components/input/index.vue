@@ -16,7 +16,7 @@
 <template>
   <div class="input-area">
     <div class="input-container">
-      <button class="attach-btn" title="附加文件">
+      <button class="attach-btn" :title="$t('input.attachFile')">
         <Icon icon="carbon:attachment" />
       </button>
       <textarea
@@ -101,10 +101,10 @@ const handleSend = () => {
   if (!currentInput.value.trim() || isDisabled.value) return
 
   const query = currentInput.value.trim()
-  
+
   // Use Vue's emit to send a message
   emit('send', query)
-  
+
   // Clear the input
   clearInput()
 }
@@ -251,7 +251,7 @@ onUnmounted(() => {
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    
+
     &::placeholder {
       color: #444444;
     }

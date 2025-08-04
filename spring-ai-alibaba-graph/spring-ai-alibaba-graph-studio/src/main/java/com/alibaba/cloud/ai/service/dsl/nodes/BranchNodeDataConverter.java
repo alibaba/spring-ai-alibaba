@@ -19,6 +19,8 @@ import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.Case;
+import com.alibaba.cloud.ai.model.workflow.ComparisonOperatorType;
+import com.alibaba.cloud.ai.model.workflow.LogicalOperatorType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.BranchNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -57,25 +59,30 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 
 			@Override
 			public BranchNodeData parse(Map<String, Object> data) {
+				@SuppressWarnings("unchecked")
 				List<Map<String, Object>> casesMap = (List<Map<String, Object>>) data.get("cases");
 				List<Case> cases = new ArrayList<>();
 				if (casesMap != null) {
 					for (Map<String, Object> caseData : casesMap) {
 						// convert cases
+						@SuppressWarnings("unchecked")
 						List<Map<String, Object>> conditionMaps = (List<Map<String, Object>>) caseData
 							.get("conditions");
 						List<Case.Condition> conditions = conditionMaps.stream().map(conditionMap -> {
+							@SuppressWarnings("unchecked")
 							List<String> selectors = (List<String>) conditionMap.get("variable_selector");
 							String difyVarType = (String) conditionMap.get("varType");
 							VariableType variableType = VariableType.fromDifyValue(difyVarType)
 								.orElse(VariableType.OBJECT);
 							return new Case.Condition().setValue((String) conditionMap.get("value"))
 								.setVarType(variableType.value())
-								.setComparisonOperator((String) conditionMap.get("comparison_operator"))
+								.setComparisonOperator(ComparisonOperatorType
+									.fromDifyValue((String) conditionMap.get("comparison_operator")))
 								.setVariableSelector(new VariableSelector(selectors.get(0), selectors.get(1)));
 						}).collect(Collectors.toList());
 						cases.add(new Case().setId((String) caseData.get("id"))
-							.setLogicalOperator((String) caseData.get("logical_operator"))
+							.setLogicalOperator(
+									LogicalOperatorType.fromDifyValue((String) caseData.get("logical_operator")))
 							.setConditions(conditions));
 					}
 				}
@@ -92,13 +99,14 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 				List<Map<String, Object>> caseMaps = nodeData.getCases().stream().map(c -> {
 					List<Map<String, Object>> conditions = c.getConditions()
 						.stream()
-						.map(condition -> Map.of("comparison_operator", condition.getComparisonOperator(), "value",
-								condition.getValue(), "varType", condition.getVarType(), "variable_selector",
+						.map(condition -> Map.of("comparison_operator",
+								condition.getComparisonOperator().getDifyValue(), "value", condition.getValue(),
+								"varType", condition.getVarType(), "variable_selector",
 								List.of(condition.getVariableSelector().getNamespace(),
 										condition.getVariableSelector().getName())))
 						.toList();
 					return Map.of("id", c.getId(), "case_id", c.getId(), "conditions", conditions, "logical_operator",
-							c.getLogicalOperator());
+							c.getLogicalOperator().getDifyValue());
 				}).toList();
 				data.put("cases", caseMaps);
 				return data;

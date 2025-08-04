@@ -1,0 +1,12 @@
+用于创建和生成PPT文件的工具。
+
+支持的操作：
+- create：创建新的PPT文件，需要output_path、title参数，可选subtitle和slide_contents参数
+
+支持的PPT文件类型包括：
+- .pptx
+- .ppt
+
+创建PPT时可以设置：
+- 标题和副标题
+- 多张幻灯片，每张幻灯片可包含标题、内容和图片路径

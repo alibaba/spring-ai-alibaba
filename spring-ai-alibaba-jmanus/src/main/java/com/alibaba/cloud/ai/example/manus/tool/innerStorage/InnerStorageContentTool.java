@@ -23,6 +23,7 @@ import java.util.List;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 
@@ -129,84 +130,17 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 	private final PlanExecutionRecorder planExecutionRecorder;
 
+	private final ToolPromptManager toolPromptManager;
+
 	public InnerStorageContentTool(UnifiedDirectoryManager directoryManager, SummaryWorkflow summaryWorkflow,
-			PlanExecutionRecorder planExecutionRecorder) {
+			PlanExecutionRecorder planExecutionRecorder, ToolPromptManager toolPromptManager) {
 		this.directoryManager = directoryManager;
 		this.summaryWorkflow = summaryWorkflow;
 		this.planExecutionRecorder = planExecutionRecorder;
+		this.toolPromptManager = toolPromptManager;
 	}
 
 	private static final String TOOL_NAME = "inner_storage_content_tool";
-
-	private static final String TOOL_DESCRIPTION = """
-			Internal storage content retrieval tool specialized for intelligent content extraction and structured output.
-			Intelligent content extraction mode: Get detailed content based on file name, **must provide** query_key and columns parameters for intelligent extraction and structured output
-
-			Supports two operation modes:
-			1. get_content: Get content from single file (exact filename match or relative path)
-			2. get_folder_content: Get content from all files in specified folder
-			""";
-
-	private static final String PARAMETERS = """
-			{
-				"oneOf": [
-					{
-						"type": "object",
-						"properties": {
-							"action": {
-								"type": "string",
-								"const": "get_content",
-								"description": "Get content from single file"
-							},
-							"file_name": {
-								"type": "string",
-								"description": "Filename (with extension) or relative path, supports exact matching"
-							},
-							"query_key": {
-								"type": "string",
-								"description": "Related questions or content keywords to extract, must be provided"
-							},
-							"columns": {
-								"type": "array",
-								"items": {
-									"type": "string"
-								},
-								"description": "Column names for return results, used for structured output, must be provided. The returned result can be a list"
-							}
-						},
-						"required": ["action", "file_name", "query_key", "columns"],
-						"additionalProperties": false
-					},
-					{
-						"type": "object",
-						"properties": {
-							"action": {
-								"type": "string",
-								"const": "get_folder_content",
-								"description": "Get content from all files in specified folder"
-							},
-							"folder_name": {
-								"type": "string",
-								"description": "Folder name or relative path"
-							},
-							"query_key": {
-								"type": "string",
-								"description": "Related questions or content keywords to extract, must be provided"
-							},
-							"columns": {
-								"type": "array",
-								"items": {
-									"type": "string"
-								},
-								"description": "Column names for return results, used for structured output, must be provided. The returned result can be a list"
-							}
-						},
-						"required": ["action", "folder_name", "query_key", "columns"],
-						"additionalProperties": false
-					}
-				]
-			}
-			""";
 
 	@Override
 	public String getName() {
@@ -215,12 +149,12 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 	@Override
 	public String getDescription() {
-		return TOOL_DESCRIPTION;
+		return toolPromptManager.getToolDescription("inner_storage_content_tool");
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return toolPromptManager.getToolParameters("inner_storage_content_tool");
 	}
 
 	@Override
@@ -233,9 +167,11 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 		return "default-service-group";
 	}
 
-	public static OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(TOOL_DESCRIPTION, TOOL_NAME,
-				PARAMETERS);
+	public OpenAiApi.FunctionTool getToolDefinition() {
+		String description = getDescription();
+		String parameters = getParameters();
+		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, TOOL_NAME,
+				parameters);
 		return new OpenAiApi.FunctionTool(function);
 	}
 

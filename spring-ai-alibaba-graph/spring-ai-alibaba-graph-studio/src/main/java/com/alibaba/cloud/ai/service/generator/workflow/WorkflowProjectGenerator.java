@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.service.generator.workflow;
 import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppModeEnum;
 import com.alibaba.cloud.ai.model.Variable;
+import com.alibaba.cloud.ai.model.workflow.Case;
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
@@ -236,6 +237,74 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			List<String> conditions = new ArrayList<>();
 			List<String> mappings = new ArrayList<>();
 
+			// 处理条件边的扩展
+			if (sourceData instanceof BranchNodeData branchNodeData) {
+				List<Case> cases = branchNodeData.getCases();
+				// 构造EdgeAction.apply函数
+				StringBuilder conditionsBuffer = new StringBuilder();
+				for (Case c : cases) {
+					String logicalOperator = " " + c.getLogicalOperator().getValue() + " ";
+					List<String> expressions = c.getConditions().stream().map(condition -> {
+						String constValue = condition.getValue();
+						if (condition.getVarType().equalsIgnoreCase("String")) {
+							constValue = "\"" + constValue + "\"";
+						}
+						String objType = switch (condition.getVarType()) {
+							case "string", "String" -> "String.class";
+							case "list", "List", "Array", "array" -> "List.class";
+							default -> condition.getComparisonOperator()
+								.getSupportedClassList()
+								.get(0)
+								.getName()
+								.concat(".class");
+						};
+						String objName = "unknown";
+						try {
+							if (nodeMap.containsKey(condition.getVariableSelector().getNamespace())) {
+								Node inputNode = nodeMap.get(condition.getVariableSelector().getNamespace());
+								objName = inputNode.getData().getOutputs().get(0).getName();
+							}
+						}
+						catch (Exception ignore) {
+						}
+						objName = String.format("state.value(\"%s\", %s).orElseThrow()", objName, objType);
+						return condition.getComparisonOperator().convert(objName, constValue);
+					}).toList();
+					conditionsBuffer.append("if(");
+					// 组合复合条件
+					conditionsBuffer.append(String.join(logicalOperator, expressions));
+					conditionsBuffer.append(") {\n");
+					conditionsBuffer.append(String.format("return \"%s\";", c.getId()));
+					conditionsBuffer.append("}\n");
+				}
+				// 最后需要加上else的结果
+				conditionsBuffer.append("return \"false\";");
+
+				// 构建Map
+				Map<String, String> edgeCaseMap = entry.getValue()
+					.stream()
+					.collect(Collectors.toMap(Edge::getSourceHandle, Edge::getTarget));
+				String edgeCaseMapStr = "Map.of(" + String.join(", ",
+						edgeCaseMap.entrySet()
+							.stream()
+							.map(e -> "\"" + e.getKey() + "\", "
+									+ (nodeMap.get(e.getValue()) != null
+											&& "end".equalsIgnoreCase(nodeMap.get(e.getValue()).getType()) ? "END"
+													: "\"" + varNames.getOrDefault(e.getValue(), "unknown") + "\""))
+							.toList())
+						+ ")";
+
+				// 构建最终代码
+				sb.append("stateGraph.addConditionalEdges(\"")
+					.append(srcVar)
+					.append("\", edge_async(state -> {\n")
+					.append(conditionsBuffer)
+					.append("}), ")
+					.append(edgeCaseMapStr)
+					.append(");\n");
+				continue;
+			}
+
 			for (Edge e : condEdges) {
 				Map<String, Object> data = e.getData();
 				String targetType = data != null ? (String) data.get("targetType") : null;
@@ -271,14 +340,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 				.stream()
 				.filter(c -> c.getId().equals(handleId))
 				.map(QuestionClassifierNodeData.ClassConfig::getText)
-				.findFirst()
-				.orElse(handleId);
-		}
-		else if (data instanceof BranchNodeData branch) {
-			return branch.getCases()
-				.stream()
-				.filter(c -> c.getId().equals(handleId))
-				.map(c -> c.getConditions().get(0).getValue())
 				.findFirst()
 				.orElse(handleId);
 		}

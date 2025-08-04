@@ -183,9 +183,13 @@ import { parseJsonTextStrict } from '@/utils/jsonParser';
 
 const router = useRouter()
 const route = useRoute()
+const conversationStore = useConversationStore()
 // 会话ID
-const convId = route.params.convId as string
-
+let convId = route.params.convId as string
+if (!convId) {
+  const { key } = conversationStore.newOne()
+  router.push(`/chat/${key}`) 
+}
 const uploadFileList = ref([])
 const { useToken } = theme
 const { token } = useToken()
@@ -193,11 +197,11 @@ const username = useAuthStore().token
 const roles: BubbleListProps['roles'] = {
   ai: {
     placement: 'start',
-    avatar: {
-        icon: <GlobalOutlined />,
-        shape: 'square',
-        style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
-      },
+    // avatar: {
+    //     icon: <GlobalOutlined />,
+    //     shape: 'square',
+    //     style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
+    //   },
     style: {
       maxWidth: '100%',
     },
@@ -206,15 +210,15 @@ const roles: BubbleListProps['roles'] = {
   local: {
     placement: 'end',
     shape: 'corner',
-    avatar: {
-        icon: <UserOutlined />,
-        style: {},
-      },
+    // avatar: {
+    //     icon: <UserOutlined />,
+    //     style: {},
+    //   },
     rootClassName: 'local',
   }
 }
 
-const conversationStore = useConversationStore()
+
 const messageStore = useMessageStore()
 const configStore = useConfigStore()
 messageStore.convId = convId
@@ -297,7 +301,6 @@ const [agent] = useXAgent({
       }
 
       case 'onDS': {
-        current.deepResearchDetail = true
         content = await (configStore.chatConfig.auto_accepted_plan ? sendChatStream(message, onUpdate, onError) : sendResumeStream(message, onUpdate, onError))
         break
       }
@@ -389,7 +392,8 @@ const htmlChunks = ref([])
 const htmlLoading = ref(false)
 const htmlRendererRef = ref(null)
 
-const submitHandle = (nextContent: any) => {
+
+const submitHandle = (nextContent: any) => {  
   current.aiType = 'normal'
   // 如果是深度研究，需要切换到下一个aiType
   if (current.deepResearch) {
@@ -402,10 +406,7 @@ const submitHandle = (nextContent: any) => {
   }
   onRequest(nextContent)
   content.value = ''
-  if (!convId) {
-    const { key } = conversationStore.newOne()
-    router.push(`/chat/${key}`)
-  }
+  conversationStore.updateTitle(convId, nextContent)
 }
 
 // 开始研究
@@ -739,7 +740,6 @@ const bubbleList = computed(() => {
     content: parseMessage(status, message, idx === len - 1),
     footer: parseFooter(status, idx === len - 1),
   }))
-  console.log(list)
   return list;
 })
 
