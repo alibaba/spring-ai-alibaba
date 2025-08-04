@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.example.manus.tool.pptGenerator;
 
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
-import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,17 +34,14 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 
 	private final ObjectMapper objectMapper;
 
-	private final ToolPromptManager toolPromptManager;
-
 	private final UnifiedDirectoryManager unifiedDirectoryManager;
 
 	private static final String TOOL_NAME = "ppt_generator_operator";
 
 	public PptGeneratorOperator(PptGeneratorService pptGeneratorService, ObjectMapper objectMapper,
-			ToolPromptManager toolPromptManager, UnifiedDirectoryManager unifiedDirectoryManager) {
+			UnifiedDirectoryManager unifiedDirectoryManager) {
 		this.pptGeneratorService = pptGeneratorService;
 		this.objectMapper = objectMapper;
-		this.toolPromptManager = toolPromptManager;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 	}
 
@@ -115,12 +111,37 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 
 	@Override
 	public String getDescription() {
-		return toolPromptManager.getToolDescription("pptGeneratorOperator");
+		return """
+				Generate PowerPoint presentations from content. This tool can create PPT files with slides based on provided content and templates.
+				""";
 	}
 
 	@Override
 	public String getParameters() {
-		return toolPromptManager.getToolParameters("pptGeneratorOperator");
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "title": {
+				            "type": "string",
+				            "description": "Title of the presentation"
+				        },
+				        "content": {
+				            "type": "string",
+				            "description": "Content to include in the presentation"
+				        },
+				        "template": {
+				            "type": "string",
+				            "description": "Template style for the presentation"
+				        },
+				        "output_path": {
+				            "type": "string",
+				            "description": "Output file path for the generated PPT"
+				        }
+				    },
+				    "required": ["title", "content"]
+				}
+				""";
 	}
 
 	@Override
