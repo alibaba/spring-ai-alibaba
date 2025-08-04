@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.constant.Constant.COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.DATA_SET_ID;
+import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.KEYWORD_EXTRACT_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.SCHEMA_RECALL_NODE_OUTPUT;
@@ -65,7 +65,7 @@ public class SchemaRecallNode implements NodeAction {
 
 		String input = StateUtils.getStringValue(state, INPUT_KEY);
 		List<String> keywords = StateUtils.getListValue(state, KEYWORD_EXTRACT_NODE_OUTPUT);
-		String agentId = StateUtils.getStringValue(state, DATA_SET_ID);
+		String agentId = StateUtils.getStringValue(state, AGENT_ID);
 
 		// Execute business logic first - recall schema information immediately
 		List<Document> tableDocuments;
@@ -88,11 +88,11 @@ public class SchemaRecallNode implements NodeAction {
 				this.getClass().getSimpleName(), tableDocuments.size(), columnDocumentsByKeywords.size());
 
 		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始召回Schema信息..."));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("表信息召回完成，数量: " + tableDocuments.size()));
+			emitter.next(ChatResponseUtil.createStatusResponse("开始召回Schema信息..."));
+			emitter.next(ChatResponseUtil.createStatusResponse("表信息召回完成，数量: " + tableDocuments.size()));
 			emitter
-				.next(ChatResponseUtil.createCustomStatusResponse("列信息召回完成，数量: " + columnDocumentsByKeywords.size()));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("Schema信息召回完成."));
+				.next(ChatResponseUtil.createStatusResponse("列信息召回完成，数量: " + columnDocumentsByKeywords.size()));
+			emitter.next(ChatResponseUtil.createStatusResponse("Schema信息召回完成."));
 			emitter.complete();
 		});
 
