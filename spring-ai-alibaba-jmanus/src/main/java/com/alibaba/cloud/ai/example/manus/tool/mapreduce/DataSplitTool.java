@@ -456,8 +456,8 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 		// Create input.md file
 		Path inputFile = taskDir.resolve(TASK_INPUT_FILE_NAME);
 		StringBuilder inputContent = new StringBuilder();
-		inputContent.append("# Document Fragment\n\n");
-		inputContent.append("**Original File:** ").append(originalFileName).append("\n\n");
+		// inputContent.append("# Document Fragment\n\n");
+		// inputContent.append("**Original File:** ").append(originalFileName).append("\n\n");
 		inputContent.append("**Task ID:** ").append(taskId).append("\n\n");
 		inputContent.append("## Content\n\n");
 		inputContent.append("```\n");

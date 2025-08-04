@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.manus.tool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.openai.api.OpenAiApi;
 
 import java.util.List;
 import java.util.Map;
@@ -29,22 +28,13 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	public static final String name = "terminate";
 
-	private final List<String> columns;
-
-	private final ToolPromptManager toolPromptManager;
+	private final String expectedReturnInfo;
 
 	private String lastTerminationMessage = "";
 
 	private boolean isTerminated = false;
 
 	private String terminationTimestamp = "";
-
-	public static OpenAiApi.FunctionTool getToolDefinition(List<String> columns, ToolPromptManager toolPromptManager) {
-		String parameters = generateParametersJson(columns);
-		String description = toolPromptManager.getToolDescription("terminate");
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, parameters);
-		return new OpenAiApi.FunctionTool(function);
-	}
 
 	private static String getDescriptions(String expectedReturnInfo) {
 		// Simple description to avoid generating overly long content

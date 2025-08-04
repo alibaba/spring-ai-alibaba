@@ -80,7 +80,7 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 				      ],
 				      "mapSteps": [
 				        {
-				          "stepRequirement": "[MAPREDUCE_MAP_TASK_AGENT] Analyze file, find key information related to <queryKey>, information should be comprehensive, including all data, facts and opinions, comprehensive information without omission. Output format specification: <outputFormatSpecification>. File format requirement: Markdown."
+				          "stepRequirement": "[MAPREDUCE_MAP_TASK_AGENT] Analyze file, find key information related to ```<queryKey>```, information should be comprehensive, including all data, facts and opinions, comprehensive information without omission. Output format specification: ``` <outputFormatSpecification>```. File format requirement: Markdown."
 				        }
 				      ],
 				      "reduceSteps": [

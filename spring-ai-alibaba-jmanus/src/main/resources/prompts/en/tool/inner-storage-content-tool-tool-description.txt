@@ -1,6 +1,6 @@
 Internal storage content retrieval tool specialized for intelligent content extraction and structured output.
-Intelligent content extraction mode: Get detailed content based on file name, **must provide** query_key and columns parameters for intelligent extraction and structured output
+Intelligent content extraction mode: Get detailed content based on file name, **must provide** query_key and outputFormatSpecification parameters for intelligent extraction and structured output
 
 Supports two operation modes:
-1. get_content: Get content from single file (exact filename match or relative path)
+1. extract_relevant_content: Get content from single file (exact filename match or relative path)
 2. get_folder_content: Get content from all files in specified folder

@@ -227,16 +227,15 @@ public class PlanningFactory implements IPlanningFactory {
 			return toolCallbackMap;
 		}
 		// Add all tool definitions
-		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService, objectMapper));
-		toolDefinitions.add(DatabaseUseTool.getInstance(dataSourceService, objectMapper));
+		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService, objectMapper, toolPromptManager));
+		toolDefinitions.add(DatabaseUseTool.getInstance(dataSourceService, objectMapper, toolPromptManager));
 		toolDefinitions.add(new TerminateTool(planId, expectedReturnInfo));
-		toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper));
-		toolDefinitions.add(new DocLoaderTool());
-		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
+		toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper, toolPromptManager));
+		toolDefinitions.add(new DocLoaderTool(toolPromptManager));
+		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper, toolPromptManager));
 		toolDefinitions.add(new TableProcessorTool(tableProcessingService));
 		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
-		toolDefinitions
-			.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder, toolPromptManager));
+		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder, toolPromptManager));
 		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager, toolPromptManager));
 		// toolDefinitions.add(new GoogleSearch());
 		// toolDefinitions.add(new PythonExecute());
@@ -248,7 +247,7 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager,
 				unifiedDirectoryManager));
 		toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
-		toolDefinitions.add(new CronTool(cronService, objectMapper));
+		toolDefinitions.add(new CronTool(cronService, objectMapper, toolPromptManager));
 		
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {

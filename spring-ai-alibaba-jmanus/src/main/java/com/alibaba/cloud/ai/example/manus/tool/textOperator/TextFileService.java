@@ -66,7 +66,8 @@ public class TextFileService implements ApplicationRunner, ITextFileService {
 			".xml", ".json", ".yaml", ".yml", ".properties", // Configuration files
 			".sql", ".sh", ".bat", ".cmd", // Scripts and database
 			".log", ".conf", ".ini", // Logs and configuration
-			".gradle", ".pom", ".mvn" // Build tools
+			".gradle", ".pom", ".mvn", // Build tools
+			".csv"
 	));
 
 	private final ConcurrentHashMap<String, FileState> fileStates = new ConcurrentHashMap<>();
@@ -108,21 +109,6 @@ public class TextFileService implements ApplicationRunner, ITextFileService {
 		return "";
 	}
 
-	public void validateAndGetAbsolutePath(String workingDirectoryPath, String filePath) throws IOException {
-		// Use UnifiedDirectoryManager for path validation and retrieval
-		try {
-			Path resolvedPath = unifiedDirectoryManager.getSpecifiedDirectory(filePath);
-
-			// Check file size (if file exists)
-			if (Files.exists(resolvedPath) && Files.size(resolvedPath) > 10 * 1024 * 1024) { // 10MB
-																								// limit
-				throw new IOException("File is too large (>10MB). For safety reasons, please use a smaller file.");
-			}
-		}
-		catch (SecurityException e) {
-			throw new IOException("Access denied: " + e.getMessage());
-		}
-	}
 
 	public void updateFileState(String planId, String filePath, String operationResult) {
 		FileState state = getFileState(planId);
@@ -193,9 +179,9 @@ public class TextFileService implements ApplicationRunner, ITextFileService {
 		Path absolutePath = getAbsolutePath(planId, filePath);
 
 		// Check file size (if file exists)
-		if (Files.exists(absolutePath) && Files.size(absolutePath) > 10 * 1024 * 1024) { // 10MB
+		if (Files.exists(absolutePath) && Files.size(absolutePath) > 200 * 1024 * 1024) { // 200MB
 																							// Restrictions
-			throw new IOException("File is too large (>10MB). For safety reasons, please use a smaller file.");
+			throw new IOException("File is too large (>200MB). For safety reasons, please use a smaller file.");
 		}
 
 		return absolutePath;

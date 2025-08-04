@@ -197,7 +197,7 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 							},
 							"outputFormatSpecification": {
 								"type": "string",
-								"description": "A file used to describe in what format the data should be stored (default is an excel table), the table header of this file is the specification description, must be provided. The returned result can be a list"
+							"description": "Provide a string to specify the structure in which you expect the data for query_key to be returned. If you want the result to consist of multiple fields as a whole, you can input a comma-separated string to define the fields."
 							}
 						},
 						"required": ["action", "folder_name", "query_key", "outputFormatSpecification"],
@@ -214,12 +214,12 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 	@Override
 	public String getDescription() {
-		return toolPromptManager.getToolDescription("inner_storage_content_tool");
+		return TOOL_DESCRIPTION;
 	}
 
 	@Override
 	public String getParameters() {
-		return toolPromptManager.getToolParameters("inner_storage_content_tool");
+		return PARAMETERS;
 	}
 
 	@Override

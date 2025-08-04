@@ -5,7 +5,7 @@
             "properties": {
                 "action": {
                     "type": "string",
-                    "const": "get_content",
+                    "const": "extract_relevant_content",
                     "description": "从单个文件获取内容"
                 },
                 "file_name": {
@@ -16,15 +16,12 @@
                     "type": "string",
                     "description": "要提取的相关问题或内容关键词，必须提供"
                 },
-                "columns": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "description": "返回结果的列名，用于结构化输出，必须提供。返回结果可以是列表"
+                "outputFormatSpecification": {
+                    "type": "string",
+                    "description": "提供一个字符串来指定您期望query_key返回的数据结构。如果希望结果由多个字段组成，可以输入逗号分隔的字符串来定义字段。"
                 }
             },
-            "required": ["action", "file_name", "query_key", "columns"],
+            "required": ["action", "file_name", "query_key", "outputFormatSpecification"],
             "additionalProperties": false
         },
         {
@@ -43,15 +40,12 @@
                     "type": "string",
                     "description": "要提取的相关问题或内容关键词，必须提供"
                 },
-                "columns": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "description": "返回结果的列名，用于结构化输出，必须提供。返回结果可以是列表"
+                "outputFormatSpecification": {
+                    "type": "string",
+                    "description": "提供一个字符串来指定您期望query_key返回的数据结构。如果希望结果由多个字段组成，可以输入逗号分隔的字符串来定义字段。"
                 }
             },
-            "required": ["action", "folder_name", "query_key", "columns"],
+            "required": ["action", "folder_name", "query_key", "outputFormatSpecification"],
             "additionalProperties": false
         }
     ]
