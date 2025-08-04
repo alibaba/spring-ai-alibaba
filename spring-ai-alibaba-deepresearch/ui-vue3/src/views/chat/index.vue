@@ -17,7 +17,7 @@
 <template>
   <div class="__container_chat_index">
     <Flex class="body" gap="middle">
-      <Flex class="chat" vertical gap="middle" flex="1" align="center">
+      <Flex class="chat" vertical gap="middle" :style="{ width: current.deepResearchDetail ? '40%' : '100%' }" align="center">
         <div
           ref="scrollContainer"
           align="center"
@@ -71,17 +71,6 @@
                     </a-button>
                   </a-upload>
 
-                  <a-button
-                    size="small"
-                    style="border-radius: 15px; margin-right: 8px"
-                    type="text"
-                    @click="deepResearch"
-                    :style="{ color: current.deepResearchDetail ? token.colorPrimary : '' }"
-                  >
-                    <BgColorsOutlined />
-                    Report
-                  </a-button>
-
                   <a-switch
                     un-checked-children="Deep Research"
                     checked-children="Deep Research"
@@ -118,40 +107,21 @@
         </div>
       </Flex>
       <Report :visible="current.deepResearchDetail" :convId="convId" @close="current.deepResearchDetail = false" />
-      <!-- HTML 渲染组件弹窗 -->
-      <a-modal
-        v-model:open="htmlModalVisible"
-        title="HTML 报告"
-        :width="1200"
-        :footer="null"
-        :destroyOnClose="true"
-        @cancel="closeHtmlModal"
-      >
-        <HtmlRenderer
-          ref="htmlRendererRef"
-          :htmlChunks="htmlChunks"
-          :loading="htmlLoading"
-          style="height: 600px;"
-        />
-      </a-modal>
+      <!-- <MD content="" v-if=""/> -->
     </Flex>
   </div>
 </template>
 
 <script setup lang="tsx">
-import { Button, Card, Flex, Modal, Spin, theme, Typography } from 'ant-design-vue'
+import { Button, Card, Flex, Spin, theme, Typography } from 'ant-design-vue'
 import {
   CheckCircleOutlined,
-  CloseOutlined,
-  CopyOutlined,
   GlobalOutlined,
   LinkOutlined,
-  MoreOutlined,
   SendOutlined,
   IeOutlined,
   BgColorsOutlined,
   DotChartOutlined,
-  ShareAltOutlined,
   LoadingOutlined,
   UserOutlined,
 } from '@ant-design/icons-vue'
@@ -171,9 +141,7 @@ import type { JSX } from 'vue/jsx-runtime'
 import MD from '@/components/md/index.vue'
 import Gap from '@/components/toolkit/Gap.vue'
 import Report from '@/components/report/index.vue'
-import HtmlRenderer from '@/components/html/index.vue'
 import { XStreamBody } from '@/utils/stream'
-import request from '@/utils/request'
 import { ScrollController } from '@/utils/scroll'
 import { useAuthStore } from '@/store/AuthStore'
 import { useMessageStore } from '@/store/MessageStore'
@@ -374,14 +342,15 @@ const [agent] = useXAgent({
     senderLoading.value = false
   },
 })
+
 const { onRequest, messages } = useXChat({
   agent: agent.value,
   requestPlaceholder: 'Waiting...',
   requestFallback: 'Failed return. Please try again later.',
 })
+
 if (convId) {
   const his_messages = messageStore.history[convId]
-  console.log('his_messages', his_messages)
   if (his_messages) {
     messages.value = [...his_messages]
   }
@@ -389,12 +358,6 @@ if (convId) {
 
 const content = ref('')
 const senderLoading = ref(false)
-
-// HTML 渲染组件相关状态
-const htmlModalVisible = ref(false)
-const htmlChunks = ref<string[]>([])
-const htmlLoading = ref(false)
-const htmlRendererRef = ref(null)
 
 
 const submitHandle = (nextContent: any) => {  
@@ -419,72 +382,7 @@ function startDeepResearch() {
   onRequest('开始研究')
 }
 
-// 展示HTML报告
-async function htmlDeepResearch(){
-    // 先打开弹窗
-    htmlModalVisible.value = true
-    htmlLoading.value = true
-    htmlChunks.value = []
-    
-    
-    if(messageStore.htmlReport[convId]){
-      htmlChunks.value = messageStore.htmlReport[convId]
-      htmlLoading.value = false
-      return
-    }
-
-    const xStreamBody = new XStreamBody('/api/reports/build-html?threadId=' + convId, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-        }})
-    let success = true
-    try {
-        await xStreamBody.readStream((chunk: any) => {
-            // 将接收到的HTML片段添加到数组中
-            const chunkNode = JSON.parse(chunk)
-            htmlChunks.value.push(chunkNode.result.output.text)
-        })
-        htmlLoading.value = false
-    } catch (e: any) {
-        console.error(e.statusText)
-        htmlLoading.value = false
-        // 如果出错，可以显示错误信息
-        htmlChunks.value = [`<div style="color: red; padding: 20px;">加载HTML报告时出错: ${e.statusText}</div>`]
-        success = false
-    }
-    // 缓存html报告
-    if(success) {
-        messageStore.htmlReport[convId] = htmlChunks.value
-    }
-    
-}
-
-// 关闭HTML模态框
-function closeHtmlModal() {
-    htmlModalVisible.value = false
-    htmlChunks.value = []
-    htmlLoading.value = false
-}
-
-// 下载报告
-function downDeepResearch(){
-  request({
-    url: '/api/reports/export',
-    method: 'POST',
-    data: {
-      thread_id: convId,
-      format: 'pdf'
-    }
-  }).then((response: any) => {
-    if(response.status === 'success') {
-      window.open(import.meta.env.VITE_BASE_URL + response.report_information.download_url, '_blank')
-    }
-  })
-}
-
-function deepResearch() {
+function openDeepResearch() {
   current.deepResearchDetail = !current.deepResearchDetail
 }
 
@@ -548,7 +446,7 @@ function buildStartDSThoughtChain(jsonArray: any[]) : any {
         description: <i>只需要几分钟就可以准备好</i>,
         footer: (
           <Flex style="margin-left: auto" gap="middle">
-            <Button type="primary">修改方案</Button>
+            {/* <Button type="primary">修改方案</Button> */}
             <Button type="primary" onClick={startDeepResearch}>开始研究</Button>
           </Flex>
         ),
@@ -611,7 +509,7 @@ function buildOnDSThoughtChain() : any {
       </>
     )
 }
-
+const collapsible = ref({})
 function buildEndDSThoughtChain(jsonArray: any[]): JSX.Element | undefined {
   if(tempJsonArray.length === 0 && jsonArray.length === 0){
     return undefined
@@ -619,7 +517,6 @@ function buildEndDSThoughtChain(jsonArray: any[]): JSX.Element | undefined {
   const curJsonArray = tempJsonArray.length > 0 ? tempJsonArray : jsonArray
   const { Paragraph, Text } = Typography
   const items: ThoughtChainProps['items'] = []
-  let collapsible = { }
   // 获取背景调查节点
   const backgroundInvestigatorNode = curJsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
   if(backgroundInvestigatorNode && backgroundInvestigatorNode.siteInformation){
@@ -642,7 +539,7 @@ function buildEndDSThoughtChain(jsonArray: any[]): JSX.Element | undefined {
           ),
       }
       items.push(item)
-      collapsible = { expandedKeys: ['backgroundInvestigator'] }
+      collapsible.value = { expandedKeys: ['backgroundInvestigator'] }
   }
   const completeItem: ThoughtChainItem = {
       status: 'success',
@@ -650,8 +547,7 @@ function buildEndDSThoughtChain(jsonArray: any[]): JSX.Element | undefined {
       icon: <CheckCircleOutlined />,
       footer: (
           <Flex style="margin-left: auto" gap="middle">
-            <Button type="primary" onClick={downDeepResearch}>下载报告</Button>
-            <Button type="primary" onClick={htmlDeepResearch}>在线报告</Button>
+          <Button type="primary" onClick={ openDeepResearch} >打开</Button>
           </Flex>
         ),
     }
@@ -668,7 +564,7 @@ function buildEndDSThoughtChain(jsonArray: any[]): JSX.Element | undefined {
       这是该主题的研究方案已完成，可以点击下载报告
       <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
         {/* <h2>{{ msg }}</h2> */}
-        <ThoughtChain items={items} collapsible={collapsible} />
+        <ThoughtChain items={items} collapsible={collapsible.value} />
       </Card>
     </>
   )
@@ -780,9 +676,13 @@ const bubbleList = computed(() => {
 
 const scrollContainer = ref<Element | any>(null)
 const sc = new ScrollController()
+
+
 onMounted(() => {
   sc.init(scrollContainer)
 })
+
+
 watch(
   () => messages.value,
   (o, n) => {
@@ -792,6 +692,7 @@ watch(
   { deep: true }
 )
 </script>
+
 <style lang="less" scoped>
 .__container_chat_index {
   width: 100%;
@@ -804,12 +705,11 @@ watch(
     box-sizing: border-box;
   }
 
-
-
   .chat {
     padding-top: 20px;
     height: 100%;
     box-sizing: border-box;
+    transition: width 0.3s ease, margin 0.3s ease, padding 0.3s ease;
 
     .bubble-list {
       width: 100%;
