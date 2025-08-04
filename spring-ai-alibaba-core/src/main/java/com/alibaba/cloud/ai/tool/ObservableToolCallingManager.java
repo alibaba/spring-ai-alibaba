@@ -18,7 +18,9 @@ package com.alibaba.cloud.ai.tool;
 import com.alibaba.cloud.ai.tool.observation.ArmsToolCallingObservationContext;
 import com.alibaba.cloud.ai.tool.observation.ArmsToolCallingObservationConvention;
 import com.alibaba.cloud.ai.tool.observation.ArmsToolCallingObservationDocumentation;
+import com.alibaba.cloud.ai.tool.observation.inner.ToolCallReactiveContextHolder;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -49,6 +51,7 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import reactor.util.context.ContextView;
 
 /**
  * Inspired from org.springframework.ai.model.tool.DefaultToolCallingManager.
@@ -214,6 +217,12 @@ public class ObservableToolCallingManager implements ToolCallingManager {
 				.description(toolCallback.getToolDefinition().description())
 				.returnDirect(returnDirect)
 				.build();
+
+			ContextView contextView = ToolCallReactiveContextHolder.getContext();
+			if (contextView != null) {
+				observationContext
+					.setParentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null));
+			}
 
 			String toolResult = ArmsToolCallingObservationDocumentation.EXECUTE_TOOL_OPERATION
 				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,

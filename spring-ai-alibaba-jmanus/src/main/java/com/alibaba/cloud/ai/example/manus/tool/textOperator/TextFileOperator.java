@@ -15,20 +15,21 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.textOperator;
 
-import java.io.*;
-import java.nio.channels.FileChannel;
-import java.nio.file.*;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
+import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.openai.api.OpenAiApi;
+
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Map;
 
 public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFileInput> {
 
@@ -125,147 +126,17 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 
 	private final ObjectMapper objectMapper;
 
+	private final ToolPromptManager toolPromptManager;
+
 	public TextFileOperator(TextFileService textFileService, SmartContentSavingService innerStorageService,
-			ObjectMapper objectMapper) {
+			ObjectMapper objectMapper, ToolPromptManager toolPromptManager) {
 		this.textFileService = textFileService;
 		this.innerStorageService = innerStorageService;
 		this.objectMapper = objectMapper;
+		this.toolPromptManager = toolPromptManager;
 	}
-
-	private final String PARAMETERS = """
-			{
-			    "oneOf": [
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "replace"
-			                },
-			                "file_path": {
-			                    "type": "string",
-			                    "description": "File path to operate on"
-			                },
-			                "source_text": {
-			                    "type": "string",
-			                    "description": "Text to be replaced"
-			                },
-			                "target_text": {
-			                    "type": "string",
-			                    "description": "Replacement text"
-			                }
-			            },
-			            "required": ["action", "file_path", "source_text", "target_text"],
-			            "additionalProperties": false
-			        },		        {
-			           "type": "object",
-			           "properties": {
-			               "action": {
-			                   "type": "string",
-			                   "const": "get_text"
-			               },
-			               "file_path": {
-			                   "type": "string",
-			                   "description": "File path to read"
-			               },
-			               "start_line": {
-			                   "type": "integer",
-			                   "description": "Starting line number (starts from 1)"
-			               },
-			               "end_line": {
-			                   "type": "integer",
-			                   "description": "Ending line number (inclusive). Note: Maximum 500 lines per call, use multiple calls for more content"
-			               }
-			           },
-			           "required": ["action", "file_path", "start_line", "end_line"],
-			           "additionalProperties": false
-			       },
-			       {
-			           "type": "object",
-			           "properties": {
-			               "action": {
-			                   "type": "string",
-			                   "const": "get_all_text"
-			               },
-			               "file_path": {
-			                   "type": "string",
-			                   "description": "File path to read all content. Note: If file is too long, content will be stored in temporary file and return file path"
-			               }
-			           },
-			           "required": ["action", "file_path"],
-			           "additionalProperties": false
-			       },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "append"
-			                },
-			                "file_path": {
-			                    "type": "string",
-			                    "description": "File path to append content to"
-			                },
-			                "content": {
-			                    "type": "string",
-			                    "description": "Content to append"
-			                }
-			            },
-			            "required": ["action", "file_path", "content"],
-			            "additionalProperties": false
-			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "count_words"
-			                },
-			                "file_path": {
-			                    "type": "string",
-			                    "description": "File path to count words"
-			                }
-			            },
-			            "required": ["action", "file_path"],
-			            "additionalProperties": false
-			        }
-			    ]
-			}
-			""";
 
 	private static final String TOOL_NAME = "text_file_operator";
-
-	private final String TOOL_DESCRIPTION = """
-			Perform various operations on text files (including md, html, css, java, etc.).
-			Supported operations:
-			- replace: Replace specific text in file, requires source_text and target_text parameters
-			- get_text: Get content from specified line range in file, requires start_line and end_line parameters
-			  Limitation: Maximum 500 lines per call, use multiple calls for more content
-			- get_all_text: Get all content from file
-			  Note: If file content is too long, it will be automatically stored in temporary file and return file path
-			- append: Append content to file, requires content parameter
-			- count_words: Count words in current file
-
-			Supported file types include:
-			- Text files (.txt)
-			- Markdown files (.md, .markdown)
-			- Web files (.html, .css, .scss, .sass, .less)
-			- Programming files (.java, .py, .js, .ts, .jsx, .tsx)
-			- Configuration files (.xml, .json, .yaml, .yml, .properties)
-			- Script files (.sh, .bat, .cmd)
-			- Log files (.log)
-			- And more text-based file types
-
-			Note: File operations automatically handle file opening and saving, users do not need to manually perform these operations.
-			Each operation has strict parameter requirements to ensure accuracy and security of operations.
-			""";
-
-	public OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(TOOL_DESCRIPTION, TOOL_NAME,
-				PARAMETERS);
-		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
-		return functionTool;
-	}
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("TextFileOperator toolInput:{}", toolInput);
@@ -658,12 +529,12 @@ public class TextFileOperator extends AbstractBaseTool<TextFileOperator.TextFile
 
 	@Override
 	public String getDescription() {
-		return TOOL_DESCRIPTION;
+		return toolPromptManager.getToolDescription("textFileOperator");
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return toolPromptManager.getToolParameters("textFileOperator");
 	}
 
 	@Override

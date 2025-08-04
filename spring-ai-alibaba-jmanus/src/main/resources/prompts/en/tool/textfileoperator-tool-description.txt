@@ -1,0 +1,18 @@
+Perform various operations on text files (including md, html, css, java, etc.).
+
+Supported operations:
+- replace: Replace specific text in file, requires source_text and target_text parameters
+- get_text: Get content from specified line range in file, requires start_line and end_line parameters
+  Limitation: Maximum 500 lines per call, use multiple calls for more content
+- get_all_text: Get all content from file
+  Note: If file content is too long, it will be automatically stored in temporary file and return file path
+- append: Append content to file, requires content parameter
+- count_words: Count words in current file
+
+Supported file types include:
+- Text files (.txt)
+- Markdown files (.md, .markdown)
+- Web files (.html, .css, .scss, .sass, .less)
+- Programming files (.java, .py, .js, .ts, .cpp, .c, .h, .go, .rs, .php, .rb, .swift, .kt, .scala)
+- Configuration files (.json, .xml, .yaml, .yml, .toml, .ini, .conf)
+- Documentation files (.rst, .adoc)

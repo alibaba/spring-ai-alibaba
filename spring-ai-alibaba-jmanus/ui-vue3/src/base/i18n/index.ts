@@ -55,7 +55,7 @@ export const changeLanguage = async (locale: string) => {
 }
 
 /**
- * Change language during initialization and reset all agents
+ * Change language during initialization and reset all agents and prompts
  * This function is used during the initial setup process
  */
 export const changeLanguageWithAgentReset = async (locale: string) => {
@@ -63,8 +63,24 @@ export const changeLanguageWithAgentReset = async (locale: string) => {
   await changeLanguage(locale)
 
   try {
+    // Reset prompts to the new language
+    const promptResponse = await fetch(`/admin/prompts/switch-language?language=${locale}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (promptResponse.ok) {
+      console.log(`Successfully reset prompts to language: ${locale}`)
+    } else {
+      const promptError = await promptResponse.text()
+      console.error(`Failed to reset prompts to language: ${locale}`, promptError)
+      // Continue with agent initialization even if prompt reset fails
+    }
+
     // Initialize agents with the new language (used during initial setup)
-    const response = await fetch('/api/agent-management/initialize', {
+    const agentResponse = await fetch('/api/agent-management/initialize', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -72,16 +88,16 @@ export const changeLanguageWithAgentReset = async (locale: string) => {
       body: JSON.stringify({ language: locale }),
     })
 
-    if (response.ok) {
-      const result = await response.json()
+    if (agentResponse.ok) {
+      const result = await agentResponse.json()
       console.log(`Successfully initialized agents with language: ${locale}`, result)
     } else {
-      const error = await response.json()
+      const error = await agentResponse.json()
       console.error(`Failed to initialize agents with language: ${locale}`, error)
       throw new Error(error.error || 'Failed to initialize agents')
     }
   } catch (error) {
-    console.error('Error initializing agents during language change:', error)
+    console.error('Error initializing agents and prompts during language change:', error)
     throw error
   }
 }

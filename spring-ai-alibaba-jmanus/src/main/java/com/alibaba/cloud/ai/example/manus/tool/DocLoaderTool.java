@@ -21,11 +21,10 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+
+import java.io.File;
 
 public class DocLoaderTool extends AbstractBaseTool<DocLoaderTool.DocLoaderInput> {
 
@@ -68,33 +67,14 @@ public class DocLoaderTool extends AbstractBaseTool<DocLoaderTool.DocLoaderInput
 
 	}
 
-	private static String PARAMETERS = """
-			{
-			    "type": "object",
-			    "properties": {
-			        "file_type": {
-			            "type": "string",
-			            "description": "(required) File type, only support pdf file."
-			        },
-			        "file_path": {
-			            "type": "string",
-			            "description": "(required) Get the absolute path of the file from the user request."
-			        }
-			    },
-			    "required": ["file_type","file_path"]
-			}
-			""";
-
 	private static final String name = "doc_loader";
 
-	private static final String description = """
-			Get the content information of a local file at a specified path.
-			Use this tool when you want to get some related information asked by the user.
-			This tool accepts the file path and gets the related information content.
-			""";
+	private final ToolPromptManager toolPromptManager;
 
-	public static OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
+	public OpenAiApi.FunctionTool getToolDefinition() {
+		String description = getDescription();
+		String parameters = getParameters();
+		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, parameters);
 		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
 		return functionTool;
 	}
@@ -102,17 +82,21 @@ public class DocLoaderTool extends AbstractBaseTool<DocLoaderTool.DocLoaderInput
 	/**
 	 * Get FunctionToolCallback for Spring AI
 	 */
-	public static FunctionToolCallback<DocLoaderInput, ToolExecuteResult> getFunctionToolCallback() {
+	public static FunctionToolCallback<DocLoaderInput, ToolExecuteResult> getFunctionToolCallback(
+			ToolPromptManager toolPromptManager) {
 		return FunctionToolCallback
 			.<DocLoaderInput, ToolExecuteResult>builder(name,
-					(DocLoaderInput input, org.springframework.ai.chat.model.ToolContext context) -> new DocLoaderTool()
-						.run(input))
-			.description(description)
+					(DocLoaderInput input,
+							org.springframework.ai.chat.model.ToolContext context) -> new DocLoaderTool(
+									toolPromptManager)
+								.run(input))
+			.description(toolPromptManager.getToolDescription("doc_loader"))
 			.inputType(DocLoaderInput.class)
 			.build();
 	}
 
-	public DocLoaderTool() {
+	public DocLoaderTool(ToolPromptManager toolPromptManager) {
+		this.toolPromptManager = toolPromptManager;
 	}
 
 	private String lastFilePath = "";
@@ -161,12 +145,12 @@ public class DocLoaderTool extends AbstractBaseTool<DocLoaderTool.DocLoaderInput
 
 	@Override
 	public String getDescription() {
-		return description;
+		return toolPromptManager.getToolDescription("doc_loader");
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return toolPromptManager.getToolParameters("doc_loader");
 	}
 
 	@Override

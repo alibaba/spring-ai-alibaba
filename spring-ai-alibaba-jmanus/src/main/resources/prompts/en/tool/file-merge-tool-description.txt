@@ -1,0 +1,2 @@
+File merge tool for merging single files into specified target folders.
+Each call merges one file to the target folder, supports fuzzy filename matching.

@@ -62,6 +62,14 @@ public abstract class BaseVectorStoreService {
 	}
 
 	/**
+	 * 为指定智能体获取向量库中的文档
+	 */
+	public List<Document> getDocumentsForAgent(String agentId, String query, String vectorType) {
+		// 默认实现：如果子类没有重写，则使用全局搜索
+		return getDocuments(query, vectorType);
+	}
+
+	/**
 	 * 默认 filter 的搜索接口
 	 */
 	public abstract List<Document> searchWithVectorType(SearchRequest searchRequestDTO);

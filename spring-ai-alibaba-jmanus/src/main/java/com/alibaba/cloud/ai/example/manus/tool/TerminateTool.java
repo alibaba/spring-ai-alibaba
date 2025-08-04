@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.manus.tool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.openai.api.OpenAiApi;
 
 import java.util.List;
@@ -32,23 +31,19 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	private final List<String> columns;
 
+	private final ToolPromptManager toolPromptManager;
+
 	private String lastTerminationMessage = "";
 
 	private boolean isTerminated = false;
 
 	private String terminationTimestamp = "";
 
-	public static OpenAiApi.FunctionTool getToolDefinition(List<String> columns) {
+	public static OpenAiApi.FunctionTool getToolDefinition(List<String> columns, ToolPromptManager toolPromptManager) {
 		String parameters = generateParametersJson(columns);
-		String description = getDescriptions(columns);
+		String description = toolPromptManager.getToolDescription("terminate");
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, parameters);
 		return new OpenAiApi.FunctionTool(function);
-	}
-
-	private static String getDescriptions(List<String> columns) {
-		// Simple description to avoid generating overly long content
-		return "Terminate the current execution step with structured data. "
-				+ "Provide data in JSON format with 'columns' array and 'data' array containing rows of values.";
 	}
 
 	private static String generateParametersJson(List<String> columns) {
@@ -94,10 +89,11 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 				currentPlanId != null ? currentPlanId : "N/A", columns != null ? String.join(", ", columns) : "N/A");
 	}
 
-	public TerminateTool(String planId, List<String> columns) {
+	public TerminateTool(String planId, List<String> columns, ToolPromptManager toolPromptManager) {
 		this.currentPlanId = planId;
 		// If columns is null or empty, use "message" as default column
 		this.columns = (columns == null || columns.isEmpty()) ? List.of("message") : columns;
+		this.toolPromptManager = toolPromptManager;
 	}
 
 	@Override
@@ -143,7 +139,7 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	@Override
 	public String getDescription() {
-		return getDescriptions(this.columns);
+		return toolPromptManager.getToolDescription("terminate");
 	}
 
 	@Override

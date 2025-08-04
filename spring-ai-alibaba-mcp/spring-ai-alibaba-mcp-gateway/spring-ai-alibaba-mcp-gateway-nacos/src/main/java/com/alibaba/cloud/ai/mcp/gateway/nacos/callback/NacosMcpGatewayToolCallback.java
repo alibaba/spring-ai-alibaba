@@ -35,6 +35,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.client.McpClient;
+import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.InitializeResult;
+import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
@@ -42,10 +49,12 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.http.HttpMethod;
 import org.springframework.lang.NonNull;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -358,79 +367,214 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				}
 			}
 
-			McpServerRemoteServiceConfig remoteServerConfig = this.toolDefinition.getRemoteServerConfig();
-			if (remoteServerConfig == null) {
-				throw new IllegalStateException("Remote server config is null");
-			}
-
 			String protocol = this.toolDefinition.getProtocol();
 			if (protocol == null) {
 				throw new IllegalStateException("Protocol is null");
 			}
 
+			// 根据协议类型分发到不同的处理方法
 			if ("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)) {
-				McpServiceRef serviceRef = remoteServerConfig.getServiceRef();
-				if (serviceRef != null) {
-					McpEndpointInfo mcpEndpointInfo = nacosMcpOperationService.selectEndpoint(serviceRef);
-					if (mcpEndpointInfo == null) {
-						throw new RuntimeException(
-								"No available endpoint found for service: " + serviceRef.getServiceName());
-					}
-
-					logger.info("Tool callback instance: {}", JacksonUtils.toJson(mcpEndpointInfo));
-					McpToolMeta toolMeta = this.toolDefinition.getToolMeta();
-					String baseUrl = protocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
-
-					if (toolMeta != null && toolMeta.getTemplates() != null) {
-						Map<String, Object> templates = toolMeta.getTemplates();
-						if (templates != null && templates.containsKey("json-go-template")) {
-							Object jsonGoTemplate = templates.get("json-go-template");
-							try {
-								logger.info("[call] json-go-template: {}",
-										objectMapper.writeValueAsString(jsonGoTemplate));
-							}
-							catch (JsonProcessingException e) {
-								logger.error("[call] Failed to serialize json-go-template", e);
-							}
-							try {
-								// 调用executeToolRequest
-								String configJson = objectMapper.writeValueAsString(jsonGoTemplate);
-								logger.info("[executeToolRequest] configJson: {} args: {} baseUrl: {}", configJson,
-										args, baseUrl);
-								return processToolRequest(configJson, args, baseUrl).block();
-							}
-							catch (Exception e) {
-								logger.error("Failed to execute tool request", e);
-								return "Error: " + e.getMessage();
-							}
-						}
-						else {
-							logger.warn("[call] json-go-template not found in templates");
-							return "Error: json-go-template not found in tool configuration";
-						}
-					}
-					else {
-						logger.warn("[call] templates not found in toolsMeta");
-						return "Error: templates not found in tool metadata";
-					}
+				McpServerRemoteServiceConfig remoteServerConfig = this.toolDefinition.getRemoteServerConfig();
+				if (remoteServerConfig == null) {
+					throw new IllegalStateException("Remote server config is null");
 				}
-				else {
-					logger.error("[call] serviceRef is null");
-					return "Error: service reference is null";
+
+				return handleHttpHttpsProtocol(args, remoteServerConfig, protocol);
+			}
+			else if ("mcp-sse".equalsIgnoreCase(protocol)) {
+				McpServerRemoteServiceConfig remoteServerConfig = this.toolDefinition.getRemoteServerConfig();
+				if (remoteServerConfig == null) {
+					throw new IllegalStateException("Remote server config is null");
 				}
+				return handleMcpStreamProtocol(args, remoteServerConfig, protocol);
+			}
+			else if ("mcp-streamable".equalsIgnoreCase(protocol)) {
+				return "Error: Unsupported protocol " + protocol;
 			}
 			else {
 				logger.error("[call] Unsupported protocol: {}", protocol);
 				return "Error: Unsupported protocol " + protocol;
 			}
 		}
-		catch (NacosException e) {
-			logger.error("[call] Nacos exception occurred", e);
-			throw new RuntimeException("Nacos service error: " + e.getMessage(), e);
-		}
 		catch (Exception e) {
 			logger.error("[call] Unexpected error occurred", e);
 			return "Error: " + e.getMessage();
+		}
+	}
+
+	/**
+	 * 处理HTTP/HTTPS协议的工具调用
+	 */
+	private String handleHttpHttpsProtocol(Map<String, Object> args, McpServerRemoteServiceConfig remoteServerConfig,
+			String protocol) throws NacosException {
+		McpServiceRef serviceRef = remoteServerConfig.getServiceRef();
+		if (serviceRef != null) {
+			McpEndpointInfo mcpEndpointInfo = nacosMcpOperationService.selectEndpoint(serviceRef);
+			if (mcpEndpointInfo == null) {
+				throw new RuntimeException("No available endpoint found for service: " + serviceRef.getServiceName());
+			}
+
+			logger.info("Tool callback instance: {}", JacksonUtils.toJson(mcpEndpointInfo));
+			McpToolMeta toolMeta = this.toolDefinition.getToolMeta();
+			String baseUrl = protocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
+
+			if (toolMeta != null && toolMeta.getTemplates() != null) {
+				Map<String, Object> templates = toolMeta.getTemplates();
+				if (templates != null && templates.containsKey("json-go-template")) {
+					Object jsonGoTemplate = templates.get("json-go-template");
+					try {
+						logger.info("[handleHttpHttpsProtocol] json-go-template: {}",
+								objectMapper.writeValueAsString(jsonGoTemplate));
+					}
+					catch (JsonProcessingException e) {
+						logger.error("[handleHttpHttpsProtocol] Failed to serialize json-go-template", e);
+					}
+					try {
+						// 调用executeToolRequest
+						String configJson = objectMapper.writeValueAsString(jsonGoTemplate);
+						logger.info("[handleHttpHttpsProtocol] configJson: {} args: {} baseUrl: {}", configJson, args,
+								baseUrl);
+						return processToolRequest(configJson, args, baseUrl).block();
+					}
+					catch (Exception e) {
+						logger.error("Failed to execute tool request", e);
+						return "Error: " + e.getMessage();
+					}
+				}
+				else {
+					logger.warn("[handleHttpHttpsProtocol] json-go-template not found in templates");
+					return "Error: json-go-template not found in tool configuration";
+				}
+			}
+			else {
+				logger.warn("[handleHttpHttpsProtocol] templates not found in toolsMeta");
+				return "Error: templates not found in tool metadata";
+			}
+		}
+		else {
+			logger.error("[handleHttpHttpsProtocol] serviceRef is null");
+			return "Error: service reference is null";
+		}
+	}
+
+	/**
+	 * 处理MCP流式协议的工具调用 (mcp-sse, mcp-streamable)
+	 */
+	private String handleMcpStreamProtocol(Map<String, Object> args, McpServerRemoteServiceConfig remoteServerConfig,
+			String protocol) throws NacosException {
+		McpServiceRef serviceRef = remoteServerConfig.getServiceRef();
+		if (serviceRef != null) {
+			McpEndpointInfo mcpEndpointInfo = nacosMcpOperationService.selectEndpoint(serviceRef);
+			if (mcpEndpointInfo == null) {
+				throw new RuntimeException("No available endpoint found for service: " + serviceRef.getServiceName());
+			}
+
+			logger.info("[handleMcpStreamProtocol] Tool callback instance: {}", JacksonUtils.toJson(mcpEndpointInfo));
+			String exportPath = remoteServerConfig.getExportPath();
+
+			// 构建基础URL，根据协议类型调整
+			String baseUrl;
+			if ("mcp-sse".equalsIgnoreCase(protocol)) {
+				baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
+			}
+			else {
+				// mcp-streamable 或其他协议
+				baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
+			}
+
+			logger.info("[handleMcpStreamProtocol] Processing {} protocol with args: {} and baseUrl: {}", protocol,
+					args, baseUrl);
+
+			try {
+				// 获取工具名称 - 从工具定义名称中提取实际的工具名称
+				String toolDefinitionName = this.toolDefinition.name();
+				if (toolDefinitionName == null || toolDefinitionName.isEmpty()) {
+					throw new RuntimeException("Tool definition name is not available");
+				}
+
+				// 工具定义名称格式为: serverName_tools_toolName
+				// 需要提取最后的 toolName 部分
+				String toolName;
+				if (toolDefinitionName.contains("_tools_")) {
+					toolName = toolDefinitionName.substring(toolDefinitionName.lastIndexOf("_tools_") + 7);
+				}
+				else {
+					// 如果没有 _tools_ 分隔符，使用整个名称
+					toolName = toolDefinitionName;
+				}
+
+				if (toolName.isEmpty()) {
+					throw new RuntimeException("Extracted tool name is empty");
+				}
+
+				// 构建传输层
+				String sseEndpoint = "/sse";
+				if (exportPath != null && !exportPath.isEmpty()) {
+					sseEndpoint = exportPath;
+				}
+
+				HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl)
+					.sseEndpoint(sseEndpoint);
+
+				// 添加自定义请求头（如果需要）
+				// 这里可以根据需要添加认证头等
+
+				HttpClientSseClientTransport transport = transportBuilder.build();
+
+				// 创建MCP同步客户端
+				McpSyncClient client = McpClient.sync(transport).build();
+
+				try {
+					// 初始化客户端
+					InitializeResult initializeResult = client.initialize();
+					logger.info("[handleMcpStreamProtocol] MCP Client initialized: {}", initializeResult);
+
+					// 调用工具
+					McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, args);
+					logger.info("[handleMcpStreamProtocol] CallToolRequest: {}", request);
+
+					CallToolResult result = client.callTool(request);
+					logger.info("[handleMcpStreamProtocol] tool call result: {}", result);
+
+					// 处理结果
+					Object content = result.content();
+					if (content instanceof List<?> list && !CollectionUtils.isEmpty(list)) {
+						Object first = list.get(0);
+						// 兼容TextContent的text字段
+						if (first instanceof TextContent textContent) {
+							return textContent.text();
+						}
+						else if (first instanceof Map<?, ?> map && map.containsKey("text")) {
+							return map.get("text").toString();
+						}
+						else {
+							return first.toString();
+						}
+					}
+					else {
+						return content != null ? content.toString() : "No content returned";
+					}
+				}
+				finally {
+					// 清理资源
+					try {
+						if (client != null) {
+							client.close();
+						}
+					}
+					catch (Exception e) {
+						logger.warn("[handleMcpStreamProtocol] Failed to close MCP client", e);
+					}
+				}
+			}
+			catch (Exception e) {
+				logger.error("[handleMcpStreamProtocol] MCP call failed:", e);
+				return "Error: MCP call failed - " + e.getMessage();
+			}
+		}
+		else {
+			logger.error("[handleMcpStreamProtocol] serviceRef is null");
+			return "Error: service reference is null";
 		}
 	}
 
