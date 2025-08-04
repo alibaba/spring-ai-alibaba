@@ -92,10 +92,8 @@ public class BackgroundInvestigationNode implements NodeAction {
 			List<String> backgroundResults = new ArrayList<>();
 			assert resultsList.size() != queries.size();
 
-			for (int i = 0; i < resultsList.size(); i += 2) {
+			for (int i = 0; i < resultsList.size(); i++) {
 				List<Map<String, String>> searchResults = resultsList.get(i);
-				if (i + 1 < resultsList.size())
-					searchResults.addAll(resultsList.get(i + 1));
 
 				String query = queries.get(i);
 
