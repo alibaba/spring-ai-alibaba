@@ -10,6 +10,7 @@
           "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] 使用map_reduce_tool，对 %s 进行内容分割，输出文件为 %s",
           "terminateColumns": "%s"
         }
+
       ],
       "mapSteps": [
         {
