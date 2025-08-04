@@ -411,9 +411,9 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			headers.forEach((key, value) -> multiValueMap.add(key, value));
 		}
 
-		// 克隆WebClient.Builder并添加超时配置
+		// Clone WebClient.Builder and add timeout configuration
 		WebClient.Builder enhancedWebClientBuilder = webClientBuilder.clone()
-			// 添加5分钟的默认超时设置
+			// Add 5 minutes default timeout setting
 			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB
 			.filter((request, next) -> next.exchange(request).timeout(Duration.ofMinutes(10)));
 
