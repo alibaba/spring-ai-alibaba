@@ -241,38 +241,37 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 
 			log.info("File exported successfully: {} -> {}", REDUCE_FILE_NAME, newFileName);
 
-			// Read the target file and get first 3 lines to confirm the copy
+			// Read the target file and check its size
 			List<String> lines = Files.readAllLines(targetFilePath);
-			StringBuilder result = new StringBuilder();
-
-			result.append(String.format("File exported successfully , file name is : %s", newFileName)).append("\n\n");
-			result.append("Preview of exported file:\n");
-			result.append("-".repeat(30)).append("\n");
-
-			int totalLines = lines.size();
+			StringBuilder fileContent = new StringBuilder();
+			for (String line : lines) {
+				fileContent.append(line).append("\n");
+			}
+			
 			int charLimit = getInfiniteContextTaskContextSize();
-			int charCount = result.length();
-			boolean truncated = false;
+			int contentLength = fileContent.length();
 
-			for (int i = 0; i < totalLines; i++) {
-				String lineStr = String.format("%4d: %s\n", i + 1, lines.get(i));
-				if (charCount + lineStr.length() > charLimit) {
-					truncated = true;
-					break;
-				}
-				result.append(lineStr);
-				charCount += lineStr.length();
-			}
-
-			if (truncated) {
-				result.append(String.format("... (total %d lines)\n", totalLines));
-				result.append(String.format(
-						"Note: Content has been truncated due to size limit. You can access the complete file content by reading the exported file directly: %s\n",
+			// If content size is less than required content size, include the entire content in the result
+			if (contentLength <= charLimit) {
+				StringBuilder result = new StringBuilder();
+				result.append(String.format("The function call was successful. The content has been saved to the file(%s). the file content is :\n", 
 						newFileName));
+				result.append(fileContent.toString());
+				return new ToolExecuteResult(result.toString());
+			} 
+			// If the file content size exceeds the required context size, indicate that the content is still too large
+			else {
+				StringBuilder result = new StringBuilder();
+				result.append("The function call was successful. The content has been saved to the file(");
+				result.append(newFileName);
+				result.append("). The file content size is ");
+				result.append(contentLength);
+				result.append(" characters, which exceeds the limit of ");
+				result.append(charLimit);
+				result.append(" characters. The content is still too large and has been saved to the new file. ");
+				result.append("The user can read the file directly or use other functions to further process the oversized file.");
+				return new ToolExecuteResult(result.toString());
 			}
-
-			return new ToolExecuteResult(result.toString());
-
 		}
 		catch (IOException e) {
 			log.error("Failed to export file", e);

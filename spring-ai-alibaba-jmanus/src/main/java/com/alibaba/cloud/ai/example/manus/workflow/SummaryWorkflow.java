@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.util.Map;
@@ -67,29 +68,29 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 		return """
 				{
 				  "planType": "advanced",
-				  "planId": "{planId}",
+				  "planId": "<planId>",
 				  "title": "Intelligent content summarization for large files, with final merged file name output in summary",
 				  "steps": [
 				    {
 				      "type": "mapreduce",
 				      "dataPreparedSteps": [
 				        {
-				          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] Use map_reduce_tool to split content of {fileName}"
+				          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] Use map_reduce_tool to split content of file <fileName>"
 				        }
 				      ],
 				      "mapSteps": [
 				        {
-				          "stepRequirement": "[MAPREDUCE_MAP_TASK_AGENT] Analyze file, find key information related to {queryKey}, information should be comprehensive, including all data, facts and opinions, comprehensive information without omission. Output format specification: {outputFormatSpecification}"
+				          "stepRequirement": "[MAPREDUCE_MAP_TASK_AGENT] Analyze file, find key information related to <queryKey>, information should be comprehensive, including all data, facts and opinions, comprehensive information without omission. Output format specification: <outputFormatSpecification>. File format requirement: Markdown."
 				        }
 				      ],
 				      "reduceSteps": [
 				        {
-				          "stepRequirement": "[MAPREDUCE_REDUCE_TASK_AGENT] Merge the information from this chunk into file, while maintaining information integrity, merge all content and remove results with no content found. Output format specification: {outputFormatSpecification}"
+				          "stepRequirement": "[MAPREDUCE_REDUCE_TASK_AGENT] Merge the information from this chunk into file, while maintaining information integrity, merge all content and remove results with no content found. Output format specification: <outputFormatSpecification>. File format requirement: Markdown."
 				        }
 				      ],
 				      "postProcessSteps": [
 				        {
-				          "stepRequirement": "[MAPREDUCE_FIN_AGENT] After export completion, read the exported results and output all exported content completely. Output format specification: {outputFormatSpecification}"
+				          "stepRequirement": "[MAPREDUCE_FIN_AGENT] After export completion, read the exported results and output all exported content completely. Output format specification: <outputFormatSpecification>. File format requirement: Markdown."
 				        }
 				      ]
 				    }
@@ -138,7 +139,11 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 			logger.info("Building summary execution plan with provided planId: {}", parentPlanId);
 
 			// Generate plan JSON using local template with PromptTemplate
-			PromptTemplate promptTemplate = new PromptTemplate(getSummaryPlanTemplate());
+			PromptTemplate promptTemplate = PromptTemplate.builder()
+			.renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+    		.template(getSummaryPlanTemplate())
+				.build();
+				
 			Map<String, Object> variables = new HashMap<>();
 			variables.put("planId", parentPlanId);
 			variables.put("fileName", fileName);

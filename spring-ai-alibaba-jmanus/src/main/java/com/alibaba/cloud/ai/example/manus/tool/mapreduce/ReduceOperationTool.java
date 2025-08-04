@@ -51,7 +51,7 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	 */
 	public static class ReduceOperationInput {
 
-		private List<List<Object>> data;
+		private String data;
 
 		@com.fasterxml.jackson.annotation.JsonProperty("has_value")
 		private boolean hasValue;
@@ -59,11 +59,11 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 		public ReduceOperationInput() {
 		}
 
-		public List<List<Object>> getData() {
+		public String getData() {
 			return data;
 		}
 
-		public void setData(List<List<Object>> data) {
+		public void setData(String data) {
 			this.data = data;
 		}
 
@@ -88,7 +88,7 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 				- has_value: Boolean value indicating whether there is valid data to write
 				  - If no valid data is found, set to false
 				  - If there is data to output, set to true
-				- data: Must provide data when has_value is true
+				- data: Must provide data when has_value is true. This should be a string containing the final output content.
 
 				**IMPORTANT**: Tool will automatically terminate after operation completion.
 				Please complete all content output in a single call.
@@ -110,12 +110,8 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 				            "description": "Whether there is valid data to write. Set to false if no valid data is found, set to true when there is data"
 				        },
 				        "data": {
-				            "type": "array",
-				            "items": {
-				                "type": "array",
-				                "items": {"type": "string"}
-				            },
-				            "description": "%s (only required when has_value is true)"
+				            "type": "string",
+				            "description": "The final output content as a string (only required when has_value is true)"
 				        }
 				    },
 				    "required": ["has_value"],
@@ -197,7 +193,7 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	public ToolExecuteResult run(ReduceOperationInput input) {
 		log.info("ReduceOperationTool input: hasValue={}", input.isHasValue());
 		try {
-			List<List<Object>> data = input.getData();
+			String data = input.getData();
 			boolean hasValue = input.isHasValue();
 
 			// Check hasValue logic
@@ -207,15 +203,8 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 					return new ToolExecuteResult("Error: data parameter is required when has_value is true");
 				}
 
-				// Validate data structure
-				ToolExecuteResult validationResult = validateDataStructure(data);
-				if (validationResult != null) {
-					return validationResult; // Return validation error
-				}
-
-				// Convert structured data to JSON format and append
-				String jsonContent = formatStructuredDataAsJson(data);
-				return appendToFile(REDUCE_FILE_NAME, jsonContent);
+				// Append the data directly to file
+				return appendToFile(REDUCE_FILE_NAME, data);
 			}
 			else {
 				// When hasValue is false, do not append anything but still mark as
@@ -236,59 +225,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 			this.terminationTimestamp = java.time.LocalDateTime.now().toString();
 			return new ToolExecuteResult("Tool execution failed: " + e.getMessage());
 		}
-	}
-
-	/**
-	 * Validate data structure
-	 * @param data the input data
-	 * @return ToolExecuteResult with error message if validation fails, null if valid
-	 */
-	private ToolExecuteResult validateDataStructure(List<List<Object>> data) {
-		// Perform basic validation to ensure data is not empty
-		if (data == null || data.isEmpty()) {
-			return new ToolExecuteResult("Error: data parameter is required when has_value is true");
-		}
-		
-		return null; // Validation passed
-	}
-
-	/**
-	 * Format structured data as JSON
-	 * @param data the input data
-	 * @return formatted JSON string
-	 */
-	private String formatStructuredDataAsJson(List<List<Object>> data) {
-		StringBuilder jsonBuilder = new StringBuilder();
-		jsonBuilder.append("{\n");
-		jsonBuilder.append("  \"data\": [\n");
-
-		for (int i = 0; i < data.size(); i++) {
-			List<Object> row = data.get(i);
-			jsonBuilder.append("    [");
-			for (int j = 0; j < row.size(); j++) {
-				Object value = row.get(j);
-				// JSON escape string values
-				if (value instanceof String) {
-					jsonBuilder.append("\"").append(((String) value).replace("\"", "\\\"")).append("\"");
-				}
-				else {
-					jsonBuilder.append(value);
-				}
-				if (j < row.size() - 1) {
-					jsonBuilder.append(", ");
-				}
-			}
-			jsonBuilder.append("]");
-			if (i < data.size() - 1) {
-				jsonBuilder.append(",");
-			}
-			jsonBuilder.append("\n");
-		}
-
-		jsonBuilder.append("  ]\n");
-		jsonBuilder.append("}\n");
-
-		return jsonBuilder.toString();
 	}
 
 	/**
