@@ -143,7 +143,6 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
 	}
-
 	@Override
 	public String getName() {
 		return TOOL_NAME;
@@ -239,12 +238,12 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 				content = "";
 			}
 
-			// Get file from root plan directory
-			Path rootPlanDir = getPlanDirectory(rootPlanId);
-			ensureDirectoryExists(rootPlanDir);
+			// Get file from plan directory with hierarchical structure
+			Path planDir = getPlanDirectory();
+			ensureDirectoryExists(planDir);
 
 			// Get file path and append content
-			Path filePath = rootPlanDir.resolve(fileName);
+			Path filePath = planDir.resolve(fileName);
 
 			String resultMessage;
 			// If file doesn't exist, create new file
@@ -323,10 +322,17 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 	}
 
 	/**
-	 * Get plan directory path
+	 * Get plan directory path with hierarchical structure support
 	 */
-	private Path getPlanDirectory(String planId) {
-		return getInnerStorageRoot().resolve(planId);
+	private Path getPlanDirectory() {
+		Path innerStorageRoot = getInnerStorageRoot();
+		if (rootPlanId != null && !rootPlanId.equals(currentPlanId)) {
+			// Use hierarchical structure: inner_storage/{rootPlanId}/{currentPlanId}
+			return innerStorageRoot.resolve(rootPlanId).resolve(currentPlanId);
+		} else {
+			// Use flat structure: inner_storage/{planId}
+			return innerStorageRoot.resolve(currentPlanId);
+		}
 	}
 
 	/**

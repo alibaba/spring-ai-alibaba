@@ -124,6 +124,7 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 	// Track if any operation has completed, allowing termination
 	private volatile boolean operationCompleted = false;
 
+
 	public FinalizeTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager,
 			UnifiedDirectoryManager unifiedDirectoryManager) {
 		this.currentPlanId = planId;
@@ -221,10 +222,10 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 	 */
 	private ToolExecuteResult exportFile(String newFileName) {
 		try {
-			// Get root plan directory
-			Path rootPlanDir = getPlanDirectory(rootPlanId);
-			Path sourceFilePath = rootPlanDir.resolve(REDUCE_FILE_NAME);
-			Path targetFilePath = rootPlanDir.resolve(newFileName);
+			// Get plan directory with hierarchical structure
+			Path planDir = getPlanDirectory();
+			Path sourceFilePath = planDir.resolve(REDUCE_FILE_NAME);
+			Path targetFilePath = planDir.resolve(newFileName);
 
 			// Check if source file exists
 			if (!Files.exists(sourceFilePath)) {
@@ -312,10 +313,17 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 	}
 
 	/**
-	 * Get plan directory path
+	 * Get plan directory path with hierarchical structure support
 	 */
-	private Path getPlanDirectory(String planId) {
-		return getInnerStorageRoot().resolve(planId);
+	private Path getPlanDirectory() {
+		Path innerStorageRoot = getInnerStorageRoot();
+		if (rootPlanId != null && !rootPlanId.equals(currentPlanId)) {
+			// Use hierarchical structure: inner_storage/{rootPlanId}/{currentPlanId}
+			return innerStorageRoot.resolve(rootPlanId).resolve(currentPlanId);
+		} else {
+			// Use flat structure: inner_storage/{planId}
+			return innerStorageRoot.resolve(currentPlanId);
+		}
 	}
 
 	/**
