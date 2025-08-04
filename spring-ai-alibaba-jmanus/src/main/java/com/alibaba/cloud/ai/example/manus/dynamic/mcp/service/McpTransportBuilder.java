@@ -193,7 +193,8 @@ public class McpTransportBuilder {
 
 		// 使用 WebClient.Builder 创建 transport，保持与 buildSseTransport 一致的风格
 		WebClient.Builder webClientBuilder = createWebClientBuilder(baseUrl);
-//		webClientBuilder.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024 * 10));
+		// webClientBuilder.codecs(configurer ->
+		// configurer.defaultCodecs().maxInMemorySize(1024 * 1024 * 10));
 
 		// 使用 WebClientStreamableHttpTransport 作为 STREAMING 模式的实现
 		// 这样可以复用相同的 WebClient 配置和日志记录模式
@@ -219,7 +220,7 @@ public class McpTransportBuilder {
 			.defaultHeader("Content-Type", "application/json")
 			.defaultHeader("User-Agent", mcpProperties.getUserAgent())
 			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024 * 10));
-			
+
 	}
 
 }
