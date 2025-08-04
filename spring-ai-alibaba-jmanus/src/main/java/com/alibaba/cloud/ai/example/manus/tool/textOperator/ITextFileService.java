@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.textOperator;
 
+import java.io.IOException;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
@@ -56,6 +57,14 @@ public interface ITextFileService {
 	 * @return File extension
 	 */
 	String getFileExtension(String filePath);
+
+	/**
+	 * Validate and get absolute path
+	 * @param workingDirectoryPath Working directory path
+	 * @param filePath File path
+	 * @throws IOException IO exception
+	 */
+	void validateAndGetAbsolutePath(String workingDirectoryPath, String filePath) throws IOException;
 
 	/**
 	 * Update file status

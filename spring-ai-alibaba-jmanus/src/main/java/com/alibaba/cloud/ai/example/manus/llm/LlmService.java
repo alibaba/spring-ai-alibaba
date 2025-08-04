@@ -27,7 +27,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
@@ -38,13 +37,12 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import jakarta.annotation.PostConstruct;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -409,6 +407,14 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			headers.forEach((key, value) -> multiValueMap.add(key, value));
 		}
 
+		// 克隆WebClient.Builder并添加超时配置
+		WebClient.Builder enhancedWebClientBuilder = webClientBuilder.clone()
+			// 添加5分钟的默认超时设置
+			.codecs(configurer -> configurer
+				.defaultCodecs()
+				.maxInMemorySize(10 * 1024 * 1024)) // 10MB
+			.filter((request, next) -> next.exchange(request).timeout(Duration.ofMinutes(5)));
+
 		return OpenAiApi.builder()
 			.baseUrl(dynamicModelEntity.getBaseUrl())
 			.apiKey(new SimpleApiKey(dynamicModelEntity.getApiKey()))
@@ -416,8 +422,7 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			.completionsPath("/v1/chat/completions")
 			.embeddingsPath("/v1/embeddings")
 			.restClientBuilder(restClientBuilder)
-			.webClientBuilder(webClientBuilder)
+			.webClientBuilder(enhancedWebClientBuilder)
 			.build();
 	}
-
 }
