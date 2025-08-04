@@ -17,6 +17,6 @@ package com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums;
 
 public enum PromptType {
 
-	LLM, PLANNING, AGENT, TOOL_DESCRIPTION, TOOL_PARAMETER
+	LLM, PLANNING, AGENT
 
 }

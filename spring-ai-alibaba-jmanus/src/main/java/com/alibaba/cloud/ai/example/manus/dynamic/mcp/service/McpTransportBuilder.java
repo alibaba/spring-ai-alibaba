@@ -20,6 +20,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.config.McpProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigType;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerConfig;
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.transport.StreamableHttpClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.modelcontextprotocol.client.transport.ServerParameters;
@@ -172,10 +172,35 @@ public class McpTransportBuilder {
 		String url = serverConfig.getUrl().trim();
 		configValidator.validateUrl(url, serverName);
 
-		logger.info("Building Streamable HTTP transport for server: {} with URL: {}", serverName, url);
+		URL parsedUrl = new URL(url);
+		String baseUrl = parsedUrl.getProtocol() + "://" + parsedUrl.getHost()
+				+ (parsedUrl.getPort() == -1 ? "" : ":" + parsedUrl.getPort());
 
-		WebClient.Builder webClientBuilder = createWebClientBuilder();
-		return new StreamableHttpClientTransport(webClientBuilder, objectMapper, url);
+		String streamEndpoint = parsedUrl.getPath();
+
+		// Remove leading slash
+		if (streamEndpoint.startsWith("/")) {
+			streamEndpoint = streamEndpoint.substring(1);
+		}
+
+		// Set to null if empty
+		if (streamEndpoint.isEmpty()) {
+			streamEndpoint = null;
+		}
+
+		logger.info("Building Streamable HTTP transport for server: {} with Url: {} and Endpoint: {}", serverName,
+				baseUrl, streamEndpoint);
+
+		WebClient.Builder webClientBuilder = createWebClientBuilder(baseUrl);
+
+		logger.debug("Using WebClientStreamableHttpTransport with endpoint: {} for STREAMING mode", streamEndpoint);
+		return WebClientStreamableHttpTransport.builder(webClientBuilder)
+			.objectMapper(objectMapper)
+			.endpoint(streamEndpoint)
+			.resumableStreams(true)
+			.openConnectionOnStartup(false)
+			.build();
+
 	}
 
 	/**
@@ -188,17 +213,9 @@ public class McpTransportBuilder {
 			.baseUrl(baseUrl)
 			.defaultHeader("Accept", "text/event-stream")
 			.defaultHeader("Content-Type", "application/json")
-			.defaultHeader("User-Agent", mcpProperties.getUserAgent());
-	}
+			.defaultHeader("User-Agent", mcpProperties.getUserAgent())
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024 * 10));
 
-	/**
-	 * Create WebClient builder (without baseUrl)
-	 * @return WebClient builder
-	 */
-	private WebClient.Builder createWebClientBuilder() {
-		return WebClient.builder()
-			.defaultHeader("Accept", "application/json, text/event-stream")
-			.defaultHeader("Content-Type", "application/json");
 	}
 
 }

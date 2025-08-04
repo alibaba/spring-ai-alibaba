@@ -1,2 +1,0 @@
-Terminate the current execution step with structured data.
-Provide data in JSON format with 'columns' array and 'data' array containing rows of values.

@@ -16,8 +16,15 @@
 
 package com.alibaba.cloud.ai.service;
 
+import com.alibaba.cloud.ai.connector.DBConnectionPool;
+import com.alibaba.cloud.ai.connector.DBConnectionPoolContext;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.entity.Datasource;
 import com.alibaba.cloud.ai.entity.AgentDatasource;
+import com.alibaba.cloud.ai.enums.ErrorCodeEnum;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -41,8 +48,13 @@ import java.util.Map;
 @Service
 public class DatasourceService {
 
+	private static final Logger log = LoggerFactory.getLogger(DatasourceService.class);
+
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
+
+	@Autowired
+	private DBConnectionPoolContext dbConnectionPoolContext;
 
 	/**
 	 * 获取所有数据源列表
@@ -165,12 +177,10 @@ public class DatasourceService {
 		if (datasource == null) {
 			return false;
 		}
-
 		try {
-			// 这里应该实际测试数据库连接
-			// 为了简化，这里只是模拟测试
-			boolean connectionSuccess = simulateConnectionTest(datasource);
-
+			// ping测试
+			boolean connectionSuccess = realConnectionTest(datasource);
+			log.info(datasource.getName() + " test connection result: " + connectionSuccess);
 			// 更新测试状态
 			updateTestStatus(id, connectionSuccess ? "success" : "failed");
 
@@ -178,17 +188,54 @@ public class DatasourceService {
 		}
 		catch (Exception e) {
 			updateTestStatus(id, "failed");
+			log.error("Error testing connection for datasource ID " + id + ": " + e.getMessage(), e);
 			return false;
 		}
 	}
 
 	/**
-	 * 模拟连接测试（实际应用中应该真正连接数据库）
+	 * 实际的连接测试方法
 	 */
-	private boolean simulateConnectionTest(Datasource datasource) {
-		// 模拟连接测试逻辑
-		// 实际应该根据数据源类型创建相应的数据库连接
-		return !"192.168.1.102".equals(datasource.getHost()); // 模拟某个主机连接失败
+	private boolean realConnectionTest(Datasource datasource) {
+		// 把 Datasource 转成 DbConfig
+		DbConfig config = new DbConfig();
+		String originalUrl = datasource.getConnectionUrl();
+
+		// 检查 URL 是否含有 serverTimezone 参数，如果没有则添加默认时区，否则会抛异常
+		if (StringUtils.isNotBlank(originalUrl)) {
+			String lowerUrl = originalUrl.toLowerCase();
+
+			if (!lowerUrl.contains("servertimezone=")) {
+				if (originalUrl.contains("?")) {
+					originalUrl += "&serverTimezone=Asia/Shanghai";
+				}
+				else {
+					originalUrl += "?serverTimezone=Asia/Shanghai";
+				}
+			}
+
+			// 检查是否含有 useSSL 参数，如果没有则添加 useSSL=false
+			if (!lowerUrl.contains("usessl=")) {
+				if (originalUrl.contains("?")) {
+					originalUrl += "&useSSL=false";
+				}
+				else {
+					originalUrl += "?useSSL=false";
+				}
+			}
+		}
+		config.setUrl(originalUrl);
+		config.setUsername(datasource.getUsername());
+		config.setPassword(datasource.getPassword());
+
+		DBConnectionPool pool = dbConnectionPoolContext.getPoolByType(datasource.getType());
+		if (pool == null) {
+			return false;
+		}
+
+		ErrorCodeEnum result = pool.ping(config);
+		return result == ErrorCodeEnum.SUCCESS;
+
 	}
 
 	/**

@@ -23,7 +23,6 @@ import java.util.List;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 
@@ -130,14 +129,11 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 	private final PlanExecutionRecorder planExecutionRecorder;
 
-	private final ToolPromptManager toolPromptManager;
-
 	public InnerStorageContentTool(UnifiedDirectoryManager directoryManager, SummaryWorkflow summaryWorkflow,
-			PlanExecutionRecorder planExecutionRecorder, ToolPromptManager toolPromptManager) {
+			PlanExecutionRecorder planExecutionRecorder) {
 		this.directoryManager = directoryManager;
 		this.summaryWorkflow = summaryWorkflow;
 		this.planExecutionRecorder = planExecutionRecorder;
-		this.toolPromptManager = toolPromptManager;
 	}
 
 	private static final String TOOL_NAME = "inner_storage_content_tool";
@@ -149,12 +145,38 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 	@Override
 	public String getDescription() {
-		return toolPromptManager.getToolDescription("inner_storage_content_tool");
+		return """
+				Access and manage content stored in the internal storage system. This tool allows you to retrieve, search, and manipulate content that has been stored during plan execution.
+				""";
 	}
 
 	@Override
 	public String getParameters() {
-		return toolPromptManager.getToolParameters("inner_storage_content_tool");
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "action": {
+				            "type": "string",
+				            "enum": ["get", "search", "list", "delete"],
+				            "description": "Action to perform on inner storage content"
+				        },
+				        "content_id": {
+				            "type": "string",
+				            "description": "ID of the content to retrieve or manipulate"
+				        },
+				        "search_query": {
+				            "type": "string",
+				            "description": "Search query for finding content"
+				        },
+				        "category": {
+				            "type": "string",
+				            "description": "Category filter for content search"
+				        }
+				    },
+				    "required": ["action"]
+				}
+				""";
 	}
 
 	@Override

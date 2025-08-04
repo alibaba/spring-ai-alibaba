@@ -1,0 +1,71 @@
+    /*
+* Copyright 2025 the original author or authors.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*  https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
+### 1. 保存报告生成器自定义配置
+POST http://localhost:8065/api/prompt-config/save
+Content-Type: application/json
+
+{
+  "name": "销售数据分析专用模板",
+  "promptType": "report-generator",
+  "systemPrompt": "你是一个专业的销售数据分析师，擅长从销售数据中发现商业洞察。\n\n请根据以下分析结果生成专业的销售分析报告：\n\n## 用户需求\n{user_requirements_and_plan}\n\n## 数据分析结果\n{analysis_steps_and_data}\n\n## 报告要求\n{summary_and_recommendations}\n\n请按照以下结构生成销售分析报告：\n\n### 📊 销售概况\n- 总体销售表现概述\n- 关键指标汇总\n\n### 📈 趋势分析\n- 销售趋势变化\n- 增长率分析\n- 季节性特征\n\n### 🎯 细分分析\n- 产品类别表现\n- 区域分布分析\n- 客户群体特征\n\n### ⚠️ 风险识别\n- 下滑风险点\n- 异常数据说明\n\n### 💡 优化建议\n- 具体改进措施\n- 资源配置建议\n\n格式要求：使用emoji增强可读性，数据用表格展示，关键结论加粗显示。",
+  "enabled": true,
+  "description": "专门用于销售数据分析的报告模板，包含完整的销售分析结构",
+  "creator": "admin"
+}
+
+### 2. 获取所有配置列表
+GET http://localhost:8065/api/prompt-config/list
+
+### 3. 根据类型获取配置
+GET http://localhost:8065/api/prompt-config/list-by-type/report-generator
+
+### 4. 获取当前启用的配置
+GET http://localhost:8065/api/prompt-config/active/report-generator
+
+### 5. 获取支持的提示词类型
+GET http://localhost:8065/api/prompt-config/types
+
+### 6. 保存财务分析模板
+POST http://localhost:8065/api/prompt-config/save
+Content-Type: application/json
+
+{
+  "name": "财务数据分析专用模板",
+  "promptType": "report-generator",
+  "systemPrompt": "你是一个专业的财务分析师，请生成标准的财务分析报告。\n\n分析内容：\n{user_requirements_and_plan}\n\n数据结果：\n{analysis_steps_and_data}\n\n报告要求：\n{summary_and_recommendations}\n\n报告结构：\n\n## 财务概要\n- 关键财务指标\n- 财务健康度评估\n\n## 收入分析\n- 收入构成\n- 增长驱动因素\n\n## 成本控制\n- 成本结构分析\n- 效率指标\n\n## 风险评估\n- 财务风险点\n- 现金流状况\n\n## 建议措施\n- 财务优化建议\n- 投资决策参考",
+  "enabled": false,
+  "description": "专业的财务数据分析报告模板",
+  "creator": "admin"
+}
+
+### 7. 启用指定配置（需要替换{id}为实际的配置ID）
+POST http://localhost:8065/api/prompt-config/{id}/enable
+
+### 8. 禁用指定配置（需要替换{id}为实际的配置ID）
+POST http://localhost:8065/api/prompt-config/{id}/disable
+
+### 9. 获取指定配置详情（需要替换{id}为实际的配置ID）
+GET http://localhost:8065/api/prompt-config/{id}
+
+### 10. 删除指定配置（需要替换{id}为实际的配置ID）
+DELETE http://localhost:8065/api/prompt-config/{id}
+
+### 11. 测试NL2SQL查询 - 验证自定义提示词效果
+POST http://localhost:8065/simpleChat
+Content-Type: application/json
+
+"查询上月销售额前10的产品"

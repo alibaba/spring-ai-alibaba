@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.tool.code;
 
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
-import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -28,8 +28,6 @@ import java.util.Map;
 public class PythonExecute extends AbstractBaseTool<PythonExecute.PythonInput> {
 
 	private final ObjectMapper objectMapper;
-
-	private final ToolPromptManager toolPromptManager;
 
 	private static final Logger log = LoggerFactory.getLogger(PythonExecute.class);
 
@@ -71,9 +69,8 @@ public class PythonExecute extends AbstractBaseTool<PythonExecute.PythonInput> {
 
 	private boolean hasError = false;
 
-	public PythonExecute(ObjectMapper objectMapper, ToolPromptManager toolPromptManager) {
+	public PythonExecute(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
-		this.toolPromptManager = toolPromptManager;
 	}
 
 	@Override
@@ -171,12 +168,23 @@ public class PythonExecute extends AbstractBaseTool<PythonExecute.PythonInput> {
 
 	@Override
 	public String getDescription() {
-		return toolPromptManager.getToolDescription("python_execute");
+		return "Executes Python code string. Note: Only print outputs are visible, function return values are not captured. Use print statements to see results.";
 	}
 
 	@Override
 	public String getParameters() {
-		return toolPromptManager.getToolParameters("python_execute");
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "code": {
+				            "type": "string",
+				            "description": "The Python code to execute."
+				        }
+				    },
+				    "required": ["code"]
+				}
+				""";
 	}
 
 	@Override

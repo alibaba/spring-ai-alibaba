@@ -19,7 +19,6 @@ import com.alibaba.cloud.ai.service.AgentVectorService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
@@ -42,11 +41,15 @@ public class AgentSchemaController {
 
 	private static final Logger log = LoggerFactory.getLogger(AgentSchemaController.class);
 
-	@Autowired
-	private AgentVectorService agentVectorService;
+	private final AgentVectorService agentVectorService;
 
-	@Autowired
-	private Nl2sqlForGraphController nl2sqlForGraphController;
+	private final Nl2sqlForGraphController nl2sqlForGraphController;
+
+	public AgentSchemaController(AgentVectorService agentVectorService,
+			Nl2sqlForGraphController nl2sqlForGraphController) {
+		this.agentVectorService = agentVectorService;
+		this.nl2sqlForGraphController = nl2sqlForGraphController;
+	}
 
 	/**
 	 * 为智能体初始化数据库Schema到向量存储 对应前端页面的"初始化信息源"功能

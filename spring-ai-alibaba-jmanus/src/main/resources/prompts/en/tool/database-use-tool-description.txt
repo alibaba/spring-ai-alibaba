@@ -1,6 +1,0 @@
-Interact with database, execute SQL, table structure, index, health status and other operations. Supported operations include:
-- 'execute_sql': Execute SQL statements
-- 'get_table_name': Find table names based on table comments
-- 'get_table_index': Get table index information
-- 'get_table_meta': Get complete metadata of table structure, fields, indexes
-- 'get_datasource_info': Get data source information

@@ -31,17 +31,18 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	private final List<String> columns;
 
-	private final ToolPromptManager toolPromptManager;
-
 	private String lastTerminationMessage = "";
 
 	private boolean isTerminated = false;
 
 	private String terminationTimestamp = "";
 
-	public static OpenAiApi.FunctionTool getToolDefinition(List<String> columns, ToolPromptManager toolPromptManager) {
+	public static OpenAiApi.FunctionTool getToolDefinition(List<String> columns) {
 		String parameters = generateParametersJson(columns);
-		String description = toolPromptManager.getToolDescription("terminate");
+		String description = """
+				Terminate the current execution step with structured data.
+				Provide data in JSON format with 'columns' array and 'data' array containing rows of values.
+				""";
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, parameters);
 		return new OpenAiApi.FunctionTool(function);
 	}
@@ -89,11 +90,10 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 				currentPlanId != null ? currentPlanId : "N/A", columns != null ? String.join(", ", columns) : "N/A");
 	}
 
-	public TerminateTool(String planId, List<String> columns, ToolPromptManager toolPromptManager) {
+	public TerminateTool(String planId, List<String> columns) {
 		this.currentPlanId = planId;
 		// If columns is null or empty, use "message" as default column
 		this.columns = (columns == null || columns.isEmpty()) ? List.of("message") : columns;
-		this.toolPromptManager = toolPromptManager;
 	}
 
 	@Override
@@ -139,12 +139,40 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	@Override
 	public String getDescription() {
-		return toolPromptManager.getToolDescription("terminate");
+		return """
+				Terminate the current execution step with structured data.
+				Provide data in JSON format with 'columns' array and 'data' array containing rows of values.
+				""";
 	}
 
 	@Override
 	public String getParameters() {
-		return generateParametersJson(this.columns);
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "columns": {
+				            "type": "array",
+				            "items": {
+				                "type": "string"
+				            },
+				            "description": "Column names for the data structure"
+				        },
+				        "data": {
+				            "type": "array",
+				            "items": {
+				                "type": "array",
+				                "items": {
+				                    "type": "string"
+				                }
+				            },
+				            "description": "Data rows, each row should match the columns structure"
+				        }
+				    },
+				    "required": ["columns", "data"],
+				    "additionalProperties": false
+				}
+				""";
 	}
 
 	@Override
