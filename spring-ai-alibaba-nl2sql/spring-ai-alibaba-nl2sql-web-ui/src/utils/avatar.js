@@ -1,17 +1,27 @@
-/**
- * 头像生成工具
- * 统一管理智能体头像的生成和显示
+/*
+ * Copyright 2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
-// 专业现代的头像风格
 const PROFESSIONAL_STYLES = [
-  'avataaars',           // 现代卡通人物，专业感强
-  'adventurer-neutral',  // 中性冒险者风格，简洁现代
-  'big-ears-neutral',    // 中性大耳朵风格，友好专业
-  'lorelei-neutral',     // 中性现代人物风格
-  'personas',            // 专业人物头像
-  'micah',              // 现代简约风格
-  'initials'            // 字母头像，最正规
+  'avataaars',
+  'adventurer-neutral',
+  'big-ears-neutral',
+  'lorelei-neutral',
+  'personas',
+  'micah',
+  'initials'
 ]
 
 // 现代配色方案
