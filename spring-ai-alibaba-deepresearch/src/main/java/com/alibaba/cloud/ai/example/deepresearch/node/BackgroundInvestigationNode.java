@@ -91,8 +91,12 @@ public class BackgroundInvestigationNode implements NodeAction {
 		if (!resultsList.isEmpty()) {
 			List<String> backgroundResults = new ArrayList<>();
 			assert resultsList.size() != queries.size();
-			for (int i = 0; i < resultsList.size(); i++) {
+
+			for (int i = 0; i < resultsList.size(); i += 2) {
 				List<Map<String, String>> searchResults = resultsList.get(i);
+				if (i + 1 < resultsList.size())
+					searchResults.addAll(resultsList.get(i + 1));
+
 				String query = queries.get(i);
 
 				Message messages = new UserMessage(
@@ -113,6 +117,11 @@ public class BackgroundInvestigationNode implements NodeAction {
 			logger.warn("⚠️ 搜索失败");
 		}
 
+		String nextStep = "planner";
+		if (!state.value("enable_deepresearch", true)) {
+			nextStep = "reporter";
+		}
+		resultMap.put("background_investigation_next_node", nextStep);
 		return resultMap;
 	}
 

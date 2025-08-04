@@ -13,17 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.example.deepresearch.dispatcher;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
 
-public class UserFileRagDispatcher implements EdgeAction {
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+
+/**
+ * @author scmrcore
+ * @since 2025/8/4 14:52
+ */
+
+public class BackgroundInvestigationDispatcher implements EdgeAction {
 
 	@Override
 	public String apply(OverAllState state) {
-		Boolean enabled = state.value("user_upload_file", false);
-		return Boolean.TRUE.equals(enabled) ? "user_file_rag" : "background_investigator";
+		return (String) state.value("background_investigation_next_node", END);
 	}
 
 }

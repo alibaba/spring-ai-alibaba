@@ -17,12 +17,14 @@
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.BackgroundInvestigationDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ProfessionalKbDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.RewriteAndMultiQueryDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.dispatcher.UserFileRagDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
 
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
@@ -182,6 +184,7 @@ public class DeepResearchConfiguration {
 			// 条件边控制：跳转下一个节点
 			keyStrategyHashMap.put("coordinator_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("rewrite_multi_query_next_node", new ReplaceStrategy());
+			keyStrategyHashMap.put("background_investigation_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("planner_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("information_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("human_next_node", new ReplaceStrategy());
@@ -190,7 +193,7 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("query", new ReplaceStrategy());
 			keyStrategyHashMap.put("optimize_queries", new ReplaceStrategy());
 			keyStrategyHashMap.put("thread_id", new ReplaceStrategy());
-			keyStrategyHashMap.put("enable_background_investigation", new ReplaceStrategy());
+			keyStrategyHashMap.put("enable_deepresearch", new ReplaceStrategy());
 			keyStrategyHashMap.put("auto_accepted_plan", new ReplaceStrategy());
 			keyStrategyHashMap.put("plan_max_iterations", new ReplaceStrategy());
 			keyStrategyHashMap.put("max_step_num", new ReplaceStrategy());
@@ -254,10 +257,12 @@ public class DeepResearchConfiguration {
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
 					Map.of("rewrite_multi_query", "rewrite_multi_query", END, END))
 			.addConditionalEdges("rewrite_multi_query", edge_async(new RewriteAndMultiQueryDispatcher()),
-					Map.of("background_investigator", "background_investigator", "user_file_rag", "user_file_rag",
-							"planner", "planner", END, END))
-			.addEdge("background_investigator", "reporter")
-			.addEdge("user_file_rag", "planner")
+					Map.of("background_investigator", "background_investigator", "user_file_rag", "user_file_rag", END,
+							END))
+			.addConditionalEdges("background_investigator", edge_async(new BackgroundInvestigationDispatcher()),
+					Map.of("reporter", "reporter", "planner", "planner", END, END))
+			.addConditionalEdges("user_file_rag", edge_async(new UserFileRagDispatcher()),
+					Map.of("background_investigator", "background_investigator", END, END))
 			.addEdge("planner", "information")
 			.addConditionalEdges("information", edge_async(new InformationDispatcher()),
 					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",

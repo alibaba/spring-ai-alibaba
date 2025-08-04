@@ -71,18 +71,18 @@ public class ReporterNode implements NodeAction {
 		// 添加消息
 		List<Message> messages = new ArrayList<>();
 
-		// 添加背景调查的消息(快速模式)
-		if (state.value("enable_background_investigation", true)) {
-			List<String> backgroundInvestigationResults = state.value("background_investigation_results",
-					(List<String>) null);
-			assert backgroundInvestigationResults != null && !backgroundInvestigationResults.isEmpty();
-			for (String backgroundInvestigationResult : backgroundInvestigationResults) {
-				if (StringUtils.hasText(backgroundInvestigationResult)) {
-					messages.add(new UserMessage(backgroundInvestigationResult));
-				}
+		// 添加背景调查的信息
+		List<String> backgroundInvestigationResults = state.value("background_investigation_results",
+				(List<String>) null);
+		assert backgroundInvestigationResults != null && !backgroundInvestigationResults.isEmpty();
+		for (String backgroundInvestigationResult : backgroundInvestigationResults) {
+			if (StringUtils.hasText(backgroundInvestigationResult)) {
+				messages.add(new UserMessage(backgroundInvestigationResult));
 			}
 		}
-		else {
+
+		// 添加深度研究信息
+		if (state.value("enable_deepresearch", true)) {
 			Plan currentPlan = state.value("current_plan", Plan.class)
 				.orElseThrow(() -> new IllegalArgumentException("current_plan is missing"));
 
