@@ -44,7 +44,7 @@ public class ChatRequestProcess {
 					chatRequest.maxStepNum() == null ? 3 : chatRequest.maxStepNum(),
 					chatRequest.autoAcceptPlan() == null || chatRequest.autoAcceptPlan(),
 					chatRequest.interruptFeedback(),
-					chatRequest.enableBackgroundInvestigation() == null || chatRequest.enableBackgroundInvestigation(),
+					chatRequest.enableDeepResearch() == null || chatRequest.enableDeepResearch(),
 					chatRequest.mcpSettings() == null ? Collections.emptyMap() : chatRequest.mcpSettings(),
 					StringUtils.hasText(chatRequest.query()) ? chatRequest.query() : "草莓蛋糕怎么做呀",
 					chatRequest.searchEngine() == null ? searchBeanUtil.getFirstAvailableSearch().orElse(null)
@@ -57,7 +57,7 @@ public class ChatRequestProcess {
 
 	public static void initializeObjectMap(ChatRequest chatRequest, Map<String, Object> objectMap) {
 		objectMap.put("thread_id", chatRequest.threadId());
-		objectMap.put("enable_background_investigation", chatRequest.enableBackgroundInvestigation());
+		objectMap.put("enable_deepresearch", chatRequest.enableDeepResearch());
 		objectMap.put("auto_accepted_plan", chatRequest.autoAcceptPlan());
 		objectMap.put("query", chatRequest.query());
 		objectMap.put("max_step_num", chatRequest.maxStepNum());

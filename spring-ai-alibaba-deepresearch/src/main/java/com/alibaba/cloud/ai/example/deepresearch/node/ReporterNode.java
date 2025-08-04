@@ -62,38 +62,46 @@ public class ReporterNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("reporter node is running.");
-		Plan currentPlan = state.value("current_plan", Plan.class)
-			.orElseThrow(() -> new IllegalArgumentException("current_plan is missing"));
 
 		// 从 OverAllState 中获取线程ID
 		String threadId = state.value("thread_id", String.class)
 			.orElseThrow(() -> new IllegalArgumentException("thread_id is missing from state"));
 		logger.info("Thread ID from state: {}", threadId);
-		// 1. 添加消息
+
+		// 添加消息
 		List<Message> messages = new ArrayList<>();
-		// 1.1 研究报告格式消息
-		messages.add(new UserMessage(
-				MessageFormat.format(RESEARCH_FORMAT, currentPlan.getTitle(), currentPlan.getThought())));
-		// 1.2 添加背景调查的消息
-		if (state.value("enable_background_investigation", true)) {
-			List<String> backgroundInvestigationResults = state.value("background_investigation_results",
-					(List<String>) null);
-			assert backgroundInvestigationResults != null && !backgroundInvestigationResults.isEmpty();
-			for (String backgroundInvestigationResult : backgroundInvestigationResults) {
-				if (StringUtils.hasText(backgroundInvestigationResult)) {
-					messages.add(new UserMessage(backgroundInvestigationResult));
-				}
+
+		// 添加背景调查的信息
+		List<String> backgroundInvestigationResults = state.value("background_investigation_results",
+				(List<String>) null);
+		assert backgroundInvestigationResults != null && !backgroundInvestigationResults.isEmpty();
+		for (String backgroundInvestigationResult : backgroundInvestigationResults) {
+			if (StringUtils.hasText(backgroundInvestigationResult)) {
+				messages.add(new UserMessage(backgroundInvestigationResult));
 			}
 		}
-		// 1.4 添加研究组节点返回的信息
-		List<String> researcherTeam = List.of(ParallelEnum.RESEARCHER.getValue(), ParallelEnum.CODER.getValue());
-		for (String content : StateUtil.getParallelMessages(state, researcherTeam, StateUtil.getMaxStepNum(state))) {
-			logger.info("researcherTeam_content: {}", content);
-			messages.add(new UserMessage(content));
-		}
-		// 1.5 添加专业知识库决策节点返回的信息
-		if (state.value("use_professional_kb", false) && StringUtils.hasText(StateUtil.getRagContent(state))) {
-			messages.add(new UserMessage(StateUtil.getRagContent(state)));
+
+		// 添加深度研究信息
+		if (state.value("enable_deepresearch", true)) {
+			Plan currentPlan = state.value("current_plan", Plan.class)
+				.orElseThrow(() -> new IllegalArgumentException("current_plan is missing"));
+
+			// 1.1 研究报告格式消息
+			messages.add(new UserMessage(
+					MessageFormat.format(RESEARCH_FORMAT, currentPlan.getTitle(), currentPlan.getThought())));
+
+			// 1.2 添加研究组节点返回的信息
+			List<String> researcherTeam = List.of(ParallelEnum.RESEARCHER.getValue(), ParallelEnum.CODER.getValue());
+			for (String content : StateUtil.getParallelMessages(state, researcherTeam,
+					StateUtil.getMaxStepNum(state))) {
+				logger.info("researcherTeam_content: {}", content);
+				messages.add(new UserMessage(content));
+			}
+
+			// 1.3 添加专业知识库决策节点返回的信息
+			if (state.value("use_professional_kb", false) && StringUtils.hasText(StateUtil.getRagContent(state))) {
+				messages.add(new UserMessage(StateUtil.getRagContent(state)));
+			}
 		}
 
 		logger.debug("reporter node messages: {}", messages);
