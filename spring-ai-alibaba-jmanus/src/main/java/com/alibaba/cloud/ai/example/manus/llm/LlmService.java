@@ -34,15 +34,18 @@ import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-import java.time.Duration;
+import reactor.core.publisher.Flux;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -407,21 +410,23 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			headers.forEach((key, value) -> multiValueMap.add(key, value));
 		}
 
-		// 克隆WebClient.Builder并添加超时配置
-		WebClient.Builder enhancedWebClientBuilder = webClientBuilder.clone()
-			// 添加5分钟的默认超时设置
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB
-			.filter((request, next) -> next.exchange(request).timeout(Duration.ofMinutes(5)));
+		return new OpenAiApi(dynamicModelEntity.getBaseUrl(), new SimpleApiKey(dynamicModelEntity.getApiKey()),
+				multiValueMap, "/v1/chat/completions", "/v1/embeddings", restClientBuilder, webClientBuilder,
+				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER) {
+			@Override
+			public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest,
+					MultiValueMap<String, String> additionalHttpHeader) {
+				LlmTraceRecorder.recordRequest(chatRequest);
+				return super.chatCompletionEntity(chatRequest, additionalHttpHeader);
+			}
 
-		return OpenAiApi.builder()
-			.baseUrl(dynamicModelEntity.getBaseUrl())
-			.apiKey(new SimpleApiKey(dynamicModelEntity.getApiKey()))
-			.headers(multiValueMap)
-			.completionsPath("/v1/chat/completions")
-			.embeddingsPath("/v1/embeddings")
-			.restClientBuilder(restClientBuilder)
-			.webClientBuilder(enhancedWebClientBuilder)
-			.build();
+			@Override
+			public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
+					MultiValueMap<String, String> additionalHttpHeader) {
+				LlmTraceRecorder.recordRequest(chatRequest);
+				return super.chatCompletionStream(chatRequest, additionalHttpHeader);
+			}
+		};
 	}
 
 }
