@@ -23,6 +23,7 @@ import java.util.List;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 
@@ -130,11 +131,14 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 	private final PlanExecutionRecorder planExecutionRecorder;
 
+	private final ToolPromptManager toolPromptManager;
+
 	public InnerStorageContentTool(UnifiedDirectoryManager directoryManager, SummaryWorkflow summaryWorkflow,
-			PlanExecutionRecorder planExecutionRecorder) {
+			PlanExecutionRecorder planExecutionRecorder, ToolPromptManager toolPromptManager) {
 		this.directoryManager = directoryManager;
 		this.summaryWorkflow = summaryWorkflow;
 		this.planExecutionRecorder = planExecutionRecorder;
+		this.toolPromptManager = toolPromptManager;
 	}
 
 	private static final String TOOL_NAME = "inner_storage_content_tool";
@@ -210,12 +214,12 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 	@Override
 	public String getDescription() {
-		return TOOL_DESCRIPTION;
+		return toolPromptManager.getToolDescription("inner_storage_content_tool");
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return toolPromptManager.getToolParameters("inner_storage_content_tool");
 	}
 
 	@Override
@@ -228,9 +232,11 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 		return "default-service-group";
 	}
 
-	public static OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(TOOL_DESCRIPTION, TOOL_NAME,
-				PARAMETERS);
+	public OpenAiApi.FunctionTool getToolDefinition() {
+		String description = getDescription();
+		String parameters = getParameters();
+		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, TOOL_NAME,
+				parameters);
 		return new OpenAiApi.FunctionTool(function);
 	}
 

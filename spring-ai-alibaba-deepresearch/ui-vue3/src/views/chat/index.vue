@@ -24,7 +24,7 @@
           class="bubble-list"
           v-show="bubbleList.length > 0"
         >
-          <Bubble.List style="min-height: 100%" :roles="roles" :items="bubbleList"> </Bubble.List>
+          <Bubble.List style="min-height: 85%" :roles="roles" :items="bubbleList"> </Bubble.List>
           <Gap height="100px" />
           <!--          <div style="height: 100px; width: 0px" class="bottom-spacer"></div>-->
         </div>
@@ -167,6 +167,7 @@ import {
   useXChat,
 } from 'ant-design-x-vue'
 import { computed, h, onMounted, reactive, ref, watch } from 'vue'
+import type { JSX } from 'vue/jsx-runtime'
 import MD from '@/components/md/index.vue'
 import Gap from '@/components/toolkit/Gap.vue'
 import Report from '@/components/report/index.vue'
@@ -180,6 +181,8 @@ import { useConversationStore } from '@/store/ConversationStore'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfigStore } from '@/store/ConfigStore'
 import { parseJsonTextStrict } from '@/utils/jsonParser';
+import type { NormalNode } from '@/types/node';
+import type { UploadFile } from '@/types/upload';
 
 const router = useRouter()
 const route = useRoute()
@@ -190,18 +193,18 @@ if (!convId) {
   const { key } = conversationStore.newOne()
   router.push(`/chat/${key}`) 
 }
-const uploadFileList = ref([])
+const uploadFileList = ref<UploadFile[]>([])
 const { useToken } = theme
 const { token } = useToken()
 const username = useAuthStore().token
 const roles: BubbleListProps['roles'] = {
   ai: {
     placement: 'start',
-    // avatar: {
-    //     icon: <GlobalOutlined />,
-    //     shape: 'square',
-    //     style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
-    //   },
+    avatar: {
+        icon: <GlobalOutlined />,
+        shape: 'square',
+        style: { background: 'linear-gradient(to right, #f67ac4, #6b4dee)' },
+      },
     style: {
       maxWidth: '100%',
     },
@@ -210,10 +213,10 @@ const roles: BubbleListProps['roles'] = {
   local: {
     placement: 'end',
     shape: 'corner',
-    // avatar: {
-    //     icon: <UserOutlined />,
-    //     style: {},
-    //   },
+    avatar: {
+        icon: <UserOutlined />,
+        style: {},
+      },
     rootClassName: 'local',
   }
 }
@@ -378,6 +381,7 @@ const { onRequest, messages } = useXChat({
 })
 if (convId) {
   const his_messages = messageStore.history[convId]
+  console.log('his_messages', his_messages)
   if (his_messages) {
     messages.value = [...his_messages]
   }
@@ -388,7 +392,7 @@ const senderLoading = ref(false)
 
 // HTML 渲染组件相关状态
 const htmlModalVisible = ref(false)
-const htmlChunks = ref([])
+const htmlChunks = ref<string[]>([])
 const htmlLoading = ref(false)
 const htmlRendererRef = ref(null)
 
@@ -473,7 +477,7 @@ function downDeepResearch(){
       thread_id: convId,
       format: 'pdf'
     }
-  }).then(response => {
+  }).then((response: any) => {
     if(response.status === 'success') {
       window.open(import.meta.env.VITE_BASE_URL + response.report_information.download_url, '_blank')
     }
@@ -502,7 +506,7 @@ function buildPendingNodeThoughtChain() : any {
         )
 }
 
-let tempJsonArray = []
+let tempJsonArray: any[] = []
 function buildStartDSThoughtChain(jsonArray: any[]) : any {
     // 重置数组
     if(tempJsonArray.length > 0) {
@@ -512,7 +516,7 @@ function buildStartDSThoughtChain(jsonArray: any[]) : any {
     // 获取背景调查节点
     const backgroundInvestigatorNode = jsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
     const results = backgroundInvestigatorNode.siteInformation
-    const markdownContent = results.map((result, index) => {
+    const markdownContent = results.map((result: any, index: number) => {
         return `${index + 1}. [${result.title}](${result.url})\n\n`
     }).join('\n')
     const items: ThoughtChainProps['items'] = [
@@ -571,7 +575,7 @@ function buildOnDSThoughtChain() : any {
     // 获取背景调查节点
     const backgroundInvestigatorNode = tempJsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
     const results = backgroundInvestigatorNode.siteInformation
-    const markdownContent = results.map((result, index) => {
+    const markdownContent = results.map((result: any, index: number) => {
         return `${index + 1}. [${result.title}](${result.url})\n\n`
     }).join('\n')
     const items: ThoughtChainProps['items'] = [
@@ -608,9 +612,9 @@ function buildOnDSThoughtChain() : any {
     )
 }
 
-function buildEndDSThoughtChain(jsonArray: any[]): any {
+function buildEndDSThoughtChain(jsonArray: any[]): JSX.Element | undefined {
   if(tempJsonArray.length === 0 && jsonArray.length === 0){
-    return
+    return undefined
   }
   const curJsonArray = tempJsonArray.length > 0 ? tempJsonArray : jsonArray
   const { Paragraph, Text } = Typography
@@ -620,7 +624,7 @@ function buildEndDSThoughtChain(jsonArray: any[]): any {
   const backgroundInvestigatorNode = curJsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
   if(backgroundInvestigatorNode && backgroundInvestigatorNode.siteInformation){
       const results = backgroundInvestigatorNode.siteInformation
-      const markdownContent = results.map((result, index) => {
+      const markdownContent = results.map((result: any, index: number) => {
           return `${index + 1}. [${result.title}](${result.url})\n\n`
       }).join('\n')
       const item: ThoughtChainItem = {
@@ -640,9 +644,9 @@ function buildEndDSThoughtChain(jsonArray: any[]): any {
       items.push(item)
       collapsible = { expandedKeys: ['backgroundInvestigator'] }
   }
-  const endItem: ThoughtChainItem = {
+  const completeItem: ThoughtChainItem = {
       status: 'success',
-      title: '完成分析结果',
+      title: '分析结果',
       icon: <CheckCircleOutlined />,
       footer: (
           <Flex style="margin-left: auto" gap="middle">
@@ -651,6 +655,13 @@ function buildEndDSThoughtChain(jsonArray: any[]): any {
           </Flex>
         ),
     }
+  items.push(completeItem)
+  const endItem: ThoughtChainItem = {
+          title: '完成',
+          icon: h(CheckCircleOutlined),
+          status: 'success'
+        }
+  
   items.push(endItem)
   return (
     <>
@@ -662,6 +673,60 @@ function buildEndDSThoughtChain(jsonArray: any[]): any {
     </>
   )
 }
+
+function parseLoadingMessage(): any{
+    if(current.deepResearch){
+    // 准备开始研究
+    if(current.aiType === 'startDS') {
+      return buildPendingNodeThoughtChain()
+    }
+    if(current.aiType === 'onDS' && configStore.chatConfig.auto_accepted_plan) {
+      return buildPendingNodeThoughtChain()
+    }
+    // 正在研究中
+    if(current.aiType === 'onDS') {
+      return  buildOnDSThoughtChain()
+    }
+  }
+  return buildPendingNodeThoughtChain()
+}
+
+function parseSuccessMessage(msg: any, isCurrent: boolean) {
+    // 解析完整数据
+    const jsonArray: NormalNode[] = parseJsonTextStrict(msg)
+    // 历史数据渲染
+    if (current.deepResearch && !isCurrent) {
+      // 研究网站、分析结果、生成报告
+      return <MD content={ '进行下一步处理' } />
+    }
+    
+    if (current.deepResearch && isCurrent) {
+      // 不启用研究模式，闲聊模式
+      if(jsonArray.filter((item) => item.nodeName === 'coordinator').length > 0) {
+        const coordinatorNode = jsonArray.filter((item) => item.nodeName === 'coordinator')[0];
+        if(!coordinatorNode.content) {
+          return (jsonArray.filter((item) => item.nodeName === '__END__')[0].content as any).output
+        }
+      }
+      if (current.aiType === 'startDS') {
+        // 如果不包含背景调查，则提示用户重新输入
+        if(jsonArray.filter((item) => item.nodeName === 'background_investigator').length === 0) {
+          return <MD content={'未进行背景调查，请重新输入话题进行研究'} />
+        }
+        return buildStartDSThoughtChain(jsonArray)
+      }
+      // 研究完成，TODO 这里应该流为endDS状态
+      if (current.aiType === 'onDS') {
+        return buildEndDSThoughtChain(jsonArray)
+      }
+    }
+}
+
+function getTargetNode(jsonArray: NormalNode[]): NormalNode | undefined {
+  // TODO: 实现获取目标节点的逻辑
+  return undefined
+}
+
 // 解析消息记录 
 // status === local 表示人类  loading表示stream流正在返回  success表示steram完成返回
 // msg  当status === loading的时候，返回stream流的chunk  当status === success的时候，返回所有chunk的拼接字符串
@@ -672,42 +737,11 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
     case 'local':
       return msg
     case 'loading':
-      if(current.deepResearch){
-        // 准备开始研究
-        if(current.aiType === 'startDS') {
-          return buildPendingNodeThoughtChain()
-        }
-        if(current.aiType === 'onDS' && configStore.chatConfig.auto_accepted_plan) {
-          return buildPendingNodeThoughtChain()
-        }
-        // 正在研究中
-        if(current.aiType === 'onDS') {
-          return  buildOnDSThoughtChain()
-        }
-      }
-      return buildPendingNodeThoughtChain()
+      return parseLoadingMessage()
     case 'success':
-      // 解析完整数据
-      const jsonArray = parseJsonTextStrict(msg)
-      // 历史数据渲染
-      if (current.deepResearch && !isCurrent) {
-        // 研究网站、分析结果、生成报告
-        return <MD content={ '进行下一步处理' } />
-      }
-      
-      if (current.deepResearch && isCurrent) {
-        if (current.aiType === 'startDS') {
-          // 如果不包含背景调查，则提示用户重新输入
-          if(jsonArray.filter((item) => item.nodeName === 'background_investigator').length === 0) {
-            return <MD content={'未进行背景调查，请重新输入话题进行研究'} />
-          }
-          return buildStartDSThoughtChain(jsonArray)
-        }
-        // 研究完成，TODO 这里应该流为endDS状态
-        if (current.aiType === 'onDS') {
-          return buildEndDSThoughtChain(jsonArray)
-        }
-      }
+      return parseSuccessMessage(msg, isCurrent)
+      case 'error':
+        return msg
     default:
       return ''
   }
@@ -716,15 +750,16 @@ function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any 
 function parseFooter(status: MessageStatus, isCurrent: boolean): any {
   switch (status) {
     case 'success':
-      return (
-        <div class="bubble-footer">
-          <Flex gap="middle" class={isCurrent ? '' : 'toggle-bubble-footer'}>
-            <CopyOutlined />
-            <ShareAltOutlined />
-            <MoreOutlined />
-          </Flex>
-        </div>
-      )
+      // return (
+      //   <div class="bubble-footer">
+      //     <Flex gap="middle" class={isCurrent ? '' : 'toggle-bubble-footer'}>
+      //       <CopyOutlined />
+      //       <ShareAltOutlined />
+      //       <MoreOutlined />
+      //     </Flex>
+      //   </div>
+      // )
+      return ''
     default:
       return ''
   }

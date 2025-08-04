@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -84,6 +85,7 @@ import com.alibaba.cloud.ai.example.manus.tool.tableProcessor.TableProcessingSer
 import com.alibaba.cloud.ai.example.manus.tool.tableProcessor.TableProcessorTool;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
+import com.alibaba.cloud.ai.example.manus.tool.pptGenerator.PptGeneratorOperator;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -147,8 +149,14 @@ public class PlanningFactory implements IPlanningFactory {
 	private StreamingResponseHandler streamingResponseHandler;
 
 	@Autowired
+	private ToolPromptManager toolPromptManager;
+
+	@Autowired
 	@Lazy
 	private CronService cronService;
+
+	@Autowired
+	private PptGeneratorOperator pptGeneratorOperator;
 
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
@@ -227,8 +235,9 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
 		toolDefinitions.add(new TableProcessorTool(tableProcessingService));
 		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
-		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
-		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
+		toolDefinitions
+			.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder, toolPromptManager));
+		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager, toolPromptManager));
 		// toolDefinitions.add(new GoogleSearch());
 		// toolDefinitions.add(new PythonExecute());
 		toolDefinitions.add(new FormInputTool(objectMapper, promptService));

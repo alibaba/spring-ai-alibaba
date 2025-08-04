@@ -1,0 +1,15 @@
+{
+    "type": "object",
+    "properties": {
+        "action": {
+            "type": "string",
+            "const": "export"
+        },
+        "new_file_name": {
+            "type": "string",
+            "description": "New file name (with extension), used to save the final output result"
+        }
+    },
+    "required": ["action", "new_file_name"],
+    "additionalProperties": false
+}

@@ -1,0 +1,20 @@
+{
+    "type": "object",
+    "properties": {
+        "action": {
+            "type": "string",
+            "enum": ["merge_file"],
+            "description": "操作类型，目前支持merge_file"
+        },
+        "file_name": {
+            "type": "string",
+            "description": "要合并的文件名（支持模糊匹配）"
+        },
+        "target_folder": {
+            "type": "string",
+            "description": "文件将被复制到的目标文件夹路径"
+        }
+    },
+    "required": ["action", "file_name", "target_folder"],
+    "additionalProperties": false
+}

@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.entity.Agent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -34,8 +36,13 @@ import java.util.List;
 @Service
 public class AgentService {
 
+	private static final Logger log = LoggerFactory.getLogger(AgentService.class);
+
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
+
+	@Autowired(required = false)
+	private AgentVectorService agentVectorService;
 
 	private static final String SELECT_ALL = """
 			SELECT * FROM agent ORDER BY create_time DESC
@@ -129,7 +136,28 @@ public class AgentService {
 	}
 
 	public void deleteById(Long id) {
-		jdbcTemplate.update(DELETE, id);
+		try {
+			// 删除数据库中的智能体记录
+			jdbcTemplate.update(DELETE, id);
+
+			// 同时清理智能体的向量数据
+			if (agentVectorService != null) {
+				try {
+					agentVectorService.deleteAllVectorDataForAgent(id);
+					log.info("Successfully deleted vector data for agent: {}", id);
+				}
+				catch (Exception vectorException) {
+					log.warn("Failed to delete vector data for agent: {}, error: {}", id, vectorException.getMessage());
+					// 向量数据删除失败不影响主流程
+				}
+			}
+
+			log.info("Successfully deleted agent: {}", id);
+		}
+		catch (Exception e) {
+			log.error("Failed to delete agent: {}", id, e);
+			throw e;
+		}
 	}
 
 }
