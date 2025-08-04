@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,28 +35,65 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	private final ObjectMapper objectMapper;
 
-	private final PromptService promptService;
-
 	private static final Logger log = LoggerFactory.getLogger(FormInputTool.class);
 
 	private String getToolParameters() {
-		try {
-			return promptService.getPromptByName("FORM_INPUT_TOOL_PARAMETERS").getPromptContent();
-		}
-		catch (Exception e) {
-			log.warn("Failed to load prompt-based tool parameters, using legacy configuration", e);
-			return LEGACY_PARAMETERS;
-		}
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "description": {
+				            "type": "string",
+				            "description": "Description of the form and what information is being collected"
+				        },
+				        "inputs": {
+				            "type": "array",
+				            "items": {
+				                "type": "object",
+				                "properties": {
+				                    "name": {
+				                        "type": "string",
+				                        "description": "Name/ID of the input field"
+				                    },
+				                    "label": {
+				                        "type": "string",
+				                        "description": "Display label for the input field"
+				                    },
+				                    "type": {
+				                        "type": "string",
+				                        "enum": ["text", "number", "email", "password", "textarea", "select", "checkbox", "radio"],
+				                        "description": "Type of input field"
+				                    },
+				                    "required": {
+				                        "type": "boolean",
+				                        "description": "Whether this field is required"
+				                    },
+				                    "placeholder": {
+				                        "type": "string",
+				                        "description": "Placeholder text for the input field"
+				                    },
+				                    "options": {
+				                        "type": "array",
+				                        "items": {
+				                            "type": "string"
+				                        },
+				                        "description": "Options for select, checkbox, or radio inputs"
+				                    }
+				                },
+				                "required": ["name", "label", "type"]
+				            },
+				            "description": "Array of input field definitions"
+				        }
+				    },
+				    "required": ["description", "inputs"]
+				}
+				""";
 	}
 
 	private String getToolDescription() {
-		try {
-			return promptService.getPromptByName("FORM_INPUT_TOOL_DESCRIPTION").getPromptContent();
-		}
-		catch (Exception e) {
-			log.warn("Failed to load prompt-based tool description, using legacy configuration", e);
-			return LEGACY_DESCRIPTION;
-		}
+		return """
+				Create interactive forms to collect user input. This tool allows you to define form fields and collect structured data from users through a web interface.
+				""";
 	}
 
 	private static final String LEGACY_PARAMETERS = """
@@ -180,9 +216,8 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	}
 
-	public FormInputTool(ObjectMapper objectMapper, PromptService promptService) {
+	public FormInputTool(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
-		this.promptService = promptService;
 	}
 
 	public enum InputState {
