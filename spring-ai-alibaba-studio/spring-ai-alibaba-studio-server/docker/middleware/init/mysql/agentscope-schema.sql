@@ -389,7 +389,7 @@ CREATE TABLE `model`
 #init account
 INSERT INTO account (account_id, username, email, mobile, password, type, status, gmt_create,
                      gmt_modified, creator, modifier)
-VALUES ('10000', 'agentscope', 'agentscope@alibaba-inc.com', null,
+VALUES ('10000', 'saa', 'ken.lj.hz@gmail.com', null,
         '$argon2id$v=19$m=66536,t=2,p=1$KSDQowfZxDjKLqBtxFNRng$znU0oQFQs2shR9la4S11n7d0LpGApmSBXvDOXuhbR40', 'admin', 1,
         now(), now(), '10000', '10000');
 
