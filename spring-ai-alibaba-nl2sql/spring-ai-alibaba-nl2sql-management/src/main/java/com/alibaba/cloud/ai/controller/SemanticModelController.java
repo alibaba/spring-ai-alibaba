@@ -31,7 +31,7 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class SemanticModelController {
 
-	private SemanticModelService semanticModelService;
+	private final SemanticModelService semanticModelService;
 
 	public SemanticModelController(SemanticModelService semanticModelService) {
 		this.semanticModelService = semanticModelService;

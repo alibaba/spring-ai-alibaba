@@ -33,7 +33,7 @@ public class AgentPresetQuestionController {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentPresetQuestionController.class);
 
-	private AgentPresetQuestionService presetQuestionService;
+	private final AgentPresetQuestionService presetQuestionService;
 
 	public AgentPresetQuestionController(AgentPresetQuestionService presetQuestionService) {
 		this.presetQuestionService = presetQuestionService;

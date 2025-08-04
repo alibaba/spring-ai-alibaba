@@ -36,7 +36,7 @@ import java.util.HashMap;
 @CrossOrigin(origins = "*")
 public class DatasourceController {
 
-	private DatasourceService datasourceService;
+	private final DatasourceService datasourceService;
 
 	public DatasourceController(DatasourceService datasourceService) {
 		this.datasourceService = datasourceService;

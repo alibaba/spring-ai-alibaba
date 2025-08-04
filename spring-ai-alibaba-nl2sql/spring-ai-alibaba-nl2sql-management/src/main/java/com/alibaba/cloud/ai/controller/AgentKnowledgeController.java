@@ -34,9 +34,9 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class AgentKnowledgeController {
 
-	private AgentKnowledgeService agentKnowledgeService;
+	private final AgentKnowledgeService agentKnowledgeService;
 
-	private AgentVectorService agentVectorService;
+	private final AgentVectorService agentVectorService;
 
 	public AgentKnowledgeController(AgentKnowledgeService agentKnowledgeService,
 			AgentVectorService agentVectorService) {

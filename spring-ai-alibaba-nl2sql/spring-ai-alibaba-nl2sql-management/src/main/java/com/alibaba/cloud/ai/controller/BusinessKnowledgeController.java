@@ -31,7 +31,7 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class BusinessKnowledgeController {
 
-	private BusinessKnowledgeService businessKnowledgeService;
+	private final BusinessKnowledgeService businessKnowledgeService;
 
 	public BusinessKnowledgeController(BusinessKnowledgeService businessKnowledgeService) {
 		this.businessKnowledgeService = businessKnowledgeService;

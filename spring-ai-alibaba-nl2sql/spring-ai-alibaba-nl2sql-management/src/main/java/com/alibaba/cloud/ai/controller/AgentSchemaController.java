@@ -41,9 +41,9 @@ public class AgentSchemaController {
 
 	private static final Logger log = LoggerFactory.getLogger(AgentSchemaController.class);
 
-	private AgentVectorService agentVectorService;
+	private final AgentVectorService agentVectorService;
 
-	private Nl2sqlForGraphController nl2sqlForGraphController;
+	private final Nl2sqlForGraphController nl2sqlForGraphController;
 
 	public AgentSchemaController(AgentVectorService agentVectorService,
 			Nl2sqlForGraphController nl2sqlForGraphController) {

@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @ConditionalOnADBEnabled
 public class AnalyticNl2SqlController {
 
-	private AnalyticNl2SqlService nl2SqlService;
+	private final AnalyticNl2SqlService nl2SqlService;
 
 	public AnalyticNl2SqlController(AnalyticNl2SqlService nl2SqlService) {
 		this.nl2SqlService = nl2SqlService;

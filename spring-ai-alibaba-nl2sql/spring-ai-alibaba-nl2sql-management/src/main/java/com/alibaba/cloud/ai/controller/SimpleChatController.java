@@ -28,11 +28,11 @@ import java.util.Arrays;
 @RestController
 public class SimpleChatController {
 
-	private SimpleNl2SqlService simpleNl2SqlService;
+	private final SimpleNl2SqlService simpleNl2SqlService;
 
-	private SimpleVectorStoreService simpleVectorStoreService;
+	private final SimpleVectorStoreService simpleVectorStoreService;
 
-	private DbConfig dbConfig;
+	private final DbConfig dbConfig;
 
 	public SimpleChatController(SimpleNl2SqlService simpleNl2SqlService,
 			SimpleVectorStoreService simpleVectorStoreService, DbConfig dbConfig) {
