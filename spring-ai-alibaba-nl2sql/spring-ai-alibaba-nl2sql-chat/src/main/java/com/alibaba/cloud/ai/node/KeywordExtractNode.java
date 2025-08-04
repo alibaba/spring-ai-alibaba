@@ -180,8 +180,7 @@ public class KeywordExtractNode implements NodeAction {
 
 			for (KeywordExtractionResult result : extractionResults) {
 				if (result.isSuccessful()) {
-					emitter
-						.next(ChatResponseUtil.createStatusResponse("处理问题变体: \"" + result.getQuestion() + "\""));
+					emitter.next(ChatResponseUtil.createStatusResponse("处理问题变体: \"" + result.getQuestion() + "\""));
 					emitter.next(ChatResponseUtil
 						.createStatusResponse("提取的证据: " + String.join(", ", result.getEvidences())));
 					emitter.next(ChatResponseUtil

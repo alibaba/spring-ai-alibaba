@@ -115,7 +115,8 @@ public class Nl2sqlForGraphController {
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 
 		// 使用流式处理，传递agentId到状态中
-		AsyncGenerator<NodeOutput> generator = compiledGraph.stream(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId));
+		AsyncGenerator<NodeOutput> generator = compiledGraph
+			.stream(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId));
 
 		CompletableFuture.runAsync(() -> {
 			try {

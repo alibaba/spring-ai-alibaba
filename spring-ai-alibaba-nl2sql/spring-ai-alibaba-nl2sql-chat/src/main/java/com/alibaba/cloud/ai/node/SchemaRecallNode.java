@@ -90,8 +90,7 @@ public class SchemaRecallNode implements NodeAction {
 		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
 			emitter.next(ChatResponseUtil.createStatusResponse("开始召回Schema信息..."));
 			emitter.next(ChatResponseUtil.createStatusResponse("表信息召回完成，数量: " + tableDocuments.size()));
-			emitter
-				.next(ChatResponseUtil.createStatusResponse("列信息召回完成，数量: " + columnDocumentsByKeywords.size()));
+			emitter.next(ChatResponseUtil.createStatusResponse("列信息召回完成，数量: " + columnDocumentsByKeywords.size()));
 			emitter.next(ChatResponseUtil.createStatusResponse("Schema信息召回完成."));
 			emitter.complete();
 		});
