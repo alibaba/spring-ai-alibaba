@@ -30,7 +30,6 @@ import com.alibaba.fastjson.JSON;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
@@ -62,16 +61,16 @@ public class Nl2sqlForGraphController {
 
 	private final CompiledGraph compiledGraph;
 
-	@Autowired
-	private SimpleVectorStoreService simpleVectorStoreService;
+	private final SimpleVectorStoreService simpleVectorStoreService;
 
-	@Autowired
-	private DbConfig dbConfig;
+	private final DbConfig dbConfig;
 
-	@Autowired
-	public Nl2sqlForGraphController(@Qualifier("nl2sqlGraph") StateGraph stateGraph) throws GraphStateException {
+	public Nl2sqlForGraphController(@Qualifier("nl2sqlGraph") StateGraph stateGraph,
+			SimpleVectorStoreService simpleVectorStoreService, DbConfig dbConfig) throws GraphStateException {
 		this.compiledGraph = stateGraph.compile();
 		this.compiledGraph.setMaxIterations(100);
+		this.simpleVectorStoreService = simpleVectorStoreService;
+		this.dbConfig = dbConfig;
 	}
 
 	@GetMapping("/search")
