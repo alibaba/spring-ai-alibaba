@@ -227,13 +227,29 @@ public class PromptHelper {
 		return PromptConstant.SEMANTIC_CONSISTENCY_PROMPT_TEMPLATE.render(params);
 	}
 
-	public static String buildReportGeneratorPrompt(String userRequirementsAndPlan, String analysisStepsAndData,
-			String summaryAndRecommendations) {
+	/**
+	 * 构建带自定义提示词的报告生成提示词
+	 * @param userRequirementsAndPlan 用户需求和计划
+	 * @param analysisStepsAndData 分析步骤和数据
+	 * @param summaryAndRecommendations 总结和建议
+	 * @param customPrompt 用户自定义的提示词内容，如果为null则使用默认提示词
+	 * @return 构建的提示词
+	 */
+	public static String buildReportGeneratorPromptWithCustom(String userRequirementsAndPlan,
+			String analysisStepsAndData, String summaryAndRecommendations, String customPrompt) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("user_requirements_and_plan", userRequirementsAndPlan);
 		params.put("analysis_steps_and_data", analysisStepsAndData);
 		params.put("summary_and_recommendations", summaryAndRecommendations);
-		return PromptConstant.getReportGeneratorPromptTemplate().render(params);
+
+		if (customPrompt != null && !customPrompt.trim().isEmpty()) {
+			// 使用自定义提示词
+			return new org.springframework.ai.chat.prompt.PromptTemplate(customPrompt).render(params);
+		}
+		else {
+			// 使用默认提示词
+			return PromptConstant.getReportGeneratorPromptTemplate().render(params);
+		}
 	}
 
 	public static String buildSqlErrorFixerPrompt(String question, DbConfig dbConfig, SchemaDTO schemaDTO,

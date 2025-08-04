@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>业务知识管理配置</title>
+    <title>提示词配置管理</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
         :root {
             --primary-color: #1890ff;
             --secondary-color: #52c41a;
+            --tertiary-color: #fadb14;
             --background-color: #f5f8fa;
             --card-bg: #ffffff;
             --text-color: #333333;
@@ -141,6 +142,15 @@
             background-color: #e6e6e6;
         }
 
+        .btn-warning {
+            background-color: var(--tertiary-color);
+            color: #333;
+        }
+
+        .btn-warning:hover {
+            background-color: #ffc53d;
+        }
+
         .card {
             background-color: var(--card-bg);
             border-radius: var(--radius);
@@ -166,8 +176,8 @@
 
         .table th:last-child,
         .table td:last-child {
-            width: 200px;
-            min-width: 200px;
+            width: 250px;
+            min-width: 250px;
         }
 
         .table th {
@@ -191,6 +201,11 @@
         .badge-success {
             background-color: #f6ffed;
             color: var(--secondary-color);
+        }
+
+        .badge-warning {
+            background-color: #fffbe6;
+            color: #faad14;
         }
 
         .badge-secondary {
@@ -219,7 +234,7 @@
             background-color: var(--card-bg);
             border-radius: var(--radius);
             width: 90%;
-            max-width: 600px;
+            max-width: 800px;
             max-height: 90vh;
             overflow-y: auto;
         }
@@ -375,6 +390,48 @@
             color: white;
         }
 
+        .prompt-content {
+            background-color: #f8f9fa;
+            border-radius: var(--radius);
+            padding: 0.75rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+            max-height: 100px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        .template-variables {
+            background-color: #fff7e6;
+            border: 1px solid #ffd591;
+            border-radius: var(--radius);
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .template-variables h4 {
+            margin: 0 0 0.5rem 0;
+            color: #d46b08;
+            font-size: 0.9rem;
+        }
+
+        .template-variables .variable-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .template-variables .variable-item {
+            background-color: #fff2e8;
+            color: #d46b08;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            border: 1px solid #ffbb96;
+        }
+
         @media (max-width: 768px) {
             .toolbar {
                 flex-direction: column;
@@ -403,20 +460,20 @@
     <div class="header">
         <div class="container">
             <div class="title">
-                <i class="bi bi-book"></i> 业务知识管理配置
+                <i class="bi bi-gear-fill"></i> 提示词配置管理
             </div>
-            <div class="subtitle">管理企业知识引擎，配置业务术语、黑话和常用表达</div>
+            <div class="subtitle">配置和管理NL2SQL系统的自定义提示词模板，优化报告输出效果</div>
             <div class="nav-links">
                 <a href="/nl2sql.html" class="nav-link">
                     <i class="bi bi-house"></i> 首页
                 </a>
-                <a href="/business-knowledge.html" class="nav-link active">
+                <a href="/business-knowledge.html" class="nav-link">
                     <i class="bi bi-book"></i> 业务知识管理
                 </a>
                 <a href="/semantic-model.html" class="nav-link">
                     <i class="bi bi-diagram-3"></i> 语义模型配置
                 </a>
-                <a href="/prompt-config.html" class="nav-link">
+                <a href="/prompt-config.html" class="nav-link active">
                     <i class="bi bi-gear-fill"></i> 提示词配置
                 </a>
             </div>
@@ -426,13 +483,13 @@
     <div class="container">
         <div class="toolbar">
             <div class="search-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="搜索业务名词、说明或同义词...">
+                <input type="text" id="searchInput" class="search-input" placeholder="搜索配置名称或描述...">
                 <button id="searchBtn" class="btn btn-primary">
                     <i class="bi bi-search"></i> 搜索
                 </button>
             </div>
             <button id="addBtn" class="btn btn-success">
-                <i class="bi bi-plus-circle"></i> 新增知识
+                <i class="bi bi-plus-circle"></i> 新增配置
             </button>
         </div>
 
@@ -441,18 +498,17 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>业务名词</th>
-                            <th>说明</th>
-                            <th>同义词</th>
-                            <th>默认召回</th>
-                            <th>数据集ID</th>
+                            <th>配置名称</th>
+                            <th>提示词类型</th>
+                            <th>状态</th>
+                            <th>描述</th>
                             <th>创建时间</th>
                             <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
                         <tr>
-                            <td colspan="7" class="loading">
+                            <td colspan="6" class="loading">
                                 <div class="spinner"></div>
                                 加载中...
                             </td>
@@ -467,81 +523,127 @@
     <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title" id="modalTitle">新增业务知识</h3>
+                <h3 class="modal-title" id="modalTitle">新增提示词配置</h3>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="editForm">
                     <input type="hidden" id="editId">
                     <div class="form-group">
-                        <label class="form-label" for="businessTerm">业务名词 *</label>
-                        <input type="text" id="businessTerm" class="form-control" required 
-                               placeholder="如：年龄分布、搜索业绩口径">
+                        <label class="form-label" for="configName">配置名称 *</label>
+                        <input type="text" id="configName" class="form-control" required 
+                               placeholder="如：个性化报告模板、SQL优化提示等">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="description">说明 *</label>
-                        <textarea id="description" class="form-control" rows="3" required 
-                                  placeholder="输入对知识的定义、解释说明等"></textarea>
+                        <label class="form-label" for="promptType">提示词类型 *</label>
+                        <select id="promptType" class="form-control" required>
+                            <option value="">请选择提示词类型</option>
+                            <option value="report-generator">报告生成器 (report-generator)</option>
+                            <option value="planner">执行规划器 (planner)</option>
+                            <option value="sql-generator">SQL生成器 (sql-generator)</option>
+                            <option value="python-generator">Python代码生成器 (python-generator)</option>
+                            <option value="rewrite">查询重写器 (rewrite)</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="synonyms">同义词</label>
-                        <input type="text" id="synonyms" class="form-control" 
-                               placeholder="多个同义词用逗号分隔，如：年龄画像,年龄构成,年龄结构">
+                        <label class="form-label" for="description">描述</label>
+                        <textarea id="description" class="form-control" rows="2" 
+                                  placeholder="描述此配置的用途和特点"></textarea>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="datasetId">数据集ID</label>
-                        <input type="text" id="datasetId" class="form-control" 
-                               placeholder="关联的数据集ID">
+                        <label class="form-label" for="promptContent">提示词内容 *</label>
+                        <textarea id="promptContent" class="form-control" rows="8" required
+                                  placeholder="输入提示词模板内容，支持使用变量如 {{query}}, {{schema}}, {{context}} 等"></textarea>
+                        
+                        <!-- 模板变量提示 -->
+                        <div class="template-variables">
+                            <h4>可用的模板变量：</h4>
+                            <div class="variable-list">
+                                <span class="variable-item">{{query}}</span>
+                                <span class="variable-item">{{schema}}</span>
+                                <span class="variable-item">{{context}}</span>
+                                <span class="variable-item">{{sql}}</span>
+                                <span class="variable-item">{{result}}</span>
+                                <span class="variable-item">{{analysis}}</span>
+                                <span class="variable-item">{{businessKnowledge}}</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <div class="checkbox-group">
-                            <input type="checkbox" id="defaultRecall" class="form-control">
-                            <label class="form-label" for="defaultRecall">默认召回</label>
+                            <input type="checkbox" id="isActive" class="form-control">
+                            <label class="form-label" for="isActive">启用此配置</label>
                         </div>
-                        <small style="color: #666; margin-left: 1.5rem;">勾选后，该知识每次提问时都会作为提示词传输给大模型</small>
+                        <small style="color: #666; margin-left: 1.5rem;">启用后，该配置将应用于对应类型的提示词生成</small>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
-                <button type="button" class="btn btn-primary" onclick="saveKnowledge()">保存</button>
+                <button type="button" class="btn btn-primary" onclick="saveConfig()">保存</button>
             </div>
         </div>
     </div>
 
     <script>
-        let knowledgeList = [];
+        let configList = [];
         let currentEditId = null;
+
+        // 提示词类型映射
+        const promptTypeMap = {
+            'report-generator': '报告生成器',
+            'planner': '执行规划器', 
+            'sql-generator': 'SQL生成器',
+            'python-generator': 'Python代码生成器',
+            'rewrite': '查询重写器'
+        };
 
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', function() {
-            loadKnowledgeList();
+            loadConfigList();
             
             // 绑定事件
-            document.getElementById('searchBtn').addEventListener('click', searchKnowledge);
+            document.getElementById('searchBtn').addEventListener('click', searchConfigs);
             document.getElementById('searchInput').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
-                    searchKnowledge();
+                    searchConfigs();
                 }
             });
             document.getElementById('addBtn').addEventListener('click', showAddModal);
         });
 
-        // 加载知识列表
-        function loadKnowledgeList(keyword = '') {
-            const url = keyword ? `/api/business-knowledge?keyword=${encodeURIComponent(keyword)}` : '/api/business-knowledge';
+        // 加载配置列表
+        function loadConfigList(keyword = '') {
+            // 注意：后端暂时不支持搜索，这里只使用list接口
+            const url = '/api/prompt-config/list';
             
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    knowledgeList = data;
-                    renderTable();
+                    if (data.success) {
+                        configList = data.data || [];
+                        // 如果有搜索关键词，进行前端过滤
+                        if (keyword.trim()) {
+                            const filteredList = configList.filter(item => 
+                                (item.name && item.name.toLowerCase().includes(keyword.toLowerCase())) ||
+                                (item.description && item.description.toLowerCase().includes(keyword.toLowerCase())) ||
+                                (item.promptType && item.promptType.toLowerCase().includes(keyword.toLowerCase()))
+                            );
+                            renderTable(filteredList);
+                        } else {
+                            renderTable();
+                        }
+                    } else {
+                        configList = [];
+                        console.error('加载配置失败:', data.message);
+                        renderTable();
+                    }
                 })
                 .catch(error => {
                     console.error('加载数据失败:', error);
                     document.getElementById('tableBody').innerHTML = `
                         <tr>
-                            <td colspan="7" class="empty-state">
+                            <td colspan="6" class="empty-state">
                                 <div class="empty-icon"><i class="bi bi-exclamation-triangle"></i></div>
                                 <div>加载数据失败，请刷新页面重试</div>
                             </td>
@@ -551,39 +653,47 @@
         }
 
         // 渲染表格
-        function renderTable() {
+        function renderTable(data = configList) {
             const tbody = document.getElementById('tableBody');
             
-            if (knowledgeList.length === 0) {
+            if (data.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="empty-state">
+                        <td colspan="6" class="empty-state">
                             <div class="empty-icon"><i class="bi bi-inbox"></i></div>
-                            <div>暂无数据</div>
+                            <div>暂无配置数据</div>
                         </td>
                     </tr>
                 `;
                 return;
             }
 
-            tbody.innerHTML = knowledgeList.map(item => `
+            tbody.innerHTML = data.map(item => `
                 <tr>
-                    <td><strong>${item.businessTerm}</strong></td>
-                    <td style="max-width: 300px; word-wrap: break-word;">${item.description}</td>
-                    <td>${item.synonyms || '-'}</td>
+                    <td><strong>${item.name}</strong></td>
                     <td>
-                        <span class="badge ${item.defaultRecall ? 'badge-success' : 'badge-secondary'}">
-                            ${item.defaultRecall ? '是' : '否'}
+                        <span class="badge badge-secondary">
+                            ${promptTypeMap[item.promptType] || item.promptType}
                         </span>
                     </td>
-                    <td>${item.datasetId || '-'}</td>
+                    <td>
+                        <span class="badge ${item.enabled ? 'badge-success' : 'badge-warning'}">
+                            ${item.enabled ? '启用' : '禁用'}
+                        </span>
+                    </td>
+                    <td style="max-width: 300px; word-wrap: break-word;">${item.description || '-'}</td>
                     <td>${formatDateTime(item.createTime)}</td>
                     <td>
                         <div class="action-buttons">
                             <button class="btn btn-primary btn-sm" onclick="showEditModal(${item.id})">
                                 <i class="bi bi-pencil"></i> 编辑
                             </button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteKnowledge(${item.id})">
+                            <button class="btn ${item.enabled ? 'btn-warning' : 'btn-success'} btn-sm" 
+                                    onclick="toggleStatus(${item.id}, ${!item.enabled})">
+                                <i class="bi ${item.enabled ? 'bi-pause' : 'bi-play'}"></i> 
+                                ${item.enabled ? '禁用' : '启用'}
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteConfig(${item.id})">
                                 <i class="bi bi-trash"></i> 删除
                             </button>
                         </div>
@@ -592,16 +702,16 @@
             `).join('');
         }
 
-        // 搜索知识
-        function searchKnowledge() {
+        // 搜索配置
+        function searchConfigs() {
             const keyword = document.getElementById('searchInput').value.trim();
-            loadKnowledgeList(keyword);
+            loadConfigList(keyword);
         }
 
         // 显示新增模态框
         function showAddModal() {
             currentEditId = null;
-            document.getElementById('modalTitle').textContent = '新增业务知识';
+            document.getElementById('modalTitle').textContent = '新增提示词配置';
             document.getElementById('editForm').reset();
             document.getElementById('editId').value = '';
             document.getElementById('editModal').classList.add('show');
@@ -609,17 +719,17 @@
 
         // 显示编辑模态框
         function showEditModal(id) {
-            const item = knowledgeList.find(k => k.id === id);
+            const item = configList.find(c => c.id === id);
             if (!item) return;
 
             currentEditId = id;
-            document.getElementById('modalTitle').textContent = '编辑业务知识';
+            document.getElementById('modalTitle').textContent = '编辑提示词配置';
             document.getElementById('editId').value = id;
-            document.getElementById('businessTerm').value = item.businessTerm;
-            document.getElementById('description').value = item.description;
-            document.getElementById('synonyms').value = item.synonyms || '';
-            document.getElementById('datasetId').value = item.datasetId || '';
-            document.getElementById('defaultRecall').checked = item.defaultRecall;
+            document.getElementById('configName').value = item.name;
+            document.getElementById('promptType').value = item.promptType;
+            document.getElementById('description').value = item.description || '';
+            document.getElementById('promptContent').value = item.systemPrompt || '';
+            document.getElementById('isActive').checked = item.enabled;
             document.getElementById('editModal').classList.add('show');
         }
 
@@ -628,8 +738,8 @@
             document.getElementById('editModal').classList.remove('show');
         }
 
-        // 保存知识
-        function saveKnowledge() {
+        // 保存配置
+        function saveConfig() {
             const form = document.getElementById('editForm');
             if (!form.checkValidity()) {
                 form.reportValidity();
@@ -637,15 +747,16 @@
             }
 
             const data = {
-                businessTerm: document.getElementById('businessTerm').value.trim(),
-                description: document.getElementById('description').value.trim(),
-                synonyms: document.getElementById('synonyms').value.trim() || null,
-                datasetId: document.getElementById('datasetId').value.trim() || null,
-                defaultRecall: document.getElementById('defaultRecall').checked
+                id: currentEditId || null,
+                name: document.getElementById('configName').value.trim(),
+                promptType: document.getElementById('promptType').value,
+                description: document.getElementById('description').value.trim() || null,
+                systemPrompt: document.getElementById('promptContent').value.trim(),
+                enabled: document.getElementById('isActive').checked
             };
 
-            const url = currentEditId ? `/api/business-knowledge/${currentEditId}` : '/api/business-knowledge';
-            const method = currentEditId ? 'PUT' : 'POST';
+            const url = '/api/prompt-config/save';
+            const method = 'POST';
 
             fetch(url, {
                 method: method,
@@ -655,9 +766,13 @@
                 body: JSON.stringify(data)
             })
             .then(response => response.json())
-            .then(() => {
-                closeModal();
-                loadKnowledgeList();
+            .then(result => {
+                if (result.success) {
+                    closeModal();
+                    loadConfigList();
+                } else {
+                    alert('保存失败：' + result.message);
+                }
             })
             .catch(error => {
                 console.error('保存失败:', error);
@@ -665,17 +780,45 @@
             });
         }
 
-        // 删除知识
-        function deleteKnowledge(id) {
-            if (!confirm('确定要删除这条业务知识吗？')) {
+        // 切换配置状态
+        function toggleStatus(id, isActive) {
+            const endpoint = isActive ? 'enable' : 'disable';
+            fetch(`/api/prompt-config/${id}/${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    loadConfigList();
+                } else {
+                    alert('操作失败：' + result.message);
+                }
+            })
+            .catch(error => {
+                console.error('操作失败:', error);
+                alert('操作失败，请重试');
+            });
+        }
+
+        // 删除配置
+        function deleteConfig(id) {
+            if (!confirm('确定要删除这个提示词配置吗？')) {
                 return;
             }
 
-            fetch(`/api/business-knowledge/${id}`, {
+            fetch(`/api/prompt-config/${id}`, {
                 method: 'DELETE'
             })
-            .then(() => {
-                loadKnowledgeList();
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    loadConfigList();
+                } else {
+                    alert('删除失败：' + result.message);
+                }
             })
             .catch(error => {
                 console.error('删除失败:', error);
@@ -698,4 +841,4 @@
         });
     </script>
 </body>
-</html>
+</html> 
