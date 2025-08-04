@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.entity.Agent;
 import com.alibaba.cloud.ai.service.AgentService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -32,8 +31,11 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class AgentController {
 
-	@Autowired
 	private AgentService agentService;
+
+	public AgentController(AgentService agentService) {
+		this.agentService = agentService;
+	}
 
 	/**
 	 * 获取智能体列表

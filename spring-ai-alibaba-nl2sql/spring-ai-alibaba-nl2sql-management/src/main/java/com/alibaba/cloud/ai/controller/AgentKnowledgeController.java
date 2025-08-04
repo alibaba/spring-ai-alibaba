@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.controller;
 import com.alibaba.cloud.ai.entity.AgentKnowledge;
 import com.alibaba.cloud.ai.service.AgentKnowledgeService;
 import com.alibaba.cloud.ai.service.AgentVectorService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,11 +34,15 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class AgentKnowledgeController {
 
-	@Autowired
 	private AgentKnowledgeService agentKnowledgeService;
 
-	@Autowired
 	private AgentVectorService agentVectorService;
+
+	public AgentKnowledgeController(AgentKnowledgeService agentKnowledgeService,
+			AgentVectorService agentVectorService) {
+		this.agentKnowledgeService = agentKnowledgeService;
+		this.agentVectorService = agentVectorService;
+	}
 
 	/**
 	 * 根据智能体ID查询知识列表

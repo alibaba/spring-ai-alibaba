@@ -42,8 +42,8 @@ public class PromptConfigController {
 
 	private UserPromptConfigService promptConfigService;
 
-	public PromptConfigController() {
-		this.promptConfigService = new UserPromptConfigService();
+	public PromptConfigController(UserPromptConfigService promptConfigService) {
+		this.promptConfigService = promptConfigService;
 	}
 
 	/**

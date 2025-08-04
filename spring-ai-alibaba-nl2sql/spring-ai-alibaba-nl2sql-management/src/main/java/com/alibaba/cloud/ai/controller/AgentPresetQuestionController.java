@@ -20,7 +20,6 @@ import com.alibaba.cloud.ai.entity.AgentPresetQuestion;
 import com.alibaba.cloud.ai.service.AgentPresetQuestionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,8 +33,11 @@ public class AgentPresetQuestionController {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentPresetQuestionController.class);
 
-	@Autowired
 	private AgentPresetQuestionService presetQuestionService;
+
+	public AgentPresetQuestionController(AgentPresetQuestionService presetQuestionService) {
+		this.presetQuestionService = presetQuestionService;
+	}
 
 	/**
 	 * 获取智能体的预设问题列表

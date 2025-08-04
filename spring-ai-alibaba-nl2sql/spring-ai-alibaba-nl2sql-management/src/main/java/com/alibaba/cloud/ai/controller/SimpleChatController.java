@@ -19,7 +19,6 @@ import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.alibaba.cloud.ai.service.simple.SimpleNl2SqlService;
 import com.alibaba.cloud.ai.service.simple.SimpleVectorStoreService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,14 +28,18 @@ import java.util.Arrays;
 @RestController
 public class SimpleChatController {
 
-	@Autowired
 	private SimpleNl2SqlService simpleNl2SqlService;
 
-	@Autowired
 	private SimpleVectorStoreService simpleVectorStoreService;
 
-	@Autowired
 	private DbConfig dbConfig;
+
+	public SimpleChatController(SimpleNl2SqlService simpleNl2SqlService,
+			SimpleVectorStoreService simpleVectorStoreService, DbConfig dbConfig) {
+		this.simpleNl2SqlService = simpleNl2SqlService;
+		this.simpleVectorStoreService = simpleVectorStoreService;
+		this.dbConfig = dbConfig;
+	}
 
 	@PostMapping("/simpleChat")
 	public String simpleNl2Sql(@RequestBody String input) throws Exception {
