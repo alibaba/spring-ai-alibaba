@@ -32,8 +32,8 @@ import reactor.core.publisher.Flux;
 import java.util.List;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
 import static com.alibaba.cloud.ai.constant.Constant.COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.DATA_SET_ID;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.KEYWORD_EXTRACT_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.SCHEMA_RECALL_NODE_OUTPUT;
@@ -65,7 +65,7 @@ public class SchemaRecallNode implements NodeAction {
 
 		String input = StateUtils.getStringValue(state, INPUT_KEY);
 		List<String> keywords = StateUtils.getListValue(state, KEYWORD_EXTRACT_NODE_OUTPUT);
-		String agentId = StateUtils.getStringValue(state, DATA_SET_ID);
+		String agentId = StateUtils.getStringValue(state, AGENT_ID);
 
 		// Execute business logic first - recall schema information immediately
 		List<Document> tableDocuments;

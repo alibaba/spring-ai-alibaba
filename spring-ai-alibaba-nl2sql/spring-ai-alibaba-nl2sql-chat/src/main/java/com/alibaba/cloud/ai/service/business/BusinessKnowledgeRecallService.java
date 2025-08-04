@@ -35,6 +35,21 @@ public class BusinessKnowledgeRecallService {
 			FROM business_knowledge WHERE data_set_id = ? AND is_recall = 1
 			""";
 
+	// 根据智能体ID查询业务知识
+	private static final String FIELD_GET_BY_AGENT_ID = """
+			SELECT
+				id,
+				business_term,
+				description,
+				synonyms,
+				is_recall,
+				data_set_id,
+				agent_id,
+				created_time,
+				updated_time
+			FROM business_knowledge WHERE agent_id = ?
+			""";
+
 	private final JdbcTemplate jdbcTemplate;
 
 	public BusinessKnowledgeRecallService(JdbcTemplate jdbcTemplate) {
@@ -48,10 +63,19 @@ public class BusinessKnowledgeRecallService {
 			return new BusinessKnowledgeDTO(rs.getString("business_term"), // businessTerm
 					rs.getString("description"), // description
 					rs.getString("synonyms"), // synonyms
-					rs.getObject("is_recall", boolean.class), // defaultRecall (convert to
-																// Boolean)
+					rs.getObject("is_recall", boolean.class), // defaultRecall (convert
+																// to// Boolean)
 					rs.getString("data_set_id") // datasetId
 			);
+		});
+	}
+
+	// 根据智能体ID获取业务知识列表
+	public List<BusinessKnowledgeDTO> getKnowledgeByAgentId(String agentId) {
+		return jdbcTemplate.query(FIELD_GET_BY_AGENT_ID, new Object[] { agentId }, (rs, rowNum) -> {
+			return new BusinessKnowledgeDTO(rs.getString("business_term"), rs.getString("description"),
+					rs.getString("synonyms"), rs.getObject("is_recall", boolean.class), rs.getString("data_set_id"),
+					rs.getString("agent_id"));
 		});
 	}
 
