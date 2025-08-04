@@ -122,7 +122,7 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 
 	private UnifiedDirectoryManager unifiedDirectoryManager;
 
-	// 共享状态管理器，用于管理多个Agent实例间的共享状态
+	// Shared state manager for managing shared state between multiple Agent instances
 	private final MapReduceSharedStateManager sharedStateManager;
 
 	// ==================== TerminableTool Related Fields ====================

@@ -66,7 +66,8 @@ public class TableProcessingService implements ITableProcessingService {
 	}
 
 	/**
-	 * 表头读取监听器 - 专门用于读取表头数据 基于EasyExcel官方文档的最佳实践
+	 * Header reading listener - specifically for reading header data Based on EasyExcel
+	 * official documentation best practices
 	 */
 	private static class HeaderDataListener implements ReadListener<Map<Integer, String>> {
 
@@ -75,15 +76,15 @@ public class TableProcessingService implements ITableProcessingService {
 		private static final Logger log = LoggerFactory.getLogger(HeaderDataListener.class);
 
 		/**
-		 * 这里会一行行的返回头
+		 * This will return headers row by row
 		 */
 		@Override
 		public void invokeHead(Map<Integer, ReadCellData<?>> headMap, AnalysisContext context) {
-			log.debug("解析到一条头数据:{}", headMap);
-			// 使用 ConverterUtils 转换为 Map<Integer,String>
+			log.debug("Parsed a header data:{}", headMap);
+			// Use ConverterUtils to convert to Map<Integer,String>
 			Map<Integer, String> stringHeadMap = ConverterUtils.convertToStringMap(headMap, context);
 
-			// 将表头按列索引排序并提取值
+			// Sort headers by column index and extract values
 			List<String> headRow = stringHeadMap.entrySet()
 				.stream()
 				.sorted(Map.Entry.comparingByKey())
@@ -93,17 +94,18 @@ public class TableProcessingService implements ITableProcessingService {
 			if (!headRow.isEmpty()) {
 				headers.clear();
 				headers.addAll(headRow);
-				log.debug("提取的表头: {}", headers);
+				log.debug("Extracted headers: {}", headers);
 			}
 		}
 
 		/**
-		 * 处理数据行 - 对于表头读取，我们主要关注invokeHead方法
+		 * Process data rows - for header reading, we mainly focus on invokeHead method
 		 */
 		@Override
 		public void invoke(Map<Integer, String> data, AnalysisContext context) {
-			// 对于表头读取，这个方法不是主要关注点
-			// 但我们可以用第一行数据作为备用表头（如果invokeHead没有被调用）
+			// For header reading, this method is not the main focus
+			// But we can use the first row of data as a backup header (if invokeHead is
+			// not called)
 			if (headers.isEmpty() && data != null && !data.isEmpty()) {
 				List<String> firstRowAsHeaders = data.entrySet()
 					.stream()
@@ -111,16 +113,16 @@ public class TableProcessingService implements ITableProcessingService {
 					.map(Map.Entry::getValue)
 					.collect(Collectors.toList());
 				headers.addAll(firstRowAsHeaders);
-				log.debug("使用第一行数据作为表头: {}", headers);
+				log.debug("Using first row data as headers: {}", headers);
 			}
 		}
 
 		/**
-		 * 所有数据解析完成后调用
+		 * Called after all data parsing is completed
 		 */
 		@Override
 		public void doAfterAllAnalysed(AnalysisContext context) {
-			log.debug("表头数据解析完成，共获取到 {} 个表头", headers.size());
+			log.debug("Header data parsing completed, got {} headers in total", headers.size());
 		}
 
 		public List<String> getHeaders() {
@@ -273,14 +275,14 @@ public class TableProcessingService implements ITableProcessingService {
 			finalHeaders.addAll(headers);
 		}
 
-		// Create table with headers - 使用简单的数据写入方式
-		// 将表头作为第一行数据写入
+		// Create table with headers - using simple data writing method
+		// Write headers as the first row of data
 		List<List<String>> tableData = new ArrayList<>();
-		tableData.add(finalHeaders); // 第一行是表头
+		tableData.add(finalHeaders); // First row is headers
 
 		// Write headers to file
 		String actualSheetName = (sheetName != null && !sheetName.isEmpty()) ? sheetName : "Sheet1";
-		// 使用无模型写入方式，直接写入数据（包含表头行）
+		// Use model-free writing method to directly write data (including header row)
 		log.debug("Writing table data to file: {}, sheetName: {}, tableData: {}", absolutePath, actualSheetName,
 				tableData);
 		EasyExcel.write(absolutePath.toFile()).sheet(actualSheetName).doWrite(tableData);
@@ -291,8 +293,8 @@ public class TableProcessingService implements ITableProcessingService {
 	}
 
 	/**
-	 * Get table structure (headers) using EasyExcel's official best practice
-	 * 根据EasyExcel官方文档的表头读取最佳实践重写
+	 * Get table structure (headers) using EasyExcel's official best practice Rewritten
+	 * according to EasyExcel official documentation header reading best practices
 	 * @param planId plan ID
 	 * @param filePath file path (relative or absolute)
 	 * @return list of headers
@@ -305,7 +307,7 @@ public class TableProcessingService implements ITableProcessingService {
 			throw new IOException("File does not exist: " + absolutePath);
 		}
 
-		// 添加文件基本信息调试
+		// Add file basic information debugging
 		try {
 			long fileSize = Files.size(absolutePath);
 			boolean isReadable = Files.isReadable(absolutePath);
@@ -317,11 +319,11 @@ public class TableProcessingService implements ITableProcessingService {
 
 		log.debug("Reading table structure from: {}", absolutePath);
 
-		// 使用官方推荐的监听器方式读取表头
+		// Use official recommended listener method to read headers
 		HeaderDataListener headerListener = new HeaderDataListener();
 
 		try {
-			// 使用EasyExcel的官方方式读取表头数据
+			// Use EasyExcel's official method to read header data
 			EasyExcel.read(absolutePath.toFile(), headerListener).sheet().doRead();
 
 			List<String> headers = headerListener.getHeaders();
@@ -329,7 +331,7 @@ public class TableProcessingService implements ITableProcessingService {
 
 			if (headers.isEmpty()) {
 				log.warn("No headers found in file: {}", absolutePath);
-				// 如果监听器方式失败，尝试备用方法
+				// If listener method fails, try backup method
 				return fallbackReadHeaders(absolutePath);
 			}
 
@@ -354,16 +356,16 @@ public class TableProcessingService implements ITableProcessingService {
 	}
 
 	/**
-	 * 备用的表头读取方法 - 当监听器方式失败时使用
+	 * Backup header reading method - used when listener method fails
 	 */
 	private List<String> fallbackReadHeaders(Path absolutePath) throws IOException {
 		log.debug("Using fallback method to read headers from: {}", absolutePath);
 
 		try {
-			// 尝试同步读取方式
+			// Try synchronous reading method
 			List<Map<Integer, String>> rawData = EasyExcel.read(absolutePath.toFile())
 				.sheet()
-				.headRowNumber(0) // 从第0行开始读取，不跳过表头
+				.headRowNumber(0) // Read from row 0, do not skip headers
 				.doReadSync();
 
 			log.debug("Fallback raw data size: {}", rawData.size());
@@ -466,7 +468,8 @@ public class TableProcessingService implements ITableProcessingService {
 
 		// Write all data back
 		String sheetName = getSheetName(absolutePath);
-		// 使用无模型写入方式，按照官方文档最佳实践
+		// Use model-free writing method, according to official documentation best
+		// practices
 		log.debug("Writing data to file: {}, sheetName: {}, dataSize: {}", absolutePath, sheetName,
 				existingData.size());
 		if (!existingData.isEmpty()) {
@@ -495,14 +498,15 @@ public class TableProcessingService implements ITableProcessingService {
 		// Check file type
 		if (!isSupportedFileType(filePath)) {
 			updateFileState(planId, filePath, "Error: Unsupported file type");
-			throw new IOException("不支持的文件类型。仅支持Excel(.xlsx,.xls)和CSV(.csv)文件。");
+			throw new IOException(
+					"Unsupported file type. Only Excel (.xlsx, .xls) and CSV (.csv) files are supported.");
 		}
 
 		// Get headers to validate data size
 		List<String> headers = getTableStructure(planId, filePath);
 		if (headers.isEmpty()) {
 			updateFileState(planId, filePath, "Error: Empty table or failed to read headers");
-			throw new IOException("表格为空或无法读取表头信息");
+			throw new IOException("Empty table or failed to read header information");
 		}
 
 		// Check if table has auto-generated ID column
@@ -513,8 +517,9 @@ public class TableProcessingService implements ITableProcessingService {
 		for (int i = 0; i < data.size(); i++) {
 			List<String> row = data.get(i);
 			if (row.size() != expectedDataSize) {
-				String errorMsg = String.format("数据列数不匹配。期望: %d列(不包括ID列), 实际: %d列。表头: %s, 第%d行数据: %s", expectedDataSize,
-						row.size(), headers, i + 1, row);
+				String errorMsg = String.format(
+						"Data column count mismatch. Expected: %d columns (excluding ID column), Actual: %d columns. Headers: %s, Row %d data: %s",
+						expectedDataSize, row.size(), headers, i + 1, row);
 				updateFileState(planId, filePath, "Error: Data size mismatch");
 				throw new IOException(errorMsg);
 			}
@@ -654,7 +659,8 @@ public class TableProcessingService implements ITableProcessingService {
 
 		// Write data back
 		String sheetName = getSheetName(absolutePath);
-		// 使用无模型写入方式，按照官方文档最佳实践
+		// Use model-free writing method, according to official documentation best
+		// practices
 		EasyExcel.write(absolutePath.toFile()).sheet(sheetName).doWrite(allData);
 
 		updateFileState(planId, filePath, "Success: Rows deleted");
@@ -673,14 +679,14 @@ public class TableProcessingService implements ITableProcessingService {
 
 		log.debug("Reading all data from: {}", absolutePath);
 
-		// 尝试不同的读取方式
+		// Try different reading methods
 		List<Map<Integer, String>> rawData = null;
 
-		// 方式1：不指定headRowNumber，读取所有数据包括表头
+		// Method 1: Do not specify headRowNumber, read all data including headers
 		try {
 			rawData = EasyExcel.read(absolutePath.toFile())
 				.sheet()
-				.headRowNumber(0) // 从第0行开始读取，不跳过表头
+				.headRowNumber(0) // Read from row 0, do not skip headers
 				.doReadSync();
 			log.debug("Raw data size with headRowNumber=0: {}", rawData.size());
 		}
@@ -688,7 +694,7 @@ public class TableProcessingService implements ITableProcessingService {
 			log.warn("Failed to read with headRowNumber=0: {}", e.getMessage());
 		}
 
-		// 方式2：如果上面失败，尝试默认方式
+		// Method 2: If above fails, try default method
 		if (rawData == null || rawData.isEmpty()) {
 			try {
 				rawData = EasyExcel.read(absolutePath.toFile()).sheet().doReadSync();
@@ -699,7 +705,7 @@ public class TableProcessingService implements ITableProcessingService {
 			}
 		}
 
-		// 方式3：如果还是失败，尝试指定headRowNumber=1
+		// Method 3: If still fails, try specifying headRowNumber=1
 		if (rawData == null || rawData.isEmpty()) {
 			try {
 				rawData = EasyExcel.read(absolutePath.toFile()).sheet().headRowNumber(1).doReadSync();
