@@ -99,6 +99,7 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-minio</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-memcached</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-metaso</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-opentripmap</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tripadvisor</module>
 
         <!-- Spring AI Alibaba Document Readers -->
