@@ -1,12 +1,30 @@
-Tool for creating and generating PPT files.
+# Tool for creating and generating PPT files.
 
 Supported operations:
-- create: Create a new PPT file, requires output_path and title parameters, subtitle and slide_contents are optional
+- create: Create new PPT file or create based on template
+  - Normal creation: Requires title and file_name parameters, optional subtitle and slide_contents parameters
+  - Template-based creation: Requires title, file_name, path, and template_content parameters
+- getTemplateList: Get available template list
+- getTemplate: Get content of specified template, requires path parameter
 
-Supported PPT file types:
+Supported PPT file types include:
 - .pptx
 - .ppt
 
 When creating PPT, you can set:
 - Title and subtitle
-- Multiple slides, each slide can contain title, content and image path
+- Multiple slides, each slide can contain title, content, and image path
+
+Steps for applying template:
+1. Use getTemplateList to get available template list
+2. Use getTemplate to get template content and modify it (Note: Only modify content of Text elements, do not modify other attributes like page, shapeName, etc.)
+3. Use create operation with the following parameters to create template-based PPT:
+   - path: Template file path
+   - template_content: Modified template content
+   - file_name: Generated PPT file name
+
+Notes:
+- If applying template, must provide path, template_content and file_name parameters in create operation
+- Generated PPT files will be automatically saved in extensions/pptGenerator/ directory
+- file_name parameter is mandatory whether using template or not
+- template_content format must exactly match the format returned by getTemplate interface

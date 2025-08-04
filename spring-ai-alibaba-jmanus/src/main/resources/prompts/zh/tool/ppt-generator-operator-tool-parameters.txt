@@ -5,15 +5,13 @@
             "properties": {
                 "action": {
                     "type": "string",
-                    "const": "create"
-                },
-                "output_path": {
-                    "type": "string",
-                    "description": "生成的PPT文件保存路径"
+                    "const": "create",
+                    "description": "创建新的PPT文件或基于模板创建PPT文件"
                 },
                 "title": {
                     "type": "string",
-                    "description": "PPT的标题"
+                    "description": "PPT的标题",
+                    "minLength": 1
                 },
                 "subtitle": {
                     "type": "string",
@@ -21,17 +19,19 @@
                 },
                 "slide_contents": {
                     "type": "array",
-                    "description": "幻灯片内容列表（可选）",
+                    "description": "幻灯片内容列表（可选，不使用模板时使用）",
                     "items": {
                         "type": "object",
                         "properties": {
                             "title": {
                                 "type": "string",
-                                "description": "幻灯片标题"
+                                "description": "幻灯片标题",
+                                "minLength": 1
                             },
                             "content": {
                                 "type": "string",
-                                "description": "幻灯片内容"
+                                "description": "幻灯片内容",
+                                "minLength": 1
                             },
                             "image_path": {
                                 "type": "string",
@@ -41,9 +41,95 @@
                         "required": ["title", "content"],
                         "additionalProperties": false
                     }
+                },
+                "path": {
+                    "type": "string",
+                    "description": "模板文件路径（套用模板时必填）"
+                },
+                "template_content": {
+                    "type": "string",
+                    "description": "修改后的模板内容（套用模板时必填）"
+                },
+                "file_name": {
+                    "type": "string",
+                    "description": "生成的PPT文件名（必填）",
+                    "minLength": 1,
+                    "pattern": "^.*\\.(pptx|ppt)$",
+                    "errorMessage": "文件名必须以.pptx或.ppt结尾"
                 }
             },
-            "required": ["action", "output_path", "title"],
+            "required": ["action", "title", "file_name"],
+            "allOf": [
+                {
+                    "if": {
+                        "properties": {
+                            "path": {
+                                "not": {
+                                    "type": "null"
+                                }
+                            }
+                        },
+                        "required": ["path"]
+                    },
+                    "then": {
+                        "required": ["template_content"],
+                        "properties": {
+                            "template_content": {
+                                "minLength": 1
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "template_content": {
+                                "not": {
+                                    "type": "null"
+                                }
+                            }
+                        },
+                        "required": ["template_content"]
+                    },
+                    "then": {
+                        "required": ["path"],
+                        "properties": {
+                            "path": {
+                                "minLength": 1
+                            }
+                        }
+                    }
+                }
+            ],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "getTemplateList",
+                    "description": "获取可用模板列表"
+                }
+            },
+            "required": ["action"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "const": "getTemplate",
+                    "description": "获取指定模板的内容"
+                },
+                "path": {
+                    "type": "string",
+                    "description": "需要获取的模板文件路径",
+                    "minLength": 1
+                }
+            },
+            "required": ["action", "path"],
             "additionalProperties": false
         }
     ]

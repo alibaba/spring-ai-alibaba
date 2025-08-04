@@ -24,8 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
 @Component
 public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 
@@ -54,24 +52,32 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 	 */
 	@Override
 	public ToolExecuteResult run(PptInput input) {
-		log.info("PptGeneratorOperator input: action={}, outputPath={}, title={}", input.getAction(),
-				input.getOutputPath(), input.getTitle());
+		log.info("PptGeneratorOperator input: action={}, title={}, path={}, fileName={}", input.getAction(),
+				input.getTitle(), input.getPath(), input.getFileName());
 		try {
 			String planId = this.currentPlanId;
 
-			if (!"create".equals(input.getAction())) {
-				pptGeneratorService.updateFileState(planId, input.getOutputPath(),
-						"Error: Unsupported operations: " + input.getAction());
-				return new ToolExecuteResult(
-						"Unsupported operations: " + input.getAction() + "，Only supports the 'create' operation");
+			if ("getTemplateList".equals(input.getAction())) {
+				// Handle get template list operation
+				String templateList = pptGeneratorService.getTemplateList();
+				if (templateList == null || templateList.isEmpty()) {
+					return new ToolExecuteResult(
+							"No local templates, please check the folder extensions/pptGenerator/template available");
+				}
+				return new ToolExecuteResult(templateList);
+			}
+			else if ("getTemplate".equals(input.getAction())) {
+				// Handle get template operation
+				String templateContent = pptGeneratorService.getTemplate(input.getPath());
+				return new ToolExecuteResult(templateContent);
+			}
+			else if (!"create".equals(input.getAction())) {
+				return new ToolExecuteResult("Unsupported operations: " + input.getAction()
+						+ ", Only supports the 'create', 'getTemplateList' and 'getTemplate' operations");
 			}
 
-			// Validate the path. This will throw an exception if the path is invalid.
-			String resultPath = validateAndProcessPath(planId, input.getOutputPath());
-			input.setOutputPath(resultPath);
-
 			// Update the file state to processing.
-			pptGeneratorService.updateFileState(planId, resultPath, "Processing: Generating PPT file");
+			pptGeneratorService.updateFileState(planId, null, "Processing: Generating PPT file");
 
 			String path = pptGeneratorService.createPpt(input);
 
@@ -82,30 +88,15 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 		}
 		catch (IllegalArgumentException e) {
 			String planId = this.currentPlanId;
-			pptGeneratorService.updateFileState(planId, input.getOutputPath(),
-					"Error: Parameter validation failed: " + e.getMessage());
+			pptGeneratorService.updateFileState(planId, null, "Error: Parameter validation failed: " + e.getMessage());
 			return new ToolExecuteResult("Parameter validation failed: " + e.getMessage());
 		}
 		catch (Exception e) {
 			log.error("PPT generation failed", e);
 			String planId = this.currentPlanId;
-			pptGeneratorService.updateFileState(planId, input.getOutputPath(),
-					"Error: PPT generation failed: " + e.getMessage());
+			pptGeneratorService.updateFileState(planId, null, "Error: PPT generation failed: " + e.getMessage());
 			return new ToolExecuteResult("PPT generation failed: " + e.getMessage());
 		}
-	}
-
-	/**
-	 * Validate and process the output path.
-	 * @param planId Plan ID
-	 * @param outputPath Output path
-	 * @return Processed absolute path
-	 * @throws IOException IO exception
-	 */
-	private String validateAndProcessPath(String planId, String outputPath) throws IOException {
-		// Even if the path is empty, call the validation method, which will throw an
-		// IllegalArgumentException.
-		return pptGeneratorService.validatePptFilePath(planId, outputPath);
 	}
 
 	@Override

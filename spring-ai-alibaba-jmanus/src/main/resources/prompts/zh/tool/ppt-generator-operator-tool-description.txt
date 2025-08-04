@@ -1,7 +1,11 @@
 用于创建和生成PPT文件的工具。
 
 支持的操作：
-- create：创建新的PPT文件，需要output_path、title参数，可选subtitle和slide_contents参数
+- create：创建新的PPT文件或基于模板创建PPT文件
+  - 普通创建：需要title、file_name参数，可选subtitle和slide_contents参数
+  - 基于模板创建：需要title、file_name、path、template_content参数
+- getTemplateList：获取可用模板列表
+- getTemplate：获取指定模板的内容，需要path参数
 
 支持的PPT文件类型包括：
 - .pptx
@@ -10,3 +14,17 @@
 创建PPT时可以设置：
 - 标题和副标题
 - 多张幻灯片，每张幻灯片可包含标题、内容和图片路径
+
+套用模板时的步骤：
+1. 使用getTemplateList获取可用模板列表
+2. 使用getTemplate获取模板内容并进行修改（注意：只能修改Text元素的内容，不要修改page、shapeName等其他属性）
+3. 使用create操作并提供以下参数来创建基于模板的PPT：
+   - path：模板文件路径
+   - template_content：修改后的模板内容
+   - file_name：生成的PPT文件名
+
+注意：
+- 如果要套用模板，必须在create操作中提供path、template_content和file_name参数
+- 生成的PPT文件将自动保存在extensions/pptGenerator/目录下
+- file_name参数为必须参数，无论是否使用模板
+- template_content的格式必须与getTemplate接口返回的格式完全一致
