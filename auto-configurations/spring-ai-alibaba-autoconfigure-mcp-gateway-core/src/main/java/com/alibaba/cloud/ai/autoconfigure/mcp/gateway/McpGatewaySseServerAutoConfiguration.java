@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.autoconfigure.mcp.gateway;
 
 import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
+import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.server.autoconfigure.McpServerAutoConfiguration;
@@ -26,72 +26,60 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.web.reactive.function.server.RouterFunction;
 
 /**
- * Auto-configuration for MCP Gateway SSE Server Transport.
+ * Auto-configuration for MCP Gateway SSE Server Transport using WebFlux.
  *
- * This configuration provides SSE transport support for the MCP Gateway, enabling it to
- * expose SSE protocol with configurable settings.
+ * This configuration provides SSE transport support for the MCP Gateway using WebFlux,
+ * enabling it to expose SSE protocol with configurable settings.
  *
  * @author aias00
  */
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
-@ConditionalOnClass({ HttpServletSseServerTransportProvider.class })
+@ConditionalOnClass({ WebFluxSseServerTransportProvider.class })
 @ConditionalOnProperty(name = "spring.ai.alibaba.mcp.gateway.sse.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
 public class McpGatewaySseServerAutoConfiguration {
 
 	private static final Logger log = LoggerFactory.getLogger(McpGatewaySseServerAutoConfiguration.class);
 
 	/**
-	 * Creates an SSE server transport provider for the MCP Gateway.
+	 * Creates a WebFlux SSE server transport provider for the MCP Gateway.
 	 * @param objectMapper ObjectMapper for JSON serialization/deserialization
-	 * @param gatewayProperties Gateway properties
-	 * @return HttpServletSseServerTransportProvider
+	 * @return WebFluxSseServerTransportProvider
 	 */
 	@Bean
-	public HttpServletSseServerTransportProvider gatewaySseTransportProvider(ObjectProvider<ObjectMapper> objectMapper,
+	public WebFluxSseServerTransportProvider gatewaySseTransportProvider(ObjectProvider<ObjectMapper> objectMapper,
 			McpGatewayProperties gatewayProperties) {
 
-		log.info("Configuring MCP Gateway SSE transport provider");
+		log.info("Configuring MCP Gateway WebFlux SSE transport provider");
 
-		// 使用独立的端点路径，不依赖 Spring AI 的 SSE 端点
-		String endpoint = gatewayProperties.getSse().getEndpoint();
-
-		HttpServletSseServerTransportProvider.Builder builder = HttpServletSseServerTransportProvider.builder()
+		WebFluxSseServerTransportProvider.Builder builder = WebFluxSseServerTransportProvider.builder()
 			.objectMapper(objectMapper.getIfAvailable(ObjectMapper::new))
 			.messageEndpoint(gatewayProperties.getMessageEndpoint())
-			.sseEndpoint(endpoint);
+			.sseEndpoint(gatewayProperties.getSse().getEndpoint());
 
-		HttpServletSseServerTransportProvider provider = builder.build();
+		WebFluxSseServerTransportProvider provider = builder.build();
 
-		log.info("MCP Gateway SSE transport provider configured with endpoint: {}", endpoint);
+		log.info("MCP Gateway WebFlux SSE transport provider configured with message endpoint: {} and SSE endpoint: {}",
+				gatewayProperties.getMessageEndpoint(), gatewayProperties.getSse().getEndpoint());
 
 		return provider;
 	}
 
 	/**
-	 * Creates a servlet registration for SSE MCP endpoints.
-	 * @param sseTransportProvider SSE transport provider
-	 * @param gatewayProperties Gateway properties
-	 * @return ServletRegistrationBean for SSE MCP endpoints
+	 * Creates a router function for WebFlux SSE transport.
+	 * @param webFluxProvider WebFlux SSE transport provider
+	 * @return RouterFunction
 	 */
 	@Bean
-	public ServletRegistrationBean<HttpServletSseServerTransportProvider> gatewaySseMcpServletRegistration(
-			HttpServletSseServerTransportProvider sseTransportProvider, McpGatewayProperties gatewayProperties) {
-
-		log.info("Configuring MCP Gateway SSE servlet registration");
-
-		// 使用独立的端点路径，不依赖 Spring AI 的 SSE 端点
-		String servletPath = gatewayProperties.getSse().getEndpoint() + "/*";
-
-		ServletRegistrationBean<HttpServletSseServerTransportProvider> registration = new ServletRegistrationBean<>(
-				sseTransportProvider, servletPath);
-
-		log.info("MCP Gateway SSE servlet registration configured for path: {}", servletPath);
-
-		return registration;
+	public RouterFunction<?> webfluxMcpRouterFunction(WebFluxSseServerTransportProvider webFluxProvider) {
+		RouterFunction<?> routerFunction = webFluxProvider.getRouterFunction();
+		log.info("MCP Gateway WebFlux RouterFunction created successfully");
+		return routerFunction;
 	}
 
 }

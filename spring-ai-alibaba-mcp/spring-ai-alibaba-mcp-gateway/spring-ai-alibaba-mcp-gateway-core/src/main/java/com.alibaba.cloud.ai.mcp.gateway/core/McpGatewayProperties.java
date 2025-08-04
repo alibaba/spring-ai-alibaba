@@ -29,7 +29,7 @@ public class McpGatewayProperties {
 
 	private String registry = "nacos";
 
-	private String messageEndpoint = "/mcp/message";
+	private String messageEndpoint = "/message";
 
 	private SseConfig sse = new SseConfig();
 

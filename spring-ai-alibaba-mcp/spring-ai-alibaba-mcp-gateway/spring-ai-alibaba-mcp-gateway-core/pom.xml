@@ -47,7 +47,7 @@
             <artifactId>spring-ai-starter-mcp-server</artifactId>
             <optional>true</optional>
         </dependency>
-       
+
         <!-- Jackson Annotations -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

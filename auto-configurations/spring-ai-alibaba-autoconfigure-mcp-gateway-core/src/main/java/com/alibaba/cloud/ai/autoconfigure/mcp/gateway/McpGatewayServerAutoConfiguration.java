@@ -24,6 +24,7 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.SingleSessionSyncSpecification;
 import io.modelcontextprotocol.server.McpServer.SyncSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpAsyncServer;
@@ -45,6 +46,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.lang.NonNull;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 
 import java.util.ArrayList;
@@ -77,6 +79,21 @@ public class McpGatewayServerAutoConfiguration implements ApplicationContextAwar
 		return McpGatewayToolCallbackProvider.builder().toolCallbacks(toolsInitializer.initializeTools()).build();
 	}
 
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public List<McpServerFeatures.SyncToolSpecification> syncTools(ObjectProvider<List<ToolCallback>> toolCalls,
+			List<ToolCallback> toolCallbacksList, McpServerProperties serverProperties) {
+
+		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
+
+		if (!CollectionUtils.isEmpty(toolCallbacksList)) {
+			tools.addAll(toolCallbacksList);
+		}
+
+		return this.toSyncToolSpecifications(tools, serverProperties);
+	}
+
 	/**
 	 * Creates a synchronous MCP Server bean compatible with v0.11.0. This simulates the
 	 * old version's sync() method behavior.
@@ -84,6 +101,8 @@ public class McpGatewayServerAutoConfiguration implements ApplicationContextAwar
 	 * @return McpSyncServer
 	 */
 	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
 	public McpSyncServer mcpSyncServer(ObjectProvider<List<McpServerTransportProvider>> transportProviders,
 			ObjectProvider<List<SyncToolSpecification>> tools, List<ToolCallbackProvider> toolCallbackProvider,
 			McpServerProperties serverProperties) {
@@ -153,6 +172,19 @@ public class McpGatewayServerAutoConfiguration implements ApplicationContextAwar
 			.toList();
 	}
 
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public List<McpServerFeatures.AsyncToolSpecification> asyncTools(ObjectProvider<List<ToolCallback>> toolCalls,
+			List<ToolCallback> toolCallbackList, McpServerProperties serverProperties) {
+
+		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
+		if (!CollectionUtils.isEmpty(toolCallbackList)) {
+			tools.addAll(toolCallbackList);
+		}
+
+		return this.toAsyncToolSpecification(tools, serverProperties);
+	}
+
 	/**
 	 * Creates an asynchronous MCP Server bean compatible with v0.11.0. This simulates the
 	 * old version's async() method behavior.
@@ -160,7 +192,10 @@ public class McpGatewayServerAutoConfiguration implements ApplicationContextAwar
 	 * @return McpAsyncServer
 	 */
 	@Bean
-	public McpAsyncServer mcpAsyncServer(ObjectProvider<List<McpServerTransportProvider>> transportProviders) {
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public McpAsyncServer mcpAsyncServer(ObjectProvider<List<McpServerTransportProvider>> transportProviders,
+			ObjectProvider<List<AsyncToolSpecification>> tools, McpServerProperties serverProperties,
+			List<ToolCallbackProvider> toolCallbackProvider) {
 
 		log.info("Creating MCP Async Server bean compatible with v0.11.0");
 
@@ -182,7 +217,16 @@ public class McpGatewayServerAutoConfiguration implements ApplicationContextAwar
 
 		// 构建服务器能力
 		McpSchema.ServerCapabilities.Builder capabilitiesBuilder = McpSchema.ServerCapabilities.builder();
-		capabilitiesBuilder.tools(false); // 启用工具能力
+		List<AsyncToolSpecification> toolSpecifications = new ArrayList<>(
+				tools.stream().flatMap(List::stream).toList());
+		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
+			.map(pr -> List.of(pr.getToolCallbacks()))
+			.flatMap(List::stream)
+			.filter(fc -> fc instanceof ToolCallback)
+			.map(fc -> (ToolCallback) fc)
+			.toList();
+		toolSpecifications.addAll(this.toAsyncToolSpecification(providerToolCallbacks, serverProperties));
+		capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
 
 		serverBuilder.capabilities(capabilitiesBuilder.build());
 
@@ -190,31 +234,54 @@ public class McpGatewayServerAutoConfiguration implements ApplicationContextAwar
 		return serverBuilder.build();
 	}
 
-	/**
-	 * Creates a default MCP Server bean for backward compatibility. This provides a
-	 * fallback for applications expecting the old API.
-	 * @param syncServer Synchronous server
-	 * @param asyncServer Asynchronous server
-	 * @return McpAsyncServer (优先使用异步服务器)
-	 */
-	@Bean
-	public McpAsyncServer mcpServer(McpSyncServer syncServer, McpAsyncServer asyncServer) {
-
-		log.info("Creating default MCP Server bean for backward compatibility");
-
-		// 优先使用异步服务器，如果没有则从同步服务器获取
-		if (asyncServer != null) {
-			log.info("Using MCP Async Server");
-			return asyncServer;
-		}
-		else if (syncServer != null) {
-			log.info("Using MCP Sync Server's async server");
-			return syncServer.getAsyncServer();
-		}
-		else {
-			log.warn("No server specifications available, cannot create MCP Server");
-			return null;
-		}
+	private List<McpServerFeatures.AsyncToolSpecification> toAsyncToolSpecification(List<ToolCallback> tools,
+			McpServerProperties serverProperties) {
+		// De-duplicate tools by their name, keeping the first occurrence of each tool
+		// name
+		return tools.stream() // Key: tool name
+			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool, // Value:
+					// the
+					// tool
+					// itself
+					(existing, replacement) -> existing)) // On duplicate key, keep the
+			// existing tool
+			.values()
+			.stream()
+			.map(tool -> {
+				String toolName = tool.getToolDefinition().name();
+				MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
+						? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
+				return McpToolUtils.toAsyncToolSpecification(tool, mimeType);
+			})
+			.toList();
 	}
+
+	// /**
+	// * Creates a default MCP Server bean for backward compatibility. This provides a
+	// * fallback for applications expecting the old API.
+	// * @param syncServer Synchronous server
+	// * @param asyncServer Asynchronous server
+	// * @return McpAsyncServer (优先使用异步服务器)
+	// */
+	// @Bean
+	// public McpAsyncServer mcpServer(McpSyncServer syncServer, McpAsyncServer
+	// asyncServer) {
+	//
+	// log.info("Creating default MCP Server bean for backward compatibility");
+	//
+	// // 优先使用异步服务器，如果没有则从同步服务器获取
+	// if (asyncServer != null) {
+	// log.info("Using MCP Async Server");
+	// return asyncServer;
+	// }
+	// else if (syncServer != null) {
+	// log.info("Using MCP Sync Server's async server");
+	// return syncServer.getAsyncServer();
+	// }
+	// else {
+	// log.warn("No server specifications available, cannot create MCP Server");
+	// return null;
+	// }
+	// }
 
 }

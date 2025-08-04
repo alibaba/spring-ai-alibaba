@@ -57,7 +57,6 @@ public class McpGatewayStreamableServerAutoConfiguration {
 
 		log.info("Configuring MCP Gateway Streamable HTTP transport provider");
 
-		// 使用独立的端点路径，不依赖 SSE 端点
 		String endpoint = gatewayProperties.getStreamable().getEndpoint();
 
 		HttpServletStreamableServerTransportProvider.Builder builder = HttpServletStreamableServerTransportProvider
@@ -86,7 +85,6 @@ public class McpGatewayStreamableServerAutoConfiguration {
 
 		log.info("Configuring MCP Gateway Streamable HTTP servlet registration");
 
-		// 使用独立的端点路径，不依赖 SSE 端点
 		String servletPath = gatewayProperties.getStreamable().getEndpoint() + "/*";
 
 		ServletRegistrationBean<HttpServletStreamableServerTransportProvider> registration = new ServletRegistrationBean<>(

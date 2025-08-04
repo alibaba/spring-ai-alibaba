@@ -29,7 +29,6 @@ import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.nacos.api.exception.NacosException;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
@@ -79,7 +78,7 @@ public class NacosMcpGatewayAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnBean(HttpServletSseServerTransportProvider.class)
+	@ConditionalOnBean(McpAsyncServer.class)
 	@ConditionalOnMissingBean(McpGatewayToolManager.class)
 	public McpGatewayToolManager nacosMcpGatewayAsyncToolsProvider(final McpAsyncServer mcpAsyncServer) {
 		return new NacosMcpAsyncGatewayToolsProvider(mcpAsyncServer);
