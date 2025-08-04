@@ -225,7 +225,16 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 			// Get plan directory with hierarchical structure
 			Path planDir = getPlanDirectory();
 			Path sourceFilePath = planDir.resolve(REDUCE_FILE_NAME);
-			Path targetFilePath = planDir.resolve(newFileName);
+			
+			// Target file path - export to parent directory or root storage directory
+			Path targetFilePath;
+			if (rootPlanId != null && !rootPlanId.equals(currentPlanId)) {
+				// If hierarchical structure exists, export to parent directory (rootPlanId level)
+				targetFilePath = getInnerStorageRoot().resolve(rootPlanId).resolve(newFileName);
+			} else {
+				// If no hierarchy, throw an exception
+				return new ToolExecuteResult("Error: Cannot export file - no hierarchical structure found. The tool requires a root plan ID different from the current plan ID.");
+			}
 
 			// Check if source file exists
 			if (!Files.exists(sourceFilePath)) {
