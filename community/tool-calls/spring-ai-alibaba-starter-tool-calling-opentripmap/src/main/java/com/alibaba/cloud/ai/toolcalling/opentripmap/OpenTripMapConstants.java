@@ -30,4 +30,6 @@ public final class OpenTripMapConstants {
 
 	public static final String TOOL_NAME = "openTripMapService";
 
+	public static final String BASE_URL = "https://api.opentripmap.com/0.1/en";
+
 }

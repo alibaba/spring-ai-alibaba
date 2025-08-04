@@ -27,7 +27,7 @@ import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 public class OpenTripMapProperties extends CommonToolCallProperties {
 
 	public OpenTripMapProperties() {
-		super("https://api.opentripmap.com/0.1/en");
+		super(OpenTripMapConstants.BASE_URL);
 		this.setPropertiesFromEnv(OpenTripMapConstants.API_KEY_ENV, null, null, null);
 	}
 
