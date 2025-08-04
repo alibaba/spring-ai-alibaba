@@ -31,11 +31,15 @@ import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author yingzi
@@ -52,13 +56,17 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final SmartAgentSelectionHelperService smartAgentSelectionHelper;
 
+	private final ChatClient backgroundAgent;
+
 	public BackgroundInvestigationNode(JinaCrawlerService jinaCrawlerService, InfoCheckService infoCheckService,
 			SearchFilterService searchFilterService, QuestionClassifierService questionClassifierService,
-			SearchPlatformSelectionService platformSelectionService, SmartAgentProperties smartAgentProperties) {
+			SearchPlatformSelectionService platformSelectionService, SmartAgentProperties smartAgentProperties,
+			ChatClient backgroundAgent) {
 		this.searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService);
 		this.infoCheckService = infoCheckService;
 		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties, null,
 				questionClassifierService, platformSelectionService);
+		this.backgroundAgent = backgroundAgent;
 	}
 
 	@Override
@@ -83,24 +91,35 @@ public class BackgroundInvestigationNode implements NodeAction {
 		if (!resultsList.isEmpty()) {
 			List<String> backgroundResults = new ArrayList<>();
 			assert resultsList.size() != queries.size();
+
 			for (int i = 0; i < resultsList.size(); i++) {
-				List<Map<String, String>> results = resultsList.get(i);
+				List<Map<String, String>> searchResults = resultsList.get(i);
+
 				String query = queries.get(i);
-				// filter result
-				String checkResults = infoCheckService.backgroundInfoCheck(results, query);
 
-				String prompt = "background investigation query:\n" + query + "\n"
-						+ "background investigation results:\n" + checkResults + "\n";
+				Message messages = new UserMessage(
+						"搜索问题:" + query + "\n" + "以下是搜索结果：\n\n" + searchResults.stream().map(r -> {
+							return String.format("标题: %s\n权重: %s\n内容: %s\n", r.get("title"), r.get("weight"),
+									r.get("content"));
+						}).collect(Collectors.joining("\n\n")));
 
-				backgroundResults.add(prompt);
+				String content = backgroundAgent.prompt().messages(messages).call().content();
+
+				backgroundResults.add(content);
+
+				logger.info("背景调查报告生成已完成: {}", backgroundResults.size());
 			}
-			logger.info("✅ 搜索结果: {} 组", backgroundResults.size());
 			resultMap.put("background_investigation_results", backgroundResults);
 		}
 		else {
 			logger.warn("⚠️ 搜索失败");
 		}
 
+		String nextStep = "planner";
+		if (!state.value("enable_deepresearch", true)) {
+			nextStep = "reporter";
+		}
+		resultMap.put("background_investigation_next_node", nextStep);
 		return resultMap;
 	}
 
