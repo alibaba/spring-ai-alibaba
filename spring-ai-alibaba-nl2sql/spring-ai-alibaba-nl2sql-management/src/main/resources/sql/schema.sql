@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS agent (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL COMMENT '智能体名称',
     description TEXT COMMENT '智能体描述',
-    avatar VARCHAR(500) COMMENT '头像URL',
+    avatar TEXT COMMENT '头像URL',
     status VARCHAR(50) DEFAULT 'draft' COMMENT '状态：draft-待发布，published-已发布，offline-已下线',
     prompt TEXT COMMENT '自定义Prompt配置',
     category VARCHAR(100) COMMENT '分类',
