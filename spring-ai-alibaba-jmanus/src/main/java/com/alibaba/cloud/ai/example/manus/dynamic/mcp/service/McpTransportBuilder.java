@@ -217,7 +217,9 @@ public class McpTransportBuilder {
 			.baseUrl(baseUrl)
 			.defaultHeader("Accept", "text/event-stream")
 			.defaultHeader("Content-Type", "application/json")
-			.defaultHeader("User-Agent", mcpProperties.getUserAgent());
+			.defaultHeader("User-Agent", mcpProperties.getUserAgent())
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024 * 10));
+			
 	}
 
 }
