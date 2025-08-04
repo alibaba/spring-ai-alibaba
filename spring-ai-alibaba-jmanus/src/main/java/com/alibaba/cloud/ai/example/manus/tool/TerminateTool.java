@@ -115,7 +115,8 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 	public TerminateTool(String planId, String expectedReturnInfo) {
 		this.currentPlanId = planId;
 		// If expectedReturnInfo is null or empty, use "message" as default
-		this.expectedReturnInfo = (expectedReturnInfo == null || expectedReturnInfo.isEmpty()) ? "message" : expectedReturnInfo;
+		this.expectedReturnInfo = (expectedReturnInfo == null || expectedReturnInfo.isEmpty()) ? "message"
+				: expectedReturnInfo;
 	}
 
 	@Override
@@ -133,32 +134,38 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 	private String formatStructuredData(Map<String, Object> input) {
 		StringBuilder sb = new StringBuilder();
-		
+
 		// Handle new format with message and fileList
 		if (input.containsKey("message")) {
 			sb.append("Message: ").append(input.get("message")).append("\n");
 		}
-		
+
 		if (input.containsKey("fileList")) {
 			@SuppressWarnings("unchecked")
 			List<Map<String, String>> fileList = (List<Map<String, String>>) input.get("fileList");
 			sb.append("Files:\n");
 			for (Map<String, String> file : fileList) {
-				sb.append("  - Name: ").append(file.get("fileName"))
-				  .append("\n    Description: ").append(file.get("fileDescription")).append("\n");
+				sb.append("  - Name: ")
+					.append(file.get("fileName"))
+					.append("\n    Description: ")
+					.append(file.get("fileDescription"))
+					.append("\n");
 			}
 		}
-		
+
 		if (input.containsKey("folderList")) {
 			@SuppressWarnings("unchecked")
 			List<Map<String, String>> folderList = (List<Map<String, String>>) input.get("folderList");
 			sb.append("Folders:\n");
 			for (Map<String, String> folder : folderList) {
-				sb.append("  - Name: ").append(folder.get("folderName"))
-				  .append("\n    Description: ").append(folder.get("folderDescription")).append("\n");
+				sb.append("  - Name: ")
+					.append(folder.get("folderName"))
+					.append("\n    Description: ")
+					.append(folder.get("folderDescription"))
+					.append("\n");
 			}
 		}
-		
+
 		// If no recognized keys, just output the whole map
 		if (!input.containsKey("message") && !input.containsKey("fileList") && !input.containsKey("folderList")) {
 			sb.append(input.toString());

@@ -410,9 +410,7 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 		// 克隆WebClient.Builder并添加超时配置
 		WebClient.Builder enhancedWebClientBuilder = webClientBuilder.clone()
 			// 添加5分钟的默认超时设置
-			.codecs(configurer -> configurer
-				.defaultCodecs()
-				.maxInMemorySize(10 * 1024 * 1024)) // 10MB
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB
 			.filter((request, next) -> next.exchange(request).timeout(Duration.ofMinutes(5)));
 
 		return OpenAiApi.builder()
@@ -425,4 +423,5 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			.webClientBuilder(enhancedWebClientBuilder)
 			.build();
 	}
+
 }

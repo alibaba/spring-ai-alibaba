@@ -111,6 +111,7 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 		public void setRowIndices(List<Integer> rowIndices) {
 			this.rowIndices = rowIndices;
 		}
+
 	}
 
 	private final TableProcessingService tableProcessingService;
@@ -261,7 +262,6 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 		return functionTool;
 	}
 
-
 	/**
 	 * Execute table processing operations with strongly typed input object
 	 */
@@ -297,7 +297,8 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					// Get data as 2D array
 					List<List<String>> multipleRows = input.getMultipleRowsData();
 					if (multipleRows == null) {
-						yield new ToolExecuteResult("Error: multiple_rows_data parameter (2D array format) is required for write_multiple_rows operation");
+						yield new ToolExecuteResult(
+								"Error: multiple_rows_data parameter (2D array format) is required for write_multiple_rows operation");
 					}
 
 					yield writeMultipleRowsToTable(planId, filePath, multipleRows);
@@ -315,15 +316,16 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 					List<Integer> rowIndices = input.getRowIndices();
 
 					if (rowIndices == null) {
-						yield new ToolExecuteResult("Error: row_indices parameter is required for delete_rows operation");
+						yield new ToolExecuteResult(
+								"Error: row_indices parameter is required for delete_rows operation");
 					}
 
 					yield deleteRowsByList(planId, filePath, rowIndices);
 				}
 				default -> {
 					tableProcessingService.updateFileState(planId, filePath, "Error: Unknown action");
-					yield new ToolExecuteResult(
-							"Unknown operation: " + action + ". Supported operations: create_table, get_structure, write_multiple_rows, search_rows, delete_rows");
+					yield new ToolExecuteResult("Unknown operation: " + action
+							+ ". Supported operations: create_table, get_structure, write_multiple_rows, search_rows, delete_rows");
 				}
 			};
 		}
@@ -340,7 +342,8 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 			// Check file type
 			if (!tableProcessingService.isSupportedFileType(filePath)) {
 				tableProcessingService.updateFileState(planId, filePath, "Error: Unsupported file type");
-				return new ToolExecuteResult("Unsupported file type. Only Excel (.xlsx, .xls) and CSV (.csv) files are supported.");
+				return new ToolExecuteResult(
+						"Unsupported file type. Only Excel (.xlsx, .xls) and CSV (.csv) files are supported.");
 			}
 
 			tableProcessingService.createTable(planId, filePath, tableName, headers);
@@ -412,21 +415,19 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 		String planId = this.currentPlanId;
 		try {
 			Path workingDir = tableProcessingService.getAbsolutePath(planId, "");
-			return String.format(
-					"""
-							Current Table Processing State:
-							- working Directory:
-							%s
+			return String.format("""
+					Current Table Processing State:
+					- working Directory:
+					%s
 
-							- Operations are automatically handled (no manual file opening/closing required)
-							- All file operations (open, save) are performed automatically
-							- Supported file types: xlsx, xls, csv
+					- Operations are automatically handled (no manual file opening/closing required)
+					- All file operations (open, save) are performed automatically
+					- Supported file types: xlsx, xls, csv
 
-							- Last Operation Result:
-							%s
-							""",
-					workingDir.toString(), tableProcessingService.getLastOperationResult(planId).isEmpty()
-							? "No operation performed yet" : tableProcessingService.getLastOperationResult(planId));
+					- Last Operation Result:
+					%s
+					""", workingDir.toString(), tableProcessingService.getLastOperationResult(planId).isEmpty()
+					? "No operation performed yet" : tableProcessingService.getLastOperationResult(planId));
 		}
 		catch (Exception e) {
 			return String.format("""
@@ -472,4 +473,5 @@ public class TableProcessorTool extends AbstractBaseTool<TableProcessorTool.Tabl
 	public String getServiceGroup() {
 		return "default-service-group";
 	}
+
 }

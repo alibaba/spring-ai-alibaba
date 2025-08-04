@@ -124,7 +124,6 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 	// Track if any operation has completed, allowing termination
 	private volatile boolean operationCompleted = false;
 
-
 	public FinalizeTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager,
 			UnifiedDirectoryManager unifiedDirectoryManager) {
 		this.currentPlanId = planId;
@@ -225,15 +224,18 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 			// Get plan directory with hierarchical structure
 			Path planDir = getPlanDirectory();
 			Path sourceFilePath = planDir.resolve(REDUCE_FILE_NAME);
-			
+
 			// Target file path - export to parent directory or root storage directory
 			Path targetFilePath;
 			if (rootPlanId != null && !rootPlanId.equals(currentPlanId)) {
-				// If hierarchical structure exists, export to parent directory (rootPlanId level)
+				// If hierarchical structure exists, export to parent directory
+				// (rootPlanId level)
 				targetFilePath = getInnerStorageRoot().resolve(rootPlanId).resolve(newFileName);
-			} else {
+			}
+			else {
 				// If no hierarchy, throw an exception
-				return new ToolExecuteResult("Error: Cannot export file - no hierarchical structure found. The tool requires a root plan ID different from the current plan ID.");
+				return new ToolExecuteResult(
+						"Error: Cannot export file - no hierarchical structure found. The tool requires a root plan ID different from the current plan ID.");
 			}
 
 			// Check if source file exists
@@ -257,19 +259,22 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 			for (String line : lines) {
 				fileContent.append(line).append("\n");
 			}
-			
+
 			int charLimit = getInfiniteContextTaskContextSize();
 			int contentLength = fileContent.length();
 
-			// If content size is less than required content size, include the entire content in the result
+			// If content size is less than required content size, include the entire
+			// content in the result
 			if (contentLength <= charLimit) {
 				StringBuilder result = new StringBuilder();
-				result.append(String.format("The function call was successful. The content has been saved to the file(%s). the file content is :\n", 
+				result.append(String.format(
+						"The function call was successful. The content has been saved to the file(%s). the file content is :\n",
 						newFileName));
 				result.append(fileContent.toString());
 				return new ToolExecuteResult(result.toString());
-			} 
-			// If the file content size exceeds the required context size, indicate that the content is still too large
+			}
+			// If the file content size exceeds the required context size, indicate that
+			// the content is still too large
 			else {
 				StringBuilder result = new StringBuilder();
 				result.append("The function call was successful. The content has been saved to the file(");
@@ -279,7 +284,8 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 				result.append(" characters, which exceeds the limit of ");
 				result.append(charLimit);
 				result.append(" characters. The content is still too large and has been saved to the new file. ");
-				result.append("The user can read the file directly or use other functions to further process the oversized file.");
+				result.append(
+						"The user can read the file directly or use other functions to further process the oversized file.");
 				return new ToolExecuteResult(result.toString());
 			}
 		}
@@ -329,7 +335,8 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 		if (rootPlanId != null && !rootPlanId.equals(currentPlanId)) {
 			// Use hierarchical structure: inner_storage/{rootPlanId}/{currentPlanId}
 			return innerStorageRoot.resolve(rootPlanId).resolve(currentPlanId);
-		} else {
+		}
+		else {
 			// Use flat structure: inner_storage/{planId}
 			return innerStorageRoot.resolve(currentPlanId);
 		}

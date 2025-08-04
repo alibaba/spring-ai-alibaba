@@ -105,6 +105,7 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 		public void setExpectedOutputFields(java.util.List<String> expectedOutputFields) {
 			this.expectedOutputFields = expectedOutputFields;
 		}
+
 	}
 
 	private static final String TOOL_NAME = "data_split_tool";
@@ -153,11 +154,12 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	private volatile boolean splitCompleted = false;
 
 	private final ObjectMapper objectMapper;
-	
+
 	private final TableProcessingService tableProcessingService;
 
 	public DataSplitTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager,
-			UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper, TableProcessingService tableProcessingService) {
+			UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper,
+			TableProcessingService tableProcessingService) {
 		this.currentPlanId = planId;
 		this.manusProperties = manusProperties;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
@@ -209,7 +211,8 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	 */
 	@Override
 	public ToolExecuteResult run(DataSplitInput input) {
-		log.info("DataSplitTool input: inputFileToSplit={}, expectedOutputFields={}", input.getInputFileToSplit(), input.getExpectedOutputFields());
+		log.info("DataSplitTool input: inputFileToSplit={}, expectedOutputFields={}", input.getInputFileToSplit(),
+				input.getExpectedOutputFields());
 		try {
 			String inputFileToSplit = input.getInputFileToSplit();
 			if (inputFileToSplit == null) {
@@ -228,7 +231,8 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	/**
 	 * Process complete workflow for file or directory: validate existence -> split data
 	 */
-	private ToolExecuteResult processFileOrDirectory(String inputFileToSplit, java.util.List<String> expectedOutputFields) {
+	private ToolExecuteResult processFileOrDirectory(String inputFileToSplit,
+			java.util.List<String> expectedOutputFields) {
 		try {
 			// Ensure planId exists, use default if empty
 			if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
@@ -328,15 +332,16 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 				sharedStateManager.setSplitResults(currentPlanId, allTaskDirs);
 			}
 
-			// Generate concise return result with table header information if it's a table file
+			// Generate concise return result with table header information if it's a
+			// table file
 			StringBuilder result = new StringBuilder();
 			result.append("Split successful");
-			
+
 			// If expectedOutputFields is provided, include information about it
 			if (expectedOutputFields != null && !expectedOutputFields.isEmpty()) {
 				result.append(", expected output fields: ").append(expectedOutputFields);
 			}
-			
+
 			result.append(", created ").append(allTaskDirs.size()).append(" task directories");
 
 			String resultStr = result.toString();
@@ -356,7 +361,6 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			return new ToolExecuteResult(error);
 		}
 	}
-
 
 	/**
 	 * Split results class
@@ -457,7 +461,8 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 		Path inputFile = taskDir.resolve(TASK_INPUT_FILE_NAME);
 		StringBuilder inputContent = new StringBuilder();
 		// inputContent.append("# Document Fragment\n\n");
-		// inputContent.append("**Original File:** ").append(originalFileName).append("\n\n");
+		// inputContent.append("**Original File:**
+		// ").append(originalFileName).append("\n\n");
 		inputContent.append("**Task ID:** ").append(taskId).append("\n\n");
 		inputContent.append("## Content\n\n");
 		inputContent.append("```\n");

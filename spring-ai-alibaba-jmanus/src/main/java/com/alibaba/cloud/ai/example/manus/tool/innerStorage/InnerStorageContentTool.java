@@ -241,8 +241,10 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 	 */
 	@Override
 	public ToolExecuteResult run(InnerStorageContentInput input) {
-		log.info("InnerStorageContentTool input: action={}, fileName={}, folderName={}, queryKey={}, outputFormatSpecification={}",
-				input.getAction(), input.getFileName(), input.getFolderName(), input.getQueryKey(), input.getOutputFormatSpecification());
+		log.info(
+				"InnerStorageContentTool input: action={}, fileName={}, folderName={}, queryKey={}, outputFormatSpecification={}",
+				input.getAction(), input.getFileName(), input.getFolderName(), input.getQueryKey(),
+				input.getOutputFormatSpecification());
 		try {
 			String action = input.getAction();
 			if (action == null) {
@@ -250,8 +252,8 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			}
 
 			return switch (action) {
-				case "extract_relevant_content" -> getStoredContent(input.getFileName(), input.getQueryKey(), 
-						input.getOutputFormatSpecification());
+				case "extract_relevant_content" ->
+					getStoredContent(input.getFileName(), input.getQueryKey(), input.getOutputFormatSpecification());
 				case "get_folder_content" ->
 					getFolderContent(input.getFolderName(), input.getQueryKey(), input.getOutputFormatSpecification());
 				default -> new ToolExecuteResult("Error: Unsupported operation type '" + action

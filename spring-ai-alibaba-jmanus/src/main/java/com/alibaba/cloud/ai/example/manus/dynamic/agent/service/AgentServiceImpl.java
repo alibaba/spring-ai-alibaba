@@ -176,7 +176,8 @@ public class AgentServiceImpl implements AgentService {
 		String uuid = UUID.randomUUID().toString();
 		String expectedReturnInfo = "dummyColumn1, dummyColumn2";
 		try {
-			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid, uuid, expectedReturnInfo);
+			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid, uuid,
+					expectedReturnInfo);
 			return toolcallContext.entrySet().stream().map(entry -> {
 				Tool tool = new Tool();
 				tool.setKey(entry.getKey());

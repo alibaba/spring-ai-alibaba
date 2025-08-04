@@ -32,8 +32,8 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * Map output recording tool for MapReduce workflow. 
- * Responsible for recording Map stage processing results and task status management.
+ * Map output recording tool for MapReduce workflow. Responsible for recording Map stage
+ * processing results and task status management.
  */
 public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput> implements TerminableTool {
 
@@ -162,8 +162,6 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 	// Shared state manager for managing shared state between multiple Agent instances
 	private MapReduceSharedStateManager sharedStateManager;
-
-	
 
 	// Track if map output recording has completed, allowing termination
 	private volatile boolean mapOutputRecorded = false;

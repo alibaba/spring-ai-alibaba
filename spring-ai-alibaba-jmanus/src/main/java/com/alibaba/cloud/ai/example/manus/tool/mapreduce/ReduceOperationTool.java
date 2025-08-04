@@ -143,6 +143,7 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
 	}
+
 	@Override
 	public String getName() {
 		return TOOL_NAME;
@@ -157,6 +158,7 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 		}
 		return new ArrayList<>();
 	}
+
 	@Override
 	public String getDescription() {
 		return getToolDescription();
@@ -329,7 +331,8 @@ public class ReduceOperationTool extends AbstractBaseTool<ReduceOperationTool.Re
 		if (rootPlanId != null && !rootPlanId.equals(currentPlanId)) {
 			// Use hierarchical structure: inner_storage/{rootPlanId}/{currentPlanId}
 			return innerStorageRoot.resolve(rootPlanId).resolve(currentPlanId);
-		} else {
+		}
+		else {
 			// Use flat structure: inner_storage/{planId}
 			return innerStorageRoot.resolve(currentPlanId);
 		}

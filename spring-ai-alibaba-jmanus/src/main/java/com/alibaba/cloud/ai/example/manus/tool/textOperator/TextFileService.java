@@ -67,8 +67,7 @@ public class TextFileService implements ApplicationRunner, ITextFileService {
 			".sql", ".sh", ".bat", ".cmd", // Scripts and database
 			".log", ".conf", ".ini", // Logs and configuration
 			".gradle", ".pom", ".mvn", // Build tools
-			".csv"
-	));
+			".csv"));
 
 	private final ConcurrentHashMap<String, FileState> fileStates = new ConcurrentHashMap<>();
 

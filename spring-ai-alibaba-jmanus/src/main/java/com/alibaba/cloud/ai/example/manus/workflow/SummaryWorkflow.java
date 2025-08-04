@@ -57,12 +57,12 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 
 	/**
 	 * Get summary plan template directly as built-in English version
-	 * 
-	 * We use a local template instead of PromptService for the following reasons:
-	 * 1. This is a core workflow template that should not be externally modified
-	 * 2. Using a local template improves performance by avoiding service calls
-	 * 3. It ensures consistency and stability of the core summarization workflow
-	 * 4. The template is fixed and does not require dynamic configuration
+	 *
+	 * We use a local template instead of PromptService for the following reasons: 1. This
+	 * is a core workflow template that should not be externally modified 2. Using a local
+	 * template improves performance by avoiding service calls 3. It ensures consistency
+	 * and stability of the core summarization workflow 4. The template is fixed and does
+	 * not require dynamic configuration
 	 */
 	private String getSummaryPlanTemplate() {
 		return """
@@ -106,7 +106,9 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 	 * @param content File content
 	 * @param queryKey Query keywords
 	 * @param thinkActRecordId Think-act record ID for sub-plan execution tracking
-	 * @param outputFormatSpecification A file used to describe in what format the data should be stored (default is an excel table), the table header of this file is the specification description
+	 * @param outputFormatSpecification A file used to describe in what format the data
+	 * should be stored (default is an excel table), the table header of this file is the
+	 * specification description
 	 * @return Future of summarization result
 	 */
 	public CompletableFuture<String> executeSummaryWorkflow(String parentPlanId, String fileName, String content,
@@ -122,14 +124,16 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 
 	/**
 	 * Build MapReduce-based summarization execution plan
-	 * 
-	 * @param parentPlanId            Use caller-provided plan ID to ensure subprocess can find the corresponding directory
-	 * @param fileName                File name to be processed
-	 * @param content                 File content (not directly used yet, but kept as extension parameter)
-	 * @param queryKey                Query keywords for information extraction
-	 * @param outputFormatSpecification A file used to describe in what format the data should be stored (default is an excel table),
-	 *                                the table header of this file is the specification description
-	 * @return                        MapReduceExecutionPlan object configured based on the input parameters
+	 * @param parentPlanId Use caller-provided plan ID to ensure subprocess can find the
+	 * corresponding directory
+	 * @param fileName File name to be processed
+	 * @param content File content (not directly used yet, but kept as extension
+	 * parameter)
+	 * @param queryKey Query keywords for information extraction
+	 * @param outputFormatSpecification A file used to describe in what format the data
+	 * should be stored (default is an excel table), the table header of this file is the
+	 * specification description
+	 * @return MapReduceExecutionPlan object configured based on the input parameters
 	 */
 	private MapReduceExecutionPlan buildSummaryExecutionPlan(String parentPlanId, String fileName, String content,
 			String queryKey, String outputFormatSpecification) {
@@ -140,21 +144,22 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 
 			// Generate plan JSON using local template with PromptTemplate
 			PromptTemplate promptTemplate = PromptTemplate.builder()
-			.renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
-    		.template(getSummaryPlanTemplate())
+				.renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+				.template(getSummaryPlanTemplate())
 				.build();
-				
+
 			Map<String, Object> variables = new HashMap<>();
 			variables.put("planId", parentPlanId);
 			variables.put("fileName", fileName);
 			variables.put("queryKey", queryKey);
 			variables.put("outputFormatSpecification", outputFormatSpecification);
-			
+
 			String planJson = promptTemplate.render(variables);
 
 			// Parse JSON to MapReduceExecutionPlan object
 			MapReduceExecutionPlan plan = objectMapper.readValue(planJson, MapReduceExecutionPlan.class);
-			// Output format specifications are configured directly in JSON template, no need to set here
+			// Output format specifications are configured directly in JSON template, no
+			// need to set here
 
 			return plan;
 

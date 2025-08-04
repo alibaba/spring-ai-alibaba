@@ -170,26 +170,28 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			int currentStepIndex = step.getStepIndex();
 			recordToUpdate.setCurrentStepIndex(currentStepIndex);
 			retrieveExecutionSteps(context, recordToUpdate);
-			
+
 			List<AgentExecutionRecord> agentExecutionSequence = recordToUpdate.getAgentExecutionSequence();
 			// 检查边界，确保 agentExecutionSequence 有足够的元素
 			if (agentExecutionSequence.size() > currentStepIndex) {
 				AgentExecutionRecord agentExecutionRecord = agentExecutionSequence.get(currentStepIndex);
 				agentExecutionRecord.setStatus(
 						step.getStatus() == AgentState.COMPLETED ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING);
-			} else {
+			}
+			else {
 				// 如果没有对应的 AgentExecutionRecord，创建一个新的
-				AgentExecutionRecord agentExecutionRecord = new AgentExecutionRecord(recordToUpdate.getCurrentPlanId(), null, null);
+				AgentExecutionRecord agentExecutionRecord = new AgentExecutionRecord(recordToUpdate.getCurrentPlanId(),
+						null, null);
 				agentExecutionRecord.setStatus(
 						step.getStatus() == AgentState.COMPLETED ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING);
-				
+
 				// 补齐到 currentStepIndex
 				while (agentExecutionSequence.size() < currentStepIndex) {
 					agentExecutionSequence.add(new AgentExecutionRecord());
 				}
 				agentExecutionSequence.add(agentExecutionRecord);
 			}
-			
+
 			// Save the correct plan (parent for sub-plan, self for root plan)
 			if (rootPlan != null) {
 				savePlanExecutionRecords(rootPlan);

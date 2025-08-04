@@ -66,11 +66,12 @@ public class TableProcessingService implements ITableProcessingService {
 	}
 
 	/**
-	 * 表头读取监听器 - 专门用于读取表头数据
-	 * 基于EasyExcel官方文档的最佳实践
+	 * 表头读取监听器 - 专门用于读取表头数据 基于EasyExcel官方文档的最佳实践
 	 */
 	private static class HeaderDataListener implements ReadListener<Map<Integer, String>> {
+
 		private final List<String> headers = new ArrayList<>();
+
 		private static final Logger log = LoggerFactory.getLogger(HeaderDataListener.class);
 
 		/**
@@ -81,14 +82,14 @@ public class TableProcessingService implements ITableProcessingService {
 			log.debug("解析到一条头数据:{}", headMap);
 			// 使用 ConverterUtils 转换为 Map<Integer,String>
 			Map<Integer, String> stringHeadMap = ConverterUtils.convertToStringMap(headMap, context);
-			
+
 			// 将表头按列索引排序并提取值
 			List<String> headRow = stringHeadMap.entrySet()
 				.stream()
 				.sorted(Map.Entry.comparingByKey())
 				.map(Map.Entry::getValue)
 				.collect(Collectors.toList());
-			
+
 			if (!headRow.isEmpty()) {
 				headers.clear();
 				headers.addAll(headRow);
@@ -125,6 +126,7 @@ public class TableProcessingService implements ITableProcessingService {
 		public List<String> getHeaders() {
 			return new ArrayList<>(headers);
 		}
+
 	}
 
 	/**
@@ -222,7 +224,7 @@ public class TableProcessingService implements ITableProcessingService {
 		if (currentFile != null && fileStates.containsKey(currentFile)) {
 			return fileStates.get(currentFile);
 		}
-		
+
 		// If no current file, return the first available state
 		return fileStates.values().iterator().next();
 	}
@@ -253,7 +255,8 @@ public class TableProcessingService implements ITableProcessingService {
 		if (headers != null) {
 			for (String header : headers) {
 				if ("ID".equalsIgnoreCase(header)) {
-					throw new IOException("ID is a reserved column name and cannot be used as a header. Please use a different column name.");
+					throw new IOException(
+							"ID is a reserved column name and cannot be used as a header. Please use a different column name.");
 				}
 			}
 		}
@@ -278,7 +281,8 @@ public class TableProcessingService implements ITableProcessingService {
 		// Write headers to file
 		String actualSheetName = (sheetName != null && !sheetName.isEmpty()) ? sheetName : "Sheet1";
 		// 使用无模型写入方式，直接写入数据（包含表头行）
-		log.debug("Writing table data to file: {}, sheetName: {}, tableData: {}", absolutePath, actualSheetName, tableData);
+		log.debug("Writing table data to file: {}, sheetName: {}, tableData: {}", absolutePath, actualSheetName,
+				tableData);
 		EasyExcel.write(absolutePath.toFile()).sheet(actualSheetName).doWrite(tableData);
 		log.debug("Successfully created table file: {}", absolutePath);
 
@@ -306,7 +310,8 @@ public class TableProcessingService implements ITableProcessingService {
 			long fileSize = Files.size(absolutePath);
 			boolean isReadable = Files.isReadable(absolutePath);
 			log.debug("File info - path: {}, size: {} bytes, readable: {}", absolutePath, fileSize, isReadable);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.warn("Failed to get file info: {}", e.getMessage());
 		}
 
@@ -314,37 +319,36 @@ public class TableProcessingService implements ITableProcessingService {
 
 		// 使用官方推荐的监听器方式读取表头
 		HeaderDataListener headerListener = new HeaderDataListener();
-		
+
 		try {
 			// 使用EasyExcel的官方方式读取表头数据
-			EasyExcel.read(absolutePath.toFile(), headerListener)
-				.sheet()
-				.doRead();
-			
+			EasyExcel.read(absolutePath.toFile(), headerListener).sheet().doRead();
+
 			List<String> headers = headerListener.getHeaders();
 			log.debug("Successfully extracted headers using listener: {}", headers);
-			
+
 			if (headers.isEmpty()) {
 				log.warn("No headers found in file: {}", absolutePath);
 				// 如果监听器方式失败，尝试备用方法
 				return fallbackReadHeaders(absolutePath);
 			}
-			
+
 			// Remove ID column from returned headers if it exists and is the first column
 			if (!headers.isEmpty() && "ID".equals(headers.get(0))) {
 				return new ArrayList<>(headers.subList(1, headers.size()));
 			}
-			
+
 			return headers;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.warn("Failed to read headers using listener, trying fallback method: {}", e.getMessage());
 			List<String> headers = fallbackReadHeaders(absolutePath);
-			
+
 			// Remove ID column from returned headers if it exists and is the first column
 			if (!headers.isEmpty() && "ID".equals(headers.get(0))) {
 				return new ArrayList<>(headers.subList(1, headers.size()));
 			}
-			
+
 			return headers;
 		}
 	}
@@ -354,7 +358,7 @@ public class TableProcessingService implements ITableProcessingService {
 	 */
 	private List<String> fallbackReadHeaders(Path absolutePath) throws IOException {
 		log.debug("Using fallback method to read headers from: {}", absolutePath);
-		
+
 		try {
 			// 尝试同步读取方式
 			List<Map<Integer, String>> rawData = EasyExcel.read(absolutePath.toFile())
@@ -363,7 +367,7 @@ public class TableProcessingService implements ITableProcessingService {
 				.doReadSync();
 
 			log.debug("Fallback raw data size: {}", rawData.size());
-			
+
 			if (!rawData.isEmpty()) {
 				Map<Integer, String> headerRow = rawData.get(0);
 				List<String> headers = headerRow.entrySet()
@@ -371,14 +375,15 @@ public class TableProcessingService implements ITableProcessingService {
 					.sorted(Map.Entry.comparingByKey())
 					.map(Map.Entry::getValue)
 					.collect(Collectors.toList());
-				
+
 				log.debug("Fallback extracted headers: {}", headers);
 				return headers;
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Fallback method also failed: {}", e.getMessage());
 		}
-		
+
 		return new ArrayList<>();
 	}
 
@@ -398,16 +403,16 @@ public class TableProcessingService implements ITableProcessingService {
 
 		// Get table structure to validate data size
 		List<String> headers = getTableStructure(planId, filePath);
-		
+
 		// Check if table has auto-generated ID column
 		boolean hasIdColumn = !headers.isEmpty() && "ID".equals(headers.get(0));
 		int expectedDataSize = hasIdColumn ? headers.size() - 1 : headers.size();
-		
+
 		// Validate data size (excluding auto-generated ID column if present)
 		if (data.size() != expectedDataSize) {
-			throw new IOException(
-					String.format("Data size mismatch. Expected: %d columns (excluding ID), Actual: %d columns. Headers: %s",
-							expectedDataSize, data.size(), headers));
+			throw new IOException(String.format(
+					"Data size mismatch. Expected: %d columns (excluding ID), Actual: %d columns. Headers: %s",
+					expectedDataSize, data.size(), headers));
 		}
 
 		// Read existing data
@@ -422,7 +427,7 @@ public class TableProcessingService implements ITableProcessingService {
 				List<String> updatedData = new ArrayList<>();
 				updatedData.add(idToUpdate); // Add ID as first column
 				updatedData.addAll(data.subList(1, data.size())); // Add remaining data
-				
+
 				// Try to find and update existing row with this ID
 				boolean updated = false;
 				for (int i = 0; i < existingData.size(); i++) {
@@ -433,21 +438,23 @@ public class TableProcessingService implements ITableProcessingService {
 						break;
 					}
 				}
-				
+
 				// If not found, add as new row with specified ID
 				if (!updated) {
 					existingData.add(updatedData);
 				}
-				
+
 				dataToWrite = null; // We've already handled adding the data
-			} else {
+			}
+			else {
 				// Auto-generate ID as the first column
 				String nextId = String.valueOf(existingData.size() > 0 ? existingData.size() - 1 : 0);
 				dataToWrite = new ArrayList<>();
 				dataToWrite.add(nextId);
 				dataToWrite.addAll(data);
 			}
-		} else {
+		}
+		else {
 			// No ID column, use data as is
 			dataToWrite = new ArrayList<>(data);
 		}
@@ -460,7 +467,8 @@ public class TableProcessingService implements ITableProcessingService {
 		// Write all data back
 		String sheetName = getSheetName(absolutePath);
 		// 使用无模型写入方式，按照官方文档最佳实践
-		log.debug("Writing data to file: {}, sheetName: {}, dataSize: {}", absolutePath, sheetName, existingData.size());
+		log.debug("Writing data to file: {}, sheetName: {}, dataSize: {}", absolutePath, sheetName,
+				existingData.size());
 		if (!existingData.isEmpty()) {
 			log.debug("First row (headers): {}", existingData.get(0));
 			if (existingData.size() > 1) {
@@ -505,9 +513,8 @@ public class TableProcessingService implements ITableProcessingService {
 		for (int i = 0; i < data.size(); i++) {
 			List<String> row = data.get(i);
 			if (row.size() != expectedDataSize) {
-				String errorMsg = String.format(
-						"数据列数不匹配。期望: %d列(不包括ID列), 实际: %d列。表头: %s, 第%d行数据: %s",
-						expectedDataSize, row.size(), headers, i + 1, row);
+				String errorMsg = String.format("数据列数不匹配。期望: %d列(不包括ID列), 实际: %d列。表头: %s, 第%d行数据: %s", expectedDataSize,
+						row.size(), headers, i + 1, row);
 				updateFileState(planId, filePath, "Error: Data size mismatch");
 				throw new IOException(errorMsg);
 			}
@@ -526,7 +533,7 @@ public class TableProcessingService implements ITableProcessingService {
 					List<String> updatedData = new ArrayList<>();
 					updatedData.add(idToUpdate); // Add ID as first column
 					updatedData.addAll(row.subList(1, row.size())); // Add remaining data
-					
+
 					// Try to find and update existing row with this ID
 					boolean updated = false;
 					for (int i = 0; i < existingData.size(); i++) {
@@ -537,12 +544,13 @@ public class TableProcessingService implements ITableProcessingService {
 							break;
 						}
 					}
-					
+
 					// If not found, add as new row
 					if (!updated) {
 						existingData.add(updatedData);
 					}
-				} else {
+				}
+				else {
 					// No ID specified, generate one
 					String nextId = String.valueOf(existingData.size() > 0 ? existingData.size() - 1 : 0);
 					List<String> dataToWrite = new ArrayList<>();
@@ -551,7 +559,8 @@ public class TableProcessingService implements ITableProcessingService {
 					existingData.add(dataToWrite);
 				}
 			}
-		} else {
+		}
+		else {
 			// No ID column, add rows as is
 			existingData.addAll(data);
 		}
@@ -623,7 +632,8 @@ public class TableProcessingService implements ITableProcessingService {
 		int dataRowCount = allData.size() - 1; // Exclude header row
 		for (Integer index : rowIndices) {
 			if (index < 0 || index >= dataRowCount) {
-				throw new IOException("Row index out of bounds: " + index + " (valid range: 0-" + (dataRowCount - 1) + ")");
+				throw new IOException(
+						"Row index out of bounds: " + index + " (valid range: 0-" + (dataRowCount - 1) + ")");
 			}
 		}
 
@@ -660,52 +670,50 @@ public class TableProcessingService implements ITableProcessingService {
 	 */
 	private List<List<String>> readAllData(String planId, String filePath) throws IOException {
 		Path absolutePath = validateFilePath(planId, filePath);
-		
+
 		log.debug("Reading all data from: {}", absolutePath);
 
 		// 尝试不同的读取方式
 		List<Map<Integer, String>> rawData = null;
-		
+
 		// 方式1：不指定headRowNumber，读取所有数据包括表头
 		try {
 			rawData = EasyExcel.read(absolutePath.toFile())
-					.sheet()
-					.headRowNumber(0) // 从第0行开始读取，不跳过表头
-					.doReadSync();
+				.sheet()
+				.headRowNumber(0) // 从第0行开始读取，不跳过表头
+				.doReadSync();
 			log.debug("Raw data size with headRowNumber=0: {}", rawData.size());
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.warn("Failed to read with headRowNumber=0: {}", e.getMessage());
 		}
-		
+
 		// 方式2：如果上面失败，尝试默认方式
 		if (rawData == null || rawData.isEmpty()) {
 			try {
-				rawData = EasyExcel.read(absolutePath.toFile())
-						.sheet()
-						.doReadSync();
+				rawData = EasyExcel.read(absolutePath.toFile()).sheet().doReadSync();
 				log.debug("Raw data size without headRowNumber: {}", rawData.size());
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.warn("Failed to read without headRowNumber: {}", e.getMessage());
 			}
 		}
-		
+
 		// 方式3：如果还是失败，尝试指定headRowNumber=1
 		if (rawData == null || rawData.isEmpty()) {
 			try {
-				rawData = EasyExcel.read(absolutePath.toFile())
-						.sheet()
-						.headRowNumber(1)
-						.doReadSync();
+				rawData = EasyExcel.read(absolutePath.toFile()).sheet().headRowNumber(1).doReadSync();
 				log.debug("Raw data size with headRowNumber=1: {}", rawData.size());
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.warn("Failed to read with headRowNumber=1: {}", e.getMessage());
 			}
 		}
-		
+
 		if (rawData == null) {
 			rawData = new ArrayList<>();
 		}
-		
+
 		log.debug("Raw data size in readAllData: {}", rawData.size());
 
 		List<List<String>> result = rawData.stream()
@@ -715,16 +723,16 @@ public class TableProcessingService implements ITableProcessingService {
 				.map(Map.Entry::getValue)
 				.collect(Collectors.toList()))
 			.collect(Collectors.toList());
-			
+
 		log.debug("Converted data size: {}", result.size());
-		
+
 		// If the first column is ID, remove it from all rows
 		if (!result.isEmpty() && !result.get(0).isEmpty() && "ID".equals(result.get(0).get(0))) {
 			return result.stream()
 				.map(row -> row.subList(1, row.size())) // Remove first column (ID)
 				.collect(Collectors.toList());
 		}
-		
+
 		return result;
 	}
 
@@ -767,7 +775,8 @@ public class TableProcessingService implements ITableProcessingService {
 		try {
 			Integer.parseInt(str);
 			return true;
-		} catch (NumberFormatException e) {
+		}
+		catch (NumberFormatException e) {
 			return false;
 		}
 	}
