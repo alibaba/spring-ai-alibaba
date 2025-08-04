@@ -126,15 +126,26 @@
               {{ $t('init.apiKeyLabel') }}
               <span class="required">*</span>
             </label>
-            <input
-              id="apiKey"
-              v-model="form.apiKey"
-              type="password"
-              class="form-input"
-              :placeholder="$t('init.apiKeyPlaceholder')"
-              :disabled="loading"
-              required
-            />
+            <div class="api-key-input-container">
+              <input
+                id="apiKey"
+                v-model="form.apiKey"
+                :type="showDashscopeApiKey ? 'text' : 'password'"
+                class="form-input"
+                :placeholder="$t('init.apiKeyPlaceholder')"
+                :disabled="loading"
+                required
+              />
+              <button
+                type="button"
+                class="api-key-toggle-btn"
+                @click="showDashscopeApiKey = !showDashscopeApiKey"
+                :title="showDashscopeApiKey ? $t('init.hideApiKey') : $t('init.showApiKey')"
+              >
+                <span v-if="showDashscopeApiKey">👁️</span>
+                <span v-else>🙈</span>
+              </button>
+            </div>
             <div class="form-hint">
               {{ $t('init.apiKeyHint') }}
               <a
@@ -171,15 +182,26 @@
                 {{ $t('init.customApiKeyLabel') }}
                 <span class="required">*</span>
               </label>
-              <input
-                id="customApiKey"
-                v-model="form.apiKey"
-                type="password"
-                class="form-input"
-                :placeholder="$t('init.customApiKeyPlaceholder')"
-                :disabled="loading"
-                required
-              />
+              <div class="api-key-input-container">
+                <input
+                  id="customApiKey"
+                  v-model="form.apiKey"
+                  :type="showCustomApiKey ? 'text' : 'password'"
+                  class="form-input"
+                  :placeholder="$t('init.customApiKeyPlaceholder')"
+                  :disabled="loading"
+                  required
+                />
+                <button
+                  type="button"
+                  class="api-key-toggle-btn"
+                  @click="showCustomApiKey = !showCustomApiKey"
+                  :title="showCustomApiKey ? $t('init.hideApiKey') : $t('init.showApiKey')"
+                >
+                  <span v-if="showCustomApiKey">👁️</span>
+                  <span v-else>🙈</span>
+                </button>
+              </div>
             </div>
 
             <div class="form-group">
@@ -289,6 +311,10 @@ const loading = ref(false)
 const error = ref('')
 const success = ref(false)
 
+// API key visibility state
+const showDashscopeApiKey = ref(false)
+const showCustomApiKey = ref(false)
+
 // Computed properties
 const isFormValid = computed(() => {
   if (!form.value.apiKey.trim()) {
@@ -334,6 +360,9 @@ const onConfigModeChange = () => {
   form.value.modelName = ''
   form.value.modelDisplayName = ''
   error.value = ''
+  // Reset API key visibility
+  showDashscopeApiKey.value = false
+  showCustomApiKey.value = false
 }
 
 const validateForm = () => {
@@ -698,6 +727,42 @@ onMounted(() => {
 
 .form-input::placeholder {
   color: #666666;
+}
+
+.api-key-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.api-key-input-container .form-input {
+  padding-right: 50px;
+}
+
+.api-key-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.api-key-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.api-key-toggle-btn:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .config-mode-selection {

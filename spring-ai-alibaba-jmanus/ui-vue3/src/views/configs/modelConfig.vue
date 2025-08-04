@@ -143,12 +143,22 @@
         <div class="form-item">
           <label>{{ t('config.modelConfig.apiKey') }} <span class="required">*</span></label>
           <div class="api-key-container">
-            <input
-              type="text"
-              v-model="selectedModel.apiKey"
-              :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
-              required
-            />
+            <div class="api-key-input-wrapper">
+              <input
+                :type="showSelectedApiKey ? 'text' : 'password'"
+                v-model="selectedModel.apiKey"
+                :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
+                required
+              />
+              <button
+                type="button"
+                class="api-key-toggle-btn"
+                @click="showSelectedApiKey = !showSelectedApiKey"
+                :title="showSelectedApiKey ? t('config.modelConfig.hideApiKey') : t('config.modelConfig.showApiKey')"
+              >
+                <Icon :icon="showSelectedApiKey ? 'carbon:view-off' : 'carbon:view'" />
+              </button>
+            </div>
             <button
               class="check-btn"
               @click="handleValidateConfig"
@@ -259,12 +269,22 @@
         <div class="form-item">
           <label>{{ t('config.modelConfig.apiKey') }} <span class="required">*</span></label>
           <div class="api-key-container">
-            <input
-              type="text"
-              v-model="newModel.apiKey"
-              :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
-              required
-            />
+            <div class="api-key-input-wrapper">
+              <input
+                :type="showNewApiKey ? 'text' : 'password'"
+                v-model="newModel.apiKey"
+                :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
+                required
+              />
+              <button
+                type="button"
+                class="api-key-toggle-btn"
+                @click="showNewApiKey = !showNewApiKey"
+                :title="showNewApiKey ? t('config.modelConfig.hideApiKey') : t('config.modelConfig.showApiKey')"
+              >
+                <Icon :icon="showNewApiKey ? 'carbon:view-off' : 'carbon:view'" />
+              </button>
+            </div>
             <button
               class="check-btn"
               @click="handleNewModelValidateConfig"
@@ -397,6 +417,10 @@ const modelAvailableModels = ref<Map<string, Model[]>>(new Map())
 const newModelValidating = ref(false)
 const newModelAvailableModels = ref<Model[]>([])
 
+// API key visibility state
+const showSelectedApiKey = ref(false)
+const showNewApiKey = ref(false)
+
 const selectedHeadersJson = computed({
   get() {
     if (!selectedModel.value?.headers) return ''
@@ -487,6 +511,8 @@ const selectModel = async (model: Model) => {
     }
     // When switching models, clear validation state but keep available model list for that model
     validating.value = false
+    // Reset API key visibility when switching models
+    showSelectedApiKey.value = false
   } catch (err: any) {
     console.error('Failed to load Model details:', err)
     showMessage(t('config.modelConfig.loadDetailsFailed') + ': ' + err.message, 'error')
@@ -510,6 +536,8 @@ const showAddModelModal = () => {
   // Clear new Model modal state
   newModelValidating.value = false
   newModelAvailableModels.value = []
+  // Reset API key visibility
+  showNewApiKey.value = false
   showModal.value = true
 }
 
@@ -1259,8 +1287,44 @@ onMounted(() => {
   align-items: center;
 }
 
-.api-key-container input {
+.api-key-input-wrapper {
+  position: relative;
   flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.api-key-input-wrapper input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.api-key-toggle-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.api-key-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.api-key-toggle-btn:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 1);
 }
 
 .check-btn {
