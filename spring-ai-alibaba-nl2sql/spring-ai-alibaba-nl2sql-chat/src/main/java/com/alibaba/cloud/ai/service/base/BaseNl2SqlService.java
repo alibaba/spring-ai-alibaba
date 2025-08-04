@@ -79,10 +79,14 @@ public class BaseNl2SqlService {
 	}
 
 	public Flux<ChatResponse> rewriteStream(String query) throws Exception {
-		logger.info("Starting rewriteStream for query: {}", query);
-		List<String> evidences = extractEvidences(query);
+		return rewriteStream(query, null);
+	}
+
+	public Flux<ChatResponse> rewriteStream(String query, String agentId) throws Exception {
+		logger.info("Starting rewriteStream for query: {} with agentId: {}", query, agentId);
+		List<String> evidences = extractEvidences(query, agentId);
 		logger.debug("Extracted {} evidences for rewriteStream", evidences.size());
-		SchemaDTO schemaDTO = select(query, evidences);
+		SchemaDTO schemaDTO = select(query, evidences, agentId);
 		String prompt = PromptHelper.buildRewritePrompt(query, schemaDTO, evidences);
 		logger.debug("Built rewrite prompt for streaming");
 		Flux<ChatResponse> result = aiService.streamCall(prompt);
@@ -203,8 +207,21 @@ public class BaseNl2SqlService {
 	 * 抽取证据
 	 */
 	public List<String> extractEvidences(String query) {
-		logger.debug("Extracting evidences for query: {}", query);
-		List<Document> evidenceDocuments = vectorStoreService.getDocuments(query, "evidence");
+		return extractEvidences(query, null);
+	}
+
+	/**
+	 * 抽取证据 - 支持智能体隔离
+	 */
+	public List<String> extractEvidences(String query, String agentId) {
+		logger.debug("Extracting evidences for query: {} with agentId: {}", query, agentId);
+		List<Document> evidenceDocuments;
+		if (agentId != null) {
+			evidenceDocuments = vectorStoreService.getDocumentsForAgent(agentId, query, "evidence");
+		}
+		else {
+			evidenceDocuments = vectorStoreService.getDocuments(query, "evidence");
+		}
 		List<String> evidences = evidenceDocuments.stream().map(Document::getText).collect(Collectors.toList());
 		logger.debug("Extracted {} evidences: {}", evidences.size(), evidences);
 		return evidences;
@@ -229,10 +246,21 @@ public class BaseNl2SqlService {
 	}
 
 	public SchemaDTO select(String query, List<String> evidenceList) throws Exception {
-		logger.debug("Starting schema selection for query: {} with {} evidences", query, evidenceList.size());
+		return select(query, evidenceList, null);
+	}
+
+	public SchemaDTO select(String query, List<String> evidenceList, String agentId) throws Exception {
+		logger.debug("Starting schema selection for query: {} with {} evidences and agentId: {}", query,
+				evidenceList.size(), agentId);
 		List<String> keywords = extractKeywords(query, evidenceList);
 		logger.debug("Using {} keywords for schema selection", keywords != null ? keywords.size() : 0);
-		SchemaDTO schemaDTO = schemaService.mixRag(query, keywords);
+		SchemaDTO schemaDTO;
+		if (agentId != null) {
+			schemaDTO = schemaService.mixRagForAgent(agentId, query, keywords);
+		}
+		else {
+			schemaDTO = schemaService.mixRag(query, keywords);
+		}
 		logger.debug("Retrieved schema with {} tables", schemaDTO.getTable() != null ? schemaDTO.getTable().size() : 0);
 		SchemaDTO result = fineSelect(schemaDTO, query, evidenceList);
 		logger.debug("Fine selection completed, final schema has {} tables",

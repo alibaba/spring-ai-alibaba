@@ -1,0 +1,53 @@
+{
+    "oneOf": [
+        {
+            "type": "object",
+            "properties": {
+                "action": { "type": "string", "const": "execute_sql" },
+                "query": { "type": "string", "description": "SQL statement to execute" },
+                "datasourceName": { "type": "string", "description": "Data source name, optional" }
+            },
+            "required": ["action", "query"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": { "type": "string", "const": "get_table_name" },
+                "text": { "type": "string", "description": "Chinese table name or table description to search, supports single query only" },
+                "datasourceName": { "type": "string", "description": "Data source name, optional" }
+            },
+            "required": ["action", "text"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": { "type": "string", "const": "get_table_index" },
+                "text": { "type": "string", "description": "Table name to search" },
+                "datasourceName": { "type": "string", "description": "Data source name, optional" }
+            },
+            "required": ["action", "text"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": { "type": "string", "const": "get_table_meta" },
+                "text": { "type": "string", "description": "Fuzzy search table description, leave empty to get all tables" },
+                "datasourceName": { "type": "string", "description": "Data source name, optional" }
+            },
+            "required": ["action"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": { "type": "string", "const": "get_datasource_info" },
+                "datasourceName": { "type": "string", "description": "Data source name, leave empty to get all available data sources" }
+            },
+            "required": ["action"],
+            "additionalProperties": false
+        }
+    ]
+}

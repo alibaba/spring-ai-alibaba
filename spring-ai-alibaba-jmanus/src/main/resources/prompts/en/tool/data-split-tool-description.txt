@@ -1,0 +1,9 @@
+Data split tool for MapReduce workflow data preparation phase.
+Automatically validates file existence and performs data split processing.
+Supports CSV, TSV, TXT and other text format data files.
+
+Key features:
+- File and directory existence validation
+- Automatic text file detection and processing
+- Task directory structure creation with metadata
+- Support for both single files and directories

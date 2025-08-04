@@ -1,0 +1,24 @@
+{
+    "type": "object",
+    "properties": {
+        "columns": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "Column names for the data structure"
+        },
+        "data": {
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "description": "Data rows, each row should match the columns structure"
+        }
+    },
+    "required": ["columns", "data"],
+    "additionalProperties": false
+}

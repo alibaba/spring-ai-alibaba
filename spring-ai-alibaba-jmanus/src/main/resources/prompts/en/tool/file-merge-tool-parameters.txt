@@ -1,0 +1,20 @@
+{
+    "type": "object",
+    "properties": {
+        "action": {
+            "type": "string",
+            "enum": ["merge_file"],
+            "description": "Operation type, currently supports merge_file"
+        },
+        "file_name": {
+            "type": "string",
+            "description": "Filename to merge (supports fuzzy matching)"
+        },
+        "target_folder": {
+            "type": "string",
+            "description": "Target folder path where the file will be copied"
+        }
+    },
+    "required": ["action", "file_name", "target_folder"],
+    "additionalProperties": false
+}

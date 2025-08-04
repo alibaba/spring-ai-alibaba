@@ -1,0 +1,53 @@
+{
+    "oneOf": [
+        {
+            "type": "object",
+            "properties": {
+                "action": { "type": "string", "const": "execute_sql" },
+                "query": { "type": "string", "description": "要执行的SQL语句" },
+                "datasourceName": { "type": "string", "description": "数据源名称，可选" }
+            },
+            "required": ["action", "query"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": { "type": "string", "const": "get_table_name" },
+                "text": { "type": "string", "description": "要搜索的中文表名或表描述，仅支持单个查询" },
+                "datasourceName": { "type": "string", "description": "数据源名称，可选" }
+            },
+            "required": ["action", "text"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": { "type": "string", "const": "get_table_index" },
+                "text": { "type": "string", "description": "要搜索的表名" },
+                "datasourceName": { "type": "string", "description": "数据源名称，可选" }
+            },
+            "required": ["action", "text"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": { "type": "string", "const": "get_table_meta" },
+                "text": { "type": "string", "description": "模糊搜索表描述，留空获取所有表" },
+                "datasourceName": { "type": "string", "description": "数据源名称，可选" }
+            },
+            "required": ["action"],
+            "additionalProperties": false
+        },
+        {
+            "type": "object",
+            "properties": {
+                "action": { "type": "string", "const": "get_datasource_info" },
+                "datasourceName": { "type": "string", "description": "数据源名称，留空获取所有可用数据源" }
+            },
+            "required": ["action"],
+            "additionalProperties": false
+        }
+    ]
+}
