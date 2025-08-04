@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -149,9 +148,6 @@ public class PlanningFactory implements IPlanningFactory {
 	private StreamingResponseHandler streamingResponseHandler;
 
 	@Autowired
-	private ToolPromptManager toolPromptManager;
-
-	@Autowired
 	@Lazy
 	private CronService cronService;
 
@@ -227,28 +223,27 @@ public class PlanningFactory implements IPlanningFactory {
 			return toolCallbackMap;
 		}
 		// Add all tool definitions
-		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService, objectMapper, toolPromptManager));
-		toolDefinitions.add(DatabaseUseTool.getInstance(dataSourceService, objectMapper, toolPromptManager));
+		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService, objectMapper));
+		toolDefinitions.add(DatabaseUseTool.getInstance(dataSourceService, objectMapper));
 		toolDefinitions.add(new TerminateTool(planId, expectedReturnInfo));
-		toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper, toolPromptManager));
-		toolDefinitions.add(new DocLoaderTool(toolPromptManager));
-		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper, toolPromptManager));
-		toolDefinitions.add(new TableProcessorTool(tableProcessingService));
+		toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper));
+		toolDefinitions.add(new DocLoaderTool());
+		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
 		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
-		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder, toolPromptManager));
-		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager, toolPromptManager));
+		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
+		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
 		// toolDefinitions.add(new GoogleSearch());
 		// toolDefinitions.add(new PythonExecute());
-		toolDefinitions.add(new FormInputTool(objectMapper, promptService));
-		toolDefinitions.add(new DataSplitTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
-				objectMapper, tableProcessingService));
+		toolDefinitions.add(new FormInputTool(objectMapper));
+		toolDefinitions
+			.add(new DataSplitTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager, objectMapper,tableProcessingService));
 		toolDefinitions.add(new MapOutputTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
 				objectMapper));
 		toolDefinitions.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager,
 				unifiedDirectoryManager));
 		toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
-		toolDefinitions.add(new CronTool(cronService, objectMapper, toolPromptManager));
-		
+		toolDefinitions.add(new CronTool(cronService, objectMapper));
+
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
 			String serviceGroup = toolCallback.getServiceGroup();

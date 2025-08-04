@@ -1,3 +1,0 @@
-Get the content information of a local file at a specified path.
-Use this tool when you want to get some related information asked by the user.
-This tool accepts the file path and gets the related information content.

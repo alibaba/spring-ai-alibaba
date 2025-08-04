@@ -69,8 +69,6 @@ public class DocLoaderTool extends AbstractBaseTool<DocLoaderTool.DocLoaderInput
 
 	private static final String name = "doc_loader";
 
-	private final ToolPromptManager toolPromptManager;
-
 	public OpenAiApi.FunctionTool getToolDefinition() {
 		String description = getDescription();
 		String parameters = getParameters();
@@ -82,21 +80,21 @@ public class DocLoaderTool extends AbstractBaseTool<DocLoaderTool.DocLoaderInput
 	/**
 	 * Get FunctionToolCallback for Spring AI
 	 */
-	public static FunctionToolCallback<DocLoaderInput, ToolExecuteResult> getFunctionToolCallback(
-			ToolPromptManager toolPromptManager) {
+	public static FunctionToolCallback<DocLoaderInput, ToolExecuteResult> getFunctionToolCallback() {
 		return FunctionToolCallback
 			.<DocLoaderInput, ToolExecuteResult>builder(name,
-					(DocLoaderInput input,
-							org.springframework.ai.chat.model.ToolContext context) -> new DocLoaderTool(
-									toolPromptManager)
-								.run(input))
-			.description(toolPromptManager.getToolDescription("doc_loader"))
+					(DocLoaderInput input, org.springframework.ai.chat.model.ToolContext context) -> new DocLoaderTool()
+						.run(input))
+			.description("""
+					Get the content information of a local file at a specified path.
+					Use this tool when you want to get some related information asked by the user.
+					This tool accepts the file path and gets the related information content.
+					""")
 			.inputType(DocLoaderInput.class)
 			.build();
 	}
 
-	public DocLoaderTool(ToolPromptManager toolPromptManager) {
-		this.toolPromptManager = toolPromptManager;
+	public DocLoaderTool() {
 	}
 
 	private String lastFilePath = "";
@@ -145,12 +143,31 @@ public class DocLoaderTool extends AbstractBaseTool<DocLoaderTool.DocLoaderInput
 
 	@Override
 	public String getDescription() {
-		return toolPromptManager.getToolDescription("doc_loader");
+		return """
+				Get the content information of a local file at a specified path.
+				Use this tool when you want to get some related information asked by the user.
+				This tool accepts the file path and gets the related information content.
+				""";
 	}
 
 	@Override
 	public String getParameters() {
-		return toolPromptManager.getToolParameters("doc_loader");
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "file_type": {
+				            "type": "string",
+				            "description": "(required) File type, only support pdf file."
+				        },
+				        "file_path": {
+				            "type": "string",
+				            "description": "(required) Get the absolute path of the file from the user request."
+				        }
+				    },
+				    "required": ["file_type", "file_path"]
+				}
+				""";
 	}
 
 	@Override

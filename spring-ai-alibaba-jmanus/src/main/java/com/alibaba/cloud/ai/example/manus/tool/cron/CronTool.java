@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.manus.tool.cron;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.service.CronService;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.vo.CronConfig;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
-import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -28,16 +27,13 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 
 	private final ObjectMapper objectMapper;
 
-	private final ToolPromptManager toolPromptManager;
-
 	private static final Logger log = LoggerFactory.getLogger(CronTool.class);
 
 	private final CronService cronService;
 
-	public CronTool(CronService cronService, ObjectMapper objectMapper, ToolPromptManager toolPromptManager) {
+	public CronTool(CronService cronService, ObjectMapper objectMapper) {
 		this.cronService = cronService;
 		this.objectMapper = objectMapper;
-		this.toolPromptManager = toolPromptManager;
 	}
 
 	public static class CronToolInput {
@@ -118,12 +114,37 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 
 	@Override
 	public String getDescription() {
-		return toolPromptManager.getToolDescription("cron_tool");
+		return """
+				Create and manage scheduled cron tasks. This tool allows you to create recurring tasks that will be executed automatically at specified times using cron expressions.
+				""";
 	}
 
 	@Override
 	public String getParameters() {
-		return toolPromptManager.getToolParameters("cron_tool");
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "cronName": {
+				            "type": "string",
+				            "description": "Name of the cron task"
+				        },
+				        "cronTime": {
+				            "type": "string",
+				            "description": "Cron expression for scheduling (e.g., '0 0 8 * * ?' for daily at 8 AM)"
+				        },
+				        "planTemplateId": {
+				            "type": "string",
+				            "description": "ID of the plan template to execute"
+				        },
+				        "description": {
+				            "type": "string",
+				            "description": "Description of what this cron task does"
+				        }
+				    },
+				    "required": ["cronName", "cronTime", "planTemplateId"]
+				}
+				""";
 	}
 
 	@Override

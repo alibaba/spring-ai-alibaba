@@ -23,7 +23,6 @@ import java.util.List;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 
@@ -131,14 +130,11 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 	private final PlanExecutionRecorder planExecutionRecorder;
 
-	private final ToolPromptManager toolPromptManager;
-
 	public InnerStorageContentTool(UnifiedDirectoryManager directoryManager, SummaryWorkflow summaryWorkflow,
-			PlanExecutionRecorder planExecutionRecorder, ToolPromptManager toolPromptManager) {
+			PlanExecutionRecorder planExecutionRecorder) {
 		this.directoryManager = directoryManager;
 		this.summaryWorkflow = summaryWorkflow;
 		this.planExecutionRecorder = planExecutionRecorder;
-		this.toolPromptManager = toolPromptManager;
 	}
 
 	private static final String TOOL_NAME = "inner_storage_content_tool";

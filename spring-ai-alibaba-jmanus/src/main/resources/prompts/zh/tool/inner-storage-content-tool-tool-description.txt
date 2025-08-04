@@ -1,6 +1,0 @@
-内部存储内容检索工具，专门用于智能内容提取和结构化输出。
-智能内容提取模式：根据文件名获取详细内容，**必须提供** query_key 和 outputFormatSpecification 参数进行智能提取和结构化输出
-
-支持两种操作模式：
-1. extract_relevant_content：从单个文件获取内容（精确文件名匹配或相对路径）
-2. get_folder_content：从指定文件夹中的所有文件获取内容
