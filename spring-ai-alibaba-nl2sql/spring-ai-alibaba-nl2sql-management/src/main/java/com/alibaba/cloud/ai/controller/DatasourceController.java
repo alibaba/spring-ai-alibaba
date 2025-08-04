@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.controller;
 import com.alibaba.cloud.ai.entity.Datasource;
 import com.alibaba.cloud.ai.entity.AgentDatasource;
 import com.alibaba.cloud.ai.service.DatasourceService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,8 +36,11 @@ import java.util.HashMap;
 @CrossOrigin(origins = "*")
 public class DatasourceController {
 
-	@Autowired
-	private DatasourceService datasourceService;
+	private final DatasourceService datasourceService;
+
+	public DatasourceController(DatasourceService datasourceService) {
+		this.datasourceService = datasourceService;
+	}
 
 	/**
 	 * 获取所有数据源列表

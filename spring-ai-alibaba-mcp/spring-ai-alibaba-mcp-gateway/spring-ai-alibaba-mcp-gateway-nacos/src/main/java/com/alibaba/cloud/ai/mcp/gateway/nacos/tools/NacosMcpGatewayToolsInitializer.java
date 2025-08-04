@@ -26,6 +26,7 @@ import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
 import com.alibaba.nacos.api.ai.model.mcp.McpTool;
 import com.alibaba.nacos.api.ai.model.mcp.McpToolMeta;
 import com.alibaba.nacos.api.ai.model.mcp.McpToolSpecification;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
@@ -64,21 +65,28 @@ public class NacosMcpGatewayToolsInitializer implements McpGatewayToolsInitializ
 					continue;
 				}
 				String protocol = serviceDetail.getProtocol();
-				if (!"http".equalsIgnoreCase(protocol) && !"https".equalsIgnoreCase(protocol)) {
-					logger.warn("Protocol {} is not supported, no tools will be initialized for service: {}", protocol,
-							serviceName);
-					continue;
-				}
-				List<ToolCallback> tools = parseToolsFromMcpServerDetailInfo(serviceDetail);
-				if (tools != null && !tools.isEmpty()) {
+				if ("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)
+						|| "mcp-sse".equalsIgnoreCase(protocol) || "mcp-streamable".equalsIgnoreCase(protocol)) {
+					List<ToolCallback> tools = parseToolsFromMcpServerDetailInfo(serviceDetail);
+					if (CollectionUtils.isEmpty(tools)) {
+						logger.warn("No tools defined for service: {}", serviceName);
+						continue;
+					}
 					allTools.addAll(tools);
 				}
+				else {
+					logger.error("protocol {} is not supported yet. Check your configuration for valid tool protocols",
+							protocol);
+				}
+
 			}
 			catch (Exception e) {
 				logger.error("Failed to initialize tools for service: {}", serviceName, e);
 			}
 		}
-		logger.info("Initial dynamic tools loading completed - Found {} tools", allTools.size());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Initial dynamic tools loading completed - Found {} tools", allTools.size());
+		}
 		return allTools;
 	}
 

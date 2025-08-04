@@ -135,12 +135,14 @@ public class NacosMcpGatewayToolsWatcher extends AbstractMcpGatewayToolsWatcher 
 		if (oldMcpServerDetail != null) {
 			oldProtocol = oldMcpServerDetail.getProtocol();
 		}
-		if (!StringUtils.equals(oldProtocol, "http") && !StringUtils.equals(oldProtocol, "https")) {
+		if (!StringUtils.equals(oldProtocol, "http") && !StringUtils.equals(oldProtocol, "https")
+				&& !StringUtils.equals(oldProtocol, "mcp-sse") && !StringUtils.equals(oldProtocol, "mcp-streamable")) {
 			isHaveOldTools = false;
 		}
 		String newProtocol = mcpServerDetail.getProtocol();
 
-		if (!StringUtils.equals(newProtocol, "http") && !StringUtils.equals(newProtocol, "https")) {
+		if (!StringUtils.equals(newProtocol, "http") && !StringUtils.equals(newProtocol, "https")
+				&& !StringUtils.equals(newProtocol, "mcp-sse") && !StringUtils.equals(newProtocol, "mcp-streamable")) {
 			isHaveNewTools = false;
 		}
 
@@ -238,7 +240,9 @@ public class NacosMcpGatewayToolsWatcher extends AbstractMcpGatewayToolsWatcher 
 			Set<String> needToUpdateTools = new HashSet<>();
 			compareToolsChange(oldMcpServerDetail, mcpServerDetail, needToDeleteTools, needToUpdateTools);
 
-			logger.info("Nacos mcp service info (name {}): {}", mcpName, JacksonUtils.toJson(mcpServerDetail));
+			if (logger.isDebugEnabled()) {
+				logger.debug("Nacos mcp service info (name {}): {}", mcpName, JacksonUtils.toJson(mcpServerDetail));
+			}
 			McpToolSpecification toolSpec = mcpServerDetail.getToolSpec();
 			McpServerRemoteServiceConfig remoteServerConfig = mcpServerDetail.getRemoteServerConfig();
 			String protocol = mcpServerDetail.getProtocol();

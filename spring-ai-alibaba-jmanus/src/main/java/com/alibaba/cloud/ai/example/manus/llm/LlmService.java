@@ -45,6 +45,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -348,9 +349,11 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			defaultOptions.setTopP(dynamicModelEntity.getTopP());
 		}
 		Map<String, String> headers = dynamicModelEntity.getHeaders();
-		if (headers != null) {
-			defaultOptions.setHttpHeaders(headers);
+		if (headers == null) {
+			headers = new HashMap<>();
 		}
+		headers.put("User-Agent", "JManus/3.0.2-SNAPSHOT");
+		defaultOptions.setHttpHeaders(headers);
 		var openAiApi = openAiApi(restClientBuilderProvider.getIfAvailable(RestClient::builder),
 				webClientBuilderProvider.getIfAvailable(WebClient::builder), dynamicModelEntity);
 		OpenAiChatOptions options = OpenAiChatOptions.fromOptions(defaultOptions);
