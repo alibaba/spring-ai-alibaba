@@ -481,7 +481,7 @@ public class DynamicAgent extends ReActAgent {
 			return;
 		}
 		// clear current plan memory
-		llmService.getAgentMemory(manusProperties.getMaxMemory()).clear(getCurrentPlanId());
+		llmService.getAgentMemory(manusProperties.getMaxMemory()).clear(getMemoryId());
 		for (Message message : messages) {
 			// exclude all system message
 			if (message instanceof SystemMessage) {
@@ -493,7 +493,7 @@ public class DynamicAgent extends ReActAgent {
 				continue;
 			}
 			// only keep assistant message and tool_call message
-			llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getCurrentPlanId(), message);
+			llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getMemoryId(), message);
 		}
 	}
 

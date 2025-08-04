@@ -112,7 +112,7 @@ public class PlanFinalizer {
 			throw new RuntimeException("Failed to generate summary", e);
 		}
 		finally {
-			llmService.clearConversationMemory(context.getMemoryId());
+			// llmService.clearConversationMemory(context.getMemoryId());
 		}
 	}
 
@@ -177,7 +177,7 @@ public class PlanFinalizer {
 		}
 		finally {
 			if (context.getPlan() != null) {
-				llmService.clearConversationMemory(context.getMemoryId());
+				// llmService.clearConversationMemory(context.getMemoryId());
 			}
 		}
 	}
