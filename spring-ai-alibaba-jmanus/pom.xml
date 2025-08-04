@@ -108,6 +108,19 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
         </dependency>
+        
+        <!-- MCP SDK -->
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp</artifactId>
+            <version>0.11.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-spring-webflux</artifactId>
+            <version>0.11.0</version>
+        </dependency>
+
         <!--
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
@@ -273,6 +286,7 @@
             <version>2.15.1</version>
         </dependency>
     </dependencies>
+    
 
     <build>
         <finalName>jmanus</finalName>
