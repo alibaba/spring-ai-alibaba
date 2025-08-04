@@ -20,6 +20,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntit
 import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelRepository;
 import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
 import com.alibaba.cloud.ai.example.manus.event.ModelChangeEvent;
+import com.alibaba.cloud.ai.memory.jdbc.MysqlChatMemoryRepository;
+import com.alibaba.cloud.ai.memory.jdbc.PostgresChatMemoryRepository;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +93,7 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	private DynamicModelRepository dynamicModelRepository;
 
 	@Autowired
-	private
+	private MysqlChatMemoryRepository mysqlChatMemoryRepository;
 
 	public LlmService() {
 	}
@@ -241,15 +243,18 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	@Override
 	public ChatMemory getAgentMemory(Integer maxMessages) {
 		if (agentMemory == null) {
-			agentMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
+			agentMemory = MessageWindowChatMemory.builder()
+				.chatMemoryRepository(mysqlChatMemoryRepository)
+				.maxMessages(maxMessages)
+				.build();
 		}
 		return agentMemory;
 	}
 
 	@Override
-	public void clearAgentMemory(String planId) {
+	public void clearAgentMemory(String memoryId) {
 		if (this.agentMemory != null) {
-			this.agentMemory.clear(planId);
+			this.agentMemory.clear(memoryId);
 		}
 	}
 
@@ -268,12 +273,15 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	}
 
 	@Override
-	public void clearConversationMemory(String planId) {
+	public void clearConversationMemory(String memoryId) {
 		if (this.conversationMemory == null) {
 			// Default to 100 messages if not specified elsewhere
-			this.conversationMemory = MessageWindowChatMemory.builder().maxMessages(100).build();
+			this.conversationMemory = MessageWindowChatMemory.builder()
+				.chatMemoryRepository(mysqlChatMemoryRepository)
+				.maxMessages(100)
+				.build();
 		}
-		this.conversationMemory.clear(planId);
+		this.conversationMemory.clear(memoryId);
 	}
 
 	@Override
@@ -293,7 +301,10 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	@Override
 	public ChatMemory getConversationMemory(Integer maxMessages) {
 		if (conversationMemory == null) {
-			conversationMemory = MessageWindowChatMemory.builder().chatMemoryRepository().maxMessages(maxMessages).build();
+			conversationMemory = MessageWindowChatMemory.builder()
+				.chatMemoryRepository(mysqlChatMemoryRepository)
+				.maxMessages(maxMessages)
+				.build();
 		}
 		return conversationMemory;
 	}

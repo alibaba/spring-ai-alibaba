@@ -92,7 +92,7 @@ public class PlanFinalizer {
 
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
 			if (context.isUseMemory()) {
-				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
+				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
 				requestSpec.advisors(MessageChatMemoryAdvisor
 					.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
 					.build());
@@ -112,7 +112,7 @@ public class PlanFinalizer {
 			throw new RuntimeException("Failed to generate summary", e);
 		}
 		finally {
-			llmService.clearConversationMemory(plan.getCurrentPlanId());
+			llmService.clearConversationMemory(context.getMemoryId());
 		}
 	}
 
@@ -155,7 +155,7 @@ public class PlanFinalizer {
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
 
 			if (context.isUseMemory()) {
-				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
+				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
 				requestSpec.advisors(MessageChatMemoryAdvisor
 					.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
 					.build());
@@ -177,7 +177,7 @@ public class PlanFinalizer {
 		}
 		finally {
 			if (context.getPlan() != null) {
-				llmService.clearConversationMemory(context.getPlan().getCurrentPlanId());
+				llmService.clearConversationMemory(context.getMemoryId());
 			}
 		}
 	}

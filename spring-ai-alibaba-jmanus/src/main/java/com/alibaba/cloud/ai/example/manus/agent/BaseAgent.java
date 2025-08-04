@@ -68,6 +68,8 @@ public abstract class BaseAgent {
 
 	private String currentPlanId = null;
 
+	private String memoryId = null;
+
 	private String rootPlanId = null;
 
 	// Think-act record ID for sub-plan executions triggered by tool calls
@@ -326,7 +328,7 @@ public abstract class BaseAgent {
 	protected boolean isStuck() {
 		// Currently, if the agent does not call the tool three times, it is considered
 		// stuck and the current step is exited.
-		List<Message> memoryEntries = llmService.getAgentMemory(manusProperties.getMaxMemory()).get(getCurrentPlanId());
+		List<Message> memoryEntries = llmService.getAgentMemory(manusProperties.getMaxMemory()).get(getMemoryId());
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
 			if (msg instanceof AssistantMessage) {
@@ -349,6 +351,14 @@ public abstract class BaseAgent {
 
 	public void setCurrentPlanId(String planId) {
 		this.currentPlanId = planId;
+	}
+
+	public String getMemoryId() {
+		return memoryId;
+	}
+
+	public void setMemoryId(String memoryId) {
+		this.memoryId = memoryId;
 	}
 
 	public void setRootPlanId(String rootPlanId) {

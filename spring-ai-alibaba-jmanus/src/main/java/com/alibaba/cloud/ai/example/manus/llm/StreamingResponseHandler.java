@@ -48,6 +48,8 @@ public class StreamingResponseHandler {
 	@Autowired
 	private JmanusEventPublisher jmanusEventPublisher;
 
+	1
+
 	/**
 	 * Result container for streaming response processing
 	 */

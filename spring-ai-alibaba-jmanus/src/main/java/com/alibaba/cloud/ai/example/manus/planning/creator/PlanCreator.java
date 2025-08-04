@@ -107,8 +107,8 @@ public class PlanCreator {
 						.prompt(prompt)
 						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
 					if (useMemory) {
-						requestSpec.advisors(
-								memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
+						requestSpec
+							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
 						requestSpec.advisors(MessageChatMemoryAdvisor
 							.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
 							.build());

@@ -170,7 +170,7 @@ public class DynamicAgent extends ReActAgent {
 			List<Message> messages = new ArrayList<>(Collections.singletonList(systemMessage));
 			// Add history message.
 			ChatMemory chatMemory = llmService.getAgentMemory(manusProperties.getMaxMemory());
-			List<Message> historyMem = chatMemory.get(getCurrentPlanId());
+			List<Message> historyMem = chatMemory.get(getMemoryId());
 			messages.addAll(historyMem);
 			messages.add(currentStepEnvMessage);
 			// Call the LLM
@@ -465,7 +465,7 @@ public class DynamicAgent extends ReActAgent {
 			if (!StringUtils.isBlank(userInput)) {
 				// Add user input to memory
 
-				llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getCurrentPlanId(), userMessage);
+				llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getMemoryId(), userMessage);
 
 			}
 		}

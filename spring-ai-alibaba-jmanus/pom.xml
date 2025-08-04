@@ -281,6 +281,12 @@
             <artifactId>commons-io</artifactId>
             <version>2.15.1</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-memory-jdbc</artifactId>
+            <version>${memory.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

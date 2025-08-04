@@ -41,6 +41,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -96,6 +97,9 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		context.setCurrentPlanId(planId);
 		context.setRootPlanId(planId);
 		context.setNeedSummary(true);
+
+		String memoryId = request.get("memoryId");
+		context.setMemoryId(memoryId == null ? UUID.randomUUID().toString() : memoryId);
 
 		// Get or create planning flow
 		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(planId);
