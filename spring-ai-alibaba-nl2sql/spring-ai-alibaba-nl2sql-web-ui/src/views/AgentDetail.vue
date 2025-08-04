@@ -412,54 +412,77 @@
                     添加数据源
                   </button>
                 </div>
-                <div class="datasource-table">
-                  <table class="table">
-                    <thead>
-                      <tr>
-                        <th>数据源名称</th>
-                        <th>数据源类型</th>
-                        <th>连接地址</th>
-                        <th>连接状态</th>
-                        <th>状态</th>
-                        <th>创建时间</th>
-                        <th>操作</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-if="agentDatasourceList.length === 0">
-                        <td colspan="7" class="text-center text-muted">暂无数据源</td>
-                      </tr>
-                      <tr v-for="agentDatasource in agentDatasourceList" :key="agentDatasource.id">
-                        <td>{{ agentDatasource.datasource?.name }}</td>
-                        <td>{{ getDatasourceTypeText(agentDatasource.datasource?.type) }}</td>
-                        <td>{{ agentDatasource.datasource?.connectionUrl }}</td>
-                        <td>
-                          <span class="status-badge" :class="agentDatasource.datasource?.testStatus">
-                            {{ getTestStatusText(agentDatasource.datasource?.testStatus) }}
-                          </span>
-                        </td>
-                        <td>
-                          <span class="status-badge" :class="agentDatasource.isActive === 1 ? 'active' : 'inactive'">
-                            {{ agentDatasource.isActive === 1 ? '启用' : '禁用' }}
-                          </span>
-                        </td>
-                        <td>{{ formatDate(agentDatasource.createTime) }}</td>
-                        <td>
-                          <div class="action-buttons">
-                            <button 
-                              class="btn btn-sm"
-                              :class="agentDatasource.isActive === 1 ? 'btn-warning' : 'btn-success'"
-                              @click="toggleDatasourceStatus(agentDatasource.datasource.id, agentDatasource.isActive !== 1)"
-                            >
-                              {{ agentDatasource.isActive === 1 ? '禁用' : '启用' }}
-                            </button>
-                            <button class="btn btn-sm btn-outline" @click="testDatasourceConnection(agentDatasource.datasource.id)">测试连接</button>
-                            <button class="btn btn-sm btn-danger" @click="removeDatasourceFromAgent(agentDatasource.datasource.id)">移除</button>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div class="datasource-table-container">
+                  <div class="datasource-table">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th style="min-width: 120px;">数据源名称</th>
+                          <th style="min-width: 100px;">数据源类型</th>
+                          <th style="min-width: 200px;">连接地址</th>
+                          <th style="min-width: 80px;">连接状态</th>
+                          <th style="min-width: 60px;">状态</th>
+                          <th style="min-width: 100px;">创建时间</th>
+                          <th style="min-width: 200px;">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-if="agentDatasourceList.length === 0">
+                          <td colspan="7" class="text-center text-muted">暂无数据源</td>
+                        </tr>
+                        <tr v-for="agentDatasource in agentDatasourceList" :key="agentDatasource.id">
+                          <td>
+                            <div class="cell-content" :title="agentDatasource.datasource?.name">
+                              {{ agentDatasource.datasource?.name }}
+                            </div>
+                          </td>
+                          <td>{{ getDatasourceTypeText(agentDatasource.datasource?.type) }}</td>
+                          <td>
+                            <div class="cell-content" :title="agentDatasource.datasource?.connectionUrl">
+                              {{ agentDatasource.datasource?.connectionUrl }}
+                            </div>
+                          </td>
+                          <td>
+                            <span class="status-badge" :class="agentDatasource.datasource?.testStatus">
+                              {{ getTestStatusText(agentDatasource.datasource?.testStatus) }}
+                            </span>
+                          </td>
+                          <td>
+                            <span class="status-badge" :class="agentDatasource.isActive === 1 ? 'active' : 'inactive'">
+                              {{ agentDatasource.isActive === 1 ? '启用' : '禁用' }}
+                            </span>
+                          </td>
+                          <td>{{ formatDate(agentDatasource.createTime) }}</td>
+                          <td>
+                            <div class="action-buttons">
+                              <button 
+                                class="btn btn-sm"
+                                :class="agentDatasource.isActive === 1 ? 'btn-warning' : 'btn-success'"
+                                @click="toggleDatasourceStatus(agentDatasource.datasource.id, agentDatasource.isActive !== 1)"
+                                :title="agentDatasource.isActive === 1 ? '禁用数据源' : '启用数据源'"
+                              >
+                                {{ agentDatasource.isActive === 1 ? '禁用' : '启用' }}
+                              </button>
+                              <button 
+                                class="btn btn-sm btn-outline" 
+                                @click="testDatasourceConnection(agentDatasource.datasource.id)"
+                                title="测试连接"
+                              >
+                                测试连接
+                              </button>
+                              <button 
+                                class="btn btn-sm btn-danger" 
+                                @click="removeDatasourceFromAgent(agentDatasource.datasource.id)"
+                                title="移除数据源"
+                              >
+                                移除
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2183,6 +2206,25 @@ export default {
   min-height: 100vh;
   background: var(--bg-layout);
   font-family: var(--font-family);
+  width: 100vw;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* 确保页面占满整个屏幕宽度 */
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* 现代化头部导航 */
@@ -2430,7 +2472,16 @@ export default {
 .container {
   width: 100%;
   padding: 0 1rem;
-  max-width: 100%;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* 确保页面占满整个屏幕宽度 */
+.page-header .header-content {
+  max-width: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .header-content {
@@ -2522,6 +2573,7 @@ export default {
 .main-content {
   padding: 1rem 0;
   max-width: 100%;
+  width: 100%;
 }
 
 .content-layout {
@@ -2529,6 +2581,15 @@ export default {
   gap: 24px;
   align-items: stretch;
   min-height: 600px;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* 确保整个页面占满屏幕宽度 */
+.agent-detail-page {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* 左侧导航样式 */
@@ -2607,10 +2668,16 @@ export default {
   background: white;
   border-radius: 8px;
   overflow: hidden;
+  width: 100%;
+  max-width: none;
+  min-width: 0; /* 确保flex子元素可以收缩 */
 }
 
 .tab-content {
   padding: 1rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .content-header {
@@ -2860,10 +2927,61 @@ export default {
 /* 数据源配置样式 */
 .datasource-section {
   margin-top: 16px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.datasource-table-container {
+  margin-top: 16px;
+  overflow-x: auto;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: white;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .datasource-table {
-  margin-top: 16px;
+  min-width: 100%;
+  width: 100%;
+  table-layout: fixed; /* 使用固定表格布局 */
+}
+
+.datasource-table .table {
+  margin: 0;
+  white-space: nowrap;
+  width: 100%;
+  table-layout: fixed; /* 使用固定表格布局 */
+}
+
+.datasource-table .table th,
+.datasource-table .table td {
+  padding: 12px 8px;
+  vertical-align: middle;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.datasource-table .cell-content {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.datasource-table .action-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+  min-width: 200px;
+}
+
+.datasource-table .action-buttons .btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .datasource-table .status-badge {
@@ -2871,6 +2989,7 @@ export default {
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .datasource-table .status-badge.active {
@@ -2881,6 +3000,37 @@ export default {
 .datasource-table .status-badge.inactive {
   background: #fff2f0;
   color: #ff4d4f;
+}
+
+.datasource-table .status-badge.success {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.datasource-table .status-badge.failed {
+  background: #fff2f0;
+  color: #ff4d4f;
+}
+
+.datasource-table .status-badge.unknown {
+  background: #f5f5f5;
+  color: #999;
+}
+
+/* 响应式优化 */
+@media (max-width: 1200px) {
+  .datasource-table-container {
+    overflow-x: scroll;
+  }
+  
+  .datasource-table .action-buttons {
+    min-width: 180px;
+  }
+  
+  .datasource-table .action-buttons .btn {
+    padding: 3px 6px;
+    font-size: 11px;
+  }
 }
 
 /* 启用/禁用按钮样式 */
