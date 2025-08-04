@@ -192,7 +192,7 @@ public class McpTransportBuilder {
 				baseUrl, streamEndpoint);
 
 		WebClient.Builder webClientBuilder = createWebClientBuilder(baseUrl);
-		
+
 		logger.debug("Using WebClientStreamableHttpTransport with endpoint: {} for STREAMING mode", streamEndpoint);
 		return WebClientStreamableHttpTransport.builder(webClientBuilder)
 			.objectMapper(objectMapper)
