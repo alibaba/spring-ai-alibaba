@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.arms;
 
+import com.alibaba.cloud.ai.observation.model.ArmsChatModelInputObservationHandler;
+import com.alibaba.cloud.ai.observation.model.ArmsChatModelOutputObservationHandler;
 import com.alibaba.cloud.ai.tool.ObservableToolCallingManager;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.model.ChatModel;
@@ -24,6 +26,7 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -43,6 +46,24 @@ public class ArmsAutoConfiguration {
 			.toolCallbackResolver(toolCallbackResolver)
 			.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor)
 			.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(value = { ArmsChatModelInputObservationHandler.class },
+			name = { "armsChatModelInputObservationHandler" })
+	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "model.capture-input",
+			havingValue = "true")
+	ArmsChatModelInputObservationHandler armsChatModelInputObservationHandler() {
+		return new ArmsChatModelInputObservationHandler();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(value = { ArmsChatModelOutputObservationHandler.class },
+			name = { "armsChatModelOutputObservationHandler" })
+	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "model.capture-output",
+			havingValue = "true")
+	ArmsChatModelOutputObservationHandler armsChatModelOutputObservationHandler() {
+		return new ArmsChatModelOutputObservationHandler();
 	}
 
 }
