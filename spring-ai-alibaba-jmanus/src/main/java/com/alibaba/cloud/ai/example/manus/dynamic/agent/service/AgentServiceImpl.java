@@ -269,8 +269,9 @@ public class AgentServiceImpl implements AgentService {
 
 		// 4. Set the user-selected namespace
 		entity.setNamespace(config.getNamespace());
-		
-		// 5. Set isBuiltIn if provided (only allow setting to false for existing built-in agents)
+
+		// 5. Set isBuiltIn if provided (only allow setting to false for existing built-in
+		// agents)
 		if (config.getIsBuiltIn() != null) {
 			entity.setIsBuiltIn(config.getIsBuiltIn());
 		}

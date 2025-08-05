@@ -133,12 +133,13 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 			config.setAgentName((String) yamlData.getOrDefault("agentName", agentName));
 			config.setAgentDescription((String) yamlData.getOrDefault("agentDescription", ""));
 			config.setNextStepPrompt((String) yamlData.getOrDefault("nextStepPrompt", ""));
-			
+
 			// Parse isBuiltIn field (default: false)
 			Object isBuiltInObj = yamlData.get("isBuiltIn");
 			if (isBuiltInObj instanceof Boolean) {
 				config.setIsBuiltIn((Boolean) isBuiltInObj);
-			} else {
+			}
+			else {
 				config.setIsBuiltIn(false); // Default: not built-in (deletable)
 			}
 

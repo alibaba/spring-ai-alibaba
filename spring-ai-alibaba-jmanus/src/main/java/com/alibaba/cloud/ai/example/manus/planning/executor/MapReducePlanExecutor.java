@@ -99,9 +99,10 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 	// Thread pool for parallel execution
 	private volatile ExecutorService executorService;
-	
+
 	// Thread pool configuration tracking
 	private volatile int currentThreadPoolSize;
+
 	private volatile long lastConfigCheckTime;
 
 	public MapReducePlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
@@ -934,45 +935,44 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	}
 
 	/**
-	 * Check and update thread pool configuration if needed.
-	 * This method is called before each executor service usage to ensure
-	 * configuration changes are picked up without using timers or background threads.
-	 * 
+	 * Check and update thread pool configuration if needed. This method is called before
+	 * each executor service usage to ensure configuration changes are picked up without
+	 * using timers or background threads.
 	 * @return the current (potentially updated) executor service
 	 */
 	private ExecutorService getUpdatedExecutorService() {
 		long currentTime = System.currentTimeMillis();
-		
+
 		// Check if enough time has passed since last configuration check
 		if (currentTime - lastConfigCheckTime >= CONFIG_CHECK_INTERVAL_MILLIS) {
 			lastConfigCheckTime = currentTime;
-			
+
 			// Get current configuration
 			int newThreadPoolSize = getMapTaskThreadPoolSize();
-			
+
 			// Check if configuration has changed
 			if (newThreadPoolSize != currentThreadPoolSize) {
-				logger.info("Thread pool size configuration changed from {} to {}, rebuilding thread pool", 
+				logger.info("Thread pool size configuration changed from {} to {}, rebuilding thread pool",
 						currentThreadPoolSize, newThreadPoolSize);
-				
+
 				// Gracefully shutdown old executor service
 				ExecutorService oldExecutorService = executorService;
-				
+
 				// Create new executor service with updated configuration
 				ExecutorService newExecutorService = Executors.newFixedThreadPool(newThreadPoolSize);
-				
+
 				// Update current state atomically
 				this.executorService = newExecutorService;
 				this.currentThreadPoolSize = newThreadPoolSize;
-				
+
 				// Gracefully shutdown old executor service in background
 				// This ensures existing tasks can complete
 				shutdownExecutorGracefully(oldExecutorService);
-				
+
 				logger.info("Thread pool successfully updated to size: {}", newThreadPoolSize);
 			}
 		}
-		
+
 		return executorService;
 	}
 
@@ -986,7 +986,8 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 				// Initiate graceful shutdown
 				executor.shutdown();
 				logger.debug("Old thread pool shutdown initiated");
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				logger.warn("Error during graceful shutdown of old thread pool", e);
 				// Force shutdown if graceful shutdown fails
 				executor.shutdownNow();

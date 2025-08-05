@@ -115,11 +115,12 @@ public class AgentInitializationService {
 			agentEntity.setAgentDescription(agentConfig.getAgentDescription());
 			agentEntity.setNextStepPrompt(agentConfig.getNextStepPrompt());
 			agentEntity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
-			
+
 			// Set isBuiltIn based on YAML configuration
 			Boolean isBuiltIn = agentConfig.getIsBuiltIn();
 			agentEntity.setIsBuiltIn(isBuiltIn != null ? isBuiltIn : false);
-		} else {
+		}
+		else {
 			// If no config found, default to built-in (not deletable)
 			agentEntity.setIsBuiltIn(true);
 		}
@@ -128,8 +129,8 @@ public class AgentInitializationService {
 			agentRepository.save(agentEntity);
 			boolean isBuiltIn = agentEntity.getIsBuiltIn() != null ? agentEntity.getIsBuiltIn() : false;
 			String action = isNewAgent ? "Created" : "Updated";
-			log.info("{} agent: {} for namespace: {} with language: {} (built-in: {})", 
-					action, agent.getAgentName(), namespace, language, isBuiltIn);
+			log.info("{} agent: {} for namespace: {} with language: {} (built-in: {})", action, agent.getAgentName(),
+					namespace, language, isBuiltIn);
 		}
 		catch (Exception e) {
 			String action = isNewAgent ? "create" : "update";
@@ -155,7 +156,7 @@ public class AgentInitializationService {
 				agentEntity.setAgentDescription(agentConfig.getAgentDescription());
 				agentEntity.setNextStepPrompt(agentConfig.getNextStepPrompt());
 				agentEntity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
-				
+
 				// Update isBuiltIn based on YAML configuration
 				Boolean isBuiltIn = agentConfig.getIsBuiltIn();
 				agentEntity.setIsBuiltIn(isBuiltIn != null ? isBuiltIn : false);
