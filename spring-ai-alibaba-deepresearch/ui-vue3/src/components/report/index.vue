@@ -1,35 +1,88 @@
 <template>
-  <Flex class="aux" v-if="visible" style="width: 60%" vertical>
-    <a-card style="height: 100%">
-      <template #title>
-        <Flex justify="space-between">
-          研究细节
-          <Button type="text" @click="handleClose">
-            <CloseOutlined />
-          </Button>
-        </Flex>
-      </template>
-      <div class="message-list" v-if="items && items.length > 0">
-        <ThoughtChain
-          :items="items"
-          collapsible
+  <transition name="fade" mode="out-in">
+    <Flex class="aux" v-if="visible" style="width: 60%" vertical>
+      <a-card style="height: 100%">
+          <template #title>
+            <Flex justify="space-between" align="center">
+              <span style="font-weight: 500;">
+                {{ endFlag ? '报告' : '思考过程' }}
+              </span>
+              <Flex gap="small" align="center" v-if="endFlag">
+                <Button type="text" size="small" @click="handleOnlineReport">
+                  <GlobalOutlined />
+                  在线报告
+                </Button>
+                <Button type="text" size="small" @click="handleDownloadReport">
+                  <DownloadOutlined />
+                  下载报告
+                </Button>
+                <Button type="text" size="small" @click="handleClose">
+                  <CloseOutlined />
+                </Button>
+              </Flex>
+            </Flex>
+          </template>
+        <div class="message-list" v-if="items && items.length > 0 && !endFlag">
+          <ThoughtChain
+            :items="items"
+            collapsible
+          />
+        </div>
+        <div v-else-if="endFlag" class="end-content">
+            <MD :content="endContent" />
+            
+            <!-- 思考过程 -->
+            <a-collapse :bordered="false" class="thought-collapse">
+              <a-collapse-panel header="参考来源" key="1" class="thought-panel">
+                <ReferenceSources :sources="sources" />
+              </a-collapse-panel>
+              <a-collapse-panel header="思路" key="2" class="thought-panel">
+                <ThoughtChain
+                  :items="items"
+                  collapsible
+                />
+              </a-collapse-panel>
+            </a-collapse>
+        </div>
+        
+        <!-- 无消息记录时的提示 -->
+        <div v-else class="no-messages">
+          暂无消息记录
+        </div>
+      </a-card>
+      
+      <!-- HTML 渲染组件弹窗 -->
+      <a-modal
+        v-model:open="htmlModalVisible"
+        title="HTML 报告"
+        :width="1200"
+        :footer="null"
+        :destroyOnClose="true"
+        @cancel="closeHtmlModal"
+      >
+        <HtmlRenderer
+          ref="htmlRendererRef"
+          :htmlChunks="htmlChunks"
+          :loading="htmlLoading"
+          style="height: 600px;"
         />
-      </div>
-      <div v-else class="no-messages">
-        暂无消息记录
-      </div>
-    </a-card>
-  </Flex>
+      </a-modal>
+    </Flex>
+  </transition>
 </template>
 
 <script setup lang="ts">
-import { Flex, Button } from 'ant-design-vue'
-import { CloseOutlined, LoadingOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
+import { Flex, Button, Modal } from 'ant-design-vue'
+import { CloseOutlined, LoadingOutlined, CheckCircleOutlined, GlobalOutlined, DownloadOutlined } from '@ant-design/icons-vue'
 import { parseJsonTextStrict } from '@/utils/jsonParser';
 import { useMessageStore } from '@/store/MessageStore'
 import { computed, h, watch, onUnmounted, ref } from 'vue'
 import { ThoughtChain, type ThoughtChainProps, type ThoughtChainItem } from 'ant-design-x-vue';
 import MD from '@/components/md/index.vue'
+import HtmlRenderer from '@/components/html/index.vue'
+import ReferenceSources from '@/components/reference-sources/index.vue'
+import { XStreamBody } from '@/utils/stream'
+import request from '@/utils/request'
 
 const messageStore = useMessageStore()
 
@@ -40,12 +93,23 @@ interface Props {
 
 interface Emits {
   (e: 'close'): void
+  (e: 'onlineReport'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   visible: false,
   convId: ''
 })
+
+// HTML 渲染组件相关状态
+const htmlModalVisible = ref(false)
+const htmlChunks = ref<string[]>([])
+const htmlLoading = ref(false)
+const htmlRendererRef = ref(null)
+
+const endFlag = ref(false)
+const endContent = ref('')
+const sources = ref([])
 
 const arrayTemp: ThoughtChainProps['items'] = []
 // 用于控制历史记录的显示
@@ -220,12 +284,8 @@ const processJsonNode = (node: any) => {
         title = node.displayTitle
         description = '正在收集和分析背景信息'
         if(node.siteInformation && Array.isArray(node.siteInformation)) {
-          const results = node.siteInformation
-          const markdownContent = results.map((result: any, index: number) => {
-            const { title, url, content, icon, weight } = result
-            return `### ${index + 1}. [${title}](${url})\n\n**权重:** ${weight}\n\n**内容摘要:** ${content}\n\n**来源:** ![favicon](${icon}) [${url}](${url})\n\n---\n`
-          }).join('\n')
-          content = h(MD, { content: markdownContent })
+          content = h(ReferenceSources, { sources: node.siteInformation })
+          sources.value = node.siteInformation
         }
         break
 
@@ -251,12 +311,14 @@ const processJsonNode = (node: any) => {
         description = '生成最终研究报告'
         if(node.content) {
           content = h(MD, { content: node.content })
+          endContent.value = node.content
         }
         break
 
       case '__END__':
         title = node.displayTitle
         description = '研究完成'
+        endFlag.value = true
         break
 
       default:
@@ -292,22 +354,155 @@ const handleClose = () => {
   emit('close')
 }
 
-const formatTime = (timestamp: number) => {
-  return new Date(timestamp).toLocaleString()
+// 展示HTML报告
+const handleOnlineReport = async () => {
+  // 先打开弹窗
+  htmlModalVisible.value = true
+  htmlLoading.value = true
+  htmlChunks.value = []
+  
+  if(messageStore.htmlReport[props.convId]){
+    htmlChunks.value = messageStore.htmlReport[props.convId]
+    htmlLoading.value = false
+    return
+  }
+
+  const xStreamBody = new XStreamBody('/api/reports/build-html?threadId=' + props.convId, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      }})
+  let success = true
+  try {
+      await xStreamBody.readStream((chunk: any) => {
+          // 将接收到的HTML片段添加到数组中
+          const chunkNode = JSON.parse(chunk)
+          htmlChunks.value.push(chunkNode.result.output.text)
+      })
+      htmlLoading.value = false
+  } catch (e: any) {
+      console.error(e.statusText)
+      htmlLoading.value = false
+      // 如果出错，可以显示错误信息
+      htmlChunks.value = [`<div style="color: red; padding: 20px;">加载HTML报告时出错: ${e.statusText}</div>`]
+      success = false
+  }
+  // 缓存html报告
+  if(success) {
+      messageStore.htmlReport[props.convId] = htmlChunks.value
+  }
 }
+
+// 关闭HTML模态框
+const closeHtmlModal = () => {
+  htmlModalVisible.value = false
+  htmlChunks.value = []
+  htmlLoading.value = false
+}
+
+const handleDownloadReport = () => {
+  request({
+    url: '/api/reports/export',
+    method: 'POST',
+    data: {
+      thread_id: props.convId,
+      format: 'pdf'
+    }
+  }).then((response: any) => {
+    if(response.status === 'success') {
+      window.open(import.meta.env.VITE_BASE_URL + response.report_information.download_url, '_blank')
+    }
+  })
+}
+
 </script>
 
 <style lang="less" scoped>
 .aux {
   padding-top: 20px;
   height: 100%;
-  padding-bottom: 38px;
+  // padding-bottom: 38px;
 }
 
 .message-list {
   max-height: calc(100vh - 200px);
   overflow-y: auto;
   padding: 16px 0;
+}
+
+.end-content {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  padding: 16px;
+  line-height: 1.6;
+  
+  :deep(img) {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  :deep(pre) {
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+}
+
+// 思考过程折叠面板样式
+.thought-collapse {
+  margin-top: 24px;
+  background: transparent;
+  
+  :deep(.ant-collapse-item) {
+    border: none;
+    background: linear-gradient(135deg, #f6f8ff 0%, #f0f4ff 100%);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.08);
+    margin-bottom: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      box-shadow: 0 4px 16px rgba(24, 144, 255, 0.12);
+      transform: translateY(-1px);
+    }
+  }
+  
+  :deep(.ant-collapse-header) {
+    padding: 16px 20px;
+    background: transparent;
+    border: none;
+    font-weight: 600;
+    font-size: 15px;
+    color: #1890ff;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      color: #40a9ff;
+    }
+    
+    .ant-collapse-arrow {
+      color: #1890ff;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+  }
+  
+  :deep(.ant-collapse-content) {
+    border: none;
+    background: transparent;
+    
+    .ant-collapse-content-box {
+      padding: 0 20px 20px 20px;
+    }
+  }
+  
+  :deep(.ant-collapse-item-active) {
+    .ant-collapse-header {
+      border-bottom: 1px solid rgba(24, 144, 255, 0.1);
+    }
+  }
 }
 
 .message-item {
@@ -340,5 +535,16 @@ const formatTime = (timestamp: number) => {
   color: #999;
   padding: 40px 0;
   font-size: 16px;
+}
+
+// 淡入淡出过渡动画
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
