@@ -48,6 +48,9 @@ public class StreamingResponseHandler {
 	@Autowired
 	private JmanusEventPublisher jmanusEventPublisher;
 
+	@Autowired
+	private LlmTraceRecorder llmTraceRecorder;
+
 	/**
 	 * Result container for streaming response processing
 	 */
@@ -218,7 +221,7 @@ public class StreamingResponseHandler {
 				jmanusEventPublisher.publish(new PlanExceptionEvent(planId, e));
 			}).blockLast();
 
-			LlmTraceRecorder.recordResponse(finalChatResponseRef.get());
+			llmTraceRecorder.recordResponse(finalChatResponseRef.get());
 			return new StreamingResult(finalChatResponseRef.get());
 		}
 		finally {
