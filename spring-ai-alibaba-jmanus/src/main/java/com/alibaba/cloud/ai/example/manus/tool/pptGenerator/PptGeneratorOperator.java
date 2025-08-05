@@ -102,7 +102,7 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 
 	@Override
 	public String getDescription() {
-		return "Tool for creating and generating PPT files. Supported operations: create (Create new PPT file or create based on template), getTemplateList (Get available template list), and getTemplate (Get content of specified template). Supported PPT file types include .pptx and .ppt. When creating PPT, you can set title, subtitle, and multiple slides with title, content, and image path. For template-based creation, first use getTemplateList to get available templates, then use getTemplate to get and modify template content (only modify content of Text elements), and finally use create operation with path, template_content, and file_name parameters. Generated PPT files will be automatically saved in extensions/pptGenerator/ directory. The file_name parameter is mandatory whether using template or not, and template_content format must exactly match the format returned by getTemplate interface.";
+		return "Tool for creating and generating PPT files. Supported operations: create (Create new PPT file or create based on template), getTemplateList (Get available template list), and getTemplate (Get content of specified template). Supported PPT file types include .pptx and .ppt. When creating PPT, you can set title, subtitle, and multiple slides with title, content, and image path. For template-based creation, first use getTemplateList to get available templates, then use getTemplate to get and modify template content (only modify content of Text elements), and finally use create operation with path, template_content, and file_name parameters. Generated PPT files will be automatically saved in extensions/pptGenerator/ directory. The file_name parameter is mandatory whether using template or not. Note: path must be a preset template path and exist in the content returned by getTemplateList. template_content must strictly follow JSON format, and getTemplate returns a JSON format string.";
 	}
 
 	@Override
@@ -154,11 +154,11 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 				                },
 				                "path": {
 				                    "type": "string",
-				                    "description": "Template file path (required when applying template)"
+				                    "description": "Template file path (required when applying template). Must be a preset template path and exist in the content returned by getTemplateList."
 				                },
 				                "template_content": {
 				                    "type": "string",
-				                    "description": "Modified template content (required when applying template)"
+				                    "description": "Modified template content (required when applying template). Must strictly follow JSON format."
 				                },
 				                "file_name": {
 				                    "type": "string",
@@ -230,11 +230,11 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 				                "action": {
 				                    "type": "string",
 				                    "const": "getTemplate",
-				                    "description": "Get content of specified template"
+				                    "description": "Get content of specified template. Returns a JSON format string."
 				                },
 				                "path": {
 				                    "type": "string",
-				                    "description": "Template file path to retrieve",
+				                    "description": "Template file path to retrieve. Must be a preset template path and exist in the content returned by getTemplateList.",
 				                    "minLength": 1
 				                }
 				            },

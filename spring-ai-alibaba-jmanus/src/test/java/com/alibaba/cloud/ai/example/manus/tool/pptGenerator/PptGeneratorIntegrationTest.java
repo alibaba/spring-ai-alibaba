@@ -115,7 +115,7 @@ public class PptGeneratorIntegrationTest {
 		log.info("\n===== Starting test: Create PPT with basic content =====");
 		// Prepare test data
 		String planId = "test-plan-123";
-		String fileName = "test-2213.pptx";
+		String fileName = "test-0.pptx";
 		log.info("Preparing test data: planId={}, fileName={}", planId, fileName);
 
 		PptInput input = new PptInput();
@@ -167,7 +167,7 @@ public class PptGeneratorIntegrationTest {
 		log.info("\n===== Starting test: Create PPT with minimal input =====");
 		// Prepare test data with minimal required fields
 		String planId = "minimal-test";
-		String fileName = "minimal-2213.pptx";
+		String fileName = "minimal-0.pptx";
 		log.info("Preparing test data: planId={}, fileName={}", planId, fileName);
 
 		PptInput input = new PptInput();
@@ -313,7 +313,7 @@ public class PptGeneratorIntegrationTest {
 			PptInput createInput = new PptInput();
 			createInput.setPath(firstTemplatePath);
 			createInput.setAction("create");
-			String fileName = "applied-template-2213.pptx";
+			String fileName = "applied-template-0.pptx";
 			createInput.setFileName(fileName);
 			createInput.setTemplateContent(modifiedTemplateContent);
 			log.info("Setting create PPT operation, using modified template content");
