@@ -87,6 +87,33 @@ const words: I18nType = {
     parameters: '参数',
   },
 
+  // 文件浏览器
+  fileBrowser: {
+    title: '文件浏览器',
+    refresh: '刷新',
+    loading: '正在加载文件树...',
+    retry: '重试',
+    noFiles: '未找到文件',
+    loadError: '加载文件树失败',
+    loadingContent: '正在加载文件内容...',
+    contentLoadError: '加载文件内容失败',
+    download: '下载',
+    downloadToView: '下载查看',
+    binaryFile: '这是一个二进制文件，无法在查看器中显示。',
+    open: '打开',
+    copyPath: '复制路径',
+    noPlanSelected: '未选择计划。请执行任务以查看文件。',
+    noFilesYet: '暂未生成文件',
+    waitingForFiles: 'AI 模型正在处理您的请求，生成的文件将在此处显示。',
+    filesTip: '分析结果、报告和数据导出等生成的文件将显示在此文件浏览器中。',
+    noPlanExecuting: '当前没有执行中的任务。',
+    startTaskTip: '请在左侧对话框中发起任务，生成的文件将在此处显示。',
+    waitingForGeneration: '等待文件生成',
+    planExecuting: 'AI 模型正在执行计划并生成文件。',
+    checking: '检查中...',
+    checkNow: '立即检查',
+  },
+
   // 语言
   language: {
     zh: '中文',
