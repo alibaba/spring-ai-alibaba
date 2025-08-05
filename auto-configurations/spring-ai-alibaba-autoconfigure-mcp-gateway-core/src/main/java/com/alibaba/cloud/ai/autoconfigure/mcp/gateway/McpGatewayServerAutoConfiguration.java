@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolCallbackProvider;
 import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolsInitializer;
 import com.alibaba.cloud.ai.mcp.gateway.core.utils.SpringBeanUtils;
 import io.modelcontextprotocol.server.McpServer;
+import io.modelcontextprotocol.server.McpServer.AsyncSpecification;
 import io.modelcontextprotocol.server.McpServer.SingleSessionSyncSpecification;
 import io.modelcontextprotocol.server.McpServer.SyncSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -213,7 +214,7 @@ public class McpGatewayServerAutoConfiguration implements ApplicationContextAwar
 		McpSchema.Implementation serverInfo = new McpSchema.Implementation("mcp-gateway", "1.0.0");
 
 		// 创建异步服务器规范
-		McpServer.AsyncSpecification serverBuilder = McpServer.async(provider).serverInfo(serverInfo);
+		AsyncSpecification<?> serverBuilder = McpServer.async(provider).serverInfo(serverInfo);
 
 		// 构建服务器能力
 		McpSchema.ServerCapabilities.Builder capabilitiesBuilder = McpSchema.ServerCapabilities.builder();
@@ -227,6 +228,8 @@ public class McpGatewayServerAutoConfiguration implements ApplicationContextAwar
 			.toList();
 		toolSpecifications.addAll(this.toAsyncToolSpecification(providerToolCallbacks, serverProperties));
 		capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
+
+		serverBuilder.tools(toolSpecifications);
 
 		serverBuilder.capabilities(capabilitiesBuilder.build());
 
