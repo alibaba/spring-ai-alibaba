@@ -186,11 +186,11 @@
                 </div>
                 <div class="form-group">
                   <label>创建时间</label>
-                  <input type="text" :value="formatDateTime(agent.createTime)" class="form-control" readonly>
+                  <div class="form-control readonly-field">{{ formatDateTime(agent.createTime) }}</div>
                 </div>
                 <div class="form-group">
                   <label>更新时间</label>
-                  <input type="text" :value="formatDateTime(agent.updateTime)" class="form-control" readonly>
+                  <div class="form-control readonly-field">{{ formatDateTime(agent.updateTime) }}</div>
                 </div>
                 <div class="form-actions">
                   <button class="btn btn-primary" @click="updateAgent">保存</button>
@@ -383,8 +383,8 @@
             <!-- Prompt配置 -->
             <div v-if="activeTab === 'prompt'" class="tab-content">
               <div class="content-header">
-                <h2>自定义Prompt配置</h2>
-                <p class="content-subtitle">配置智能体的提示词模板</p>
+                <h2>自定义Prompt配置（待实现）</h2>
+                <p class="content-subtitle">TODO：这里配置的Prompt仅用作效果优化，需支持多个提示词配置，系统已内置提示词<br/>如：<br/>1. 查询的年销售额精确到小数点后两位。<br/>2. 报告格式第一章节请先总结年销售额</p>
               </div>
               <div class="prompt-config-section">
                 <div class="form-group">
@@ -3720,6 +3720,26 @@ html {
   background-color: #e6f7ff;
 }
 
+/* 只读字段样式 */
+.readonly-field {
+  background-color: #f5f5f5;
+  color: #666;
+  cursor: not-allowed;
+  border: 1px solid #d9d9d9;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.readonly-field:hover {
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+}
+
 /* 表单验证样式 */
 .form-control.is-invalid {
   border-color: #ff4d4f;
@@ -3849,6 +3869,30 @@ html {
 .question-actions .btn {
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
+}
+
+/* 预设问题管理表单操作按钮样式优化 */
+.preset-questions-section .form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e8e8e8;
+}
+
+.preset-questions-section .form-actions .btn {
+  min-width: 100px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.preset-questions-section .form-actions .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 
