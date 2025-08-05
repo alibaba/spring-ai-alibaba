@@ -90,8 +90,7 @@ public class OpenAlexTest {
 	@Test
 	public void testCustomConfiguration() {
 		this.contextRunner
-			.withPropertyValues(
-					"spring.ai.alibaba.toolcalling.openalex.per-page=50",
+			.withPropertyValues("spring.ai.alibaba.toolcalling.openalex.per-page=50",
 					"spring.ai.alibaba.toolcalling.openalex.timeout=60000",
 					"spring.ai.alibaba.toolcalling.openalex.include-abstract=true",
 					"spring.ai.alibaba.toolcalling.openalex.max-pages=3")
@@ -138,114 +137,105 @@ public class OpenAlexTest {
 	@Test
 	@DisplayName("Actual API Call Test - Works Search")
 	public void testActualWorksSearch() {
-		this.contextRunner
-			.withPropertyValues(
-				"spring.ai.alibaba.toolcalling.openalex.per-page=5"  // 限制结果数量以加快测试
-			)
-			.run((context) -> {
-				OpenAlexService service = context.getBean(OpenAlexService.class);
-				assertThat(service).isNotNull();
+		this.contextRunner.withPropertyValues("spring.ai.alibaba.toolcalling.openalex.per-page=5" // 限制结果数量以加快测试
+		).run((context) -> {
+			OpenAlexService service = context.getBean(OpenAlexService.class);
+			assertThat(service).isNotNull();
 
-				// Test simple works search
-				log.info("Testing OpenAlex works search with query: 'machine learning'");
-				OpenAlexService.Request request = OpenAlexService.Request.simpleQuery("machine learning");
-				OpenAlexService.Response response = service.apply(request);
+			// Test simple works search
+			log.info("Testing OpenAlex works search with query: 'machine learning'");
+			OpenAlexService.Request request = OpenAlexService.Request.simpleQuery("machine learning");
+			OpenAlexService.Response response = service.apply(request);
 
-				// Verify response structure
-				assertThat(response).isNotNull();
-				assertThat(response.query()).isEqualTo("machine learning");
+			// Verify response structure
+			assertThat(response).isNotNull();
+			assertThat(response.query()).isEqualTo("machine learning");
 
-				// Check if API call was successful (no error)
-				if (response.error() != null) {
-					log.warn("API call returned error: {}", response.error());
-					// If there's an error, we still want to verify the response structure
-					assertThat(response.results()).isNull();
-				} else {
-					// If successful, verify results
-					assertThat(response.results()).isNotNull();
-					log.info("Found {} results for 'machine learning'", response.results().size());
-					
-					if (!response.results().isEmpty()) {
-						// Verify first result structure
-						OpenAlexService.OpenAlexResult firstResult = response.results().get(0);
-						assertThat(firstResult).isNotNull();
-						assertThat(firstResult.id()).isNotEmpty();
-						assertThat(firstResult.title()).isNotEmpty();
-						assertThat(firstResult.entityType()).isEqualTo("works");
-						
-						log.info("First result: {} - {}", firstResult.title(), firstResult.description());
-					}
+			// Check if API call was successful (no error)
+			if (response.error() != null) {
+				log.warn("API call returned error: {}", response.error());
+				// If there's an error, we still want to verify the response structure
+				assertThat(response.results()).isNull();
+			}
+			else {
+				// If successful, verify results
+				assertThat(response.results()).isNotNull();
+				log.info("Found {} results for 'machine learning'", response.results().size());
+
+				if (!response.results().isEmpty()) {
+					// Verify first result structure
+					OpenAlexService.OpenAlexResult firstResult = response.results().get(0);
+					assertThat(firstResult).isNotNull();
+					assertThat(firstResult.id()).isNotEmpty();
+					assertThat(firstResult.title()).isNotEmpty();
+					assertThat(firstResult.entityType()).isEqualTo("works");
+
+					log.info("First result: {} - {}", firstResult.title(), firstResult.description());
 				}
-			});
+			}
+		});
 	}
 
 	@Test
 	@DisplayName("Actual API Call Test - Author Search")
 	public void testActualAuthorSearch() {
-		this.contextRunner
-			.withPropertyValues(
-				"spring.ai.alibaba.toolcalling.openalex.per-page=3"
-			)
-			.run((context) -> {
-				OpenAlexService service = context.getBean(OpenAlexService.class);
-				assertThat(service).isNotNull();
+		this.contextRunner.withPropertyValues("spring.ai.alibaba.toolcalling.openalex.per-page=3").run((context) -> {
+			OpenAlexService service = context.getBean(OpenAlexService.class);
+			assertThat(service).isNotNull();
 
-				// Test author search
-				log.info("Testing OpenAlex author search with query: 'Geoffrey Hinton'");
-				OpenAlexService.Request request = OpenAlexService.Request.authorSearch("Geoffrey Hinton");
-				OpenAlexService.Response response = service.apply(request);
+			// Test author search
+			log.info("Testing OpenAlex author search with query: 'Geoffrey Hinton'");
+			OpenAlexService.Request request = OpenAlexService.Request.authorSearch("Geoffrey Hinton");
+			OpenAlexService.Response response = service.apply(request);
 
-				// Verify response structure
-				assertThat(response).isNotNull();
-				assertThat(response.query()).isEqualTo("Geoffrey Hinton");
+			// Verify response structure
+			assertThat(response).isNotNull();
+			assertThat(response.query()).isEqualTo("Geoffrey Hinton");
 
-				// Check results
-				if (response.error() != null) {
-					log.warn("Author search returned error: {}", response.error());
-				} else {
-					assertThat(response.results()).isNotNull();
-					log.info("Found {} authors for 'Geoffrey Hinton'", response.results().size());
-					
-					if (!response.results().isEmpty()) {
-						OpenAlexService.OpenAlexResult firstResult = response.results().get(0);
-						assertThat(firstResult.entityType()).isEqualTo("authors");
-						log.info("First author result: {} - {}", firstResult.displayName(), firstResult.description());
-					}
+			// Check results
+			if (response.error() != null) {
+				log.warn("Author search returned error: {}", response.error());
+			}
+			else {
+				assertThat(response.results()).isNotNull();
+				log.info("Found {} authors for 'Geoffrey Hinton'", response.results().size());
+
+				if (!response.results().isEmpty()) {
+					OpenAlexService.OpenAlexResult firstResult = response.results().get(0);
+					assertThat(firstResult.entityType()).isEqualTo("authors");
+					log.info("First author result: {} - {}", firstResult.displayName(), firstResult.description());
 				}
-			});
+			}
+		});
 	}
 
 	@Test
 	@DisplayName("Actual API Call Test - Abstract SearchService Interface")
 	public void testActualSearchServiceInterface() {
-		this.contextRunner
-			.withPropertyValues(
-				"spring.ai.alibaba.toolcalling.openalex.per-page=3"
-			)
-			.run((context) -> {
-				// Test using the abstract SearchService interface
-				SearchService searchService = context.getBean(SearchService.class);
-				assertThat(searchService).isNotNull();
+		this.contextRunner.withPropertyValues("spring.ai.alibaba.toolcalling.openalex.per-page=3").run((context) -> {
+			// Test using the abstract SearchService interface
+			SearchService searchService = context.getBean(SearchService.class);
+			assertThat(searchService).isNotNull();
 
-				log.info("Testing SearchService interface with query: 'artificial intelligence'");
-				SearchService.Response response = searchService.query("artificial intelligence");
+			log.info("Testing SearchService interface with query: 'artificial intelligence'");
+			SearchService.Response response = searchService.query("artificial intelligence");
 
-				// Verify SearchService response
-				assertThat(response).isNotNull();
-				SearchService.SearchResult searchResult = response.getSearchResult();
-				assertThat(searchResult).isNotNull();
-				assertThat(searchResult.results()).isNotNull();
+			// Verify SearchService response
+			assertThat(response).isNotNull();
+			SearchService.SearchResult searchResult = response.getSearchResult();
+			assertThat(searchResult).isNotNull();
+			assertThat(searchResult.results()).isNotNull();
 
-				log.info("SearchService returned {} results", searchResult.results().size());
+			log.info("SearchService returned {} results", searchResult.results().size());
 
-				// Verify SearchContent structure if results exist
-				if (!searchResult.results().isEmpty()) {
-					SearchService.SearchContent firstContent = searchResult.results().get(0);
-					assertThat(firstContent).isNotNull();
-					assertThat(firstContent.title()).isNotEmpty();
-					log.info("First SearchContent: {}", firstContent.title());
-				}
-			});
+			// Verify SearchContent structure if results exist
+			if (!searchResult.results().isEmpty()) {
+				SearchService.SearchContent firstContent = searchResult.results().get(0);
+				assertThat(firstContent).isNotNull();
+				assertThat(firstContent.title()).isNotEmpty();
+				log.info("First SearchContent: {}", firstContent.title());
+			}
+		});
 	}
 
 	@Test

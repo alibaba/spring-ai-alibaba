@@ -150,7 +150,7 @@ public class OpenAlexService implements SearchService, Function<OpenAlexService.
 		try {
 			JsonNode rootNode = objectMapper.readTree(responseBody);
 			JsonNode resultsNode = rootNode.get("results");
-			
+
 			List<OpenAlexResult> results = new ArrayList<>();
 			if (resultsNode != null && resultsNode.isArray()) {
 				for (JsonNode resultNode : resultsNode) {
@@ -165,7 +165,7 @@ public class OpenAlexService implements SearchService, Function<OpenAlexService.
 					}
 				}
 			}
-			
+
 			log.debug("Found {} search results", results.size());
 			return new Response(request.getQuery(), results, null);
 		}
