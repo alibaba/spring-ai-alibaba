@@ -27,9 +27,9 @@
           :disabled="loading"
           :title="$t('fileBrowser.refresh')"
         >
-          <Icon 
-            icon="carbon:refresh" 
-            :class="{ 'rotating': loading }" 
+          <Icon
+            icon="carbon:refresh"
+            :class="{ 'rotating': loading }"
             :style="{ color: '#ffffff', fontSize: '18px', width: '18px', height: '18px' }"
           />
         </button>
@@ -43,7 +43,7 @@
           <Icon icon="carbon:loading" class="rotating" />
           <span>{{ $t('fileBrowser.loading') }}</span>
         </div>
-        
+
         <div v-else-if="error" class="error-state">
           <div v-if="isPlanDirectoryNotFound" class="waiting-for-files">
             <Icon icon="carbon:time" class="rotating" />
@@ -68,14 +68,14 @@
             </button>
           </div>
         </div>
-        
+
         <div v-else-if="!fileTree" class="empty-state">
           <Icon icon="carbon:folder-off" />
           <span>{{ $t('fileBrowser.noFiles') }}</span>
         </div>
-        
+
         <div v-else class="file-tree">
-          <FileTreeNode 
+          <FileTreeNode
             :node="fileTree"
             :level="0"
             @file-selected="handleFileSelected"
@@ -93,14 +93,14 @@
             <span class="file-size">({{ formatFileSize(selectedFile.size) }})</span>
           </div>
           <div class="file-actions">
-            <button 
+            <button
               @click="handleDownloadFile(selectedFile)"
               class="download-btn"
               :title="$t('fileBrowser.download')"
             >
               <Icon icon="carbon:download" />
             </button>
-            <button 
+            <button
               @click="closeFileViewer"
               class="close-btn"
               :title="$t('common.close')"
@@ -115,12 +115,12 @@
             <Icon icon="carbon:loading" class="rotating" />
             <span>{{ $t('fileBrowser.loadingContent') }}</span>
           </div>
-          
+
           <div v-else-if="contentError" class="content-error">
             <Icon icon="carbon:warning" />
             <span>{{ contentError }}</span>
           </div>
-          
+
           <div v-else-if="fileContent" class="file-content">
             <div v-if="isTextFile" class="text-content">
               <pre><code>{{ fileContent.content }}</code></pre>
@@ -173,8 +173,7 @@ const isTextFile = computed(() => {
 const isPlanDirectoryNotFound = computed(() => {
   return error.value && (
     error.value.includes('Plan directory not found') ||
-    error.value.includes('not found') ||
-    error.value.includes('目录未找到')
+    error.value.includes('not found')
   )
 })
 
@@ -198,23 +197,22 @@ const startAutoRefresh = () => {
 
 const refreshFileTree = async () => {
   if (!props.planId) return
-  
+
   loading.value = true
   error.value = null
   clearAutoRefresh()
-  
+
   try {
     fileTree.value = await FileBrowserApiService.getFileTree(props.planId)
     // Success - no need to auto refresh
   } catch (err) {
     error.value = err instanceof Error ? err.message : t('fileBrowser.loadError')
     console.error('Failed to load file tree:', err)
-    
+
     // Start auto refresh if it's a "directory not found" error
     const errorMessage = err instanceof Error ? err.message : ''
-    if (errorMessage.includes('Plan directory not found') || 
-        errorMessage.includes('not found') || 
-        errorMessage.includes('目录未找到')) {
+    if (errorMessage.includes('Plan directory not found') ||
+        errorMessage.includes('not found')) {
       startAutoRefresh()
     }
   } finally {
@@ -224,12 +222,12 @@ const refreshFileTree = async () => {
 
 const handleFileSelected = async (file: FileNode) => {
   if (file.type === 'directory') return
-  
+
   selectedFile.value = file
   fileContent.value = null
   loadingContent.value = true
   contentError.value = null
-  
+
   try {
     fileContent.value = await FileBrowserApiService.getFileContent(props.planId, file.path)
   } catch (err) {
