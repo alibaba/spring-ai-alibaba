@@ -93,6 +93,9 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	@Autowired
 	private DynamicModelRepository dynamicModelRepository;
 
+	@Autowired
+	private LlmTraceRecorder llmTraceRecorder;
+
 	public LlmService() {
 	}
 
@@ -423,14 +426,14 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			@Override
 			public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest,
 					MultiValueMap<String, String> additionalHttpHeader) {
-				LlmTraceRecorder.recordRequest(chatRequest);
+				llmTraceRecorder.recordRequest(chatRequest);
 				return super.chatCompletionEntity(chatRequest, additionalHttpHeader);
 			}
 
 			@Override
 			public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
 					MultiValueMap<String, String> additionalHttpHeader) {
-				LlmTraceRecorder.recordRequest(chatRequest);
+				llmTraceRecorder.recordRequest(chatRequest);
 				return super.chatCompletionStream(chatRequest, additionalHttpHeader);
 			}
 		};
