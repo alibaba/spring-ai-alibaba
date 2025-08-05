@@ -108,143 +108,143 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 	@Override
 	public String getParameters() {
 		return """
-			{
-			    "oneOf": [
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "create",
-			                    "description": "Create new PPT file or create based on template"
-			                },
-			                "title": {
-			                    "type": "string",
-			                    "description": "PPT title",
-			                    "minLength": 1
-			                },
-			                "subtitle": {
-			                    "type": "string",
-			                    "description": "PPT subtitle (optional)"
-			                },
-			                "slide_contents": {
-			                    "type": "array",
-			                    "description": "Slide content list (optional, used when not using template)",
-			                    "items": {
-			                        "type": "object",
-			                        "properties": {
-			                            "title": {
-			                                "type": "string",
-			                                "description": "Slide title",
-			                                "minLength": 1
-			                            },
-			                            "content": {
-			                                "type": "string",
-			                                "description": "Slide content",
-			                                "minLength": 1
-			                            },
-			                            "image_path": {
-			                                "type": "string",
-			                                "description": "Image path in slide (optional)"
-			                            }
-			                        },
-			                        "required": ["title", "content"],
-			                        "additionalProperties": false
-			                    }
-			                },
-			                "path": {
-			                    "type": "string",
-			                    "description": "Template file path (required when applying template)"
-			                },
-			                "template_content": {
-			                    "type": "string",
-			                    "description": "Modified template content (required when applying template)"
-			                },
-			                "file_name": {
-			                    "type": "string",
-			                    "description": "Generated PPT file name (required)",
-			                    "minLength": 1,
-			                    "pattern": "^.*\\.(pptx|ppt)$",
-			                    "errorMessage": "File name must end with .pptx or .ppt"
-			                }
-			            },
-			            "required": ["action", "title", "file_name"],
-			            "allOf": [
-			                {
-			                    "if": {
-			                        "properties": {
-			                            "path": {
-			                                "not": {
-			                                    "type": "null"
-			                                }
-			                            }
-			                        },
-			                        "required": ["path"]
-			                    },
-			                    "then": {
-			                        "required": ["template_content"],
-			                        "properties": {
-			                            "template_content": {
-			                                "minLength": 1
-			                            }
-			                        }
-			                    }
-			                },
-			                {
-			                    "if": {
-			                        "properties": {
-			                            "template_content": {
-			                                "not": {
-			                                    "type": "null"
-			                                }
-			                            }
-			                        },
-			                        "required": ["template_content"]
-			                    },
-			                    "then": {
-			                        "required": ["path"],
-			                        "properties": {
-			                            "path": {
-			                                "minLength": 1
-			                            }
-			                        }
-			                    }
-			                }
-			            ],
-			            "additionalProperties": false
-			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "getTemplateList",
-			                    "description": "Get available template list"
-			                }
-			            },
-			            "required": ["action"],
-			            "additionalProperties": false
-			        },
-			        {
-			            "type": "object",
-			            "properties": {
-			                "action": {
-			                    "type": "string",
-			                    "const": "getTemplate",
-			                    "description": "Get content of specified template"
-			                },
-			                "path": {
-			                    "type": "string",
-			                    "description": "Template file path to retrieve",
-			                    "minLength": 1
-			                }
-			            },
-			            "required": ["action", "path"],
-			            "additionalProperties": false
-			        }
-			    ]
-			}
-			""";
+				{
+				    "oneOf": [
+				        {
+				            "type": "object",
+				            "properties": {
+				                "action": {
+				                    "type": "string",
+				                    "const": "create",
+				                    "description": "Create new PPT file or create based on template"
+				                },
+				                "title": {
+				                    "type": "string",
+				                    "description": "PPT title",
+				                    "minLength": 1
+				                },
+				                "subtitle": {
+				                    "type": "string",
+				                    "description": "PPT subtitle (optional)"
+				                },
+				                "slide_contents": {
+				                    "type": "array",
+				                    "description": "Slide content list (optional, used when not using template)",
+				                    "items": {
+				                        "type": "object",
+				                        "properties": {
+				                            "title": {
+				                                "type": "string",
+				                                "description": "Slide title",
+				                                "minLength": 1
+				                            },
+				                            "content": {
+				                                "type": "string",
+				                                "description": "Slide content",
+				                                "minLength": 1
+				                            },
+				                            "image_path": {
+				                                "type": "string",
+				                                "description": "Image path in slide (optional)"
+				                            }
+				                        },
+				                        "required": ["title", "content"],
+				                        "additionalProperties": false
+				                    }
+				                },
+				                "path": {
+				                    "type": "string",
+				                    "description": "Template file path (required when applying template)"
+				                },
+				                "template_content": {
+				                    "type": "string",
+				                    "description": "Modified template content (required when applying template)"
+				                },
+				                "file_name": {
+				                    "type": "string",
+				                    "description": "Generated PPT file name (required)",
+				                    "minLength": 1,
+				                    "pattern": "^.*\\.(pptx|ppt)$",
+				                    "errorMessage": "File name must end with .pptx or .ppt"
+				                }
+				            },
+				            "required": ["action", "title", "file_name"],
+				            "allOf": [
+				                {
+				                    "if": {
+				                        "properties": {
+				                            "path": {
+				                                "not": {
+				                                    "type": "null"
+				                                }
+				                            }
+				                        },
+				                        "required": ["path"]
+				                    },
+				                    "then": {
+				                        "required": ["template_content"],
+				                        "properties": {
+				                            "template_content": {
+				                                "minLength": 1
+				                            }
+				                        }
+				                    }
+				                },
+				                {
+				                    "if": {
+				                        "properties": {
+				                            "template_content": {
+				                                "not": {
+				                                    "type": "null"
+				                                }
+				                            }
+				                        },
+				                        "required": ["template_content"]
+				                    },
+				                    "then": {
+				                        "required": ["path"],
+				                        "properties": {
+				                            "path": {
+				                                "minLength": 1
+				                            }
+				                        }
+				                    }
+				                }
+				            ],
+				            "additionalProperties": false
+				        },
+				        {
+				            "type": "object",
+				            "properties": {
+				                "action": {
+				                    "type": "string",
+				                    "const": "getTemplateList",
+				                    "description": "Get available template list"
+				                }
+				            },
+				            "required": ["action"],
+				            "additionalProperties": false
+				        },
+				        {
+				            "type": "object",
+				            "properties": {
+				                "action": {
+				                    "type": "string",
+				                    "const": "getTemplate",
+				                    "description": "Get content of specified template"
+				                },
+				                "path": {
+				                    "type": "string",
+				                    "description": "Template file path to retrieve",
+				                    "minLength": 1
+				                }
+				            },
+				            "required": ["action", "path"],
+				            "additionalProperties": false
+				        }
+				    ]
+				}
+				""";
 	}
 
 	@Override
