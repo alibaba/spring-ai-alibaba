@@ -15,39 +15,42 @@
  */
 package com.alibaba.cloud.ai.example.manus.llm;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+@Component
 public class LlmTraceRecorder {
 
 	private static final Logger logger = LoggerFactory.getLogger("LLM_REQUEST_LOGGER");
 
 	private static final Logger selfLogger = LoggerFactory.getLogger(LlmTraceRecorder.class);
 
-	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
 	private static final ThreadLocal<String> REQUEST_ID = new ThreadLocal<>();
 
-	public static void recordRequest(OpenAiApi.ChatCompletionRequest chatRequest) {
+	@Autowired
+	private ObjectMapper objectMapper;
+
+	public void recordRequest(OpenAiApi.ChatCompletionRequest chatRequest) {
 		try {
-			logger.info("Request[{}]: {}", REQUEST_ID.get(), OBJECT_MAPPER.writer().writeValueAsString(chatRequest));
+			logger.info("Request[{}]: {}", REQUEST_ID.get(), objectMapper.writer().writeValueAsString(chatRequest));
 		}
-		catch (JsonProcessingException e) {
+		catch (Throwable e) {
 			selfLogger.error("Failed to serialize chat request", e);
 		}
 	}
 
-	public static void recordResponse(ChatResponse chatResponse) {
+	public void recordResponse(ChatResponse chatResponse) {
 		try {
-			logger.info("Response[{}]: {}", REQUEST_ID.get(), OBJECT_MAPPER.writer().writeValueAsString(chatResponse));
+			logger.info("Response[{}]: {}", REQUEST_ID.get(), objectMapper.writer().writeValueAsString(chatResponse));
 		}
-		catch (JsonProcessingException e) {
+		catch (Throwable e) {
 			selfLogger.error("Failed to serialize chat response", e);
 		}
 	}
