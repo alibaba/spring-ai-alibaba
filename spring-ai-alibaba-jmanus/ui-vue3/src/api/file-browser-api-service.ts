@@ -66,11 +66,11 @@ export class FileBrowserApiService {
             const response = await fetch(`${this.BASE_URL}/tree/${planId}`)
             const result = await this.handleResponse(response)
             const apiResponse: ApiResponse<FileNode> = await result.json()
-            
+
             if (!apiResponse.success) {
                 throw new Error(apiResponse.message || 'Failed to get file tree')
             }
-            
+
             return apiResponse.data!
         } catch (error) {
             console.error('Failed to get file tree:', error)
@@ -86,11 +86,11 @@ export class FileBrowserApiService {
             const response = await fetch(`${this.BASE_URL}/content/${planId}?path=${encodeURIComponent(filePath)}`)
             const result = await this.handleResponse(response)
             const apiResponse: ApiResponse<FileContent> = await result.json()
-            
+
             if (!apiResponse.success) {
                 throw new Error(apiResponse.message || 'Failed to get file content')
             }
-            
+
             return apiResponse.data!
         } catch (error) {
             console.error('Failed to get file content:', error)
@@ -105,7 +105,7 @@ export class FileBrowserApiService {
         try {
             const response = await fetch(`${this.BASE_URL}/download/${planId}?path=${encodeURIComponent(filePath)}`)
             await this.handleResponse(response)
-            
+
             const blob = await response.blob()
             const url = window.URL.createObjectURL(blob)
             const a = document.createElement('a')
@@ -132,18 +132,18 @@ export class FileBrowserApiService {
             'application/javascript',
             'application/typescript'
         ]
-        
+
         const textExtensions = [
-            '.txt', '.md', '.json', '.xml', '.html', '.css', '.js', '.ts', 
+            '.txt', '.md', '.json', '.xml', '.html', '.css', '.js', '.ts',
             '.vue', '.jsx', '.tsx', '.py', '.java', '.cpp', '.c', '.h',
             '.sh', '.bat', '.yml', '.yaml', '.properties', '.conf', '.cfg'
         ]
-        
+
         // Check mime type
         if (textMimeTypes.some(type => mimeType.startsWith(type))) {
             return true
         }
-        
+
         // Check file extension
         const lowerFileName = fileName.toLowerCase()
         return textExtensions.some(ext => lowerFileName.endsWith(ext))
@@ -156,9 +156,9 @@ export class FileBrowserApiService {
         if (node.type === 'directory') {
             return 'carbon:folder'
         }
-        
+
         const fileName = node.name.toLowerCase()
-        
+
         // Programming languages
         if (fileName.endsWith('.js')) return 'vscode-icons:file-type-js'
         if (fileName.endsWith('.ts')) return 'vscode-icons:file-type-typescript'
@@ -171,19 +171,19 @@ export class FileBrowserApiService {
         if (fileName.endsWith('.css')) return 'vscode-icons:file-type-css'
         if (fileName.endsWith('.md')) return 'vscode-icons:file-type-markdown'
         if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) return 'vscode-icons:file-type-yaml'
-        
+
         // Documents
         if (fileName.endsWith('.pdf')) return 'vscode-icons:file-type-pdf2'
         if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) return 'vscode-icons:file-type-word'
         if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) return 'vscode-icons:file-type-excel'
         if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) return 'vscode-icons:file-type-powerpoint'
-        
+
         // Images
         if (fileName.match(/\.(jpg|jpeg|png|gif|bmp|svg)$/)) return 'carbon:image'
-        
+
         // Archives
         if (fileName.match(/\.(zip|rar|7z|tar|gz)$/)) return 'carbon:archive'
-        
+
         // Default file icon
         return 'carbon:document'
     }

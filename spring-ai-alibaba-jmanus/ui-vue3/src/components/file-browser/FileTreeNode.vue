@@ -18,9 +18,9 @@
 
 <template>
   <div class="file-tree-node">
-    <div 
+    <div
       class="node-content"
-      :class="{ 
+      :class="{
         'is-directory': node.type === 'directory',
         'is-file': node.type === 'file',
         'is-expanded': isExpanded
@@ -30,33 +30,33 @@
       @contextmenu.prevent="handleRightClick"
     >
       <!-- Expand/Collapse Icon for directories -->
-      <div 
-        v-if="node.type === 'directory'" 
+      <div
+        v-if="node.type === 'directory'"
         class="expand-icon"
         @click.stop="toggleExpanded"
       >
-        <Icon 
-          :icon="isExpanded ? 'carbon:chevron-down' : 'carbon:chevron-right'" 
+        <Icon
+          :icon="isExpanded ? 'carbon:chevron-down' : 'carbon:chevron-right'"
           class="chevron-icon"
         />
       </div>
-      
+
       <!-- File/Directory Icon -->
       <div class="node-icon">
         <Icon :icon="getNodeIcon()" />
       </div>
-      
+
       <!-- Name -->
       <span class="node-name">{{ node.name }}</span>
-      
+
       <!-- File size for files -->
       <span v-if="node.type === 'file'" class="file-size">
         {{ formatFileSize(node.size) }}
       </span>
-      
+
       <!-- Actions -->
       <div class="node-actions" v-if="showActions">
-        <button 
+        <button
           v-if="node.type === 'file'"
           @click.stop="$emit('download-file', node)"
           class="action-btn download-btn"
@@ -66,7 +66,7 @@
         </button>
       </div>
     </div>
-    
+
     <!-- Children (for directories) -->
     <div v-if="node.type === 'directory' && isExpanded && node.children" class="children">
       <FileTreeNode
@@ -78,9 +78,9 @@
         @download-file="$emit('download-file', $event)"
       />
     </div>
-    
+
     <!-- Context Menu -->
-    <div 
+    <div
       v-if="showContextMenu"
       class="context-menu"
       :style="contextMenuStyle"
@@ -90,9 +90,9 @@
         <Icon icon="carbon:view" />
         <span>Open</span>
       </div>
-      <div 
+      <div
         v-if="node.type === 'file'"
-        class="context-menu-item" 
+        class="context-menu-item"
         @click="handleDownload"
       >
         <Icon icon="carbon:download" />
@@ -167,7 +167,7 @@ const handleDownload = () => {
 const handleRightClick = (event: MouseEvent) => {
   event.preventDefault()
   showContextMenu.value = true
-  
+
   // Position context menu
   // const rect = (event.target as HTMLElement).getBoundingClientRect()
   contextMenuStyle.value = {
@@ -176,7 +176,7 @@ const handleRightClick = (event: MouseEvent) => {
     left: `${event.clientX}px`,
     zIndex: 1000
   }
-  
+
   // Add click listener to hide context menu
   setTimeout(() => {
     document.addEventListener('click', hideContextMenu)
