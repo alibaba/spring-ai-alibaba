@@ -50,7 +50,7 @@ public class LettuceRedisChatMemoryConnectionAutoConfiguration extends RedisChat
 	@Bean
 	@ConditionalOnMissingBean
 	LettuceRedisChatMemoryRepository redisChatMemoryRepository() {
-		if (getClusterConfiguration() != null) {
+		if (getRedisChatMemoryMode() == RedisChatMemoryProperties.Mode.CLUSTER && getClusterConfiguration() != null) {
 			logger.info("Configuring Redis Cluster chat memory repository using Lettuce");
 			RedisChatMemoryClusterConfiguration clusterConfiguration = getClusterConfiguration();
 			return LettuceRedisChatMemoryRepository.builder()

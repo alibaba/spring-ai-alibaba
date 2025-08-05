@@ -50,11 +50,11 @@ public class RedissonRedisChatMemoryConnectionAutoConfiguration extends RedisCha
 	@Bean
 	@ConditionalOnMissingBean
 	RedissonRedisChatMemoryRepository redisChatMemoryRepository() {
-		if (getClusterConfiguration() != null) {
+		if (getRedisChatMemoryMode() == RedisChatMemoryProperties.Mode.CLUSTER && getClusterConfiguration() != null) {
 			logger.info("Configuring Redis Cluster chat memory repository using Redisson");
 			RedisChatMemoryClusterConfiguration clusterConfiguration = getClusterConfiguration();
 			return RedissonRedisChatMemoryRepository.builder()
-				.nods(clusterConfiguration.nodeAddresses())
+				.nodes(clusterConfiguration.nodeAddresses())
 				.username(clusterConfiguration.username())
 				.password(clusterConfiguration.password())
 				.timeout(clusterConfiguration.timeout())

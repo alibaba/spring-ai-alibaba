@@ -79,7 +79,7 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 
 		private boolean useCluster = false;
 
-		public RedissonBuilder nods(List<String> nodes) {
+		public RedissonBuilder nodes(List<String> nodes) {
 			this.nodes = nodes;
 			this.useCluster = true;
 			return this;

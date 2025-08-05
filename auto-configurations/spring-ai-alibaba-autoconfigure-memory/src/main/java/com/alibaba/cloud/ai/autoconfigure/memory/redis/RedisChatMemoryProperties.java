@@ -64,6 +64,11 @@ public class RedisChatMemoryProperties {
 	 */
 	private Cluster cluster;
 
+	/**
+	 * Redis memory mode.
+	 */
+	private Mode mode;
+
 	public String getHost() {
 		return host;
 	}
@@ -120,6 +125,14 @@ public class RedisChatMemoryProperties {
 		this.clientType = clientType;
 	}
 
+	public Mode getMode() {
+		return mode;
+	}
+
+	public void setMode(Mode mode) {
+		this.mode = mode;
+	}
+
 	/**
 	 * Type of Redis client to use.
 	 */
@@ -160,6 +173,23 @@ public class RedisChatMemoryProperties {
 		public void setNodes(List<String> nodes) {
 			this.nodes = nodes;
 		}
+
+	}
+
+	/**
+	 * Type of Redis memory mode to use
+	 */
+	public enum Mode {
+
+		/**
+		 * Use the standalone mode
+		 */
+		STANDALONE,
+
+		/**
+		 * Use the cluster mode
+		 */
+		CLUSTER
 
 	}
 

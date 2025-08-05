@@ -39,6 +39,14 @@ public abstract class RedisChatMemoryConnectionAutoConfiguration {
 		this.connectionDetails = connectionDetails;
 	}
 
+	protected RedisChatMemoryProperties.Mode getRedisChatMemoryMode() {
+		RedisChatMemoryProperties.Mode mode = properties.getMode();
+		if (mode == null) {
+			return RedisChatMemoryProperties.Mode.STANDALONE;
+		}
+		return properties.getMode();
+	}
+
 	protected final RedisChatMemoryStandaloneConfiguration getStandaloneConfiguration() {
 		RedisConnectionDetails.Standalone standalone = connectionDetails.getStandalone();
 		return new RedisChatMemoryStandaloneConfiguration(standalone.getHost(), standalone.getPort(),
@@ -46,7 +54,7 @@ public abstract class RedisChatMemoryConnectionAutoConfiguration {
 	}
 
 	protected final RedisChatMemoryClusterConfiguration getClusterConfiguration() {
-		if (CollectionUtils.isEmpty(properties.getCluster().getNodes())) {
+		if (properties.getCluster() == null || CollectionUtils.isEmpty(properties.getCluster().getNodes())) {
 			return null;
 		}
 		List<String> nodes = getNodes(connectionDetails.getCluster());
