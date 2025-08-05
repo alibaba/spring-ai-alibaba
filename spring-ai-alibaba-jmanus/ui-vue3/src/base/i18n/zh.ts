@@ -244,6 +244,7 @@ const words: I18nType = {
       loadDataFailed: '加载数据失败',
       loadDetailsFailed: '加载Agent详情失败',
       invalidFormat: 'Agent配置格式不正确：缺少必要字段',
+      cannotDeleteBuiltIn: '无法删除内置Agent',
     },
     // Model配置页面
     modelConfig: {

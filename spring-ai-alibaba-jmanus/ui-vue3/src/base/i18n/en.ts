@@ -244,6 +244,7 @@ const words: I18nType = {
       invalidFormat: 'Invalid agent configuration format: missing required fields',
       modelConfiguration: 'Model Configuration',
       modelConfigurationLabel: 'Select Model',
+      cannotDeleteBuiltIn: 'Cannot delete built-in agent',
     },
     // Model configuration page
     modelConfig: {

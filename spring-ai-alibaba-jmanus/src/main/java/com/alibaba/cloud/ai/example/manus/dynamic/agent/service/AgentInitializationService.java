@@ -112,12 +112,20 @@ public class AgentInitializationService {
 				agentEntity.setAgentDescription(agentConfig.getAgentDescription());
 				agentEntity.setNextStepPrompt(agentConfig.getNextStepPrompt());
 				agentEntity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
+				
+				// Set isBuiltIn based on YAML configuration
+				Boolean isBuiltIn = agentConfig.getIsBuiltIn();
+				agentEntity.setIsBuiltIn(isBuiltIn != null ? isBuiltIn : false);
+			} else {
+				// If no config found, default to built-in (not deletable)
+				agentEntity.setIsBuiltIn(true);
 			}
 
 			try {
 				agentRepository.save(agentEntity);
-				log.info("Created agent: {} for namespace: {} with language: {}", agent.getAgentName(), namespace,
-						language);
+				boolean isBuiltIn = agentEntity.getIsBuiltIn() != null ? agentEntity.getIsBuiltIn() : false;
+				log.info("Created agent: {} for namespace: {} with language: {} (built-in: {})", 
+						agent.getAgentName(), namespace, language, isBuiltIn);
 			}
 			catch (Exception e) {
 				log.error("Failed to create agent: {} for namespace: {} with language: {}", agent.getAgentName(),
@@ -143,6 +151,10 @@ public class AgentInitializationService {
 				agentEntity.setAgentDescription(agentConfig.getAgentDescription());
 				agentEntity.setNextStepPrompt(agentConfig.getNextStepPrompt());
 				agentEntity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
+				
+				// Update isBuiltIn based on YAML configuration
+				Boolean isBuiltIn = agentConfig.getIsBuiltIn();
+				agentEntity.setIsBuiltIn(isBuiltIn != null ? isBuiltIn : false);
 			}
 
 			try {

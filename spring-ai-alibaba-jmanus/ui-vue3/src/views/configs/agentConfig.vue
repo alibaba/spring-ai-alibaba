@@ -54,6 +54,7 @@
           >
             <div class="agent-card-header">
               <span class="agent-name">{{ agent.name }}</span>
+              <span v-if="agent.isBuiltIn" class="built-in-badge">Built-in</span>
               <Icon icon="carbon:chevron-right" />
             </div>
             <p class="agent-desc">{{ agent.description }}</p>
@@ -101,7 +102,12 @@
               <Icon icon="carbon:save" />
               {{ t('common.save') }}
             </button>
-            <button class="action-btn danger" @click="showDeleteConfirm">
+            <button 
+              class="action-btn danger" 
+              @click="showDeleteConfirm"
+              :disabled="selectedAgent?.isBuiltIn"
+              :title="selectedAgent?.isBuiltIn ? t('config.agentConfig.cannotDeleteBuiltIn') : ''"
+            >
               <Icon icon="carbon:trash-can" />
               {{ t('common.delete') }}
             </button>
@@ -1664,5 +1670,29 @@ watch(
     background: rgba(0, 0, 0, 0.05);
     color: rgba(0, 0, 0, 0.9);
   }
+}
+
+.built-in-badge {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 8px;
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.3);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #ccc;
+}
+
+.action-btn.danger:disabled {
+  background: #ccc;
+  border-color: #ccc;
 }
 </style>
