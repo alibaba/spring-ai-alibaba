@@ -105,7 +105,7 @@
             <button 
               class="action-btn danger" 
               @click="showDeleteConfirm"
-              :disabled="selectedAgent?.isBuiltIn"
+              :disabled="!!selectedAgent?.isBuiltIn"
               :title="selectedAgent?.isBuiltIn ? t('config.agentConfig.cannotDeleteBuiltIn') : ''"
             >
               <Icon icon="carbon:trash-can" />

@@ -1,6 +1,7 @@
 # PPT Generator Agent Configuration
 agentName: PPT_GENERATOR_AGENT
 agentDescription: A professional PowerPoint presentation generation agent capable of automatically creating PPT files with a title slide and multiple content slides, supporting both text and images.
+isBuiltIn: false  # PPT generator agent can be deleted if not needed
 availableToolKeys:
   - ppt_generator_operator
   - inner_storage_content_tool

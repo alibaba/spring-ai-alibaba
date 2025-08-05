@@ -1,6 +1,7 @@
 # DEFAULT_AGENT 配置
 agentName: DEFAULT_AGENT
 agentDescription: 一个多功能默认代理，可以使用文件操作和shell命令处理各种用户请求。非常适合可能涉及文件操作、系统操作或文本处理的通用任务。
+isBuiltIn: false  # 默认 agent 可以被删除
 availableToolKeys:
   - text_file_operator
   - terminate

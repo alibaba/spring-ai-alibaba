@@ -245,6 +245,8 @@ const words: I18nType = {
       modelConfiguration: 'Model Configuration',
       modelConfigurationLabel: 'Select Model',
       cannotDeleteBuiltIn: 'Cannot delete built-in agent',
+      builtInAgents: 'Built-in Agents',
+      customAgents: 'Custom Agents',
     },
     // Model configuration page
     modelConfig: {

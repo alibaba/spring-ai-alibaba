@@ -1,6 +1,7 @@
 # MAPREDUCE_MAP_TASK_AGENT 配置
 agentName: MAPREDUCE_MAP_TASK_AGENT
 agentDescription: 一个Map任务执行代理，负责处理MapReduce流程中的Map阶段任务。代理会自动接收任务文档片段内容，执行业务处理逻辑，并通过map_output_tool记录任务完成状态。
+isBuiltIn: true  # MapReduce 系统 agent，不可删除
 availableToolKeys:
   - map_output_tool
   - terminate
