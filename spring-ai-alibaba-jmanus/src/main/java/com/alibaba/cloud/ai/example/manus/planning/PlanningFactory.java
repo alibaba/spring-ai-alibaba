@@ -229,6 +229,7 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new DocLoaderTool());
 		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
 		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
+		// toolDefinitions.add(pptGeneratorOperator);
 		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
 		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
 		// toolDefinitions.add(new GoogleSearch());
