@@ -26,7 +26,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.util.StringUtils;
 
 @Configuration
 @EnableConfigurationProperties(OpenAlexProperties.class)
