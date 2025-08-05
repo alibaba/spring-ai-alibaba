@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.controller;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.entity.MemoryEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.service.MemoryService;
 import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
 import com.alibaba.cloud.ai.example.manus.event.PlanExceptionEvent;
 import com.alibaba.cloud.ai.example.manus.exception.PlanException;
@@ -31,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +42,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -55,6 +60,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	private final Cache<String, Throwable> exceptionCache;
 
+	private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd,yyyy hh:mm a");
+
 	@Autowired
 	@Lazy
 	private PlanningFactory planningFactory;
@@ -67,6 +74,9 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	@Autowired
 	private UserInputService userInputService;
+
+	@Autowired
+	private MemoryService memoryService;
 
 	@Autowired
 	public ManusController(ObjectMapper objectMapper) {
@@ -98,8 +108,9 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		context.setRootPlanId(planId);
 		context.setNeedSummary(true);
 
-		String memoryId = request.get("memoryId");
-		context.setMemoryId(memoryId == null ? UUID.randomUUID().toString() : memoryId);
+		String memoryId = StringUtils.isEmpty(request.get("memoryId")) ? UUID.randomUUID().toString()
+				: request.get("memoryId");
+		context.setMemoryId(memoryId);
 
 		// Get or create planning flow
 		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(planId);
@@ -107,6 +118,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		// Asynchronous execution of task
 		CompletableFuture.supplyAsync(() -> {
 			try {
+				memoryService.saveMemory(new MemoryEntity(memoryId, LocalDateTime.now().format(formatter)));
 				return planningFlow.executePlan(context);
 			}
 			catch (Exception e) {

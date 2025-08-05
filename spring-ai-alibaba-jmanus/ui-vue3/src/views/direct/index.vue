@@ -20,6 +20,7 @@
   <div class="direct-page">
     <div class="direct-chat">
       <Sidebar @planExecutionRequested="handlePlanExecutionRequested" />
+      <Memory />
       <!-- Left Panel - Chat -->
       <div class="left-panel" :style="{ width: leftPanelWidth + '%' }">
         <div class="chat-header">
@@ -61,6 +62,7 @@
           @focus="handleInputFocus"
           @update-state="handleInputUpdateState"
           @plan-mode-clicked="handlePlanModeClicked"
+          @memory-list-clicked="handleMemoryListClicked"
         />
       </div>
 
@@ -96,6 +98,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import Sidebar from '@/components/sidebar/index.vue'
+import Memory from '@/components/memory/index.vue'
 import RightPanel from '@/components/right-panel/index.vue'
 import ChatContainer from '@/components/chat/index.vue'
 import InputArea from '@/components/input/index.vue'
@@ -106,6 +109,7 @@ import { useTaskStore } from '@/stores/task'
 import { sidebarStore } from '@/stores/sidebar'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import { useMessage } from '@/composables/useMessage'
+import {memoryStore} from "@/stores/memory";
 
 const route = useRoute()
 const router = useRouter()
@@ -504,6 +508,10 @@ const handlePlanModeClicked = () => {
   // Toggle sidebar display state
   sidebarStore.toggleSidebar()
   console.log('[DirectView] Sidebar toggled, isCollapsed:', sidebarStore.isCollapsed)
+}
+
+const handleMemoryListClicked = () => {
+  memoryStore.toggleSidebar()
 }
 
 const goBack = () => {

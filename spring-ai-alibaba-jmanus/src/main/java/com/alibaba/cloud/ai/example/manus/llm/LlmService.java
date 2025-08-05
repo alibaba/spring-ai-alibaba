@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
@@ -93,7 +94,7 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	private DynamicModelRepository dynamicModelRepository;
 
 	@Autowired
-	private MysqlChatMemoryRepository mysqlChatMemoryRepository;
+	private ChatMemoryRepository chatMemoryRepository;
 
 	public LlmService() {
 	}
@@ -244,7 +245,7 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	public ChatMemory getAgentMemory(Integer maxMessages) {
 		if (agentMemory == null) {
 			agentMemory = MessageWindowChatMemory.builder()
-				.chatMemoryRepository(mysqlChatMemoryRepository)
+				.chatMemoryRepository(chatMemoryRepository)
 				.maxMessages(maxMessages)
 				.build();
 		}
@@ -277,7 +278,7 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 		if (this.conversationMemory == null) {
 			// Default to 100 messages if not specified elsewhere
 			this.conversationMemory = MessageWindowChatMemory.builder()
-				.chatMemoryRepository(mysqlChatMemoryRepository)
+				.chatMemoryRepository(chatMemoryRepository)
 				.maxMessages(100)
 				.build();
 		}
@@ -302,7 +303,7 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	public ChatMemory getConversationMemory(Integer maxMessages) {
 		if (conversationMemory == null) {
 			conversationMemory = MessageWindowChatMemory.builder()
-				.chatMemoryRepository(mysqlChatMemoryRepository)
+				.chatMemoryRepository(chatMemoryRepository)
 				.maxMessages(maxMessages)
 				.build();
 		}

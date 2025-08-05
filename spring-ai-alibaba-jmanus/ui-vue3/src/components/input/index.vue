@@ -32,6 +32,10 @@
         <Icon icon="carbon:document" />
         {{ $t('input.planMode') }}
       </button>
+      <button class="plan-mode-btn" :title="选择记忆" @click="handleMemoryListClick">
+        <Icon icon="carbon:document" />
+        {{ memoryStore.selectMemoryId  || '选择记忆' }}
+      </button>
       <button
         class="send-button"
         :disabled="!currentInput.trim() || isDisabled"
@@ -49,6 +53,7 @@
 import { ref, nextTick, onMounted, onUnmounted, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
+import {memoryStore} from "@/stores/memory"
 
 const { t } = useI18n()
 
@@ -63,6 +68,7 @@ interface Emits {
   (e: 'clear'): void
   (e: 'update-state', enabled: boolean, placeholder?: string): void
   (e: 'plan-mode-clicked'): void
+  (e: 'memory-list-clicked'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -112,6 +118,11 @@ const handleSend = () => {
 const handlePlanModeClick = () => {
   // Trigger the plan mode toggle event
   emit('plan-mode-clicked')
+}
+
+const handleMemoryListClick = () => {
+  // Trigger the plan mode toggle event
+  emit('memory-list-clicked')
 }
 
 /**
