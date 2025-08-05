@@ -341,7 +341,7 @@ export default {
       streamingSections.value = []
 
       try {
-        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(debugQuery.value)}&agentId=${props.agentId}`)
+        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(debugQuery.value)}&agentId=${props.agentId + 999999}`)
         currentEventSource = eventSource
 
         // 使用与 AgentWorkspace.vue 完全相同的流式数据处理逻辑
@@ -816,7 +816,7 @@ export default {
       if (!schemaInitForm.selectedDatasource) return
 
       try {
-        const response = await fetch(`/api/agent/${props.agentId}/schema/datasources/${schemaInitForm.selectedDatasource.id}/tables`)
+        const response = await fetch(`/api/agent/${props.agentId + 999999}/schema/datasources/${schemaInitForm.selectedDatasource.id}/tables`)
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -850,7 +850,7 @@ export default {
       try {
         schemaInitializing.value = true
 
-        const response = await fetch(`/api/agent/${props.agentId}/schema/init`, {
+        const response = await fetch(`/api/agent/${props.agentId + 999999}/schema/init`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -885,7 +885,7 @@ export default {
 
     const getSchemaStatistics = async () => {
       try {
-        const response = await fetch(`/api/agent/${props.agentId}/schema/statistics`)
+        const response = await fetch(`/api/agent/${props.agentId + 999999}/schema/statistics`)
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -912,7 +912,7 @@ export default {
       if (!confirm('确定要清空所有Schema数据吗？此操作不可恢复。')) return
 
       try {
-        const response = await fetch(`/api/agent/${props.agentId}/schema/clear`, {
+        const response = await fetch(`/api/agent/${props.agentId + 999999}/schema/clear`, {
           method: 'DELETE'
         })
 
