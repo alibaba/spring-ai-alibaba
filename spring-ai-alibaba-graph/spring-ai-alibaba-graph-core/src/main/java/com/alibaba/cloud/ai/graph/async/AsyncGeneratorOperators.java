@@ -93,6 +93,9 @@ public interface AsyncGeneratorOperators<E> {
 	 * given consumer to each element.
 	 * @param consumer the consumer function to be applied to each element
 	 * @return a CompletableFuture representing the completion of the iteration process.
+	 *
+	 * fix: zhangr: 2025/08/05 1. 解决异常未正常传递，陷入循环的问题
+	 *
 	 */
 	default CompletableFuture<Object> forEachAsync(Consumer<E> consumer) {
 		CompletableFuture<Object> future = completedFuture(null);
@@ -100,10 +103,17 @@ public interface AsyncGeneratorOperators<E> {
 			final AsyncGenerator.Data<E> finalNext = next;
 			if (finalNext.embed != null) {
 				future = future.thenCompose(v -> finalNext.embed.generator.async(executor()).forEachAsync(consumer));
+				if (future.isCompletedExceptionally()) {
+					return future;
+				}
+
 			}
 			else {
 				future = future
 					.thenCompose(v -> finalNext.data.thenAcceptAsync(consumer, executor()).thenApply(x -> null));
+				if (future.isCompletedExceptionally()) {
+					return future;
+				}
 			}
 		}
 		return future;
@@ -124,6 +134,9 @@ public interface AsyncGeneratorOperators<E> {
 				consumer.accept(res, v);
 				return res;
 			}, executor()));
+			if (future.isCompletedExceptionally()) {
+				return future;
+			}
 		}
 		return future;
 	}
