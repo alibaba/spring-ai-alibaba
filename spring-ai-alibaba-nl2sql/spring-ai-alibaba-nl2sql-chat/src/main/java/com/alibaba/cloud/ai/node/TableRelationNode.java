@@ -38,6 +38,7 @@ import reactor.core.publisher.Flux;
 import java.util.List;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
 import static com.alibaba.cloud.ai.constant.Constant.BUSINESS_KNOWLEDGE;
 import static com.alibaba.cloud.ai.constant.Constant.COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.DATA_SET_ID;
@@ -93,6 +94,11 @@ public class TableRelationNode implements NodeAction {
 		List<List<Document>> columnDocumentsByKeywords = StateUtils.getDocumentListList(state,
 				COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT);
 		String dataSetId = StateUtils.getStringValue(state, DATA_SET_ID);
+		String agentIdStr = StateUtils.getStringValue(state, AGENT_ID);
+		long agentId = -1L;
+		if (!agentIdStr.isEmpty()) {
+			agentId = Long.parseLong(agentIdStr);
+		}
 
 		// Execute business logic first - get final result immediately
 		SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
@@ -100,7 +106,7 @@ public class TableRelationNode implements NodeAction {
 
 		// Extract business knowledge and semantic model
 		List<BusinessKnowledgeDTO> businessKnowledges = businessKnowledgeRecallService.getFieldByDataSetId(dataSetId);
-		List<SemanticModelDTO> semanticModel = semanticModelRecallService.getFieldByDataSetId(dataSetId);
+		List<SemanticModelDTO> semanticModel = semanticModelRecallService.getFieldByDataSetId(String.valueOf(agentId));
 		// load prompt template
 		String businessKnowledgePrompt = buildBusinessKnowledgePrompt(businessKnowledges);
 		String semanticModelPrompt = buildSemanticModelPrompt(semanticModel);

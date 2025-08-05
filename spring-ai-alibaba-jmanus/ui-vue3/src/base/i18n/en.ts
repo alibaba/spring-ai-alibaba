@@ -42,6 +42,8 @@ const words: I18nType = {
     apiKeyPlaceholder: 'Enter your API key',
     apiKeyHint: 'You can get your API key from Alibaba Cloud Bailian Console.',
     getApiKey: 'Get API Key',
+    showApiKey: 'Show API Key',
+    hideApiKey: 'Hide API Key',
     baseUrlLabel: 'API Base URL',
     baseUrlPlaceholder: 'https://api.openai.com or your custom URL',
     baseUrlHint: 'OpenAI compatible API base URL, e.g. http://localhost:11434',
@@ -233,6 +235,8 @@ const words: I18nType = {
       baseUrlPlaceholder: 'Enter base url',
       apiKey: 'API Key',
       apiKeyPlaceholder: 'Enter API key',
+      showApiKey: 'Show API Key',
+      hideApiKey: 'Hide API Key',
       modelName: 'Model Name',
       modelNamePlaceholder: 'Enter model name',
       description: 'Description',
@@ -908,14 +912,14 @@ const words: I18nType = {
     examples: {
       stockPrice: {
         title: 'Query Stock Price',
-        description: "Get today's latest stock price for Alibaba (Agent can use browser tools)",
+        description: "Get today's latest stock price for Alphabet (Agent can use browser tools)",
         prompt:
-          "Use browser based on Baidu to query today's Alibaba stock price and return the latest stock price",
+          "Use browser based on Google to query today's Alphabet stock price and return the latest stock price\n",
       },
       weather: {
         title: 'Query Weather',
-        description: "Get today's weather in Beijing (Agent can use MCP tool services)",
-        prompt: "Use browser, based on Baidu, to query today's weather in Beijing",
+        description: "Get today's weather in New York (Agent can use MCP tool services)",
+        prompt: "Use browser, based on Google, to query today's weather in New York",
       },
       queryplan: {
         title: 'Query Person Info',

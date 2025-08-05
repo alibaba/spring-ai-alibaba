@@ -68,11 +68,22 @@ public abstract class BaseSchemaService {
 	 * @return SchemaDTO
 	 */
 	public SchemaDTO mixRag(String query, List<String> keywords) {
+		return mixRagForAgent(null, query, keywords);
+	}
+
+	/**
+	 * 基于 RAG 构建 schema - 支持智能体隔离
+	 * @param agentId 智能体ID
+	 * @param query 查询
+	 * @param keywords 关键词列表
+	 * @return SchemaDTO
+	 */
+	public SchemaDTO mixRagForAgent(String agentId, String query, List<String> keywords) {
 		SchemaDTO schemaDTO = new SchemaDTO();
 		extractDatabaseName(schemaDTO); // 设置数据库名或模式名
 
-		List<Document> tableDocuments = getTableDocuments(query); // 获取表文档
-		List<List<Document>> columnDocumentList = getColumnDocumentsByKeywords(keywords); // 获取列文档列表
+		List<Document> tableDocuments = getTableDocuments(query, agentId); // 获取表文档
+		List<List<Document>> columnDocumentList = getColumnDocumentsByKeywords(keywords, agentId); // 获取列文档列表
 
 		buildSchemaFromDocuments(columnDocumentList, tableDocuments, schemaDTO);
 
@@ -114,14 +125,56 @@ public abstract class BaseSchemaService {
 	 * 根据关键词获取所有表文档
 	 */
 	public List<Document> getTableDocuments(String query) {
-		return vectorStoreService.getDocuments(query, "table");
+		return getTableDocuments(query, null);
+	}
+
+	/**
+	 * 根据关键词获取所有表文档 - 支持智能体隔离
+	 */
+	public List<Document> getTableDocuments(String query, String agentId) {
+		if (agentId != null) {
+			return vectorStoreService.getDocumentsForAgent(agentId, query, "table");
+		}
+		else {
+			return vectorStoreService.getDocuments(query, "table");
+		}
+	}
+
+	/**
+	 * 为指定智能体根据关键词获取所有表文档
+	 */
+	public List<Document> getTableDocumentsForAgent(String agentId, String query) {
+		return vectorStoreService.getDocumentsForAgent(agentId, query, "table");
 	}
 
 	/**
 	 * 根据关键词获取所有列文档
 	 */
 	public List<List<Document>> getColumnDocumentsByKeywords(List<String> keywords) {
-		return keywords.stream().map(kw -> vectorStoreService.getDocuments(kw, "column")).collect(Collectors.toList());
+		return getColumnDocumentsByKeywords(keywords, null);
+	}
+
+	/**
+	 * 根据关键词获取所有列文档 - 支持智能体隔离
+	 */
+	public List<List<Document>> getColumnDocumentsByKeywords(List<String> keywords, String agentId) {
+		if (agentId != null) {
+			return getColumnDocumentsByKeywordsForAgent(agentId, keywords);
+		}
+		else {
+			return keywords.stream()
+				.map(kw -> vectorStoreService.getDocuments(kw, "column"))
+				.collect(Collectors.toList());
+		}
+	}
+
+	/**
+	 * 为指定智能体根据关键词获取所有列文档
+	 */
+	public List<List<Document>> getColumnDocumentsByKeywordsForAgent(String agentId, List<String> keywords) {
+		return keywords.stream()
+			.map(kw -> vectorStoreService.getDocumentsForAgent(agentId, kw, "column"))
+			.collect(Collectors.toList());
 	}
 
 	/**

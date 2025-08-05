@@ -351,6 +351,7 @@ const { onRequest, messages } = useXChat({
 
 if (convId) {
   const his_messages = messageStore.history[convId]
+  console.log('his_messages', his_messages)
   if (his_messages) {
     messages.value = [...his_messages]
   }

@@ -40,7 +40,7 @@ export const useConversationStore = () =>
           title: firstMessage || 'Unnamed conversation',
           messages: null,
         }
-        this.conversations = [...this.conversations, newVar]
+        this.conversations = [newVar, ...this.conversations]
         this.current++
         return newVar
       },

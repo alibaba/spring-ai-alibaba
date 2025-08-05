@@ -38,12 +38,17 @@ public class KnowledgeExample {
 	public void example(KnowledgeStoreImpl store) throws Exception {
 
 		/*
-		 * 创建一个Embedding模型供后续使用。维度768。
+		 * Create an Embedding model for subsequent use. Dimension 768.
 		 */
 		FakedEmbeddingService fakedEmbeddingService = new FakedEmbeddingService(768);
 
-		// 创建一个 document
-		String tenantId = "user_小明"; // 如果不涉及多租户场景，后续其它地方的tenantId相关参数不传即可。如果涉及多租户，该租户id填什么值由各个业务自己决定，通常来说使用用户id或者知识库id当做租户id有通用性。
+		// Create a document
+		String tenantId = "user_小明"; // If not involving multi-tenant scenarios, don't
+										// pass tenantId related parameters in other
+										// places. If involving multi-tenant, what value
+										// to fill for tenantId is decided by each
+										// business itself, typically using user ID or
+										// knowledge base ID as tenant ID has generality.
 		Document document = new Document("文档id_a", tenantId);
 		document.setText("你好，世界");
 		float[] embedding = fakedEmbeddingService.embed(document.getText());
@@ -55,67 +60,76 @@ public class KnowledgeExample {
 		document.getMetadata().put("meta_example_boolean", true);
 		document.getMetadata().put("meta_example_bytes", "test".getBytes(StandardCharsets.UTF_8));
 
-		// 将 document 存入知识库(如果之前存在则覆盖)
+		// Store document into knowledge base (if existed before then overwrite)
 		store.putDocument(document);
 
-		// 读取 document
+		// Read document
 		Document documentByRead = store.getDocument("文档id_a", tenantId);
 
-		// 批量读取 document
+		// Batch read documents
 		store.getDocuments(Arrays.asList("文档id_a", "文档id_b", "文档id_c"), tenantId);
 
-		// 更新 document
+		// Update document
 		store.updateDocument(document);
 
-		// 删除 document
+		// Delete document
 		store.deleteDocument("文档id_a", tenantId);
-		// 删除一个租户下所有 document
+		// Delete all documents under a tenant
 		store.deleteDocumentByTenant(tenantId);
-		// 删除一个租户下满足条件的 document, 条件：city=="shanghai" && year >= 2005
+		// Delete documents under a tenant that meet conditions: city=="shanghai" && year
+		// >= 2005
 		store.deleteDocument(new HashSet<>(Collections.singletonList(tenantId)),
 				Filters.and(Filters.eq("city", "shanghai"), Filters.gte("year", 2005)));
 
-		// 查询："你好" 相关的文档
+		// Query: documents related to "你好"
 		String queryText = "你好";
-		Set<String> tenantIds = new HashSet<>(Collections.singletonList(tenantId)); // 多租户场景下租户id。如果不涉及多租户场景，则传null或空集合即可
-		Filter metadataFilter1 = null; // 过滤条件.
-		Filter metadataFilter2 = Filters.and(Filters.eq("city", "shanghai"), Filters.gte("year", 2005)); // 过滤条件.
+		// Tenant ID in multi-tenant scenarios. If not involving multi-tenant scenarios,
+		// pass null or empty collection.
+		Set<String> tenantIds = new HashSet<>(Collections.singletonList(tenantId));
+		Filter metadataFilter1 = null; // Filter condition.
+		Filter metadataFilter2 = Filters.and(Filters.eq("city", "shanghai"), Filters.gte("year", 2005)); // Filter
+																											// condition.
 																											// city=="shanghai"
 																											// &&
 																											// year
 																											// >=
 																											// 2005
 		{
-			// 1. 使用 向量检索 document
+			// 1. Using vector retrieval for documents
 			{
 				float[] queryVector = fakedEmbeddingService.embed(queryText);
 				int topK = 20;
-				Float minScore = 0.0f; // 0.0f或者null表示不限制
+				Float minScore = 0.0f; // 0.0f or null indicates no limit
 
-				List<String> columnsToGet = new ArrayList<>(); // 该参数填null或空集合会默认返回初始化KnowledgeStore时候的参数里定义的所有非向量字段。
+				// If this parameter is null or empty collection, it will return all
+				// non-vector fields defined in KnowledgeStore initialization parameters
+				// by default.
+				List<String> columnsToGet = new ArrayList<>();
 				Response<DocumentHit> response = store.vectorSearch(queryVector, topK, minScore, tenantIds,
 						metadataFilter1, columnsToGet);
 				List<DocumentHit> hits = response.getHits();
 				for (DocumentHit hit : hits) {
-					// 获取到文档
+					// Get document
 					Document doc = hit.getDocument();
-					// 获取到分数
+					// Get score
 					Double score = hit.getScore();
 				}
 			}
-			// 2. 使用全文检索 (其它参数不再细节讲解，请参考上面的向量检索的文档示例)
+			// 2. Using full-text retrieval (For details on other parameters, please refer
+			// to the documentation example of vector retrieval above)
 			{
 				int limit = 50;
-				// 这里展示遍历获取所有文档，如果仅需要前面几个，则只进行首次查询即可。
+				// Here shows traversing all documents, if only need first few, just
+				// perform first query.
 				String nextToken = null;
 				do {
 					Response<DocumentHit> response = store.fullTextSearch(queryText, tenantIds, limit, metadataFilter1,
 							nextToken, null);
 					List<DocumentHit> hits = response.getHits();
 					for (DocumentHit hit : hits) {
-						// 获取到文档
+						// Get document
 						Document doc = hit.getDocument();
-						// 获取到分数
+						// Get score
 						Double score = hit.getScore();
 					}
 					nextToken = response.getNextToken();
@@ -123,30 +137,46 @@ public class KnowledgeExample {
 				while (nextToken != null);
 
 			}
-			// 3. 相对灵活的自定义查询: 下面只根据meta进行过滤数据为例。
+			// 3. Relatively flexible custom queries: below is an example of filtering
+			// data based on meta information only.
 			{
-				Filter textQuery = Filters.textMatch(store.getTextField(), queryText); // 查询文档的text文本字段。也可以查询其它metaData里的文本字段
-				// 进行全文检索同时需要满足metadataFilter2，这里可以自由组合其它任意条件。
+				// Query text field of document. Can also query other text fields in
+				// metaData.
+				Filter textQuery = Filters.textMatch(store.getTextField(), queryText);
+				// Perform full-text search while needing to meet metadataFilter2, can
+				// freely combine with any other conditions here.
 				Filter finalFilter = Filters.and(textQuery, metadataFilter2);
 
-				// 这里展示遍历获取所有文档，如果仅需要前面几个，则只进行首次查询即可。
+				// Here shows traversing all documents, if only need first few, just
+				// perform first query.
 				String nextToken = null;
 				do {
 					KnowledgeSearchRequest searchRequest = KnowledgeSearchRequest.builder()
-						.tenantIds(tenantIds) // 多租户场景下设置租户id可提高性能。如果不涉及多租户场景，则传null或空集合即可
+						// Setting tenant ID in multi-tenant scenarios can improve
+						// performance. If not involving multi-tenant scenarios, pass null
+						// or empty collection.
+						.tenantIds(tenantIds)
 						.limit(10)
-						.metadataFilter(finalFilter) // 不需要额外添加多租户的条件。上面已经在构造函数里添加了.
-														// 额外添加对功能没影响，对性能影响很小。
+						.metadataFilter(finalFilter) // No need to add extra multi-tenant
+														// conditions. Already added in
+														// constructor above.
+														// Extra addition has no impact on
+														// functionality, very small
+														// impact on performance.
 						.nextToken(nextToken)
-						.sort(new FieldSort("city", Order.ASC)) // 按照city字段升序。
-																// 不设置排序通常有更快的性能。
+						.sort(new FieldSort("city", Order.ASC)) // Sort by city field
+																// ascending.
+																// Not setting sorting
+																// usually has faster
+																// performance.
 						.build();
 					Response<DocumentHit> response = store.searchDocuments(searchRequest);
 					List<DocumentHit> hits = response.getHits();
 					for (DocumentHit hit : hits) {
-						// 获取到文档
+						// Get document
 						Document doc = hit.getDocument();
-						// 获取到分数(只查询metaData元数据时，score无意义)
+						// Get score(When querying metaData only, the score is not
+						// meaningful.)
 						Double score = hit.getScore();
 					}
 					nextToken = response.getNextToken();

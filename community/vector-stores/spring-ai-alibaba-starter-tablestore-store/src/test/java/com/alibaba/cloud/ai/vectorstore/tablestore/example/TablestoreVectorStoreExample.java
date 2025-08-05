@@ -27,42 +27,46 @@ import java.util.Map;
 public class TablestoreVectorStoreExample {
 
 	/**
-	 * 因为 Spring AI Vector Store 兼容版基于 `Knowledge Store` 实现，所以需要先初始化 KnowledgeStore
-	 * @param knowledgeStoreImpl 如何初始化 KnowledgeStore 请参考
+	 * Because Spring AI Vector Store compatibility version is based on `Knowledge Store`,
+	 * we need to initialize KnowledgeStore first
+	 * @param knowledgeStoreImpl How to initialize KnowledgeStore please refer to
 	 * {@link KnowledgeStoreInitExample}
 	 */
 	public void example(KnowledgeStoreImpl knowledgeStoreImpl) throws Exception {
 
 		/*
-		 * 创建一个Embedding模型供后续使用。维度768。
+		 * Create an Embedding model for subsequent use. Dimension 768.
 		 */
 		FakedEmbeddingService embeddingService = new FakedEmbeddingService(768);
 
 		TablestoreVectorStore store = TablestoreVectorStore.builder(knowledgeStoreImpl, embeddingService)
-			.initializeTable(true) // 首次使用可将该参数设置为 true，进行初始化表。后续不需要设置。
+			.initializeTable(true) // For first use, set this parameter to true to
+									// initialize table. Not needed afterwards.
 			.build();
 
 		/*
-		 * 初始化表.spring内部会自动初始化表，如果非spring场景，可以人工调用。或者直接使用
-		 * knowledgeStoreImpl.initTable()完成初始化。
+		 * Initialize table. Spring will automatically initialize table internally. For
+		 * non-spring scenarios, can call manually. Or directly use
+		 * knowledgeStoreImpl.initTable() to complete initialization.
 		 */
 		store.afterPropertiesSet();
 
 		/*
-		 * 声明文档
+		 * Declare document
 		 */
 		Map<String, Object> metadata = new HashMap();
 		metadata.put("city", "hangzhou");
 		metadata.put("year", 2005);
-		// 因 KnowledgeStoreImpl 内部有多租户优化，而spring不支持多租户优化，这里我们将多租户设置到metadata中
+		// Since KnowledgeStoreImpl has multi-tenant optimization internally, but spring
+		// doesn't support multi-tenant optimization, we set multi-tenant in metadata here
 		metadata.put(com.aliyun.openservices.tablestore.agent.model.Document.DOCUMENT_TENANT_ID, "租户id_user小明");
 		Document document = new Document("文档id_001", "The World is Big and Salvation Lurks Around the Corner",
 				metadata);
 
-		// 添加文档
+		// Add document
 		store.add(List.of(document));
 
-		// 删除文档
+		// Delete document
 		store.delete(List.of("文档id_001"));
 
 		/*
