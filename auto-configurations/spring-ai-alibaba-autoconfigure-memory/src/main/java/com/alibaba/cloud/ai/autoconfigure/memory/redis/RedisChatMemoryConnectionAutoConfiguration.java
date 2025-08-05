@@ -27,30 +27,30 @@ import java.util.List;
  * @author benym
  * @date 2025/7/30 21:24
  */
-public abstract class RedisMemoryConnectionConfiguration {
+public abstract class RedisChatMemoryConnectionAutoConfiguration {
 
 	private final RedisChatMemoryProperties properties;
 
 	private final RedisChatMemoryConnectionDetails connectionDetails;
 
-	public RedisMemoryConnectionConfiguration(RedisChatMemoryProperties properties,
+	public RedisChatMemoryConnectionAutoConfiguration(RedisChatMemoryProperties properties,
 			RedisChatMemoryConnectionDetails connectionDetails) {
 		this.properties = properties;
 		this.connectionDetails = connectionDetails;
 	}
 
-	protected final RedisMemoryStandaloneConfiguration getStandaloneConfiguration() {
+	protected final RedisChatMemoryStandaloneConfiguration getStandaloneConfiguration() {
 		RedisConnectionDetails.Standalone standalone = connectionDetails.getStandalone();
-		return new RedisMemoryStandaloneConfiguration(standalone.getHost(), standalone.getPort(),
+		return new RedisChatMemoryStandaloneConfiguration(standalone.getHost(), standalone.getPort(),
 				connectionDetails.getUsername(), connectionDetails.getPassword(), properties.getTimeout());
 	}
 
-	protected final RedisMemoryClusterConfiguration getClusterConfiguration() {
+	protected final RedisChatMemoryClusterConfiguration getClusterConfiguration() {
 		if (CollectionUtils.isEmpty(properties.getCluster().getNodes())) {
 			return null;
 		}
 		List<String> nodes = getNodes(connectionDetails.getCluster());
-		return new RedisMemoryClusterConfiguration(nodes, connectionDetails.getUsername(),
+		return new RedisChatMemoryClusterConfiguration(nodes, connectionDetails.getUsername(),
 				connectionDetails.getPassword(), properties.getTimeout());
 	}
 

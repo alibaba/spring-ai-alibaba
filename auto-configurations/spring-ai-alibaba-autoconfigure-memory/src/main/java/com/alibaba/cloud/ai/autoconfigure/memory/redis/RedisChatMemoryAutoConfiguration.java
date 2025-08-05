@@ -30,9 +30,10 @@ import org.springframework.context.annotation.Import;
  */
 @AutoConfiguration
 @EnableConfigurationProperties(RedisChatMemoryProperties.class)
-@Import({ JedisRedisChatMemoryConnectionConfiguration.class, LettuceRedisChatMemoryConnectionConfiguration.class,
-		RedissonRedisChatMemoryConnectionConfiguration.class })
-public class RedisMemoryAutoConfiguration {
+@Import({ JedisRedisChatMemoryConnectionAutoConfiguration.class,
+		LettuceRedisChatMemoryConnectionAutoConfiguration.class,
+		RedissonRedisChatMemoryConnectionAutoConfiguration.class })
+public class RedisChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(RedisConnectionDetails.class)

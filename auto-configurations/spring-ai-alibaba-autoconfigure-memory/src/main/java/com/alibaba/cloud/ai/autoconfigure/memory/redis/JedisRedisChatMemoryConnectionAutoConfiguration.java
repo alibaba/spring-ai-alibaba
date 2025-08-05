@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.autoconfigure.memory.redis;
 
 import com.alibaba.cloud.ai.autoconfigure.memory.ChatMemoryAutoConfiguration;
-import com.alibaba.cloud.ai.memory.redis.RedissonRedisChatMemoryRepository;
-import org.redisson.api.RedissonClient;
+import com.alibaba.cloud.ai.memory.redis.JedisRedisChatMemoryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -26,42 +26,43 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import redis.clients.jedis.Jedis;
 
 /**
- * Auto-configuration for Redis Chat Memory using Redisson.
+ * Auto-configuration for Redis Chat Memory using Jedis.
  *
+ * @author Jast
  * @author benym
- * @date 2025/7/30 19:01
  */
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
-@ConditionalOnClass({ RedissonRedisChatMemoryRepository.class, RedissonClient.class })
+@ConditionalOnClass({ JedisRedisChatMemoryRepository.class, Jedis.class })
 @EnableConfigurationProperties(RedisChatMemoryProperties.class)
-@ConditionalOnProperty(name = "spring.ai.memory.redis.client-type", havingValue = "redisson", matchIfMissing = true)
-public class RedissonRedisChatMemoryConnectionConfiguration extends RedisMemoryConnectionConfiguration {
+@ConditionalOnProperty(name = "spring.ai.memory.redis.client-type", havingValue = "jedis")
+public class JedisRedisChatMemoryConnectionAutoConfiguration extends RedisChatMemoryConnectionAutoConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(RedissonRedisChatMemoryConnectionConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(JedisRedisChatMemoryConnectionAutoConfiguration.class);
 
-	public RedissonRedisChatMemoryConnectionConfiguration(RedisChatMemoryProperties properties,
+	public JedisRedisChatMemoryConnectionAutoConfiguration(RedisChatMemoryProperties properties,
 			RedisChatMemoryConnectionDetails connectionDetails) {
 		super(properties, connectionDetails);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	RedissonRedisChatMemoryRepository redisChatMemoryRepository() {
+	JedisRedisChatMemoryRepository redisChatMemoryRepository() {
 		if (getClusterConfiguration() != null) {
-			logger.info("Configuring Redis Cluster chat memory repository using Redisson");
-			RedisMemoryClusterConfiguration clusterConfiguration = getClusterConfiguration();
-			return RedissonRedisChatMemoryRepository.builder()
-				.nods(clusterConfiguration.nodeAddresses())
+			logger.info("Configuring Redis Cluster chat memory repository using Jedis");
+			RedisChatMemoryClusterConfiguration clusterConfiguration = getClusterConfiguration();
+			return JedisRedisChatMemoryRepository.builder()
+				.nodes(clusterConfiguration.nodeAddresses())
 				.username(clusterConfiguration.username())
 				.password(clusterConfiguration.password())
 				.timeout(clusterConfiguration.timeout())
 				.build();
 		}
-		logger.info("Configuring Redis Standalone chat memory repository using Redisson");
-		RedisMemoryStandaloneConfiguration standaloneConfiguration = getStandaloneConfiguration();
-		return RedissonRedisChatMemoryRepository.builder()
+		logger.info("Configuring Redis Standalone chat memory repository using Jedis");
+		RedisChatMemoryStandaloneConfiguration standaloneConfiguration = getStandaloneConfiguration();
+		return JedisRedisChatMemoryRepository.builder()
 			.host(standaloneConfiguration.hostName())
 			.port(standaloneConfiguration.port())
 			.username(standaloneConfiguration.username())

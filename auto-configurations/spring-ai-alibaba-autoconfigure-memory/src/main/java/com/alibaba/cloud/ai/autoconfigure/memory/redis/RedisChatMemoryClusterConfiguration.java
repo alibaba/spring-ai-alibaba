@@ -15,13 +15,15 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.memory.redis;
 
+import java.util.List;
+
 /**
- * Configuration for Redis Memory using Redis Standalone
+ * Configuration for Redis Memory using Redis Cluster
  *
  * @author benym
- * @date 2025/7/30 21:32
+ * @date 2025/7/30 21:33
  */
-public record RedisMemoryStandaloneConfiguration(String hostName, int port, String username, String password,
+public record RedisChatMemoryClusterConfiguration(List<String> nodeAddresses, String username, String password,
 		int timeout) {
 
 }
