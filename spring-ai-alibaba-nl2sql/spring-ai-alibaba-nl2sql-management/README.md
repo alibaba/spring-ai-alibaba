@@ -46,8 +46,26 @@
     mvn spring-boot:run
     ```
 
+3. **运行前端页面**:
+    前端页面使用 Vue 3 + Vite 构建。请确保你已经安装了 Node.js 和 npm/yarn。然后在 `spring-ai-alibaba-nl2sql-web-ui` 目录下执行以下命令：
+
+    ```bash
+    # 安装依赖
+    npm install
+
+    # 启动开发服务器
+    npm run dev
+    ```
+
+    或者使用 yarn：
+
+    ```bash
+    yarn install
+    yarn dev
+    ```
+
 3.  **访问应用**:
-    应用启动后，在浏览器中访问 `http://localhost:8080` 即可打开 Web 界面。
+    应用启动后，在浏览器中访问 `http://localhost:3000` 即可打开 Web 界面。
 
 ### API 端点
 

@@ -7,7 +7,7 @@
       "type": "mapreduce",
       "dataPreparedSteps": [
         {
-          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] Use map_reduce_tool to split content of %s",
+          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] Use map_reduce_tool to split content of %s , output file is %s",
           "terminateColumns": "%s"
         }
       ],

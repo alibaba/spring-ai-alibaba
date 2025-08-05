@@ -278,7 +278,7 @@ public class ManusProperties implements IManusProperties {
 
 	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "parallelThreads",
 			path = "manus.infiniteContext.parallelThreads",
-			description = "manus.infiniteContext.parallelThreads.description", defaultValue = "4",
+			description = "manus.infiniteContext.parallelThreads.description", defaultValue = "6",
 			inputType = ConfigInputType.NUMBER)
 	private volatile Integer infiniteContextParallelThreads;
 

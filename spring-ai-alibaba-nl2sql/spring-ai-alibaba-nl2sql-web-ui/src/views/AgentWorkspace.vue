@@ -1046,23 +1046,34 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .example-query {
   padding: 0.5rem 1rem;
-  background-color: rgba(255, 255, 255, 0.8);
-  border: 1px solid #d1ecf1;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e1e8ed;
   border-radius: 20px;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s;
-  color: #0c5460;
+  transition: all 0.3s ease;
+  color: #475569;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .example-query:hover {
-  background-color: white;
-  border-color: #1890ff;
-  color: #1890ff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+}
+
+.example-query:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.2);
 }
 
 /* 消息样式 */
