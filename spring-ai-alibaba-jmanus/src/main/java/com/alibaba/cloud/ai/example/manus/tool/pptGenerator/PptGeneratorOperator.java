@@ -164,7 +164,6 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 				                    "type": "string",
 				                    "description": "Generated PPT file name (required)",
 				                    "minLength": 1,
-				                    "pattern": "^.*\\.(pptx|ppt)$",
 				                    "errorMessage": "File name must end with .pptx or .ppt"
 				                }
 				            },
