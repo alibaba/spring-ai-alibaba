@@ -425,6 +425,10 @@ const handleDownloadReport = () => {
   // padding-bottom: 38px;
 }
 
+:deep(.ant-card) {
+  border-radius: 20px;
+}
+
 .message-list {
   max-height: calc(100vh - 200px);
   overflow-y: auto;

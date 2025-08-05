@@ -719,6 +719,10 @@ watch(
       max-height: calc(100vh - 280px);
     }
 
+    :deep(.ant-card) {
+      border-radius: 20px;
+    }
+
     :deep(.ant-bubble-content-wrapper) {
       .bubble-footer {
         font-size: 18px;
