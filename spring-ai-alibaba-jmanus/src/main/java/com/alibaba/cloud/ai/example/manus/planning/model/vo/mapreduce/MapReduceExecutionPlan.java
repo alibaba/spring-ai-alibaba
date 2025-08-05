@@ -227,11 +227,15 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 			}
 			else if (node instanceof MapReduceNode) {
 				MapReduceNode mrNode = (MapReduceNode) node;
-				sb.append("Type: MapReduce\n");
-				sb.append("Data Preparation Step Count: ").append(mrNode.getDataPreparedStepCount()).append("\n");
-				sb.append("Map Step Count: ").append(mrNode.getMapStepCount()).append("\n");
-				sb.append("Reduce Step Count: ").append(mrNode.getReduceStepCount()).append("\n");
-				sb.append("Post Process Step Count: ").append(mrNode.getPostProcessStepCount()).append("\n");
+				// sb.append("Type: MapReduce\n");
+				// sb.append("Data Preparation Step Count:
+				// ").append(mrNode.getDataPreparedStepCount()).append("\n");
+				// sb.append("Map Step Count:
+				// ").append(mrNode.getMapStepCount()).append("\n");
+				// sb.append("Reduce Step Count:
+				// ").append(mrNode.getReduceStepCount()).append("\n");
+				// sb.append("Post Process Step Count:
+				// ").append(mrNode.getPostProcessStepCount()).append("\n");
 
 				// When onlyCompletedAndFirstInProgress = true, need to determine current
 				// execution phase

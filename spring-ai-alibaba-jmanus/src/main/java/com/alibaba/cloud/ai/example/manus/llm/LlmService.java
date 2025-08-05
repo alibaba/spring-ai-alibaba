@@ -27,7 +27,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
@@ -40,7 +39,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
 import jakarta.annotation.PostConstruct;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -48,6 +46,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -412,8 +411,14 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			headers.forEach((key, value) -> multiValueMap.add(key, value));
 		}
 
+		// Clone WebClient.Builder and add timeout configuration
+		WebClient.Builder enhancedWebClientBuilder = webClientBuilder.clone()
+			// Add 5 minutes default timeout setting
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB
+			.filter((request, next) -> next.exchange(request).timeout(Duration.ofMinutes(10)));
+
 		return new OpenAiApi(dynamicModelEntity.getBaseUrl(), new SimpleApiKey(dynamicModelEntity.getApiKey()),
-				multiValueMap, "/v1/chat/completions", "/v1/embeddings", restClientBuilder, webClientBuilder,
+				multiValueMap, "/v1/chat/completions", "/v1/embeddings", restClientBuilder, enhancedWebClientBuilder,
 				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER) {
 			@Override
 			public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest,
