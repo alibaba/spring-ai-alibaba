@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 @Component
 public class WorkflowProjectGenerator implements ProjectGenerator {
 
+	@SuppressWarnings("unused")
 	private static final Logger log = LoggerFactory.getLogger(WorkflowProjectGenerator.class);
 
 	private final String GRAPH_BUILDER_TEMPLATE_NAME = "GraphBuilder.java";
@@ -128,6 +129,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 				List.of(graphBuilderModel, graphRunControllerModel), projectRoot, projectDescription);
 	}
 
+	@SuppressWarnings("unused")
 	private Map<String, String> assignVariableNames(List<Node> nodes) {
 		Map<NodeType, Integer> counter = new HashMap<>();
 		Map<String, String> varNames = new HashMap<>();
@@ -176,7 +178,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return sb.toString();
 	}
 
-	private String renderEdgeSections(List<Edge> edges, List<Node> nodes, Map<String, String> varNames) {
+	String renderEdgeSections(List<Edge> edges, List<Node> nodes, Map<String, String> varNames) {
 		StringBuilder sb = new StringBuilder();
 		Map<String, Node> nodeMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
 
@@ -237,98 +239,67 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			List<String> conditions = new ArrayList<>();
 			List<String> mappings = new ArrayList<>();
 
-			// 处理条件边的扩展
-			if (sourceData instanceof BranchNodeData branchNodeData) {
-				List<Case> cases = branchNodeData.getCases();
-				// 构造EdgeAction.apply函数
-				StringBuilder conditionsBuffer = new StringBuilder();
-				for (Case c : cases) {
-					String logicalOperator = " " + c.getLogicalOperator().getValue() + " ";
-					List<String> expressions = c.getConditions().stream().map(condition -> {
-						String constValue = condition.getValue();
-						if (condition.getVarType().equalsIgnoreCase("String")) {
-							constValue = "\"" + constValue + "\"";
+			if (sourceData instanceof BranchNodeData branchData) {
+				for (Edge e : condEdges) {
+					Map<String, Object> data = e.getData();
+					String targetType = data != null ? (String) data.get("targetType") : null;
+					String handleId = e.getSourceHandle();
+					String tgtVar2 = varNames.get(e.getTarget());
+
+					Case matchingCase = branchData.getCases()
+						.stream()
+						.filter(c -> c.getId().equals(handleId))
+						.findFirst()
+						.orElse(null);
+
+					if (matchingCase != null && !matchingCase.getConditions().isEmpty()) {
+						String conditionLogic = generateBranchConditionLogic(matchingCase);
+						conditions.add(String.format("if (%s) return \"%s\";", conditionLogic, handleId));
+
+						if ("end".equals(targetType)) {
+							mappings.add(String.format("\"%s\", END", handleId));
 						}
-						String objType = switch (condition.getVarType()) {
-							case "string", "String" -> "String.class";
-							case "list", "List", "Array", "array" -> "List.class";
-							default -> condition.getComparisonOperator()
-								.getSupportedClassList()
-								.get(0)
-								.getName()
-								.concat(".class");
-						};
-						String objName = "unknown";
-						try {
-							if (nodeMap.containsKey(condition.getVariableSelector().getNamespace())) {
-								Node inputNode = nodeMap.get(condition.getVariableSelector().getNamespace());
-								objName = inputNode.getData().getOutputs().get(0).getName();
-							}
+						else {
+							mappings.add(String.format("\"%s\", \"%s\"", handleId, tgtVar2));
 						}
-						catch (Exception ignore) {
-						}
-						objName = String.format("state.value(\"%s\", %s).orElseThrow()", objName, objType);
-						return condition.getComparisonOperator().convert(objName, constValue);
-					}).toList();
-					conditionsBuffer.append("if(");
-					// 组合复合条件
-					conditionsBuffer.append(String.join(logicalOperator, expressions));
-					conditionsBuffer.append(") {\n");
-					conditionsBuffer.append(String.format("return \"%s\";", c.getId()));
-					conditionsBuffer.append("}\n");
+					}
 				}
-				// 最后需要加上else的结果
-				conditionsBuffer.append("return \"false\";");
-
-				// 构建Map
-				Map<String, String> edgeCaseMap = entry.getValue()
-					.stream()
-					.collect(Collectors.toMap(Edge::getSourceHandle, Edge::getTarget));
-				String edgeCaseMapStr = "Map.of(" + String.join(", ",
-						edgeCaseMap.entrySet()
-							.stream()
-							.map(e -> "\"" + e.getKey() + "\", "
-									+ (nodeMap.get(e.getValue()) != null
-											&& "end".equalsIgnoreCase(nodeMap.get(e.getValue()).getType()) ? "END"
-													: "\"" + varNames.getOrDefault(e.getValue(), "unknown") + "\""))
-							.toList())
-						+ ")";
-
-				// 构建最终代码
-				sb.append("stateGraph.addConditionalEdges(\"")
-					.append(srcVar)
-					.append("\", edge_async(state -> {\n")
-					.append(conditionsBuffer)
-					.append("}), ")
-					.append(edgeCaseMapStr)
-					.append(");\n");
-				continue;
 			}
-
-			for (Edge e : condEdges) {
-				Map<String, Object> data = e.getData();
-				String targetType = data != null ? (String) data.get("targetType") : null;
-				String conditionKey = resolveConditionKey(sourceData, e.getSourceHandle());
-				String tgtVar2 = varNames.get(e.getTarget());
-				String targetId = e.getTarget();
-				if ("end".equals(targetType)) {
+			else {
+				for (Edge e : condEdges) {
+					Map<String, Object> data = e.getData();
+					String targetType = data != null ? (String) data.get("targetType") : null;
+					String conditionKey = resolveConditionKey(sourceData, e.getSourceHandle());
+					String tgtVar2 = varNames.get(e.getTarget());
+					if ("end".equals(targetType)) {
+						conditions.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey,
+								conditionKey));
+						mappings.add(String.format("\"%s\", END", conditionKey));
+						continue;
+					}
 					conditions
 						.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
-					mappings.add(String.format("\"%s\", END", conditionKey));
-					continue;
+					mappings.add(String.format("\"%s\", \"%s\"", conditionKey, tgtVar2));
 				}
-				conditions.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
-				mappings.add(String.format("\"%s\", \"%s\"", conditionKey, tgtVar2));
 			}
 
 			String lambdaContent = String.join("\n", conditions);
 			String mapContent = String.join(", ", mappings);
 
+			String stateAccessCode;
+			if (sourceData instanceof BranchNodeData) {
+				stateAccessCode = "";
+				// nodes
+			}
+			else {
+				stateAccessCode = String
+					.format("String value = state.value(\"%s_output\", String.class).orElse(\"\");%n", srcVar);
+			}
+
 			sb.append(String.format(
-					"stateGraph.addConditionalEdges(\"%s\",%n" + "            edge_async(state -> {%n"
-							+ "String value = state.value(\"%s_output\", String.class).orElse(\"\");%n" + "%s%n"
+					"stateGraph.addConditionalEdges(\"%s\",%n" + "            edge_async(state -> {%n" + "%s%s%n"
 							+ "return null;%n" + "            }),%n" + "            Map.of(%s)%n" + ");%n",
-					srcVar, srcVar, lambdaContent, mapContent));
+					srcVar, stateAccessCode, lambdaContent, mapContent));
 		}
 
 		return sb.toString();
@@ -461,6 +432,188 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			throw new RuntimeException("Got error when creating files", e);
 		}
 		return fileRoot;
+	}
+
+	String generateBranchConditionLogic(Case caseData) {
+		List<Case.Condition> conditions = caseData.getConditions();
+		if (conditions == null || conditions.isEmpty()) {
+			return "false";
+		}
+
+		List<String> conditionStrings = new ArrayList<>();
+		for (Case.Condition condition : conditions) {
+			String conditionStr = generateSingleCondition(condition);
+			if (conditionStr != null && !conditionStr.trim().isEmpty()) {
+				conditionStrings.add(conditionStr);
+			}
+		}
+
+		if (conditionStrings.isEmpty()) {
+			return "false";
+		}
+
+		String logicalOperator = caseData.getLogicalOperator() != null ? caseData.getLogicalOperator().getValue()
+				: "&&";
+		String joinOperator = "or".equalsIgnoreCase(logicalOperator) || "||".equals(logicalOperator) ? " || " : " && ";
+
+		return "(" + String.join(joinOperator, conditionStrings) + ")";
+	}
+
+	String generateSingleCondition(Case.Condition condition) {
+		if (condition.getVariableSelector() == null) {
+			return "false";
+		}
+
+		String varName = condition.getVariableSelector().getName();
+		String varType = condition.getVarType();
+		String comparisonOperator = condition.getComparisonOperator() != null
+				? condition.getComparisonOperator().getValue() : "equals";
+		String value = condition.getValue();
+
+		String javaType;
+		String defaultValue;
+		String stateAccessTemplate;
+
+		switch (varType != null ? varType.toLowerCase() : "string") {
+			case "string":
+				javaType = "String.class";
+				defaultValue = "\"\"";
+				stateAccessTemplate = "state.value(\"%s\", %s).orElse(%s)";
+				break;
+			case "number":
+			case "integer":
+				javaType = "Integer.class";
+				defaultValue = "0";
+				stateAccessTemplate = "state.value(\"%s\", %s).orElse(%s)";
+				break;
+			case "float":
+			case "double":
+				javaType = "Double.class";
+				defaultValue = "0.0";
+				stateAccessTemplate = "state.value(\"%s\", %s).orElse(%s)";
+				break;
+			case "boolean":
+				javaType = "Boolean.class";
+				defaultValue = "false";
+				stateAccessTemplate = "state.value(\"%s\", %s).orElse(%s)";
+				break;
+			case "file":
+			case "object":
+			case "list":
+			case "array":
+				// comparison
+				javaType = "Object.class";
+				defaultValue = "null";
+				stateAccessTemplate = "String.valueOf(state.value(\"%s\", %s).orElse(%s))";
+				break;
+			default:
+				// Default to Object for unknown types
+				javaType = "Object.class";
+				defaultValue = "null";
+				stateAccessTemplate = "String.valueOf(state.value(\"%s\", %s).orElse(%s))";
+				break;
+		}
+
+		String stateAccess = String.format(stateAccessTemplate, varName, javaType, defaultValue);
+
+		return generateComparison(stateAccess, comparisonOperator, value, varType);
+	}
+
+	String generateComparison(String leftSide, String operator, String value, String varType) {
+		if (operator == null || value == null) {
+			return "false";
+		}
+
+		String escapedValue = value.replace("\"", "\\\"");
+
+		switch (operator.toLowerCase()) {
+			case "equals":
+			case "==":
+			case "=":
+			case "is": // Add support for "is" operator used in file type comparisons
+				if ("string".equalsIgnoreCase(varType)) {
+					return String.format("Objects.equals(%s, \"%s\")", leftSide, escapedValue);
+				}
+				else if ("file".equalsIgnoreCase(varType) || "object".equalsIgnoreCase(varType)
+						|| "list".equalsIgnoreCase(varType) || "array".equalsIgnoreCase(varType)) {
+					return String.format("%s.equals(\"%s\")", leftSide, escapedValue);
+				}
+				else {
+					return String.format("Objects.equals(%s, %s)", leftSide, formatValueForType(value, varType));
+				}
+			case "not_equals":
+			case "!=":
+			case "not equals":
+				if ("string".equalsIgnoreCase(varType)) {
+					return String.format("!Objects.equals(%s, \"%s\")", leftSide, escapedValue);
+				}
+				else if ("file".equalsIgnoreCase(varType) || "object".equalsIgnoreCase(varType)
+						|| "list".equalsIgnoreCase(varType) || "array".equalsIgnoreCase(varType)) {
+					return String.format("!%s.equals(\"%s\")", leftSide, escapedValue);
+				}
+				else {
+					return String.format("!Objects.equals(%s, %s)", leftSide, formatValueForType(value, varType));
+				}
+			case "contains":
+				return String.format("%s.toString().contains(\"%s\")", leftSide, escapedValue);
+			case "not_contains":
+			case "not contains":
+				return String.format("!%s.toString().contains(\"%s\")", leftSide, escapedValue);
+			case "starts_with":
+			case "startswith":
+				return String.format("%s.toString().startsWith(\"%s\")", leftSide, escapedValue);
+			case "ends_with":
+			case "endswith":
+				return String.format("%s.toString().endsWith(\"%s\")", leftSide, escapedValue);
+			case "greater_than":
+			case ">":
+			case "gt":
+				return String.format("Double.parseDouble(%s.toString()) > %s", leftSide,
+						formatValueForType(value, "number"));
+			case "less_than":
+			case "<":
+			case "lt":
+				return String.format("Double.parseDouble(%s.toString()) < %s", leftSide,
+						formatValueForType(value, "number"));
+			case "greater_than_or_equal":
+			case ">=":
+			case "gte":
+				return String.format("Double.parseDouble(%s.toString()) >= %s", leftSide,
+						formatValueForType(value, "number"));
+			case "less_than_or_equal":
+			case "<=":
+			case "lte":
+				return String.format("Double.parseDouble(%s.toString()) <= %s", leftSide,
+						formatValueForType(value, "number"));
+			default:
+				return String.format("Objects.equals(%s.toString(), \"%s\")", leftSide, escapedValue);
+		}
+	}
+
+	String formatValueForType(String value, String varType) {
+		if (value == null) {
+			return "null";
+		}
+
+		switch (varType != null ? varType.toLowerCase() : "string") {
+			case "string":
+				return "\"" + value.replace("\"", "\\\"") + "\"";
+			case "number":
+			case "integer":
+			case "float":
+			case "double":
+				try {
+					Double.parseDouble(value);
+					return value;
+				}
+				catch (NumberFormatException e) {
+					return "0";
+				}
+			case "boolean":
+				return Boolean.parseBoolean(value) ? "true" : "false";
+			default:
+				return "\"" + value.replace("\"", "\\\"") + "\"";
+		}
 	}
 
 }
