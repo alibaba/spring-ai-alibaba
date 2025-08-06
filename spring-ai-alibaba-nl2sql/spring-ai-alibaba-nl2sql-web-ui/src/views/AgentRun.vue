@@ -243,7 +243,14 @@ export default {
         const response = await fetch(`/api/sessions/${sessionId}/messages`)
         if (response.ok) {
           const data = await response.json()
-          currentMessages.value = data || []
+          // 将数据库消息转换为前端格式
+          currentMessages.value = data.map(dbMessage => ({
+            id: dbMessage.id,
+            role: dbMessage.role,
+            type: dbMessage.messageType || 'text',
+            content: dbMessage.content,
+            timestamp: new Date(dbMessage.createTime)
+          })) || []
           await nextTick()
           scrollToBottom()
         }
@@ -372,6 +379,15 @@ export default {
       }
       
       currentMessages.value.push(userMessage)
+      
+      // 保存用户消息到数据库
+      await saveMessage({
+        sessionId: currentSessionId.value,
+        role: 'user',
+        content: message,
+        messageType: 'text'
+      })
+      
       await nextTick()
       scrollToBottom()
       
@@ -490,10 +506,21 @@ export default {
             }
         }
 
-        eventSource.addEventListener('complete', () => {
+        eventSource.addEventListener('complete', async () => {
           console.log('流式输出完成')
           isLoading.value = false
           eventSource.close()
+          
+          // 保存AI回复消息到数据库
+          const assistantMessage = currentMessages.value[agentMessageIndex]
+          if (assistantMessage && assistantMessage.content) {
+            await saveMessage({
+              sessionId: currentSessionId.value,
+              role: 'assistant',
+              content: assistantMessage.content,
+              messageType: 'streaming'
+            })
+          }
         })
 
         eventSource.onerror = (error) => {
@@ -625,8 +652,17 @@ export default {
     }
     
     const getSessionPreview = (session) => {
-      // 返回会话的预览文本
-      return '帮我查询最近一个月的6月份...'
+      // 如果是当前会话且有消息，显示最后一条用户消息的预览
+      if (session.id === currentSessionId.value && currentMessages.value.length > 0) {
+        const lastUserMessage = currentMessages.value.slice().reverse().find(msg => msg.role === 'user')
+        if (lastUserMessage) {
+          return lastUserMessage.content.length > 30 ? 
+            lastUserMessage.content.substring(0, 30) + '...' : 
+            lastUserMessage.content
+        }
+      }
+      // 否则显示默认文本
+      return '点击开始对话...'
     }
     
     const getQuestionIcon = (index) => {
@@ -863,6 +899,7 @@ export default {
       getRandomColor,
       getRandomIcon,
       getSessionPreview,
+      switchSession,
       escapeHtml
     }
   }
