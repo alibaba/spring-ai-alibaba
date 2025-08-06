@@ -960,9 +960,11 @@ export default {
   flex: 1;
   display: flex;
   width: 100%;
+  max-width: 100%;
   overflow: hidden;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
 /* 左侧边栏样式 */
@@ -1248,12 +1250,18 @@ export default {
   display: flex;
   flex-direction: column;
   background: var(--bg-primary);
+  min-width: 0;
+  max-width: calc(100% - 280px);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .messages-container {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--space-xl);
+  box-sizing: border-box;
 }
 
 /* 欢迎消息样式 */
@@ -1332,6 +1340,8 @@ export default {
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .message-item {
@@ -1339,6 +1349,8 @@ export default {
   gap: var(--space-base);
   align-items: flex-start;
   margin-bottom: var(--space-lg);
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* 智能体消息使用垂直布局 */
@@ -1397,12 +1409,16 @@ export default {
   box-shadow: var(--shadow-xs);
   word-break: break-word;
   overflow-wrap: break-word;
+  overflow-x: auto;
+  box-sizing: border-box;
 }
 
 .assistant-message-body .text-message {
   font-size: var(--font-size-sm);
   line-height: 1.6;
   word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .message-avatar {
@@ -1435,6 +1451,8 @@ export default {
 .message-content {
   flex: 1;
   min-width: 0;
+  max-width: calc(100% - 60px);
+  box-sizing: border-box;
 }
 
 .message-header {
@@ -1461,6 +1479,10 @@ export default {
   padding: var(--space-md) var(--space-lg);
   max-width: 70%;
   box-shadow: var(--shadow-xs);
+  word-break: break-word;
+  overflow-wrap: break-word;
+  overflow-x: auto;
+  box-sizing: border-box;
 }
 
 .user-message {
@@ -1471,6 +1493,10 @@ export default {
   background: var(--primary-color);
   color: white;
   max-width: 70%;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  overflow-x: auto;
+  box-sizing: border-box;
 }
 
 .user-message .message-content {
@@ -1492,6 +1518,8 @@ export default {
   font-size: var(--font-size-sm);
   line-height: 1.6;
   word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 /* 加载动画样式 */
@@ -1538,16 +1566,20 @@ export default {
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: 100%;
   gap: 0.75rem;
+  box-sizing: border-box;
 }
 
 .agent-response-block {
   display: block !important;
   width: 100% !important;
+  max-width: 100% !important;
   border: 1px solid #e1e5e9;
   border-radius: 8px;
   overflow: hidden;
   background: #f8f9fa;
+  box-sizing: border-box;
 }
 
 .agent-response-title {
@@ -1573,6 +1605,9 @@ export default {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 13px;
   line-height: 1.5;
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
 }
 
 .agent-response-content pre {
@@ -1598,9 +1633,13 @@ export default {
 
 .dynamic-table {
   width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
   margin: 8px 0;
   font-size: 12px;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
 .dynamic-table th,
@@ -1608,6 +1647,10 @@ export default {
   border: 1px solid #dee2e6;
   padding: 6px 8px;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
 .dynamic-table th {
@@ -1639,6 +1682,56 @@ export default {
 
 .markdown-content li {
   margin: 4px 0;
+}
+
+/* 图片和媒体内容样式 */
+.text-message img,
+.assistant-message-body img,
+.message-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  display: block;
+  margin: var(--space-sm) 0;
+  box-shadow: var(--shadow-xs);
+}
+
+.text-message pre,
+.assistant-message-body pre,
+.message-body pre {
+  max-width: 100%;
+  overflow-x: auto;
+  background: #f8f9fa;
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm);
+  margin: var(--space-sm) 0;
+  font-size: 12px;
+  line-height: 1.4;
+  border: 1px solid #e9ecef;
+}
+
+.text-message code,
+.assistant-message-body code,
+.message-body code {
+  max-width: 100%;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+.text-message table,
+.assistant-message-body table,
+.message-body table {
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
+  white-space: nowrap;
+}
+
+.text-message video,
+.assistant-message-body video,
+.message-body video {
+  max-width: 100%;
+  height: auto;
 }
 
 /* 输入区域样式 */
@@ -1796,10 +1889,27 @@ export default {
   
   .message-body {
     max-width: 85%;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    overflow-x: auto;
   }
   
   .user-message .message-body {
     max-width: 85%;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    overflow-x: auto;
+  }
+
+  .assistant-message-body {
+    max-width: 95%;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    overflow-x: auto;
+  }
+
+  .chat-main {
+    max-width: 100%;
   }
   
   .header-content {
