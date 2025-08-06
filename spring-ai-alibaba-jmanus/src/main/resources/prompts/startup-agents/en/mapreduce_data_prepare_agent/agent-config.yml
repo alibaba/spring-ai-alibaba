@@ -1,7 +1,7 @@
 # MAPREDUCE_DATA_PREPARE_AGENT Configuration
 agentName: MAPREDUCE_DATA_PREPARE_AGENT
 agentDescription: A data preparation agent responsible for verifying file/folder existence and calling splitting tools for data splitting processing, fixed for the Preparation phase at the beginning of MapReduce.
-isBuiltIn: true
+builtIn: true
 availableToolKeys:
   - data_split_tool
   - terminate

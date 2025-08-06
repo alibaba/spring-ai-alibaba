@@ -1,7 +1,7 @@
 # BROWSER_AGENT Configuration
 agentName: BROWSER_AGENT
 agentDescription: A browser agent that can control browsers to complete tasks
-isBuiltIn: false
+builtIn: false
 availableToolKeys:
   - browser_use
   - text_file_operator
