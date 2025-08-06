@@ -33,6 +33,10 @@ import org.springframework.core.io.Resource;
 {{#hasCode}}
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig;
 import com.alibaba.cloud.ai.graph.node.code.CodeExecutor;
+import com.alibaba.cloud.ai.graph.node.code.LocalCommandlineCodeExecutor;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 {{/hasCode}}
 
 @Component

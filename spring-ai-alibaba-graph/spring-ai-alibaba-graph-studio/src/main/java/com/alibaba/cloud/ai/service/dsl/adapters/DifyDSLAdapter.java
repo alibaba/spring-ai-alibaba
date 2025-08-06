@@ -154,7 +154,8 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 				for (VariableSelector sel : cd.getInputs()) {
 					String upstreamId = sel.getNamespace();
 					String upstreamVar = idToVarName.get(upstreamId);
-					sel.setName(upstreamVar + "_output");
+					// 可能来自一个节点的多个变量
+					sel.setName(upstreamVar + "." + sel.getName());
 				}
 			}
 		}
