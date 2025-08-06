@@ -97,6 +97,7 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	@Autowired
 	private ChatMemoryRepository chatMemoryRepository;
 
+	@Autowired
 	private LlmTraceRecorder llmTraceRecorder;
 
 	public LlmService() {

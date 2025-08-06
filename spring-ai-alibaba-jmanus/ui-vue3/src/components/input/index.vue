@@ -64,11 +64,16 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'send', message: string): void
+  (e: 'send', message: InputMessage): void
   (e: 'clear'): void
   (e: 'update-state', enabled: boolean, placeholder?: string): void
   (e: 'plan-mode-clicked'): void
   (e: 'memory-list-clicked'): void
+}
+
+export interface InputMessage {
+  input: string
+  memoryId?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -106,7 +111,10 @@ const handleKeydown = (event: KeyboardEvent) => {
 const handleSend = () => {
   if (!currentInput.value.trim() || isDisabled.value) return
 
-  const query = currentInput.value.trim()
+  const query = {
+    input: currentInput.value.trim(),
+    memoryId: memoryStore.selectMemoryId
+  }
 
   // Use Vue's emit to send a message
   emit('send', query)

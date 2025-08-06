@@ -18,7 +18,7 @@ import {reactive} from "vue";
 export class MemoryStore {
     // Basic state
     isCollapsed = true
-    selectMemoryId = ''
+    selectMemoryId = this.generateRandomId()
 
     toggleSidebar() {
         this.isCollapsed = !this.isCollapsed
@@ -27,6 +27,10 @@ export class MemoryStore {
     selectMemory(memoryId: string) {
         this.toggleSidebar()
         this.selectMemoryId = memoryId
+    }
+
+    generateRandomId(): string {
+        return Math.random().toString(36).substring(2, 10);
     }
 }
 

@@ -386,6 +386,7 @@ import { DirectApiService } from '@/api/direct-api-service'
 import { usePlanExecution } from '@/utils/use-plan-execution'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
+import type {InputMessage} from "@/components/input/index.vue";
 
 /**
  * Chat message interface that includes PlanExecutionRecord for plan-based messages
@@ -490,7 +491,7 @@ const updateLastMessage = (updates: Partial<Message>) => {
   }
 }
 
-const handleDirectMode = async (query: string) => {
+const handleDirectMode = async (query: InputMessage) => {
   try {
     isLoading.value = true
 
@@ -510,7 +511,7 @@ const handleDirectMode = async (query: string) => {
       }
       assistantMessage.planExecution!.currentPlanId = response.planId
 
-      planExecutionManager.handlePlanExecutionRequested(response.planId, query)
+      planExecutionManager.handlePlanExecutionRequested(response.planId, query.input)
 
       delete assistantMessage.thinking
 
@@ -608,9 +609,9 @@ const removeScrollListener = () => {
   }
 }
 
-const handleSendMessage = (message: string) => {
+const handleSendMessage = (message: InputMessage) => {
   // First, add the user message to the UI.
-  addMessage('user', message)
+  addMessage('user', message.input)
 
   // Handle messages according to the mode
   if (props.mode === 'plan') {

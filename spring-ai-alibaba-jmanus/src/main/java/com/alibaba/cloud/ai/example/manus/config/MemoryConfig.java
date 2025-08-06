@@ -42,7 +42,12 @@ public class MemoryConfig {
 	private boolean postgresEnabled;
 
 	@Bean
-	public ChatMemory chatMemoryRepository(JdbcTemplate jdbcTemplate) {
+	public ChatMemory chatMemory(ChatMemoryRepository chatMemoryRepository) {
+		return MessageWindowChatMemory.builder().chatMemoryRepository(chatMemoryRepository).build();
+	}
+
+	@Bean
+	public ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
 		ChatMemoryRepository chatMemoryRepository = null;
 		if (mysqlEnabled) {
 			chatMemoryRepository = MysqlChatMemoryRepository.mysqlBuilder().jdbcTemplate(jdbcTemplate).build();
@@ -53,7 +58,7 @@ public class MemoryConfig {
 		if (chatMemoryRepository == null) {
 			throw new RuntimeException("Please enable mysql or postgres memory");
 		}
-		return MessageWindowChatMemory.builder().chatMemoryRepository(chatMemoryRepository).build();
+		return chatMemoryRepository;
 	}
 
 }

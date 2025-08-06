@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -96,7 +96,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	 */
 	@PostMapping("/execute")
 	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, String> request) {
-		String query = request.get("query");
+		String query = request.get("input");
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Query content cannot be empty"));
 		}
@@ -108,8 +108,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		context.setRootPlanId(planId);
 		context.setNeedSummary(true);
 
-		String memoryId = StringUtils.isEmpty(request.get("memoryId")) ? UUID.randomUUID().toString()
-				: request.get("memoryId");
+		String memoryId = request.get("memoryId");
 		context.setMemoryId(memoryId);
 
 		// Get or create planning flow

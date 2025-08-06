@@ -101,7 +101,7 @@ import Sidebar from '@/components/sidebar/index.vue'
 import Memory from '@/components/memory/index.vue'
 import RightPanel from '@/components/right-panel/index.vue'
 import ChatContainer from '@/components/chat/index.vue'
-import InputArea from '@/components/input/index.vue'
+import InputArea, {InputMessage} from '@/components/input/index.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
 import CronTaskModal from '@/components/cron-task-modal/index.vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
@@ -437,13 +437,13 @@ const shouldProcessEventForCurrentPlan = (rootPlanId: string, allowSpecialIds: b
 }
 
 // New event handler function
-const handleSendMessage = (message: string) => {
-  console.log('[DirectView] Send message from input:', message)
+const handleSendMessage = (message: InputMessage) => {
+  console.log('[DirectView] Send message from input:', JSON.stringify(message))
 
   // In direct mode, only call chat component's handleSendMessage
   // It will handle both UI update and API call via handleDirectMode
   if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
-    console.log('[DirectView] Calling chatRef.handleSendMessage:', message)
+    console.log('[DirectView] Calling chatRef.handleSendMessage:', JSON.stringify(message))
     chatRef.value.handleSendMessage(message)
   } else {
     console.warn('[DirectView] chatRef.handleSendMessage method not available')

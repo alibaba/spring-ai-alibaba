@@ -441,7 +441,6 @@ const showSuccessToast = () => {
   background: rgba(255, 255, 255, 0.05);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease-in-out;
-  overflow: hidden;
 }
 
 .memory-wrapper-collapsed {
