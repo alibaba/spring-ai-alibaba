@@ -103,6 +103,10 @@
                     <artifactId>spring-ai-autoconfigure-model-openai</artifactId>
                     <groupId>org.springframework.ai</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>spring-ai-autoconfigure-model-chat-memory</artifactId>
+                    <groupId>org.springframework.ai</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -314,12 +318,6 @@
         </dependency>
 
         <!-- support memory -->
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-autoconfigure-memory</artifactId>
-            <version>${memory.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-memory-jdbc</artifactId>
