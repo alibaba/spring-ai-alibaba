@@ -377,25 +377,22 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 	private String renderImportSection(Workflow workflow) {
 		// construct a list of node types
 		Map<String, String> nodeTypeToClass = Map.ofEntries(
-				Map.entry(NodeType.ANSWER.difyValue(), "com.alibaba.cloud.ai.graph.node.AnswerNode"),
-				Map.entry(NodeType.CODE.difyValue(), "com.alibaba.cloud.ai.graph.node.code.CodeExecutorNodeAction;"),
-				Map.entry(NodeType.LLM.difyValue(), "com.alibaba.cloud.ai.graph.node.LlmNode"),
+				Map.entry(NodeType.ANSWER.value(), "com.alibaba.cloud.ai.graph.node.AnswerNode"),
+				Map.entry(NodeType.CODE.value(), "com.alibaba.cloud.ai.graph.node.code.CodeExecutorNodeAction;"),
+				Map.entry(NodeType.LLM.value(), "com.alibaba.cloud.ai.graph.node.LlmNode"),
 				Map.entry(NodeType.BRANCH.value(), "com.alibaba.cloud.ai.graph.node.BranchNode"),
-				Map.entry(NodeType.DOC_EXTRACTOR.difyValue(), "com.alibaba.cloud.ai.graph.node.DocumentExtractorNode"),
-				Map.entry(NodeType.HTTP.difyValue(), "com.alibaba.cloud.ai.graph.node.HttpNode"),
-				Map.entry(NodeType.LIST_OPERATOR.difyValue(), "com.alibaba.cloud.ai.graph.node.ListOperatorNode"),
-				Map.entry(NodeType.QUESTION_CLASSIFIER.difyValue(),
+				Map.entry(NodeType.DOC_EXTRACTOR.value(), "com.alibaba.cloud.ai.graph.node.DocumentExtractorNode"),
+				Map.entry(NodeType.HTTP.value(), "com.alibaba.cloud.ai.graph.node.HttpNode"),
+				Map.entry(NodeType.LIST_OPERATOR.value(), "com.alibaba.cloud.ai.graph.node.ListOperatorNode"),
+				Map.entry(NodeType.QUESTION_CLASSIFIER.value(),
 						"com.alibaba.cloud.ai.graph.node.QuestionClassifierNode"),
-				Map.entry(NodeType.PARAMETER_PARSING.difyValue(),
-						"com.alibaba.cloud.ai.graph.node.ParameterParsingNode"),
-				Map.entry(NodeType.TEMPLATE_TRANSFORM.difyValue(),
-						"com.alibaba.cloud.ai.graph.node.TemplateTransformNode"),
-				Map.entry(NodeType.TOOL.difyValue(), "com.alibaba.cloud.ai.graph.node.ToolNode"),
-				Map.entry(NodeType.KNOWLEDGE_RETRIEVAL.difyValue(),
+				Map.entry(NodeType.PARAMETER_PARSING.value(), "com.alibaba.cloud.ai.graph.node.ParameterParsingNode"),
+				Map.entry(NodeType.TEMPLATE_TRANSFORM.value(), "com.alibaba.cloud.ai.graph.node.TemplateTransformNode"),
+				Map.entry(NodeType.TOOL.value(), "com.alibaba.cloud.ai.graph.node.ToolNode"),
+				Map.entry(NodeType.KNOWLEDGE_RETRIEVAL.value(),
 						"com.alibaba.cloud.ai.graph.node.KnowledgeRetrievalNode"),
-				Map.entry(NodeType.VARIABLE_AGGREGATOR.difyValue(),
-						"com.alibaba.cloud.ai.graph.node.VariableAggregatorNode"),
-				Map.entry(NodeType.ITERATION.difyValue(), "com.alibaba.cloud.ai.graph.node.IterationNode"));
+				Map.entry(NodeType.AGGREGATOR.value(), "com.alibaba.cloud.ai.graph.node.VariableAggregatorNode"),
+				Map.entry(NodeType.ITERATION.value(), "com.alibaba.cloud.ai.graph.node.IterationNode"));
 
 		Set<String> uniqueTypes = workflow.getGraph()
 			.getNodes()
