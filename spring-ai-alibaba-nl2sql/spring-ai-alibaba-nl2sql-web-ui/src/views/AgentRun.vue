@@ -669,7 +669,7 @@ export default {
         if (type === 'sql') {
             let cleanedData = data.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
             cleanedData = cleanedData.replace(/\\n/g, '\n');
-            return `<pre><code class="language-sql">${cleanedData}</code></pre>`;
+            return `<pre style="max-width: 100%; overflow-x: auto; word-wrap: break-word; white-space: pre-wrap;"><code class="language-sql">${cleanedData}</code></pre>`;
         } 
         
         if (type === 'result') {
@@ -680,6 +680,17 @@ export default {
         
         if (typeof processedData === 'string') {
             processedData = processedData.replace(/\\n/g, '\n');
+        }
+
+        // 检查是否是JSON格式的字符串，如果是，进行格式化显示
+        if (typeof processedData === 'string' && (processedData.trim().startsWith('{') || processedData.trim().startsWith('['))) {
+            try {
+                const parsed = JSON.parse(processedData);
+                const formattedJson = JSON.stringify(parsed, null, 2);
+                return `<pre><code class="language-json">${escapeHtml(formattedJson)}</code></pre>`;
+            } catch (e) {
+                // 如果不是有效的JSON，继续原来的处理逻辑
+            }
         }
 
         if (isMarkdown(processedData)) {
@@ -698,11 +709,24 @@ export default {
                 
                 return htmlContent.replace(/\n/g, '<br>');
             } else {
-                return processedData.toString()
+                // 对于长文本，确保正确换行
+                let result = processedData.toString()
                     .replace(/\n\s*\n\s*\n+/g, '\n\n')
                     .replace(/\n/g, '<br>');
+                
+                // 对所有文本都添加强制换行样式，确保不会溢出
+                result = `<div style="word-break: break-all; overflow-wrap: break-word; white-space: pre-wrap; max-width: 100%; overflow-x: auto;">${result}</div>`;
+                
+                return result;
             }
         }
+    }
+
+    // 添加HTML转义函数
+    const escapeHtml = (text) => {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     const isMarkdown = (text) => {
@@ -858,7 +882,8 @@ export default {
       formatTime,
       getRandomColor,
       getRandomIcon,
-      getSessionPreview
+      getSessionPreview,
+      escapeHtml
     }
   }
 }
@@ -1608,6 +1633,11 @@ export default {
   max-width: 100%;
   overflow-x: auto;
   box-sizing: border-box;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-all;
+  hyphens: auto;
 }
 
 .agent-response-content pre {
@@ -1617,6 +1647,10 @@ export default {
   border-radius: 4px;
   overflow-x: auto;
   border: 1px solid #e9ecef;
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  box-sizing: border-box;
 }
 
 .agent-response-content code {
@@ -1629,6 +1663,13 @@ export default {
 
 .agent-response-content .language-sql {
   color: #0066cc;
+}
+
+.agent-response-content .language-json {
+  color: #0066cc;
+  white-space: pre-wrap !important;
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .dynamic-table {
@@ -1708,6 +1749,8 @@ export default {
   font-size: 12px;
   line-height: 1.4;
   border: 1px solid #e9ecef;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .text-message code,
@@ -1716,6 +1759,7 @@ export default {
   max-width: 100%;
   word-break: break-all;
   overflow-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 .text-message table,
@@ -1732,6 +1776,25 @@ export default {
 .message-body video {
   max-width: 100%;
   height: auto;
+}
+
+/* 处理长文本内容的换行 */
+.text-message *,
+.assistant-message-body *,
+.message-body * {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* 特殊处理JSON和代码块 */
+.text-message .language-json,
+.assistant-message-body .language-json,
+.message-body .language-json {
+  white-space: pre-wrap !important;
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 /* 输入区域样式 */
