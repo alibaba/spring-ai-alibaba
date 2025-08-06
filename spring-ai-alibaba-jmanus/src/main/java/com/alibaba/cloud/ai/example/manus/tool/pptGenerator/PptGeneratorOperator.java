@@ -16,15 +16,12 @@
 package com.alibaba.cloud.ai.example.manus.tool.pptGenerator;
 
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
-import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 
 @Component
 public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
@@ -35,17 +32,14 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 
 	private final ObjectMapper objectMapper;
 
-	private final ToolPromptManager toolPromptManager;
-
 	private final UnifiedDirectoryManager unifiedDirectoryManager;
 
 	private static final String TOOL_NAME = "ppt_generator_operator";
 
 	public PptGeneratorOperator(PptGeneratorService pptGeneratorService, ObjectMapper objectMapper,
-			ToolPromptManager toolPromptManager, UnifiedDirectoryManager unifiedDirectoryManager) {
+			UnifiedDirectoryManager unifiedDirectoryManager) {
 		this.pptGeneratorService = pptGeneratorService;
 		this.objectMapper = objectMapper;
-		this.toolPromptManager = toolPromptManager;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 	}
 
@@ -54,24 +48,32 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 	 */
 	@Override
 	public ToolExecuteResult run(PptInput input) {
-		log.info("PptGeneratorOperator input: action={}, outputPath={}, title={}", input.getAction(),
-				input.getOutputPath(), input.getTitle());
+		log.info("PptGeneratorOperator input: action={}, title={}, path={}, fileName={}", input.getAction(),
+				input.getTitle(), input.getPath(), input.getFileName());
 		try {
 			String planId = this.currentPlanId;
 
-			if (!"create".equals(input.getAction())) {
-				pptGeneratorService.updateFileState(planId, input.getOutputPath(),
-						"Error: Unsupported operations: " + input.getAction());
-				return new ToolExecuteResult(
-						"Unsupported operations: " + input.getAction() + "，Only supports the 'create' operation");
+			if ("getTemplateList".equals(input.getAction())) {
+				// Handle get template list operation
+				String templateList = pptGeneratorService.getTemplateList();
+				if (templateList == null || templateList.isEmpty()) {
+					return new ToolExecuteResult(
+							"No local templates, please check the folder extensions/pptGenerator/template available");
+				}
+				return new ToolExecuteResult(templateList);
+			}
+			else if ("getTemplate".equals(input.getAction())) {
+				// Handle get template operation
+				String templateContent = pptGeneratorService.getTemplate(input.getPath());
+				return new ToolExecuteResult(templateContent);
+			}
+			else if (!"create".equals(input.getAction())) {
+				return new ToolExecuteResult("Unsupported operations: " + input.getAction()
+						+ ", Only supports the 'create', 'getTemplateList' and 'getTemplate' operations");
 			}
 
-			// Validate the path. This will throw an exception if the path is invalid.
-			String resultPath = validateAndProcessPath(planId, input.getOutputPath());
-			input.setOutputPath(resultPath);
-
 			// Update the file state to processing.
-			pptGeneratorService.updateFileState(planId, resultPath, "Processing: Generating PPT file");
+			pptGeneratorService.updateFileState(planId, null, "Processing: Generating PPT file");
 
 			String path = pptGeneratorService.createPpt(input);
 
@@ -82,30 +84,15 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 		}
 		catch (IllegalArgumentException e) {
 			String planId = this.currentPlanId;
-			pptGeneratorService.updateFileState(planId, input.getOutputPath(),
-					"Error: Parameter validation failed: " + e.getMessage());
+			pptGeneratorService.updateFileState(planId, null, "Error: Parameter validation failed: " + e.getMessage());
 			return new ToolExecuteResult("Parameter validation failed: " + e.getMessage());
 		}
 		catch (Exception e) {
 			log.error("PPT generation failed", e);
 			String planId = this.currentPlanId;
-			pptGeneratorService.updateFileState(planId, input.getOutputPath(),
-					"Error: PPT generation failed: " + e.getMessage());
+			pptGeneratorService.updateFileState(planId, null, "Error: PPT generation failed: " + e.getMessage());
 			return new ToolExecuteResult("PPT generation failed: " + e.getMessage());
 		}
-	}
-
-	/**
-	 * Validate and process the output path.
-	 * @param planId Plan ID
-	 * @param outputPath Output path
-	 * @return Processed absolute path
-	 * @throws IOException IO exception
-	 */
-	private String validateAndProcessPath(String planId, String outputPath) throws IOException {
-		// Even if the path is empty, call the validation method, which will throw an
-		// IllegalArgumentException.
-		return pptGeneratorService.validatePptFilePath(planId, outputPath);
 	}
 
 	@Override
@@ -115,12 +102,148 @@ public class PptGeneratorOperator extends AbstractBaseTool<PptInput> {
 
 	@Override
 	public String getDescription() {
-		return toolPromptManager.getToolDescription("pptGeneratorOperator");
+		return "Tool for creating and generating PPT files. Supported operations: create (Create new PPT file or create based on template), getTemplateList (Get available template list), and getTemplate (Get content of specified template). Supported PPT file types include .pptx and .ppt. When creating PPT, you can set title, subtitle, and multiple slides with title, content, and image path. For template-based creation, first use getTemplateList to get available templates, then use getTemplate to get and modify template content (only modify content of Text elements), and finally use create operation with path, template_content, and file_name parameters. Generated PPT files will be automatically saved in extensions/pptGenerator/ directory. The file_name parameter is mandatory whether using template or not. Note: path must be a preset template path and exist in the content returned by getTemplateList. template_content must strictly follow JSON format, and getTemplate returns a JSON format string.";
 	}
 
 	@Override
 	public String getParameters() {
-		return toolPromptManager.getToolParameters("pptGeneratorOperator");
+		return """
+				{
+				    "oneOf": [
+				        {
+				            "type": "object",
+				            "properties": {
+				                "action": {
+				                    "type": "string",
+				                    "const": "create",
+				                    "description": "Create new PPT file or create based on template"
+				                },
+				                "title": {
+				                    "type": "string",
+				                    "description": "PPT title",
+				                    "minLength": 1
+				                },
+				                "subtitle": {
+				                    "type": "string",
+				                    "description": "PPT subtitle (optional)"
+				                },
+				                "slide_contents": {
+				                    "type": "array",
+				                    "description": "Slide content list (optional, used when not using template)",
+				                    "items": {
+				                        "type": "object",
+				                        "properties": {
+				                            "title": {
+				                                "type": "string",
+				                                "description": "Slide title",
+				                                "minLength": 1
+				                            },
+				                            "content": {
+				                                "type": "string",
+				                                "description": "Slide content",
+				                                "minLength": 1
+				                            },
+				                            "image_path": {
+				                                "type": "string",
+				                                "description": "Image path in slide (optional)"
+				                            }
+				                        },
+				                        "required": ["title", "content"],
+				                        "additionalProperties": false
+				                    }
+				                },
+				                "path": {
+				                    "type": "string",
+				                    "description": "Template file path (required when applying template). Must be a preset template path and exist in the content returned by getTemplateList."
+				                },
+				                "template_content": {
+				                    "type": "string",
+				                    "description": "Modified template content (required when applying template). Must strictly follow JSON format."
+				                },
+				                "file_name": {
+				                    "type": "string",
+				                    "description": "Generated PPT file name (required)",
+				                    "minLength": 1,
+				                    "errorMessage": "File name must end with .pptx or .ppt"
+				                }
+				            },
+				            "required": ["action", "title", "file_name"],
+				            "allOf": [
+				                {
+				                    "if": {
+				                        "properties": {
+				                            "path": {
+				                                "not": {
+				                                    "type": "null"
+				                                }
+				                            }
+				                        },
+				                        "required": ["path"]
+				                    },
+				                    "then": {
+				                        "required": ["template_content"],
+				                        "properties": {
+				                            "template_content": {
+				                                "minLength": 1
+				                            }
+				                        }
+				                    }
+				                },
+				                {
+				                    "if": {
+				                        "properties": {
+				                            "template_content": {
+				                                "not": {
+				                                    "type": "null"
+				                                }
+				                            }
+				                        },
+				                        "required": ["template_content"]
+				                    },
+				                    "then": {
+				                        "required": ["path"],
+				                        "properties": {
+				                            "path": {
+				                                "minLength": 1
+				                            }
+				                        }
+				                    }
+				                }
+				            ],
+				            "additionalProperties": false
+				        },
+				        {
+				            "type": "object",
+				            "properties": {
+				                "action": {
+				                    "type": "string",
+				                    "const": "getTemplateList",
+				                    "description": "Get available template list"
+				                }
+				            },
+				            "required": ["action"],
+				            "additionalProperties": false
+				        },
+				        {
+				            "type": "object",
+				            "properties": {
+				                "action": {
+				                    "type": "string",
+				                    "const": "getTemplate",
+				                    "description": "Get content of specified template. Returns a JSON format string."
+				                },
+				                "path": {
+				                    "type": "string",
+				                    "description": "Template file path to retrieve. Must be a preset template path and exist in the content returned by getTemplateList.",
+				                    "minLength": 1
+				                }
+				            },
+				            "required": ["action", "path"],
+				            "additionalProperties": false
+				        }
+				    ]
+				}
+				""";
 	}
 
 	@Override

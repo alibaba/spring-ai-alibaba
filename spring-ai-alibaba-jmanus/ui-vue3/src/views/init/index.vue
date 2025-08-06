@@ -19,7 +19,7 @@
       <!-- Header -->
       <div class="init-header">
         <div class="logo">
-          <h1>🤖 JManus</h1>
+          <h1><Icon icon="carbon:bot" class="logo-icon" /> JManus</h1>
         </div>
         <h2>{{ currentStep === 1 ? $t('init.welcomeStep') : $t('init.welcome') }}</h2>
         <p class="description">{{ currentStep === 1 ? $t('init.languageStepDescription') : $t('init.description') }}</p>
@@ -50,7 +50,9 @@
                 value="zh"
               />
               <span class="language-content">
-                <span class="language-flag">🇨🇳</span>
+                <span class="language-flag">
+                  <Icon icon="circle-flags:cn" />
+                </span>
                 <span class="language-text">
                   <strong>{{ $t('language.zh') }}</strong>
                   <small>{{ $t('init.simplifiedChinese') }}</small>
@@ -64,7 +66,9 @@
                 value="en"
               />
               <span class="language-content">
-                <span class="language-flag">🇺🇸</span>
+                <span class="language-flag">
+                  <Icon icon="circle-flags:us" />
+                </span>
                 <span class="language-text">
                   <strong>English</strong>
                   <small>English (US)</small>
@@ -126,15 +130,26 @@
               {{ $t('init.apiKeyLabel') }}
               <span class="required">*</span>
             </label>
-            <input
-              id="apiKey"
-              v-model="form.apiKey"
-              type="password"
-              class="form-input"
-              :placeholder="$t('init.apiKeyPlaceholder')"
-              :disabled="loading"
-              required
-            />
+            <div class="api-key-input-container">
+              <input
+                id="apiKey"
+                v-model="form.apiKey"
+                :type="showDashscopeApiKey ? 'text' : 'password'"
+                class="form-input"
+                :placeholder="$t('init.apiKeyPlaceholder')"
+                :disabled="loading"
+                required
+              />
+              <button
+                type="button"
+                class="api-key-toggle-btn"
+                @click="showDashscopeApiKey = !showDashscopeApiKey"
+                :title="showDashscopeApiKey ? $t('init.hideApiKey') : $t('init.showApiKey')"
+              >
+                <Icon v-if="showDashscopeApiKey" icon="carbon:view" />
+                <Icon v-else icon="carbon:view-off" />
+              </button>
+            </div>
             <div class="form-hint">
               {{ $t('init.apiKeyHint') }}
               <a
@@ -171,15 +186,26 @@
                 {{ $t('init.customApiKeyLabel') }}
                 <span class="required">*</span>
               </label>
-              <input
-                id="customApiKey"
-                v-model="form.apiKey"
-                type="password"
-                class="form-input"
-                :placeholder="$t('init.customApiKeyPlaceholder')"
-                :disabled="loading"
-                required
-              />
+              <div class="api-key-input-container">
+                <input
+                  id="customApiKey"
+                  v-model="form.apiKey"
+                  :type="showCustomApiKey ? 'text' : 'password'"
+                  class="form-input"
+                  :placeholder="$t('init.customApiKeyPlaceholder')"
+                  :disabled="loading"
+                  required
+                />
+                <button
+                  type="button"
+                  class="api-key-toggle-btn"
+                  @click="showCustomApiKey = !showCustomApiKey"
+                  :title="showCustomApiKey ? $t('init.hideApiKey') : $t('init.showApiKey')"
+                >
+                  <Icon v-if="showCustomApiKey" icon="carbon:view" />
+                  <Icon v-else icon="carbon:view-off" />
+                </button>
+              </div>
             </div>
 
             <div class="form-group">
@@ -266,6 +292,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { Icon } from '@iconify/vue'
 import { LlmCheckService } from '@/utils/llm-check'
 import { changeLanguageWithAgentReset, LOCAL_STORAGE_LOCALE } from '@/base/i18n'
 
@@ -288,6 +315,10 @@ const form = ref({
 const loading = ref(false)
 const error = ref('')
 const success = ref(false)
+
+// API key visibility state
+const showDashscopeApiKey = ref(false)
+const showCustomApiKey = ref(false)
 
 // Computed properties
 const isFormValid = computed(() => {
@@ -334,6 +365,9 @@ const onConfigModeChange = () => {
   form.value.modelName = ''
   form.value.modelDisplayName = ''
   error.value = ''
+  // Reset API key visibility
+  showDashscopeApiKey.value = false
+  showCustomApiKey.value = false
 }
 
 const validateForm = () => {
@@ -490,6 +524,17 @@ onMounted(() => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  font-size: 48px !important;
+  color: #667eea !important;
+  background: none !important;
+  -webkit-text-fill-color: #667eea !important;
 }
 
 .init-header h2 {
@@ -635,6 +680,15 @@ onMounted(() => {
 .language-flag {
   font-size: 32px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.language-flag .iconify {
+  font-size: 32px !important;
+  width: 32px !important;
+  height: 32px !important;
 }
 
 .language-text {
@@ -698,6 +752,49 @@ onMounted(() => {
 
 .form-input::placeholder {
   color: #666666;
+}
+
+.api-key-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.api-key-input-container .form-input {
+  padding-right: 50px;
+}
+
+.api-key-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.api-key-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.api-key-toggle-btn:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.api-key-toggle-btn .iconify {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  color: #ffffff !important;
 }
 
 .config-mode-selection {
@@ -1050,6 +1147,10 @@ onMounted(() => {
     font-size: 36px;
   }
 
+  .logo-icon {
+    font-size: 36px !important;
+  }
+
   .init-header h2 {
     font-size: 24px;
   }
@@ -1066,6 +1167,10 @@ onMounted(() => {
 
   .logo h1 {
     font-size: 40px;
+  }
+
+  .logo-icon {
+    font-size: 40px !important;
   }
 
   .init-header h2 {
@@ -1088,6 +1193,12 @@ onMounted(() => {
 
   .language-flag {
     font-size: 28px;
+  }
+
+  .language-flag .iconify {
+    font-size: 28px !important;
+    width: 28px !important;
+    height: 28px !important;
   }
 
   .language-text strong {
@@ -1118,6 +1229,10 @@ onMounted(() => {
 
   .logo h1 {
     font-size: 32px;
+  }
+
+  .logo-icon {
+    font-size: 32px !important;
   }
 
   .init-header h2 {
@@ -1154,6 +1269,12 @@ onMounted(() => {
 
   .language-flag {
     font-size: 24px;
+  }
+
+  .language-flag .iconify {
+    font-size: 24px !important;
+    width: 24px !important;
+    height: 24px !important;
   }
 
   .language-text strong {

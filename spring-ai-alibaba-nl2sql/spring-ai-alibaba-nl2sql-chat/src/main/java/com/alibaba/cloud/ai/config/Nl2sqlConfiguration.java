@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.config;
 
 import com.alibaba.cloud.ai.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
+import com.alibaba.cloud.ai.constant.Constant;
 import com.alibaba.cloud.ai.dispatcher.PlanExecutorDispatcher;
 import com.alibaba.cloud.ai.dispatcher.PythonExecutorDispatcher;
 import com.alibaba.cloud.ai.dispatcher.QueryRewriteDispatcher;
@@ -48,10 +49,10 @@ import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.service.business.BusinessKnowledgeRecallService;
 import com.alibaba.cloud.ai.service.semantic.SemanticModelRecallService;
 import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
+import com.alibaba.cloud.ai.service.UserPromptConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -62,7 +63,6 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
 import static com.alibaba.cloud.ai.constant.Constant.BUSINESS_KNOWLEDGE;
 import static com.alibaba.cloud.ai.constant.Constant.COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.DATA_SET_ID;
 import static com.alibaba.cloud.ai.constant.Constant.EVIDENCES;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.KEYWORD_EXTRACT_NODE;
@@ -119,32 +119,41 @@ public class Nl2sqlConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(Nl2sqlConfiguration.class);
 
-	@Autowired
-	@Qualifier("nl2SqlServiceImpl")
 	private BaseNl2SqlService nl2SqlService;
 
-	@Autowired
-	@Qualifier("schemaServiceImpl")
 	private BaseSchemaService schemaService;
 
-	@Autowired
-	@Qualifier("mysqlAccessor")
 	private Accessor dbAccessor;
 
-	@Autowired
 	private DbConfig dbConfig;
 
-	@Autowired
 	private CodeExecutorProperties codeExecutorProperties;
 
-	@Autowired
 	private CodePoolExecutorService codePoolExecutor;
 
-	@Autowired
 	private SemanticModelRecallService semanticModelRecallService;
 
-	@Autowired
 	private BusinessKnowledgeRecallService businessKnowledgeRecallService;
+
+	private UserPromptConfigService promptConfigService;
+
+	public Nl2sqlConfiguration(@Qualifier("nl2SqlServiceImpl") BaseNl2SqlService nl2SqlService,
+			@Qualifier("schemaServiceImpl") BaseSchemaService schemaService,
+			@Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig,
+			CodeExecutorProperties codeExecutorProperties, CodePoolExecutorService codePoolExecutor,
+			SemanticModelRecallService semanticModelRecallService,
+			BusinessKnowledgeRecallService businessKnowledgeRecallService,
+			UserPromptConfigService promptConfigService) {
+		this.nl2SqlService = nl2SqlService;
+		this.schemaService = schemaService;
+		this.dbAccessor = dbAccessor;
+		this.dbConfig = dbConfig;
+		this.codeExecutorProperties = codeExecutorProperties;
+		this.codePoolExecutor = codePoolExecutor;
+		this.semanticModelRecallService = semanticModelRecallService;
+		this.businessKnowledgeRecallService = businessKnowledgeRecallService;
+		this.promptConfigService = promptConfigService;
+	}
 
 	@Bean
 	public StateGraph nl2sqlGraph(ChatClient.Builder chatClientBuilder) throws GraphStateException {
@@ -154,7 +163,7 @@ public class Nl2sqlConfiguration {
 			// 用户输入
 			keyStrategyHashMap.put(INPUT_KEY, new ReplaceStrategy());
 			// 数据集ID
-			keyStrategyHashMap.put(DATA_SET_ID, new ReplaceStrategy());
+			keyStrategyHashMap.put(Constant.AGENT_ID, new ReplaceStrategy());
 			// 智能体ID
 			keyStrategyHashMap.put(AGENT_ID, new ReplaceStrategy());
 			// 业务知识
@@ -219,7 +228,7 @@ public class Nl2sqlConfiguration {
 					node_async(new PythonGenerateNode(codeExecutorProperties, chatClientBuilder)))
 			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(codePoolExecutor)))
 			.addNode(PYTHON_ANALYZE_NODE, node_async(new PythonAnalyzeNode(chatClientBuilder)))
-			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder)))
+			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder, promptConfigService)))
 			.addNode(SEMANTIC_CONSISTENCY_NODE, node_async(new SemanticConsistencyNode(nl2SqlService)));
 
 		stateGraph.addEdge(START, QUERY_REWRITE_NODE)

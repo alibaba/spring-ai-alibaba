@@ -51,8 +51,7 @@ public record ChatRequest(
 		/**
 		 * 是否启用背景调查，用于控制是否启用背景调查 默认值为 true，表示启用背景调查
 		 */
-		@JsonProperty(value = "enable_background_investigation",
-				defaultValue = "true") Boolean enableBackgroundInvestigation,
+		@JsonProperty(value = "enable_deepresearch", defaultValue = "true") Boolean enableDeepResearch,
 		/**
 		 * MCP 设置
 		 */

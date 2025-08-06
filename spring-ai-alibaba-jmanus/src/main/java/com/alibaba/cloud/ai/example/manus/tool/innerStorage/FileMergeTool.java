@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.example.manus.tool.innerStorage;
 
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
-import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import org.slf4j.Logger;
@@ -80,11 +79,8 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 
 	private final UnifiedDirectoryManager directoryManager;
 
-	private final ToolPromptManager toolPromptManager;
-
-	public FileMergeTool(UnifiedDirectoryManager directoryManager, ToolPromptManager toolPromptManager) {
+	public FileMergeTool(UnifiedDirectoryManager directoryManager) {
 		this.directoryManager = directoryManager;
-		this.toolPromptManager = toolPromptManager;
 	}
 
 	private static final String TOOL_NAME = "file_merge_tool";
@@ -96,12 +92,37 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 
 	@Override
 	public String getDescription() {
-		return toolPromptManager.getToolDescription("file_merge_tool");
+		return """
+				Merge multiple files into a single file. This tool can combine content from multiple source files and create a merged output file.
+				""";
 	}
 
 	@Override
 	public String getParameters() {
-		return toolPromptManager.getToolParameters("file_merge_tool");
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "source_files": {
+				            "type": "array",
+				            "items": {
+				                "type": "string"
+				            },
+				            "description": "List of source file paths to merge"
+				        },
+				        "output_file": {
+				            "type": "string",
+				            "description": "Output file path for the merged content"
+				        },
+				        "merge_strategy": {
+				            "type": "string",
+				            "enum": ["concatenate", "interleave"],
+				            "description": "Strategy for merging files: concatenate (append all files) or interleave (alternate between files)"
+				        }
+				    },
+				    "required": ["source_files", "output_file"]
+				}
+				""";
 	}
 
 	@Override

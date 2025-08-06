@@ -1,6 +1,7 @@
 # BROWSER_AGENT 配置
 agentName: BROWSER_AGENT
 agentDescription: 一个可以控制浏览器完成任务的浏览器代理
+isBuiltIn: false  # 浏览器 agent 可以删除
 availableToolKeys:
   - browser_use
   - text_file_operator

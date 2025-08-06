@@ -44,6 +44,6 @@ public interface AgentService {
 	 * @return Created BaseAgent object
 	 */
 	BaseAgent createDynamicBaseAgent(String name, String currentPlanId, String memoryId, String rootPlanId,
-			Map<String, Object> initialAgentSetting, List<String> columns);
+			Map<String, Object> initialAgentSetting, String expectedReturnInfo);
 
 }

@@ -83,15 +83,12 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 		List<Query> multiQueries = queryExpander.expand(rewriteQuery);
 		List<String> newQueries = multiQueries.stream().map(Query::text).collect(Collectors.toList());
 		updated.put("optimize_queries", newQueries);
-		// 判断是否需要背景调查
-		if (state.value("enable_background_investigation", true)) {
-			nextStep = "background_investigator";
-		}
-		else if (state.value("user_upload_file", false)) {
+		// 判断是否需要用户上传
+		if (state.value("user_upload_file", false)) {
 			nextStep = "user_file_rag";
 		}
 		else {
-			nextStep = "planner";
+			nextStep = "background_investigator";
 		}
 		updated.put("rewrite_multi_query_next_node", nextStep);
 		return updated;

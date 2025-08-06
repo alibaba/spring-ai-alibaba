@@ -42,6 +42,8 @@ const words: I18nType = {
     apiKeyPlaceholder: 'Enter your API key',
     apiKeyHint: 'You can get your API key from Alibaba Cloud Bailian Console.',
     getApiKey: 'Get API Key',
+    showApiKey: 'Show API Key',
+    hideApiKey: 'Hide API Key',
     baseUrlLabel: 'API Base URL',
     baseUrlPlaceholder: 'https://api.openai.com or your custom URL',
     baseUrlHint: 'OpenAI compatible API base URL, e.g. http://localhost:11434',
@@ -83,6 +85,33 @@ const words: I18nType = {
     search: 'Search',
     loading: 'Loading...',
     parameters: 'Parameters',
+  },
+
+  // File Browser
+  fileBrowser: {
+    title: 'File Browser',
+    refresh: 'Refresh',
+    loading: 'Loading file tree...',
+    retry: 'Retry',
+    noFiles: 'No files found',
+    loadError: 'Failed to load file tree',
+    loadingContent: 'Loading file content...',
+    contentLoadError: 'Failed to load file content',
+    download: 'Download',
+    downloadToView: 'Download to View',
+    binaryFile: 'This is a binary file that cannot be displayed in the viewer.',
+    open: 'Open',
+    copyPath: 'Copy Path',
+    noPlanSelected: 'No plan selected. Please execute a task to view files.',
+    noFilesYet: 'No Files Generated Yet',
+    waitingForFiles: 'The AI model is still processing your request. Files will appear here once they are generated.',
+    filesTip: 'Generated files like analysis results, reports, and data exports will be displayed in this file browser.',
+    noPlanExecuting: 'No task is currently being executed.',
+    startTaskTip: 'Please start a task in the chat panel on the left. Generated files will be displayed here.',
+    waitingForGeneration: 'Waiting for File Generation',
+    planExecuting: 'The AI model is currently executing the plan and generating files.',
+    checking: 'Checking...',
+    checkNow: 'Check Now',
   },
 
   // Language
@@ -215,6 +244,9 @@ const words: I18nType = {
       invalidFormat: 'Invalid agent configuration format: missing required fields',
       modelConfiguration: 'Model Configuration',
       modelConfigurationLabel: 'Select Model',
+      cannotDeleteBuiltIn: 'Cannot delete built-in agent',
+      builtInAgents: 'Built-in Agents',
+      customAgents: 'Custom Agents',
     },
     // Model configuration page
     modelConfig: {
@@ -233,6 +265,8 @@ const words: I18nType = {
       baseUrlPlaceholder: 'Enter base url',
       apiKey: 'API Key',
       apiKeyPlaceholder: 'Enter API key',
+      showApiKey: 'Show API Key',
+      hideApiKey: 'Hide API Key',
       modelName: 'Model Name',
       modelNamePlaceholder: 'Enter model name',
       description: 'Description',
@@ -908,14 +942,14 @@ const words: I18nType = {
     examples: {
       stockPrice: {
         title: 'Query Stock Price',
-        description: "Get today's latest stock price for Alibaba (Agent can use browser tools)",
+        description: "Get today's latest stock price for Alphabet (Agent can use browser tools)",
         prompt:
-          "Use browser based on Baidu to query today's Alibaba stock price and return the latest stock price",
+          "Use browser based on Google to query today's Alphabet stock price and return the latest stock price\n",
       },
       weather: {
         title: 'Query Weather',
-        description: "Get today's weather in Beijing (Agent can use MCP tool services)",
-        prompt: "Use browser, based on Baidu, to query today's weather in Beijing",
+        description: "Get today's weather in New York (Agent can use MCP tool services)",
+        prompt: "Use browser, based on Google, to query today's weather in New York",
       },
       queryplan: {
         title: 'Query Person Info',

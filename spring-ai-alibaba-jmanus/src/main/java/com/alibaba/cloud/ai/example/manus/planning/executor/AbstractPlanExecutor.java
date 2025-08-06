@@ -87,8 +87,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 		try {
 			String stepType = getStepFromStepReq(step.getStepRequirement());
 			int stepIndex = step.getStepIndex();
-			String columnsInString = step.getTerminateColumns();
-			List<String> columns = parseColumns(columnsInString);
+			String expectedReturnInfo = step.getTerminateColumns();
 
 			String planStatus = context.getPlan().getPlanExecutionStateStringFormat(true);
 			String stepText = step.getStepRequirement();
@@ -99,7 +98,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			initSettings.put(STEP_TEXT_KEY, stepText);
 			initSettings.put(EXTRA_PARAMS_KEY, context.getPlan().getExecutionParams());
 
-			BaseAgent executor = getExecutorForStep(stepType, context, initSettings, columns);
+			BaseAgent executor = getExecutorForStep(stepType, context, initSettings, expectedReturnInfo);
 			if (executor == null) {
 				logger.error("No executor found for step type: {}", stepType);
 				step.setResult("No executor found for step type: " + stepType);
@@ -116,7 +115,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			return executor;
 		}
 		catch (Exception e) {
-			logger.error("Error executing step: {}", e.getMessage(), e);
+			logger.error("Error executing step: {}", step.getStepRequirement(), e);
 			step.setResult("Execution failed: " + e.getMessage());
 		}
 		finally {
@@ -140,12 +139,12 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	 * Get the executor for the step.
 	 */
 	protected BaseAgent getExecutorForStep(String stepType, ExecutionContext context, Map<String, Object> initSettings,
-			List<String> columns) {
+			String expectedReturnInfo) {
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
 				BaseAgent executor = agentService.createDynamicBaseAgent(agent.getAgentName(),
-						context.getPlan().getCurrentPlanId(), context.getMemoryId(), context.getPlan().getRootPlanId(),
-						initSettings, columns);
+						context.getPlan().getCurrentPlanId(), context.getMemoryId(), context.getPlan().getRootPlanId(), initSettings,
+						expectedReturnInfo);
 				// Set thinkActRecordId from context for sub-plan executions
 				if (context.getThinkActRecordId() != null) {
 					executor.setThinkActRecordId(context.getThinkActRecordId());

@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.example.manus.tool.database;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
-import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
+
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.database.action.ExecuteSqlAction;
 import com.alibaba.cloud.ai.example.manus.tool.database.action.GetDatasourceInfoAction;
@@ -40,14 +40,11 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 
 	private final ObjectMapper objectMapper;
 
-	private final ToolPromptManager toolPromptManager;
-
 	public DatabaseUseTool(ManusProperties manusProperties, DataSourceService dataSourceService,
-			ObjectMapper objectMapper, ToolPromptManager toolPromptManager) {
+			ObjectMapper objectMapper) {
 		this.manusProperties = manusProperties;
 		this.dataSourceService = dataSourceService;
 		this.objectMapper = objectMapper;
-		this.toolPromptManager = toolPromptManager;
 	}
 
 	public DataSourceService getDataSourceService() {
@@ -68,12 +65,73 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 
 	@Override
 	public String getDescription() {
-		return toolPromptManager.getToolDescription("database_use");
+		return """
+				Interact with database, execute SQL, table structure, index, health status and other operations. Supported operations include:
+				- 'execute_sql': Execute SQL statements
+				- 'get_table_name': Find table names based on table comments
+				- 'get_table_index': Get table index information
+				- 'get_table_meta': Get complete metadata of table structure, fields, indexes
+				- 'get_datasource_info': Get data source information
+				""";
 	}
 
 	@Override
 	public String getParameters() {
-		return toolPromptManager.getToolParameters("database_use");
+		return """
+				{
+				    "oneOf": [
+				        {
+				            "type": "object",
+				            "properties": {
+				                "action": { "type": "string", "const": "execute_sql" },
+				                "query": { "type": "string", "description": "SQL statement to execute" },
+				                "datasourceName": { "type": "string", "description": "Data source name, optional" }
+				            },
+				            "required": ["action", "query"],
+				            "additionalProperties": false
+				        },
+				        {
+				            "type": "object",
+				            "properties": {
+				                "action": { "type": "string", "const": "get_table_name" },
+				                "text": { "type": "string", "description": "Chinese table name or table description to search, supports single query only" },
+				                "datasourceName": { "type": "string", "description": "Data source name, optional" }
+				            },
+				            "required": ["action", "text"],
+				            "additionalProperties": false
+				        },
+				        {
+				            "type": "object",
+				            "properties": {
+				                "action": { "type": "string", "const": "get_table_index" },
+				                "text": { "type": "string", "description": "Table name to search" },
+				                "datasourceName": { "type": "string", "description": "Data source name, optional" }
+				            },
+				            "required": ["action", "text"],
+				            "additionalProperties": false
+				        },
+				        {
+				            "type": "object",
+				            "properties": {
+				                "action": { "type": "string", "const": "get_table_meta" },
+				                "text": { "type": "string", "description": "Fuzzy search table description, leave empty to get all tables" },
+				                "datasourceName": { "type": "string", "description": "Data source name, optional" }
+				            },
+				            "required": ["action"],
+				            "additionalProperties": false
+				        },
+				        {
+				            "type": "object",
+				            "properties": {
+				                "action": { "type": "string", "const": "get_datasource_info" },
+				                "datasourceName": { "type": "string", "description": "Data source name, leave empty to get all available data sources" }
+				            },
+				            "required": ["action"],
+				            "additionalProperties": false
+				        }
+				    ]
+				}
+				""";
 	}
 
 	@Override
@@ -191,9 +249,8 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 		}
 	}
 
-	public static DatabaseUseTool getInstance(DataSourceService dataSourceService, ObjectMapper objectMapper,
-			ToolPromptManager toolPromptManager) {
-		return new DatabaseUseTool(null, dataSourceService, objectMapper, toolPromptManager);
+	public static DatabaseUseTool getInstance(DataSourceService dataSourceService, ObjectMapper objectMapper) {
+		return new DatabaseUseTool(null, dataSourceService, objectMapper);
 	}
 
 }
