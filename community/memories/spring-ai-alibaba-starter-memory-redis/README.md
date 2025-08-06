@@ -317,7 +317,7 @@ public class ChatController {
 
         // 发起 AI 模型调用，并启用记忆功能
         return chatClient.prompt(prompt)
-                .advisors(new MessageChatMemoryAdvisor(chatMemory))
+                .advisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
                 .stream()     // 使用流式响应
                 .content();   // 获取内容流
