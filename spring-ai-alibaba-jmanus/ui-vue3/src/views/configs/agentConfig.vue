@@ -478,7 +478,7 @@ const loadData = async () => {
       if (a.builtIn === b.builtIn) {
         return 0
       }
-      // Put non-built-in agents first (a.buildIn = false comes before b.buildIn = true)
+      // Put non-built-in agents first (a.builtIn = false comes before b.builtIn = true)
       return a.builtIn ? 1 : -1
     })
 

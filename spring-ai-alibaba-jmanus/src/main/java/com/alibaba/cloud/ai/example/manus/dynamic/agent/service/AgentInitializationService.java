@@ -98,7 +98,6 @@ public class AgentInitializationService {
 	private void createAgentIfNotExists(String namespace, AgentEnum agent, String language) {
 		DynamicAgentEntity agentEntity = agentRepository.findByNamespaceAndAgentName(namespace, agent.getAgentName());
 		boolean isNewAgent = (agentEntity == null);
-		boolean isNewAgent = (agentEntity == null);
 
 		if (isNewAgent) {
 			if (isNewAgent) {
@@ -114,8 +113,6 @@ public class AgentInitializationService {
 		String agentPath = agent.getAgentPath();
 		StartupAgentConfigLoader.AgentConfig agentConfig = configLoader.loadAgentConfig(agentPath, language);
 		// Load configuration and update agent (both new and existing)
-		String agentPath = agent.getAgentPath();
-		StartupAgentConfigLoader.AgentConfig agentConfig = configLoader.loadAgentConfig(agentPath, language);
 
 		if (agentConfig != null) {
 			agentEntity.setAgentDescription(agentConfig.getAgentDescription());
@@ -123,7 +120,7 @@ public class AgentInitializationService {
 			agentEntity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
 
 			// Set buildIn based on YAML configuration
-			Boolean builtIn = agentConfig.getBuildIn();
+			Boolean builtIn = agentConfig.getBuiltIn();
 			agentEntity.setBuiltIn(builtIn != null ? builtIn : false);
 		}
 		else {
@@ -164,7 +161,7 @@ public class AgentInitializationService {
 				agentEntity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
 
 				// Update buildIn based on YAML configuration
-				Boolean builtIn = agentConfig.getBuildIn();
+				Boolean builtIn = agentConfig.getBuiltIn();
 				agentEntity.setBuiltIn(builtIn != null ? builtIn : false);
 			}
 
