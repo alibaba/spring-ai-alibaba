@@ -33,8 +33,13 @@
         {{ $t('input.planMode') }}
       </button>
       <button class="plan-mode-btn" :title="$t('memory.selectMemory')" @click="handleMemoryListClick">
-        <Icon icon="carbon:document" />
+        <Icon icon="carbon:calendar" />
         {{ memoryStore.selectMemoryId  || $t('memory.selectMemory') }}
+        <Icon v-if="memoryStore.selectMemoryId"
+              icon="carbon:close"
+              class="clear-memory-btn"
+              @click.stop="clearSelectMemory"
+              :placeholder="$t('memory.clearMemory')"/>
       </button>
       <button
         class="send-button"
@@ -135,6 +140,10 @@ const handlePlanModeClick = () => {
 const handleMemoryListClick = () => {
   // Trigger the plan mode toggle event
   emit('memory-list-clicked')
+}
+
+const clearSelectMemory = () => {
+  memoryStore.clearMemoryId()
 }
 
 /**
@@ -324,5 +333,10 @@ onUnmounted(() => {
     opacity: 0.5;
     cursor: not-allowed;
   }
+}
+
+.clear-memory-btn{
+  width: 1.5em;
+  height: 1.5em;
 }
 </style>

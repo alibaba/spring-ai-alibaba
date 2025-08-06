@@ -1098,7 +1098,8 @@ const words: I18nType = {
     deleteHint: 'delete hint',
     deleteHintPrefix: 'Are you sure you want to delete the memory with ID',
     deleteHintSuffix: '? This action cannot be undone.',
-    selectMemory: 'Select Memory'
+    selectMemory: 'Select Memory',
+    clearMemory: 'Clear Memory',
   },
 }
 

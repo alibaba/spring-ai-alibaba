@@ -19,6 +19,7 @@
 
     <div class="search-bar">
       <div class="search-container">
+        <Icon icon="carbon:search" />
         <input
             type="text"
             :placeholder="$t('memory.searchPlaceholder')"
@@ -26,7 +27,6 @@
             v-model="searchQuery"
             @input="handleSearch"
         >
-        <i class="fa fa-search search-icon"></i>
       </div>
     </div>
 
@@ -49,9 +49,10 @@
                     {{ message.memoryName }}
                   </h3>
                   <span
-                      class="edit-indicator"
                       @click.stop="showNameEditModal(message.memoryId, message.memoryName)"
-                  ></span>
+                  >
+                    <Icon icon="carbon:edit" />
+                  </span>
                 </div>
               </div>
 
@@ -82,7 +83,7 @@
             <div class="toggle-container" @click.stop="toggleMessage(message.memoryId)">
               <Icon
                   :id="'toggle-' + message.memoryId"
-                  icon="carbon:close"
+                  icon="carbon:chevron-down"
               >
               </Icon>
             </div>
@@ -92,7 +93,7 @@
                   class="delete-btn"
                   @click.stop="showDeleteConfirm(message.memoryId)"
               >
-                <Icon icon="carbon:close"></Icon>
+                <Icon icon="carbon:delete"></Icon>
               </button>
             </div>
           </div>
@@ -707,29 +708,6 @@ const confirmDelete = async () => {
 .char-count {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.5);
-}
-
-.edit-indicator {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 50%;
-  background-color: #667eea;
-  color: white;
-  font-size: 0.75rem;
-  cursor: pointer;
-  margin-left: 0.375rem;
-}
-
-.edit-indicator::after {
-  content: '✎';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
 }
 
 @keyframes fadeIn {
