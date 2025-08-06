@@ -20,7 +20,6 @@ import io.lettuce.core.SocketOptions;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.data.redis.connection.*;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -45,8 +44,7 @@ import java.util.stream.Collectors;
  * @author benym
  * @date 2025/7/31 14:40
  */
-public class LettuceRedisChatMemoryRepository extends BaseRedisChatMemoryRepository
-		implements ChatMemoryRepository, AutoCloseable {
+public class LettuceRedisChatMemoryRepository extends BaseRedisChatMemoryRepository {
 
 	private static final Logger logger = LoggerFactory.getLogger(LettuceRedisChatMemoryRepository.class);
 

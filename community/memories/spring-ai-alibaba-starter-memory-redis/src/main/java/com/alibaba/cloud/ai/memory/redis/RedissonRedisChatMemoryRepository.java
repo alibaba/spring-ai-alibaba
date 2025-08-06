@@ -20,10 +20,10 @@ import org.redisson.api.RKeys;
 import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.options.KeysScanOptions;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -39,8 +39,7 @@ import java.util.stream.StreamSupport;
  * @author benym
  * @date 2025/7/30 18:47
  */
-public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryRepository
-		implements ChatMemoryRepository, AutoCloseable {
+public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryRepository {
 
 	private static final Logger logger = LoggerFactory.getLogger(RedissonRedisChatMemoryRepository.class);
 
@@ -125,6 +124,7 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 				return new RedissonRedisChatMemoryRepository(Redisson.create(redissonConfig));
 			}
 			Config config = new Config();
+			config.setCodec(new StringCodec());
 			if (useCluster) {
 				List<String> nodesUrl = nodes.stream().map(node -> "redis://" + node).toList();
 				config.useClusterServers()

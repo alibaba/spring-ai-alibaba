@@ -37,7 +37,8 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass({ LettuceRedisChatMemoryRepository.class, RedisClient.class })
 @EnableConfigurationProperties(RedisChatMemoryProperties.class)
 @ConditionalOnProperty(name = "spring.ai.memory.redis.client-type", havingValue = "lettuce")
-public class LettuceRedisChatMemoryConnectionAutoConfiguration extends RedisChatMemoryConnectionAutoConfiguration {
+public class LettuceRedisChatMemoryConnectionAutoConfiguration
+		extends RedisChatMemoryConnectionAutoConfiguration<LettuceRedisChatMemoryRepository> {
 
 	private static final Logger logger = LoggerFactory
 		.getLogger(LettuceRedisChatMemoryConnectionAutoConfiguration.class);
@@ -47,27 +48,35 @@ public class LettuceRedisChatMemoryConnectionAutoConfiguration extends RedisChat
 		super(properties, connectionDetails);
 	}
 
+	@Override
 	@Bean
 	@ConditionalOnMissingBean
-	LettuceRedisChatMemoryRepository redisChatMemoryRepository() {
-		if (getRedisChatMemoryMode() == RedisChatMemoryProperties.Mode.CLUSTER && getClusterConfiguration() != null) {
-			logger.info("Configuring Redis Cluster chat memory repository using Lettuce");
-			RedisChatMemoryClusterConfiguration clusterConfiguration = getClusterConfiguration();
-			return LettuceRedisChatMemoryRepository.builder()
-				.nodes(clusterConfiguration.nodeAddresses())
-				.username(clusterConfiguration.username())
-				.password(clusterConfiguration.password())
-				.timeout(clusterConfiguration.timeout())
-				.build();
-		}
+	protected LettuceRedisChatMemoryRepository buildRedisChatMemoryRepository() {
+		return super.buildRedisChatMemoryRepository();
+	}
+
+	@Override
+	protected LettuceRedisChatMemoryRepository createStandaloneChatMemoryRepository(
+			RedisChatMemoryStandaloneConfiguration standaloneConfiguration) {
 		logger.info("Configuring Redis Standalone chat memory repository using Lettuce");
-		RedisChatMemoryStandaloneConfiguration standaloneConfiguration = getStandaloneConfiguration();
 		return LettuceRedisChatMemoryRepository.builder()
 			.host(standaloneConfiguration.hostName())
 			.port(standaloneConfiguration.port())
 			.username(standaloneConfiguration.username())
 			.password(standaloneConfiguration.password())
 			.timeout(standaloneConfiguration.timeout())
+			.build();
+	}
+
+	@Override
+	protected LettuceRedisChatMemoryRepository createClusterChatMemoryRepository(
+			RedisChatMemoryClusterConfiguration clusterConfiguration) {
+		logger.info("Configuring Redis Cluster chat memory repository using Lettuce");
+		return LettuceRedisChatMemoryRepository.builder()
+			.nodes(clusterConfiguration.nodeAddresses())
+			.username(clusterConfiguration.username())
+			.password(clusterConfiguration.password())
+			.timeout(clusterConfiguration.timeout())
 			.build();
 	}
 

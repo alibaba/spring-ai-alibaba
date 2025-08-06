@@ -251,6 +251,12 @@
       "defaultValue": "127.0.0.1"
     },
     {
+      "name": "spring.ai.memory.redis.mode",
+      "type": "com.alibaba.cloud.ai.autoconfigure.memory.redis.RedisChatMemoryProperties$Mode",
+      "description": "Redis memory mode.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.redis.RedisChatMemoryProperties"
+    },
+    {
       "name": "spring.ai.memory.redis.password",
       "type": "java.lang.String",
       "description": "Redis server password.",

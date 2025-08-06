@@ -27,7 +27,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import redis.clients.jedis.JedisPoolConfig;
 
-import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.util.Assert;
 
@@ -43,8 +42,7 @@ import java.util.stream.Collectors;
  * @author Jast
  * @author benym
  */
-public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepository
-		implements ChatMemoryRepository, AutoCloseable {
+public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepository {
 
 	private static final Logger logger = LoggerFactory.getLogger(JedisRedisChatMemoryRepository.class);
 

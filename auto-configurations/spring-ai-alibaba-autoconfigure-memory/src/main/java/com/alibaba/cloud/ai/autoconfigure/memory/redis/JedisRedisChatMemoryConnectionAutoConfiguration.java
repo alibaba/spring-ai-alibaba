@@ -38,7 +38,8 @@ import redis.clients.jedis.Jedis;
 @ConditionalOnClass({ JedisRedisChatMemoryRepository.class, Jedis.class })
 @EnableConfigurationProperties(RedisChatMemoryProperties.class)
 @ConditionalOnProperty(name = "spring.ai.memory.redis.client-type", havingValue = "jedis")
-public class JedisRedisChatMemoryConnectionAutoConfiguration extends RedisChatMemoryConnectionAutoConfiguration {
+public class JedisRedisChatMemoryConnectionAutoConfiguration
+		extends RedisChatMemoryConnectionAutoConfiguration<JedisRedisChatMemoryRepository> {
 
 	private static final Logger logger = LoggerFactory.getLogger(JedisRedisChatMemoryConnectionAutoConfiguration.class);
 
@@ -47,27 +48,35 @@ public class JedisRedisChatMemoryConnectionAutoConfiguration extends RedisChatMe
 		super(properties, connectionDetails);
 	}
 
+	@Override
 	@Bean
 	@ConditionalOnMissingBean
-	JedisRedisChatMemoryRepository redisChatMemoryRepository() {
-		if (getRedisChatMemoryMode() == RedisChatMemoryProperties.Mode.CLUSTER && getClusterConfiguration() != null) {
-			logger.info("Configuring Redis Cluster chat memory repository using Jedis");
-			RedisChatMemoryClusterConfiguration clusterConfiguration = getClusterConfiguration();
-			return JedisRedisChatMemoryRepository.builder()
-				.nodes(clusterConfiguration.nodeAddresses())
-				.username(clusterConfiguration.username())
-				.password(clusterConfiguration.password())
-				.timeout(clusterConfiguration.timeout())
-				.build();
-		}
+	protected JedisRedisChatMemoryRepository buildRedisChatMemoryRepository() {
+		return super.buildRedisChatMemoryRepository();
+	}
+
+	@Override
+	protected JedisRedisChatMemoryRepository createStandaloneChatMemoryRepository(
+			RedisChatMemoryStandaloneConfiguration standaloneConfiguration) {
 		logger.info("Configuring Redis Standalone chat memory repository using Jedis");
-		RedisChatMemoryStandaloneConfiguration standaloneConfiguration = getStandaloneConfiguration();
 		return JedisRedisChatMemoryRepository.builder()
 			.host(standaloneConfiguration.hostName())
 			.port(standaloneConfiguration.port())
 			.username(standaloneConfiguration.username())
 			.password(standaloneConfiguration.password())
 			.timeout(standaloneConfiguration.timeout())
+			.build();
+	}
+
+	@Override
+	protected JedisRedisChatMemoryRepository createClusterChatMemoryRepository(
+			RedisChatMemoryClusterConfiguration clusterConfiguration) {
+		logger.info("Configuring Redis Cluster chat memory repository using Jedis");
+		return JedisRedisChatMemoryRepository.builder()
+			.nodes(clusterConfiguration.nodeAddresses())
+			.username(clusterConfiguration.username())
+			.password(clusterConfiguration.password())
+			.timeout(clusterConfiguration.timeout())
 			.build();
 	}
 

@@ -37,7 +37,8 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass({ RedissonRedisChatMemoryRepository.class, RedissonClient.class })
 @EnableConfigurationProperties(RedisChatMemoryProperties.class)
 @ConditionalOnProperty(name = "spring.ai.memory.redis.client-type", havingValue = "redisson")
-public class RedissonRedisChatMemoryConnectionAutoConfiguration extends RedisChatMemoryConnectionAutoConfiguration {
+public class RedissonRedisChatMemoryConnectionAutoConfiguration
+		extends RedisChatMemoryConnectionAutoConfiguration<RedissonRedisChatMemoryRepository> {
 
 	private static final Logger logger = LoggerFactory
 		.getLogger(RedissonRedisChatMemoryConnectionAutoConfiguration.class);
@@ -47,27 +48,35 @@ public class RedissonRedisChatMemoryConnectionAutoConfiguration extends RedisCha
 		super(properties, connectionDetails);
 	}
 
+	@Override
 	@Bean
 	@ConditionalOnMissingBean
-	RedissonRedisChatMemoryRepository redisChatMemoryRepository() {
-		if (getRedisChatMemoryMode() == RedisChatMemoryProperties.Mode.CLUSTER && getClusterConfiguration() != null) {
-			logger.info("Configuring Redis Cluster chat memory repository using Redisson");
-			RedisChatMemoryClusterConfiguration clusterConfiguration = getClusterConfiguration();
-			return RedissonRedisChatMemoryRepository.builder()
-				.nodes(clusterConfiguration.nodeAddresses())
-				.username(clusterConfiguration.username())
-				.password(clusterConfiguration.password())
-				.timeout(clusterConfiguration.timeout())
-				.build();
-		}
+	protected RedissonRedisChatMemoryRepository buildRedisChatMemoryRepository() {
+		return super.buildRedisChatMemoryRepository();
+	}
+
+	@Override
+	protected RedissonRedisChatMemoryRepository createStandaloneChatMemoryRepository(
+			RedisChatMemoryStandaloneConfiguration standaloneConfiguration) {
 		logger.info("Configuring Redis Standalone chat memory repository using Redisson");
-		RedisChatMemoryStandaloneConfiguration standaloneConfiguration = getStandaloneConfiguration();
 		return RedissonRedisChatMemoryRepository.builder()
 			.host(standaloneConfiguration.hostName())
 			.port(standaloneConfiguration.port())
 			.username(standaloneConfiguration.username())
 			.password(standaloneConfiguration.password())
 			.timeout(standaloneConfiguration.timeout())
+			.build();
+	}
+
+	@Override
+	protected RedissonRedisChatMemoryRepository createClusterChatMemoryRepository(
+			RedisChatMemoryClusterConfiguration clusterConfiguration) {
+		logger.info("Configuring Redis Cluster chat memory repository using Redisson");
+		return RedissonRedisChatMemoryRepository.builder()
+			.nodes(clusterConfiguration.nodeAddresses())
+			.username(clusterConfiguration.username())
+			.password(clusterConfiguration.password())
+			.timeout(clusterConfiguration.timeout())
 			.build();
 	}
 
