@@ -108,9 +108,9 @@ public class ChatSession {
 
 	@Override
 	public String toString() {
-		return "ChatSession{" + "id='" + id + '\'' + ", agentId=" + agentId + ", title='" + title + '\''
-				+ ", status='" + status + '\'' + ", userId=" + userId + ", createTime=" + createTime + ", updateTime="
-				+ updateTime + '}';
+		return "ChatSession{" + "id='" + id + '\'' + ", agentId=" + agentId + ", title='" + title + '\'' + ", status='"
+				+ status + '\'' + ", userId=" + userId + ", createTime=" + createTime + ", updateTime=" + updateTime
+				+ '}';
 	}
 
 }

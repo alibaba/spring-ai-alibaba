@@ -104,8 +104,7 @@ public class ChatSessionService {
 		LocalDateTime now = LocalDateTime.now();
 		session.setUpdateTime(now);
 
-		jdbcTemplate.update(UPDATE, session.getTitle(), session.getStatus(), session.getUpdateTime(),
-				session.getId());
+		jdbcTemplate.update(UPDATE, session.getTitle(), session.getStatus(), session.getUpdateTime(), session.getId());
 
 		log.info("Updated chat session: {}", session.getId());
 		return session;

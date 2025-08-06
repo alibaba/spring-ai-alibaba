@@ -52,8 +52,6 @@ public class ChatController {
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
-
-
 	/**
 	 * 获取智能体的会话列表
 	 */
@@ -188,15 +186,16 @@ public class ChatController {
 		try {
 			// 设置会话ID
 			message.setSessionId(sessionId);
-			
+
 			// 保存消息
 			ChatMessage savedMessage = chatMessageService.saveMessage(message);
-			
+
 			// 更新会话活动时间
 			chatSessionService.updateSessionTime(sessionId);
-			
+
 			return ResponseEntity.ok(savedMessage);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Save message error for session {}: {}", sessionId, e.getMessage(), e);
 			return ResponseEntity.internalServerError().build();
 		}

@@ -91,9 +91,8 @@ public class ChatResponse {
 
 	@Override
 	public String toString() {
-		return "ChatResponse{" + "sessionId='" + sessionId + '\'' + ", message='" + message + '\''
-				+ ", messageType='" + messageType + '\'' + ", sql='" + sql + '\'' + ", result=" + result + ", error='"
-				+ error + '\'' + '}';
+		return "ChatResponse{" + "sessionId='" + sessionId + '\'' + ", message='" + message + '\'' + ", messageType='"
+				+ messageType + '\'' + ", sql='" + sql + '\'' + ", result=" + result + ", error='" + error + '\'' + '}';
 	}
 
 }
