@@ -99,7 +99,7 @@
             </div>
 
             <!-- 展开/收起按钮 -->
-            <div class="toggle-container" @click="toggleMessage(message.memoryId)">
+            <div class="toggle-container" @click.stop="toggleMessage(message.memoryId)">
               <Icon
                   :id="'toggle-' + message.memoryId"
                   icon="carbon:close"
@@ -254,16 +254,30 @@ onMounted(() => {
     title.value = savedTitle;
   }
 
-  // 加载消息数据
-  loadMessages();
+  memoryStore.setLoadMessages(loadMessages)
 });
 
 // 加载消息数据
 const loadMessages = async () => {
   try {
     const mes = await MemoryApiService.getMemories()
-    // 为每条消息添加expanded属性，默认为false
-    messages.value = mes.map(msg => ({...msg, expanded: false}));
+    if(messages.value){
+      // 创建一个以 memoryId 为键的映射表，存储已有的 expanded 状态
+      const expandedMap = new Map(
+          messages.value.map(msg => [msg.memoryId, msg.expanded])
+      );
+      // 同步状态并更新 messages
+      messages.value = mes.map(mesMsg => ({
+        ...mesMsg,
+        // 如果存在对应的状态则使用，否则保持原有值或设为默认值
+        expanded: expandedMap.has(mesMsg.memoryId)
+            ? expandedMap.get(mesMsg.memoryId)
+            : mesMsg.expanded // 或设置默认值如 false
+      }));
+    } else {
+      // 为每条消息添加expanded属性，默认为false
+      messages.value = mes.map(msg => ({...msg, expanded: false}));
+    }
     // 初始化过滤结果
     filteredMessages.value = [...messages.value];
   } catch (e) {
@@ -441,6 +455,7 @@ const showSuccessToast = () => {
   background: rgba(255, 255, 255, 0.05);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease-in-out;
+  overflow-y: auto;
 }
 
 .memory-wrapper-collapsed {

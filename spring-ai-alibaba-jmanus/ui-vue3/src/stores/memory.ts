@@ -14,14 +14,30 @@
  * limitations under the License.
  */
 import {reactive} from "vue";
+import {MemoryApiService} from "@/api/memory-api-service";
+
+export interface MemorySelector {
+    value: string
+    label: string
+}
 
 export class MemoryStore {
     // Basic state
     isCollapsed = true
-    selectMemoryId = this.generateRandomId()
+    selectMemoryId = ''
+    loadMessages = new Function()
+    intervalId = 0
 
     toggleSidebar() {
         this.isCollapsed = !this.isCollapsed
+        if (!this.isCollapsed) {
+            this.loadMessages();
+            this.intervalId = setInterval(() => {
+                this.loadMessages();
+            }, 3000);
+        } else {
+            clearInterval(this.intervalId);
+        }
     }
 
     selectMemory(memoryId: string) {
@@ -29,8 +45,16 @@ export class MemoryStore {
         this.selectMemoryId = memoryId
     }
 
+    defaultMemoryId() {
+        this.selectMemoryId = this.generateRandomId()
+    }
+
     generateRandomId(): string {
         return Math.random().toString(36).substring(2, 10);
+    }
+
+    setLoadMessages(messages: Function) {
+        this.loadMessages = messages
     }
 }
 

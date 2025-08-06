@@ -111,6 +111,10 @@ const handleKeydown = (event: KeyboardEvent) => {
 const handleSend = () => {
   if (!currentInput.value.trim() || isDisabled.value) return
 
+  if(!memoryStore.selectMemoryId){
+    memoryStore.defaultMemoryId()
+  }
+
   const query = {
     input: currentInput.value.trim(),
     memoryId: memoryStore.selectMemoryId

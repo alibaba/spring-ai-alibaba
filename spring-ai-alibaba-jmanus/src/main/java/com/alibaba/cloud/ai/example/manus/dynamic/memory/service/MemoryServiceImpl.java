@@ -58,7 +58,15 @@ public class MemoryServiceImpl implements MemoryService {
 
 	@Override
 	public MemoryEntity saveMemory(MemoryEntity memoryEntity) {
-		return memoryRepository.save(memoryEntity);
+		MemoryEntity findEntity = memoryRepository.findByMemoryId(memoryEntity.getMemoryId());
+		if (findEntity != null) {
+			return findEntity;
+		}
+		else {
+			MemoryEntity saveEntity = memoryRepository.save(memoryEntity);
+			saveEntity.setMessages(chatMemory.get(saveEntity.getMemoryId()));
+			return saveEntity;
+		}
 	}
 
 }
