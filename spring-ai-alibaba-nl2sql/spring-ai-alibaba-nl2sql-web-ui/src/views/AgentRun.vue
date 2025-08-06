@@ -104,44 +104,61 @@
               class="message-item"
               :class="{ 'user-message': message.role === 'user', 'assistant-message': message.role === 'assistant' }"
             >
-              <div class="message-avatar">
-                <div v-if="message.role === 'user'" class="user-avatar">
-                  <i class="bi bi-person-fill"></i>
-                </div>
-                <div v-else class="assistant-avatar" :style="{ backgroundColor: getRandomColor(agent.id) }">
-                  <i :class="getRandomIcon(agent.id)"></i>
-                </div>
-              </div>
-              <div class="message-content">
-                <div class="message-header">
-                  <span class="message-role">{{ message.role === 'user' ? '用户' : agent.name }}</span>
-                  <span class="message-time">{{ formatTime(message.timestamp) }}</span>
-                </div>
-                <div class="message-body">
-                  <div class="text-message">
-                    <div v-html="formatMessage(message.content)"></div>
+              <!-- 用户消息保持原有布局 -->
+              <template v-if="message.role === 'user'">
+                <div class="message-avatar">
+                  <div class="user-avatar">
+                    <i class="bi bi-person-fill"></i>
                   </div>
                 </div>
-              </div>
+                <div class="message-content">
+                  <div class="message-header">
+                    <span class="message-role">用户</span>
+                    <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+                  </div>
+                  <div class="message-body">
+                    <div class="text-message">
+                      <div v-html="formatMessage(message.content)"></div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              
+              <!-- 智能体消息使用垂直布局 -->
+              <template v-else>
+                <div class="assistant-message-header">
+                  <div class="assistant-avatar" :style="{ backgroundColor: getRandomColor(agent.id) }">
+                    <i :class="getRandomIcon(agent.id)"></i>
+                  </div>
+                  <div class="assistant-info">
+                    <span class="message-role">{{ agent.name }}</span>
+                    <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+                  </div>
+                </div>
+                <div class="assistant-message-body">
+                  <div class="text-message">
+                    <div v-html="message.type === 'streaming' ? message.content : formatMessage(message.content)"></div>
+                  </div>
+                </div>
+              </template>
             </div>
 
             <!-- 加载中消息 -->
             <div v-if="isLoading" class="message-item assistant-message loading">
-              <div class="message-avatar">
+              <div class="assistant-message-header">
                 <div class="assistant-avatar" :style="{ backgroundColor: getRandomColor(agent.id) }">
                   <i :class="getRandomIcon(agent.id)"></i>
                 </div>
-              </div>
-              <div class="message-content">
-                <div class="message-header">
+                <div class="assistant-info">
                   <span class="message-role">{{ agent.name }}</span>
+                  <span class="message-time">正在思考中...</span>
                 </div>
-                <div class="message-body">
-                  <div class="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
+              </div>
+              <div class="assistant-message-body">
+                <div class="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
                 </div>
               </div>
             </div>
@@ -180,6 +197,7 @@
 <script>
 import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { presetQuestionApi } from '../utils/api.js'
 
 export default {
   name: 'AgentRun',
@@ -190,8 +208,8 @@ export default {
     // 响应式数据
     const agent = ref({
       id: route.params.id,
-      name: 'NL2SQL 智能助手',
-      description: '自然语言转SQL查询助手，帮助您快速生成和执行数据库查询',
+      name: '',
+      description: '',
       type: 'nl2sql'
     })
     
@@ -204,34 +222,99 @@ export default {
     const messagesContainer = ref(null)
     const messageInput = ref(null)
     
-    // 快捷操作
-    const quickActions = ref([
-      {
-        id: 1,
-        label: '查询销售数据',
-        message: '帮我查询最近一个月的销售数据',
-        icon: 'bi bi-graph-up'
-      },
-      {
-        id: 2,
-        label: '用户统计',
-        message: '统计用户注册情况',
-        icon: 'bi bi-people'
-      },
-      {
-        id: 3,
-        label: '产品分析',
-        message: '分析产品销售情况',
-        icon: 'bi bi-bar-chart'
-      },
-      {
-        id: 4,
-        label: '数据导出',
-        message: '导出数据报表',
-        icon: 'bi bi-download'
-      }
-    ])
+    // 预设问题（快捷操作）
+    const quickActions = ref([])
     
+    // API方法
+    const loadAgentInfo = async () => {
+      try {
+        const response = await fetch(`/api/agent/${agent.value.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          agent.value.name = data.name || 'NL2SQL 智能助手'
+          agent.value.description = data.description || '自然语言转SQL查询助手，帮助您快速生成和执行数据库查询'
+        } else {
+          // 使用默认值
+          agent.value.name = 'NL2SQL 智能助手'
+          agent.value.description = '自然语言转SQL查询助手，帮助您快速生成和执行数据库查询'
+        }
+      } catch (error) {
+        console.error('加载智能体信息失败:', error)
+        agent.value.name = 'NL2SQL 智能助手'
+        agent.value.description = '自然语言转SQL查询助手，帮助您快速生成和执行数据库查询'
+      }
+    }
+
+    const loadChatSessions = async () => {
+      try {
+        const response = await fetch(`/api/agent/${agent.value.id}/sessions`)
+        if (response.ok) {
+          const data = await response.json()
+          chatSessions.value = data || []
+        }
+      } catch (error) {
+        console.error('加载对话历史失败:', error)
+        chatSessions.value = []
+      }
+    }
+
+    const loadMessages = async (sessionId) => {
+      try {
+        const response = await fetch(`/api/sessions/${sessionId}/messages`)
+        if (response.ok) {
+          const data = await response.json()
+          currentMessages.value = data || []
+          await nextTick()
+          scrollToBottom()
+        }
+      } catch (error) {
+        console.error('加载消息失败:', error)
+        currentMessages.value = []
+      }
+    }
+
+    const loadPresetQuestions = async () => {
+      try {
+        const questions = await presetQuestionApi.getByAgentId(agent.value.id)
+        // 转换为快捷操作格式
+        quickActions.value = questions.map((question, index) => ({
+          id: question.id || index + 1,
+          label: question.question.length > 20 ? question.question.substring(0, 20) + '...' : question.question,
+          message: question.question,
+          icon: getQuestionIcon(index)
+        }))
+      } catch (error) {
+        console.error('加载预设问题失败:', error)
+        // 使用默认的快捷操作
+        quickActions.value = [
+          {
+            id: 1,
+            label: '查询销售数据',
+            message: '帮我查询最近一个月的销售数据',
+            icon: 'bi bi-graph-up'
+          },
+          {
+            id: 2,
+            label: '用户统计',
+            message: '统计用户注册情况',
+            icon: 'bi bi-people'
+          },
+          {
+            id: 3,
+            label: '产品分析',
+            message: '分析产品销售情况',
+            icon: 'bi bi-bar-chart'
+          },
+          {
+            id: 4,
+            label: '数据导出',
+            message: '导出数据报表',
+            icon: 'bi bi-download'
+          }
+        ]
+      }
+    }
+
     // 方法
     const goBack = () => {
       router.push(`/agent/${agent.value.id}`)
@@ -239,16 +322,25 @@ export default {
     
     const startNewChat = async () => {
       try {
-        const newSession = {
-          id: Date.now(),
-          title: '新对话',
-          agentId: agent.value.id,
-          createdAt: new Date()
-        }
+        const response = await fetch(`/api/agent/${agent.value.id}/sessions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: '新对话',
+            agentId: agent.value.id
+          })
+        })
         
-        chatSessions.value.unshift(newSession)
-        currentSessionId.value = newSession.id
-        currentMessages.value = []
+        if (response.ok) {
+          const newSession = await response.json()
+          chatSessions.value.unshift(newSession)
+          currentSessionId.value = newSession.id
+          currentMessages.value = []
+        } else {
+          throw new Error('创建会话失败')
+        }
       } catch (error) {
         console.error('创建新对话失败:', error)
         alert('创建新对话失败')
@@ -261,20 +353,28 @@ export default {
           return
         }
         
-        chatSessions.value = []
-        currentSessionId.value = null
-        currentMessages.value = []
-        console.log('历史记录已清空')
+        const response = await fetch(`/api/agent/${agent.value.id}/sessions`, {
+          method: 'DELETE'
+        })
+        
+        if (response.ok) {
+          chatSessions.value = []
+          currentSessionId.value = null
+          currentMessages.value = []
+          console.log('历史记录已清空')
+        } else {
+          throw new Error('清空历史失败')
+        }
       } catch (error) {
         console.error('清空历史失败:', error)
         alert('清空历史失败')
       }
     }
     
-    const sendMessage = async () => {
-      if (!inputMessage.value.trim() || isLoading.value) return
+    const sendMessage = async (messageText = null) => {
+      const message = messageText || inputMessage.value.trim()
+      if (!message || isLoading.value) return
       
-      const message = inputMessage.value.trim()
       inputMessage.value = ''
       
       // 如果没有当前会话，创建新会话
@@ -295,25 +395,178 @@ export default {
       await nextTick()
       scrollToBottom()
       
-      // 模拟AI回复
+      // 开始流式处理
       isLoading.value = true
       
-      setTimeout(() => {
-        const assistantMessage = {
+      try {
+        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(message)}&agentId=${agent.value.id}`)
+        
+        const agentMessageIndex = currentMessages.value.length
+        currentMessages.value.push({ 
           id: Date.now() + 1,
           role: 'assistant',
-          type: 'text',
-          content: `我收到了您的问题："${message}"。这是一个模拟回复，实际应用中会调用后端API进行处理。`,
+          type: 'streaming',
+          content: '<div class="typing-indicator"><span></span><span></span><span></span></div>', 
+          timestamp: new Date() 
+        })
+
+        const streamState = {
+            contentByType: {},
+            typeOrder: [],
+        }
+
+        const typeMapping = {
+          'status': { title: '当前状态', icon: 'bi bi-activity' },
+          'rewrite': { title: '需求理解', icon: 'bi bi-pencil-square' },
+          'keyword_extract': { title: '关键词提取', icon: 'bi bi-key' },
+          'plan_generation': { title: '计划生成', icon: 'bi bi-diagram-3' },
+          'schema_recall': { title: 'Schema初步召回', icon: 'bi bi-database-gear' },
+          'schema_deep_recall': { title: 'Schema深度召回', icon: 'bi bi-database-fill-gear' },
+          'sql': { title: '生成的SQL', icon: 'bi bi-code-square' },
+          'execute_sql': { title: '执行SQL', icon: 'bi bi-play-circle' },
+          'python_analysis': { title: 'Python分析执行', icon: 'bi bi-code-slash' },
+          'validation': { title: '校验', icon: 'bi bi-check-circle' },
+          'output_report': { title: '输出报告', icon: 'bi bi-file-earmark-text' },
+          'explanation': { title: '解释说明', icon: 'bi bi-info-circle' },
+          'result': { title: '查询结果', icon: 'bi bi-table' },
+          'error': { title: '解析错误', icon: 'bi bi-exclamation-triangle' }
+        }
+
+        const updateDisplay = () => {
+            let fullContent = '<div class="agent-responses-container" style="display: flex; flex-direction: column; width: 100%; gap: 0.75rem;">'
+            for (const type of streamState.typeOrder) {
+                const typeInfo = typeMapping[type] || { title: type, icon: 'bi bi-file-text' }
+                const content = streamState.contentByType[type] || ''
+                const formattedSubContent = formatContentByType(type, content)
+                fullContent += `
+<div class="agent-response-block" style="display: block !important; width: 100% !important;">
+  <div class="agent-response-title">
+    <i class="${typeInfo.icon}"></i> ${typeInfo.title}
+  </div>
+  <div class="agent-response-content">${formattedSubContent}</div>
+</div>
+`
+            }
+            fullContent += '</div>'
+            currentMessages.value[agentMessageIndex].content = fullContent
+            scrollToBottom()
+        }
+
+        eventSource.onmessage = (event) => {
+            let chunk
+            let actualType
+            let actualData
+            
+            try {
+                let parsedData = JSON.parse(event.data)
+                
+                if (typeof parsedData === 'string') {
+                    chunk = JSON.parse(parsedData)
+                } else {
+                    chunk = parsedData
+                }
+
+                actualType = chunk['type']
+                actualData = chunk['data']
+
+                if (actualType === 'explanation' && typeof actualData === 'string') {
+                    try {
+                        const innerChunk = JSON.parse(actualData)
+                        if (innerChunk.type && innerChunk.data !== undefined) {
+                            actualType = innerChunk.type
+                            actualData = innerChunk.data
+                        }
+                    } catch (e) {
+                        // 如果内层解析失败，保持原来的值
+                    }
+                }
+
+            } catch (e) {
+                console.error('JSON解析失败:', e, event.data)
+                return
+            }
+
+            if (actualType && actualData !== undefined && actualData !== null) {
+                let processedData = actualData
+                
+                if (typeof processedData === 'string') {
+                    processedData = processedData.replace(/\\n/g, '\n')
+                }
+                
+                if (actualType === 'sql' && typeof processedData === 'string') {
+                    processedData = processedData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim()
+                }
+                
+                if (!streamState.contentByType.hasOwnProperty(actualType)) {
+                    streamState.typeOrder.push(actualType)
+                    streamState.contentByType[actualType] = ''
+                }
+                
+                if (processedData) {
+                    streamState.contentByType[actualType] += processedData
+                }
+                
+                updateDisplay()
+            }
+        }
+
+        eventSource.addEventListener('complete', () => {
+          console.log('流式输出完成')
+          isLoading.value = false
+          eventSource.close()
+        })
+
+        eventSource.onerror = (error) => {
+          console.error('流式连接错误:', error)
+          isLoading.value = false
+          
+          if (eventSource.readyState === EventSource.CLOSED) {
+            console.log('EventSource 连接已正常关闭')
+          } else {
+            const errorMessage = {
+              id: Date.now() + 2,
+              role: 'assistant',
+              type: 'error',
+              content: '抱歉，处理您的请求时出现了错误，请稍后重试。',
+              timestamp: new Date()
+            }
+            currentMessages.value.push(errorMessage)
+          }
+          
+          eventSource.close()
+          scrollToBottom()
+        }
+        
+      } catch (error) {
+        console.error('发送消息失败:', error)
+        isLoading.value = false
+        
+        const errorMessage = {
+          id: Date.now() + 1,
+          role: 'assistant',
+          type: 'error',
+          content: '抱歉，处理您的请求时出现了错误，请稍后重试。',
           timestamp: new Date()
         }
         
-        currentMessages.value.push(assistantMessage)
-        isLoading.value = false
-        
-        nextTick(() => {
-          scrollToBottom()
+        currentMessages.value.push(errorMessage)
+        await nextTick()
+        scrollToBottom()
+      }
+    }
+
+    const saveMessage = async (message) => {
+      try {
+        await fetch(`/api/sessions/${currentSessionId.value}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(message)
         })
-      }, 1000)
+      } catch (error) {
+        console.error('保存消息失败:', error)
+      }
     }
     
     const sendQuickMessage = (message) => {
@@ -388,8 +641,7 @@ export default {
       if (sessionId === currentSessionId.value) return
       
       currentSessionId.value = sessionId
-      // 这里可以加载对应会话的消息
-      currentMessages.value = []
+      await loadMessages(sessionId)
     }
     
     const getSessionPreview = (session) => {
@@ -397,10 +649,189 @@ export default {
       return '帮我查询最近一个月的6月份...'
     }
     
+    const getQuestionIcon = (index) => {
+      const icons = [
+        'bi bi-graph-up',
+        'bi bi-people',
+        'bi bi-bar-chart',
+        'bi bi-download',
+        'bi bi-search',
+        'bi bi-table',
+        'bi bi-pie-chart',
+        'bi bi-clipboard-data'
+      ]
+      return icons[index % icons.length]
+    }
+
+    const formatContentByType = (type, data) => {
+        if (data === null || data === undefined) return '';
+
+        if (type === 'sql') {
+            let cleanedData = data.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
+            cleanedData = cleanedData.replace(/\\n/g, '\n');
+            return `<pre><code class="language-sql">${cleanedData}</code></pre>`;
+        } 
+        
+        if (type === 'result') {
+            return convertJsonToHTMLTable(data);
+        }
+
+        let processedData = data;
+        
+        if (typeof processedData === 'string') {
+            processedData = processedData.replace(/\\n/g, '\n');
+        }
+
+        if (isMarkdown(processedData)) {
+            return renderMarkdown(processedData);
+        } else {
+            const sqlCodeBlockRegex = /```\s*sql?\s*([\s\S]*?)```/gi;
+            const sqlMatches = processedData.match(sqlCodeBlockRegex);
+            
+            if (sqlMatches && sqlMatches.length > 0) {
+                let htmlContent = processedData;
+                
+                htmlContent = htmlContent.replace(sqlCodeBlockRegex, (match, sqlContent) => {
+                    let cleanedSQL = sqlContent.trim();
+                    return `<pre><code class="language-sql">${cleanedSQL}</code></pre>`;
+                });
+                
+                return htmlContent.replace(/\n/g, '<br>');
+            } else {
+                return processedData.toString()
+                    .replace(/\n\s*\n\s*\n+/g, '\n\n')
+                    .replace(/\n/g, '<br>');
+            }
+        }
+    }
+
+    const isMarkdown = (text) => {
+        if (!text || typeof text !== 'string') return false;
+        
+        const markdownPatterns = [
+            /^#{1,6}\s+.+/m,
+            /\*\*[^*]+\*\*/,
+            /\*[^*]+\*/,
+            /`[^`]+`/,
+            /```[\s\S]*?```/,
+            /^\s*[-*+]\s+/m,
+            /^\s*\d+\.\s+/m,
+            /^\s*>\s+/m,
+            /\[.+\]\(.+\)/,
+            /^\s*\|.+\|/m,
+            /^---+$/m
+        ];
+        
+        return markdownPatterns.some(pattern => pattern.test(text));
+    }
+
+    const renderMarkdown = (text) => {
+        if (!text || typeof text !== 'string') return '';
+        
+        let html = text;
+        
+        html = html.replace(/```(\w+)?\s*([\s\S]*?)```/g, (match, lang, code) => {
+            const language = lang || 'text';
+            let highlightedCode = code.trim();
+            return `<pre><code class="language-${language}">${highlightedCode}</code></pre>`;
+        });
+        
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+        
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
+        html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+        
+        html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
+        
+        html = html.replace(/(\|[^|\r\n]*\|[^|\r\n]*\|[^\r\n]*\r?\n\|[-:\s|]*\|[^\r\n]*\r?\n(?:\|[^|\r\n]*\|[^\r\n]*\r?\n?)*)/gm, (match) => {
+            return convertMarkdownTableToHTML(match);
+        });
+        
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        
+        html = html.replace(/\n\s*\n\s*\n/g, '\n\n')
+             .replace(/\n/g, '<br>');
+        
+        return `<div class="markdown-content">${html}</div>`;
+    }
+
+    const convertMarkdownTableToHTML = (markdownTable) => {
+        if (!markdownTable) return '';
+        const lines = markdownTable.trim().split('\n');
+        if (lines.length < 2 || !lines[1].includes('---')) return markdownTable;
+
+        const headers = lines[0].split('|').map(h => h.trim()).filter(Boolean);
+        let html = '<table class="dynamic-table"><thead><tr>';
+        headers.forEach(header => { 
+            html += `<th>${header}</th>` 
+        });
+        html += '</tr></thead><tbody>';
+
+        for (let i = 2; i < lines.length; i++) {
+            const rowCells = lines[i].split('|').map(c => c.trim()).filter(Boolean);
+            if (rowCells.length > 0) {
+                html += '<tr>';
+                for (let j = 0; j < headers.length; j++) {
+                    html += `<td>${rowCells[j] || ''}</td>`;
+                }
+                html += '</tr>';
+            }
+        }
+        html += '</tbody></table>';
+        return html;
+    }
+    
+    const convertJsonToHTMLTable = (jsonString) => {
+      try {
+        const data = JSON.parse(jsonString);
+        if (!data || !Array.isArray(data.columns) || !Array.isArray(data.data)) {
+          return `<pre><code>${JSON.stringify(data, null, 2)}</code></pre>`;
+        }
+
+        let html = '<table class="dynamic-table"><thead><tr>';
+        data.columns.forEach(header => {
+          html += `<th>${header}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+
+        data.data.forEach(row => {
+          html += '<tr>';
+          data.columns.forEach((col, i) => {
+            html += `<td>${row[i] || ''}</td>`;
+          });
+          html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        return html;
+      } catch (e) {
+        return `<pre><code>${jsonString}</code></pre>`;
+      }
+    }
+    
     // 生命周期
     onMounted(async () => {
-      // 初始化时创建一个默认会话
-      await startNewChat()
+      // 加载智能体信息
+      await loadAgentInfo()
+      // 加载预设问题
+      await loadPresetQuestions()
+      // 加载历史对话
+      await loadChatSessions()
+      // 如果没有历史对话，创建一个新对话
+      if (chatSessions.value.length === 0) {
+        await startNewChat()
+      } else {
+        // 选择最新的对话
+        currentSessionId.value = chatSessions.value[0].id
+        await loadMessages(chatSessions.value[0].id)
+      }
     })
     
     return {
@@ -426,7 +857,8 @@ export default {
       formatMessage,
       formatTime,
       getRandomColor,
-      getRandomIcon
+      getRandomIcon,
+      getSessionPreview
     }
   }
 }
@@ -909,6 +1341,70 @@ export default {
   margin-bottom: var(--space-lg);
 }
 
+/* 智能体消息使用垂直布局 */
+.assistant-message {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+/* 智能体消息头部区域（头像+名字+时间） */
+.assistant-message-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.assistant-message-header .assistant-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.assistant-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.assistant-info .message-role {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.assistant-info .message-time {
+  font-size: var(--font-size-xs);
+  color: var(--text-quaternary);
+}
+
+/* 智能体消息内容区域 */
+.assistant-message-body {
+  width: 100%;
+  max-width: 90%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-tertiary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  box-shadow: var(--shadow-xs);
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.assistant-message-body .text-message {
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
 .message-avatar {
   flex-shrink: 0;
 }
@@ -1035,6 +1531,114 @@ export default {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+/* 流式响应样式 */
+.agent-responses-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 0.75rem;
+}
+
+.agent-response-block {
+  display: block !important;
+  width: 100% !important;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+.agent-response-title {
+  background: #e9ecef;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #495057;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agent-response-title i {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.agent-response-content {
+  padding: 12px;
+  background: white;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.agent-response-content pre {
+  margin: 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  overflow-x: auto;
+  border: 1px solid #e9ecef;
+}
+
+.agent-response-content code {
+  background: #f8f9fa;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+}
+
+.agent-response-content .language-sql {
+  color: #0066cc;
+}
+
+.dynamic-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 12px;
+}
+
+.dynamic-table th,
+.dynamic-table td {
+  border: 1px solid #dee2e6;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.dynamic-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.dynamic-table tr:nth-child(even) {
+  background: #f8f9fa;
+}
+
+.markdown-content {
+  line-height: 1.6;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  margin: 16px 0 8px 0;
+  color: #333;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.markdown-content li {
+  margin: 4px 0;
 }
 
 /* 输入区域样式 */
