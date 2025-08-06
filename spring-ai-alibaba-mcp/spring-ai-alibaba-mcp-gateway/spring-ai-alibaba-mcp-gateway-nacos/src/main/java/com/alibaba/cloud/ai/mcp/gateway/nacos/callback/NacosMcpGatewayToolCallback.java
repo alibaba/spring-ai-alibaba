@@ -632,12 +632,6 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 					throw new RuntimeException("Extracted tool name is empty");
 				}
 
-				// 使用WebClient构建streamable传输层
-				WebClient.Builder webClientBuilder = this.webClientBuilder.clone()
-					.baseUrl(baseUrl)
-					.defaultHeader("Accept", "application/json, text/event-stream")
-					.defaultHeader("Content-Type", "application/json")
-					.defaultHeader("MCP-Protocol-Version", "2025-06-18"); // Streamable
 				// HTTP协议版本
 
 				// 创建MCP同步客户端，使用Streamable HTTP传输
@@ -702,17 +696,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	}
 
 	private java.time.Duration getTimeoutDuration() {
-		// try {
-		// NacosMcpGatewayProperties properties = SpringBeanUtils.getInstance()
-		// .getBean(NacosMcpGatewayProperties.class);
-		// if (properties != null) {
-		// return java.time.Duration.ofSeconds(properties.getReadTimeout());
-		// }
-		// }
-		// catch (Exception e) {
-		// logger.debug("Failed to load gateway properties for timeout, using default 30
-		// seconds", e);
-		// }
+
 		return java.time.Duration.ofSeconds(30); // 默认超时时间
 	}
 
