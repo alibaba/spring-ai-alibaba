@@ -225,28 +225,29 @@ public class PlanningFactory implements IPlanningFactory {
 			log.error("SmartContentSavingService is null, skipping BrowserUseTool registration");
 			return toolCallbackMap;
 		}
-		if (!agentInit) {
-			toolDefinitions.add(new TerminateTool(planId, terminateColumns));
-		} else {
+		if(!agentInit){
+			toolDefinitions.add(new TerminateTool(planId, expectedReturnInfo));
+		}else {
 			// Add all tool definitions
 			toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService, objectMapper));
 			toolDefinitions.add(DatabaseUseTool.getInstance(dataSourceService, objectMapper));
-			toolDefinitions.add(new TerminateTool(planId, terminateColumns));
+			toolDefinitions.add(new TerminateTool(planId, expectedReturnInfo));
 			toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper));
 			toolDefinitions.add(new DocLoaderTool());
 			toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
 			// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
+			// toolDefinitions.add(pptGeneratorOperator);
 			toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
 			toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
 			// toolDefinitions.add(new GoogleSearch());
 			// toolDefinitions.add(new PythonExecute());
 			toolDefinitions.add(new FormInputTool(objectMapper));
 			toolDefinitions.add(new DataSplitTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
-					objectMapper));
-			toolDefinitions.add(new MapOutputTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
-					terminateColumns, objectMapper));
-			toolDefinitions.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager,
-					unifiedDirectoryManager, terminateColumns));
+					objectMapper, tableProcessingService));
+			toolDefinitions
+					.add(new MapOutputTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager, objectMapper));
+			toolDefinitions
+					.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 			toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 			toolDefinitions.add(new CronTool(cronService, objectMapper));
 		}
