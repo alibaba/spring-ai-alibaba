@@ -225,9 +225,7 @@ public class PlanningFactory implements IPlanningFactory {
 			log.error("SmartContentSavingService is null, skipping BrowserUseTool registration");
 			return toolCallbackMap;
 		}
-		if(!agentInit){
-			toolDefinitions.add(new TerminateTool(planId, expectedReturnInfo));
-		}else {
+		if(agentInit){
 			// Add all tool definitions
 			toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService, objectMapper));
 			toolDefinitions.add(DatabaseUseTool.getInstance(dataSourceService, objectMapper));
@@ -250,6 +248,8 @@ public class PlanningFactory implements IPlanningFactory {
 					.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 			toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 			toolDefinitions.add(new CronTool(cronService, objectMapper));
+		}else {
+			toolDefinitions.add(new TerminateTool(planId, expectedReturnInfo));
 		}
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
