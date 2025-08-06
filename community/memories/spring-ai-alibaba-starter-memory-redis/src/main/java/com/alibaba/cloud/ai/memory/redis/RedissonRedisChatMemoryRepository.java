@@ -121,6 +121,11 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 
 		public RedissonRedisChatMemoryRepository build() {
 			if (redissonConfig != null) {
+				// when the user does not set redisson serialization, maintain String
+				// serialization consistent with jedis and lettuce
+				if (redissonConfig.getCodec() == null) {
+					redissonConfig.setCodec(new StringCodec());
+				}
 				return new RedissonRedisChatMemoryRepository(Redisson.create(redissonConfig));
 			}
 			Config config = new Config();
