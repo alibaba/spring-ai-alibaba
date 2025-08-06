@@ -1050,6 +1050,20 @@ const words: I18nType = {
     createManually: '手动创建',
     createManuallyDesc: '自己填写定时任务信息',
   },
+  memory: {
+    title: '记忆管理',
+    searchPlaceholder: '搜索记忆...',
+    size: '条记忆',
+    newNamePlaceholder: '输入新名称...',
+    changeName: '修改名称',
+    save: '保存',
+    cancel: '关闭',
+    delete: '删除',
+    deleteHint: '删除提示',
+    deleteHintPrefix: '你确定要删除ID为',
+    deleteHintSuffix: '的消息吗？此操作不可撤销。',
+    selectMemory: '选择记忆'
+  },
 }
 
 export default words

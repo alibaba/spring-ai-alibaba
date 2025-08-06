@@ -32,9 +32,9 @@
         <Icon icon="carbon:document" />
         {{ $t('input.planMode') }}
       </button>
-      <button class="plan-mode-btn" :title="选择记忆" @click="handleMemoryListClick">
+      <button class="plan-mode-btn" :title="$t('memory.selectMemory')" @click="handleMemoryListClick">
         <Icon icon="carbon:document" />
-        {{ memoryStore.selectMemoryId  || '选择记忆' }}
+        {{ memoryStore.selectMemoryId  || $t('memory.selectMemory') }}
       </button>
       <button
         class="send-button"

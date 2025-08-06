@@ -1,15 +1,13 @@
 <template>
   <div class="app-container" :class="{ 'memory-wrapper-collapsed': memoryStore.isCollapsed }">
-    <!-- 标题栏 -->
     <div class="header">
       <div class="relative">
         <div class="title-edit-group">
           <h1 id="main-title" class="main-title">
-            <span>{{ title }}</span>
+            <span>{{ $t('memory.title') }}</span>
           </h1>
         </div>
 
-        <!-- 标题编辑框 -->
         <div
             id="title-edit-container"
             class="title-edit-container"
@@ -19,12 +17,11 @@
       </div>
     </div>
 
-    <!-- 搜索框 -->
     <div class="search-bar">
       <div class="search-container">
         <input
             type="text"
-            placeholder="搜索消息..."
+            :placeholder="$t('memory.searchPlaceholder')"
             class="search-input"
             v-model="searchQuery"
             @input="handleSearch"
@@ -33,9 +30,7 @@
       </div>
     </div>
 
-    <!-- 消息列表 -->
     <div class="message-list" id="message-list">
-      <!-- 消息项列表 -->
       <div>
         <div
             class="message-item"
@@ -43,9 +38,7 @@
             :key="message.memoryId"
             :class="{ 'expanded': message.expanded }"
         >
-          <!-- 消息头部 -->
           <div class="message-header" @click="selectMemory(message.memoryId)">
-            <!-- 消息内容 -->
             <div class="message-content">
               <div class="sender-info">
                 <div style="display: flex; align-items: center;">
@@ -57,13 +50,11 @@
                   </h3>
                   <span
                       class="edit-indicator"
-                      title="点击修改名称"
                       @click.stop="showNameEditModal(message.memoryId, message.memoryName)"
                   ></span>
                 </div>
               </div>
 
-              <!-- 消息预览 -->
               <div class="message-preview">
                 <p class="preview-line">
                   {{ message.messages.length > 0 ? message.messages[0].text : 'none message' }}
@@ -77,19 +68,17 @@
                 </p>
               </div>
 
-              <!-- ID信息和时间 -->
               <div class="message-meta">
                 <span class="message-id">ID: {{ message.memoryId }}</span>
                 <div class="meta-right">
                   <span class="unread-count" v-if="message.messages.length > 0">
-                    {{ message.messages.length }}条消息
+                    {{ message.messages.length }} {{$t('memory.size')}}
                   </span>
                   <span class="message-time">{{ formatTimestamp(message.createTime) }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- 展开/收起按钮 -->
             <div class="toggle-container" @click.stop="toggleMessage(message.memoryId)">
               <Icon
                   :id="'toggle-' + message.memoryId"
@@ -98,7 +87,6 @@
               </Icon>
             </div>
 
-            <!-- 操作按钮 -->
             <div class="action-buttons">
               <button
                   class="delete-btn"
@@ -109,7 +97,6 @@
             </div>
           </div>
 
-          <!-- 展开的消息内容 -->
           <div
               :id="'content-' + message.memoryId"
               class="expanded-content"
@@ -129,13 +116,11 @@
         </div>
       </div>
 
-      <!-- 搜索无结果提示 -->
       <div v-if="filteredMessages.length === 0 && searchQuery" class="empty-state">
         <p class="state-text">none message</p>
       </div>
     </div>
 
-    <!-- 名称编辑弹窗 -->
     <div
         id="name-edit-modal"
         class="modal-overlay"
@@ -144,12 +129,12 @@
     >
       <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title">修改发送者名称</h3>
+          <h3 class="modal-title">{{$t('memory.changeName')}}</h3>
           <input
               type="text"
               v-model="nameInput"
               class="edit-input"
-              placeholder="输入新名称..."
+              :placeholder="$t('memory.newNamePlaceholder')"
               maxlength="100"
           >
           <span id="name-char-count" class="char-count" style="text-align: right; display: block; margin-top: 0.25rem;">
@@ -163,20 +148,19 @@
               class="modal-btn cancel-btn"
               @click="closeNameModal"
           >
-            取消
+            {{$t('memory.cancel')}}
           </button>
           <button
               id="save-name"
               class="modal-btn confirm-btn"
               @click="saveName"
           >
-            保存
+            {{$t('memory.save')}}
           </button>
         </div>
       </div>
     </div>
 
-    <!-- 删除确认弹窗 -->
     <div
         id="delete-modal"
         class="modal-overlay"
@@ -185,9 +169,9 @@
     >
       <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title">确认删除</h3>
+          <h3 class="modal-title">{{$t('memory.deleteHint')}}</h3>
           <p class="state-text" id="delete-message">
-            你确定要删除ID为 {{ currentDeleteId }} 的消息吗？此操作不可撤销。
+            {{$t('memory.deleteHintPrefix')}} {{ currentDeleteId }} {{$t('memory.deleteHintSuffix')}}
           </p>
         </div>
 
@@ -197,14 +181,14 @@
               class="modal-btn cancel-btn"
               @click="closeDeleteModal"
           >
-            取消
+            {{$t('memory.cancel')}}
           </button>
           <button
               id="confirm-delete"
               class="modal-btn delete-btn-confirm"
               @click="confirmDelete"
           >
-            确认删除
+            {{$t('memory.delete')}}
           </button>
         </div>
       </div>
@@ -219,56 +203,38 @@ import type { Message} from '@/api/memory-api-service'
 import {Icon} from '@iconify/vue'
 import {memoryStore} from "@/stores/memory";
 
-// 状态管理
-const title = ref('记忆列表');
 const showTitleEdit = ref(false);
 const searchQuery = ref('');
 const messages = ref<Message[]>([]);
 const filteredMessages = ref<Message[]>([]);
-const showToast = ref(false);
 
-// 名称编辑相关
 const showNameModal = ref(false);
 const currentEditMessageId = ref<string | null>(null);
 const nameInput = ref('');
 
-// 删除相关
 const showDeleteModal = ref(false);
 const currentDeleteId = ref<string | null>(null);
 
-// 初始化数据
 onMounted(() => {
-  // 从本地存储加载标题
-  const savedTitle = localStorage.getItem('messageListTitle');
-  if (savedTitle) {
-    title.value = savedTitle;
-  }
-
   memoryStore.setLoadMessages(loadMessages)
 });
 
-// 加载消息数据
 const loadMessages = async () => {
   try {
     const mes = await MemoryApiService.getMemories()
     if(messages.value){
-      // 创建一个以 memoryId 为键的映射表，存储已有的 expanded 状态
       const expandedMap = new Map(
           messages.value.map(msg => [msg.memoryId, msg.expanded])
       );
-      // 同步状态并更新 messages
       messages.value = mes.map((mesMsg: Message) => ({
         ...mesMsg,
-        // 如果存在对应的状态则使用，否则保持原有值或设为默认值
         expanded: expandedMap.has(mesMsg.memoryId)
             ? expandedMap.get(mesMsg.memoryId)
             : mesMsg.expanded // 或设置默认值如 false
       }));
     } else {
-      // 为每条消息添加expanded属性，默认为false
       messages.value = mes.map((msg: Message) => ({...msg, expanded: false}));
     }
-    // 初始化过滤结果
     filteredMessages.value = [...messages.value];
     handleSearch()
   } catch (e) {
@@ -282,17 +248,11 @@ const selectMemory = (memoryId: string) => {
   memoryStore.selectMemory(memoryId);
 };
 
-// 格式化时间戳
 const formatTimestamp = (timestamp: number | string): string => {
-  // 处理字符串类型的时间戳
   const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
-
-  // 检查时间戳是否有效
   if (isNaN(timestampNum) || timestampNum <= 0) {
     return '未知时间';
   }
-
-  // 处理毫秒级时间戳（如果是13位）
   const date = new Date(
       timestampNum.toString().length === 13
           ? timestampNum
@@ -310,7 +270,6 @@ const formatTimestamp = (timestamp: number | string): string => {
   }).replace(',', ' ');
 };
 
-// 搜索功能
 const handleSearch = () => {
   const query = searchQuery.value.toLowerCase().trim();
 
@@ -320,22 +279,15 @@ const handleSearch = () => {
   }
 
   filteredMessages.value = messages.value.filter(message => {
-    // 搜索发送者名称
     const matchesName = message.memoryName.toLowerCase().includes(query);
-
-    // 搜索消息ID
     const matchesId = message.memoryId.toLowerCase().includes(query);
-
-    // 搜索消息内容
     const matchesContent = message.messages.some(bubble =>
         bubble.text.toLowerCase().includes(query)
     );
-
     return matchesName || matchesId || matchesContent;
   });
 };
 
-// 名称编辑功能
 const showNameEditModal = (messageId: string, currentName: string) => {
   currentEditMessageId.value = messageId;
   nameInput.value = currentName;
@@ -349,14 +301,10 @@ const closeNameModal = () => {
 
 const saveName = async () => {
   if (!currentEditMessageId.value) return;
-
   const newName = nameInput.value.trim() || 'unknow name';
-
-  // 更新消息列表中的名称
   const messageIndex = messages.value.findIndex(
       msg => msg.memoryId === currentEditMessageId.value
   );
-
   if (messageIndex !== -1) {
     const currentMessage = messages.value[messageIndex]
     currentMessage.memoryName = newName;
@@ -366,24 +314,19 @@ const saveName = async () => {
       if (!returnMemory.messages) {
         returnMemory.messages = [];
       }
-      // 保留expanded状态
       messages.value[messageIndex] = {...returnMemory, expanded: currentMessage.expanded};
-      // 更新过滤列表
       handleSearch();
       showNameModal.value = false;
-      showSuccessToast();
     } catch (error) {
       console.error('error:', error);
     }
   }
 };
 
-// 切换消息展开/收起
 const toggleMessage = (id: string) => {
   const message = messages.value.find(msg => msg.memoryId === id);
   if (message) {
     message.expanded = !message.expanded;
-    // 更新过滤列表中的对应项
     const filteredIndex = filteredMessages.value.findIndex(msg => msg.memoryId === id);
     if (filteredIndex !== -1) {
       filteredMessages.value[filteredIndex] = {...message};
@@ -391,7 +334,6 @@ const toggleMessage = (id: string) => {
   }
 };
 
-// 删除功能
 const showDeleteConfirm = (id: string) => {
   currentDeleteId.value = id;
   showDeleteModal.value = true;
@@ -406,34 +348,21 @@ const confirmDelete = async () => {
   if (!currentDeleteId.value) return;
 
   try {
-    // 调用API删除
     await MemoryApiService.delete(currentDeleteId.value);
-    // 从列表中移除消息
     messages.value = messages.value.filter(msg => msg.memoryId !== currentDeleteId.value);
-    // 更新过滤列表
     handleSearch();
     if(messages.value.length === 0){
       memoryStore.clearMemoryId()
     }
     showDeleteModal.value = false;
     currentDeleteId.value = null;
-    showSuccessToast();
   } catch (error) {
-    console.error('删除失败:', error);
+    console.error('error:', error);
   }
-};
-
-// 显示成功提示
-const showSuccessToast = () => {
-  showToast.value = true;
-  setTimeout(() => {
-    showToast.value = false;
-  }, 2000);
 };
 </script>
 
 <style>
-/* 基础样式重置 */
 * {
   margin: 0;
   padding: 0;
@@ -456,7 +385,6 @@ const showSuccessToast = () => {
   width: 0;
 }
 
-/* 头部样式 */
 .header {
   padding: 1rem;
   border-bottom: 1px solid #333333;
@@ -481,7 +409,6 @@ const showSuccessToast = () => {
   margin-right: 0.5rem;
 }
 
-/* 搜索框样式 */
 .search-bar {
   padding: 1rem;
   border-bottom: 1px solid #333333;
@@ -514,7 +441,6 @@ const showSuccessToast = () => {
   color: #888888;
 }
 
-/* 消息列表样式 */
 .message-list {
   flex: 1;
   overflow-y: auto;
@@ -618,15 +544,6 @@ const showSuccessToast = () => {
   min-width: 24px;
 }
 
-.toggle-icon {
-  color: rgba(255, 255, 255, 0.7);
-  transition: transform 0.3s ease;
-}
-
-.message-item.expanded .toggle-icon {
-  transform: rotate(180deg);
-}
-
 .action-buttons {
   margin-left: 0.5rem;
   transition: opacity 0.2s ease;
@@ -650,7 +567,6 @@ const showSuccessToast = () => {
   color: #ff6b6b;
 }
 
-/* 展开的消息内容 */
 .expanded-content {
   background-color: #333333;
   border-top: 1px solid #444444;
@@ -694,7 +610,6 @@ const showSuccessToast = () => {
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* 弹窗样式 */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -773,23 +688,6 @@ const showSuccessToast = () => {
   background-color: #ff5252;
 }
 
-.delete-icon-container {
-  width: 4rem;
-  height: 4rem;
-  background-color: rgba(255, 107, 107, 0.2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem;
-}
-
-.delete-icon {
-  color: #ff6b6b;
-  font-size: 2rem;
-}
-
-/* 编辑框样式 */
 .edit-input {
   width: 100%;
   background-color: #333333;
@@ -811,27 +709,6 @@ const showSuccessToast = () => {
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* 提示消息 */
-.success-toast {
-  position: fixed;
-  top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #4ade80;
-  color: #ffffff;
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
-  font-size: 0.875rem;
-  z-index: 50;
-  display: none;
-  animation: fadeInOut 2s ease-in-out;
-}
-
-.success-toast.show {
-  display: block;
-}
-
-/* 编辑图标样式 */
 .edit-indicator {
   position: relative;
   display: inline-flex;
@@ -855,7 +732,6 @@ const showSuccessToast = () => {
   transform: translate(-50%, -50%);
 }
 
-/* 动画 */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -886,7 +762,6 @@ const showSuccessToast = () => {
   }
 }
 
-/* 响应式调整 */
 @media (max-width: 640px) {
   .main-title {
     font-size: 1.125rem;
