@@ -64,6 +64,8 @@ const words: I18nType = {
     successMessage: '配置保存成功！正在跳转到主页面...',
     restartRequired: 'API密钥已保存成功！为了使配置生效，需要重启应用程序。\n\n点击"确定"立即重启，点击"取消"稍后手动重启。',
     simplifiedChinese: '简体中文',
+    completionsPath: 'Completions路径',
+    completionsPathPlaceholder: 'CompletionsPath，资源路径',
   },
 
   // 通用按钮和操作
@@ -309,6 +311,8 @@ const words: I18nType = {
       temperaturePlaceholder: '留空使用模型默认值',
       topP: 'Top P',
       topPPlaceholder: '留空使用模型默认值',
+      completionsPath: 'Completions Path',
+      completionsPathPlaceholder: '留空使用模型默认值',
     },
     // MCP配置页面
     mcpConfig: {

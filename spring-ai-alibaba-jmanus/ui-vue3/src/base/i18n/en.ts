@@ -64,6 +64,8 @@ const words: I18nType = {
     successMessage: 'Configuration saved successfully! Redirecting to home page...',
     restartRequired: 'API key saved successfully! The application needs to be restarted for the configuration to take effect.\n\nClick "OK" to restart now, or "Cancel" to restart manually later.',
     simplifiedChinese: 'Simplified Chinese',
+    completionsPath: 'Completions Path',
+    completionsPathPlaceholder: 'Completions Path, Resource Path',
   },
 
   // Common buttons and actions
@@ -307,6 +309,8 @@ const words: I18nType = {
       temperaturePlaceholder: 'Leave empty to use model default',
       topP: 'Top P',
       topPPlaceholder: 'Leave empty to use model default',
+      completionsPath: 'Completions Path',
+      completionsPathPlaceholder: 'Leave empty to use model default',
       headers: 'Headers',
       headersPlaceholder: 'Request headers (JSON format)',
     },
