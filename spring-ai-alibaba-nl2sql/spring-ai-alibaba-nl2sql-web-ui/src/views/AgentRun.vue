@@ -142,26 +142,6 @@
                 </div>
               </template>
             </div>
-
-            <!-- 加载中消息 -->
-            <div v-if="isLoading" class="message-item assistant-message loading">
-              <div class="assistant-message-header">
-                <div class="assistant-avatar" :style="{ backgroundColor: getRandomColor(agent.id) }">
-                  <i :class="getRandomIcon(agent.id)"></i>
-                </div>
-                <div class="assistant-info">
-                  <span class="message-role">{{ agent.name }}</span>
-                  <span class="message-time">正在思考中...</span>
-                </div>
-              </div>
-              <div class="assistant-message-body">
-                <div class="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
