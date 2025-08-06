@@ -27,6 +27,8 @@ spring:
       enabled: true
   application:
     name: saa-studio
+  config:
+    import: classpath:initializr.yml
 
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
