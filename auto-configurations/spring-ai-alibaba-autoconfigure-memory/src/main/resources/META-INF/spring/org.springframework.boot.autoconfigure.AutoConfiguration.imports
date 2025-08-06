@@ -19,7 +19,10 @@ com.alibaba.cloud.ai.autoconfigure.memory.MysqlChatMemoryAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.memory.OracleChatMemoryAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.memory.PostgresChatMemoryAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.memory.SqlServerChatMemoryAutoConfiguration
-com.alibaba.cloud.ai.autoconfigure.memory.RedisChatMemoryAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.memory.redis.JedisRedisChatMemoryConnectionAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.memory.redis.RedissonRedisChatMemoryConnectionAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.memory.redis.LettuceRedisChatMemoryConnectionAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.memory.redis.RedisChatMemoryAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.memory.ElasticsearchChatMemoryAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.memory.MongoDBChatMemoryAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.memory.TablestoreChatMemoryAutoConfiguration
