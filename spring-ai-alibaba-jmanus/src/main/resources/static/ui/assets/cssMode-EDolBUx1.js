@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:spring-ai-alibaba-jmanus/src/main/resources/static/ui/assets/cssMode-EDolBUx1.js
 var Fe=Object.defineProperty;var Le=(e,n,i)=>n in e?Fe(e,n,{enumerable:!0,configurable:!0,writable:!0,value:i}):e[n]=i;var k=(e,n,i)=>Le(e,typeof n!="symbol"?n+"":n,i);import{m as je}from"./index-Bb-2ZTor.js";import"./index-dr9-rQHR.js";import"./_plugin-vue_export-helper--shhf_CY.js";import"./useMessage-CpRVAwnw.js";import"./index-CuLlRUzS.js";/*!-----------------------------------------------------------------------------
+========
+var Fe=Object.defineProperty;var Le=(e,n,i)=>n in e?Fe(e,n,{enumerable:!0,configurable:!0,writable:!0,value:i}):e[n]=i;var k=(e,n,i)=>Le(e,typeof n!="symbol"?n+"":n,i);import{m as je}from"./index-Dyywgn9d.js";import"./index-DO2yvTzX.js";import"./_plugin-vue_export-helper-w9WVOjBt.js";import"./useToast-Dk4yxrfJ.js";import"./index-VlvMYK3B.js";/*!-----------------------------------------------------------------------------
+>>>>>>>> daa139ef (feat(jmanus): enhance index page (#1842)):spring-ai-alibaba-jmanus/src/main/resources/static/ui/assets/cssMode-B_FCp6wK.js
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Version: 0.45.0(5e5af013f8d295555a7210df0d5f2cea0bf5dd56)
  * Released under the MIT license

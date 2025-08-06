@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:spring-ai-alibaba-jmanus/src/main/resources/static/ui/assets/jsonMode-C00IL2Sj.js
 var $e=Object.defineProperty;var Ge=(e,n,i)=>n in e?$e(e,n,{enumerable:!0,configurable:!0,writable:!0,value:i}):e[n]=i;var C=(e,n,i)=>Ge(e,typeof n!="symbol"?n+"":n,i);import{m as Qe}from"./index-Bb-2ZTor.js";import"./index-dr9-rQHR.js";import"./_plugin-vue_export-helper--shhf_CY.js";import"./useMessage-CpRVAwnw.js";import"./index-CuLlRUzS.js";/*!-----------------------------------------------------------------------------
+========
+var $e=Object.defineProperty;var Ge=(e,n,i)=>n in e?$e(e,n,{enumerable:!0,configurable:!0,writable:!0,value:i}):e[n]=i;var C=(e,n,i)=>Ge(e,typeof n!="symbol"?n+"":n,i);import{m as Qe}from"./index-Dyywgn9d.js";import"./index-DO2yvTzX.js";import"./_plugin-vue_export-helper-w9WVOjBt.js";import"./useToast-Dk4yxrfJ.js";import"./index-VlvMYK3B.js";/*!-----------------------------------------------------------------------------
+>>>>>>>> daa139ef (feat(jmanus): enhance index page (#1842)):spring-ai-alibaba-jmanus/src/main/resources/static/ui/assets/jsonMode-BQ7PoCj7.js
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Version: 0.45.0(5e5af013f8d295555a7210df0d5f2cea0bf5dd56)
  * Released under the MIT license
