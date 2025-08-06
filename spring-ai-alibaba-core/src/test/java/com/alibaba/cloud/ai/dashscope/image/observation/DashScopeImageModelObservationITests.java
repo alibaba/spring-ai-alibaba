@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.dashscope.image.observation;
 
+import java.util.List;
+
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncResponse;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncResponse.DashScopeImageAsyncResponseOutput;
@@ -29,6 +31,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.mockito.Mockito;
+
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
@@ -39,8 +42,6 @@ import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
-
-import java.util.List;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -71,7 +72,7 @@ class DashScopeImageModelObservationTests {
 
 	@Test
 	@Tag("observation")
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".*")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = "sk.+")
 	void imageModelObservationTest() {
 
 		DashScopeImageOptions options = DashScopeImageOptions.builder()
