@@ -39,6 +39,8 @@ public class AgentConfig {
 
 	private String namespace;
 
+	private Boolean isBuiltIn = false;
+
 	// Getters and Setters
 	public String getId() {
 		return id;
@@ -110,6 +112,14 @@ public class AgentConfig {
 
 	public void setNamespace(String namespace) {
 		this.namespace = namespace;
+	}
+
+	public Boolean getIsBuiltIn() {
+		return isBuiltIn;
+	}
+
+	public void setIsBuiltIn(Boolean isBuiltIn) {
+		this.isBuiltIn = isBuiltIn;
 	}
 
 }

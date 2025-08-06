@@ -1,6 +1,7 @@
 # PPT生成代理配置
 agentName: PPT_GENERATOR_AGENT
-agentDescription: 一个专业的PowerPoint演示文稿生成代理，能够自动创建包含标题页和多个内容页的PPT文件，内容支持文本。
+agentDescription: 一个专业的PowerPoint演示文稿生成代理，能够自动创建包含标题页和多个内容页的PPT文件，内容支持文本与图片。
+isBuiltIn: false  # PPT生成 agent 可以删除
 availableToolKeys:
   - ppt_generator_operator
   - inner_storage_content_tool

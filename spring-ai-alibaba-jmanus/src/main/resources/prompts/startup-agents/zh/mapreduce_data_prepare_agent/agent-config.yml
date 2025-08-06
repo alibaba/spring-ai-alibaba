@@ -1,6 +1,7 @@
 # MAPREDUCE_DATA_PREPARE_AGENT 配置
 agentName: MAPREDUCE_DATA_PREPARE_AGENT
 agentDescription: 一个数据准备代理，负责验证文件/文件夹存在性并调用分割工具进行数据分割处理，固定的用于MapReduce 的开始的 Preparation  准备 环节。
+isBuiltIn: true  # MapReduce 系统 agent，不可删除
 availableToolKeys:
   - data_split_tool
   - terminate
