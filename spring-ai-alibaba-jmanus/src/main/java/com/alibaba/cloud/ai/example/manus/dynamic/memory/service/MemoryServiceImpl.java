@@ -60,13 +60,15 @@ public class MemoryServiceImpl implements MemoryService {
 	public MemoryEntity saveMemory(MemoryEntity memoryEntity) {
 		MemoryEntity findEntity = memoryRepository.findByMemoryId(memoryEntity.getMemoryId());
 		if (findEntity != null) {
-			return findEntity;
+			findEntity.setMemoryName(memoryEntity.getMemoryName());
+			findEntity.setMessages(null);
 		}
 		else {
-			MemoryEntity saveEntity = memoryRepository.save(memoryEntity);
-			saveEntity.setMessages(chatMemory.get(saveEntity.getMemoryId()));
-			return saveEntity;
+			findEntity = memoryEntity;
 		}
+		MemoryEntity saveEntity = memoryRepository.save(findEntity);
+		saveEntity.setMessages(chatMemory.get(saveEntity.getMemoryId()));
+		return saveEntity;
 	}
 
 }

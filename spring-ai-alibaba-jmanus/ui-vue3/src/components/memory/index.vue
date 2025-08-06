@@ -1,14 +1,5 @@
 <template>
   <div class="app-container" :class="{ 'memory-wrapper-collapsed': memoryStore.isCollapsed }">
-    <!-- 成功提示 -->
-    <div
-        id="success-toast"
-        class="success-toast"
-        :class="{ 'show': showToast }"
-    >
-      修改已保存
-    </div>
-
     <!-- 标题栏 -->
     <div class="header">
       <div class="relative">
@@ -75,7 +66,7 @@
               <!-- 消息预览 -->
               <div class="message-preview">
                 <p class="preview-line">
-                  {{ message.messages.length > 0 ? message.messages[0].text : '无消息内容' }}
+                  {{ message.messages.length > 0 ? message.messages[0].text : 'none message' }}
                 </p>
                 <p
                     class="preview-line"
@@ -103,7 +94,6 @@
               <Icon
                   :id="'toggle-' + message.memoryId"
                   icon="carbon:close"
-                  aria-label="展开/收起"
               >
               </Icon>
             </div>
@@ -113,7 +103,6 @@
               <button
                   class="delete-btn"
                   @click.stop="showDeleteConfirm(message.memoryId)"
-                  aria-label="删除消息"
               >
                 <Icon icon="carbon:close"></Icon>
               </button>
@@ -142,7 +131,7 @@
 
       <!-- 搜索无结果提示 -->
       <div v-if="filteredMessages.length === 0 && searchQuery" class="empty-state">
-        <p class="state-text">未找到与 "{{ searchQuery }}" 匹配的消息</p>
+        <p class="state-text">none message</p>
       </div>
     </div>
 
@@ -225,7 +214,8 @@
 
 <script setup lang="ts">
 import {onMounted, ref} from 'vue';
-import {MemoryApiService, Message} from '@/api/memory-api-service'
+import {MemoryApiService} from '@/api/memory-api-service'
+import type { Message} from '@/api/memory-api-service'
 import {Icon} from '@iconify/vue'
 import {memoryStore} from "@/stores/memory";
 
@@ -267,7 +257,7 @@ const loadMessages = async () => {
           messages.value.map(msg => [msg.memoryId, msg.expanded])
       );
       // 同步状态并更新 messages
-      messages.value = mes.map(mesMsg => ({
+      messages.value = mes.map((mesMsg: Message) => ({
         ...mesMsg,
         // 如果存在对应的状态则使用，否则保持原有值或设为默认值
         expanded: expandedMap.has(mesMsg.memoryId)
@@ -276,10 +266,11 @@ const loadMessages = async () => {
       }));
     } else {
       // 为每条消息添加expanded属性，默认为false
-      messages.value = mes.map(msg => ({...msg, expanded: false}));
+      messages.value = mes.map((msg: Message) => ({...msg, expanded: false}));
     }
     // 初始化过滤结果
     filteredMessages.value = [...messages.value];
+    handleSearch()
   } catch (e) {
     console.error('加载消息失败:', e);
     messages.value = [];
@@ -369,10 +360,10 @@ const saveName = async () => {
   if (messageIndex !== -1) {
     const currentMessage = messages.value[messageIndex]
     currentMessage.memoryName = newName;
-    const {expanded, messages: _messages, ...filteredMessages} = currentMessage;
+    currentMessage.messages = []
     try {
-      const returnMemory = await MemoryApiService.update(filteredMessages)
-      if (returnMemory.messages == null) {
+      const returnMemory = await MemoryApiService.update(currentMessage)
+      if (!returnMemory.messages) {
         returnMemory.messages = [];
       }
       // 保留expanded状态
@@ -382,7 +373,7 @@ const saveName = async () => {
       showNameModal.value = false;
       showSuccessToast();
     } catch (error) {
-      console.error('保存名称失败:', error);
+      console.error('error:', error);
     }
   }
 };
@@ -417,11 +408,13 @@ const confirmDelete = async () => {
   try {
     // 调用API删除
     await MemoryApiService.delete(currentDeleteId.value);
-
     // 从列表中移除消息
     messages.value = messages.value.filter(msg => msg.memoryId !== currentDeleteId.value);
     // 更新过滤列表
     handleSearch();
+    if(messages.value.length === 0){
+      memoryStore.clearMemoryId()
+    }
     showDeleteModal.value = false;
     currentDeleteId.value = null;
     showSuccessToast();
@@ -695,22 +688,6 @@ const showSuccessToast = () => {
 .bubble-text {
   font-size: 0.875rem;
   margin-bottom: 0.25rem;
-}
-
-.bubble-time {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
-  display: block;
-  text-align: right;
-}
-
-/* 状态显示 */
-.loading-state, .empty-state, .error-state {
-  padding: 2.5rem 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
 }
 
 .state-text {

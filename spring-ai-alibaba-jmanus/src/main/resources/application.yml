@@ -34,12 +34,8 @@ spring:
         format_sql: true
   ai:
     memory:
-      postgres: true
-    chat:
-      memory:
-        repository:
-          jdbc:
-            postgres: dahua_test
+      h2:
+        enabled: true
 
 logging:
   file:

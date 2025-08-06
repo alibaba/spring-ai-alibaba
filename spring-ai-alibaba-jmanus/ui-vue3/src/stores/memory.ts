@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 import {reactive} from "vue";
-import {MemoryApiService} from "@/api/memory-api-service";
-
-export interface MemorySelector {
-    value: string
-    label: string
-}
 
 export class MemoryStore {
     // Basic state
@@ -47,6 +41,10 @@ export class MemoryStore {
 
     defaultMemoryId() {
         this.selectMemoryId = this.generateRandomId()
+    }
+
+    clearMemoryId() {
+        this.selectMemoryId = ''
     }
 
     generateRandomId(): string {

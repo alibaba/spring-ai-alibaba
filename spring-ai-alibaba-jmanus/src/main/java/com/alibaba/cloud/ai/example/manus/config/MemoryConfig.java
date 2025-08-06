@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.config;
 
+import com.alibaba.cloud.ai.memory.jdbc.H2ChatMemoryRepository;
 import com.alibaba.cloud.ai.memory.jdbc.MysqlChatMemoryRepository;
 import com.alibaba.cloud.ai.memory.jdbc.PostgresChatMemoryRepository;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -33,13 +34,16 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Configuration
 public class MemoryConfig {
 
-	// import memory auto configuration, jmanus only support memory for mysql and
-	// postgresql now
+	// import memory auto configuration
+	// jmanus only support memory for mysql and postgresql now
 	@Value("${spring.ai.memory.mysql.enabled:false}")
 	private boolean mysqlEnabled;
 
 	@Value("${spring.ai.memory.postgres.enabled:false}")
 	private boolean postgresEnabled;
+
+	@Value("${spring.ai.memory.h2.enabled:false}")
+	private boolean h2Enabled;
 
 	@Bean
 	public ChatMemory chatMemory(ChatMemoryRepository chatMemoryRepository) {
@@ -55,8 +59,11 @@ public class MemoryConfig {
 		else if (postgresEnabled) {
 			chatMemoryRepository = PostgresChatMemoryRepository.postgresBuilder().jdbcTemplate(jdbcTemplate).build();
 		}
+		else if (h2Enabled) {
+			chatMemoryRepository = H2ChatMemoryRepository.h2Builder().jdbcTemplate(jdbcTemplate).build();
+		}
 		if (chatMemoryRepository == null) {
-			throw new RuntimeException("Please enable mysql or postgres memory");
+			throw new RuntimeException("Please enable mysql or postgres or h2 memory");
 		}
 		return chatMemoryRepository;
 	}
