@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SessionContextService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -52,11 +53,15 @@ public class ReporterNode implements NodeAction {
 
 	private final ReportService reportService;
 
+	private final SessionContextService sessionContextService;
+
 	private static final String RESEARCH_FORMAT = "# Research Requirements\n\n## Task\n\n{0}\n\n## Description\n\n{1}";
 
-	public ReporterNode(ChatClient reporterAgent, ReportService reportService) {
+	public ReporterNode(ChatClient reporterAgent, ReportService reportService,
+			SessionContextService sessionContextService) {
 		this.reporterAgent = reporterAgent;
 		this.reportService = reportService;
+		this.sessionContextService = sessionContextService;
 	}
 
 	@Override
@@ -66,7 +71,10 @@ public class ReporterNode implements NodeAction {
 		// 从 OverAllState 中获取线程ID
 		String threadId = state.value("thread_id", String.class)
 			.orElseThrow(() -> new IllegalArgumentException("thread_id is missing from state"));
+		String sessionId = state.value("session_id", String.class)
+			.orElseThrow(() -> new IllegalArgumentException("session_id is missing from state"));
 		logger.info("Thread ID from state: {}", threadId);
+		logger.info("Session ID from state: {}", sessionId);
 
 		// 添加消息
 		List<Message> messages = new ArrayList<>();
@@ -122,6 +130,7 @@ public class ReporterNode implements NodeAction {
 				String finalReport = Objects.requireNonNull(response.getResult().getOutput().getText());
 				try {
 					reportService.saveReport(threadId, finalReport);
+					sessionContextService.addThreadId(sessionId, threadId);
 					logger.info("Report saved successfully, Thread ID: {}", threadId);
 				}
 				catch (Exception e) {

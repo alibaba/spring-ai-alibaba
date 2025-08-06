@@ -14,16 +14,28 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.model.req;
+package com.alibaba.cloud.ai.example.deepresearch.service;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.io.Serializable;
+import java.util.List;
 
 /**
+ * 记录某会话Id的上下文（如线程ID等信息）
+ *
  * @author vlsmb
  * @since 2025/8/6
  */
-public record GraphId(@JsonProperty("session_id") String sessionId,
-		@JsonProperty("thread_id") String threadId) implements Serializable {
+public interface SessionContextService {
+
+	void addThreadId(String sessionId, String threadId);
+
+	List<String> getGraphThreadIds(String sessionId);
+
+	List<String> getReports(String sessionId, List<String> threadIds);
+
+	List<String> getRecentReports(String sessionId, int count);
+
+	default List<String> getRecentReports(String sessionId) {
+		return this.getRecentReports(sessionId, 5);
+	}
+
 }

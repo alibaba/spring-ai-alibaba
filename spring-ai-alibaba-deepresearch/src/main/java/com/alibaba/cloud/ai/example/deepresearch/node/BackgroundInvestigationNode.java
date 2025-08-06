@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SessionContextService;
 import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SearchPlatformSelectionService;
 import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
 import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SmartAgentSelectionHelperService;
@@ -32,6 +33,7 @@ import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 
@@ -56,17 +58,20 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final SmartAgentSelectionHelperService smartAgentSelectionHelper;
 
+	private final SessionContextService sessionContextService;
+
 	private final ChatClient backgroundAgent;
 
 	public BackgroundInvestigationNode(JinaCrawlerService jinaCrawlerService, InfoCheckService infoCheckService,
 			SearchFilterService searchFilterService, QuestionClassifierService questionClassifierService,
 			SearchPlatformSelectionService platformSelectionService, SmartAgentProperties smartAgentProperties,
-			ChatClient backgroundAgent) {
+			ChatClient backgroundAgent, SessionContextService sessionContextService) {
 		this.searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService);
 		this.infoCheckService = infoCheckService;
 		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties, null,
 				questionClassifierService, platformSelectionService);
 		this.backgroundAgent = backgroundAgent;
+		this.sessionContextService = sessionContextService;
 	}
 
 	@Override
@@ -103,7 +108,18 @@ public class BackgroundInvestigationNode implements NodeAction {
 									r.get("content"));
 						}).collect(Collectors.joining("\n\n")));
 
-				String content = backgroundAgent.prompt().messages(messages).call().content();
+				String sessionId = state.value("session_id", String.class).orElse("__default__");
+				List<String> reports = sessionContextService.getRecentReports(sessionId);
+				Message lastReportMessage;
+				if (reports != null && !reports.isEmpty()) {
+					lastReportMessage = new AssistantMessage(
+							"这是用户前几次使用DeepResearch的报告：\r\n" + String.join("\r\n\r\n", reports));
+				}
+				else {
+					lastReportMessage = new AssistantMessage("这是用户的第一次询问，因此没有上下文。");
+				}
+
+				String content = backgroundAgent.prompt().messages(lastReportMessage, messages).call().content();
 
 				backgroundResults.add(content);
 

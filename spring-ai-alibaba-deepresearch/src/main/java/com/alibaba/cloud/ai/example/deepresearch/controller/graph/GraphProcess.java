@@ -109,21 +109,23 @@ public class GraphProcess {
 					&& !Thread.currentThread().isInterrupted(); next = generator.next()) {
 				final AsyncGenerator.Data<NodeOutput> finalNext = next;
 				if (finalNext.getEmbed() != null) {
-					future = future.thenCompose(
-							v -> this.forEachAsyncWithInterrupt(finalNext.getEmbed().getGenerator().async(generator.executor()), consumer));
+					future = future.thenCompose(v -> this.forEachAsyncWithInterrupt(
+							finalNext.getEmbed().getGenerator().async(generator.executor()), consumer));
 					if (future.isCompletedExceptionally()) {
 						return future;
 					}
 				}
 				else {
-					future = future.thenCompose(
-							v -> finalNext.getData().thenAcceptAsync(consumer, generator.executor()).thenApply(x -> null));
+					future = future.thenCompose(v -> finalNext.getData()
+						.thenAcceptAsync(consumer, generator.executor())
+						.thenApply(x -> null));
 					if (future.isCompletedExceptionally()) {
 						return future;
 					}
 				}
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("error when processing graph stream: {}", e.getMessage());
 		}
 		return future;
@@ -180,7 +182,7 @@ public class GraphProcess {
 	 */
 	public boolean stopGraph(GraphId graphId) {
 		Future<?> future = this.graphTaskFutureMap.remove(graphId);
-		if(future == null) {
+		if (future == null) {
 			return false;
 		}
 		if (future.isDone()) {
