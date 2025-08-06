@@ -135,14 +135,14 @@ mcp:
 实现 `execute(Map<String, Object>)` 方法：
 
 ```java
-@McpTool(name = "calculator", description = "计算器工具")
+@McpTool(name = "my_tool", description = "我的工具")
 @Component
-public class CalculatorTool {
+public class MyTool {
     
     public String execute(Map<String, Object> arguments) {
-        String expression = (String) arguments.get("expression");
-        // 计算逻辑
-        return "计算结果: " + result;
+        String input = (String) arguments.get("input");
+        // 处理逻辑
+        return "处理结果: " + input;
     }
 }
 ```
@@ -166,55 +166,61 @@ public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 
 ## 示例工具
 
-### 1. 计算器工具
+### 1. 天气查询工具
 
 ```java
-@McpTool(name = "calculator", description = "数学计算工具")
+@McpTool(name = "weather", description = "天气查询工具")
 @McpToolSchema("""
     {
         "type": "object",
         "properties": {
-            "expression": {
+            "city": {
                 "type": "string",
-                "description": "数学表达式"
+                "description": "城市名称"
             }
         },
-        "required": ["expression"]
+        "required": ["city"]
     }
     """)
 @Component
-public class CalculatorTool {
+public class WeatherTool {
     
     public String execute(Map<String, Object> arguments) {
-        String expression = (String) arguments.get("expression");
-        double result = evaluateExpression(expression);
-        return String.format("计算结果: %s = %.2f", expression, result);
+        String city = (String) arguments.get("city");
+        // 天气查询逻辑
+        return String.format("%s的天气信息: 晴天，25°C", city);
     }
 }
 ```
 
-### 2. 回显工具
+### 2. 文件处理工具
 
 ```java
-@McpTool(name = "echo", description = "回显工具")
+@McpTool(name = "file_processor", description = "文件处理工具")
 @McpToolSchema("""
     {
         "type": "object",
         "properties": {
-            "message": {
+            "filename": {
                 "type": "string",
-                "description": "要回显的消息"
+                "description": "文件名"
+            },
+            "operation": {
+                "type": "string",
+                "description": "操作类型",
+                "enum": ["read", "write", "delete"]
             }
         },
-        "required": ["message"]
+        "required": ["filename", "operation"]
     }
     """)
 @Component
-public class EchoTool {
+public class FileProcessorTool {
     
     public String execute(Map<String, Object> arguments) {
-        String message = (String) arguments.get("message");
-        return "回显: " + message;
+        String filename = (String) arguments.get("filename");
+        String operation = (String) arguments.get("operation");
+        return String.format("执行%s操作，文件: %s", operation, filename);
     }
 }
 ```

@@ -14,40 +14,47 @@
 
 ## 可用工具
 
-### 1. 计算器 (calculator)
-执行数学计算，支持基本的算术运算。
+### 1. 天气查询 (weather)
+获取指定城市的天气信息。
 
 **参数:**
-- `expression` (string): 要计算的数学表达式
+- `city` (string): 城市名称
 
 **示例:**
 ```json
 {
-  "expression": "2 + 3 * 4"
+  "city": "北京"
 }
 ```
 
-### 2. 回显 (echo)
-回显输入的消息，用于测试和调试。
+### 2. 文件处理 (file_processor)
+执行文件操作，包括读取、写入和删除。
 
 **参数:**
-- `message` (string): 要回显的消息
+- `filename` (string): 文件名
+- `operation` (string): 操作类型 (read, write, delete)
 
 **示例:**
 ```json
 {
-  "message": "Hello World"
+  "filename": "test.txt",
+  "operation": "read"
 }
 ```
 
-### 3. Ping (ping)
-测试服务器连接状态。
+### 3. 翻译 (translate)
+翻译文本内容。
 
-**参数:** 无
+**参数:**
+- `text` (string): 要翻译的文本
+- `target_language` (string): 目标语言 (en, zh, ja, ko, fr, de, es)
 
 **示例:**
 ```json
-{}
+{
+  "text": "你好",
+  "target_language": "en"
+}
 ```
 
 ### 4. 天气 (weather)

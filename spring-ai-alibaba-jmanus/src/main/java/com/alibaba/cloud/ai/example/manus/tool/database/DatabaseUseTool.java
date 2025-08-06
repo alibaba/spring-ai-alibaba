@@ -31,6 +31,7 @@ import com.alibaba.cloud.ai.example.manus.tool.database.action.GetDatasourceInfo
 
 import java.util.Map;
 import org.springframework.stereotype.Component;
+
 @Component
 public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 
