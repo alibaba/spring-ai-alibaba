@@ -1,6 +1,7 @@
 # MAPREDUCE_FIN_AGENT Configuration
 agentName: MAPREDUCE_FIN_AGENT
 agentDescription: A MapReduce post-processing agent responsible for handling final processing tasks after the MapReduce process is completed. The agent will receive the final results of MapReduce and perform subsequent processing, formatting, exporting, or other customized operations according to the user's specific requirements.
+builtIn: true
 availableToolKeys:
   - mapreduce_finalize_tool
   - terminate

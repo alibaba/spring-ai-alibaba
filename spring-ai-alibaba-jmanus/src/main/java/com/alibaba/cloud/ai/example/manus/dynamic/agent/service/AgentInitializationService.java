@@ -97,32 +97,48 @@ public class AgentInitializationService {
 	 */
 	private void createAgentIfNotExists(String namespace, AgentEnum agent, String language) {
 		DynamicAgentEntity agentEntity = agentRepository.findByNamespaceAndAgentName(namespace, agent.getAgentName());
+		boolean isNewAgent = (agentEntity == null);
 
-		if (agentEntity == null) {
-			agentEntity = new DynamicAgentEntity();
-			agentEntity.setAgentName(agent.getAgentName());
-			agentEntity.setNamespace(namespace);
-			// Description will be loaded from config file
-			agentEntity.setClassName(""); // YAML-based agents
-
-			String agentPath = agent.getAgentPath();
-			StartupAgentConfigLoader.AgentConfig agentConfig = configLoader.loadAgentConfig(agentPath, language);
-
-			if (agentConfig != null) {
-				agentEntity.setAgentDescription(agentConfig.getAgentDescription());
-				agentEntity.setNextStepPrompt(agentConfig.getNextStepPrompt());
-				agentEntity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
+		if (isNewAgent) {
+			if (isNewAgent) {
+				agentEntity = new DynamicAgentEntity();
+				agentEntity.setAgentName(agent.getAgentName());
+				agentEntity.setNamespace(namespace);
+				// Description will be loaded from config file
+				agentEntity.setClassName(""); // YAML-based agents
 			}
+		}
 
-			try {
-				agentRepository.save(agentEntity);
-				log.info("Created agent: {} for namespace: {} with language: {}", agent.getAgentName(), namespace,
-						language);
-			}
-			catch (Exception e) {
-				log.error("Failed to create agent: {} for namespace: {} with language: {}", agent.getAgentName(),
-						namespace, language, e);
-			}
+		// Load configuration and update agent (both new and existing)
+		String agentPath = agent.getAgentPath();
+		StartupAgentConfigLoader.AgentConfig agentConfig = configLoader.loadAgentConfig(agentPath, language);
+		// Load configuration and update agent (both new and existing)
+
+		if (agentConfig != null) {
+			agentEntity.setAgentDescription(agentConfig.getAgentDescription());
+			agentEntity.setNextStepPrompt(agentConfig.getNextStepPrompt());
+			agentEntity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
+
+			// Set builtIn based on YAML configuration
+			Boolean builtIn = agentConfig.getBuiltIn();
+			agentEntity.setBuiltIn(builtIn != null ? builtIn : false);
+		}
+		else {
+			// If no config found, default to built-in (not deletable)
+			agentEntity.setBuiltIn(true);
+		}
+
+		try {
+			agentRepository.save(agentEntity);
+			boolean builtIn = agentEntity.getBuiltIn() != null ? agentEntity.getBuiltIn() : false;
+			String action = isNewAgent ? "Created" : "Updated";
+			log.info("{} agent: {} for namespace: {} with language: {} (built-in: {})", action, agent.getAgentName(),
+					namespace, language, builtIn);
+		}
+		catch (Exception e) {
+			String action = isNewAgent ? "create" : "update";
+			log.error("Failed to {} agent: {} for namespace: {} with language: {}", action, agent.getAgentName(),
+					namespace, language, e);
 		}
 	}
 
@@ -143,6 +159,10 @@ public class AgentInitializationService {
 				agentEntity.setAgentDescription(agentConfig.getAgentDescription());
 				agentEntity.setNextStepPrompt(agentConfig.getNextStepPrompt());
 				agentEntity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
+
+				// Update builtIn based on YAML configuration
+				Boolean builtIn = agentConfig.getBuiltIn();
+				agentEntity.setBuiltIn(builtIn != null ? builtIn : false);
 			}
 
 			try {

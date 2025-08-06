@@ -269,7 +269,8 @@
 
         <poi.version>5.4.0</poi.version>
 
-        <mcp.version>0.10.0</mcp.version>
+        <mcp.version>0.11.0</mcp.version>
+
         <opentelemetry.version>1.38.0</opentelemetry.version>
 
         <!-- CheckStyle Plugin -->

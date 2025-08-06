@@ -134,6 +134,15 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 			config.setAgentDescription((String) yamlData.getOrDefault("agentDescription", ""));
 			config.setNextStepPrompt((String) yamlData.getOrDefault("nextStepPrompt", ""));
 
+			// Parse builtIn field (default: false)
+			Object builtInObj = yamlData.get("builtIn");
+			if (builtInObj instanceof Boolean) {
+				config.setBuiltIn((Boolean) builtInObj);
+			}
+			else {
+				config.setBuiltIn(false); // Default: not built-in (deletable)
+			}
+
 			// Process tool list
 			Object toolKeysObj = yamlData.get("availableToolKeys");
 			if (toolKeysObj instanceof List) {
@@ -217,6 +226,8 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 
 		private List<String> availableToolKeys;
 
+		private Boolean builtIn = false; // Default: not built-in (deletable)
+
 		// Getters and Setters
 		public String getAgentName() {
 			return agentName;
@@ -248,6 +259,14 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 
 		public void setAvailableToolKeys(List<String> availableToolKeys) {
 			this.availableToolKeys = availableToolKeys;
+		}
+
+		public Boolean getBuiltIn() {
+			return builtIn;
+		}
+
+		public void setBuiltIn(Boolean builtIn) {
+			this.builtIn = builtIn;
 		}
 
 	}

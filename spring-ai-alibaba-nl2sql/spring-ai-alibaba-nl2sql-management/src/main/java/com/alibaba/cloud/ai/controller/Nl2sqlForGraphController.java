@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.connector.config.DbConfig;
+import com.alibaba.cloud.ai.constant.Constant;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -46,7 +47,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
-import static com.alibaba.cloud.ai.constant.Constant.DATA_SET_ID;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.RESULT;
 
@@ -84,7 +84,7 @@ public class Nl2sqlForGraphController {
 		simpleVectorStoreService.schema(schemaInitRequest);
 
 		Optional<OverAllState> invoke = compiledGraph
-			.invoke(Map.of(INPUT_KEY, query, DATA_SET_ID, dataSetId, AGENT_ID, agentId));
+			.invoke(Map.of(INPUT_KEY, query, Constant.AGENT_ID, dataSetId, AGENT_ID, agentId));
 		OverAllState overAllState = invoke.get();
 		return overAllState.value(RESULT).get().toString();
 	}
@@ -115,7 +115,8 @@ public class Nl2sqlForGraphController {
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 
 		// 使用流式处理，传递agentId到状态中
-		AsyncGenerator<NodeOutput> generator = compiledGraph.stream(Map.of(INPUT_KEY, query, DATA_SET_ID, agentId));
+		AsyncGenerator<NodeOutput> generator = compiledGraph
+			.stream(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId));
 
 		CompletableFuture.runAsync(() -> {
 			try {

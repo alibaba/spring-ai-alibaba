@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +29,6 @@ import java.util.Map;
 /**
  * LLM form input tool: supports multiple input items with labels and descriptions.
  */
-@Component
 public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput> {
 
 	private final ObjectMapper objectMapper;
