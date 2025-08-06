@@ -152,7 +152,7 @@ public class AgentServiceImpl implements AgentService {
 			.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + id));
 
 		// Protect built-in agents from deletion
-		if (Boolean.TRUE.equals(entity.getIsBuiltIn())) {
+		if (Boolean.TRUE.equals(entity.getBuiltIn())) {
 			throw new IllegalArgumentException("Cannot delete built-in Agent: " + entity.getAgentName());
 		}
 
@@ -193,7 +193,7 @@ public class AgentServiceImpl implements AgentService {
 		config.setAvailableTools(entity.getAvailableToolKeys());
 		config.setClassName(entity.getClassName());
 		config.setNamespace(entity.getNamespace());
-		config.setIsBuiltIn(entity.getIsBuiltIn());
+		config.setBuiltIn(entity.getBuiltIn());
 		DynamicModelEntity model = entity.getModel();
 		config.setModel(model == null ? null : model.mapToModelConfig());
 		return config;
@@ -270,10 +270,10 @@ public class AgentServiceImpl implements AgentService {
 		// 4. Set the user-selected namespace
 		entity.setNamespace(config.getNamespace());
 
-		// 5. Set isBuiltIn if provided (only allow setting to false for existing built-in
+		// 5. Set buildIn if provided (only allow setting to false for existing built-in
 		// agents)
-		if (config.getIsBuiltIn() != null) {
-			entity.setIsBuiltIn(config.getIsBuiltIn());
+		if (config.getBuiltIn() != null) {
+			entity.setBuiltIn(config.getBuiltIn());
 		}
 	}
 

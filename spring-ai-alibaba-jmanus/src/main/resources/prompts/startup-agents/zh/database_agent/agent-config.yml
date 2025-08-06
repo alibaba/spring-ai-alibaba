@@ -1,7 +1,7 @@
 # DATABASE_AGENT 配置
 agentName: DATABASE_AGENT
 agentDescription: 一个可以通过自然语言操作数据库、自动完成数据查询和分析任务的数据库代理
-isBuiltIn: false  # 数据库 agent 可以删除
+builtIn: false  # 数据库 agent 可以删除
 availableToolKeys:
   - database_use
   - terminate

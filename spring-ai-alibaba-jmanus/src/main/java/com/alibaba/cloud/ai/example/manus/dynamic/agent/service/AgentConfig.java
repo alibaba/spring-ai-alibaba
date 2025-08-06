@@ -39,7 +39,7 @@ public class AgentConfig {
 
 	private String namespace;
 
-	private Boolean isBuiltIn = false;
+	private Boolean builtIn = false;
 
 	// Getters and Setters
 	public String getId() {
@@ -114,12 +114,12 @@ public class AgentConfig {
 		this.namespace = namespace;
 	}
 
-	public Boolean getIsBuiltIn() {
-		return isBuiltIn;
+	public Boolean getBuiltIn() {
+		return builtIn;
 	}
 
-	public void setIsBuiltIn(Boolean isBuiltIn) {
-		this.isBuiltIn = isBuiltIn;
+	public void setBuiltIn(Boolean builtIn) {
+		this.builtIn = builtIn;
 	}
 
 }
