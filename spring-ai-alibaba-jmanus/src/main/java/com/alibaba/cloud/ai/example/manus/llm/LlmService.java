@@ -20,9 +20,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntit
 import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelRepository;
 import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
 import com.alibaba.cloud.ai.example.manus.event.ModelChangeEvent;
-import com.alibaba.cloud.ai.memory.jdbc.MysqlChatMemoryRepository;
-import com.alibaba.cloud.ai.memory.jdbc.PostgresChatMemoryRepository;
 import io.micrometer.observation.ObservationRegistry;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -42,7 +41,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import jakarta.annotation.PostConstruct;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
