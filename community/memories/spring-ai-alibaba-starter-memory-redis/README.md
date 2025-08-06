@@ -273,15 +273,15 @@ public class CustomRedissonRedisChatMemoryAutoConfiguration extends RedisChatMem
 ### 示例代码
 
 ```java
-import com.alibaba.cloud.ai.memory.redis.JedisRedisChatMemoryRepository;
-import com.alibaba.cloud.ai.memory.redis.LettuceRedisChatMemoryRepository;
-import com.alibaba.cloud.ai.memory.redis.RedissonRedisChatMemoryRepository;
+import com.alibaba.cloud.ai.memory.redis.BaseRedisChatMemoryRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
-
-import javax.servlet.http.HttpServletResponse;
 
 @RestController
 public class ChatController {
