@@ -119,7 +119,7 @@ public class AgentInitializationService {
 			agentEntity.setNextStepPrompt(agentConfig.getNextStepPrompt());
 			agentEntity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
 
-			// Set buildIn based on YAML configuration
+			// Set builtIn based on YAML configuration
 			Boolean builtIn = agentConfig.getBuiltIn();
 			agentEntity.setBuiltIn(builtIn != null ? builtIn : false);
 		}
@@ -160,7 +160,7 @@ public class AgentInitializationService {
 				agentEntity.setNextStepPrompt(agentConfig.getNextStepPrompt());
 				agentEntity.setAvailableToolKeys(agentConfig.getAvailableToolKeys());
 
-				// Update buildIn based on YAML configuration
+				// Update builtIn based on YAML configuration
 				Boolean builtIn = agentConfig.getBuiltIn();
 				agentEntity.setBuiltIn(builtIn != null ? builtIn : false);
 			}
