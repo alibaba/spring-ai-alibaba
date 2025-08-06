@@ -69,9 +69,9 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 	}
 
 	/**
-	 * 初始化数据库 schema 到向量库
-	 * @param schemaInitRequest schema 初始化请求
-	 * @throws Exception 如果发生错误
+	 * Initialize database schema to vector store
+	 * @param schemaInitRequest schema initialization request
+	 * @throws Exception if an error occurs
 	 */
 	@Override
 	public Boolean schema(SchemaInitRequest schemaInitRequest) throws Exception {
@@ -115,9 +115,9 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 	}
 
 	/**
-	 * 将证据内容添加到向量库中
-	 * @param evidenceRequests 证据请求列表
-	 * @return 是否成功
+	 * Add evidence content to vector store
+	 * @param evidenceRequests list of evidence requests
+	 * @return success status
 	 */
 	@Override
 	public Boolean addEvidence(List<EvidenceRequest> evidenceRequests) {
@@ -197,9 +197,9 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 	}
 
 	/**
-	 * 删除指定条件的向量数据
-	 * @param deleteRequest 删除请求
-	 * @return 是否删除成功
+	 * Delete vector data with specified conditions
+	 * @param deleteRequest delete request
+	 * @return deletion success status
 	 */
 	@Override
 	public Boolean deleteDocuments(DeleteRequest deleteRequest) throws Exception {
@@ -225,10 +225,10 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 	}
 
 	/**
-	 * 根据搜索请求在向量库中检索文档
-	 * @param searchRequest 搜索请求
-	 * @return 匹配的文档列表
-	 * @throws Exception 检索异常
+	 * Search documents in vector store based on search request
+	 * @param searchRequest search request
+	 * @return list of matching documents
+	 * @throws Exception search exception
 	 */
 	public List<Document> search(SearchRequest searchRequest) throws Exception {
 		try {

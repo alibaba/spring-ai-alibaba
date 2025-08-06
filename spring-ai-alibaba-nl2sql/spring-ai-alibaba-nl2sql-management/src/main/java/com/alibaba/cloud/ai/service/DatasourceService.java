@@ -41,7 +41,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 数据源服务类
+ * Data Source Service Class
  *
  * @author Alibaba Cloud AI
  */
@@ -57,7 +57,7 @@ public class DatasourceService {
 	private DBConnectionPoolContext dbConnectionPoolContext;
 
 	/**
-	 * 获取所有数据源列表
+	 * Get all data source list
 	 */
 	public List<Datasource> getAllDatasources() {
 		String sql = "SELECT * FROM datasource ORDER BY create_time DESC";
@@ -65,7 +65,7 @@ public class DatasourceService {
 	}
 
 	/**
-	 * 根据状态获取数据源列表
+	 * Get data source list by status
 	 */
 	public List<Datasource> getDatasourcesByStatus(String status) {
 		String sql = "SELECT * FROM datasource WHERE status = ? ORDER BY create_time DESC";
@@ -73,7 +73,7 @@ public class DatasourceService {
 	}
 
 	/**
-	 * 根据类型获取数据源列表
+	 * Get data source list by type
 	 */
 	public List<Datasource> getDatasourcesByType(String type) {
 		String sql = "SELECT * FROM datasource WHERE type = ? ORDER BY create_time DESC";
@@ -81,7 +81,7 @@ public class DatasourceService {
 	}
 
 	/**
-	 * 根据ID获取数据源详情
+	 * Get data source details by ID
 	 */
 	public Datasource getDatasourceById(Integer id) {
 		try {
@@ -94,10 +94,10 @@ public class DatasourceService {
 	}
 
 	/**
-	 * 创建数据源
+	 * Create data source
 	 */
 	public Datasource createDatasource(Datasource datasource) {
-		// 生成连接URL
+		// Generate connection URL
 		datasource.generateConnectionUrl();
 
 		String sql = "INSERT INTO datasource (name, type, host, port, database_name, username, password, "
@@ -113,7 +113,7 @@ public class DatasourceService {
 			ps.setInt(4, datasource.getPort());
 			ps.setString(5, datasource.getDatabaseName());
 			ps.setString(6, datasource.getUsername());
-			ps.setString(7, datasource.getPassword()); // 注意：实际应用中需要加密
+			ps.setString(7, datasource.getPassword()); // Note: Encryption is needed in actual applications
 			ps.setString(8, datasource.getConnectionUrl());
 			ps.setString(9, datasource.getStatus() != null ? datasource.getStatus() : "active");
 			ps.setString(10, datasource.getTestStatus() != null ? datasource.getTestStatus() : "unknown");
@@ -130,10 +130,10 @@ public class DatasourceService {
 	}
 
 	/**
-	 * 更新数据源
+	 * Update data source
 	 */
 	public Datasource updateDatasource(Integer id, Datasource datasource) {
-		// 重新生成连接URL
+		// Regenerate connection URL
 		datasource.generateConnectionUrl();
 
 		String sql = "UPDATE datasource SET name = ?, type = ?, host = ?, port = ?, database_name = ?, "
@@ -148,21 +148,21 @@ public class DatasourceService {
 	}
 
 	/**
-	 * 删除数据源
+	 * Delete data source
 	 */
 	@Transactional
 	public void deleteDatasource(Integer id) {
-		// 先删除关联关系
+		// First delete the association
 		String deleteRelationSql = "DELETE FROM agent_datasource WHERE datasource_id = ?";
 		jdbcTemplate.update(deleteRelationSql, id);
 
-		// 再删除数据源
+		// Then delete the data source
 		String deleteDatasourceSql = "DELETE FROM datasource WHERE id = ?";
 		jdbcTemplate.update(deleteDatasourceSql, id);
 	}
 
 	/**
-	 * 更新数据源测试状态
+	 * Update data source test status
 	 */
 	public void updateTestStatus(Integer id, String testStatus) {
 		String sql = "UPDATE datasource SET test_status = ? WHERE id = ?";
@@ -170,7 +170,7 @@ public class DatasourceService {
 	}
 
 	/**
-	 * 测试数据源连接
+	 * Test data source connection
 	 */
 	public boolean testConnection(Integer id) {
 		Datasource datasource = getDatasourceById(id);
@@ -181,7 +181,7 @@ public class DatasourceService {
 			// ping测试
 			boolean connectionSuccess = realConnectionTest(datasource);
 			log.info(datasource.getName() + " test connection result: " + connectionSuccess);
-			// 更新测试状态
+			// Update test status
 			updateTestStatus(id, connectionSuccess ? "success" : "failed");
 
 			return connectionSuccess;
@@ -194,14 +194,14 @@ public class DatasourceService {
 	}
 
 	/**
-	 * 实际的连接测试方法
+	 * Actual connection test method
 	 */
 	private boolean realConnectionTest(Datasource datasource) {
-		// 把 Datasource 转成 DbConfig
+		// Convert Datasource to DbConfig
 		DbConfig config = new DbConfig();
 		String originalUrl = datasource.getConnectionUrl();
 
-		// 检查 URL 是否含有 serverTimezone 参数，如果没有则添加默认时区，否则会抛异常
+		// Check if URL contains serverTimezone parameter, add default timezone if not, otherwise it will throw an exception
 		if (StringUtils.isNotBlank(originalUrl)) {
 			String lowerUrl = originalUrl.toLowerCase();
 
@@ -214,7 +214,7 @@ public class DatasourceService {
 				}
 			}
 
-			// 检查是否含有 useSSL 参数，如果没有则添加 useSSL=false
+			// Check if it contains useSSL parameter, add useSSL=false if not
 			if (!lowerUrl.contains("usessl=")) {
 				if (originalUrl.contains("?")) {
 					originalUrl += "&useSSL=false";
@@ -239,7 +239,7 @@ public class DatasourceService {
 	}
 
 	/**
-	 * 获取智能体关联的数据源列表
+	 * Get data source list associated with agent
 	 */
 	public List<AgentDatasource> getAgentDatasources(Integer agentId) {
 		String sql = "SELECT ad.*, d.name, d.type, d.host, d.port, d.database_name, "
@@ -256,7 +256,7 @@ public class DatasourceService {
 			agentDatasource.setCreateTime(rs.getTimestamp("create_time").toLocalDateTime());
 			agentDatasource.setUpdateTime(rs.getTimestamp("update_time").toLocalDateTime());
 
-			// 填充数据源信息
+			// Fill data source information
 			Datasource datasource = new Datasource();
 			datasource.setId(rs.getInt("datasource_id"));
 			datasource.setName(rs.getString("name"));
@@ -275,30 +275,30 @@ public class DatasourceService {
 	}
 
 	/**
-	 * 为智能体添加数据源
+	 * Add data source for agent
 	 */
 	@Transactional
 	public AgentDatasource addDatasourceToAgent(Integer agentId, Integer datasourceId) {
-		// 先禁用该智能体的其他数据源（一个智能体只能启用一个数据源）
+		// First disable other data sources of the agent (an agent can only enable one data source)
 		String disableOthersSql = "UPDATE agent_datasource SET is_active = 0 WHERE agent_id = ?";
 		jdbcTemplate.update(disableOthersSql, agentId);
 
-		// 检查是否已存在关联
+		// Check if association already exists
 		String checkSql = "SELECT COUNT(*) FROM agent_datasource WHERE agent_id = ? AND datasource_id = ?";
 		Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, agentId, datasourceId);
 
 		if (count != null && count > 0) {
-			// 如果已存在，则激活该关联
+			// If exists, activate the association
 			String activateSql = "UPDATE agent_datasource SET is_active = 1 WHERE agent_id = ? AND datasource_id = ?";
 			jdbcTemplate.update(activateSql, agentId, datasourceId);
 
-			// 查询并返回更新后的关联
+			// Query and return the updated association
 			String selectSql = "SELECT * FROM agent_datasource WHERE agent_id = ? AND datasource_id = ?";
 			return jdbcTemplate.queryForObject(selectSql, new BeanPropertyRowMapper<>(AgentDatasource.class), agentId,
 					datasourceId);
 		}
 		else {
-			// 如果不存在，则创建新关联
+			// If not exists, create new association
 			String insertSql = "INSERT INTO agent_datasource (agent_id, datasource_id, is_active) VALUES (?, ?, 1)";
 			KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -319,7 +319,7 @@ public class DatasourceService {
 	}
 
 	/**
-	 * 移除智能体的数据源关联
+	 * Remove data source association from agent
 	 */
 	public void removeDatasourceFromAgent(Integer agentId, Integer datasourceId) {
 		String sql = "DELETE FROM agent_datasource WHERE agent_id = ? AND datasource_id = ?";
@@ -330,7 +330,7 @@ public class DatasourceService {
 	 * 启用/禁用智能体的数据源
 	 */
 	public AgentDatasource toggleDatasourceForAgent(Integer agentId, Integer datasourceId, Boolean isActive) {
-		// 如果要启用数据源，先检查是否已有其他启用的数据源
+		// If enabling data source, first check if there are other enabled data sources
 		if (isActive) {
 			String checkSql = "SELECT COUNT(*) FROM agent_datasource WHERE agent_id = ? AND is_active = 1 AND datasource_id != ?";
 			Integer activeCount = jdbcTemplate.queryForObject(checkSql, Integer.class, agentId, datasourceId);
@@ -339,7 +339,7 @@ public class DatasourceService {
 			}
 		}
 
-		// 更新数据源状态
+		// Update data source status
 		Integer activeValue = isActive ? 1 : 0;
 		String updateSql = "UPDATE agent_datasource SET is_active = ? WHERE agent_id = ? AND datasource_id = ?";
 		int updated = jdbcTemplate.update(updateSql, activeValue, agentId, datasourceId);
@@ -348,7 +348,7 @@ public class DatasourceService {
 			throw new RuntimeException("未找到相关的数据源关联记录");
 		}
 
-		// 返回更新后的关联记录
+		// Return the updated association record
 		String selectSql = "SELECT id, agent_id, datasource_id, is_active, create_time "
 				+ "FROM agent_datasource WHERE agent_id = ? AND datasource_id = ?";
 		return jdbcTemplate.queryForObject(selectSql, (rs, rowNum) -> {
@@ -363,27 +363,27 @@ public class DatasourceService {
 	}
 
 	/**
-	 * 获取数据源统计信息
+	 * Get data source statistics
 	 */
 	public Map<String, Object> getDatasourceStats() {
 		Map<String, Object> stats = new HashMap<>();
 
-		// 总数统计
+		// Total count statistics
 		String totalSql = "SELECT COUNT(*) FROM datasource";
 		Integer total = jdbcTemplate.queryForObject(totalSql, Integer.class);
 		stats.put("total", total);
 
-		// 按状态统计
+		// Statistics by status
 		String statusSql = "SELECT status, COUNT(*) as count FROM datasource GROUP BY status";
 		List<Map<String, Object>> statusStats = jdbcTemplate.queryForList(statusSql);
 		stats.put("byStatus", statusStats);
 
-		// 按类型统计
+		// Statistics by type
 		String typeSql = "SELECT type, COUNT(*) as count FROM datasource GROUP BY type";
 		List<Map<String, Object>> typeStats = jdbcTemplate.queryForList(typeSql);
 		stats.put("byType", typeStats);
 
-		// 连接状态统计
+		// Connection status statistics
 		String testStatusSql = "SELECT test_status, COUNT(*) as count FROM datasource GROUP BY test_status";
 		List<Map<String, Object>> testStats = jdbcTemplate.queryForList(testStatusSql);
 		stats.put("byTestStatus", testStats);

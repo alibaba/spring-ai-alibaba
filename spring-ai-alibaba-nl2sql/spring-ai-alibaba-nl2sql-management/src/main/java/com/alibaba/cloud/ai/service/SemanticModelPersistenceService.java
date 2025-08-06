@@ -94,7 +94,7 @@ public class SemanticModelPersistenceService {
 			DELETE FROM semantic_model WHERE id = ?
 			""";
 
-	// 模糊搜索
+	// Fuzzy search
 	private static final String FIELD_SEARCH = """
 			   		SELECT
 				id,
@@ -118,7 +118,7 @@ public class SemanticModelPersistenceService {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	// 新增智能体字段
+	// Add agent field
 	public void addField(SemanticModelDTO semanticModelDTO) {
 		SemanticModel semanticModel = new SemanticModel();
 		BeanUtils.copyProperties(semanticModelDTO, semanticModel);
@@ -131,7 +131,7 @@ public class SemanticModelPersistenceService {
 				semanticModel.getCreateTime(), semanticModel.getUpdateTime());
 	}
 
-	// 批量新增智能体字段
+	// Batch add agent fields
 	public void addFields(List<SemanticModelDTO> semanticModelDTOS) {
 		List<SemanticModel> semanticModels = semanticModelDTOS.stream().map(semanticModelDTO -> {
 			SemanticModel semanticModel = new SemanticModel();
@@ -143,7 +143,7 @@ public class SemanticModelPersistenceService {
 		jdbcTemplate.batchUpdate(FIELD_ADD, new AddBatchPreparedStatement(semanticModels));
 	}
 
-	// 批量启用
+	// Batch enable
 	public void enableFields(List<Long> ids) {
 		jdbcTemplate.batchUpdate(FIELD_ENABLE, new BatchPreparedStatementSetter() {
 			@Override
@@ -158,7 +158,7 @@ public class SemanticModelPersistenceService {
 		});
 	}
 
-	// 批量禁用
+	// Batch disable
 	public void disableFields(List<Long> ids) {
 		jdbcTemplate.batchUpdate(FIELD_DISABLE, new BatchPreparedStatementSetter() {
 			@Override
@@ -173,7 +173,7 @@ public class SemanticModelPersistenceService {
 		});
 	}
 
-	// 根据智能体ID获取语义模型
+	// Get semantic model by agent ID
 	public List<SemanticModel> getFieldByAgentId(Long agentId) {
 		return this.jdbcTemplate.query(FIELD_GET_BY_AGENT_ID, new Object[] { agentId }, (rs, rowNum) -> {
 			SemanticModel model = new SemanticModel();
@@ -193,14 +193,14 @@ public class SemanticModelPersistenceService {
 		});
 	}
 
-	// 搜索
+	// Search
 	public List<SemanticModel> searchFields(String keyword) {
 		Objects.requireNonNull(keyword, "searchKeyword cannot be null");
 		return jdbcTemplate.query(FIELD_SEARCH,
 				new Object[] { "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%" }, (rs, rowNum) -> {
 					SemanticModel model = new SemanticModel();
 					model.setId(rs.getObject("id", Long.class));
-					model.setAgentId(rs.getObject("agent_id", Long.class)); // 添加agentId
+					model.setAgentId(rs.getObject("agent_id", Long.class)); // Add agentId
 					model.setOriginalFieldName(rs.getString("origin_name"));
 					model.setAgentFieldName(rs.getString("field_name"));
 					model.setFieldSynonyms(rs.getString("synonyms"));
@@ -215,12 +215,12 @@ public class SemanticModelPersistenceService {
 				});
 	}
 
-	// 根据id删除智能体字段
+	// Delete agent field by id
 	public void deleteFieldById(long id) {
 		jdbcTemplate.update(FIELD_CLEAR, id);
 	}
 
-	// 更新智能体字段
+	// Update agent field
 	public void updateField(SemanticModelDTO semanticModelDTO, long id) {
 		jdbcTemplate.update(FIELD_UPDATE, semanticModelDTO.getAgentFieldName(), semanticModelDTO.getFieldSynonyms(),
 				semanticModelDTO.getOriginalFieldName(), semanticModelDTO.getFieldDescription(),
