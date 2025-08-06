@@ -94,8 +94,6 @@ public interface AsyncGeneratorOperators<E> {
 	 * @param consumer the consumer function to be applied to each element
 	 * @return a CompletableFuture representing the completion of the iteration process.
 	 *
-	 * fix: zhangr: 2025/08/05 1. 解决异常未正常传递，陷入循环的问题
-	 *
 	 */
 	default CompletableFuture<Object> forEachAsync(Consumer<E> consumer) {
 		CompletableFuture<Object> future = completedFuture(null);
