@@ -1,6 +1,7 @@
 # DEFAULT_AGENT Configuration
 agentName: DEFAULT_AGENT
 agentDescription: A versatile default agent that can handle various user requests using file operations and shell commands. Perfect for general tasks that may involve file operations, system operations, or text processing.
+builtIn: false
 availableToolKeys:
   - text_file_operator
   - terminate

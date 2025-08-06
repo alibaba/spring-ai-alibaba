@@ -1,6 +1,7 @@
 # MAPREDUCE_MAP_TASK_AGENT Configuration
 agentName: MAPREDUCE_MAP_TASK_AGENT
 agentDescription: A Map task execution agent responsible for handling Map phase tasks in the MapReduce process. The agent will automatically receive task document fragment content, execute business processing logic, and record task completion status through map_output_tool.
+builtIn: true
 availableToolKeys:
   - map_output_tool
   - terminate

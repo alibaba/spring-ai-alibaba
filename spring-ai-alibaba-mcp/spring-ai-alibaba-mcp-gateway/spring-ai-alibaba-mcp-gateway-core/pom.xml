@@ -29,6 +29,18 @@
             <artifactId>spring-webflux</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-spring-webflux</artifactId>
+            <version>${mcp.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-spring-webmvc</artifactId>
+            <version>${mcp.version}</version>
+        </dependency>
+
         <!-- Spring AI MCP Server -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
@@ -53,6 +65,7 @@
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>

@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-import static com.alibaba.cloud.ai.constant.Constant.DATA_SET_ID;
+import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.QUERY_REWRITE_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.RESULT;
@@ -56,7 +56,7 @@ public class QueryRewriteNode implements NodeAction {
 		logger.info("Entering {} node", this.getClass().getSimpleName());
 
 		String input = StateUtils.getStringValue(state, INPUT_KEY);
-		String agentId = StateUtils.getStringValue(state, DATA_SET_ID); // 获取智能体ID
+		String agentId = StateUtils.getStringValue(state, AGENT_ID); // 获取智能体ID
 		logger.info("[{}] Processing user input: {} for agentId: {}", this.getClass().getSimpleName(), input, agentId);
 
 		// Use streaming utility class for content collection and result mapping

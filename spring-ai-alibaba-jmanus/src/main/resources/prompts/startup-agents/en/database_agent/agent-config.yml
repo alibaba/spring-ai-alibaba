@@ -1,6 +1,7 @@
 # DATABASE_AGENT Configuration
 agentName: DATABASE_AGENT
 agentDescription: A database agent that can operate databases through natural language and automatically complete data query and analysis tasks
+builtIn: false
 availableToolKeys:
   - database_use
   - terminate

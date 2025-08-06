@@ -1,6 +1,7 @@
 # MAPREDUCE_REDUCE_TASK_AGENT Configuration
 agentName: MAPREDUCE_REDUCE_TASK_AGENT
 agentDescription: A Reduce task execution agent responsible for handling Reduce phase tasks in the MapReduce process. The agent will automatically receive output results from multiple Map tasks, execute data aggregation, merging, or aggregation operations, and generate final processing results.
+builtIn: true
 availableToolKeys:
   - reduce_operation_tool
   - terminate
