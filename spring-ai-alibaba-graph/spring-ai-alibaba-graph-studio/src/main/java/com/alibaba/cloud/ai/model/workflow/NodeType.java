@@ -50,8 +50,6 @@ public enum NodeType {
 
 	TOOL("tool", "tool"),
 
-	KNOWLEDGE_RETRIEVAL("knowledge-retrieval", "knowledge-retrieval"),
-
 	MCP("mcp", "unsupported"),
 
 	TEMPLATE_TRANSFORM("template-transform", "template-transform"),

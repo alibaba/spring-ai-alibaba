@@ -21,25 +21,6 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 {{importSection}}
 
-{{#hasRetriever}}
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.reader.TextReader;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-{{/hasRetriever}}
-
-{{#hasCode}}
-import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig;
-import com.alibaba.cloud.ai.graph.node.code.CodeExecutor;
-import com.alibaba.cloud.ai.graph.node.code.LocalCommandlineCodeExecutor;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-{{/hasCode}}
-
 @Component
 public class GraphBuilder {
     {{#hasRetriever}}
@@ -53,7 +34,7 @@ public class GraphBuilder {
         ChatModel chatModel
         {{#hasRetriever}}, VectorStore vectorStore{{/hasRetriever}}
         {{#hasCode}}, CodeExecutionConfig codeExecutionConfig, CodeExecutor codeExecutor{{/hasCode}}
-        ) throws GraphStateException {
+        ) throws Exception {
         ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
 
         // new stateGraph
