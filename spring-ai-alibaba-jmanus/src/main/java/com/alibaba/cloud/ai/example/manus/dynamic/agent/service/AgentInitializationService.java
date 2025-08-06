@@ -98,7 +98,9 @@ public class AgentInitializationService {
 	private void createAgentIfNotExists(String namespace, AgentEnum agent, String language) {
 		DynamicAgentEntity agentEntity = agentRepository.findByNamespaceAndAgentName(namespace, agent.getAgentName());
 		boolean isNewAgent = (agentEntity == null);
+		boolean isNewAgent = (agentEntity == null);
 
+		if (isNewAgent) {
 		if (isNewAgent) {
 			agentEntity = new DynamicAgentEntity();
 			agentEntity.setAgentName(agent.getAgentName());
@@ -106,7 +108,11 @@ public class AgentInitializationService {
 			// Description will be loaded from config file
 			agentEntity.setClassName(""); // YAML-based agents
 		}
+		}
 
+		// Load configuration and update agent (both new and existing)
+		String agentPath = agent.getAgentPath();
+		StartupAgentConfigLoader.AgentConfig agentConfig = configLoader.loadAgentConfig(agentPath, language);
 		// Load configuration and update agent (both new and existing)
 		String agentPath = agent.getAgentPath();
 		StartupAgentConfigLoader.AgentConfig agentConfig = configLoader.loadAgentConfig(agentPath, language);

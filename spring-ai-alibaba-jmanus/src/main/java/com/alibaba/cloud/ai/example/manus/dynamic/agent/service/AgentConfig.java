@@ -41,6 +41,8 @@ public class AgentConfig {
 
 	private Boolean builtIn = false;
 
+	private Boolean isBuiltIn = false;
+
 	// Getters and Setters
 	public String getId() {
 		return id;
@@ -120,6 +122,14 @@ public class AgentConfig {
 
 	public void setBuiltIn(Boolean builtIn) {
 		this.builtIn = builtIn;
+	}
+
+	public Boolean getIsBuiltIn() {
+		return isBuiltIn;
+	}
+
+	public void setIsBuiltIn(Boolean isBuiltIn) {
+		this.isBuiltIn = isBuiltIn;
 	}
 
 }
