@@ -170,6 +170,13 @@ export default function Account() {
       breadcrumbLinks={[
         {
           title: $i18n.get({
+            id: 'main.pages.App.index.home',
+            dm: '首页',
+          }),
+          path: '/',
+        },
+        {
+          title: $i18n.get({
             id: 'main.pages.Setting.Account.index.accountManagement',
             dm: '账户管理',
           }),

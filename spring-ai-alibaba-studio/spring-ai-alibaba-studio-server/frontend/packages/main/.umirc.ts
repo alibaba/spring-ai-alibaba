@@ -17,7 +17,7 @@ export default defineConfig({
   routes: [
     {
       path: '/',
-      redirect: '/app',
+      redirect: '/home',
     },
     {
       path: '/app/assistant/:id',
@@ -29,7 +29,19 @@ export default defineConfig({
     },
     {
       path: '/app',
+      component: 'App/AppList',
+    },
+    {
+      path: '/app/:tab',
+      component: 'App/AppList',
+    },
+    {
+      path: '/home',
       component: 'App/index',
+    },
+    {
+      path: '/dify',
+      component: 'Dify/index',
     },
     {
       path: '/app/:tab',

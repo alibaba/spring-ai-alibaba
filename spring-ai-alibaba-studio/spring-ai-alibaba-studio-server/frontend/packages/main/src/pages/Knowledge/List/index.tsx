@@ -128,6 +128,13 @@ export default function () {
       breadcrumbLinks={[
         {
           title: $i18n.get({
+            id: 'main.pages.App.index.home',
+            dm: '首页',
+          }),
+          path: '/',
+        },
+        {
+          title: $i18n.get({
             id: 'main.pages.Knowledge.List.index.knowledgeBase',
             dm: '知识库',
           }),

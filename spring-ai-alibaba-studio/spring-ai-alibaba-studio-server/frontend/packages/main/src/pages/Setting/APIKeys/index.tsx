@@ -197,6 +197,13 @@ export default function APIKeys() {
       breadcrumbLinks={[
         {
           title: $i18n.get({
+            id: 'main.pages.App.index.home',
+            dm: '首页',
+          }),
+          path: '/',
+        },
+        {
+          title: $i18n.get({
             id: 'main.pages.Setting.APIKeys.index.apiKeyManagement',
             dm: 'API KEY 管理',
           }),
