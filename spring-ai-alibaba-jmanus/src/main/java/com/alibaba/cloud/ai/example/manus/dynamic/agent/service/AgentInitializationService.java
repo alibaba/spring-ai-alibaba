@@ -101,13 +101,13 @@ public class AgentInitializationService {
 		boolean isNewAgent = (agentEntity == null);
 
 		if (isNewAgent) {
-		if (isNewAgent) {
-			agentEntity = new DynamicAgentEntity();
-			agentEntity.setAgentName(agent.getAgentName());
-			agentEntity.setNamespace(namespace);
-			// Description will be loaded from config file
-			agentEntity.setClassName(""); // YAML-based agents
-		}
+			if (isNewAgent) {
+				agentEntity = new DynamicAgentEntity();
+				agentEntity.setAgentName(agent.getAgentName());
+				agentEntity.setNamespace(namespace);
+				// Description will be loaded from config file
+				agentEntity.setClassName(""); // YAML-based agents
+			}
 		}
 
 		// Load configuration and update agent (both new and existing)
