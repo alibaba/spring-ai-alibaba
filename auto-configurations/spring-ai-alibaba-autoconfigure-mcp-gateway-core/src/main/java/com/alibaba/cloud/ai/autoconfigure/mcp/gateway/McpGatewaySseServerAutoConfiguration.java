@@ -18,10 +18,18 @@ package com.alibaba.cloud.ai.autoconfigure.mcp.gateway;
 
 import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.server.McpAsyncServer;
+import io.modelcontextprotocol.server.McpServer;
+import io.modelcontextprotocol.server.McpServer.AsyncSpecification;
+import io.modelcontextprotocol.server.McpServer.SyncSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures;
+import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
+import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.mcp.server.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -29,6 +37,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.reactive.function.server.RouterFunction;
+
+import java.util.List;
 
 /**
  * Auto-configuration for MCP Gateway SSE Server Transport using WebFlux.
@@ -38,7 +48,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  *
  * @author aias00
  */
-@AutoConfiguration(before = McpServerAutoConfiguration.class)
+@AutoConfiguration(before = McpGatewayServerAutoConfiguration.class)
 @ConditionalOnClass({ WebFluxSseServerTransportProvider.class })
 @ConditionalOnProperty(name = "spring.ai.alibaba.mcp.gateway.sse.enabled", havingValue = "true", matchIfMissing = true)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
@@ -72,14 +82,100 @@ public class McpGatewaySseServerAutoConfiguration {
 
 	/**
 	 * Creates a router function for WebFlux SSE transport.
-	 * @param webFluxProvider WebFlux SSE transport provider
+	 * @param webFluxSseServerTransportProvider WebFlux SSE transport provider
 	 * @return RouterFunction
 	 */
 	@Bean
-	public RouterFunction<?> webfluxMcpRouterFunction(WebFluxSseServerTransportProvider webFluxProvider) {
-		RouterFunction<?> routerFunction = webFluxProvider.getRouterFunction();
+	public RouterFunction<?> webfluxMcpRouterFunction(
+			WebFluxSseServerTransportProvider webFluxSseServerTransportProvider) {
+		RouterFunction<?> routerFunction = webFluxSseServerTransportProvider.getRouterFunction();
 		log.info("MCP Gateway WebFlux RouterFunction created successfully");
 		return routerFunction;
+	}
+
+	/**
+	 * Creates a synchronous MCP Server bean compatible with v0.11.0. This simulates the
+	 * old version's sync() method behavior.
+	 * @param transportProviders Available transport providers
+	 * @return McpSyncServer
+	 */
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public McpSyncServer mcpSyncServer(ObjectProvider<List<McpServerTransportProvider>> transportProviders,
+			ObjectProvider<List<McpServerFeatures.SyncToolSpecification>> tools, McpServerProperties serverProperties) {
+
+		log.info("Creating MCP Sync Server bean compatible with v0.11.0");
+
+		List<McpServerTransportProvider> providers = transportProviders.getIfAvailable();
+		if (providers == null || providers.isEmpty()) {
+			log.warn("No transport providers available for MCP Sync Server");
+			return null;
+		}
+
+		// 使用第一个可用的 transport provider
+		McpServerTransportProvider provider = providers.get(0);
+		log.info("Using transport provider: {}", provider.getClass().getSimpleName());
+
+		// 创建服务器信息
+		McpSchema.Implementation serverInfo = new McpSchema.Implementation("mcp-sse-gateway", "1.0.0");
+
+		// 创建同步服务器规范
+		SyncSpecification<?> serverBuilder = McpServer.sync(provider).serverInfo(serverInfo);
+
+		// 构建服务器能力
+		McpSchema.ServerCapabilities.Builder capabilitiesBuilder = McpSchema.ServerCapabilities.builder();
+		capabilitiesBuilder.tools(serverProperties.isToolChangeNotification()); // 启用工具能力
+
+		serverBuilder.capabilities(capabilitiesBuilder.build());
+
+		serverBuilder.tools(tools.stream().flatMap(List::stream).toList());
+		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
+		// 构建并返回同步服务器
+		return serverBuilder.build();
+	}
+
+	/**
+	 * Creates an asynchronous MCP Server bean compatible with v0.11.0. This simulates the
+	 * old version's async() method behavior.
+	 * @param transportProviders Available transport providers
+	 * @return McpAsyncServer
+	 */
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public McpAsyncServer mcpAsyncServer(ObjectProvider<List<McpServerTransportProvider>> transportProviders,
+			ObjectProvider<List<McpServerFeatures.AsyncToolSpecification>> tools,
+			McpServerProperties serverProperties) {
+
+		log.info("Creating MCP Async Server bean compatible with v0.11.0");
+
+		List<McpServerTransportProvider> providers = transportProviders.getIfAvailable();
+		if (providers == null || providers.isEmpty()) {
+			log.warn("No transport providers available for MCP Async Server");
+			return null;
+		}
+
+		// 使用第一个可用的 transport provider
+		McpServerTransportProvider provider = providers.get(0);
+		log.info("Using transport provider: {}", provider.getClass().getSimpleName());
+
+		// 创建服务器信息
+		McpSchema.Implementation serverInfo = new McpSchema.Implementation("mcp-gateway", "1.0.0");
+
+		// 创建异步服务器规范
+		AsyncSpecification<?> serverBuilder = McpServer.async(provider).serverInfo(serverInfo);
+
+		// 构建服务器能力
+		McpSchema.ServerCapabilities.Builder capabilitiesBuilder = McpSchema.ServerCapabilities.builder();
+
+		capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
+
+		serverBuilder.tools(tools.stream().flatMap(List::stream).toList());
+
+		serverBuilder.capabilities(capabilitiesBuilder.build());
+
+		// 构建并返回异步服务器
+		return serverBuilder.build();
 	}
 
 }
