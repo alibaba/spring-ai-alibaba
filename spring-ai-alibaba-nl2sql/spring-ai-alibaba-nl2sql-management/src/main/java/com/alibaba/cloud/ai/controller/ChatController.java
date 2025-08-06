@@ -180,4 +180,26 @@ public class ChatController {
 		}
 	}
 
+	/**
+	 * 保存消息到会话
+	 */
+	@PostMapping("/sessions/{sessionId}/messages")
+	public ResponseEntity<ChatMessage> saveMessage(@PathVariable String sessionId, @RequestBody ChatMessage message) {
+		try {
+			// 设置会话ID
+			message.setSessionId(sessionId);
+			
+			// 保存消息
+			ChatMessage savedMessage = chatMessageService.saveMessage(message);
+			
+			// 更新会话活动时间
+			chatSessionService.updateSessionTime(sessionId);
+			
+			return ResponseEntity.ok(savedMessage);
+		} catch (Exception e) {
+			log.error("Save message error for session {}: {}", sessionId, e.getMessage(), e);
+			return ResponseEntity.internalServerError().build();
+		}
+	}
+
 }
