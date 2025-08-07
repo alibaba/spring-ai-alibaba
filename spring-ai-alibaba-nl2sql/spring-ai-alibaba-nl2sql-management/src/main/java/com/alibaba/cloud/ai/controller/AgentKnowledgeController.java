@@ -219,10 +219,16 @@ public class AgentKnowledgeController {
 							&& updatedKnowledge.getContent() != null
 							&& !updatedKnowledge.getContent().trim().isEmpty()) {
 						// Content changes or status becomes active, re-vectorize
-						agentVectorService.deleteKnowledgeFromVector(agentId, id); // First delete old
-						agentVectorService.addKnowledgeToVector(agentId, updatedKnowledge); // Then add new
+						agentVectorService.deleteKnowledgeFromVector(agentId, id); // First
+																					// delete
+																					// old
+						agentVectorService.addKnowledgeToVector(agentId, updatedKnowledge); // Then
+																							// add
+																							// new
 						updatedKnowledge.setEmbeddingStatus("completed");
-						agentKnowledgeService.updateKnowledge(id, updatedKnowledge); // Update embedding status
+						agentKnowledgeService.updateKnowledge(id, updatedKnowledge); // Update
+																						// embedding
+																						// status
 					}
 				}
 				catch (Exception vectorException) {

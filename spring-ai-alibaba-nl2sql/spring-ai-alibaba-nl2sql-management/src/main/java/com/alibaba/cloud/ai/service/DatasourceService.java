@@ -113,7 +113,8 @@ public class DatasourceService {
 			ps.setInt(4, datasource.getPort());
 			ps.setString(5, datasource.getDatabaseName());
 			ps.setString(6, datasource.getUsername());
-			ps.setString(7, datasource.getPassword()); // Note: Encryption is needed in actual applications
+			ps.setString(7, datasource.getPassword()); // Note: Encryption is needed in
+														// actual applications
 			ps.setString(8, datasource.getConnectionUrl());
 			ps.setString(9, datasource.getStatus() != null ? datasource.getStatus() : "active");
 			ps.setString(10, datasource.getTestStatus() != null ? datasource.getTestStatus() : "unknown");
@@ -201,7 +202,8 @@ public class DatasourceService {
 		DbConfig config = new DbConfig();
 		String originalUrl = datasource.getConnectionUrl();
 
-		// Check if URL contains serverTimezone parameter, add default timezone if not, otherwise it will throw an exception
+		// Check if URL contains serverTimezone parameter, add default timezone if not,
+		// otherwise it will throw an exception
 		if (StringUtils.isNotBlank(originalUrl)) {
 			String lowerUrl = originalUrl.toLowerCase();
 
@@ -279,7 +281,8 @@ public class DatasourceService {
 	 */
 	@Transactional
 	public AgentDatasource addDatasourceToAgent(Integer agentId, Integer datasourceId) {
-		// First disable other data sources of the agent (an agent can only enable one data source)
+		// First disable other data sources of the agent (an agent can only enable one
+		// data source)
 		String disableOthersSql = "UPDATE agent_datasource SET is_active = 0 WHERE agent_id = ?";
 		jdbcTemplate.update(disableOthersSql, agentId);
 

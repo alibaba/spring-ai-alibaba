@@ -32,7 +32,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Agent Schema Initialization Controller Handles agent's database Schema initialization to vector storage
+ * Agent Schema Initialization Controller Handles agent's database Schema initialization
+ * to vector storage
  */
 @Controller
 @RequestMapping("/api/agent/{agentId}/schema")
@@ -52,7 +53,8 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * Initialize agent's database Schema to vector storage Corresponds to the "Initialize Information Source" function on the frontend
+	 * Initialize agent's database Schema to vector storage Corresponds to the "Initialize
+	 * Information Source" function on the frontend
 	 */
 	@PostMapping("/init")
 	@ResponseBody
@@ -238,7 +240,8 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * Agent chat interface - Streaming response Directly call streamSearch method of Nl2sqlForGraphController
+	 * Agent chat interface - Streaming response Directly call streamSearch method of
+	 * Nl2sqlForGraphController
 	 */
 	@PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	@ResponseBody

@@ -36,7 +36,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Agent Vector Storage Service Specializes in handling agent-related vector storage operations, ensuring data isolation
+ * Agent Vector Storage Service Specializes in handling agent-related vector storage
+ * operations, ensuring data isolation
  */
 @Service
 public class AgentVectorService {
@@ -278,7 +279,8 @@ public class AgentVectorService {
 	private com.alibaba.cloud.ai.connector.accessor.Accessor dbAccessor;
 
 	/**
-	 * Get list of data sources configured for agent Query data source information associated with agent from database
+	 * Get list of data sources configured for agent Query data source information
+	 * associated with agent from database
 	 */
 	public List<Map<String, Object>> getAgentDatasources(Long agentId) {
 		try {
@@ -303,7 +305,8 @@ public class AgentVectorService {
 						dsMap.put("port", datasource.getPort());
 						dsMap.put("databaseName", datasource.getDatabaseName());
 						dsMap.put("username", datasource.getUsername());
-						dsMap.put("password", datasource.getPassword()); // Add password field
+						dsMap.put("password", datasource.getPassword()); // Add password
+																			// field
 						dsMap.put("connectionUrl", datasource.getConnectionUrl());
 						dsMap.put("status", datasource.getStatus());
 						dsMap.put("testStatus", datasource.getTestStatus());
@@ -480,7 +483,8 @@ public class AgentVectorService {
 			DbConfig dbConfig = createDbConfigFromDatasource(dsEntity);
 
 			// Use SimpleNl2SqlService to process query
-			// Note: SimpleNl2SqlService needs to be injected here, but for simplicity, we return a basic response first
+			// Note: SimpleNl2SqlService needs to be injected here, but for simplicity, we
+			// return a basic response first
 			String response = processAgentQuery(agentIdStr, query, dbConfig);
 
 			log.info("Generated response for agent: {}", agentIdStr);
@@ -499,7 +503,8 @@ public class AgentVectorService {
 	private String processAgentQuery(String agentId, String query, DbConfig dbConfig) {
 		try {
 			// This is a simplified implementation
-			// In actual applications, the complete NL2SQL processing flow should be integrated
+			// In actual applications, the complete NL2SQL processing flow should be
+			// integrated
 
 			// 1. 检查是否是简单的问候语
 			if (isGreeting(query)) {
@@ -552,7 +557,9 @@ public class AgentVectorService {
 
 			if (!columns.isEmpty()) {
 				response.append("📋 **相关字段：**\n");
-				for (String column : columns.subList(0, Math.min(columns.size(), 8))) { // Limit display quantity
+				for (String column : columns.subList(0, Math.min(columns.size(), 8))) { // Limit
+																						// display
+																						// quantity
 					response.append(column).append("\n");
 				}
 				if (columns.size() > 8) {

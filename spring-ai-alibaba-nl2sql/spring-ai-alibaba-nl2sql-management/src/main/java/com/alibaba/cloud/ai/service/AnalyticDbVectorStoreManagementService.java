@@ -53,7 +53,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Core vector database operation service, providing vector writing, querying, deletion, schema initialization and other functions.
+ * Core vector database operation service, providing vector writing, querying, deletion,
+ * schema initialization and other functions.
  */
 
 @Service
