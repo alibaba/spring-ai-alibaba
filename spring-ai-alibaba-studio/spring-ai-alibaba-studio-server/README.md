@@ -10,9 +10,14 @@ chmod a+x ./run.sh
 ./run.sh
 ```
 
-3. 运行 studio admin
+3. 进入 spring-ai-alibaba-studio-server-admin 目录，启动后端应用
 
 ```shell
+cd spring-ai-alibaba-studio-server-admin
 mvn spring-boot:run
 # 如遇编译或依赖问题，请在根目录运行 mvn clean install 安装相关组件后重试
 ```
+
+4. 启动前端组件
+
+进入 frontend 目录，参考 README 运行并打开浏览器访问前端页面。
