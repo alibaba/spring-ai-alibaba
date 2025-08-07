@@ -117,7 +117,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		// Asynchronous execution of task
 		CompletableFuture.supplyAsync(() -> {
 			try {
-				// The name here will be automatically adjusted to generate the corresponding language according to the time zone
+				// The name here will be automatically adjusted to generate the
+				// corresponding language according to the time zone
 				memoryService.saveMemory(new MemoryEntity(memoryId, LocalDateTime.now().format(formatter)));
 				return planningFlow.executePlan(context);
 			}
