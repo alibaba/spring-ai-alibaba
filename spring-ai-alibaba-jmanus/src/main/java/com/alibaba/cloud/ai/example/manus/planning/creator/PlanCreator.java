@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.planning.creator;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.advisor.CustomMessageChatMemoryAdvisor;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
@@ -28,7 +29,6 @@ import com.alibaba.cloud.ai.example.manus.tool.PlanningToolInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -109,9 +109,11 @@ public class PlanCreator {
 					if (useMemory) {
 						requestSpec
 							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
-						requestSpec.advisors(MessageChatMemoryAdvisor
-							.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
-							.build());
+						requestSpec.advisors(
+								CustomMessageChatMemoryAdvisor
+									.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()),
+											context.getUserRequest())
+									.build());
 					}
 
 					// Use streaming response handler for plan creation

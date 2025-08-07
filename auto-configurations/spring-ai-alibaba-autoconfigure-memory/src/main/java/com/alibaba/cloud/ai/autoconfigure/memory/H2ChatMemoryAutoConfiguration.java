@@ -35,7 +35,7 @@ import javax.sql.DataSource;
  * Auto-configuration for h2 chat memory repository.
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
-@ConditionalOnClass({ H2ChatMemoryRepository.class, DataSource.class, JdbcTemplate.class })
+@ConditionalOnClass({ H2ChatMemoryRepository.class, JdbcTemplate.class })
 @ConditionalOnProperty(prefix = "spring.ai.memory.h2", name = "enabled", havingValue = "true", matchIfMissing = false)
 @EnableConfigurationProperties(H2ChatMemoryProperties.class)
 public class H2ChatMemoryAutoConfiguration {

@@ -24,7 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(H2ChatMemoryProperties.CONFIG_PREFIX)
 public class H2ChatMemoryProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.jdbc.h2";
+	public static final String CONFIG_PREFIX = "spring.ai.memory.h2";
 
 	private boolean initializeSchema = true;
 

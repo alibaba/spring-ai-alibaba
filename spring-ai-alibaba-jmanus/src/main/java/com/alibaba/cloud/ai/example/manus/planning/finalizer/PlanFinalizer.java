@@ -112,7 +112,7 @@ public class PlanFinalizer {
 			throw new RuntimeException("Failed to generate summary", e);
 		}
 		finally {
-			// llmService.clearConversationMemory(context.getMemoryId());
+			llmService.clearConversationMemory(context.getMemoryId());
 		}
 	}
 
@@ -174,11 +174,6 @@ public class PlanFinalizer {
 		catch (Exception e) {
 			log.error("Error generating direct response for request: {}", userRequest, e);
 			throw new RuntimeException("Failed to generate direct response", e);
-		}
-		finally {
-			if (context.getPlan() != null) {
-				// llmService.clearConversationMemory(context.getMemoryId());
-			}
 		}
 	}
 

@@ -35,4 +35,5 @@ public interface MemoryService {
 	MemoryEntity updateMemory(MemoryEntity memoryEntity);
 
 	MemoryEntity singleMemory(String memoryId);
+
 }
