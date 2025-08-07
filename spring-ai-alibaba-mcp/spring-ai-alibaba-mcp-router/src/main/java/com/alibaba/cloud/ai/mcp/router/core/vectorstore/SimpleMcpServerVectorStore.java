@@ -18,6 +18,8 @@
 package com.alibaba.cloud.ai.mcp.router.core.vectorstore;
 
 import com.alibaba.cloud.ai.mcp.router.model.McpServerInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -38,6 +40,8 @@ import java.util.stream.Collectors;
 @Component
 public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 
+	private static final Logger logger = LoggerFactory.getLogger(SimpleMcpServerVectorStore.class);
+
 	private final EmbeddingModel embeddingModel;
 
 	private final SimpleVectorStore vectorStore;
@@ -47,26 +51,40 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 		this.embeddingModel = embeddingModel;
 		if (embeddingModel != null) {
 			this.vectorStore = SimpleVectorStore.builder(embeddingModel).build();
+			logger.info("SimpleMcpServerVectorStore initialized with EmbeddingModel: {}",
+					embeddingModel.getClass().getSimpleName());
 		}
 		else {
 			// 如果没有 EmbeddingModel，创建一个空的 SimpleVectorStore
 			this.vectorStore = null;
+			logger
+				.warn("SimpleMcpServerVectorStore initialized without EmbeddingModel - vector store will be disabled");
 		}
 	}
 
 	@Override
 	public boolean addServer(McpServerInfo serverInfo) {
-		if (serverInfo == null || serverInfo.getName() == null || vectorStore == null) {
+		if (serverInfo == null || serverInfo.getName() == null) {
+			logger.warn("Cannot add server: serverInfo is null or name is null");
+			return false;
+		}
+
+		if (vectorStore == null) {
+			logger.warn("Cannot add server '{}': vectorStore is null (no EmbeddingModel available)",
+					serverInfo.getName());
 			return false;
 		}
 
 		try {
 			// 转换为 Document
 			Document document = convertToDocument(serverInfo);
+			logger.debug("Adding server to vector store: {}", serverInfo.getName());
 			vectorStore.add(List.of(document));
+			logger.info("Successfully added server to vector store: {}", serverInfo.getName());
 			return true;
 		}
 		catch (Exception e) {
+			logger.error("Failed to add server to vector store: {}", serverInfo.getName(), e);
 			return false;
 		}
 	}
@@ -74,6 +92,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 	@Override
 	public boolean removeServer(String serviceName) {
 		if (vectorStore == null) {
+			logger.warn("Cannot remove server '{}': vectorStore is null", serviceName);
 			return false;
 		}
 
@@ -86,12 +105,15 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 				Document doc = documents.get(0);
 				if (serviceName.equals(doc.getMetadata().get("serviceName"))) {
 					vectorStore.delete(List.of(doc.getId()));
+					logger.info("Successfully removed server from vector store: {}", serviceName);
 					return true;
 				}
 			}
+			logger.warn("Server not found in vector store: {}", serviceName);
 			return false;
 		}
 		catch (Exception e) {
+			logger.error("Failed to remove server from vector store: {}", serviceName, e);
 			return false;
 		}
 	}
@@ -99,6 +121,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 	@Override
 	public McpServerInfo getServer(String serviceName) {
 		if (vectorStore == null) {
+			logger.warn("Cannot get server '{}': vectorStore is null", serviceName);
 			return null;
 		}
 
@@ -113,9 +136,11 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 					return convertFromDocument(doc);
 				}
 			}
+			logger.debug("Server not found in vector store: {}", serviceName);
 			return null;
 		}
 		catch (Exception e) {
+			logger.error("Failed to get server from vector store: {}", serviceName, e);
 			return null;
 		}
 	}
@@ -123,6 +148,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 	@Override
 	public List<McpServerInfo> getAllServers() {
 		if (vectorStore == null) {
+			logger.warn("Cannot get all servers: vectorStore is null");
 			return new ArrayList<>();
 		}
 
@@ -134,12 +160,14 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 				.build();
 
 			List<Document> documents = vectorStore.similaritySearch(searchRequest);
+			logger.debug("Found {} documents in vector store", documents.size());
 			return documents.stream()
 				.map(this::convertFromDocument)
 				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
 		}
 		catch (Exception e) {
+			logger.error("Failed to get all servers from vector store", e);
 			return new ArrayList<>();
 		}
 	}
@@ -147,13 +175,16 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 	@Override
 	public List<McpServerInfo> search(String query, int limit) {
 		if (vectorStore == null) {
+			logger.warn("Cannot search servers: vectorStore is null");
 			return new ArrayList<>();
 		}
 
 		try {
+			logger.debug("Searching vector store with query: '{}', limit: {}", query, limit);
 			SearchRequest searchRequest = SearchRequest.builder().query(query).topK(limit).build();
 
 			List<Document> documents = vectorStore.similaritySearch(searchRequest);
+			logger.debug("Found {} documents in search results", documents.size());
 
 			return documents.stream()
 				.filter(doc -> doc.getScore() > 0.2) // 过滤低分结果
@@ -162,6 +193,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 				.collect(Collectors.toList());
 		}
 		catch (Exception e) {
+			logger.error("Failed to search vector store with query: '{}'", query, e);
 			return new ArrayList<>();
 		}
 	}
@@ -176,9 +208,11 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 			SearchRequest searchRequest = SearchRequest.builder().query("").topK(Integer.MAX_VALUE).build();
 
 			List<Document> documents = vectorStore.similaritySearch(searchRequest);
+			logger.debug("Vector store size: {}", documents.size());
 			return documents.size();
 		}
 		catch (Exception e) {
+			logger.error("Failed to get vector store size", e);
 			return 0;
 		}
 	}
@@ -186,6 +220,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 	@Override
 	public void clear() {
 		if (vectorStore == null) {
+			logger.warn("Cannot clear vector store: vectorStore is null");
 			return;
 		}
 
@@ -198,10 +233,11 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 
 			if (!ids.isEmpty()) {
 				vectorStore.delete(ids);
+				logger.info("Cleared {} documents from vector store", ids.size());
 			}
 		}
 		catch (Exception e) {
-			// 忽略异常
+			logger.error("Failed to clear vector store", e);
 		}
 	}
 
@@ -245,6 +281,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 			return serverInfo;
 		}
 		catch (Exception e) {
+			logger.error("Failed to convert document to McpServerInfo", e);
 			return null;
 		}
 	}

@@ -30,10 +30,6 @@ public abstract class AbstractRouterWatcher {
 
 	protected final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-	public AbstractRouterWatcher() {
-		startScheduledPolling();
-	}
-
 	protected void startScheduledPolling() {
 		long interval = Math.max(1, getPollingInterval()); // 保证最小为1秒
 		scheduler.scheduleAtFixedRate(this::watch, interval, interval, TimeUnit.SECONDS);

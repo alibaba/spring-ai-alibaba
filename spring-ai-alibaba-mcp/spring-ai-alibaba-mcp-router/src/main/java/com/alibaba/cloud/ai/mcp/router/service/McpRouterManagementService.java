@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.mcp.router.service;
 import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscovery;
 import com.alibaba.cloud.ai.mcp.router.core.vectorstore.McpServerVectorStore;
 import com.alibaba.cloud.ai.mcp.router.model.McpServerInfo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -36,7 +35,6 @@ public class McpRouterManagementService {
 
 	private final McpServerVectorStore mcpServerVectorStore;
 
-	@Autowired
 	public McpRouterManagementService(McpServiceDiscovery mcpServiceDiscovery,
 			McpServerVectorStore mcpServerVectorStore) {
 		this.mcpServiceDiscovery = mcpServiceDiscovery;

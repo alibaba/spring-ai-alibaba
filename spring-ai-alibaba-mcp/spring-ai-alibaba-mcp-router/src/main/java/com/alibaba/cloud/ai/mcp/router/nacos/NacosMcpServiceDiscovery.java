@@ -21,7 +21,6 @@ import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscovery;
 import com.alibaba.cloud.ai.mcp.router.model.McpServerInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -33,8 +32,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class NacosMcpServiceDiscovery implements McpServiceDiscovery {
 
-	@Autowired
-	private NacosMcpOperationService nacosMcpOperationService;
+	private final NacosMcpOperationService nacosMcpOperationService;
+
+	public NacosMcpServiceDiscovery(final NacosMcpOperationService nacosMcpOperationService) {
+		this.nacosMcpOperationService = nacosMcpOperationService;
+	}
 
 	// 本地缓存：serviceName -> McpServerInfo
 	private final Map<String, McpServerInfo> serviceCache = new ConcurrentHashMap<>();

@@ -35,10 +35,10 @@ public class EmbeddingModelConfig {
 	@Value("${spring.ai.dashscope.api-key:default_api_key}")
 	private String apiKey;
 
-	@Bean(name = "dashscopeEmbeddingModel")
+	@Bean
 	@ConditionalOnMissingBean
-	public EmbeddingModel dashscopeEmbeddingModel() {
-		if (apiKey == null || apiKey.isEmpty()) {
+	public EmbeddingModel embeddingModel() {
+		if (apiKey == null || apiKey.isEmpty() || "default_api_key".equals(apiKey)) {
 			throw new IllegalArgumentException("Environment variable DASHSCOPE_API_KEY is not set.");
 		}
 		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(apiKey).build();
