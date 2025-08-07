@@ -170,7 +170,7 @@ public class InitController {
 			if (apiKey == null || apiKey.trim().isEmpty()) {
 				throw new IllegalArgumentException("API key cannot be null or empty");
 			}
-			
+
 			ModelConfig modelConfig = new ModelConfig();
 			modelConfig.setApiKey(apiKey.trim());
 			modelConfig.setType(ModelType.GENERAL.name());
@@ -185,25 +185,27 @@ public class InitController {
 				modelConfig.setModelDescription(description);
 			}
 			else if ("custom".equals(configMode)) {
-				// Use user custom configuration - only baseUrl, modelName, and apiKey are required
+				// Use user custom configuration - only baseUrl, modelName, and apiKey are
+				// required
 				String baseUrl = request.getBaseUrl();
 				if (baseUrl == null || baseUrl.trim().isEmpty()) {
 					throw new IllegalArgumentException("Base URL cannot be null or empty");
 				}
 				modelConfig.setBaseUrl(baseUrl.trim());
-				
+
 				String modelName = request.getModelName();
 				if (modelName == null || modelName.trim().isEmpty()) {
 					throw new IllegalArgumentException("Model name cannot be null or empty");
 				}
 				modelConfig.setModelName(modelName.trim());
-				
+
 				// Optional fields - can be null or empty
 				String completionsPath = request.getCompletionsPath();
 				if (completionsPath != null && !completionsPath.trim().isEmpty()) {
 					modelConfig.setCompletionsPath(completionsPath.trim());
 				}
-				// If completionsPath is null/empty, it will use default "/v1/chat/completions"
+				// If completionsPath is null/empty, it will use default
+				// "/v1/chat/completions"
 
 				String displayName = request.getModelDisplayName();
 				if (displayName == null || displayName.trim().isEmpty()) {
