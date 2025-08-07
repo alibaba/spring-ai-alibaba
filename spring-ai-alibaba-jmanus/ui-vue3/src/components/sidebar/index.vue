@@ -250,19 +250,38 @@
                 />
                 {{ sidebarStore.isExecuting ? $t('sidebar.executing') : $t('sidebar.executePlan') }}
               </button>
+              <button
+                class="btn btn-secondary publish-mcp-btn"
+                @click="handlePublishMcpService"
+                :disabled="!sidebarStore.currentPlanTemplateId"
+              >
+                <Icon icon="carbon:cloud-service" width="16" />
+                发布MCP服务
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- 发布MCP服务模态框 -->
+  <PublishMcpServiceModal
+    v-model="showPublishMcpModal"
+    :plan-template-id="sidebarStore.currentPlanTemplateId || ''"
+    :plan-title="sidebarStore.selectedTemplate?.title || ''"
+    :plan-description="sidebarStore.selectedTemplate?.description || ''"
+    @published="handleMcpServicePublished"
+  />
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { sidebarStore } from '@/stores/sidebar'
+import PublishMcpServiceModal from '@/components/publish-mcp-service-modal/index.vue'
+import type { CoordinatorToolVO } from '@/api/coordinator-tool-api-service'
 
 const { t } = useI18n()
 
@@ -393,6 +412,28 @@ const handleExecutePlan = async () => {
   } finally {
     sidebarStore.finishPlanExecution()
   }
+}
+
+// 发布MCP服务相关状态
+const showPublishMcpModal = ref(false)
+
+const handlePublishMcpService = () => {
+  console.log('[Sidebar] 发布MCP服务按钮被点击')
+  console.log('[Sidebar] currentPlanTemplateId:', sidebarStore.currentPlanTemplateId)
+  
+  if (!sidebarStore.currentPlanTemplateId) {
+    console.log('[Sidebar] 没有选择计划模板，显示警告')
+    alert('请先选择一个计划模板')
+    return
+  }
+  
+  console.log('[Sidebar] 打开发布MCP服务模态框')
+  showPublishMcpModal.value = true
+}
+
+const handleMcpServicePublished = (tool: CoordinatorToolVO) => {
+  console.log('MCP服务发布成功:', tool)
+  // 可以在这里添加发布成功后的处理逻辑
 }
 
 // Utility functions
@@ -737,10 +778,17 @@ defineExpose({
             }
           }
 
-          .execute-btn {
+          .execute-btn,
+          .publish-mcp-btn {
             padding: 10px 16px;
             font-size: 13px;
             font-weight: 500;
+            width: 100%;
+            margin-bottom: 8px;
+          }
+
+          .publish-mcp-btn {
+            margin-bottom: 0;
           }
         }
       }
@@ -783,6 +831,18 @@ defineExpose({
       &:hover:not(:disabled) {
         background: rgba(255, 255, 255, 0.2);
         color: white;
+      }
+    }
+
+    &.publish-mcp-btn {
+      background: rgba(76, 175, 80, 0.1);
+      color: rgba(76, 175, 80, 0.9);
+      border: 1px solid rgba(76, 175, 80, 0.3);
+
+      &:hover:not(:disabled) {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        border-color: rgba(76, 175, 80, 0.5);
       }
     }
 
