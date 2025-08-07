@@ -79,16 +79,86 @@
             </div>
           </div>
           <div class="agent-actions">
-            <button 
-              class="btn btn-publish" 
-              @click="publishAgent"
-              :disabled="isPublishing"
-              :class="{ loading: isPublishing }"
-            >
-              <i class="bi bi-cloud-upload" v-if="!isPublishing"></i>
-              <div class="spinner" v-if="isPublishing"></div>
-              {{ isPublishing ? '发布中...' : '发布' }}
-            </button>
+            <div class="publish-dropdown" :class="{ active: showPublishDropdown }">
+              <button 
+                class="btn btn-publish" 
+                @click="togglePublishDropdown"
+              >
+                <i class="bi bi-cloud-upload"></i>
+                发布
+                <i class="bi bi-chevron-down dropdown-arrow"></i>
+              </button>
+              
+              <!-- 下拉菜单 -->
+              <div v-if="showPublishDropdown" class="publish-dropdown-menu">
+                <div class="dropdown-header">
+                  <div class="publish-status">
+                    <i class="bi bi-clock-history"></i>
+                    <div class="status-info">
+                      <h4>最新发布</h4>
+                      <p>发布于 2 小时前</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="dropdown-body">
+                  <!-- 发布更新按钮 -->
+                  <button 
+                    class="dropdown-item primary" 
+                    @click="publishUpdate"
+                    :disabled="isPublishing"
+                  >
+                    <div class="item-content">
+                      <div class="item-icon">
+                        <i class="bi bi-cloud-upload" v-if="!isPublishing"></i>
+                        <div class="spinner" v-if="isPublishing"></div>
+                      </div>
+                      <div class="item-text">
+                        <span class="item-title">{{ isPublishing ? '发布中...' : '发布更新' }}</span>
+                        <span class="item-shortcut">⌘ ↑ P</span>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <!-- 其他操作 -->
+                  <button class="dropdown-item" @click="runAgent">
+                    <div class="item-content">
+                      <div class="item-icon">
+                        <i class="bi bi-play-circle"></i>
+                      </div>
+                      <div class="item-text">
+                        <span class="item-title">运行</span>
+                        <i class="bi bi-arrow-up-right item-arrow"></i>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button class="dropdown-item" @click="embedWebsite">
+                    <div class="item-content">
+                      <div class="item-icon">
+                        <i class="bi bi-code-square"></i>
+                      </div>
+                      <div class="item-text">
+                        <span class="item-title">嵌入网站</span>
+                        <i class="bi bi-arrow-up-right item-arrow"></i>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button class="dropdown-item" @click="accessAPI">
+                    <div class="item-content">
+                      <div class="item-icon">
+                        <i class="bi bi-terminal"></i>
+                      </div>
+                      <div class="item-text">
+                        <span class="item-title">访问 API</span>
+                        <i class="bi bi-arrow-up-right item-arrow"></i>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -983,6 +1053,95 @@
       </div>
     </div>
 
+    <!-- 发布弹出框 -->
+    <div v-if="showPublishModal" class="modal-overlay" @click="closePublishModal">
+      <div class="publish-modal" @click.stop>
+        <div class="publish-header">
+          <div class="publish-status">
+            <div class="status-info">
+              <h3>最新发布</h3>
+              <p class="publish-time">发布于 几秒前</p>
+            </div>
+          </div>
+          <button class="close-btn" @click="closePublishModal">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        
+        <div class="publish-body">
+          <!-- 发布更新按钮 -->
+          <button 
+            class="publish-action-btn primary" 
+            @click="publishUpdate"
+            :disabled="isPublishing"
+          >
+            <div class="btn-content">
+              <div class="btn-icon">
+                <i class="bi bi-cloud-upload" v-if="!isPublishing"></i>
+                <div class="spinner" v-if="isPublishing"></div>
+              </div>
+              <div class="btn-text">
+                <span class="btn-title">{{ isPublishing ? '发布中...' : '发布更新' }}</span>
+                <span class="btn-shortcut">⌘ ↑ P</span>
+              </div>
+            </div>
+          </button>
+          
+          <!-- 运行按钮 -->
+          <button class="publish-action-btn" @click="runAgent">
+            <div class="btn-content">
+              <div class="btn-icon">
+                <i class="bi bi-play-circle"></i>
+              </div>
+              <div class="btn-text">
+                <span class="btn-title">运行</span>
+                <span class="btn-arrow">→</span>
+              </div>
+            </div>
+          </button>
+          
+          <!-- 嵌入网站按钮 -->
+          <button class="publish-action-btn" @click="embedWebsite">
+            <div class="btn-content">
+              <div class="btn-icon">
+                <i class="bi bi-code-square"></i>
+              </div>
+              <div class="btn-text">
+                <span class="btn-title">嵌入网站</span>
+                <span class="btn-arrow">→</span>
+              </div>
+            </div>
+          </button>
+          
+          <!-- 在"探索"中打开按钮 -->
+          <button class="publish-action-btn" @click="openInExplore">
+            <div class="btn-content">
+              <div class="btn-icon">
+                <i class="bi bi-compass"></i>
+              </div>
+              <div class="btn-text">
+                <span class="btn-title">在"探索"中打开</span>
+                <span class="btn-arrow">→</span>
+              </div>
+            </div>
+          </button>
+          
+          <!-- 访问API按钮 -->
+          <button class="publish-action-btn" @click="accessAPI">
+            <div class="btn-content">
+              <div class="btn-icon">
+                <i class="bi bi-terminal"></i>
+              </div>
+              <div class="btn-text">
+                <span class="btn-title">访问 API</span>
+                <span class="btn-arrow">→</span>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 业务知识创建/编辑模态框 -->
     <div v-if="showCreateKnowledgeModal" class="modal-overlay" @click="closeBusinessKnowledgeModal">
       <div class="modal-dialog" @click.stop>
@@ -1051,11 +1210,199 @@
         </div>
       </div>
     </div>
+
+    <!-- API访问模态框 -->
+    <div v-if="showAPIModal" class="modal-overlay" @click="closeAPIModal">
+      <div class="api-modal" @click.stop>
+        <div class="modal-header">
+          <h3>API 访问信息</h3>
+          <button class="close-btn" @click="closeAPIModal">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="api-section">
+            <h4>
+              <i class="bi bi-link-45deg"></i>
+              API 端点
+            </h4>
+            <div class="api-endpoint">
+              <div class="endpoint-item">
+                <label>聊天接口:</label>
+                <div class="endpoint-url">
+                  <code>POST {{ apiBaseUrl }}/api/agents/{{ agent.id }}/chat</code>
+                  <button class="btn-copy" @click="copyToClipboard(`${apiBaseUrl}/api/agents/${agent.id}/chat`)">
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="endpoint-item">
+                <label>流式聊天接口:</label>
+                <div class="endpoint-url">
+                  <code>POST {{ apiBaseUrl }}/api/agents/{{ agent.id }}/chat/stream</code>
+                  <button class="btn-copy" @click="copyToClipboard(`${apiBaseUrl}/api/agents/${agent.id}/chat/stream`)">
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="api-section">
+            <h4>
+              <i class="bi bi-key"></i>
+              认证信息
+            </h4>
+            <div class="auth-info">
+              <div class="auth-item">
+                <label>API Key:</label>
+                <div class="api-key-display">
+                  <input 
+                    type="text" 
+                    :value="showApiKey ? apiKey : '••••••••••••••••••••••••••••••••'"
+                    readonly
+                    class="form-control"
+                  >
+                  <button class="btn-toggle" @click="toggleApiKeyVisibility">
+                    <i :class="showApiKey ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                  </button>
+                  <button class="btn-copy" @click="copyToClipboard(apiKey)">
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="auth-note">
+                <i class="bi bi-info-circle"></i>
+                <span>请在请求头中添加: <code>Authorization: Bearer YOUR_API_KEY</code></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="api-section">
+            <h4>
+              <i class="bi bi-code-square"></i>
+              请求示例
+            </h4>
+            <div class="code-examples">
+              <div class="example-tabs">
+                <button 
+                  class="tab-btn" 
+                  :class="{ active: activeExampleTab === 'curl' }"
+                  @click="activeExampleTab = 'curl'"
+                >
+                  cURL
+                </button>
+                <button 
+                  class="tab-btn" 
+                  :class="{ active: activeExampleTab === 'javascript' }"
+                  @click="activeExampleTab = 'javascript'"
+                >
+                  JavaScript
+                </button>
+                <button 
+                  class="tab-btn" 
+                  :class="{ active: activeExampleTab === 'python' }"
+                  @click="activeExampleTab = 'python'"
+                >
+                  Python
+                </button>
+              </div>
+              
+              <div class="example-content">
+                <div v-if="activeExampleTab === 'curl'" class="code-block">
+                  <pre><code>curl -X POST {{ apiBaseUrl }}/api/agents/{{ agent.id }}/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {{ apiKey }}" \
+  -d '{
+    "message": "查询最近一个月的销售数据",
+    "sessionId": "optional-session-id"
+  }'</code></pre>
+                  <button class="btn-copy-code" @click="copyToClipboard(getCurlExample())">
+                    <i class="bi bi-clipboard"></i>
+                    复制
+                  </button>
+                </div>
+                
+                <div v-if="activeExampleTab === 'javascript'" class="code-block">
+                  <pre><code>const response = await fetch('{{ apiBaseUrl }}/api/agents/{{ agent.id }}/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer {{ apiKey }}'
+  },
+  body: JSON.stringify({
+    message: '查询最近一个月的销售数据',
+    sessionId: 'optional-session-id'
+  })
+});
+
+const result = await response.json();
+console.log(result);</code></pre>
+                  <button class="btn-copy-code" @click="copyToClipboard(getJavaScriptExample())">
+                    <i class="bi bi-clipboard"></i>
+                    复制
+                  </button>
+                </div>
+                
+                <div v-if="activeExampleTab === 'python'" class="code-block">
+                  <pre><code>import requests
+
+url = "{{ apiBaseUrl }}/api/agents/{{ agent.id }}/chat"
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer {{ apiKey }}"
+}
+data = {
+    "message": "查询最近一个月的销售数据",
+    "sessionId": "optional-session-id"
+}
+
+response = requests.post(url, headers=headers, json=data)
+result = response.json()
+print(result)</code></pre>
+                  <button class="btn-copy-code" @click="copyToClipboard(getPythonExample())">
+                    <i class="bi bi-clipboard"></i>
+                    复制
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="api-section">
+            <h4>
+              <i class="bi bi-file-text"></i>
+              响应格式
+            </h4>
+            <div class="response-format">
+              <pre><code>{
+  "success": true,
+  "data": {
+    "type": "text|sql|table|error",
+    "content": "响应内容",
+    "data": {}, // 当type为table时包含表格数据
+    "sessionId": "会话ID",
+    "timestamp": "2025-01-07T10:30:00Z"
+  },
+  "message": "请求处理成功"
+}</code></pre>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeAPIModal">关闭</button>
+          <button type="button" class="btn btn-primary" @click="openAPIDocumentation">
+            <i class="bi bi-book"></i>
+            查看完整文档
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { agentApi, businessKnowledgeApi, semanticModelApi, datasourceApi, presetQuestionApi } from '../utils/api.js'
 import AgentDebugPanel from '../components/AgentDebugPanel.vue'
@@ -1101,6 +1448,9 @@ export default {
     const showCreateModelModal = ref(false)
     const showUploadModal = ref(false)
     const showAddDatasourceModal = ref(false)
+    const showPublishModal = ref(false)
+    const showPublishDropdown = ref(false)
+    const showAPIModal = ref(false)
     
     // 预设问题相关数据
     const presetQuestions = ref([])
@@ -1891,8 +2241,39 @@ export default {
       message.show = false
     }
 
-    // 发布智能体
-    const publishAgent = async () => {
+    // 发布弹出框相关方法
+    const closePublishModal = () => {
+      showPublishModal.value = false
+    }
+
+    // 发布下拉菜单相关方法
+    const togglePublishDropdown = () => {
+      showPublishDropdown.value = !showPublishDropdown.value
+    }
+
+    const closePublishDropdown = () => {
+      showPublishDropdown.value = false
+    }
+
+    // 点击外部关闭下拉菜单
+    const handleClickOutside = (event) => {
+      const dropdown = event.target.closest('.publish-dropdown')
+      if (!dropdown && showPublishDropdown.value) {
+        closePublishDropdown()
+      }
+    }
+
+    // 添加全局点击监听器
+    onMounted(() => {
+      document.addEventListener('click', handleClickOutside)
+    })
+
+    // 清理监听器
+    onUnmounted(() => {
+      document.removeEventListener('click', handleClickOutside)
+    })
+
+    const publishUpdate = async () => {
       if (isPublishing.value) return
 
       try {
@@ -1955,9 +2336,7 @@ export default {
 
         // 4. 发布成功
         showMessage('智能体发布成功！所有配置的数据源已完成初始化', 'success')
-        
-        // 可以在这里更新智能体状态为已发布
-        // await updateAgentStatus('published')
+        closePublishModal()
         
       } catch (error) {
         console.error('发布智能体失败:', error)
@@ -1965,6 +2344,99 @@ export default {
       } finally {
         isPublishing.value = false
       }
+    }
+
+    const runAgent = () => {
+      // 跳转到智能体运行页面
+      router.push(`/agent/${agent.id}/run`)
+    }
+
+    const embedWebsite = () => {
+      // TODO: 实现嵌入网站功能
+      showMessage('嵌入网站功能开发中...', 'info')
+    }
+
+    const openInExplore = () => {
+      // TODO: 实现在探索中打开功能
+      showMessage('在探索中打开功能开发中...', 'info')
+    }
+
+    const accessAPI = () => {
+      // 显示API访问信息模态框
+      showAPIModal.value = true
+    }
+
+    // API模态框相关数据和方法
+    const apiBaseUrl = ref(window.location.origin)
+    const apiKey = ref('sk-1234567890abcdef1234567890abcdef') // 这里应该从后端获取
+    const showApiKey = ref(false)
+    const activeExampleTab = ref('curl')
+
+    const closeAPIModal = () => {
+      showAPIModal.value = false
+    }
+
+    const toggleApiKeyVisibility = () => {
+      showApiKey.value = !showApiKey.value
+    }
+
+    const copyToClipboard = async (text) => {
+      try {
+        await navigator.clipboard.writeText(text)
+        showMessage('已复制到剪贴板', 'success')
+      } catch (error) {
+        console.error('复制失败:', error)
+        showMessage('复制失败', 'error')
+      }
+    }
+
+    const getCurlExample = () => {
+      return `curl -X POST ${apiBaseUrl.value}/api/agents/${agent.id}/chat \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${apiKey.value}" \\
+  -d '{
+    "message": "查询最近一个月的销售数据",
+    "sessionId": "optional-session-id"
+  }'`
+    }
+
+    const getJavaScriptExample = () => {
+      return `const response = await fetch('${apiBaseUrl.value}/api/agents/${agent.id}/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ${apiKey.value}'
+  },
+  body: JSON.stringify({
+    message: '查询最近一个月的销售数据',
+    sessionId: 'optional-session-id'
+  })
+});
+
+const result = await response.json();
+console.log(result);`
+    }
+
+    const getPythonExample = () => {
+      return `import requests
+
+url = "${apiBaseUrl.value}/api/agents/${agent.id}/chat"
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer ${apiKey.value}"
+}
+data = {
+    "message": "查询最近一个月的销售数据",
+    "sessionId": "optional-session-id"
+}
+
+response = requests.post(url, headers=headers, json=data)
+result = response.json()
+print(result)`
+    }
+
+    const openAPIDocumentation = () => {
+      window.open('https://github.com/alibaba/spring-ai-alibaba/blob/main/spring-ai-alibaba-nl2sql/API.md', '_blank')
     }
     
     const getMessageIcon = (type) => {
@@ -2297,8 +2769,30 @@ export default {
       hideMessage,
       getMessageIcon,
       // 发布相关
-      publishAgent,
+      showPublishModal,
+      closePublishModal,
+      showPublishDropdown,
+      togglePublishDropdown,
+      closePublishDropdown,
+      publishUpdate,
+      runAgent,
+      embedWebsite,
+      openInExplore,
+      accessAPI,
       isPublishing,
+      // API模态框相关
+      showAPIModal,
+      closeAPIModal,
+      apiBaseUrl,
+      apiKey,
+      showApiKey,
+      activeExampleTab,
+      toggleApiKeyVisibility,
+      copyToClipboard,
+      getCurlExample,
+      getJavaScriptExample,
+      getPythonExample,
+      openAPIDocumentation,
       // 预设问题方法
       presetQuestions,
       addPresetQuestion,
@@ -2526,6 +3020,130 @@ html {
   }
 }
 
+/* 发布弹出框样式 */
+.publish-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  width: 400px;
+  max-width: 90vw;
+  overflow: hidden;
+  animation: slideInUp 0.3s ease-out;
+}
+
+.publish-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.status-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.publish-time {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.publish-body {
+  padding: 16px 24px 24px;
+}
+
+.publish-action-btn {
+  width: 100%;
+  padding: 0;
+  margin-bottom: 8px;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.publish-action-btn:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+}
+
+.publish-action-btn.primary {
+  background: linear-gradient(135deg, #1890ff, #40a9ff);
+  border-color: #1890ff;
+  color: white;
+  margin-bottom: 16px;
+}
+
+.publish-action-btn.primary:hover {
+  background: linear-gradient(135deg, #096dd9, #1890ff);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.25);
+}
+
+.publish-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-content {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+.btn-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.btn-text {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-title {
+  font-weight: 500;
+}
+
+.btn-shortcut {
+  font-size: 12px;
+  opacity: 0.7;
+  font-family: monospace;
+}
+
+.btn-arrow {
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.publish-action-btn.primary .btn-shortcut,
+.publish-action-btn.primary .btn-arrow {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 /* 头部导航样式 */
 .top-nav {
   background: white;
@@ -2673,6 +3291,165 @@ html {
 .btn-publish .spinner {
   width: 14px;
   height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.dropdown-arrow {
+  margin-left: 4px;
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.publish-dropdown.active .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* 发布下拉菜单样式 */
+.publish-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.publish-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border-secondary);
+  min-width: 320px;
+  z-index: 1000;
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-tertiary);
+}
+
+.publish-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.publish-status i {
+  font-size: 16px;
+  color: var(--text-tertiary);
+}
+
+.status-info h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.status-info p {
+  margin: 2px 0 0 0;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.dropdown-body {
+  padding: 8px;
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: 0;
+  margin-bottom: 4px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: var(--bg-secondary);
+}
+
+.dropdown-item.primary {
+  background: var(--primary-color);
+  color: white;
+  margin-bottom: 12px;
+}
+
+.dropdown-item.primary:hover {
+  background: var(--primary-hover);
+}
+
+.dropdown-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.item-content {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+.item-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.item-text {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.item-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.item-shortcut {
+  font-size: 11px;
+  opacity: 0.7;
+  font-family: monospace;
+}
+
+.item-arrow {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.dropdown-item.primary .item-shortcut,
+.dropdown-item.primary .item-arrow {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.dropdown-item .spinner {
+  width: 16px;
+  height: 16px;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-top: 2px solid white;
   border-radius: 50%;
@@ -4282,6 +5059,321 @@ html {
   
   .table-actions {
     justify-content: center;
+  }
+}
+
+/* API模态框样式 */
+.api-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  width: 800px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: slideInUp 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+.api-modal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.api-section {
+  padding: 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.api-section:last-child {
+  border-bottom: none;
+}
+
+.api-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.api-section h4 i {
+  color: #1890ff;
+}
+
+.api-endpoint {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.endpoint-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.endpoint-item label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+}
+
+.endpoint-url {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.endpoint-url code {
+  flex: 1;
+  background: none;
+  border: none;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  color: #24292e;
+}
+
+.btn-copy {
+  background: none;
+  border: none;
+  color: #586069;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.btn-copy:hover {
+  background: #e1e4e8;
+  color: #24292e;
+}
+
+.auth-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-item label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+}
+
+.api-key-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.api-key-display .form-control {
+  flex: 1;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+}
+
+.btn-toggle {
+  background: none;
+  border: 1px solid #e1e4e8;
+  color: #586069;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.btn-toggle:hover {
+  background: #f6f8fa;
+  border-color: #d0d7de;
+}
+
+.auth-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background: #f0f8ff;
+  border: 1px solid #b3d8ff;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #0969da;
+}
+
+.auth-note i {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.auth-note code {
+  background: rgba(175, 184, 193, 0.2);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.code-examples {
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.example-tabs {
+  display: flex;
+  background: #f6f8fa;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #656d76;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+  color: #24292e;
+  background: rgba(208, 215, 222, 0.32);
+}
+
+.tab-btn.active {
+  color: #0969da;
+  background: white;
+  border-bottom-color: #0969da;
+}
+
+.example-content {
+  position: relative;
+}
+
+.code-block {
+  position: relative;
+  background: #f6f8fa;
+}
+
+.code-block pre {
+  margin: 0;
+  padding: 16px;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #24292e;
+}
+
+.code-block code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.btn-copy-code {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e1e4e8;
+  color: #656d76;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-copy-code:hover {
+  background: white;
+  color: #24292e;
+  border-color: #d0d7de;
+}
+
+.response-format {
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.response-format pre {
+  margin: 0;
+  padding: 16px;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #24292e;
+}
+
+.response-format code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* API模态框响应式设计 */
+@media (max-width: 768px) {
+  .api-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .api-section {
+    padding: 16px;
+  }
+  
+  .endpoint-url {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .api-key-display {
+    flex-direction: column;
+  }
+  
+  .example-tabs {
+    flex-wrap: wrap;
+  }
+  
+  .tab-btn {
+    flex: 1;
+    min-width: 80px;
+  }
+  
+  .code-block pre {
+    font-size: 12px;
+    padding: 12px;
+  }
+  
+  .btn-copy-code {
+    position: static;
+    margin: 8px;
+    align-self: flex-start;
   }
 }
 </style>
