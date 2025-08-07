@@ -201,4 +201,62 @@ public class ChatController {
 		}
 	}
 
+	/**
+	 * 置顶/取消置顶会话
+	 */
+	@PutMapping("/sessions/{sessionId}/pin")
+	public ResponseEntity<ApiResponse> pinSession(@PathVariable String sessionId,
+			@RequestBody Map<String, Object> request) {
+		try {
+			Boolean isPinned = (Boolean) request.get("isPinned");
+			if (isPinned == null) {
+				return ResponseEntity.badRequest().body(ApiResponse.error("isPinned参数不能为空"));
+			}
+
+			chatSessionService.pinSession(sessionId, isPinned);
+			String message = isPinned ? "会话已置顶" : "会话已取消置顶";
+			return ResponseEntity.ok(ApiResponse.success(message));
+		}
+		catch (Exception e) {
+			log.error("Pin session error for session {}: {}", sessionId, e.getMessage(), e);
+			return ResponseEntity.internalServerError().body(ApiResponse.error("操作失败"));
+		}
+	}
+
+	/**
+	 * 重命名会话
+	 */
+	@PutMapping("/sessions/{sessionId}/rename")
+	public ResponseEntity<ApiResponse> renameSession(@PathVariable String sessionId,
+			@RequestBody Map<String, Object> request) {
+		try {
+			String newTitle = (String) request.get("title");
+			if (newTitle == null || newTitle.trim().isEmpty()) {
+				return ResponseEntity.badRequest().body(ApiResponse.error("标题不能为空"));
+			}
+
+			chatSessionService.renameSession(sessionId, newTitle.trim());
+			return ResponseEntity.ok(ApiResponse.success("会话已重命名"));
+		}
+		catch (Exception e) {
+			log.error("Rename session error for session {}: {}", sessionId, e.getMessage(), e);
+			return ResponseEntity.internalServerError().body(ApiResponse.error("重命名失败"));
+		}
+	}
+
+	/**
+	 * 删除单个会话
+	 */
+	@DeleteMapping("/sessions/{sessionId}")
+	public ResponseEntity<ApiResponse> deleteSession(@PathVariable String sessionId) {
+		try {
+			chatSessionService.deleteSession(sessionId);
+			return ResponseEntity.ok(ApiResponse.success("会话已删除"));
+		}
+		catch (Exception e) {
+			log.error("Delete session error for session {}: {}", sessionId, e.getMessage(), e);
+			return ResponseEntity.internalServerError().body(ApiResponse.error("删除失败"));
+		}
+	}
+
 }

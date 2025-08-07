@@ -153,6 +153,7 @@ CREATE TABLE IF NOT EXISTS chat_session (
   agent_id INT NOT NULL COMMENT '智能体ID',
   title VARCHAR(255) DEFAULT '新对话' COMMENT '会话标题',
   status VARCHAR(50) DEFAULT 'active' COMMENT '状态：active-活跃，archived-归档，deleted-已删除',
+  is_pinned TINYINT DEFAULT 0 COMMENT '是否置顶：0-否，1-是',
   user_id BIGINT COMMENT '用户ID',
   create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -160,6 +161,7 @@ CREATE TABLE IF NOT EXISTS chat_session (
   INDEX idx_agent_id (agent_id),
   INDEX idx_user_id (user_id),
   INDEX idx_status (status),
+  INDEX idx_is_pinned (is_pinned),
   INDEX idx_create_time (create_time),
   FOREIGN KEY (agent_id) REFERENCES agent(id) ON DELETE CASCADE
 ) ENGINE = InnoDB COMMENT = '聊天会话表';

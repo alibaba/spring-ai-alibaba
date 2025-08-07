@@ -56,17 +56,72 @@
               v-for="session in chatSessions" 
               :key="session.id"
               class="history-item"
-              :class="{ active: currentSessionId === session.id }"
-              @click="switchSession(session.id)"
+              :class="{ active: currentSessionId === session.id, pinned: session.isPinned }"
             >
-              <div class="history-title">{{ session.title || '新的对话' }}</div>
-              <div class="history-preview">{{ getSessionPreview(session) }}</div>
+              <div class="history-content" @click="switchSession(session.id)">
+                <div class="history-title-row">
+                  <i v-if="session.isPinned" class="bi bi-pin-fill pin-icon"></i>
+                  <span class="history-title">{{ session.title || '新的对话' }}</span>
+                </div>
+                <div class="history-preview">{{ getSessionPreview(session) }}</div>
+              </div>
+              <div class="history-actions">
+                <div class="dropdown" :class="{ active: activeDropdown === session.id }">
+                  <button class="dropdown-toggle" @click.stop="toggleDropdown(session.id)">
+                    <i class="bi bi-three-dots"></i>
+                  </button>
+                  <div class="dropdown-menu" v-if="activeDropdown === session.id">
+                    <button class="dropdown-item" @click.stop="togglePin(session)">
+                      <i :class="session.isPinned ? 'bi bi-pin-fill' : 'bi bi-pin'"></i>
+                      {{ session.isPinned ? '取消置顶' : '置顶' }}
+                    </button>
+                    <button class="dropdown-item" @click.stop="showRenameDialog(session)">
+                      <i class="bi bi-pencil"></i>
+                      重命名
+                    </button>
+                    <button class="dropdown-item delete" @click.stop="deleteSession(session)">
+                      <i class="bi bi-trash"></i>
+                      删除
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div v-if="chatSessions.length === 0" class="empty-history">
               <div class="history-item">
-                <div class="history-title">新的对话</div>
-                <div class="history-preview">帮我查询最近一个月的6月份...</div>
+                <div class="history-content">
+                  <div class="history-title-row">
+                    <span class="history-title">新的对话</span>
+                  </div>
+                  <div class="history-preview">帮我查询最近一个月的6月份...</div>
+                </div>
               </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 重命名对话框 -->
+        <div v-if="showRenameModal" class="modal-overlay" @click="closeRenameDialog">
+          <div class="modal-content" @click.stop>
+            <div class="modal-header">
+              <h3>重命名对话</h3>
+              <button class="modal-close" @click="closeRenameDialog">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <input 
+                v-model="renameTitle" 
+                type="text" 
+                class="rename-input" 
+                placeholder="请输入新的对话标题"
+                @keydown.enter="confirmRename"
+                ref="renameInput"
+              />
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" @click="closeRenameDialog">取消</button>
+              <button class="btn btn-primary" @click="confirmRename" :disabled="!renameTitle.trim()">确认</button>
             </div>
           </div>
         </div>
@@ -175,7 +230,7 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { presetQuestionApi } from '../utils/api.js'
 
@@ -201,9 +256,16 @@ export default {
     
     const messagesContainer = ref(null)
     const messageInput = ref(null)
+    const renameInput = ref(null)
     
     // 预设问题（快捷操作）
     const quickActions = ref([])
+    
+    // 下拉菜单和重命名对话框状态
+    const activeDropdown = ref(null)
+    const showRenameModal = ref(false)
+    const renameTitle = ref('')
+    const currentRenameSession = ref(null)
     
     // API方法
     const loadAgentInfo = async () => {
@@ -679,6 +741,138 @@ export default {
       return icons[index % icons.length]
     }
 
+    // 下拉菜单和会话操作方法
+    const toggleDropdown = (sessionId) => {
+      if (activeDropdown.value === sessionId) {
+        activeDropdown.value = null
+      } else {
+        activeDropdown.value = sessionId
+      }
+    }
+
+    const togglePin = async (session) => {
+      try {
+        const response = await fetch(`/api/sessions/${session.id}/pin`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            isPinned: !session.isPinned
+          })
+        })
+
+        if (response.ok) {
+          // 更新本地状态
+          session.isPinned = !session.isPinned
+          // 重新排序会话列表
+          await loadChatSessions()
+          activeDropdown.value = null
+        } else {
+          const errorData = await response.json()
+          alert(errorData.message || '操作失败')
+        }
+      } catch (error) {
+        console.error('置顶操作失败:', error)
+        alert('置顶操作失败')
+      }
+    }
+
+    const showRenameDialog = (session) => {
+      currentRenameSession.value = session
+      renameTitle.value = session.title || '新的对话'
+      showRenameModal.value = true
+      activeDropdown.value = null
+      
+      // 等待DOM更新后聚焦输入框
+      nextTick(() => {
+        if (renameInput.value) {
+          renameInput.value.focus()
+          renameInput.value.select()
+        }
+      })
+    }
+
+    const closeRenameDialog = () => {
+      showRenameModal.value = false
+      currentRenameSession.value = null
+      renameTitle.value = ''
+    }
+
+    const confirmRename = async () => {
+      if (!renameTitle.value.trim()) return
+
+      try {
+        const response = await fetch(`/api/sessions/${currentRenameSession.value.id}/rename`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: renameTitle.value.trim()
+          })
+        })
+
+        if (response.ok) {
+          // 更新本地状态
+          currentRenameSession.value.title = renameTitle.value.trim()
+          closeRenameDialog()
+        } else {
+          const errorData = await response.json()
+          alert(errorData.message || '重命名失败')
+        }
+      } catch (error) {
+        console.error('重命名失败:', error)
+        alert('重命名失败')
+      }
+    }
+
+    const deleteSession = async (session) => {
+      if (!confirm(`确定要删除对话"${session.title || '新的对话'}"吗？`)) {
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/sessions/${session.id}`, {
+          method: 'DELETE'
+        })
+
+        if (response.ok) {
+          // 从本地列表中移除
+          const index = chatSessions.value.findIndex(s => s.id === session.id)
+          if (index > -1) {
+            chatSessions.value.splice(index, 1)
+          }
+
+          // 如果删除的是当前会话，切换到其他会话或清空
+          if (currentSessionId.value === session.id) {
+            if (chatSessions.value.length > 0) {
+              currentSessionId.value = chatSessions.value[0].id
+              await loadMessages(chatSessions.value[0].id)
+            } else {
+              currentSessionId.value = null
+              currentMessages.value = []
+            }
+          }
+
+          activeDropdown.value = null
+        } else {
+          const errorData = await response.json()
+          alert(errorData.message || '删除失败')
+        }
+      } catch (error) {
+        console.error('删除会话失败:', error)
+        alert('删除会话失败')
+      }
+    }
+
+    // 点击外部关闭下拉菜单
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.dropdown')) {
+        activeDropdown.value = null
+      }
+    }
+
     const formatContentByType = (type, data) => {
         if (data === null || data === undefined) return '';
 
@@ -872,6 +1066,14 @@ export default {
         currentSessionId.value = chatSessions.value[0].id
         await loadMessages(chatSessions.value[0].id)
       }
+      
+      // 添加全局点击事件监听器
+      document.addEventListener('click', handleClickOutside)
+    })
+    
+    // 组件卸载时移除事件监听器
+    onUnmounted(() => {
+      document.removeEventListener('click', handleClickOutside)
     })
     
     return {
@@ -885,6 +1087,11 @@ export default {
       quickActions,
       messagesContainer,
       messageInput,
+      renameInput,
+      activeDropdown,
+      showRenameModal,
+      renameTitle,
+      currentRenameSession,
       
       // 方法
       goBack,
@@ -900,6 +1107,12 @@ export default {
       getRandomIcon,
       getSessionPreview,
       switchSession,
+      toggleDropdown,
+      togglePin,
+      showRenameDialog,
+      closeRenameDialog,
+      confirmRename,
+      deleteSession,
       escapeHtml
     }
   }
@@ -1223,12 +1436,15 @@ export default {
 }
 
 .history-item {
-  padding: var(--space-md);
+  display: flex;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-md);
-  cursor: pointer;
   transition: all var(--transition-base);
   background: var(--bg-primary);
   border: 1px solid transparent;
+  position: relative;
+  min-height: 60px;
 }
 
 .history-item:hover {
@@ -1241,12 +1457,121 @@ export default {
   border-color: var(--primary-color);
 }
 
-.history-item .history-title {
+.history-item.pinned {
+  border-left: 3px solid var(--primary-color);
+}
+
+.history-content {
+  flex: 1;
+  cursor: pointer;
+  padding: var(--space-xs) 0;
+  min-width: 0;
+}
+
+.history-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+
+.pin-icon {
+  color: var(--primary-color);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.history-title {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--text-primary);
-  margin-bottom: var(--space-xs);
   line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.history-actions {
+  flex-shrink: 0;
+  margin-left: var(--space-xs);
+}
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-toggle {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  color: var(--text-quaternary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.history-item:hover .dropdown-toggle {
+  opacity: 1;
+}
+
+.dropdown-toggle:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.dropdown.active .dropdown-toggle {
+  opacity: 1;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  min-width: 120px;
+  padding: var(--space-xs) 0;
+  margin-top: var(--space-xs);
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.dropdown-item.delete {
+  color: var(--danger-color);
+}
+
+.dropdown-item.delete:hover {
+  background: var(--danger-light);
 }
 
 .history-preview {
@@ -1266,6 +1591,110 @@ export default {
 .empty-history .history-item:hover {
   background: var(--bg-primary);
   border-color: transparent;
+}
+
+/* 重命名对话框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: 90%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.modal-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.modal-body {
+  padding: var(--space-xl);
+}
+
+.rename-input {
+  width: 100%;
+  padding: var(--space-md);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: all var(--transition-base);
+  box-sizing: border-box;
+}
+
+.rename-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  padding: var(--space-lg) var(--space-xl);
+  border-top: 1px solid var(--border-secondary);
+  background: var(--bg-secondary);
+}
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-color: var(--border-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-quaternary);
+  color: var(--text-primary);
+  border-color: var(--border-secondary);
 }
 
 /* 历史列表滚动条 */
@@ -1918,6 +2347,13 @@ export default {
 .btn-primary:hover {
   background: var(--primary-hover);
   border-color: var(--primary-hover);
+}
+
+/* CSS变量定义 */
+:root {
+  --danger-color: #dc3545;
+  --danger-light: #f8d7da;
+  --bg-quaternary: #e9ecef;
 }
 
 /* 响应式设计 */
