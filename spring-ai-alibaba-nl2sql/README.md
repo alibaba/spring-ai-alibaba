@@ -16,87 +16,75 @@ spring-ai-alibaba-nl2sql/
 ```
 
 ## 快速启动
+
 项目进行本地测试是在spring-ai-alibaba-nl2sql-management中进行
 
-### 1. 配置数据库
+### 1. 业务数据库准备
 
-修改 `spring-ai-alibaba-nl2sql-management/src/main/resources/application.yml`：
+可以在spring-ai-alibaba-example项目仓库获取测试表和数据：
 
-.sql文件在spring-ai-alibaba-example项目仓库中(https://github.com/springaialibaba/spring-ai-alibaba-examples/tree/main/spring-ai-alibaba-nl2sql-example)
+- Schema：https://github.com/springaialibaba/spring-ai-alibaba-examples/blob/main/spring-ai-alibaba-nl2sql-example/chat/sql/schema.sql
+- Data：https://github.com/springaialibaba/spring-ai-alibaba-examples/blob/main/spring-ai-alibaba-nl2sql-example/chat/sql/insert.sql
 
-请直接导入对应的insert.sql文件和schema.sql文件，并进行配置后启动spring-ai-alibaba-nl2sql-management
+将表和数据导入到你的MySQL数据库中。
+
+### 2. 配置management数据库
+
+在`spring-ai-alibaba-nl2sql-management/src/main/resources/application.yml`中配置你的MySQL数据库连接信息
+
+> 目前程序会自动创建表和数据，所以不需要手动创建。
 
 ```yaml
-chatBi:
-  dbConfig:
-    url: jdbc:mysql://localhost:3306/你的数据库?useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8
-    username: 你的用户名
-    password: 你的密码
-    dialect-type: mysql
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/nl2sql?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
 ```
 
-### 2. 配置API Key
-
-在同一个配置文件中设置（两个部分都需要配置）：
+### 3. 配置 API Key
 
 ```yaml
 spring:
   ai:
-    dashscope:
-      api-key: 你的DashScope-API-Key
     openai:
-      api-key: 你的DashScope-API-Key
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      api-key: ${AI_DASHSCOPE_API_KEY}
+      model: qwen-max
+      embedding:
+        model: text-embedding-v4
 ```
 
-## 如何使用
-### API调用
+
+### 4. 启动管理端
+
+在`spring-ai-alibaba-nl2sql-management`目录下，运行 `spring-ai-alibaba-nl2sql/spring-ai-alibaba-nl2sql-management/src/main/java/com/alibaba/cloud/ai/Application.java` 类。
+
+### 5. 启动WEB页面
+
+进入 `spring-ai-alibaba-nl2sql/spring-ai-alibaba-nl2sql-web-ui` 目录
+
+#### 安装依赖
+
+
 ```bash
-# 执行自然语言查询
-GET http://localhost:8062/nl2sql/search?query=查询用户数量
+# 使用 npm
+npm install
 
-# 流式聊天（实时返回结果，想要参与进入开发,一般使用该接口）
-GET http://localhost:8062/nl2sql/stream/search?query=你的问题
-
-# 简单聊天接口
-POST http://localhost:8062/simpleChat
-Content-Type: application/json
+# 或使用 yarn
+yarn install
 ```
 
+### 启动服务
 
-## 开发集成
+```bash
+# 使用 npm
+npm run dev
 
-如果要在自己的项目中集成NL2SQL功能：
-
-### 1. 添加依赖
-
-```xml
-<dependency>
-    <groupId>com.alibaba.cloud.ai</groupId>
-    <artifactId>spring-ai-alibaba-starter-nl2sql</artifactId>
-    <version>${spring-ai-alibaba.version}</version>
-</dependency>
+# 或使用 yarn
+yarn dev
 ```
 
-### 2. 代码示例
-
-```java
-@RestController
-public class MyNl2SqlController {
-    
-    @Autowired
-    private SimpleNl2SqlService simpleNl2SqlService;
-    
-    @PostMapping("/query")
-    public String query(@RequestBody String question) throws Exception {
-        return simpleNl2SqlService.nl2sql(question);
-    }
-}
-```
-
-## 贡献指南
-
-欢迎提交Issue和PR！详见 [Spring AI Alibaba 贡献指南](https://github.com/alibaba/spring-ai-alibaba/blob/main/CONTRIBUTING-zh.md)
-
-## 开源协议
-
-Apache License 2.0 
+启动成功后，访问地址 http://localhost:3000
