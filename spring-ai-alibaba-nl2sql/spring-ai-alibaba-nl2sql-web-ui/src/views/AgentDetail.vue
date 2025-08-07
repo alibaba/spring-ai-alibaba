@@ -78,6 +78,18 @@
               </div>
             </div>
           </div>
+          <div class="agent-actions">
+            <button 
+              class="btn btn-publish" 
+              @click="publishAgent"
+              :disabled="isPublishing"
+              :class="{ loading: isPublishing }"
+            >
+              <i class="bi bi-cloud-upload" v-if="!isPublishing"></i>
+              <div class="spinner" v-if="isPublishing"></div>
+              {{ isPublishing ? '发布中...' : '发布' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1165,6 +1177,9 @@ export default {
     const schemaInitializing = ref(false)
     const schemaStatistics = ref(null)
     
+    // 发布相关数据
+    const isPublishing = ref(false)
+    
     // 方法
     const setActiveTab = (tab) => {
       activeTab.value = tab
@@ -1846,6 +1861,82 @@ export default {
     const hideMessage = () => {
       message.show = false
     }
+
+    // 发布智能体
+    const publishAgent = async () => {
+      if (isPublishing.value) return
+
+      try {
+        isPublishing.value = true
+        showMessage('开始发布智能体...', 'info')
+
+        // 1. 获取智能体配置的数据源
+        const agentDatasources = await datasourceApi.getAgentDatasources(agent.id)
+        if (!agentDatasources || agentDatasources.length === 0) {
+          throw new Error('智能体未配置数据源，请先配置数据源')
+        }
+
+        // 2. 使用正常的 agentId 进行 schema 初始化
+        const enabledDatasources = agentDatasources.filter(ds => ds.isActive === 1)
+        if (enabledDatasources.length === 0) {
+          throw new Error('没有启用的数据源，请先启用至少一个数据源')
+        }
+
+        // 3. 为每个启用的数据源获取表列表并初始化
+        for (const agentDatasource of enabledDatasources) {
+          const datasource = agentDatasource.datasource
+          showMessage(`正在初始化数据源: ${datasource.name}...`, 'info')
+          
+          // 获取数据源的所有表
+          const tablesResponse = await fetch(`/api/agent/${agent.id}/schema/datasources/${datasource.id}/tables`)
+          if (!tablesResponse.ok) {
+            console.warn(`获取数据源 ${datasource.name} 的表列表失败`)
+            continue
+          }
+          
+          const tablesResult = await tablesResponse.json()
+          if (!tablesResult.success || !tablesResult.data) {
+            console.warn(`数据源 ${datasource.name} 没有可用的表`)
+            continue
+          }
+
+          // 使用正常的 agentId 初始化 schema
+          const initResponse = await fetch(`/api/agent/${agent.id}/schema/init`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              datasourceId: datasource.id,
+              tables: tablesResult.data // 使用所有表
+            })
+          })
+
+          if (!initResponse.ok) {
+            console.warn(`数据源 ${datasource.name} 初始化失败`)
+            continue
+          }
+
+          const initResult = await initResponse.json()
+          if (!initResult.success) {
+            console.warn(`数据源 ${datasource.name} 初始化失败: ${initResult.message}`)
+            continue
+          }
+        }
+
+        // 4. 发布成功
+        showMessage('智能体发布成功！所有配置的数据源已完成初始化', 'success')
+        
+        // 可以在这里更新智能体状态为已发布
+        // await updateAgentStatus('published')
+        
+      } catch (error) {
+        console.error('发布智能体失败:', error)
+        showMessage(`发布失败: ${error.message}`, 'error')
+      } finally {
+        isPublishing.value = false
+      }
+    }
     
     const getMessageIcon = (type) => {
       const iconMap = {
@@ -2175,6 +2266,9 @@ export default {
       showMessage,
       hideMessage,
       getMessageIcon,
+      // 发布相关
+      publishAgent,
+      isPublishing,
       // 预设问题方法
       presetQuestions,
       addPresetQuestion,
@@ -2506,6 +2600,58 @@ html {
   align-items: center;
   gap: 16px;
   flex: 1;
+}
+
+.agent-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-publish {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #52c41a, #73d13d);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.25);
+}
+
+.btn-publish:hover:not(:disabled) {
+  background: linear-gradient(135deg, #389e0d, #52c41a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.35);
+}
+
+.btn-publish:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-publish.loading {
+  pointer-events: none;
+}
+
+.btn-publish .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .agent-avatar .avatar-icon {
