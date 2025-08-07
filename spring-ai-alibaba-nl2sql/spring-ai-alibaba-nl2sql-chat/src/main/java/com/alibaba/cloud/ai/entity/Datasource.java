@@ -206,10 +206,14 @@ public class Datasource {
 	public void generateConnectionUrl() {
 		if (host != null && port != null && databaseName != null) {
 			if ("mysql".equalsIgnoreCase(type)) {
-				this.connectionUrl = String.format("jdbc:mysql://%s:%d/%s?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai", host, port, databaseName);
+				this.connectionUrl = String.format(
+						"jdbc:mysql://%s:%d/%s?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai",
+						host, port, databaseName);
 			}
 			else if ("postgresql".equalsIgnoreCase(type)) {
-				this.connectionUrl = String.format("jdbc:postgresql://%s:%d/%s?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai", host, port, databaseName);
+				this.connectionUrl = String.format(
+						"jdbc:postgresql://%s:%d/%s?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai",
+						host, port, databaseName);
 			}
 		}
 	}

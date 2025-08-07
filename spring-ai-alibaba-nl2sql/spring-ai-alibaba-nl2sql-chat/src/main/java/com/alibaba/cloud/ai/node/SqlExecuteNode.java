@@ -21,9 +21,14 @@ import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.connector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.constant.Constant;
+
+import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
 import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.model.execution.ExecutionStep;
+import com.alibaba.cloud.ai.service.DatasourceService;
+import com.alibaba.cloud.ai.entity.AgentDatasource;
+import com.alibaba.cloud.ai.entity.Datasource;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StepResultUtils;
@@ -34,6 +39,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE_EXCEPTION_OUTPUT;
@@ -52,14 +58,14 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 	private static final Logger logger = LoggerFactory.getLogger(SqlExecuteNode.class);
 
-	private final DbConfig dbConfig;
-
 	private final Accessor dbAccessor;
 
-	public SqlExecuteNode(Accessor dbAccessor, DbConfig dbConfig) {
+	private final DatasourceService datasourceService;
+
+	public SqlExecuteNode(Accessor dbAccessor, DatasourceService datasourceService) {
 		super();
 		this.dbAccessor = dbAccessor;
-		this.dbConfig = dbConfig;
+		this.datasourceService = datasourceService;
 	}
 
 	@Override
@@ -75,7 +81,83 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 		logger.info("Executing SQL query: {}", sqlQuery);
 		logger.info("Step description: {}", toolParameters.getDescription());
 
-		return executeSqlQuery(state, currentStep, sqlQuery);
+		// 动态获取智能体的数据源配置
+		DbConfig dbConfig = getAgentDbConfig(state);
+
+		return executeSqlQuery(state, currentStep, sqlQuery, dbConfig);
+	}
+
+	/**
+	 * 动态获取智能体的数据源配置
+	 * @param state 包含智能体ID的状态对象
+	 * @return 智能体对应的数据库配置
+	 * @throws RuntimeException 如果智能体未配置启用的数据源
+	 */
+	private DbConfig getAgentDbConfig(OverAllState state) {
+		try {
+			// 从 state 获取智能体ID
+			String agentIdStr = StateUtils.getStringValue(state, Constant.AGENT_ID);
+			if (agentIdStr == null || agentIdStr.trim().isEmpty()) {
+				throw new RuntimeException("未找到智能体ID，无法获取数据源配置");
+			}
+
+			Integer agentId = Integer.valueOf(agentIdStr);
+			logger.info("Getting datasource config for agent: {}", agentId);
+
+			// 获取智能体启用的数据源
+			List<AgentDatasource> agentDatasources = datasourceService.getAgentDatasources(agentId);
+			if (agentDatasources.size() == 0) {
+				// TODO 调试AgentID不一致，暂时手动处理
+				agentDatasources = datasourceService.getAgentDatasources(agentId - 999999);
+			}
+			AgentDatasource activeDatasource = agentDatasources.stream()
+				.filter(ad -> ad.getIsActive() == 1)
+				.findFirst()
+				.orElseThrow(() -> new RuntimeException("智能体 " + agentId + " 未配置启用的数据源"));
+
+			// 转换为 DbConfig
+			DbConfig dbConfig = createDbConfigFromDatasource(activeDatasource.getDatasource());
+			logger.info("Successfully created DbConfig for agent {}: url={}, schema={}, type={}", agentId,
+					dbConfig.getUrl(), dbConfig.getSchema(), dbConfig.getDialectType());
+
+			return dbConfig;
+		}
+		catch (Exception e) {
+			logger.error("Failed to get agent datasource config", e);
+			throw new RuntimeException("获取智能体数据源配置失败: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * 从数据源实体创建数据库配置
+	 * @param datasource 数据源实体
+	 * @return 数据库配置对象
+	 */
+	private DbConfig createDbConfigFromDatasource(Datasource datasource) {
+		DbConfig dbConfig = new DbConfig();
+
+		// 设置基本连接信息
+		dbConfig.setUrl(datasource.getConnectionUrl());
+		dbConfig.setUsername(datasource.getUsername());
+		dbConfig.setPassword(datasource.getPassword());
+
+		// 设置数据库类型
+		if ("mysql".equalsIgnoreCase(datasource.getType())) {
+			dbConfig.setConnectionType("jdbc");
+			dbConfig.setDialectType("mysql");
+		}
+		else if ("postgresql".equalsIgnoreCase(datasource.getType())) {
+			dbConfig.setConnectionType("jdbc");
+			dbConfig.setDialectType("postgresql");
+		}
+		else {
+			throw new RuntimeException("不支持的数据库类型: " + datasource.getType());
+		}
+
+		// 设置Schema为数据源的数据库名称
+		dbConfig.setSchema(datasource.getDatabaseName());
+
+		return dbConfig;
 	}
 
 	/**
@@ -87,10 +169,12 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 	 * @param state The overall state containing execution context
 	 * @param currentStep The current step number in the execution plan
 	 * @param sqlQuery The SQL query to execute
+	 * @param dbConfig The database configuration to use for execution
 	 * @return Map containing the generator for streaming output
 	 */
 	@SuppressWarnings("unchecked")
-	private Map<String, Object> executeSqlQuery(OverAllState state, Integer currentStep, String sqlQuery) {
+	private Map<String, Object> executeSqlQuery(OverAllState state, Integer currentStep, String sqlQuery,
+			DbConfig dbConfig) {
 		// Execute business logic first - actual SQL execution
 		DbQueryParameter dbQueryParameter = new DbQueryParameter();
 		dbQueryParameter.setSql(sqlQuery);
