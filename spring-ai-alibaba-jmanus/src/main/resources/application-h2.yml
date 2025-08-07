@@ -6,7 +6,7 @@ spring:
     password: $FSD#@!@#!#$!12341234
   h2:
     console:
-      enabled: true
+      enabled: false
       path: /h2-console
       settings:
         web-allow-others: true
