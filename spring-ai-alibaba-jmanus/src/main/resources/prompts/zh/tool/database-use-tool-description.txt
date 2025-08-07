@@ -1,6 +1,0 @@
-与数据库交互，执行SQL、表结构、索引、健康状态等操作。支持的操作包括：
-- 'execute_sql': 执行SQL语句
-- 'get_table_name': 根据表注释查找表名
-- 'get_table_index': 获取表索引信息
-- 'get_table_meta': 获取表结构、字段、索引的完整元数据
-- 'get_datasource_info': 获取数据源信息

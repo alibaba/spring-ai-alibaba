@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.connector.config.DbConfig;
+import com.alibaba.cloud.ai.constant.Constant;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -30,7 +31,6 @@ import com.alibaba.fastjson.JSON;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
@@ -61,16 +61,16 @@ public class Nl2sqlForGraphController {
 
 	private final CompiledGraph compiledGraph;
 
-	@Autowired
-	private SimpleVectorStoreService simpleVectorStoreService;
+	private final SimpleVectorStoreService simpleVectorStoreService;
 
-	@Autowired
-	private DbConfig dbConfig;
+	private final DbConfig dbConfig;
 
-	@Autowired
-	public Nl2sqlForGraphController(@Qualifier("nl2sqlGraph") StateGraph stateGraph) throws GraphStateException {
+	public Nl2sqlForGraphController(@Qualifier("nl2sqlGraph") StateGraph stateGraph,
+			SimpleVectorStoreService simpleVectorStoreService, DbConfig dbConfig) throws GraphStateException {
 		this.compiledGraph = stateGraph.compile();
 		this.compiledGraph.setMaxIterations(100);
+		this.simpleVectorStoreService = simpleVectorStoreService;
+		this.dbConfig = dbConfig;
 	}
 
 	@GetMapping("/search")
@@ -81,8 +81,8 @@ public class Nl2sqlForGraphController {
 		schemaInitRequest
 			.setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
 		simpleVectorStoreService.schema(schemaInitRequest);
-
-		Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query, AGENT_ID, agentId));
+		Optional<OverAllState> invoke = compiledGraph
+			.invoke(Map.of(INPUT_KEY, query, Constant.AGENT_ID, dataSetId, AGENT_ID, agentId));
 		OverAllState overAllState = invoke.get();
 		return overAllState.value(RESULT).get().toString();
 	}
@@ -113,7 +113,8 @@ public class Nl2sqlForGraphController {
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 
 		// 使用流式处理，传递agentId到状态中
-		AsyncGenerator<NodeOutput> generator = compiledGraph.stream(Map.of(INPUT_KEY, query, AGENT_ID, agentId));
+		AsyncGenerator<NodeOutput> generator = compiledGraph
+			.stream(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId));
 
 		CompletableFuture.runAsync(() -> {
 			try {

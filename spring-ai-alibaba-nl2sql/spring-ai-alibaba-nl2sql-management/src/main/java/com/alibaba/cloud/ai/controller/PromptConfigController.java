@@ -40,10 +40,10 @@ public class PromptConfigController {
 
 	private static final Logger logger = LoggerFactory.getLogger(PromptConfigController.class);
 
-	private UserPromptConfigService promptConfigService;
+	private final UserPromptConfigService promptConfigService;
 
-	public PromptConfigController() {
-		this.promptConfigService = new UserPromptConfigService();
+	public PromptConfigController(UserPromptConfigService promptConfigService) {
+		this.promptConfigService = promptConfigService;
 	}
 
 	/**

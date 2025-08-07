@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.config;
 
 import com.alibaba.cloud.ai.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
+import com.alibaba.cloud.ai.constant.Constant;
 import com.alibaba.cloud.ai.dispatcher.PlanExecutorDispatcher;
 import com.alibaba.cloud.ai.dispatcher.PythonExecutorDispatcher;
 import com.alibaba.cloud.ai.dispatcher.QueryRewriteDispatcher;
@@ -62,7 +63,6 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
 import static com.alibaba.cloud.ai.constant.Constant.BUSINESS_KNOWLEDGE;
 import static com.alibaba.cloud.ai.constant.Constant.COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.DATA_SET_ID;
 import static com.alibaba.cloud.ai.constant.Constant.EVIDENCES;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.KEYWORD_EXTRACT_NODE;
@@ -163,7 +163,7 @@ public class Nl2sqlConfiguration {
 			// 用户输入
 			keyStrategyHashMap.put(INPUT_KEY, new ReplaceStrategy());
 			// 数据集ID
-			keyStrategyHashMap.put(DATA_SET_ID, new ReplaceStrategy());
+			keyStrategyHashMap.put(Constant.AGENT_ID, new ReplaceStrategy());
 			// 智能体ID
 			keyStrategyHashMap.put(AGENT_ID, new ReplaceStrategy());
 			// 业务知识

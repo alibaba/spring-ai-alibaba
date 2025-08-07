@@ -75,7 +75,7 @@
       </div>
 
       <!-- Right Panel - Preview -->
-      <RightPanel ref="rightPanelRef" :style="{ width: 100 - leftPanelWidth + '%' }" />
+      <RightPanel ref="rightPanelRef" :style="{ width: 100 - leftPanelWidth + '%' }" :current-root-plan-id="currentRootPlanId" />
     </div>
 
     <!-- Cron Task Modal -->

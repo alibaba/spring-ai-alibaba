@@ -89,4 +89,19 @@ public interface IPptGeneratorService {
 	 */
 	ManusProperties getManusProperties();
 
+	/**
+	 * Get template list
+	 * @return Template list in JSON format
+	 * @throws IOException IO exception
+	 */
+	String getTemplateList() throws IOException;
+
+	/**
+	 * Get template content
+	 * @param path Template path
+	 * @return Template content in JSON format
+	 * @throws IOException IO exception
+	 */
+	String getTemplate(String path) throws IOException;
+
 }

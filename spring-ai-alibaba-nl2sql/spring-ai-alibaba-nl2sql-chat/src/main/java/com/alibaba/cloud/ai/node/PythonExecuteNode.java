@@ -80,11 +80,11 @@ public class PythonExecuteNode extends AbstractPlanBasedNode implements NodeActi
 
 			// Create display flux for user experience only
 			Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("开始执行Python代码..."));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("标准输出：\n```"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse(taskResponse.stdOut()));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("\n```"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("Python代码执行成功！"));
+				emitter.next(ChatResponseUtil.createStatusResponse("开始执行Python代码..."));
+				emitter.next(ChatResponseUtil.createStatusResponse("标准输出：\n```"));
+				emitter.next(ChatResponseUtil.createStatusResponse(taskResponse.stdOut()));
+				emitter.next(ChatResponseUtil.createStatusResponse("\n```"));
+				emitter.next(ChatResponseUtil.createStatusResponse("Python代码执行成功！"));
 				emitter.complete();
 			});
 

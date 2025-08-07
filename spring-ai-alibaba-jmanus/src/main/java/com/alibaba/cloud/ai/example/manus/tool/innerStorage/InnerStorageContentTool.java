@@ -23,7 +23,6 @@ import java.util.List;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.ToolPromptManager;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 
@@ -55,7 +54,8 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 		@com.fasterxml.jackson.annotation.JsonProperty("query_key")
 		private String queryKey;
 
-		private List<String> columns;
+		@com.fasterxml.jackson.annotation.JsonProperty("outputFormatSpecification")
+		private String outputFormatSpecification;
 
 		@com.fasterxml.jackson.annotation.JsonProperty("start_line")
 		private Integer startLine;
@@ -98,12 +98,12 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			this.queryKey = queryKey;
 		}
 
-		public List<String> getColumns() {
-			return columns;
+		public String getOutputFormatSpecification() {
+			return outputFormatSpecification;
 		}
 
-		public void setColumns(List<String> columns) {
-			this.columns = columns;
+		public void setOutputFormatSpecification(String outputFormatSpecification) {
+			this.outputFormatSpecification = outputFormatSpecification;
 		}
 
 		public Integer getStartLine() {
@@ -130,17 +130,78 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 	private final PlanExecutionRecorder planExecutionRecorder;
 
-	private final ToolPromptManager toolPromptManager;
-
 	public InnerStorageContentTool(UnifiedDirectoryManager directoryManager, SummaryWorkflow summaryWorkflow,
-			PlanExecutionRecorder planExecutionRecorder, ToolPromptManager toolPromptManager) {
+			PlanExecutionRecorder planExecutionRecorder) {
 		this.directoryManager = directoryManager;
 		this.summaryWorkflow = summaryWorkflow;
 		this.planExecutionRecorder = planExecutionRecorder;
-		this.toolPromptManager = toolPromptManager;
 	}
 
 	private static final String TOOL_NAME = "inner_storage_content_tool";
+
+	private static final String TOOL_DESCRIPTION = """
+			Internal storage content retrieval tool specialized for intelligent content extraction and structured output.
+			Intelligent content extraction mode: Get detailed content based on file name, **must provide** query_key and outputFormatSpecification parameters for intelligent extraction and structured output
+
+			Supports two operation modes:
+			1. extract_relevant_content: Get content from single file (exact filename match or relative path)
+			2. get_folder_content: Get content from all files in specified folder
+			""";
+
+	private static final String PARAMETERS = """
+			{
+				"oneOf": [
+					{
+						"type": "object",
+						"properties": {
+							"action": {
+								"type": "string",
+								"const": "extract_relevant_content",
+								"description": "Get content from single file"
+							},
+							"file_name": {
+								"type": "string",
+								"description": "Filename (with extension) or relative path, supports exact matching"
+							},
+							"query_key": {
+								"type": "string",
+								"description": "Related questions or content keywords to extract, must be provided"
+							},
+							"outputFormatSpecification": {
+								"type": "string",
+								"description": "Provide a string to specify the structure in which you expect the data for query_key to be returned. If you want the result to consist of multiple fields as a whole, you can input a comma-separated string to define the fields."
+							}
+						},
+						"required": ["action", "file_name", "query_key", "outputFormatSpecification"],
+						"additionalProperties": false
+					},
+					{
+						"type": "object",
+						"properties": {
+							"action": {
+								"type": "string",
+								"const": "get_folder_content",
+								"description": "Get content from all files in specified folder"
+							},
+							"folder_name": {
+								"type": "string",
+								"description": "Folder name or relative path"
+							},
+							"query_key": {
+								"type": "string",
+								"description": "Related questions or content keywords to extract, must be provided"
+							},
+							"outputFormatSpecification": {
+								"type": "string",
+							"description": "Provide a string to specify the structure in which you expect the data for query_key to be returned. If you want the result to consist of multiple fields as a whole, you can input a comma-separated string to define the fields."
+							}
+						},
+						"required": ["action", "folder_name", "query_key", "outputFormatSpecification"],
+						"additionalProperties": false
+					}
+				]
+			}
+			""";
 
 	@Override
 	public String getName() {
@@ -149,12 +210,12 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 	@Override
 	public String getDescription() {
-		return toolPromptManager.getToolDescription("inner_storage_content_tool");
+		return TOOL_DESCRIPTION;
 	}
 
 	@Override
 	public String getParameters() {
-		return toolPromptManager.getToolParameters("inner_storage_content_tool");
+		return PARAMETERS;
 	}
 
 	@Override
@@ -180,8 +241,10 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 	 */
 	@Override
 	public ToolExecuteResult run(InnerStorageContentInput input) {
-		log.info("InnerStorageContentTool input: action={}, fileName={}, folderName={}, queryKey={}, columns={}",
-				input.getAction(), input.getFileName(), input.getFolderName(), input.getQueryKey(), input.getColumns());
+		log.info(
+				"InnerStorageContentTool input: action={}, fileName={}, folderName={}, queryKey={}, outputFormatSpecification={}",
+				input.getAction(), input.getFileName(), input.getFolderName(), input.getQueryKey(),
+				input.getOutputFormatSpecification());
 		try {
 			String action = input.getAction();
 			if (action == null) {
@@ -189,11 +252,12 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			}
 
 			return switch (action) {
-				case "get_content" -> getStoredContent(input.getFileName(), input.getQueryKey(), input.getColumns());
+				case "extract_relevant_content" ->
+					getStoredContent(input.getFileName(), input.getQueryKey(), input.getOutputFormatSpecification());
 				case "get_folder_content" ->
-					getFolderContent(input.getFolderName(), input.getQueryKey(), input.getColumns());
+					getFolderContent(input.getFolderName(), input.getQueryKey(), input.getOutputFormatSpecification());
 				default -> new ToolExecuteResult("Error: Unsupported operation type '" + action
-						+ "'. Supported operations: get_content, get_folder_content");
+						+ "'. Supported operations: extract_relevant_content, get_folder_content");
 			};
 		}
 		catch (Exception e) {
@@ -206,7 +270,7 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 	 * Get stored content by filename, supports AI intelligent extraction and structured
 	 * output
 	 */
-	private ToolExecuteResult getStoredContent(String fileName, String queryKey, List<String> columns) {
+	private ToolExecuteResult getStoredContent(String fileName, String queryKey, String outputFormatSpecification) {
 		if (fileName == null || fileName.trim().isEmpty()) {
 			return new ToolExecuteResult("Error: file_name parameter is required");
 		}
@@ -214,9 +278,9 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			return new ToolExecuteResult(
 					"Error: query_key parameter is required to specify content keywords to extract");
 		}
-		if (columns == null || columns.isEmpty()) {
+		if (outputFormatSpecification == null || outputFormatSpecification.isEmpty()) {
 			return new ToolExecuteResult(
-					"Error: columns parameter is required to specify structured column names for return results");
+					"Error: outputFormatSpecification parameter is required to specify structured column names for return results");
 		}
 		try {
 			Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
@@ -251,10 +315,9 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			log.info("Delegating to SummaryWorkflow for file content extraction: file={}, query keywords={}",
 					actualFileName, queryKey);
 			Long thinkActRecordId = getCurrentThinkActRecordId();
-			String terminateColumnsString = String.join(",", columns);
 			String result = summaryWorkflow
 				.executeSummaryWorkflow(rootPlanId, actualFileName, fileContent, queryKey, thinkActRecordId,
-						terminateColumnsString)
+						outputFormatSpecification)
 				.get();
 			return new ToolExecuteResult(result);
 		}
@@ -271,7 +334,7 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 	/**
 	 * Get information from all files in specified folder
 	 */
-	private ToolExecuteResult getFolderContent(String folderName, String queryKey, List<String> columns) {
+	private ToolExecuteResult getFolderContent(String folderName, String queryKey, String outputFormatSpecification) {
 		if (folderName == null || folderName.trim().isEmpty()) {
 			return new ToolExecuteResult("Error: folder_name parameter is required");
 		}
@@ -279,9 +342,9 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			return new ToolExecuteResult(
 					"Error: query_key parameter is required to specify content keywords to extract");
 		}
-		if (columns == null || columns.isEmpty()) {
+		if (outputFormatSpecification == null || outputFormatSpecification.isEmpty()) {
 			return new ToolExecuteResult(
-					"Error: columns parameter is required to specify structured column names for return results");
+					"Error: outputFormatSpecification parameter is required to specify structured column names for return results");
 		}
 		try {
 			Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
@@ -316,10 +379,9 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 					folderName, files.size(), queryKey);
 
 			Long thinkActRecordId = getCurrentThinkActRecordId();
-			String terminateColumnsString = String.join(",", columns);
 			String result = summaryWorkflow
 				.executeSummaryWorkflow(rootPlanId, folderName, combinedContent.toString(), queryKey, thinkActRecordId,
-						terminateColumnsString)
+						outputFormatSpecification)
 				.get();
 			return new ToolExecuteResult(result);
 

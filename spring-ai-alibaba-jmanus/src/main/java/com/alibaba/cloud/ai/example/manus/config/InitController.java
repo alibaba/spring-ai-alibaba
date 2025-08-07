@@ -183,6 +183,7 @@ public class InitController {
 				// Use user custom configuration
 				modelConfig.setBaseUrl(request.getBaseUrl().trim());
 				modelConfig.setModelName(request.getModelName().trim());
+				modelConfig.setCompletionsPath(request.getCompletionsPath().trim());
 
 				String displayName = request.getModelDisplayName();
 				if (displayName == null || displayName.trim().isEmpty()) {
@@ -222,6 +223,8 @@ public class InitController {
 
 		private String modelDisplayName;
 
+		private String completionsPath;
+
 		public String getConfigMode() {
 			return configMode;
 		}
@@ -260,6 +263,14 @@ public class InitController {
 
 		public void setModelDisplayName(String modelDisplayName) {
 			this.modelDisplayName = modelDisplayName;
+		}
+
+		public String getCompletionsPath() {
+			return completionsPath;
+		}
+
+		public void setCompletionsPath(String completionsPath) {
+			this.completionsPath = completionsPath;
 		}
 
 	}
