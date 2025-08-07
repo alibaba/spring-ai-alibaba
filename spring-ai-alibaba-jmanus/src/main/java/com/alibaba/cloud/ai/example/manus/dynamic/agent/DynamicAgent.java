@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.dynamic.memory.advisor.CustomMessageChatMemoryAdvisor;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
@@ -57,8 +56,6 @@ import reactor.core.publisher.Flux;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 public class DynamicAgent extends ReActAgent {
 
