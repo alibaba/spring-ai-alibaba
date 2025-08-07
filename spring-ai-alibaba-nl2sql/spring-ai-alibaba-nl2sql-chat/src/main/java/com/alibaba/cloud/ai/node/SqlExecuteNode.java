@@ -22,7 +22,6 @@ import com.alibaba.cloud.ai.connector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.constant.Constant;
 
-import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
 import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.model.execution.ExecutionStep;
