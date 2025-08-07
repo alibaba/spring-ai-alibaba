@@ -11,7 +11,7 @@
 ```
 spring-ai-alibaba-nl2sql/
 ├── spring-ai-alibaba-nl2sql-management    # 管理端（可直接启动的Web应用）
-├── spring-ai-alibaba-nl2sql-chat         # 核心功能（不能独立启动，供集成使用）  
+├── spring-ai-alibaba-nl2sql-chat         # 核心功能（不能独立启动，供集成使用）
 └── spring-ai-alibaba-nl2sql-common       # 公共代码
 ```
 
@@ -88,3 +88,66 @@ yarn dev
 ```
 
 启动成功后，访问地址 http://localhost:3000
+
+## 系统体验
+
+访问 http://localhost:3000 ，可以看到有四个智能体（目前这四个只是占位显示，并没有对接数据）
+
+![img.png](img/img.png)
+
+点击右上角“创建智能体” ，这里只需要输入智能体名称，其他配置都选默认。
+
+![img_1.png](img/img_1.png)
+
+创建成功后，可以看到智能体配置页面。
+
+![img_2.png](img/img_2.png)
+
+进入数据源配置页面，配置业务数据库（我们在环境初始化时第一步提供的业务数据库）。
+
+![img_3.png](img/img_3.png)
+
+添加完成后，可以在列表页面验证数据源连接是否正常。
+
+![img_4.png](img/img_4.png)
+
+预设问题管理，可以为智能体设置预设问题
+
+![img_12.png](img/img_12.png)
+
+智能体调试页面可以定制化配置数据源，然后初始化数据源到向量库，进行效果调试。
+
+![img_5.png](img/img_5.png)
+
+![img_6.png](img/img_6.png)
+
+成功后可以在智能体调试页面输入自然语言进行查询。
+
+![img_7.png](img/img_7.png)
+
+![img_8.png](img/img_8.png)
+
+> 调试和发布的智能体数据是分离的，调试时的数据不会影响发布后的智能体。
+
+调试没问题后，可以发布智能体。
+
+![img_9.png](img/img_9.png)
+
+> 目前“嵌入网站”和“访问API”当前版本暂未实现。
+
+点击发布后会更新元数据到发布后的智能体。
+
+![img_10.png](img/img_10.png)
+
+![img_11.png](img/img_11.png)
+
+分析问题
+
+![img_13.png](img/img_13.png)
+
+分析结果
+
+![img.png](img/img_14.png)
+
+> 注意：Python节点默认启用的是模拟节点，目前会造成幻觉问题，如需解决幻觉问题，需要实际启动Python执行功能。
+> 如果你没有环境执行Python节点，临时解决方法：在提问的问题中，添加“请不要通过Python分析”。
