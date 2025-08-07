@@ -7,8 +7,9 @@ cd docker/middleware
 
 ```shell
 chmod a+x ./run.sh
-./run.sh
+sudo ./run.sh
 ```
+等待 60秒， `rmq-init-topic` 脚本会自动创建 RocketMQ 相关的 Topic。
 
 3. 进入 spring-ai-alibaba-studio-server-admin 目录，启动后端应用
 

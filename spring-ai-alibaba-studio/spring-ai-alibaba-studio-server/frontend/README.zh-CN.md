@@ -85,7 +85,7 @@ DEFAULT_PASSWORD=123456
 最后，运行开发服务器：
 
 ```bash
-cd main
+cd packages/main
 npm run dev
 ```
 

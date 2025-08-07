@@ -13,8 +13,8 @@ TZ=Asia/Shanghai
 MIDDLEWARE_HOME=.
 EOF
 
-sudo chown -R 1000:0 elasticsearch/data
-sudo chown -R 1000:0 kibana/data
+sudo chmod -R 777 elasticsearch/data
+sudo chmod -R 777 kibana/data
 
 echo "Created .env file with UID=$(id -u) and GID=$(id -g)"
 
