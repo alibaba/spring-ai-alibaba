@@ -478,9 +478,12 @@
                               <button 
                                 class="btn btn-sm btn-outline" 
                                 @click="testDatasourceConnection(agentDatasource.datasource.id)"
-                                title="测试连接"
+                                :disabled="testingConnections.has(agentDatasource.datasource.id)"
+                                :title="testingConnections.has(agentDatasource.datasource.id) ? '测试中...' : '测试连接'"
                               >
-                                测试连接
+                                <i v-if="testingConnections.has(agentDatasource.datasource.id)" class="bi bi-arrow-clockwise spin"></i>
+                                <span v-if="!testingConnections.has(agentDatasource.datasource.id)">测试连接</span>
+                                <span v-else>测试中...</span>
                               </button>
                               <button 
                                 class="btn btn-sm btn-danger" 
@@ -1165,6 +1168,7 @@ export default {
     // 数据源测试相关
     const showTestResult = ref(false)
     const testResultMessage = ref('')
+    const testingConnections = ref(new Set()) // 存储正在测试的数据源ID
     
     // 初始化信息源相关数据
     const showSchemaInitModal = ref(false)
@@ -1505,18 +1509,43 @@ export default {
     }
 
     const testDatasourceConnection = async (datasourceId) => {
+      // 防止重复测试同一个数据源
+      if (testingConnections.value.has(datasourceId)) {
+        showMessage('该数据源正在测试中，请稍候', 'warning')
+        return
+      }
+
+      // 添加到测试中的集合
+      testingConnections.value.add(datasourceId)
+      
+      // 创建30秒超时的Promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('连接测试超时（30秒），请检查网络连接或数据库配置'))
+        }, 30000)
+      })
+
       try {
-        const result = await datasourceApi.testConnection(datasourceId)
+        // 使用Promise.race来实现超时控制
+        const result = await Promise.race([
+          datasourceApi.testConnection(datasourceId),
+          timeoutPromise
+        ])
+        
         if (result.success) {
           showMessage('连接测试成功', 'success')
         } else {
           showMessage('连接测试失败：' + result.message, 'error')
         }
         // 重新加载数据源状态
-        loadDatasources()
+        await loadDatasources()
       } catch (error) {
         console.error('连接测试失败:', error)
-        showMessage('连接测试失败，请重试', 'error')
+        const errorMessage = error.message || '连接测试失败，请重试'
+        showMessage(errorMessage, 'error')
+      } finally {
+        // 无论成功还是失败，都要从测试中的集合移除
+        testingConnections.value.delete(datasourceId)
       }
     }
 
@@ -2210,6 +2239,7 @@ export default {
       datasourceForm,
       showTestResult,
       testResultMessage,
+      testingConnections,
       // 初始化信息源相关
       schemaInitForm,
       availableTables,
