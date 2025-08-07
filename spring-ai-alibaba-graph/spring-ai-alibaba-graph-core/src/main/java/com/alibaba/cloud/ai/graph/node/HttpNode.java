@@ -183,7 +183,7 @@ public class HttpNode implements NodeAction {
 				try {
 					jsonObject = parseNestedJson(jsonTemplate);
 				}
-				catch (Exception e) {
+				catch (com.fasterxml.jackson.core.JsonProcessingException e) {
 					throw RunnableErrors.nodeInterrupt.exception("Failed to parse JSON body: " + e.getMessage());
 				}
 				requestSpec.headers(h -> h.setContentType(MediaType.APPLICATION_JSON));
@@ -279,7 +279,7 @@ public class HttpNode implements NodeAction {
 	 * @return parsed JSON object
 	 * @throws Exception if parsing fails
 	 */
-	public static Object parseNestedJson(String json) throws Exception {
+	public static Object parseNestedJson(String json) throws JsonProcessingException {
 		JsonNode rootNode = mapper.readTree(json);
 		if (rootNode.isObject()) {
 			Map<String, Object> map = mapper.convertValue(rootNode, Map.class);
