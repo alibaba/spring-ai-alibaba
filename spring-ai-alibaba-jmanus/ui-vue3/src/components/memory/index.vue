@@ -1,200 +1,209 @@
 <template>
-  <div class="app-container" :class="{ 'memory-wrapper-collapsed': memoryStore.isCollapsed }">
-    <div class="header">
-      <div class="relative">
-        <div class="title-edit-group">
-          <h1 id="main-title" class="main-title">
-            <span>{{ $t('memory.title') }}</span>
-          </h1>
-        </div>
-
-        <div
-            id="title-edit-container"
-            class="title-edit-container"
-            v-if="showTitleEdit"
-        >
-        </div>
-      </div>
-    </div>
-
-    <div class="search-bar">
-      <div class="search-container">
-        <Icon class="search-container-icon" icon="carbon:search" />
-        <input
-            type="text"
-            :placeholder="$t('memory.searchPlaceholder')"
-            class="search-input"
-            v-model="searchQuery"
-            @input="handleSearch"
-        >
-      </div>
-    </div>
-
-    <div class="message-list" id="message-list">
-      <div>
-        <div
-            class="message-item"
-            v-for="message in filteredMessages"
-            :key="message.memoryId"
-            :class="{ 'expanded': message.expanded }"
-        >
-          <div class="message-header">
-            <div class="message-content">
-              <div class="sender-info">
-                <div style="display: flex; align-items: center;">
-                  <h3
-                      class="sender-name"
-                      @click.stop="selectMemory(message.memoryId)"
-                  >
-                    {{ message.memoryName }}
-                  </h3>
-                  <span
-                      @click.stop="showNameEditModal(message.memoryId, message.memoryName)"
-                  >
-                    <Icon icon="carbon:edit" style="margin-left: 10px; cursor: pointer;"/>
-                  </span>
-                </div>
-                <div class="toggle-container" @click.stop="toggleMessage(message.memoryId)">
-                  <Icon
-                      :id="'toggle-' + message.memoryId"
-                      icon="carbon:chevron-down"
-                      style="cursor: pointer;"
-                  >
-                  </Icon>
-                </div>
-
-                <div class="action-buttons">
-                  <button
-                      class="delete-btn"
-                      @click.stop="showDeleteConfirm(message.memoryId)"
-                  >
-                    <Icon icon="carbon:delete"></Icon>
-                  </button>
-                </div>
+  <Teleport to="body">
+    <Transition name="modal">
+      <div class="app-container" v-if="memoryStore.isCollapsed">
+        <div class="app-content">
+          <div class="header">
+            <div class="relative">
+              <div class="title-edit-group">
+                <h1 id="main-title" class="main-title">
+                  <span>{{ $t('memory.title') }}</span>
+                </h1>
               </div>
 
-              <div class="message-preview">
-                <p class="preview-line">
-                  {{ message.messages.length > 0 ? message.messages[0].text : 'none message' }}
-                </p>
-                <p
-                    class="preview-line"
-                    style="opacity: 0.8;"
-                    v-if="message.messages.length > 1"
+              <div
+                  id="title-edit-container"
+                  class="title-edit-container"
+                  v-if="showTitleEdit"
+              >
+              </div>
+            </div>
+            <button class="close-btn" @click="memoryStore.isCollapsed = false">
+              <Icon icon="carbon:close" />
+            </button>
+          </div>
+
+          <div class="search-bar">
+            <div class="search-container">
+              <Icon class="search-container-icon" icon="carbon:search" />
+              <input
+                  type="text"
+                  :placeholder="$t('memory.searchPlaceholder')"
+                  class="search-input"
+                  v-model="searchQuery"
+                  @input="handleSearch"
+              >
+            </div>
+          </div>
+
+          <div class="message-list" id="message-list">
+            <div>
+              <div
+                  class="message-item"
+                  v-for="message in filteredMessages"
+                  :key="message.memoryId"
+                  :class="{ 'expanded': message.expanded }"
+              >
+                <div class="message-header">
+                  <div class="message-content">
+                    <div class="sender-info">
+                      <div style="display: flex; align-items: center;">
+                        <h3
+                            class="sender-name"
+                            @click.stop="selectMemory(message.memoryId)"
+                        >
+                          {{ message.memoryName }}
+                        </h3>
+                        <span
+                            @click.stop="showNameEditModal(message.memoryId, message.memoryName)"
+                        >
+                        <Icon icon="carbon:edit" style="margin-left: 10px; cursor: pointer;"/>
+                      </span>
+                      </div>
+                      <div class="toggle-container" @click.stop="toggleMessage(message.memoryId)">
+                        <Icon
+                            :id="'toggle-' + message.memoryId"
+                            icon="carbon:chevron-down"
+                            style="cursor: pointer;"
+                        >
+                        </Icon>
+                      </div>
+
+                      <div class="action-buttons">
+                        <button
+                            class="delete-btn"
+                            @click.stop="showDeleteConfirm(message.memoryId)"
+                        >
+                          <Icon icon="carbon:delete"></Icon>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="message-preview">
+                      <p class="preview-line">
+                        {{ message.messages.length > 0 ? message.messages[0].text : 'none message' }}
+                      </p>
+                      <p
+                          class="preview-line"
+                          style="opacity: 0.8;"
+                          v-if="message.messages.length > 1"
+                      >
+                        {{ message.messages[1].text }}
+                      </p>
+                    </div>
+
+                    <div class="message-meta">
+                      <span class="message-id">ID: {{ message.memoryId }}</span>
+                      <div class="meta-right">
+                      <span class="unread-count" v-if="message.messages.length > 0">
+                        {{ message.messages.length }} {{$t('memory.size')}}
+                      </span>
+                        <span class="message-time">{{ formatTimestamp(message.createTime) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                    :id="'content-' + message.memoryId"
+                    class="expanded-content"
+                    v-if="message.expanded"
                 >
-                  {{ message.messages[1].text }}
-                </p>
+                  <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div class="message-bubble" v-for="(bubble, idx) in message.messages" :key="idx">
+                      <div class="bubble-avatar">
+                        {{ bubble.messageType }}
+                      </div>
+                      <div class="bubble-content">
+                        <p class="bubble-text">{{ bubble.text }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="filteredMessages.length === 0 && searchQuery" class="empty-state">
+              <p class="state-text">none message</p>
+            </div>
+          </div>
+
+          <div
+              id="name-edit-modal"
+              class="modal-overlay"
+              v-if="showNameModal"
+              @click.self="closeNameModal"
+          >
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 class="modal-title">{{$t('memory.changeName')}}</h3>
+                <input
+                    type="text"
+                    v-model="nameInput"
+                    class="edit-input"
+                    :placeholder="$t('memory.newNamePlaceholder')"
+                    maxlength="100"
+                >
+                <span id="name-char-count" class="char-count" style="text-align: right; display: block; margin-top: 0.25rem;">
+                {{ nameInput.length }}/100
+              </span>
               </div>
 
-              <div class="message-meta">
-                <span class="message-id">ID: {{ message.memoryId }}</span>
-                <div class="meta-right">
-                  <span class="unread-count" v-if="message.messages.length > 0">
-                    {{ message.messages.length }} {{$t('memory.size')}}
-                  </span>
-                  <span class="message-time">{{ formatTimestamp(message.createTime) }}</span>
-                </div>
+              <div class="modal-footer">
+                <button
+                    id="cancel-name"
+                    class="modal-btn cancel-btn"
+                    @click="closeNameModal"
+                >
+                  {{$t('memory.cancel')}}
+                </button>
+                <button
+                    id="save-name"
+                    class="modal-btn confirm-btn"
+                    @click="saveName"
+                >
+                  {{$t('memory.save')}}
+                </button>
               </div>
             </div>
           </div>
 
           <div
-              :id="'content-' + message.memoryId"
-              class="expanded-content"
-              v-if="message.expanded"
+              id="delete-modal"
+              class="modal-overlay"
+              v-if="showDeleteModal"
+              @click.self="closeDeleteModal"
           >
-            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-              <div class="message-bubble" v-for="(bubble, idx) in message.messages" :key="idx">
-                <div class="bubble-avatar">
-                  {{ bubble.messageType }}
-                </div>
-                <div class="bubble-content">
-                  <p class="bubble-text">{{ bubble.text }}</p>
-                </div>
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 class="modal-title">{{$t('memory.deleteHint')}}</h3>
+                <p class="state-text" id="delete-message">
+                  {{$t('memory.deleteHintPrefix')}} {{ currentDeleteId }} {{$t('memory.deleteHintSuffix')}}
+                </p>
+              </div>
+
+              <div class="modal-footer">
+                <button
+                    id="cancel-delete"
+                    class="modal-btn cancel-btn"
+                    @click="closeDeleteModal"
+                >
+                  {{$t('memory.cancel')}}
+                </button>
+                <button
+                    id="confirm-delete"
+                    class="modal-btn delete-btn-confirm"
+                    @click="confirmDelete"
+                >
+                  {{$t('memory.delete')}}
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <div v-if="filteredMessages.length === 0 && searchQuery" class="empty-state">
-        <p class="state-text">none message</p>
-      </div>
-    </div>
-
-    <div
-        id="name-edit-modal"
-        class="modal-overlay"
-        v-if="showNameModal"
-        @click.self="closeNameModal"
-    >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">{{$t('memory.changeName')}}</h3>
-          <input
-              type="text"
-              v-model="nameInput"
-              class="edit-input"
-              :placeholder="$t('memory.newNamePlaceholder')"
-              maxlength="100"
-          >
-          <span id="name-char-count" class="char-count" style="text-align: right; display: block; margin-top: 0.25rem;">
-            {{ nameInput.length }}/100
-          </span>
-        </div>
-
-        <div class="modal-footer">
-          <button
-              id="cancel-name"
-              class="modal-btn cancel-btn"
-              @click="closeNameModal"
-          >
-            {{$t('memory.cancel')}}
-          </button>
-          <button
-              id="save-name"
-              class="modal-btn confirm-btn"
-              @click="saveName"
-          >
-            {{$t('memory.save')}}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div
-        id="delete-modal"
-        class="modal-overlay"
-        v-if="showDeleteModal"
-        @click.self="closeDeleteModal"
-    >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">{{$t('memory.deleteHint')}}</h3>
-          <p class="state-text" id="delete-message">
-            {{$t('memory.deleteHintPrefix')}} {{ currentDeleteId }} {{$t('memory.deleteHintSuffix')}}
-          </p>
-        </div>
-
-        <div class="modal-footer">
-          <button
-              id="cancel-delete"
-              class="modal-btn cancel-btn"
-              @click="closeDeleteModal"
-          >
-            {{$t('memory.cancel')}}
-          </button>
-          <button
-              id="confirm-delete"
-              class="modal-btn delete-btn-confirm"
-              @click="confirmDelete"
-          >
-            {{$t('memory.delete')}}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -202,7 +211,7 @@ import {onMounted, ref} from 'vue';
 import {MemoryApiService} from '@/api/memory-api-service'
 import type { Message} from '@/api/memory-api-service'
 import {Icon} from '@iconify/vue'
-import {memoryStore} from "@/stores/memory";
+import {memoryStore,MemoryEmits} from "@/stores/memory";
 
 const showTitleEdit = ref(false);
 const searchQuery = ref('');
@@ -215,6 +224,8 @@ const nameInput = ref('');
 
 const showDeleteModal = ref(false);
 const currentDeleteId = ref<string | null>(null);
+const expandedMap = new Map()
+const emit = defineEmits<MemoryEmits>()
 
 onMounted(() => {
   memoryStore.setLoadMessages(loadMessages)
@@ -224,14 +235,11 @@ const loadMessages = async () => {
   try {
     const mes = await MemoryApiService.getMemories()
     if(messages.value){
-      const expandedMap = new Map(
-          messages.value.map(msg => [msg.memoryId, msg.expanded])
-      );
       messages.value = mes.map((mesMsg: Message) => ({
         ...mesMsg,
         expanded: expandedMap.has(mesMsg.memoryId)
             ? expandedMap.get(mesMsg.memoryId)
-            : mesMsg.expanded
+            : false
       }));
     } else {
       messages.value = mes.map((msg: Message) => ({...msg, expanded: false}));
@@ -241,12 +249,14 @@ const loadMessages = async () => {
   } catch (e) {
     console.error('error:', e);
     messages.value = [];
+
     filteredMessages.value = [];
   }
 };
 
 const selectMemory = (memoryId: string) => {
   memoryStore.selectMemory(memoryId);
+  emit('memory-selected')
 };
 
 const formatTimestamp = (timestamp: number | string): string => {
@@ -326,6 +336,7 @@ const toggleMessage = (id: string) => {
   const message = messages.value.find(msg => msg.memoryId === id);
   if (message) {
     message.expanded = !message.expanded;
+    expandedMap.set(id, message.expanded)
     const filteredIndex = filteredMessages.value.findIndex(msg => msg.memoryId === id);
     if (filteredIndex !== -1) {
       filteredMessages.value[filteredIndex] = {...message};
@@ -370,13 +381,31 @@ const confirmDelete = async () => {
 }
 
 .app-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.app-content {
   position: relative;
-  width: 26%;
-  height: 100vh;
-  background: rgba(255, 255, 255, 0.05);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease-in-out;
   overflow-y: auto;
+  border-radius: 16px;
+  width: 90%;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.15));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  max-width: 800px;
+  max-height: 80vh;
+  min-height: 500px;
 }
 
 .memory-wrapper-collapsed {
@@ -406,6 +435,22 @@ const confirmDelete = async () => {
 
 .main-title i {
   margin-right: 0.5rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.close-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .search-bar {

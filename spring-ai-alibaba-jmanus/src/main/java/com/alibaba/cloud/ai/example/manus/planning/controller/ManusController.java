@@ -58,8 +58,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	private final Cache<String, Throwable> exceptionCache;
 
-	private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd,yyyy hh:mm a");
-
 	@Autowired
 	@Lazy
 	private PlanningFactory planningFactory;
@@ -117,7 +115,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			try {
 				// The name here will be automatically adjusted to generate the
 				// corresponding language according to the time zone
-				memoryService.saveMemory(new MemoryEntity(memoryId, LocalDateTime.now().format(formatter)));
+				memoryService.saveMemory(new MemoryEntity(memoryId, query));
 				return planningFlow.executePlan(context);
 			}
 			catch (Exception e) {

@@ -34,41 +34,62 @@ import java.util.List;
 @Transactional
 public class MemoryServiceImpl implements MemoryService {
 
-	@Autowired
-	private MemoryRepository memoryRepository;
+    @Autowired
+    private MemoryRepository memoryRepository;
 
-	@Autowired
-	private ChatMemory chatMemory;
+    @Autowired
+    private ChatMemory chatMemory;
 
-	@Override
-	public List<MemoryEntity> getMemories() {
-		List<MemoryEntity> memoryEntities = memoryRepository.findAll();
-		memoryEntities.forEach(memoryEntity -> {
-			List<Message> messages = chatMemory.get(memoryEntity.getMemoryId());
-			memoryEntity.setMessages(messages);
-		});
-		return memoryEntities;
-	}
+    @Override
+    public List<MemoryEntity> getMemories() {
+        List<MemoryEntity> memoryEntities = memoryRepository.findAll();
+        memoryEntities.forEach(memoryEntity -> {
+            List<Message> messages = chatMemory.get(memoryEntity.getMemoryId());
+            memoryEntity.setMessages(messages);
+        });
+        memoryEntities.stream().sorted((m1, m2) ->
+                Math.toIntExact(m1.getCreateTime().getTime() - m2.getCreateTime().getTime())).toList();
+        return memoryEntities;
+    }
 
-	@Override
-	public void deleteMemory(String memoryId) {
-		chatMemory.clear(memoryId);
-		memoryRepository.deleteByMemoryId(memoryId);
-	}
+    @Override
+    public void deleteMemory(String memoryId) {
+        chatMemory.clear(memoryId);
+        memoryRepository.deleteByMemoryId(memoryId);
+    }
 
-	@Override
-	public MemoryEntity saveMemory(MemoryEntity memoryEntity) {
-		MemoryEntity findEntity = memoryRepository.findByMemoryId(memoryEntity.getMemoryId());
-		if (findEntity != null) {
-			findEntity.setMemoryName(memoryEntity.getMemoryName());
-			findEntity.setMessages(null);
-		}
-		else {
-			findEntity = memoryEntity;
-		}
-		MemoryEntity saveEntity = memoryRepository.save(findEntity);
-		saveEntity.setMessages(chatMemory.get(saveEntity.getMemoryId()));
-		return saveEntity;
-	}
+    @Override
+    public MemoryEntity saveMemory(MemoryEntity memoryEntity) {
+        MemoryEntity findEntity = memoryRepository.findByMemoryId(memoryEntity.getMemoryId());
+        if (findEntity != null) {
+            findEntity.setMessages(null);
+        } else {
+            findEntity = memoryEntity;
+        }
+        MemoryEntity saveEntity = memoryRepository.save(findEntity);
+        saveEntity.setMessages(chatMemory.get(saveEntity.getMemoryId()));
+        return saveEntity;
+    }
 
+    @Override
+    public MemoryEntity updateMemory(MemoryEntity memoryEntity) {
+        MemoryEntity findEntity = memoryRepository.findByMemoryId(memoryEntity.getMemoryId());
+        if (findEntity == null) {
+            throw new IllegalArgumentException();
+        }
+        findEntity.setMemoryName(memoryEntity.getMemoryName());
+        MemoryEntity saveEntity = memoryRepository.save(findEntity);
+        saveEntity.setMessages(chatMemory.get(saveEntity.getMemoryId()));
+        return saveEntity;
+    }
+
+    @Override
+    public MemoryEntity singleMemory(String memoryId) {
+        MemoryEntity findEntity = memoryRepository.findByMemoryId(memoryId);
+        if (findEntity == null) {
+            throw new IllegalArgumentException();
+        }
+        findEntity.setMessages(chatMemory.get(findEntity.getMemoryId()));
+        return findEntity;
+    }
 }

@@ -15,16 +15,20 @@
  */
 import {reactive} from "vue";
 
+export interface MemoryEmits {
+    (e: 'memory-selected'): void
+}
+
 export class MemoryStore {
     // Basic state
-    isCollapsed = true
+    isCollapsed = false
     selectMemoryId = ''
     loadMessages = new Function()
     intervalId = 0
 
     toggleSidebar() {
         this.isCollapsed = !this.isCollapsed
-        if (!this.isCollapsed) {
+        if (this.isCollapsed) {
             this.loadMessages();
             this.intervalId = setInterval(() => {
                 this.loadMessages();

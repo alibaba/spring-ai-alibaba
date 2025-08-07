@@ -55,6 +55,17 @@ export class MemoryApiService {
         }
     }
 
+    static async getMemory(memoryId: string): Promise<Message> {
+        try {
+            const response = await fetch(`${this.BASE_URL}/single?memoryId=${memoryId}`)
+            const result = await this.handleResponse(response)
+            return await result.json()
+        } catch (error) {
+            console.error('Failed to get memory :', error)
+            throw error
+        }
+    }
+
     static async update(memoryId: string, memoryName: string): Promise<Message> {
         try {
             const response = await fetch(`${this.BASE_URL}/update`, {

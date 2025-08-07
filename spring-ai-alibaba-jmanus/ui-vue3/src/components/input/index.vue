@@ -32,15 +32,6 @@
         <Icon icon="carbon:document" />
         {{ $t('input.planMode') }}
       </button>
-      <button class="plan-mode-btn" :title="$t('memory.selectMemory')" @click="handleMemoryListClick">
-        <Icon icon="carbon:calendar" />
-        {{ memoryStore.selectMemoryId  || $t('memory.selectMemory') }}
-        <Icon v-if="memoryStore.selectMemoryId"
-              icon="carbon:close"
-              class="clear-memory-btn"
-              @click.stop="clearSelectMemory"
-              :placeholder="$t('memory.clearMemory')"/>
-      </button>
       <button
         class="send-button"
         :disabled="!currentInput.trim() || isDisabled"
@@ -73,7 +64,6 @@ interface Emits {
   (e: 'clear'): void
   (e: 'update-state', enabled: boolean, placeholder?: string): void
   (e: 'plan-mode-clicked'): void
-  (e: 'memory-list-clicked'): void
 }
 
 export interface InputMessage {
@@ -135,15 +125,6 @@ const handleSend = () => {
 const handlePlanModeClick = () => {
   // Trigger the plan mode toggle event
   emit('plan-mode-clicked')
-}
-
-const handleMemoryListClick = () => {
-  // Trigger the plan mode toggle event
-  emit('memory-list-clicked')
-}
-
-const clearSelectMemory = () => {
-  memoryStore.clearMemoryId()
 }
 
 /**

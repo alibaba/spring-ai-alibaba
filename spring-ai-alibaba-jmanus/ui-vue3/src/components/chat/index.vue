@@ -387,6 +387,8 @@ import { usePlanExecution } from '@/utils/use-plan-execution'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
 import type {InputMessage} from "@/components/input/index.vue";
+import {memoryStore} from "@/stores/memory";
+import {MemoryApiService} from "@/api/memory-api-service";
 
 /**
  * Chat message interface that includes PlanExecutionRecord for plan-based messages
@@ -1357,6 +1359,22 @@ onUnmounted(() => {
   Object.keys(formInputsStore).forEach(key => delete formInputsStore[key])
 })
 
+const showMemory = async () => {
+  if(memoryStore.selectMemoryId) {
+    const memory = await MemoryApiService.getMemory(memoryStore.selectMemoryId);
+    messages.value = []
+    memory.messages.map(message => {
+      if(message.messageType.toLowerCase() === 'user') {
+        addMessage('user',message.text)
+      }
+      if(message.messageType.toLowerCase() === 'assistant') {
+        addMessage('assistant',message.text)
+      }
+    });
+    forceScrollToBottom()
+  }
+}
+
 // Expose methods to parent components for usage
 defineExpose({
   handleSendMessage,
@@ -1364,7 +1382,8 @@ defineExpose({
   handlePlanCompleted,
   handleDialogRoundStart,
   addMessage,
-  handlePlanError
+  handlePlanError,
+  showMemory
 })
 </script>
 

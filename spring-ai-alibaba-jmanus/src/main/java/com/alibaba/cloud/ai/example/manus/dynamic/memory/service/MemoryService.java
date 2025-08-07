@@ -32,4 +32,7 @@ public interface MemoryService {
 
 	MemoryEntity saveMemory(MemoryEntity memoryEntity);
 
+	MemoryEntity updateMemory(MemoryEntity memoryEntity);
+
+	MemoryEntity singleMemory(String memoryId);
 }

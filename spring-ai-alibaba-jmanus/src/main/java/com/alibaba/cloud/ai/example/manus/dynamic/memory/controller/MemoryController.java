@@ -41,9 +41,14 @@ public class MemoryController {
 		return ResponseEntity.ok(memoryService.getMemories());
 	}
 
+	@GetMapping("/single")
+	public ResponseEntity<MemoryEntity> singleMemory(String memoryId) {
+		return ResponseEntity.ok(memoryService.singleMemory(memoryId));
+	}
+
 	@PostMapping("/update")
 	public ResponseEntity<MemoryEntity> updateMemory(@RequestBody MemoryEntity memoryEntity) {
-		return ResponseEntity.ok(memoryService.saveMemory(memoryEntity));
+		return ResponseEntity.ok(memoryService.updateMemory(memoryEntity));
 	}
 
 	@GetMapping("/delete")

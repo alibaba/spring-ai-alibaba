@@ -20,7 +20,6 @@
   <div class="direct-page">
     <div class="direct-chat">
       <Sidebar @planExecutionRequested="handlePlanExecutionRequested" />
-      <Memory />
       <!-- Left Panel - Chat -->
       <div class="left-panel" :style="{ width: leftPanelWidth + '%' }">
         <div class="chat-header">
@@ -35,6 +34,9 @@
             </button>
             <button class="cron-task-btn" @click="showCronTaskModal = true" :title="$t('cronTask.title')">
               <Icon icon="carbon:alarm" width="20" />
+            </button>
+            <button class="cron-task-btn" @click="memoryStore.toggleSidebar()" :title="$t('memory.selectMemory')">
+              <Icon icon="carbon:calendar" width="20" />
             </button>
           </div>
         </div>
@@ -62,7 +64,6 @@
           @focus="handleInputFocus"
           @update-state="handleInputUpdateState"
           @plan-mode-clicked="handlePlanModeClicked"
-          @memory-list-clicked="handleMemoryListClicked"
         />
       </div>
 
@@ -82,6 +83,9 @@
 
     <!-- Cron Task Modal -->
     <CronTaskModal v-model="showCronTaskModal" />
+
+    <!-- Memory Modal -->
+    <Memory @memory-selected="memorySelected"/>
 
     <!-- Message toast component -->
     <div v-if="message.show" class="message-toast" :class="message.type">
@@ -109,7 +113,7 @@ import { useTaskStore } from '@/stores/task'
 import { sidebarStore } from '@/stores/sidebar'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import { useMessage } from '@/composables/useMessage'
-import {memoryStore} from "@/stores/memory";
+import {MemoryEmits, memoryStore} from "@/stores/memory";
 
 const route = useRoute()
 const router = useRouter()
@@ -510,10 +514,6 @@ const handlePlanModeClicked = () => {
   console.log('[DirectView] Sidebar toggled, isCollapsed:', sidebarStore.isCollapsed)
 }
 
-const handleMemoryListClicked = () => {
-  memoryStore.toggleSidebar()
-}
-
 const goBack = () => {
   router.push('/home')
 }
@@ -617,6 +617,10 @@ const handlePlanExecutionRequested = async (payload: {
     console.log('[Direct] Plan execution finished, resetting isExecutingPlan flag')
     isExecutingPlan.value = false
   }
+}
+
+const memorySelected = () => {
+  chatRef.value.showMemory()
 }
 </script>
 
