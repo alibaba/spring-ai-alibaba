@@ -231,7 +231,7 @@ const loadMessages = async () => {
         ...mesMsg,
         expanded: expandedMap.has(mesMsg.memoryId)
             ? expandedMap.get(mesMsg.memoryId)
-            : mesMsg.expanded // 或设置默认值如 false
+            : mesMsg.expanded
       }));
     } else {
       messages.value = mes.map((msg: Message) => ({...msg, expanded: false}));
@@ -239,7 +239,7 @@ const loadMessages = async () => {
     filteredMessages.value = [...messages.value];
     handleSearch()
   } catch (e) {
-    console.error('加载消息失败:', e);
+    console.error('error:', e);
     messages.value = [];
     filteredMessages.value = [];
   }
@@ -252,7 +252,7 @@ const selectMemory = (memoryId: string) => {
 const formatTimestamp = (timestamp: number | string): string => {
   const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
   if (isNaN(timestampNum) || timestampNum <= 0) {
-    return '未知时间';
+    return 'unknow time';
   }
   const date = new Date(
       timestampNum.toString().length === 13
