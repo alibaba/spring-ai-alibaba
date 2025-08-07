@@ -19,7 +19,7 @@
 
     <div class="search-bar">
       <div class="search-container">
-        <Icon icon="carbon:search" />
+        <Icon class="search-container-icon" icon="carbon:search" />
         <input
             type="text"
             :placeholder="$t('memory.searchPlaceholder')"
@@ -38,21 +38,38 @@
             :key="message.memoryId"
             :class="{ 'expanded': message.expanded }"
         >
-          <div class="message-header" @click="selectMemory(message.memoryId)">
+          <div class="message-header">
             <div class="message-content">
               <div class="sender-info">
                 <div style="display: flex; align-items: center;">
                   <h3
                       class="sender-name"
-                      @click.stop="showNameEditModal(message.memoryId, message.memoryName)"
+                      @click.stop="selectMemory(message.memoryId)"
                   >
                     {{ message.memoryName }}
                   </h3>
                   <span
                       @click.stop="showNameEditModal(message.memoryId, message.memoryName)"
                   >
-                    <Icon icon="carbon:edit" />
+                    <Icon icon="carbon:edit" style="margin-left: 10px; cursor: pointer;"/>
                   </span>
+                </div>
+                <div class="toggle-container" @click.stop="toggleMessage(message.memoryId)">
+                  <Icon
+                      :id="'toggle-' + message.memoryId"
+                      icon="carbon:chevron-down"
+                      style="cursor: pointer;"
+                  >
+                  </Icon>
+                </div>
+
+                <div class="action-buttons">
+                  <button
+                      class="delete-btn"
+                      @click.stop="showDeleteConfirm(message.memoryId)"
+                  >
+                    <Icon icon="carbon:delete"></Icon>
+                  </button>
                 </div>
               </div>
 
@@ -78,23 +95,6 @@
                   <span class="message-time">{{ formatTimestamp(message.createTime) }}</span>
                 </div>
               </div>
-            </div>
-
-            <div class="toggle-container" @click.stop="toggleMessage(message.memoryId)">
-              <Icon
-                  :id="'toggle-' + message.memoryId"
-                  icon="carbon:chevron-down"
-              >
-              </Icon>
-            </div>
-
-            <div class="action-buttons">
-              <button
-                  class="delete-btn"
-                  @click.stop="showDeleteConfirm(message.memoryId)"
-              >
-                <Icon icon="carbon:delete"></Icon>
-              </button>
             </div>
           </div>
 
@@ -308,10 +308,8 @@ const saveName = async () => {
   );
   if (messageIndex !== -1) {
     const currentMessage = messages.value[messageIndex]
-    currentMessage.memoryName = newName;
-    currentMessage.messages = []
     try {
-      const returnMemory = await MemoryApiService.update(currentMessage)
+      const returnMemory = await MemoryApiService.update(currentMessage.memoryId, newName)
       if (!returnMemory.messages) {
         returnMemory.messages = [];
       }
@@ -363,7 +361,7 @@ const confirmDelete = async () => {
 };
 </script>
 
-<style>
+<style scoped>
 * {
   margin: 0;
   padding: 0;
@@ -373,7 +371,7 @@ const confirmDelete = async () => {
 
 .app-container {
   position: relative;
-  width: 600px;
+  width: 26%;
   height: 100vh;
   background: rgba(255, 255, 255, 0.05);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -417,6 +415,11 @@ const confirmDelete = async () => {
 
 .search-container {
   position: relative;
+}
+.search-container-icon {
+  position: absolute;
+  top: 10px;
+  left: 8px;
 }
 
 .search-input {
@@ -463,9 +466,8 @@ const confirmDelete = async () => {
 }
 
 .message-header {
+  cursor: text;
   padding: 0.75rem;
-  cursor: pointer;
-  display: flex;
   align-items: center;
   width: 100%;
 }
@@ -474,6 +476,9 @@ const confirmDelete = async () => {
   flex: 1;
   min-width: 0;
   padding-right: 0.5rem;
+}
+.message.user .message-content {
+  flex: none !important;
 }
 
 .sender-info {
@@ -494,6 +499,10 @@ const confirmDelete = async () => {
 
 .message-preview {
   margin-bottom: 0.25rem;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
 }
 
 .preview-line {
@@ -535,20 +544,20 @@ const confirmDelete = async () => {
   background-color: rgba(102, 126, 234, 0.2);
   color: #667eea;
   padding: 0.125rem 0.375rem;
+  margin-top: 2px;
   border-radius: 1rem;
 }
 
 .toggle-container {
-  margin-left: 0.5rem;
+  margin-left: auto;
+  margin-top: 4px;
   display: flex;
   align-items: center;
-  min-width: 24px;
 }
 
 .action-buttons {
   margin-left: 0.5rem;
   transition: opacity 0.2s ease;
-  min-width: 24px;
 }
 
 .message-item:hover .action-buttons {
@@ -560,7 +569,7 @@ const confirmDelete = async () => {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.25rem;
+  padding: 0.25rem 0;
   font-size: 1rem;
 }
 
@@ -576,17 +585,17 @@ const confirmDelete = async () => {
 }
 
 .message-bubble {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 0.75rem;
 }
 
 .bubble-avatar {
   width: 5rem;
-  height: 2rem;
   overflow: hidden;
   margin-right: 0.5rem;
   flex-shrink: 0;
+  margin-bottom: 6px;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
 }
 
 .bubble-avatar img {
@@ -596,14 +605,14 @@ const confirmDelete = async () => {
 }
 
 .bubble-content {
-  background-color: #2d2d2d;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  max-width: 85%;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
 }
 
 .bubble-text {
-  font-size: 0.875rem;
+  font-size: 12px;
   margin-bottom: 0.25rem;
 }
 

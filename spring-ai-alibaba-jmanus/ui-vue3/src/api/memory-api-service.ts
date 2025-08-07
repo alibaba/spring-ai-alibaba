@@ -55,14 +55,17 @@ export class MemoryApiService {
         }
     }
 
-    static async update(currentMessage: Message): Promise<Message> {
+    static async update(memoryId: string, memoryName: string): Promise<Message> {
         try {
             const response = await fetch(`${this.BASE_URL}/update`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(currentMessage)
+                body: JSON.stringify({
+                    memoryId: memoryId,
+                    memoryName: memoryName
+                })
             })
             const result = await this.handleResponse(response)
             return await result.json()
