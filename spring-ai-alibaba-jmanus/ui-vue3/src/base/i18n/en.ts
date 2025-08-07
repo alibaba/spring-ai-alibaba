@@ -65,7 +65,7 @@ const words: I18nType = {
     restartRequired: 'API key saved successfully! The application needs to be restarted for the configuration to take effect.\n\nClick "OK" to restart now, or "Cancel" to restart manually later.',
     simplifiedChinese: 'Simplified Chinese',
     completionsPath: 'Completions Path',
-    completionsPathPlaceholder: 'If not specified, the default configuration is: /v1/chat/completions',
+    completionsPathPlaceholder: 'Completions Path, Resource Path',
   },
 
   // Common buttons and actions
@@ -310,7 +310,7 @@ const words: I18nType = {
       topP: 'Top P',
       topPPlaceholder: 'Leave empty to use model default',
       completionsPath: 'Completions Path',
-      completionsPathPlaceholder: 'If not specified, the default configuration is: /v1/chat/completions',
+      completionsPathPlaceholder: 'Leave empty to use model default',
       headers: 'Headers',
       headersPlaceholder: 'Request headers (JSON format)',
     },
@@ -840,8 +840,7 @@ const words: I18nType = {
   direct: {
     planTemplateIdNotFound: 'Plan template ID not found',
     executionFailedNoPlanId: 'Plan execution failed: No valid plan ID returned',
-    executionFailed: 'Plan execution failed',
-    configuration: 'config'
+    executionFailed: 'Plan execution failed'
   },
 
   // Modal
