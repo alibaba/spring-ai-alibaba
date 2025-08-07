@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.node.HttpNode.BodyData;
 import com.alibaba.cloud.ai.graph.node.HttpNode.BodyType;
 import com.alibaba.cloud.ai.graph.node.HttpNode.HttpRequestNodeBody;
 import com.alibaba.cloud.ai.graph.node.HttpNode.RetryConfig;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.utils.InMemoryFileStorage;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
@@ -277,6 +278,69 @@ public class HttpNodeTest {
 		assertEquals(HttpStatus.OK.value(), messages.get("status"));
 
 		assertEquals(3, mockWebServer.getRequestCount());
+	}
+
+	@Test
+	void testJsonBodyAndVariableReplace() throws Exception {
+		mockWebServer.enqueue(new MockResponse().setResponseCode(200)
+			.setBody("OK")
+			.setHeader(HttpHeaders.CONTENT_TYPE, "text/plain"));
+		OverAllState state = new OverAllState();
+		state.registerKeyAndStrategy("key1", new ReplaceStrategy());
+		state.registerKeyAndStrategy("key2", new ReplaceStrategy());
+		state.registerKeyAndStrategy("key3", new ReplaceStrategy());
+		String nestedJson = """
+				{
+				  "user": {
+				    "id": 123,
+				    "name": "Alice",
+				    "contact": {
+				      "email": "alice@example.com",
+				      "phones": [
+				        {"type": "mobile", "number": "123-4567"},
+				        {"type": "work", "number": "987-6543"}
+				      ]
+				    }
+				  },
+				  "order": {
+				    "orderId": "ORD-001",
+				    "items": [
+				      {"sku": "A123", "qty": 2, "price": 50.0},
+				      {"sku": "B456", "qty": 1, "price": 25.5}
+				    ]
+				  }
+				}""";
+
+		state.updateState(Map.of("key1", "value1", "key2",
+				"```json\n{\"person\":{\"name\":\"Tom\",\"age\":28,\"address\":{\"city\":\"Beijing\",\"zipcode\":\"100000\"}}}\n```",
+				"key3", nestedJson));
+
+		String myJson = "{" + "\"type\": \"JSON\", " + "\"data\": {" + "\"key1out\": \"${key1}\", "
+				+ "\"key2out\": \"${key2}\", " + "\"key3out\": \"${key3}\"" + "}" + "}";
+
+		HttpNode node = HttpNode.builder()
+			.url(mockWebServer.url("/mock").toString())
+			.method(HttpMethod.POST)
+			.header("Content-Type", "application/json")
+			.body(HttpRequestNodeBody.fromJson(myJson))
+			.retryConfig(new HttpNode.RetryConfig(3, 100, true))
+			.outputKey("http_node_output")
+			.build();
+
+		Map<String, Object> result = assertDoesNotThrow(() -> node.apply(state));
+		Map<String, Object> messages = (Map<String, Object>) result.get("messages");
+		assertEquals(HttpStatus.OK.value(), messages.get("status"));
+
+		okhttp3.mockwebserver.RecordedRequest request = mockWebServer.takeRequest();
+		assertEquals("/mock", request.getPath());
+		assertEquals("POST", request.getMethod());
+		assertEquals("application/json", request.getHeader("Content-Type"));
+
+		String expectedBody = "{" + "\"key1out\": \"value1\", "
+				+ "\"key2out\": {\"person\":{\"name\":\"Tom\",\"age\":28,\"address\":{\"city\":\"Beijing\",\"zipcode\":\"100000\"}}}, "
+				+ "\"key3out\": " + nestedJson + "}";
+		assertEquals(expectedBody.replaceAll("\\s+", ""), request.getBody().readUtf8().replaceAll("\\s+", ""));
+
 	}
 
 }
