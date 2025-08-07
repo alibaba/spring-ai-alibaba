@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.service;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.SessionHistory;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.GraphId;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -34,15 +36,23 @@ public class InMemorySessionContextService implements SessionContextService {
 
 	private final ConcurrentHashMap<String, CopyOnWriteArrayList<String>> sessionThreadMap;
 
+	// key: threadId
+	private final ConcurrentHashMap<String, SessionHistory> sessionHistoryMap;
+
 	public InMemorySessionContextService(ReportService reportService) {
 		this.reportService = reportService;
 		this.sessionThreadMap = new ConcurrentHashMap<>();
+		this.sessionHistoryMap = new ConcurrentHashMap<>();
 	}
 
 	@Override
-	public void addThreadId(String sessionId, String threadId) {
-		sessionThreadMap.putIfAbsent(sessionId, new CopyOnWriteArrayList<>());
-		sessionThreadMap.get(sessionId).add(threadId);
+	public void addSessionHistory(GraphId graphId, SessionHistory sessionHistory) {
+		sessionThreadMap.putIfAbsent(graphId.sessionId(), new CopyOnWriteArrayList<>());
+		sessionThreadMap.get(graphId.sessionId()).add(graphId.threadId());
+		// 会话的报告信息由reportService维护
+		reportService.saveReport(graphId.threadId(), sessionHistory.getReport());
+		sessionHistory.setReport("");
+		sessionHistoryMap.put(graphId.threadId(), sessionHistory);
 	}
 
 	@Override
@@ -51,20 +61,25 @@ public class InMemorySessionContextService implements SessionContextService {
 	}
 
 	@Override
-	public List<String> getReports(String sessionId, List<String> threadIds) {
+	public List<SessionHistory> getReports(String sessionId, List<String> threadIds) {
 		return threadIds.stream()
 			.filter(threadId -> Optional.ofNullable(sessionThreadMap.get(sessionId))
 				.orElse(new CopyOnWriteArrayList<>())
 				.contains(threadId))
-			.map(reportService::getReport)
+			.map(sessionHistoryMap::get)
+			.peek(sessionHistory -> {
+				String threadId = sessionHistory.getGraphId().threadId();
+				sessionHistory.setReport(reportService.getReport(threadId));
+			})
 			.toList();
 	}
 
 	@Override
-	public List<String> getRecentReports(String sessionId, int count) {
+	public List<SessionHistory> getRecentReports(String sessionId, int count) {
 		List<String> list = Optional.ofNullable(sessionThreadMap.get(sessionId)).orElse(new CopyOnWriteArrayList<>());
 		int size = list.size();
-		return list.stream().skip(Math.max(0, size - count)).map(reportService::getReport).limit(count).toList();
+		return this.getReports(sessionId,
+				this.getGraphThreadIds(sessionId).stream().skip(Math.max(0, size - count)).toList());
 	}
 
 }

@@ -18,7 +18,9 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
+import com.alibaba.cloud.ai.example.deepresearch.model.SessionHistory;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.GraphId;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SessionContextService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
@@ -129,8 +131,10 @@ public class ReporterNode implements NodeAction {
 			.mapResult(response -> {
 				String finalReport = Objects.requireNonNull(response.getResult().getOutput().getText());
 				try {
-					reportService.saveReport(threadId, finalReport);
-					sessionContextService.addThreadId(sessionId, threadId);
+					GraphId graphId = new GraphId(sessionId, threadId);
+					String userQuery = state.value("query", String.class).orElse("UNKNOWN");
+					sessionContextService.addSessionHistory(graphId,
+							SessionHistory.builder().graphId(graphId).userQuery(userQuery).report(finalReport).build());
 					logger.info("Report saved successfully, Thread ID: {}", threadId);
 				}
 				catch (Exception e) {

@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.SessionHistory;
 import com.alibaba.cloud.ai.example.deepresearch.service.SessionContextService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
@@ -64,11 +66,11 @@ public class CoordinatorNode implements NodeAction {
 
 		// 添加前几次同一会话的报告
 		String sessionId = state.value("session_id", String.class).orElse("__default__");
-		List<String> reports = sessionContextService.getRecentReports(sessionId);
+		List<SessionHistory> reports = sessionContextService.getRecentReports(sessionId);
 		Message lastReportMessage;
 		if (reports != null && !reports.isEmpty()) {
-			lastReportMessage = new AssistantMessage(
-					"这是用户前几次使用DeepResearch的报告：\r\n" + String.join("\r\n\r\n", reports));
+			lastReportMessage = new AssistantMessage("这是用户前几次使用DeepResearch的报告：\r\n"
+					+ reports.stream().map(SessionHistory::toString).collect(Collectors.joining("\r\n\r\n")));
 		}
 		else {
 			lastReportMessage = new AssistantMessage("这是用户的第一次询问，因此没有上下文。");

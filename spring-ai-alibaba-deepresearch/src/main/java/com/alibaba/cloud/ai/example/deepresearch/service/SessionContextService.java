@@ -16,6 +16,9 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.service;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.SessionHistory;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.GraphId;
+
 import java.util.List;
 
 /**
@@ -26,15 +29,15 @@ import java.util.List;
  */
 public interface SessionContextService {
 
-	void addThreadId(String sessionId, String threadId);
+	void addSessionHistory(GraphId graphId, SessionHistory sessionHistory);
 
 	List<String> getGraphThreadIds(String sessionId);
 
-	List<String> getReports(String sessionId, List<String> threadIds);
+	List<SessionHistory> getReports(String sessionId, List<String> threadIds);
 
-	List<String> getRecentReports(String sessionId, int count);
+	List<SessionHistory> getRecentReports(String sessionId, int count);
 
-	default List<String> getRecentReports(String sessionId) {
+	default List<SessionHistory> getRecentReports(String sessionId) {
 		return this.getRecentReports(sessionId, 5);
 	}
 
