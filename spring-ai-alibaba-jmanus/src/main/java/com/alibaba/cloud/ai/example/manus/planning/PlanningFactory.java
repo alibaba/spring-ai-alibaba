@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -170,6 +171,24 @@ public class PlanningFactory implements IPlanningFactory {
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.dataSourceService = dataSourceService;
 		this.tableProcessingService = tableProcessingService;
+	}
+
+	public PlanningCoordinator createPlanningCoordinator(ExecutionContext context) {
+        // Add all dynamic agents from the database
+		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAgents(context);
+
+		PlanningToolInterface planningTool = new PlanningTool();
+
+		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
+				manusProperties, streamingResponseHandler);
+
+		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties,
+				streamingResponseHandler);
+
+		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
+				planFinalizer);
+
+		return planningCoordinator;
 	}
 
 	// Use the enhanced PlanningCoordinator with dynamic executor selection
