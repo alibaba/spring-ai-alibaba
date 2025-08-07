@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.async.AsyncGeneratorOperators;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -42,12 +43,16 @@ import reactor.core.publisher.Sinks;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.Optional;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
+
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
  * @author yingzi
@@ -91,10 +96,44 @@ public class GraphProcess {
 		processStream(graphId, resultFuture, sink);
 	}
 
+	/**
+	 * 支持中断的AsyncGeneratorOperators.forEachAsync
+	 */
+	private CompletableFuture<Object> forEachAsyncWithInterrupt(AsyncGeneratorOperators<NodeOutput> generator,
+			Consumer<NodeOutput> consumer) {
+		CompletableFuture<Object> future = completedFuture(null);
+		try {
+			logger.debug("Current Thread: {}", Thread.currentThread().getName());
+			for (AsyncGenerator.Data<NodeOutput> next = generator.next(); !next.isDone()
+					&& !Thread.currentThread().isInterrupted(); next = generator.next()) {
+				final AsyncGenerator.Data<NodeOutput> finalNext = next;
+				if (finalNext.getEmbed() != null) {
+					future = future.thenCompose(v -> this.forEachAsyncWithInterrupt(
+							finalNext.getEmbed().getGenerator().async(generator.executor()), consumer));
+					if (future.isCompletedExceptionally()) {
+						return future;
+					}
+				}
+				else {
+					future = future.thenCompose(v -> finalNext.getData()
+						.thenAcceptAsync(consumer, generator.executor())
+						.thenApply(x -> null));
+					if (future.isCompletedExceptionally()) {
+						return future;
+					}
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.error("error when processing graph stream: {}", e.getMessage());
+		}
+		return future;
+	}
+
 	public void processStream(GraphId graphId, AsyncGenerator<NodeOutput> generator,
 			Sinks.Many<ServerSentEvent<String>> sink) {
 		Future<?> future = executor.submit(() -> {
-			generator.forEachAsync(output -> {
+			this.forEachAsyncWithInterrupt(generator, output -> {
 				try {
 					// logger.info("output = {}", output);
 					String nodeName = output.node();
