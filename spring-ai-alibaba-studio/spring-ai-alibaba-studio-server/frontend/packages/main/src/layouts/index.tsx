@@ -12,8 +12,8 @@ import ThemeSelect from './ThemeSelect';
 export default function Layout() {
   const location = useLocation();
 
-  // Hide top menu only for the home page, not for app list or other app pages
-  const shouldHideTopMenu = location.pathname === '/' || location.pathname === '/home';
+  // Hide top menu only for the home page and dify converter page
+  const shouldHideTopMenu = location.pathname === '/' || location.pathname === '/home' || location.pathname === '/dify';
 
   return (
     <PureLayout>

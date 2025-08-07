@@ -74,7 +74,7 @@ const DifyConverter: React.FC = () => {
         packageName: 'com.example.demo',
         packaging: 'jar',
         javaVersion: '17',
-        difyDsl: fileContent,
+        dsl: fileContent,
       };
 
       // 调用转换服务
@@ -159,7 +159,7 @@ const DifyConverter: React.FC = () => {
             </div>
             <div className={styles.instruction}>
               <span className={styles.step}>3.</span>
-              <span>点击"开始转换"按钮，系统将自动���析 DSL 并生成 Spring AI Alibaba 项目</span>
+              <span>点击"开始转换"按钮，系统将自动解析析 DSL 并生成 Spring AI Alibaba 项目</span>
             </div>
             <div className={styles.instruction}>
               <span className={styles.step}>4.</span>
@@ -222,11 +222,6 @@ const DifyConverter: React.FC = () => {
                     <span className={styles.filePath}>{filePath}</span>
                   </div>
                 ))}
-              </div>
-              <div className={styles.downloadSection}>
-                <Button type="primary" className={styles.downloadButton}>
-                  下载项目源码
-                </Button>
               </div>
             </div>
           </div>

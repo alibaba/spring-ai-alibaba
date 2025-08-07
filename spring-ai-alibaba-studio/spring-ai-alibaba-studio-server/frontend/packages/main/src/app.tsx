@@ -40,11 +40,19 @@ export function onRouteChange({ clientRoutes, location }) {
       id: 'main.pages.Login.components.Register.index.login',
       dm: '登录',
     }),
+    '/debug': $i18n.get({
+      id: 'main.pages.Debug.index.title',
+      dm: 'Agent Chat UI',
+    }),
+    '/dify': $i18n.get({
+      id: 'main.pages.Dify.index.title',
+      dm: 'Dify转换',
+    }),
   };
 
   Object.entries(firstLevelRouteMaps).some((item) => {
     if (route?.path?.startsWith(item[0])) {
-      document.title = `AgentScope - ${item[1]}`;
+      document.title = `SAA - ${item[1]}`;
       return true;
     } else {
       return false;

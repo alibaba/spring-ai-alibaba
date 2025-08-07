@@ -2,7 +2,7 @@ import path from 'path';
 import { defineConfig } from 'umi';
 
 export default defineConfig({
-  title: 'AgentScope',
+  title: 'SAA',
   define: {
     'process.env.WEB_SERVER': process.env.WEB_SERVER,
     'process.env.BACK_END': process.env.BACK_END,
@@ -42,6 +42,10 @@ export default defineConfig({
     {
       path: '/dify',
       component: 'Dify/index',
+    },
+    {
+      path: '/debug',
+      component: 'Debug/index',
     },
     {
       path: '/app/:tab',
