@@ -27,7 +27,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 用户提示词配置管理服务 提供提示词配置的增删改查功能，支持运行时配置更新
+ * User Prompt Configuration Management Service Provides CRUD functionality for prompt
+ * configurations, supports runtime configuration updates
  *
  * @author Makoto
  */
@@ -37,26 +38,26 @@ public class UserPromptConfigService {
 	private static final Logger logger = LoggerFactory.getLogger(UserPromptConfigService.class);
 
 	/**
-	 * 内存存储，实际项目中可以替换为数据库存储
+	 * Memory storage, can be replaced with database storage in actual projects
 	 */
 	private final Map<String, UserPromptConfig> configStorage = new ConcurrentHashMap<>();
 
 	/**
-	 * 根据提示词类型存储配置ID的映射
+	 * Store configuration ID mapping by prompt type
 	 */
 	private final Map<String, String> promptTypeToConfigId = new ConcurrentHashMap<>();
 
 	/**
-	 * 创建或更新提示词配置
-	 * @param configDTO 配置数据传输对象
-	 * @return 保存后的配置对象
+	 * Create or update prompt configuration
+	 * @param configDTO configuration data transfer object
+	 * @return saved configuration object
 	 */
 	public UserPromptConfig saveOrUpdateConfig(PromptConfigDTO configDTO) {
 		logger.info("保存或更新提示词配置：{}", configDTO);
 
 		UserPromptConfig config;
 		if (configDTO.id() != null && configStorage.containsKey(configDTO.id())) {
-			// 更新现有配置
+			// Update existing configuration
 			config = configStorage.get(configDTO.id());
 			config.setName(configDTO.name());
 			config.setSystemPrompt(configDTO.systemPrompt());
@@ -65,7 +66,7 @@ public class UserPromptConfigService {
 			config.setUpdateTime(LocalDateTime.now());
 		}
 		else {
-			// 创建新配置
+			// Create new configuration
 			config = new UserPromptConfig();
 			config.setId(UUID.randomUUID().toString());
 			config.setName(configDTO.name());
@@ -78,7 +79,7 @@ public class UserPromptConfigService {
 
 		configStorage.put(config.getId(), config);
 
-		// 如果配置启用，更新类型映射
+		// If configuration is enabled, update type mapping
 		if (Boolean.TRUE.equals(config.getEnabled())) {
 			promptTypeToConfigId.put(config.getPromptType(), config.getId());
 			logger.info("已启用提示词类型 [{}] 的配置：{}", config.getPromptType(), config.getId());
@@ -88,18 +89,18 @@ public class UserPromptConfigService {
 	}
 
 	/**
-	 * 根据ID获取配置
-	 * @param id 配置ID
-	 * @return 配置对象，不存在时返回null
+	 * Get configuration by ID
+	 * @param id configuration ID
+	 * @return configuration object, returns null if not exists
 	 */
 	public UserPromptConfig getConfigById(String id) {
 		return configStorage.get(id);
 	}
 
 	/**
-	 * 根据提示词类型获取启用的配置
-	 * @param promptType 提示词类型
-	 * @return 配置对象，不存在时返回null
+	 * Get enabled configuration by prompt type
+	 * @param promptType prompt type
+	 * @return configuration object, returns null if not exists
 	 */
 	public UserPromptConfig getActiveConfigByType(String promptType) {
 		String configId = promptTypeToConfigId.get(promptType);
@@ -113,17 +114,17 @@ public class UserPromptConfigService {
 	}
 
 	/**
-	 * 获取所有配置
-	 * @return 配置列表
+	 * Get all configurations
+	 * @return configuration list
 	 */
 	public List<UserPromptConfig> getAllConfigs() {
 		return new ArrayList<>(configStorage.values());
 	}
 
 	/**
-	 * 根据提示词类型获取所有配置
-	 * @param promptType 提示词类型
-	 * @return 配置列表
+	 * Get all configurations by prompt type
+	 * @param promptType prompt type
+	 * @return configuration list
 	 */
 	public List<UserPromptConfig> getConfigsByType(String promptType) {
 		return configStorage.values()
@@ -134,14 +135,14 @@ public class UserPromptConfigService {
 	}
 
 	/**
-	 * 删除配置
-	 * @param id 配置ID
-	 * @return 是否删除成功
+	 * Delete configuration
+	 * @param id configuration ID
+	 * @return whether deletion succeeded
 	 */
 	public boolean deleteConfig(String id) {
 		UserPromptConfig config = configStorage.remove(id);
 		if (config != null) {
-			// 如果删除的是当前启用的配置，需要清除类型映射
+			// If deleting currently enabled configuration, need to clear type mapping
 			String currentActiveId = promptTypeToConfigId.get(config.getPromptType());
 			if (id.equals(currentActiveId)) {
 				promptTypeToConfigId.remove(config.getPromptType());
@@ -154,17 +155,17 @@ public class UserPromptConfigService {
 	}
 
 	/**
-	 * 启用指定配置
-	 * @param id 配置ID
-	 * @return 是否操作成功
+	 * Enable specified configuration
+	 * @param id configuration ID
+	 * @return whether operation succeeded
 	 */
 	public boolean enableConfig(String id) {
 		UserPromptConfig config = configStorage.get(id);
 		if (config != null) {
-			// 先禁用同类型的其他配置
+			// First disable other configurations of same type
 			disableConfigsByType(config.getPromptType());
 
-			// 启用当前配置
+			// Enable current configuration
 			config.setEnabled(true);
 			config.setUpdateTime(LocalDateTime.now());
 			promptTypeToConfigId.put(config.getPromptType(), id);
@@ -176,9 +177,9 @@ public class UserPromptConfigService {
 	}
 
 	/**
-	 * 禁用指定配置
-	 * @param id 配置ID
-	 * @return 是否操作成功
+	 * Disable specified configuration
+	 * @param id configuration ID
+	 * @return whether operation succeeded
 	 */
 	public boolean disableConfig(String id) {
 		UserPromptConfig config = configStorage.get(id);
@@ -186,7 +187,7 @@ public class UserPromptConfigService {
 			config.setEnabled(false);
 			config.setUpdateTime(LocalDateTime.now());
 
-			// 如果是当前活跃配置，移除类型映射
+			// If it's current active configuration, remove type mapping
 			String currentActiveId = promptTypeToConfigId.get(config.getPromptType());
 			if (id.equals(currentActiveId)) {
 				promptTypeToConfigId.remove(config.getPromptType());
@@ -199,8 +200,8 @@ public class UserPromptConfigService {
 	}
 
 	/**
-	 * 禁用指定类型的所有配置
-	 * @param promptType 提示词类型
+	 * Disable all configurations of specified type
+	 * @param promptType prompt type
 	 */
 	private void disableConfigsByType(String promptType) {
 		configStorage.values().stream().filter(config -> promptType.equals(config.getPromptType())).forEach(config -> {
@@ -211,9 +212,9 @@ public class UserPromptConfigService {
 	}
 
 	/**
-	 * 获取自定义提示词内容，如果没有自定义配置则返回null
-	 * @param promptType 提示词类型
-	 * @return 自定义提示词内容
+	 * Get custom prompt content, returns null if no custom configuration
+	 * @param promptType prompt type
+	 * @return custom prompt content
 	 */
 	public String getCustomPromptContent(String promptType) {
 		UserPromptConfig config = getActiveConfigByType(promptType);
@@ -221,9 +222,9 @@ public class UserPromptConfigService {
 	}
 
 	/**
-	 * 检查是否有自定义配置
-	 * @param promptType 提示词类型
-	 * @return 是否有自定义配置
+	 * Check if there is custom configuration
+	 * @param promptType prompt type
+	 * @return whether there is custom configuration
 	 */
 	public boolean hasCustomConfig(String promptType) {
 		return getActiveConfigByType(promptType) != null;
