@@ -27,11 +27,11 @@
             <version>${revision}</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.modelcontextprotocol.sdk</groupId>
-            <artifactId>mcp</artifactId>
-            <version>${mcp.version}</version>
-        </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>io.modelcontextprotocol.sdk</groupId>-->
+        <!--            <artifactId>mcp</artifactId>-->
+        <!--            <version>0.11.0</version>-->
+        <!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
