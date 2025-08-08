@@ -98,8 +98,6 @@ yarn dev
 
 点击右上角“创建智能体” ，这里只需要输入智能体名称，其他配置都选默认。
 
-![publish-agent.png](img/publish-agent.png)
-
 创建成功后，可以看到智能体配置页面。
 
 ![agent-config.png](img/agent-config.png)
@@ -132,7 +130,7 @@ yarn dev
 
 调试没问题后，可以发布智能体。
 
-![img_9.png](img/img_9.png)
+![publish-agent.png](img/publish-agent.png)
 
 > 目前“嵌入网站”和“访问API”当前版本暂未实现。
 
