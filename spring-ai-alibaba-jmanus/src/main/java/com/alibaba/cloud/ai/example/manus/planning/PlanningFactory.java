@@ -174,7 +174,7 @@ public class PlanningFactory implements IPlanningFactory {
 	}
 
 	public PlanningCoordinator createPlanningCoordinator(ExecutionContext context) {
-        // Add all dynamic agents from the database
+		// Add all dynamic agents from the database
 		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAgents(context);
 
 		PlanningToolInterface planningTool = new PlanningTool();

@@ -41,7 +41,7 @@ public interface IDynamicAgentLoader {
 	 */
 	List<DynamicAgentEntity> getAllAgents();
 
-	default  List<DynamicAgentEntity> getAgents(ExecutionContext context){
+	default List<DynamicAgentEntity> getAgents(ExecutionContext context) {
 		return getAllAgents();
 	}
 

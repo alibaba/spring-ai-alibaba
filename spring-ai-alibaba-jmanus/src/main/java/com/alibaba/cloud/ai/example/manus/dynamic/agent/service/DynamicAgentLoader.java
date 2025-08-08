@@ -89,7 +89,6 @@ public class DynamicAgentLoader implements IDynamicAgentLoader {
 			.toList();
 	}
 
-
 	@Override
 	public List<DynamicAgentEntity> getAgents(ExecutionContext context) {
 		return IDynamicAgentLoader.super.getAgents(context);
