@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -33,6 +34,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -154,6 +156,9 @@ public class PlanningFactory implements IPlanningFactory {
 	@Autowired
 	private PptGeneratorOperator pptGeneratorOperator;
 
+	@Value("${agent.init}")
+	private Boolean agentInit = true;
+
 	@Autowired
 	private JsxGeneratorOperator jsxGeneratorOperator;
 
@@ -170,6 +175,24 @@ public class PlanningFactory implements IPlanningFactory {
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.dataSourceService = dataSourceService;
 		this.tableProcessingService = tableProcessingService;
+	}
+
+	public PlanningCoordinator createPlanningCoordinator(ExecutionContext context) {
+		// Add all dynamic agents from the database
+		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAgents(context);
+
+		PlanningToolInterface planningTool = new PlanningTool();
+
+		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
+				manusProperties, streamingResponseHandler);
+
+		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties,
+				streamingResponseHandler);
+
+		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
+				planFinalizer);
+
+		return planningCoordinator;
 	}
 
 	// Use the enhanced PlanningCoordinator with dynamic executor selection
@@ -225,29 +248,34 @@ public class PlanningFactory implements IPlanningFactory {
 			log.error("SmartContentSavingService is null, skipping BrowserUseTool registration");
 			return toolCallbackMap;
 		}
-		// Add all tool definitions
-		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService, objectMapper));
-		toolDefinitions.add(DatabaseUseTool.getInstance(dataSourceService, objectMapper));
-		toolDefinitions.add(new TerminateTool(planId, expectedReturnInfo));
-		toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper));
-		toolDefinitions.add(new DocLoaderTool());
-		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
-		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
-		// toolDefinitions.add(pptGeneratorOperator);
-		// toolDefinitions.add(jsxGeneratorOperator);
+		if (agentInit) {
+			// Add all tool definitions
+			toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService, innerStorageService, objectMapper));
+			toolDefinitions.add(DatabaseUseTool.getInstance(dataSourceService, objectMapper));
+			toolDefinitions.add(new TerminateTool(planId, expectedReturnInfo));
+			toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper));
+			toolDefinitions.add(new DocLoaderTool());
+			toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
+			// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
+			// toolDefinitions.add(pptGeneratorOperator);
+			// toolDefinitions.add(jsxGeneratorOperator);
 		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
-		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
-		// toolDefinitions.add(new GoogleSearch());
-		// toolDefinitions.add(new PythonExecute());
-		toolDefinitions.add(new FormInputTool(objectMapper));
-		toolDefinitions.add(new DataSplitTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
-				objectMapper, tableProcessingService));
-		toolDefinitions
-			.add(new MapOutputTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager, objectMapper));
-		toolDefinitions
-			.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
-		toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
-		toolDefinitions.add(new CronTool(cronService, objectMapper));
+			toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
+			// toolDefinitions.add(new GoogleSearch());
+			// toolDefinitions.add(new PythonExecute());
+			toolDefinitions.add(new FormInputTool(objectMapper));
+			toolDefinitions.add(new DataSplitTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
+					objectMapper, tableProcessingService));
+			toolDefinitions.add(new MapOutputTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
+					objectMapper));
+			toolDefinitions
+				.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
+			toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
+			toolDefinitions.add(new CronTool(cronService, objectMapper));
+		}
+		else {
+			toolDefinitions.add(new TerminateTool(planId, expectedReturnInfo));
+		}
 
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
