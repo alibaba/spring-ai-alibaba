@@ -63,7 +63,8 @@ public class KeywordExtractNode implements NodeAction {
 	}
 
 	/**
-	 * Process multiple question variants, extract keywords and merge results Use parallel stream processing to improve multi-question processing efficiency
+	 * Process multiple question variants, extract keywords and merge results Use parallel
+	 * stream processing to improve multi-question processing efficiency
 	 * @param questions list of question variants
 	 * @return list of extraction results
 	 */
@@ -86,7 +87,8 @@ public class KeywordExtractNode implements NodeAction {
 	}
 
 	/**
-	 * Merge keywords from multiple question variants, deduplicate and keep original question keywords priority
+	 * Merge keywords from multiple question variants, deduplicate and keep original
+	 * question keywords priority
 	 * @param extractionResults list of extraction results
 	 * @param originalQuestion original question
 	 * @return merged keyword list

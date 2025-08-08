@@ -18,7 +18,9 @@ package com.alibaba.cloud.ai.enums;
 /**
  * Database connection related error code definitions.
  * <p>
- * Contains standard SQLState codes, custom codes and corresponding Chinese prompt information. Can be used as a basic error code module for open source projects, facilitating unified exception handling.
+ * Contains standard SQLState codes, custom codes and corresponding Chinese prompt
+ * information. Can be used as a basic error code module for open source projects,
+ * facilitating unified exception handling.
  */
 public enum ErrorCodeEnum {
 
@@ -131,7 +133,8 @@ public enum ErrorCodeEnum {
 	}
 
 	/**
-	 * Find corresponding error information based on error code, return SUCCESS by default if not found
+	 * Find corresponding error information based on error code, return SUCCESS by default
+	 * if not found
 	 * @param code error code string
 	 * @return matched error code or default SUCCESS
 	 */

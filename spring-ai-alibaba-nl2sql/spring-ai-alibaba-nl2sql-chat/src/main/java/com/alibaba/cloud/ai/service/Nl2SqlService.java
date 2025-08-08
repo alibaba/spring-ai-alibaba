@@ -49,7 +49,8 @@ public class Nl2SqlService {
 	}
 
 	/**
-	 * Extract natural language to SQL conversion function code according to Nl2Sql-Graph definition
+	 * Extract natural language to SQL conversion function code according to Nl2Sql-Graph
+	 * definition
 	 * @param query natural language
 	 * @return SQL language
 	 */

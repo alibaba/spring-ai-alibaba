@@ -31,7 +31,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Agent Vector Storage Manager Provides independent vector storage instances for each agent, ensuring data isolation
+ * Agent Vector Storage Manager Provides independent vector storage instances for each
+ * agent, ensuring data isolation
  */
 @Component
 public class AgentVectorStoreManager {

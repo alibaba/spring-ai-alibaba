@@ -40,7 +40,8 @@ import static com.alibaba.cloud.ai.constant.Constant.REPORT_GENERATOR_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE;
 
 /**
- * Plan execution and validation node, decides next execution node based on plan, and validates before execution.
+ * Plan execution and validation node, decides next execution node based on plan, and
+ * validates before execution.
  *
  * @author zhangshenghang
  */

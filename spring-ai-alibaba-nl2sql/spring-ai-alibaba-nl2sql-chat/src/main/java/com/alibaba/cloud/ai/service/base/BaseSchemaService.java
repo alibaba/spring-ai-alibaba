@@ -82,8 +82,12 @@ public abstract class BaseSchemaService {
 		SchemaDTO schemaDTO = new SchemaDTO();
 		extractDatabaseName(schemaDTO); // Set database name or schema name
 
-		List<Document> tableDocuments = getTableDocuments(query, agentId); // Get table documents
-		List<List<Document>> columnDocumentList = getColumnDocumentsByKeywords(keywords, agentId); // Get column document list
+		List<Document> tableDocuments = getTableDocuments(query, agentId); // Get table
+																			// documents
+		List<List<Document>> columnDocumentList = getColumnDocumentsByKeywords(keywords, agentId); // Get
+																									// column
+																									// document
+																									// list
 
 		buildSchemaFromDocuments(columnDocumentList, tableDocuments, schemaDTO);
 

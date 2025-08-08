@@ -53,9 +53,11 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 	private static final Logger log = LoggerFactory.getLogger(SimpleVectorStoreService.class);
 
-	private final SimpleVectorStore vectorStore; // Keep original global storage for backward compatibility
+	private final SimpleVectorStore vectorStore; // Keep original global storage for
+													// backward compatibility
 
-	private final AgentVectorStoreManager agentVectorStoreManager; // New agent vector storage manager
+	private final AgentVectorStoreManager agentVectorStoreManager; // New agent vector
+																	// storage manager
 
 	private final Gson gson;
 
@@ -76,7 +78,9 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		this.dbConfig = dbConfig;
 		this.embeddingModel = embeddingModel;
 		this.agentVectorStoreManager = agentVectorStoreManager;
-		this.vectorStore = SimpleVectorStore.builder(embeddingModel).build(); // Keep original implementation
+		this.vectorStore = SimpleVectorStore.builder(embeddingModel).build(); // Keep
+																				// original
+																				// implementation
 		log.info("SimpleVectorStoreService initialized successfully with AgentVectorStoreManager");
 	}
 
@@ -196,7 +200,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		if (columnInfoBO.getSamples() != null) {
 			metadata.put("samples", columnInfoBO.getSamples());
 		}
-		// Multi-table duplicate field data will be deduplicated, using table name + field name as unique identifier
+		// Multi-table duplicate field data will be deduplicated, using table name + field
+		// name as unique identifier
 		Document document = new Document(id, text, metadata);
 		log.debug("Created column document with ID: {}", id);
 		return document;
@@ -310,7 +315,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		log.debug("Searching with custom filter: vectorType={}, query={}, topK={}", searchRequestDTO.getVectorType(),
 				searchRequestDTO.getQuery(), searchRequestDTO.getTopK());
 
-		// Need to parse filterFormatted field according to actual situation here, convert to FilterExpressionBuilder expression
+		// Need to parse filterFormatted field according to actual situation here, convert
+		// to FilterExpressionBuilder expression
 		// Simplified implementation, for demonstration only
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 		Filter.Expression expression = b.eq("vectorType", searchRequestDTO.getVectorType()).build();
@@ -523,7 +529,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * Get documents from vector store for specified agent Override parent method, use agent-specific vector storage
+	 * Get documents from vector store for specified agent Override parent method, use
+	 * agent-specific vector storage
 	 */
 	@Override
 	public List<Document> getDocumentsForAgent(String agentId, String query, String vectorType) {

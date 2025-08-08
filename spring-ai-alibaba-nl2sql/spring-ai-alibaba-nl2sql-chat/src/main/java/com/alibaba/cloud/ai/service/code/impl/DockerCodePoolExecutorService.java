@@ -96,7 +96,8 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 	}
 
 	/**
-	 * Automatically select appropriate Docker Host address based on current operating system
+	 * Automatically select appropriate Docker Host address based on current operating
+	 * system
 	 * @return Docker Host URI
 	 */
 	private String getDockerHostForCurrentOS(String dockerHost) {

@@ -19,7 +19,8 @@ package com.alibaba.cloud.ai.dto;
 import java.util.List;
 
 /**
- * Keyword extraction result data structure, used to store extraction results for each question variant
+ * Keyword extraction result data structure, used to store extraction results for each
+ * question variant
  *
  * @author zhangshenghang
  */

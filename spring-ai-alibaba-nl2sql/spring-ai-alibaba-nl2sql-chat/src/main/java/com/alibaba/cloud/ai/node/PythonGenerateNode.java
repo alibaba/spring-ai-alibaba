@@ -84,7 +84,8 @@ public class PythonGenerateNode extends AbstractPlanBasedNode implements NodeAct
 
 		String userPrompt = StateUtils.getStringValue(state, QUERY_REWRITE_NODE_OUTPUT);
 		if (!codeRunSuccess) {
-			// Last generated Python code failed to run, inform AI model of this information
+			// Last generated Python code failed to run, inform AI model of this
+			// information
 			String lastCode = StateUtils.getStringValue(state, PYTHON_GENERATE_NODE_OUTPUT);
 			String lastError = StateUtils.getStringValue(state, PYTHON_EXECUTE_NODE_OUTPUT);
 			userPrompt += String.format("""
@@ -120,7 +121,8 @@ public class PythonGenerateNode extends AbstractPlanBasedNode implements NodeAct
 
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
 				"正在生成Python代码...", "Python代码生成完成。", aiResponse -> {
-					// Some AI models still output Markdown markup (even though Prompt has emphasized this)
+					// Some AI models still output Markdown markup (even though Prompt has
+					// emphasized this)
 					aiResponse = MarkdownParser.extractRawText(aiResponse);
 					log.info("Python Generate Code: {}", aiResponse);
 					return Map.of(PYTHON_GENERATE_NODE_OUTPUT, aiResponse, PYTHON_TRIES_COUNT, triesCount - 1);

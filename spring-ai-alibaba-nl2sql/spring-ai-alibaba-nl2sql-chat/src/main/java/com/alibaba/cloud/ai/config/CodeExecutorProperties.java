@@ -39,7 +39,8 @@ public class CodeExecutorProperties {
 	String host = null;
 
 	/**
-	 * Image name, can customize image with common third-party dependencies to replace this configuration
+	 * Image name, can customize image with common third-party dependencies to replace
+	 * this configuration
 	 */
 	String imageName = "continuumio/anaconda3:latest";
 
