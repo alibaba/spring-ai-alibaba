@@ -76,7 +76,7 @@ public class Nl2sqlForGraphController {
 	@GetMapping("/search")
 	public String search(@RequestParam String query, @RequestParam String dataSetId, @RequestParam String agentId)
 			throws Exception {
-		// 初始化向量
+		// Initialize vector
 		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
 		schemaInitRequest.setDbConfig(dbConfig);
 		schemaInitRequest
@@ -91,7 +91,7 @@ public class Nl2sqlForGraphController {
 
 	@GetMapping("/init")
 	public void init() throws Exception {
-		// 初始化向量
+		// Initialize vector
 		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
 		schemaInitRequest.setDbConfig(dbConfig);
 		schemaInitRequest
@@ -102,7 +102,7 @@ public class Nl2sqlForGraphController {
 	@GetMapping(value = "/stream/search", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> streamSearch(@RequestParam String query, @RequestParam String agentId,
 			HttpServletResponse response) throws Exception {
-		// 设置SSE相关的HTTP头
+		// Set SSE related HTTP headers
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("text/event-stream");
 		response.setHeader("Cache-Control", "no-cache");
@@ -114,7 +114,7 @@ public class Nl2sqlForGraphController {
 
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 
-		// 使用流式处理，传递agentId到状态中
+		// Use streaming processing, pass agentId to state
 		AsyncGenerator<NodeOutput> generator = compiledGraph
 			.stream(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId));
 
@@ -128,7 +128,7 @@ public class Nl2sqlForGraphController {
 							String chunk = streamingOutput.chunk();
 							if (chunk != null && !chunk.trim().isEmpty()) {
 								logger.debug("Emitting chunk: {}", chunk);
-								// 确保chunk是有效的JSON
+								// Ensure chunk is valid JSON
 								ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(chunk))
 									.build();
 								sink.tryEmitNext(event);
@@ -144,16 +144,16 @@ public class Nl2sqlForGraphController {
 					}
 					catch (Exception e) {
 						logger.error("Error processing streaming output: ", e);
-						// 不要抛出异常，继续处理下一个输出
+						// Don't throw exception, continue processing next output
 					}
 				}).thenAccept(v -> {
-					// 发送完成事件
+					// Send completion event
 					logger.info("Stream processing completed successfully");
 					sink.tryEmitNext(ServerSentEvent.builder("complete").event("complete").build());
 					sink.tryEmitComplete();
 				}).exceptionally(e -> {
 					logger.error("Error in stream processing: ", e);
-					// 发送错误事件而不是直接错误
+					// Send error event instead of direct error
 					sink.tryEmitNext(ServerSentEvent.builder("error: " + e.getMessage()).event("error").build());
 					sink.tryEmitComplete();
 					return null;

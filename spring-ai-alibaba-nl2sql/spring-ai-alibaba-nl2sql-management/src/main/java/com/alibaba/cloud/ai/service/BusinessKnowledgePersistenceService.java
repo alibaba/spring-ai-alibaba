@@ -82,7 +82,7 @@ public class BusinessKnowledgePersistenceService {
 			DELETE FROM business_knowledge WHERE id = ?
 			""";
 
-	// 模糊搜素
+	// Fuzzy search
 	private static final String FIELD_SEARCH = """
 			   		SELECT
 				id,
@@ -97,7 +97,7 @@ public class BusinessKnowledgePersistenceService {
 			FROM business_knowledge WHERE business_term LIKE ? OR description LIKE ? OR synonyms LIKE ?
 			""";
 
-	// 根据智能体ID查询业务知识
+	// Query business knowledge by agent ID
 	private static final String FIELD_GET_BY_AGENT_ID = """
 			SELECT
 				id,
@@ -112,12 +112,12 @@ public class BusinessKnowledgePersistenceService {
 			FROM business_knowledge WHERE agent_id = ?
 			""";
 
-	// 根据智能体ID删除业务知识
+	// Delete business knowledge by agent ID
 	private static final String FIELD_DELETE_BY_AGENT_ID = """
 			DELETE FROM business_knowledge WHERE agent_id = ?
 			""";
 
-	// 在智能体范围内搜索业务知识
+	// Search business knowledge within agent scope
 	private static final String FIELD_SEARCH_IN_AGENT = """
 			SELECT
 				id,
@@ -140,7 +140,7 @@ public class BusinessKnowledgePersistenceService {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	// 新增智能体字段
+	// Add agent field
 	public void addKnowledge(BusinessKnowledgeDTO knowledgeDTO) {
 		BusinessKnowledge knowledge = new BusinessKnowledge();
 		BeanUtils.copyProperties(knowledgeDTO, knowledge);
@@ -151,7 +151,7 @@ public class BusinessKnowledgePersistenceService {
 				knowledge.getCreateTime(), knowledge.getUpdateTime());
 	}
 
-	// 批量新增智能体字段
+	// Batch add agent fields
 	public void addKnowledgeList(List<BusinessKnowledgeDTO> knowledgeDTOList) {
 		List<BusinessKnowledge> knowledgeList = knowledgeDTOList.stream().map(knowledgeDTO -> {
 			BusinessKnowledge knowledge = new BusinessKnowledge();
@@ -163,12 +163,12 @@ public class BusinessKnowledgePersistenceService {
 		jdbcTemplate.batchUpdate(FIELD_ADD, new AddBatchPreparedStatement(knowledgeList));
 	}
 
-	// 获取数据集列表
+	// Get dataset list
 	public List<String> getDataSetIds() {
 		return this.jdbcTemplate.query(FIELD_GET_DATASET_IDS, (rs, rowNum) -> rs.getString("data_set_id"));
 	}
 
-	// 根据data_set_id获取智能体字段
+	// Get agent fields by data_set_id
 	public List<BusinessKnowledge> getFieldByDataSetId(String dataSetId) {
 		return this.jdbcTemplate.query(FIELD_GET_BY_DATASET_IDS, new Object[] { dataSetId }, (rs, rowNum) -> {
 			return new BusinessKnowledge(rs.getObject("id", Long.class), // id
@@ -185,7 +185,7 @@ public class BusinessKnowledgePersistenceService {
 		});
 	}
 
-	// 搜索
+	// Search
 	public List<BusinessKnowledge> searchFields(String keyword) {
 		Objects.requireNonNull(keyword, "searchKeyword cannot be null");
 		return jdbcTemplate.query(FIELD_SEARCH,
@@ -198,19 +198,19 @@ public class BusinessKnowledgePersistenceService {
 				});
 	}
 
-	// 根据id删除智能体字段
+	// Delete agent field by id
 	public void deleteFieldById(long id) {
 		jdbcTemplate.update(FIELD_CLEAR, id);
 	}
 
-	// 更新智能体字段
+	// Update agent field
 	public void updateField(BusinessKnowledgeDTO knowledgeDTO, long id) {
 		jdbcTemplate.update(FIELD_UPDATE, knowledgeDTO.getBusinessTerm(), knowledgeDTO.getDescription(),
 				knowledgeDTO.getSynonyms(), knowledgeDTO.getDefaultRecall(), knowledgeDTO.getDatasetId(),
 				knowledgeDTO.getAgentId(), Timestamp.valueOf(LocalDateTime.now()), id);
 	}
 
-	// 根据智能体ID获取业务知识列表
+	// Get business knowledge list by agent ID
 	public List<BusinessKnowledge> getKnowledgeByAgentId(String agentId) {
 		return jdbcTemplate.query(FIELD_GET_BY_AGENT_ID, new Object[] { agentId }, (rs, rowNum) -> {
 			return new BusinessKnowledge(rs.getObject("id", Long.class), rs.getString("business_term"),
@@ -221,12 +221,12 @@ public class BusinessKnowledgePersistenceService {
 		});
 	}
 
-	// 根据智能体ID删除所有业务知识
+	// Delete all business knowledge by agent ID
 	public void deleteKnowledgeByAgentId(String agentId) {
 		jdbcTemplate.update(FIELD_DELETE_BY_AGENT_ID, agentId);
 	}
 
-	// 在智能体范围内搜索业务知识
+	// Search business knowledge within agent scope
 	public List<BusinessKnowledge> searchKnowledgeInAgent(String agentId, String keyword) {
 		Objects.requireNonNull(agentId, "agentId cannot be null");
 		Objects.requireNonNull(keyword, "searchKeyword cannot be null");
