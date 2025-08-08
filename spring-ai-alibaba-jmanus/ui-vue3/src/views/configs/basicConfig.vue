@@ -31,6 +31,14 @@
       </div>
       <div class="header-right">
         <div class="import-export-actions">
+          <button 
+            @click="restoreAllDefaults" 
+            class="action-btn restore-btn" 
+            :title="$t('config.basicConfig.restoreAllDefaults')"
+            :disabled="loading"
+          >
+            🔄 {{ $t('config.basicConfig.restoreAllDefaults') }}
+          </button>
           <button @click="exportConfigs" class="action-btn" :title="$t('config.basicConfig.exportConfigs')">
             📤
           </button>
@@ -72,16 +80,6 @@
         <div class="group-header">
           <div class="group-info">
             <span class="group-icon">{{ GROUP_ICONS[group.name] || '⚙️' }}</span>
-          </div>
-          <div class="group-actions">
-            <button
-              @click="resetGroupConfigs(group.name)"
-              class="reset-btn"
-              :disabled="loading"
-              :title="$t('config.resetGroupConfirm')"
-            >
-              {{ $t('config.reset') }}
-            </button>
           </div>
           <div class="group-divider"></div>
         </div>
@@ -665,72 +663,6 @@ const saveAllConfigs = async () => {
   }
 }
 
-// Reset group configurations
-const resetGroupConfigs = async (groupName: string) => {
-  const confirmed = confirm(t('config.basicConfig.resetGroupConfirm', GROUP_DISPLAY_NAMES[groupName] || groupName))
-  if (!confirmed) return
-
-  try {
-    loading.value = true
-
-    // Find the target group
-    const targetGroup = configGroups.value.find(g => g.name === groupName)
-    if (!targetGroup) return
-
-    // Collect all configuration items in this group
-    const groupConfigs: ConfigItem[] = []
-    targetGroup.subGroups.forEach(subGroup => {
-      subGroup.items.forEach(item => {
-        // We should call the API to get the default value here. For now, let's handle it simply.
-        const defaultValue = getDefaultValueForKey(item.configKey)
-        if (defaultValue !== item.configValue) {
-          groupConfigs.push({
-            ...item,
-            configValue: defaultValue
-          })
-        }
-      })
-    })
-
-    if (groupConfigs.length === 0) {
-      showMessage(t('config.basicConfig.isDefault'))
-      return
-    }
-
-    // Batch update
-    const result = await AdminApiService.batchUpdateConfigs(groupConfigs)
-
-    if (result.success) {
-      // Reload configurations
-      await loadAllConfigs()
-      showMessage(t('config.basicConfig.resetSuccess', groupConfigs.length))
-    } else {
-      showMessage(result.message || t('config.basicConfig.resetFailed'), 'error')
-    }
-  } catch (error) {
-    console.error(t('config.basicConfig.resetFailed'), error)
-    showMessage(t('config.basicConfig.resetFailed'), 'error')
-  } finally {
-    loading.value = false
-  }
-}
-
-// Get the default value of the configuration item
-const getDefaultValueForKey = (configKey: string): string => {
-  // There should be a default value mapping table here. For now, return the basic default values.
-  const defaults: Record<string, string> = {
-    'systemName': 'JManus',
-    'language': 'zh-CN',
-    'maxThreads': '8',
-    'timeoutSeconds': '60',
-    'autoOpenBrowser': 'false',
-    'headlessBrowser': 'true',
-    'maxMemory': '1000'
-    // More default values can be added as needed
-  }
-
-  return defaults[configKey] || ''
-}
 
 // Toggle subgroup collapse
 const toggleSubGroup = (groupName: string, subGroupName: string) => {
@@ -877,6 +809,31 @@ const importConfigs = (event: Event) => {
   }
 
   reader.readAsText(file)
+}
+
+// Restore all configurations to defaults
+const restoreAllDefaults = async () => {
+  const confirmed = confirm(t('config.basicConfig.restoreAllDefaultsConfirm'))
+  if (!confirmed) return
+
+  try {
+    loading.value = true
+
+    const result = await AdminApiService.resetAllConfigsToDefaults()
+
+    if (result.success) {
+      // Reload all configurations
+      await loadAllConfigs()
+      showMessage(t('config.basicConfig.restoreAllDefaultsSuccess'))
+    } else {
+      showMessage(result.message || t('config.basicConfig.restoreAllDefaultsFailed'), 'error')
+    }
+  } catch (error) {
+    console.error(t('config.basicConfig.restoreAllDefaultsFailed'), error)
+    showMessage(t('config.basicConfig.restoreAllDefaultsFailed'), 'error')
+  } finally {
+    loading.value = false
+  }
 }
 
 // Load configurations when the component is mounted
@@ -1381,34 +1338,6 @@ onMounted(() => {
   align-items: center;
 }
 
-.group-actions {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-  margin-right: 16px;
-}
-
-.reset-btn {
-  background: rgba(244, 67, 54, 0.1);
-  border: 1px solid rgba(244, 67, 54, 0.3);
-  border-radius: 4px;
-  color: #ef5350;
-  padding: 4px 8px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.reset-btn:hover:not(:disabled) {
-  background: rgba(244, 67, 54, 0.2);
-  border-color: rgba(244, 67, 54, 0.5);
-}
-
-.reset-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 /* Import/Export action style */
 .import-export-actions {
   display: flex;
@@ -1435,5 +1364,22 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.95);
   border-color: rgba(255, 255, 255, 0.25);
+}
+
+.action-btn.restore-btn {
+  background: rgba(244, 67, 54, 0.1);
+  border-color: rgba(244, 67, 54, 0.3);
+  color: #ef5350;
+}
+
+.action-btn.restore-btn:hover:not(:disabled) {
+  background: rgba(244, 67, 54, 0.2);
+  border-color: rgba(244, 67, 54, 0.5);
+  color: #f44336;
+}
+
+.action-btn.restore-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

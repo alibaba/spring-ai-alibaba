@@ -203,6 +203,10 @@ public interface AsyncGenerator<E> extends Iterable<E>, AsyncGeneratorOperators<
 			this.onCompletion = onCompletion;
 		}
 
+		public AsyncGenerator<E> getGenerator() {
+			return generator;
+		}
+
 	}
 
 	/**
@@ -226,6 +230,10 @@ public interface AsyncGenerator<E> extends Iterable<E>, AsyncGeneratorOperators<
 
 		public CompletableFuture<E> getData() {
 			return data;
+		}
+
+		public Embed<E> getEmbed() {
+			return embed;
 		}
 
 		public Optional<Object> resultValue() {

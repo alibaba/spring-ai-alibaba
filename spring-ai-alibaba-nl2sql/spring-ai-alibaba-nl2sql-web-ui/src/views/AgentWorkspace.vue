@@ -283,6 +283,8 @@ export default {
           'schema_deep_recall': { title: 'Schema深度召回', icon: 'bi bi-database-fill-gear' },
           'sql': { title: '生成的SQL', icon: 'bi bi-code-square' },
           'execute_sql': { title: '执行SQL', icon: 'bi bi-play-circle' },
+          'python_execute': { title: 'Python执行', icon: 'bi bi-play-circle-fill' },
+          'python_generate': { title: 'Python代码生成', icon: 'bi bi-code-square-fill' },
           'python_analysis': { title: 'Python分析执行', icon: 'bi bi-code-slash' },
           'validation': { title: '校验', icon: 'bi bi-check-circle' },
           'output_report': { title: '输出报告', icon: 'bi bi-file-earmark-text' },
@@ -353,9 +355,14 @@ export default {
                 // 对数据进行预处理
                 let processedData = actualData;
                 
+                // 处理转义的换行符
+                if (typeof processedData === 'string') {
+                    processedData = processedData.replace(/\\n/g, '\n');
+                }
+                
                 // 只对SQL类型进行Markdown代码块标记的预清理
-                if (actualType === 'sql' && typeof actualData === 'string') {
-                    processedData = actualData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
+                if (actualType === 'sql' && typeof processedData === 'string') {
+                    processedData = processedData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
                 }
                 
                 // 累积数据到对应的类型
@@ -417,6 +424,8 @@ export default {
 
         if (type === 'sql') {
             let cleanedData = data.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
+            // 处理SQL中的转义换行符
+            cleanedData = cleanedData.replace(/\\n/g, '\n');
             return `<pre><code class="language-sql">${cleanedData}</code></pre>`;
         } 
         
@@ -424,43 +433,13 @@ export default {
             return convertJsonToHTMLTable(data);
         }
 
-        // 处理其他类型的数据
+        // 直接处理数据，简化逻辑
         let processedData = data;
-        if (typeof data === 'string') {
-            // 检查数据是否包含多个JSON对象连接在一起
-            const jsonPattern = /\{"[^"]+":"[^"]*"[^}]*\}/g;
-            const jsonMatches = data.match(jsonPattern);
-            
-            if (jsonMatches && jsonMatches.length > 1) {
-                // 多个JSON对象，分别解析并提取data字段
-                let extractedContent = [];
-                jsonMatches.forEach(jsonStr => {
-                    try {
-                        const jsonObj = JSON.parse(jsonStr);
-                        if (jsonObj.data) {
-                            extractedContent.push(jsonObj.data.replace(/\\n/g, '\n'));
-                        }
-                    } catch (e) {
-                        extractedContent.push(jsonStr);
-                    }
-                });
-                processedData = extractedContent.join('');
-            } else {
-                // 单个JSON对象或普通文本
-                try {
-                    const jsonData = JSON.parse(data);
-                    if (jsonData && typeof jsonData === 'object') {
-                        if (jsonData.data) {
-                            processedData = jsonData.data;
-                        } else {
-                            processedData = JSON.stringify(jsonData, null, 2);
-                        }
-                    }
-                } catch (e) {
-                    // 不是JSON，保持原始数据
-                    processedData = data;
-                }
-            }
+        
+        // 如果是字符串，直接处理转义的换行符
+        if (typeof processedData === 'string') {
+            // 将所有的 \n 转换为真正的换行符
+            processedData = processedData.replace(/\\n/g, '\n');
         }
 
         // 检查是否是Markdown格式
@@ -487,7 +466,6 @@ export default {
                 // 优化换行处理，保持合理的换行显示
                 return processedData.toString()
                     .replace(/\n\s*\n\s*\n+/g, '\n\n') // 将3个或以上连续空行替换为2个换行
-                    .replace(/^\s+|\s+$/g, '') // 去除首尾空白
                     .replace(/\n/g, '<br>'); // 保持单个换行的显示
             }
         }
@@ -564,8 +542,7 @@ export default {
         
         // 处理换行，减少空白行
         html = html.replace(/\n\s*\n\s*\n/g, '\n\n') // 将多个连续空行替换为最多两个换行
-             .replace(/^\s+|\s+$/g, '') // 去除首尾空白
-             .replace(/\n/g, '<br>');
+             .replace(/\n/g, '<br>'); // 保持换行符，不去除首尾空白
         
         return `<div class="markdown-content">${html}</div>`;
     };
@@ -1046,23 +1023,34 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .example-query {
   padding: 0.5rem 1rem;
-  background-color: rgba(255, 255, 255, 0.8);
-  border: 1px solid #d1ecf1;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e1e8ed;
   border-radius: 20px;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s;
-  color: #0c5460;
+  transition: all 0.3s ease;
+  color: #475569;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .example-query:hover {
-  background-color: white;
-  border-color: #1890ff;
-  color: #1890ff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+}
+
+.example-query:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.2);
 }
 
 /* 消息样式 */
@@ -1301,19 +1289,32 @@ export default {
   background: #ffffff;
   min-height: auto;
   box-sizing: border-box;
+  white-space: pre-wrap; /* 确保换行符和空格能正确显示 */
 }
 
-/* 优化智能体回复内容的空白行处理 */
-:deep(.agent-response-content) br + br + br {
-  display: none; /* 隐藏3个或以上连续的换行符 */
+/* 确保br标签能正确显示换行 - 最紧凑的行间距 */
+:deep(.agent-response-content br) {
+  display: block !important;
+  content: "" !important;
+  margin: 0 !important;
+  line-height: 0.1 !important;
+  height: 0.1em !important;
+  visibility: visible !important;
 }
 
-:deep(.agent-response-content) br:first-child {
-  display: none; /* 隐藏开头的换行符 */
+/* 确保agent-response-content内的所有br标签都能正确显示 - 最紧凑的行间距 */
+.agent-response-content br {
+  display: block !important;
+  content: "" !important;
+  margin: 0 !important;
+  line-height: 0.1 !important;
+  height: 0.1em !important;
+  visibility: visible !important;
 }
 
-:deep(.agent-response-content) br:last-child {
-  display: none; /* 隐藏结尾的换行符 */
+/* 优化智能体回复内容的空白行处理 - 保留必要的换行 */
+:deep(.agent-response-content) br + br + br + br {
+  display: none; /* 只隐藏4个或以上连续的换行符 */
 }
 
 /* 优化段落间距 */

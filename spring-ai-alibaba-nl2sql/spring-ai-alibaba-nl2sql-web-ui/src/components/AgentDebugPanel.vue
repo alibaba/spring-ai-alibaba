@@ -16,38 +16,38 @@
 <template>
   <div class="agent-debug-panel" style="padding: 1.5rem; height: calc(100vh - 120px); display: flex; flex-direction: column; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); gap: 1.5rem;">
     <!-- 调试头部 -->
-    <div class="debug-header" style="background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
-      <h2 style="font-size: 1.8rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">智能体调试</h2>
-      <p class="debug-subtitle" style="color: #64748b; font-size: 1rem; margin: 0; font-weight: 500;">测试智能体的响应能力和配置正确性</p>
+    <div class="debug-header" style="background: white; padding: 1rem 1.5rem; border-radius: 12px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0;">
+      <h2 style="font-size: 1.3rem; font-weight: 600; color: #1e293b; margin-bottom: 0.25rem; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">智能体调试</h2>
+      <p class="debug-subtitle" style="color: #64748b; font-size: 0.85rem; margin: 0; font-weight: 400;">测试智能体的响应能力和配置正确性</p>
     </div>
 
     <!-- 调试结果区域 -->
     <div class="debug-result-section" style="background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); overflow: hidden; flex: 1; display: flex; flex-direction: column; border: 1px solid #e2e8f0;">
-      <div class="result-header" style="padding: 1.5rem 2rem; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-        <div class="result-title" style="font-size: 1.2rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 0.75rem;">
-          <i class="bi bi-terminal" style="color: #3b82f6; font-size: 1.3rem;"></i>
+      <div class="result-header" style="padding: 0.75rem 1.25rem; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+        <div class="result-title" style="font-size: 1rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="bi bi-terminal" style="color: #3b82f6; font-size: 1rem;"></i>
           调试结果
         </div>
         <div class="result-status" v-if="debugStatus">
-          <span class="badge" :class="getStatusClass()" style="padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">{{ debugStatus }}</span>
+          <span class="badge" :class="getStatusClass()" style="padding: 0.3rem 0.75rem; border-radius: 16px; font-size: 0.75rem; font-weight: 500;">{{ debugStatus }}</span>
         </div>
       </div>
-      <div class="result-content" ref="resultContainer" style="flex: 1; overflow-y: auto; background: #fafbfc;">
+      <div class="result-content" ref="resultContainer" style="flex: 1; overflow-y: auto; background: #fafbfc; display: flex; flex-direction: column;">
         <!-- 空状态 -->
-        <div v-if="!hasResults" class="empty-state" style="text-align: center; padding: 4rem 2rem; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border-radius: 20px; margin: 2rem; border: 2px dashed #cbd5e1;">
-          <div class="empty-icon" style="font-size: 4rem; margin-bottom: 2rem; color: #94a3b8;">
+        <div v-if="!hasResults" class="empty-state" style="text-align: center; padding: 2.5rem 1.5rem; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border-radius: 16px; margin: 1rem; border: 2px dashed #cbd5e1; flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 0;">
+          <div class="empty-icon" style="font-size: 2.5rem; margin-bottom: 1.25rem; color: #94a3b8;">
             <i class="bi bi-chat-square-text"></i>
           </div>
-          <div class="empty-text" style="font-size: 1.2rem; margin-bottom: 2.5rem; color: #475569; font-weight: 600;">
+          <div class="empty-text" style="font-size: 0.95rem; margin-bottom: 1.5rem; color: #475569; font-weight: 500;">
             输入测试问题，查看智能体的响应结果
           </div>
-          <div class="example-queries" v-if="exampleQueries.length > 0" style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; max-width: 800px; margin: 0 auto;">
+          <div class="example-queries" v-if="exampleQueries.length > 0" style="display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; max-width: 700px; margin: 0 auto;">
             <div
               class="example-query"
               v-for="example in exampleQueries"
               :key="example"
               @click="useExampleQuery(example)"
-              style="padding: 1rem 1.5rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); font-size: 0.95rem;"
+              style="padding: 0.75rem 1.25rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border-radius: 20px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; box-shadow: 0 3px 12px rgba(59, 130, 246, 0.25); font-size: 0.85rem;"
             >
               {{ example }}
             </div>
@@ -94,8 +94,8 @@
     </div>
 
     <!-- 调试输入区域 -->
-    <div class="debug-input-section" style="background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
-      <div class="input-container" style="display: flex; gap: 1rem; align-items: center;">
+    <div class="debug-input-section" style="background: white; padding: 1rem 1.5rem; border-radius: 12px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0;">
+      <div class="input-container" style="display: flex; gap: 0.75rem; align-items: center;">
         <input
           type="text"
           v-model="debugQuery"
@@ -104,15 +104,15 @@
           :disabled="isDebugging || isInitializing"
           @keyup.enter="startDebug"
           ref="debugInput"
-          style="flex: 1; padding: 1.2rem 1.5rem; font-size: 1.05rem; border: 1px solid #e2e8f0; border-radius: 12px; outline: none; background: #fafbfc; color: #1e293b; transition: all 0.3s ease;"
+          style="flex: 1; padding: 0.75rem 1rem; font-size: 0.9rem; border: 1px solid #e2e8f0; border-radius: 8px; outline: none; background: #fafbfc; color: #1e293b; transition: all 0.3s ease;"
         >
         <button
           class="debug-button"
           :disabled="isDebugging"
           @click="handleDebugClick"
-          style="padding: 1.2rem 2rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border: none; border-radius: 12px; font-size: 1.05rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem; min-width: 140px; justify-content: center; font-weight: 600; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);"
+          style="padding: 0.75rem 1.25rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border: none; border-radius: 8px; font-size: 0.85rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.4rem; min-width: 100px; justify-content: center; font-weight: 500; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);"
         >
-          <i class="bi bi-play-circle" v-if="!isDebugging"></i>
+          <i class="bi bi-play-circle" v-if="!isDebugging" style="font-size: 0.85rem;"></i>
           <div class="spinner" v-else></div>
           {{ isDebugging ? '调试中...' : '开始调试' }}
         </button>
@@ -120,9 +120,9 @@
           class="schema-init-button"
           :disabled="isDebugging || isInitializing"
           @click="openSchemaInitModal"
-          style="padding: 1.2rem 1.8rem; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; border-radius: 12px; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem; font-weight: 600; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);"
+          style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.4rem; font-weight: 500; box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);"
         >
-          <i class="bi bi-database-gear"></i>
+          <i class="bi bi-database-gear" style="font-size: 0.8rem;"></i>
           初始化信息源
         </button>
         <button
@@ -130,10 +130,10 @@
           :disabled="isInitializing || isDebugging"
           :class="{ loading: isInitializing }"
           @click="initializeDataSource"
-          style="padding: 1.2rem 1.8rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem; font-weight: 600; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);"
+          style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.4rem; font-weight: 500; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);"
         >
-          <i class="bi bi-database-add" v-if="!isInitializing && !isInitialized"></i>
-          <i class="bi bi-check-circle" v-if="!isInitializing && isInitialized"></i>
+          <i class="bi bi-database-add" v-if="!isInitializing && !isInitialized" style="font-size: 0.8rem;"></i>
+          <i class="bi bi-check-circle" v-if="!isInitializing && isInitialized" style="font-size: 0.8rem;"></i>
           <div class="spinner" v-if="isInitializing"></div>
           {{ getInitButtonText() }}
         </button>
@@ -269,6 +269,10 @@ export default {
     }
   },
   setup(props) {
+    // 调试模式下的 Agent ID 偏移量
+    const DEBUG_AGENT_ID_OFFSET = 999999
+    const debugAgentId = props.agentId + DEBUG_AGENT_ID_OFFSET
+
     // 响应式数据
     const debugQuery = ref('查询用户总数')
     const isDebugging = ref(false)
@@ -341,7 +345,7 @@ export default {
       streamingSections.value = []
 
       try {
-        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(debugQuery.value)}&agentId=${props.agentId}`)
+        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(debugQuery.value)}&agentId=${debugAgentId}`)
         currentEventSource = eventSource
 
         // 使用与 AgentWorkspace.vue 完全相同的流式数据处理逻辑
@@ -359,6 +363,8 @@ export default {
           'schema_deep_recall': { title: 'Schema深度召回', icon: 'bi bi-database-fill-gear' },
           'sql': { title: '生成的SQL', icon: 'bi bi-code-square' },
           'execute_sql': { title: '执行SQL', icon: 'bi bi-play-circle' },
+          'python_execute': { title: 'Python执行', icon: 'bi bi-play-circle-fill' },
+          'python_generate': { title: 'Python代码生成', icon: 'bi bi-code-square-fill' },
           'python_analysis': { title: 'Python分析执行', icon: 'bi bi-code-slash' },
           'validation': { title: '校验', icon: 'bi bi-check-circle' },
           'output_report': { title: '输出报告', icon: 'bi bi-file-earmark-text' },
@@ -816,7 +822,7 @@ export default {
       if (!schemaInitForm.selectedDatasource) return
 
       try {
-        const response = await fetch(`/api/agent/${props.agentId}/schema/datasources/${schemaInitForm.selectedDatasource.id}/tables`)
+        const response = await fetch(`/api/agent/${debugAgentId}/schema/datasources/${schemaInitForm.selectedDatasource.id}/tables`)
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -850,7 +856,7 @@ export default {
       try {
         schemaInitializing.value = true
 
-        const response = await fetch(`/api/agent/${props.agentId}/schema/init`, {
+        const response = await fetch(`/api/agent/${debugAgentId}/schema/init`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -885,7 +891,7 @@ export default {
 
     const getSchemaStatistics = async () => {
       try {
-        const response = await fetch(`/api/agent/${props.agentId}/schema/statistics`)
+        const response = await fetch(`/api/agent/${debugAgentId}/schema/statistics`)
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -912,7 +918,7 @@ export default {
       if (!confirm('确定要清空所有Schema数据吗？此操作不可恢复。')) return
 
       try {
-        const response = await fetch(`/api/agent/${props.agentId}/schema/clear`, {
+        const response = await fetch(`/api/agent/${debugAgentId}/schema/clear`, {
           method: 'DELETE'
         })
 

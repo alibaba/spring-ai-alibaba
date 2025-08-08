@@ -92,8 +92,18 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	 */
 	private static final int DEFAULT_MAP_TASK_THREAD_POOL_SIZE = 1;
 
+	/**
+	 * Configuration check interval in milliseconds (10 seconds)
+	 */
+	private static final long CONFIG_CHECK_INTERVAL_MILLIS = 10_000;
+
 	// Thread pool for parallel execution
-	private final ExecutorService executorService;
+	private volatile ExecutorService executorService;
+
+	// Thread pool configuration tracking
+	private volatile int currentThreadPoolSize;
+
+	private volatile long lastConfigCheckTime;
 
 	public MapReducePlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
 			AgentService agentService, ILlmService llmService, ManusProperties manusProperties,
@@ -101,11 +111,12 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		super(agents, recorder, agentService, llmService, manusProperties);
 		OBJECT_MAPPER = objectMapper;
 
-		// Get thread pool size from configuration
-		int threadPoolSize = getMapTaskThreadPoolSize();
-		this.executorService = Executors.newFixedThreadPool(threadPoolSize);
+		// Initialize thread pool with current configuration
+		this.currentThreadPoolSize = getMapTaskThreadPoolSize();
+		this.executorService = Executors.newFixedThreadPool(currentThreadPoolSize);
+		this.lastConfigCheckTime = System.currentTimeMillis();
 
-		logger.info("MapReducePlanExecutor initialized with thread pool size: {}", threadPoolSize);
+		logger.info("MapReducePlanExecutor initialized with thread pool size: {}", currentThreadPoolSize);
 	}
 
 	/**
@@ -328,7 +339,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 						logger.info("Completed processing task directory: {}", taskDirectory);
 						return fileExecutor;
-					}, executorService);
+					}, getUpdatedExecutorService());
 
 					futures.add(future);
 				}
@@ -459,7 +470,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 				logger.info("Completed processing Reduce batch {}", batchCounter);
 				return batchExecutor;
-			}, executorService);
+			}, getUpdatedExecutorService());
 
 			futures.add(future);
 		}
@@ -675,8 +686,9 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	 * Shutdown executor, release thread pool resources
 	 */
 	public void shutdown() {
-		if (executorService != null && !executorService.isShutdown()) {
-			executorService.shutdown();
+		ExecutorService currentExecutor = executorService;
+		if (currentExecutor != null && !currentExecutor.isShutdown()) {
+			shutdownExecutorGracefully(currentExecutor);
 		}
 	}
 
@@ -920,6 +932,67 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		logger.debug("Using default Map task thread pool size: {}", DEFAULT_MAP_TASK_THREAD_POOL_SIZE);
 		return DEFAULT_MAP_TASK_THREAD_POOL_SIZE;
+	}
+
+	/**
+	 * Check and update thread pool configuration if needed. This method is called before
+	 * each executor service usage to ensure configuration changes are picked up without
+	 * using timers or background threads.
+	 * @return the current (potentially updated) executor service
+	 */
+	private ExecutorService getUpdatedExecutorService() {
+		long currentTime = System.currentTimeMillis();
+
+		// Check if enough time has passed since last configuration check
+		if (currentTime - lastConfigCheckTime >= CONFIG_CHECK_INTERVAL_MILLIS) {
+			lastConfigCheckTime = currentTime;
+
+			// Get current configuration
+			int newThreadPoolSize = getMapTaskThreadPoolSize();
+
+			// Check if configuration has changed
+			if (newThreadPoolSize != currentThreadPoolSize) {
+				logger.info("Thread pool size configuration changed from {} to {}, rebuilding thread pool",
+						currentThreadPoolSize, newThreadPoolSize);
+
+				// Gracefully shutdown old executor service
+				ExecutorService oldExecutorService = executorService;
+
+				// Create new executor service with updated configuration
+				ExecutorService newExecutorService = Executors.newFixedThreadPool(newThreadPoolSize);
+
+				// Update current state atomically
+				this.executorService = newExecutorService;
+				this.currentThreadPoolSize = newThreadPoolSize;
+
+				// Gracefully shutdown old executor service in background
+				// This ensures existing tasks can complete
+				shutdownExecutorGracefully(oldExecutorService);
+
+				logger.info("Thread pool successfully updated to size: {}", newThreadPoolSize);
+			}
+		}
+
+		return executorService;
+	}
+
+	/**
+	 * Gracefully shutdown an executor service
+	 * @param executor the executor service to shutdown
+	 */
+	private void shutdownExecutorGracefully(ExecutorService executor) {
+		if (executor != null && !executor.isShutdown()) {
+			try {
+				// Initiate graceful shutdown
+				executor.shutdown();
+				logger.debug("Old thread pool shutdown initiated");
+			}
+			catch (Exception e) {
+				logger.warn("Error during graceful shutdown of old thread pool", e);
+				// Force shutdown if graceful shutdown fails
+				executor.shutdownNow();
+			}
+		}
 	}
 
 	/**

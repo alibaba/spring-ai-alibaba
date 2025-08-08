@@ -64,6 +64,8 @@ const words: I18nType = {
     successMessage: '配置保存成功！正在跳转到主页面...',
     restartRequired: 'API密钥已保存成功！为了使配置生效，需要重启应用程序。\n\n点击"确定"立即重启，点击"取消"稍后手动重启。',
     simplifiedChinese: '简体中文',
+    completionsPath: 'Completions Path',
+    completionsPathPlaceholder: '聊天模型端点，各平台路径不同。如未填写默认配置是：/v1/chat/completions',
   },
 
   // 通用按钮和操作
@@ -85,6 +87,33 @@ const words: I18nType = {
     search: '搜索',
     loading: '加载中...',
     parameters: '参数',
+  },
+
+  // 文件浏览器
+  fileBrowser: {
+    title: '文件浏览器',
+    refresh: '刷新',
+    loading: '正在加载文件树...',
+    retry: '重试',
+    noFiles: '未找到文件',
+    loadError: '加载文件树失败',
+    loadingContent: '正在加载文件内容...',
+    contentLoadError: '加载文件内容失败',
+    download: '下载',
+    downloadToView: '下载查看',
+    binaryFile: '这是一个二进制文件，无法在查看器中显示。',
+    open: '打开',
+    copyPath: '复制路径',
+    noPlanSelected: '未选择计划。请执行任务以查看文件。',
+    noFilesYet: '暂未生成文件',
+    waitingForFiles: 'AI 模型正在处理您的请求，生成的文件将在此处显示。',
+    filesTip: '分析结果、报告和数据导出等生成的文件将显示在此文件浏览器中。',
+    noPlanExecuting: '当前没有执行中的任务。',
+    startTaskTip: '请在左侧对话框中发起任务，生成的文件将在此处显示。',
+    waitingForGeneration: '等待文件生成',
+    planExecuting: 'AI 模型正在执行计划并生成文件。',
+    checking: '检查中...',
+    checkNow: '立即检查',
   },
 
   // 语言
@@ -217,6 +246,9 @@ const words: I18nType = {
       loadDataFailed: '加载数据失败',
       loadDetailsFailed: '加载Agent详情失败',
       invalidFormat: 'Agent配置格式不正确：缺少必要字段',
+      cannotDeleteBuiltIn: '无法删除内置Agent',
+      builtInAgents: '内置Agent',
+      customAgents: '自定义Agent',
     },
     // Model配置页面
     modelConfig: {
@@ -279,6 +311,8 @@ const words: I18nType = {
       temperaturePlaceholder: '留空使用模型默认值',
       topP: 'Top P',
       topPPlaceholder: '留空使用模型默认值',
+      completionsPath: 'Completions Path',
+      completionsPathPlaceholder: '聊天模型端点，各平台路径不同。如未填写默认配置是：/v1/chat/completions',
     },
     // MCP配置页面
     mcpConfig: {
@@ -462,6 +496,10 @@ const words: I18nType = {
         system: '系统',
         performance: '性能',
       },
+      restoreAllDefaults: '恢复到默认配置',
+      restoreAllDefaultsConfirm: '确定要将所有配置恢复到默认值吗？此操作将覆盖所有自定义配置。',
+      restoreAllDefaultsSuccess: '所有配置已恢复到默认值',
+      restoreAllDefaultsFailed: '恢复默认配置失败',
     },
     promptConfig: {
       title: '动态Prompt配置',
@@ -773,7 +811,8 @@ const words: I18nType = {
   direct: {
     planTemplateIdNotFound: '没有找到计划模板ID',
     executionFailedNoPlanId: '执行计划失败：未返回有效的计划ID',
-    executionFailed: '执行计划失败'
+    executionFailed: '执行计划失败',
+    configuration: '设置'
   },
 
   // 模态框

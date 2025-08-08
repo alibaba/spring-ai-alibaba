@@ -64,6 +64,8 @@ const words: I18nType = {
     successMessage: 'Configuration saved successfully! Redirecting to home page...',
     restartRequired: 'API key saved successfully! The application needs to be restarted for the configuration to take effect.\n\nClick "OK" to restart now, or "Cancel" to restart manually later.',
     simplifiedChinese: 'Simplified Chinese',
+    completionsPath: 'Completions Path',
+    completionsPathPlaceholder: 'If not specified, the default configuration is: /v1/chat/completions',
   },
 
   // Common buttons and actions
@@ -85,6 +87,33 @@ const words: I18nType = {
     search: 'Search',
     loading: 'Loading...',
     parameters: 'Parameters',
+  },
+
+  // File Browser
+  fileBrowser: {
+    title: 'File Browser',
+    refresh: 'Refresh',
+    loading: 'Loading file tree...',
+    retry: 'Retry',
+    noFiles: 'No files found',
+    loadError: 'Failed to load file tree',
+    loadingContent: 'Loading file content...',
+    contentLoadError: 'Failed to load file content',
+    download: 'Download',
+    downloadToView: 'Download to View',
+    binaryFile: 'This is a binary file that cannot be displayed in the viewer.',
+    open: 'Open',
+    copyPath: 'Copy Path',
+    noPlanSelected: 'No plan selected. Please execute a task to view files.',
+    noFilesYet: 'No Files Generated Yet',
+    waitingForFiles: 'The AI model is still processing your request. Files will appear here once they are generated.',
+    filesTip: 'Generated files like analysis results, reports, and data exports will be displayed in this file browser.',
+    noPlanExecuting: 'No task is currently being executed.',
+    startTaskTip: 'Please start a task in the chat panel on the left. Generated files will be displayed here.',
+    waitingForGeneration: 'Waiting for File Generation',
+    planExecuting: 'The AI model is currently executing the plan and generating files.',
+    checking: 'Checking...',
+    checkNow: 'Check Now',
   },
 
   // Language
@@ -217,6 +246,9 @@ const words: I18nType = {
       invalidFormat: 'Invalid agent configuration format: missing required fields',
       modelConfiguration: 'Model Configuration',
       modelConfigurationLabel: 'Select Model',
+      cannotDeleteBuiltIn: 'Cannot delete built-in agent',
+      builtInAgents: 'Built-in Agents',
+      customAgents: 'Custom Agents',
     },
     // Model configuration page
     modelConfig: {
@@ -277,6 +309,8 @@ const words: I18nType = {
       temperaturePlaceholder: 'Leave empty to use model default',
       topP: 'Top P',
       topPPlaceholder: 'Leave empty to use model default',
+      completionsPath: 'Completions Path',
+      completionsPathPlaceholder: 'If not specified, the default configuration is: /v1/chat/completions',
       headers: 'Headers',
       headersPlaceholder: 'Request headers (JSON format)',
     },
@@ -464,6 +498,10 @@ const words: I18nType = {
         system: 'System',
         performance: 'Performance',
       },
+      restoreAllDefaults: 'Restore to Default',
+      restoreAllDefaultsConfirm: 'Are you sure you want to restore all configurations to default values? This will overwrite all custom configurations.',
+      restoreAllDefaultsSuccess: 'All configurations have been restored to default values',
+      restoreAllDefaultsFailed: 'Failed to restore default configurations',
     },
     promptConfig: {
       title: 'Dynamic Prompt Configuration',
@@ -806,7 +844,8 @@ const words: I18nType = {
   direct: {
     planTemplateIdNotFound: 'Plan template ID not found',
     executionFailedNoPlanId: 'Plan execution failed: No valid plan ID returned',
-    executionFailed: 'Plan execution failed'
+    executionFailed: 'Plan execution failed',
+    configuration: 'config'
   },
 
   // Modal

@@ -25,9 +25,12 @@ import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
+import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -53,10 +56,46 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 	private PromptService promptService;
 
 	/**
-	 * Get summary plan template from PromptService
+	 * Get summary plan template directly as built-in English version
+	 *
+	 * We use a local template instead of PromptService for the following reasons: 1. This
+	 * is a core workflow template that should not be externally modified 2. Using a local
+	 * template improves performance by avoiding service calls 3. It ensures consistency
+	 * and stability of the core summarization workflow 4. The template is fixed and does
+	 * not require dynamic configuration
 	 */
 	private String getSummaryPlanTemplate() {
-		return promptService.getPromptByName("SUMMARY_PLAN_TEMPLATE").getPromptContent();
+		return """
+				{
+				  "planType": "advanced",
+				  "planId": "<planId>",
+				  "title": "Intelligent content summarization for large files, with final merged file name output in summary",
+				  "steps": [
+				    {
+				      "type": "mapreduce",
+				      "dataPreparedSteps": [
+				        {
+				          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] Use map_reduce_tool to split content of file <fileName>"
+				        }
+				      ],
+				      "mapSteps": [
+				        {
+				          "stepRequirement": "[MAPREDUCE_MAP_TASK_AGENT] Analyze file, find key information related to ```<queryKey>```, information should be comprehensive, including all data, facts and opinions, comprehensive information without omission. Output format specification: ``` <outputFormatSpecification>```. File format requirement: Markdown."
+				        }
+				      ],
+				      "reduceSteps": [
+				        {
+				          "stepRequirement": "[MAPREDUCE_REDUCE_TASK_AGENT] Merge the information from this chunk into file, while maintaining information integrity, merge all content and remove results with no content found. Output format specification: <outputFormatSpecification>. File format requirement: Markdown."
+				        }
+				      ],
+				      "postProcessSteps": [
+				        {
+				          "stepRequirement": "[MAPREDUCE_FIN_AGENT] After export completion, read the exported results and output all exported content completely. Output format specification: <outputFormatSpecification>. File format requirement: Markdown."
+				        }
+				      ]
+				    }
+				  ]
+				}""";
 	}
 
 	/**
@@ -67,14 +106,17 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 	 * @param content File content
 	 * @param queryKey Query keywords
 	 * @param thinkActRecordId Think-act record ID for sub-plan execution tracking
+	 * @param outputFormatSpecification A file used to describe in what format the data
+	 * should be stored (default is an excel table), the table header of this file is the
+	 * specification description
 	 * @return Future of summarization result
 	 */
 	public CompletableFuture<String> executeSummaryWorkflow(String parentPlanId, String fileName, String content,
-			String queryKey, Long thinkActRecordId, String terminateColumnsString) {
+			String queryKey, Long thinkActRecordId, String outputFormatSpecification) {
 
 		// 1. Build MapReduce execution plan using caller's planId
 		MapReduceExecutionPlan executionPlan = buildSummaryExecutionPlan(parentPlanId, fileName, content, queryKey,
-				terminateColumnsString);
+				outputFormatSpecification);
 
 		// 2. Execute plan directly, passing thinkActRecordId
 		return executeMapReducePlanWithContext(parentPlanId, executionPlan, thinkActRecordId);
@@ -82,36 +124,42 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 
 	/**
 	 * Build MapReduce-based summarization execution plan
-	 * @param planId Use caller-provided plan ID to ensure subprocess can find
+	 * @param parentPlanId Use caller-provided plan ID to ensure subprocess can find the
 	 * corresponding directory
-	 * @param fileName File name
+	 * @param fileName File name to be processed
 	 * @param content File content (not directly used yet, but kept as extension
 	 * parameter)
-	 * @param queryKey Query keywords
+	 * @param queryKey Query keywords for information extraction
+	 * @param outputFormatSpecification A file used to describe in what format the data
+	 * should be stored (default is an excel table), the table header of this file is the
+	 * specification description
+	 * @return MapReduceExecutionPlan object configured based on the input parameters
 	 */
 	private MapReduceExecutionPlan buildSummaryExecutionPlan(String parentPlanId, String fileName, String content,
-			String queryKey, String terminateColumnsString) {
+			String queryKey, String outputFormatSpecification) {
 
 		try {
 			// Use caller-provided planId instead of generating a new one
 			logger.info("Building summary execution plan with provided planId: {}", parentPlanId);
 
-			// Generate plan JSON using template from PromptService
-			String planJson = String.format(getSummaryPlanTemplate(), parentPlanId, // Plan
-																					// ID
-					fileName, // dataPreparedSteps file name
-					terminateColumnsString, // dataPreparedSteps terminateColumns
-					queryKey, // mapSteps query key
-					terminateColumnsString, // mapSteps terminateColumns
-					terminateColumnsString, // reduceSteps terminateColumns
-					terminateColumnsString // postProcessSteps terminateColumns (will auto
-											// add fileURL)
-			);
+			// Generate plan JSON using local template with PromptTemplate
+			PromptTemplate promptTemplate = PromptTemplate.builder()
+				.renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+				.template(getSummaryPlanTemplate())
+				.build();
+
+			Map<String, Object> variables = new HashMap<>();
+			variables.put("planId", parentPlanId);
+			variables.put("fileName", fileName);
+			variables.put("queryKey", queryKey);
+			variables.put("outputFormatSpecification", outputFormatSpecification);
+
+			String planJson = promptTemplate.render(variables);
 
 			// Parse JSON to MapReduceExecutionPlan object
 			MapReduceExecutionPlan plan = objectMapper.readValue(planJson, MapReduceExecutionPlan.class);
-			// terminateColumns are configured directly in JSON template, no need to set
-			// here
+			// Output format specifications are configured directly in JSON template, no
+			// need to set here
 
 			return plan;
 

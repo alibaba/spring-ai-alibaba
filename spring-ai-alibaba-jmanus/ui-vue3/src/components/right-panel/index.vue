@@ -17,19 +17,30 @@
   <div class="right-panel">
     <div class="preview-header">
       <div class="preview-tabs">
-        <!-- Only show details tab -->
-        <button
-            class="tab-button active"
+        <!-- Step Execution Details tab -->
+        <div
+            class="tab-item"
+            :class="{ active: activeTab === 'details' }"
+            @click="activeTab = 'details'"
         >
           <Icon icon="carbon:events"/>
-          {{ t('rightPanel.stepExecutionDetails') }}
-        </button>
+          <span>{{ t('rightPanel.stepExecutionDetails') }}</span>
+        </div>
+        <!-- File Browser tab -->
+        <div
+            class="tab-item"
+            :class="{ active: activeTab === 'files' }"
+            @click="activeTab = 'files'"
+        >
+          <Icon icon="carbon:folder"/>
+          <span>{{ t('fileBrowser.title') }}</span>
+        </div>
       </div>
     </div>
 
     <div class="preview-content">
       <!-- Step Execution Details -->
-      <div class="step-details">
+      <div v-if="activeTab === 'details'" class="step-details">
         <!-- Fixed top step basic information -->
         <div v-if="selectedStep" class="step-info-fixed">
           <h3>
@@ -277,16 +288,43 @@
           </Transition>
         </div>
       </div>
+
+      <!-- File Browser -->
+      <div v-if="activeTab === 'files'" class="file-browser-container">
+        <FileBrowser 
+          v-if="fileBrowserPlanId" 
+          :plan-id="fileBrowserPlanId"
+        />
+        <div v-else-if="shouldShowNoTaskMessage" class="no-plan-message">
+          <Icon icon="carbon:folder-off" />
+          <div class="message-content">
+            <h3>{{ t('fileBrowser.noFilesYet') }}</h3>
+            <p>{{ t('fileBrowser.noPlanExecuting') }}</p>
+            <div class="tips">
+              <Icon icon="carbon:information" />
+              <span>{{ t('fileBrowser.startTaskTip') }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
+import FileBrowser from '@/components/file-browser/index.vue'
+
+// Define props interface
+interface Props {
+  currentRootPlanId?: string | null
+}
+
+const props = defineProps<Props>()
 
 // Define step selection context interface
 interface StepSelectionContext {
@@ -317,6 +355,11 @@ const scrollContainer = ref<HTMLElement>()
 // Local state - replacing store state
 const currentDisplayedPlanId = ref<string>()
 const selectedStep = ref<SelectedStep | null>()
+const activeTab = ref<'details' | 'files'>('details')
+
+// Keep track of the last executed plan for file browser
+const lastExecutedPlanId = ref<string | null>(localStorage.getItem('jmanus-last-plan-id'))
+const hasExecutedAnyPlan = ref(localStorage.getItem('jmanus-has-executed-plan') === 'true')
 
 // Current step selection context for auto-refresh
 const currentStepContext = ref<StepSelectionContext | null>(null)
@@ -332,6 +375,21 @@ const stepStatusText = computed(() => {
   if (selectedStep.value.completed) return t('rightPanel.status.completed')
   if (selectedStep.value.current) return t('rightPanel.status.executing')
   return t('rightPanel.status.waiting')
+})
+
+// Computed property to determine which planId to show in file browser
+const fileBrowserPlanId = computed(() => {
+  // If there's a current plan, use it
+  if (props.currentRootPlanId) {
+    return props.currentRootPlanId
+  }
+  // Otherwise, use the last executed plan if any
+  return lastExecutedPlanId.value
+})
+
+// Computed property to determine if we should show the "no task" message
+const shouldShowNoTaskMessage = computed(() => {
+  return !fileBrowserPlanId.value && !hasExecutedAnyPlan.value
 })
 
 // Actions - Plan data management and refresh control
@@ -768,6 +826,24 @@ const initScrollListener = () => {
     }
   })
 }
+
+// Watch for currentRootPlanId changes to track execution history
+watch(() => props.currentRootPlanId, (newPlanId, oldPlanId) => {
+  if (newPlanId && newPlanId !== oldPlanId) {
+    // A new plan has started executing
+    lastExecutedPlanId.value = newPlanId
+    hasExecutedAnyPlan.value = true
+    
+    // Persist to localStorage
+    localStorage.setItem('jmanus-last-plan-id', newPlanId)
+    localStorage.setItem('jmanus-has-executed-plan', 'true')
+    
+    console.log('[RightPanel] New plan started:', newPlanId)
+  } else if (!newPlanId && oldPlanId) {
+    // Plan execution finished, but keep the lastExecutedPlanId for file browser
+    console.log('[RightPanel] Plan execution finished, keeping last plan:', lastExecutedPlanId.value)
+  }
+}, { immediate: true })
 
 // Lifecycle - initialization on mount
 onMounted(() => {
@@ -1362,5 +1438,116 @@ defineExpose({
 .scroll-button-leave-to {
   opacity: 0;
   transform: translateY(20px) scale(0.8);
+}
+
+/* File Browser Container */
+.file-browser-container {
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+.no-plan-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.6);
+  gap: 24px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.no-plan-message > .iconify {
+  font-size: 64px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 300px;
+}
+
+.message-content h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.message-content p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.tips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(103, 126, 234, 0.1);
+  border: 1px solid rgba(103, 126, 234, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: rgba(103, 126, 234, 0.9);
+}
+
+.tips .iconify {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* Tab styles */
+.preview-tabs {
+  display: flex;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 0;
+  flex: 1;
+  justify-content: center;
+  position: relative;
+}
+
+.tab-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.tab-item.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.tab-item .iconify {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.tab-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

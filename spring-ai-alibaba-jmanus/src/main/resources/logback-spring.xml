@@ -107,6 +107,20 @@
         </encoder>
     </appender>
 
+    <!-- LLM Request logs -->
+    <appender name="LLM_REQUEST" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/llm-requests/llm-requests-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
 
     <!--  MyBatis log configure -->
     <logger name="com.apache.ibatis" level="DEBUG"/>
@@ -114,6 +128,11 @@
     <logger name="java.sql.Connection" level="DEBUG"/>
     <logger name="java.sql.Statement" level="DEBUG"/>
     <logger name="java.sql.PreparedStatement" level="DEBUG"/>
+
+    <!-- LLM Request Logger configure -->
+    <logger name="LLM_REQUEST_LOGGER" level="INFO" additivity="false">
+        <appender-ref ref="LLM_REQUEST"/>
+    </logger>
 
     <logger name="druid.sql" level="INFO"/>
     <logger name="org.mybatis.spring" level="INFO"/>
