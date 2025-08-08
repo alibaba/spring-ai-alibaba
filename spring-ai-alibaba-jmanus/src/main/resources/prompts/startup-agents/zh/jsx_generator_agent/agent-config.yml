@@ -17,7 +17,7 @@ nextStepPrompt: |
   请按照以下步骤使用 jsx_generator_operator 工具创建Vue单文件组件：
 
   步骤1: 使用 generate_vue 操作创建新的Vue组件
-  
+
   必需的JSON格式示例：
   ```json
   <BRACE>
@@ -36,7 +36,7 @@ nextStepPrompt: |
     <SLASH_BRACE>
   <SLASH_BRACE>
   ```
-  
+
   占位符说明（请在实际使用时替换）：
   - BRACE 替换为左花括号
   - SLASH_BRACE 替换为右花括号
@@ -60,7 +60,7 @@ nextStepPrompt: |
   - methods字段的值应为字符串格式的JavaScript函数
 
   步骤2: 使用 apply_template 操作应用Handlebars模板
-  
+
   必需的JSON格式示例：
   ```json
   <BRACE>
@@ -80,7 +80,7 @@ nextStepPrompt: |
   - template_data: 可选。用于填充模板的数据对象
 
   步骤3: 使用 save 操作保存生成的Vue SFC代码
-  
+
   必需的JSON格式示例：
   ```json
   <BRACE>
@@ -95,7 +95,7 @@ nextStepPrompt: |
   - vue_sfc_code: 必需。要保存的完整Vue SFC代码
 
   步骤4: 使用 preview 操作生成Sandpack预览
-  
+
   必需的JSON格式示例：
   ```json
   <BRACE>
@@ -112,7 +112,7 @@ nextStepPrompt: |
   - dependencies: 可选。额外的npm依赖对象
 
   步骤5: 使用 validate 操作验证Vue SFC代码语法
-  
+
   必需的JSON格式示例：
   ```json
   <BRACE>
@@ -138,7 +138,7 @@ nextStepPrompt: |
   1. 特定的缺失或无效参数
   2. 接收到的参数用于调试
   3. 该操作的预期JSON格式
-  
+
   常见问题说明：
   - "component_type parameter is required"：确保在JSON中包含"component_type"字段
   - JSON解析错误：检查JSON语法是否有效，确保使用双引号

@@ -17,7 +17,7 @@ nextStepPrompt: |
   Please follow these steps to use the jsx_generator_operator tool to create Vue Single File Components:
 
   Step 1: Use the generate_vue action to create a new Vue component
-  
+
   Required JSON format example:
   ```json
   <example>
@@ -36,7 +36,7 @@ nextStepPrompt: |
     </data>
   </example>
   ```
-  
+
   Note: Replace the following placeholders with correct characters when using:
   - <example> and </example> with opening and closing curly braces
   - <data> and </data> with opening and closing curly braces
@@ -65,7 +65,7 @@ nextStepPrompt: |
   - methods field values should be string-formatted JavaScript functions
 
   Step 2: Use the apply_template action to apply Handlebars templates
-  
+
   Required JSON format example:
   ```json
   <templateExample>
@@ -85,7 +85,7 @@ nextStepPrompt: |
   - template_data: OPTIONAL. Data object to populate the template
 
   Step 3: Use the save action to save the generated Vue SFC code
-  
+
   Required JSON format example:
   ```json
   <saveExample>
@@ -100,7 +100,7 @@ nextStepPrompt: |
   - vue_sfc_code: REQUIRED. The complete Vue SFC code to save
 
   Step 4: Use the preview action to generate a Sandpack preview
-  
+
   Required JSON format example:
   ```json
   <previewExample>
@@ -117,7 +117,7 @@ nextStepPrompt: |
   - dependencies: OPTIONAL. Additional npm dependencies object
 
   Step 5: Use the validate action to validate Vue SFC code syntax
-  
+
   Required JSON format example:
   ```json
   <validateExample>
@@ -143,7 +143,7 @@ nextStepPrompt: |
   1. The specific missing or invalid parameter
   2. The received parameters for debugging
   3. The expected JSON format for that operation
-  
+
   Common issues and solutions:
   - "component_type parameter is required": Ensure you include "component_type" field in your JSON
   - JSON parsing errors: Check that your JSON syntax is valid with double quotes
