@@ -283,6 +283,8 @@ export default {
           'schema_deep_recall': { title: 'Schema深度召回', icon: 'bi bi-database-fill-gear' },
           'sql': { title: '生成的SQL', icon: 'bi bi-code-square' },
           'execute_sql': { title: '执行SQL', icon: 'bi bi-play-circle' },
+          'python_execute': { title: 'Python执行', icon: 'bi bi-play-circle-fill' },
+          'python_generate': { title: 'Python代码生成', icon: 'bi bi-code-square-fill' },
           'python_analysis': { title: 'Python分析执行', icon: 'bi bi-code-slash' },
           'validation': { title: '校验', icon: 'bi bi-check-circle' },
           'output_report': { title: '输出报告', icon: 'bi bi-file-earmark-text' },
