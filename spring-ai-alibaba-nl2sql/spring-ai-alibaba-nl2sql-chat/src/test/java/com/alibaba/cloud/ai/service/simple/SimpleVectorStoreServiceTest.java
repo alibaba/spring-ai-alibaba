@@ -11,11 +11,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations und		// 测试null column - 应该直接抛出IllegalArgumentException，不会被包装
-		IllegalArgumentException nullColumnException = assertThrows(IllegalArgumentException.class, () -> {
-			vectorStoreService.convertToDocument(validTable, null);
-		});
-		assertTrue(nullColumnException.getMessage().contains("ColumnInfoBO cannot be null"));e License.
+ * limitations under the License.
  */
 package com.alibaba.cloud.ai.service.simple;
 
@@ -770,7 +766,6 @@ class SimpleVectorStoreServiceTest {
 	}
 
 }
-
 
 @ExtendWith(MockitoExtension.class)
 class SimpleVectorStoreServiceErrorHandlingTest {
