@@ -37,7 +37,7 @@
             :title="$t('config.basicConfig.restoreAllDefaults')"
             :disabled="loading"
           >
-            🔄
+            🔄 {{ $t('config.basicConfig.restoreAllDefaults') }}
           </button>
           <button @click="exportConfigs" class="action-btn" :title="$t('config.basicConfig.exportConfigs')">
             📤
