@@ -1375,6 +1375,10 @@ const showMemory = async () => {
   }
 }
 
+const newChat = () => {
+  messages.value = []
+}
+
 // Expose methods to parent components for usage
 defineExpose({
   handleSendMessage,
@@ -1383,7 +1387,8 @@ defineExpose({
   handleDialogRoundStart,
   addMessage,
   handlePlanError,
-  showMemory
+  showMemory,
+  newChat
 })
 </script>
 

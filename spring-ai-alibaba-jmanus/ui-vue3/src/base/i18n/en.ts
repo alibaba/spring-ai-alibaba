@@ -1100,6 +1100,7 @@ const words: I18nType = {
     deleteHintSuffix: '? This action cannot be undone.',
     selectMemory: 'Select Memory',
     clearMemory: 'Clear Memory',
+    newChat: 'new chat',
   },
 }
 

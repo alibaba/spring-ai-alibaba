@@ -15,9 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.config;
 
-import com.alibaba.cloud.ai.memory.jdbc.H2ChatMemoryRepository;
-import com.alibaba.cloud.ai.memory.jdbc.MysqlChatMemoryRepository;
-import com.alibaba.cloud.ai.memory.jdbc.PostgresChatMemoryRepository;
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.repository.H2ChatMemoryRepository;
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.repository.MysqlChatMemoryRepository;
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.repository.PostgresChatMemoryRepository;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;

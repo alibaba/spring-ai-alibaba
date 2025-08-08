@@ -1064,6 +1064,7 @@ const words: I18nType = {
     deleteHintSuffix: '的消息吗？此操作不可撤销。',
     selectMemory: '选择记忆',
     clearMemory: '清除记忆',
+    newChat: '新建对话',
   },
 }
 

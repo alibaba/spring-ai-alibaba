@@ -28,6 +28,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SimpleApiKey;
@@ -249,7 +250,8 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	public ChatMemory getAgentMemory(Integer maxMessages) {
 		if (agentMemory == null) {
 			agentMemory = MessageWindowChatMemory.builder()
-				.chatMemoryRepository(chatMemoryRepository)
+				// in memory use by agent
+				.chatMemoryRepository(new InMemoryChatMemoryRepository())
 				.maxMessages(maxMessages)
 				.build();
 		}

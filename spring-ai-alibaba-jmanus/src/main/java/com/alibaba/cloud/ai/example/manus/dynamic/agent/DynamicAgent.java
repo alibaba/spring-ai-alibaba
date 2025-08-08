@@ -170,7 +170,7 @@ public class DynamicAgent extends ReActAgent {
 			List<Message> messages = new ArrayList<>(Collections.singletonList(systemMessage));
 			// Add history message.
 			ChatMemory chatMemory = llmService.getAgentMemory(manusProperties.getMaxMemory());
-			List<Message> historyMem = chatMemory.get(getMemoryId());
+			List<Message> historyMem = chatMemory.get(getCurrentPlanId());
 			messages.addAll(historyMem);
 			messages.add(currentStepEnvMessage);
 			// Call the LLM
@@ -465,7 +465,7 @@ public class DynamicAgent extends ReActAgent {
 			if (!StringUtils.isBlank(userInput)) {
 				// Add user input to memory
 
-				llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getMemoryId(), userMessage);
+				llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getCurrentPlanId(), userMessage);
 
 			}
 		}
@@ -481,7 +481,7 @@ public class DynamicAgent extends ReActAgent {
 			return;
 		}
 		// clear current plan memory
-		llmService.getAgentMemory(manusProperties.getMaxMemory()).clear(getMemoryId());
+		llmService.getAgentMemory(manusProperties.getMaxMemory()).clear(getCurrentPlanId());
 		for (Message message : messages) {
 			// exclude all system message
 			if (message instanceof SystemMessage) {
@@ -493,7 +493,7 @@ public class DynamicAgent extends ReActAgent {
 				continue;
 			}
 			// only keep assistant message and tool_call message
-			llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getMemoryId(), message);
+			llmService.getAgentMemory(manusProperties.getMaxMemory()).add(getCurrentPlanId(), message);
 		}
 	}
 

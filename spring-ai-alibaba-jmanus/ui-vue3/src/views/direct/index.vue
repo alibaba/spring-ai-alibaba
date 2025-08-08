@@ -29,6 +29,9 @@
           <h2>{{ $t('conversation') }}</h2>
           <div class="header-actions">
             <LanguageSwitcher />
+            <button class="config-button" @click="newChat" :title="$t('memory.newChat')">
+              <Icon icon="carbon:add" width="20" />
+            </button>
             <button class="config-button" @click="handleConfig" :title="$t('direct.configuration')">
               <Icon icon="carbon:settings-adjust" width="20" />
             </button>
@@ -85,7 +88,9 @@
     <CronTaskModal v-model="showCronTaskModal" />
 
     <!-- Memory Modal -->
-    <Memory @memory-selected="memorySelected"/>
+    <Memory
+        @memory-selected="memorySelected"
+    />
 
     <!-- Message toast component -->
     <div v-if="message.show" class="message-toast" :class="message.type">
@@ -621,6 +626,11 @@ const handlePlanExecutionRequested = async (payload: {
 
 const memorySelected = () => {
   chatRef.value.showMemory()
+}
+
+const newChat = () => {
+  memoryStore.clearMemoryId()
+  chatRef.value.newChat()
 }
 </script>
 

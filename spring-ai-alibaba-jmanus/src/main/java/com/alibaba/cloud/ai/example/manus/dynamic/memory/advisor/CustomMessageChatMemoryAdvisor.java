@@ -45,8 +45,10 @@ public class CustomMessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private String userRequest;
 
+	private AdvisorType advisorType;
+
 	private CustomMessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order,
-			Scheduler scheduler, String userRequest) {
+			Scheduler scheduler, String userRequest, AdvisorType advisorType) {
 		Assert.notNull(chatMemory, "chatMemory cannot be null");
 		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
 		Assert.notNull(scheduler, "scheduler cannot be null");
@@ -55,6 +57,7 @@ public class CustomMessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		this.order = order;
 		this.scheduler = scheduler;
 		this.userRequest = userRequest;
+		this.advisorType = advisorType;
 	}
 
 	@Override
@@ -83,6 +86,10 @@ public class CustomMessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 			.prompt(chatClientRequest.prompt().mutate().messages(processedMessages).build())
 			.build();
 
+		if (this.advisorType == AdvisorType.AFTER) {
+			return processedChatClientRequest;
+		}
+
 		// 4. Add the new user message to the conversation memory.
 		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
 
@@ -104,6 +111,9 @@ public class CustomMessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	@Override
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+		if (this.advisorType == AdvisorType.BEFORE) {
+			return chatClientResponse;
+		}
 		List<Message> assistantMessages = new ArrayList<>();
 		if (chatClientResponse.chatResponse() != null) {
 			assistantMessages = chatClientResponse.chatResponse()
@@ -132,8 +142,9 @@ public class CustomMessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 					response -> this.after(response, streamAdvisorChain)));
 	}
 
-	public static CustomMessageChatMemoryAdvisor.Builder builder(ChatMemory chatMemory, String userRequest) {
-		return new CustomMessageChatMemoryAdvisor.Builder(chatMemory, userRequest);
+	public static CustomMessageChatMemoryAdvisor.Builder builder(ChatMemory chatMemory, String userRequest,
+			AdvisorType advisorType) {
+		return new CustomMessageChatMemoryAdvisor.Builder(chatMemory, userRequest, advisorType);
 	}
 
 	public static final class Builder {
@@ -148,9 +159,12 @@ public class CustomMessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		private String userRequest;
 
-		private Builder(ChatMemory chatMemory, String userRequest) {
+		private AdvisorType advisorType;
+
+		private Builder(ChatMemory chatMemory, String userRequest, AdvisorType advisorType) {
 			this.chatMemory = chatMemory;
 			this.userRequest = userRequest;
+			this.advisorType = advisorType;
 		}
 
 		/**
@@ -184,8 +198,14 @@ public class CustomMessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		 */
 		public CustomMessageChatMemoryAdvisor build() {
 			return new CustomMessageChatMemoryAdvisor(this.chatMemory, this.conversationId, this.order, this.scheduler,
-					this.userRequest);
+					this.userRequest, this.advisorType);
 		}
+
+	}
+
+	public enum AdvisorType {
+
+		BEFORE, AFTER, ALL
 
 	}
 

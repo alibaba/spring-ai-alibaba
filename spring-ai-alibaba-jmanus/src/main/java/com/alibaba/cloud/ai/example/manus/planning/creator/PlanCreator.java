@@ -109,11 +109,10 @@ public class PlanCreator {
 					if (useMemory) {
 						requestSpec
 							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
-						requestSpec.advisors(
-								CustomMessageChatMemoryAdvisor
-									.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()),
-											context.getUserRequest())
-									.build());
+						requestSpec.advisors(CustomMessageChatMemoryAdvisor
+							.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()),
+									context.getUserRequest(), CustomMessageChatMemoryAdvisor.AdvisorType.BEFORE)
+							.build());
 					}
 
 					// Use streaming response handler for plan creation
