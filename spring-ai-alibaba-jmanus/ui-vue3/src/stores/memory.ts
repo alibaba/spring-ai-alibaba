@@ -28,7 +28,7 @@ export class MemoryStore {
     // Basic state
     isCollapsed = false
     selectMemoryId = ''
-    loadMessages = new Function()
+    loadMessages = () => {}
     intervalId: number | undefined = undefined
 
     toggleSidebar() {
@@ -60,7 +60,7 @@ export class MemoryStore {
         return Math.random().toString(36).substring(2, 10);
     }
 
-    setLoadMessages(messages: Function) {
+    setLoadMessages(messages : () => void) {
         this.loadMessages = messages
     }
 }
