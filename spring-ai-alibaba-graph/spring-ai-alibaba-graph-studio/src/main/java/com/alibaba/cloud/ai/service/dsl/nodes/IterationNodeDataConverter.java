@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -71,8 +72,8 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 					.id(id)
 					.inputType(inputType)
 					.outputType(outputType)
-					.inputSelector(new VariableSelector("", inputSelector.get(0), inputSelector.get(1)))
-					.outputSelector(new VariableSelector("", outputSelector.get(0), outputSelector.get(1)))
+					.inputSelector(new VariableSelector(inputSelector.get(0), inputSelector.get(1), ""))
+					.outputSelector(new VariableSelector(outputSelector.get(0), outputSelector.get(1), ""))
 					.startNodeId(startNodeId)
 					.endNodeId(endNodeId)
 					.inputKey(id + "_input")
@@ -116,12 +117,20 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 	}
 
 	@Override
-	public void postProcess(IterationNodeData nodeData, String varName) {
-		nodeData.setOutputKey(varName + "_output");
-		nodeData.setInputKey(varName + "_input");
-		Variable output = new Variable(nodeData.getOutputKey(), nodeData.getOutputType());
-		nodeData.setOutputs(List.of(output));
-		nodeData.setOutput(output);
+	public void postProcessOutput(IterationNodeData nodeData, String varName) {
+		nodeData.setOutputKey(varName + "." + IterationNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
+		nodeData.setOutputs(List.of(IterationNodeData.DEFAULT_OUTPUT_SCHEMA));
+		nodeData.setOutput(IterationNodeData.DEFAULT_OUTPUT_SCHEMA);
+		super.postProcessOutput(nodeData, varName);
+	}
+
+	@Override
+	public BiConsumer<IterationNodeData, Map<String, String>> postProcessConsumer() {
+		return super.postProcessConsumer().andThen((iterationNodeData, varNames) -> {
+			// 等待所有的节点都生成了变量名后，补充迭代节点的起始名称
+			iterationNodeData.setStartNodeName(varNames.getOrDefault(iterationNodeData.getStartNodeId(), "unknown"));
+			iterationNodeData.setEndNodeName(varNames.getOrDefault(iterationNodeData.getEndNodeId(), "unknown"));
+		});
 	}
 
 	@Override

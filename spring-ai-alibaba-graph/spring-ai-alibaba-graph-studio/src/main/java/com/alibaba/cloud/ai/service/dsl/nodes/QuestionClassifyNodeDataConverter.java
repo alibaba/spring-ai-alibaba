@@ -196,15 +196,10 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 	}
 
 	@Override
-	public void postProcess(QuestionClassifierNodeData data, String varName) {
-		String origKey = data.getOutputKey();
-		String newKey = varName + "_output";
-
-		if (origKey == null) {
-			data.setOutputKey(newKey);
-		}
-		data.setOutputs(List.of(new com.alibaba.cloud.ai.model.Variable(data.getOutputKey(),
-				com.alibaba.cloud.ai.model.VariableType.STRING.value())));
+	public void postProcessOutput(QuestionClassifierNodeData data, String varName) {
+		data.setOutputKey(varName + "." + QuestionClassifierNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
+		data.setOutputs(List.of(QuestionClassifierNodeData.DEFAULT_OUTPUT_SCHEMA));
+		super.postProcessOutput(data, varName);
 	}
 
 	@Override

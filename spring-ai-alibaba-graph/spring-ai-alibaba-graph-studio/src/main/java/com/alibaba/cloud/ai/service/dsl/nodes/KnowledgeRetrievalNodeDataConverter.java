@@ -18,9 +18,7 @@ package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankOptions;
 import com.alibaba.cloud.ai.model.RerankModel;
-import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.KnowledgeRetrievalNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -231,14 +229,10 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 	}
 
 	@Override
-	public void postProcess(KnowledgeRetrievalNodeData data, String varName) {
-		String origKey = data.getOutputKey();
-		String newKey = varName + "_output";
-
-		if (origKey == null) {
-			data.setOutputKey(newKey);
-		}
-		data.setOutputs(List.of(new Variable(data.getOutputKey(), VariableType.ARRAY_OBJECT.value())));
+	public void postProcessOutput(KnowledgeRetrievalNodeData data, String varName) {
+		data.setOutputKey(varName + "." + KnowledgeRetrievalNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
+		data.setOutputs(List.of(KnowledgeRetrievalNodeData.DEFAULT_OUTPUT_SCHEMA));
+		super.postProcessOutput(data, varName);
 	}
 
 }

@@ -113,17 +113,19 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 	}
 
 	@Override
-	public void postProcess(StartNodeData data, String varName) {
-		String outputKey = varName + "_output";
-		data.setOutputKey(outputKey);
+	public void postProcessOutput(StartNodeData data, String varName) {
+		// todo: start节点的outputKey有实际使用吗
+		// String outputKey = varName + ".";
+		// data.setOutputKey(outputKey);
 
 		List<Variable> vars = new ArrayList<>(data.getStartInputs()
 			.stream()
 			.map(input -> new Variable(input.getVariable(), VariableType.STRING.value()))
 			.toList());
 
-		vars.add(new Variable(outputKey, VariableType.STRING.value()));
+		// vars.add(new Variable(outputKey, VariableType.STRING.value()));
 		data.setOutputs(vars);
+		super.postProcessOutput(data, varName);
 	}
 
 }

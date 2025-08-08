@@ -20,7 +20,6 @@ import com.alibaba.cloud.ai.graph.node.HttpNode.AuthConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.HttpRequestNodeBody;
 import com.alibaba.cloud.ai.graph.node.HttpNode.RetryConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.TimeoutConfig;
-import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
@@ -239,15 +238,10 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 	}
 
 	@Override
-	public void postProcess(HttpNodeData data, String varName) {
-		String origKey = data.getOutputKey();
-		String newKey = varName + "_output";
-
-		if (origKey == null) {
-			data.setOutputKey(newKey);
-		}
-		data.setOutputs(
-				List.of(new Variable(data.getOutputKey(), com.alibaba.cloud.ai.model.VariableType.STRING.value())));
+	public void postProcessOutput(HttpNodeData data, String varName) {
+		data.setOutputKey(varName + "." + HttpNodeData.DEFAULT_OUTPUT_SCHEMAS.get(0).getName());
+		data.setOutputs(HttpNodeData.DEFAULT_OUTPUT_SCHEMAS);
+		super.postProcessOutput(data, varName);
 	}
 
 }

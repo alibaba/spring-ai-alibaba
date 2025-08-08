@@ -18,9 +18,12 @@ package com.alibaba.cloud.ai.service.dsl;
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 /**
@@ -65,9 +68,33 @@ public interface NodeDataConverter<T extends NodeData> {
 	 * After parseMapData is complete and varName is injected, call: Used to override the
 	 * default outputKey based on varName and refresh the list of outputs
 	 * @param nodeData {@link NodeData}
-	 * @param varName
+	 * @param varName nodeVarName
 	 */
-	default void postProcess(T nodeData, String varName) {
+	default void postProcessOutput(T nodeData, String varName) {
+		// 将所有的输出变量的名称统一为"nodeVarName.varName"的格式
+		Optional.ofNullable(nodeData.getOutputs())
+			.ifPresentOrElse((outputs) -> nodeData.setOutputs(outputs.stream().peek(v -> {
+				String name = v.getName();
+				v.setName(varName.concat(".").concat(name));
+			}).toList()), () -> nodeData.setOutputs(List.of()));
+	}
+
+	/**
+	 * 生成用于处理inputKey和inputSelector的Consumer
+	 * @return 一个BiConsumer，接受参数：T nodeData和Map idToVarName
+	 */
+	default BiConsumer<T, Map<String, String>> postProcessConsumer() {
+		return (nodeData, idToVarName) -> {
+			// 将所有的输入变量的nodeId转化为nodeName
+			nodeData.setInputs(
+					Optional.ofNullable(nodeData.getInputs()).orElse(List.of()).stream().peek(variableSelector -> {
+						String nodeId = variableSelector.getNamespace();
+						String nodeName = idToVarName.get(nodeId);
+						if (StringUtils.hasText(nodeName)) {
+							variableSelector.setNamespace(nodeName);
+						}
+					}).toList());
+		};
 	}
 
 	/**

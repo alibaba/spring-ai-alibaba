@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+// todo: 与KnowledgeRetrievalNodeDataConverter的关系是什么
 @Component
 public class RetrieverNodeDataConverter extends AbstractNodeDataConverter<RetrieverNodeData> {
 

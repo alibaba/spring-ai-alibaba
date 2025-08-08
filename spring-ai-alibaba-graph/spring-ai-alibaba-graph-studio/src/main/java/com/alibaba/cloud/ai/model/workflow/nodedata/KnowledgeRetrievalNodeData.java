@@ -33,8 +33,7 @@ import java.util.List;
  */
 public class KnowledgeRetrievalNodeData extends NodeData {
 
-	public static final List<Variable> DEFAULT_OUTPUT_SCHEMA = List
-		.of(new Variable("retrieved_documents", VariableType.ARRAY_OBJECT.value()));
+	public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("result", VariableType.ARRAY_OBJECT.value());
 
 	private String userPromptKey;
 
@@ -83,7 +82,7 @@ public class KnowledgeRetrievalNodeData extends NodeData {
 	private String inputField;
 
 	public KnowledgeRetrievalNodeData() {
-		super(Collections.emptyList(), DEFAULT_OUTPUT_SCHEMA);
+		super(Collections.emptyList(), List.of(DEFAULT_OUTPUT_SCHEMA));
 	}
 
 	public KnowledgeRetrievalNodeData(List<VariableSelector> inputs, List<Variable> outputs) {

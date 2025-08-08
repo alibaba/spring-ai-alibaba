@@ -16,9 +16,7 @@
 
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
-import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -313,11 +311,12 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 	}
 
 	@Override
-	public void postProcess(LLMNodeData data, String varName) {
-		if (data.getOutputKey() == null) {
-			data.setOutputKey(varName + "_output");
-		}
-		data.setOutputs(List.of(new Variable(data.getOutputKey(), VariableType.STRING.value())));
+	public void postProcessOutput(LLMNodeData data, String varName) {
+		data.setOutputKey(varName + "." + LLMNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
+		data.setOutputs(List.of(LLMNodeData.DEFAULT_OUTPUT_SCHEMA));
+		super.postProcessOutput(data, varName);
+
+		// todo: 思考一下这里模板替换正确吗，可以处理来自别的节点的变量吗
 		UnaryOperator<String> fixRefs = txt -> txt.replaceAll("#(\\d+)\\.", "#" + varName + ".");
 		if (data.getPromptTemplate() != null) {
 			data.getPromptTemplate().forEach(pt -> pt.setText(fixRefs.apply(pt.getText())));

@@ -85,11 +85,6 @@ public class EmptyNodeDataConverter extends AbstractNodeDataConverter<EmptyNodeD
 	}
 
 	@Override
-	public void postProcess(EmptyNodeData nodeData, String varName) {
-		super.postProcess(nodeData, varName);
-	}
-
-	@Override
 	public Stream<Variable> extractWorkflowVars(EmptyNodeData nodeData) {
 		return super.extractWorkflowVars(nodeData);
 	}

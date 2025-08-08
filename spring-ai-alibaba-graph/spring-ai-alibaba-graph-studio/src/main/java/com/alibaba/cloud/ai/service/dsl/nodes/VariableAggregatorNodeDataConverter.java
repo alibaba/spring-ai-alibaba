@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
+import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -154,14 +155,11 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
 	}
 
 	@Override
-	public void postProcess(VariableAggregatorNodeData data, String varName) {
-		String origKey = data.getOutputKey();
-		String newKey = varName + "_output";
-
-		if (origKey == null) {
-			data.setOutputKey(newKey);
-		}
-		data.setOutputs(List.of(new Variable(data.getOutputKey(), data.getOutputType())));
+	public void postProcessOutput(VariableAggregatorNodeData data, String varName) {
+		// todo: 支持分组聚合的输出
+		Variable output = new Variable("output", VariableType.STRING.value());
+		data.setOutputs(List.of(output));
+		data.setOutputKey(varName + ".output");
 	}
 
 }

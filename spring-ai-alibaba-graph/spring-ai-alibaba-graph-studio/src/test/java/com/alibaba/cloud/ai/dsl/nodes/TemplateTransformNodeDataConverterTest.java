@@ -57,11 +57,11 @@ public class TemplateTransformNodeDataConverterTest {
 	}
 
 	@Test
-	public void testPostProcess() {
+	public void testPostProcessOutput() {
 		TemplateTransformNodeData nodeData = new TemplateTransformNodeData();
 		String varName = "testNode";
 
-		converter.postProcess(nodeData, varName);
+		converter.postProcessOutput(nodeData, varName);
 
 		assertEquals("testNode_output", nodeData.getOutputKey());
 		assertEquals(1, nodeData.getOutputs().size());
@@ -70,12 +70,12 @@ public class TemplateTransformNodeDataConverterTest {
 	}
 
 	@Test
-	public void testPostProcessWithExistingOutputKey() {
+	public void testPostProcessOutputWithExistingOutputKey() {
 		TemplateTransformNodeData nodeData = new TemplateTransformNodeData();
 		nodeData.setOutputKey("existing_output");
 		String varName = "testNode";
 
-		converter.postProcess(nodeData, varName);
+		converter.postProcessOutput(nodeData, varName);
 
 		// 如果已有outputKey，不应该改变
 		assertEquals("existing_output", nodeData.getOutputKey());

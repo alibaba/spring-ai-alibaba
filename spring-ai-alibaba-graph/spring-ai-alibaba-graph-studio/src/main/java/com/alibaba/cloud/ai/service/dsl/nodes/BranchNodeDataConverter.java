@@ -133,14 +133,15 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 	}
 
 	@Override
-	public void postProcess(BranchNodeData data, String varName) {
-		if (data.getOutputKey() == null) {
-			data.setOutputKey(varName + "_output");
-		}
-
-		List<Variable> outs = new ArrayList<>();
-		outs.add(new Variable(data.getOutputKey(), VariableType.STRING.value()));
-		data.setOutputs(outs);
+	public void postProcessOutput(BranchNodeData data, String varName) {
+		// todo: branchNode的outputKey有实际使用吗
+		// if (data.getOutputKey() == null) {
+		// data.setOutputKey(varName + "_output");
+		// }
+		//
+		// List<Variable> outs = new ArrayList<>();
+		// outs.add(new Variable(data.getOutputKey(), VariableType.STRING.value()));
+		// data.setOutputs(outs);
 	}
 
 	@Override

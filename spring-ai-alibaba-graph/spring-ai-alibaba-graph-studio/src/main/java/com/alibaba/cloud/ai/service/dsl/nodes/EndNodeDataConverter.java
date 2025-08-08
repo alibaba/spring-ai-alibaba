@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+// todo: 新增Dify结束节点，用于输出所有选中的变量
 @Component
 public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData> {
 
@@ -95,11 +96,11 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 	}
 
 	@Override
-	public void postProcess(EndNodeData data, String varName) {
-		String outputKey = varName + "_output";
+	public void postProcessOutput(EndNodeData data, String varName) {
+		String outputKey = varName + "." + EndNodeData.DEFAULT_OUTPUT_SCHEMA.getName();
 		data.setOutputKey(outputKey);
-
-		data.setOutputs(List.of(new Variable(outputKey, VariableType.STRING.value())));
+		data.setOutputs(List.of(EndNodeData.DEFAULT_OUTPUT_SCHEMA));
+		super.postProcessOutput(data, varName);
 	}
 
 }

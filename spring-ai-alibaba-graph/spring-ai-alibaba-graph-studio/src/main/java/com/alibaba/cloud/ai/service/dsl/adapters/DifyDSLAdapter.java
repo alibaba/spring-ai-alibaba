@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
-import com.alibaba.cloud.ai.model.workflow.nodedata.CodeNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.EmptyNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.IterationNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
@@ -33,7 +32,6 @@ import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
 import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.AbstractDSLAdapter;
-import com.alibaba.cloud.ai.model.VariableSelector;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -143,22 +142,6 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
 		Graph graph = constructGraph((Map<String, Object>) workflowData.get("graph"));
 
-		// del codeNode
-		Map<String, String> idToVarName = graph.getNodes()
-			.stream()
-			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
-
-		for (Node node : graph.getNodes()) {
-			if (NodeType.CODE.value().equals(node.getType())) {
-				CodeNodeData cd = (CodeNodeData) node.getData();
-				for (VariableSelector sel : cd.getInputs()) {
-					String upstreamId = sel.getNamespace();
-					String upstreamVar = idToVarName.get(upstreamId);
-					// 可能来自一个节点的多个变量
-					sel.setName(upstreamVar + "." + sel.getName());
-				}
-			}
-		}
 		workflow.setGraph(graph);
 		// register overAllState output key
 		List<Variable> extraVars = graph.getNodes().stream().flatMap(node -> {
@@ -205,6 +188,8 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		Map<NodeType, Integer> counters = new HashMap<>();
 		List<Node> nodes = new ArrayList<>();
 
+		Map<Class<? extends NodeData>, BiConsumer<? super NodeData, Map<String, String>>> postProcessConsumers = new HashMap<>();
+
 		for (Map<String, Object> nodeMap : nodeMaps) {
 			@SuppressWarnings("unchecked")
 			Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
@@ -239,24 +224,27 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			data.setVarName(varName);
 
 			// Post-processing: Overwrite the default outputKey and refresh the outputs
-			converter.postProcess(data, varName);
+			converter.postProcessOutput(data, varName);
+
+			// 获得处理输入变量名称的Consumer，当所有节点都处理完时使用
+			postProcessConsumers.put(data.getClass(), converter.postProcessConsumer());
 
 			node.setData(data);
 			node.setType(nodeType.value());
 			nodes.add(node);
 		}
 
-		// 等待所有的节点都生成了变量名后，补充迭代节点的起始名称
 		Map<String, String> varNames = nodes.stream()
 			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
-		for (Node node : nodes) {
-			if (node.getData() instanceof IterationNodeData iterationNodeData) {
-				iterationNodeData
-					.setStartNodeName(varNames.getOrDefault(iterationNodeData.getStartNodeId(), "unknown"));
-				iterationNodeData.setEndNodeName(varNames.getOrDefault(iterationNodeData.getEndNodeId(), "unknown"));
-			}
-		}
 
+		// 执行每一个节点的postProcess
+		nodes.forEach(node -> {
+			Class<? extends NodeData> clazz = node.getData().getClass();
+			BiConsumer<? super NodeData, Map<String, String>> consumer = postProcessConsumers.get(clazz);
+			consumer.accept(node.getData(), varNames);
+		});
+
+		// todo: 完善一下
 		Map<String, String> idToOutputKey = nodes.stream()
 			.filter(n -> !(n.getData() instanceof EmptyNodeData))
 			.collect(Collectors.toMap(Node::getId, n -> {
