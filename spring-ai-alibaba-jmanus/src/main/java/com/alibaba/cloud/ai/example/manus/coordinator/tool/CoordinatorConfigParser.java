@@ -19,6 +19,8 @@ import com.alibaba.cloud.ai.example.manus.coordinator.vo.CoordinatorParameterVO;
 
 /**
  * CoordinatorConfig Parser
+ * 
+ * Optimized JSON parser for coordinator configuration with improved performance and maintainability
  */
 @Component
 public class CoordinatorConfigParser {
@@ -28,24 +30,48 @@ public class CoordinatorConfigParser {
 	// Pre-compiled regex pattern for better performance
 	private static final Pattern PARAMETER_PATTERN = Pattern.compile("\\{([^}]+)\\}");
 
-	// Default JSON Schema template
-	private static final String DEFAULT_SCHEMA = """
+	// JSON Schema templates for better performance
+	private static final String SCHEMA_HEADER = """
 			{
 				"$schema": "http://json-schema.org/draft-07/schema#",
 				"type": "object",
-				"properties": {},
+				"properties": {
+			""";
+	
+	private static final String SCHEMA_FOOTER = """
+				},
 				"required": []
 			}
 			""";
+	
+	private static final String PROPERTY_TEMPLATE = """
+				"%s": {
+					"type": "%s",
+					"description": "%s"
+				}""";
+	
+	private static final String REQUIRED_ARRAY_TEMPLATE = """
+				"required": [
+					%s
+				]""";
+
+	// Default JSON Schema for empty or invalid input
+	private static final String DEFAULT_SCHEMA = SCHEMA_HEADER + SCHEMA_FOOTER;
 
 	private final ObjectMapper objectMapper;
+	private final JsonSchemaBuilder schemaBuilder;
 
 	public CoordinatorConfigParser() {
 		this.objectMapper = new ObjectMapper();
+		this.schemaBuilder = new JsonSchemaBuilder();
 	}
 
 	/**
 	 * Convert Plan JSON string to CoordinatorConfigVO
+	 * 
+	 * @param planJson JSON string containing plan configuration
+	 * @return CoordinatorConfigVO object
+	 * @throws IllegalArgumentException if JSON is invalid or missing required fields
 	 */
 	public CoordinatorConfigVO parser(String planJson) {
 		logger.info("Starting to convert Plan JSON: {}", planJson != null ? "not null" : "null");
@@ -55,20 +81,14 @@ public class CoordinatorConfigParser {
 		}
 
 		try {
-			// Parse JSON
-			JsonNode rootNode = objectMapper.readTree(planJson);
+			// Parse JSON using optimized method
+			JsonNode rootNode = JsonUtils.parseJson(objectMapper, planJson, "Plan JSON");
 
 			// Validate required fields
 			validatePlanJson(rootNode);
 
-			CoordinatorConfigVO config = new CoordinatorConfigVO();
-			config.setId(getStringValue(rootNode, "planId"));
-			config.setName(getStringValue(rootNode, "title"));
-			config.setDescription(getStringValue(rootNode, "userRequest"));
-			config.setEndpoint(getStringValue(rootNode, "endpoint"));
-
-			// Parse steps
-			config.setParameters(parseStepsToParameters(rootNode));
+			// Build configuration object
+			CoordinatorConfigVO config = buildConfigFromJson(rootNode);
 
 			logger.info("Conversion completed, generated config: {}", config);
 			return config;
@@ -97,9 +117,25 @@ public class CoordinatorConfigParser {
 		}
 
 		// Check required fields
-		if (getStringValue(rootNode, "planId") == null) {
+		if (JsonUtils.getStringValue(rootNode, "planId") == null) {
 			throw new IllegalArgumentException("Plan JSON missing required field: planId");
 		}
+	}
+
+	/**
+	 * Build configuration object from JSON node
+	 */
+	private CoordinatorConfigVO buildConfigFromJson(JsonNode rootNode) {
+		CoordinatorConfigVO config = new CoordinatorConfigVO();
+		config.setId(JsonUtils.getStringValue(rootNode, "planId"));
+		config.setName(JsonUtils.getStringValue(rootNode, "title"));
+		config.setDescription(JsonUtils.getStringValue(rootNode, "userRequest"));
+		config.setEndpoint(JsonUtils.getStringValue(rootNode, "endpoint"));
+
+		// Parse steps to parameters
+		config.setParameters(parseStepsToParameters(rootNode));
+
+		return config;
 	}
 
 	/**
@@ -130,7 +166,7 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * Parse parameter list
+	 * Parse parameter list from steps
 	 */
 	public List<CoordinatorParameterVO> parseParameters(List<String> steps) {
 		if (steps == null || steps.isEmpty()) {
@@ -150,7 +186,7 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * Extract parameter names from steps
+	 * Extract parameter names from steps using optimized regex
 	 */
 	private Set<String> extractParameterNames(List<String> steps) {
 		Set<String> parameterNames = new HashSet<>();
@@ -171,7 +207,7 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * Create parameter object
+	 * Create parameter object with default values
 	 */
 	private CoordinatorParameterVO createParameter(String paramName) {
 		CoordinatorParameterVO parameter = new CoordinatorParameterVO();
@@ -185,15 +221,8 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * Safely get string value
-	 */
-	private static String getStringValue(JsonNode node, String fieldName) {
-		JsonNode fieldNode = node.get(fieldName);
-		return fieldNode != null && fieldNode.isTextual() ? fieldNode.asText() : null;
-	}
-
-	/**
-	 * Convert JSON string to tool Schema
+	 * Convert JSON string to tool Schema using optimized builder pattern
+	 * 
 	 * @param json JSON string, format like: [{"name":"name","description":"Parameter: name","type":"string"}]
 	 * @return Converted JSON Schema string
 	 */
@@ -204,15 +233,16 @@ public class CoordinatorConfigParser {
 		}
 
 		try {
-			// Parse JSON array
-			JsonNode parametersArray = objectMapper.readTree(json);
+			// Parse JSON array using optimized method
+			JsonNode parametersArray = JsonUtils.parseJson(objectMapper, json, "Tool Schema JSON");
 
 			if (!parametersArray.isArray()) {
 				logger.warn("JSON is not in array format, returning default Schema");
 				return DEFAULT_SCHEMA;
 			}
 
-			return buildJsonSchema(parametersArray);
+			// Use builder pattern for better performance and maintainability
+			return schemaBuilder.buildSchema(parametersArray);
 
 		}
 		catch (Exception e) {
@@ -222,113 +252,146 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * Build JSON Schema
+	 * JSON Schema Builder for optimized schema generation
 	 */
-	private String buildJsonSchema(JsonNode parametersArray) {
-		StringBuilder schema = new StringBuilder();
-		List<String> requiredParams = new ArrayList<>();
+	private static class JsonSchemaBuilder {
+		
+		/**
+		 * Build JSON Schema from parameters array
+		 */
+		public String buildSchema(JsonNode parametersArray) {
+			StringBuilder schema = new StringBuilder();
+			List<String> requiredParams = new ArrayList<>();
 
-		// Build properties section
-		schema.append("{\n");
-		schema.append("    \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n");
-		schema.append("    \"type\": \"object\",\n");
-		schema.append("    \"properties\": {\n");
+			// Build properties section
+			schema.append(SCHEMA_HEADER);
 
-		for (int i = 0; i < parametersArray.size(); i++) {
-			JsonNode paramNode = parametersArray.get(i);
+			for (int i = 0; i < parametersArray.size(); i++) {
+				JsonNode paramNode = parametersArray.get(i);
 
-			if (paramNode.isObject()) {
-				String name = getStringValue(paramNode, "name");
-				String description = getStringValue(paramNode, "description");
-				String type = getStringValue(paramNode, "type");
+				if (paramNode.isObject()) {
+					String name = JsonUtils.getStringValue(paramNode, "name");
+					String description = JsonUtils.getStringValue(paramNode, "description");
+					String type = JsonUtils.getStringValue(paramNode, "type");
 
-				if (name != null && !name.trim().isEmpty()) {
-					appendProperty(schema, name, description, type, i < parametersArray.size() - 1);
-					requiredParams.add(name);
+					if (name != null && !name.trim().isEmpty()) {
+						appendProperty(schema, name, description, type, i < parametersArray.size() - 1);
+						requiredParams.add(name);
+					}
 				}
+			}
+
+			schema.append("				},\n");
+
+			// Add required field using optimized template
+			appendRequiredField(schema, requiredParams);
+
+			schema.append("			}\n");
+			schema.append("		}");
+
+			logger.info("Successfully generated tool Schema, parameter count: {}", requiredParams.size());
+			return schema.toString();
+		}
+
+		/**
+		 * Add property to schema using template
+		 */
+		private void appendProperty(StringBuilder schema, String name, String description, String type, boolean hasNext) {
+			String escapedName = JsonUtils.escapeJsonString(name);
+			String escapedDescription = JsonUtils.escapeJsonString(description);
+			String convertedType = JsonUtils.convertType(type);
+			
+			schema.append(String.format(PROPERTY_TEMPLATE, escapedName, convertedType, escapedDescription));
+
+			if (hasNext) {
+				schema.append(",");
+			}
+			schema.append("\n");
+		}
+
+		/**
+		 * Add required field using optimized template
+		 */
+		private void appendRequiredField(StringBuilder schema, List<String> requiredParams) {
+			if (!requiredParams.isEmpty()) {
+				String requiredString = requiredParams.stream()
+					.map(param -> "\"" + JsonUtils.escapeJsonString(param) + "\"")
+					.reduce((a, b) -> a + ",\n					" + b)
+					.orElse("");
+				
+				schema.append(String.format(REQUIRED_ARRAY_TEMPLATE, requiredString));
+			}
+			else {
+				schema.append("				\"required\": []");
+			}
+		}
+	}
+
+	/**
+	 * Utility class for JSON operations
+	 */
+	private static class JsonUtils {
+		
+		/**
+		 * Parse JSON with unified error handling
+		 */
+		public static JsonNode parseJson(ObjectMapper mapper, String json, String context) {
+			try {
+				return mapper.readTree(json);
+			} catch (Exception e) {
+				logger.error("Failed to parse JSON for {}: {}", context, e.getMessage());
+				throw new IllegalArgumentException("Invalid JSON format for " + context, e);
 			}
 		}
 
-		schema.append("    },\n");
-
-		// Add required field
-		appendRequiredField(schema, requiredParams);
-
-		schema.append("}");
-
-		logger.info("Successfully generated tool Schema, parameter count: {}", requiredParams.size());
-		return schema.toString();
-	}
-
-	/**
-	 * Add property to Schema
-	 */
-	private void appendProperty(StringBuilder schema, String name, String description, String type, boolean hasNext) {
-		schema.append("        \"").append(escapeJsonString(name)).append("\": {\n");
-		schema.append("            \"type\": \"").append(convertType(type)).append("\",\n");
-		schema.append("            \"description\": \"").append(escapeJsonString(description)).append("\"\n");
-		schema.append("        }");
-
-		if (hasNext) {
-			schema.append(",");
+		/**
+		 * Safely get string value from JSON node
+		 */
+		public static String getStringValue(JsonNode node, String fieldName) {
+			JsonNode fieldNode = node.get(fieldName);
+			return fieldNode != null && fieldNode.isTextual() ? fieldNode.asText() : null;
 		}
-		schema.append("\n");
-	}
 
-	/**
-	 * Add required field
-	 */
-	private void appendRequiredField(StringBuilder schema, List<String> requiredParams) {
-		if (!requiredParams.isEmpty()) {
-			schema.append("    \"required\": [\n");
-			for (int i = 0; i < requiredParams.size(); i++) {
-				schema.append("        \"").append(escapeJsonString(requiredParams.get(i))).append("\"");
-				if (i < requiredParams.size() - 1) {
-					schema.append(",");
-				}
-				schema.append("\n");
+		/**
+		 * Convert parameter type to JSON Schema type
+		 */
+		public static String convertType(String type) {
+			if (type == null || type.trim().isEmpty()) {
+				return "string";
 			}
-			schema.append("    ]\n");
+
+			String lowerType = type.toLowerCase().trim();
+			return switch (lowerType) {
+				case "int", "integer", "number" -> "number";
+				case "boolean", "bool" -> "boolean";
+				case "array", "list" -> "array";
+				case "object", "map" -> "object";
+				default -> "string";
+			};
 		}
-		else {
-			schema.append("    \"required\": []\n");
+
+		/**
+		 * Escape JSON string with optimized performance
+		 */
+		public static String escapeJsonString(String input) {
+			if (input == null) {
+				return "";
+			}
+			
+			// Use StringBuilder for better performance with large strings
+			StringBuilder result = new StringBuilder(input.length() * 2);
+			for (int i = 0; i < input.length(); i++) {
+				char c = input.charAt(i);
+				switch (c) {
+					case '\\' -> result.append("\\\\");
+					case '"' -> result.append("\\\"");
+					case '\n' -> result.append("\\n");
+					case '\r' -> result.append("\\r");
+					case '\t' -> result.append("\\t");
+					default -> result.append(c);
+				}
+			}
+			return result.toString();
 		}
 	}
-
-	/**
-	 * Convert parameter type to JSON Schema type
-	 * @param type Original type
-	 * @return JSON Schema type
-	 */
-	private static String convertType(String type) {
-		if (type == null || type.trim().isEmpty()) {
-			return "string";
-		}
-
-		String lowerType = type.toLowerCase().trim();
-		return switch (lowerType) {
-			case "int", "integer", "number" -> "number";
-			case "boolean", "bool" -> "boolean";
-			case "array", "list" -> "array";
-			case "object", "map" -> "object";
-			default -> "string";
-		};
-	}
-
-	/**
-	 * Escape JSON string
-	 * @param input Input string
-	 * @return Escaped string
-	 */
-	private static String escapeJsonString(String input) {
-		if (input == null) {
-			return "";
-		}
-		return input.replace("\\", "\\\\")
-			.replace("\"", "\\\"")
-			.replace("\n", "\\n")
-			.replace("\r", "\\r")
-			.replace("\t", "\\t");
-	}
-
 }
