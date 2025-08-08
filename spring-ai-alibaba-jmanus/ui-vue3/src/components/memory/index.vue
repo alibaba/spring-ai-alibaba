@@ -211,7 +211,8 @@ import {onMounted, ref} from 'vue';
 import {MemoryApiService} from '@/api/memory-api-service'
 import type { Message} from '@/api/memory-api-service'
 import {Icon} from '@iconify/vue'
-import {memoryStore,MemoryEmits} from "@/stores/memory";
+import {memoryStore} from "@/stores/memory";
+import type {MemoryEmits} from "@/stores/memory";
 
 const showTitleEdit = ref(false);
 const searchQuery = ref('');

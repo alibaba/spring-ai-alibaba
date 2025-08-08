@@ -49,7 +49,8 @@
 import { ref, nextTick, onMounted, onUnmounted, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import {memoryStore} from "@/stores/memory"
+import { memoryStore } from "@/stores/memory"
+import type { InputMessage } from "@/stores/memory"
 
 const { t } = useI18n()
 
@@ -64,11 +65,6 @@ interface Emits {
   (e: 'clear'): void
   (e: 'update-state', enabled: boolean, placeholder?: string): void
   (e: 'plan-mode-clicked'): void
-}
-
-export interface InputMessage {
-  input: string
-  memoryId?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {

@@ -15,7 +15,7 @@
  */
 
 import { LlmCheckService } from '@/utils/llm-check'
-import type {InputMessage} from "@/components/input/index.vue";
+import type { InputMessage } from "@/stores/memory"
 
 export class DirectApiService {
   private static readonly BASE_URL = '/api/executor'

@@ -386,7 +386,7 @@ import { DirectApiService } from '@/api/direct-api-service'
 import { usePlanExecution } from '@/utils/use-plan-execution'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
-import type {InputMessage} from "@/components/input/index.vue";
+import type { InputMessage } from "@/stores/memory"
 import {memoryStore} from "@/stores/memory";
 import {MemoryApiService} from "@/api/memory-api-service";
 
@@ -522,7 +522,7 @@ const handleDirectMode = async (query: InputMessage) => {
       delete assistantMessage.thinking
 
       // Generate a natural and human-like response
-      const finalResponse = generateDirectModeResponse(response, query)
+      const finalResponse = generateDirectModeResponse(response, query.input)
       assistantMessage.content = finalResponse
     }
   } catch (error: any) {
@@ -619,7 +619,7 @@ const handleSendMessage = (message: InputMessage) => {
   if (props.mode === 'plan') {
     // In plan mode, only add UI message, parent component handles the API call
     // This prevents double API calls
-    console.log('[ChatComponent] Plan mode message sent, parent should handle:', message)
+    console.log('[ChatComponent] Plan mode message sent, parent should handle:', message.input)
     // Don't call any API here, just add to UI
   } else {
     // Direct mode is still handled directly
@@ -1306,7 +1306,9 @@ watch(
     if (newPrompt && typeof newPrompt === 'string' && newPrompt.trim() && newPrompt !== oldPrompt) {
       console.log('[ChatComponent] Processing changed initial prompt:', newPrompt)
       nextTick(() => {
-        handleSendMessage(newPrompt)
+        handleSendMessage({
+          input: newPrompt
+        })
       })
     }
   },
@@ -1336,7 +1338,9 @@ onMounted(() => {
   if (props.initialPrompt && typeof props.initialPrompt === 'string' && props.initialPrompt.trim()) {
     console.log('[ChatComponent] Processing initial prompt:', props.initialPrompt)
     nextTick(() => {
-      handleSendMessage(props.initialPrompt!)
+      handleSendMessage({
+        input: props.initialPrompt!
+      })
     })
   }
 })

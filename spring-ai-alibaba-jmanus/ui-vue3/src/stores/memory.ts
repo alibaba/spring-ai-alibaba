@@ -19,18 +19,23 @@ export interface MemoryEmits {
     (e: 'memory-selected'): void
 }
 
+export interface InputMessage {
+    input: string
+    memoryId?: string
+}
+
 export class MemoryStore {
     // Basic state
     isCollapsed = false
     selectMemoryId = ''
     loadMessages = new Function()
-    intervalId = 0
+    intervalId: number | undefined = undefined
 
     toggleSidebar() {
         this.isCollapsed = !this.isCollapsed
         if (this.isCollapsed) {
             this.loadMessages();
-            this.intervalId = setInterval(() => {
+            this.intervalId = window.setInterval(() => {
                 this.loadMessages();
             }, 3000);
         } else {

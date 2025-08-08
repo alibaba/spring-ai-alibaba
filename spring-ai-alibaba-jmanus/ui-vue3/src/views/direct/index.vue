@@ -110,7 +110,7 @@ import Sidebar from '@/components/sidebar/index.vue'
 import Memory from '@/components/memory/index.vue'
 import RightPanel from '@/components/right-panel/index.vue'
 import ChatContainer from '@/components/chat/index.vue'
-import InputArea, {InputMessage} from '@/components/input/index.vue'
+import InputArea from '@/components/input/index.vue'
 import LanguageSwitcher from '@/components/language-switcher/index.vue'
 import CronTaskModal from '@/components/cron-task-modal/index.vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
@@ -118,7 +118,8 @@ import { useTaskStore } from '@/stores/task'
 import { sidebarStore } from '@/stores/sidebar'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import { useMessage } from '@/composables/useMessage'
-import {MemoryEmits, memoryStore} from "@/stores/memory";
+import { memoryStore } from "@/stores/memory";
+import type { InputMessage } from "@/stores/memory";
 
 const route = useRoute()
 const router = useRouter()

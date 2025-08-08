@@ -44,7 +44,7 @@ export class MemoryApiService {
         return response
     }
 
-    static async getMemories(): Promise<Message> {
+    static async getMemories(): Promise<Message[]> {
         try {
             const response = await fetch(`${this.BASE_URL}`)
             const result = await this.handleResponse(response)
