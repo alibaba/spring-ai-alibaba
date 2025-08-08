@@ -30,6 +30,8 @@ public class ChatSession {
 
 	private String status; // active, archived, deleted
 
+	private Boolean isPinned; // 是否置顶
+
 	private Long userId;
 
 	private LocalDateTime createTime;
@@ -44,6 +46,7 @@ public class ChatSession {
 		this.agentId = agentId;
 		this.title = title;
 		this.status = status;
+		this.isPinned = false;
 		this.userId = userId;
 		this.createTime = LocalDateTime.now();
 		this.updateTime = LocalDateTime.now();
@@ -82,6 +85,14 @@ public class ChatSession {
 		this.status = status;
 	}
 
+	public Boolean getIsPinned() {
+		return isPinned;
+	}
+
+	public void setIsPinned(Boolean isPinned) {
+		this.isPinned = isPinned;
+	}
+
 	public Long getUserId() {
 		return userId;
 	}
@@ -109,8 +120,8 @@ public class ChatSession {
 	@Override
 	public String toString() {
 		return "ChatSession{" + "id='" + id + '\'' + ", agentId=" + agentId + ", title='" + title + '\'' + ", status='"
-				+ status + '\'' + ", userId=" + userId + ", createTime=" + createTime + ", updateTime=" + updateTime
-				+ '}';
+				+ status + '\'' + ", isPinned=" + isPinned + ", userId=" + userId + ", createTime=" + createTime
+				+ ", updateTime=" + updateTime + '}';
 	}
 
 }
