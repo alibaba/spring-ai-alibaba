@@ -269,6 +269,10 @@ export default {
     }
   },
   setup(props) {
+    // 调试模式下的 Agent ID 偏移量
+    const DEBUG_AGENT_ID_OFFSET = 999999
+    const debugAgentId = props.agentId + DEBUG_AGENT_ID_OFFSET
+
     // 响应式数据
     const debugQuery = ref('查询用户总数')
     const isDebugging = ref(false)
@@ -341,7 +345,7 @@ export default {
       streamingSections.value = []
 
       try {
-        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(debugQuery.value)}&agentId=${props.agentId}`)
+        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(debugQuery.value)}&agentId=${debugAgentId}`)
         currentEventSource = eventSource
 
         // 使用与 AgentWorkspace.vue 完全相同的流式数据处理逻辑
@@ -359,6 +363,8 @@ export default {
           'schema_deep_recall': { title: 'Schema深度召回', icon: 'bi bi-database-fill-gear' },
           'sql': { title: '生成的SQL', icon: 'bi bi-code-square' },
           'execute_sql': { title: '执行SQL', icon: 'bi bi-play-circle' },
+          'python_execute': { title: 'Python执行', icon: 'bi bi-play-circle-fill' },
+          'python_generate': { title: 'Python代码生成', icon: 'bi bi-code-square-fill' },
           'python_analysis': { title: 'Python分析执行', icon: 'bi bi-code-slash' },
           'validation': { title: '校验', icon: 'bi bi-check-circle' },
           'output_report': { title: '输出报告', icon: 'bi bi-file-earmark-text' },
@@ -816,7 +822,7 @@ export default {
       if (!schemaInitForm.selectedDatasource) return
 
       try {
-        const response = await fetch(`/api/agent/${props.agentId}/schema/datasources/${schemaInitForm.selectedDatasource.id}/tables`)
+        const response = await fetch(`/api/agent/${debugAgentId}/schema/datasources/${schemaInitForm.selectedDatasource.id}/tables`)
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -850,7 +856,7 @@ export default {
       try {
         schemaInitializing.value = true
 
-        const response = await fetch(`/api/agent/${props.agentId}/schema/init`, {
+        const response = await fetch(`/api/agent/${debugAgentId}/schema/init`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -885,7 +891,7 @@ export default {
 
     const getSchemaStatistics = async () => {
       try {
-        const response = await fetch(`/api/agent/${props.agentId}/schema/statistics`)
+        const response = await fetch(`/api/agent/${debugAgentId}/schema/statistics`)
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -912,7 +918,7 @@ export default {
       if (!confirm('确定要清空所有Schema数据吗？此操作不可恢复。')) return
 
       try {
-        const response = await fetch(`/api/agent/${props.agentId}/schema/clear`, {
+        const response = await fetch(`/api/agent/${debugAgentId}/schema/clear`, {
           method: 'DELETE'
         })
 

@@ -78,6 +78,7 @@ public class PlanFinalizer {
 			context.setResultSummary(summary);
 			recordPlanCompletion(context, summary);
 			return;
+
 		}
 		PlanInterface plan = context.getPlan();
 		String executionDetail = plan.getPlanExecutionStateStringFormat(false);

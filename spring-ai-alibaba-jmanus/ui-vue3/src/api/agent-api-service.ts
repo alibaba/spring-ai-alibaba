@@ -25,7 +25,7 @@ export interface Agent {
   nextStepPrompt?: string,
   model?: Model | null
   namespace?: string
-  isBuiltIn?: boolean
+  builtIn?: boolean
 }
 
 export interface Tool {

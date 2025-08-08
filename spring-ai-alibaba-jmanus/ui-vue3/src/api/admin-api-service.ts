@@ -137,5 +137,30 @@ export class AdminApiService {
     }
   }
 
+  /**
+   * Reset all configurations to default values
+   */
+  public static async resetAllConfigsToDefaults(): Promise<ApiResponse> {
+    try {
+      const response = await fetch(`${this.BASE_URL}/reset-all-defaults`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to reset configurations to defaults: ${response.status}`)
+      }
+
+      return { success: true, message: 'All configurations reset to defaults successfully' }
+    } catch (error) {
+      console.error('Failed to reset configurations to defaults:', error)
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Reset failed, please try again' 
+      }
+    }
+  }
 
 }

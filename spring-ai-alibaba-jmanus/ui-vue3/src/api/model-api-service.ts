@@ -26,6 +26,7 @@ export interface Model {
     isDefault?: boolean
     temperature?: number
     topP?: number
+    completionsPath?: string
 }
 
 export interface Headers {

@@ -131,18 +131,14 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 				        },
 				        "cronTime": {
 				            "type": "string",
-				            "description": "Cron expression for scheduling (e.g., '0 0 8 * * ?' for daily at 8 AM)"
+				            "description": "Cron expression for scheduling (e.g., '0 0 8 * * ?' for daily at 8 AM，need 6 parameters)"
 				        },
-				        "planTemplateId": {
-				            "type": "string",
-				            "description": "ID of the plan template to execute"
-				        },
-				        "description": {
+				        "planDesc": {
 				            "type": "string",
 				            "description": "Description of what this cron task does"
 				        }
 				    },
-				    "required": ["cronName", "cronTime", "planTemplateId"]
+				    "required": ["cronName", "cronTime", "planDesc"]
 				}
 				""";
 	}

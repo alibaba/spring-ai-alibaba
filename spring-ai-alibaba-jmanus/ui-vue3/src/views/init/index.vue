@@ -236,6 +236,18 @@
                 :disabled="loading"
               />
             </div>
+
+            <div class="form-group">
+              <label for="completionsPath" class="form-label">{{ $t('init.completionsPath') }}</label>
+              <input
+                  id="modelDisplayName"
+                  v-model="form.completionsPath"
+                  type="text"
+                  class="form-input"
+                  :placeholder="$t('init.completionsPathPlaceholder')"
+                  :disabled="loading"
+              />
+            </div>
           </div>
 
           <div class="form-actions">
@@ -309,7 +321,8 @@ const form = ref({
   apiKey: '',
   baseUrl: '',
   modelName: '',
-  modelDisplayName: ''
+  modelDisplayName: '',
+  completionsPath: ''
 })
 
 const loading = ref(false)
@@ -364,6 +377,7 @@ const onConfigModeChange = () => {
   form.value.baseUrl = ''
   form.value.modelName = ''
   form.value.modelDisplayName = ''
+  form.value.completionsPath = ''
   error.value = ''
   // Reset API key visibility
   showDashscopeApiKey.value = false
@@ -408,6 +422,7 @@ const handleSubmit = async () => {
       requestBody.baseUrl = form.value.baseUrl.trim()
       requestBody.modelName = form.value.modelName.trim()
       requestBody.modelDisplayName = form.value.modelDisplayName.trim() || form.value.modelName.trim()
+      requestBody.completionsPath = form.value.completionsPath.trim()
     }
 
     const response = await fetch('/api/init/save', {

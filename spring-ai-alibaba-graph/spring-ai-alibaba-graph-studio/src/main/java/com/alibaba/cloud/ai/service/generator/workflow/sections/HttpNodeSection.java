@@ -69,7 +69,7 @@ public class HttpNodeSection implements NodeSection {
 			catch (JsonProcessingException e) {
 				throw new RuntimeException("serialization Http body map failed", e);
 			}
-			sb.append(String.format(".body(HttpRequestNodeBody.fromJson(\"%s\"))%n", escape(rawJson)));
+			sb.append(String.format(".body(HttpNode.HttpRequestNodeBody.fromJson(\"%s\"))%n", escape(rawJson)));
 		}
 
 		HttpNode.AuthConfig ac = d.getAuthConfig();
@@ -85,7 +85,7 @@ public class HttpNodeSection implements NodeSection {
 
 		HttpNode.RetryConfig rc = d.getRetryConfig();
 		if (rc != null) {
-			sb.append(String.format(".retryConfig(new RetryConfig(%d, %d, %b))%n", rc.getMaxRetries(),
+			sb.append(String.format(".retryConfig(new HttpNode.RetryConfig(%d, %d, %b))%n", rc.getMaxRetries(),
 					rc.getMaxRetryInterval(), rc.isEnable()));
 		}
 

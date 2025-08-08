@@ -40,6 +40,7 @@ import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
 import com.alibaba.cloud.ai.example.deepresearch.node.RewriteAndMultiQueryNode;
+import com.alibaba.cloud.ai.example.deepresearch.service.SessionContextService;
 import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.QuestionClassifierService;
 import com.alibaba.cloud.ai.example.deepresearch.rag.core.HybridRagProcessor;
 import com.alibaba.cloud.ai.example.deepresearch.rag.strategy.FusionStrategy;
@@ -133,6 +134,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private ReportService reportService;
+
+	@Autowired
+	private SessionContextService sessionContextService;
 
 	@Autowired(required = false)
 	private McpProviderFactory mcpProviderFactory;
@@ -232,13 +236,13 @@ public class DeepResearchConfiguration {
 
 		StateGraph stateGraph = new StateGraph("deep research", keyStrategyFactory,
 				new DeepResearchStateSerializer(OverAllState::new))
-			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent)))
+			.addNode("coordinator", node_async(new CoordinatorNode(coordinatorAgent, sessionContextService)))
 			.addNode("rewrite_multi_query",
 					node_async(new RewriteAndMultiQueryNode(rewriteAndMultiQueryChatClientBuilder)))
 			.addNode("background_investigator",
 					node_async(new BackgroundInvestigationNode(jinaCrawlerService, infoCheckService,
 							searchFilterService, questionClassifierService, searchPlatformSelectionService,
-							smartAgentProperties, backgroundAgent)))
+							smartAgentProperties, backgroundAgent, sessionContextService)))
 			.addNode("user_file_rag", createUserFileRagNode())
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("professional_kb_decision",
@@ -248,7 +252,7 @@ public class DeepResearchConfiguration {
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
-			.addNode("reporter", node_async(new ReporterNode(reporterAgent, reportService)));
+			.addNode("reporter", node_async(new ReporterNode(reporterAgent, reportService, sessionContextService)));
 
 		// 添加并行节点块
 		configureParallelNodes(stateGraph);

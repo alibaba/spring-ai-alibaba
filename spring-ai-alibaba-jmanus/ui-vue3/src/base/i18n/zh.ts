@@ -64,6 +64,8 @@ const words: I18nType = {
     successMessage: '配置保存成功！正在跳转到主页面...',
     restartRequired: 'API密钥已保存成功！为了使配置生效，需要重启应用程序。\n\n点击"确定"立即重启，点击"取消"稍后手动重启。',
     simplifiedChinese: '简体中文',
+    completionsPath: 'Completions Path',
+    completionsPathPlaceholder: '聊天模型端点，各平台路径不同。如未填写默认配置是：/v1/chat/completions',
   },
 
   // 通用按钮和操作
@@ -309,6 +311,8 @@ const words: I18nType = {
       temperaturePlaceholder: '留空使用模型默认值',
       topP: 'Top P',
       topPPlaceholder: '留空使用模型默认值',
+      completionsPath: 'Completions Path',
+      completionsPathPlaceholder: '聊天模型端点，各平台路径不同。如未填写默认配置是：/v1/chat/completions',
     },
     // MCP配置页面
     mcpConfig: {
@@ -492,6 +496,10 @@ const words: I18nType = {
         system: '系统',
         performance: '性能',
       },
+      restoreAllDefaults: '恢复到默认配置',
+      restoreAllDefaultsConfirm: '确定要将所有配置恢复到默认值吗？此操作将覆盖所有自定义配置。',
+      restoreAllDefaultsSuccess: '所有配置已恢复到默认值',
+      restoreAllDefaultsFailed: '恢复默认配置失败',
     },
     promptConfig: {
       title: '动态Prompt配置',
@@ -803,7 +811,8 @@ const words: I18nType = {
   direct: {
     planTemplateIdNotFound: '没有找到计划模板ID',
     executionFailedNoPlanId: '执行计划失败：未返回有效的计划ID',
-    executionFailed: '执行计划失败'
+    executionFailed: '执行计划失败',
+    configuration: '设置'
   },
 
   // 模态框

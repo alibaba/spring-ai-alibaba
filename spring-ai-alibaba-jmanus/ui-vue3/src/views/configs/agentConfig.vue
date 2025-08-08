@@ -55,7 +55,7 @@
             <div class="agent-card-header">
               <div class="agent-name-section">
                 <span class="agent-name">{{ agent.name }}</span>
-                <span v-if="agent.isBuiltIn" class="built-in-badge">Built-in</span>
+                <span v-if="agent.builtIn" class="built-in-badge">Built-in</span>
               </div>
               <Icon icon="carbon:chevron-right" />
             </div>
@@ -107,8 +107,8 @@
             <button 
               class="action-btn danger" 
               @click="showDeleteConfirm"
-              :disabled="!!selectedAgent?.isBuiltIn"
-              :title="selectedAgent?.isBuiltIn ? t('config.agentConfig.cannotDeleteBuiltIn') : ''"
+              :disabled="!!selectedAgent?.builtIn"
+              :title="selectedAgent?.builtIn ? t('config.agentConfig.cannotDeleteBuiltIn') : ''"
             >
               <Icon icon="carbon:trash-can" />
               {{ t('common.delete') }}
@@ -475,11 +475,11 @@ const loadData = async () => {
     // Sort agents: non-built-in agents first, then built-in agents
     const sortedAgents = normalizedAgents.sort((a, b) => {
       // If both are built-in or both are not built-in, maintain original order
-      if (a.isBuiltIn === b.isBuiltIn) {
+      if (a.builtIn === b.builtIn) {
         return 0
       }
-      // Put non-built-in agents first (a.isBuiltIn = false comes before b.isBuiltIn = true)
-      return a.isBuiltIn ? 1 : -1
+      // Put non-built-in agents first (a.builtIn = false comes before b.builtIn = true)
+      return a.builtIn ? 1 : -1
     })
 
     agents.splice(0, agents.length, ...sortedAgents)

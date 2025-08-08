@@ -54,6 +54,12 @@ public class ConfigController {
 		return ResponseEntity.ok().build();
 	}
 
+	@PostMapping("/reset-all-defaults")
+	public ResponseEntity<Void> resetAllConfigsToDefaults() {
+		configService.resetAllConfigsToDefaults();
+		return ResponseEntity.ok().build();
+	}
+
 	@GetMapping("/available-models")
 	public ResponseEntity<Map<String, Object>> getAvailableModels() {
 		List<DynamicModelEntity> models = dynamicModelRepository.findAll();

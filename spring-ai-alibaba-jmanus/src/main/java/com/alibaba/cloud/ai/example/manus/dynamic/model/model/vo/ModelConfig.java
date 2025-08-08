@@ -43,6 +43,8 @@ public class ModelConfig {
 
 	private Double topP;
 
+	private String completionsPath;
+
 	public Long getId() {
 		return id;
 	}
@@ -121,6 +123,14 @@ public class ModelConfig {
 
 	public void setTopP(Double topP) {
 		this.topP = topP;
+	}
+
+	public String getCompletionsPath() {
+		return completionsPath;
+	}
+
+	public void setCompletionsPath(String completionsPath) {
+		this.completionsPath = completionsPath;
 	}
 
 }
