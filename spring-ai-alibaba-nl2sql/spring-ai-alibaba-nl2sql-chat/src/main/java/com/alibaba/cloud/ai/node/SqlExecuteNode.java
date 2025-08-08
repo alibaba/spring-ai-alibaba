@@ -115,10 +115,10 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 			// Create display flux for user experience only
 			Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("开始执行SQL..."));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("执行SQL查询"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("```" + sqlQuery + "```"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("执行SQL完成"));
+				emitter.next(ChatResponseUtil.createStatusResponse("开始执行SQL..."));
+				emitter.next(ChatResponseUtil.createStatusResponse("执行SQL查询"));
+				emitter.next(ChatResponseUtil.createStatusResponse("```" + sqlQuery + "```"));
+				emitter.next(ChatResponseUtil.createStatusResponse("执行SQL完成"));
 				emitter.complete();
 			});
 
@@ -138,9 +138,9 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 			// Create error display flux
 			Flux<ChatResponse> errorDisplayFlux = Flux.create(emitter -> {
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("开始执行SQL..."));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("执行SQL查询"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("SQL执行失败: " + errorMessage));
+				emitter.next(ChatResponseUtil.createStatusResponse("开始执行SQL..."));
+				emitter.next(ChatResponseUtil.createStatusResponse("执行SQL查询"));
+				emitter.next(ChatResponseUtil.createStatusResponse("SQL执行失败: " + errorMessage));
 				emitter.complete();
 			});
 
