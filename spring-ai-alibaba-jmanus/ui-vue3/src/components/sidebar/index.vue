@@ -251,11 +251,12 @@
                 {{ sidebarStore.isExecuting ? $t('sidebar.executing') : $t('sidebar.executePlan') }}
               </button>
               <button
-                class="btn btn-secondary publish-mcp-btn"
+                class="btn publish-mcp-btn"
                 @click="handlePublishMcpService"
                 :disabled="!sidebarStore.currentPlanTemplateId"
+                v-if="showPublishButton"
               >
-                <Icon icon="carbon:cloud-service" width="16" />
+                <Icon icon="carbon:application" width="16" />
                 发布MCP服务
               </button>
             </div>
@@ -281,12 +282,42 @@ import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { sidebarStore } from '@/stores/sidebar'
 import PublishMcpServiceModal from '@/components/publish-mcp-service-modal/index.vue'
-import type { CoordinatorToolVO } from '@/api/coordinator-tool-api-service'
+import type { CoordinatorToolVO, CoordinatorToolConfig } from '@/api/coordinator-tool-api-service'
+import { CoordinatorToolApiService } from '@/api/coordinator-tool-api-service'
 
 const { t } = useI18n()
 
 // Fields to hide in JSON editor
 const hiddenFields = ['currentPlanId', 'userRequest', 'rootPlanId']
+
+// CoordinatorTool配置
+const coordinatorToolConfig = ref<CoordinatorToolConfig>({
+  enabled: true,
+  showPublishButton: true,
+  success: true
+})
+
+// 计算属性：是否显示发布MCP服务按钮
+const showPublishButton = computed(() => {
+  return coordinatorToolConfig.value.enabled && coordinatorToolConfig.value.showPublishButton
+})
+
+// 加载CoordinatorTool配置
+const loadCoordinatorToolConfig = async () => {
+  try {
+    const config = await CoordinatorToolApiService.getCoordinatorToolConfig()
+    coordinatorToolConfig.value = config
+  } catch (error) {
+    console.error('加载CoordinatorTool配置失败:', error)
+    // 使用默认配置
+    coordinatorToolConfig.value = {
+      enabled: true,
+      showPublishButton: true,
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
 
 // Computed property for formatted JSON content
 const formattedJsonContent = computed({
@@ -466,6 +497,7 @@ const truncateText = (text: string, maxLength: number): string => {
 // Lifecycle
 onMounted(() => {
   sidebarStore.loadPlanTemplateList()
+  loadCoordinatorToolConfig()
 })
 
 // Expose methods for parent component to call
@@ -835,14 +867,13 @@ defineExpose({
     }
 
     &.publish-mcp-btn {
-      background: rgba(76, 175, 80, 0.1);
-      color: rgba(76, 175, 80, 0.9);
-      border: 1px solid rgba(76, 175, 80, 0.3);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      border: none;
 
       &:hover:not(:disabled) {
-        background: rgba(76, 175, 80, 0.2);
-        color: #4caf50;
-        border-color: rgba(76, 175, 80, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
       }
     }
 

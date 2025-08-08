@@ -14,37 +14,103 @@
  * limitations under the License.
 -->
 <template>
-  <Modal v-model="showModal" title="发布MCP服务" @confirm="handlePublish">
+  <Modal 
+    v-model="showModal" 
+    :title="modalTitle" 
+    :endpoint-url="endpointUrl"
+    @confirm="handlePublish" 
+    class="wide-modal"
+  >
     <div class="modal-form">
-      <!-- Endpoint配置 -->
+      <!-- Endpoint和MCP Streamable URL配置 -->
       <div class="form-section">
-        <div class="form-item">
-          <label>Endpoint <span class="required">*</span></label>
-          <div class="endpoint-container">
-            <select
-              v-model="formData.endpoint"
-              class="endpoint-select"
-              @change="handleEndpointChange"
-            >
-              <option value="">请选择或输入Endpoint</option>
-              <option
-                v-for="endpoint in availableEndpoints"
-                :key="endpoint"
-                :value="endpoint"
-              >
-                {{ endpoint }}
-              </option>
-            </select>
-            <input
-              type="text"
-              v-model="formData.endpoint"
-              placeholder="请输入Endpoint（必须是英文）"
-              class="endpoint-input"
-              @input="handleEndpointInput"
-            />
+        <div class="endpoint-url-row" :class="{ 'single-item': !isPublished }">
+          <!-- Endpoint配置 -->
+          <div class="form-item endpoint-item">
+            <label>Endpoint <span class="required">*</span></label>
+            <div class="endpoint-container">
+              <div class="endpoint-row">
+                <div class="custom-select">
+                  <div class="select-input-container">
+                    <div class="input-content">
+                      <Icon icon="carbon:application" width="16" class="input-icon" />
+                      <input
+                        type="text"
+                        v-model="formData.endpoint"
+                        placeholder="请选择或输入Endpoint"
+                        class="select-input"
+                        @focus="isDropdownOpen = true"
+                        @input="handleEndpointInput"
+                        @keydown.enter="handleEndpointEnter"
+                        @blur="handleEndpointBlur"
+                      />
+                    </div>
+                    <button class="select-arrow-btn" @click="toggleDropdown" title="展开选项">
+                      <Icon
+                        :icon="isDropdownOpen ? 'carbon:chevron-up' : 'carbon:chevron-down'"
+                        width="14"
+                        class="chevron"
+                      />
+                    </button>
+                  </div>
+
+                  <!-- 下拉选项 - 使用绝对定位，不占用文档流 -->
+                  <div v-if="isDropdownOpen" class="select-dropdown" :class="{ 'dropdown-top': dropdownPosition === 'top' }">
+                    <div class="dropdown-header">
+                      <span>选择Endpoint</span>
+                      <button class="close-btn" @click="isDropdownOpen = false">
+                        <Icon icon="carbon:close" width="12" />
+                      </button>
+                    </div>
+                    <div class="select-options">
+                      <button
+                        v-for="endpoint in availableEndpoints"
+                        :key="endpoint"
+                        class="select-option"
+                        :class="{ active: formData.endpoint === endpoint }"
+                        @click="selectEndpoint(endpoint)"
+                      >
+                        <span class="option-name">{{ endpoint }}</span>
+                        <Icon v-if="formData.endpoint === endpoint" icon="carbon:checkmark" width="14" class="check-icon" />
+                      </button>
+                    </div>
+                    <!-- 手工输入区域 -->
+                    <div class="manual-input-section">
+                      <div class="manual-input-container">
+                        <input
+                          type="text"
+                          v-model="manualEndpointInput"
+                          placeholder="手动输入Endpoint"
+                          class="manual-input"
+                          @keydown.enter="addManualEndpoint"
+                          @blur="handleManualInputBlur"
+                        />
+                        <button class="add-manual-btn" @click="addManualEndpoint">
+                          <Icon icon="carbon:add" width="14" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="isDropdownOpen" class="backdrop" @click="isDropdownOpen = false"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MCP Streamable URL配置 - 仅在已发布时显示 -->
+          <div v-if="isPublished" class="form-item url-item">
+            <label>MCP Streamable URL</label>
+            <div class="url-container">
+              <div class="url-display" @dblclick="copyEndpointUrl" :title="'双击复制: ' + endpointUrl">
+                <span class="url-text">{{ endpointUrl || '请输入Endpoint以生成URL' }}</span>
+                <Icon icon="carbon:copy" width="16" class="copy-icon" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+
 
       <!-- Tool Name -->
       <div class="form-section">
@@ -55,6 +121,8 @@
             v-model="formData.serviceName"
             placeholder="请输入Tool Name"
             required
+            readonly
+            class="readonly-input"
           />
         </div>
       </div>
@@ -75,66 +143,60 @@
 
       <!-- 参数配置 -->
       <div class="form-section">
-        <h4 class="section-title">参数配置</h4>
+        <div class="section-title">参数配置</div>
         <div class="parameters-table">
           <table>
             <thead>
               <tr>
                 <th>字段名</th>
                 <th>字段描述</th>
-                <th>操作</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(param, index) in formData.parameters" :key="index">
+                            <tr v-for="(param, index) in formData.parameters" :key="index">
                 <td>
                   <input
                     type="text"
                     v-model="param.name"
-                    placeholder="字段名"
                     class="param-input"
+                    placeholder="参数名称"
                   />
                 </td>
                 <td>
                   <input
                     type="text"
                     v-model="param.description"
-                    placeholder="字段描述"
                     class="param-input"
+                    placeholder="参数描述"
                   />
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    class="remove-param-btn"
-                    @click="removeParameter(index)"
-                  >
-                    <Icon icon="carbon:trash-can" />
-                  </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <button type="button" class="add-param-btn" @click="addParameter">
-          <Icon icon="carbon:add" />
-          添加参数
-        </button>
+        <!-- 添加参数按钮已移除 -->
       </div>
     </div>
 
     <template #footer>
-      <button class="cancel-btn" @click="handleCancel">
-        {{ t('common.cancel') }}
-      </button>
-      <button class="save-btn" @click="handleSave" :disabled="saving">
-        <Icon icon="carbon:loading" v-if="saving" class="loading-icon" />
-        {{ saving ? '保存中...' : '保存' }}
-      </button>
-      <button class="publish-btn" @click="handlePublish" :disabled="publishing">
-        <Icon icon="carbon:loading" v-if="publishing" class="loading-icon" />
-        {{ publishing ? '发布中...' : '发布' }}
-      </button>
+      <div class="button-container">
+        <button class="action-btn primary" @click="handleSave" :disabled="saving">
+          <Icon icon="carbon:loading" v-if="saving" class="loading-icon" />
+          <Icon icon="carbon:save" v-else />
+          {{ saving ? '保存中...' : '保存' }}
+        </button>
+        <!-- 发布开关组件 - 始终占用空间，通过透明度控制显示 -->
+        <div class="publish-toggle-container" :class="{ 'visible': isSaved, 'hidden': !isSaved }">
+          <div class="publish-toggle" @click="handlePublishToggle">
+            <div class="toggle-track" :class="{ 'toggle-on': isPublished, 'toggle-off': !isPublished }">
+              <div class="toggle-thumb" :class="{ 'thumb-on': isPublished, 'thumb-off': !isPublished }"></div>
+              <span class="toggle-label" :class="{ 'label-on': isPublished, 'label-off': !isPublished }">
+                {{ isPublished ? $t('common.published') : $t('common.unpublished') }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </template>
   </Modal>
 
@@ -154,11 +216,11 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
-import { useI18n } from 'vue-i18n'
+// import { useI18n } from 'vue-i18n' // 暂时未使用，注释掉
 import Modal from '@/components/modal/index.vue'
 import { CoordinatorToolApiService, type CoordinatorToolVO } from '@/api/coordinator-tool-api-service'
 
-const { t } = useI18n()
+// const { t } = useI18n() // 暂时未使用，注释掉
 
 // Props
 interface Props {
@@ -193,8 +255,21 @@ const publishing = ref(false)
 const saving = ref(false)
 const availableEndpoints = ref<string[]>([])
 
+// 新增的响应式数据
+const publishStatus = ref('')
+const endpointUrl = ref('')
+const isDropdownOpen = ref(false)
+const dropdownPosition = ref('bottom')
+const manualEndpointInput = ref('')
+
 // 当前工具数据，用于判断是创建还是更新
 const currentTool = ref<CoordinatorToolVO | null>(null)
+
+// 发布开关相关状态
+const isSaved = ref(false)
+const isPublished = ref(false)
+
+// 计算完整的URL功能已移除
 
 // Form data
 const formData = reactive({
@@ -204,6 +279,14 @@ const formData = reactive({
   parameters: [] as Array<{ name: string; description: string }>
 })
 
+// 计算模态框标题
+const modalTitle = computed(() => {
+  const isUpdate = currentTool.value && currentTool.value.id
+  return isUpdate ? '更新MCP服务' : '创建MCP服务'
+})
+
+// 状态图标相关计算属性已移除
+
 // 初始化表单数据
 const initializeFormData = () => {
   formData.serviceName = ''
@@ -211,6 +294,8 @@ const initializeFormData = () => {
   formData.endpoint = ''
   formData.parameters = []
   currentTool.value = null
+  publishStatus.value = ''
+  endpointUrl.value = ''
 }
 
 // 加载可用的endpoints
@@ -223,28 +308,101 @@ const loadEndpoints = async () => {
   }
 }
 
-// 添加参数
-const addParameter = () => {
-  formData.parameters.push({ name: '', description: '' })
+// 参数操作方法已移除
+
+// 下拉框相关方法
+const toggleDropdown = () => {
+  if (!isDropdownOpen.value) {
+    // Calculate position before showing dropdown
+    calculateDropdownPosition()
+  }
+  isDropdownOpen.value = !isDropdownOpen.value
 }
 
-// 删除参数
-const removeParameter = (index: number) => {
-  formData.parameters.splice(index, 1)
+const calculateDropdownPosition = () => {
+  const selectElement = document.querySelector('.custom-select') as HTMLElement
+  if (!selectElement) return
+  
+  const rect = selectElement.getBoundingClientRect()
+  const windowHeight = window.innerHeight
+  const dropdownHeight = 200 // Estimated dropdown height
+  
+  // If there's not enough space below, show above
+  if (rect.bottom + dropdownHeight > windowHeight) {
+    dropdownPosition.value = 'top'
+  } else {
+    dropdownPosition.value = 'bottom'
+  }
 }
 
-// 处理endpoint选择
-const handleEndpointChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement
-  formData.endpoint = target.value
+const selectEndpoint = (endpoint: string) => {
+  formData.endpoint = endpoint
+  isDropdownOpen.value = false
+  manualEndpointInput.value = ''
 }
 
-// 处理endpoint输入
-const handleEndpointInput = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  // 只允许英文字母、数字、下划线和斜杠
-  const value = target.value.replace(/[^a-zA-Z0-9_/]/g, '')
-  formData.endpoint = value
+const addManualEndpoint = () => {
+  if (manualEndpointInput.value.trim()) {
+    const newEndpoint = manualEndpointInput.value.trim().replace(/[^a-zA-Z0-9_/]/g, '')
+    if (newEndpoint) {
+      formData.endpoint = newEndpoint
+      if (!availableEndpoints.value.includes(newEndpoint)) {
+        availableEndpoints.value.push(newEndpoint)
+      }
+      isDropdownOpen.value = false
+      manualEndpointInput.value = ''
+    }
+  }
+}
+
+const handleManualInputBlur = () => {
+  // 延迟处理，确保点击事件能够正常触发
+  setTimeout(() => {
+    if (manualEndpointInput.value.trim()) {
+      addManualEndpoint()
+    }
+  }, 200)
+}
+
+// 处理下拉框输入
+const handleEndpointInput = () => {
+  // 当用户在输入框中输入时，如果输入的是一个已有的endpoint，则直接选中
+  if (availableEndpoints.value.includes(formData.endpoint)) {
+    selectEndpoint(formData.endpoint)
+  }
+}
+
+// 处理下拉框回车
+const handleEndpointEnter = () => {
+  // 当用户在输入框中按回车时，如果输入的是一个已有的endpoint，则直接选中
+  if (availableEndpoints.value.includes(formData.endpoint)) {
+    selectEndpoint(formData.endpoint)
+  }
+}
+
+// 处理下拉框失焦
+const handleEndpointBlur = () => {
+  // 当输入框失去焦点时，如果输入的是一个已有的endpoint，则直接选中
+  if (availableEndpoints.value.includes(formData.endpoint)) {
+    selectEndpoint(formData.endpoint)
+  }
+}
+
+// 复制到剪贴板功能已移除
+
+// 复制完整URL功能已移除
+
+// 复制endpointUrl
+const copyEndpointUrl = async () => {
+  if (!endpointUrl.value) return
+  
+  try {
+    await navigator.clipboard.writeText(endpointUrl.value)
+    showMessage('URL已复制到剪贴板', 'success')
+  } catch (err) {
+    console.error('复制失败:', err)
+    showMessage('复制失败', 'error')
+  }
 }
 
 // 显示消息
@@ -340,7 +498,7 @@ const handleSave = async () => {
 
     console.log('[PublishModal] 保存成功:', savedTool)
     showMessage('MCP服务保存成功', 'success')
-    
+    isSaved.value = true
   } catch (err: any) {
     console.error('[PublishModal] 保存MCP服务失败:', err)
     showMessage('保存MCP服务失败: ' + err.message, 'error')
@@ -353,7 +511,7 @@ const handleSave = async () => {
 const handlePublish = async () => {
   console.log('[PublishModal] 开始处理发布请求')
   console.log('[PublishModal] 表单数据:', formData)
-  console.log('[PublishModal] planTemplateId:', props.planTemplateId)
+  console.log('[PublishModal] 当前工具:', currentTool.value)
   
   if (!validateForm()) {
     console.log('[PublishModal] 表单验证失败')
@@ -409,14 +567,30 @@ const handlePublish = async () => {
 
     // 5. 发布工具
     console.log('[PublishModal] 步骤5: 发布工具，ID:', currentTool.value.id)
-    const publishResult = await CoordinatorToolApiService.publishCoordinatorTool(currentTool.value.id!)
+    const publishResult = await CoordinatorToolApiService.publishCoordinatorTool(currentTool.value.id!) as any
     console.log('[PublishModal] 发布结果:', publishResult)
     
     if (publishResult.success) {
       console.log('[PublishModal] 发布成功')
+      // 设置发布状态和URL - 从响应中获取正确的endpointUrl
+      publishStatus.value = publishResult.publishStatus || 'PUBLISHED'
+      
+      // 优先使用响应中的endpointUrl，如果没有则构建完整URL
+      if (publishResult.endpointUrl) {
+        endpointUrl.value = publishResult.endpointUrl
+      } else if (currentTool.value.endpoint) {
+        // 构建完整的URL
+        const baseUrl = window.location.origin
+        endpointUrl.value = `${baseUrl}/mcp${currentTool.value.endpoint}`
+      } else {
+        endpointUrl.value = ''
+      }
+      
+      console.log('[PublishModal] 设置状态 - publishStatus:', publishStatus.value, 'endpointUrl:', endpointUrl.value)
       showMessage('MCP服务发布成功', 'success')
       emit('published', currentTool.value)
-      showModal.value = false
+      // 不立即关闭模态框，让用户可以看到URL
+      // showModal.value = false
     } else {
       throw new Error(publishResult.message)
     }
@@ -428,10 +602,37 @@ const handlePublish = async () => {
   }
 }
 
-// 处理取消
-const handleCancel = () => {
-  showModal.value = false
-  initializeFormData()
+// 处理取消功能已移除
+
+// 处理发布开关切换
+const handlePublishToggle = async () => {
+  if (publishing.value) return
+  
+  publishing.value = true
+  try {
+    if (isPublished.value) {
+      // 取消发布 - 暂时使用更新状态的方式
+      console.log('[PublishModal] 取消发布MCP服务')
+      if (currentTool.value) {
+        currentTool.value.publishStatus = 'UNPUBLISHED'
+        await CoordinatorToolApiService.updateCoordinatorTool(currentTool.value.id!, currentTool.value)
+        isPublished.value = false
+        endpointUrl.value = '' // 清空endpointUrl
+        showMessage('MCP服务已取消发布', 'success')
+      }
+    } else {
+      // 发布
+      console.log('[PublishModal] 发布MCP服务')
+      await handlePublish()
+      isPublished.value = true
+      // handlePublish已经处理了endpointUrl的设置
+    }
+  } catch (error: any) {
+    console.error('[PublishModal] 发布开关操作失败:', error)
+    showMessage('操作失败: ' + error.message, 'error')
+  } finally {
+    publishing.value = false
+  }
 }
 
 // 监听modal显示状态
@@ -472,6 +673,28 @@ const loadCoordinatorToolData = async () => {
       // 保存当前工具数据
       currentTool.value = tool
       
+      // 设置发布状态和URL
+      publishStatus.value = tool.publishStatus || ''
+      isPublished.value = tool.publishStatus === 'PUBLISHED'
+      isSaved.value = true
+      
+      // 使用后端返回的endpointUrl，如果没有则构建
+      if (tool.publishStatus === 'PUBLISHED') {
+        // 检查是否有后端返回的endpointUrl
+        if ((result as any).endpointUrl) {
+          endpointUrl.value = (result as any).endpointUrl
+        } else if (tool.endpoint) {
+          // 如果没有后端返回的endpointUrl，则构建
+          const baseUrl = window.location.origin
+          endpointUrl.value = `${baseUrl}/mcp${tool.endpoint}`
+        } else {
+          endpointUrl.value = ''
+        }
+      } else {
+        endpointUrl.value = ''
+      }
+      
+      console.log('[PublishModal] 加载工具数据 - publishStatus:', publishStatus.value, 'endpointUrl:', endpointUrl.value)
       // 填充表单数据
       formData.serviceName = tool.toolName || ''
       formData.userRequest = tool.toolDescription || props.planDescription || ''
@@ -517,16 +740,25 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 宽模态框样式 */
+:deep(.wide-modal .modal-container) {
+  width: 90%;
+  max-width: 900px !important; /* 调整宽度为900px */
+}
+
+/* 表单布局优化 - 参考新建Model模态框的样式 */
 .modal-form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px; /* 调整为16px，与新建Model模态框一致 */
+  width: 100%;
 }
 
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px; /* 调整为8px，优化标题与输入框间距 */
+  width: 100%;
 }
 
 .section-title {
@@ -541,13 +773,14 @@ onMounted(async () => {
 .form-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 8px; /* 调整为8px，优化标题与输入框间距 */
 }
 
 .form-item label {
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
   font-size: 14px;
+  margin: 0; /* 移除默认margin */
 }
 
 .required {
@@ -565,6 +798,12 @@ onMounted(async () => {
   font-size: 14px;
   transition: all 0.3s ease;
   font-family: inherit;
+  box-sizing: border-box;
+  min-height: 48px; /* 确保最小高度一致 */
+}
+
+.form-item input {
+  height: 48px; /* 单行输入框固定高度 */
 }
 
 .form-item input:focus,
@@ -572,6 +811,7 @@ onMounted(async () => {
   border-color: #667eea;
   outline: none;
   background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
 }
 
 .form-item input::placeholder,
@@ -583,10 +823,14 @@ onMounted(async () => {
   resize: vertical;
   min-height: 80px;
   line-height: 1.5;
+  width: 100%;
 }
 
+/* 参数表格自适应 */
 .parameters-table {
   margin-bottom: 16px;
+  width: 100%;
+  overflow-x: auto;
 }
 
 .parameters-table table {
@@ -595,6 +839,7 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   overflow: hidden;
+  min-width: 600px;
 }
 
 .parameters-table th {
@@ -604,6 +849,7 @@ onMounted(async () => {
   padding: 12px;
   text-align: left;
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .parameters-table td {
@@ -620,6 +866,7 @@ onMounted(async () => {
   color: #fff;
   font-size: 14px;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .param-input:focus {
@@ -628,12 +875,453 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.remove-param-btn {
-  background: rgba(234, 102, 102, 0.2);
-  border: 1px solid rgba(234, 102, 102, 0.3);
-  color: #ea6666;
-  padding: 6px 8px;
+/* 删除按钮和添加按钮样式已移除 */
+
+/* Endpoint组件自适应 - 支持手动输入 */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  height: 48px; /* 确保与其他输入框高度一致 */
+}
+
+.dropdown-input input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 14px;
+  width: 100%;
+  cursor: text; /* 允许文本输入 */
+  height: 100%;
+  padding: 0;
+}
+
+.dropdown-input input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+.dropdown-input.active {
+  border-color: #667eea;
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  transform: translateY(-1px);
+}
+
+.dropdown-input:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.07);
+  transform: translateY(-1px);
+}
+
+.dropdown-arrow {
+  transition: transform 0.3s ease;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.dropdown-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+  margin-top: 4px;
+}
+
+.dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(102, 126, 234, 0.1));
+  color: #a8b3ff;
+  transform: translateX(4px);
+}
+
+.dropdown-item.selected {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(102, 126, 234, 0.2));
+  color: #a8b3ff;
+  font-weight: 500;
+}
+
+.dropdown-item.custom-input {
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+  padding-left: 16px; /* Align with other items */
+}
+
+.dropdown-item.custom-input .custom-label {
+  color: rgba(255, 255, 255, 0.6);
+  margin-right: 4px;
+}
+
+/* 按钮容器 - 参考截图的样式 */
+.button-container {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 0;
+  align-items: center;
+  padding: 16px 0;
+  min-height: 52px; /* 确保容器有固定高度，防止抖动 */
+  position: relative; /* 为绝对定位的子元素提供参考 */
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn.primary {
+  background: rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.3);
+  color: #a8b3ff;
+}
+
+.action-btn.primary:hover:not(:disabled) {
+  background: rgba(102, 126, 234, 0.3);
+}
+
+/* 只读输入框样式 */
+.readonly-input {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  cursor: not-allowed !important;
+  opacity: 0.8;
+}
+
+.readonly-input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Endpoint容器布局 */
+.endpoint-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.endpoint-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+/* 自定义下拉框样式 - 参考截图三 */
+.custom-select {
+  position: relative;
+  display: inline-block;
+  width: 100%; /* 调整为100%以适应新的布局 */
+  flex-shrink: 0;
+}
+
+.select-input-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(20, 20, 25, 0.95);
+  border: 2px solid rgba(102, 126, 234, 0.6);
+  border-radius: 12px;
+  color: #667eea;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  width: 100%;
+  justify-content: space-between;
+  height: 44px;
+  box-sizing: border-box;
+  box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.3);
+  padding: 0 12px;
+}
+
+.select-input-container:hover {
+  border-color: rgba(102, 126, 234, 0.8);
+  background-color: rgba(20, 20, 25, 0.98);
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.4);
+}
+
+.select-input-container:focus-within {
+  border-color: rgba(102, 126, 234, 0.9);
+  outline: none;
+  background-color: rgba(20, 20, 25, 0.98);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+.input-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.input-icon {
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+.select-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #667eea;
+  font-size: 14px;
+  font-weight: 600;
+  text-shadow: none;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  height: 100%;
+}
+
+.select-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+.select-arrow-btn {
+  background: none;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.select-arrow-btn:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+}
+
+.chevron {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.9;
+  filter: none;
+  width: 16px;
+  height: 16px;
+}
+
+.select-dropdown {
+  position: absolute;
+  top: 100%;
+  z-index: 99999;
+  margin-top: 6px;
+  background: rgba(15, 15, 20, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  width: 280px; /* 与select-btn宽度保持一致 */
+  max-height: 280px;
+  overflow: hidden;
+  /* 确保不占用文档流 */
+  pointer-events: auto;
+}
+
+.select-dropdown.dropdown-top {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+  font-size: 14px;
+  font-weight: 600;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
   border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.select-options {
+  padding: 12px 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.select-option {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  padding: 12px 18px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-size: 14px;
+}
+
+.select-option:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+}
+
+.select-option.active {
+  background: rgba(102, 126, 234, 0.2);
+  color: #667eea;
+  border-left: 3px solid #667eea;
+  padding-left: 15px;
+  font-weight: 500;
+}
+
+.select-option.custom-input {
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+}
+
+.select-option.custom-input .custom-label {
+  color: rgba(255, 255, 255, 0.6);
+  margin-right: 4px;
+}
+
+.option-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.check-icon {
+  color: #667eea;
+  opacity: 0.8;
+}
+
+/* 手工输入区域样式 */
+.manual-input-section {
+  padding: 14px 18px;
+  border-top: 1px solid rgba(102, 126, 234, 0.2);
+  background: rgba(102, 126, 234, 0.03);
+}
+
+.manual-input-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.manual-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(20, 20, 25, 0.8);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 8px;
+  color: #667eea;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.manual-input:focus {
+  border-color: rgba(102, 126, 234, 0.8);
+  outline: none;
+  background: rgba(20, 20, 25, 0.9);
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.manual-input::placeholder {
+  color: rgba(102, 126, 234, 0.5);
+}
+
+.add-manual-btn {
+  padding: 8px 12px;
+  background: rgba(102, 126, 234, 0.15);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 8px;
+  color: #667eea;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -641,129 +1329,217 @@ onMounted(async () => {
   justify-content: center;
 }
 
-.remove-param-btn:hover {
-  background: rgba(234, 102, 102, 0.3);
-  border-color: rgba(234, 102, 102, 0.5);
-}
-
-.add-param-btn {
-  background: rgba(102, 126, 234, 0.2);
-  border: 1px solid rgba(102, 126, 234, 0.3);
-  color: #a8b3ff;
-  padding: 10px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.add-param-btn:hover {
-  background: rgba(102, 126, 234, 0.3);
+.add-manual-btn:hover {
+  background: rgba(102, 126, 234, 0.25);
   border-color: rgba(102, 126, 234, 0.5);
 }
 
-.endpoint-container {
+/* 两列布局样式 */
+.endpoint-url-row {
   display: flex;
-  gap: 8px;
+  gap: 16px;
+  width: 100%;
 }
 
-.endpoint-select {
+.endpoint-url-row.single-item {
+  gap: 0;
+}
+
+.endpoint-url-row.single-item .endpoint-item {
+  flex: 0 0 50%; /* 即使单独显示也保持50%宽度 */
+}
+
+.endpoint-item {
+  flex: 0 0 50%; /* 固定宽度为50%，不自适应 */
+  min-width: 0;
+}
+
+.url-item {
   flex: 1;
+  min-width: 0;
+}
+
+/* URL显示样式 */
+.url-container {
+  width: 100%;
+}
+
+.url-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 12px 16px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   color: #fff;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.endpoint-select:focus {
-  border-color: #667eea;
-  outline: none;
-}
-
-.endpoint-select option {
-  background: #1a1a1a;
-  color: #fff;
-}
-
-.endpoint-input {
-  flex: 2;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: #fff;
-  font-size: 14px;
-}
-
-.endpoint-input:focus {
-  border-color: #667eea;
-  outline: none;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.cancel-btn,
-.save-btn,
-.publish-btn {
-  padding: 10px 20px;
-  border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-height: 48px;
+}
+
+.url-display:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.url-text {
+  flex: 1;
   font-size: 14px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  word-break: break-all;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.cancel-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.copy-icon {
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 8px;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.url-display:hover .copy-icon {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 发布开关样式 */
+.publish-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+  min-width: 156px; /* 保持最小宽度，防止布局抖动 */
+}
+
+.publish-toggle-container.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.publish-toggle-container.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(10px);
+  pointer-events: none; /* 禁用交互 */
+}
+
+.publish-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  width: 156px; /* 固定宽度，防止抖动 */
+  flex-shrink: 0; /* 防止收缩 */
+}
+
+.toggle-track {
+  position: relative;
+  width: 104px; /* 固定宽度，防止抖动 */
+  height: 36px; /* 与保存按钮一致 */
+  border-radius: 18px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 改为两端对齐 */
+  padding: 0 12px; /* 添加左右内边距 */
+  overflow: hidden; /* 防止文字溢出 */
+}
+
+.toggle-track.toggle-on {
+  background: #4caf50;
+  box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.3);
+}
+
+.toggle-track.toggle-off {
+  background: rgba(120, 120, 120, 0.6);
+  box-shadow: 0 0 0 1px rgba(120, 120, 120, 0.3);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  width: 32px; /* 调整大小以适应36px高度 */
+  height: 32px; /* 调整大小以适应36px高度 */
+  border-radius: 16px; /* 与轨道圆角保持一致 */
+  background: #fff;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 2; /* 确保在文字之上 */
+}
+
+.toggle-thumb.thumb-on {
+  right: 2px; /* 开启状态：滑块在右侧 */
+}
+
+.toggle-thumb.thumb-off {
+  left: 2px; /* 关闭状态：滑块在左侧 */
+}
+
+.toggle-label {
+  font-size: 12px; /* 调整字体大小以适应较小的高度 */
+  font-weight: 500;
+  transition: all 0.3s ease;
   color: #fff;
+  z-index: 1;
+  white-space: nowrap;
+  flex: 1; /* 自适应剩余空间 */
+  text-align: center; /* 文字居中 */
+  padding: 0 8px; /* 左右内边距，避免与滑块重叠 */
+  line-height: 32px; /* 垂直居中 */
 }
 
-.cancel-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+.toggle-label.label-on {
+  color: #fff;
+  text-align: left; /* 开启状态：文字左对齐 */
+  padding-left: 8px; /* 左边距 */
+  padding-right: 40px; /* 右边距，为滑块留出空间 */
 }
 
-.save-btn {
-  background: rgba(255, 193, 7, 0.2);
-  border: 1px solid rgba(255, 193, 7, 0.3);
-  color: #ffc107;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.toggle-label.label-off {
+  color: #fff;
+  text-align: right; /* 关闭状态：文字右对齐 */
+  padding-left: 40px; /* 左边距，为滑块留出空间 */
+  padding-right: 8px; /* 右边距 */
 }
 
-.save-btn:hover:not(:disabled) {
-  background: rgba(255, 193, 7, 0.3);
-  border-color: rgba(255, 193, 7, 0.5);
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99998;
+  background: transparent;
 }
 
-.save-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+
+
+
+
+.slideDown-enter-active,
+.slideDown-leave-active {
+  transition: all 0.2s ease;
+  transform-origin: top;
 }
 
-.publish-btn {
-  background: rgba(102, 126, 234, 0.2);
-  border: 1px solid rgba(102, 126, 234, 0.3);
-  color: #a8b3ff;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.slideDown-enter-from,
+.slideDown-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.95);
 }
 
-.publish-btn:hover:not(:disabled) {
-  background: rgba(102, 126, 234, 0.3);
-  border-color: rgba(102, 126, 234, 0.5);
-}
 
-.publish-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+
+/* 旧的保存按钮样式已移除 */
+
+
+
+
+
+
 
 .loading-icon {
   animation: spin 1s linear infinite;
@@ -778,6 +1554,7 @@ onMounted(async () => {
   }
 }
 
+/* 提示消息 */
 .error-toast,
 .success-toast {
   position: fixed;
@@ -814,4 +1591,6 @@ onMounted(async () => {
     opacity: 1;
   }
 }
+
+
 </style> 

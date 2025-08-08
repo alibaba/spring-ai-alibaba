@@ -28,7 +28,8 @@ public class CoordinatorConfigVO {
 		this.parameters = parameters;
 	}
 
-	public CoordinatorConfigVO(String id, String name, String description, String endpoint, List<CoordinatorParameterVO> parameters) {
+	public CoordinatorConfigVO(String id, String name, String description, String endpoint,
+			List<CoordinatorParameterVO> parameters) {
 		this.id = id;
 		this.name = name;
 		this.description = description;
@@ -83,4 +84,4 @@ public class CoordinatorConfigVO {
 				+ '\'' + ", endpoint='" + endpoint + '\'' + ", parameters=" + parameters + '}';
 	}
 
-} 
+}

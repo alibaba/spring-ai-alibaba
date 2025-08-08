@@ -112,8 +112,6 @@ public class CoordinatorToolVO {
 		this.publishStatus = publishStatus;
 	}
 
-	
-
 	/**
 	 * 从Entity转换为VO
 	 */
@@ -154,13 +152,9 @@ public class CoordinatorToolVO {
 
 	@Override
 	public String toString() {
-		return "CoordinatorToolVO{" +
-				"id=" + id +
-				", toolName='" + toolName + '\'' +
-				", toolDescription='" + toolDescription + '\'' +
-				", planTemplateId='" + planTemplateId + '\'' +
-				", endpoint='" + endpoint + '\'' +
-				", publishStatus='" + publishStatus + 
-				'}';
+		return "CoordinatorToolVO{" + "id=" + id + ", toolName='" + toolName + '\'' + ", toolDescription='"
+				+ toolDescription + '\'' + ", planTemplateId='" + planTemplateId + '\'' + ", endpoint='" + endpoint
+				+ '\'' + ", publishStatus='" + publishStatus + '}';
 	}
-} 
+
+}

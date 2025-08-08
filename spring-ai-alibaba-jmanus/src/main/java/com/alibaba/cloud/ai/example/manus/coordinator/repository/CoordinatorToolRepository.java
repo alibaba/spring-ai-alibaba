@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.manus.coordinator.repository;
 import com.alibaba.cloud.ai.example.manus.coordinator.entity.CoordinatorToolEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -48,37 +47,13 @@ public interface CoordinatorToolRepository extends JpaRepository<CoordinatorTool
 	/**
 	 * 查找所有已发布的工具
 	 */
-	List<CoordinatorToolEntity> findByPublishStatusOrderByCreateTimeDesc(CoordinatorToolEntity.PublishStatus publishStatus);
-
-	/**
-	 * 根据工具名称和发布状态查找
-	 */
-	Optional<CoordinatorToolEntity> findByToolNameAndPublishStatus(String toolName, CoordinatorToolEntity.PublishStatus publishStatus);
-
-	/**
-	 * 根据计划模板ID和发布状态查找
-	 */
-	List<CoordinatorToolEntity> findByPlanTemplateIdAndPublishStatus(String planTemplateId, CoordinatorToolEntity.PublishStatus publishStatus);
-
-	/**
-	 * 检查工具名称是否存在
-	 */
-	boolean existsByToolName(String toolName);
-
-	/**
-	 * 检查计划模板ID是否存在
-	 */
-	boolean existsByPlanTemplateId(String planTemplateId);
+	List<CoordinatorToolEntity> findByPublishStatusOrderByCreateTimeDesc(
+			CoordinatorToolEntity.PublishStatus publishStatus);
 
 	/**
 	 * 根据endpoint查找
 	 */
 	Optional<CoordinatorToolEntity> findByEndpoint(String endpoint);
-
-	/**
-	 * 检查endpoint是否存在
-	 */
-	boolean existsByEndpoint(String endpoint);
 
 	/**
 	 * 查找所有去重的endpoint列表
@@ -109,13 +84,6 @@ public interface CoordinatorToolRepository extends JpaRepository<CoordinatorTool
 	List<CoordinatorToolEntity> findRecentlyUpdatedTools();
 
 	/**
-	 * 根据创建时间范围查找
-	 */
-	@Query("SELECT c FROM CoordinatorToolEntity c WHERE c.createTime BETWEEN :startTime AND :endTime")
-	List<CoordinatorToolEntity> findByCreateTimeBetween(@Param("startTime") java.time.LocalDateTime startTime, 
-													   @Param("endTime") java.time.LocalDateTime endTime);
-
-	/**
 	 * 统计已发布的工具数量
 	 */
 	long countByPublishStatus(CoordinatorToolEntity.PublishStatus publishStatus);
@@ -126,9 +94,4 @@ public interface CoordinatorToolRepository extends JpaRepository<CoordinatorTool
 	@Query("SELECT COUNT(c) FROM CoordinatorToolEntity c WHERE c.publishStatus = 'UNPUBLISHED'")
 	long countUnpublishedTools();
 
-	/**
-	 * 删除所有未发布的工具
-	 */
-	void deleteByPublishStatus(CoordinatorToolEntity.PublishStatus publishStatus);
-
-} 
+}

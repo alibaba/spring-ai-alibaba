@@ -27,8 +27,44 @@ export interface CoordinatorToolVO {
   updateTime?: string
 }
 
+export interface CoordinatorToolConfig {
+  enabled: boolean
+  showPublishButton: boolean
+  success: boolean
+  message?: string
+}
+
 export class CoordinatorToolApiService {
   private static readonly BASE_URL = '/api/coordinator-tools'
+
+  /**
+   * 获取CoordinatorTool配置信息
+   */
+  public static async getCoordinatorToolConfig(): Promise<CoordinatorToolConfig> {
+    try {
+      const response = await fetch(`${this.BASE_URL}/config`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to get coordinator tool config: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error: any) {
+      console.error('获取CoordinatorTool配置失败:', error)
+      // 返回默认配置
+      return {
+        enabled: true,
+        showPublishButton: true,
+        success: false,
+        message: error.message
+      }
+    }
+  }
 
   /**
    * 获取所有endpoint列表

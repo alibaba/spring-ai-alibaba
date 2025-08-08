@@ -87,6 +87,8 @@ const words: I18nType = {
     no: '否',
     enable: '启用',
     disable: '禁用',
+    published: '已发布',
+    unpublished: '未发布',
     copy: '复制',
     paste: '粘贴',
     cut: '剪切',

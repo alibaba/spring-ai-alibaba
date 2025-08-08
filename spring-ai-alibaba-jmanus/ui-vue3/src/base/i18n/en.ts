@@ -87,6 +87,8 @@ const words: I18nType = {
     no: 'No',
     enable: 'Enable',
     disable: 'Disable',
+    published: 'Published',
+    unpublished: 'Unpublished',
     copy: 'Copy',
     paste: 'Paste',
     cut: 'Cut',

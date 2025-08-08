@@ -61,8 +61,8 @@ public class CoordinatorToolEntity {
 	 * 发布状态枚举
 	 */
 	public enum PublishStatus {
-		PUBLISHED("published"),
-		UNPUBLISHED("unpublished");
+
+		PUBLISHED("published"), UNPUBLISHED("unpublished");
 
 		private final String description;
 
@@ -73,6 +73,7 @@ public class CoordinatorToolEntity {
 		public String getDescription() {
 			return description;
 		}
+
 	}
 
 	public CoordinatorToolEntity() {
@@ -172,15 +173,10 @@ public class CoordinatorToolEntity {
 
 	@Override
 	public String toString() {
-		return "CoordinatorToolEntity{" +
-				"id=" + id +
-				", toolName='" + toolName + '\'' +
-				", toolDescription='" + toolDescription + '\'' +
-				", planTemplateId='" + planTemplateId + '\'' +
-				", endpoint='" + endpoint + '\'' +
-				", publishStatus=" + publishStatus +
-				", createTime=" + createTime +
-				", updateTime=" + updateTime +
-				'}';
+		return "CoordinatorToolEntity{" + "id=" + id + ", toolName='" + toolName + '\'' + ", toolDescription='"
+				+ toolDescription + '\'' + ", planTemplateId='" + planTemplateId + '\'' + ", endpoint='" + endpoint
+				+ '\'' + ", publishStatus=" + publishStatus + ", createTime=" + createTime + ", updateTime="
+				+ updateTime + '}';
 	}
-} 
+
+}

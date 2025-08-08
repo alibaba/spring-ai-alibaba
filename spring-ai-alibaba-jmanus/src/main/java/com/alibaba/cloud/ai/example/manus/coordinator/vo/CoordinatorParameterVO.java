@@ -87,4 +87,4 @@ public class CoordinatorParameterVO {
 		return name != null ? name.hashCode() : 0;
 	}
 
-} 
+}
