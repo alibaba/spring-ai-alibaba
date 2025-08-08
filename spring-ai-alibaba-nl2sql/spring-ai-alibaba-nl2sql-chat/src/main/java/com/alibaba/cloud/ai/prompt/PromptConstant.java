@@ -19,13 +19,13 @@ package com.alibaba.cloud.ai.prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
 /**
- * 提示词常量类，动态加载提示词文件
+ * Prompt constant class, dynamically loads prompt files
  *
  * @author zhangshenghang
  */
 public class PromptConstant {
 
-	// 提示词模板获取方法
+	// Prompt template acquisition method
 	public static PromptTemplate getInitRewritePromptTemplate() {
 		return new PromptTemplate(PromptLoader.loadPrompt("init-rewrite"));
 	}
@@ -90,7 +90,7 @@ public class PromptConstant {
 		return new PromptTemplate(PromptLoader.loadPrompt("semantic-model"));
 	}
 
-	// 兼容性方法，保持向后兼容
+	// Compatibility method, maintain backward compatibility
 	@Deprecated
 	public static final PromptTemplate INIT_REWRITE_PROMPT_TEMPLATE = getInitRewritePromptTemplate();
 

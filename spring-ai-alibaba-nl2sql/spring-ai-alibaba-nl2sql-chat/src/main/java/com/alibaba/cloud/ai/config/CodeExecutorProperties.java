@@ -29,87 +29,87 @@ public class CodeExecutorProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.nl2sql.code-executor";
 
 	/**
-	 * 指定代码容器池运行服务的实现类
+	 * Specify implementation class of code container pool runtime service
 	 */
 	CodePoolExecutorEnum codePoolExecutor = CodePoolExecutorEnum.DOCKER;
 
 	/**
-	 * 服务Host，为null则使用默认地址
+	 * Service host, use default address if null
 	 */
 	String host = null;
 
 	/**
-	 * 镜像名称，可以自定义带有常用第三方依赖的镜像来替换此配置
+	 * Image name, can customize image with common third-party dependencies to replace this configuration
 	 */
 	String imageName = "continuumio/anaconda3:latest";
 
 	/**
-	 * 容器名称前缀
+	 * Container name prefix
 	 */
 	String containerNamePrefix = "nl2sql-python-exec-";
 
 	/**
-	 * 任务阻塞队列大小
+	 * Task blocking queue size
 	 */
 	Integer taskQueueSize = 5;
 
 	/**
-	 * 核心容器的最大数量
+	 * Maximum number of core containers
 	 */
 	Integer coreContainerNum = 2;
 
 	/**
-	 * 临时容器的最大数量
+	 * Maximum number of temporary containers
 	 */
 	Integer tempContainerNum = 2;
 
 	/**
-	 * 线程池的核心线程数量
+	 * Core thread count of thread pool
 	 */
 	Integer coreThreadSize = 5;
 
 	/**
-	 * 线程池的最大线程数量
+	 * Maximum thread count of thread pool
 	 */
 	Integer maxThreadSize = 5;
 
 	/**
-	 * 临时容器的存活时间，单位分
+	 * Survival time of temporary containers, in minutes
 	 */
 	Integer tempContainerAliveTime = 5;
 
 	/**
-	 * 线程池的任务存活时间，单位秒
+	 * Task survival time of thread pool, in seconds
 	 */
 	Long keepThreadAliveTime = 60L;
 
 	/**
-	 * 线程池的任务阻塞队列大小
+	 * Task blocking queue size of thread pool
 	 */
 	Integer threadQueueSize = 10;
 
 	/**
-	 * 容器最大内存，单位MB
+	 * Maximum container memory, in MB
 	 */
 	Long limitMemory = 500L;
 
 	/**
-	 * 容器CPU核心数
+	 * Number of container CPU cores
 	 */
 	Long cpuCore = 1L;
 
 	/**
-	 * Python代码运行上限时间
+	 * Python code execution time limit
 	 */
 	String codeTimeout = "60s";
 
 	/**
-	 * 容器运行最大时间
+	 * Maximum container runtime
 	 */
 	Long containerTimeout = 3000L;
 
 	/**
-	 * 容器网络模式
+	 * Container network mode
 	 */
 	String networkMode = "bridge";
 

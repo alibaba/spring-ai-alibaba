@@ -46,7 +46,7 @@ public class SemanticModelRecallService {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	// 根据data_set_id获取智能体字段
+	// Get agent fields by data_set_id
 	public List<SemanticModelDTO> getFieldByDataSetId(String dataSetId) {
 		return this.jdbcTemplate.query(FIELD_GET_BY_DATASET_IDS, new Object[] { dataSetId }, (rs, rowNum) -> {
 			return new SemanticModelDTO(rs.getString("agent_id"), rs.getString("origin_name"),

@@ -40,7 +40,7 @@ import static com.alibaba.cloud.ai.constant.Constant.REPORT_GENERATOR_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE;
 
 /**
- * 计划执行与验证节点，根据计划决定下一个执行的节点，并在执行前进行验证。
+ * Plan execution and validation node, decides next execution node based on plan, and validates before execution.
  *
  * @author zhangshenghang
  */

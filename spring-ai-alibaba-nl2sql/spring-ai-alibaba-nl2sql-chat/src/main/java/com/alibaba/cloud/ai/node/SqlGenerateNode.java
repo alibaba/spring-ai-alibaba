@@ -172,7 +172,7 @@ public class SqlGenerateNode implements NodeAction {
 
 		logger.info("开始增强SQL生成流程 - 原始SQL: {}, 异常信息: {}", originalSql, exceptionMessage);
 
-		// 多轮SQL优化流程
+		// Multi-round SQL optimization process
 		String bestSql = originalSql;
 		double bestScore = 0.0;
 
@@ -182,12 +182,12 @@ public class SqlGenerateNode implements NodeAction {
 			try {
 				String currentSql;
 				if (round == 1) {
-					// 第一轮：使用原始服务生成基础SQL
+					// First round: Use original service to generate basic SQL
 					currentSql = baseNl2SqlService.generateSql(evidenceList, input, schemaDTO, originalSql,
 							exceptionMessage);
 				}
 				else {
-					// 后续轮次：使用ChatClient进行优化
+					// Subsequent rounds: Use ChatClient for optimization
 					currentSql = generateOptimizedSql(bestSql, exceptionMessage, round);
 				}
 
@@ -196,12 +196,12 @@ public class SqlGenerateNode implements NodeAction {
 					continue;
 				}
 
-				// 评估SQL质量
+				// Evaluate SQL quality
 				SqlQualityScore score = evaluateSqlQuality(currentSql, schemaDTO);
 				logger.info("第{}轮SQL评分: 语法={}, 安全={}, 性能={}, 总分={}", round, score.syntaxScore, score.securityScore,
 						score.performanceScore, score.totalScore);
 
-				// 更新最佳SQL
+				// Update best SQL
 				if (score.totalScore > bestScore) {
 					bestSql = currentSql;
 					bestScore = score.totalScore;

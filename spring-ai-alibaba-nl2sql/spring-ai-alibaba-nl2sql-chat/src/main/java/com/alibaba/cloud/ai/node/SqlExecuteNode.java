@@ -109,7 +109,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 					resultSetBO.getData() != null ? resultSetBO.getData().size() : 0);
 
 			// Prepare the final result object
-			// 将SQL查询结果的List存储起来，供代码运行节点使用
+			// Store List of SQL query results for use by code execution node
 			Map<String, Object> result = Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedResults,
 					SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, "", Constant.SQL_RESULT_LIST_MEMORY, resultSetBO.getData());
 

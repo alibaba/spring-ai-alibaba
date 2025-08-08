@@ -23,14 +23,14 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * 状态管理工具类，提供类型安全的状态获取方法
+ * State management utility class, providing type-safe state getting methods
  *
  * @author zhangshenghang
  */
 public class StateUtils {
 
 	/**
-	 * 安全获取字符串类型状态值
+	 * Safely get string type state value
 	 */
 	public static String getStringValue(OverAllState state, String key) {
 		return state.value(key)
@@ -39,14 +39,14 @@ public class StateUtils {
 	}
 
 	/**
-	 * 安全获取字符串类型状态值，带默认值
+	 * Safely get string type state value with default value
 	 */
 	public static String getStringValue(OverAllState state, String key, String defaultValue) {
 		return state.value(key).map(String.class::cast).orElse(defaultValue);
 	}
 
 	/**
-	 * 安全获取列表类型状态值
+	 * Safely get list type state value
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> List<T> getListValue(OverAllState state, String key) {
@@ -56,7 +56,7 @@ public class StateUtils {
 	}
 
 	/**
-	 * 安全获取对象类型状态值
+	 * Safely get object type state value
 	 */
 	public static <T> T getObjectValue(OverAllState state, String key, Class<T> type) {
 		return state.value(key)
@@ -65,35 +65,35 @@ public class StateUtils {
 	}
 
 	/**
-	 * 安全获取对象类型状态值，带默认值
+	 * Safely get object type state value with default value
 	 */
 	public static <T> T getObjectValue(OverAllState state, String key, Class<T> type, T defaultValue) {
 		return state.value(key).map(type::cast).orElse(defaultValue);
 	}
 
 	/**
-	 * 安全获取对象类型状态值，带默认值提供器
+	 * Safely get object type state value with default value supplier
 	 */
 	public static <T> T getObjectValue(OverAllState state, String key, Class<T> type, Supplier<T> defaultSupplier) {
 		return state.value(key).map(type::cast).orElseGet(defaultSupplier);
 	}
 
 	/**
-	 * 检查状态值是否存在
+	 * Check if state value exists
 	 */
 	public static boolean hasValue(OverAllState state, String key) {
 		return state.value(key).isPresent() && !((String) state.value(key).get()).equals("");
 	}
 
 	/**
-	 * 获取Document列表
+	 * Get Document list
 	 */
 	public static List<Document> getDocumentList(OverAllState state, String key) {
 		return getListValue(state, key);
 	}
 
 	/**
-	 * 获取Document列表的列表
+	 * Get list of Document lists
 	 */
 	public static List<List<Document>> getDocumentListList(OverAllState state, String key) {
 		return getListValue(state, key);

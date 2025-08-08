@@ -17,17 +17,17 @@
 package com.alibaba.cloud.ai.dto;
 
 /**
- * 提示词配置请求DTO
+ * Prompt configuration request DTO
  *
  * @author Makoto
  */
-public record PromptConfigDTO(String id, // 配置ID（更新时需要）
-		String name, // 配置名称
-		String promptType, // 提示词类型
-		String systemPrompt, // 用户自定义的系统提示词内容
-		Boolean enabled, // 是否启用该配置
-		String description, // 配置描述
-		String creator // 创建者
+public record PromptConfigDTO(String id, // Configuration ID (required for update)
+		String name, // Configuration name
+		String promptType, // Prompt type
+		String systemPrompt, // User-defined system prompt content
+		Boolean enabled, // Whether to enable this configuration
+		String description, // Configuration description
+		String creator // Creator
 ) {
 	public PromptConfigDTO(String promptType, String systemPrompt) {
 		this(null, null, promptType, systemPrompt, true, null, null);
