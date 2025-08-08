@@ -7,7 +7,7 @@
     <groupId>com.alibaba.cloud.ai</groupId>
     <name>Spring AI Alibaba JManus</name>
     <artifactId>spring-ai-alibaba-jmanus</artifactId>
-    <version>3.0.2-SNAPSHOT</version>
+    <version>3.0.4-SNAPSHOT</version>
 
     <!-- The required dependencies are maintained separately by the JManus module -->
     <properties>
@@ -27,6 +27,9 @@
         <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
 
         <webdrivermanager.version>6.1.0</webdrivermanager.version>
+
+        <!-- Playwright Configuration -->
+        <playwright.version>1.53.0</playwright.version>
 
         <!-- CheckStyle Maven Plugin -->
         <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
@@ -168,7 +171,7 @@
         <dependency>
             <groupId>com.microsoft.playwright</groupId>
             <artifactId>playwright</artifactId>
-            <version>1.52.0</version>
+            <version>${playwright.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>

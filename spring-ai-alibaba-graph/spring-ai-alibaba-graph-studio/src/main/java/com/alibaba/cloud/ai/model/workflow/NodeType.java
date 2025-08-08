@@ -50,13 +50,9 @@ public enum NodeType {
 
 	TOOL("tool", "tool"),
 
-	KNOWLEDGE_RETRIEVAL("knowledge-retrieval", "knowledge-retrieval"),
-
 	MCP("mcp", "unsupported"),
 
 	TEMPLATE_TRANSFORM("template-transform", "template-transform"),
-
-	VARIABLE_AGGREGATOR("variable-aggregator", "variable-aggregator"),
 
 	ITERATION("iteration", "iteration"),
 
@@ -64,9 +60,9 @@ public enum NodeType {
 
 	ASSIGNER("assigner", "assigner");
 
-	private String value;
+	private final String value;
 
-	private String difyValue;
+	private final String difyValue;
 
 	NodeType(String value, String difyValue) {
 		this.value = value;

@@ -72,4 +72,9 @@ public interface IConfigService {
 	 */
 	void batchUpdateConfigs(List<ConfigEntity> configs);
 
+	/**
+	 * Reset all configurations to their default values
+	 */
+	void resetAllConfigsToDefaults();
+
 }

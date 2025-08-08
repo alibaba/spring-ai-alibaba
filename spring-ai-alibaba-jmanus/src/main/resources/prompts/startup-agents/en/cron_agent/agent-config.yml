@@ -1,7 +1,7 @@
 # CRON_AGENT Configuration
 agentName: CRON_AGENT
 agentDescription: A scheduled task execution agent responsible for handling user-proposed scheduled task requirements. The agent will parse the time for user scheduled task execution and the execution plan prompts.
-isBuiltIn: false  # Cron agent can be deleted if not needed
+builtIn: false  # Cron agent can be deleted if not needed
 availableToolKeys:
   - cron_tool
   - terminate

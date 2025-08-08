@@ -227,6 +227,15 @@
             max="1"
           />
         </div>
+
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.completionsPath') }}</label>
+          <input
+              type="text"
+              v-model="selectedModel.completionsPath"
+              :placeholder="t('config.modelConfig.completionsPathPlaceholder')"
+          />
+        </div>
       </div>
 
       <!-- Empty state -->
@@ -349,6 +358,15 @@
             step="0.1"
             min="0"
             max="1"
+          />
+        </div>
+
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.completionsPath') }}</label>
+          <input
+              type="text"
+              v-model="newModel.completionsPath"
+              :placeholder="t('config.modelConfig.completionsPathPlaceholder')"
           />
         </div>
       </div>
@@ -707,6 +725,7 @@ const handleAddModel = async () => {
       type: newModel.type.trim(),
       temperature: isNaN(newModel.temperature!) ? null : newModel.temperature,
       topP: isNaN(newModel.topP!) ? null : newModel.topP,
+      completionsPath: newModel.completionsPath?.trim()
     } as Omit<Model, 'id'>
 
     const createdModel = await ModelApiService.createModel(modelData)

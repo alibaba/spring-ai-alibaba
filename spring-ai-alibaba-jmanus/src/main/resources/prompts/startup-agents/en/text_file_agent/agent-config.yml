@@ -1,7 +1,7 @@
 # TEXT_FILE_AGENT Configuration
 agentName: TEXT_FILE_AGENT
 agentDescription: A text file processing agent that can create, read, write, and append content to various text-based files. Suitable for temporary and persistent record keeping. Supports multiple file types including markdown, html, source code, and configuration files.
-isBuiltIn: false
+builtIn: false
 availableToolKeys:
   - text_file_operator
   - terminate

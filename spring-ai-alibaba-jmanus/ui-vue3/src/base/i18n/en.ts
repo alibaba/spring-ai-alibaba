@@ -64,6 +64,8 @@ const words: I18nType = {
     successMessage: 'Configuration saved successfully! Redirecting to home page...',
     restartRequired: 'API key saved successfully! The application needs to be restarted for the configuration to take effect.\n\nClick "OK" to restart now, or "Cancel" to restart manually later.',
     simplifiedChinese: 'Simplified Chinese',
+    completionsPath: 'Completions Path',
+    completionsPathPlaceholder: 'If not specified, the default configuration is: /v1/chat/completions',
   },
 
   // Common buttons and actions
@@ -307,6 +309,8 @@ const words: I18nType = {
       temperaturePlaceholder: 'Leave empty to use model default',
       topP: 'Top P',
       topPPlaceholder: 'Leave empty to use model default',
+      completionsPath: 'Completions Path',
+      completionsPathPlaceholder: 'If not specified, the default configuration is: /v1/chat/completions',
       headers: 'Headers',
       headersPlaceholder: 'Request headers (JSON format)',
     },
@@ -494,6 +498,10 @@ const words: I18nType = {
         system: 'System',
         performance: 'Performance',
       },
+      restoreAllDefaults: 'Restore to Default',
+      restoreAllDefaultsConfirm: 'Are you sure you want to restore all configurations to default values? This will overwrite all custom configurations.',
+      restoreAllDefaultsSuccess: 'All configurations have been restored to default values',
+      restoreAllDefaultsFailed: 'Failed to restore default configurations',
     },
     promptConfig: {
       title: 'Dynamic Prompt Configuration',
@@ -836,7 +844,8 @@ const words: I18nType = {
   direct: {
     planTemplateIdNotFound: 'Plan template ID not found',
     executionFailedNoPlanId: 'Plan execution failed: No valid plan ID returned',
-    executionFailed: 'Plan execution failed'
+    executionFailed: 'Plan execution failed',
+    configuration: 'config'
   },
 
   // Modal
