@@ -315,18 +315,11 @@ public class ChromeDriverService implements IChromeDriverService {
 	}
 
 	/**
-	 * Detect if running in Spring Boot environment
+	 * Detect if running in Spring Boot environment , default return true because we are
+	 * in spring boot env .
 	 */
 	private boolean isSpringBootEnvironment() {
-		try {
-			// Simple check for Spring Boot application class
-			Class.forName("org.springframework.boot.SpringApplication");
-			return true;
-		}
-		catch (ClassNotFoundException e) {
-			// If Spring Boot is not found, assume standard environment
-			return false;
-		}
+		return true;
 	}
 
 	/**
