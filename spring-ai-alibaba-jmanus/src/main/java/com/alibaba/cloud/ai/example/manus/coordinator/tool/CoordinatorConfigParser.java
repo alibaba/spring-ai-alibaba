@@ -11,14 +11,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.alibaba.cloud.ai.example.manus.coordinator.vo.CoordinatorConfigVO;
 import com.alibaba.cloud.ai.example.manus.coordinator.vo.CoordinatorParameterVO;
-import com.alibaba.cloud.ai.example.manus.coordinator.entity.CoordinatorToolEntity;
 
 /**
  * CoordinatorConfig解析器
