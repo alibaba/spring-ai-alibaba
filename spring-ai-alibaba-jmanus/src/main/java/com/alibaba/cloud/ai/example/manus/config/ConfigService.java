@@ -292,4 +292,24 @@ public class ConfigService implements IConfigService, ApplicationListener<Contex
 		}
 	}
 
+	/**
+	 * Reset all configurations to their default values
+	 */
+	@Transactional
+	public void resetAllConfigsToDefaults() {
+		List<ConfigEntity> allConfigs = configRepository.findAll();
+		
+		for (ConfigEntity config : allConfigs) {
+			if (config.getDefaultValue() != null && !config.getDefaultValue().equals(config.getConfigValue())) {
+				config.setConfigValue(config.getDefaultValue());
+				configRepository.save(config);
+				
+				// Update all beans using this configuration
+				Map<String, Object> configBeans = applicationContext.getBeansWithAnnotation(ConfigurationProperties.class);
+				configBeans.values()
+					.forEach(bean -> updateBeanConfig(bean, config.getConfigPath(), config.getDefaultValue()));
+			}
+		}
+	}
+
 }

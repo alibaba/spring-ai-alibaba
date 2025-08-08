@@ -31,6 +31,14 @@
       </div>
       <div class="header-right">
         <div class="import-export-actions">
+          <button 
+            @click="restoreAllDefaults" 
+            class="action-btn restore-btn" 
+            :title="$t('config.basicConfig.restoreAllDefaults')"
+            :disabled="loading"
+          >
+            🔄
+          </button>
           <button @click="exportConfigs" class="action-btn" :title="$t('config.basicConfig.exportConfigs')">
             📤
           </button>
@@ -879,6 +887,31 @@ const importConfigs = (event: Event) => {
   reader.readAsText(file)
 }
 
+// Restore all configurations to defaults
+const restoreAllDefaults = async () => {
+  const confirmed = confirm(t('config.basicConfig.restoreAllDefaultsConfirm'))
+  if (!confirmed) return
+
+  try {
+    loading.value = true
+
+    const result = await AdminApiService.resetAllConfigsToDefaults()
+
+    if (result.success) {
+      // Reload all configurations
+      await loadAllConfigs()
+      showMessage(t('config.basicConfig.restoreAllDefaultsSuccess'))
+    } else {
+      showMessage(result.message || t('config.basicConfig.restoreAllDefaultsFailed'), 'error')
+    }
+  } catch (error) {
+    console.error(t('config.basicConfig.restoreAllDefaultsFailed'), error)
+    showMessage(t('config.basicConfig.restoreAllDefaultsFailed'), 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
 // Load configurations when the component is mounted
 onMounted(() => {
   loadAllConfigs()
@@ -1435,5 +1468,22 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.95);
   border-color: rgba(255, 255, 255, 0.25);
+}
+
+.action-btn.restore-btn {
+  background: rgba(244, 67, 54, 0.1);
+  border-color: rgba(244, 67, 54, 0.3);
+  color: #ef5350;
+}
+
+.action-btn.restore-btn:hover:not(:disabled) {
+  background: rgba(244, 67, 54, 0.2);
+  border-color: rgba(244, 67, 54, 0.5);
+  color: #f44336;
+}
+
+.action-btn.restore-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
