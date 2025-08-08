@@ -498,6 +498,10 @@ const words: I18nType = {
         system: 'System',
         performance: 'Performance',
       },
+      restoreAllDefaults: 'Restore to Default',
+      restoreAllDefaultsConfirm: 'Are you sure you want to restore all configurations to default values? This will overwrite all custom configurations.',
+      restoreAllDefaultsSuccess: 'All configurations have been restored to default values',
+      restoreAllDefaultsFailed: 'Failed to restore default configurations',
     },
     promptConfig: {
       title: 'Dynamic Prompt Configuration',

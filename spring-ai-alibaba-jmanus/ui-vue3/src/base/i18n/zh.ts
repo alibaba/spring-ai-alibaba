@@ -496,6 +496,10 @@ const words: I18nType = {
         system: '系统',
         performance: '性能',
       },
+      restoreAllDefaults: '恢复到默认配置',
+      restoreAllDefaultsConfirm: '确定要将所有配置恢复到默认值吗？此操作将覆盖所有自定义配置。',
+      restoreAllDefaultsSuccess: '所有配置已恢复到默认值',
+      restoreAllDefaultsFailed: '恢复默认配置失败',
     },
     promptConfig: {
       title: '动态Prompt配置',
