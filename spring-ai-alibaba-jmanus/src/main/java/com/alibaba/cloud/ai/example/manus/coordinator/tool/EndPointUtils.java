@@ -16,9 +16,9 @@ public class EndPointUtils {
 	}
 
 	/**
-	 * 构建messageEndpoint，增加默认前缀/mcp
-	 * @param endpoint 原始端点地址
-	 * @return 带前缀的端点地址
+	 * Build messageEndpoint, add default prefix /mcp
+	 * @param endpoint Original endpoint address
+	 * @return Endpoint address with prefix
 	 */
 	public static String buildMessageEndpoint(String endpoint) {
 		if (endpoint == null || endpoint.trim().isEmpty()) {
@@ -27,12 +27,12 @@ public class EndPointUtils {
 
 		String trimmedEndpoint = endpoint.trim();
 
-		// 如果endpoint已经以/开头，则直接拼接/mcp
+		// If endpoint already starts with /, directly concatenate /mcp
 		if (trimmedEndpoint.startsWith("/")) {
 			return ENDPOINT_PREFIX + trimmedEndpoint;
 		}
 		else {
-			// 如果endpoint不以/开头，则添加/
+			// If endpoint doesn't start with /, add /
 			return ENDPOINT_PREFIX + "/" + trimmedEndpoint;
 		}
 	}

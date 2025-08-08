@@ -65,7 +65,7 @@ public class CoordinatorToolController {
 	private CoordinatorToolProperties coordinatorToolProperties;
 
 	/**
-	 * 获取所有协调器工具
+	 * Get all coordinator tools
 	 */
 	@GetMapping
 	public ResponseEntity<List<CoordinatorToolVO>> getAllCoordinatorTools() {
@@ -77,7 +77,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 根据ID获取协调器工具
+	 * Get coordinator tool by ID
 	 */
 	@GetMapping("/{id}")
 	public ResponseEntity<CoordinatorToolVO> getCoordinatorToolById(@PathVariable("id") Long id) {
@@ -89,14 +89,14 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 创建协调器工具
+	 * Create coordinator tool
 	 */
 	@PostMapping
 	public ResponseEntity<CoordinatorToolVO> createCoordinatorTool(@RequestBody CoordinatorToolVO toolVO) {
 		try {
 			System.out.println("Received toolVO: " + toolVO);
 
-			// 验证必需字段
+			// Validate required fields
 			if (toolVO.getToolName() == null || toolVO.getToolName().trim().isEmpty()) {
 				System.err.println("Tool name is required but was null or empty");
 				return ResponseEntity.badRequest().build();
@@ -142,7 +142,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 更新协调器工具
+	 * Update coordinator tool
 	 */
 	@PutMapping("/{id}")
 	public ResponseEntity<CoordinatorToolVO> updateCoordinatorTool(@PathVariable("id") Long id,
@@ -168,7 +168,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 删除协调器工具
+	 * Delete coordinator tool
 	 */
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> deleteCoordinatorTool(@PathVariable("id") Long id) {
@@ -185,7 +185,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 根据工具名称查找
+	 * Find by tool name
 	 */
 	@GetMapping("/by-name/{toolName}")
 	public ResponseEntity<CoordinatorToolVO> getCoordinatorToolByName(@PathVariable("toolName") String toolName) {
@@ -197,7 +197,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 根据计划模板ID查找
+	 * Find by plan template ID
 	 */
 	@GetMapping("/by-template/{planTemplateId}")
 	public ResponseEntity<List<CoordinatorToolVO>> getCoordinatorToolsByTemplate(
@@ -210,7 +210,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 根据endpoint查找
+	 * Find by endpoint
 	 */
 	@GetMapping("/by-endpoint/{endpoint}")
 	public ResponseEntity<CoordinatorToolVO> getCoordinatorToolByEndpoint(@PathVariable("endpoint") String endpoint) {
@@ -222,7 +222,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 根据发布状态查找
+	 * Find by publish status
 	 */
 	@GetMapping("/by-status/{publishStatus}")
 	public ResponseEntity<List<CoordinatorToolVO>> getCoordinatorToolsByStatus(
@@ -242,7 +242,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 获取所有已发布的工具
+	 * Get all published tools
 	 */
 	@GetMapping("/published")
 	public ResponseEntity<List<CoordinatorToolVO>> getPublishedCoordinatorTools() {
@@ -255,7 +255,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 发布工具
+	 * Publish tool
 	 */
 	@PostMapping("/{id}/publish")
 	public ResponseEntity<Map<String, Object>> publishCoordinatorTool(@PathVariable("id") Long id) {
@@ -296,7 +296,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 取消发布工具
+	 * Unpublish tool
 	 */
 	@PostMapping("/{id}/unpublish")
 	public ResponseEntity<Map<String, Object>> unpublishCoordinatorTool(@PathVariable("id") Long id) {
@@ -323,7 +323,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 获取工具统计信息
+	 * Get tool statistics
 	 */
 	@GetMapping("/stats")
 	public ResponseEntity<Map<String, Object>> getCoordinatorToolStats() {
@@ -349,7 +349,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 搜索工具（根据名称或描述）
+	 * Search tools (by name or description)
 	 */
 	@GetMapping("/search")
 	public ResponseEntity<List<CoordinatorToolVO>> searchCoordinatorTools(@RequestParam("keyword") String keyword) {
@@ -372,7 +372,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 获取最近创建的工具
+	 * Get recently created tools
 	 */
 	@GetMapping("/recent")
 	public ResponseEntity<List<CoordinatorToolVO>> getRecentCoordinatorTools() {
@@ -384,7 +384,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 获取最近更新的工具
+	 * Get recently updated tools
 	 */
 	@GetMapping("/recently-updated")
 	public ResponseEntity<List<CoordinatorToolVO>> getRecentlyUpdatedCoordinatorTools() {
@@ -396,7 +396,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 获取所有endpoint列表（包含jmanus）
+	 * Get all endpoint lists (including jmanus)
 	 */
 	@GetMapping("/endpoints")
 	public ResponseEntity<List<String>> getAllEndpoints() {
@@ -407,7 +407,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 根据计划模板ID获取或创建协调器工具
+	 * Get or create coordinator tool by plan template ID
 	 */
 	@GetMapping("/get-or-new-by-template/{planTemplateId}")
 	public ResponseEntity<Map<String, Object>> getOrNewCoordinatorToolsByTemplate(
@@ -495,7 +495,7 @@ public class CoordinatorToolController {
 	}
 
 	/**
-	 * 获取CoordinatorTool配置信息
+	 * Get CoordinatorTool configuration information
 	 */
 	@GetMapping("/config")
 	public ResponseEntity<Map<String, Object>> getCoordinatorToolConfig() {

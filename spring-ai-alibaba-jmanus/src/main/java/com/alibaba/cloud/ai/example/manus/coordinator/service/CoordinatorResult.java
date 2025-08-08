@@ -19,7 +19,7 @@ package com.alibaba.cloud.ai.example.manus.coordinator.service;
 import java.util.Map;
 
 /**
- * 协调器结果包装类
+ * Coordinator Result Wrapper Class
  */
 public class CoordinatorResult {
 

@@ -42,9 +42,9 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 
 /**
- * 协调器服务
+ * Coordinator Service
  *
- * 负责加载和管理协调器工具，处理业务逻辑
+ * Responsible for loading and managing coordinator tools, handling business logic
  */
 @Service
 public class CoordinatorService {
@@ -64,25 +64,25 @@ public class CoordinatorService {
 
 	public CoordinatorService() {
 		this.objectMapper = new ObjectMapper();
-		// 注册JSR310模块以支持LocalDateTime等Java 8时间类型
+		// Register JSR310 module to support LocalDateTime and other Java 8 time types
 		this.objectMapper.registerModule(new JavaTimeModule());
 	}
 
 	/**
-	 * 加载协调器工具
-	 * @return 按endpoint分组的协调器工具Map
+	 * Load coordinator tools
+	 * @return Map of coordinator tools grouped by endpoint
 	 */
 	public Map<String, List<CoordinatorTool>> loadCoordinatorTools() {
-		log.info("开始加载协调器工具");
+		log.info("Starting to load coordinator tools");
 
 		try {
-			// 从数据库查询已发布的工具
+			// Query published tools from database
 			List<CoordinatorToolEntity> publishedEntities = coordinatorToolRepository
 				.findByPublishStatus(CoordinatorToolEntity.PublishStatus.PUBLISHED);
 
-			log.info("从数据库查询到 {} 个已发布的工具", publishedEntities.size());
+			log.info("Found {} published tools from database", publishedEntities.size());
 
-			// 转换为CoordinatorTool对象
+			// Convert to CoordinatorTool objects
 			List<CoordinatorTool> coordinatorTools = new ArrayList<>();
 			for (CoordinatorToolEntity entity : publishedEntities) {
 				CoordinatorTool tool = new CoordinatorTool();
@@ -93,19 +93,19 @@ public class CoordinatorService {
 				coordinatorTools.add(tool);
 			}
 
-			log.info("成功转换 {} 个协调器工具", coordinatorTools.size());
+			log.info("Successfully converted {} coordinator tools", coordinatorTools.size());
 
-			// 按endpoint分组
+			// Group by endpoint
 			Map<String, List<CoordinatorTool>> groupedTools = coordinatorTools.stream()
 				.collect(Collectors.groupingBy(CoordinatorTool::getEndpoint));
 
-			log.info("成功加载协调器工具，共 {} 个工具，分组为 {} 个endpoint", coordinatorTools.size(), groupedTools.size());
+			log.info("Successfully loaded coordinator tools, total {} tools, grouped into {} endpoints", coordinatorTools.size(), groupedTools.size());
 
-			// 输出每个endpoint的工具信息
+			// Output tool information for each endpoint
 			for (Map.Entry<String, List<CoordinatorTool>> entry : groupedTools.entrySet()) {
-				log.info("Endpoint: {}, 工具数量: {}", entry.getKey(), entry.getValue().size());
+				log.info("Endpoint: {}, tool count: {}", entry.getKey(), entry.getValue().size());
 				for (CoordinatorTool tool : entry.getValue()) {
-					log.info("  - 工具: {} (描述: {})", tool.getToolName(), tool.getToolDescription());
+					log.info("  - Tool: {} (description: {})", tool.getToolName(), tool.getToolDescription());
 				}
 			}
 
@@ -113,15 +113,15 @@ public class CoordinatorService {
 
 		}
 		catch (Exception e) {
-			log.error("加载协调器工具失败: {}", e.getMessage(), e);
+			log.error("Failed to load coordinator tools: {}", e.getMessage(), e);
 			return Map.of();
 		}
 	}
 
 	/**
-	 * 为协调器工具创建工具规范
-	 * @param tool 协调器工具
-	 * @return 工具规范
+	 * Create tool specification for coordinator tool
+	 * @param tool Coordinator tool
+	 * @return Tool specification
 	 */
 	public McpServerFeatures.SyncToolSpecification createToolSpecification(CoordinatorTool tool) {
 		return McpServerFeatures.SyncToolSpecification.builder()
@@ -135,37 +135,37 @@ public class CoordinatorService {
 	}
 
 	/**
-	 * 调用协调器工具
-	 * @param request 工具调用请求
-	 * @return 工具调用结果
+	 * Invoke coordinator tool
+	 * @param request Tool invocation request
+	 * @return Tool invocation result
 	 */
 	public CallToolResult invokeTool(CallToolRequest request) {
 		try {
-			log.debug("调用计划协调工具，参数: {}", request.arguments());
+			log.debug("Invoking plan coordinator tool, parameters: {}", request.arguments());
 			String resultString = null;
 			String toolName = request.name();
 
-			// 将参数转换为JSON字符串
+			// Convert parameters to JSON string
 			String rawParam = objectMapper.writeValueAsString(request.arguments());
 
-			log.info("执行计划模板: {}, 参数: {}", toolName, rawParam);
+			log.info("Executing plan template: {}, parameters: {}", toolName, rawParam);
 
-			// 调用计划模板服务
+			// Call plan template service
 			ResponseEntity<Map<String, Object>> responseEntity = planTemplateService
 				.executePlanByTemplateIdInternal(toolName, rawParam);
 
-			// 创建简化的返回结果
+			// Create simplified response result
 			CoordinatorResult response;
 
-			// 处理服务返回结果
+			// Process service response result
 			if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
 				Map<String, Object> executionResult = responseEntity.getBody();
 
-				// 获取planId和状态
+				// Get planId and status
 				String planId = (String) executionResult.get("planId");
 				String status = (String) executionResult.get("status");
 				String message = (String) executionResult.get("message");
-				resultString = "计划执行完成，planId: " + planId;
+				resultString = "Plan execution completed, planId: " + planId;
 				response = new CoordinatorResult(planId, request.arguments(), 2, "success", resultString);
 
 			}
@@ -173,75 +173,75 @@ public class CoordinatorService {
 				response = new CoordinatorResult(null, request.arguments(), 2, "failed", resultString);
 			}
 
-			// 转换为JSON字符串
+			// Convert to JSON string
 			String resultJson = objectMapper.writeValueAsString(response);
 
-			log.info("计划模板执行完成: {}, 结果: {}", toolName, resultJson);
+			log.info("Plan template execution completed: {}, result: {}", toolName, resultJson);
 
-			// 直接返回结果字符串，与其他工具保持一致
+			// Directly return result string, consistent with other tools
 			return new CallToolResult(List.of(new McpSchema.TextContent(resultJson)), null);
 
 		}
 		catch (Exception e) {
-			log.error("计划协调工具调用失败: {}", e.getMessage(), e);
+			log.error("Plan coordinator tool invocation failed: {}", e.getMessage(), e);
 
-			// 创建简化的错误响应
+			// Create simplified error response
 			CoordinatorResult errorResponse = new CoordinatorResult(null, request.arguments(), 2, "error", null);
 			try {
 				String errorJson = objectMapper.writeValueAsString(errorResponse);
 				return new CallToolResult(List.of(new McpSchema.TextContent(errorJson)), null);
 			}
 			catch (Exception jsonError) {
-				return new CallToolResult(List.of(new McpSchema.TextContent("计划协调工具调用失败: " + e.getMessage())), null);
+				return new CallToolResult(List.of(new McpSchema.TextContent("Plan coordinator tool invocation failed: " + e.getMessage())), null);
 			}
 		}
 	}
 
 	/**
-	 * 发布CoordinatorTool到MCP服务器
-	 * @param tool 要发布的协调器工具
-	 * @return 是否发布成功
+	 * Publish CoordinatorTool to MCP server
+	 * @param tool Coordinator tool to publish
+	 * @return Whether publishing was successful
 	 */
 	public boolean publishCoordinatorTool(CoordinatorTool tool) {
 		if (tool == null) {
-			log.warn("CoordinatorTool为空，无法发布");
+			log.warn("CoordinatorTool is null, cannot publish");
 			return false;
 		}
 
 		try {
-			log.info("开始发布CoordinatorTool: {} 到endpoint: {}", tool.getToolName(), tool.getEndpoint());
+			log.info("Starting to publish CoordinatorTool: {} to endpoint: {}", tool.getToolName(), tool.getEndpoint());
 
-			// 调用MCP服务器进行动态注册
+			// Call MCP server for dynamic registration
 			boolean success = mcpServer.registerCoordinatorTool(tool);
 
 			if (success) {
-				log.info("成功发布CoordinatorTool: {} 到endpoint: {}", tool.getToolName(), tool.getEndpoint());
+				log.info("Successfully published CoordinatorTool: {} to endpoint: {}", tool.getToolName(), tool.getEndpoint());
 			}
 			else {
-				log.error("发布CoordinatorTool失败: {} 到endpoint: {}", tool.getToolName(), tool.getEndpoint());
+				log.error("Failed to publish CoordinatorTool: {} to endpoint: {}", tool.getToolName(), tool.getEndpoint());
 			}
 
 			return success;
 		}
 		catch (Exception e) {
-			log.error("发布CoordinatorTool时发生异常: {}", e.getMessage(), e);
+			log.error("Exception occurred while publishing CoordinatorTool: {}", e.getMessage(), e);
 			return false;
 		}
 	}
 
 	/**
-	 * 发布CoordinatorToolEntity到MCP服务器
-	 * @param entity 要发布的协调器工具实体
-	 * @return 是否发布成功
+	 * Publish CoordinatorToolEntity to MCP server
+	 * @param entity Coordinator tool entity to publish
+	 * @return Whether publishing was successful
 	 */
 	public boolean publishCoordinatorTool(CoordinatorToolEntity entity) {
 		if (entity == null) {
-			log.warn("CoordinatorToolEntity为空，无法发布");
+			log.warn("CoordinatorToolEntity is null, cannot publish");
 			return false;
 		}
 
 		try {
-			log.info("开始发布CoordinatorToolEntity: {} 到endpoint: {}", entity.getToolName(), entity.getEndpoint());
+			log.info("Starting to publish CoordinatorToolEntity: {} to endpoint: {}", entity.getToolName(), entity.getEndpoint());
 
 			CoordinatorTool tool = new CoordinatorTool();
 			tool.setToolName(entity.getToolName());
@@ -249,28 +249,28 @@ public class CoordinatorService {
 			tool.setEndpoint(entity.getEndpoint());
 			tool.setToolSchema(entity.getMcpSchema());
 
-			// 先尝试刷新现有工具
+			// First try to refresh existing tool
 			boolean refreshSuccess = mcpServer.refreshTool(entity.getToolName(), tool);
 			if (refreshSuccess) {
-				log.info("成功刷新工具: {} 在MCP服务器中", entity.getToolName());
+				log.info("Successfully refreshed tool: {} in MCP server", entity.getToolName());
 				return true;
 			}
 
-			// 如果刷新失败，则尝试注册新工具
-			log.info("工具: {} 不存在，尝试注册新工具", entity.getToolName());
+			// If refresh fails, try to register new tool
+			log.info("Tool: {} doesn't exist, trying to register new tool", entity.getToolName());
 			boolean success = publishCoordinatorTool(tool);
 
 			if (success) {
-				log.info("成功发布CoordinatorToolEntity: {} 到endpoint: {}", entity.getToolName(), entity.getEndpoint());
+				log.info("Successfully published CoordinatorToolEntity: {} to endpoint: {}", entity.getToolName(), entity.getEndpoint());
 			}
 			else {
-				log.error("发布CoordinatorToolEntity失败: {} 到endpoint: {}", entity.getToolName(), entity.getEndpoint());
+				log.error("Failed to publish CoordinatorToolEntity: {} to endpoint: {}", entity.getToolName(), entity.getEndpoint());
 			}
 
 			return success;
 		}
 		catch (Exception e) {
-			log.error("发布CoordinatorToolEntity时发生异常: {}", e.getMessage(), e);
+			log.error("Exception occurred while publishing CoordinatorToolEntity: {}", e.getMessage(), e);
 			return false;
 		}
 	}

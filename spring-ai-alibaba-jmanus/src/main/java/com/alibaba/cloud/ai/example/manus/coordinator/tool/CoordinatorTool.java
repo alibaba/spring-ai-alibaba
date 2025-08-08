@@ -17,91 +17,91 @@
 package com.alibaba.cloud.ai.example.manus.coordinator.tool;
 
 /**
- * 计划协调工具 POJO
+ * Plan Coordinator Tool POJO
  *
- * 简化的工具类，只包含基本的工具信息，业务逻辑由 CoordinatorService 处理
+ * Simplified tool class, only contains basic tool information, business logic is handled by CoordinatorService
  */
 public class CoordinatorTool {
 
 	/**
-	 * 端点地址
+	 * Endpoint address
 	 */
 	private String endpoint;
 
 	/**
-	 * 工具名称
+	 * Tool name
 	 */
 	private String toolName;
 
 	/**
-	 * 工具描述
+	 * Tool description
 	 */
 	private String toolDescription;
 
 	/**
-	 * 工具Schema
+	 * Tool schema
 	 */
 	private String toolSchema;
 
 	/**
-	 * 获取端点地址
-	 * @return 端点地址
+	 * Get endpoint address
+	 * @return Endpoint address
 	 */
 	public String getEndpoint() {
 		return endpoint;
 	}
 
 	/**
-	 * 设置端点地址
-	 * @param endpoint 端点地址
+	 * Set endpoint address
+	 * @param endpoint Endpoint address
 	 */
 	public void setEndpoint(String endpoint) {
 		this.endpoint = endpoint;
 	}
 
 	/**
-	 * 获取工具名称
-	 * @return 工具名称
+	 * Get tool name
+	 * @return Tool name
 	 */
 	public String getToolName() {
 		return toolName;
 	}
 
 	/**
-	 * 设置工具名称
-	 * @param toolName 工具名称
+	 * Set tool name
+	 * @param toolName Tool name
 	 */
 	public void setToolName(String toolName) {
 		this.toolName = toolName;
 	}
 
 	/**
-	 * 获取工具描述
-	 * @return 工具描述
+	 * Get tool description
+	 * @return Tool description
 	 */
 	public String getToolDescription() {
 		return toolDescription;
 	}
 
 	/**
-	 * 设置工具描述
-	 * @param toolDescription 工具描述
+	 * Set tool description
+	 * @param toolDescription Tool description
 	 */
 	public void setToolDescription(String toolDescription) {
 		this.toolDescription = toolDescription;
 	}
 
 	/**
-	 * 获取工具Schema
-	 * @return 工具Schema
+	 * Get tool schema
+	 * @return Tool schema
 	 */
 	public String getToolSchema() {
 		return toolSchema;
 	}
 
 	/**
-	 * 设置工具Schema
-	 * @param toolSchema 工具Schema
+	 * Set tool schema
+	 * @param toolSchema Tool schema
 	 */
 	public void setToolSchema(String toolSchema) {
 		this.toolSchema = toolSchema;

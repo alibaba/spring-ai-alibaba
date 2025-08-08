@@ -48,9 +48,10 @@ import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 
 /**
- * MCP服务器应用
+ * MCP Server Application
  *
- * 支持多endpoint的MCP服务器，每个endpoint对应一组工具 参考WebFluxStreamableServerApplication的多endpoint逻辑
+ * Supports multi-endpoint MCP server, each endpoint corresponds to a group of tools
+ * Reference WebFluxStreamableServerApplication's multi-endpoint logic
  */
 @Component
 public class CoordinatorMCPServer implements ApplicationListener<ApplicationReadyEvent> {
@@ -73,23 +74,23 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 
 	private List<Object> mcpServers = new ArrayList<>();
 
-	// 存储已注册的工具，按endpoint分组
+	// Store registered tools, grouped by endpoint
 	private Map<String, List<CoordinatorTool>> registeredTools = new ConcurrentHashMap<>();
 
-	// 存储已注册的MCP服务器，按endpoint分组
+	// Store registered MCP servers, grouped by endpoint
 	private Map<String, Object> registeredMcpServers = new ConcurrentHashMap<>();
 
 	@Override
 	public void onApplicationEvent(ApplicationReadyEvent event) {
-		// 检查是否启用CoordinatorTool功能
+		// Check if CoordinatorTool feature is enabled
 		if (!coordinatorToolProperties.isEnabled()) {
-			log.info("CoordinatorTool功能已禁用，跳过MCP服务器启动");
+			log.info("CoordinatorTool feature is disabled, skipping MCP server startup");
 			return;
 		}
 
-		// 延迟启动 MCP 服务器，确保所有 Bean 都已初始化完成
+		// Delay MCP server startup to ensure all Beans are initialized
 		try {
-			Thread.sleep(1000); // 等待 1 秒确保所有 Bean 初始化完成
+			Thread.sleep(1000); // Wait 1 second to ensure all Beans are initialized
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -98,12 +99,12 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 	}
 
 	/**
-	 * 启动 MCP 服务器
+	 * Start MCP server
 	 */
 	private void startMcpServer() {
-		// 检查是否启用CoordinatorTool功能
+		// Check if CoordinatorTool feature is enabled
 		if (!coordinatorToolProperties.isEnabled()) {
-			log.info("CoordinatorTool功能已禁用，跳过MCP服务器启动");
+			log.info("CoordinatorTool feature is disabled, skipping MCP server startup");
 			return;
 		}
 
@@ -111,80 +112,80 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 			log.info("==========================================");
 			log.info("JManus Multi EndPoint Streamable Http Server");
 			log.info("==========================================");
-			log.info("启动 JManus Multi EndPoint Streamable Http Server...");
+			log.info("Starting JManus Multi EndPoint Streamable Http Server...");
 
-			log.info("服务器信息:");
-			log.info("  完整地址: http://{}:{}", EndPointUtils.SERVICE_HOST, EndPointUtils.SERVICE_PORT);
+			log.info("Server Information:");
+			log.info("  Full Address: http://{}:{}", EndPointUtils.SERVICE_HOST, EndPointUtils.SERVICE_PORT);
 
-			// 加载协调器工具
+			// Load coordinator tools
 			Map<String, List<CoordinatorTool>> coordinatorToolsByEndpoint = coordinatorService.loadCoordinatorTools();
 
-			// 合并所有路由函数
+			// Combine all router functions
 			RouterFunction<?> combinedRouter = createCombinedRouter(coordinatorToolsByEndpoint);
 
 			if (combinedRouter == null) {
-				log.warn("没有创建任何路由函数，服务器可能无法正常工作");
+				log.warn("No router functions created, server may not function normally");
 			}
 			else {
-				log.info("成功创建合并路由函数");
+				log.info("Successfully created combined router functions");
 			}
 
-			// 创建 HTTP 处理器
+			// Create HTTP handler
 			HttpHandler httpHandler = RouterFunctions.toHttpHandler(combinedRouter);
 			ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
 
-			// 启动 HTTP 服务器
+			// Start HTTP server
 			this.httpServer = HttpServer.create().port(EndPointUtils.SERVICE_PORT).handle(adapter).bindNow();
 
-			log.info("HTTP服务器已启动，监听端口: {}", EndPointUtils.SERVICE_PORT);
-			log.info("服务器地址: http://{}:{}", EndPointUtils.SERVICE_HOST, EndPointUtils.SERVICE_PORT);
+			log.info("HTTP server started, listening on port: {}", EndPointUtils.SERVICE_PORT);
+			log.info("Server address: http://{}:{}", EndPointUtils.SERVICE_HOST, EndPointUtils.SERVICE_PORT);
 
-			log.info("JManus Multi EndPoint Streamable Http Server 已启动成功！");
+			log.info("JManus Multi EndPoint Streamable Http Server started successfully!");
 			log.info("==========================================");
-			log.info("MCP服务列表:");
+			log.info("MCP Service List:");
 			log.info("==========================================");
 
-			// 输出所有MCP服务信息
+			// Output all MCP service information
 			if (!coordinatorToolsByEndpoint.isEmpty()) {
 				int serviceIndex = 1;
 				for (Map.Entry<String, List<CoordinatorTool>> entry : coordinatorToolsByEndpoint.entrySet()) {
 					String endpoint = entry.getKey();
 					List<CoordinatorTool> tools = entry.getValue();
-					log.info("  完整URL: {}", EndPointUtils.getUrl(endpoint));
-					log.info("  工具数量: {}", tools.size());
+					log.info("  Full URL: {}", EndPointUtils.getUrl(endpoint));
+					log.info("  Tool Count: {}", tools.size());
 
-					// 输出该endpoint下的所有工具
+					// Output all tools for this endpoint
 					for (int i = 0; i < tools.size(); i++) {
 						CoordinatorTool tool = tools.get(i);
-						log.info("    工具 #{}: {} - {}", i + 1, tool.getToolName(), tool.getToolDescription());
+						log.info("    Tool #{}: {} - {}", i + 1, tool.getToolName(), tool.getToolDescription());
 					}
 					log.info("  ----------------------------------------");
 				}
 			}
 			else {
-				log.info("未找到任何MCP服务");
+				log.info("No MCP services found");
 			}
 
 			log.info("==========================================");
-			log.info("MCP服务启动完成，共 {} 个endpoint", coordinatorToolsByEndpoint.size());
+			log.info("MCP service startup complete, {} endpoints", coordinatorToolsByEndpoint.size());
 			log.info("==========================================");
 
 		}
 		catch (Exception e) {
-			log.error("启动服务器时发生错误: {}", e.getMessage(), e);
+			log.error("Error starting server: {}", e.getMessage(), e);
 		}
 	}
 
 	/**
-	 * 创建合并的路由函数
+	 * Create combined router functions
 	 */
 	private RouterFunction<?> createCombinedRouter(Map<String, List<CoordinatorTool>> coordinatorToolsByEndpoint) {
 
-		log.info("开始创建合并路由函数，共有 {} 个endpoint", coordinatorToolsByEndpoint.size());
+		log.info("Starting to create combined router functions, {} endpoints", coordinatorToolsByEndpoint.size());
 
 		RouterFunction<?> combinedRouter = null;
 
-		// 为每个协调器endpoint创建独立的传输提供者和服务器
+		// Create independent transport providers and servers for each coordinator endpoint
 		for (Map.Entry<String, List<CoordinatorTool>> entry : coordinatorToolsByEndpoint.entrySet()) {
 			String endpoint = entry.getKey();
 			List<CoordinatorTool> tools = entry.getValue();
@@ -193,10 +194,10 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 				continue;
 			}
 
-			// 将工具注册到内部存储
+			// Register tools to internal storage
 			registeredTools.put(endpoint, new ArrayList<>(tools));
 
-			// 创建MCP服务器和路由函数
+			// Create MCP server and router function
 			RouterFunction<?> routerFunction = createMcpServerAndGetRouter(endpoint, tools);
 			if (routerFunction != null) {
 				if (combinedRouter == null) {
@@ -207,37 +208,37 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 				}
 			}
 
-			log.info("为endpoint {} 创建了MCP服务器，包含 {} 个工具", endpoint, tools.size());
+			log.info("Created MCP server for endpoint {}, containing {} tools", endpoint, tools.size());
 		}
 
 		return combinedRouter;
 	}
 
 	/**
-	 * 创建MCP服务器并获取路由函数
-	 * @param endpoint 端点地址
-	 * @param tools 工具列表
-	 * @return 路由函数
+	 * Create MCP server and get router function
+	 * @param endpoint Endpoint address
+	 * @param tools Tool list
+	 * @return Router function
 	 */
 	private RouterFunction<?> createMcpServerAndGetRouter(String endpoint, List<CoordinatorTool> tools) {
 		try {
-			// 构建messageEndpoint，增加默认前缀/mcp
+			// Build messageEndpoint, add default prefix /mcp
 			String messageEndpoint = EndPointUtils.buildMessageEndpoint(endpoint);
 
-			// 创建传输提供者
+			// Create transport provider
 			WebFluxStreamableServerTransportProvider transportProvider = WebFluxStreamableServerTransportProvider
 				.builder()
 				.objectMapper(objectMapper)
 				.messageEndpoint(messageEndpoint)
 				.build();
 
-			// 创建工具规范
+			// Create tool specification
 			List<McpServerFeatures.SyncToolSpecification> toolSpecs = new ArrayList<>();
 			for (CoordinatorTool tool : tools) {
 				toolSpecs.add(coordinatorService.createToolSpecification(tool));
 			}
 
-			// 创建MCP服务器
+			// Create MCP server
 			McpServer.SyncSpecification<?> serverSpec = McpServer.sync(transportProvider)
 				.serverInfo("jmanus-coordinator-server-" + endpoint, "1.0.0")
 				.capabilities(ServerCapabilities.builder().tools(true).logging().build())
@@ -245,121 +246,121 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 
 			Object mcpServer = serverSpec.build();
 
-			// 存储MCP服务器
+			// Store MCP server
 			registeredMcpServers.put(endpoint, mcpServer);
 			mcpServers.add(mcpServer);
 
-			log.info("成功为endpoint: {} 创建MCP服务器，包含 {} 个工具", endpoint, tools.size());
+			log.info("Successfully created MCP server for endpoint: {}, containing {} tools", endpoint, tools.size());
 
-			// 返回路由函数
+			// Return router function
 			return transportProvider.getRouterFunction();
 
 		}
 		catch (Exception e) {
-			log.error("为endpoint: {} 创建MCP服务器时发生异常: {}", endpoint, e.getMessage(), e);
+			log.error("Exception occurred while creating MCP server for endpoint: {}, {}", endpoint, e.getMessage(), e);
 			return null;
 		}
 	}
 
 	/**
-	 * 注册CoordinatorTool到MCP服务器
-	 * @param tool 要注册的协调器工具
-	 * @return 是否注册成功
+	 * Register CoordinatorTool to MCP server
+	 * @param tool Coordinator tool to register
+	 * @return Whether registration was successful
 	 */
 	public boolean registerCoordinatorTool(CoordinatorTool tool) {
-		// 检查是否启用CoordinatorTool功能
+		// Check if CoordinatorTool feature is enabled
 		if (!coordinatorToolProperties.isEnabled()) {
-			log.info("CoordinatorTool功能已禁用，跳过工具注册");
+			log.info("CoordinatorTool feature is disabled, skipping tool registration");
 			return false;
 		}
 
 		if (tool == null) {
-			log.warn("CoordinatorTool为空，无法注册");
+			log.warn("CoordinatorTool is null, cannot register");
 			return false;
 		}
 
 		String endpoint = tool.getEndpoint();
 		if (endpoint == null || endpoint.trim().isEmpty()) {
-			log.warn("CoordinatorTool的endpoint为空，无法注册");
+			log.warn("CoordinatorTool's endpoint is empty, cannot register");
 			return false;
 		}
 
 		try {
-			log.info("开始注册CoordinatorTool: {} 到endpoint: {}", tool.getToolName(), endpoint);
+			log.info("Starting to register CoordinatorTool: {} to endpoint: {}", tool.getToolName(), endpoint);
 
-			// 获取或创建该endpoint的工具列表
+			// Get or create the tool list for this endpoint
 			List<CoordinatorTool> toolsForEndpoint = registeredTools.computeIfAbsent(endpoint, k -> new ArrayList<>());
 
-			// 检查工具是否已经注册，如果已注册则先删除旧版本
+			// Check if tool is already registered, and remove old version if it is
 			boolean alreadyRegistered = toolsForEndpoint.stream()
 				.anyMatch(existingTool -> existingTool.getToolName().equals(tool.getToolName()));
 
 			if (alreadyRegistered) {
-				log.info("CoordinatorTool: {} 已经注册到endpoint: {}，将更新为新的服务注册", tool.getToolName(), endpoint);
-				// 删除旧版本的工具
+				log.info("CoordinatorTool: {} is already registered to endpoint: {}, will update to new service registration", tool.getToolName(), endpoint);
+				// Remove old tool version
 				toolsForEndpoint.removeIf(existingTool -> existingTool.getToolName().equals(tool.getToolName()));
 			}
 
-			// 添加新工具到列表（无论是新增还是更新）
+			// Add new tool to the list (whether it's new or updated)
 			toolsForEndpoint.add(tool);
-			log.info("成功添加CoordinatorTool: {} 到endpoint: {} 的工具列表", tool.getToolName(), endpoint);
+			log.info("Successfully added CoordinatorTool: {} to the tool list for endpoint: {}", tool.getToolName(), endpoint);
 
-			// 检查该endpoint是否已经有MCP服务器
+			// Check if MCP server already exists for this endpoint
 			Object existingMcpServer = registeredMcpServers.get(endpoint);
 			if (existingMcpServer != null) {
-				log.info("endpoint: {} 已有MCP服务器，需要重新创建以包含新工具", endpoint);
-				// 重新创建该endpoint的MCP服务器
+				log.info("Endpoint: {} already has MCP server, need to recreate to include new tools", endpoint);
+				// Recreate MCP server for this endpoint
 				recreateMcpServerForEndpoint(endpoint, toolsForEndpoint);
 			}
 			else {
-				log.info("endpoint: {} 没有MCP服务器，创建新的MCP服务器", endpoint);
-				// 创建新的MCP服务器
+				log.info("Endpoint: {} does not have MCP server, creating new MCP server", endpoint);
+				// Create new MCP server
 				createMcpServerForEndpoint(endpoint, toolsForEndpoint);
 			}
 
-			log.info("成功注册CoordinatorTool: {} 到endpoint: {}", tool.getToolName(), endpoint);
-			log.info("MCP服务访问信息:");
-			log.info("  完整URL: {}", EndPointUtils.getUrl(endpoint));
+			log.info("Successfully registered CoordinatorTool: {} to endpoint: {}", tool.getToolName(), endpoint);
+			log.info("MCP Service Access Information:");
+			log.info("  Full URL: {}", EndPointUtils.getUrl(endpoint));
 
 			return true;
 
 		}
 		catch (Exception e) {
-			log.error("注册CoordinatorTool时发生异常: {}", e.getMessage(), e);
+			log.error("Exception occurred while registering CoordinatorTool: {}", e.getMessage(), e);
 			return false;
 		}
 	}
 
 	/**
-	 * 为指定endpoint创建MCP服务器
-	 * @param endpoint 端点地址
-	 * @param tools 该端点的工具列表
+	 * Create MCP server for a specific endpoint
+	 * @param endpoint Endpoint address
+	 * @param tools Tool list for this endpoint
 	 */
 	private void createMcpServerForEndpoint(String endpoint, List<CoordinatorTool> tools) {
-		// 检查是否启用CoordinatorTool功能
+		// Check if CoordinatorTool feature is enabled
 		if (!coordinatorToolProperties.isEnabled()) {
-			log.info("CoordinatorTool功能已禁用，跳过创建MCP服务器");
+			log.info("CoordinatorTool feature is disabled, skipping MCP server creation");
 			return;
 		}
 
 		try {
-			// 构建messageEndpoint，增加默认前缀/mcp
+			// Build messageEndpoint, add default prefix /mcp
 			String messageEndpoint = EndPointUtils.buildMessageEndpoint(endpoint);
 
-			// 创建传输提供者
+			// Create transport provider
 			WebFluxStreamableServerTransportProvider transportProvider = WebFluxStreamableServerTransportProvider
 				.builder()
 				.objectMapper(objectMapper)
 				.messageEndpoint(messageEndpoint)
 				.build();
 
-			// 创建工具规范
+			// Create tool specification
 			List<McpServerFeatures.SyncToolSpecification> toolSpecs = new ArrayList<>();
 			for (CoordinatorTool tool : tools) {
 				toolSpecs.add(coordinatorService.createToolSpecification(tool));
 			}
 
-			// 创建MCP服务器
+			// Create MCP server
 			McpServer.SyncSpecification<?> serverSpec = McpServer.sync(transportProvider)
 				.serverInfo("jmanus-coordinator-server-" + endpoint, "1.0.0")
 				.capabilities(ServerCapabilities.builder().tools(true).logging().build())
@@ -367,163 +368,163 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 
 			Object mcpServer = serverSpec.build();
 
-			// 存储MCP服务器
+			// Store MCP server
 			registeredMcpServers.put(endpoint, mcpServer);
 			mcpServers.add(mcpServer);
 
-			log.info("成功为endpoint: {} 创建MCP服务器，包含 {} 个工具", endpoint, tools.size());
+			log.info("Successfully created MCP server for endpoint: {}, containing {} tools", endpoint, tools.size());
 
-			// 重新创建HTTP服务器以更新路由
+			// Recreate HTTP server to update routes
 			recreateHttpServer();
 
 		}
 		catch (Exception e) {
-			log.error("为endpoint: {} 创建MCP服务器时发生异常: {}", endpoint, e.getMessage(), e);
+			log.error("Exception occurred while creating MCP server for endpoint: {}, {}", endpoint, e.getMessage(), e);
 		}
 	}
 
 	/**
-	 * 重新创建指定endpoint的MCP服务器
-	 * @param endpoint 端点地址
-	 * @param tools 该端点的工具列表
+	 * Recreate MCP server for a specific endpoint
+	 * @param endpoint Endpoint address
+	 * @param tools Tool list for this endpoint
 	 */
 	private void recreateMcpServerForEndpoint(String endpoint, List<CoordinatorTool> tools) {
-		// 检查是否启用CoordinatorTool功能
+		// Check if CoordinatorTool feature is enabled
 		if (!coordinatorToolProperties.isEnabled()) {
-			log.info("CoordinatorTool功能已禁用，跳过重新创建MCP服务器");
+			log.info("CoordinatorTool feature is disabled, skipping MCP server recreation");
 			return;
 		}
 
 		try {
-			log.info("开始重新创建endpoint: {} 的MCP服务器", endpoint);
+			log.info("Starting to recreate MCP server for endpoint: {}", endpoint);
 
-			// 删除旧的MCP服务器
+			// Delete old MCP server
 			Object oldMcpServer = registeredMcpServers.remove(endpoint);
 			if (oldMcpServer != null) {
 				mcpServers.remove(oldMcpServer);
 				if (oldMcpServer instanceof AutoCloseable) {
 					try {
 						((AutoCloseable) oldMcpServer).close();
-						log.info("已关闭旧的MCP服务器: {}", endpoint);
+						log.info("Old MCP server closed: {}", endpoint);
 					}
 					catch (Exception e) {
-						log.warn("关闭旧的MCP服务器时出现异常: {}", e.getMessage());
+						log.warn("Exception occurred while closing old MCP server: {}", e.getMessage());
 					}
 				}
 			}
 
-			// 创建新的MCP服务器
+			// Create new MCP server
 			createMcpServerForEndpoint(endpoint, tools);
 
-			log.info("成功重新创建endpoint: {} 的MCP服务器", endpoint);
+			log.info("Successfully recreated MCP server for endpoint: {}", endpoint);
 
 		}
 		catch (Exception e) {
-			log.error("重新创建endpoint: {} 的MCP服务器时发生异常: {}", endpoint, e.getMessage(), e);
+			log.error("Exception occurred while recreating MCP server for endpoint: {}, {}", endpoint, e.getMessage(), e);
 		}
 	}
 
 	/**
-	 * 重新创建HTTP服务器
+	 * Recreate HTTP server
 	 */
 	private void recreateHttpServer() {
-		// 检查是否启用CoordinatorTool功能
+		// Check if CoordinatorTool feature is enabled
 		if (!coordinatorToolProperties.isEnabled()) {
-			log.info("CoordinatorTool功能已禁用，跳过重新创建HTTP服务器");
+			log.info("CoordinatorTool feature is disabled, skipping HTTP server recreation");
 			return;
 		}
 
 		try {
-			log.info("开始重新创建HTTP服务器以更新路由");
+			log.info("Starting to recreate HTTP server to update routes");
 
-			// 停止当前HTTP服务器
+			// Stop current HTTP server
 			if (this.httpServer != null) {
 				this.httpServer.disposeNow();
-				log.info("已停止当前HTTP服务器");
+				log.info("Current HTTP server stopped");
 			}
 
-			// 重新创建合并路由
+			// Recreate combined router
 			RouterFunction<?> combinedRouter = createCombinedRouter(registeredTools);
 
 			if (combinedRouter == null) {
-				log.warn("没有创建任何路由函数，无法重新创建HTTP服务器");
+				log.warn("No router functions created, cannot recreate HTTP server");
 				return;
 			}
 
-			// 创建新的HTTP处理器
+			// Create new HTTP handler
 			HttpHandler httpHandler = RouterFunctions.toHttpHandler(combinedRouter);
 			ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
 
-			// 启动新的HTTP服务器
+			// Start new HTTP server
 			this.httpServer = HttpServer.create().port(EndPointUtils.SERVICE_PORT).handle(adapter).bindNow();
 
-			log.info("成功重新创建HTTP服务器，监听端口: {}", EndPointUtils.SERVICE_PORT);
+			log.info("Successfully recreated HTTP server, listening on port: {}", EndPointUtils.SERVICE_PORT);
 
 		}
 		catch (Exception e) {
-			log.error("重新创建HTTP服务器时发生异常: {}", e.getMessage(), e);
+			log.error("Exception occurred while recreating HTTP server: {}", e.getMessage(), e);
 		}
 	}
 
 	/**
-	 * 强制刷新特定工具
-	 * @param toolName 工具名称
-	 * @param updatedTool 更新后的工具
-	 * @return 是否刷新成功
+	 * Forcefully refresh a specific tool
+	 * @param toolName Tool name
+	 * @param updatedTool Updated tool
+	 * @return Whether refresh was successful
 	 */
 	public boolean refreshTool(String toolName, CoordinatorTool updatedTool) {
-		// 检查是否启用CoordinatorTool功能
+		// Check if CoordinatorTool feature is enabled
 		if (!coordinatorToolProperties.isEnabled()) {
-			log.info("CoordinatorTool功能已禁用，跳过工具刷新");
+			log.info("CoordinatorTool feature is disabled, skipping tool refresh");
 			return false;
 		}
 
 		if (updatedTool == null || toolName == null) {
-			log.warn("工具或工具名称为空，无法刷新");
+			log.warn("Tool or tool name is empty, cannot refresh");
 			return false;
 		}
 
 		String endpoint = updatedTool.getEndpoint();
 		if (endpoint == null || endpoint.trim().isEmpty()) {
-			log.warn("工具的endpoint为空，无法刷新");
+			log.warn("Tool's endpoint is empty, cannot refresh");
 			return false;
 		}
 
 		try {
-			log.info("开始强制刷新工具: {} 在endpoint: {}", toolName, endpoint);
+			log.info("Starting to force refresh tool: {} in endpoint: {}", toolName, endpoint);
 
-			// 获取该endpoint的工具列表
+			// Get tool list for this endpoint
 			List<CoordinatorTool> toolsForEndpoint = registeredTools.get(endpoint);
 			if (toolsForEndpoint == null) {
-				log.warn("endpoint: {} 没有找到工具列表", endpoint);
+				log.warn("Tool list not found for endpoint: {}", endpoint);
 				return false;
 			}
 
-			// 查找并替换工具
+			// Find and replace tool
 			boolean found = false;
 			for (int i = 0; i < toolsForEndpoint.size(); i++) {
 				if (toolsForEndpoint.get(i).getToolName().equals(toolName)) {
 					toolsForEndpoint.set(i, updatedTool);
 					found = true;
-					log.info("找到并替换了工具: {}", toolName);
+					log.info("Tool found and replaced: {}", toolName);
 					break;
 				}
 			}
 
 			if (!found) {
-				log.warn("在endpoint: {} 中没有找到工具: {}", endpoint, toolName);
+				log.warn("Tool: {} not found in endpoint: {}", endpoint, toolName);
 				return false;
 			}
 
-			// 重新创建MCP服务器
+			// Recreate MCP server
 			recreateMcpServerForEndpoint(endpoint, toolsForEndpoint);
 
-			log.info("成功刷新工具: {} 在endpoint: {}", toolName, endpoint);
+			log.info("Successfully refreshed tool: {} in endpoint: {}", toolName, endpoint);
 			return true;
 
 		}
 		catch (Exception e) {
-			log.error("刷新工具时发生异常: {}", e.getMessage(), e);
+			log.error("Exception occurred while refreshing tool: {}", e.getMessage(), e);
 			return false;
 		}
 	}

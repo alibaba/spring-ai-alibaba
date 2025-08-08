@@ -18,17 +18,17 @@ import com.alibaba.cloud.ai.example.manus.coordinator.vo.CoordinatorConfigVO;
 import com.alibaba.cloud.ai.example.manus.coordinator.vo.CoordinatorParameterVO;
 
 /**
- * CoordinatorConfig解析器
+ * CoordinatorConfig Parser
  */
 @Component
 public class CoordinatorConfigParser {
 
 	private static final Logger logger = LoggerFactory.getLogger(CoordinatorConfigParser.class);
 
-	// 预编译正则表达式，提高性能
+	// Pre-compiled regex pattern for better performance
 	private static final Pattern PARAMETER_PATTERN = Pattern.compile("\\{([^}]+)\\}");
 
-	// 默认JSON Schema模板
+	// Default JSON Schema template
 	private static final String DEFAULT_SCHEMA = """
 			{
 				"$schema": "http://json-schema.org/draft-07/schema#",
@@ -45,20 +45,20 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * 将Plan JSON字符串转换为CoordinatorConfigVO
+	 * Convert Plan JSON string to CoordinatorConfigVO
 	 */
 	public CoordinatorConfigVO parser(String planJson) {
-		logger.info("开始转换Plan JSON: {}", planJson != null ? "非空" : "null");
+		logger.info("Starting to convert Plan JSON: {}", planJson != null ? "not null" : "null");
 
 		if (planJson == null || planJson.trim().isEmpty()) {
-			throw new IllegalArgumentException("Plan JSON不能为空");
+			throw new IllegalArgumentException("Plan JSON cannot be empty");
 		}
 
 		try {
-			// 解析JSON
+			// Parse JSON
 			JsonNode rootNode = objectMapper.readTree(planJson);
 
-			// 验证必要字段
+			// Validate required fields
 			validatePlanJson(rootNode);
 
 			CoordinatorConfigVO config = new CoordinatorConfigVO();
@@ -67,43 +67,43 @@ public class CoordinatorConfigParser {
 			config.setDescription(getStringValue(rootNode, "userRequest"));
 			config.setEndpoint(getStringValue(rootNode, "endpoint"));
 
-			// 解析steps
+			// Parse steps
 			config.setParameters(parseStepsToParameters(rootNode));
 
-			logger.info("转换完成，生成配置: {}", config);
+			logger.info("Conversion completed, generated config: {}", config);
 			return config;
 
 		}
 		catch (IllegalArgumentException e) {
-			logger.error("转换失败", e);
+			logger.error("Conversion failed", e);
 			throw e;
 		}
 		catch (Exception e) {
-			logger.error("转换过程中发生未知异常", e);
-			throw new IllegalArgumentException("转换失败: " + e.getMessage(), e);
+			logger.error("Unknown exception occurred during conversion", e);
+			throw new IllegalArgumentException("Conversion failed: " + e.getMessage(), e);
 		}
 	}
 
 	/**
-	 * 验证Plan JSON的必要字段
+	 * Validate required fields in Plan JSON
 	 */
 	private void validatePlanJson(JsonNode rootNode) {
 		if (rootNode == null) {
-			throw new IllegalArgumentException("Plan JSON解析失败，根节点为空");
+			throw new IllegalArgumentException("Plan JSON parsing failed, root node is null");
 		}
 
 		if (!rootNode.isObject()) {
-			throw new IllegalArgumentException("Plan JSON必须是对象格式");
+			throw new IllegalArgumentException("Plan JSON must be in object format");
 		}
 
-		// 检查必要字段
+		// Check required fields
 		if (getStringValue(rootNode, "planId") == null) {
-			throw new IllegalArgumentException("Plan JSON缺少必要字段: planId");
+			throw new IllegalArgumentException("Plan JSON missing required field: planId");
 		}
 	}
 
 	/**
-	 * 解析steps为参数列表
+	 * Parse steps to parameter list
 	 */
 	private List<CoordinatorParameterVO> parseStepsToParameters(JsonNode rootNode) {
 		JsonNode stepsNode = rootNode.get("steps");
@@ -113,14 +113,14 @@ public class CoordinatorConfigParser {
 
 		List<String> steps = new ArrayList<>();
 		for (JsonNode stepNode : stepsNode) {
-			// 处理新的格式：steps是对象数组，每个对象包含stepRequirement字段
+			// Handle new format: steps is object array, each object contains stepRequirement field
 			if (stepNode.isObject()) {
 				JsonNode stepRequirementNode = stepNode.get("stepRequirement");
 				if (stepRequirementNode != null && stepRequirementNode.isTextual()) {
 					steps.add(stepRequirementNode.asText());
 				}
 			}
-			// 兼容旧格式：steps是字符串数组
+			// Compatible with old format: steps is string array
 			else if (stepNode.isTextual()) {
 				steps.add(stepNode.asText());
 			}
@@ -130,17 +130,17 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * 解析参数列表
+	 * Parse parameter list
 	 */
 	public List<CoordinatorParameterVO> parseParameters(List<String> steps) {
 		if (steps == null || steps.isEmpty()) {
 			return new ArrayList<>();
 		}
 
-		// 提取所有参数名
+		// Extract all parameter names
 		Set<String> parameterNames = extractParameterNames(steps);
 
-		// 转换为参数对象
+		// Convert to parameter objects
 		List<CoordinatorParameterVO> parameters = new ArrayList<>();
 		for (String paramName : parameterNames) {
 			parameters.add(createParameter(paramName));
@@ -150,7 +150,7 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * 从步骤中提取参数名
+	 * Extract parameter names from steps
 	 */
 	private Set<String> extractParameterNames(List<String> steps) {
 		Set<String> parameterNames = new HashSet<>();
@@ -171,7 +171,7 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * 创建参数对象
+	 * Create parameter object
 	 */
 	private CoordinatorParameterVO createParameter(String paramName) {
 		CoordinatorParameterVO parameter = new CoordinatorParameterVO();
@@ -180,12 +180,12 @@ public class CoordinatorConfigParser {
 		parameter.setDescription(paramName);
 		parameter.setRequired(true);
 
-		logger.debug("创建参数对象: {}", parameter);
+		logger.debug("Created parameter object: {}", parameter);
 		return parameter;
 	}
 
 	/**
-	 * 安全获取字符串值
+	 * Safely get string value
 	 */
 	private static String getStringValue(JsonNode node, String fieldName) {
 		JsonNode fieldNode = node.get(fieldName);
@@ -193,22 +193,22 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * 将JSON字符串转换为工具Schema
-	 * @param json JSON字符串，格式如：[{"name":"name","description":"参数: name","type":"string"}]
-	 * @return 转换后的JSON Schema字符串
+	 * Convert JSON string to tool Schema
+	 * @param json JSON string, format like: [{"name":"name","description":"Parameter: name","type":"string"}]
+	 * @return Converted JSON Schema string
 	 */
 	public String generateToolSchema(String json) {
 		if (json == null || json.trim().isEmpty()) {
-			logger.warn("JSON字符串为空，返回默认Schema");
+			logger.warn("JSON string is empty, returning default Schema");
 			return DEFAULT_SCHEMA;
 		}
 
 		try {
-			// 解析JSON数组
+			// Parse JSON array
 			JsonNode parametersArray = objectMapper.readTree(json);
 
 			if (!parametersArray.isArray()) {
-				logger.warn("JSON不是数组格式，返回默认Schema");
+				logger.warn("JSON is not in array format, returning default Schema");
 				return DEFAULT_SCHEMA;
 			}
 
@@ -216,19 +216,19 @@ public class CoordinatorConfigParser {
 
 		}
 		catch (Exception e) {
-			logger.error("生成工具Schema时发生异常: {}", e.getMessage(), e);
+			logger.error("Exception occurred while generating tool Schema: {}", e.getMessage(), e);
 			return DEFAULT_SCHEMA;
 		}
 	}
 
 	/**
-	 * 构建JSON Schema
+	 * Build JSON Schema
 	 */
 	private String buildJsonSchema(JsonNode parametersArray) {
 		StringBuilder schema = new StringBuilder();
 		List<String> requiredParams = new ArrayList<>();
 
-		// 构建properties部分
+		// Build properties section
 		schema.append("{\n");
 		schema.append("    \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n");
 		schema.append("    \"type\": \"object\",\n");
@@ -251,24 +251,22 @@ public class CoordinatorConfigParser {
 
 		schema.append("    },\n");
 
-		// 添加required字段
+		// Add required field
 		appendRequiredField(schema, requiredParams);
 
 		schema.append("}");
 
-		logger.info("成功生成工具Schema，参数数量: {}", requiredParams.size());
+		logger.info("Successfully generated tool Schema, parameter count: {}", requiredParams.size());
 		return schema.toString();
 	}
 
 	/**
-	 * 添加属性到Schema
+	 * Add property to Schema
 	 */
 	private void appendProperty(StringBuilder schema, String name, String description, String type, boolean hasNext) {
 		schema.append("        \"").append(escapeJsonString(name)).append("\": {\n");
 		schema.append("            \"type\": \"").append(convertType(type)).append("\",\n");
-		schema.append("            \"description\": \"")
-			.append(escapeJsonString(description))
-			.append("\"\n");
+		schema.append("            \"description\": \"").append(escapeJsonString(description)).append("\"\n");
 		schema.append("        }");
 
 		if (hasNext) {
@@ -278,7 +276,7 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * 添加required字段
+	 * Add required field
 	 */
 	private void appendRequiredField(StringBuilder schema, List<String> requiredParams) {
 		if (!requiredParams.isEmpty()) {
@@ -298,9 +296,9 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * 转换参数类型为JSON Schema类型
-	 * @param type 原始类型
-	 * @return JSON Schema类型
+	 * Convert parameter type to JSON Schema type
+	 * @param type Original type
+	 * @return JSON Schema type
 	 */
 	private static String convertType(String type) {
 		if (type == null || type.trim().isEmpty()) {
@@ -318,9 +316,9 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * 转义JSON字符串
-	 * @param input 输入字符串
-	 * @return 转义后的字符串
+	 * Escape JSON string
+	 * @param input Input string
+	 * @return Escaped string
 	 */
 	private static String escapeJsonString(String input) {
 		if (input == null) {
