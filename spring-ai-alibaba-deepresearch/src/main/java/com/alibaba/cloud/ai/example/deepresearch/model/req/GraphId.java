@@ -18,29 +18,12 @@ package com.alibaba.cloud.ai.example.deepresearch.model.req;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serializable;
+
 /**
- * @author yingzi
- * @since 2025/6/10
+ * @author vlsmb
+ * @since 2025/8/6
  */
-
-public record FeedbackRequest(
-		/**
-		 * 会话 ID。默认值为 "__default__"，表示使用默认会话。
-		 */
-		@JsonProperty(value = "session_id", defaultValue = "__default__") String sessionId,
-
-		/**
-		 * 线程 ID，用于标识当前对话的唯一性。
-		 */
-		@JsonProperty(value = "thread_id", defaultValue = "") String threadId,
-
-		/**
-		 * 是否接受Planner的计划，true为接受，false为重新生成
-		 */
-		@JsonProperty(value = "feed_back", defaultValue = "true") Boolean feedBack,
-
-		/**
-		 * 用户反馈内容，重新生成Planner计划是给予额外的上下文信息
-		 */
-		@JsonProperty(value = "feed_back_content", defaultValue = "") String feedBackContent) {
+public record GraphId(@JsonProperty("session_id") String sessionId,
+		@JsonProperty("thread_id") String threadId) implements Serializable {
 }
