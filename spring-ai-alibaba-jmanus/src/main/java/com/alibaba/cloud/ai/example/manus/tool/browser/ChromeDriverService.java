@@ -31,6 +31,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Page;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -56,6 +58,9 @@ public class ChromeDriverService implements IChromeDriverService {
 	private UnifiedDirectoryManager unifiedDirectoryManager;
 
 	private final ObjectMapper objectMapper;
+
+	@Autowired(required = false)
+	private SpringBootPlaywrightInitializer playwrightInitializer;
 
 	/**
 	 * Shared directory for storing cookies
@@ -197,21 +202,45 @@ public class ChromeDriverService implements IChromeDriverService {
 	}
 
 	private DriverWrapper createNewDriver() {
+		log.info("Creating new browser driver");
+		return createDriverInstance();
+	}
+
+	/**
+	 * Create browser driver instance
+	 */
+	private DriverWrapper createDriverInstance() {
+		// Set system properties for Playwright configuration
+		System.setProperty("playwright.browsers.path", System.getProperty("user.home") + "/.cache/ms-playwright");
+
+		// Set custom driver temp directory to avoid classpath issues
+		System.setProperty("playwright.driver.tmpdir", System.getProperty("java.io.tmpdir"));
+
+		// Skip browser download if browsers are already installed
+		System.setProperty("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1");
+
+		// Try to create Playwright instance using Spring Boot initializer
 		Playwright playwright = null;
 		try {
-
-			if (playwright == null) {
+			if (playwrightInitializer != null && playwrightInitializer.canInitialize()) {
+				log.info("Using SpringBootPlaywrightInitializer");
+				playwright = playwrightInitializer.createPlaywright();
+			}
+			else {
+				log.info("Using standard Playwright initialization");
 				playwright = Playwright.create();
 			}
+
+			// Get browser type
+			BrowserType browserType = getBrowserTypeFromEnv(playwright);
+			log.info("Using browser type: {}", browserType.name());
+
 			BrowserType.LaunchOptions options = new BrowserType.LaunchOptions();
 
 			// Basic configuration
 			options.setArgs(Arrays.asList("--remote-allow-origins=*", "--disable-blink-features=AutomationControlled",
 					"--disable-infobars", "--disable-notifications", "--disable-dev-shm-usage",
-					"--lang=zh-CN,zh,en-US,en", "--user-agent=" + getRandomUserAgent(), "--window-size=1920,1080" // Default
-																													// window
-																													// size
-			));
+					"--lang=zh-CN,zh,en-US,en", "--user-agent=" + getRandomUserAgent(), "--window-size=1920,1080"));
 
 			// Decide whether to use headless mode based on configuration
 			if (manusProperties.getBrowserHeadless()) {
@@ -223,10 +252,20 @@ public class ChromeDriverService implements IChromeDriverService {
 				options.setHeadless(false);
 			}
 
-			Browser browser = playwright.chromium().launch(options);
-			log.info("Created new Playwright Browser instance with anti-detection");
-			// Pass the sharedDir to the DriverWrapper constructor
-			return new DriverWrapper(playwright, browser, browser.newPage(), this.sharedDir, objectMapper);
+			Browser browser = browserType.launch(options);
+			log.info("Created new Playwright Browser instance");
+
+			// Create new page and configure timeout
+			Page page = browser.newPage();
+
+			// Set default timeout based on configuration
+			Integer timeout = manusProperties.getBrowserRequestTimeout();
+			if (timeout != null && timeout > 0) {
+				log.info("Setting browser page timeout to {} seconds", timeout);
+				page.setDefaultTimeout(timeout * 1000); // Convert to milliseconds
+			}
+
+			return new DriverWrapper(playwright, browser, page, this.sharedDir, objectMapper);
 		}
 		catch (Exception e) {
 			if (playwright != null) {
@@ -237,8 +276,27 @@ public class ChromeDriverService implements IChromeDriverService {
 					log.warn("Failed to close failed Playwright instance", ex);
 				}
 			}
-			log.error("Failed to create Playwright Browser instance", e);
 			throw new RuntimeException("Failed to initialize Playwright Browser", e);
+		}
+	}
+
+	/**
+	 * Get browser type, supports environment variable configuration
+	 */
+	private BrowserType getBrowserTypeFromEnv(Playwright playwright) {
+		String browserName = System.getenv("BROWSER");
+		if (browserName == null) {
+			browserName = "chromium";
+		}
+
+		switch (browserName.toLowerCase()) {
+			case "webkit":
+				return playwright.webkit();
+			case "firefox":
+				return playwright.firefox();
+			case "chromium":
+			default:
+				return playwright.chromium();
 		}
 	}
 

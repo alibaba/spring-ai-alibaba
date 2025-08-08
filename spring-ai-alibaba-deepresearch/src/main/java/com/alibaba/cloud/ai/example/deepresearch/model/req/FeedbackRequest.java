@@ -25,9 +25,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record FeedbackRequest(
 		/**
-		 * 线程 ID，用于标识当前对话的唯一性。 默认值为 "__default__"，表示使用默认线程
+		 * 会话 ID。默认值为 "__default__"，表示使用默认会话。
 		 */
-		@JsonProperty(value = "thread_id", defaultValue = "__default__") String threadId,
+		@JsonProperty(value = "session_id", defaultValue = "__default__") String sessionId,
+
+		/**
+		 * 线程 ID，用于标识当前对话的唯一性。
+		 */
+		@JsonProperty(value = "thread_id", defaultValue = "") String threadId,
 
 		/**
 		 * 是否接受Planner的计划，true为接受，false为重新生成
