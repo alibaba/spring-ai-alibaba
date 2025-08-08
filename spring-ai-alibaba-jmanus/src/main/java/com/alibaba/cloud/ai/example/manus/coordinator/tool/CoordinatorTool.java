@@ -31,33 +31,17 @@ public class CoordinatorTool {
 	/**
 	 * 工具名称
 	 */
-	private String toolName = "coordinator";
+	private String toolName;
 
 	/**
 	 * 工具描述
 	 */
-	private String toolDescription = "计划协调工具 - 执行计划模板并返回结果";
+	private String toolDescription;
 
 	/**
 	 * 工具Schema
 	 */
-	private String toolSchema = """
-			{
-				"$schema": "http://json-schema.org/draft-07/schema#",
-				"type": "object",
-				"properties": {
-					"planTemplateId": {
-						"type": "string",
-						"description": "计划模板ID"
-					},
-					"parameters": {
-						"type": "object",
-						"description": "执行参数"
-					}
-				},
-				"required": ["planTemplateId"]
-			}
-			""";
+	private String toolSchema;
 
 	/**
 	 * 获取端点地址

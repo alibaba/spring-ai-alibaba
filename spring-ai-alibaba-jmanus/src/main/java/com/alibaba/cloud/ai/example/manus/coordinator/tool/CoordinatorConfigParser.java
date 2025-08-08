@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -28,6 +27,16 @@ public class CoordinatorConfigParser {
 
 	// 预编译正则表达式，提高性能
 	private static final Pattern PARAMETER_PATTERN = Pattern.compile("\\{([^}]+)\\}");
+
+	// 默认JSON Schema模板
+	private static final String DEFAULT_SCHEMA = """
+			{
+				"$schema": "http://json-schema.org/draft-07/schema#",
+				"type": "object",
+				"properties": {},
+				"required": []
+			}
+			""";
 
 	private final ObjectMapper objectMapper;
 
@@ -59,27 +68,7 @@ public class CoordinatorConfigParser {
 			config.setEndpoint(getStringValue(rootNode, "endpoint"));
 
 			// 解析steps
-			JsonNode stepsNode = rootNode.get("steps");
-			if (stepsNode != null && stepsNode.isArray()) {
-				List<String> steps = new ArrayList<>();
-				for (JsonNode stepNode : stepsNode) {
-					// 处理新的格式：steps是对象数组，每个对象包含stepRequirement字段
-					if (stepNode.isObject()) {
-						JsonNode stepRequirementNode = stepNode.get("stepRequirement");
-						if (stepRequirementNode != null && stepRequirementNode.isTextual()) {
-							steps.add(stepRequirementNode.asText());
-						}
-					}
-					// 兼容旧格式：steps是字符串数组
-					else if (stepNode.isTextual()) {
-						steps.add(stepNode.asText());
-					}
-				}
-				config.setParameters(parseParameters(steps));
-			}
-			else {
-				config.setParameters(List.of());
-			}
+			config.setParameters(parseStepsToParameters(rootNode));
 
 			logger.info("转换完成，生成配置: {}", config);
 			return config;
@@ -111,6 +100,33 @@ public class CoordinatorConfigParser {
 		if (getStringValue(rootNode, "planId") == null) {
 			throw new IllegalArgumentException("Plan JSON缺少必要字段: planId");
 		}
+	}
+
+	/**
+	 * 解析steps为参数列表
+	 */
+	private List<CoordinatorParameterVO> parseStepsToParameters(JsonNode rootNode) {
+		JsonNode stepsNode = rootNode.get("steps");
+		if (stepsNode == null || !stepsNode.isArray()) {
+			return List.of();
+		}
+
+		List<String> steps = new ArrayList<>();
+		for (JsonNode stepNode : stepsNode) {
+			// 处理新的格式：steps是对象数组，每个对象包含stepRequirement字段
+			if (stepNode.isObject()) {
+				JsonNode stepRequirementNode = stepNode.get("stepRequirement");
+				if (stepRequirementNode != null && stepRequirementNode.isTextual()) {
+					steps.add(stepRequirementNode.asText());
+				}
+			}
+			// 兼容旧格式：steps是字符串数组
+			else if (stepNode.isTextual()) {
+				steps.add(stepNode.asText());
+			}
+		}
+
+		return parseParameters(steps);
 	}
 
 	/**
@@ -161,7 +177,7 @@ public class CoordinatorConfigParser {
 		CoordinatorParameterVO parameter = new CoordinatorParameterVO();
 		parameter.setName(paramName);
 		parameter.setType("String");
-		parameter.setDescription("参数: " + paramName);
+		parameter.setDescription(paramName);
 		parameter.setRequired(true);
 
 		logger.debug("创建参数对象: {}", parameter);
@@ -177,142 +193,6 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
-	 * 从inputSchema中解析参数列表
-	 * @param inputSchema JSON格式的inputSchema字符串
-	 * @return 参数列表
-	 */
-	private static List<CoordinatorParameterVO> parseParametersFromSchema(String inputSchema) {
-		List<CoordinatorParameterVO> parameters = new ArrayList<>();
-
-		if (inputSchema == null || inputSchema.trim().isEmpty()) {
-			return parameters;
-		}
-
-		try {
-			ObjectMapper mapper = new ObjectMapper();
-			JsonNode schemaNode = mapper.readTree(inputSchema);
-
-			// 检查是否是数组格式
-			if (schemaNode.isArray()) {
-				for (JsonNode paramNode : schemaNode) {
-					if (paramNode.isObject()) {
-						CoordinatorParameterVO parameter = new CoordinatorParameterVO();
-						parameter.setName(getStringValue(paramNode, "name"));
-						parameter.setType(getParameterType(paramNode));
-						parameter.setDescription(getParameterDescription(paramNode));
-						parameter.setRequired(isParameterRequired(schemaNode, parameter.getName()));
-						parameters.add(parameter);
-					}
-				}
-			}
-			// 检查是否是对象格式（JSON Schema格式）
-			else if (schemaNode.isObject()) {
-				JsonNode propertiesNode = schemaNode.get("properties");
-				if (propertiesNode != null && propertiesNode.isObject()) {
-					Iterator<String> fieldNames = propertiesNode.fieldNames();
-					while (fieldNames.hasNext()) {
-						String fieldName = fieldNames.next();
-						JsonNode fieldNode = propertiesNode.get(fieldName);
-						if (fieldNode.isObject()) {
-							CoordinatorParameterVO parameter = new CoordinatorParameterVO();
-							parameter.setName(fieldName);
-							parameter.setType(getParameterType(fieldNode));
-							parameter.setDescription(getParameterDescription(fieldNode));
-							parameter.setRequired(isParameterRequired(schemaNode, fieldName));
-							parameters.add(parameter);
-						}
-					}
-				}
-			}
-
-		}
-		catch (Exception e) {
-			logger.warn("解析inputSchema时发生异常: {}", e.getMessage());
-		}
-
-		return parameters;
-	}
-
-	/**
-	 * 生成工具Schema
-	 * @param parameters 参数列表
-	 * @return JSON Schema字符串
-	 */
-	private static String generateToolSchema(List<CoordinatorParameterVO> parameters) {
-		try {
-			StringBuilder schema = new StringBuilder();
-			schema.append("{\n");
-			schema.append("    \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n");
-			schema.append("    \"type\": \"object\",\n");
-			schema.append("    \"properties\": {\n");
-
-			if (parameters != null && !parameters.isEmpty()) {
-				for (int i = 0; i < parameters.size(); i++) {
-					CoordinatorParameterVO param = parameters.get(i);
-
-					if (param != null && param.getName() != null && !param.getName().trim().isEmpty()) {
-						schema.append("        \"").append(escapeJsonString(param.getName())).append("\": {\n");
-						schema.append("            \"type\": \"").append(convertType(param.getType())).append("\",\n");
-						schema.append("            \"description\": \"")
-							.append(escapeJsonString(param.getDescription()))
-							.append("\"\n");
-						schema.append("        }");
-
-						if (i < parameters.size() - 1) {
-							schema.append(",");
-						}
-						schema.append("\n");
-					}
-				}
-			}
-
-			schema.append("    },\n");
-
-			// 添加required字段
-			if (parameters != null && !parameters.isEmpty()) {
-				List<String> requiredParams = parameters.stream()
-					.filter(param -> param != null && param.isRequired() && param.getName() != null
-							&& !param.getName().trim().isEmpty())
-					.map(CoordinatorParameterVO::getName)
-					.toList();
-
-				if (!requiredParams.isEmpty()) {
-					schema.append("    \"required\": [");
-					for (int i = 0; i < requiredParams.size(); i++) {
-						schema.append("\"").append(escapeJsonString(requiredParams.get(i))).append("\"");
-						if (i < requiredParams.size() - 1) {
-							schema.append(", ");
-						}
-					}
-					schema.append("]\n");
-				}
-				else {
-					schema.append("    \"required\": []\n");
-				}
-			}
-			else {
-				schema.append("    \"required\": []\n");
-			}
-
-			schema.append("}");
-
-			return schema.toString();
-		}
-		catch (Exception e) {
-			logger.error("生成JSON Schema时发生错误: {}", e.getMessage(), e);
-			// 返回默认的简单Schema
-			return """
-					{
-						"$schema": "http://json-schema.org/draft-07/schema#",
-						"type": "object",
-						"properties": {},
-						"required": []
-					}
-					""";
-		}
-	}
-
-	/**
 	 * 将JSON字符串转换为工具Schema
 	 * @param json JSON字符串，格式如：[{"name":"name","description":"参数: name","type":"string"}]
 	 * @return 转换后的JSON Schema字符串
@@ -320,14 +200,7 @@ public class CoordinatorConfigParser {
 	public String generateToolSchema(String json) {
 		if (json == null || json.trim().isEmpty()) {
 			logger.warn("JSON字符串为空，返回默认Schema");
-			return """
-					{
-						"$schema": "http://json-schema.org/draft-07/schema#",
-						"type": "object",
-						"properties": {},
-						"required": []
-					}
-					""";
+			return DEFAULT_SCHEMA;
 		}
 
 		try {
@@ -336,125 +209,92 @@ public class CoordinatorConfigParser {
 
 			if (!parametersArray.isArray()) {
 				logger.warn("JSON不是数组格式，返回默认Schema");
-				return """
-						{
-							"$schema": "http://json-schema.org/draft-07/schema#",
-							"type": "object",
-							"properties": {},
-							"required": []
-						}
-						""";
+				return DEFAULT_SCHEMA;
 			}
 
-			StringBuilder schema = new StringBuilder();
-			schema.append("{\n");
-			schema.append("    \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n");
-			schema.append("    \"type\": \"object\",\n");
-			schema.append("    \"properties\": {\n");
-
-			List<String> requiredParams = new ArrayList<>();
-
-			for (int i = 0; i < parametersArray.size(); i++) {
-				JsonNode paramNode = parametersArray.get(i);
-
-				if (paramNode.isObject()) {
-					String name = getStringValue(paramNode, "name");
-					String description = getStringValue(paramNode, "description");
-					String type = getStringValue(paramNode, "type");
-
-					if (name != null && !name.trim().isEmpty()) {
-						schema.append("        \"").append(escapeJsonString(name)).append("\": {\n");
-						schema.append("            \"type\": \"").append(convertType(type)).append("\",\n");
-						schema.append("            \"description\": \"")
-							.append(escapeJsonString(description))
-							.append("\"\n");
-						schema.append("        }");
-
-						if (i < parametersArray.size() - 1) {
-							schema.append(",");
-						}
-						schema.append("\n");
-
-						// 默认所有参数都是必需的
-						requiredParams.add(name);
-					}
-				}
-			}
-
-			schema.append("    },\n");
-
-			// 添加required字段
-			if (!requiredParams.isEmpty()) {
-				schema.append("    \"required\": [\n");
-				for (int i = 0; i < requiredParams.size(); i++) {
-					schema.append("        \"").append(escapeJsonString(requiredParams.get(i))).append("\"");
-					if (i < requiredParams.size() - 1) {
-						schema.append(",");
-					}
-					schema.append("\n");
-				}
-				schema.append("    ]\n");
-			}
-			else {
-				schema.append("    \"required\": []\n");
-			}
-
-			schema.append("}");
-
-			logger.info("成功生成工具Schema，参数数量: {}", requiredParams.size());
-			return schema.toString();
+			return buildJsonSchema(parametersArray);
 
 		}
 		catch (Exception e) {
 			logger.error("生成工具Schema时发生异常: {}", e.getMessage(), e);
-			// 返回默认的简单Schema
-			return """
-					{
-						"$schema": "http://json-schema.org/draft-07/schema#",
-						"type": "object",
-						"properties": {},
-						"required": []
-					}
-					""";
+			return DEFAULT_SCHEMA;
 		}
 	}
 
 	/**
-	 * 获取参数类型
-	 * @param paramNode 参数节点
-	 * @return 参数类型
+	 * 构建JSON Schema
 	 */
-	private static String getParameterType(JsonNode paramNode) {
-		JsonNode typeNode = paramNode.get("type");
-		return typeNode != null && typeNode.isTextual() ? typeNode.asText() : "string";
-	}
+	private String buildJsonSchema(JsonNode parametersArray) {
+		StringBuilder schema = new StringBuilder();
+		List<String> requiredParams = new ArrayList<>();
 
-	/**
-	 * 获取参数描述
-	 * @param paramNode 参数节点
-	 * @return 参数描述
-	 */
-	private static String getParameterDescription(JsonNode paramNode) {
-		JsonNode descNode = paramNode.get("description");
-		return descNode != null && descNode.isTextual() ? descNode.asText() : "";
-	}
+		// 构建properties部分
+		schema.append("{\n");
+		schema.append("    \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n");
+		schema.append("    \"type\": \"object\",\n");
+		schema.append("    \"properties\": {\n");
 
-	/**
-	 * 判断参数是否必需
-	 * @param schemaNode Schema根节点
-	 * @param paramName 参数名称
-	 * @return 是否必需
-	 */
-	private static boolean isParameterRequired(JsonNode schemaNode, String paramName) {
-		JsonNode requiredNode = schemaNode.get("required");
-		if (requiredNode != null && requiredNode.isArray()) {
-			for (JsonNode requiredParam : requiredNode) {
-				if (requiredParam.isTextual() && paramName.equals(requiredParam.asText())) {
-					return true;
+		for (int i = 0; i < parametersArray.size(); i++) {
+			JsonNode paramNode = parametersArray.get(i);
+
+			if (paramNode.isObject()) {
+				String name = getStringValue(paramNode, "name");
+				String description = getStringValue(paramNode, "description");
+				String type = getStringValue(paramNode, "type");
+
+				if (name != null && !name.trim().isEmpty()) {
+					appendProperty(schema, name, description, type, i < parametersArray.size() - 1);
+					requiredParams.add(name);
 				}
 			}
 		}
-		return false;
+
+		schema.append("    },\n");
+
+		// 添加required字段
+		appendRequiredField(schema, requiredParams);
+
+		schema.append("}");
+
+		logger.info("成功生成工具Schema，参数数量: {}", requiredParams.size());
+		return schema.toString();
+	}
+
+	/**
+	 * 添加属性到Schema
+	 */
+	private void appendProperty(StringBuilder schema, String name, String description, String type, boolean hasNext) {
+		schema.append("        \"").append(escapeJsonString(name)).append("\": {\n");
+		schema.append("            \"type\": \"").append(convertType(type)).append("\",\n");
+		schema.append("            \"description\": \"")
+			.append(escapeJsonString(description))
+			.append("\"\n");
+		schema.append("        }");
+
+		if (hasNext) {
+			schema.append(",");
+		}
+		schema.append("\n");
+	}
+
+	/**
+	 * 添加required字段
+	 */
+	private void appendRequiredField(StringBuilder schema, List<String> requiredParams) {
+		if (!requiredParams.isEmpty()) {
+			schema.append("    \"required\": [\n");
+			for (int i = 0; i < requiredParams.size(); i++) {
+				schema.append("        \"").append(escapeJsonString(requiredParams.get(i))).append("\"");
+				if (i < requiredParams.size() - 1) {
+					schema.append(",");
+				}
+				schema.append("\n");
+			}
+			schema.append("    ]\n");
+		}
+		else {
+			schema.append("    \"required\": []\n");
+		}
 	}
 
 	/**
@@ -468,23 +308,13 @@ public class CoordinatorConfigParser {
 		}
 
 		String lowerType = type.toLowerCase().trim();
-		switch (lowerType) {
-			case "int":
-			case "integer":
-			case "number":
-				return "number";
-			case "boolean":
-			case "bool":
-				return "boolean";
-			case "array":
-			case "list":
-				return "array";
-			case "object":
-			case "map":
-				return "object";
-			default:
-				return "string";
-		}
+		return switch (lowerType) {
+			case "int", "integer", "number" -> "number";
+			case "boolean", "bool" -> "boolean";
+			case "array", "list" -> "array";
+			case "object", "map" -> "object";
+			default -> "string";
+		};
 	}
 
 	/**
