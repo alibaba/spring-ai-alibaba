@@ -24,7 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(OracleChatMemoryProperties.CONFIG_PREFIX)
 public class OracleChatMemoryProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.jdbc.oracle";
+	public static final String CONFIG_PREFIX = "spring.ai.memory.oracle";
 
 	private boolean initializeSchema = true;
 

@@ -24,7 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(SqlServerChatMemoryProperties.CONFIG_PREFIX)
 public class SqlServerChatMemoryProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.jdbc.sqlserver";
+	public static final String CONFIG_PREFIX = "spring.ai.memory.sqlserver";
 
 	private boolean initializeSchema = true;
 

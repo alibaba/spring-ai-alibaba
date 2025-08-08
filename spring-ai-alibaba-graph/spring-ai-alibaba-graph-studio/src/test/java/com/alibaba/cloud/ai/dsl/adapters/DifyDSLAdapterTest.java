@@ -15,12 +15,17 @@
  */
 package com.alibaba.cloud.ai.dsl.adapters;
 
+import com.alibaba.cloud.ai.model.Variable;
+import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.model.workflow.nodedata.ToolNodeData;
+import com.alibaba.cloud.ai.service.dsl.adapters.DifyDSLAdapter;
 import com.alibaba.cloud.ai.service.dsl.nodes.ToolNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -292,6 +297,315 @@ public class DifyDSLAdapterTest {
 		assertEquals("null_test_tool", parsedData.getToolNames().get(0));
 
 		System.out.println(" Tool node data parsing with null values test passed");
+	}
+
+	@Test
+	public void testVariableConversionWithArrayValue() {
+		DifyDSLAdapter adapter = new DifyDSLAdapter(List.of(), null);
+
+		// Construct workflow data containing array values, simulating actual Dify DSL
+		Map<String, Object> workflowData = new HashMap<>();
+
+		// Create conversation_variables that include array-type values
+		List<Map<String, Object>> conversationVars = new ArrayList<>();
+
+		// First variable: array-type tags
+		Map<String, Object> tagsVar = new HashMap<>();
+		tagsVar.put("description", "可打标签列表");
+		tagsVar.put("id", "4f0e8dbe-d4f3-48d3-9632-ec9bf331db69");
+		tagsVar.put("name", "tags");
+		tagsVar.put("selector", List.of("conversation", "tags"));
+		tagsVar.put("value", List.of()); // Empty array
+		tagsVar.put("value_type", "array[object]");
+		conversationVars.add(tagsVar);
+
+		// Second variable: string-type special_rules
+		Map<String, Object> rulesVar = new HashMap<>();
+		rulesVar.put("description", "回答规则");
+		rulesVar.put("id", "82778541-b684-4044-8edd-d0832b6fd002");
+		rulesVar.put("name", "special_rules");
+		rulesVar.put("selector", List.of("conversation", "special_rules"));
+		rulesVar.put("value", "");
+		rulesVar.put("value_type", "string");
+		conversationVars.add(rulesVar);
+
+		// Third variable: array containing complex objects
+		Map<String, Object> complexVar = new HashMap<>();
+		complexVar.put("description", "复杂对象数组");
+		complexVar.put("id", "test-complex-array");
+		complexVar.put("name", "complex_array");
+		complexVar.put("selector", List.of("conversation", "complex"));
+		complexVar.put("value", List.of(Map.of("key1", "value1", "nested", Map.of("prop", 123)),
+				Map.of("key2", "value2", "array", List.of(1, 2, 3))));
+		complexVar.put("value_type", "array[object]");
+		conversationVars.add(complexVar);
+
+		workflowData.put("conversation_variables", conversationVars);
+
+		// Add an empty graph to meet basic requirements
+		Map<String, Object> graph = new HashMap<>();
+		graph.put("nodes", List.of());
+		graph.put("edges", List.of());
+		workflowData.put("graph", graph);
+
+		Map<String, Object> dslData = new HashMap<>();
+		dslData.put("workflow", workflowData);
+
+		// Call mapToWorkflow method, this should not throw an exception
+		assertDoesNotThrow(() -> {
+			Workflow workflow = adapter.mapToWorkflow(dslData);
+			assertNotNull(workflow);
+
+			// Verify variables are correctly parsed
+			List<Variable> vars = workflow.getWorkflowVars();
+			assertNotNull(vars);
+			assertEquals(3, vars.size());
+
+			// Check first variable (array type)
+			Variable tagsVariable = vars.stream().filter(v -> "tags".equals(v.getName())).findFirst().orElse(null);
+			assertNotNull(tagsVariable);
+			assertEquals("可打标签列表", tagsVariable.getDescription());
+			assertEquals("array[object]", tagsVariable.getValueType());
+			assertEquals("[]", tagsVariable.getValue()); // Array should be serialized as
+															// JSON string
+
+			// Check second variable (string type)
+			Variable rulesVariable = vars.stream()
+				.filter(v -> "special_rules".equals(v.getName()))
+				.findFirst()
+				.orElse(null);
+			assertNotNull(rulesVariable);
+			assertEquals("回答规则", rulesVariable.getDescription());
+			assertEquals("string", rulesVariable.getValueType());
+			assertEquals("", rulesVariable.getValue());
+
+			// Check third variable (complex array type)
+			Variable complexVariable = vars.stream()
+				.filter(v -> "complex_array".equals(v.getName()))
+				.findFirst()
+				.orElse(null);
+			assertNotNull(complexVariable);
+			assertEquals("复杂对象数组", complexVariable.getDescription());
+			assertEquals("array[object]", complexVariable.getValueType());
+			// Value should be JSON string representation of the array
+			String value = complexVariable.getValue();
+			assertNotNull(value);
+			assertTrue(value.startsWith("["));
+			assertTrue(value.endsWith("]"));
+			assertTrue(value.contains("key1"));
+			assertTrue(value.contains("value1"));
+		});
+
+		System.out.println("Variable conversion with array value test passed");
+	}
+
+	@Test
+	public void testSpecificErrorScenarioFromIssue() {
+		DifyDSLAdapter adapter = new DifyDSLAdapter(List.of(), null);
+
+		// This test simulates the exact error scenario reported by the user
+		Map<String, Object> workflowData = new HashMap<>();
+
+		// Create conversation_variables structure identical to the reported issue
+		List<Map<String, Object>> conversationVars = new ArrayList<>();
+
+		// First variable: tags, value is empty array, value_type is array[object]
+		Map<String, Object> tagsVar = new HashMap<>();
+		tagsVar.put("description", "可打标签列表");
+		tagsVar.put("id", "4f0e8dbe-d4f3-48d3-9632-ec9bf331db69");
+		tagsVar.put("name", "tags");
+		tagsVar.put("selector", List.of("conversation", "tags"));
+		tagsVar.put("value", List.of()); // This is exactly what caused the error!
+		tagsVar.put("value_type", "array[object]");
+		conversationVars.add(tagsVar);
+
+		// Second variable: special_rules, value is empty string
+		Map<String, Object> rulesVar = new HashMap<>();
+		rulesVar.put("description", "回答规则");
+		rulesVar.put("id", "82778541-b684-4044-8edd-d0832b6fd002");
+		rulesVar.put("name", "special_rules");
+		rulesVar.put("selector", List.of("conversation", "special_rules"));
+		rulesVar.put("value", "");
+		rulesVar.put("value_type", "string");
+		conversationVars.add(rulesVar);
+
+		// Third variable: conclusion, value is empty string
+		Map<String, Object> conclusionVar = new HashMap<>();
+		conclusionVar.put("description", "结束语");
+		conclusionVar.put("id", "d53189c0-31bd-47eb-be1b-a0f61b11f492");
+		conclusionVar.put("name", "conclusion");
+		conclusionVar.put("selector", List.of("conversation", "conclusion"));
+		conclusionVar.put("value", "");
+		conclusionVar.put("value_type", "string");
+		conversationVars.add(conclusionVar);
+
+		workflowData.put("conversation_variables", conversationVars);
+
+		// Add empty graph
+		Map<String, Object> graph = new HashMap<>();
+		graph.put("nodes", List.of());
+		graph.put("edges", List.of());
+		workflowData.put("graph", graph);
+
+		Map<String, Object> dslData = new HashMap<>();
+		dslData.put("workflow", workflowData);
+
+		// This call would previously throw IllegalArgumentException:
+		// "Cannot deserialize value of type java.lang.String from Array value"
+		// Now it should work properly
+		assertDoesNotThrow(() -> {
+			Workflow workflow = adapter.mapToWorkflow(dslData);
+			assertNotNull(workflow);
+
+			// Verify variables are parsed correctly
+			List<Variable> vars = workflow.getWorkflowVars();
+			assertNotNull(vars);
+			assertEquals(3, vars.size());
+
+			// Verify tags variable (the one that originally caused the issue)
+			Variable tagsVariable = vars.stream().filter(v -> "tags".equals(v.getName())).findFirst().orElse(null);
+			assertNotNull(tagsVariable, "tags variable should be parsed correctly");
+			assertEquals("可打标签列表", tagsVariable.getDescription());
+			assertEquals("array[object]", tagsVariable.getValueType());
+			assertEquals("[]", tagsVariable.getValue()); // Empty array serialized as "[]"
+
+			// Verify other variables still work normally
+			Variable rulesVariable = vars.stream()
+				.filter(v -> "special_rules".equals(v.getName()))
+				.findFirst()
+				.orElse(null);
+			assertNotNull(rulesVariable, "special_rules variable should be parsed correctly");
+			assertEquals("", rulesVariable.getValue());
+
+			Variable conclusionVariable = vars.stream()
+				.filter(v -> "conclusion".equals(v.getName()))
+				.findFirst()
+				.orElse(null);
+			assertNotNull(conclusionVariable, "conclusion variable should be parsed correctly");
+			assertEquals("", conclusionVariable.getValue());
+		});
+
+		System.out.println("Specific error scenario from issue #2017 test passed");
+	}
+
+	@Test
+	public void testVariableValueTypesEdgeCases() {
+		DifyDSLAdapter adapter = new DifyDSLAdapter(List.of(), null);
+
+		Map<String, Object> workflowData = new HashMap<>();
+		List<Map<String, Object>> conversationVars = new ArrayList<>();
+
+		// Test various types of value values
+
+		// 1. null value
+		Map<String, Object> nullVar = new HashMap<>();
+		nullVar.put("name", "null_value");
+		nullVar.put("value", null);
+		nullVar.put("value_type", "string");
+		conversationVars.add(nullVar);
+
+		// 2. Number value
+		Map<String, Object> numberVar = new HashMap<>();
+		numberVar.put("name", "number_value");
+		numberVar.put("value", 42);
+		numberVar.put("value_type", "number");
+		conversationVars.add(numberVar);
+
+		// 3. Boolean value
+		Map<String, Object> boolVar = new HashMap<>();
+		boolVar.put("name", "bool_value");
+		boolVar.put("value", true);
+		boolVar.put("value_type", "boolean");
+		conversationVars.add(boolVar);
+
+		// 4. Nested object
+		Map<String, Object> objectVar = new HashMap<>();
+		objectVar.put("name", "object_value");
+		objectVar.put("value", Map.of("nested", Map.of("deep", "value"), "array", List.of(1, 2, 3)));
+		objectVar.put("value_type", "object");
+		conversationVars.add(objectVar);
+
+		// 5. Array containing different types of elements
+		Map<String, Object> mixedArrayVar = new HashMap<>();
+		mixedArrayVar.put("name", "mixed_array");
+		List<Object> mixedList = new ArrayList<>();
+		mixedList.add("string");
+		mixedList.add(123);
+		mixedList.add(true);
+		mixedList.add(Map.of("key", "value"));
+		mixedList.add(null);
+		mixedArrayVar.put("value", mixedList);
+		mixedArrayVar.put("value_type", "array[mixed]");
+		conversationVars.add(mixedArrayVar);
+
+		workflowData.put("conversation_variables", conversationVars);
+
+		// Add empty graph
+		Map<String, Object> graph = new HashMap<>();
+		graph.put("nodes", List.of());
+		graph.put("edges", List.of());
+		workflowData.put("graph", graph);
+
+		Map<String, Object> dslData = new HashMap<>();
+		dslData.put("workflow", workflowData);
+
+		// All these edge cases should be handled correctly
+		assertDoesNotThrow(() -> {
+			Workflow workflow = adapter.mapToWorkflow(dslData);
+			assertNotNull(workflow);
+
+			List<Variable> vars = workflow.getWorkflowVars();
+			assertNotNull(vars);
+			assertEquals(5, vars.size());
+
+			// Verify null value variable
+			Variable nullVariable = vars.stream()
+				.filter(v -> "null_value".equals(v.getName()))
+				.findFirst()
+				.orElse(null);
+			assertNotNull(nullVariable);
+			assertNull(nullVariable.getValue()); // null value should remain null
+
+			// Verify number value variable
+			Variable numberVariable = vars.stream()
+				.filter(v -> "number_value".equals(v.getName()))
+				.findFirst()
+				.orElse(null);
+			assertNotNull(numberVariable);
+			assertEquals("42", numberVariable.getValue());
+
+			// Verify boolean value variable
+			Variable boolVariable = vars.stream()
+				.filter(v -> "bool_value".equals(v.getName()))
+				.findFirst()
+				.orElse(null);
+			assertNotNull(boolVariable);
+			assertEquals("true", boolVariable.getValue());
+
+			// Verify object value variable (should be serialized as JSON)
+			Variable objectVariable = vars.stream()
+				.filter(v -> "object_value".equals(v.getName()))
+				.findFirst()
+				.orElse(null);
+			assertNotNull(objectVariable);
+			String objectValue = objectVariable.getValue();
+			assertTrue(objectValue.contains("nested"));
+			assertTrue(objectValue.contains("array"));
+
+			// Verify mixed array variable
+			Variable mixedArrayVariable = vars.stream()
+				.filter(v -> "mixed_array".equals(v.getName()))
+				.findFirst()
+				.orElse(null);
+			assertNotNull(mixedArrayVariable);
+			String mixedArrayValue = mixedArrayVariable.getValue();
+			assertTrue(mixedArrayValue.startsWith("["));
+			assertTrue(mixedArrayValue.endsWith("]"));
+			assertTrue(mixedArrayValue.contains("string"));
+			assertTrue(mixedArrayValue.contains("123"));
+		});
+
+		System.out.println(" Variable value types edge cases test passed");
 	}
 
 }

@@ -137,13 +137,15 @@ public class Nl2sqlConfiguration {
 
 	private UserPromptConfigService promptConfigService;
 
+	private com.alibaba.cloud.ai.service.DatasourceService datasourceService;
+
 	public Nl2sqlConfiguration(@Qualifier("nl2SqlServiceImpl") BaseNl2SqlService nl2SqlService,
 			@Qualifier("schemaServiceImpl") BaseSchemaService schemaService,
 			@Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig,
 			CodeExecutorProperties codeExecutorProperties, CodePoolExecutorService codePoolExecutor,
 			SemanticModelRecallService semanticModelRecallService,
-			BusinessKnowledgeRecallService businessKnowledgeRecallService,
-			UserPromptConfigService promptConfigService) {
+			BusinessKnowledgeRecallService businessKnowledgeRecallService, UserPromptConfigService promptConfigService,
+			com.alibaba.cloud.ai.service.DatasourceService datasourceService) {
 		this.nl2SqlService = nl2SqlService;
 		this.schemaService = schemaService;
 		this.dbAccessor = dbAccessor;
@@ -153,6 +155,7 @@ public class Nl2sqlConfiguration {
 		this.semanticModelRecallService = semanticModelRecallService;
 		this.businessKnowledgeRecallService = businessKnowledgeRecallService;
 		this.promptConfigService = promptConfigService;
+		this.datasourceService = datasourceService;
 	}
 
 	@Bean
@@ -223,7 +226,7 @@ public class Nl2sqlConfiguration {
 			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(chatClientBuilder, nl2SqlService)))
 			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
-			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(dbAccessor, dbConfig)))
+			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(dbAccessor, datasourceService)))
 			.addNode(PYTHON_GENERATE_NODE,
 					node_async(new PythonGenerateNode(codeExecutorProperties, chatClientBuilder)))
 			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(codePoolExecutor)))

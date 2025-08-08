@@ -19,11 +19,13 @@ package com.alibaba.cloud.ai.example.deepresearch.controller.graph;
 import com.alibaba.cloud.ai.example.deepresearch.enums.NodeNameEnum;
 import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.GraphId;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.async.AsyncGeneratorOperators;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -41,10 +43,16 @@ import reactor.core.publisher.Sinks;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.Optional;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
+
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
  * @author yingzi
@@ -53,19 +61,31 @@ import java.util.Optional;
 
 public class GraphProcess {
 
+	private final ConcurrentHashMap<String, Integer> sessionCountMap = new ConcurrentHashMap<>();
+
+	private final ConcurrentHashMap<GraphId, Future<?>> graphTaskFutureMap = new ConcurrentHashMap<>();
+
 	private static final Logger logger = LoggerFactory.getLogger(GraphProcess.class);
 
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-	private CompiledGraph compiledGraph;
+	private final CompiledGraph compiledGraph;
 
 	public GraphProcess(CompiledGraph compiledGraph) {
 		this.compiledGraph = compiledGraph;
 	}
 
-	public void handleHumanFeedback(ChatRequest chatRequest, Map<String, Object> objectMap,
+	public GraphId createNewGraphId(String sessionId) {
+		if (StringUtils.isEmpty(sessionId)) {
+			throw new IllegalArgumentException("Session Id is empty");
+		}
+		int count = sessionCountMap.merge(sessionId, 1, Integer::sum);
+		return new GraphId(sessionId, String.format("%s-%d", sessionId, count));
+	}
+
+	public void handleHumanFeedback(GraphId graphId, ChatRequest chatRequest, Map<String, Object> objectMap,
 			RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) throws GraphRunnerException {
 		objectMap.put("feed_back", chatRequest.interruptFeedback());
 		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
@@ -73,12 +93,47 @@ public class GraphProcess {
 		state.withResume();
 		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
 		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.streamFromInitialNode(state, runnableConfig);
-		processStream(resultFuture, sink);
+		processStream(graphId, resultFuture, sink);
 	}
 
-	public void processStream(AsyncGenerator<NodeOutput> generator, Sinks.Many<ServerSentEvent<String>> sink) {
-		executor.submit(() -> {
-			generator.forEachAsync(output -> {
+	/**
+	 * 支持中断的AsyncGeneratorOperators.forEachAsync
+	 */
+	private CompletableFuture<Object> forEachAsyncWithInterrupt(AsyncGeneratorOperators<NodeOutput> generator,
+			Consumer<NodeOutput> consumer) {
+		CompletableFuture<Object> future = completedFuture(null);
+		try {
+			logger.debug("Current Thread: {}", Thread.currentThread().getName());
+			for (AsyncGenerator.Data<NodeOutput> next = generator.next(); !next.isDone()
+					&& !Thread.currentThread().isInterrupted(); next = generator.next()) {
+				final AsyncGenerator.Data<NodeOutput> finalNext = next;
+				if (finalNext.getEmbed() != null) {
+					future = future.thenCompose(v -> this.forEachAsyncWithInterrupt(
+							finalNext.getEmbed().getGenerator().async(generator.executor()), consumer));
+					if (future.isCompletedExceptionally()) {
+						return future;
+					}
+				}
+				else {
+					future = future.thenCompose(v -> finalNext.getData()
+						.thenAcceptAsync(consumer, generator.executor())
+						.thenApply(x -> null));
+					if (future.isCompletedExceptionally()) {
+						return future;
+					}
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.error("error when processing graph stream: {}", e.getMessage());
+		}
+		return future;
+	}
+
+	public void processStream(GraphId graphId, AsyncGenerator<NodeOutput> generator,
+			Sinks.Many<ServerSentEvent<String>> sink) {
+		Future<?> future = executor.submit(() -> {
+			this.forEachAsyncWithInterrupt(generator, output -> {
 				try {
 					// logger.info("output = {}", output);
 					String nodeName = output.node();
@@ -90,7 +145,7 @@ public class GraphProcess {
 					}
 					else {
 						logger.debug("Normal output from node {}: {}", nodeName, output.state().value("messages"));
-						content = buildNormalNodeContent(nodeName, output);
+						content = buildNormalNodeContent(graphId, nodeName, output);
 					}
 					if (StringUtils.isNotEmpty(content)) {
 						sink.tryEmitNext(ServerSentEvent.builder(content).build());
@@ -110,6 +165,29 @@ public class GraphProcess {
 				return null;
 			});
 		});
+		// 存放到Map中
+		Future<?> oldFuture = graphTaskFutureMap.put(graphId, future);
+		Optional.ofNullable(oldFuture).ifPresent((f) -> {
+			if (!f.isDone()) {
+				logger.warn("A task with the same GraphId {} is still running!", graphId);
+			}
+		});
+	}
+
+	/**
+	 * 终止运行中的图
+	 * @param graphId graphId
+	 * @return 是否成功
+	 */
+	public boolean stopGraph(GraphId graphId) {
+		Future<?> future = this.graphTaskFutureMap.remove(graphId);
+		if (future == null) {
+			return false;
+		}
+		if (future.isDone()) {
+			return true;
+		}
+		return future.cancel(true);
 	}
 
 	private String buildLLMNodeContent(String nodeName, StreamingOutput streamingOutput, NodeOutput output) {
@@ -130,7 +208,7 @@ public class GraphProcess {
 	private record NodeResponse(String nodeName, String displayTitle, Object content, Object siteInformation) {
 	}
 
-	private String buildNormalNodeContent(String nodeName, NodeOutput output) {
+	private String buildNormalNodeContent(GraphId graphId, String nodeName, NodeOutput output) {
 		NodeNameEnum nodeEnum = NodeNameEnum.fromNodeName(nodeName);
 		if (nodeEnum == null) {
 			return "";
@@ -138,7 +216,10 @@ public class GraphProcess {
 		Object content;
 		// 不同节点给前端的内容不一样
 		content = switch (nodeEnum) {
-			case START -> output.state().data().get("query");
+			case START -> {
+				String query = output.state().data().get("query").toString();
+				yield Map.of("query", query, "graphId", graphId);
+			}
 			case COORDINATOR -> output.state().data().get("deep_research");
 			case REWRITE_MULTI_QUERY, HUMAN_FEEDBACK, END -> output.state().data();
 			case PLANNER -> output.state().data().get("planner_content");

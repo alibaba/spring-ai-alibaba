@@ -84,6 +84,7 @@ import com.alibaba.cloud.ai.example.manus.tool.tableProcessor.TableProcessingSer
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
 import com.alibaba.cloud.ai.example.manus.tool.pptGenerator.PptGeneratorOperator;
+import com.alibaba.cloud.ai.example.manus.tool.jsxGenerator.JsxGeneratorOperator;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -152,6 +153,9 @@ public class PlanningFactory implements IPlanningFactory {
 
 	@Autowired
 	private PptGeneratorOperator pptGeneratorOperator;
+
+	@Autowired
+	private JsxGeneratorOperator jsxGeneratorOperator;
 
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
@@ -230,6 +234,7 @@ public class PlanningFactory implements IPlanningFactory {
 		toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
 		// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
 		// toolDefinitions.add(pptGeneratorOperator);
+		// toolDefinitions.add(jsxGeneratorOperator);
 		toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
 		toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
 		// toolDefinitions.add(new GoogleSearch());
