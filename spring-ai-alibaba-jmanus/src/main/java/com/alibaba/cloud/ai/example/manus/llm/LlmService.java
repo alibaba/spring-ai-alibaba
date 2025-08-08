@@ -224,6 +224,8 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			chatOptionsBuilder.topP(model.getTopP());
 		}
 
+		chatOptionsBuilder.internalToolExecutionEnabled(false);
+
 		OpenAiChatOptions chatOptions = chatOptionsBuilder.build();
 		if (headers != null) {
 			chatOptions.setHttpHeaders(headers);
@@ -235,7 +237,6 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 		ChatClient client = ChatClient.builder(openAiChatModel)
 			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
 		clients.put(modelId, client);
 		log.info("Build or update dynamic chat client for model: {}", modelName);
