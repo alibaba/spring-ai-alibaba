@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import jakarta.annotation.PreDestroy;
@@ -201,60 +202,15 @@ public class ChromeDriverService implements IChromeDriverService {
 	}
 
 	private DriverWrapper createNewDriver() {
-		try {
-			// Check if running in Spring Boot environment
-			if (isSpringBootEnvironment()) {
-				log.info("Detected Spring Boot environment, using special handling");
-				return createNewDriverForSpringBoot();
-			}
-
-			// Standard handling approach
-			try (Playwright playwright = Playwright.create()) {
-				// Get browser type, supports environment variable configuration
-				BrowserType browserType = getBrowserTypeFromEnv(playwright);
-				log.info("Using browser type: {}", browserType.name());
-
-				BrowserType.LaunchOptions options = new BrowserType.LaunchOptions();
-
-				// Basic configuration
-				options.setArgs(Arrays.asList("--remote-allow-origins=*",
-						"--disable-blink-features=AutomationControlled", "--disable-infobars",
-						"--disable-notifications", "--disable-dev-shm-usage", "--lang=zh-CN,zh,en-US,en",
-						"--user-agent=" + getRandomUserAgent(), "--window-size=1920,1080"));
-
-				// Decide whether to use headless mode based on configuration
-				if (manusProperties.getBrowserHeadless()) {
-					log.info("Enable Playwright headless mode");
-					options.setHeadless(true);
-				}
-				else {
-					log.info("Enable Playwright non-headless mode");
-					options.setHeadless(false);
-				}
-
-				// Use browserType.launch() instead of playwright.chromium().launch()
-				Browser browser = browserType.launch(options);
-				log.info("Created new Playwright Browser instance with anti-detection");
-
-				// Create DriverWrapper, but don't close playwright here, let
-				// DriverWrapper manage it
-				DriverWrapper wrapper = new DriverWrapper(playwright, browser, browser.newPage(), this.sharedDir,
-						objectMapper);
-
-				return wrapper;
-			}
-		}
-		catch (Exception e) {
-			log.error("Failed to create Playwright Browser instance", e);
-			throw new RuntimeException("Failed to initialize Playwright Browser", e);
-		}
+		log.info("Creating new browser driver");
+		return createDriverInstance();
 	}
 
 	/**
-	 * Create browser driver for Spring Boot environment
+	 * Create browser driver instance
 	 */
-	private DriverWrapper createNewDriverForSpringBoot() {
-		// In Spring Boot environment, we need to manually set system properties
+	private DriverWrapper createDriverInstance() {
+		// Set system properties for Playwright configuration
 		System.setProperty("playwright.browsers.path", System.getProperty("user.home") + "/.cache/ms-playwright");
 
 		// Set custom driver temp directory to avoid classpath issues
@@ -297,9 +253,19 @@ public class ChromeDriverService implements IChromeDriverService {
 			}
 
 			Browser browser = browserType.launch(options);
-			log.info("Created new Playwright Browser instance for Spring Boot environment");
+			log.info("Created new Playwright Browser instance");
 
-			return new DriverWrapper(playwright, browser, browser.newPage(), this.sharedDir, objectMapper);
+			// Create new page and configure timeout
+			Page page = browser.newPage();
+
+			// Set default timeout based on configuration
+			Integer timeout = manusProperties.getBrowserRequestTimeout();
+			if (timeout != null && timeout > 0) {
+				log.info("Setting browser page timeout to {} seconds", timeout);
+				page.setDefaultTimeout(timeout * 1000); // Convert to milliseconds
+			}
+
+			return new DriverWrapper(playwright, browser, page, this.sharedDir, objectMapper);
 		}
 		catch (Exception e) {
 			if (playwright != null) {
@@ -310,22 +276,7 @@ public class ChromeDriverService implements IChromeDriverService {
 					log.warn("Failed to close failed Playwright instance", ex);
 				}
 			}
-			throw new RuntimeException("Failed to initialize Playwright Browser in Spring Boot environment", e);
-		}
-	}
-
-	/**
-	 * Detect if running in Spring Boot environment
-	 */
-	private boolean isSpringBootEnvironment() {
-		try {
-			// Simple check for Spring Boot application class
-			Class.forName("org.springframework.boot.SpringApplication");
-			return true;
-		}
-		catch (ClassNotFoundException e) {
-			// If Spring Boot is not found, assume standard environment
-			return false;
+			throw new RuntimeException("Failed to initialize Playwright Browser", e);
 		}
 	}
 

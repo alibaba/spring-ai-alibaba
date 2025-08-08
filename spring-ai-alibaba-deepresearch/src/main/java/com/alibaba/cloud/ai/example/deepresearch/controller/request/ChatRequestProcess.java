@@ -35,11 +35,13 @@ public class ChatRequestProcess {
 	 */
 	public static ChatRequest getDefaultChatRequest(ChatRequest chatRequest, SearchBeanUtil searchBeanUtil) {
 		if (chatRequest == null) {
-			return new ChatRequest("__default__", 1, 3, true, null, true, Collections.emptyMap(), "草莓蛋糕怎么做呀。",
+			return new ChatRequest("__default__", "", 1, 3, true, null, true, Collections.emptyMap(), "草莓蛋糕怎么做呀。",
 					searchBeanUtil.getFirstAvailableSearch().orElse(null), true, 3, false);
 		}
 		else {
-			return new ChatRequest(StringUtils.hasText(chatRequest.threadId()) ? chatRequest.threadId() : "__default__",
+			return new ChatRequest(
+					StringUtils.hasText(chatRequest.sessionId()) ? chatRequest.sessionId() : "__default__",
+					chatRequest.threadId(),
 					chatRequest.maxPlanIterations() == null ? 1 : chatRequest.maxPlanIterations(),
 					chatRequest.maxStepNum() == null ? 3 : chatRequest.maxStepNum(),
 					chatRequest.autoAcceptPlan() == null || chatRequest.autoAcceptPlan(),
@@ -55,6 +57,14 @@ public class ChatRequestProcess {
 		}
 	}
 
+	public static ChatRequest updateThreadId(ChatRequest chatRequest, String threadId) {
+		return new ChatRequest(chatRequest.sessionId(), threadId, chatRequest.maxPlanIterations(),
+				chatRequest.maxStepNum(), chatRequest.autoAcceptPlan(), chatRequest.interruptFeedback(),
+				chatRequest.enableDeepResearch(), chatRequest.mcpSettings(), chatRequest.query(),
+				chatRequest.searchEngine(), chatRequest.enableSearchFilter(), chatRequest.optimizeQueryNum(),
+				chatRequest.isUploadFile());
+	}
+
 	public static void initializeObjectMap(ChatRequest chatRequest, Map<String, Object> objectMap) {
 		objectMap.put("thread_id", chatRequest.threadId());
 		objectMap.put("enable_deepresearch", chatRequest.enableDeepResearch());
@@ -66,7 +76,7 @@ public class ChatRequestProcess {
 		objectMap.put("search_engine", chatRequest.searchEngine());
 		objectMap.put("enable_search_filter", chatRequest.enableSearchFilter());
 		objectMap.put("optimize_query_num", chatRequest.optimizeQueryNum());
-		objectMap.put("session_id", chatRequest.threadId());
+		objectMap.put("session_id", chatRequest.sessionId());
 		objectMap.put("user_upload_file", chatRequest.isUploadFile() != null && chatRequest.isUploadFile());
 	}
 

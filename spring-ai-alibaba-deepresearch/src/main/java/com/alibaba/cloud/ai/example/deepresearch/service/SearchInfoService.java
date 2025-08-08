@@ -103,7 +103,13 @@ public class SearchInfoService {
 			}
 			catch (Exception e) {
 				logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
-				Thread.sleep(RETRY_DELAY_MS);
+				try {
+					Thread.sleep(RETRY_DELAY_MS);
+				}
+				catch (InterruptedException e1) {
+					logger.info("Thread interrupted... {}", e1.getMessage());
+					Thread.currentThread().interrupt();
+				}
 			}
 		}
 		return results;

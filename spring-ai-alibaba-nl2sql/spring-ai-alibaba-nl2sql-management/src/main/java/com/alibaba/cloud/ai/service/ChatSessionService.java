@@ -39,7 +39,7 @@ public class ChatSessionService {
 	private JdbcTemplate jdbcTemplate;
 
 	private static final String SELECT_BY_AGENT_ID = """
-			SELECT * FROM chat_session WHERE agent_id = ? AND status = 'active' ORDER BY update_time DESC
+			SELECT * FROM chat_session WHERE agent_id = ? AND status = 'active' ORDER BY is_pinned DESC, update_time DESC
 			""";
 
 	private static final String SELECT_BY_ID = """
@@ -47,8 +47,8 @@ public class ChatSessionService {
 			""";
 
 	private static final String INSERT = """
-			INSERT INTO chat_session (id, agent_id, title, status, user_id, create_time, update_time)
-			VALUES (?, ?, ?, ?, ?, ?, ?)
+			INSERT INTO chat_session (id, agent_id, title, status, is_pinned, user_id, create_time, update_time)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 			""";
 
 	private static final String UPDATE = """
@@ -61,6 +61,18 @@ public class ChatSessionService {
 
 	private static final String UPDATE_TIME = """
 			UPDATE chat_session SET update_time = ? WHERE id = ?
+			""";
+
+	private static final String UPDATE_PIN_STATUS = """
+			UPDATE chat_session SET is_pinned = ?, update_time = ? WHERE id = ?
+			""";
+
+	private static final String UPDATE_TITLE = """
+			UPDATE chat_session SET title = ?, update_time = ? WHERE id = ?
+			""";
+
+	private static final String DELETE_SESSION = """
+			UPDATE chat_session SET status = 'deleted', update_time = ? WHERE id = ?
 			""";
 
 	/**
@@ -91,7 +103,7 @@ public class ChatSessionService {
 		session.setUpdateTime(now);
 
 		jdbcTemplate.update(INSERT, session.getId(), session.getAgentId(), session.getTitle(), session.getStatus(),
-				session.getUserId(), session.getCreateTime(), session.getUpdateTime());
+				session.getIsPinned(), session.getUserId(), session.getCreateTime(), session.getUpdateTime());
 
 		log.info("Created new chat session: {} for agent: {}", sessionId, agentId);
 		return session;
@@ -125,6 +137,33 @@ public class ChatSessionService {
 	public void updateSessionTime(String sessionId) {
 		LocalDateTime now = LocalDateTime.now();
 		jdbcTemplate.update(UPDATE_TIME, now, sessionId);
+	}
+
+	/**
+	 * 置顶/取消置顶会话
+	 */
+	public void pinSession(String sessionId, boolean isPinned) {
+		LocalDateTime now = LocalDateTime.now();
+		jdbcTemplate.update(UPDATE_PIN_STATUS, isPinned, now, sessionId);
+		log.info("Updated pin status for session: {} to: {}", sessionId, isPinned);
+	}
+
+	/**
+	 * 重命名会话
+	 */
+	public void renameSession(String sessionId, String newTitle) {
+		LocalDateTime now = LocalDateTime.now();
+		jdbcTemplate.update(UPDATE_TITLE, newTitle, now, sessionId);
+		log.info("Renamed session: {} to: {}", sessionId, newTitle);
+	}
+
+	/**
+	 * 删除单个会话
+	 */
+	public void deleteSession(String sessionId) {
+		LocalDateTime now = LocalDateTime.now();
+		jdbcTemplate.update(DELETE_SESSION, now, sessionId);
+		log.info("Deleted session: {}", sessionId);
 	}
 
 }

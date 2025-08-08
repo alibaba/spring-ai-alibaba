@@ -64,8 +64,8 @@ const words: I18nType = {
     successMessage: '配置保存成功！正在跳转到主页面...',
     restartRequired: 'API密钥已保存成功！为了使配置生效，需要重启应用程序。\n\n点击"确定"立即重启，点击"取消"稍后手动重启。',
     simplifiedChinese: '简体中文',
-    completionsPath: 'Completions路径',
-    completionsPathPlaceholder: 'CompletionsPath，资源路径',
+    completionsPath: 'Completions Path',
+    completionsPathPlaceholder: '聊天模型端点，各平台路径不同。如未填写默认配置是：/v1/chat/completions',
   },
 
   // 通用按钮和操作
@@ -312,7 +312,7 @@ const words: I18nType = {
       topP: 'Top P',
       topPPlaceholder: '留空使用模型默认值',
       completionsPath: 'Completions Path',
-      completionsPathPlaceholder: '留空使用模型默认值',
+      completionsPathPlaceholder: '聊天模型端点，各平台路径不同。如未填写默认配置是：/v1/chat/completions',
     },
     // MCP配置页面
     mcpConfig: {
@@ -811,7 +811,8 @@ const words: I18nType = {
   direct: {
     planTemplateIdNotFound: '没有找到计划模板ID',
     executionFailedNoPlanId: '执行计划失败：未返回有效的计划ID',
-    executionFailed: '执行计划失败'
+    executionFailed: '执行计划失败',
+    configuration: '设置'
   },
 
   // 模态框
