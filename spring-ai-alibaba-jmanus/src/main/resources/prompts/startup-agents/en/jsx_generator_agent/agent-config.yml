@@ -159,4 +159,3 @@ nextStepPrompt: |
   - Functions in methods field should use complete JavaScript syntax
 
   To extract content from existing text or documents, please use text_file_operator or inner_storage_content_tool.
-  

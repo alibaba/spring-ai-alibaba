@@ -155,4 +155,3 @@ nextStepPrompt: |
   - methods字段中的函数应使用完整的JavaScript语法
 
   如需从已有文本或文档中提取内容，请使用 text_file_operator 或 inner_storage_content_tool。
-  
