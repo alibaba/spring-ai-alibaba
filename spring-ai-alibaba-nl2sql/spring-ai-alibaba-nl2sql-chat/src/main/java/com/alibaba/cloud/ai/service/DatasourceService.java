@@ -243,9 +243,9 @@ public class DatasourceService {
 	 */
 	public List<AgentDatasource> getAgentDatasources(Integer agentId) {
 		String sql = "SELECT ad.*, d.name, d.type, d.host, d.port, d.database_name, "
-				+ "d.connection_url, d.status, d.test_status, d.description " + "FROM agent_datasource ad "
-				+ "LEFT JOIN datasource d ON ad.datasource_id = d.id " + "WHERE ad.agent_id = ? "
-				+ "ORDER BY ad.create_time DESC";
+				+ "d.connection_url, d.username, d.password, d.status, d.test_status, d.description "
+				+ "FROM agent_datasource ad " + "LEFT JOIN datasource d ON ad.datasource_id = d.id "
+				+ "WHERE ad.agent_id = ? " + "ORDER BY ad.create_time DESC";
 
 		return jdbcTemplate.query(sql, (rs, rowNum) -> {
 			AgentDatasource agentDatasource = new AgentDatasource();
@@ -265,6 +265,8 @@ public class DatasourceService {
 			datasource.setPort(rs.getInt("port"));
 			datasource.setDatabaseName(rs.getString("database_name"));
 			datasource.setConnectionUrl(rs.getString("connection_url"));
+			datasource.setUsername(rs.getString("username"));
+			datasource.setPassword(rs.getString("password"));
 			datasource.setStatus(rs.getString("status"));
 			datasource.setTestStatus(rs.getString("test_status"));
 			datasource.setDescription(rs.getString("description"));
