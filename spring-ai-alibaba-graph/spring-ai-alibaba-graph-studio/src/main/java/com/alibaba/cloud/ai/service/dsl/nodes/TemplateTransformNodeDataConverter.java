@@ -28,6 +28,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
@@ -115,6 +119,39 @@ public class TemplateTransformNodeDataConverter extends AbstractNodeDataConverte
 		nodeData.setOutputKey(varName + "_" + TemplateTransformNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
 		nodeData.setOutputs(List.of(TemplateTransformNodeData.DEFAULT_OUTPUT_SCHEMA));
 		super.postProcessOutput(nodeData, varName);
+	}
+
+	private String replacePlaceholders(String text, Map<String, String> data) {
+		Pattern pattern = Pattern.compile("\\{\\{\\s*(\\w+)\\s*\\}\\}");
+		Matcher matcher = pattern.matcher(text);
+
+		StringBuilder result = new StringBuilder();
+		while (matcher.find()) {
+			String key = matcher.group(1);
+			String value = data.get(key);
+
+			if (value != null) {
+				String replacement = "{{ " + value + " }}";
+				matcher.appendReplacement(result, replacement);
+			}
+		}
+		matcher.appendTail(result);
+		return result.toString();
+	}
+
+	@Override
+	public BiConsumer<TemplateTransformNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
+				// todo: 支持Jinja2的if、for语句
+				// 将模板中的占位变量替换为工作流的中间变量
+				Map<String, String> argToStateName = nodeData.getInputs()
+					.stream()
+					.collect(Collectors.toMap(VariableSelector::getLabel, VariableSelector::getNameInCode));
+				nodeData.setTemplate(this.replacePlaceholders(nodeData.getTemplate(), argToStateName));
+			});
+			case CUSTOM -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }
