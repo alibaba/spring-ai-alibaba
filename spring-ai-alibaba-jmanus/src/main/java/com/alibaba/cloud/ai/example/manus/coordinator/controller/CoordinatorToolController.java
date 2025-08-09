@@ -305,11 +305,25 @@ public class CoordinatorToolController {
 			Optional<CoordinatorToolEntity> entity = coordinatorToolRepository.findById(id);
 			if (entity.isPresent()) {
 				CoordinatorToolEntity tool = entity.get();
-				tool.setPublishStatus(CoordinatorToolEntity.PublishStatus.UNPUBLISHED);
-				coordinatorToolRepository.save(tool);
-				response.put("success", true);
-				response.put("message", "Tool has been unpublished successfully");
-				return ResponseEntity.ok(response);
+
+				// 尝试从coordinator server取消发布
+				boolean unpublishSuccess = coordinatorService.unpublishCoordinatorTool(tool);
+
+				if (unpublishSuccess) {
+					// 取消发布成功，更新数据库状态为未发布
+					tool.setPublishStatus(CoordinatorToolEntity.PublishStatus.UNPUBLISHED);
+					coordinatorToolRepository.save(tool);
+
+					response.put("success", true);
+					response.put("message", "Tool has been unpublished successfully from coordinator server");
+					return ResponseEntity.ok(response);
+				}
+				else {
+					// 取消发布失败，忽略，不更新数据库状态
+					response.put("success", false);
+					response.put("message", "Failed to unpublish tool from coordinator server, status unchanged");
+					return ResponseEntity.ok(response);
+				}
 			}
 			response.put("success", false);
 			response.put("message", "Tool not found");

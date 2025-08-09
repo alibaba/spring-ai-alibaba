@@ -48,15 +48,15 @@ import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 
 /**
- * MCP Server Application
+ * Coordinator Server Application
  *
- * Supports multi-endpoint MCP server, each endpoint corresponds to a group of tools
+ * Supports multi-endpoint coordinator server, each endpoint corresponds to a group of tools
  * Reference WebFluxStreamableServerApplication's multi-endpoint logic
  */
 @Component
-public class CoordinatorMCPServer implements ApplicationListener<ApplicationReadyEvent> {
+public class CoordinatorServer implements ApplicationListener<ApplicationReadyEvent> {
 
-	private static final Logger log = LoggerFactory.getLogger(CoordinatorMCPServer.class);
+	private static final Logger log = LoggerFactory.getLogger(CoordinatorServer.class);
 
 	@Autowired
 	private Environment environment;
@@ -84,27 +84,27 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 	public void onApplicationEvent(ApplicationReadyEvent event) {
 		// Check if CoordinatorTool feature is enabled
 		if (!coordinatorToolProperties.isEnabled()) {
-			log.info("CoordinatorTool feature is disabled, skipping MCP server startup");
+			log.info("CoordinatorTool feature is disabled, skipping coordinator server startup");
 			return;
 		}
 
-		// Delay MCP server startup to ensure all Beans are initialized
+		// Delay coordinator server startup to ensure all Beans are initialized
 		try {
 			Thread.sleep(1000); // Wait 1 second to ensure all Beans are initialized
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
-		startMcpServer();
+		startCoordinatorServer();
 	}
 
 	/**
-	 * Start MCP server
+	 * Start coordinator server
 	 */
-	private void startMcpServer() {
+	private void startCoordinatorServer() {
 		// Check if CoordinatorTool feature is enabled
 		if (!coordinatorToolProperties.isEnabled()) {
-			log.info("CoordinatorTool feature is disabled, skipping MCP server startup");
+			log.info("CoordinatorTool feature is disabled, skipping coordinator server startup");
 			return;
 		}
 
@@ -142,10 +142,10 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 
 			log.info("JManus Multi EndPoint Streamable Http Server started successfully!");
 			log.info("==========================================");
-			log.info("MCP Service List:");
+			log.info("Coordinator Service List:");
 			log.info("==========================================");
 
-			// Output all MCP service information
+			// Output all coordinator service information
 			if (!coordinatorToolsByEndpoint.isEmpty()) {
 				int serviceIndex = 1;
 				for (Map.Entry<String, List<CoordinatorTool>> entry : coordinatorToolsByEndpoint.entrySet()) {
@@ -163,11 +163,11 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 				}
 			}
 			else {
-				log.info("No MCP services found");
+				log.info("No coordinator services found");
 			}
 
 			log.info("==========================================");
-			log.info("MCP service startup complete, {} endpoints", coordinatorToolsByEndpoint.size());
+			log.info("Coordinator service startup complete, {} endpoints", coordinatorToolsByEndpoint.size());
 			log.info("==========================================");
 
 		}
@@ -263,7 +263,7 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 	}
 
 	/**
-	 * Register CoordinatorTool to MCP server
+	 * Register CoordinatorTool to coordinator server
 	 * @param tool Coordinator tool to register
 	 * @return Whether registration was successful
 	 */
@@ -319,7 +319,7 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 			}
 
 			log.info("Successfully registered CoordinatorTool: {} to endpoint: {}", tool.getToolName(), endpoint);
-			log.info("MCP Service Access Information:");
+			log.info("Coordinator Service Access Information:");
 			log.info("  Full URL: {}", EndPointUtils.getUrl(endpoint));
 
 			return true;
@@ -525,6 +525,81 @@ public class CoordinatorMCPServer implements ApplicationListener<ApplicationRead
 		}
 		catch (Exception e) {
 			log.error("Exception occurred while refreshing tool: {}", e.getMessage(), e);
+			return false;
+		}
+	}
+
+	/**
+	 * Unregister CoordinatorTool from coordinator server
+	 * @param toolName Tool name to unregister
+	 * @param endpoint Endpoint address
+	 * @return Whether unregistration was successful
+	 */
+	public boolean unregisterCoordinatorTool(String toolName, String endpoint) {
+		// Check if CoordinatorTool feature is enabled
+		if (!coordinatorToolProperties.isEnabled()) {
+			log.info("CoordinatorTool feature is disabled, skipping tool unregistration");
+			return false;
+		}
+
+		if (toolName == null || toolName.trim().isEmpty()) {
+			log.warn("Tool name is empty, cannot unregister");
+			return false;
+		}
+
+		if (endpoint == null || endpoint.trim().isEmpty()) {
+			log.warn("Endpoint is empty, cannot unregister");
+			return false;
+		}
+
+		try {
+			log.info("Starting to unregister CoordinatorTool: {} from endpoint: {}", toolName, endpoint);
+
+			// Get tool list for this endpoint
+			List<CoordinatorTool> toolsForEndpoint = registeredTools.get(endpoint);
+			if (toolsForEndpoint == null) {
+				log.warn("No tools found for endpoint: {}", endpoint);
+				return false;
+			}
+
+			// Remove tool from the list
+			boolean removed = toolsForEndpoint.removeIf(tool -> tool.getToolName().equals(toolName));
+
+			if (!removed) {
+				log.warn("Tool: {} not found in endpoint: {}", toolName, endpoint);
+				return false;
+			}
+
+			log.info("Successfully removed tool: {} from endpoint: {}", toolName, endpoint);
+
+			// If no tools left for this endpoint, remove the endpoint entirely
+			if (toolsForEndpoint.isEmpty()) {
+				registeredTools.remove(endpoint);
+				Object mcpServer = registeredMcpServers.remove(endpoint);
+				if (mcpServer != null) {
+					mcpServers.remove(mcpServer);
+					if (mcpServer instanceof AutoCloseable) {
+						try {
+							((AutoCloseable) mcpServer).close();
+							log.info("Closed MCP server for empty endpoint: {}", endpoint);
+						}
+						catch (Exception e) {
+							log.warn("Exception occurred while closing MCP server: {}", e.getMessage());
+						}
+					}
+				}
+				log.info("Removed empty endpoint: {}", endpoint);
+			} else {
+				// Recreate MCP server for this endpoint with remaining tools
+				recreateMcpServerForEndpoint(endpoint, toolsForEndpoint);
+			}
+
+			log.info("Successfully unregistered CoordinatorTool: {} from endpoint: {}", toolName, endpoint);
+			return true;
+
+		}
+		catch (Exception e) {
+			log.error("Exception occurred while unregistering CoordinatorTool: {}", e.getMessage(), e);
 			return false;
 		}
 	}

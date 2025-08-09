@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import com.alibaba.cloud.ai.example.manus.coordinator.tool.CoordinatorTool;
-import com.alibaba.cloud.ai.example.manus.coordinator.server.CoordinatorMCPServer;
+import com.alibaba.cloud.ai.example.manus.coordinator.server.CoordinatorServer;
 import com.alibaba.cloud.ai.example.manus.coordinator.entity.CoordinatorToolEntity;
 import com.alibaba.cloud.ai.example.manus.coordinator.repository.CoordinatorToolRepository;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
@@ -55,7 +55,7 @@ public class CoordinatorService {
 	private PlanTemplateService planTemplateService;
 
 	@Autowired
-	private CoordinatorMCPServer mcpServer;
+	private CoordinatorServer coordinatorServer;
 
 	@Autowired
 	private CoordinatorToolRepository coordinatorToolRepository;
@@ -198,7 +198,7 @@ public class CoordinatorService {
 	}
 
 	/**
-	 * Publish CoordinatorTool to MCP server
+	 * Publish CoordinatorTool to coordinator server
 	 * @param tool Coordinator tool to publish
 	 * @return Whether publishing was successful
 	 */
@@ -211,8 +211,8 @@ public class CoordinatorService {
 		try {
 			log.info("Starting to publish CoordinatorTool: {} to endpoint: {}", tool.getToolName(), tool.getEndpoint());
 
-			// Call MCP server for dynamic registration
-			boolean success = mcpServer.registerCoordinatorTool(tool);
+			// Call coordinator server for dynamic registration
+			boolean success = coordinatorServer.registerCoordinatorTool(tool);
 
 			if (success) {
 				log.info("Successfully published CoordinatorTool: {} to endpoint: {}", tool.getToolName(), tool.getEndpoint());
@@ -230,7 +230,7 @@ public class CoordinatorService {
 	}
 
 	/**
-	 * Publish CoordinatorToolEntity to MCP server
+	 * Publish CoordinatorToolEntity to coordinator server
 	 * @param entity Coordinator tool entity to publish
 	 * @return Whether publishing was successful
 	 */
@@ -250,9 +250,9 @@ public class CoordinatorService {
 			tool.setToolSchema(entity.getMcpSchema());
 
 			// First try to refresh existing tool
-			boolean refreshSuccess = mcpServer.refreshTool(entity.getToolName(), tool);
+			boolean refreshSuccess = coordinatorServer.refreshTool(entity.getToolName(), tool);
 			if (refreshSuccess) {
-				log.info("Successfully refreshed tool: {} in MCP server", entity.getToolName());
+				log.info("Successfully refreshed tool: {} in coordinator server", entity.getToolName());
 				return true;
 			}
 
@@ -271,6 +271,75 @@ public class CoordinatorService {
 		}
 		catch (Exception e) {
 			log.error("Exception occurred while publishing CoordinatorToolEntity: {}", e.getMessage(), e);
+			return false;
+		}
+	}
+
+	/**
+	 * Unpublish CoordinatorTool from coordinator server
+	 * @param toolName Tool name to unpublish
+	 * @param endpoint Endpoint address
+	 * @return Whether unpublishing was successful
+	 */
+	public boolean unpublishCoordinatorTool(String toolName, String endpoint) {
+		if (toolName == null || toolName.trim().isEmpty()) {
+			log.warn("Tool name is empty, cannot unpublish");
+			return false;
+		}
+
+		if (endpoint == null || endpoint.trim().isEmpty()) {
+			log.warn("Endpoint is empty, cannot unpublish");
+			return false;
+		}
+
+		try {
+			log.info("Starting to unpublish CoordinatorTool: {} from endpoint: {}", toolName, endpoint);
+
+			// Call coordinator server for dynamic unregistration
+			boolean success = coordinatorServer.unregisterCoordinatorTool(toolName, endpoint);
+
+			if (success) {
+				log.info("Successfully unpublished CoordinatorTool: {} from endpoint: {}", toolName, endpoint);
+			}
+			else {
+				log.error("Failed to unpublish CoordinatorTool: {} from endpoint: {}", toolName, endpoint);
+			}
+
+			return success;
+		}
+		catch (Exception e) {
+			log.error("Exception occurred while unpublishing CoordinatorTool: {}", e.getMessage(), e);
+			return false;
+		}
+	}
+
+	/**
+	 * Unpublish CoordinatorToolEntity from coordinator server
+	 * @param entity Coordinator tool entity to unpublish
+	 * @return Whether unpublishing was successful
+	 */
+	public boolean unpublishCoordinatorTool(CoordinatorToolEntity entity) {
+		if (entity == null) {
+			log.warn("CoordinatorToolEntity is null, cannot unpublish");
+			return false;
+		}
+
+		try {
+			log.info("Starting to unpublish CoordinatorToolEntity: {} from endpoint: {}", entity.getToolName(), entity.getEndpoint());
+
+			boolean success = unpublishCoordinatorTool(entity.getToolName(), entity.getEndpoint());
+
+			if (success) {
+				log.info("Successfully unpublished CoordinatorToolEntity: {} from endpoint: {}", entity.getToolName(), entity.getEndpoint());
+			}
+			else {
+				log.error("Failed to unpublish CoordinatorToolEntity: {} from endpoint: {}", entity.getToolName(), entity.getEndpoint());
+			}
+
+			return success;
+		}
+		catch (Exception e) {
+			log.error("Exception occurred while unpublishing CoordinatorToolEntity: {}", e.getMessage(), e);
 			return false;
 		}
 	}
