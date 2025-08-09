@@ -47,30 +47,48 @@
                 <div class="message-header">
                   <div class="message-content">
                     <div class="sender-info">
-                      <div style="display: flex; align-items: center;">
+                      <div style="display: flex; align-items: center;max-width: 80%">
                         <h3
                             class="sender-name"
-                            @click.stop="selectMemory(message.memoryId)"
+                            :title="message.memoryName"
                         >
                           {{ message.memoryName }}
                         </h3>
-                        <span
-                            @click.stop="showNameEditModal(message.memoryId, message.memoryName)"
-                        >
-                        <Icon icon="carbon:edit" style="margin-left: 10px; cursor: pointer;"/>
-                      </span>
                       </div>
-                      <div class="toggle-container" @click.stop="toggleMessage(message.memoryId)">
+
+                      <div class="toggle-container" @click.stop="selectMemory(message.memoryId)">
+                        <Icon
+                            :id="'toggle-' + message.memoryId"
+                            icon="carbon:checkmark"
+                            class="select-btn"
+                            style="cursor: pointer;"
+                        >
+                        </Icon>
+                      </div>
+
+                      <div class="action-buttons" @click.stop="toggleMessage(message.memoryId)">
                         <Icon
                             :id="'toggle-' + message.memoryId"
                             icon="carbon:chevron-down"
-                            style="cursor: pointer;"
+                            class="down-btn"
+                            style="cursor: pointer;margin-bottom: -5px;"
                         >
                         </Icon>
                       </div>
 
                       <div class="action-buttons">
                         <button
+                            style="cursor: pointer;"
+                            class="delete-btn"
+                            @click.stop="showNameEditModal(message.memoryId, message.memoryName)"
+                        >
+                          <Icon icon="carbon:edit"></Icon>
+                        </button>
+                      </div>
+
+                      <div class="action-buttons">
+                        <button
+                            style="cursor: pointer;"
                             class="delete-btn"
                             @click.stop="showDeleteConfirm(message.memoryId)"
                         >
@@ -142,10 +160,9 @@
                     v-model="nameInput"
                     class="edit-input"
                     :placeholder="$t('memory.newNamePlaceholder')"
-                    maxlength="100"
                 >
                 <span id="name-char-count" class="char-count" style="text-align: right; display: block; margin-top: 0.25rem;">
-                {{ nameInput.length }}/100
+                {{ nameInput.length }}
               </span>
               </div>
 
@@ -540,7 +557,6 @@ const confirmDelete = async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  cursor: pointer;
 }
 
 .message-preview {
@@ -620,6 +636,14 @@ const confirmDelete = async () => {
 }
 
 .delete-btn:hover {
+  color: #ff6b6b;
+}
+
+.select-btn:hover {
+  color: #ff6b6b;
+}
+
+.down-btn:hover {
   color: #ff6b6b;
 }
 
