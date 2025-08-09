@@ -46,11 +46,20 @@ export const routes: Readonly<RouteRecordType[]> = [
         },
       },
       {
+        path: '/knowledge',
+        name: 'knowledge',
+        component: () => import('../views/knowledge/index.vue'),
+        meta: {
+          icon: 'carbon:book',
+          fullscreen: true,
+        },
+      },
+      {
         path: '/config',
         name: 'config',
         component: () => import('../views/config/index.vue'),
         meta: {
-          icon: 'carbon:chat',
+          icon: 'carbon:settings',
           fullscreen: true,
         },
       },

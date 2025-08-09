@@ -78,6 +78,88 @@
               </div>
             </div>
           </div>
+          <div class="agent-actions">
+            <div class="publish-dropdown" :class="{ active: showPublishDropdown }">
+              <button 
+                class="btn btn-publish" 
+                @click="togglePublishDropdown"
+              >
+                <i class="bi bi-cloud-upload"></i>
+                发布
+                <i class="bi bi-chevron-down dropdown-arrow"></i>
+              </button>
+              
+              <!-- 下拉菜单 -->
+              <div v-if="showPublishDropdown" class="publish-dropdown-menu">
+                <div class="dropdown-header">
+                  <div class="publish-status">
+                    <i class="bi bi-clock-history"></i>
+                    <div class="status-info">
+                      <h4>最新发布</h4>
+                      <p>发布于 2 小时前</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="dropdown-body">
+                  <!-- 发布更新按钮 -->
+                  <button 
+                    class="dropdown-item primary" 
+                    @click="publishUpdate"
+                    :disabled="isPublishing"
+                  >
+                    <div class="item-content">
+                      <div class="item-icon">
+                        <i class="bi bi-cloud-upload" v-if="!isPublishing"></i>
+                        <div class="spinner" v-if="isPublishing"></div>
+                      </div>
+                      <div class="item-text">
+                        <span class="item-title">{{ isPublishing ? '发布中...' : '发布更新' }}</span>
+                        <span class="item-shortcut">⌘ ↑ P</span>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <!-- 其他操作 -->
+                  <button class="dropdown-item" @click="runAgent">
+                    <div class="item-content">
+                      <div class="item-icon">
+                        <i class="bi bi-play-circle"></i>
+                      </div>
+                      <div class="item-text">
+                        <span class="item-title">运行</span>
+                        <i class="bi bi-arrow-up-right item-arrow"></i>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button class="dropdown-item" @click="embedWebsite">
+                    <div class="item-content">
+                      <div class="item-icon">
+                        <i class="bi bi-code-square"></i>
+                      </div>
+                      <div class="item-text">
+                        <span class="item-title">嵌入网站</span>
+                        <i class="bi bi-arrow-up-right item-arrow"></i>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button class="dropdown-item" @click="accessAPI">
+                    <div class="item-content">
+                      <div class="item-icon">
+                        <i class="bi bi-terminal"></i>
+                      </div>
+                      <div class="item-text">
+                        <span class="item-title">访问 API</span>
+                        <i class="bi bi-arrow-up-right item-arrow"></i>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -186,11 +268,11 @@
                 </div>
                 <div class="form-group">
                   <label>创建时间</label>
-                  <input type="text" :value="formatDateTime(agent.createTime)" class="form-control" readonly>
+                  <div class="form-control readonly-field">{{ formatDateTime(agent.createTime) }}</div>
                 </div>
                 <div class="form-group">
                   <label>更新时间</label>
-                  <input type="text" :value="formatDateTime(agent.updateTime)" class="form-control" readonly>
+                  <div class="form-control readonly-field">{{ formatDateTime(agent.updateTime) }}</div>
                 </div>
                 <div class="form-actions">
                   <button class="btn btn-primary" @click="updateAgent">保存</button>
@@ -311,6 +393,10 @@
                       <button class="btn btn-sm btn-outline" @click="batchToggleStatus(false)">批量禁用</button>
                       <button class="btn btn-sm btn-danger" @click="batchDeleteModels">批量删除</button>
                     </div>
+                    <button class="btn btn-success" @click="openSchemaInitModal">
+                      <i class="bi bi-database-gear"></i>
+                      初始化信息源
+                    </button>
                     <button class="btn btn-primary" @click="showCreateModelModal = true">
                       <i class="bi bi-plus"></i>
                       添加模型
@@ -379,8 +465,8 @@
             <!-- Prompt配置 -->
             <div v-if="activeTab === 'prompt'" class="tab-content">
               <div class="content-header">
-                <h2>自定义Prompt配置</h2>
-                <p class="content-subtitle">配置智能体的提示词模板</p>
+                <h2>自定义Prompt配置（待实现）</h2>
+                <p class="content-subtitle">TODO：这里配置的Prompt仅用作效果优化，需支持多个提示词配置，系统已内置提示词<br/>如：<br/>1. 查询的年销售额精确到小数点后两位。<br/>2. 报告格式第一章节请先总结年销售额</p>
               </div>
               <div class="prompt-config-section">
                 <div class="form-group">
@@ -408,54 +494,80 @@
                     添加数据源
                   </button>
                 </div>
-                <div class="datasource-table">
-                  <table class="table">
-                    <thead>
-                      <tr>
-                        <th>数据源名称</th>
-                        <th>数据源类型</th>
-                        <th>连接地址</th>
-                        <th>连接状态</th>
-                        <th>状态</th>
-                        <th>创建时间</th>
-                        <th>操作</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-if="agentDatasourceList.length === 0">
-                        <td colspan="7" class="text-center text-muted">暂无数据源</td>
-                      </tr>
-                      <tr v-for="agentDatasource in agentDatasourceList" :key="agentDatasource.id">
-                        <td>{{ agentDatasource.datasource?.name }}</td>
-                        <td>{{ getDatasourceTypeText(agentDatasource.datasource?.type) }}</td>
-                        <td>{{ agentDatasource.datasource?.connectionUrl }}</td>
-                        <td>
-                          <span class="status-badge" :class="agentDatasource.datasource?.testStatus">
-                            {{ getTestStatusText(agentDatasource.datasource?.testStatus) }}
-                          </span>
-                        </td>
-                        <td>
-                          <span class="status-badge" :class="agentDatasource.isActive === 1 ? 'active' : 'inactive'">
-                            {{ agentDatasource.isActive === 1 ? '启用' : '禁用' }}
-                          </span>
-                        </td>
-                        <td>{{ formatDate(agentDatasource.createTime) }}</td>
-                        <td>
-                          <div class="action-buttons">
-                            <button 
-                              class="btn btn-sm"
-                              :class="agentDatasource.isActive === 1 ? 'btn-warning' : 'btn-success'"
-                              @click="toggleDatasourceStatus(agentDatasource.datasource.id, agentDatasource.isActive !== 1)"
-                            >
-                              {{ agentDatasource.isActive === 1 ? '禁用' : '启用' }}
-                            </button>
-                            <button class="btn btn-sm btn-outline" @click="testDatasourceConnection(agentDatasource.datasource.id)">测试连接</button>
-                            <button class="btn btn-sm btn-danger" @click="removeDatasourceFromAgent(agentDatasource.datasource.id)">移除</button>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div class="datasource-table-container">
+                  <div class="datasource-table">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th style="min-width: 120px;">数据源名称</th>
+                          <th style="min-width: 100px;">数据源类型</th>
+                          <th style="min-width: 200px;">连接地址</th>
+                          <th style="min-width: 80px;">连接状态</th>
+                          <th style="min-width: 60px;">状态</th>
+                          <th style="min-width: 100px;">创建时间</th>
+                          <th style="min-width: 200px;">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-if="agentDatasourceList.length === 0">
+                          <td colspan="7" class="text-center text-muted">暂无数据源</td>
+                        </tr>
+                        <tr v-for="agentDatasource in agentDatasourceList" :key="agentDatasource.id">
+                          <td>
+                            <div class="cell-content" :title="agentDatasource.datasource?.name">
+                              {{ agentDatasource.datasource?.name }}
+                            </div>
+                          </td>
+                          <td>{{ getDatasourceTypeText(agentDatasource.datasource?.type) }}</td>
+                          <td>
+                            <div class="cell-content" :title="agentDatasource.datasource?.connectionUrl">
+                              {{ agentDatasource.datasource?.connectionUrl }}
+                            </div>
+                          </td>
+                          <td>
+                            <span class="status-badge" :class="agentDatasource.datasource?.testStatus">
+                              {{ getTestStatusText(agentDatasource.datasource?.testStatus) }}
+                            </span>
+                          </td>
+                          <td>
+                            <span class="status-badge" :class="agentDatasource.isActive === 1 ? 'active' : 'inactive'">
+                              {{ agentDatasource.isActive === 1 ? '启用' : '禁用' }}
+                            </span>
+                          </td>
+                          <td>{{ formatDate(agentDatasource.createTime) }}</td>
+                          <td>
+                            <div class="action-buttons">
+                              <button 
+                                class="btn btn-sm"
+                                :class="agentDatasource.isActive === 1 ? 'btn-warning' : 'btn-success'"
+                                @click="toggleDatasourceStatus(agentDatasource.datasource.id, agentDatasource.isActive !== 1)"
+                                :title="agentDatasource.isActive === 1 ? '禁用数据源' : '启用数据源'"
+                              >
+                                {{ agentDatasource.isActive === 1 ? '禁用' : '启用' }}
+                              </button>
+                              <button 
+                                class="btn btn-sm btn-outline" 
+                                @click="testDatasourceConnection(agentDatasource.datasource.id)"
+                                :disabled="testingConnections.has(agentDatasource.datasource.id)"
+                                :title="testingConnections.has(agentDatasource.datasource.id) ? '测试中...' : '测试连接'"
+                              >
+                                <i v-if="testingConnections.has(agentDatasource.datasource.id)" class="bi bi-arrow-clockwise spin"></i>
+                                <span v-if="!testingConnections.has(agentDatasource.datasource.id)">测试连接</span>
+                                <span v-else>测试中...</span>
+                              </button>
+                              <button 
+                                class="btn btn-sm btn-danger" 
+                                @click="removeDatasourceFromAgent(agentDatasource.datasource.id)"
+                                title="移除数据源"
+                              >
+                                移除
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
@@ -825,6 +937,211 @@
       </div>
     </div>
 
+    <!-- 初始化信息源模态框 -->
+    <div v-if="showSchemaInitModal" class="modal-overlay" @click="closeSchemaInitModal">
+      <div class="modal-dialog schema-init-modal" @click.stop>
+        <div class="modal-header">
+          <h3>初始化信息源</h3>
+          <button class="close-btn" @click="closeSchemaInitModal">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="initializeSchema">
+            <div class="form-group">
+              <label class="form-label">选择数据源 *</label>
+              <select 
+                v-model="schemaInitForm.selectedDatasource" 
+                class="form-control" 
+                required
+                @change="onDatasourceChange"
+              >
+                <option value="">请选择数据源</option>
+                <option 
+                  v-for="agentDatasource in agentDatasourceList" 
+                  :key="agentDatasource.datasource.id"
+                  :value="agentDatasource.datasource"
+                >
+                  {{ agentDatasource.datasource.name }} ({{ getDatasourceTypeText(agentDatasource.datasource.type) }})
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group" v-if="schemaInitForm.selectedDatasource">
+              <label class="form-label">选择表 *</label>
+              <div class="table-selection-container">
+                <div class="table-search">
+                  <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input 
+                      type="text" 
+                      v-model="tableSearchKeyword" 
+                      placeholder="搜索表名..."
+                      class="form-control"
+                    >
+                  </div>
+                  <div class="table-actions">
+                    <button type="button" class="btn btn-sm btn-outline" @click="selectAllTables">全选</button>
+                    <button type="button" class="btn btn-sm btn-outline" @click="clearAllTables">清空</button>
+                  </div>
+                </div>
+                
+                <div class="table-list" v-if="availableTables.length > 0">
+                  <div class="table-count">
+                    共 {{ filteredTables.length }} 个表，已选择 {{ selectedTables.length }} 个
+                  </div>
+                  <div class="table-items">
+                    <label 
+                      v-for="table in filteredTables" 
+                      :key="table"
+                      class="table-item"
+                    >
+                      <input 
+                        type="checkbox" 
+                        :value="table" 
+                        v-model="selectedTables"
+                        class="table-checkbox"
+                      >
+                      <span class="table-name">{{ table }}</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <div v-else-if="schemaInitForm.selectedDatasource" class="loading-tables">
+                  <i class="bi bi-arrow-clockwise spin"></i>
+                  正在加载表列表...
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group" v-if="schemaStatistics">
+              <label class="form-label">当前统计信息</label>
+              <div class="statistics-info">
+                <div class="stat-item">
+                  <span class="stat-label">已初始化表数量:</span>
+                  <span class="stat-value">{{ schemaStatistics.tableCount || 0 }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">字段总数:</span>
+                  <span class="stat-value">{{ schemaStatistics.fieldCount || 0 }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">最后更新时间:</span>
+                  <span class="stat-value">{{ formatDateTime(schemaStatistics.lastUpdateTime) || '未知' }}</span>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeSchemaInitModal">取消</button>
+          <button type="button" class="btn btn-danger" @click="clearSchemaData" v-if="schemaStatistics">
+            <i class="bi bi-trash"></i>
+            清空数据
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-primary" 
+            @click="initializeSchema"
+            :disabled="!canInitialize"
+          >
+            <i class="bi bi-database-gear" v-if="!schemaInitializing"></i>
+            <i class="bi bi-arrow-clockwise spin" v-else></i>
+            {{ schemaInitializing ? '初始化中...' : '开始初始化' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 发布弹出框 -->
+    <div v-if="showPublishModal" class="modal-overlay" @click="closePublishModal">
+      <div class="publish-modal" @click.stop>
+        <div class="publish-header">
+          <div class="publish-status">
+            <div class="status-info">
+              <h3>最新发布</h3>
+              <p class="publish-time">发布于 几秒前</p>
+            </div>
+          </div>
+          <button class="close-btn" @click="closePublishModal">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        
+        <div class="publish-body">
+          <!-- 发布更新按钮 -->
+          <button 
+            class="publish-action-btn primary" 
+            @click="publishUpdate"
+            :disabled="isPublishing"
+          >
+            <div class="btn-content">
+              <div class="btn-icon">
+                <i class="bi bi-cloud-upload" v-if="!isPublishing"></i>
+                <div class="spinner" v-if="isPublishing"></div>
+              </div>
+              <div class="btn-text">
+                <span class="btn-title">{{ isPublishing ? '发布中...' : '发布更新' }}</span>
+                <span class="btn-shortcut">⌘ ↑ P</span>
+              </div>
+            </div>
+          </button>
+          
+          <!-- 运行按钮 -->
+          <button class="publish-action-btn" @click="runAgent">
+            <div class="btn-content">
+              <div class="btn-icon">
+                <i class="bi bi-play-circle"></i>
+              </div>
+              <div class="btn-text">
+                <span class="btn-title">运行</span>
+                <span class="btn-arrow">→</span>
+              </div>
+            </div>
+          </button>
+          
+          <!-- 嵌入网站按钮 -->
+          <button class="publish-action-btn" @click="embedWebsite">
+            <div class="btn-content">
+              <div class="btn-icon">
+                <i class="bi bi-code-square"></i>
+              </div>
+              <div class="btn-text">
+                <span class="btn-title">嵌入网站</span>
+                <span class="btn-arrow">→</span>
+              </div>
+            </div>
+          </button>
+          
+          <!-- 在"探索"中打开按钮 -->
+          <button class="publish-action-btn" @click="openInExplore">
+            <div class="btn-content">
+              <div class="btn-icon">
+                <i class="bi bi-compass"></i>
+              </div>
+              <div class="btn-text">
+                <span class="btn-title">在"探索"中打开</span>
+                <span class="btn-arrow">→</span>
+              </div>
+            </div>
+          </button>
+          
+          <!-- 访问API按钮 -->
+          <button class="publish-action-btn" @click="accessAPI">
+            <div class="btn-content">
+              <div class="btn-icon">
+                <i class="bi bi-terminal"></i>
+              </div>
+              <div class="btn-text">
+                <span class="btn-title">访问 API</span>
+                <span class="btn-arrow">→</span>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 业务知识创建/编辑模态框 -->
     <div v-if="showCreateKnowledgeModal" class="modal-overlay" @click="closeBusinessKnowledgeModal">
       <div class="modal-dialog" @click.stop>
@@ -893,11 +1210,199 @@
         </div>
       </div>
     </div>
+
+    <!-- API访问模态框 -->
+    <div v-if="showAPIModal" class="modal-overlay" @click="closeAPIModal">
+      <div class="api-modal" @click.stop>
+        <div class="modal-header">
+          <h3>API 访问信息</h3>
+          <button class="close-btn" @click="closeAPIModal">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="api-section">
+            <h4>
+              <i class="bi bi-link-45deg"></i>
+              API 端点
+            </h4>
+            <div class="api-endpoint">
+              <div class="endpoint-item">
+                <label>聊天接口:</label>
+                <div class="endpoint-url">
+                  <code>POST {{ apiBaseUrl }}/api/agents/{{ agent.id }}/chat</code>
+                  <button class="btn-copy" @click="copyToClipboard(`${apiBaseUrl}/api/agents/${agent.id}/chat`)">
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="endpoint-item">
+                <label>流式聊天接口:</label>
+                <div class="endpoint-url">
+                  <code>POST {{ apiBaseUrl }}/api/agents/{{ agent.id }}/chat/stream</code>
+                  <button class="btn-copy" @click="copyToClipboard(`${apiBaseUrl}/api/agents/${agent.id}/chat/stream`)">
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="api-section">
+            <h4>
+              <i class="bi bi-key"></i>
+              认证信息
+            </h4>
+            <div class="auth-info">
+              <div class="auth-item">
+                <label>API Key:</label>
+                <div class="api-key-display">
+                  <input 
+                    type="text" 
+                    :value="showApiKey ? apiKey : '••••••••••••••••••••••••••••••••'"
+                    readonly
+                    class="form-control"
+                  >
+                  <button class="btn-toggle" @click="toggleApiKeyVisibility">
+                    <i :class="showApiKey ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                  </button>
+                  <button class="btn-copy" @click="copyToClipboard(apiKey)">
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="auth-note">
+                <i class="bi bi-info-circle"></i>
+                <span>请在请求头中添加: <code>Authorization: Bearer YOUR_API_KEY</code></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="api-section">
+            <h4>
+              <i class="bi bi-code-square"></i>
+              请求示例
+            </h4>
+            <div class="code-examples">
+              <div class="example-tabs">
+                <button 
+                  class="tab-btn" 
+                  :class="{ active: activeExampleTab === 'curl' }"
+                  @click="activeExampleTab = 'curl'"
+                >
+                  cURL
+                </button>
+                <button 
+                  class="tab-btn" 
+                  :class="{ active: activeExampleTab === 'javascript' }"
+                  @click="activeExampleTab = 'javascript'"
+                >
+                  JavaScript
+                </button>
+                <button 
+                  class="tab-btn" 
+                  :class="{ active: activeExampleTab === 'python' }"
+                  @click="activeExampleTab = 'python'"
+                >
+                  Python
+                </button>
+              </div>
+              
+              <div class="example-content">
+                <div v-if="activeExampleTab === 'curl'" class="code-block">
+                  <pre><code>curl -X POST {{ apiBaseUrl }}/api/agents/{{ agent.id }}/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {{ apiKey }}" \
+  -d '{
+    "message": "查询最近一个月的销售数据",
+    "sessionId": "optional-session-id"
+  }'</code></pre>
+                  <button class="btn-copy-code" @click="copyToClipboard(getCurlExample())">
+                    <i class="bi bi-clipboard"></i>
+                    复制
+                  </button>
+                </div>
+                
+                <div v-if="activeExampleTab === 'javascript'" class="code-block">
+                  <pre><code>const response = await fetch('{{ apiBaseUrl }}/api/agents/{{ agent.id }}/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer {{ apiKey }}'
+  },
+  body: JSON.stringify({
+    message: '查询最近一个月的销售数据',
+    sessionId: 'optional-session-id'
+  })
+});
+
+const result = await response.json();
+console.log(result);</code></pre>
+                  <button class="btn-copy-code" @click="copyToClipboard(getJavaScriptExample())">
+                    <i class="bi bi-clipboard"></i>
+                    复制
+                  </button>
+                </div>
+                
+                <div v-if="activeExampleTab === 'python'" class="code-block">
+                  <pre><code>import requests
+
+url = "{{ apiBaseUrl }}/api/agents/{{ agent.id }}/chat"
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer {{ apiKey }}"
+}
+data = {
+    "message": "查询最近一个月的销售数据",
+    "sessionId": "optional-session-id"
+}
+
+response = requests.post(url, headers=headers, json=data)
+result = response.json()
+print(result)</code></pre>
+                  <button class="btn-copy-code" @click="copyToClipboard(getPythonExample())">
+                    <i class="bi bi-clipboard"></i>
+                    复制
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="api-section">
+            <h4>
+              <i class="bi bi-file-text"></i>
+              响应格式
+            </h4>
+            <div class="response-format">
+              <pre><code>{
+  "success": true,
+  "data": {
+    "type": "text|sql|table|error",
+    "content": "响应内容",
+    "data": {}, // 当type为table时包含表格数据
+    "sessionId": "会话ID",
+    "timestamp": "2025-01-07T10:30:00Z"
+  },
+  "message": "请求处理成功"
+}</code></pre>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeAPIModal">关闭</button>
+          <button type="button" class="btn btn-primary" @click="openAPIDocumentation">
+            <i class="bi bi-book"></i>
+            查看完整文档
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { agentApi, businessKnowledgeApi, semanticModelApi, datasourceApi, presetQuestionApi } from '../utils/api.js'
 import AgentDebugPanel from '../components/AgentDebugPanel.vue'
@@ -943,6 +1448,9 @@ export default {
     const showCreateModelModal = ref(false)
     const showUploadModal = ref(false)
     const showAddDatasourceModal = ref(false)
+    const showPublishModal = ref(false)
+    const showPublishDropdown = ref(false)
+    const showAPIModal = ref(false)
     
     // 预设问题相关数据
     const presetQuestions = ref([])
@@ -1010,6 +1518,21 @@ export default {
     // 数据源测试相关
     const showTestResult = ref(false)
     const testResultMessage = ref('')
+    const testingConnections = ref(new Set()) // 存储正在测试的数据源ID
+    
+    // 初始化信息源相关数据
+    const showSchemaInitModal = ref(false)
+    const schemaInitForm = reactive({
+      selectedDatasource: null
+    })
+    const availableTables = ref([])
+    const selectedTables = ref([])
+    const tableSearchKeyword = ref('')
+    const schemaInitializing = ref(false)
+    const schemaStatistics = ref(null)
+    
+    // 发布相关数据
+    const isPublishing = ref(false)
     
     // 方法
     const setActiveTab = (tab) => {
@@ -1039,6 +1562,24 @@ export default {
 
     const goToHome = () => {
       router.push('/')
+    }
+
+    // 更新智能体信息
+    const updateAgent = async () => {
+      try {
+        await agentApi.update(agent.id, {
+          name: agent.name,
+          description: agent.description,
+          status: agent.status,
+          prompt: agent.prompt,
+          category: agent.category,
+          tags: agent.tags
+        })
+        showMessage('更新成功', 'success')
+      } catch (error) {
+        console.error('更新智能体失败:', error)
+        showMessage('更新失败：' + (error.message || '未知错误'), 'error')
+      }
     }
     
     const loadAgentDetail = async () => {
@@ -1299,10 +1840,77 @@ export default {
       }
     }
 
+    const validateDatasourceForm = () => {
+      const errors = []
+      
+      if (!datasourceForm.name || datasourceForm.name.trim() === '') {
+        errors.push('数据源名称不能为空')
+      }
+      
+      if (!datasourceForm.type) {
+        errors.push('请选择数据源类型')
+      }
+      
+      if (!datasourceForm.host || datasourceForm.host.trim() === '') {
+        errors.push('主机地址不能为空')
+      }
+      
+      if (!datasourceForm.port || datasourceForm.port <= 0 || datasourceForm.port > 65535) {
+        errors.push('请输入有效的端口号（1-65535）')
+      }
+      
+      if (!datasourceForm.databaseName || datasourceForm.databaseName.trim() === '') {
+        errors.push('数据库名不能为空')
+      }
+      
+      if (!datasourceForm.username || datasourceForm.username.trim() === '') {
+        errors.push('用户名不能为空')
+      }
+      
+      if (!datasourceForm.password || datasourceForm.password.trim() === '') {
+        errors.push('密码不能为空')
+      }
+      
+      return errors
+    }
+
+    const generateConnectionUrl = (type, host, port, databaseName) => {
+      if (type === 'mysql') {
+        return `jdbc:mysql://${host}:${port}/${databaseName}?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai`
+      } else if (type === 'postgresql') {
+        return `jdbc:postgresql://${host}:${port}/${databaseName}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai`
+      }
+      return ''
+    }
+
     const saveDatasource = async () => {
+      // 表单验证
+      const validationErrors = validateDatasourceForm()
+      if (validationErrors.length > 0) {
+        showMessage(validationErrors.join('；'), 'error')
+        return
+      }
+
       try {
+        // 生成连接URL
+        const connectionUrl = generateConnectionUrl(
+          datasourceForm.type,
+          datasourceForm.host,
+          datasourceForm.port,
+          datasourceForm.databaseName
+        )
+
+        console.log('生成的连接URL:', connectionUrl)
+
         // 创建新数据源
-        const newDatasource = await datasourceApi.create({ ...datasourceForm })
+        const datasourceData = {
+          ...datasourceForm,
+          connectionUrl: connectionUrl
+        }
+        
+        console.log('发送到后端的数据源数据:', datasourceData)
+        
+        const newDatasource = await datasourceApi.create(datasourceData)
         console.log('数据源创建成功:', newDatasource)
         
         // 将新数据源添加到智能体
@@ -1318,18 +1926,43 @@ export default {
     }
 
     const testDatasourceConnection = async (datasourceId) => {
+      // 防止重复测试同一个数据源
+      if (testingConnections.value.has(datasourceId)) {
+        showMessage('该数据源正在测试中，请稍候', 'warning')
+        return
+      }
+
+      // 添加到测试中的集合
+      testingConnections.value.add(datasourceId)
+      
+      // 创建30秒超时的Promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('连接测试超时（30秒），请检查网络连接或数据库配置'))
+        }, 30000)
+      })
+
       try {
-        const result = await datasourceApi.testConnection(datasourceId)
+        // 使用Promise.race来实现超时控制
+        const result = await Promise.race([
+          datasourceApi.testConnection(datasourceId),
+          timeoutPromise
+        ])
+        
         if (result.success) {
           showMessage('连接测试成功', 'success')
         } else {
           showMessage('连接测试失败：' + result.message, 'error')
         }
         // 重新加载数据源状态
-        loadDatasources()
+        await loadDatasources()
       } catch (error) {
         console.error('连接测试失败:', error)
-        showMessage('连接测试失败，请重试', 'error')
+        const errorMessage = error.message || '连接测试失败，请重试'
+        showMessage(errorMessage, 'error')
+      } finally {
+        // 无论成功还是失败，都要从测试中的集合移除
+        testingConnections.value.delete(datasourceId)
       }
     }
 
@@ -1370,12 +2003,246 @@ export default {
       }
     }
     
+    // 初始化信息源相关方法
+    const openSchemaInitModal = async () => {
+      showSchemaInitModal.value = true
+      // 重置表单
+      schemaInitForm.selectedDatasource = null
+      availableTables.value = []
+      selectedTables.value = []
+      tableSearchKeyword.value = ''
+      
+      // 加载智能体的数据源列表
+      await loadDatasources()
+      // 获取当前统计信息
+      await getSchemaStatistics()
+    }
+
+    const closeSchemaInitModal = () => {
+      showSchemaInitModal.value = false
+      schemaInitForm.selectedDatasource = null
+      availableTables.value = []
+      selectedTables.value = []
+      tableSearchKeyword.value = ''
+    }
+
+    const onDatasourceChange = async () => {
+      if (schemaInitForm.selectedDatasource) {
+        // 清空之前的表选择
+        availableTables.value = []
+        selectedTables.value = []
+        // 自动加载表列表
+        await loadTables()
+      }
+    }
+    
+    const loadTables = async () => {
+      if (!schemaInitForm.selectedDatasource) {
+        showMessage('请先选择数据源', 'warning')
+        return
+      }
+      
+      try {
+        // 使用智能体Schema接口获取表列表
+        const response = await fetch(`/api/agent/${agent.id}/schema/datasources/${schemaInitForm.selectedDatasource.id}/tables`)
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          availableTables.value = result.data || []
+        } else {
+          throw new Error(result.message || '获取表列表失败')
+        }
+      } catch (error) {
+        console.error('加载表列表失败:', error)
+        showMessage('加载表列表失败: ' + error.message, 'error')
+        availableTables.value = []
+      }
+    }
+    
+    const filteredTables = computed(() => {
+      if (!tableSearchKeyword.value) {
+        return availableTables.value
+      }
+      const keyword = tableSearchKeyword.value.toLowerCase()
+      return availableTables.value.filter(table => 
+        table.toLowerCase().includes(keyword)
+      )
+    })
+    
+    const selectAllTables = () => {
+      selectedTables.value = [...filteredTables.value]
+    }
+    
+    const clearAllTables = () => {
+      selectedTables.value = []
+    }
+    
+    const canInitialize = computed(() => {
+      return schemaInitForm.selectedDatasource && 
+             selectedTables.value.length > 0 && 
+             !schemaInitializing.value
+    })
+    
+    const initializeSchema = async () => {
+      if (!canInitialize.value) {
+        showMessage('请完成所有必填项', 'warning')
+        return
+      }
+      
+      try {
+        schemaInitializing.value = true
+        
+        const initRequest = {
+          datasourceId: schemaInitForm.selectedDatasource.id,
+          tables: selectedTables.value
+        }
+        
+        const response = await fetch(`/api/agent/${agent.id}/schema/init`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(initRequest)
+        })
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          showMessage(`信息源初始化成功！已处理 ${result.tablesCount} 个表`, 'success')
+          // 自动获取统计信息
+          await getSchemaStatistics()
+          // 重新加载语义模型列表
+          await loadSemanticModels()
+          // 关闭模态框
+          closeSchemaInitModal()
+        } else {
+          throw new Error(result.message || '初始化失败')
+        }
+      } catch (error) {
+        console.error('初始化信息源失败:', error)
+        showMessage('初始化失败: ' + error.message, 'error')
+      } finally {
+        schemaInitializing.value = false
+      }
+    }
+    
+    const getSchemaStatistics = async () => {
+      try {
+        const response = await fetch(`/api/agent/${agent.id}/schema/statistics`)
+        const result = await response.json()
+        
+        if (result.success) {
+          schemaStatistics.value = result.data
+        } else {
+          console.warn('获取统计信息失败:', result.message)
+        }
+      } catch (error) {
+        console.error('获取统计信息失败:', error)
+      }
+    }
+
+    const clearSchemaData = async () => {
+      if (!confirm('确定要清空所有向量数据吗？此操作不可恢复。')) {
+        return
+      }
+      
+      try {
+        const response = await fetch(`/api/agent/${agent.id}/schema/clear`, {
+          method: 'DELETE'
+        })
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          showMessage('向量数据清空成功', 'success')
+          schemaStatistics.value = null
+          // 重新加载语义模型列表
+          await loadSemanticModels()
+        } else {
+          throw new Error(result.message || '清空失败')
+        }
+      } catch (error) {
+        console.error('清空向量数据失败:', error)
+        showMessage('清空失败: ' + error.message, 'error')
+      }
+    }
+    
+    // 业务知识相关方法
+    const editBusinessKnowledge = (knowledge) => {
+      isEditingBusinessKnowledge.value = true
+      editingBusinessKnowledgeId.value = knowledge.id
+      businessKnowledgeForm.businessTerm = knowledge.businessTerm || ''
+      businessKnowledgeForm.description = knowledge.description || ''
+      businessKnowledgeForm.synonyms = knowledge.synonyms || ''
+      businessKnowledgeForm.datasetId = knowledge.datasetId || ''
+      businessKnowledgeForm.defaultRecall = knowledge.defaultRecall || false
+      showCreateKnowledgeModal.value = true
+    }
+
+    const deleteBusinessKnowledge = async (id) => {
+      if (confirm('确定要删除这个业务知识吗？')) {
+        try {
+          await businessKnowledgeApi.delete(id)
+          showMessage('删除成功', 'success')
+          await loadBusinessKnowledge()
+        } catch (error) {
+          console.error('删除业务知识失败:', error)
+          showMessage('删除失败：' + (error.message || '未知错误'), 'error')
+        }
+      }
+    }
+
+    const closeBusinessKnowledgeModal = () => {
+      showCreateKnowledgeModal.value = false
+      isEditingBusinessKnowledge.value = false
+      editingBusinessKnowledgeId.value = null
+      // 重置表单
+      businessKnowledgeForm.businessTerm = ''
+      businessKnowledgeForm.description = ''
+      businessKnowledgeForm.synonyms = ''
+      businessKnowledgeForm.datasetId = ''
+      businessKnowledgeForm.defaultRecall = true
+    }
+
+    const saveBusinessKnowledge = async () => {
+      try {
+        const knowledgeData = {
+          agentId: agent.id,
+          businessTerm: businessKnowledgeForm.businessTerm.trim(),
+          description: businessKnowledgeForm.description.trim(),
+          synonyms: businessKnowledgeForm.synonyms.trim() || null,
+          datasetId: businessKnowledgeForm.datasetId.trim() || null,
+          defaultRecall: businessKnowledgeForm.defaultRecall
+        }
+
+        if (isEditingBusinessKnowledge.value) {
+          // 更新业务知识
+          await businessKnowledgeApi.update(editingBusinessKnowledgeId.value, knowledgeData)
+          showMessage('更新成功', 'success')
+        } else {
+          // 创建业务知识
+          await businessKnowledgeApi.createForAgent(agent.id, knowledgeData)
+          showMessage('创建成功', 'success')
+        }
+        
+        closeBusinessKnowledgeModal()
+        await loadBusinessKnowledge()
+      } catch (error) {
+        console.error('保存业务知识失败:', error)
+        showMessage('保存失败：' + (error.message || '未知错误'), 'error')
+      }
+    }
+
     // 预设问题相关方法
     const loadPresetQuestions = async () => {
       try {
         const questions = await presetQuestionApi.getByAgentId(agent.id)
-        presetQuestions.value = questions.map(q => ({ question: q.question }))
-        console.log('预设问题加载成功:', questions)
+        presetQuestions.value = questions || []
       } catch (error) {
         console.error('加载预设问题失败:', error)
         presetQuestions.value = []
@@ -1386,6 +2253,8 @@ export default {
     const addPresetQuestion = () => {
       presetQuestions.value.push({ question: '' })
     }
+
+
 
     // 移除预设问题
     const removePresetQuestion = (index) => {
@@ -1438,6 +2307,204 @@ export default {
     const hideMessage = () => {
       message.show = false
     }
+
+    // 发布弹出框相关方法
+    const closePublishModal = () => {
+      showPublishModal.value = false
+    }
+
+    // 发布下拉菜单相关方法
+    const togglePublishDropdown = () => {
+      showPublishDropdown.value = !showPublishDropdown.value
+    }
+
+    const closePublishDropdown = () => {
+      showPublishDropdown.value = false
+    }
+
+    // 点击外部关闭下拉菜单
+    const handleClickOutside = (event) => {
+      const dropdown = event.target.closest('.publish-dropdown')
+      if (!dropdown && showPublishDropdown.value) {
+        closePublishDropdown()
+      }
+    }
+
+    // 添加全局点击监听器
+    onMounted(() => {
+      document.addEventListener('click', handleClickOutside)
+    })
+
+    // 清理监听器
+    onUnmounted(() => {
+      document.removeEventListener('click', handleClickOutside)
+    })
+
+    const publishUpdate = async () => {
+      if (isPublishing.value) return
+
+      try {
+        isPublishing.value = true
+        showMessage('开始发布智能体...', 'info')
+
+        // 1. 获取智能体配置的数据源
+        const agentDatasources = await datasourceApi.getAgentDatasources(agent.id)
+        if (!agentDatasources || agentDatasources.length === 0) {
+          throw new Error('智能体未配置数据源，请先配置数据源')
+        }
+
+        // 2. 使用正常的 agentId 进行 schema 初始化
+        const enabledDatasources = agentDatasources.filter(ds => ds.isActive === 1)
+        if (enabledDatasources.length === 0) {
+          throw new Error('没有启用的数据源，请先启用至少一个数据源')
+        }
+
+        // 3. 为每个启用的数据源获取表列表并初始化
+        for (const agentDatasource of enabledDatasources) {
+          const datasource = agentDatasource.datasource
+          showMessage(`正在初始化数据源: ${datasource.name}...`, 'info')
+          
+          // 获取数据源的所有表
+          const tablesResponse = await fetch(`/api/agent/${agent.id}/schema/datasources/${datasource.id}/tables`)
+          if (!tablesResponse.ok) {
+            console.warn(`获取数据源 ${datasource.name} 的表列表失败`)
+            continue
+          }
+          
+          const tablesResult = await tablesResponse.json()
+          if (!tablesResult.success || !tablesResult.data) {
+            console.warn(`数据源 ${datasource.name} 没有可用的表`)
+            continue
+          }
+
+          // 使用正常的 agentId 初始化 schema
+          const initResponse = await fetch(`/api/agent/${agent.id}/schema/init`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              datasourceId: datasource.id,
+              tables: tablesResult.data // 使用所有表
+            })
+          })
+
+          if (!initResponse.ok) {
+            console.warn(`数据源 ${datasource.name} 初始化失败`)
+            continue
+          }
+
+          const initResult = await initResponse.json()
+          if (!initResult.success) {
+            console.warn(`数据源 ${datasource.name} 初始化失败: ${initResult.message}`)
+            continue
+          }
+        }
+
+        // 4. 发布成功
+        showMessage('智能体发布成功！所有配置的数据源已完成初始化', 'success')
+        closePublishModal()
+        
+      } catch (error) {
+        console.error('发布智能体失败:', error)
+        showMessage(`发布失败: ${error.message}`, 'error')
+      } finally {
+        isPublishing.value = false
+      }
+    }
+
+    const runAgent = () => {
+      // 跳转到智能体运行页面
+      router.push(`/agent/${agent.id}/run`)
+    }
+
+    const embedWebsite = () => {
+      // TODO: 实现嵌入网站功能
+      showMessage('嵌入网站功能开发中...', 'info')
+    }
+
+    const openInExplore = () => {
+      // TODO: 实现在探索中打开功能
+      showMessage('在探索中打开功能开发中...', 'info')
+    }
+
+    const accessAPI = () => {
+      // 显示API访问信息模态框
+      showAPIModal.value = true
+    }
+
+    // API模态框相关数据和方法
+    const apiBaseUrl = ref(window.location.origin)
+    const apiKey = ref('sk-1234567890abcdef1234567890abcdef') // 这里应该从后端获取
+    const showApiKey = ref(false)
+    const activeExampleTab = ref('curl')
+
+    const closeAPIModal = () => {
+      showAPIModal.value = false
+    }
+
+    const toggleApiKeyVisibility = () => {
+      showApiKey.value = !showApiKey.value
+    }
+
+    const copyToClipboard = async (text) => {
+      try {
+        await navigator.clipboard.writeText(text)
+        showMessage('已复制到剪贴板', 'success')
+      } catch (error) {
+        console.error('复制失败:', error)
+        showMessage('复制失败', 'error')
+      }
+    }
+
+    const getCurlExample = () => {
+      return `curl -X POST ${apiBaseUrl.value}/api/agents/${agent.id}/chat \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${apiKey.value}" \\
+  -d '{
+    "message": "查询最近一个月的销售数据",
+    "sessionId": "optional-session-id"
+  }'`
+    }
+
+    const getJavaScriptExample = () => {
+      return `const response = await fetch('${apiBaseUrl.value}/api/agents/${agent.id}/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ${apiKey.value}'
+  },
+  body: JSON.stringify({
+    message: '查询最近一个月的销售数据',
+    sessionId: 'optional-session-id'
+  })
+});
+
+const result = await response.json();
+console.log(result);`
+    }
+
+    const getPythonExample = () => {
+      return `import requests
+
+url = "${apiBaseUrl.value}/api/agents/${agent.id}/chat"
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer ${apiKey.value}"
+}
+data = {
+    "message": "查询最近一个月的销售数据",
+    "sessionId": "optional-session-id"
+}
+
+response = requests.post(url, headers=headers, json=data)
+result = response.json()
+print(result)`
+    }
+
+    const openAPIDocumentation = () => {
+      window.open('https://github.com/alibaba/spring-ai-alibaba/blob/main/spring-ai-alibaba-nl2sql/API.md', '_blank')
+    }
     
     const getMessageIcon = (type) => {
       const iconMap = {
@@ -1466,103 +2533,7 @@ export default {
       }
       return statusMap[testStatus] || testStatus
     }
-    
-    const updateAgent = async () => {
-      try {
-        // 准备提交的数据，过滤掉只读字段
-        const updateData = {
-          name: agent.name,
-          description: agent.description,
-          status: agent.status,
-          category: agent.category,
-          tags: agent.tags,
-          prompt: agent.prompt || '',
-          adminId: agent.adminId || null
-        }
-        
-        const response = await agentApi.update(agent.id, updateData)
-        console.log('更新响应:', response)
-        alert('更新成功')
-        
-        // 重新加载智能体详情以获取最新的更新时间
-        await loadAgentDetail()
-      } catch (error) {
-        console.error('更新智能体失败:', error)
-        alert('更新失败：' + (error.message || '未知错误'))
-      }
-    }
-    
-    const editBusinessKnowledge = (knowledge) => {
-      // 设置编辑模式并填充表单
-      isEditingBusinessKnowledge.value = true
-      editingBusinessKnowledgeId.value = knowledge.id
-      businessKnowledgeForm.businessTerm = knowledge.businessTerm || ''
-      businessKnowledgeForm.description = knowledge.description || ''
-      businessKnowledgeForm.synonyms = knowledge.synonyms || ''
-      businessKnowledgeForm.datasetId = knowledge.datasetId || ''
-      businessKnowledgeForm.defaultRecall = knowledge.defaultRecall !== false
-      showCreateKnowledgeModal.value = true
-    }
-    
-    const deleteBusinessKnowledge = async (id) => {
-      if (confirm('确定要删除这条业务知识吗？')) {
-        try {
-          await businessKnowledgeApi.delete(id)
-          await loadBusinessKnowledge()
-          showMessage('删除成功', 'success')
-        } catch (error) {
-          console.error('删除业务知识失败:', error)
-          showMessage('删除失败：' + (error.message || '未知错误'), 'error')
-        }
-      }
-    }
-    
-    const closeBusinessKnowledgeModal = () => {
-      showCreateKnowledgeModal.value = false
-      isEditingBusinessKnowledge.value = false
-      editingBusinessKnowledgeId.value = null
-      // 重置表单
-      businessKnowledgeForm.businessTerm = ''
-      businessKnowledgeForm.description = ''
-      businessKnowledgeForm.synonyms = ''
-      businessKnowledgeForm.datasetId = ''
-      businessKnowledgeForm.defaultRecall = true
-    }
-    
-    const saveBusinessKnowledge = async () => {
-      try {
-        // 验证必填字段
-        if (!businessKnowledgeForm.businessTerm || !businessKnowledgeForm.description) {
-          showMessage('请填写必填字段', 'warning')
-          return
-        }
-        
-        const knowledgeData = {
-          businessTerm: businessKnowledgeForm.businessTerm,
-          description: businessKnowledgeForm.description,
-          synonyms: businessKnowledgeForm.synonyms,
-          datasetId: businessKnowledgeForm.datasetId,
-          defaultRecall: businessKnowledgeForm.defaultRecall,
-          agentId: agent.id
-        }
-        
-        if (isEditingBusinessKnowledge.value) {
-          // 更新业务知识
-          await businessKnowledgeApi.update(editingBusinessKnowledgeId.value, knowledgeData)
-          showMessage('更新成功', 'success')
-        } else {
-          // 创建业务知识
-          await businessKnowledgeApi.createForAgent(agent.id, knowledgeData)
-          showMessage('创建成功', 'success')
-        }
-        
-        closeBusinessKnowledgeModal()
-        await loadBusinessKnowledge()
-      } catch (error) {
-        console.error('保存业务知识失败:', error)
-        showMessage('保存失败：' + (error.message || '未知错误'), 'error')
-      }
-    }
+
     
     const editModel = (model) => {
       isEditingModel.value = true
@@ -1734,6 +2705,10 @@ export default {
       }
       return statusMap[status] || status
     }
+
+
+
+
     
     // 格式化日期
     const formatDate = (dateString) => {
@@ -1759,7 +2734,8 @@ export default {
         second: '2-digit'
       })
     }
-    
+
+
     // 生命周期
     onMounted(async () => {
       await loadAgentDetail()
@@ -1802,10 +2778,17 @@ export default {
       datasourceForm,
       showTestResult,
       testResultMessage,
+      testingConnections,
+      // 初始化信息源相关
+      schemaInitForm,
+      availableTables,
+      selectedTables,
+      tableSearchKeyword,
+      schemaInitializing,
+      schemaStatistics,
       // 方法
       setActiveTab,
       goBack,
-      goToAgentList,
       updateAgent,
       editBusinessKnowledge,
       deleteBusinessKnowledge,
@@ -1852,6 +2835,31 @@ export default {
       showMessage,
       hideMessage,
       getMessageIcon,
+      // 发布相关
+      showPublishModal,
+      closePublishModal,
+      showPublishDropdown,
+      togglePublishDropdown,
+      closePublishDropdown,
+      publishUpdate,
+      runAgent,
+      embedWebsite,
+      openInExplore,
+      accessAPI,
+      isPublishing,
+      // API模态框相关
+      showAPIModal,
+      closeAPIModal,
+      apiBaseUrl,
+      apiKey,
+      showApiKey,
+      activeExampleTab,
+      toggleApiKeyVisibility,
+      copyToClipboard,
+      getCurlExample,
+      getJavaScriptExample,
+      getPythonExample,
+      openAPIDocumentation,
       // 预设问题方法
       presetQuestions,
       addPresetQuestion,
@@ -1859,7 +2867,20 @@ export default {
       moveQuestionUp,
       moveQuestionDown,
       savePresetQuestions,
-      loadPresetQuestions
+      loadPresetQuestions,
+      // 初始化信息源方法
+      showSchemaInitModal,
+      openSchemaInitModal,
+      closeSchemaInitModal,
+      onDatasourceChange,
+      loadTables,
+      selectAllTables,
+      clearAllTables,
+      initializeSchema,
+      getSchemaStatistics,
+      clearSchemaData,
+      filteredTables,
+      canInitialize
     }
   }
 }
@@ -1870,6 +2891,25 @@ export default {
   min-height: 100vh;
   background: var(--bg-layout);
   font-family: var(--font-family);
+  width: 100vw;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* 确保页面占满整个屏幕宽度 */
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* 现代化头部导航 */
@@ -2047,6 +3087,130 @@ export default {
   }
 }
 
+/* 发布弹出框样式 */
+.publish-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  width: 400px;
+  max-width: 90vw;
+  overflow: hidden;
+  animation: slideInUp 0.3s ease-out;
+}
+
+.publish-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.status-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.publish-time {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.publish-body {
+  padding: 16px 24px 24px;
+}
+
+.publish-action-btn {
+  width: 100%;
+  padding: 0;
+  margin-bottom: 8px;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.publish-action-btn:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+}
+
+.publish-action-btn.primary {
+  background: linear-gradient(135deg, #1890ff, #40a9ff);
+  border-color: #1890ff;
+  color: white;
+  margin-bottom: 16px;
+}
+
+.publish-action-btn.primary:hover {
+  background: linear-gradient(135deg, #096dd9, #1890ff);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.25);
+}
+
+.publish-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-content {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+.btn-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.btn-text {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-title {
+  font-weight: 500;
+}
+
+.btn-shortcut {
+  font-size: 12px;
+  opacity: 0.7;
+  font-family: monospace;
+}
+
+.btn-arrow {
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.publish-action-btn.primary .btn-shortcut,
+.publish-action-btn.primary .btn-arrow {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 /* 头部导航样式 */
 .top-nav {
   background: white;
@@ -2117,7 +3281,16 @@ export default {
 .container {
   width: 100%;
   padding: 0 1rem;
-  max-width: 100%;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* 确保页面占满整个屏幕宽度 */
+.page-header .header-content {
+  max-width: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .header-content {
@@ -2142,6 +3315,217 @@ export default {
   align-items: center;
   gap: 16px;
   flex: 1;
+}
+
+.agent-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-publish {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #52c41a, #73d13d);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.25);
+}
+
+.btn-publish:hover:not(:disabled) {
+  background: linear-gradient(135deg, #389e0d, #52c41a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.35);
+}
+
+.btn-publish:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-publish.loading {
+  pointer-events: none;
+}
+
+.btn-publish .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.dropdown-arrow {
+  margin-left: 4px;
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.publish-dropdown.active .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* 发布下拉菜单样式 */
+.publish-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.publish-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border-secondary);
+  min-width: 320px;
+  z-index: 1000;
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-tertiary);
+}
+
+.publish-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.publish-status i {
+  font-size: 16px;
+  color: var(--text-tertiary);
+}
+
+.status-info h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.status-info p {
+  margin: 2px 0 0 0;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.dropdown-body {
+  padding: 8px;
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: 0;
+  margin-bottom: 4px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: var(--bg-secondary);
+}
+
+.dropdown-item.primary {
+  background: var(--primary-color);
+  color: white;
+  margin-bottom: 12px;
+}
+
+.dropdown-item.primary:hover {
+  background: var(--primary-hover);
+}
+
+.dropdown-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.item-content {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+.item-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.item-text {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.item-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.item-shortcut {
+  font-size: 11px;
+  opacity: 0.7;
+  font-family: monospace;
+}
+
+.item-arrow {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.dropdown-item.primary .item-shortcut,
+.dropdown-item.primary .item-arrow {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.dropdown-item .spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .agent-avatar .avatar-icon {
@@ -2209,6 +3593,7 @@ export default {
 .main-content {
   padding: 1rem 0;
   max-width: 100%;
+  width: 100%;
 }
 
 .content-layout {
@@ -2216,6 +3601,15 @@ export default {
   gap: 24px;
   align-items: stretch;
   min-height: 600px;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* 确保整个页面占满屏幕宽度 */
+.agent-detail-page {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* 左侧导航样式 */
@@ -2294,10 +3688,16 @@ export default {
   background: white;
   border-radius: 8px;
   overflow: hidden;
+  width: 100%;
+  max-width: none;
+  min-width: 0; /* 确保flex子元素可以收缩 */
 }
 
 .tab-content {
   padding: 1rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .content-header {
@@ -2391,13 +3791,217 @@ export default {
 }
 
 /* 审计日志样式 */
-/* 数据源配置样式 */
-.datasource-section {
+/* 初始化信息源样式 */
+.schema-init-section {
+  margin-bottom: 32px;
+}
+
+.schema-init-card {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 24px;
   margin-top: 16px;
 }
 
-.datasource-table {
+.init-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.table-selection {
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  background: white;
+}
+
+.table-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #f9f9f9;
+}
+
+.table-search .form-control {
+  flex: 1;
+  margin: 0;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.table-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.table-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.table-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.table-checkbox:hover {
+  border-color: #1890ff;
+  background: #f0f8ff;
+}
+
+.table-checkbox input[type="checkbox"] {
+  margin: 0;
+}
+
+.table-name {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.empty-tables {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.empty-tables i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.init-status {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.init-status h4 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.stat-value.text-success {
+  color: #52c41a;
+}
+
+.stat-value.text-muted {
+  color: #999;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 数据源配置样式 */
+.datasource-section {
   margin-top: 16px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.datasource-table-container {
+  margin-top: 16px;
+  overflow-x: auto;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: white;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.datasource-table {
+  min-width: 100%;
+  width: 100%;
+  table-layout: fixed; /* 使用固定表格布局 */
+}
+
+.datasource-table .table {
+  margin: 0;
+  white-space: nowrap;
+  width: 100%;
+  table-layout: fixed; /* 使用固定表格布局 */
+}
+
+.datasource-table .table th,
+.datasource-table .table td {
+  padding: 12px 8px;
+  vertical-align: middle;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.datasource-table .cell-content {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.datasource-table .action-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+  min-width: 200px;
+}
+
+.datasource-table .action-buttons .btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .datasource-table .status-badge {
@@ -2405,6 +4009,7 @@ export default {
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .datasource-table .status-badge.active {
@@ -2415,6 +4020,37 @@ export default {
 .datasource-table .status-badge.inactive {
   background: #fff2f0;
   color: #ff4d4f;
+}
+
+.datasource-table .status-badge.success {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.datasource-table .status-badge.failed {
+  background: #fff2f0;
+  color: #ff4d4f;
+}
+
+.datasource-table .status-badge.unknown {
+  background: #f5f5f5;
+  color: #999;
+}
+
+/* 响应式优化 */
+@media (max-width: 1200px) {
+  .datasource-table-container {
+    overflow-x: scroll;
+  }
+  
+  .datasource-table .action-buttons {
+    min-width: 180px;
+  }
+  
+  .datasource-table .action-buttons .btn {
+    padding: 3px 6px;
+    font-size: 11px;
+  }
 }
 
 /* 启用/禁用按钮样式 */
@@ -3104,6 +4740,26 @@ export default {
   background-color: #e6f7ff;
 }
 
+/* 只读字段样式 */
+.readonly-field {
+  background-color: #f5f5f5;
+  color: #666;
+  cursor: not-allowed;
+  border: 1px solid #d9d9d9;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.readonly-field:hover {
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+}
+
 /* 表单验证样式 */
 .form-control.is-invalid {
   border-color: #ff4d4f;
@@ -3233,5 +4889,558 @@ export default {
 .question-actions .btn {
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
+}
+
+/* 预设问题管理表单操作按钮样式优化 */
+.preset-questions-section .form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e8e8e8;
+}
+
+.preset-questions-section .form-actions .btn {
+  min-width: 100px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.preset-questions-section .form-actions .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+.schema-init-modal {
+  max-width: 800px;
+  width: 90%;
+}
+
+.schema-init-modal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.table-selection-container {
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.table-search {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.table-search .search-box {
+  flex: 1;
+  position: relative;
+}
+
+.table-search .search-box i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  z-index: 1;
+}
+
+.table-search .search-box input {
+  padding-left: 36px;
+  width: 100%;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.table-count {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f0f8ff;
+  border-radius: 4px;
+  border-left: 3px solid #1890ff;
+}
+
+.table-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.table-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.table-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.table-item:hover {
+  background: #f0f8ff;
+  border-color: #1890ff;
+}
+
+.table-item input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.table-name {
+  flex: 1;
+  font-weight: 500;
+  color: #333;
+}
+
+.loading-tables {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 14px;
+}
+
+.loading-tables i {
+  font-size: 20px;
+  margin-right: 8px;
+  color: #1890ff;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.statistics-info {
+  background: #f9f9f9;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.stat-item:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  font-weight: 500;
+  color: #666;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: #333;
+}
+
+/* 按钮样式增强 */
+.btn-success {
+  background: linear-gradient(135deg, #52c41a, #73d13d);
+  border-color: #52c41a;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, #389e0d, #52c41a);
+  border-color: #389e0d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+}
+
+.btn-success i {
+  margin-right: 6px;
+}
+
+/* 表格滚动条样式 */
+.table-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.table-list::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+.table-list::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.table-list::-webkit-scrollbar-thumb:hover {
+  background: #1890ff;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .schema-init-modal {
+    width: 95%;
+    max-width: none;
+  }
+  
+  .table-search {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .table-items {
+    grid-template-columns: 1fr;
+  }
+  
+  .table-actions {
+    justify-content: center;
+  }
+}
+
+/* API模态框样式 */
+.api-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  width: 800px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: slideInUp 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+.api-modal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.api-section {
+  padding: 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.api-section:last-child {
+  border-bottom: none;
+}
+
+.api-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.api-section h4 i {
+  color: #1890ff;
+}
+
+.api-endpoint {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.endpoint-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.endpoint-item label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+}
+
+.endpoint-url {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.endpoint-url code {
+  flex: 1;
+  background: none;
+  border: none;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  color: #24292e;
+}
+
+.btn-copy {
+  background: none;
+  border: none;
+  color: #586069;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.btn-copy:hover {
+  background: #e1e4e8;
+  color: #24292e;
+}
+
+.auth-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-item label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+}
+
+.api-key-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.api-key-display .form-control {
+  flex: 1;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+}
+
+.btn-toggle {
+  background: none;
+  border: 1px solid #e1e4e8;
+  color: #586069;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.btn-toggle:hover {
+  background: #f6f8fa;
+  border-color: #d0d7de;
+}
+
+.auth-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background: #f0f8ff;
+  border: 1px solid #b3d8ff;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #0969da;
+}
+
+.auth-note i {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.auth-note code {
+  background: rgba(175, 184, 193, 0.2);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.code-examples {
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.example-tabs {
+  display: flex;
+  background: #f6f8fa;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #656d76;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+  color: #24292e;
+  background: rgba(208, 215, 222, 0.32);
+}
+
+.tab-btn.active {
+  color: #0969da;
+  background: white;
+  border-bottom-color: #0969da;
+}
+
+.example-content {
+  position: relative;
+}
+
+.code-block {
+  position: relative;
+  background: #f6f8fa;
+}
+
+.code-block pre {
+  margin: 0;
+  padding: 16px;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #24292e;
+}
+
+.code-block code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.btn-copy-code {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e1e4e8;
+  color: #656d76;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-copy-code:hover {
+  background: white;
+  color: #24292e;
+  border-color: #d0d7de;
+}
+
+.response-format {
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.response-format pre {
+  margin: 0;
+  padding: 16px;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #24292e;
+}
+
+.response-format code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* API模态框响应式设计 */
+@media (max-width: 768px) {
+  .api-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .api-section {
+    padding: 16px;
+  }
+  
+  .endpoint-url {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .api-key-display {
+    flex-direction: column;
+  }
+  
+  .example-tabs {
+    flex-wrap: wrap;
+  }
+  
+  .tab-btn {
+    flex: 1;
+    min-width: 80px;
+  }
+  
+  .code-block pre {
+    font-size: 12px;
+    padding: 12px;
+  }
+  
+  .btn-copy-code {
+    position: static;
+    margin: 8px;
+    align-self: flex-start;
+  }
 }
 </style>

@@ -29,6 +29,12 @@ const words: I18nType = {
   welcome: 'Hi',
   create_new_conversation: 'New Conversation',
   help: 'Help',
+  chat: 'Chat',
+  knowledge_base: 'Knowledge Base',
+  system_config: 'System Config',
+  knowledge_management: 'Knowledge Management',
+  document_upload: 'Document Upload',
+  knowledge_search: 'Knowledge Search',
 }
 
 export default words

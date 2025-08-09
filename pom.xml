@@ -86,17 +86,22 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-yuque</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-kuaidi100</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-googletranslate</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-googletrends</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-alitranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tavilysearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-searches</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-worldbankdata</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tencentmap</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tushare</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-ollamasearchmodel</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-minio</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-memcached</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-metaso</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-openalex</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-opentripmap</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tripadvisor</module>
 
         <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
@@ -249,6 +254,8 @@
 
         <jedis.version>5.2.0</jedis.version>
 
+        <redisson.version>3.42.0</redisson.version>
+
         <mysql.version>8.0.32</mysql.version>
 
         <postgresql.version>42.4.4</postgresql.version>
@@ -265,7 +272,7 @@
 
         <poi.version>5.4.0</poi.version>
 
-        <mcp.version>0.11.0</mcp.version>
+        <mcp.version>0.10.0</mcp.version>
         <opentelemetry.version>1.38.0</opentelemetry.version>
 
         <!-- CheckStyle Plugin -->

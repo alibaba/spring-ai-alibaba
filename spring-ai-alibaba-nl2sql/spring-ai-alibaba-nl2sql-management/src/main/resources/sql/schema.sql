@@ -1,5 +1,25 @@
 -- 简化的数据库初始化脚本，兼容Spring Boot SQL初始化
 
+-- 智能体表
+CREATE TABLE IF NOT EXISTS agent (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL COMMENT '智能体名称',
+    description TEXT COMMENT '智能体描述',
+    avatar TEXT COMMENT '头像URL',
+    status VARCHAR(50) DEFAULT 'draft' COMMENT '状态：draft-待发布，published-已发布，offline-已下线',
+    prompt TEXT COMMENT '自定义Prompt配置',
+    category VARCHAR(100) COMMENT '分类',
+    admin_id BIGINT COMMENT '管理员ID',
+    tags TEXT COMMENT '标签，逗号分隔',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id),
+    INDEX idx_name (name),
+    INDEX idx_status (status),
+    INDEX idx_category (category),
+    INDEX idx_admin_id (admin_id)
+    ) ENGINE = InnoDB COMMENT = '智能体表';
+
 -- 业务知识表
 CREATE TABLE IF NOT EXISTS business_knowledge (
   id INT NOT NULL AUTO_INCREMENT,
@@ -41,25 +61,6 @@ CREATE TABLE IF NOT EXISTS semantic_model (
   FOREIGN KEY (agent_id) REFERENCES agent(id) ON DELETE SET NULL
 ) ENGINE = InnoDB COMMENT = '语义模型表';
 
--- 智能体表
-CREATE TABLE IF NOT EXISTS agent (
-  id INT NOT NULL AUTO_INCREMENT,
-  name VARCHAR(255) NOT NULL COMMENT '智能体名称',
-  description TEXT COMMENT '智能体描述',
-  avatar VARCHAR(500) COMMENT '头像URL',
-  status VARCHAR(50) DEFAULT 'draft' COMMENT '状态：draft-待发布，published-已发布，offline-已下线',
-  prompt TEXT COMMENT '自定义Prompt配置',
-  category VARCHAR(100) COMMENT '分类',
-  admin_id BIGINT COMMENT '管理员ID',
-  tags TEXT COMMENT '标签，逗号分隔',
-  create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (id),
-  INDEX idx_name (name),
-  INDEX idx_status (status),
-  INDEX idx_category (category),
-  INDEX idx_admin_id (admin_id)
-) ENGINE = InnoDB COMMENT = '智能体表';
 
 -- 智能体知识表
 CREATE TABLE IF NOT EXISTS agent_knowledge (
@@ -145,3 +146,39 @@ CREATE TABLE IF NOT EXISTS agent_preset_question (
   INDEX idx_is_active (is_active),
   FOREIGN KEY (agent_id) REFERENCES agent(id) ON DELETE CASCADE
 ) ENGINE = InnoDB COMMENT = '智能体预设问题表';
+
+-- 会话表
+CREATE TABLE IF NOT EXISTS chat_session (
+  id VARCHAR(36) NOT NULL COMMENT '会话ID（UUID）',
+  agent_id INT NOT NULL COMMENT '智能体ID',
+  title VARCHAR(255) DEFAULT '新对话' COMMENT '会话标题',
+  status VARCHAR(50) DEFAULT 'active' COMMENT '状态：active-活跃，archived-归档，deleted-已删除',
+  is_pinned TINYINT DEFAULT 0 COMMENT '是否置顶：0-否，1-是',
+  user_id BIGINT COMMENT '用户ID',
+  create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  INDEX idx_agent_id (agent_id),
+  INDEX idx_user_id (user_id),
+  INDEX idx_status (status),
+  INDEX idx_is_pinned (is_pinned),
+  INDEX idx_create_time (create_time),
+  FOREIGN KEY (agent_id) REFERENCES agent(id) ON DELETE CASCADE
+) ENGINE = InnoDB COMMENT = '聊天会话表';
+
+-- 消息表
+CREATE TABLE IF NOT EXISTS chat_message (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  session_id VARCHAR(36) NOT NULL COMMENT '会话ID',
+  role VARCHAR(20) NOT NULL COMMENT '角色：user-用户，assistant-助手，system-系统',
+  content TEXT NOT NULL COMMENT '消息内容',
+  message_type VARCHAR(50) DEFAULT 'text' COMMENT '消息类型：text-文本，sql-SQL查询，result-查询结果，error-错误',
+  metadata JSON COMMENT '元数据（JSON格式）',
+  create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (id),
+  INDEX idx_session_id (session_id),
+  INDEX idx_role (role),
+  INDEX idx_message_type (message_type),
+  INDEX idx_create_time (create_time),
+  FOREIGN KEY (session_id) REFERENCES chat_session(id) ON DELETE CASCADE
+) ENGINE = InnoDB COMMENT = '聊天消息表';

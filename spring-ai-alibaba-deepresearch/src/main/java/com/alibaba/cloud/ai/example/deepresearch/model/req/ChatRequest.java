@@ -29,9 +29,14 @@ import java.util.Map;
 public record ChatRequest(
 
 		/**
-		 * 线程 ID，用于标识当前对话的唯一性。 默认值为 "__default__"，表示使用默认线程。
+		 * 会话 ID。默认值为 "__default__"，表示使用默认会话。
 		 */
-		@JsonProperty(value = "thread_id", defaultValue = "__default__") String threadId,
+		@JsonProperty(value = "session_id", defaultValue = "__default__") String sessionId,
+
+		/**
+		 * 线程 ID，用于标识当前对话的唯一性。
+		 */
+		@JsonProperty(value = "thread_id", defaultValue = "") String threadId,
 		/**
 		 * 最大计划迭代次数，用于控制处理请求的最大步骤数。 默认值为 1，表示至少执行一次完整流程。
 		 */
@@ -51,8 +56,7 @@ public record ChatRequest(
 		/**
 		 * 是否启用背景调查，用于控制是否启用背景调查 默认值为 true，表示启用背景调查
 		 */
-		@JsonProperty(value = "enable_background_investigation",
-				defaultValue = "true") Boolean enableBackgroundInvestigation,
+		@JsonProperty(value = "enable_deepresearch", defaultValue = "true") Boolean enableDeepResearch,
 		/**
 		 * MCP 设置
 		 */

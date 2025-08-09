@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.utils.InMemoryFileStorage;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,8 @@ public class HttpNode implements NodeAction {
 	private static final int DEFAULT_MAX_RETRIES = 3;
 
 	private static final long DEFAULT_MAX_RETRY_INTERVAL = 1000;
+
+	private static final ObjectMapper mapper = new ObjectMapper();
 
 	private final WebClient webClient;
 
@@ -145,7 +148,8 @@ public class HttpNode implements NodeAction {
 		while (matcher.find()) {
 			String key = matcher.group(1);
 			Object value = state.value(key).orElse("");
-			matcher.appendReplacement(result, value.toString());
+			String strReplaced = getStrReplaced(value.toString());
+			matcher.appendReplacement(result, Matcher.quoteReplacement(strReplaced));
 		}
 		matcher.appendTail(result);
 		return result.toString();
@@ -177,7 +181,7 @@ public class HttpNode implements NodeAction {
 				String jsonTemplate = replaceVariables(body.getData().get(0).getValue(), state);
 				Object jsonObject;
 				try {
-					jsonObject = new ObjectMapper().readValue(jsonTemplate, Object.class);
+					jsonObject = parseNestedJson(jsonTemplate);
 				}
 				catch (com.fasterxml.jackson.core.JsonProcessingException e) {
 					throw RunnableErrors.nodeInterrupt.exception("Failed to parse JSON body: " + e.getMessage());
@@ -251,6 +255,55 @@ public class HttpNode implements NodeAction {
 				break;
 			default:
 				throw RunnableErrors.nodeInterrupt.exception("Unsupported body type: " + body.getType());
+		}
+	}
+
+	/**
+	 * Get string replaced.
+	 * @param jsonTemplate JSON template
+	 * @return string replaced
+	 */
+	private static String getStrReplaced(String jsonTemplate) {
+		return jsonTemplate == null ? ""
+				: jsonTemplate.replace("```json", "")
+					.replace("```", "")
+					.replace("\n", "")
+					.replace("\r", "")
+					.replace("\t", "")
+					.replace("\"", "\\\"");
+	}
+
+	/**
+	 * Parse nested JSON string.
+	 * @param json JSON string
+	 * @return parsed JSON object
+	 * @throws Exception if parsing fails
+	 */
+	public static Object parseNestedJson(String json) throws JsonProcessingException {
+		JsonNode rootNode = mapper.readTree(json);
+		if (rootNode.isObject()) {
+			Map<String, Object> map = mapper.convertValue(rootNode, Map.class);
+			for (Map.Entry<String, Object> entry : map.entrySet()) {
+				Object value = entry.getValue();
+				if (value instanceof String valueStr) {
+					if ((valueStr.startsWith("{") && valueStr.endsWith("}"))
+							|| (valueStr.startsWith("[") && valueStr.endsWith("]"))) {
+						try {
+							// Recursively parse the nested JSON string
+							Object parsed = parseNestedJson(valueStr);
+							map.put(entry.getKey(), parsed);
+						}
+						catch (Exception e) {
+							// If parsing fails, retain the original value
+							map.put(entry.getKey(), value);
+						}
+					}
+				}
+			}
+			return map;
+		}
+		else {
+			return mapper.convertValue(rootNode, Object.class);
 		}
 	}
 

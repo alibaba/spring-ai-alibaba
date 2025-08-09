@@ -42,6 +42,8 @@ const words: I18nType = {
     apiKeyPlaceholder: 'Enter your API key',
     apiKeyHint: 'You can get your API key from Alibaba Cloud Bailian Console.',
     getApiKey: 'Get API Key',
+    showApiKey: 'Show API Key',
+    hideApiKey: 'Hide API Key',
     baseUrlLabel: 'API Base URL',
     baseUrlPlaceholder: 'https://api.openai.com or your custom URL',
     baseUrlHint: 'OpenAI compatible API base URL, e.g. http://localhost:11434',
@@ -61,6 +63,9 @@ const words: I18nType = {
     networkError: 'Network error, please check your internet connection',
     successMessage: 'Configuration saved successfully! Redirecting to home page...',
     restartRequired: 'API key saved successfully! The application needs to be restarted for the configuration to take effect.\n\nClick "OK" to restart now, or "Cancel" to restart manually later.',
+    simplifiedChinese: 'Simplified Chinese',
+    completionsPath: 'Completions Path',
+    completionsPathPlaceholder: 'If not specified, the default configuration is: /v1/chat/completions',
   },
 
   // Common buttons and actions
@@ -77,8 +82,44 @@ const words: I18nType = {
     update: 'Update',
     submit: 'Submit',
     clear: 'Clear',
+    submitFailed: 'Submit Failed',
+    unknownError: 'Unknown Error',
     search: 'Search',
     loading: 'Loading...',
+    parameters: 'Parameters',
+  },
+
+  // File Browser
+  fileBrowser: {
+    title: 'File Browser',
+    refresh: 'Refresh',
+    loading: 'Loading file tree...',
+    retry: 'Retry',
+    noFiles: 'No files found',
+    loadError: 'Failed to load file tree',
+    loadingContent: 'Loading file content...',
+    contentLoadError: 'Failed to load file content',
+    download: 'Download',
+    downloadToView: 'Download to View',
+    binaryFile: 'This is a binary file that cannot be displayed in the viewer.',
+    open: 'Open',
+    copyPath: 'Copy Path',
+    noPlanSelected: 'No plan selected. Please execute a task to view files.',
+    noFilesYet: 'No Files Generated Yet',
+    waitingForFiles: 'The AI model is still processing your request. Files will appear here once they are generated.',
+    filesTip: 'Generated files like analysis results, reports, and data exports will be displayed in this file browser.',
+    noPlanExecuting: 'No task is currently being executed.',
+    startTaskTip: 'Please start a task in the chat panel on the left. Generated files will be displayed here.',
+    waitingForGeneration: 'Waiting for File Generation',
+    planExecuting: 'The AI model is currently executing the plan and generating files.',
+    checking: 'Checking...',
+    checkNow: 'Check Now',
+  },
+
+  // Language
+  language: {
+    zh: '中文',
+    en: 'English',
     success: 'Success',
     error: 'Error',
     warning: 'Warning',
@@ -116,6 +157,9 @@ const words: I18nType = {
     parameters: 'Parameters',
     thinking: 'Thinking',
     input: 'Input',
+    total: 'Total',
+    loadFailed: 'Load Failed',
+    switch: 'Switch Language',
   },
 
   // Configuration related
@@ -204,6 +248,9 @@ const words: I18nType = {
       invalidFormat: 'Invalid agent configuration format: missing required fields',
       modelConfiguration: 'Model Configuration',
       modelConfigurationLabel: 'Select Model',
+      cannotDeleteBuiltIn: 'Cannot delete built-in agent',
+      builtInAgents: 'Built-in Agents',
+      customAgents: 'Custom Agents',
     },
     // Model configuration page
     modelConfig: {
@@ -222,6 +269,8 @@ const words: I18nType = {
       baseUrlPlaceholder: 'Enter base url',
       apiKey: 'API Key',
       apiKeyPlaceholder: 'Enter API key',
+      showApiKey: 'Show API Key',
+      hideApiKey: 'Hide API Key',
       modelName: 'Model Name',
       modelNamePlaceholder: 'Enter model name',
       description: 'Description',
@@ -262,6 +311,8 @@ const words: I18nType = {
       temperaturePlaceholder: 'Leave empty to use model default',
       topP: 'Top P',
       topPPlaceholder: 'Leave empty to use model default',
+      completionsPath: 'Completions Path',
+      completionsPathPlaceholder: 'If not specified, the default configuration is: /v1/chat/completions',
       headers: 'Headers',
       headersPlaceholder: 'Request headers (JSON format)',
     },
@@ -326,6 +377,18 @@ const words: I18nType = {
       newMcpConfig: 'New MCP Config',
       importAll: 'Import All',
       exportAll: 'Export All',
+      mcpName: 'MCP Name',
+      usageInstructions: 'Usage Instructions',
+      getMcpServiceList: 'Get MCP Service List',
+      findMcpServices: 'You can find available MCP services on mcp.higress.ai, mcp.so, modelscope.cn',
+      batchImportTip: 'If you need to batch configure MCP services, you can use the import all function in the top right corner',
+      configureMcpService: 'Configure MCP Service',
+      fillServiceName: 'Fill in service name',
+      selectConnectionType: 'Select connection type: choose STUDIO for local and input Command, Args and Env. Choose SSE or STREAMING for remote and input URL',
+      clickSaveToComplete: 'Click save button to complete MCP configuration, MCP tools will be automatically registered to the system',
+      configureAgentUsage: 'Configure Agent Usage',
+      createAgentTip: 'Create a new Agent on the Agent configuration page, add the just configured MCP service to the Agent, this can reduce tool conflicts and improve Agent tool selection accuracy',
+      copyJsonConfig: 'Copy the complete JSON configuration to the input box above (you can refer to configuration examples), then click import',
       command: 'Command',
       args: 'Args',
       env: 'Env',
@@ -437,6 +500,10 @@ const words: I18nType = {
         system: 'System',
         performance: 'Performance',
       },
+      restoreAllDefaults: 'Restore to Default',
+      restoreAllDefaultsConfirm: 'Are you sure you want to restore all configurations to default values? This will overwrite all custom configurations.',
+      restoreAllDefaultsSuccess: 'All configurations have been restored to default values',
+      restoreAllDefaultsFailed: 'Failed to restore default configurations',
     },
     promptConfig: {
       title: 'Dynamic Prompt Configuration',
@@ -530,6 +597,21 @@ const words: I18nType = {
     saveFailed: 'Failed to save agent',
     deleteSuccess: 'Agent deleted successfully',
     deleteFailed: 'Failed to delete agent',
+    // Multi-language support
+    multiLanguage: {
+      title: 'Agent Multi-Language Management',
+      resetAll: 'Reset All Agents',
+      resetAllConfirm: 'Reset All Agents Confirmation',
+      resetAllWarning: 'This operation will delete all existing agent configurations and reload the specified language version. This action cannot be undone!',
+      selectLanguage: 'Select Language',
+      resetSuccess: 'All agents have been reset to the specified language version',
+      resetFailed: 'Failed to reset agents',
+      currentLanguage: 'Current Language',
+      supportedLanguages: 'Supported Languages',
+      resetInProgress: 'Resetting agents...',
+      confirmReset: 'Confirm Reset',
+      cancel: 'Cancel',
+    },
   },
   // Model Configuration
   model: {
@@ -611,12 +693,14 @@ const words: I18nType = {
     executionFailed: 'Execution failed',
     generationSuccess: 'Generation successful',
     generationFailed: 'Generation failed',
+    invalidJson: 'Invalid JSON format, please correct and save again',
+    executePlanTemplate: 'Execute Plan Template',
   },
 
   // Chat component
   chat: {
-    botName: 'TaskPilot:',
-    thinkingLabel: 'TaskPilot Thinking/Processing',
+    botName: 'JManus:',
+    thinkingLabel: 'JManus Thinking/Processing',
     processing: 'Processing...',
     step: 'Step',
     stepNumber: 'Step {number}',
@@ -654,6 +738,14 @@ const words: I18nType = {
     formatError: 'Request format might be incorrect, could you please rephrase your request?',
     unknownError: 'Encountered some issues while processing your request, please try again later',
     thinkingOutput: 'Thinking Output',
+    defaultResponse: 'I understand. Is there anything else I can help you with?',
+    anythingElse: 'Is there anything else I can help you with?',
+    okayDone: 'Okay, {text}',
+    ifOtherQuestions: 'If you have any other questions, please feel free to let me know',
+    hopeHelpful: 'I hope this answer is helpful to you!',
+    great: 'Great!',
+    ifOtherHelp: 'If you need any other help, please feel free to let me know',
+    completedRequest: 'I have completed your request: {result}'
   },
 
   // Input component
@@ -661,9 +753,10 @@ const words: I18nType = {
     placeholder: 'Send a message to JManus',
     send: 'Send',
     planMode: 'PLAN-ACT Template Mode',
-    waiting: 'Waiting for task completion...',
+    waiting: 'Waiting for user input...',
     maxLength: 'Max Length',
     charactersRemaining: 'Characters Remaining',
+    attachFile: 'Attach File',
   },
 
   // Sidebar
@@ -738,6 +831,26 @@ const words: I18nType = {
     defaultExecutionPlanTitle: 'Execution Plan',
   },
 
+  // Tool Selection
+  toolSelection: {
+    title: 'Select Tools',
+    searchPlaceholder: 'Search tools...',
+    sortByGroup: 'Sort by Service Group',
+    sortByName: 'Sort by Name',
+    sortByStatus: 'Sort by Status',
+    summary: '{groups} service groups, {tools} tools ({selected} selected)',
+    enableAll: 'Enable All',
+    noToolsFound: 'No tools found'
+  },
+
+  // Direct execution page
+  direct: {
+    planTemplateIdNotFound: 'Plan template ID not found',
+    executionFailedNoPlanId: 'Plan execution failed: No valid plan ID returned',
+    executionFailed: 'Plan execution failed',
+    configuration: 'config'
+  },
+
   // Modal
   modal: {
     close: 'Close',
@@ -764,12 +877,9 @@ const words: I18nType = {
     resetFontSize: 'Reset Font Size',
   },
 
-  // Language switching
-  language: {
-    switch: 'Switch Language',
-    current: 'Current Language',
-    zh: '中文',
-    en: 'English',
+  // Validation
+  validation: {
+    required: 'Content cannot be empty',
   },
 
   // Theme
@@ -790,20 +900,6 @@ const words: I18nType = {
     networkErrorDescription: 'Network connection failed, please check your network settings',
     backToHome: 'Back to Home',
     retry: 'Retry',
-  },
-
-  // Form validation
-  validation: {
-    required: 'This field is required',
-    email: 'Please enter a valid email address',
-    phone: 'Please enter a valid phone number',
-    url: 'Please enter a valid URL',
-    minLength: 'At least {min} characters required',
-    maxLength: 'Maximum {max} characters allowed',
-    min: 'Value cannot be less than {min}',
-    max: 'Value cannot be greater than {max}',
-    pattern: 'Invalid format',
-    confirmation: 'The two inputs do not match',
   },
 
   // Time related
@@ -858,24 +954,34 @@ const words: I18nType = {
     examples: {
       stockPrice: {
         title: 'Query Stock Price',
-        description: "Get today's latest stock price for Alibaba (Agent can use browser tools)",
+        description: "Get today's latest stock price for Alphabet (Agent can use browser tools)",
         prompt:
-          "Use browser based on Baidu to query today's Alibaba stock price and return the latest stock price",
+          "Use browser based on Google to query today's Alphabet stock price and return the latest stock price\n",
       },
       weather: {
         title: 'Query Weather',
-        description: "Get today's weather in Beijing (Agent can use MCP tool services)",
-        prompt: "Use browser, based on Baidu, to query today's weather in Beijing",
+        description: "Get today's weather in New York (Agent can use MCP tool services)",
+        prompt: "Use browser, based on Google, to query today's weather in New York",
       },
       queryplan: {
         title: 'Query Person Info',
         description: "Query all information about Shenxun Ali (to demonstrate infinite context capability)",
         prompt: 'Use browser, based on Baidu, to query person info',
+        planTitle: 'Query all information about Shenxun Ali (to demonstrate infinite context capability)',
+        step1: '[BROWSER_AGENT] Search for Shenxun Ali through Baidu, get the first page HTML data, merge and aggregate to html_data directory',
+        step1Output: 'Storage directory path',
+        step2: '[BROWSER_AGENT] Find all valid web links about Shenxun Ali from html_data directory, output to link.md',
+        step2Output: 'URL address, description',
       },
       ainovel: {
         title: 'AI Novel Creation',
         description: 'AI gradually defeats humanity themed novel (to demonstrate long-form content output)',
         prompt: 'Create a novel about artificial intelligence gradually defeating humanity, including 10 chapters',
+        planTitle: 'AI Gradually Defeats Humans Novel Creation Plan',
+        step1: '[TEXT_FILE_AGENT] Create a file with novel title and chapter titles, expecting a novel with 10 chapters, output outline to novel.md, each chapter uses secondary title, only write chapter titles in current step, novel title is "AI Gradually Defeats Humans"',
+        step1Output: 'File name',
+        step2: '[TEXT_FILE_AGENT] Get chapter title information from novel.md file, then improve each chapter content in sequence, only improve one chapter content per round, use replace to update content, each chapter requires 3000 words, do not query all document content after updating each chapter',
+        step2Output: 'File name',
       },
     },
   },
@@ -902,11 +1008,19 @@ const words: I18nType = {
     toolParameters: 'Tool Parameters',
     noStepDetails: 'No detailed step information available',
     scrollToBottom: 'Scroll to Bottom',
-    // Step status
+    stepInfo: 'Step Information',
+    stepName: 'Step Name',
+    noExecutionInfo: 'No detailed execution information available for this step',
+    subPlan: 'Sub Execution Plan',
+    subStep: 'Sub Step',
+    subPlanId: 'Sub Plan ID',
+    title: 'Title',
+    stepNumber: 'Step {number}',
     status: {
+      label: 'Status',
       completed: 'Completed',
       executing: 'Executing',
-      waiting: 'Waiting',
+      pending: 'Pending'
     },
     // Tab labels
     tabs: {
@@ -941,13 +1055,6 @@ const words: I18nType = {
     },
     // Default step title
     defaultStepTitle: 'Step {number}',
-  },
-
-  // Direct page
-  direct: {
-    configuration: 'Configuration',
-    panelResizeHint: 'Drag to resize panel, double-click to reset',
-    aboutExecutionDetails: 'About Integrated Execution Details',
   },
 
   // Cron Task

@@ -30,6 +30,8 @@ public class BusinessKnowledgeDTO {
 
 	private String datasetId; // 关联的数据集ID
 
+	private String agentId; // 关联的智能体ID
+
 	public BusinessKnowledgeDTO() {
 	}
 
@@ -40,6 +42,17 @@ public class BusinessKnowledgeDTO {
 		this.synonyms = synonyms;
 		this.defaultRecall = defaultRecall;
 		this.datasetId = datasetId;
+		this.agentId = null; // 默认为null，保持向后兼容
+	}
+
+	public BusinessKnowledgeDTO(String businessTerm, String description, String synonyms, Boolean defaultRecall,
+			String datasetId, String agentId) {
+		this.businessTerm = businessTerm;
+		this.description = description;
+		this.synonyms = synonyms;
+		this.defaultRecall = defaultRecall;
+		this.datasetId = datasetId;
+		this.agentId = agentId;
 	}
 
 	// Getters and Setters
@@ -84,9 +97,12 @@ public class BusinessKnowledgeDTO {
 		this.datasetId = datasetId;
 	}
 
-	@Override
-	public String toString() {
-		return String.format("业务名词: %s, 说明: %s, 同义词: %s", getBusinessTerm(), getDescription(), getSynonyms());
+	public String getAgentId() {
+		return agentId;
+	}
+
+	public void setAgentId(String agentId) {
+		this.agentId = agentId;
 	}
 
 }

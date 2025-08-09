@@ -35,8 +35,10 @@ public class ManusProperties implements IManusProperties {
 	// Begin-------------------------------------------------------------------------------------------
 
 	@ConfigProperty(group = "manus", subGroup = "browser", key = "headless", path = "manus.browser.headless",
-			description = "是否使用无头浏览器模式", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
-			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+			description = "manus.browser.headless.description", defaultValue = "false",
+			inputType = ConfigInputType.CHECKBOX,
+			options = { @ConfigOption(value = "true", label = "manus.browser.headless.option.true"),
+					@ConfigOption(value = "false", label = "manus.browser.headless.option.false") })
 	private volatile Boolean browserHeadless;
 
 	public Boolean getBrowserHeadless() {
@@ -53,8 +55,8 @@ public class ManusProperties implements IManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "browser", key = "requestTimeout",
-			path = "manus.browser.requestTimeout", description = "浏览器请求超时时间(秒)", defaultValue = "180",
-			inputType = ConfigInputType.NUMBER)
+			path = "manus.browser.requestTimeout", description = "manus.browser.requestTimeout.description",
+			defaultValue = "180", inputType = ConfigInputType.NUMBER)
 	private volatile Integer browserRequestTimeout;
 
 	public Integer getBrowserRequestTimeout() {
@@ -71,9 +73,10 @@ public class ManusProperties implements IManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "general", key = "debugDetail", path = "manus.general.debugDetail",
-			description = "debug模式 ：会要求模型输出更多内容，方便查找问题，但速度更慢", defaultValue = "false",
+			description = "manus.general.debugDetail.description", defaultValue = "false",
 			inputType = ConfigInputType.CHECKBOX,
-			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+			options = { @ConfigOption(value = "true", label = "manus.general.debugDetail.option.true"),
+					@ConfigOption(value = "false", label = "manus.general.debugDetail.option.false") })
 	private volatile Boolean debugDetail;
 
 	public Boolean getDebugDetail() {
@@ -95,8 +98,10 @@ public class ManusProperties implements IManusProperties {
 	// Interaction Settings
 	// Begin---------------------------------------------------------------------------------------
 	@ConfigProperty(group = "manus", subGroup = "interaction", key = "openBrowser", path = "manus.openBrowserAuto",
-			description = "启动时自动打开浏览器", defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
-			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+			description = "manus.interaction.openBrowser.description", defaultValue = "true",
+			inputType = ConfigInputType.CHECKBOX,
+			options = { @ConfigOption(value = "true", label = "manus.interaction.openBrowser.option.true"),
+					@ConfigOption(value = "false", label = "manus.interaction.openBrowser.option.false") })
 	private volatile Boolean openBrowserAuto;
 
 	public Boolean getOpenBrowserAuto() {
@@ -119,7 +124,7 @@ public class ManusProperties implements IManusProperties {
 	// Begin---------------------------------------------------------------------------------------------
 
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "maxSteps", path = "manus.maxSteps",
-			description = "智能体执行最大步数", defaultValue = "20", inputType = ConfigInputType.NUMBER)
+			description = "manus.agent.maxSteps.description", defaultValue = "20", inputType = ConfigInputType.NUMBER)
 	private volatile Integer maxSteps;
 
 	public Integer getMaxSteps() {
@@ -136,9 +141,10 @@ public class ManusProperties implements IManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "agents", key = "forceOverrideFromYaml",
-			path = "manus.agents.forceOverrideFromYaml", description = "强制使用YAML配置文件覆盖同名Agent", defaultValue = "true",
-			inputType = ConfigInputType.CHECKBOX,
-			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+			path = "manus.agents.forceOverrideFromYaml", description = "manus.agent.forceOverrideFromYaml.description",
+			defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
+			options = { @ConfigOption(value = "true", label = "manus.agent.forceOverrideFromYaml.option.true"),
+					@ConfigOption(value = "false", label = "manus.agent.forceOverrideFromYaml.option.false") })
 	private volatile Boolean forceOverrideFromYaml;
 
 	public Boolean getForceOverrideFromYaml() {
@@ -155,8 +161,8 @@ public class ManusProperties implements IManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "userInputTimeout",
-			path = "manus.agent.userInputTimeout", description = "用户输入表单等待超时时间(秒)", defaultValue = "300",
-			inputType = ConfigInputType.NUMBER)
+			path = "manus.agent.userInputTimeout", description = "manus.agent.userInputTimeout.description",
+			defaultValue = "300", inputType = ConfigInputType.NUMBER)
 	private volatile Integer userInputTimeout;
 
 	public Integer getUserInputTimeout() {
@@ -180,7 +186,8 @@ public class ManusProperties implements IManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "maxMemory", path = "manus.agent.maxMemory",
-			description = "能记住的最大消息数", defaultValue = "1000", inputType = ConfigInputType.NUMBER)
+			description = "manus.agent.maxMemory.description", defaultValue = "1000",
+			inputType = ConfigInputType.NUMBER)
 	private volatile Integer maxMemory;
 
 	public Integer getMaxMemory() {
@@ -200,9 +207,10 @@ public class ManusProperties implements IManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "parallelToolCalls",
-			path = "manus.agent.parallelToolCalls", description = "并行工具调用", defaultValue = "false",
-			inputType = ConfigInputType.CHECKBOX,
-			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+			path = "manus.agent.parallelToolCalls", description = "manus.agent.parallelToolCalls.description",
+			defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
+			options = { @ConfigOption(value = "true", label = "manus.agent.parallelToolCalls.option.true"),
+					@ConfigOption(value = "false", label = "manus.agent.parallelToolCalls.option.false") })
 	private volatile Boolean parallelToolCalls;
 
 	public Boolean getParallelToolCalls() {
@@ -228,7 +236,7 @@ public class ManusProperties implements IManusProperties {
 	// Begin--------------------------------------------------------------------------------------------
 
 	@ConfigProperty(group = "manus", subGroup = "general", key = "baseDir", path = "manus.baseDir",
-			description = "manus根目录", defaultValue = "", inputType = ConfigInputType.TEXT)
+			description = "manus.general.baseDir.description", defaultValue = "", inputType = ConfigInputType.TEXT)
 	private volatile String baseDir = "";
 
 	public String getBaseDir() {
@@ -249,9 +257,10 @@ public class ManusProperties implements IManusProperties {
 
 	// Infinite Context SubGroup
 	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "enabled",
-			path = "manus.infiniteContext.enabled", description = "是否开启无限上下文", defaultValue = "true",
-			inputType = ConfigInputType.CHECKBOX,
-			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+			path = "manus.infiniteContext.enabled", description = "manus.infiniteContext.enabled.description",
+			defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
+			options = { @ConfigOption(value = "true", label = "manus.infiniteContext.enabled.option.true"),
+					@ConfigOption(value = "false", label = "manus.infiniteContext.enabled.option.false") })
 	private volatile Boolean infiniteContextEnabled;
 
 	public Boolean getInfiniteContextEnabled() {
@@ -268,7 +277,8 @@ public class ManusProperties implements IManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "parallelThreads",
-			path = "manus.infiniteContext.parallelThreads", description = "并行处理线程数", defaultValue = "4",
+			path = "manus.infiniteContext.parallelThreads",
+			description = "manus.infiniteContext.parallelThreads.description", defaultValue = "6",
 			inputType = ConfigInputType.NUMBER)
 	private volatile Integer infiniteContextParallelThreads;
 
@@ -290,7 +300,8 @@ public class ManusProperties implements IManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "infiniteContext", key = "taskContextSize",
-			path = "manus.infiniteContext.taskContextSize", description = "触发无限上下文的字符数阈值(字符数)", defaultValue = "20000",
+			path = "manus.infiniteContext.taskContextSize",
+			description = "manus.infiniteContext.taskContextSize.description", defaultValue = "20000",
 			inputType = ConfigInputType.NUMBER)
 	private volatile Integer infiniteContextTaskContextSize;
 
@@ -340,7 +351,8 @@ public class ManusProperties implements IManusProperties {
 	// Begin--------------------------------------------------------------------------------------------
 
 	@ConfigProperty(group = "manus", subGroup = "mcpServiceLoader", key = "connectionTimeoutSeconds",
-			path = "manus.mcpServiceLoader.connectionTimeoutSeconds", description = "MCP连接超时时间(秒)", defaultValue = "20",
+			path = "manus.mcpServiceLoader.connectionTimeoutSeconds",
+			description = "manus.mcpServiceLoader.connectionTimeoutSeconds.description", defaultValue = "20",
 			inputType = ConfigInputType.NUMBER)
 	private volatile Integer mcpConnectionTimeoutSeconds;
 
@@ -362,7 +374,8 @@ public class ManusProperties implements IManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "mcpServiceLoader", key = "maxRetryCount",
-			path = "manus.mcpServiceLoader.maxRetryCount", description = "MCP连接最大重试次数", defaultValue = "3",
+			path = "manus.mcpServiceLoader.maxRetryCount",
+			description = "manus.mcpServiceLoader.maxRetryCount.description", defaultValue = "3",
 			inputType = ConfigInputType.NUMBER)
 	private volatile Integer mcpMaxRetryCount;
 
@@ -384,7 +397,8 @@ public class ManusProperties implements IManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "mcpServiceLoader", key = "maxConcurrentConnections",
-			path = "manus.mcpServiceLoader.maxConcurrentConnections", description = "MCP最大并发连接数", defaultValue = "10",
+			path = "manus.mcpServiceLoader.maxConcurrentConnections",
+			description = "manus.mcpServiceLoader.maxConcurrentConnections.description", defaultValue = "10",
 			inputType = ConfigInputType.NUMBER)
 	private volatile Integer mcpMaxConcurrentConnections;
 

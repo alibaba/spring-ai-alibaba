@@ -107,11 +107,11 @@ class Subject extends EmailElement {
 		}
 
 		try {
-			// 使用 JavaMail 的 MimeUtility 来解码
+			// Use JavaMail's MimeUtility to decode
 			return MimeUtility.decodeText(text);
 		}
 		catch (UnsupportedEncodingException e) {
-			// 如果解码失败，返回原始文本
+			// If decoding fails, return original text
 			return text;
 		}
 	}

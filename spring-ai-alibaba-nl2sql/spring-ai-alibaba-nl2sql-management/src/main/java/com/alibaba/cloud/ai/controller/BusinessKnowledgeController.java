@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.entity.BusinessKnowledge;
 import com.alibaba.cloud.ai.service.BusinessKnowledgeService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -32,8 +31,11 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class BusinessKnowledgeController {
 
-	@Autowired
-	private BusinessKnowledgeService businessKnowledgeService;
+	private final BusinessKnowledgeService businessKnowledgeService;
+
+	public BusinessKnowledgeController(BusinessKnowledgeService businessKnowledgeService) {
+		this.businessKnowledgeService = businessKnowledgeService;
+	}
 
 	@GetMapping
 	@ResponseBody

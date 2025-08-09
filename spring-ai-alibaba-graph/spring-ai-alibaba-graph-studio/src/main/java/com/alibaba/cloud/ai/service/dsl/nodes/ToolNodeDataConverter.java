@@ -61,13 +61,20 @@ public class ToolNodeDataConverter extends AbstractNodeDataConverter<ToolNodeDat
 				// output_key
 				nd.setOutputKey((String) data.get("output_key"));
 
-				// tool_names
+				// Handle tool_names - extract from tool_name if tool_names not present
 				List<String> names = (List<String>) data.get("tool_names");
 				if (names != null) {
 					nd.setToolNames(names);
 				}
 				else {
-					nd.setToolNames(Collections.emptyList());
+					// Try to extract tool name from tool_name field (single tool)
+					String toolName = (String) data.get("tool_name");
+					if (toolName != null) {
+						nd.setToolNames(Collections.singletonList(toolName));
+					}
+					else {
+						nd.setToolNames(Collections.emptyList());
+					}
 				}
 
 				// tool_callbacks
@@ -77,6 +84,28 @@ public class ToolNodeDataConverter extends AbstractNodeDataConverter<ToolNodeDat
 				}
 				else {
 					nd.setToolCallbacks(Collections.emptyList());
+				}
+
+				// Parse Dify-specific tool attributes
+				nd.setToolName((String) data.get("tool_name"));
+				nd.setToolDescription((String) data.get("tool_description"));
+				nd.setToolLabel((String) data.get("tool_label"));
+				nd.setProviderId((String) data.get("provider_id"));
+				nd.setProviderName((String) data.get("provider_name"));
+				nd.setProviderType((String) data.get("provider_type"));
+				nd.setIsTeamAuthorization((Boolean) data.get("is_team_authorization"));
+				nd.setOutputSchema(data.get("output_schema"));
+
+				// Parse tool_parameters
+				Map<String, Object> toolParameters = (Map<String, Object>) data.get("tool_parameters");
+				if (toolParameters != null) {
+					nd.setToolParameters(toolParameters);
+				}
+
+				// Parse tool_configurations
+				Map<String, Object> toolConfigurations = (Map<String, Object>) data.get("tool_configurations");
+				if (toolConfigurations != null) {
+					nd.setToolConfigurations(toolConfigurations);
 				}
 
 				return nd;
@@ -98,6 +127,39 @@ public class ToolNodeDataConverter extends AbstractNodeDataConverter<ToolNodeDat
 				if (nd.getToolCallbacks() != null && !nd.getToolCallbacks().isEmpty()) {
 					m.put("tool_callbacks", nd.getToolCallbacks());
 				}
+
+				// Export Dify-specific attributes
+				if (nd.getToolName() != null) {
+					m.put("tool_name", nd.getToolName());
+				}
+				if (nd.getToolDescription() != null) {
+					m.put("tool_description", nd.getToolDescription());
+				}
+				if (nd.getToolLabel() != null) {
+					m.put("tool_label", nd.getToolLabel());
+				}
+				if (nd.getProviderId() != null) {
+					m.put("provider_id", nd.getProviderId());
+				}
+				if (nd.getProviderName() != null) {
+					m.put("provider_name", nd.getProviderName());
+				}
+				if (nd.getProviderType() != null) {
+					m.put("provider_type", nd.getProviderType());
+				}
+				if (nd.getIsTeamAuthorization() != null) {
+					m.put("is_team_authorization", nd.getIsTeamAuthorization());
+				}
+				if (nd.getOutputSchema() != null) {
+					m.put("output_schema", nd.getOutputSchema());
+				}
+				if (nd.getToolParameters() != null && !nd.getToolParameters().isEmpty()) {
+					m.put("tool_parameters", nd.getToolParameters());
+				}
+				if (nd.getToolConfigurations() != null && !nd.getToolConfigurations().isEmpty()) {
+					m.put("tool_configurations", nd.getToolConfigurations());
+				}
+
 				return m;
 			}
 

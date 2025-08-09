@@ -345,6 +345,7 @@ public class ModelServiceImpl implements ModelService {
 		}
 		entity.setTemperature(config.getTemperature());
 		entity.setTopP(config.getTopP());
+		entity.setCompletionsPath(config.getCompletionsPath());
 	}
 
 	@Override

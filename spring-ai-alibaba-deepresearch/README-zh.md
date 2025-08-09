@@ -128,7 +128,7 @@ curl --location 'http://localhost:8080/chat/stream' \
 --header 'Content-Type: application/json' \
 --data '{
     "thread_id": "__default_",
-    "enable_background_investigation": false,
+    "enable_deepresearch": false,
     "query": "请为我分析泡泡玛特现象级爆火的原因",
     "max_step_num": 2,
     "auto_accepted_plan": true

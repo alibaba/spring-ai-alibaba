@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.constant.Constant;
 import com.alibaba.cloud.ai.dto.BusinessKnowledgeDTO;
 import com.alibaba.cloud.ai.dto.SemanticModelDTO;
 import com.alibaba.cloud.ai.enums.StreamResponseType;
@@ -38,9 +39,9 @@ import reactor.core.publisher.Flux;
 import java.util.List;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
 import static com.alibaba.cloud.ai.constant.Constant.BUSINESS_KNOWLEDGE;
 import static com.alibaba.cloud.ai.constant.Constant.COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.DATA_SET_ID;
 import static com.alibaba.cloud.ai.constant.Constant.EVIDENCES;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_MODEL;
@@ -92,7 +93,12 @@ public class TableRelationNode implements NodeAction {
 		List<Document> tableDocuments = StateUtils.getDocumentList(state, TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT);
 		List<List<Document>> columnDocumentsByKeywords = StateUtils.getDocumentListList(state,
 				COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT);
-		String dataSetId = StateUtils.getStringValue(state, DATA_SET_ID);
+		String dataSetId = StateUtils.getStringValue(state, Constant.AGENT_ID);
+		String agentIdStr = StateUtils.getStringValue(state, AGENT_ID);
+		long agentId = -1L;
+		if (!agentIdStr.isEmpty()) {
+			agentId = Long.parseLong(agentIdStr);
+		}
 
 		// Execute business logic first - get final result immediately
 		SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
@@ -100,7 +106,7 @@ public class TableRelationNode implements NodeAction {
 
 		// Extract business knowledge and semantic model
 		List<BusinessKnowledgeDTO> businessKnowledges = businessKnowledgeRecallService.getFieldByDataSetId(dataSetId);
-		List<SemanticModelDTO> semanticModel = semanticModelRecallService.getFieldByDataSetId(dataSetId);
+		List<SemanticModelDTO> semanticModel = semanticModelRecallService.getFieldByDataSetId(String.valueOf(agentId));
 		// load prompt template
 		String businessKnowledgePrompt = buildBusinessKnowledgePrompt(businessKnowledges);
 		String semanticModelPrompt = buildSemanticModelPrompt(semanticModel);
@@ -109,11 +115,11 @@ public class TableRelationNode implements NodeAction {
 
 		// Create display stream for user experience only
 		Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始构建初始Schema..."));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("初始Schema构建完成."));
+			emitter.next(ChatResponseUtil.createStatusResponse("开始构建初始Schema..."));
+			emitter.next(ChatResponseUtil.createStatusResponse("初始Schema构建完成."));
 
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始处理Schema选择..."));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("Schema选择处理完成."));
+			emitter.next(ChatResponseUtil.createStatusResponse("开始处理Schema选择..."));
+			emitter.next(ChatResponseUtil.createStatusResponse("Schema选择处理完成."));
 			emitter.complete();
 		});
 

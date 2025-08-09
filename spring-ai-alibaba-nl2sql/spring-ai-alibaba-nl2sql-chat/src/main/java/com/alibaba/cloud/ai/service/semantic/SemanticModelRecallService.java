@@ -27,6 +27,7 @@ public class SemanticModelRecallService {
 
 	private static final String FIELD_GET_BY_DATASET_IDS = """
 			SELECT
+			    agent_id,
 				field_name,
 				synonyms,
 				origin_name,
@@ -34,9 +35,8 @@ public class SemanticModelRecallService {
 				origin_description,
 				type,
 				is_recall,
-				status,
-				data_set_id
-			FROM semantic_model WHERE data_set_id = ? AND status = 1 AND is_recall = 1
+				status
+			FROM semantic_model WHERE agent_id = ? AND status = 1 AND is_recall = 1
 			""";
 
 	private final JdbcTemplate jdbcTemplate;
@@ -49,7 +49,7 @@ public class SemanticModelRecallService {
 	// 根据data_set_id获取智能体字段
 	public List<SemanticModelDTO> getFieldByDataSetId(String dataSetId) {
 		return this.jdbcTemplate.query(FIELD_GET_BY_DATASET_IDS, new Object[] { dataSetId }, (rs, rowNum) -> {
-			return new SemanticModelDTO(rs.getString("data_set_id"), rs.getString("origin_name"),
+			return new SemanticModelDTO(rs.getString("agent_id"), rs.getString("origin_name"),
 					rs.getString("field_name"), rs.getString("synonyms"), rs.getString("description"),
 					rs.getObject("is_recall", boolean.class), rs.getObject("status", boolean.class),
 					rs.getString("type"), rs.getString("origin_description"));

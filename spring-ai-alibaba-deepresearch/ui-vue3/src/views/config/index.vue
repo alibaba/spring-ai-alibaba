@@ -20,7 +20,7 @@
       <div class="header">
         <a-flex justify="space-between">
           <h1>Deep Research Config</h1>
-          <a-button @click="back" type="text"><CloseOutlined /></a-button>
+          <!-- <a-button @click="back" type="text"><CloseOutlined /></a-button> -->
         </a-flex>
       </div>
       <a-divider />

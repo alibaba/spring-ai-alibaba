@@ -400,14 +400,12 @@ public class PlanTemplateService implements IPlanTemplateService {
 
 			// Execute the plan asynchronously
 			CompletableFuture.runAsync(() -> {
-				try {
-					// Execute the plan and summary steps, skipping the create plan step
-					planningCoordinator.executeExistingPlan(context);
-					logger.info("Plan execution successful: {}", newPlanId);
-				}
-				catch (Exception e) {
-					logger.error("Plan execution failed", e);
-				}
+				// Execute the plan and summary steps, skipping the create plan step
+				planningCoordinator.executeExistingPlan(context);
+				logger.info("Plan execution successful: {}", newPlanId);
+			}).exceptionally(e -> {
+				logger.error("Plan execution failed", e);
+				return null;
 			});
 
 			// Return task ID and initial status

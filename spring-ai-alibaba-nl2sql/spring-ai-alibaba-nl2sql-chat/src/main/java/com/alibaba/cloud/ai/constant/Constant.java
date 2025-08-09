@@ -23,7 +23,7 @@ public class Constant {
 
 	public static final String INPUT_KEY = "input";
 
-	public static final String DATA_SET_ID = "dataSetId";
+	public static final String AGENT_ID = "agentId";
 
 	public static final String RESULT = "result";
 

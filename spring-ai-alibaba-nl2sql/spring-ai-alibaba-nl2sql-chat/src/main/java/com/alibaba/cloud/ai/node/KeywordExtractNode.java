@@ -175,24 +175,23 @@ public class KeywordExtractNode implements NodeAction {
 	private Flux<ChatResponse> createEnhancedDisplayFlux(List<KeywordExtractionResult> extractionResults,
 			List<String> mergedKeywords, List<String> mergedEvidences) {
 		return Flux.create(emitter -> {
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始增强关键词提取..."));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("正在扩展问题理解..."));
+			emitter.next(ChatResponseUtil.createStatusResponse("开始增强关键词提取..."));
+			emitter.next(ChatResponseUtil.createStatusResponse("正在扩展问题理解..."));
 
 			for (KeywordExtractionResult result : extractionResults) {
 				if (result.isSuccessful()) {
-					emitter
-						.next(ChatResponseUtil.createCustomStatusResponse("处理问题变体: \"" + result.getQuestion() + "\""));
+					emitter.next(ChatResponseUtil.createStatusResponse("处理问题变体: \"" + result.getQuestion() + "\""));
 					emitter.next(ChatResponseUtil
-						.createCustomStatusResponse("提取的证据: " + String.join(", ", result.getEvidences())));
+						.createStatusResponse("提取的证据: " + String.join(", ", result.getEvidences())));
 					emitter.next(ChatResponseUtil
-						.createCustomStatusResponse("提取的关键词: " + String.join(", ", result.getKeywords())));
+						.createStatusResponse("提取的关键词: " + String.join(", ", result.getKeywords())));
 				}
 			}
 
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("合并多个问题变体的结果..."));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("合并后的证据: " + String.join(", ", mergedEvidences)));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("合并后的关键词: " + String.join(", ", mergedKeywords)));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("关键词提取完成."));
+			emitter.next(ChatResponseUtil.createStatusResponse("合并多个问题变体的结果..."));
+			emitter.next(ChatResponseUtil.createStatusResponse("合并后的证据: " + String.join(", ", mergedEvidences)));
+			emitter.next(ChatResponseUtil.createStatusResponse("合并后的关键词: " + String.join(", ", mergedKeywords)));
+			emitter.next(ChatResponseUtil.createStatusResponse("关键词提取完成."));
 			emitter.complete();
 		});
 	}

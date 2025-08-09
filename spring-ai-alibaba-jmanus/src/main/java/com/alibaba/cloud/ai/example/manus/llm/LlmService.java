@@ -21,13 +21,13 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelR
 import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
 import com.alibaba.cloud.ai.example.manus.event.ModelChangeEvent;
 import io.micrometer.observation.ObservationRegistry;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
@@ -35,16 +35,20 @@ import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
-import jakarta.annotation.PostConstruct;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -89,6 +93,9 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 
 	@Autowired
 	private DynamicModelRepository dynamicModelRepository;
+
+	@Autowired
+	private LlmTraceRecorder llmTraceRecorder;
 
 	public LlmService() {
 	}
@@ -217,6 +224,8 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			chatOptionsBuilder.topP(model.getTopP());
 		}
 
+		chatOptionsBuilder.internalToolExecutionEnabled(false);
+
 		OpenAiChatOptions chatOptions = chatOptionsBuilder.build();
 		if (headers != null) {
 			chatOptions.setHttpHeaders(headers);
@@ -228,7 +237,6 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 		ChatClient client = ChatClient.builder(openAiChatModel)
 			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
 		clients.put(modelId, client);
 		log.info("Build or update dynamic chat client for model: {}", modelName);
@@ -348,9 +356,11 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			defaultOptions.setTopP(dynamicModelEntity.getTopP());
 		}
 		Map<String, String> headers = dynamicModelEntity.getHeaders();
-		if (headers != null) {
-			defaultOptions.setHttpHeaders(headers);
+		if (headers == null) {
+			headers = new HashMap<>();
 		}
+		headers.put("User-Agent", "JManus/3.0.2-SNAPSHOT");
+		defaultOptions.setHttpHeaders(headers);
 		var openAiApi = openAiApi(restClientBuilderProvider.getIfAvailable(RestClient::builder),
 				webClientBuilderProvider.getIfAvailable(WebClient::builder), dynamicModelEntity);
 		OpenAiChatOptions options = OpenAiChatOptions.fromOptions(defaultOptions);
@@ -406,15 +416,34 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			headers.forEach((key, value) -> multiValueMap.add(key, value));
 		}
 
-		return OpenAiApi.builder()
-			.baseUrl(dynamicModelEntity.getBaseUrl())
-			.apiKey(new SimpleApiKey(dynamicModelEntity.getApiKey()))
-			.headers(multiValueMap)
-			.completionsPath("/v1/chat/completions")
-			.embeddingsPath("/v1/embeddings")
-			.restClientBuilder(restClientBuilder)
-			.webClientBuilder(webClientBuilder)
-			.build();
+		// Clone WebClient.Builder and add timeout configuration
+		WebClient.Builder enhancedWebClientBuilder = webClientBuilder.clone()
+			// Add 5 minutes default timeout setting
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB
+			.filter((request, next) -> next.exchange(request).timeout(Duration.ofMinutes(10)));
+
+		String completionsPath = dynamicModelEntity.getCompletionsPath();
+		if (!StringUtils.hasText(completionsPath)) {
+			completionsPath = "/v1/chat/completions";
+		}
+
+		return new OpenAiApi(dynamicModelEntity.getBaseUrl(), new SimpleApiKey(dynamicModelEntity.getApiKey()),
+				multiValueMap, completionsPath, "/v1/embeddings", restClientBuilder, enhancedWebClientBuilder,
+				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER) {
+			@Override
+			public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest,
+					MultiValueMap<String, String> additionalHttpHeader) {
+				llmTraceRecorder.recordRequest(chatRequest);
+				return super.chatCompletionEntity(chatRequest, additionalHttpHeader);
+			}
+
+			@Override
+			public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
+					MultiValueMap<String, String> additionalHttpHeader) {
+				llmTraceRecorder.recordRequest(chatRequest);
+				return super.chatCompletionStream(chatRequest, additionalHttpHeader);
+			}
+		};
 	}
 
 }
