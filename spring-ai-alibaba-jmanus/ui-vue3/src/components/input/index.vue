@@ -49,6 +49,8 @@
 import { ref, nextTick, onMounted, onUnmounted, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
+import { memoryStore } from "@/stores/memory"
+import type { InputMessage } from "@/stores/memory"
 
 const { t } = useI18n()
 
@@ -59,7 +61,7 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'send', message: string): void
+  (e: 'send', message: InputMessage): void
   (e: 'clear'): void
   (e: 'update-state', enabled: boolean, placeholder?: string): void
   (e: 'plan-mode-clicked'): void
@@ -100,7 +102,10 @@ const handleKeydown = (event: KeyboardEvent) => {
 const handleSend = () => {
   if (!currentInput.value.trim() || isDisabled.value) return
 
-  const query = currentInput.value.trim()
+  const query = {
+    input: currentInput.value.trim(),
+    memoryId: memoryStore.selectMemoryId
+  }
 
   // Use Vue's emit to send a message
   emit('send', query)
@@ -301,5 +306,10 @@ onUnmounted(() => {
     opacity: 0.5;
     cursor: not-allowed;
   }
+}
+
+.clear-memory-btn{
+  width: 1.5em;
+  height: 1.5em;
 }
 </style>

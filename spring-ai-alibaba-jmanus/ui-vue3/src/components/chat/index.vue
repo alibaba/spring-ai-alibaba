@@ -473,6 +473,9 @@ import { DirectApiService } from '@/api/direct-api-service'
 import { usePlanExecution } from '@/utils/use-plan-execution'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
+import type { InputMessage } from "@/stores/memory"
+import {memoryStore} from "@/stores/memory";
+import {MemoryApiService} from "@/api/memory-api-service";
 
 /**
  * Chat message interface that includes PlanExecutionRecord for plan-based messages
@@ -577,7 +580,7 @@ const updateLastMessage = (updates: Partial<Message>) => {
   }
 }
 
-const handleDirectMode = async (query: string) => {
+const handleDirectMode = async (query: InputMessage) => {
   try {
     isLoading.value = true
 
@@ -592,12 +595,16 @@ const handleDirectMode = async (query: string) => {
     if (response.planId) {
       console.log('[ChatComponent] Received planId from direct execution:', response.planId)
 
+      if (response.memoryId) {
+        memoryStore.setMemory(response.memoryId)
+      }
+
       if (!assistantMessage.planExecution) {
         assistantMessage.planExecution = {} as any
       }
       assistantMessage.planExecution!.currentPlanId = response.planId
 
-      planExecutionManager.handlePlanExecutionRequested(response.planId, query)
+      planExecutionManager.handlePlanExecutionRequested(response.planId, query.input)
 
       delete assistantMessage.thinking
 
@@ -606,7 +613,7 @@ const handleDirectMode = async (query: string) => {
       delete assistantMessage.thinking
 
       // Generate a natural and human-like response
-      const finalResponse = generateDirectModeResponse(response, query)
+      const finalResponse = generateDirectModeResponse(response, query.input)
       assistantMessage.content = finalResponse
     }
   } catch (error: any) {
@@ -695,15 +702,15 @@ const removeScrollListener = () => {
   }
 }
 
-const handleSendMessage = (message: string) => {
+const handleSendMessage = (message: InputMessage) => {
   // First, add the user message to the UI.
-  addMessage('user', message)
+  addMessage('user', message.input)
 
   // Handle messages according to the mode
   if (props.mode === 'plan') {
     // In plan mode, only add UI message, parent component handles the API call
     // This prevents double API calls
-    console.log('[ChatComponent] Plan mode message sent, parent should handle:', message)
+    console.log('[ChatComponent] Plan mode message sent, parent should handle:', message.input)
     // Don't call any API here, just add to UI
   } else {
     // Direct mode is still handled directly
@@ -1389,17 +1396,19 @@ const handleUserInputSubmit = async (message: Message) => {
 }
 
 watch(
-    () => props.initialPrompt,
-    (newPrompt, oldPrompt) => {
-      console.log('[ChatComponent] initialPrompt changed from:', oldPrompt, 'to:', newPrompt)
-      if (newPrompt && typeof newPrompt === 'string' && newPrompt.trim() && newPrompt !== oldPrompt) {
-        console.log('[ChatComponent] Processing changed initial prompt:', newPrompt)
-        nextTick(() => {
-          handleSendMessage(newPrompt)
+  () => props.initialPrompt,
+  (newPrompt, oldPrompt) => {
+    console.log('[ChatComponent] initialPrompt changed from:', oldPrompt, 'to:', newPrompt)
+    if (newPrompt && typeof newPrompt === 'string' && newPrompt.trim() && newPrompt !== oldPrompt) {
+      console.log('[ChatComponent] Processing changed initial prompt:', newPrompt)
+      nextTick(() => {
+        handleSendMessage({
+          input: newPrompt
         })
-      }
-    },
-    { immediate: false }
+      })
+    }
+  },
+  { immediate: false }
 )
 
 onMounted(() => {
@@ -1425,7 +1434,9 @@ onMounted(() => {
   if (props.initialPrompt && typeof props.initialPrompt === 'string' && props.initialPrompt.trim()) {
     console.log('[ChatComponent] Processing initial prompt:', props.initialPrompt)
     nextTick(() => {
-      handleSendMessage(props.initialPrompt!)
+      handleSendMessage({
+        input: props.initialPrompt!
+      })
     })
   }
 })
@@ -1447,6 +1458,27 @@ onUnmounted(() => {
   // Clear form inputs
   Object.keys(formInputsStore).forEach(key => delete formInputsStore[key])
 })
+
+
+const showMemory = async () => {
+  if(memoryStore.selectMemoryId) {
+    const memory = await MemoryApiService.getMemory(memoryStore.selectMemoryId);
+    messages.value = []
+    memory.messages.map(message => {
+      if(message.messageType.toLowerCase() === 'user') {
+        addMessage('user',message.text)
+      }
+      if(message.messageType.toLowerCase() === 'assistant') {
+        addMessage('assistant',message.text)
+      }
+    });
+    forceScrollToBottom()
+  }
+}
+
+const newChat = () => {
+  messages.value = []
+}
 
 // Helper function to safely get options array
 const getOptionsArray = (options: string | string[] | undefined): string[] => {
@@ -1472,7 +1504,9 @@ defineExpose({
   handlePlanCompleted,
   handleDialogRoundStart,
   addMessage,
-  handlePlanError
+  handlePlanError,
+  showMemory,
+  newChat
 })
 </script>
 

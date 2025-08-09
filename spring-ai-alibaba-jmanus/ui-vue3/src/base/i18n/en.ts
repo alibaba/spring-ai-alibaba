@@ -1103,7 +1103,22 @@ const words: I18nType = {
     createManually: 'Create Manually',
     createManuallyDesc: 'Fill in task information yourself',
   },
-
+  memory: {
+    title: 'Memory Management',
+    searchPlaceholder: 'Search Memory',
+    size: 'memories',
+    newNamePlaceholder: 'Enter a new name...',
+    changeName: 'Change Name',
+    save: 'save',
+    cancel: 'cancel',
+    delete: 'delete',
+    deleteHint: 'delete hint',
+    deleteHintPrefix: 'Are you sure you want to delete the memory with ID',
+    deleteHintSuffix: '? This action cannot be undone.',
+    selectMemory: 'Select Memory',
+    clearMemory: 'Clear Memory',
+    newChat: 'new chat',
+  },
   // Common placeholders
   selectCommon: {
     pleaseSelect: 'Please select...',
