@@ -197,7 +197,7 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 
 	@Override
 	public void postProcessOutput(QuestionClassifierNodeData data, String varName) {
-		data.setOutputKey(varName + "." + QuestionClassifierNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
+		data.setOutputKey(varName + "_" + QuestionClassifierNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
 		data.setOutputs(List.of(QuestionClassifierNodeData.DEFAULT_OUTPUT_SCHEMA));
 		super.postProcessOutput(data, varName);
 	}

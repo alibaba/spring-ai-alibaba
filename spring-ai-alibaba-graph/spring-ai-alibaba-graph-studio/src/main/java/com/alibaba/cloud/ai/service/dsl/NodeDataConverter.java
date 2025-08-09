@@ -71,11 +71,11 @@ public interface NodeDataConverter<T extends NodeData> {
 	 * @param varName nodeVarName
 	 */
 	default void postProcessOutput(T nodeData, String varName) {
-		// 将所有的输出变量的名称统一为"nodeVarName.varName"的格式
+		// 将所有的输出变量的名称统一为"nodeVarName_varName"的格式
 		Optional.ofNullable(nodeData.getOutputs())
 			.ifPresentOrElse((outputs) -> nodeData.setOutputs(outputs.stream().peek(v -> {
 				String name = v.getName();
-				v.setName(varName.concat(".").concat(name));
+				v.setName(varName.concat("_").concat(name));
 			}).toList()), () -> nodeData.setOutputs(List.of()));
 	}
 
@@ -83,17 +83,23 @@ public interface NodeDataConverter<T extends NodeData> {
 	 * 生成用于处理inputKey和inputSelector的Consumer
 	 * @return 一个BiConsumer，接受参数：T nodeData和Map idToVarName
 	 */
-	default BiConsumer<T, Map<String, String>> postProcessConsumer() {
-		return (nodeData, idToVarName) -> {
-			// 将所有的输入变量的nodeId转化为nodeName
-			nodeData.setInputs(
-					Optional.ofNullable(nodeData.getInputs()).orElse(List.of()).stream().peek(variableSelector -> {
-						String nodeId = variableSelector.getNamespace();
-						String nodeName = idToVarName.get(nodeId);
-						if (StringUtils.hasText(nodeName)) {
-							variableSelector.setNamespace(nodeName);
-						}
-					}).toList());
+	default BiConsumer<T, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> (nodeData, idToVarName) -> {
+				// 将所有的输入变量的nodeId转化为nodeName
+				nodeData.setInputs(
+						Optional.ofNullable(nodeData.getInputs()).orElse(List.of()).stream().peek(variableSelector -> {
+							String nodeId = variableSelector.getNamespace();
+							String nodeName = idToVarName.get(nodeId);
+							if (StringUtils.hasText(nodeName)) {
+								variableSelector.setNamespace(nodeName);
+							}
+							variableSelector
+								.setNameInCode(variableSelector.getNamespace() + "_" + variableSelector.getName());
+						}).toList());
+			};
+			case CUSTOM -> (nodeData, idToVarName) -> {
+			};
 		};
 	}
 

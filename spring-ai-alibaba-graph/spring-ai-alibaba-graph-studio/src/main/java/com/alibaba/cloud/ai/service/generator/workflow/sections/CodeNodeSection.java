@@ -52,7 +52,7 @@ public class CodeNodeSection implements NodeSection {
 		if (!data.getInputs().isEmpty()) {
 			String params = data.getInputs()
 				.stream()
-				.map(sel -> String.format("\"%s\", \"%s\"", sel.getLabel(), sel.getNamespace() + "." + sel.getName()))
+				.map(sel -> String.format("\"%s\", \"%s\"", sel.getLabel(), sel.getNameInCode()))
 				.collect(Collectors.joining(", "));
 			sb.append(String.format("    .params(Map.of(%s))%n", params));
 		}
@@ -74,7 +74,7 @@ public class CodeNodeSection implements NodeSection {
 				            }
 				            return ((Map<String, Object>) object).entrySet().stream()
 				            		.collect(Collectors.toMap(
-				                    	entry -> "%s." + entry.getKey(),
+				                    	entry -> "%s_" + entry.getKey(),
 				                    	Map.Entry::getValue
 				                    ));
 				        }

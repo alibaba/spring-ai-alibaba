@@ -159,7 +159,7 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
 		// todo: 支持分组聚合的输出
 		Variable output = new Variable("output", VariableType.STRING.value());
 		data.setOutputs(List.of(output));
-		data.setOutputKey(varName + ".output");
+		data.setOutputKey(varName + "_output");
 	}
 
 }

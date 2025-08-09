@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
-import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.EmptyNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;

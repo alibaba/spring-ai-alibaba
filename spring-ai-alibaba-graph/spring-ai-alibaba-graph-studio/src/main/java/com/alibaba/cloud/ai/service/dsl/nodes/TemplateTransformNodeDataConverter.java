@@ -112,7 +112,7 @@ public class TemplateTransformNodeDataConverter extends AbstractNodeDataConverte
 
 	@Override
 	public void postProcessOutput(TemplateTransformNodeData nodeData, String varName) {
-		nodeData.setOutputKey(varName + "." + TemplateTransformNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
+		nodeData.setOutputKey(varName + "_" + TemplateTransformNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
 		nodeData.setOutputs(List.of(TemplateTransformNodeData.DEFAULT_OUTPUT_SCHEMA));
 		super.postProcessOutput(nodeData, varName);
 	}

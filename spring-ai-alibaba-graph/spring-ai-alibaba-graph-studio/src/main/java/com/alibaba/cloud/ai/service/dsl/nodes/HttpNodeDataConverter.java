@@ -239,7 +239,7 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 
 	@Override
 	public void postProcessOutput(HttpNodeData data, String varName) {
-		data.setOutputKey(varName + "." + HttpNodeData.DEFAULT_OUTPUT_SCHEMAS.get(0).getName());
+		data.setOutputKey(varName + "_" + HttpNodeData.DEFAULT_OUTPUT_SCHEMAS.get(0).getName());
 		data.setOutputs(HttpNodeData.DEFAULT_OUTPUT_SCHEMAS);
 		super.postProcessOutput(data, varName);
 	}

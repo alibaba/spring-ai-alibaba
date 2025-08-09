@@ -119,7 +119,7 @@ public class DocumentExtractorNodeDataConverter extends AbstractNodeDataConverte
 
 	@Override
 	public void postProcessOutput(DocumentExtractorNodeData data, String varName) {
-		data.setOutputKey(varName + "." + DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
+		data.setOutputKey(varName + "_" + DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
 		data.setOutputs(List.of(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA));
 		super.postProcessOutput(data, varName);
 	}

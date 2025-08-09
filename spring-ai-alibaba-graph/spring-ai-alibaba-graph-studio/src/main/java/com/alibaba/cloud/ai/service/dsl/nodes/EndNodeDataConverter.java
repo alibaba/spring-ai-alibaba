@@ -97,7 +97,7 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 
 	@Override
 	public void postProcessOutput(EndNodeData data, String varName) {
-		String outputKey = varName + "." + EndNodeData.DEFAULT_OUTPUT_SCHEMA.getName();
+		String outputKey = varName + "_" + EndNodeData.DEFAULT_OUTPUT_SCHEMA.getName();
 		data.setOutputKey(outputKey);
 		data.setOutputs(List.of(EndNodeData.DEFAULT_OUTPUT_SCHEMA));
 		super.postProcessOutput(data, varName);

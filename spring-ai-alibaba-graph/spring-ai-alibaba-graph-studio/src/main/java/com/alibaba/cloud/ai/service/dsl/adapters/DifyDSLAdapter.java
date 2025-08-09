@@ -226,7 +226,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			converter.postProcessOutput(data, varName);
 
 			// 获得处理输入变量名称的Consumer，当所有节点都处理完时使用
-			postProcessConsumers.put(data.getClass(), converter.postProcessConsumer());
+			postProcessConsumers.put(data.getClass(), converter.postProcessConsumer(DSLDialectType.DIFY));
 
 			node.setData(data);
 			node.setType(nodeType.value());

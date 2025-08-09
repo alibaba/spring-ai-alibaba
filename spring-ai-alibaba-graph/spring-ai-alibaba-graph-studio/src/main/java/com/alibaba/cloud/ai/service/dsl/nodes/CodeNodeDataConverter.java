@@ -112,7 +112,7 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 	@Override
 	public void postProcessOutput(CodeNodeData nodeData, String varName) {
 		// code节点将返回{"varName.output": {...}}的数据，之后拆包成若干输出数据
-		nodeData.setOutputKey(varName + "." + CodeNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
+		nodeData.setOutputKey(varName + "_" + CodeNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
 		super.postProcessOutput(nodeData, varName);
 	}
 

@@ -154,7 +154,22 @@ public class LLMNodeSection implements NodeSection {
 		}
 
 		sb.append(".build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
+
+		// 用于将LLMNode的结果转化为Dify定义的输出结果的辅助节点代码
+		String assistantNodeCode = String.format("""
+				state -> {
+					Map<String, Object> result = %s.apply(state);
+					String key = "%s";
+					Object object = result.get(key);
+					if(object instanceof AssistantMessage && ((AssistantMessage) object).getText() != null) {
+						return Map.of(key, ((AssistantMessage) object).getText());
+					}
+					return Map.of(key, object != null ? object.toString() : "unknown");
+				}
+				""", varName, ((LLMNodeData) node.getData()).getOutputKey());
+
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
+				assistantNodeCode));
 
 		return sb.toString();
 	}
