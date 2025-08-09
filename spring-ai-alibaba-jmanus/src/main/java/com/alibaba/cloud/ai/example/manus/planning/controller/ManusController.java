@@ -98,7 +98,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		context.setNeedSummary(true);
 
 		// Get or create planning flow
-		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(planId);
+		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(context);
 
 		// Asynchronous execution of task
 		CompletableFuture.supplyAsync(() -> {
