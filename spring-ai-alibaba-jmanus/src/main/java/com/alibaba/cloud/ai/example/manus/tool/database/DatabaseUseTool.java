@@ -29,7 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import org.springframework.stereotype.Component;
 
+@Component
 public class DatabaseUseTool extends AbstractBaseTool<DatabaseRequest> {
 
 	private static final Logger log = LoggerFactory.getLogger(DatabaseUseTool.class);
