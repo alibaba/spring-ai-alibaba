@@ -27,7 +27,7 @@
         <div class="endpoint-url-row" :class="{ 'single-item': !isPublished }">
           <!-- Endpoint配置 -->
           <div class="form-item endpoint-item">
-            <label>Endpoint <span class="required">*</span></label>
+            <label>{{ t('mcpService.endpointRequired') }}</label>
             <div class="endpoint-container">
               <div class="endpoint-row">
                 <div class="custom-select">
@@ -37,7 +37,7 @@
                       <input
                         type="text"
                         v-model="formData.endpoint"
-                        placeholder="请选择或输入Endpoint"
+                        :placeholder="t('mcpService.endpointPlaceholder')"
                         class="select-input"
                         @focus="isDropdownOpen = true"
                         @input="handleEndpointInput"
@@ -57,7 +57,7 @@
                   <!-- 下拉选项 - 使用绝对定位，不占用文档流 -->
                   <div v-if="isDropdownOpen" class="select-dropdown" :class="{ 'dropdown-top': dropdownPosition === 'top' }">
                     <div class="dropdown-header">
-                      <span>选择Endpoint</span>
+                      <span>{{ t('mcpService.selectEndpoint') }}</span>
                       <button class="close-btn" @click="isDropdownOpen = false">
                         <Icon icon="carbon:close" width="12" />
                       </button>
@@ -80,7 +80,7 @@
                         <input
                           type="text"
                           v-model="manualEndpointInput"
-                          placeholder="手动输入Endpoint"
+                          :placeholder="t('mcpService.manualInput')"
                           class="manual-input"
                           @keydown.enter="addManualEndpoint"
                           @blur="handleManualInputBlur"
@@ -99,10 +99,10 @@
 
           <!-- MCP Streamable URL配置 - 仅在已发布时显示 -->
           <div v-if="isPublished" class="form-item url-item">
-            <label>MCP Streamable URL</label>
+            <label>{{ t('mcpService.mcpStreamableUrl') }}</label>
             <div class="url-container">
-              <div class="url-display" @dblclick="copyEndpointUrl" :title="'双击复制: ' + endpointUrl">
-                <span class="url-text">{{ endpointUrl || '请输入Endpoint以生成URL' }}</span>
+              <div class="url-display" @dblclick="copyEndpointUrl" :title="t('mcpService.copyUrl') + ': ' + endpointUrl">
+                <span class="url-text">{{ endpointUrl || t('mcpService.mcpStreamableUrlPlaceholder') }}</span>
                 <Icon icon="carbon:copy" width="16" class="copy-icon" />
               </div>
             </div>
@@ -115,11 +115,11 @@
       <!-- Tool Name -->
       <div class="form-section">
         <div class="form-item">
-          <label>Tool Name <span class="required">*</span></label>
+          <label>{{ t('mcpService.toolNameRequired') }}</label>
           <input
             type="text"
             v-model="formData.serviceName"
-            placeholder="请输入Tool Name"
+            :placeholder="t('mcpService.toolNamePlaceholder')"
             required
             readonly
             class="readonly-input"
@@ -130,10 +130,10 @@
       <!-- Tool Description -->
       <div class="form-section">
         <div class="form-item">
-          <label>Tool Description <span class="required">*</span></label>
+          <label>{{ t('mcpService.toolDescriptionRequired') }}</label>
           <textarea
             v-model="formData.userRequest"
-            placeholder="请输入Tool Description"
+            :placeholder="t('mcpService.toolDescriptionPlaceholder')"
             class="description-field"
             rows="3"
             required
@@ -144,7 +144,7 @@
       <!-- 参数配置 -->
       <div class="form-section">
         <div class="section-title">{{ t('mcpService.parameterConfig') }}</div>
-        <div class="parameters-table">
+        <div class="parameter-table">
           <table>
             <thead>
               <tr>
@@ -153,45 +153,61 @@
               </tr>
             </thead>
             <tbody>
-                            <tr v-for="(param, index) in formData.parameters" :key="index">
+              <tr v-for="(param, index) in formData.parameters" :key="index">
                 <td>
                   <input
                     type="text"
                     v-model="param.name"
-                    class="param-input"
-                    placeholder="参数名称"
+                    :placeholder="t('mcpService.parameterName')"
+                    class="parameter-input"
                   />
                 </td>
                 <td>
                   <input
                     type="text"
                     v-model="param.description"
-                    class="param-input"
-                    placeholder="参数描述"
+                    :placeholder="t('mcpService.parameterDescription')"
+                    class="parameter-input"
                   />
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <!-- 添加参数按钮已移除 -->
       </div>
     </div>
 
     <template #footer>
       <div class="button-container">
+        <!-- 删除按钮 - 只在已保存时显示 -->
+        <button 
+          v-if="isSaved && currentTool?.id" 
+          class="action-btn danger" 
+          @click="handleDelete" 
+          :disabled="deleting"
+        >
+          <Icon icon="carbon:loading" v-if="deleting" class="loading-icon" />
+          <Icon icon="carbon:trash-can" v-else />
+          {{ deleting ? t('mcpService.deleting') : t('mcpService.delete') }}
+        </button>
+        
+        <!-- 保存按钮 - 始终显示 -->
         <button class="action-btn primary" @click="handleSave" :disabled="saving">
           <Icon icon="carbon:loading" v-if="saving" class="loading-icon" />
           <Icon icon="carbon:save" v-else />
-          {{ saving ? '保存中...' : '保存' }}
+          {{ saving ? t('mcpService.saving') : t('mcpService.save') }}
         </button>
-        <!-- 发布开关组件 - 始终占用空间，通过透明度控制显示 -->
-        <div class="publish-toggle-container" :class="{ 'visible': isSaved, 'hidden': !isSaved }">
+        
+        <!-- 发布开关组件 - 只在已保存时显示 -->
+        <div 
+          v-if="isSaved && currentTool?.id" 
+          class="publish-toggle-container"
+        >
           <div class="publish-toggle" @click="handlePublishToggle">
             <div class="toggle-track" :class="{ 'toggle-on': isPublished, 'toggle-off': !isPublished }">
               <div class="toggle-thumb" :class="{ 'thumb-on': isPublished, 'thumb-off': !isPublished }"></div>
               <span class="toggle-label" :class="{ 'label-on': isPublished, 'label-off': !isPublished }">
-                {{ isPublished ? $t('common.published') : $t('common.unpublished') }}
+                {{ isPublished ? t('mcpService.published') : t('mcpService.unpublished') }}
               </span>
             </div>
           </div>
@@ -216,11 +232,11 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
-// import { useI18n } from 'vue-i18n' // 暂时未使用，注释掉
+import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal/index.vue'
 import { CoordinatorToolApiService, type CoordinatorToolVO } from '@/api/coordinator-tool-api-service'
 
-// const { t } = useI18n() // 暂时未使用，注释掉
+const { t } = useI18n()
 
 // Props
 interface Props {
@@ -240,7 +256,7 @@ const props = withDefaults(defineProps<Props>(), {
 // Emits
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  'published': [tool: CoordinatorToolVO]
+  'published': [tool: CoordinatorToolVO | null]
 }>()
 
 // Reactive data
@@ -253,6 +269,7 @@ const error = ref('')
 const success = ref('')
 const publishing = ref(false)
 const saving = ref(false)
+const deleting = ref(false)
 const availableEndpoints = ref<string[]>([])
 
 // 新增的响应式数据
@@ -282,7 +299,7 @@ const formData = reactive({
 // 计算模态框标题
 const modalTitle = computed(() => {
   const isUpdate = currentTool.value && currentTool.value.id
-  return isUpdate ? '更新MCP服务' : '创建MCP服务'
+  return isUpdate ? t('mcpService.updateService') : t('mcpService.createService')
 })
 
 // 状态图标相关计算属性已移除
@@ -296,6 +313,8 @@ const initializeFormData = () => {
   currentTool.value = null
   publishStatus.value = ''
   endpointUrl.value = ''
+  isSaved.value = false
+  isPublished.value = false
 }
 
 // 加载可用的endpoints
@@ -304,7 +323,7 @@ const loadEndpoints = async () => {
     availableEndpoints.value = await CoordinatorToolApiService.getAllEndpoints()
   } catch (err: any) {
     console.error('加载endpoints失败:', err)
-    showMessage('加载endpoints失败: ' + err.message, 'error')
+    showMessage(t('mcpService.loadEndpointsFailed') + ': ' + err.message, 'error')
   }
 }
 
@@ -398,10 +417,10 @@ const copyEndpointUrl = async () => {
   
   try {
     await navigator.clipboard.writeText(endpointUrl.value)
-    showMessage('URL已复制到剪贴板', 'success')
+    showMessage(t('common.copy') + ' ' + t('common.success'), 'success')
   } catch (err) {
     console.error('复制失败:', err)
-    showMessage('复制失败', 'error')
+    showMessage(t('common.copy') + ' ' + t('common.error'), 'error')
   }
 }
 
@@ -423,15 +442,15 @@ const showMessage = (msg: string, type: 'success' | 'error' | 'info') => {
 // 验证表单
 const validateForm = (): boolean => {
   if (!formData.serviceName.trim()) {
-    showMessage('请输入Tool Name', 'error')
+    showMessage(t('mcpService.toolNameRequiredError'), 'error')
     return false
   }
   if (!formData.userRequest.trim()) {
-    showMessage('请输入Tool Description', 'error')
+    showMessage(t('mcpService.toolDescriptionRequiredError'), 'error')
     return false
   }
   if (!formData.endpoint.trim()) {
-    showMessage('请输入Endpoint', 'error')
+    showMessage(t('mcpService.endpointRequiredError'), 'error')
     return false
   }
   return true
@@ -497,11 +516,11 @@ const handleSave = async () => {
     }
 
     console.log('[PublishModal] 保存成功:', savedTool)
-    showMessage('MCP服务保存成功', 'success')
+    showMessage(t('mcpService.saveSuccess'), 'success')
     isSaved.value = true
   } catch (err: any) {
     console.error('[PublishModal] 保存MCP服务失败:', err)
-    showMessage('保存MCP服务失败: ' + err.message, 'error')
+    showMessage(t('mcpService.saveFailed') + ': ' + err.message, 'error')
   } finally {
     saving.value = false
   }
@@ -587,7 +606,7 @@ const handlePublish = async () => {
       }
       
       console.log('[PublishModal] 设置状态 - publishStatus:', publishStatus.value, 'endpointUrl:', endpointUrl.value)
-      showMessage('MCP服务发布成功', 'success')
+      showMessage(t('mcpService.publishSuccess'), 'success')
       emit('published', currentTool.value)
       // 不立即关闭模态框，让用户可以看到URL
       // showModal.value = false
@@ -596,7 +615,7 @@ const handlePublish = async () => {
     }
   } catch (err: any) {
     console.error('[PublishModal] 发布MCP服务失败:', err)
-    showMessage('发布MCP服务失败: ' + err.message, 'error')
+    showMessage(t('mcpService.publishFailed') + ': ' + err.message, 'error')
   } finally {
     publishing.value = false
   }
@@ -618,7 +637,7 @@ const handlePublishToggle = async () => {
         await CoordinatorToolApiService.updateCoordinatorTool(currentTool.value.id!, currentTool.value)
         isPublished.value = false
         endpointUrl.value = '' // 清空endpointUrl
-        showMessage('MCP服务已取消发布', 'success')
+        showMessage(t('mcpService.unpublishSuccess'), 'success')
       }
     } else {
       // 发布
@@ -629,9 +648,50 @@ const handlePublishToggle = async () => {
     }
   } catch (error: any) {
     console.error('[PublishModal] 发布开关操作失败:', error)
-    showMessage('操作失败: ' + error.message, 'error')
+    showMessage(t('mcpService.unpublishFailed') + ': ' + error.message, 'error')
   } finally {
     publishing.value = false
+  }
+}
+
+// Handle delete
+const handleDelete = async () => {
+  if (deleting.value) return
+  
+  // 确认删除
+  if (!confirm(t('mcpService.deleteConfirmMessage'))) {
+    return
+  }
+  
+  if (!currentTool.value || !currentTool.value.id) {
+    showMessage(t('mcpService.deleteFailed') + ': ' + t('mcpService.selectPlanTemplateFirst'), 'error')
+    return
+  }
+  
+  deleting.value = true
+  try {
+    console.log('[PublishModal] 开始删除MCP服务，ID:', currentTool.value.id)
+    
+    // 调用删除API
+    const result = await CoordinatorToolApiService.deleteCoordinatorTool(currentTool.value.id)
+    
+    if (result.success) {
+      console.log('[PublishModal] 删除成功')
+      showMessage(t('mcpService.deleteSuccess'), 'success')
+      
+      // 关闭模态框
+      showModal.value = false
+      
+      // 通知父组件删除成功
+      emit('published', null)
+    } else {
+      throw new Error(result.message)
+    }
+  } catch (error: any) {
+    console.error('[PublishModal] 删除MCP服务失败:', error)
+    showMessage(t('mcpService.deleteFailed') + ': ' + error.message, 'error')
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -648,7 +708,7 @@ const watchModal = async () => {
 // Load coordinator tool data
 const loadCoordinatorToolData = async () => {
   if (!props.planTemplateId) {
-    console.log('[PublishModal] 没有planTemplateId，跳过加载协调器工具数据')
+    console.log('[PublishModal] ' + t('mcpService.noPlanTemplateId'))
     return
   }
   
@@ -676,7 +736,8 @@ const loadCoordinatorToolData = async () => {
       // 设置发布状态和URL
       publishStatus.value = tool.publishStatus || ''
       isPublished.value = tool.publishStatus === 'PUBLISHED'
-      isSaved.value = true
+      // 只有已存在的工具（有ID）才设置为已保存
+      isSaved.value = !!(tool.id)
       
       // 使用后端返回的endpointUrl，如果没有则构建
       if (tool.publishStatus === 'PUBLISHED') {
@@ -712,7 +773,7 @@ const loadCoordinatorToolData = async () => {
           }
         }
       } catch (e) {
-        console.warn('[PublishModal] 解析inputSchema失败:', e)
+        console.warn('[PublishModal] ' + t('mcpService.parseInputSchemaFailed') + ':', e)
         formData.parameters = []
       }
       
@@ -721,7 +782,7 @@ const loadCoordinatorToolData = async () => {
       console.log('[PublishModal] 获取协调器工具数据失败:', result.message)
     }
   } catch (err: any) {
-    console.error('[PublishModal] 加载协调器工具数据失败:', err)
+    console.error('[PublishModal] ' + t('mcpService.loadToolDataFailed') + ':', err)
   }
 }
 
@@ -827,13 +888,13 @@ onMounted(async () => {
 }
 
 /* 参数表格自适应 */
-.parameters-table {
+.parameter-table {
   margin-bottom: 16px;
   width: 100%;
   overflow-x: auto;
 }
 
-.parameters-table table {
+.parameter-table table {
   width: 100%;
   border-collapse: collapse;
   background: rgba(255, 255, 255, 0.05);
@@ -842,7 +903,7 @@ onMounted(async () => {
   min-width: 600px;
 }
 
-.parameters-table th {
+.parameter-table th {
   background: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.9);
   font-weight: 500;
@@ -852,24 +913,23 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-.parameters-table td {
+.parameter-table td {
   padding: 8px 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.param-input {
+.parameter-input {
   width: 100%;
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border-radius: 6px;
   color: #fff;
   font-size: 14px;
   transition: all 0.3s ease;
-  box-sizing: border-box;
 }
 
-.param-input:focus {
+.parameter-input:focus {
   border-color: #667eea;
   outline: none;
   background: rgba(255, 255, 255, 0.08);
@@ -1041,6 +1101,23 @@ onMounted(async () => {
 
 .action-btn.primary:hover:not(:disabled) {
   background: rgba(102, 126, 234, 0.3);
+}
+
+.action-btn.danger {
+  background: rgba(234, 102, 102, 0.2);
+  border-color: rgba(234, 102, 102, 0.3);
+  color: #ff6b6b;
+}
+
+.action-btn.danger:hover:not(:disabled) {
+  background: rgba(234, 102, 102, 0.3);
+}
+
+.action-btn.danger:disabled {
+  background: rgba(234, 102, 102, 0.1);
+  border-color: rgba(234, 102, 102, 0.2);
+  color: rgba(255, 107, 107, 0.5);
+  cursor: not-allowed;
 }
 
 /* 只读输入框样式 */
@@ -1409,19 +1486,6 @@ onMounted(async () => {
   gap: 12px;
   transition: all 0.3s ease;
   min-width: 156px; /* 保持最小宽度，防止布局抖动 */
-}
-
-.publish-toggle-container.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(0);
-}
-
-.publish-toggle-container.hidden {
-  opacity: 0;
-  visibility: hidden;
-  transform: translateX(10px);
-  pointer-events: none; /* 禁用交互 */
 }
 
 .publish-toggle {

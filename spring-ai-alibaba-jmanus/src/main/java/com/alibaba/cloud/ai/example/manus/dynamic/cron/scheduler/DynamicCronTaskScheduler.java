@@ -141,7 +141,7 @@ public class DynamicCronTaskScheduler {
 
 			// Call PlanTemplateController's public method executePlanByTemplateId
 			ResponseEntity<Map<String, Object>> response = planTemplateService
-				.executePlanByTemplateIdInternal(planTemplateId, null);
+				.executePlanByTemplateIdInternal(planTemplateId, null, null);
 
 			if (response.getStatusCode().is2xxSuccessful()) {
 				Map<String, Object> responseBody = response.getBody();

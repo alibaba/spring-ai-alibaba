@@ -19,8 +19,9 @@ import com.alibaba.cloud.ai.example.manus.coordinator.vo.CoordinatorParameterVO;
 
 /**
  * CoordinatorConfig Parser
- * 
- * Optimized JSON parser for coordinator configuration with improved performance and maintainability
+ *
+ * Optimized JSON parser for coordinator configuration with improved performance and
+ * maintainability Also handles tool conversion and schema generation
  */
 @Component
 public class CoordinatorConfigParser {
@@ -37,28 +38,29 @@ public class CoordinatorConfigParser {
 				"type": "object",
 				"properties": {
 			""";
-	
+
 	private static final String SCHEMA_FOOTER = """
 				},
 				"required": []
 			}
 			""";
-	
+
 	private static final String PROPERTY_TEMPLATE = """
-				"%s": {
-					"type": "%s",
-					"description": "%s"
-				}""";
-	
+			"%s": {
+				"type": "%s",
+				"description": "%s"
+			}""";
+
 	private static final String REQUIRED_ARRAY_TEMPLATE = """
-				"required": [
-					%s
-				]""";
+			"required": [
+				%s
+			]""";
 
 	// Default JSON Schema for empty or invalid input
 	private static final String DEFAULT_SCHEMA = SCHEMA_HEADER + SCHEMA_FOOTER;
 
 	private final ObjectMapper objectMapper;
+
 	private final JsonSchemaBuilder schemaBuilder;
 
 	public CoordinatorConfigParser() {
@@ -68,12 +70,11 @@ public class CoordinatorConfigParser {
 
 	/**
 	 * Convert Plan JSON string to CoordinatorConfigVO
-	 * 
 	 * @param planJson JSON string containing plan configuration
 	 * @return CoordinatorConfigVO object
 	 * @throws IllegalArgumentException if JSON is invalid or missing required fields
 	 */
-	public CoordinatorConfigVO parser(String planJson) {
+	public CoordinatorConfigVO parse(String planJson) {
 		logger.info("Starting to convert Plan JSON: {}", planJson != null ? "not null" : "null");
 
 		if (planJson == null || planJson.trim().isEmpty()) {
@@ -149,7 +150,8 @@ public class CoordinatorConfigParser {
 
 		List<String> steps = new ArrayList<>();
 		for (JsonNode stepNode : stepsNode) {
-			// Handle new format: steps is object array, each object contains stepRequirement field
+			// Handle new format: steps is object array, each object contains
+			// stepRequirement field
 			if (stepNode.isObject()) {
 				JsonNode stepRequirementNode = stepNode.get("stepRequirement");
 				if (stepRequirementNode != null && stepRequirementNode.isTextual()) {
@@ -222,8 +224,8 @@ public class CoordinatorConfigParser {
 
 	/**
 	 * Convert JSON string to tool Schema using optimized builder pattern
-	 * 
-	 * @param json JSON string, format like: [{"name":"name","description":"Parameter: name","type":"string"}]
+	 * @param json JSON string, format like: [{"name":"name","description":"Parameter:
+	 * name","type":"string"}]
 	 * @return Converted JSON Schema string
 	 */
 	public String generateToolSchema(String json) {
@@ -252,10 +254,91 @@ public class CoordinatorConfigParser {
 	}
 
 	/**
+	 * Convert CoordinatorConfigVO to CoordinatorTool
+	 * @param config CoordinatorConfigVO configuration object
+	 * @return CoordinatorTool object
+	 */
+	public CoordinatorTool convertToCoordinatorTool(CoordinatorConfigVO config) {
+		if (config == null) {
+			logger.warn("CoordinatorConfigVO is null, cannot convert to CoordinatorTool");
+			return null;
+		}
+
+		CoordinatorTool tool = new CoordinatorTool();
+
+		// Set endpoint default to example
+		tool.setEndpoint("example");
+
+		// Assign config properties to tool
+		if (config.getName() != null && !config.getName().trim().isEmpty()) {
+			tool.setToolName(config.getId());
+		}
+
+		if (config.getDescription() != null && !config.getDescription().trim().isEmpty()) {
+			tool.setToolDescription(config.getDescription());
+		}
+
+		// Use convertParametersToSchema to convert parameters and set to tool
+		String schema = convertParametersToSchema(config);
+		tool.setToolSchema(schema);
+
+		logger.debug("Successfully converted CoordinatorConfigVO to CoordinatorTool: {}", tool.getToolName());
+		return tool;
+	}
+
+	/**
+	 * Batch convert CoordinatorConfigVO list to CoordinatorTool list
+	 * @param configs CoordinatorConfigVO configuration list
+	 * @return CoordinatorTool list
+	 */
+	public List<CoordinatorTool> convertToCoordinatorTools(List<CoordinatorConfigVO> configs) {
+		if (configs == null || configs.isEmpty()) {
+			logger.warn("CoordinatorConfigVO list is empty, cannot convert");
+			return new ArrayList<>();
+		}
+
+		List<CoordinatorTool> tools = new ArrayList<>();
+		for (CoordinatorConfigVO config : configs) {
+			CoordinatorTool tool = convertToCoordinatorTool(config);
+			if (tool != null) {
+				tools.add(tool);
+			}
+		}
+
+		logger.info("Successfully converted {} CoordinatorConfigVO to CoordinatorTool", tools.size());
+		return tools;
+	}
+
+	/**
+	 * Convert CoordinatorConfigVO parameters to JSON Schema
+	 * @param config CoordinatorConfigVO configuration object
+	 * @return JSON Schema string
+	 */
+	public String convertParametersToSchema(CoordinatorConfigVO config) {
+		if (config == null || config.getParameters() == null) {
+			logger.warn("CoordinatorConfigVO or parameters is null, returning default Schema");
+			return DEFAULT_SCHEMA;
+		}
+
+		try {
+			// Convert parameters to JSON format, then call generateToolSchema method
+			String json = objectMapper.writeValueAsString(config.getParameters());
+			logger.debug("Converted parameters to JSON format: {}", json);
+
+			// Call existing generateToolSchema method, reuse Schema generation logic
+			return generateToolSchema(json);
+		}
+		catch (Exception e) {
+			logger.error("Error occurred while generating JSON Schema: {}", e.getMessage(), e);
+			return DEFAULT_SCHEMA;
+		}
+	}
+
+	/**
 	 * JSON Schema Builder for optimized schema generation
 	 */
 	private static class JsonSchemaBuilder {
-		
+
 		/**
 		 * Build JSON Schema from parameters array
 		 */
@@ -266,6 +349,11 @@ public class CoordinatorConfigParser {
 			// Build properties section
 			schema.append(SCHEMA_HEADER);
 
+			// Add hardcoded sessionId parameter, which is required
+			appendProperty(schema, "planId", "Plan execution ID", "string", true);
+			requiredParams.add("planId");
+			
+			// Process other parameters
 			for (int i = 0; i < parametersArray.size(); i++) {
 				JsonNode paramNode = parametersArray.get(i);
 
@@ -296,11 +384,12 @@ public class CoordinatorConfigParser {
 		/**
 		 * Add property to schema using template
 		 */
-		private void appendProperty(StringBuilder schema, String name, String description, String type, boolean hasNext) {
+		private void appendProperty(StringBuilder schema, String name, String description, String type,
+				boolean hasNext) {
 			String escapedName = JsonUtils.escapeJsonString(name);
 			String escapedDescription = JsonUtils.escapeJsonString(description);
 			String convertedType = JsonUtils.convertType(type);
-			
+
 			schema.append(String.format(PROPERTY_TEMPLATE, escapedName, convertedType, escapedDescription));
 
 			if (hasNext) {
@@ -318,27 +407,29 @@ public class CoordinatorConfigParser {
 					.map(param -> "\"" + JsonUtils.escapeJsonString(param) + "\"")
 					.reduce((a, b) -> a + ",\n					" + b)
 					.orElse("");
-				
+
 				schema.append(String.format(REQUIRED_ARRAY_TEMPLATE, requiredString));
 			}
 			else {
 				schema.append("				\"required\": []");
 			}
 		}
+
 	}
 
 	/**
 	 * Utility class for JSON operations
 	 */
 	private static class JsonUtils {
-		
+
 		/**
 		 * Parse JSON with unified error handling
 		 */
 		public static JsonNode parseJson(ObjectMapper mapper, String json, String context) {
 			try {
 				return mapper.readTree(json);
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				logger.error("Failed to parse JSON for {}: {}", context, e.getMessage());
 				throw new IllegalArgumentException("Invalid JSON format for " + context, e);
 			}
@@ -377,7 +468,7 @@ public class CoordinatorConfigParser {
 			if (input == null) {
 				return "";
 			}
-			
+
 			// Use StringBuilder for better performance with large strings
 			StringBuilder result = new StringBuilder(input.length() * 2);
 			for (int i = 0; i < input.length(); i++) {
@@ -393,5 +484,7 @@ public class CoordinatorConfigParser {
 			}
 			return result.toString();
 		}
+
 	}
+
 }

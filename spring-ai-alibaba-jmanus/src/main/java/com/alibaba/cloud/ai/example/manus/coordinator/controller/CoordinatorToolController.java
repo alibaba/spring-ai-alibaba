@@ -22,12 +22,15 @@ import com.alibaba.cloud.ai.example.manus.coordinator.vo.CoordinatorToolVO;
 import com.alibaba.cloud.ai.example.manus.coordinator.tool.CoordinatorConfigParser;
 import com.alibaba.cloud.ai.example.manus.coordinator.vo.CoordinatorConfigVO;
 import com.alibaba.cloud.ai.example.manus.coordinator.service.CoordinatorService;
+import com.alibaba.cloud.ai.example.manus.coordinator.service.Result;
 import com.alibaba.cloud.ai.example.manus.planning.repository.PlanTemplateRepository;
 import com.alibaba.cloud.ai.example.manus.planning.repository.PlanTemplateVersionRepository;
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplateVersion;
-import com.alibaba.cloud.ai.example.manus.config.CoordinatorToolProperties;
+import com.alibaba.cloud.ai.example.manus.config.CoordinatorProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,6 +45,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/coordinator-tools")
 @CrossOrigin(origins = "*")
 public class CoordinatorToolController {
+
+	private static final Logger log = LoggerFactory.getLogger(CoordinatorToolController.class);
 
 	@Autowired
 	private CoordinatorToolRepository coordinatorToolRepository;
@@ -62,7 +67,7 @@ public class CoordinatorToolController {
 	private ObjectMapper objectMapper;
 
 	@Autowired
-	private CoordinatorToolProperties coordinatorToolProperties;
+	private CoordinatorProperties coordinatorProperties;
 
 	/**
 	 * Create coordinator tool
@@ -70,23 +75,23 @@ public class CoordinatorToolController {
 	@PostMapping
 	public ResponseEntity<CoordinatorToolVO> createCoordinatorTool(@RequestBody CoordinatorToolVO toolVO) {
 		try {
-			System.out.println("Received toolVO: " + toolVO);
+			log.info("Received toolVO: {}", toolVO);
 
 			// Validate required fields
 			if (toolVO.getToolName() == null || toolVO.getToolName().trim().isEmpty()) {
-				System.err.println("Tool name is required but was null or empty");
+				log.error("Tool name is required but was null or empty");
 				return ResponseEntity.badRequest().build();
 			}
 			if (toolVO.getToolDescription() == null || toolVO.getToolDescription().trim().isEmpty()) {
-				System.err.println("Tool description is required but was null or empty");
+				log.error("Tool description is required but was null or empty");
 				return ResponseEntity.badRequest().build();
 			}
 			if (toolVO.getPlanTemplateId() == null || toolVO.getPlanTemplateId().trim().isEmpty()) {
-				System.err.println("Plan template ID is required but was null or empty");
+				log.error("Plan template ID is required but was null or empty");
 				return ResponseEntity.badRequest().build();
 			}
 			if (toolVO.getEndpoint() == null || toolVO.getEndpoint().trim().isEmpty()) {
-				System.err.println("Endpoint is required but was null or empty");
+				log.error("Endpoint is required but was null or empty");
 				return ResponseEntity.badRequest().build();
 			}
 
@@ -105,14 +110,13 @@ public class CoordinatorToolController {
 			String mcpSchema = coordinatorConfigParser.generateToolSchema(entity.getInputSchema());
 			entity.setMcpSchema(mcpSchema);
 
-			System.out.println("Entity to save: " + entity);
+			log.info("Entity to save: {}", entity);
 			CoordinatorToolEntity savedEntity = coordinatorToolRepository.save(entity);
-			System.out.println("Saved entity: " + savedEntity);
+			log.info("Saved entity: {}", savedEntity);
 			return ResponseEntity.ok(CoordinatorToolVO.fromEntity(savedEntity));
 		}
 		catch (Exception e) {
-			System.err.println("Error creating coordinator tool: " + e.getMessage());
-			e.printStackTrace();
+			log.error("Error creating coordinator tool: {}", e.getMessage(), e);
 			return ResponseEntity.badRequest().build();
 		}
 	}
@@ -148,38 +152,49 @@ public class CoordinatorToolController {
 	 */
 	@PostMapping("/{id}/publish")
 	public ResponseEntity<Map<String, Object>> publishCoordinatorTool(@PathVariable("id") Long id) {
-		Map<String, Object> response = new HashMap<>();
 		try {
 			Optional<CoordinatorToolEntity> entity = coordinatorToolRepository.findById(id);
 			if (entity.isPresent()) {
 				CoordinatorToolEntity tool = entity.get();
 
-				// Try to publish to MCP server
-				boolean publishSuccess = coordinatorService.publishCoordinatorTool(tool);
+				// Try to publish to MCP server with detailed result
+				Result<Boolean> publishResult = coordinatorService.publishWithResult(tool);
 
-				if (publishSuccess) {
+				if (publishResult.isSuccess()) {
 					// MCP publish successful, update database status to published
 					tool.setPublishStatus(CoordinatorToolEntity.PublishStatus.PUBLISHED);
 					coordinatorToolRepository.save(tool);
 
+					Map<String, Object> response = new HashMap<>();
 					response.put("success", true);
-					response.put("message", "Tool has been published successfully to MCP server");
+					response.put("message", publishResult.getMessage());
+					response.put("errorCode", publishResult.getErrorCode());
+					response.put("timestamp", publishResult.getTimestamp());
+					response.put("endpointUrl", EndPointUtils.getUrl(tool.getEndpoint()));
 					return ResponseEntity.ok(response);
 				}
 				else {
-					// MCP publish failed, ignore, do not update database status
+					// MCP publish failed, return detailed error information
+					Map<String, Object> response = new HashMap<>();
 					response.put("success", false);
-					response.put("message", "Failed to publish tool to MCP server, status unchanged");
-					return ResponseEntity.ok(response);
+					response.put("message", publishResult.getMessage());
+					response.put("errorCode", publishResult.getErrorCode());
+					response.put("timestamp", publishResult.getTimestamp());
+					return ResponseEntity.badRequest().body(response);
 				}
 			}
+
+			Map<String, Object> response = new HashMap<>();
 			response.put("success", false);
 			response.put("message", "Tool not found");
+			response.put("errorCode", "TOOL_NOT_FOUND");
 			return ResponseEntity.notFound().build();
 		}
 		catch (Exception e) {
+			Map<String, Object> response = new HashMap<>();
 			response.put("success", false);
 			response.put("message", "Publish failed: " + e.getMessage());
+			response.put("errorCode", "SYSTEM_ERROR");
 			return ResponseEntity.status(500).body(response);
 		}
 	}
@@ -189,38 +204,48 @@ public class CoordinatorToolController {
 	 */
 	@PostMapping("/{id}/unpublish")
 	public ResponseEntity<Map<String, Object>> unpublishCoordinatorTool(@PathVariable("id") Long id) {
-		Map<String, Object> response = new HashMap<>();
 		try {
 			Optional<CoordinatorToolEntity> entity = coordinatorToolRepository.findById(id);
 			if (entity.isPresent()) {
 				CoordinatorToolEntity tool = entity.get();
 
-				// Try to unpublish from coordinator server
-				boolean unpublishSuccess = coordinatorService.unpublishCoordinatorTool(tool);
+				// Try to unpublish from coordinator server with detailed result
+				Result<Boolean> unpublishResult = coordinatorService.unpublishWithResult(tool);
 
-				if (unpublishSuccess) {
+				if (unpublishResult.isSuccess()) {
 					// Unpublish successful, update database status to unpublished
 					tool.setPublishStatus(CoordinatorToolEntity.PublishStatus.UNPUBLISHED);
 					coordinatorToolRepository.save(tool);
 
+					Map<String, Object> response = new HashMap<>();
 					response.put("success", true);
-					response.put("message", "Tool has been unpublished successfully from coordinator server");
+					response.put("message", unpublishResult.getMessage());
+					response.put("errorCode", unpublishResult.getErrorCode());
+					response.put("timestamp", unpublishResult.getTimestamp());
 					return ResponseEntity.ok(response);
 				}
 				else {
-					// Unpublish failed, ignore, do not update database status
+					// Unpublish failed, return detailed error information
+					Map<String, Object> response = new HashMap<>();
 					response.put("success", false);
-					response.put("message", "Failed to unpublish tool from coordinator server, status unchanged");
-					return ResponseEntity.ok(response);
+					response.put("message", unpublishResult.getMessage());
+					response.put("errorCode", unpublishResult.getErrorCode());
+					response.put("timestamp", unpublishResult.getTimestamp());
+					return ResponseEntity.badRequest().body(response);
 				}
 			}
+
+			Map<String, Object> response = new HashMap<>();
 			response.put("success", false);
 			response.put("message", "Tool not found");
+			response.put("errorCode", "TOOL_NOT_FOUND");
 			return ResponseEntity.notFound().build();
 		}
 		catch (Exception e) {
+			Map<String, Object> response = new HashMap<>();
 			response.put("success", false);
 			response.put("message", "Unpublish failed: " + e.getMessage());
+			response.put("errorCode", "SYSTEM_ERROR");
 			return ResponseEntity.status(500).body(response);
 		}
 	}
@@ -276,7 +301,7 @@ public class CoordinatorToolController {
 			}
 
 			// 4. Convert plan_json to CoordinatorConfigVO
-			CoordinatorConfigVO mcpPlanConfig = coordinatorConfigParser.parser(latestVersion.getPlanJson());
+			CoordinatorConfigVO mcpPlanConfig = coordinatorConfigParser.parse(latestVersion.getPlanJson());
 
 			// 5. Create CoordinatorToolVO
 			CoordinatorToolVO coordinatorToolVO = new CoordinatorToolVO();
@@ -320,8 +345,7 @@ public class CoordinatorToolController {
 	public ResponseEntity<Map<String, Object>> getCoordinatorToolConfig() {
 		Map<String, Object> config = new HashMap<>();
 		try {
-			config.put("enabled", coordinatorToolProperties.isEnabled());
-			config.put("showPublishButton", coordinatorToolProperties.isShowPublishButton());
+			config.put("enabled", coordinatorProperties.isEnabled());
 			config.put("success", true);
 			return ResponseEntity.ok(config);
 		}
@@ -329,6 +353,71 @@ public class CoordinatorToolController {
 			config.put("success", false);
 			config.put("message", "Failed to get config: " + e.getMessage());
 			return ResponseEntity.status(500).body(config);
+		}
+	}
+
+	/**
+	 * Get all unique endpoints
+	 */
+	@GetMapping("/endpoints")
+	public ResponseEntity<List<String>> getAllEndpoints() {
+		try {
+			List<String> endpoints = coordinatorToolRepository.findAllUniqueEndpoints();
+			return ResponseEntity.ok(endpoints);
+		}
+		catch (Exception e) {
+			log.error("Error getting endpoints: {}", e.getMessage(), e);
+			return ResponseEntity.status(500).build();
+		}
+	}
+
+	/**
+	 * Delete coordinator tool
+	 */
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Map<String, Object>> deleteCoordinatorTool(@PathVariable("id") Long id) {
+		Map<String, Object> result = new HashMap<>();
+		
+		try {
+			log.info("Deleting coordinator tool with ID: {}", id);
+			
+			// 1. First check if tool exists
+			Optional<CoordinatorToolEntity> toolOptional = coordinatorToolRepository.findById(id);
+			if (!toolOptional.isPresent()) {
+				result.put("success", false);
+				result.put("message", "Coordinator tool not found with ID: " + id);
+				return ResponseEntity.notFound().build();
+			}
+			
+			CoordinatorToolEntity tool = toolOptional.get();
+			
+			// 2. If tool is published, unpublish first
+			if (CoordinatorToolEntity.PublishStatus.PUBLISHED.equals(tool.getPublishStatus())) {
+				log.info("Tool is published, unpublishing first...");
+				// Call unpublish logic
+				boolean unpublishSuccess = coordinatorService.unpublish(tool.getToolName(), tool.getEndpoint());
+				if (!unpublishSuccess) {
+					result.put("success", false);
+					result.put("message", "Failed to unpublish tool before deletion");
+					return ResponseEntity.status(500).body(result);
+				}
+				log.info("Tool unpublished successfully");
+			}
+			
+			// 3. Delete database record
+			coordinatorToolRepository.deleteById(id);
+			log.info("Coordinator tool deleted from database");
+			
+			result.put("success", true);
+			result.put("message", "Coordinator tool deleted successfully");
+			return ResponseEntity.ok(result);
+			
+		}
+		catch (Exception e) {
+			log.error("Error deleting coordinator tool: {}", e.getMessage(), e);
+			result.put("success", false);
+			result.put("message", "Error deleting coordinator tool: " + e.getMessage());
+			return ResponseEntity.status(500).body(result);
 		}
 	}
 

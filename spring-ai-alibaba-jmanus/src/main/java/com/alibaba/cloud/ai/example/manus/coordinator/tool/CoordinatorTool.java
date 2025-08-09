@@ -19,7 +19,8 @@ package com.alibaba.cloud.ai.example.manus.coordinator.tool;
 /**
  * Plan Coordinator Tool POJO
  *
- * Simplified tool class, only contains basic tool information, business logic is handled by CoordinatorService
+ * Simplified tool class, only contains basic tool information, business logic is handled
+ * by CoordinatorService
  */
 public class CoordinatorTool {
 

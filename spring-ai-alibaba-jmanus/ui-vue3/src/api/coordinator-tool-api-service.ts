@@ -29,7 +29,6 @@ export interface CoordinatorToolVO {
 
 export interface CoordinatorToolConfig {
   enabled: boolean
-  showPublishButton: boolean
   success: boolean
   message?: string
 }
@@ -59,7 +58,6 @@ export class CoordinatorToolApiService {
       // 返回默认配置
       return {
         enabled: true,
-        showPublishButton: true,
         success: false,
         message: error.message
       }
@@ -254,6 +252,39 @@ export class CoordinatorToolApiService {
     } catch (error: any) {
       console.error('[CoordinatorToolApiService] 发布协调器工具失败:', error)
       throw new Error('发布协调器工具失败: ' + error.message)
+    }
+  }
+
+  /**
+   * 删除协调器工具
+   */
+  public static async deleteCoordinatorTool(id: number): Promise<{ success: boolean; message: string }> {
+    console.log('[CoordinatorToolApiService] 开始删除协调器工具，ID:', id)
+    console.log('[CoordinatorToolApiService] 请求URL:', `${this.BASE_URL}/${id}`)
+    
+    try {
+      const response = await fetch(`${this.BASE_URL}/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      console.log('[CoordinatorToolApiService] 响应状态:', response.status)
+      console.log('[CoordinatorToolApiService] 响应状态文本:', response.statusText)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[CoordinatorToolApiService] 响应错误内容:', errorText)
+        throw new Error(`Failed to delete coordinator tool: ${response.status} - ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log('[CoordinatorToolApiService] 删除成功，结果:', result)
+      return result
+    } catch (error: any) {
+      console.error('[CoordinatorToolApiService] 删除协调器工具失败:', error)
+      throw new Error('删除协调器工具失败: ' + error.message)
     }
   }
 } 

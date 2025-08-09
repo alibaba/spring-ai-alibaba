@@ -30,7 +30,7 @@ import java.io.IOException;
 @EnableScheduling
 @EnableJpaRepositories(basePackages = { "com.alibaba.cloud.ai.example.manus" })
 @EntityScan(basePackages = { "com.alibaba.cloud.ai.example.manus" })
-@ComponentScan(basePackages = { "com.alibaba.cloud.ai.example.manus", "com.alibaba.cloud.ai.example.manus.inhouse" })
+@ComponentScan(basePackages = { "com.alibaba.cloud.ai.example.manus" })
 public class OpenManusSpringBootApplication {
 
 	public static void main(String[] args) throws IOException, InterruptedException {

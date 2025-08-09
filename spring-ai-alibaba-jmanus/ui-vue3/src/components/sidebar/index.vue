@@ -257,7 +257,7 @@
                 v-if="showPublishButton"
               >
                 <Icon icon="carbon:application" width="16" />
-                发布MCP服务
+                {{ t('sidebar.publishMcpService') }}
               </button>
             </div>
           </div>
@@ -293,13 +293,12 @@ const hiddenFields = ['currentPlanId', 'userRequest', 'rootPlanId']
 // CoordinatorTool配置
 const coordinatorToolConfig = ref<CoordinatorToolConfig>({
   enabled: true,
-  showPublishButton: true,
   success: true
 })
 
 // 计算属性：是否显示发布MCP服务按钮
 const showPublishButton = computed(() => {
-  return coordinatorToolConfig.value.enabled && coordinatorToolConfig.value.showPublishButton
+  return coordinatorToolConfig.value.enabled
 })
 
 // 加载CoordinatorTool配置
@@ -312,7 +311,6 @@ const loadCoordinatorToolConfig = async () => {
     // 使用默认配置
     coordinatorToolConfig.value = {
       enabled: true,
-      showPublishButton: true,
       success: false,
       message: error instanceof Error ? error.message : 'Unknown error'
     }
@@ -454,7 +452,7 @@ const handlePublishMcpService = () => {
   
   if (!sidebarStore.currentPlanTemplateId) {
     console.log('[Sidebar] 没有选择计划模板，显示警告')
-    alert('请先选择一个计划模板')
+    alert(t('mcpService.selectPlanTemplateFirst'))
     return
   }
   
@@ -462,9 +460,14 @@ const handlePublishMcpService = () => {
   showPublishMcpModal.value = true
 }
 
-const handleMcpServicePublished = (tool: CoordinatorToolVO) => {
-  console.log('MCP服务发布成功:', tool)
-  // 可以在这里添加发布成功后的处理逻辑
+const handleMcpServicePublished = (tool: CoordinatorToolVO | null) => {
+  if (tool === null) {
+    console.log('MCP服务删除成功')
+    // 可以在这里添加删除成功后的处理逻辑，比如刷新列表等
+  } else {
+    console.log('MCP服务发布成功:', tool)
+    // 可以在这里添加发布成功后的处理逻辑
+  }
 }
 
 // Utility functions

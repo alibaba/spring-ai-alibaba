@@ -16,332 +16,304 @@
 
 package com.alibaba.cloud.ai.example.manus.coordinator.service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
 import com.alibaba.cloud.ai.example.manus.coordinator.tool.CoordinatorTool;
-import com.alibaba.cloud.ai.example.manus.coordinator.server.CoordinatorServer;
+import com.alibaba.cloud.ai.example.manus.coordinator.vo.CoordinatorConfigVO;
 import com.alibaba.cloud.ai.example.manus.coordinator.entity.CoordinatorToolEntity;
-import com.alibaba.cloud.ai.example.manus.coordinator.repository.CoordinatorToolRepository;
-import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
+import com.alibaba.cloud.ai.example.manus.coordinator.tool.CoordinatorConfigParser;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 
 import io.modelcontextprotocol.server.McpServerFeatures;
-import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 
 /**
  * Coordinator Service
  *
- * Responsible for loading and managing coordinator tools, handling business logic
+ * Unified external interface layer, providing concise APIs
  */
 @Service
 public class CoordinatorService {
 
-	private static final Logger log = LoggerFactory.getLogger(CoordinatorService.class);
+	@Autowired
+	private CoordinatorToolRegistry registry;
 
 	@Autowired
-	private PlanTemplateService planTemplateService;
+	private CoordinatorToolExecutor executor;
 
 	@Autowired
-	private CoordinatorServer coordinatorServer;
+	private CoordinatorConfigParser configParser;
 
-	@Autowired
-	private CoordinatorToolRepository coordinatorToolRepository;
-
-	private final ObjectMapper objectMapper;
-
-	public CoordinatorService() {
-		this.objectMapper = new ObjectMapper();
-		// Register JSR310 module to support LocalDateTime and other Java 8 time types
-		this.objectMapper.registerModule(new JavaTimeModule());
-	}
+	// ==================== Tool Management ====================
 
 	/**
-	 * Load coordinator tools
-	 * @return Map of coordinator tools grouped by endpoint
+	 * Load published tools
+	 * @return Tools grouped by endpoint Map
 	 */
-	public Map<String, List<CoordinatorTool>> loadCoordinatorTools() {
-		log.info("Starting to load coordinator tools");
-
-		try {
-			// Query published tools from database
-			List<CoordinatorToolEntity> publishedEntities = coordinatorToolRepository
-				.findByPublishStatus(CoordinatorToolEntity.PublishStatus.PUBLISHED);
-
-			log.info("Found {} published tools from database", publishedEntities.size());
-
-			// Convert to CoordinatorTool objects
-			List<CoordinatorTool> coordinatorTools = new ArrayList<>();
-			for (CoordinatorToolEntity entity : publishedEntities) {
-				CoordinatorTool tool = new CoordinatorTool();
-				tool.setToolName(entity.getToolName());
-				tool.setToolDescription(entity.getToolDescription());
-				tool.setToolSchema(entity.getMcpSchema());
-				tool.setEndpoint(entity.getEndpoint());
-				coordinatorTools.add(tool);
-			}
-
-			log.info("Successfully converted {} coordinator tools", coordinatorTools.size());
-
-			// Group by endpoint
-			Map<String, List<CoordinatorTool>> groupedTools = coordinatorTools.stream()
-				.collect(Collectors.groupingBy(CoordinatorTool::getEndpoint));
-
-			log.info("Successfully loaded coordinator tools, total {} tools, grouped into {} endpoints", coordinatorTools.size(), groupedTools.size());
-
-			// Output tool information for each endpoint
-			for (Map.Entry<String, List<CoordinatorTool>> entry : groupedTools.entrySet()) {
-				log.info("Endpoint: {}, tool count: {}", entry.getKey(), entry.getValue().size());
-				for (CoordinatorTool tool : entry.getValue()) {
-					log.info("  - Tool: {} (description: {})", tool.getToolName(), tool.getToolDescription());
-				}
-			}
-
-			return groupedTools;
-
-		}
-		catch (Exception e) {
-			log.error("Failed to load coordinator tools: {}", e.getMessage(), e);
-			return Map.of();
-		}
+	public Map<String, List<CoordinatorTool>> loadTools() {
+		return registry.loadPublishedTools();
 	}
 
 	/**
-	 * Create tool specification for coordinator tool
-	 * @param tool Coordinator tool
-	 * @return Tool specification
+	 * Publish tool
+	 * @param tool Tool to publish
+	 * @return Whether publication was successful
 	 */
-	public McpServerFeatures.SyncToolSpecification createToolSpecification(CoordinatorTool tool) {
-		return McpServerFeatures.SyncToolSpecification.builder()
-			.tool(io.modelcontextprotocol.spec.McpSchema.Tool.builder()
-				.name(tool.getToolName())
-				.description(tool.getToolDescription())
-				.inputSchema(tool.getToolSchema())
-				.build())
-			.callHandler((exchange, request) -> invokeTool(request))
-			.build();
+	public boolean publish(CoordinatorTool tool) {
+		return registry.publish(tool);
 	}
 
 	/**
-	 * Invoke coordinator tool
-	 * @param request Tool invocation request
-	 * @return Tool invocation result
+	 * Publish tool (with result wrapper)
+	 * @param tool Tool to publish
+	 * @return Publication result
 	 */
-	public CallToolResult invokeTool(CallToolRequest request) {
-		try {
-			log.debug("Invoking plan coordinator tool, parameters: {}", request.arguments());
-			String resultString = null;
-			String toolName = request.name();
-
-			// Convert parameters to JSON string
-			String rawParam = objectMapper.writeValueAsString(request.arguments());
-
-			log.info("Executing plan template: {}, parameters: {}", toolName, rawParam);
-
-			// Call plan template service
-			ResponseEntity<Map<String, Object>> responseEntity = planTemplateService
-				.executePlanByTemplateIdInternal(toolName, rawParam);
-
-			// Create simplified response result
-			CoordinatorResult response;
-
-			// Process service response result
-			if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
-				Map<String, Object> executionResult = responseEntity.getBody();
-
-				// Get planId and status
-				String planId = (String) executionResult.get("planId");
-				String status = (String) executionResult.get("status");
-				String message = (String) executionResult.get("message");
-				resultString = "Plan execution completed, planId: " + planId;
-				response = new CoordinatorResult(planId, request.arguments(), 2, "success", resultString);
-
-			}
-			else {
-				response = new CoordinatorResult(null, request.arguments(), 2, "failed", resultString);
-			}
-
-			// Convert to JSON string
-			String resultJson = objectMapper.writeValueAsString(response);
-
-			log.info("Plan template execution completed: {}, result: {}", toolName, resultJson);
-
-			// Directly return result string, consistent with other tools
-			return new CallToolResult(List.of(new McpSchema.TextContent(resultJson)), null);
-
-		}
-		catch (Exception e) {
-			log.error("Plan coordinator tool invocation failed: {}", e.getMessage(), e);
-
-			// Create simplified error response
-			CoordinatorResult errorResponse = new CoordinatorResult(null, request.arguments(), 2, "error", null);
-			try {
-				String errorJson = objectMapper.writeValueAsString(errorResponse);
-				return new CallToolResult(List.of(new McpSchema.TextContent(errorJson)), null);
-			}
-			catch (Exception jsonError) {
-				return new CallToolResult(List.of(new McpSchema.TextContent("Plan coordinator tool invocation failed: " + e.getMessage())), null);
-			}
-		}
+	public Result<Boolean> publishWithResult(CoordinatorTool tool) {
+		return registry.publishWithResult(tool);
 	}
 
 	/**
-	 * Publish CoordinatorTool to coordinator server
-	 * @param tool Coordinator tool to publish
-	 * @return Whether publishing was successful
+	 * Publish tool entity
+	 * @param entity Tool entity to publish
+	 * @return Whether publication was successful
 	 */
-	public boolean publishCoordinatorTool(CoordinatorTool tool) {
-		if (tool == null) {
-			log.warn("CoordinatorTool is null, cannot publish");
-			return false;
-		}
-
-		try {
-			log.info("Starting to publish CoordinatorTool: {} to endpoint: {}", tool.getToolName(), tool.getEndpoint());
-
-			// Call coordinator server for dynamic registration
-			boolean success = coordinatorServer.registerCoordinatorTool(tool);
-
-			if (success) {
-				log.info("Successfully published CoordinatorTool: {} to endpoint: {}", tool.getToolName(), tool.getEndpoint());
-			}
-			else {
-				log.error("Failed to publish CoordinatorTool: {} to endpoint: {}", tool.getToolName(), tool.getEndpoint());
-			}
-
-			return success;
-		}
-		catch (Exception e) {
-			log.error("Exception occurred while publishing CoordinatorTool: {}", e.getMessage(), e);
-			return false;
-		}
+	public boolean publish(CoordinatorToolEntity entity) {
+		return registry.publish(entity);
 	}
 
 	/**
-	 * Publish CoordinatorToolEntity to coordinator server
-	 * @param entity Coordinator tool entity to publish
-	 * @return Whether publishing was successful
+	 * Publish tool entity (with result wrapper)
+	 * @param entity Tool entity to publish
+	 * @return Publication result
 	 */
-	public boolean publishCoordinatorTool(CoordinatorToolEntity entity) {
-		if (entity == null) {
-			log.warn("CoordinatorToolEntity is null, cannot publish");
-			return false;
-		}
-
-		try {
-			log.info("Starting to publish CoordinatorToolEntity: {} to endpoint: {}", entity.getToolName(), entity.getEndpoint());
-
-			CoordinatorTool tool = new CoordinatorTool();
-			tool.setToolName(entity.getToolName());
-			tool.setToolDescription(entity.getToolDescription());
-			tool.setEndpoint(entity.getEndpoint());
-			tool.setToolSchema(entity.getMcpSchema());
-
-			// First try to refresh existing tool
-			boolean refreshSuccess = coordinatorServer.refreshTool(entity.getToolName(), tool);
-			if (refreshSuccess) {
-				log.info("Successfully refreshed tool: {} in coordinator server", entity.getToolName());
-				return true;
-			}
-
-			// If refresh fails, try to register new tool
-			log.info("Tool: {} doesn't exist, trying to register new tool", entity.getToolName());
-			boolean success = publishCoordinatorTool(tool);
-
-			if (success) {
-				log.info("Successfully published CoordinatorToolEntity: {} to endpoint: {}", entity.getToolName(), entity.getEndpoint());
-			}
-			else {
-				log.error("Failed to publish CoordinatorToolEntity: {} to endpoint: {}", entity.getToolName(), entity.getEndpoint());
-			}
-
-			return success;
-		}
-		catch (Exception e) {
-			log.error("Exception occurred while publishing CoordinatorToolEntity: {}", e.getMessage(), e);
-			return false;
-		}
+	public Result<Boolean> publishWithResult(CoordinatorToolEntity entity) {
+		return registry.publishWithResult(entity);
 	}
 
 	/**
-	 * Unpublish CoordinatorTool from coordinator server
-	 * @param toolName Tool name to unpublish
+	 * Batch publish tools
+	 * @param tools List of tools to publish
+	 * @return Number of successfully published tools
+	 */
+	public int publishAll(List<CoordinatorTool> tools) {
+		return registry.publishAll(tools);
+	}
+
+	/**
+	 * Batch publish tool entities
+	 * @param entities List of tool entities to publish
+	 * @return Number of successfully published tools
+	 */
+	public int publishAllEntities(List<CoordinatorToolEntity> entities) {
+		return registry.publishAllEntities(entities);
+	}
+
+	/**
+	 * Unpublish tool
+	 * @param toolName Tool name
 	 * @param endpoint Endpoint address
 	 * @return Whether unpublishing was successful
 	 */
-	public boolean unpublishCoordinatorTool(String toolName, String endpoint) {
-		if (toolName == null || toolName.trim().isEmpty()) {
-			log.warn("Tool name is empty, cannot unpublish");
-			return false;
-		}
-
-		if (endpoint == null || endpoint.trim().isEmpty()) {
-			log.warn("Endpoint is empty, cannot unpublish");
-			return false;
-		}
-
-		try {
-			log.info("Starting to unpublish CoordinatorTool: {} from endpoint: {}", toolName, endpoint);
-
-			// Call coordinator server for dynamic unregistration
-			boolean success = coordinatorServer.unregisterCoordinatorTool(toolName, endpoint);
-
-			if (success) {
-				log.info("Successfully unpublished CoordinatorTool: {} from endpoint: {}", toolName, endpoint);
-			}
-			else {
-				log.error("Failed to unpublish CoordinatorTool: {} from endpoint: {}", toolName, endpoint);
-			}
-
-			return success;
-		}
-		catch (Exception e) {
-			log.error("Exception occurred while unpublishing CoordinatorTool: {}", e.getMessage(), e);
-			return false;
-		}
+	public boolean unpublish(String toolName, String endpoint) {
+		return registry.unpublish(toolName, endpoint);
 	}
 
 	/**
-	 * Unpublish CoordinatorToolEntity from coordinator server
-	 * @param entity Coordinator tool entity to unpublish
+	 * Unpublish tool (with result wrapper)
+	 * @param toolName Tool name
+	 * @param endpoint Endpoint address
+	 * @return Unpublishing result
+	 */
+	public Result<Boolean> unpublishWithResult(String toolName, String endpoint) {
+		return registry.unpublishWithResult(toolName, endpoint);
+	}
+
+	/**
+	 * Unpublish tool
+	 * @param tool Tool to unpublish
 	 * @return Whether unpublishing was successful
 	 */
+	public boolean unpublish(CoordinatorTool tool) {
+		return registry.unpublish(tool);
+	}
+
+	/**
+	 * Unpublish tool entity
+	 * @param entity Tool entity to unpublish
+	 * @return Whether unpublishing was successful
+	 */
+	public boolean unpublish(CoordinatorToolEntity entity) {
+		return registry.unpublish(entity);
+	}
+
+	/**
+	 * Unpublish tool entity (with result wrapper)
+	 * @param entity Tool entity to unpublish
+	 * @return Unpublishing result
+	 */
+	public Result<Boolean> unpublishWithResult(CoordinatorToolEntity entity) {
+		return registry.unpublishWithResult(entity);
+	}
+
+	// ==================== Tool Execution ====================
+
+	/**
+	 * Create tool specification
+	 * @param tool Coordinator tool
+	 * @return Tool specification
+	 */
+	public McpServerFeatures.SyncToolSpecification createSpec(CoordinatorTool tool) {
+		return executor.createSpec(tool);
+	}
+
+	/**
+	 * Execute tool call
+	 * @param request Tool call request
+	 * @return Tool call result
+	 */
+	public CallToolResult execute(CallToolRequest request) {
+		return executor.execute(request);
+	}
+
+	/**
+	 * Get plan execution result
+	 * @param planId Plan ID
+	 * @return Execution result string
+	 */
+	public String getResult(String planId) {
+		return executor.pollPlanResult(planId);
+	}
+
+	/**
+	 * Get result output
+	 * @param record Plan execution record
+	 * @return Result output string
+	 */
+	public String getResultOutput(PlanExecutionRecord record) {
+		return executor.extractFinalResult(record);
+	}
+
+	// ==================== Configuration Conversion ====================
+
+	/**
+	 * Convert configuration to tool
+	 * @param config Configuration object
+	 * @return Tool object
+	 */
+	public CoordinatorTool convert(CoordinatorConfigVO config) {
+		return configParser.convertToCoordinatorTool(config);
+	}
+
+	/**
+	 * Batch convert configurations to tools
+	 * @param configs Configuration list
+	 * @return Tool list
+	 */
+	public List<CoordinatorTool> convert(List<CoordinatorConfigVO> configs) {
+		return configParser.convertToCoordinatorTools(configs);
+	}
+
+	// ==================== Compatibility Methods (Deprecated) ====================
+
+	/**
+	 * @deprecated Use {@link #loadTools()} instead
+	 */
+	@Deprecated
+	public Map<String, List<CoordinatorTool>> loadCoordinatorTools() {
+		return loadTools();
+	}
+
+	/**
+	 * @deprecated Use {@link #createSpec(CoordinatorTool)} instead
+	 */
+	@Deprecated
+	public McpServerFeatures.SyncToolSpecification createToolSpecification(CoordinatorTool tool) {
+		return createSpec(tool);
+	}
+
+	/**
+	 * @deprecated Use {@link #execute(CallToolRequest)} instead
+	 */
+	@Deprecated
+	public CallToolResult invokeTool(CallToolRequest request) {
+		return execute(request);
+	}
+
+	/**
+	 * @deprecated Use {@link #getResult(String)} instead
+	 */
+	@Deprecated
+	public String pollPlanExecutionStatus(String planId) {
+		return getResult(planId);
+	}
+
+	/**
+	 * @deprecated Use {@link #convert(CoordinatorConfigVO)} instead
+	 */
+	@Deprecated
+	public CoordinatorTool convertToCoordinatorTool(CoordinatorConfigVO config) {
+		return convert(config);
+	}
+
+	/**
+	 * @deprecated Use {@link #convert(List)} instead
+	 */
+	@Deprecated
+	public List<CoordinatorTool> convertToCoordinatorTools(List<CoordinatorConfigVO> configs) {
+		return convert(configs);
+	}
+
+	/**
+	 * @deprecated Use {@link #publish(CoordinatorTool)} instead
+	 */
+	@Deprecated
+	public boolean publishCoordinatorTool(CoordinatorTool tool) {
+		return publish(tool);
+	}
+
+	/**
+	 * @deprecated Use {@link #publish(CoordinatorToolEntity)} instead
+	 */
+	@Deprecated
+	public boolean publishCoordinatorTool(CoordinatorToolEntity entity) {
+		return publish(entity);
+	}
+
+	/**
+	 * @deprecated Use {@link #publishAll(List)} instead
+	 */
+	@Deprecated
+	public int publishCoordinatorTools(List<CoordinatorTool> tools) {
+		return publishAll(tools);
+	}
+
+	/**
+	 * @deprecated Use {@link #publishAllEntities(List)} instead
+	 */
+	@Deprecated
+	public int publishCoordinatorToolEntities(List<CoordinatorToolEntity> entities) {
+		return publishAllEntities(entities);
+	}
+
+	/**
+	 * @deprecated Use {@link #unpublish(String, String)} instead
+	 */
+	@Deprecated
+	public boolean unpublishCoordinatorTool(String toolName, String endpoint) {
+		return unpublish(toolName, endpoint);
+	}
+
+	/**
+	 * @deprecated Use {@link #unpublish(CoordinatorToolEntity)} instead
+	 */
+	@Deprecated
 	public boolean unpublishCoordinatorTool(CoordinatorToolEntity entity) {
-		if (entity == null) {
-			log.warn("CoordinatorToolEntity is null, cannot unpublish");
-			return false;
-		}
-
-		try {
-			log.info("Starting to unpublish CoordinatorToolEntity: {} from endpoint: {}", entity.getToolName(), entity.getEndpoint());
-
-			boolean success = unpublishCoordinatorTool(entity.getToolName(), entity.getEndpoint());
-
-			if (success) {
-				log.info("Successfully unpublished CoordinatorToolEntity: {} from endpoint: {}", entity.getToolName(), entity.getEndpoint());
-			}
-			else {
-				log.error("Failed to unpublish CoordinatorToolEntity: {} from endpoint: {}", entity.getToolName(), entity.getEndpoint());
-			}
-
-			return success;
-		}
-		catch (Exception e) {
-			log.error("Exception occurred while unpublishing CoordinatorToolEntity: {}", e.getMessage(), e);
-			return false;
-		}
+		return unpublish(entity);
 	}
 
 }

@@ -19,11 +19,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * CoordinatorTool 配置属性
+ * Coordinator 配置属性
  */
 @Component
 @ConfigurationProperties(prefix = "coordinator.tool")
-public class CoordinatorToolProperties {
+public class CoordinatorProperties {
 
 	/**
 	 * 是否启用CoordinatorTool功能
@@ -31,9 +31,9 @@ public class CoordinatorToolProperties {
 	private boolean enabled = true;
 
 	/**
-	 * 是否显示发布MCP服务按钮
+	 * 轮询配置
 	 */
-	private boolean showPublishButton = true;
+	private Polling polling = new Polling();
 
 	public boolean isEnabled() {
 		return enabled;
@@ -43,12 +43,42 @@ public class CoordinatorToolProperties {
 		this.enabled = enabled;
 	}
 
-	public boolean isShowPublishButton() {
-		return showPublishButton;
+	public Polling getPolling() {
+		return polling;
 	}
 
-	public void setShowPublishButton(boolean showPublishButton) {
-		this.showPublishButton = showPublishButton;
+	public void setPolling(Polling polling) {
+		this.polling = polling;
 	}
 
+	/**
+	 * 轮询配置内部类
+	 */
+	public static class Polling {
+		/**
+		 * 最大轮询次数
+		 */
+		private int maxAttempts = 60;
+
+		/**
+		 * 轮询间隔（毫秒）
+		 */
+		private long pollInterval = 10000;
+
+		public int getMaxAttempts() {
+			return maxAttempts;
+		}
+
+		public void setMaxAttempts(int maxAttempts) {
+			this.maxAttempts = maxAttempts;
+		}
+
+		public long getPollInterval() {
+			return pollInterval;
+		}
+
+		public void setPollInterval(long pollInterval) {
+			this.pollInterval = pollInterval;
+		}
+	}
 }

@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import com.alibaba.cloud.ai.example.manus.coordinator.tool.EndPointUtils;
-import com.alibaba.cloud.ai.example.manus.config.CoordinatorToolProperties;
+import com.alibaba.cloud.ai.example.manus.config.CoordinatorProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,8 +51,8 @@ import reactor.netty.http.server.HttpServer;
 /**
  * Coordinator Server Application
  *
- * Supports multi-endpoint coordinator server, each endpoint corresponds to a group of tools
- * Reference WebFluxStreamableServerApplication's multi-endpoint logic
+ * Supports multi-endpoint coordinator server, each endpoint corresponds to a group of
+ * tools Reference WebFluxStreamableServerApplication's multi-endpoint logic
  */
 @Component
 public class CoordinatorServer implements ApplicationListener<ApplicationReadyEvent> {
@@ -61,13 +61,21 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 
 	// ==================== Log Constants ====================
 	private static final String LOG_SEPARATOR = "==========================================";
+
 	private static final String LOG_SERVER_TITLE = "JManus Multi EndPoint Streamable Http Server";
+
 	private static final String LOG_SERVICE_LIST_TITLE = "Coordinator Service List:";
+
 	private static final String LOG_TOOL_FORMAT = "    Tool #{}: {} - {}";
+
 	private static final String LOG_URL_FORMAT = "  Full URL: {}";
+
 	private static final String LOG_COUNT_FORMAT = "  Tool Count: {}";
+
 	private static final String LOG_DIVIDER = "  ----------------------------------------";
+
 	private static final String LOG_NO_SERVICES = "No coordinator services found";
+
 	private static final String LOG_STARTUP_COMPLETE = "Coordinator service startup complete, {} endpoints";
 
 	@Autowired
@@ -80,12 +88,14 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	private CoordinatorService coordinatorService;
 
 	@Autowired
-	private CoordinatorToolProperties coordinatorToolProperties;
+	private CoordinatorProperties coordinatorProperties;
 
 	// Internal component: MCP server manager
 	private final McpServerManager mcpServerManager;
-	// Internal component: Tool registry manager  
+
+	// Internal component: Tool registry manager
 	private final ToolRegistryManager toolRegistryManager;
+
 	// Internal component: HTTP server manager
 	private final HttpServerManager httpServerManager;
 
@@ -98,7 +108,7 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	@Override
 	public void onApplicationEvent(ApplicationReadyEvent event) {
 		// Check if CoordinatorTool feature is enabled
-		if (!coordinatorToolProperties.isEnabled()) {
+		if (!coordinatorProperties.isEnabled()) {
 			log.info("CoordinatorTool feature is disabled, skipping coordinator server startup");
 			return;
 		}
@@ -118,7 +128,7 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	 */
 	private void startCoordinatorServer() {
 		// Check if CoordinatorTool feature is enabled
-		if (!coordinatorToolProperties.isEnabled()) {
+		if (!coordinatorProperties.isEnabled()) {
 			log.info("CoordinatorTool feature is disabled, skipping coordinator server startup");
 			return;
 		}
@@ -153,10 +163,10 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 			log.warn("Invalid tool parameters");
 			return false;
 		}
-		
-		return executeWithValidation("tool registration", 
-			() -> toolRegistryManager.registerTool(tool, mcpServerManager, httpServerManager),
-			tool.getToolName(), tool.getEndpoint()) != null;
+
+		return executeWithValidation("tool registration",
+				() -> toolRegistryManager.registerTool(tool, mcpServerManager, httpServerManager), tool.getToolName(),
+				tool.getEndpoint()) != null;
 	}
 
 	/**
@@ -166,15 +176,14 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	 * @return Whether unregistration was successful
 	 */
 	public boolean unregisterCoordinatorTool(String toolName, String endpoint) {
-		if (toolName == null || toolName.trim().isEmpty() || 
-			endpoint == null || endpoint.trim().isEmpty()) {
+		if (toolName == null || toolName.trim().isEmpty() || endpoint == null || endpoint.trim().isEmpty()) {
 			log.warn("Invalid parameters");
 			return false;
 		}
-		
+
 		return executeWithValidation("tool unregistration",
-			() -> toolRegistryManager.unregisterTool(toolName, endpoint, mcpServerManager, httpServerManager),
-			toolName, endpoint) != null;
+				() -> toolRegistryManager.unregisterTool(toolName, endpoint, mcpServerManager, httpServerManager),
+				toolName, endpoint) != null;
 	}
 
 	/**
@@ -184,15 +193,15 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	 * @return Whether refresh was successful
 	 */
 	public boolean refreshTool(String toolName, CoordinatorTool updatedTool) {
-		if (updatedTool == null || toolName == null || 
-			updatedTool.getEndpoint() == null || updatedTool.getEndpoint().trim().isEmpty()) {
+		if (updatedTool == null || toolName == null || updatedTool.getEndpoint() == null
+				|| updatedTool.getEndpoint().trim().isEmpty()) {
 			log.warn("Invalid tool parameters");
 			return false;
 		}
-		
+
 		return executeWithValidation("tool refresh",
-			() -> toolRegistryManager.refreshTool(toolName, updatedTool, mcpServerManager, httpServerManager),
-			toolName, updatedTool.getEndpoint()) != null;
+				() -> toolRegistryManager.refreshTool(toolName, updatedTool, mcpServerManager, httpServerManager),
+				toolName, updatedTool.getEndpoint()) != null;
 	}
 
 	// ==================== Execution Template Methods ====================
@@ -204,19 +213,19 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	 * @param operationParams Operation parameters
 	 * @return Operation result
 	 */
-	private <T> T executeWithValidation(String operation, Supplier<T> operationSupplier, 
-	                                   String... operationParams) {
-		if (!coordinatorToolProperties.isEnabled()) {
+	private <T> T executeWithValidation(String operation, Supplier<T> operationSupplier, String... operationParams) {
+		if (!coordinatorProperties.isEnabled()) {
 			log.info("CoordinatorTool feature is disabled, skipping {}", operation);
 			return null;
 		}
-		
+
 		try {
 			log.info("Starting {}: {}", operation, String.join(", ", operationParams));
 			T result = operationSupplier.get();
 			log.info("Successfully completed {}: {}", operation, String.join(", ", operationParams));
 			return result;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Exception occurred during {}: {}", operation, e.getMessage(), e);
 			return null;
 		}
@@ -277,7 +286,9 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	 * MCP Server Manager
 	 */
 	private class McpServerManager {
+
 		private final Map<String, Object> registeredMcpServers = new ConcurrentHashMap<>();
+
 		private final List<Object> mcpServers = new ArrayList<>();
 
 		/**
@@ -288,7 +299,8 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 
 			RouterFunction<?> combinedRouter = null;
 
-			// Create independent transport providers and servers for each coordinator endpoint
+			// Create independent transport providers and servers for each coordinator
+			// endpoint
 			for (Map.Entry<String, List<CoordinatorTool>> entry : coordinatorToolsByEndpoint.entrySet()) {
 				String endpoint = entry.getKey();
 				List<CoordinatorTool> tools = entry.getValue();
@@ -353,14 +365,16 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 				registeredMcpServers.put(endpoint, mcpServer);
 				mcpServers.add(mcpServer);
 
-				log.info("Successfully created MCP server for endpoint: {}, containing {} tools", endpoint, tools.size());
+				log.info("Successfully created MCP server for endpoint: {}, containing {} tools", endpoint,
+						tools.size());
 
 				// Return router function
 				return transportProvider.getRouterFunction();
 
 			}
 			catch (Exception e) {
-				log.error("Exception occurred while creating MCP server for endpoint: {}, {}", endpoint, e.getMessage(), e);
+				log.error("Exception occurred while creating MCP server for endpoint: {}, {}", endpoint, e.getMessage(),
+						e);
 				return null;
 			}
 		}
@@ -372,7 +386,7 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 		 */
 		public void createMcpServerForEndpoint(String endpoint, List<CoordinatorTool> tools) {
 			// Check if CoordinatorTool feature is enabled
-			if (!coordinatorToolProperties.isEnabled()) {
+			if (!coordinatorProperties.isEnabled()) {
 				log.info("CoordinatorTool feature is disabled, skipping MCP server creation");
 				return;
 			}
@@ -406,11 +420,13 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 				registeredMcpServers.put(endpoint, mcpServer);
 				mcpServers.add(mcpServer);
 
-				log.info("Successfully created MCP server for endpoint: {}, containing {} tools", endpoint, tools.size());
+				log.info("Successfully created MCP server for endpoint: {}, containing {} tools", endpoint,
+						tools.size());
 
 			}
 			catch (Exception e) {
-				log.error("Exception occurred while creating MCP server for endpoint: {}, {}", endpoint, e.getMessage(), e);
+				log.error("Exception occurred while creating MCP server for endpoint: {}, {}", endpoint, e.getMessage(),
+						e);
 			}
 		}
 
@@ -421,20 +437,14 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 		 */
 		public void recreateMcpServerForEndpoint(String endpoint, List<CoordinatorTool> tools) {
 			// Check if CoordinatorTool feature is enabled
-			if (!coordinatorToolProperties.isEnabled()) {
+			if (!coordinatorProperties.isEnabled()) {
 				log.info("CoordinatorTool feature is disabled, skipping MCP server recreation");
 				return;
 			}
 
 			try {
-				log.info("Starting to recreate MCP server for endpoint: {}", endpoint);
-
-				// Delete old MCP server
-				Object oldMcpServer = registeredMcpServers.remove(endpoint);
-				if (oldMcpServer != null) {
-					mcpServers.remove(oldMcpServer);
-					closeMcpServer(oldMcpServer);
-				}
+				// Remove existing MCP server
+				removeMcpServer(endpoint);
 
 				// Create new MCP server
 				createMcpServerForEndpoint(endpoint, tools);
@@ -443,7 +453,8 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 
 			}
 			catch (Exception e) {
-				log.error("Exception occurred while recreating MCP server for endpoint: {}, {}", endpoint, e.getMessage(), e);
+				log.error("Exception occurred while recreating MCP server for endpoint: {}, {}", endpoint, e.getMessage(),
+						e);
 			}
 		}
 
@@ -452,11 +463,27 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 		 * @param endpoint Endpoint address
 		 */
 		public void removeMcpServer(String endpoint) {
-			Object mcpServer = registeredMcpServers.remove(endpoint);
-			if (mcpServer != null) {
-				mcpServers.remove(mcpServer);
-				closeMcpServer(mcpServer);
-				log.info("Removed MCP server for endpoint: {}", endpoint);
+			// Check if CoordinatorTool feature is enabled
+			if (!coordinatorProperties.isEnabled()) {
+				log.info("CoordinatorTool feature is disabled, skipping MCP server removal");
+				return;
+			}
+
+			try {
+				Object mcpServer = registeredMcpServers.remove(endpoint);
+				if (mcpServer != null) {
+					closeMcpServer(mcpServer);
+					mcpServers.remove(mcpServer);
+					log.info("Successfully removed MCP server for endpoint: {}", endpoint);
+				}
+				else {
+					log.warn("MCP server not found for endpoint: {}", endpoint);
+				}
+
+			}
+			catch (Exception e) {
+				log.error("Exception occurred while removing MCP server for endpoint: {}, {}", endpoint, e.getMessage(),
+						e);
 			}
 		}
 
@@ -465,176 +492,180 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 		 * @param mcpServer MCP server to close
 		 */
 		private void closeMcpServer(Object mcpServer) {
-			if (mcpServer instanceof AutoCloseable) {
-				try {
+			try {
+				if (mcpServer instanceof AutoCloseable) {
 					((AutoCloseable) mcpServer).close();
-					log.info("MCP server closed successfully");
-				}
-				catch (Exception e) {
-					log.warn("Exception occurred while closing MCP server: {}", e.getMessage());
+					log.debug("Successfully closed MCP server");
 				}
 			}
+			catch (Exception e) {
+				log.warn("Exception occurred while closing MCP server: {}", e.getMessage());
+			}
 		}
+
 	}
 
 	/**
 	 * Tool Registry Manager
 	 */
 	private class ToolRegistryManager {
+
 		private final Map<String, List<CoordinatorTool>> registeredTools = new ConcurrentHashMap<>();
 
 		/**
-		 * Register tool
+		 * Register tool to coordinator server
 		 * @param tool Tool to register
 		 * @param mcpManager MCP server manager
 		 * @param httpManager HTTP server manager
 		 * @return Whether registration was successful
 		 */
 		public boolean registerTool(CoordinatorTool tool, McpServerManager mcpManager, HttpServerManager httpManager) {
+			// Check if CoordinatorTool feature is enabled
+			if (!coordinatorProperties.isEnabled()) {
+				log.info("CoordinatorTool feature is disabled, skipping tool registration");
+				return false;
+			}
+
 			try {
-				log.info("Starting to register CoordinatorTool: {} to endpoint: {}", tool.getToolName(), tool.getEndpoint());
-
 				String endpoint = tool.getEndpoint();
-				// Get or create the tool list for this endpoint
-				List<CoordinatorTool> toolsForEndpoint = registeredTools.computeIfAbsent(endpoint, k -> new ArrayList<>());
+				List<CoordinatorTool> tools = registeredTools.get(endpoint);
 
-				// Check if tool is already registered, and remove old version if it is
-				boolean alreadyRegistered = toolsForEndpoint.stream()
+				if (tools == null) {
+					tools = new ArrayList<>();
+					registeredTools.put(endpoint, tools);
+				}
+
+				// Check if tool already exists
+				boolean toolExists = tools.stream()
 					.anyMatch(existingTool -> existingTool.getToolName().equals(tool.getToolName()));
 
-				if (alreadyRegistered) {
-					log.info("CoordinatorTool: {} is already registered to endpoint: {}, will update to new service registration", tool.getToolName(), endpoint);
-					// Remove old tool version
-					toolsForEndpoint.removeIf(existingTool -> existingTool.getToolName().equals(tool.getToolName()));
+				if (toolExists) {
+					log.warn("Tool {} already exists in endpoint {}, skipping registration", tool.getToolName(), endpoint);
+					return false;
 				}
 
-				// Add new tool to the list (whether it's new or updated)
-				toolsForEndpoint.add(tool);
-				log.info("Successfully added CoordinatorTool: {} to the tool list for endpoint: {}", tool.getToolName(), endpoint);
+				// Add tool to list
+				tools.add(tool);
 
-				// Check if MCP server already exists for this endpoint
-				if (registeredTools.containsKey(endpoint)) {
-					log.info("Endpoint: {} already has MCP server, need to recreate to include new tools", endpoint);
-					// Recreate MCP server for this endpoint
-					mcpManager.recreateMcpServerForEndpoint(endpoint, toolsForEndpoint);
-				}
-				else {
-					log.info("Endpoint: {} does not have MCP server, creating new MCP server", endpoint);
-					// Create new MCP server
-					mcpManager.createMcpServerForEndpoint(endpoint, toolsForEndpoint);
-				}
+				// Recreate MCP server for this endpoint
+				mcpManager.recreateMcpServerForEndpoint(endpoint, tools);
 
-				// Recreate HTTP server to update routes
+				// Recreate HTTP server
 				httpManager.recreateHttpServer(registeredTools);
 
-				log.info("Successfully registered CoordinatorTool: {} to endpoint: {}", tool.getToolName(), endpoint);
-				log.info("Coordinator Service Access Information:");
-				log.info("  Full URL: {}", EndPointUtils.getUrl(endpoint));
-
+				log.info("Successfully registered tool {} to endpoint {}", tool.getToolName(), endpoint);
 				return true;
 
 			}
 			catch (Exception e) {
-				log.error("Exception occurred while registering CoordinatorTool: {}", e.getMessage(), e);
+				log.error("Exception occurred while registering tool: {}", e.getMessage(), e);
 				return false;
 			}
 		}
 
 		/**
-		 * Unregister tool
+		 * Unregister tool from coordinator server
 		 * @param toolName Tool name to unregister
 		 * @param endpoint Endpoint address
 		 * @param mcpManager MCP server manager
 		 * @param httpManager HTTP server manager
 		 * @return Whether unregistration was successful
 		 */
-		public boolean unregisterTool(String toolName, String endpoint, McpServerManager mcpManager, HttpServerManager httpManager) {
-			try {
-				log.info("Starting to unregister CoordinatorTool: {} from endpoint: {}", toolName, endpoint);
+		public boolean unregisterTool(String toolName, String endpoint, McpServerManager mcpManager,
+				HttpServerManager httpManager) {
+			// Check if CoordinatorTool feature is enabled
+			if (!coordinatorProperties.isEnabled()) {
+				log.info("CoordinatorTool feature is disabled, skipping tool unregistration");
+				return false;
+			}
 
-				// Get tool list for this endpoint
-				List<CoordinatorTool> toolsForEndpoint = registeredTools.get(endpoint);
-				if (toolsForEndpoint == null) {
+			try {
+				List<CoordinatorTool> tools = registeredTools.get(endpoint);
+
+				if (tools == null) {
 					log.warn("No tools found for endpoint: {}", endpoint);
 					return false;
 				}
 
-				// Remove tool from the list
-				boolean removed = toolsForEndpoint.removeIf(tool -> tool.getToolName().equals(toolName));
+				// Remove tool from list
+				boolean removed = tools.removeIf(tool -> tool.getToolName().equals(toolName));
 
 				if (!removed) {
-					log.warn("Tool: {} not found in endpoint: {}", toolName, endpoint);
+					log.warn("Tool {} not found in endpoint: {}", toolName, endpoint);
 					return false;
 				}
 
-				log.info("Successfully removed tool: {} from endpoint: {}", toolName, endpoint);
-
-				// If no tools left for this endpoint, remove the endpoint entirely
-				if (toolsForEndpoint.isEmpty()) {
+				// If no tools left for this endpoint, remove the endpoint
+				if (tools.isEmpty()) {
 					registeredTools.remove(endpoint);
 					mcpManager.removeMcpServer(endpoint);
-					log.info("Removed empty endpoint: {}", endpoint);
-				} else {
-					// Recreate MCP server for this endpoint with remaining tools
-					mcpManager.recreateMcpServerForEndpoint(endpoint, toolsForEndpoint);
+				}
+				else {
+					// Recreate MCP server for this endpoint
+					mcpManager.recreateMcpServerForEndpoint(endpoint, tools);
 				}
 
-				// Recreate HTTP server to update routes
+				// Recreate HTTP server
 				httpManager.recreateHttpServer(registeredTools);
 
-				log.info("Successfully unregistered CoordinatorTool: {} from endpoint: {}", toolName, endpoint);
+				log.info("Successfully unregistered tool {} from endpoint {}", toolName, endpoint);
 				return true;
 
 			}
 			catch (Exception e) {
-				log.error("Exception occurred while unregistering CoordinatorTool: {}", e.getMessage(), e);
+				log.error("Exception occurred while unregistering tool: {}", e.getMessage(), e);
 				return false;
 			}
 		}
 
 		/**
-		 * Refresh tool
+		 * Refresh tool in coordinator server
 		 * @param toolName Tool name
 		 * @param updatedTool Updated tool
 		 * @param mcpManager MCP server manager
 		 * @param httpManager HTTP server manager
 		 * @return Whether refresh was successful
 		 */
-		public boolean refreshTool(String toolName, CoordinatorTool updatedTool, McpServerManager mcpManager, HttpServerManager httpManager) {
-			try {
-				log.info("Starting to force refresh tool: {} in endpoint: {}", toolName, updatedTool.getEndpoint());
+		public boolean refreshTool(String toolName, CoordinatorTool updatedTool, McpServerManager mcpManager,
+				HttpServerManager httpManager) {
+			// Check if CoordinatorTool feature is enabled
+			if (!coordinatorProperties.isEnabled()) {
+				log.info("CoordinatorTool feature is disabled, skipping tool refresh");
+				return false;
+			}
 
+			try {
 				String endpoint = updatedTool.getEndpoint();
-				// Get tool list for this endpoint
-				List<CoordinatorTool> toolsForEndpoint = registeredTools.get(endpoint);
-				if (toolsForEndpoint == null) {
-					log.warn("Tool list not found for endpoint: {}", endpoint);
+				List<CoordinatorTool> tools = registeredTools.get(endpoint);
+
+				if (tools == null) {
+					log.warn("No tools found for endpoint: {}", endpoint);
 					return false;
 				}
 
-				// Find and replace tool
+				// Find and update tool
 				boolean found = false;
-				for (int i = 0; i < toolsForEndpoint.size(); i++) {
-					if (toolsForEndpoint.get(i).getToolName().equals(toolName)) {
-						toolsForEndpoint.set(i, updatedTool);
+				for (int i = 0; i < tools.size(); i++) {
+					CoordinatorTool tool = tools.get(i);
+					if (tool.getToolName().equals(toolName)) {
+						tools.set(i, updatedTool);
 						found = true;
-						log.info("Tool found and replaced: {}", toolName);
 						break;
 					}
 				}
 
 				if (!found) {
-					log.warn("Tool: {} not found in endpoint: {}", endpoint, toolName);
+					log.warn("Tool {} not found in endpoint: {}", toolName, endpoint);
 					return false;
 				}
 
-				// Recreate MCP server
-				mcpManager.recreateMcpServerForEndpoint(endpoint, toolsForEndpoint);
+				// Recreate MCP server for this endpoint
+				mcpManager.recreateMcpServerForEndpoint(endpoint, tools);
 
-				// Recreate HTTP server to update routes
+				// Recreate HTTP server
 				httpManager.recreateHttpServer(registeredTools);
 
-				log.info("Successfully refreshed tool: {} in endpoint: {}", toolName, endpoint);
+				log.info("Successfully refreshed tool {} in endpoint {}", toolName, endpoint);
 				return true;
 
 			}
@@ -643,12 +674,14 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 				return false;
 			}
 		}
+
 	}
 
 	/**
 	 * HTTP Server Manager
 	 */
 	private class HttpServerManager {
+
 		private DisposableServer httpServer;
 
 		/**
@@ -656,60 +689,64 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 		 * @param combinedRouter Combined router function
 		 */
 		public void startHttpServer(RouterFunction<?> combinedRouter) {
-			if (combinedRouter == null) {
-				log.warn("No router functions created, server may not function normally");
+			// Check if CoordinatorTool feature is enabled
+			if (!coordinatorProperties.isEnabled()) {
+				log.info("CoordinatorTool feature is disabled, skipping HTTP server startup");
 				return;
 			}
 
-			// Create HTTP handler
-			HttpHandler httpHandler = RouterFunctions.toHttpHandler(combinedRouter);
-			ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
+			try {
+				// Create HTTP handler
+				HttpHandler httpHandler = RouterFunctions.toHttpHandler(combinedRouter);
+				ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
 
-			// Start HTTP server
-			this.httpServer = HttpServer.create().port(EndPointUtils.SERVICE_PORT).handle(adapter).bindNow();
+				// Start HTTP server
+				httpServer = HttpServer.create()
+					.host(EndPointUtils.SERVICE_HOST)
+					.port(EndPointUtils.SERVICE_PORT)
+					.handle(adapter)
+					.bindNow();
 
-			log.info("HTTP server started, listening on port: {}", EndPointUtils.SERVICE_PORT);
-			log.info("Server address: http://{}:{}", EndPointUtils.SERVICE_HOST, EndPointUtils.SERVICE_PORT);
+				log.info("Successfully started HTTP server on {}:{}", EndPointUtils.SERVICE_HOST, EndPointUtils.SERVICE_PORT);
+
+			}
+			catch (Exception e) {
+				log.error("Exception occurred while starting HTTP server: {}", e.getMessage(), e);
+			}
 		}
 
 		/**
 		 * Recreate HTTP server
-		 * @param registeredTools Registered tools map
+		 * @param registeredTools Registered tools
 		 */
 		public void recreateHttpServer(Map<String, List<CoordinatorTool>> registeredTools) {
 			// Check if CoordinatorTool feature is enabled
-			if (!coordinatorToolProperties.isEnabled()) {
+			if (!coordinatorProperties.isEnabled()) {
 				log.info("CoordinatorTool feature is disabled, skipping HTTP server recreation");
 				return;
 			}
 
 			try {
-				log.info("Starting to recreate HTTP server to update routes");
-
-				// Stop current HTTP server
-				if (this.httpServer != null) {
-					this.httpServer.disposeNow();
-					log.info("Current HTTP server stopped");
+				// Stop existing HTTP server
+				if (httpServer != null) {
+					httpServer.disposeNow();
+					log.debug("Successfully stopped existing HTTP server");
 				}
 
-				// Recreate combined router
+				// Create combined router function
 				RouterFunction<?> combinedRouter = mcpServerManager.createCombinedRouter(registeredTools);
-
-				if (combinedRouter == null) {
-					log.warn("No router functions created, cannot recreate HTTP server");
-					return;
-				}
 
 				// Start new HTTP server
 				startHttpServer(combinedRouter);
 
-				log.info("Successfully recreated HTTP server, listening on port: {}", EndPointUtils.SERVICE_PORT);
+				log.info("Successfully recreated HTTP server");
 
 			}
 			catch (Exception e) {
 				log.error("Exception occurred while recreating HTTP server: {}", e.getMessage(), e);
 			}
 		}
+
 	}
 
 }

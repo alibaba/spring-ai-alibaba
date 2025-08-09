@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.coordinator.repository;
 
 import com.alibaba.cloud.ai.example.manus.coordinator.entity.CoordinatorToolEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -31,5 +32,16 @@ public interface CoordinatorToolRepository extends JpaRepository<CoordinatorTool
 	 * Find by plan template ID
 	 */
 	List<CoordinatorToolEntity> findByPlanTemplateId(String planTemplateId);
+
+	/**
+	 * Find by publish status
+	 */
+	List<CoordinatorToolEntity> findByPublishStatus(CoordinatorToolEntity.PublishStatus publishStatus);
+
+	/**
+	 * Find all unique endpoints
+	 */
+	@Query("SELECT DISTINCT c.endpoint FROM CoordinatorToolEntity c")
+	List<String> findAllUniqueEndpoints();
 
 }

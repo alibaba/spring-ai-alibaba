@@ -67,8 +67,12 @@ coordinator:
   tool:
     # 是否启用CoordinatorTool功能
     enabled: true
-    # 是否显示发布MCP服务按钮
-    show-publish-button: true
+    # 轮询配置
+    polling:
+      # 最大轮询次数
+      max-attempts: 60
+      # 轮询间隔（毫秒）
+      poll-interval: 10000
 
 # 日志配置
 logging:
