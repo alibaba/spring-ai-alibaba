@@ -304,7 +304,7 @@
                                   v-model="formInputsStore[message.id][inputIndex]"
                                   class="form-input form-select"
                               >
-                                <option value="">请选择...</option>
+                                <option value="">{{ $t('selectCommon.pleaseSelect') }}</option>
                                 <option
                                     v-for="option in getOptionsArray(input.options)"
                                     :key="option"

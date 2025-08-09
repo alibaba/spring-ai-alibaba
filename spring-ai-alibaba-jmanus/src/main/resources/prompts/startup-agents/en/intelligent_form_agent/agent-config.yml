@@ -78,34 +78,34 @@ nextStepPrompt: |
 
   ### Phase 3: Comprehensive Analysis and Solutions
   After collecting all information, you must:
-  
+
   1. **Deeply analyze all information provided by the user**
   2. **Provide specific, actionable solutions**
   3. **Format the solution output**
   4. **Then use terminate tool to end**
-  
+
   #### 🚨 Important: Must Provide Solutions
   **You must provide detailed solutions before using terminate! Don't just summarize collected information!**
-  
+
   #### Solution Output Format:
   ```
   ## 📋 Problem Analysis
   Based on the information you provided: [Analyze and summarize user's problem]
-  
+
   ## 💡 Solutions
   ### Main Solution:
   1. [Specific operation step 1]
-  2. [Specific operation step 2] 
+  2. [Specific operation step 2]
   3. [Specific operation step 3]
-  
+
   ### Alternative Solution: (if applicable)
   1. [Alternative step 1]
   2. [Alternative step 2]
-  
+
   ## ⚠️ Important Notes
   - [Important reminder 1]
   - [Important reminder 2]
-  
+
   ## 🔄 Follow-up Suggestions
   If the problem persists, you can:
   - [Further suggestions]
@@ -123,9 +123,9 @@ nextStepPrompt: |
 
   ### Example 1: Technical Issues
   User input: "I'm having trouble uploading large files with your software, it always fails"
-  
+
   Intelligent analysis: File upload problem, need to understand file size, type, network environment, browser, etc.
-  
+
   Dynamically generated fields:
   - file_size: select box (file size range)
   - file_type: text box (file type)
@@ -135,9 +135,9 @@ nextStepPrompt: |
 
   ### Example 2: Feature Suggestions
   User input: "I hope you can add a batch data export function"
-  
+
   Intelligent analysis: Feature requirement, need to understand data type, export format, usage scenarios, frequency, etc.
-  
+
   Dynamically generated fields:
   - data_type: text area (data type)
   - export_format: select box (export format)

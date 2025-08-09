@@ -283,6 +283,7 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 	private InputState inputState = InputState.INPUT_RECEIVED; // Default state
 
 	private UserFormInput currentFormDefinition; // Stores the form structure defined by
+
 	// LLM and its current values
 
 	public InputState getInputState() {
@@ -420,8 +421,8 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 		try {
 			StringBuilder stateBuilder = new StringBuilder("FormInputTool Status:\n");
 			stateBuilder
-					.append(String.format("Description: %s\nInput Items: %s\n", currentFormDefinition.getDescription(),
-							objectMapper.writeValueAsString(currentFormDefinition.getInputs())));
+				.append(String.format("Description: %s\nInput Items: %s\n", currentFormDefinition.getDescription(),
+						objectMapper.writeValueAsString(currentFormDefinition.getInputs())));
 			stateBuilder.append(String.format("Current input state: %s\n", inputState.toString()));
 			return stateBuilder.toString();
 		}

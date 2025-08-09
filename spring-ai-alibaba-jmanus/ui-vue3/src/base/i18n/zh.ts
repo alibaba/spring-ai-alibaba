@@ -1067,6 +1067,11 @@ const words: I18nType = {
     createManually: '手动创建',
     createManuallyDesc: '自己填写定时任务信息',
   },
+
+  // 通用占位符
+  selectCommon: {
+    pleaseSelect: '请选择...',
+  },
 }
 
 export default words

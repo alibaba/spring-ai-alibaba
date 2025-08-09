@@ -56,30 +56,30 @@ public class UserInputService implements IUserInputService {
 				waitState.setFormDescription(latestFormInput.getDescription());
 				if (latestFormInput.getInputs() != null) {
 					List<Map<String, String>> formInputsForState = latestFormInput.getInputs()
-							.stream()
-							.map(inputItem -> {
-								Map<String, String> inputMap = new HashMap<>();
-								inputMap.put("label", inputItem.getLabel());
-								inputMap.put("value", inputItem.getValue() != null ? inputItem.getValue() : "");
-								if (inputItem.getName() != null) {
-									inputMap.put("name", inputItem.getName());
-								}
-								if (inputItem.getType() != null) {
-									inputMap.put("type", inputItem.getType());
-								}
-								if (inputItem.getPlaceholder() != null) {
-									inputMap.put("placeholder", inputItem.getPlaceholder());
-								}
-								if (inputItem.getRequired() != null) {
-									inputMap.put("required", inputItem.getRequired().toString());
-								}
-								if (inputItem.getOptions() != null && !inputItem.getOptions().isEmpty()) {
-									inputMap.put("options", String.join(",", inputItem.getOptions()));
-								}
+						.stream()
+						.map(inputItem -> {
+							Map<String, String> inputMap = new HashMap<>();
+							inputMap.put("label", inputItem.getLabel());
+							inputMap.put("value", inputItem.getValue() != null ? inputItem.getValue() : "");
+							if (inputItem.getName() != null) {
+								inputMap.put("name", inputItem.getName());
+							}
+							if (inputItem.getType() != null) {
+								inputMap.put("type", inputItem.getType());
+							}
+							if (inputItem.getPlaceholder() != null) {
+								inputMap.put("placeholder", inputItem.getPlaceholder());
+							}
+							if (inputItem.getRequired() != null) {
+								inputMap.put("required", inputItem.getRequired().toString());
+							}
+							if (inputItem.getOptions() != null && !inputItem.getOptions().isEmpty()) {
+								inputMap.put("options", String.join(",", inputItem.getOptions()));
+							}
 
-								return inputMap;
-							})
-							.collect(Collectors.toList());
+							return inputMap;
+						})
+						.collect(Collectors.toList());
 					waitState.setFormInputs(formInputsForState);
 				}
 			}

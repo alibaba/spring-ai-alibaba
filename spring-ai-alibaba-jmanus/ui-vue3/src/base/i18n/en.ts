@@ -1103,6 +1103,11 @@ const words: I18nType = {
     createManually: 'Create Manually',
     createManuallyDesc: 'Fill in task information yourself',
   },
+
+  // Common placeholders
+  selectCommon: {
+    pleaseSelect: 'Please select...',
+  },
 }
 
 export default words
