@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.example.manus.coordinator.repository;
 
 import com.alibaba.cloud.ai.example.manus.coordinator.entity.CoordinatorToolEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -30,68 +29,8 @@ import java.util.Optional;
 public interface CoordinatorToolRepository extends JpaRepository<CoordinatorToolEntity, Long> {
 
 	/**
-	 * 根据工具名称查找
-	 */
-	Optional<CoordinatorToolEntity> findByToolName(String toolName);
-
-	/**
 	 * 根据计划模板ID查找
 	 */
 	List<CoordinatorToolEntity> findByPlanTemplateId(String planTemplateId);
-
-	/**
-	 * 根据发布状态查找
-	 */
-	List<CoordinatorToolEntity> findByPublishStatus(CoordinatorToolEntity.PublishStatus publishStatus);
-
-	/**
-	 * 查找所有已发布的工具
-	 */
-	List<CoordinatorToolEntity> findByPublishStatusOrderByCreateTimeDesc(
-			CoordinatorToolEntity.PublishStatus publishStatus);
-
-	/**
-	 * 根据endpoint查找
-	 */
-	Optional<CoordinatorToolEntity> findByEndpoint(String endpoint);
-
-	/**
-	 * 查找所有去重的endpoint列表
-	 */
-	@Query("SELECT DISTINCT c.endpoint FROM CoordinatorToolEntity c")
-	List<String> findEndPoint();
-
-	/**
-	 * 根据工具名称模糊查询
-	 */
-	List<CoordinatorToolEntity> findByToolNameContainingIgnoreCase(String toolName);
-
-	/**
-	 * 根据工具描述模糊查询
-	 */
-	List<CoordinatorToolEntity> findByToolDescriptionContainingIgnoreCase(String toolDescription);
-
-	/**
-	 * 查找最近创建的工具
-	 */
-	@Query("SELECT c FROM CoordinatorToolEntity c ORDER BY c.createTime DESC")
-	List<CoordinatorToolEntity> findRecentTools();
-
-	/**
-	 * 查找最近更新的工具
-	 */
-	@Query("SELECT c FROM CoordinatorToolEntity c ORDER BY c.updateTime DESC")
-	List<CoordinatorToolEntity> findRecentlyUpdatedTools();
-
-	/**
-	 * 统计已发布的工具数量
-	 */
-	long countByPublishStatus(CoordinatorToolEntity.PublishStatus publishStatus);
-
-	/**
-	 * 统计未发布的工具数量
-	 */
-	@Query("SELECT COUNT(c) FROM CoordinatorToolEntity c WHERE c.publishStatus = 'UNPUBLISHED'")
-	long countUnpublishedTools();
 
 }
