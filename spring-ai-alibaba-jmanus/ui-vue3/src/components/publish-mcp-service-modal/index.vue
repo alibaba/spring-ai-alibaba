@@ -206,7 +206,12 @@
           <div class="publish-toggle" @click="handlePublishToggle">
             <div class="toggle-track" :class="{ 'toggle-on': isPublished, 'toggle-off': !isPublished }">
               <div class="toggle-thumb" :class="{ 'thumb-on': isPublished, 'thumb-off': !isPublished }"></div>
-              <span class="toggle-label" :class="{ 'label-on': isPublished, 'label-off': !isPublished }">
+              <span 
+                ref="toggleLabelRef"
+                class="toggle-label" 
+                :class="{ 'label-on': isPublished, 'label-off': !isPublished }"
+                :style="toggleLabelStyle"
+              >
                 {{ isPublished ? t('mcpService.published') : t('mcpService.unpublished') }}
               </span>
             </div>
@@ -230,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal/index.vue'
@@ -285,6 +290,14 @@ const currentTool = ref<CoordinatorToolVO | null>(null)
 // 发布开关相关状态
 const isSaved = ref(false)
 const isPublished = ref(false)
+
+// 开关文字动态居中相关
+const toggleLabelRef = ref<HTMLElement | null>(null)
+
+// 计算开关文字样式
+const toggleLabelStyle = computed(() => {
+  return {}
+})
 
 // 计算完整的URL功能已移除
 
@@ -702,6 +715,8 @@ const watchModal = async () => {
     initializeFormData()
     await loadEndpoints()
     await loadCoordinatorToolData()
+    // 计算开关文字位置
+    calculateToggleLabelPosition()
   }
 }
 
@@ -789,6 +804,67 @@ const loadCoordinatorToolData = async () => {
 // Watch props changes
 watch(() => props.modelValue, watchModal)
 
+// 计算开关文字位置的函数
+const calculateToggleLabelPosition = () => {
+  nextTick(() => {
+    if (!toggleLabelRef.value) return
+    
+    const label = toggleLabelRef.value
+    const track = label.parentElement as HTMLElement
+    if (!track) return
+    
+    // 获取轨道和滑块的尺寸
+    const trackRect = track.getBoundingClientRect()
+    const thumb = track.querySelector('.toggle-thumb') as HTMLElement
+    const thumbRect = thumb ? thumb.getBoundingClientRect() : null
+    
+    // 计算可用空间
+    const thumbWidth = thumbRect ? thumbRect.width : 32
+    const availableWidth = trackRect.width - thumbWidth - 4 // 4px是滑块的margin
+    
+    // 计算文字宽度
+    const textWidth = label.scrollWidth
+    
+    // 如果文字宽度小于可用空间，则居中显示
+    if (textWidth <= availableWidth) {
+      const centerOffset = (availableWidth - textWidth) / 2
+      if (isPublished.value) {
+        // 开启状态：文字在左侧，滑块在右侧
+        label.style.position = 'absolute'
+        label.style.left = `${8 + centerOffset}px`
+        label.style.right = 'auto'
+        label.style.transform = 'none'
+      } else {
+        // 关闭状态：文字在右侧，滑块在左侧
+        label.style.position = 'absolute'
+        label.style.right = `${8 + centerOffset}px`
+        label.style.left = 'auto'
+        label.style.transform = 'none'
+      }
+    } else {
+      // 如果文字宽度大于可用空间，则使用默认的padding
+      if (isPublished.value) {
+        label.style.position = 'absolute'
+        label.style.left = '8px'
+        label.style.right = '50px'
+        label.style.transform = 'none'
+      } else {
+        label.style.position = 'absolute'
+        label.style.left = '50px'
+        label.style.right = '8px'
+        label.style.transform = 'none'
+      }
+    }
+  })
+}
+
+// Watch isPublished changes to recalculate label position
+watch(() => isPublished.value, calculateToggleLabelPosition)
+
+// Watch text content changes to recalculate label position
+watch(() => t('mcpService.published'), calculateToggleLabelPosition)
+watch(() => t('mcpService.unpublished'), calculateToggleLabelPosition)
+
 // Initialize when component mounts
 onMounted(async () => {
   if (showModal.value) {
@@ -796,6 +872,8 @@ onMounted(async () => {
     initializeFormData()
     await loadEndpoints()
     await loadCoordinatorToolData()
+    // 计算开关文字位置
+    calculateToggleLabelPosition()
   }
 })
 </script>
@@ -1485,7 +1563,7 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   transition: all 0.3s ease;
-  min-width: 156px; /* 保持最小宽度，防止布局抖动 */
+  min-width: 195px; /* 从156px增加25%到195px */
 }
 
 .publish-toggle {
@@ -1494,13 +1572,13 @@ onMounted(async () => {
   gap: 12px;
   cursor: pointer;
   user-select: none;
-  width: 156px; /* 固定宽度，防止抖动 */
+  width: 195px; /* 从156px增加25%到195px */
   flex-shrink: 0; /* 防止收缩 */
 }
 
 .toggle-track {
   position: relative;
-  width: 104px; /* 固定宽度，防止抖动 */
+  width: 130px; /* 从104px增加25%到130px */
   height: 36px; /* 与保存按钮一致 */
   border-radius: 18px;
   transition: all 0.3s ease;
@@ -1553,20 +1631,22 @@ onMounted(async () => {
   text-align: center; /* 文字居中 */
   padding: 0 8px; /* 左右内边距，避免与滑块重叠 */
   line-height: 32px; /* 垂直居中 */
+  position: absolute; /* 支持动态定位 */
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .toggle-label.label-on {
   color: #fff;
-  text-align: left; /* 开启状态：文字左对齐 */
-  padding-left: 8px; /* 左边距 */
-  padding-right: 40px; /* 右边距，为滑块留出空间 */
+  text-align: center; /* 改为居中对齐 */
 }
 
 .toggle-label.label-off {
   color: #fff;
-  text-align: right; /* 关闭状态：文字右对齐 */
-  padding-left: 40px; /* 左边距，为滑块留出空间 */
-  padding-right: 8px; /* 右边距 */
+  text-align: center; /* 改为居中对齐 */
 }
 
 .backdrop {
