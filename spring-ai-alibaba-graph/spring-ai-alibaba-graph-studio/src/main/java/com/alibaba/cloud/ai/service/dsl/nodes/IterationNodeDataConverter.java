@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
+import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.IterationNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -113,7 +115,7 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 
 	@Override
 	public String generateVarName(int count) {
-		return "iteration_" + count;
+		return "iteration" + count;
 	}
 
 	@Override
@@ -132,6 +134,16 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 				iterationNodeData
 					.setStartNodeName(varNames.getOrDefault(iterationNodeData.getStartNodeId(), "unknown"));
 				iterationNodeData.setEndNodeName(varNames.getOrDefault(iterationNodeData.getEndNodeId(), "unknown"));
+
+				// 更新迭代节点的输入Key
+				VariableSelector inputSelector = iterationNodeData.getInputs().get(0);
+				iterationNodeData.setInputKey(inputSelector.getNameInCode());
+
+				// 更新迭代节点的ResultKey
+				VariableSelector outputSelector = iterationNodeData.getOutputSelector();
+				iterationNodeData.setInnerItemResultKey(
+						Optional.ofNullable(varNames.get(outputSelector.getNamespace())).orElse("unknown") + "_"
+								+ outputSelector.getName());
 			});
 			case CUSTOM -> super.postProcessConsumer(dialectType);
 		};
@@ -139,12 +151,13 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 
 	@Override
 	public Stream<Variable> extractWorkflowVars(IterationNodeData nodeData) {
-		return Stream.of(nodeData.getOutput(), new Variable(nodeData.getInnerArrayKey(), "string"),
-				new Variable(nodeData.getInnerStartFlagKey(), "string"),
-				new Variable(nodeData.getInnerEndFlagKey(), "string"),
-				new Variable(nodeData.getInnerItemKey(), nodeData.getInputType()),
-				new Variable(nodeData.getInnerIndexKey(), "number"),
-				new Variable(nodeData.getInnerItemResultKey(), nodeData.getOutputType()));
+		return Stream.concat(nodeData.getOutputs().stream(),
+				Stream.of(new Variable(nodeData.getInnerArrayKey(), "string"),
+						new Variable(nodeData.getInnerStartFlagKey(), VariableType.STRING.value()),
+						new Variable(nodeData.getInnerEndFlagKey(), VariableType.STRING.value()),
+						new Variable(nodeData.getInnerItemKey(), nodeData.getInputType()),
+						new Variable(nodeData.getInnerIndexKey(), VariableType.NUMBER.value()),
+						new Variable(nodeData.getInnerItemResultKey(), nodeData.getOutputType())));
 	}
 
 }
