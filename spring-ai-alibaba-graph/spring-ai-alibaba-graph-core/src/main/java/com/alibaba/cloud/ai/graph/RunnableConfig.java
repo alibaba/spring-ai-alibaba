@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import static java.lang.String.format;
@@ -43,6 +44,8 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	private final CompiledGraph.StreamMode streamMode;
 
 	private final Map<String, Object> metadata;
+
+	private final Map<String, Object> interruptedNodes;
 
 	/**
 	 * Returns the stream mode of the compiled graph.
@@ -80,6 +83,51 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	}
 
 	/**
+	 * Checks if a node is marked as interrupted in the metadata.
+	 * @param nodeId the ID of the node to check for interruption status
+	 * @return true if the node is marked as interrupted, false otherwise
+	 */
+	public boolean isInterrupted(String nodeId) {
+		return interruptData(HasMetadata.formatNodeId(nodeId)).map(value -> Boolean.TRUE.equals(value)).orElse(false);
+	}
+
+	/**
+	 * Marks a node as not interrupted by setting its value to false in the metadata.
+	 * @param nodeId the ID of the node to mark as not interrupted
+	 * @return a new {@code RunnableConfig} instance with the updated metadata
+	 */
+	public void withNodeResumed(String nodeId) {
+		String formattedNodeId = HasMetadata.formatNodeId(nodeId);
+		interruptedNodes.put(formattedNodeId, false);
+	}
+
+	/**
+	 * Removes the interrupted marker for a specific node by removing its entry from the
+	 * metadata.
+	 * @param nodeId the ID of the node to remove the interrupted marker for
+	 * @return a new {@code RunnableConfig} instance with the updated metadata
+	 */
+	public void removeInterrupted(String nodeId) {
+		String formattedNodeId = HasMetadata.formatNodeId(nodeId);
+		if (interruptedNodes == null || !interruptedNodes.containsKey(formattedNodeId)) {
+			return; // No change needed if the marker doesn't exist
+		}
+		interruptedNodes.remove(formattedNodeId);
+	}
+
+	/**
+	 * Marks a node as interrupted by adding it to the metadata with a formatted key. The
+	 * node ID is formatted using {@link #formatNodeId(String)} and associated with a
+	 * value of {@code true} in the metadata map.
+	 * @param nodeId the ID of the node to mark as interrupted; must not be null
+	 * @return this {@code Builder} instance for method chaining
+	 * @throws NullPointerException if nodeId is null
+	 */
+	public void markNodeAsInterrupted(String nodeId) {
+		interruptedNodes.put(HasMetadata.formatNodeId(nodeId), true);
+	}
+
+	/**
 	 * Create a new RunnableConfig with the same attributes as this one but with a
 	 * different {@link CompiledGraph.StreamMode}.
 	 * @param streamMode the new stream mode
@@ -105,6 +153,19 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		}
 		return RunnableConfig.builder(this).checkPointId(checkPointId).build();
 
+	}
+
+	/**
+	 * Retrieves interrupt data associated with the specified key.
+	 * @param key the key for which to retrieve interrupt data; may be null
+	 * @return an Optional containing the interrupt data if present, or an empty Optional
+	 * if the key is null or no data is found
+	 */
+	public Optional<Object> interruptData(String key) {
+		if (key == null) {
+			return Optional.empty();
+		}
+		return ofNullable(interruptedNodes).map(m -> m.get(key));
 	}
 
 	/**
@@ -251,6 +312,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		this.nextNode = builder.nextNode;
 		this.streamMode = builder.streamMode;
 		this.metadata = ofNullable(builder.metadata()).map(Map::copyOf).orElse(null);
+		this.interruptedNodes = new ConcurrentHashMap<>();
 	}
 
 	@Override

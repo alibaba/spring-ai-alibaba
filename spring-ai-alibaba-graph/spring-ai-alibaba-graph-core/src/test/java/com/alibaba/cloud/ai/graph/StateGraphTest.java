@@ -892,4 +892,35 @@ public class StateGraphTest {
 
 	}
 
+	@Test
+	public void testRunnableInterrupt() throws GraphStateException, GraphRunnerException {
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("prop1", (o, o2) -> o2)
+			.build();
+
+		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
+			.addEdge("agent_1", "agent_2")
+			.addNode("agent_1", AsyncNodeActionWithConfig.node_async((state, config) -> {
+				log.info("agent_1\n{}", state);
+				config.markNodeAsInterrupted("agent_1");
+				return Map.of("prop1", "test");
+			}))
+			.addNode("agent_2", AsyncNodeActionWithConfig.node_async((state, config) -> {
+				log.info("agent_2\n{}", state);
+				return Map.of("prop1", "test_2");
+			}))
+			.addEdge("agent_2", END);
+
+		CompiledGraph app = workflow.compile();
+		RunnableConfig runnableConfig = new RunnableConfig.Builder().threadId("thread1").build();
+		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"), runnableConfig);
+		System.out.println("result = " + result);
+		assertTrue(result.isPresent());
+
+		// resume
+		result = app.stream(null, runnableConfig).stream().reduce((a, b) -> b).map(NodeOutput::state);
+		System.out.println("result = " + result);
+		assertTrue(result.isPresent());
+
+	}
+
 }
