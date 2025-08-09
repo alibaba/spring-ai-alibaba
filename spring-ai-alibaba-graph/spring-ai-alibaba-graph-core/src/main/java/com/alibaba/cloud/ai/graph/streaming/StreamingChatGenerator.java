@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static java.util.Optional.ofNullable;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A generator interface for streaming chat responses in a reactive manner. It provides a
@@ -125,20 +125,20 @@ public interface StreamingChatGenerator {
 						return response;
 					}
 
-					var currentMessage = response.getResult().getOutput();
+					final var currentMessage = response.getResult().getOutput();
 
 					if (currentMessage.hasToolCalls()) {
 						return response;
 					}
 
-					var lastMessage = lastResponse.getResult().getOutput();
+					final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
+							"lastResponse text cannot be null");
+
+					final var currentMessageText = currentMessage.getText();
 
 					var newMessage = new AssistantMessage(
-							Objects.requireNonNull(ofNullable(currentMessage.getText()).map(text -> {
-								assert lastMessage.getText() != null;
-								return lastMessage.getText().concat(text);
-							}).orElse(lastMessage.getText())), currentMessage.getMetadata(),
-							currentMessage.getToolCalls(), currentMessage.getMedia());
+							currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText,
+							currentMessage.getMetadata(), currentMessage.getToolCalls(), currentMessage.getMedia());
 
 					var newGeneration = new Generation(newMessage, response.getResult().getMetadata());
 					return new ChatResponse(List.of(newGeneration), response.getMetadata());
@@ -146,7 +146,10 @@ public interface StreamingChatGenerator {
 				});
 			};
 
-			var processedFlux = flux.doOnNext(mergeMessage).map(outputMapper);
+			var processedFlux = flux
+				.filter(response -> response.getResult() != null && response.getResult().getOutput() != null)
+				.doOnNext(mergeMessage)
+				.map(next -> new StreamingOutput(next.getResult().getOutput().getText(), startingNode, startingState));
 
 			return FlowGenerator.fromPublisher(FlowAdapters.toFlowPublisher(processedFlux), () -> {
 				ChatResponse finalResult = result.get();

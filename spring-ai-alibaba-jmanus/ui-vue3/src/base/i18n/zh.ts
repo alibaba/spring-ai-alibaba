@@ -945,10 +945,13 @@ const words: I18nType = {
         step2: '[TEXT_FILE_AGENT] 从novel.md文件获取子标题信息，然后依次完善每一个章节的具体内容，每个轮次只完善一个子章节的内容，用replace来更新内容，每个章节要求有3000字的内容，不要每更新一个章节就查询一下文档的全部内容',
         step2Output: '文件的名字',
       },
-      ainovel: {
-        title: 'AI小说创作',
-        description: '人工智能逐步击败人类主题小说（用于展示超长内容的输出）',
-        prompt: '创建一个关于人工智能逐步击败人类的小说，包含10个章节',
+      formInputDemo: {
+        title: 'AI智能动态表单演示',
+        description: '体验AI智能分析用户需求并动态生成相关表单字段的能力',
+        prompt: '演示AI如何根据用户问题智能生成针对性的表单字段',
+        planTitle: 'AI智能动态表单演示计划',
+        step1: '[INTELLIGENT_FORM_AGENT] 启动智能动态表单演示，主动分析用户需求并动态生成相关表单字段，展示AI智能表单生成能力',
+        step1Output: '演示结果，用户交互数据',
       },
     },
   },
@@ -1063,6 +1066,11 @@ const words: I18nType = {
     createWithJmanusDesc: '通过AI助手引导创建定时任务',
     createManually: '手动创建',
     createManuallyDesc: '自己填写定时任务信息',
+  },
+
+  // 通用占位符
+  selectCommon: {
+    pleaseSelect: '请选择...',
   },
 }
 
