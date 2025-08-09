@@ -44,7 +44,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -438,9 +437,6 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			.filter((request, next) -> next.exchange(request).timeout(Duration.ofMinutes(10)));
 
 		String completionsPath = dynamicModelEntity.getCompletionsPath();
-		if (!StringUtils.hasText(completionsPath)) {
-			completionsPath = "/v1/chat/completions";
-		}
 
 		return new OpenAiApi(dynamicModelEntity.getBaseUrl(), new SimpleApiKey(dynamicModelEntity.getApiKey()),
 				multiValueMap, completionsPath, "/v1/embeddings", restClientBuilder, enhancedWebClientBuilder,
