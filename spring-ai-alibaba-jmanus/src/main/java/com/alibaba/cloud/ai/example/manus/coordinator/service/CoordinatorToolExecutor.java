@@ -51,13 +51,18 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 public class CoordinatorToolExecutor {
 
 	private static final Logger log = LoggerFactory.getLogger(CoordinatorToolExecutor.class);
-	
+
 	// Constant definitions
 	private static final String LOG_PREFIX = "[CoordinatorToolExecutor]";
+
 	private static final String PLAN_ID_KEY = "planId";
+
 	private static final String DEFAULT_RESULT_MESSAGE = "Plan execution completed, but no specific result obtained";
+
 	private static final String PLAN_NOT_FOUND_ERROR = "Plan not found: %s";
+
 	private static final String POLLING_TIMEOUT_ERROR = "Polling timeout after %d attempts";
+
 	private static final String POLLING_INTERRUPTED_ERROR = "Polling interrupted: %s";
 
 	@Autowired
@@ -101,27 +106,30 @@ public class CoordinatorToolExecutor {
 	public CallToolResult execute(CallToolRequest request) {
 		String toolName = request.name();
 		log.debug("{} Starting tool call execution: {}", LOG_PREFIX, toolName);
-		
+
 		try {
 			// 1. Validate and extract parameters
 			Map<String, Object> arguments = request.arguments();
 			String planId = validateAndExtractPlanId(arguments);
 			String rawParam = serializeArguments(arguments);
-			
+
 			// 2. Execute plan template
 			executePlanTemplate(toolName, rawParam, planId);
-			
+
 			// 3. Poll for results
 			String resultString = pollPlanResult(planId);
-			
+
 			// 4. Return success result
 			log.info("{} Tool call execution completed: {}", LOG_PREFIX, toolName);
 			return new CallToolResult(List.of(new McpSchema.TextContent(resultString)), false);
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			log.error("{} Tool call failed: {} - {}", LOG_PREFIX, toolName, e.getMessage(), e);
-			return new CallToolResult(List.of(new McpSchema.TextContent(
-				String.format("Tool call failed: %s - %s", e.getClass().getSimpleName(), e.getMessage()))), true);
+			return new CallToolResult(
+					List.of(new McpSchema.TextContent(
+							String.format("Tool call failed: %s - %s", e.getClass().getSimpleName(), e.getMessage()))),
+					true);
 		}
 	}
 
@@ -134,17 +142,17 @@ public class CoordinatorToolExecutor {
 		if (arguments == null) {
 			throw new IllegalArgumentException("Request parameters cannot be empty");
 		}
-		
+
 		Object planIdObject = arguments.get(PLAN_ID_KEY);
 		if (planIdObject == null) {
 			throw new IllegalArgumentException("Missing required planId parameter");
 		}
-		
+
 		String planId = planIdObject.toString().trim();
 		if (planId.isEmpty()) {
 			throw new IllegalArgumentException("planId cannot be empty");
 		}
-		
+
 		log.debug("{} Successfully extracted planId: {}", LOG_PREFIX, planId);
 		return planId;
 	}
@@ -158,16 +166,17 @@ public class CoordinatorToolExecutor {
 		if (arguments == null || arguments.isEmpty()) {
 			return "{}";
 		}
-		
+
 		// Create parameter copy to avoid modifying original parameters
 		Map<String, Object> paramsCopy = new HashMap<>(arguments);
 		paramsCopy.remove(PLAN_ID_KEY);
-		
+
 		try {
 			String serializedParams = objectMapper.writeValueAsString(paramsCopy);
 			log.debug("{} Parameter serialization completed: {}", LOG_PREFIX, serializedParams);
 			return serializedParams;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new RuntimeException("Parameter serialization failed: " + e.getMessage(), e);
 		}
 	}
@@ -180,22 +189,23 @@ public class CoordinatorToolExecutor {
 	 */
 	private void executePlanTemplate(String toolName, String rawParam, String planId) {
 		log.info("{} Executing plan template: {}, parameters: {}, planId: {}", LOG_PREFIX, toolName, rawParam, planId);
-		
+
 		ResponseEntity<Map<String, Object>> responseEntity = planTemplateService
 			.executePlanByTemplateIdInternal(toolName, rawParam, planId);
-		
+
 		if (!responseEntity.getStatusCode().is2xxSuccessful()) {
-			String errorMsg = String.format("Plan template service call failed, status code: %s", responseEntity.getStatusCode());
+			String errorMsg = String.format("Plan template service call failed, status code: %s",
+					responseEntity.getStatusCode());
 			log.error("{} {}", LOG_PREFIX, errorMsg);
 			throw new RuntimeException(errorMsg);
 		}
-		
+
 		if (responseEntity.getBody() == null) {
 			String errorMsg = "Plan template service returned empty response";
 			log.error("{} {}", LOG_PREFIX, errorMsg);
 			throw new RuntimeException(errorMsg);
 		}
-		
+
 		log.info("{} Plan template execution successful: {}", LOG_PREFIX, toolName);
 	}
 
@@ -206,22 +216,25 @@ public class CoordinatorToolExecutor {
 	 */
 	public String pollPlanResult(String planId) {
 		log.info("{} Starting to poll plan execution results: {}", LOG_PREFIX, planId);
-		
+
 		try {
 			// Poll until plan completion
 			PlanExecutionRecord record = pollUntilComplete(planId);
-			
+
 			// Extract final result
 			String resultOutput = extractFinalResult(record);
-			
+
 			if (resultOutput != null && !resultOutput.trim().isEmpty()) {
 				log.info("{} Successfully obtained plan execution result: {}", LOG_PREFIX, planId);
 				return resultOutput;
-			} else {
-				log.warn("{} Unable to obtain plan execution result, returning default message: {}", LOG_PREFIX, planId);
+			}
+			else {
+				log.warn("{} Unable to obtain plan execution result, returning default message: {}", LOG_PREFIX,
+						planId);
 				return DEFAULT_RESULT_MESSAGE;
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("{} Polling plan results failed: {} - {}", LOG_PREFIX, planId, e.getMessage(), e);
 			throw new RuntimeException("Polling plan results failed: " + e.getMessage(), e);
 		}
@@ -236,36 +249,36 @@ public class CoordinatorToolExecutor {
 		if (record == null) {
 			throw new IllegalArgumentException("Plan execution record cannot be empty");
 		}
-		
+
 		List<AgentExecutionRecord> sequence = record.getAgentExecutionSequence();
 		if (sequence == null || sequence.isEmpty()) {
 			throw new RuntimeException("Agent execution sequence is empty, unable to obtain result output");
 		}
-		
+
 		// Get the last Agent execution record
 		AgentExecutionRecord lastAgentRecord = sequence.get(sequence.size() - 1);
 		List<ThinkActRecord> thinkActSteps = lastAgentRecord.getThinkActSteps();
-		
+
 		if (thinkActSteps == null || thinkActSteps.isEmpty()) {
 			throw new RuntimeException("ThinkAct steps are empty, unable to obtain result output");
 		}
-		
+
 		// Get the last ThinkAct record
 		ThinkActRecord lastThinkActRecord = thinkActSteps.get(thinkActSteps.size() - 1);
 		List<ThinkActRecord.ActToolInfo> actToolInfoList = lastThinkActRecord.getActToolInfoList();
-		
+
 		if (actToolInfoList == null || actToolInfoList.isEmpty()) {
 			throw new RuntimeException("ActTool info list is empty, unable to obtain result output");
 		}
-		
+
 		// Get the result of the last tool call
 		ThinkActRecord.ActToolInfo lastToolInfo = actToolInfoList.get(actToolInfoList.size() - 1);
 		String result = lastToolInfo.getResult();
-		
+
 		if (result == null) {
 			throw new RuntimeException("Tool call result is empty");
 		}
-		
+
 		log.debug("{} Successfully extracted final result: {}", LOG_PREFIX, result);
 		return result;
 	}
@@ -278,30 +291,30 @@ public class CoordinatorToolExecutor {
 	private PlanExecutionRecord pollUntilComplete(String planId) {
 		int maxAttempts = coordinatorProperties.getPolling().getMaxAttempts();
 		long pollInterval = coordinatorProperties.getPolling().getPollInterval();
-		
-		log.debug("{} Starting to poll plan: {}, max attempts: {}, poll interval: {}ms", 
-			LOG_PREFIX, planId, maxAttempts, pollInterval);
-		
+
+		log.debug("{} Starting to poll plan: {}, max attempts: {}, poll interval: {}ms", LOG_PREFIX, planId,
+				maxAttempts, pollInterval);
+
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 			log.debug("{} Polling plan {} attempt {}", LOG_PREFIX, planId, attempt);
-			
+
 			// Get execution record
 			PlanExecutionRecord planRecord = getPlanExecutionRecord(planId);
-			
+
 			// Check if completed
 			if (planRecord.isCompleted()) {
 				log.info("{} Plan {} completed, polling ended", LOG_PREFIX, planId);
 				return planRecord;
 			}
-			
+
 			log.debug("{} Plan {} not yet completed, continuing to poll", LOG_PREFIX, planId);
-			
+
 			// Wait for specified time before continuing to poll
 			if (attempt < maxAttempts) {
 				sleepWithInterruptHandling(pollInterval);
 			}
 		}
-		
+
 		String errorMsg = String.format(POLLING_TIMEOUT_ERROR, maxAttempts);
 		log.warn("{} {}", LOG_PREFIX, errorMsg);
 		throw new RuntimeException(errorMsg);
@@ -315,15 +328,16 @@ public class CoordinatorToolExecutor {
 	private PlanExecutionRecord getPlanExecutionRecord(String planId) {
 		try {
 			PlanExecutionRecord planRecord = planExecutionRecorder.getRootPlanExecutionRecord(planId);
-			
+
 			if (planRecord == null) {
 				String errorMsg = String.format(PLAN_NOT_FOUND_ERROR, planId);
 				log.warn("{} {}", LOG_PREFIX, errorMsg);
 				throw new RuntimeException(errorMsg);
 			}
-			
+
 			return planRecord;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("{} Failed to get plan execution record: {} - {}", LOG_PREFIX, planId, e.getMessage(), e);
 			throw new RuntimeException("Failed to get plan execution record: " + e.getMessage(), e);
 		}
@@ -337,10 +351,12 @@ public class CoordinatorToolExecutor {
 		try {
 			log.debug("{} Waiting {} milliseconds before continuing to poll", LOG_PREFIX, millis);
 			Thread.sleep(millis);
-		} catch (InterruptedException e) {
+		}
+		catch (InterruptedException e) {
 			log.warn("{} Polling interrupted: {}", LOG_PREFIX, e.getMessage());
 			Thread.currentThread().interrupt();
 			throw new RuntimeException(String.format(POLLING_INTERRUPTED_ERROR, e.getMessage()));
 		}
 	}
+
 }

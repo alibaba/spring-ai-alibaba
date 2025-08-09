@@ -377,10 +377,10 @@ public class CoordinatorToolController {
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Map<String, Object>> deleteCoordinatorTool(@PathVariable("id") Long id) {
 		Map<String, Object> result = new HashMap<>();
-		
+
 		try {
 			log.info("Deleting coordinator tool with ID: {}", id);
-			
+
 			// 1. First check if tool exists
 			Optional<CoordinatorToolEntity> toolOptional = coordinatorToolRepository.findById(id);
 			if (!toolOptional.isPresent()) {
@@ -388,9 +388,9 @@ public class CoordinatorToolController {
 				result.put("message", "Coordinator tool not found with ID: " + id);
 				return ResponseEntity.notFound().build();
 			}
-			
+
 			CoordinatorToolEntity tool = toolOptional.get();
-			
+
 			// 2. If tool is published, unpublish first
 			if (CoordinatorToolEntity.PublishStatus.PUBLISHED.equals(tool.getPublishStatus())) {
 				log.info("Tool is published, unpublishing first...");
@@ -403,15 +403,15 @@ public class CoordinatorToolController {
 				}
 				log.info("Tool unpublished successfully");
 			}
-			
+
 			// 3. Delete database record
 			coordinatorToolRepository.deleteById(id);
 			log.info("Coordinator tool deleted from database");
-			
+
 			result.put("success", true);
 			result.put("message", "Coordinator tool deleted successfully");
 			return ResponseEntity.ok(result);
-			
+
 		}
 		catch (Exception e) {
 			log.error("Error deleting coordinator tool: {}", e.getMessage(), e);

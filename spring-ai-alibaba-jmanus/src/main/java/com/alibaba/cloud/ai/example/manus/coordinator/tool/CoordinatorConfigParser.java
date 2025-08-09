@@ -352,7 +352,7 @@ public class CoordinatorConfigParser {
 			// Add hardcoded sessionId parameter, which is required
 			appendProperty(schema, "planId", "Plan execution ID", "string", true);
 			requiredParams.add("planId");
-			
+
 			// Process other parameters
 			for (int i = 0; i < parametersArray.size(); i++) {
 				JsonNode paramNode = parametersArray.get(i);

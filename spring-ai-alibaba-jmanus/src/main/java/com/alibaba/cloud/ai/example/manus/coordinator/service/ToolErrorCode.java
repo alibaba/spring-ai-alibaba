@@ -21,10 +21,12 @@ package com.alibaba.cloud.ai.example.manus.coordinator.service;
  */
 public enum ToolErrorCode {
 
-	TOOL_NOT_FOUND("TOOL_001", "Tool not found"), TOOL_ALREADY_EXISTS("TOOL_002", "Tool already exists"), NETWORK_ERROR("TOOL_003", "Network connection error"),
-	PERMISSION_DENIED("TOOL_004", "Insufficient permissions"), INVALID_PARAMETER("TOOL_005", "Invalid parameter"), SERVER_ERROR("TOOL_006", "Internal server error"),
-	TIMEOUT_ERROR("TOOL_007", "Operation timeout"), PUBLISH_FAILED("TOOL_008", "Publication failed"), UNPUBLISH_FAILED("TOOL_009", "Unpublishing failed"),
-	LOAD_FAILED("TOOL_010", "Loading failed"), REFRESH_FAILED("TOOL_011", "Refresh failed");
+	TOOL_NOT_FOUND("TOOL_001", "Tool not found"), TOOL_ALREADY_EXISTS("TOOL_002", "Tool already exists"),
+	NETWORK_ERROR("TOOL_003", "Network connection error"), PERMISSION_DENIED("TOOL_004", "Insufficient permissions"),
+	INVALID_PARAMETER("TOOL_005", "Invalid parameter"), SERVER_ERROR("TOOL_006", "Internal server error"),
+	TIMEOUT_ERROR("TOOL_007", "Operation timeout"), PUBLISH_FAILED("TOOL_008", "Publication failed"),
+	UNPUBLISH_FAILED("TOOL_009", "Unpublishing failed"), LOAD_FAILED("TOOL_010", "Loading failed"),
+	REFRESH_FAILED("TOOL_011", "Refresh failed");
 
 	private final String code;
 

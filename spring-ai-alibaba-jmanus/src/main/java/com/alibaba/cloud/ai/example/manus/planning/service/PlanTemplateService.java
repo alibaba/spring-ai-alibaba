@@ -336,7 +336,8 @@ public class PlanTemplateService implements IPlanTemplateService {
 	 * @param rawParam URL query parameters
 	 * @return Result status
 	 */
-	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam, String planId) {
+	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam,
+			String planId) {
 		try {
 			// Step 1: Get execution JSON from repository by planTemplateId
 			PlanTemplate template = getPlanTemplate(planTemplateId);
@@ -359,7 +360,8 @@ public class PlanTemplateService implements IPlanTemplateService {
 			String newPlanId;
 			if (planId != null && !planId.trim().isEmpty()) {
 				newPlanId = planId;
-			} else {
+			}
+			else {
 				newPlanId = planIdDispatcher.generatePlanId();
 			}
 

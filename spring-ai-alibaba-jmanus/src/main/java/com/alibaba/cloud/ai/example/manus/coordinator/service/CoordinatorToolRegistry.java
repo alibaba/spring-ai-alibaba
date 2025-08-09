@@ -87,7 +87,8 @@ public class CoordinatorToolRegistry {
 			Map<String, List<CoordinatorTool>> groupedTools = coordinatorTools.stream()
 				.collect(Collectors.groupingBy(CoordinatorTool::getEndpoint));
 
-			log.info("Successfully loaded coordinator tools, total {} tools, grouped into {} endpoints", coordinatorTools.size(), groupedTools.size());
+			log.info("Successfully loaded coordinator tools, total {} tools, grouped into {} endpoints",
+					coordinatorTools.size(), groupedTools.size());
 
 			return Result.success(groupedTools, "Successfully loaded " + coordinatorTools.size() + " tools");
 		}
@@ -135,7 +136,8 @@ public class CoordinatorToolRegistry {
 		}
 		catch (Exception e) {
 			log.error("Exception occurred while publishing tool: {}", e.getMessage(), e);
-			return Result.failure(ToolErrorCode.SERVER_ERROR.getCode(), "Error occurred while publishing tool: " + e.getMessage());
+			return Result.failure(ToolErrorCode.SERVER_ERROR.getCode(),
+					"Error occurred while publishing tool: " + e.getMessage());
 		}
 	}
 
@@ -181,17 +183,20 @@ public class CoordinatorToolRegistry {
 			Result<Boolean> publishResult = publishWithResult(tool);
 
 			if (publishResult.isSuccess()) {
-				log.info("Successfully published tool entity: {} to endpoint: {}", entity.getToolName(), entity.getEndpoint());
+				log.info("Successfully published tool entity: {} to endpoint: {}", entity.getToolName(),
+						entity.getEndpoint());
 				return Result.success(true, "Tool published successfully");
 			}
 			else {
-				log.error("Failed to publish tool entity: {} to endpoint: {}", entity.getToolName(), entity.getEndpoint());
+				log.error("Failed to publish tool entity: {} to endpoint: {}", entity.getToolName(),
+						entity.getEndpoint());
 				return publishResult;
 			}
 		}
 		catch (Exception e) {
 			log.error("Exception occurred while publishing tool entity: {}", e.getMessage(), e);
-			return Result.failure(ToolErrorCode.SERVER_ERROR.getCode(), "Error occurred while publishing tool entity: " + e.getMessage());
+			return Result.failure(ToolErrorCode.SERVER_ERROR.getCode(),
+					"Error occurred while publishing tool entity: " + e.getMessage());
 		}
 	}
 
@@ -233,17 +238,20 @@ public class CoordinatorToolRegistry {
 			}
 		}
 
-		log.info("Batch publishing completed, successfully published {} tools out of {} total", successCount, totalCount);
+		log.info("Batch publishing completed, successfully published {} tools out of {} total", successCount,
+				totalCount);
 
 		if (successCount == totalCount) {
 			return Result.success(successCount, "All tools published successfully");
 		}
 		else if (successCount > 0) {
-			return Result.success(successCount, String.format("Partially successful tool publishing, %d successful, %d failed. Failed tools: %s", successCount,
-					totalCount - successCount, failedTools.toString()));
+			return Result.success(successCount,
+					String.format("Partially successful tool publishing, %d successful, %d failed. Failed tools: %s",
+							successCount, totalCount - successCount, failedTools.toString()));
 		}
 		else {
-			return Result.failure(ToolErrorCode.PUBLISH_FAILED.getCode(), "All tools failed to publish: " + failedTools.toString());
+			return Result.failure(ToolErrorCode.PUBLISH_FAILED.getCode(),
+					"All tools failed to publish: " + failedTools.toString());
 		}
 	}
 
@@ -285,17 +293,20 @@ public class CoordinatorToolRegistry {
 			}
 		}
 
-		log.info("Batch publishing completed, successfully published {} tool entities out of {} total", successCount, totalCount);
+		log.info("Batch publishing completed, successfully published {} tool entities out of {} total", successCount,
+				totalCount);
 
 		if (successCount == totalCount) {
 			return Result.success(successCount, "All tool entities published successfully");
 		}
 		else if (successCount > 0) {
-			return Result.success(successCount, String.format("Partially successful tool entity publishing, %d successful, %d failed. Failed entities: %s", successCount,
-					totalCount - successCount, failedEntities.toString()));
+			return Result.success(successCount, String.format(
+					"Partially successful tool entity publishing, %d successful, %d failed. Failed entities: %s",
+					successCount, totalCount - successCount, failedEntities.toString()));
 		}
 		else {
-			return Result.failure(ToolErrorCode.PUBLISH_FAILED.getCode(), "All tool entities failed to publish: " + failedEntities.toString());
+			return Result.failure(ToolErrorCode.PUBLISH_FAILED.getCode(),
+					"All tool entities failed to publish: " + failedEntities.toString());
 		}
 	}
 
@@ -344,7 +355,8 @@ public class CoordinatorToolRegistry {
 		}
 		catch (Exception e) {
 			log.error("Exception occurred while unpublishing tool: {}", e.getMessage(), e);
-			return Result.failure(ToolErrorCode.SERVER_ERROR.getCode(), "Error occurred while unpublishing tool: " + e.getMessage());
+			return Result.failure(ToolErrorCode.SERVER_ERROR.getCode(),
+					"Error occurred while unpublishing tool: " + e.getMessage());
 		}
 	}
 
@@ -385,7 +397,8 @@ public class CoordinatorToolRegistry {
 		}
 		catch (Exception e) {
 			log.error("Exception occurred while unpublishing tool: {}", e.getMessage(), e);
-			return Result.failure(ToolErrorCode.SERVER_ERROR.getCode(), "Error occurred while unpublishing tool: " + e.getMessage());
+			return Result.failure(ToolErrorCode.SERVER_ERROR.getCode(),
+					"Error occurred while unpublishing tool: " + e.getMessage());
 		}
 	}
 
@@ -411,22 +424,26 @@ public class CoordinatorToolRegistry {
 		}
 
 		try {
-			log.info("Starting to unpublish tool entity: {} from endpoint: {}", entity.getToolName(), entity.getEndpoint());
+			log.info("Starting to unpublish tool entity: {} from endpoint: {}", entity.getToolName(),
+					entity.getEndpoint());
 
 			Result<Boolean> result = unpublishWithResult(entity.getToolName(), entity.getEndpoint());
 
 			if (result.isSuccess()) {
-				log.info("Successfully unpublished tool entity: {} from endpoint: {}", entity.getToolName(), entity.getEndpoint());
+				log.info("Successfully unpublished tool entity: {} from endpoint: {}", entity.getToolName(),
+						entity.getEndpoint());
 				return Result.success(true, "Tool entity unpublished successfully");
 			}
 			else {
-				log.error("Failed to unpublish tool entity: {} from endpoint: {}", entity.getToolName(), entity.getEndpoint());
+				log.error("Failed to unpublish tool entity: {} from endpoint: {}", entity.getToolName(),
+						entity.getEndpoint());
 				return result;
 			}
 		}
 		catch (Exception e) {
 			log.error("Exception occurred while unpublishing tool entity: {}", e.getMessage(), e);
-			return Result.failure(ToolErrorCode.SERVER_ERROR.getCode(), "Error occurred while unpublishing tool entity: " + e.getMessage());
+			return Result.failure(ToolErrorCode.SERVER_ERROR.getCode(),
+					"Error occurred while unpublishing tool entity: " + e.getMessage());
 		}
 	}
 

@@ -55,6 +55,7 @@ public class CoordinatorProperties {
 	 * 轮询配置内部类
 	 */
 	public static class Polling {
+
 		/**
 		 * 最大轮询次数
 		 */
@@ -80,5 +81,7 @@ public class CoordinatorProperties {
 		public void setPollInterval(long pollInterval) {
 			this.pollInterval = pollInterval;
 		}
+
 	}
+
 }

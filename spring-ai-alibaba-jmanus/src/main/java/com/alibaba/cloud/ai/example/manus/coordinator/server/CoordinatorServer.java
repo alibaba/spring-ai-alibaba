@@ -453,8 +453,8 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 
 			}
 			catch (Exception e) {
-				log.error("Exception occurred while recreating MCP server for endpoint: {}, {}", endpoint, e.getMessage(),
-						e);
+				log.error("Exception occurred while recreating MCP server for endpoint: {}, {}", endpoint,
+						e.getMessage(), e);
 			}
 		}
 
@@ -540,7 +540,8 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 					.anyMatch(existingTool -> existingTool.getToolName().equals(tool.getToolName()));
 
 				if (toolExists) {
-					log.warn("Tool {} already exists in endpoint {}, skipping registration", tool.getToolName(), endpoint);
+					log.warn("Tool {} already exists in endpoint {}, skipping registration", tool.getToolName(),
+							endpoint);
 					return false;
 				}
 
@@ -707,7 +708,8 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 					.handle(adapter)
 					.bindNow();
 
-				log.info("Successfully started HTTP server on {}:{}", EndPointUtils.SERVICE_HOST, EndPointUtils.SERVICE_PORT);
+				log.info("Successfully started HTTP server on {}:{}", EndPointUtils.SERVICE_HOST,
+						EndPointUtils.SERVICE_PORT);
 
 			}
 			catch (Exception e) {
