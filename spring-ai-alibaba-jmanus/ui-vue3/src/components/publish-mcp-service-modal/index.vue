@@ -143,13 +143,13 @@
 
       <!-- 参数配置 -->
       <div class="form-section">
-        <div class="section-title">参数配置</div>
+        <div class="section-title">{{ t('mcpService.parameterConfig') }}</div>
         <div class="parameters-table">
           <table>
             <thead>
               <tr>
-                <th>字段名</th>
-                <th>字段描述</th>
+                <th>{{ t('mcpService.parameterName') }}</th>
+                <th>{{ t('mcpService.parameterDescription') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -602,9 +602,9 @@ const handlePublish = async () => {
   }
 }
 
-// 处理取消功能已移除
+// Handle cancel functionality removed
 
-// 处理发布开关切换
+// Handle publish toggle switch
 const handlePublishToggle = async () => {
   if (publishing.value) return
   
@@ -635,7 +635,7 @@ const handlePublishToggle = async () => {
   }
 }
 
-// 监听modal显示状态
+// Watch modal display state
 const watchModal = async () => {
   if (showModal.value) {
     console.log('[PublishModal] 模态框打开，开始初始化数据')
@@ -645,7 +645,7 @@ const watchModal = async () => {
   }
 }
 
-// 加载协调器工具数据
+// Load coordinator tool data
 const loadCoordinatorToolData = async () => {
   if (!props.planTemplateId) {
     console.log('[PublishModal] 没有planTemplateId，跳过加载协调器工具数据')
@@ -725,10 +725,10 @@ const loadCoordinatorToolData = async () => {
   }
 }
 
-// 监听props变化
+// Watch props changes
 watch(() => props.modelValue, watchModal)
 
-// 组件挂载时初始化
+// Initialize when component mounts
 onMounted(async () => {
   if (showModal.value) {
     console.log('[PublishModal] 组件挂载时初始化')
