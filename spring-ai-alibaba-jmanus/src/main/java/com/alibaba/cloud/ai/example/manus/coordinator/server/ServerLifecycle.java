@@ -13,23 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.coordinator.repository;
-
-import com.alibaba.cloud.ai.example.manus.coordinator.entity.CoordinatorToolEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-import java.util.List;
+package com.alibaba.cloud.ai.example.manus.coordinator.server;
 
 /**
- * 协调器工具数据访问层
+ * Server lifecycle management interface
  */
-@Repository
-public interface CoordinatorToolRepository extends JpaRepository<CoordinatorToolEntity, Long> {
-
-	/**
-	 * 根据计划模板ID查找
-	 */
-	List<CoordinatorToolEntity> findByPlanTemplateId(String planTemplateId);
-
+public interface ServerLifecycle {
+    
+    /**
+     * Start the server
+     */
+    void start();
+    
+    /**
+     * Stop the server
+     */
+    void stop();
+    
+    /**
+     * Check if server is running
+     * @return true if running, false otherwise
+     */
+    boolean isRunning();
 }
