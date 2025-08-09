@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.service.generator.workflow.sections;
 
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
-import com.alibaba.cloud.ai.model.workflow.nodedata.BranchNodeData;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
@@ -31,23 +30,13 @@ public class BranchNodeSection implements NodeSection {
 
 	@Override
 	public String render(Node node, String varName) {
-		BranchNodeData branchNode = (BranchNodeData) node.getData();
 		String id = node.getId();
-
-		String inputKey = "";
-		if (!branchNode.getCases().isEmpty()) {
-			inputKey = branchNode.getCases().get(0).getConditions().get(0).getVariableSelector().getName();
-		}
 
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("// —— BranchNode [%s] ——%n", id));
-		sb.append(String.format("BranchNode %s = BranchNode.builder()\n", varName));
-
-		sb.append(String.format("    .inputKey(\"%s\")\n", inputKey));
-		sb.append(String.format("    .outputKey(\"%s\")\n", escape(branchNode.getOutputKey())));
-		sb.append(String.format("    .build();\n"));
-
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
+		// 条件判断在条件边上，本节点为空节点
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(state -> Map.of()));%n%n",
+				varName));
 
 		return sb.toString();
 	}

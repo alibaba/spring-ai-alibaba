@@ -28,7 +28,9 @@ import java.util.List;
  */
 public class QuestionClassifierNodeData extends NodeData {
 
-	public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("class_name", VariableType.STRING.value());
+	public static Variable getDefaultOutputSchema() {
+		return new Variable("class_name", VariableType.STRING.value());
+	}
 
 	private ModelConfig model;
 

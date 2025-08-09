@@ -86,7 +86,7 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 							QuestionClassifierNodeData.CompletionParams.class));
 
 				QuestionClassifierNodeData nodeData = new QuestionClassifierNodeData(inputs,
-						List.of(QuestionClassifierNodeData.DEFAULT_OUTPUT_SCHEMA))
+						List.of(QuestionClassifierNodeData.getDefaultOutputSchema()))
 					.setModel(modelConfig);
 
 				// convert instructions
@@ -197,8 +197,8 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 
 	@Override
 	public void postProcessOutput(QuestionClassifierNodeData data, String varName) {
-		data.setOutputKey(varName + "_" + QuestionClassifierNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
-		data.setOutputs(List.of(QuestionClassifierNodeData.DEFAULT_OUTPUT_SCHEMA));
+		data.setOutputKey(varName + "_" + QuestionClassifierNodeData.getDefaultOutputSchema().getName());
+		data.setOutputs(List.of(QuestionClassifierNodeData.getDefaultOutputSchema()));
 		super.postProcessOutput(data, varName);
 	}
 

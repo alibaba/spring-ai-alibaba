@@ -63,7 +63,7 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 				}).toList();
 				String outputKey = (String) data.get("output_key");
 
-				AnswerNodeData nd = new AnswerNodeData(inputs, AnswerNodeData.DEFAULT_OUTPUTS).setAnswer(tmpl);
+				AnswerNodeData nd = new AnswerNodeData(inputs, AnswerNodeData.getDefaultOutputs()).setAnswer(tmpl);
 				nd.setOutputKey(outputKey);
 				return nd;
 			}

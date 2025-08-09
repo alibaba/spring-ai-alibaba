@@ -317,8 +317,8 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 
 	@Override
 	public void postProcessOutput(LLMNodeData data, String varName) {
-		data.setOutputKey(varName + "_" + LLMNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
-		data.setOutputs(List.of(LLMNodeData.DEFAULT_OUTPUT_SCHEMA));
+		data.setOutputKey(varName + "_" + LLMNodeData.getDefaultOutputSchema().getName());
+		data.setOutputs(List.of(LLMNodeData.getDefaultOutputSchema()));
 		super.postProcessOutput(data, varName);
 	}
 

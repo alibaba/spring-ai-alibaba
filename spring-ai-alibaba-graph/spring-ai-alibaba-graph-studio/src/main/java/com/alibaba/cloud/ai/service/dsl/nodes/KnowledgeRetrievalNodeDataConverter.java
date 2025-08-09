@@ -230,8 +230,8 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 
 	@Override
 	public void postProcessOutput(KnowledgeRetrievalNodeData data, String varName) {
-		data.setOutputKey(varName + "_" + KnowledgeRetrievalNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
-		data.setOutputs(List.of(KnowledgeRetrievalNodeData.DEFAULT_OUTPUT_SCHEMA));
+		data.setOutputKey(varName + "_" + KnowledgeRetrievalNodeData.getDefaultOutputSchema().getName());
+		data.setOutputs(List.of(KnowledgeRetrievalNodeData.getDefaultOutputSchema()));
 		super.postProcessOutput(data, varName);
 	}
 

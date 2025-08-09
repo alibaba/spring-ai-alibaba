@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 public class WorkflowProjectGenerator implements ProjectGenerator {
@@ -184,6 +185,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			}
 
 			// 迭代节点作为边的终止点时直接使用节点ID，作为边的起始点时使用ID_out
+			// todo: 修改迭代节点终止ID，防止与变量冲突（Dify不冲突）
 			if (sourceType != null && sourceType.equalsIgnoreCase("iteration")) {
 				srcVar += "_out";
 			}
@@ -199,7 +201,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 				sb.append(String.format("stateGraph.addEdge(START, \"%s\");%n", tgtVar));
 			}
 			else if ("end".equals(targetType)) {
-				sb.append(String.format("stateGraph.addEdge(\"%s\", END);%n", srcVar));
+				sb.append(String.format("stateGraph.addEdge(\"%s\", \"%s\");%n", srcVar, tgtVar));
+				sb.append(String.format("stateGraph.addEdge(\"%s\", END);%n", tgtVar));
 			}
 			else {
 				sb.append(String.format("stateGraph.addEdge(\"%s\", \"%s\");%n", srcVar, tgtVar));
@@ -218,6 +221,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			List<String> mappings = new ArrayList<>();
 
 			// 处理条件边的扩展
+			// todo: 完善条件边的EdgeAction
 			if (sourceData instanceof BranchNodeData branchNodeData) {
 				List<Case> cases = branchNodeData.getCases();
 				// 构造EdgeAction.apply函数
@@ -264,15 +268,11 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 				Map<String, String> edgeCaseMap = entry.getValue()
 					.stream()
 					.collect(Collectors.toMap(Edge::getSourceHandle, Edge::getTarget));
-				String edgeCaseMapStr = "Map.of(" + String.join(", ",
-						edgeCaseMap.entrySet()
-							.stream()
-							.map(e -> "\"" + e.getKey() + "\", "
-									+ (nodeMap.get(e.getValue()) != null
-											&& "end".equalsIgnoreCase(nodeMap.get(e.getValue()).getType()) ? "END"
-													: "\"" + varNames.getOrDefault(e.getValue(), "unknown") + "\""))
-							.toList())
-						+ ")";
+				String edgeCaseMapStr = "Map.of(" + edgeCaseMap.entrySet()
+					.stream()
+					.flatMap(e -> Stream.of(e.getKey(), varNames.getOrDefault(e.getValue(), "unknown")))
+					.map(v -> String.format("\"%s\"", v))
+					.collect(Collectors.joining(", ")) + ")";
 
 				// 构建最终代码
 				sb.append("stateGraph.addConditionalEdges(\"")
@@ -282,6 +282,21 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 					.append("}), ")
 					.append(edgeCaseMapStr)
 					.append(");\n");
+
+				// 补充结束节点与END的联系（如果有）
+				List<String> endNodeNames = edgeCaseMap.values()
+					.stream()
+					.map(nodeMap::get)
+					.filter(Objects::nonNull)
+					.filter(node -> "end".equalsIgnoreCase(node.getType()))
+					.map(Node::getId)
+					.map(varNames::get)
+					.toList();
+				if (!endNodeNames.isEmpty()) {
+					sb.append("stateGraph");
+					endNodeNames.forEach(varName -> sb.append(String.format("\n.addEdge(\"%s\", END)", varName)));
+					sb.append(";\n");
+				}
 				continue;
 			}
 

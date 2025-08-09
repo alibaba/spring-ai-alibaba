@@ -24,7 +24,9 @@ import java.util.List;
 
 public class CodeNodeData extends NodeData {
 
-	public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("output", VariableType.STRING.value());
+	public static Variable getDefaultOutputSchema() {
+		return new Variable("output", VariableType.STRING.value());
+	}
 
 	private String code;
 

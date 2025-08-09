@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.EndNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-// todo: 新增Dify结束节点，用于输出所有选中的变量
 @Component
 public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData> {
 
@@ -59,9 +57,7 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 					String variable = (String) output.get("variable");
 					return new VariableSelector(valueSelector.get(0), valueSelector.get(1)).setLabel(variable);
 				}).toList();
-				List<Variable> outputs = inputs.stream()
-					.map(input -> new Variable(input.getLabel(), VariableType.OBJECT.value()))
-					.toList();
+				List<Variable> outputs = List.of();
 				return new EndNodeData(inputs, outputs);
 			}
 
@@ -97,9 +93,9 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 
 	@Override
 	public void postProcessOutput(EndNodeData data, String varName) {
-		String outputKey = varName + "_" + EndNodeData.DEFAULT_OUTPUT_SCHEMA.getName();
+		String outputKey = varName + "_" + EndNodeData.getDefaultOutputSchema().getName();
 		data.setOutputKey(outputKey);
-		data.setOutputs(List.of(EndNodeData.DEFAULT_OUTPUT_SCHEMA));
+		data.setOutputs(List.of(EndNodeData.getDefaultOutputSchema()));
 		super.postProcessOutput(data, varName);
 	}
 

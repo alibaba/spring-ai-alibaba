@@ -24,7 +24,9 @@ import java.util.List;
 
 public class EndNodeData extends NodeData {
 
-	public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("output", VariableType.ARRAY_STRING.value());
+	public static Variable getDefaultOutputSchema() {
+		return new Variable("output", VariableType.ARRAY_STRING.value());
+	}
 
 	public String getOutputKey() {
 		return outputKey;

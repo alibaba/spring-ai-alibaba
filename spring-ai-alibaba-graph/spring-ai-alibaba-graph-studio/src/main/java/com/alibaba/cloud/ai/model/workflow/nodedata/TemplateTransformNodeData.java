@@ -25,7 +25,9 @@ import java.util.List;
 
 public class TemplateTransformNodeData extends NodeData {
 
-	public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("output", VariableType.STRING.value());
+	public static Variable getDefaultOutputSchema() {
+		return new Variable("output", VariableType.STRING.value());
+	}
 
 	private String template;
 
