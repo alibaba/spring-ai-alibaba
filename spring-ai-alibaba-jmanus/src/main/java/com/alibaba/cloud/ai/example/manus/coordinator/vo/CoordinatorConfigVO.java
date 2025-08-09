@@ -3,21 +3,21 @@ package com.alibaba.cloud.ai.example.manus.coordinator.vo;
 import java.util.List;
 
 /**
- * CoordinatorConfigVO输出数据结构
+ * CoordinatorConfigVO Output Data Structure
  */
 public class CoordinatorConfigVO {
 
-	private String id; // 配置ID，对应planId
+	private String id; // Configuration ID, corresponds to planId
 
-	private String name; // 配置名称，对应title
+	private String name; // Configuration name, corresponds to title
 
-	private String description; // 配置描述，对应userRequest
+	private String description; // Configuration description, corresponds to userRequest
 
-	private String endpoint; // 端点地址
+	private String endpoint; // Endpoint address
 
-	private List<CoordinatorParameterVO> parameters; // 参数列表
+	private List<CoordinatorParameterVO> parameters; // Parameter list
 
-	// 构造函数
+	// Constructor
 	public CoordinatorConfigVO() {
 	}
 
@@ -37,7 +37,7 @@ public class CoordinatorConfigVO {
 		this.parameters = parameters;
 	}
 
-	// Getter和Setter方法
+	// Getter and Setter methods
 	public String getId() {
 		return id;
 	}

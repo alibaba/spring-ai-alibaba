@@ -22,13 +22,13 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 /**
- * 协调器工具数据访问层
+ * Coordinator Tool Data Access Layer
  */
 @Repository
 public interface CoordinatorToolRepository extends JpaRepository<CoordinatorToolEntity, Long> {
 
 	/**
-	 * 根据计划模板ID查找
+	 * Find by plan template ID
 	 */
 	List<CoordinatorToolEntity> findByPlanTemplateId(String planTemplateId);
 

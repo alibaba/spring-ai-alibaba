@@ -1,19 +1,19 @@
 package com.alibaba.cloud.ai.example.manus.coordinator.vo;
 
 /**
- * CoordinatorParameterVO参数对象
+ * CoordinatorParameterVO Parameter Object
  */
 public class CoordinatorParameterVO {
 
-	private String name; // 参数名称
+	private String name; // Parameter name
 
-	private String type; // 参数类型，默认"String"
+	private String type; // Parameter type, default "String"
 
-	private String description; // 参数描述
+	private String description; // Parameter description
 
-	private boolean required; // 是否必需，默认true
+	private boolean required; // Whether required, default true
 
-	// 构造函数
+	// Constructor
 	public CoordinatorParameterVO() {
 		this.type = "String";
 		this.required = true;
@@ -33,7 +33,7 @@ public class CoordinatorParameterVO {
 		this.required = true;
 	}
 
-	// Getter和Setter方法
+	// Getter and Setter methods
 	public String getName() {
 		return name;
 	}

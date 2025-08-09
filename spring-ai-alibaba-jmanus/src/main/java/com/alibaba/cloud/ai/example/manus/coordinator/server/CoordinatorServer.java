@@ -59,7 +59,7 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 
 	private static final Logger log = LoggerFactory.getLogger(CoordinatorServer.class);
 
-	// ==================== 日志常量 ====================
+	// ==================== Log Constants ====================
 	private static final String LOG_SEPARATOR = "==========================================";
 	private static final String LOG_SERVER_TITLE = "JManus Multi EndPoint Streamable Http Server";
 	private static final String LOG_SERVICE_LIST_TITLE = "Coordinator Service List:";
@@ -82,11 +82,11 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	@Autowired
 	private CoordinatorToolProperties coordinatorToolProperties;
 
-	// 内部组件：MCP服务器管理器
+	// Internal component: MCP server manager
 	private final McpServerManager mcpServerManager;
-	// 内部组件：工具注册管理器  
+	// Internal component: Tool registry manager  
 	private final ToolRegistryManager toolRegistryManager;
-	// 内部组件：HTTP服务器管理器
+	// Internal component: HTTP server manager
 	private final HttpServerManager httpServerManager;
 
 	public CoordinatorServer() {
@@ -195,14 +195,14 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 			toolName, updatedTool.getEndpoint()) != null;
 	}
 
-	// ==================== 执行模板方法 ====================
+	// ==================== Execution Template Methods ====================
 
 	/**
-	 * 执行模板方法，统一处理验证、日志和异常
-	 * @param operation 操作名称
-	 * @param operationSupplier 操作执行函数
-	 * @param operationParams 操作参数
-	 * @return 操作结果
+	 * Execution template method, unified handling of validation, logging and exceptions
+	 * @param operation Operation name
+	 * @param operationSupplier Operation execution function
+	 * @param operationParams Operation parameters
+	 * @return Operation result
 	 */
 	private <T> T executeWithValidation(String operation, Supplier<T> operationSupplier, 
 	                                   String... operationParams) {
@@ -222,10 +222,10 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 		}
 	}
 
-	// ==================== 辅助方法 ====================
+	// ==================== Helper Methods ====================
 
 	/**
-	 * 记录服务器启动日志
+	 * Log server startup information
 	 */
 	private void logServerStartup() {
 		log.info(LOG_SEPARATOR);
@@ -238,7 +238,7 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	}
 
 	/**
-	 * 记录服务器启动完成日志
+	 * Log server startup completion information
 	 */
 	private void logServerStartupComplete(Map<String, List<CoordinatorTool>> coordinatorToolsByEndpoint) {
 		log.info("{} started successfully!", LOG_SERVER_TITLE);
@@ -271,10 +271,10 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 		log.info(LOG_SEPARATOR);
 	}
 
-	// ==================== 内部组件类 ====================
+	// ==================== Internal Component Classes ====================
 
 	/**
-	 * MCP服务器管理器
+	 * MCP Server Manager
 	 */
 	private class McpServerManager {
 		private final Map<String, Object> registeredMcpServers = new ConcurrentHashMap<>();
@@ -478,7 +478,7 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	}
 
 	/**
-	 * 工具注册管理器
+	 * Tool Registry Manager
 	 */
 	private class ToolRegistryManager {
 		private final Map<String, List<CoordinatorTool>> registeredTools = new ConcurrentHashMap<>();
@@ -646,7 +646,7 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	}
 
 	/**
-	 * HTTP服务器管理器
+	 * HTTP Server Manager
 	 */
 	private class HttpServerManager {
 		private DisposableServer httpServer;

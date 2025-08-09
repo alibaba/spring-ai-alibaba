@@ -19,7 +19,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * 协调器工具实体类
+ * Coordinator Tool Entity Class
  */
 @Entity
 @Table(name = "coordinator_tools")
@@ -58,7 +58,7 @@ public class CoordinatorToolEntity {
 	private LocalDateTime updateTime;
 
 	/**
-	 * 发布状态枚举
+	 * Publish Status Enum
 	 */
 	public enum PublishStatus {
 
@@ -164,7 +164,7 @@ public class CoordinatorToolEntity {
 	}
 
 	/**
-	 * 更新时自动设置更新时间
+	 * Automatically set update time when updating
 	 */
 	@PreUpdate
 	public void preUpdate() {

@@ -91,9 +91,9 @@ public class CoordinatorToolController {
 			}
 
 			CoordinatorToolEntity entity = toolVO.toEntity();
-			entity.setId(null); // 确保新创建
+			entity.setId(null); // Ensure new creation
 
-			// 设置默认值
+			// Set default values
 			if (entity.getInputSchema() == null || entity.getInputSchema().trim().isEmpty()) {
 				entity.setInputSchema("[]");
 			}
@@ -101,7 +101,7 @@ public class CoordinatorToolController {
 				entity.setPublishStatus(CoordinatorToolEntity.PublishStatus.UNPUBLISHED);
 			}
 
-			// 调用CoordinatorConfigParser生成MCP Schema
+			// Call CoordinatorConfigParser to generate MCP Schema
 			String mcpSchema = coordinatorConfigParser.generateToolSchema(entity.getInputSchema());
 			entity.setMcpSchema(mcpSchema);
 
@@ -129,7 +129,7 @@ public class CoordinatorToolController {
 				CoordinatorToolEntity entity = toolVO.toEntity();
 				entity.setId(id);
 
-				// 调用CoordinatorConfigParser生成MCP Schema
+				// Call CoordinatorConfigParser to generate MCP Schema
 				String mcpSchema = coordinatorConfigParser.generateToolSchema(entity.getInputSchema());
 				entity.setMcpSchema(mcpSchema);
 
@@ -154,11 +154,11 @@ public class CoordinatorToolController {
 			if (entity.isPresent()) {
 				CoordinatorToolEntity tool = entity.get();
 
-				// 尝试发布到MCP服务器
+				// Try to publish to MCP server
 				boolean publishSuccess = coordinatorService.publishCoordinatorTool(tool);
 
 				if (publishSuccess) {
-					// MCP发布成功，更新数据库状态为已发布
+					// MCP publish successful, update database status to published
 					tool.setPublishStatus(CoordinatorToolEntity.PublishStatus.PUBLISHED);
 					coordinatorToolRepository.save(tool);
 
@@ -167,7 +167,7 @@ public class CoordinatorToolController {
 					return ResponseEntity.ok(response);
 				}
 				else {
-					// MCP发布失败，忽略，不更新数据库状态
+					// MCP publish failed, ignore, do not update database status
 					response.put("success", false);
 					response.put("message", "Failed to publish tool to MCP server, status unchanged");
 					return ResponseEntity.ok(response);
@@ -195,11 +195,11 @@ public class CoordinatorToolController {
 			if (entity.isPresent()) {
 				CoordinatorToolEntity tool = entity.get();
 
-				// 尝试从coordinator server取消发布
+				// Try to unpublish from coordinator server
 				boolean unpublishSuccess = coordinatorService.unpublishCoordinatorTool(tool);
 
 				if (unpublishSuccess) {
-					// 取消发布成功，更新数据库状态为未发布
+					// Unpublish successful, update database status to unpublished
 					tool.setPublishStatus(CoordinatorToolEntity.PublishStatus.UNPUBLISHED);
 					coordinatorToolRepository.save(tool);
 
@@ -208,7 +208,7 @@ public class CoordinatorToolController {
 					return ResponseEntity.ok(response);
 				}
 				else {
-					// 取消发布失败，忽略，不更新数据库状态
+					// Unpublish failed, ignore, do not update database status
 					response.put("success", false);
 					response.put("message", "Failed to unpublish tool from coordinator server, status unchanged");
 					return ResponseEntity.ok(response);
@@ -234,11 +234,11 @@ public class CoordinatorToolController {
 		Map<String, Object> result = new HashMap<>();
 
 		try {
-			// 1. 先查询coordinator_tools表中是否已存在
+			// 1. First check if it already exists in coordinator_tools table
 			List<CoordinatorToolEntity> existingTools = coordinatorToolRepository.findByPlanTemplateId(planTemplateId);
 
 			if (!existingTools.isEmpty()) {
-				// 如果已存在，直接返回
+				// If it already exists, return directly
 				List<CoordinatorToolVO> tools = existingTools.stream()
 					.map(CoordinatorToolVO::fromEntity)
 					.collect(Collectors.toList());
@@ -251,7 +251,7 @@ public class CoordinatorToolController {
 				return ResponseEntity.ok(result);
 			}
 
-			// 2. 如果不存在，查询plan_template表
+			// 2. If it doesn't exist, query plan_template table
 			PlanTemplate planTemplate = planTemplateRepository.findByPlanTemplateId(planTemplateId).orElse(null);
 			if (planTemplate == null) {
 				result.put("success", false);
@@ -259,7 +259,7 @@ public class CoordinatorToolController {
 				return ResponseEntity.notFound().build();
 			}
 
-			// 3. 查询最新版本
+			// 3. Query the latest version
 			Integer maxVersionIndex = planTemplateVersionRepository.findMaxVersionIndexByPlanTemplateId(planTemplateId);
 			if (maxVersionIndex == null) {
 				result.put("success", false);
@@ -275,10 +275,10 @@ public class CoordinatorToolController {
 				return ResponseEntity.notFound().build();
 			}
 
-			// 4. 转换plan_json为CoordinatorConfigVO
+			// 4. Convert plan_json to CoordinatorConfigVO
 			CoordinatorConfigVO mcpPlanConfig = coordinatorConfigParser.parser(latestVersion.getPlanJson());
 
-			// 5. 创建CoordinatorToolVO
+			// 5. Create CoordinatorToolVO
 			CoordinatorToolVO coordinatorToolVO = new CoordinatorToolVO();
 			coordinatorToolVO.setToolName(mcpPlanConfig.getId()); // id = toolName
 			coordinatorToolVO.setPlanTemplateId(planTemplateId);
@@ -286,7 +286,7 @@ public class CoordinatorToolController {
 																					// =
 																					// toolDescription
 
-			// 6. 将parameters转换为JSON作为inputSchema
+			// 6. Convert parameters to JSON as inputSchema
 			try {
 				String inputSchema = objectMapper.writeValueAsString(mcpPlanConfig.getParameters());
 				coordinatorToolVO.setInputSchema(inputSchema);
@@ -295,7 +295,7 @@ public class CoordinatorToolController {
 				coordinatorToolVO.setInputSchema("[]");
 			}
 
-			// 7. 设置默认值
+			// 7. Set default values
 			coordinatorToolVO.setMcpSchema("{}");
 			coordinatorToolVO.setEndpoint("jmanus");
 			coordinatorToolVO.setPublishStatus("UNPUBLISHED");

@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.example.manus.coordinator.entity.CoordinatorToolEnti
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * 协调器工具VO类
+ * Coordinator Tool VO Class
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CoordinatorToolVO {
@@ -113,7 +113,7 @@ public class CoordinatorToolVO {
 	}
 
 	/**
-	 * 从Entity转换为VO
+	 * Convert from Entity to VO
 	 */
 	public static CoordinatorToolVO fromEntity(CoordinatorToolEntity entity) {
 		if (entity == null) {
@@ -128,12 +128,12 @@ public class CoordinatorToolVO {
 		vo.setPlanTemplateId(entity.getPlanTemplateId());
 		vo.setEndpoint(entity.getEndpoint());
 		vo.setPublishStatus(entity.getPublishStatus() != null ? entity.getPublishStatus().name() : null);
-		// 明确不设置createTime和updateTime字段
+		// Explicitly do not set createTime and updateTime fields
 		return vo;
 	}
 
 	/**
-	 * 转换为Entity
+	 * Convert to Entity
 	 */
 	public CoordinatorToolEntity toEntity() {
 		CoordinatorToolEntity entity = new CoordinatorToolEntity();
