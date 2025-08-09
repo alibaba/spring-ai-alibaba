@@ -18,12 +18,16 @@ package com.alibaba.cloud.ai.service.dsl;
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.google.common.base.Strings;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -100,6 +104,36 @@ public interface NodeDataConverter<T extends NodeData> {
 			};
 			case CUSTOM -> (nodeData, idToVarName) -> {
 			};
+		};
+	}
+
+	/**
+	 * 将文本中变量占位符进行转化，比如Dify DSL的"你好，{{#123.query#}}"转化为"你好，{nodeName1.query}"
+	 * @param dialectType dsl语言
+	 * @return BiFunction，输入待转换的字符串和nodeId与nodeName的映射，输出转换结果
+	 */
+	static BiFunction<String, Map<String, String>, String> convertVarReserveFunction(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> (str, idToVarName) -> {
+				// todo: 模板支持上下文
+				if (Strings.isNullOrEmpty(str)) {
+					return str;
+				}
+				StringBuilder result = new StringBuilder();
+				Pattern pattern = Pattern.compile("\\{\\{#(\\w+)\\.(\\w+)#}}");
+				Matcher matcher = pattern.matcher(str);
+				while (matcher.find()) {
+					String nodeId = matcher.group(1);
+					String varName = matcher.group(2);
+					String res = "{"
+							+ idToVarName.getOrDefault(nodeId, StringUtils.hasText(nodeId) ? nodeId : "unknown") + "_"
+							+ varName + "}";
+					matcher.appendReplacement(result, Matcher.quoteReplacement(res));
+				}
+				matcher.appendTail(result);
+				return result.toString();
+			};
+			case CUSTOM -> (str, idToVarName) -> str;
 		};
 	}
 

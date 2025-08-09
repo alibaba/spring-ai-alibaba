@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
-import com.google.common.base.Strings;
+import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -31,8 +31,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -326,24 +324,9 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 	public BiConsumer<LLMNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
 			case DIFY -> super.postProcessConsumer(dialectType).andThen((data, idToVarName) -> {
-				// todo: 模板支持上下文
 				// 替换Dify的变量占位符
-				UnaryOperator<String> convertString = (prompt) -> {
-					if (Strings.isNullOrEmpty(prompt)) {
-						return prompt;
-					}
-					StringBuilder result = new StringBuilder();
-					Pattern pattern = Pattern.compile("\\{\\{#(\\d+)\\.(\\w+)#}}");
-					Matcher matcher = pattern.matcher(prompt);
-					while (matcher.find()) {
-						String nodeId = matcher.group(1);
-						String varName = matcher.group(2);
-						String res = "{" + idToVarName.getOrDefault(nodeId, "unknown") + "_" + varName + "}";
-						matcher.appendReplacement(result, Matcher.quoteReplacement(res));
-					}
-					matcher.appendTail(result);
-					return result.toString();
-				};
+				UnaryOperator<String> convertString = (
+						prompt) -> NodeDataConverter.convertVarReserveFunction(dialectType).apply(prompt, idToVarName);
 				UnaryOperator<LLMNodeData.PromptTemplate> convertTemplate = (promptTemplate) -> {
 					String prompt = promptTemplate.getText();
 					return promptTemplate.setText(convertString.apply(prompt));

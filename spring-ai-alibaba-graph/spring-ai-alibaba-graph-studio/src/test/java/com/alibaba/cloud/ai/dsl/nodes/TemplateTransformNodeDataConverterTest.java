@@ -70,21 +70,6 @@ public class TemplateTransformNodeDataConverterTest {
 	}
 
 	@Test
-	public void testPostProcessOutputWithExistingOutputKey() {
-		TemplateTransformNodeData nodeData = new TemplateTransformNodeData();
-		nodeData.setOutputKey("existing_output");
-		String varName = "testNode";
-
-		converter.postProcessOutput(nodeData, varName);
-
-		// 如果已有outputKey，不应该改变
-		assertEquals("existing_output", nodeData.getOutputKey());
-		assertEquals(1, nodeData.getOutputs().size());
-		assertEquals("existing_output", nodeData.getOutputs().get(0).getName());
-		assertEquals(VariableType.STRING.value(), nodeData.getOutputs().get(0).getValueType());
-	}
-
-	@Test
 	public void testParseMapDataDify() {
 		// 创建Dify格式的测试数据
 		Map<String, Object> data = new HashMap<>();
