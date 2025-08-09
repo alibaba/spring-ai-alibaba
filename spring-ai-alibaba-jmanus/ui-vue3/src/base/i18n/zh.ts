@@ -1075,6 +1075,9 @@ const words: I18nType = {
     clearMemory: '清除记忆',
     newChat: '新建对话',
   },
+  selectCommon: {
+    pleaseSelect: '请选择...',
+  },
 }
 
 export default words

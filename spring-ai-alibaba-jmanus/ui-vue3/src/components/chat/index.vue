@@ -1387,6 +1387,23 @@ const newChat = () => {
   messages.value = []
 }
 
+// Helper function to safely get options array
+const getOptionsArray = (options: string | string[] | undefined): string[] => {
+  if (!options) return []
+  if (Array.isArray(options)) return options
+  if (typeof options === 'string') {
+    return options.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0)
+  }
+  return []
+}
+
+// Helper function to check if field is required
+const isRequired = (required: boolean | string | undefined): boolean => {
+  if (typeof required === 'boolean') return required
+  if (typeof required === 'string') return required === 'true'
+  return false
+}
+
 // Expose methods to parent components for usage
 defineExpose({
   handleSendMessage,

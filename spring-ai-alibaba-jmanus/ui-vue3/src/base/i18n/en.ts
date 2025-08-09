@@ -1111,6 +1111,9 @@ const words: I18nType = {
     clearMemory: 'Clear Memory',
     newChat: 'new chat',
   },
+  selectCommon: {
+    pleaseSelect: 'Please select...',
+  },
 }
 
 export default words
