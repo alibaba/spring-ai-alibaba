@@ -59,7 +59,7 @@ public class PythonAnalyzeNode extends AbstractPlanBasedNode implements NodeActi
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		this.logNodeEntry();
 
-		// 获取上下文
+		// Get context
 		String userQuery = StateUtils.getStringValue(state, QUERY_REWRITE_NODE_OUTPUT);
 		String pythonOutput = StateUtils.getStringValue(state, PYTHON_EXECUTE_NODE_OUTPUT);
 		int currentStep = this.getCurrentStepNumber(state);
@@ -67,7 +67,7 @@ public class PythonAnalyzeNode extends AbstractPlanBasedNode implements NodeActi
 		Map<String, String> sqlExecuteResult = StateUtils.getObjectValue(state, SQL_EXECUTE_NODE_OUTPUT, Map.class,
 				new HashMap());
 
-		// 加载Python代码生成模板
+		// Load Python code generation template
 		String systemPrompt = PromptConstant.getPythonAnalyzePromptTemplate()
 			.render(Map.of("python_output", pythonOutput, "user_query", userQuery));
 

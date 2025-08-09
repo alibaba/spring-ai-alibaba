@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
- * 语义模型配置服务
+ * Semantic Model Configuration Service
  */
 @Service
 public class SemanticModelService {
@@ -35,12 +35,12 @@ public class SemanticModelService {
 	private final AtomicLong idGenerator = new AtomicLong(1);
 
 	public SemanticModelService() {
-		// 初始化示例数据
+		// Initialize sample data
 		initSampleData();
 	}
 
 	private void initSampleData() {
-		// 为智能体1创建示例数据
+		// Create sample data for agent 1
 		SemanticModel model1 = new SemanticModel();
 		model1.setAgentId(1L);
 		model1.setOriginalFieldName("user_age");
@@ -65,7 +65,7 @@ public class SemanticModelService {
 		model2.setOriginalDescription("商品名称字段");
 		save(model2);
 
-		// 为智能体2创建示例数据
+		// Create sample data for agent 2
 		SemanticModel model3 = new SemanticModel();
 		model3.setAgentId(2L);
 		model3.setOriginalFieldName("order_amount");

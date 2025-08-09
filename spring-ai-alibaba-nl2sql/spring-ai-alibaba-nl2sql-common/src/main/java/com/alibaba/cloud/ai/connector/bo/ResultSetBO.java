@@ -111,8 +111,8 @@ public final class ResultSetBO extends DdlBaseBO implements Cloneable {
 	}
 
 	/**
-	 * 将当前对象转换为 JSON 字符串
-	 * @return JSON 字符串
+	 * Convert current object to JSON string
+	 * @return JSON string
 	 */
 	public String toJsonStr() {
 		ObjectMapper objectMapper = new ObjectMapper();

@@ -16,21 +16,21 @@
 package com.alibaba.cloud.ai.dto;
 
 /**
- * 业务知识管理实体类
+ * Business knowledge management entity class
  */
 public class BusinessKnowledgeDTO {
 
-	private String businessTerm; // 业务名词
+	private String businessTerm; // Business term
 
-	private String description; // 说明
+	private String description; // Description
 
-	private String synonyms; // 同义词，逗号分隔
+	private String synonyms; // Synonyms, comma separated
 
-	private Boolean defaultRecall; // 默认召回
+	private Boolean defaultRecall; // Default recall
 
-	private String datasetId; // 关联的数据集ID
+	private String datasetId; // Associated dataset ID
 
-	private String agentId; // 关联的智能体ID
+	private String agentId; // Associated agent ID
 
 	public BusinessKnowledgeDTO() {
 	}
@@ -42,7 +42,7 @@ public class BusinessKnowledgeDTO {
 		this.synonyms = synonyms;
 		this.defaultRecall = defaultRecall;
 		this.datasetId = datasetId;
-		this.agentId = null; // 默认为null，保持向后兼容
+		this.agentId = null; // Default to null for backward compatibility
 	}
 
 	public BusinessKnowledgeDTO(String businessTerm, String description, String synonyms, Boolean defaultRecall,

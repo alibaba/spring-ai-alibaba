@@ -19,7 +19,7 @@ package com.alibaba.cloud.ai.entity;
 import java.time.LocalDateTime;
 
 /**
- * 智能体预设问题实体类
+ * Agent Preset Question Entity Class
  */
 public class AgentPresetQuestion {
 
@@ -37,7 +37,7 @@ public class AgentPresetQuestion {
 
 	private LocalDateTime updateTime;
 
-	// 构造函数
+	// Constructor
 	public AgentPresetQuestion() {
 	}
 

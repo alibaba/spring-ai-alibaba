@@ -32,7 +32,7 @@ public enum BizDataSourceTypeEnum {
 	ADB_PG(21, "adg_pg", DatabaseDialectEnum.POSTGRESQL.getCode(), DbAccessTypeEnum.DATA_API.getCode()),
 
 	MAX_COMPUTE(31, "max_compute", DatabaseDialectEnum.MYSQL.getCode(), DbAccessTypeEnum.JDBC.getCode()),
-	// 函数计算中SQLite模拟数据库
+	// SQLite simulated database in function computation
 	FC_MEMORY_DB(41, "fc_memory_db", DatabaseDialectEnum.SQLite.getCode(), DbAccessTypeEnum.FC_HTTP.getCode()),
 
 	MYSQL_VIRTUAL(51, "mysql-virtual", DatabaseDialectEnum.MYSQL.getCode(), DbAccessTypeEnum.MEMORY.getCode()),
@@ -72,9 +72,9 @@ public enum BizDataSourceTypeEnum {
 	}
 
 	/**
-	 * 根据code获取对应的typeName。
-	 * @param code 要获取typeName的code
-	 * @return 对应的typeName，如果没有找到则返回null。
+	 * Get corresponding typeName based on code.
+	 * @param code code for which to get typeName
+	 * @return corresponding typeName, return null if not found.
 	 */
 	public static String getTypeNameByCode(Integer code) {
 		for (BizDataSourceTypeEnum type : values()) {
@@ -82,7 +82,7 @@ public enum BizDataSourceTypeEnum {
 				return type.getTypeName();
 			}
 		}
-		return null; // 如果没有找到对应的code，则返回null
+		return null; // If corresponding code is not found, return null
 	}
 
 	public static String getDialectByCode(Integer code) {
@@ -91,7 +91,7 @@ public enum BizDataSourceTypeEnum {
 				return type.getDialect();
 			}
 		}
-		return null; // 如果没有找到对应的code，则返回null
+		return null; // If corresponding code is not found, return null
 	}
 
 	public static String getProtocolByCode(Integer code) {

@@ -82,7 +82,7 @@ public class Constant {
 
 	public static final String PLAN_REPAIR_COUNT = "PLAN_REPAIR_COUNT";
 
-	// 节点KEY
+	// Node KEY
 	public static final String PLANNER_NODE = "PLANNER_NODE";
 
 	public static final String PLAN_EXECUTOR_NODE = "PLAN_EXECUTOR_NODE";
@@ -109,7 +109,7 @@ public class Constant {
 
 	public static final String INTENT_UNCLEAR = "意图模糊需要澄清";
 
-	// 有关Python代码执行的键
+	// Keys related to Python code execution
 	public static final String PYTHON_GENERATE_NODE = "PYTHON_GENERATE_NODE";
 
 	public static final String PYTHON_EXECUTE_NODE = "PYTHON_EXECUTE_NODE";
@@ -122,7 +122,8 @@ public class Constant {
 
 	public static final String PYTHON_TRIES_COUNT = "PYTHON_TRIES_COUNT";
 
-	// 代码执行成功则输出代码运行结果，执行失败则输出错误信息
+	// If code execution succeeds, output code running result; if fails, output error
+	// information
 	public static final String PYTHON_EXECUTE_NODE_OUTPUT = "PYTHON_EXECUTE_NODE_OUTPUT";
 
 	public static final String PYTHON_GENERATE_NODE_OUTPUT = "PYTHON_GENERATE_NODE_OUTPUT";

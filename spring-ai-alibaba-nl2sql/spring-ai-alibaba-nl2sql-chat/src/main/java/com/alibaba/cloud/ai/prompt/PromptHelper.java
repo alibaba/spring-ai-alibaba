@@ -228,12 +228,12 @@ public class PromptHelper {
 	}
 
 	/**
-	 * 构建带自定义提示词的报告生成提示词
-	 * @param userRequirementsAndPlan 用户需求和计划
-	 * @param analysisStepsAndData 分析步骤和数据
-	 * @param summaryAndRecommendations 总结和建议
-	 * @param customPrompt 用户自定义的提示词内容，如果为null则使用默认提示词
-	 * @return 构建的提示词
+	 * Build report generation prompt with custom prompt
+	 * @param userRequirementsAndPlan user requirements and plan
+	 * @param analysisStepsAndData analysis steps and data
+	 * @param summaryAndRecommendations summary and recommendations
+	 * @param customPrompt user-defined prompt content, use default prompt if null
+	 * @return built prompt
 	 */
 	public static String buildReportGeneratorPromptWithCustom(String userRequirementsAndPlan,
 			String analysisStepsAndData, String summaryAndRecommendations, String customPrompt) {
@@ -243,11 +243,11 @@ public class PromptHelper {
 		params.put("summary_and_recommendations", summaryAndRecommendations);
 
 		if (customPrompt != null && !customPrompt.trim().isEmpty()) {
-			// 使用自定义提示词
+			// Use custom prompt
 			return new org.springframework.ai.chat.prompt.PromptTemplate(customPrompt).render(params);
 		}
 		else {
-			// 使用默认提示词
+			// Use default prompt
 			return PromptConstant.getReportGeneratorPromptTemplate().render(params);
 		}
 	}

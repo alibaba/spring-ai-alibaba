@@ -50,34 +50,34 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 
 	private static final Logger log = LoggerFactory.getLogger(AbstractCodePoolExecutorService.class);
 
-	// 记录核心容器的状态
+	// Record core container status
 	protected final ConcurrentHashMap<String, CodePoolExecutorService.State> coreContainerState;
 
-	// 记录临时容器的状态
+	// Record temporary container status
 	protected final ConcurrentHashMap<String, CodePoolExecutorService.State> tempContainerState;
 
-	// 记录临时容器销毁的Future
+	// Record Future for temporary container destruction
 	protected final ConcurrentHashMap<String, Future<?>> tempContainerRemoveFuture;
 
-	// 任务队列（当容器满时临时存放任务）
+	// Task queue (temporarily store tasks when containers are full)
 	protected final ArrayBlockingQueue<FutureTask<CodePoolExecutorService.TaskResponse>> taskQueue;
 
-	// 已经就绪的核心容器
+	// Ready core containers
 	protected final ArrayBlockingQueue<String> readyCoreContainer;
 
-	// 已经就绪的临时容器
+	// Ready temporary containers
 	protected final ArrayBlockingQueue<String> readyTempContainer;
 
-	// 当前核心容器的数量
+	// Current number of core containers
 	protected final AtomicInteger currentCoreContainerSize;
 
-	// 当前临时容器的数量
+	// Current number of temporary containers
 	protected final AtomicInteger currentTempContainerSize;
 
-	// 线程池，运行临时存放的任务
+	// Thread pool, running temporarily stored tasks
 	protected final ExecutorService consumerThreadPool;
 
-	// 配置属性
+	// Configuration properties
 	protected final CodeExecutorProperties properties;
 
 	public AbstractCodePoolExecutorService(CodeExecutorProperties properties) {
@@ -93,7 +93,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 				new ArrayBlockingQueue<>(properties.getThreadQueueSize()));
 		this.currentCoreContainerSize = new AtomicInteger(0);
 		this.currentTempContainerSize = new AtomicInteger(0);
-		// 注册关闭钩子
+		// Register shutdown hook
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			log.info("Shutting down container pool executor...");
 			try {
@@ -113,9 +113,9 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 	protected abstract void removeContainer(String containerId) throws Exception;
 
 	protected void shutdownPool() throws Exception {
-		// 关闭线程池
+		// Shutdown thread pool
 		this.consumerThreadPool.shutdownNow();
-		// 停止并删除所有的容器
+		// Stop and delete all containers
 		for (String containerId : this.tempContainerState.keySet()) {
 			try {
 				this.stopContainer(containerId);
@@ -142,7 +142,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 		this.taskQueue.clear();
 	}
 
-	// 创建删除临时容器的线程
+	// Create thread to delete temporary containers
 	private Future<?> registerRemoveTempContainer(String containerId) {
 		return consumerThreadPool.submit(() -> {
 			try {
@@ -152,12 +152,12 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 				}
 			}
 			catch (InterruptedException e) {
-				// 由于容器正在运行而取消临时容器的销毁线程
+				// Cancel temporary container destruction thread due to container running
 				log.debug("Interrupted while waiting for temp container to be removed, info: {}", e.getMessage());
 				return;
 			}
 			try {
-				// 移除临时容器
+				// Remove temporary container
 				this.tempContainerState.remove(containerId);
 				this.tempContainerRemoveFuture.remove(containerId);
 				this.removeContainer(containerId);
@@ -170,16 +170,16 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 		});
 	}
 
-	// 使用核心容器
+	// Use core container
 	private TaskResponse useCoreContainer(String containerId, TaskRequest request) {
 		try {
-			// 执行任务
+			// Execute task
 			this.coreContainerState.replace(containerId, State.RUNNING);
 			TaskResponse resp = this.execTaskInContainer(request, containerId);
 			this.coreContainerState.replace(containerId, State.READY);
-			// 放回阻塞队列中
+			// Put back into blocking queue
 			this.readyCoreContainer.add(containerId);
-			// 运行任务队列里的任务，如果有
+			// Run tasks in task queue if any
 			this.popTaskQueue();
 			return resp;
 		}
@@ -189,28 +189,28 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 		}
 	}
 
-	// 使用临时容器
+	// Use temporary container
 	private TaskResponse useTempContainer(String containerId, TaskRequest request) {
 		try {
 			Future<?> future = this.tempContainerRemoveFuture.remove(containerId);
-			// 取消临时容器的销毁线程
+			// Cancel temporary container destruction thread
 			if (future != null) {
 				if (future.isDone()) {
-					// 容器被销毁，重新选择使用策略
+					// Container is destroyed, reselect usage strategy
 					log.debug("reselect strategy: {} ...", request.toString());
 					return this.runTask(request);
 				}
 				future.cancel(true);
 			}
-			// 执行任务
+			// Execute task
 			this.tempContainerState.replace(containerId, State.RUNNING);
 			TaskResponse resp = this.execTaskInContainer(request, containerId);
 			this.tempContainerState.replace(containerId, State.READY);
-			// 放回阻塞队列中
+			// Put back into blocking queue
 			this.readyTempContainer.add(containerId);
-			// 重新创建临时容器的销毁线程
+			// Recreate temporary container destruction thread
 			this.tempContainerRemoveFuture.put(containerId, this.registerRemoveTempContainer(containerId));
-			// 运行任务队列里的任务，如果有
+			// Run tasks in task queue if any
 			this.popTaskQueue();
 			return resp;
 		}
@@ -220,7 +220,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 		}
 	}
 
-	// 创建并使用核心容器
+	// Create and use core container
 	private TaskResponse createAndUseCoreContainer(TaskRequest request) {
 		String containerId;
 		try {
@@ -230,13 +230,13 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 			log.error("create new container failed, {}", e.getMessage(), e);
 			return TaskResponse.error(e.getMessage());
 		}
-		// 记录新增的容器
+		// Record newly added container
 		this.coreContainerState.put(containerId, State.READY);
-		// 使用容器
+		// Use container
 		return this.useCoreContainer(containerId, request);
 	}
 
-	// 创建并使用临时容器
+	// Create and use temporary container
 	private TaskResponse createAndUseTempContainer(TaskRequest request) {
 		String containerId;
 		try {
@@ -246,9 +246,9 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 			log.error("create new container failed, {}", e.getMessage(), e);
 			return TaskResponse.error(e.getMessage());
 		}
-		// 记录新增的容器
+		// Record newly added container
 		this.tempContainerState.put(containerId, State.READY);
-		// 使用容器
+		// Use container
 		return this.useTempContainer(containerId, request);
 	}
 
@@ -261,7 +261,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 		return ft.get();
 	}
 
-	// 运行任务队列里的任务，如果有
+	// Run tasks in task queue if any
 	private void popTaskQueue() {
 		FutureTask<CodePoolExecutorService.TaskResponse> future = this.taskQueue.poll();
 		if (future == null) {
@@ -273,21 +273,21 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 
 	@Override
 	public TaskResponse runTask(TaskRequest request) {
-		// 使用可用的核心容器
+		// Use available core container
 		String freeCoreId = this.readyCoreContainer.poll();
 		if (freeCoreId != null) {
 			log.debug("Use free core container to run task {} ...", request.toString());
 			return this.useCoreContainer(freeCoreId, request);
 		}
 
-		// 使用可用的临时容器
+		// Use available temporary container
 		String freeTempId = this.readyTempContainer.poll();
 		if (freeTempId != null) {
 			log.debug("Use free temp container to run task {} ...", request.toString());
 			return this.useTempContainer(freeTempId, request);
 		}
 
-		// 创建新的核心容器
+		// Create new core container
 		int currentCore;
 		boolean useCoreContainer = true;
 		do {
@@ -303,7 +303,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 			return this.createAndUseCoreContainer(request);
 		}
 
-		// 创建新的临时容器
+		// Create new temporary container
 		int currentTemp;
 		boolean useTempContainer = true;
 		do {
@@ -319,7 +319,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 			return this.createAndUseTempContainer(request);
 		}
 
-		// 放入任务队列里等待
+		// Put into task queue to wait
 		try {
 			log.debug("push task into BlockingQueue: {} ...", request.toString());
 			return this.pushTaskQueue(request);
@@ -331,7 +331,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 	}
 
 	/**
-	 * 删除临时目录
+	 * Delete temporary directory
 	 */
 	protected void clearTempDir(Path tempDir) {
 		try {
@@ -362,10 +362,10 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 	}
 
 	/**
-	 * 创建可写的临时文件
-	 * @param tempDir 临时目录
-	 * @param fileName 文件名
-	 * @throws IOException IO异常
+	 * Create writable temporary file
+	 * @param tempDir temporary directory
+	 * @param fileName file name
+	 * @throws IOException IO exception
 	 */
 	protected void createWritableFile(Path tempDir, String fileName) throws IOException {
 		File file = new File(tempDir.resolve(fileName).toUri());
@@ -384,7 +384,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 	}
 
 	/**
-	 * 生成唯一的容器名称
+	 * Generate unique container name
 	 */
 	protected String generateContainerName() {
 		return this.properties.getContainerNamePrefix() + "_" + System.currentTimeMillis() + "_"

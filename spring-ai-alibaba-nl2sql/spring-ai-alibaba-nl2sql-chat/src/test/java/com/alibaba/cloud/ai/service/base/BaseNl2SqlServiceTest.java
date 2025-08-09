@@ -56,7 +56,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * BaseNl2SqlService 测试类
+ * BaseNl2SqlService Test Class
  *
  * @author test
  */
@@ -121,13 +121,13 @@ class BaseNl2SqlServiceTest {
 			.thenReturn("[]")
 			.thenReturn("需求类型：正常查询\n需求内容：" + expectedRewrittenQuery);
 
-		// 执行测试
+		// Execute test
 		String result = baseNl2SqlService.rewrite(query);
 
-		// 验证结果
+		// Verify result
 		assertEquals(expectedRewrittenQuery, result);
 
-		// 验证方法调用
+		// Verify method call
 		verify(vectorStoreService, times(1)).getDocuments(eq(query), eq("evidence"));
 		verify(aiService, atLeastOnce()).call(anyString());
 
@@ -150,10 +150,10 @@ class BaseNl2SqlServiceTest {
 			.thenReturn("[]") // fineSelect
 			.thenReturn("需求类型：《自由闲聊》\n需求内容：用户问好"); // buildRewritePrompt
 
-		// 执行测试
+		// Execute test
 		String result = baseNl2SqlService.rewrite(query);
 
-		// 验证结果
+		// Verify result
 		assertEquals("闲聊拒识", result);
 
 		log.info("Small talk rewrite test passed");
@@ -175,10 +175,10 @@ class BaseNl2SqlServiceTest {
 			.thenReturn("[]") // fineSelect
 			.thenReturn("需求类型：《需要澄清》\n需求内容：需要更多信息"); // buildRewritePrompt
 
-		// 执行测试
+		// Execute test
 		String result = baseNl2SqlService.rewrite(query);
 
-		// 验证结果
+		// Verify result
 		assertEquals("意图模糊需要澄清", result);
 
 		log.info("Unclear intent rewrite test passed");
@@ -201,15 +201,16 @@ class BaseNl2SqlServiceTest {
 		Flux<ChatResponse> mockFlux = Flux.just(chatResponse);
 		when(aiService.streamCall(anyString())).thenReturn(mockFlux);
 
-		// 执行测试
+		// Execute test
 		Flux<ChatResponse> result = baseNl2SqlService.rewriteStream(query);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(result);
-		// 验证流式结果（简化验证，因为无法使用 StepVerifier）
+		// Verify streaming result (simplified verification, as StepVerifier cannot be
+		// used)
 		assertFalse(result.toIterable().iterator().hasNext() == false);
 
-		// 验证方法调用
+		// Verify method call
 		verify(aiService, times(1)).streamCall(anyString());
 
 		log.info("RewriteStream test passed");
@@ -222,7 +223,7 @@ class BaseNl2SqlServiceTest {
 		String query = "查询用户表中年龄大于18的用户";
 		String expectedSql = "SELECT * FROM users WHERE age > 18";
 
-		// 配置 DbConfig Mock
+		// Configure DbConfig Mock
 		when(dbConfig.getDialectType()).thenReturn("mysql");
 
 		// Mock 依赖方法的返回值
@@ -239,13 +240,13 @@ class BaseNl2SqlServiceTest {
 
 		when(aiService.callWithSystemPrompt(anyString(), anyString())).thenReturn("```sql\n" + expectedSql + "\n```");
 
-		// 执行测试
+		// Execute test
 		String result = baseNl2SqlService.nl2sql(query);
 
-		// 验证结果
+		// Verify result
 		assertEquals(expectedSql, result);
 
-		// 验证方法调用
+		// Verify method call
 		verify(vectorStoreService, times(1)).getDocuments(eq(query), eq("evidence"));
 		verify(schemaService, times(1)).mixRag(anyString(), anyList());
 		verify(aiService, atLeastOnce()).call(anyString());
@@ -263,7 +264,7 @@ class BaseNl2SqlServiceTest {
 		ResultSetBO mockResultSet = new ResultSetBO();
 		mockResultSet.setColumn(Arrays.asList("id", "name", "age"));
 
-		// 创建测试数据
+		// Create test data
 		List<Map<String, String>> data = new ArrayList<>();
 		Map<String, String> row = new HashMap<>();
 		row.put("id", "1");
@@ -275,10 +276,11 @@ class BaseNl2SqlServiceTest {
 		when(dbAccessor.executeSqlAndReturnObject(any(DbConfig.class), any(DbQueryParameter.class)))
 			.thenReturn(mockResultSet);
 
-		// 由于 MdTableGenerator.generateTable 是静态方法，我们主要验证流程
+		// Since MdTableGenerator.generateTable is a static method, we mainly verify the
+		// process
 		String result = baseNl2SqlService.executeSql(sql);
 
-		// 验证方法调用
+		// Verify method call
 		verify(dbAccessor, times(1)).executeSqlAndReturnObject(any(DbConfig.class), any(DbQueryParameter.class));
 		assertNotNull(result);
 
@@ -295,15 +297,15 @@ class BaseNl2SqlServiceTest {
 		Flux<ChatResponse> mockFlux = Flux.just(chatResponse);
 		when(aiService.streamCall(anyString())).thenReturn(mockFlux);
 
-		// 执行测试
+		// Execute test
 		Flux<ChatResponse> result = baseNl2SqlService.semanticConsistencyStream(sql, queryPrompt);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(result);
-		// 验证流式结果（简化验证）
+		// Verify streaming result (simplified verification)
 		assertFalse(result.toIterable().iterator().hasNext() == false);
 
-		// 验证方法调用
+		// Verify method call
 		verify(aiService, times(1)).streamCall(anyString());
 
 		log.info("SemanticConsistencyStream test passed");
@@ -319,15 +321,15 @@ class BaseNl2SqlServiceTest {
 		// Mock LLM 返回的 JSON 响应
 		when(aiService.call(anyString())).thenReturn(gson.toJson(expectedExpansions));
 
-		// 执行测试
+		// Execute test
 		List<String> result = baseNl2SqlService.expandQuestion(query);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(result);
 		assertEquals(expectedExpansions.size(), result.size());
 		assertTrue(result.contains("查询用户信息"));
 
-		// 验证方法调用
+		// Verify method call
 		verify(aiService, times(1)).call(anyString());
 
 		log.info("ExpandQuestion test passed with {} expanded questions", result.size());
@@ -342,10 +344,10 @@ class BaseNl2SqlServiceTest {
 		// Mock LLM 抛出异常
 		when(aiService.call(anyString())).thenThrow(new RuntimeException("LLM error"));
 
-		// 执行测试
+		// Execute test
 		List<String> result = baseNl2SqlService.expandQuestion(query);
 
-		// 验证结果 - 应该返回原始问题
+		// Verify result - 应该返回原始问题
 		assertNotNull(result);
 		assertEquals(1, result.size());
 		assertEquals(query, result.get(0));
@@ -363,15 +365,15 @@ class BaseNl2SqlServiceTest {
 		when(vectorStoreService.getDocuments(eq(query), eq("evidence")))
 			.thenReturn(createMockDocuments(expectedEvidences));
 
-		// 执行测试
+		// Execute test
 		List<String> result = baseNl2SqlService.extractEvidences(query);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(result);
 		assertEquals(expectedEvidences.size(), result.size());
 		assertEquals(expectedEvidences, result);
 
-		// 验证方法调用
+		// Verify method call
 		verify(vectorStoreService, times(1)).getDocuments(eq(query), eq("evidence"));
 
 		log.info("ExtractEvidences test passed with {} evidences", result.size());
@@ -387,15 +389,15 @@ class BaseNl2SqlServiceTest {
 
 		when(aiService.call(anyString())).thenReturn(gson.toJson(expectedKeywords));
 
-		// 执行测试
+		// Execute test
 		List<String> result = baseNl2SqlService.extractKeywords(query, evidenceList);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(result);
 		assertEquals(expectedKeywords.size(), result.size());
 		assertEquals(expectedKeywords, result);
 
-		// 验证方法调用
+		// Verify method call
 		verify(aiService, times(1)).call(anyString());
 
 		log.info("ExtractKeywords test passed with {} keywords", result.size());
@@ -413,14 +415,14 @@ class BaseNl2SqlServiceTest {
 			.thenReturn("[]"); // fineSelect
 		when(schemaService.mixRag(anyString(), anyList())).thenReturn(mockSchemaDTO);
 
-		// 执行测试
+		// Execute test
 		SchemaDTO result = baseNl2SqlService.select(query, evidenceList);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(result);
 		assertEquals(mockSchemaDTO.getName(), result.getName());
 
-		// 验证方法调用
+		// Verify method call
 		verify(schemaService, times(1)).mixRag(anyString(), anyList());
 		verify(aiService, atLeastOnce()).call(anyString());
 
@@ -436,18 +438,18 @@ class BaseNl2SqlServiceTest {
 		List<String> evidenceList = Arrays.asList("evidence1", "evidence2");
 		String expectedResponse = "信息满足要求";
 
-		// 配置 DbConfig Mock
+		// Configure DbConfig Mock
 		when(dbConfig.getDialectType()).thenReturn("mysql");
 
 		when(aiService.call(anyString())).thenReturn(expectedResponse);
 
-		// 执行测试
+		// Execute test
 		String result = baseNl2SqlService.isRecallInfoSatisfyRequirement(query, schemaDTO, evidenceList);
 
-		// 验证结果
+		// Verify result
 		assertEquals(expectedResponse, result);
 
-		// 验证方法调用
+		// Verify method call
 		verify(aiService, times(1)).call(anyString());
 
 		log.info("IsRecallInfoSatisfyRequirement test passed");
@@ -462,19 +464,19 @@ class BaseNl2SqlServiceTest {
 		SchemaDTO schemaDTO = createMockSchemaDTO();
 		String expectedSql = "SELECT * FROM users";
 
-		// 配置 DbConfig Mock
+		// Configure DbConfig Mock
 		when(dbConfig.getDialectType()).thenReturn("mysql");
 
 		when(aiService.call(anyString())).thenReturn("[\"2024-01-01\"]");
 		when(aiService.callWithSystemPrompt(anyString(), anyString())).thenReturn("```sql\n" + expectedSql + "\n```");
 
-		// 执行测试
+		// Execute test
 		String result = baseNl2SqlService.generateSql(evidenceList, query, schemaDTO);
 
-		// 验证结果
+		// Verify result
 		assertEquals(expectedSql, result);
 
-		// 验证方法调用
+		// Verify method call
 		verify(aiService, times(1)).call(anyString());
 		verify(aiService, times(1)).callWithSystemPrompt(anyString(), anyString());
 
@@ -492,19 +494,19 @@ class BaseNl2SqlServiceTest {
 		String exceptionMessage = "Table 'user' not found";
 		String expectedSql = "SELECT * FROM users";
 
-		// 配置 DbConfig Mock
+		// Configure DbConfig Mock
 		when(dbConfig.getDialectType()).thenReturn("mysql");
 
 		when(aiService.call(anyString())).thenReturn("[\"2024-01-01\"]") // buildDateTimeExtractPrompt
 			.thenReturn("```sql\n" + expectedSql + "\n```"); // buildSqlErrorFixerPrompt
 
-		// 执行测试
+		// Execute test
 		String result = baseNl2SqlService.generateSql(evidenceList, query, schemaDTO, existingSql, exceptionMessage);
 
-		// 验证结果
+		// Verify result
 		assertEquals(expectedSql, result);
 
-		// 验证方法调用
+		// Verify method call
 		verify(aiService, times(2)).call(anyString());
 
 		log.info("GenerateSql with existing SQL test passed with result: {}", result);
@@ -520,16 +522,16 @@ class BaseNl2SqlServiceTest {
 
 		when(aiService.call(anyString())).thenReturn("[\"users\", \"orders\"]");
 
-		// 执行测试
+		// Execute test
 		Set<String> result = baseNl2SqlService.fineSelect(schemaDTO, advice);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(result);
 		assertEquals(expectedTables.size(), result.size());
 		assertTrue(result.contains("users"));
 		assertTrue(result.contains("orders"));
 
-		// 验证方法调用
+		// Verify method call
 		verify(aiService, times(1)).call(anyString());
 
 		log.info("FineSelect with advice test passed with {} tables", result.size());
@@ -545,13 +547,13 @@ class BaseNl2SqlServiceTest {
 
 		when(aiService.call(anyString())).thenReturn("[\"users\"]");
 
-		// 执行测试
+		// Execute test
 		SchemaDTO result = baseNl2SqlService.fineSelect(schemaDTO, query, evidenceList);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(result);
 
-		// 验证方法调用
+		// Verify method call
 		verify(aiService, times(1)).call(anyString());
 
 		log.info("FineSelect with query test passed");
@@ -574,7 +576,7 @@ class BaseNl2SqlServiceTest {
 
 		List<TableDTO> tables = new ArrayList<>();
 
-		// 创建用户表
+		// Create user table
 		TableDTO userTable = new TableDTO();
 		userTable.setName("users");
 		userTable.setDescription("用户表");

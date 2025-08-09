@@ -60,14 +60,14 @@ public class AgentPresetQuestionService {
 			""";
 
 	/**
-	 * 根据智能体ID获取预设问题列表
+	 * Get preset question list by agent ID
 	 */
 	public List<AgentPresetQuestion> findByAgentId(Long agentId) {
 		return jdbcTemplate.query(SELECT_BY_AGENT_ID, new BeanPropertyRowMapper<>(AgentPresetQuestion.class), agentId);
 	}
 
 	/**
-	 * 创建预设问题
+	 * Create preset question
 	 */
 	public AgentPresetQuestion create(AgentPresetQuestion question) {
 		KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -84,33 +84,33 @@ public class AgentPresetQuestionService {
 	}
 
 	/**
-	 * 更新预设问题
+	 * Update preset question
 	 */
 	public void update(Long id, AgentPresetQuestion question) {
 		jdbcTemplate.update(UPDATE, question.getQuestion(), question.getSortOrder(), question.getIsActive(), id);
 	}
 
 	/**
-	 * 删除预设问题
+	 * Delete preset question
 	 */
 	public void deleteById(Long id) {
 		jdbcTemplate.update(DELETE, id);
 	}
 
 	/**
-	 * 删除智能体的所有预设问题
+	 * Delete all preset questions of agent
 	 */
 	public void deleteByAgentId(Long agentId) {
 		jdbcTemplate.update(DELETE_BY_AGENT_ID, agentId);
 	}
 
 	/**
-	 * 批量保存预设问题（先删除再插入）
+	 * Batch save preset questions (delete first then insert)
 	 */
 	public void batchSave(Long agentId, List<AgentPresetQuestion> questions) {
-		// 先删除该智能体的所有预设问题
+		// First delete all preset questions of the agent
 		deleteByAgentId(agentId);
-		// 批量插入新的预设问题
+		// Batch insert new preset questions
 		for (int i = 0; i < questions.size(); i++) {
 			AgentPresetQuestion question = questions.get(i);
 			question.setAgentId(agentId);

@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
- * 业务知识管理服务
+ * Business Knowledge Management Service
  */
 @Service
 public class BusinessKnowledgeService {
@@ -35,7 +35,7 @@ public class BusinessKnowledgeService {
 	private final AtomicLong idGenerator = new AtomicLong(1);
 
 	public BusinessKnowledgeService() {
-		// 初始化示例数据
+		// Initialize sample data
 		initSampleData();
 	}
 

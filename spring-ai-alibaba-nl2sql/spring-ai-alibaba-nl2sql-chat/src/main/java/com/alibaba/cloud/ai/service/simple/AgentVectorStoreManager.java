@@ -31,7 +31,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 智能体向量存储管理器 为每个智能体提供独立的向量存储实例，确保数据隔离
+ * Agent Vector Storage Manager Provides independent vector storage instances for each
+ * agent, ensuring data isolation
  */
 @Component
 public class AgentVectorStoreManager {
@@ -49,9 +50,9 @@ public class AgentVectorStoreManager {
 	}
 
 	/**
-	 * 获取或创建智能体专用的向量存储
-	 * @param agentId 智能体ID
-	 * @return 智能体专用的SimpleVectorStore实例
+	 * Get or create agent-specific vector storage
+	 * @param agentId agent ID
+	 * @return agent-specific SimpleVectorStore instance
 	 */
 	public SimpleVectorStore getOrCreateVectorStore(String agentId) {
 		if (agentId == null || agentId.trim().isEmpty()) {
@@ -65,9 +66,9 @@ public class AgentVectorStoreManager {
 	}
 
 	/**
-	 * 为指定智能体添加文档
-	 * @param agentId 智能体ID
-	 * @param documents 要添加的文档列表
+	 * Add documents for specified agent
+	 * @param agentId agent ID
+	 * @param documents list of documents to add
 	 */
 	public void addDocuments(String agentId, List<Document> documents) {
 		if (documents == null || documents.isEmpty()) {
@@ -81,11 +82,11 @@ public class AgentVectorStoreManager {
 	}
 
 	/**
-	 * 为指定智能体搜索相似文档
-	 * @param agentId 智能体ID
-	 * @param query 查询文本
-	 * @param topK 返回结果数量
-	 * @return 相似文档列表
+	 * Search similar documents for specified agent
+	 * @param agentId agent ID
+	 * @param query query text
+	 * @param topK number of results to return
+	 * @return list of similar documents
 	 */
 	public List<Document> similaritySearch(String agentId, String query, int topK) {
 		SimpleVectorStore store = agentStores.get(agentId);
@@ -101,12 +102,12 @@ public class AgentVectorStoreManager {
 	}
 
 	/**
-	 * 为指定智能体搜索相似文档（带过滤条件）
-	 * @param agentId 智能体ID
-	 * @param query 查询文本
-	 * @param topK 返回结果数量
-	 * @param vectorType 向量类型过滤
-	 * @return 相似文档列表
+	 * Search similar documents for specified agent (with filter conditions)
+	 * @param agentId agent ID
+	 * @param query query text
+	 * @param topK number of results to return
+	 * @param vectorType vector type filter
+	 * @return list of similar documents
 	 */
 	public List<Document> similaritySearchWithFilter(String agentId, String query, int topK, String vectorType) {
 		SimpleVectorStore store = agentStores.get(agentId);
@@ -130,8 +131,8 @@ public class AgentVectorStoreManager {
 	}
 
 	/**
-	 * 删除指定智能体的所有数据
-	 * @param agentId 智能体ID
+	 * Delete all data of specified agent
+	 * @param agentId agent ID
 	 */
 	public void deleteAgentData(String agentId) {
 		SimpleVectorStore removed = agentStores.remove(agentId);
@@ -144,9 +145,9 @@ public class AgentVectorStoreManager {
 	}
 
 	/**
-	 * 删除指定智能体的特定文档
-	 * @param agentId 智能体ID
-	 * @param documentIds 要删除的文档ID列表
+	 * Delete specific documents of specified agent
+	 * @param agentId agent ID
+	 * @param documentIds list of document IDs to delete
 	 */
 	public void deleteDocuments(String agentId, List<String> documentIds) {
 		SimpleVectorStore store = agentStores.get(agentId);
@@ -162,9 +163,9 @@ public class AgentVectorStoreManager {
 	}
 
 	/**
-	 * 删除指定智能体的特定类型文档
-	 * @param agentId 智能体ID
-	 * @param vectorType 向量类型
+	 * Delete specific type documents of specified agent
+	 * @param agentId agent ID
+	 * @param vectorType vector type
 	 */
 	public void deleteDocumentsByType(String agentId, String vectorType) {
 		SimpleVectorStore store = agentStores.get(agentId);
@@ -199,18 +200,18 @@ public class AgentVectorStoreManager {
 	}
 
 	/**
-	 * 检查智能体是否有向量数据
-	 * @param agentId 智能体ID
-	 * @return 是否有数据
+	 * Check if agent has vector data
+	 * @param agentId agent ID
+	 * @return whether has data
 	 */
 	public boolean hasAgentData(String agentId) {
 		return agentStores.containsKey(agentId);
 	}
 
 	/**
-	 * 获取智能体的文档数量（估算）
-	 * @param agentId 智能体ID
-	 * @return 文档数量
+	 * Get document count of agent (estimated)
+	 * @param agentId agent ID
+	 * @return document count
 	 */
 	public int getDocumentCount(String agentId) {
 		SimpleVectorStore store = agentStores.get(agentId);
@@ -219,7 +220,7 @@ public class AgentVectorStoreManager {
 		}
 
 		try {
-			// 通过搜索所有文档来估算数量
+			// Estimate quantity by searching all documents
 			List<Document> allDocs = store.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
 				.query("")
 				.topK(Integer.MAX_VALUE)
@@ -233,16 +234,16 @@ public class AgentVectorStoreManager {
 	}
 
 	/**
-	 * 获取所有有数据的智能体ID
-	 * @return 智能体ID集合
+	 * Get all agent IDs with data
+	 * @return set of agent IDs
 	 */
 	public Set<String> getAllAgentIds() {
 		return Set.copyOf(agentStores.keySet());
 	}
 
 	/**
-	 * 获取向量存储统计信息
-	 * @return 统计信息
+	 * Get vector storage statistics
+	 * @return statistics
 	 */
 	public Map<String, Object> getStatistics() {
 		Map<String, Object> stats = new ConcurrentHashMap<>();

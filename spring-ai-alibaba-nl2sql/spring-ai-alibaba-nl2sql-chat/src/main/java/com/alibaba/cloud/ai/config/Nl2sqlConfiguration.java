@@ -163,15 +163,15 @@ public class Nl2sqlConfiguration {
 
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			// 用户输入
+			// User input
 			keyStrategyHashMap.put(INPUT_KEY, new ReplaceStrategy());
-			// 数据集ID
+			// Dataset ID
 			keyStrategyHashMap.put(Constant.AGENT_ID, new ReplaceStrategy());
-			// 智能体ID
+			// Agent ID
 			keyStrategyHashMap.put(AGENT_ID, new ReplaceStrategy());
-			// 业务知识
+			// Business knowledge
 			keyStrategyHashMap.put(BUSINESS_KNOWLEDGE, new ReplaceStrategy());
-			// 语义模型
+			// Semantic model
 			keyStrategyHashMap.put(SEMANTIC_MODEL, new ReplaceStrategy());
 			// queryWrite节点输出
 			keyStrategyHashMap.put(QUERY_REWRITE_NODE_OUTPUT, new ReplaceStrategy());
@@ -211,7 +211,7 @@ public class Nl2sqlConfiguration {
 			keyStrategyHashMap.put(PYTHON_EXECUTE_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(PYTHON_GENERATE_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(PYTHON_ANALYSIS_NODE_OUTPUT, new ReplaceStrategy());
-			// 最终结果
+			// Final result
 			keyStrategyHashMap.put(RESULT, new ReplaceStrategy());
 			return keyStrategyHashMap;
 		};

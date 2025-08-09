@@ -36,7 +36,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 智能体向量存储服务 专门处理智能体相关的向量存储操作，确保数据隔离
+ * Agent Vector Storage Service Specializes in handling agent-related vector storage
+ * operations, ensuring data isolation
  */
 @Service
 public class AgentVectorService {
@@ -47,10 +48,10 @@ public class AgentVectorService {
 	private SimpleVectorStoreService vectorStoreService;
 
 	/**
-	 * 为智能体初始化数据库Schema
-	 * @param agentId 智能体ID
-	 * @param schemaInitRequest Schema初始化请求
-	 * @return 是否成功
+	 * Initialize database Schema for agent
+	 * @param agentId agent ID
+	 * @param schemaInitRequest Schema initialization request
+	 * @return success status
 	 */
 	public Boolean initializeSchemaForAgent(Long agentId, SchemaInitRequest schemaInitRequest) {
 		try {
@@ -66,19 +67,19 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 为智能体添加知识文档到向量库
-	 * @param agentId 智能体ID
-	 * @param knowledge 知识内容
+	 * Add knowledge document to vector store for agent
+	 * @param agentId agent ID
+	 * @param knowledge knowledge content
 	 */
 	public void addKnowledgeToVector(Long agentId, AgentKnowledge knowledge) {
 		try {
 			String agentIdStr = String.valueOf(agentId);
 			log.info("Adding knowledge to vector store for agent: {}, knowledge ID: {}", agentIdStr, knowledge.getId());
 
-			// 创建文档
+			// Create document
 			Document document = createDocumentFromKnowledge(agentIdStr, knowledge);
 
-			// 添加到向量库
+			// Add to vector store
 			vectorStoreService.getAgentVectorStoreManager().addDocuments(agentIdStr, List.of(document));
 
 			log.info("Successfully added knowledge to vector store for agent: {}", agentIdStr);
@@ -91,9 +92,9 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 为智能体批量添加知识文档到向量库
-	 * @param agentId 智能体ID
-	 * @param knowledgeList 知识列表
+	 * Batch add knowledge documents to vector store for agent
+	 * @param agentId agent ID
+	 * @param knowledgeList knowledge list
 	 */
 	public void addKnowledgeListToVector(Long agentId, List<AgentKnowledge> knowledgeList) {
 		if (knowledgeList == null || knowledgeList.isEmpty()) {
@@ -105,12 +106,12 @@ public class AgentVectorService {
 			String agentIdStr = String.valueOf(agentId);
 			log.info("Adding {} knowledge items to vector store for agent: {}", knowledgeList.size(), agentIdStr);
 
-			// 创建文档列表
+			// Create document列表
 			List<Document> documents = knowledgeList.stream()
 				.map(knowledge -> createDocumentFromKnowledge(agentIdStr, knowledge))
 				.toList();
 
-			// 批量添加到向量库
+			// Batch add to vector store
 			vectorStoreService.getAgentVectorStoreManager().addDocuments(agentIdStr, documents);
 
 			log.info("Successfully added {} knowledge items to vector store for agent: {}", documents.size(),
@@ -123,11 +124,11 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 从向量库中搜索相关知识
-	 * @param agentId 智能体ID
-	 * @param query 查询文本
-	 * @param topK 返回结果数量
-	 * @return 相关文档列表
+	 * Search related knowledge from vector store
+	 * @param agentId agent ID
+	 * @param query query text
+	 * @param topK number of results to return
+	 * @return list of related documents
 	 */
 	public List<Document> searchKnowledge(Long agentId, String query, int topK) {
 		try {
@@ -147,12 +148,12 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 从向量库中搜索特定类型的知识
-	 * @param agentId 智能体ID
-	 * @param query 查询文本
-	 * @param topK 返回结果数量
-	 * @param knowledgeType 知识类型
-	 * @return 相关文档列表
+	 * Search specific type of knowledge from vector store
+	 * @param agentId agent ID
+	 * @param query query text
+	 * @param topK number of results to return
+	 * @param knowledgeType knowledge type
+	 * @return list of related documents
 	 */
 	public List<Document> searchKnowledgeByType(Long agentId, String query, int topK, String knowledgeType) {
 		try {
@@ -174,9 +175,9 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 删除智能体的特定知识文档
-	 * @param agentId 智能体ID
-	 * @param knowledgeId 知识ID
+	 * Delete specific knowledge document of agent
+	 * @param agentId agent ID
+	 * @param knowledgeId knowledge ID
 	 */
 	public void deleteKnowledgeFromVector(Long agentId, Integer knowledgeId) {
 		try {
@@ -197,8 +198,8 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 删除智能体的所有向量数据
-	 * @param agentId 智能体ID
+	 * Delete all vector data of agent
+	 * @param agentId agent ID
 	 */
 	public void deleteAllVectorDataForAgent(Long agentId) {
 		try {
@@ -216,9 +217,9 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 获取智能体向量存储统计信息
-	 * @param agentId 智能体ID
-	 * @return 统计信息
+	 * Get agent vector storage statistics
+	 * @param agentId agent ID
+	 * @return statistics
 	 */
 	public Map<String, Object> getVectorStatistics(Long agentId) {
 		try {
@@ -244,13 +245,13 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 从AgentKnowledge创建Document
+	 * Create Document from AgentKnowledge
 	 */
 	private Document createDocumentFromKnowledge(String agentId, AgentKnowledge knowledge) {
 		String documentId = agentId + ":knowledge:" + knowledge.getId();
 		String content = knowledge.getContent();
 		if (content == null || content.trim().isEmpty()) {
-			content = knowledge.getTitle(); // 如果内容为空，使用标题
+			content = knowledge.getTitle(); // If content is empty, use title
 		}
 
 		Map<String, Object> metadata = new HashMap<>();
@@ -278,20 +279,21 @@ public class AgentVectorService {
 	private com.alibaba.cloud.ai.connector.accessor.Accessor dbAccessor;
 
 	/**
-	 * 获取智能体配置的数据源列表 从数据库中查询智能体关联的数据源信息
+	 * Get list of data sources configured for agent Query data source information
+	 * associated with agent from database
 	 */
 	public List<Map<String, Object>> getAgentDatasources(Long agentId) {
 		try {
 			log.info("Getting datasources for agent: {}", agentId);
 
-			// 调用DatasourceService获取智能体关联的数据源
+			// Call DatasourceService to get data sources associated with agent
 			List<com.alibaba.cloud.ai.entity.AgentDatasource> agentDatasources = datasourceService
 				.getAgentDatasources(agentId.intValue());
 
 			List<Map<String, Object>> datasources = new ArrayList<>();
 
 			for (com.alibaba.cloud.ai.entity.AgentDatasource agentDatasource : agentDatasources) {
-				// 只返回激活状态的数据源
+				// Only return active status data sources
 				if (agentDatasource.getIsActive() != null) {
 					com.alibaba.cloud.ai.entity.Datasource datasource = agentDatasource.getDatasource();
 					if (datasource != null) {
@@ -303,7 +305,8 @@ public class AgentVectorService {
 						dsMap.put("port", datasource.getPort());
 						dsMap.put("databaseName", datasource.getDatabaseName());
 						dsMap.put("username", datasource.getUsername());
-						dsMap.put("password", datasource.getPassword()); // 添加密码字段
+						dsMap.put("password", datasource.getPassword()); // Add password
+																			// field
 						dsMap.put("connectionUrl", datasource.getConnectionUrl());
 						dsMap.put("status", datasource.getStatus());
 						dsMap.put("testStatus", datasource.getTestStatus());
@@ -327,37 +330,37 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 获取数据源的表列表
-	 * @param datasourceId 数据源ID
-	 * @return 表名列表
+	 * Get table list of data source
+	 * @param datasourceId data source ID
+	 * @return list of table names
 	 */
 	public List<String> getDatasourceTables(Integer datasourceId) {
 		try {
 			log.info("Getting tables for datasource: {}", datasourceId);
 
-			// 获取数据源信息
+			// Get data source information
 			com.alibaba.cloud.ai.entity.Datasource datasource = datasourceService.getDatasourceById(datasourceId);
 			if (datasource == null) {
 				throw new RuntimeException("Datasource not found with id: " + datasourceId);
 			}
 
-			// 检查数据源类型，目前只支持MySQL
+			// Check data source type, currently only supports MySQL
 			if (!"mysql".equalsIgnoreCase(datasource.getType())) {
 				log.warn("Unsupported datasource type: {}, only MySQL is supported currently", datasource.getType());
 				return new ArrayList<>();
 			}
 
-			// 创建数据库配置
+			// Create database configuration
 			DbConfig dbConfig = createDbConfigFromDatasource(datasource);
 
-			// 创建查询参数
+			// Create query parameters
 			DbQueryParameter queryParam = DbQueryParameter.from(dbConfig);
 			queryParam.setSchema(datasource.getDatabaseName());
 
-			// 查询表列表
+			// Query table list
 			List<TableInfoBO> tableInfoList = dbAccessor.showTables(dbConfig, queryParam);
 
-			// 提取表名
+			// Extract table names
 			List<String> tableNames = tableInfoList.stream()
 				.map(TableInfoBO::getName)
 				.filter(name -> name != null && !name.trim().isEmpty())
@@ -375,28 +378,28 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 从数据源实体创建数据库配置
+	 * Create database configuration from data source entity
 	 */
 	private DbConfig createDbConfigFromDatasource(com.alibaba.cloud.ai.entity.Datasource datasource) {
 		DbConfig dbConfig = new DbConfig();
 
-		// 设置基本连接信息
+		// Set basic connection information
 		dbConfig.setUrl(datasource.getConnectionUrl());
 		dbConfig.setUsername(datasource.getUsername());
 		dbConfig.setPassword(datasource.getPassword());
 
-		// 设置数据库类型
+		// Set database type
 		if ("mysql".equalsIgnoreCase(datasource.getType())) {
 			dbConfig.setConnectionType("jdbc");
 			dbConfig.setDialectType("mysql");
 		}
-		// 其他数据库类型的支持可以在这里扩展
+		// Support for other database types can be extended here
 		// else if ("postgresql".equalsIgnoreCase(datasource.getType())) {
 		// dbConfig.setConnectionType("jdbc");
 		// dbConfig.setDialectType("postgresql");
 		// }
 
-		// 设置Schema为数据源的数据库名称
+		// Set Schema as the database name of the data source
 		dbConfig.setSchema(datasource.getDatabaseName());
 
 		log.debug("Created DbConfig for datasource {}: url={}, schema={}, type={}", datasource.getId(),
@@ -406,11 +409,11 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 使用数据源ID为智能体初始化数据库Schema
-	 * @param agentId 智能体ID
-	 * @param datasourceId 数据源ID
-	 * @param tables 表列表
-	 * @return 是否成功
+	 * Initialize database Schema for agent using data source ID
+	 * @param agentId agent ID
+	 * @param datasourceId data source ID
+	 * @param tables table list
+	 * @return success status
 	 */
 	public Boolean initializeSchemaForAgentWithDatasource(Long agentId, Integer datasourceId, List<String> tables) {
 		try {
@@ -418,23 +421,23 @@ public class AgentVectorService {
 			log.info("Initializing schema for agent: {} with datasource: {}, tables: {}", agentIdStr, datasourceId,
 					tables);
 
-			// 获取数据源信息
+			// Get data source information
 			com.alibaba.cloud.ai.entity.Datasource datasource = datasourceService.getDatasourceById(datasourceId);
 			if (datasource == null) {
 				throw new RuntimeException("Datasource not found with id: " + datasourceId);
 			}
 
-			// 创建数据库配置
+			// Create database configuration
 			DbConfig dbConfig = createDbConfigFromDatasource(datasource);
 
-			// 创建SchemaInitRequest
+			// Create SchemaInitRequest
 			SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
 			schemaInitRequest.setDbConfig(dbConfig);
 			schemaInitRequest.setTables(tables);
 
 			log.info("Created SchemaInitRequest for agent: {}, dbConfig: {}, tables: {}", agentIdStr, dbConfig, tables);
 
-			// 调用原有的初始化方法
+			// Call the original initialization method
 			return vectorStoreService.schemaForAgent(agentIdStr, schemaInitRequest);
 
 		}
@@ -445,32 +448,32 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 智能体聊天功能
-	 * @param agentId 智能体ID
-	 * @param query 用户查询
-	 * @return 智能体回答
+	 * Agent chat function
+	 * @param agentId agent ID
+	 * @param query user query
+	 * @return agent response
 	 */
 	public String chatWithAgent(Long agentId, String query) {
 		try {
 			String agentIdStr = String.valueOf(agentId);
 			log.info("Processing chat request for agent: {}, query: {}", agentIdStr, query);
 
-			// 检查智能体是否已初始化
+			// Check if agent has been initialized
 			boolean hasData = vectorStoreService.getAgentVectorStoreManager().hasAgentData(agentIdStr);
 			if (!hasData) {
 				return "智能体尚未初始化数据源，请先在「初始化信息源」中配置数据源和表结构。";
 			}
 
-			// 获取智能体的数据源信息
+			// Get agent's data source information
 			List<Map<String, Object>> datasources = getAgentDatasources(agentId);
 			if (datasources.isEmpty()) {
 				return "智能体没有配置可用的数据源，请先配置数据源。";
 			}
 
-			// 使用第一个激活的数据源
+			// Use the first active data source
 			Map<String, Object> datasource = datasources.get(0);
 
-			// 创建数据库配置
+			// Create database configuration
 			com.alibaba.cloud.ai.entity.Datasource dsEntity = datasourceService
 				.getDatasourceById((Integer) datasource.get("id"));
 			if (dsEntity == null) {
@@ -479,8 +482,9 @@ public class AgentVectorService {
 
 			DbConfig dbConfig = createDbConfigFromDatasource(dsEntity);
 
-			// 使用SimpleNl2SqlService处理查询
-			// 注意：这里需要注入SimpleNl2SqlService，但为了简化，我们先返回一个基本的响应
+			// Use SimpleNl2SqlService to process query
+			// Note: SimpleNl2SqlService needs to be injected here, but for simplicity, we
+			// return a basic response first
 			String response = processAgentQuery(agentIdStr, query, dbConfig);
 
 			log.info("Generated response for agent: {}", agentIdStr);
@@ -494,12 +498,13 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 处理智能体查询（简化版本）
+	 * Process agent query (simplified version)
 	 */
 	private String processAgentQuery(String agentId, String query, DbConfig dbConfig) {
 		try {
-			// 这里是一个简化的实现
-			// 在实际应用中，应该集成完整的NL2SQL处理流程
+			// This is a simplified implementation
+			// In actual applications, the complete NL2SQL processing flow should be
+			// integrated
 
 			// 1. 检查是否是简单的问候语
 			if (isGreeting(query)) {
@@ -520,7 +525,7 @@ public class AgentVectorService {
 			StringBuilder response = new StringBuilder();
 			response.append("根据您的问题「").append(query).append("」，我找到了以下相关信息：\n\n");
 
-			// 分析相关的表和列
+			// Analyze related tables and columns
 			Set<String> tables = new HashSet<>();
 			List<String> columns = new ArrayList<>();
 
@@ -552,7 +557,9 @@ public class AgentVectorService {
 
 			if (!columns.isEmpty()) {
 				response.append("📋 **相关字段：**\n");
-				for (String column : columns.subList(0, Math.min(columns.size(), 8))) { // 限制显示数量
+				for (String column : columns.subList(0, Math.min(columns.size(), 8))) { // Limit
+																						// display
+																						// quantity
 					response.append(column).append("\n");
 				}
 				if (columns.size() > 8) {
@@ -588,7 +595,7 @@ public class AgentVectorService {
 	}
 
 	/**
-	 * 检查是否是问候语
+	 * Check if it is a greeting
 	 */
 	private boolean isGreeting(String query) {
 		String lowerQuery = query.toLowerCase().trim();

@@ -31,7 +31,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 智能体服务类
+ * Agent Service Class
  */
 @Service
 public class AgentService {
@@ -99,7 +99,7 @@ public class AgentService {
 		LocalDateTime now = LocalDateTime.now();
 
 		if (agent.getId() == null) {
-			// 新增
+			// Add
 			agent.setCreateTime(now);
 			agent.setUpdateTime(now);
 
@@ -125,7 +125,7 @@ public class AgentService {
 			}
 		}
 		else {
-			// 更新
+			// Update
 			agent.setUpdateTime(now);
 			jdbcTemplate.update(UPDATE, agent.getName(), agent.getDescription(), agent.getAvatar(), agent.getStatus(),
 					agent.getPrompt(), agent.getCategory(), agent.getAdminId(), agent.getTags(), agent.getUpdateTime(),
@@ -137,10 +137,10 @@ public class AgentService {
 
 	public void deleteById(Long id) {
 		try {
-			// 删除数据库中的智能体记录
+			// Delete agent record from database
 			jdbcTemplate.update(DELETE, id);
 
-			// 同时清理智能体的向量数据
+			// Also clean up the agent's vector data
 			if (agentVectorService != null) {
 				try {
 					agentVectorService.deleteAllVectorDataForAgent(id);
@@ -148,7 +148,7 @@ public class AgentService {
 				}
 				catch (Exception vectorException) {
 					log.warn("Failed to delete vector data for agent: {}, error: {}", id, vectorException.getMessage());
-					// 向量数据删除失败不影响主流程
+					// Vector data deletion failure does not affect the main process
 				}
 			}
 

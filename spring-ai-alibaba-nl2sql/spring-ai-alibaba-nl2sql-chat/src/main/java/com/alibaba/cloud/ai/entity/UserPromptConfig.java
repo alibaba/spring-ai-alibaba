@@ -19,54 +19,54 @@ package com.alibaba.cloud.ai.entity;
 import java.time.LocalDateTime;
 
 /**
- * 用户自定义提示词配置实体类
+ * User-defined prompt configuration entity class
  *
  * @author Makoto
  */
 public class UserPromptConfig {
 
 	/**
-	 * 配置ID
+	 * Configuration ID
 	 */
 	private String id;
 
 	/**
-	 * 配置名称
+	 * Configuration name
 	 */
 	private String name;
 
 	/**
-	 * 提示词类型（如：report-generator, planner等）
+	 * Prompt type (e.g., report-generator, planner, etc.)
 	 */
 	private String promptType;
 
 	/**
-	 * 用户自定义的系统提示词内容
+	 * User-defined system prompt content
 	 */
 	private String systemPrompt;
 
 	/**
-	 * 是否启用该配置
+	 * Whether to enable this configuration
 	 */
 	private Boolean enabled;
 
 	/**
-	 * 配置描述
+	 * Configuration description
 	 */
 	private String description;
 
 	/**
-	 * 创建时间
+	 * Creation time
 	 */
 	private LocalDateTime createTime;
 
 	/**
-	 * 更新时间
+	 * Update time
 	 */
 	private LocalDateTime updateTime;
 
 	/**
-	 * 创建者
+	 * Creator
 	 */
 	private String creator;
 

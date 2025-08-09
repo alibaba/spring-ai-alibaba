@@ -42,7 +42,7 @@ public class BusinessKnowledgeRecallService {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	// 根据data_set_id获取智能体字段
+	// Get agent fields by data_set_id
 	public List<BusinessKnowledgeDTO> getFieldByDataSetId(String dataSetId) {
 		return this.jdbcTemplate.query(FIELD_GET_BY_DATASET_IDS, new Object[] { dataSetId }, (rs, rowNum) -> {
 			return new BusinessKnowledgeDTO(rs.getString("business_term"), // businessTerm

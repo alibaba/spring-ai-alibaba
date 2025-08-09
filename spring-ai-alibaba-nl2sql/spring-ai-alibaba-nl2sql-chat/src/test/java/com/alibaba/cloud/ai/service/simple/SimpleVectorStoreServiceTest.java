@@ -72,16 +72,16 @@ class SimpleVectorStoreServiceTest {
 	@BeforeEach
 	void setUp() {
 		gson = new Gson();
-		// 创建被测试的服务实例
+		// Create service instance to be tested
 		vectorStoreService = new SimpleVectorStoreService(embeddingModel, gson, dbAccessor, dbConfig, null);
 	}
 
 	@Test
 	void testSchemaInitialization() throws Exception {
-		// 准备测试数据
+		// Prepare test data
 		SchemaInitRequest schemaInitRequest = createMockSchemaInitRequest();
 
-		// 模拟数据库操作返回的数据
+		// Mock data returned by database operations
 		when(dbAccessor.showForeignKeys(any(DbConfig.class), any(DbQueryParameter.class)))
 			.thenReturn(createMockForeignKeys());
 
@@ -92,16 +92,16 @@ class SimpleVectorStoreServiceTest {
 		when(dbAccessor.sampleColumn(any(DbConfig.class), any(DbQueryParameter.class)))
 			.thenReturn(Arrays.asList("sample1", "sample2", "sample3"));
 
-		// 模拟 EmbeddingModel 的行为 - 只 mock Document 类型的 embed 方法
+		// Mock EmbeddingModel behavior - only mock embed method for Document type
 		when(embeddingModel.embed(any(Document.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
 
-		// 执行测试
+		// Execute test
 		Boolean result = vectorStoreService.schema(schemaInitRequest);
 
-		// 验证结果
+		// Verify result
 		assertTrue(result);
 
-		// 验证方法调用
+		// Verify method call
 		verify(dbAccessor, times(1)).showForeignKeys(any(DbConfig.class), any(DbQueryParameter.class));
 		verify(dbAccessor, times(1)).fetchTables(any(DbConfig.class), any(DbQueryParameter.class));
 		verify(dbAccessor, atLeastOnce()).showColumns(any(DbConfig.class), any(DbQueryParameter.class));
@@ -110,17 +110,18 @@ class SimpleVectorStoreServiceTest {
 
 	@Test
 	void testConvertToDocument() {
-		// 准备测试数据
+		// Prepare test data
 		TableInfoBO tableInfo = createMockTableInfo();
 		ColumnInfoBO columnInfo = createMockColumnInfo();
 
-		// 执行测试
+		// Execute test
 		Document document = vectorStoreService.convertToDocument(tableInfo, columnInfo);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(document);
 		assertEquals("test_table.test_column", document.getId());
-		assertEquals("Test column description", document.getText()); // 实际返回的是 description
+		assertEquals("Test column description", document.getText()); // Actually returns
+																		// description
 
 		Map<String, Object> metadata = document.getMetadata();
 		assertEquals("test_table.test_column", metadata.get("id"));
@@ -134,16 +135,16 @@ class SimpleVectorStoreServiceTest {
 
 	@Test
 	void testConvertTableToDocument() {
-		// 准备测试数据
+		// Prepare test data
 		TableInfoBO tableInfo = createMockTableInfo();
 
-		// 执行测试
+		// Execute test
 		Document document = vectorStoreService.convertTableToDocument(tableInfo);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(document);
 		assertEquals("test_table", document.getId());
-		assertEquals("Test table", document.getText()); // 实际返回的是 description
+		assertEquals("Test table", document.getText()); // Actually returns description
 
 		Map<String, Object> metadata = document.getMetadata();
 		assertEquals("test_table", metadata.get("name"));
@@ -153,10 +154,10 @@ class SimpleVectorStoreServiceTest {
 
 	@Test
 	void testDeleteDocumentsById() throws Exception {
-		// 准备测试数据 - 先通过 schema 方法添加一些文档
+		// Prepare test data - 先通过 schema 方法添加一些文档
 		SchemaInitRequest schemaInitRequest = createMockSchemaInitRequest();
 
-		// 模拟数据库操作返回的数据
+		// Mock data returned by database operations
 		when(dbAccessor.showForeignKeys(any(DbConfig.class), any(DbQueryParameter.class)))
 			.thenReturn(createMockForeignKeys());
 
@@ -167,14 +168,14 @@ class SimpleVectorStoreServiceTest {
 		when(dbAccessor.sampleColumn(any(DbConfig.class), any(DbQueryParameter.class)))
 			.thenReturn(Arrays.asList("sample1", "sample2", "sample3"));
 
-		// 模拟 EmbeddingModel 的行为
+		// Mock EmbeddingModel behavior
 		when(embeddingModel.embed(any(Document.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
 		when(embeddingModel.embed(any(String.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
 
-		// 执行 schema 初始化，向 vectorStore 添加数据
+		// Execute schema initialization, add data to vectorStore
 		vectorStoreService.schema(schemaInitRequest);
 
-		// 统计删除前所有类型的文档数量
+		// Count documents of all types before deletion
 		SearchRequest searchAllRequest = new SearchRequest();
 		searchAllRequest.setVectorType("column");
 		searchAllRequest.setQuery("");
@@ -189,18 +190,19 @@ class SimpleVectorStoreServiceTest {
 
 		int totalBeforeCount = beforeColumnCount + beforeTableCount;
 
-		// 准备删除请求 - 注意：实际的删除实现中用的是硬编码的 "comment_count"
-		// 这里测试的是删除逻辑本身，而不是具体的 ID 匹配
+		// Prepare delete request - Note: actual delete implementation uses hardcoded
+		// "comment_count"
+		// Here we test the delete logic itself, not specific ID matching
 		DeleteRequest deleteRequest = new DeleteRequest();
 		deleteRequest.setId("test_id");
 
-		// 执行删除操作
+		// Execute delete operation
 		Boolean result = vectorStoreService.deleteDocuments(deleteRequest);
 
-		// 验证删除操作成功
+		// Verify delete operation succeeded
 		assertTrue(result);
 
-		// 统计删除后的文档数量
+		// Count documents after deletion
 		List<Document> afterDeleteColumns = vectorStoreService.searchWithVectorType(searchAllRequest);
 		searchAllRequest.setVectorType("column");
 		afterDeleteColumns = vectorStoreService.searchWithVectorType(searchAllRequest);
@@ -212,8 +214,9 @@ class SimpleVectorStoreServiceTest {
 
 		int totalAfterCount = afterColumnCount + afterTableCount;
 
-		// 验证删除结果 - 由于实现中使用了硬编码的 ID，可能没有实际删除文档
-		// 这里主要验证方法执行成功，并记录数据变化
+		// Verify delete result - since hardcoded ID is used in implementation, may not
+		// actually delete documents
+		// Here we mainly verify method execution succeeded and record data changes
 		System.out.println("按ID删除测试:");
 		System.out.println("删除前 column 类型文档数量: " + beforeColumnCount);
 		System.out.println("删除后 column 类型文档数量: " + afterColumnCount);
@@ -222,16 +225,16 @@ class SimpleVectorStoreServiceTest {
 		System.out.println("删除前总文档数量: " + totalBeforeCount);
 		System.out.println("删除后总文档数量: " + totalAfterCount);
 
-		// 验证方法执行成功
+		// Verify method execution succeeded
 		assertTrue(result, "删除操作应该返回成功");
 	}
 
 	@Test
 	void testDeleteDocumentsByVectorType() throws Exception {
-		// 准备测试数据 - 先通过 schema 方法添加一些文档
+		// Prepare test data - 先通过 schema 方法添加一些文档
 		SchemaInitRequest schemaInitRequest = createMockSchemaInitRequest();
 
-		// 模拟数据库操作返回的数据
+		// Mock data returned by database operations
 		when(dbAccessor.showForeignKeys(any(DbConfig.class), any(DbQueryParameter.class)))
 			.thenReturn(createMockForeignKeys());
 
@@ -242,23 +245,23 @@ class SimpleVectorStoreServiceTest {
 		when(dbAccessor.sampleColumn(any(DbConfig.class), any(DbQueryParameter.class)))
 			.thenReturn(Arrays.asList("sample1", "sample2", "sample3"));
 
-		// 模拟 EmbeddingModel 的行为
+		// Mock EmbeddingModel behavior
 		when(embeddingModel.embed(any(Document.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
 		when(embeddingModel.embed(any(String.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
 
-		// 执行 schema 初始化，向 vectorStore 添加数据
+		// Execute schema initialization, add data to vectorStore
 		vectorStoreService.schema(schemaInitRequest);
 
-		// 统计删除前的数据数量 - 使用服务的搜索方法
+		// Count data before deletion - use service's search method
 		SearchRequest searchColumnRequest = new SearchRequest();
 		searchColumnRequest.setVectorType("column");
-		searchColumnRequest.setQuery(""); // 空查询以获取所有匹配的文档
+		searchColumnRequest.setQuery(""); // Empty query to get all matching documents
 		searchColumnRequest.setTopK(Integer.MAX_VALUE);
 
 		List<Document> beforeDeleteColumns = vectorStoreService.searchWithVectorType(searchColumnRequest);
 		int beforeDeleteCount = beforeDeleteColumns.size();
 
-		// 统计 table 类型的文档数量（用于验证只删除了 column 类型）
+		// Count table type documents (to verify only column type was deleted)
 		SearchRequest searchTableRequest = new SearchRequest();
 		searchTableRequest.setVectorType("table");
 		searchTableRequest.setQuery("");
@@ -267,24 +270,24 @@ class SimpleVectorStoreServiceTest {
 		List<Document> beforeDeleteTables = vectorStoreService.searchWithVectorType(searchTableRequest);
 		int beforeTableCount = beforeDeleteTables.size();
 
-		// 准备删除请求
+		// Prepare delete request
 		DeleteRequest deleteRequest = new DeleteRequest();
 		deleteRequest.setVectorType("column");
 
-		// 执行删除操作
+		// Execute delete operation
 		Boolean result = vectorStoreService.deleteDocuments(deleteRequest);
 
-		// 验证删除操作成功
+		// Verify delete operation succeeded
 		assertTrue(result);
 
-		// 统计删除后的数据数量
+		// Count data after deletion
 		List<Document> afterDeleteColumns = vectorStoreService.searchWithVectorType(searchColumnRequest);
 		int afterDeleteCount = afterDeleteColumns.size();
 
 		List<Document> afterDeleteTables = vectorStoreService.searchWithVectorType(searchTableRequest);
 		int afterTableCount = afterDeleteTables.size();
 
-		// 验证删除结果
+		// Verify delete result
 		assertTrue(beforeDeleteCount > 0, "删除前应该有column类型的文档");
 		assertEquals(0, afterDeleteCount, "删除后应该没有column类型的文档");
 		assertEquals(beforeTableCount, afterTableCount, "table类型的文档数量应该保持不变");
@@ -298,11 +301,11 @@ class SimpleVectorStoreServiceTest {
 
 	@Test
 	void testDeleteDocumentsWithInvalidRequest() {
-		// 准备测试数据
+		// Prepare test data
 		DeleteRequest deleteRequest = new DeleteRequest();
-		// 不设置任何参数
+		// Don't set any parameters
 
-		// 验证异常
+		// Verify exception
 		Exception exception = assertThrows(Exception.class, () -> {
 			vectorStoreService.deleteDocuments(deleteRequest);
 		});
@@ -312,62 +315,62 @@ class SimpleVectorStoreServiceTest {
 
 	@Test
 	void testSearchWithVectorType() {
-		// 准备测试数据
+		// Prepare test data
 		SearchRequest searchRequest = new SearchRequest();
 		searchRequest.setQuery("test query");
 		searchRequest.setVectorType("column");
 		searchRequest.setTopK(5);
 
-		// 模拟 EmbeddingModel 的行为
+		// Mock EmbeddingModel behavior
 		when(embeddingModel.embed(any(String.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
 
-		// 执行测试
+		// Execute test
 		List<Document> results = vectorStoreService.searchWithVectorType(searchRequest);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(results);
-		// 由于 SimpleVectorStore 是空的，结果应该为空
+		// Since SimpleVectorStore is empty, result should be empty
 		assertTrue(results.isEmpty() || results.size() >= 0);
 	}
 
 	@Test
 	void testSearchWithFilter() {
-		// 准备测试数据
+		// Prepare test data
 		SearchRequest searchRequest = new SearchRequest();
 		searchRequest.setQuery("test query");
 		searchRequest.setVectorType("table");
 		searchRequest.setTopK(5);
 
-		// 模拟 EmbeddingModel 的行为
+		// Mock EmbeddingModel behavior
 		when(embeddingModel.embed(any(String.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
 
-		// 执行测试
+		// Execute test
 		List<Document> results = vectorStoreService.searchWithFilter(searchRequest);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(results);
 	}
 
 	@Test
 	void testSearchTableByNameAndVectorType() {
-		// 准备测试数据
+		// Prepare test data
 		SearchRequest searchRequest = new SearchRequest();
 		searchRequest.setName("test_table");
 		searchRequest.setVectorType("table");
 		searchRequest.setTopK(5);
 
-		// 模拟 EmbeddingModel 的行为 - 这个方法不需要 embed，因为没有 query
+		// Mock EmbeddingModel behavior - 这个方法不需要 embed，因为没有 query
 		// when(embeddingModel.embed(any(String.class)))
 		// .thenReturn(new float[]{0.1f, 0.2f, 0.3f});
 
-		// 执行测试
+		// Execute test
 		List<Document> results = vectorStoreService.searchTableByNameAndVectorType(searchRequest);
 
-		// 验证结果
+		// Verify result
 		assertNotNull(results);
 	}
 
-	// 创建模拟的 SchemaInitRequest
+	// Create mock SchemaInitRequest
 	private SchemaInitRequest createMockSchemaInitRequest() {
 		SchemaInitRequest request = new SchemaInitRequest();
 
@@ -379,7 +382,7 @@ class SimpleVectorStoreServiceTest {
 		return request;
 	}
 
-	// 创建模拟的外键信息
+	// Create mock foreign key information
 	private List<ForeignKeyInfoBO> createMockForeignKeys() {
 		List<ForeignKeyInfoBO> foreignKeys = new ArrayList<>();
 
@@ -394,7 +397,7 @@ class SimpleVectorStoreServiceTest {
 		return foreignKeys;
 	}
 
-	// 创建模拟的表信息
+	// Create mock table information
 	private List<TableInfoBO> createMockTables() {
 		List<TableInfoBO> tables = new ArrayList<>();
 
@@ -408,7 +411,7 @@ class SimpleVectorStoreServiceTest {
 		return tables;
 	}
 
-	// 创建模拟的列信息
+	// Create mock column information
 	private List<ColumnInfoBO> createMockColumns() {
 		List<ColumnInfoBO> columns = new ArrayList<>();
 
@@ -426,7 +429,7 @@ class SimpleVectorStoreServiceTest {
 		return columns;
 	}
 
-	// 创建模拟的表信息对象
+	// Create mock table information对象
 	private TableInfoBO createMockTableInfo() {
 		return TableInfoBO.builder()
 			.name("test_table")
@@ -437,7 +440,7 @@ class SimpleVectorStoreServiceTest {
 			.build();
 	}
 
-	// 创建模拟的列信息对象
+	// Create mock column information对象
 	private ColumnInfoBO createMockColumnInfo() {
 		return ColumnInfoBO.builder()
 			.name("test_column")

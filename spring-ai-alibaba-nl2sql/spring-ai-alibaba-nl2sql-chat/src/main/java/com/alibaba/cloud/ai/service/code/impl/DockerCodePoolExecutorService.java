@@ -64,7 +64,7 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 
 	public DockerCodePoolExecutorService(CodeExecutorProperties properties) {
 		super(properties);
-		// 初始化DockerClient
+		// Initialize DockerClient
 		String dockerHost = this.getDockerHostForCurrentOS(properties.getHost());
 		DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
 			.withDockerHost(dockerHost)
@@ -73,7 +73,7 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 		this.dockerClient = this.createDockerClientWithFallback(config);
 		this.containerTempPath = new ConcurrentHashMap<>();
 
-		// 检查镜像是否已存在本地
+		// Check if image exists locally
 		boolean imageExists = this.dockerClient.listImagesCmd()
 			.withImageNameFilter(properties.getImageName())
 			.exec()
@@ -81,7 +81,7 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 			.anyMatch(image -> Arrays.asList(image.getRepoTags()).contains(properties.getImageName()));
 
 		if (!imageExists) {
-			// 拉取镜像
+			// Pull image
 			try {
 				this.dockerClient.pullImageCmd(properties.getImageName())
 					.exec(new PullImageResultCallback())
@@ -96,11 +96,12 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 	}
 
 	/**
-	 * 根据当前操作系统自动选择合适的Docker Host地址
+	 * Automatically select appropriate Docker Host address based on current operating
+	 * system
 	 * @return Docker Host URI
 	 */
 	private String getDockerHostForCurrentOS(String dockerHost) {
-		// 如果配置对象里有值，则直接使用配置对象的值
+		// If configuration object has value, directly use configuration object's value
 		if (StringUtils.hasText(dockerHost)) {
 			return dockerHost;
 		}
@@ -110,7 +111,7 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 		if (osName.contains("win")) {
 			// Windows系统
 			log.info("Using Windows Docker configuration");
-			// 在Windows上优先尝试TCP连接，更稳定
+			// On Windows, try TCP connection first, more stable
 			return "tcp://localhost:2375";
 		}
 		else if (osName.contains("nix") || osName.contains("nux") || osName.contains("aix")) {
@@ -124,17 +125,17 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 			return "unix:///var/run/docker.sock";
 		}
 		else {
-			// 未知系统，使用配置文件中的默认值
+			// Unknown system, use default value from configuration file
 			log.warn("Unknown operating system: {}, using default docker host", osName);
 			return "unix:///var/run/docker.sock";
 		}
 	}
 
 	/**
-	 * 创建Docker客户端，支持多种连接方式的回退机制
-	 * @param config Docker客户端配置
-	 * @return DockerClient实例
-	 * @throws Exception 如果所有连接方式都失败
+	 * Create Docker client, supports fallback mechanism for multiple connection methods
+	 * @param config Docker client configuration
+	 * @return DockerClient instance
+	 * @throws Exception if all connection methods fail
 	 */
 	private DockerClient createDockerClientWithFallback(DockerClientConfig config) {
 		String osName = System.getProperty("os.name").toLowerCase();
@@ -143,7 +144,7 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 			// Windows系统：尝试多种连接方式
 			String[] windowsHosts = { "tcp://localhost:2375", // TCP方式（需要在Docker
 					// Desktop中启用）
-					"npipe://./pipe/docker_engine" // 命名管道方式
+					"npipe://./pipe/docker_engine" // Named pipe method
 			};
 
 			for (String dockerHost : windowsHosts) {
@@ -162,7 +163,7 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 
 					DockerClient dockerClient = DockerClientImpl.getInstance(testConfig, httpClient);
 
-					// 测试连接是否正常
+					// Test if connection is normal
 					dockerClient.pingCmd().exec();
 					log.info("Successfully connected to Docker using: {}", dockerHost);
 					return dockerClient;
@@ -173,7 +174,7 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 				}
 			}
 
-			// 如果所有Windows连接方式都失败
+			// If all Windows connection methods fail
 			throw new RuntimeException(
 					"Failed to connect to Docker on Windows. Please ensure Docker Desktop is running and either:\n"
 							+ "1. Enable 'Expose daemon on tcp://localhost:2375 without TLS' in Docker Desktop settings, or\n"
@@ -189,7 +190,7 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 					.build();
 
 				DockerClient dockerClient = DockerClientImpl.getInstance(config, httpClient);
-				dockerClient.pingCmd().exec(); // 测试连接
+				dockerClient.pingCmd().exec(); // Test connection
 				log.info("Successfully connected to Docker using: {}", config.getDockerHost());
 				return dockerClient;
 
@@ -227,11 +228,11 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 	}
 
 	/**
-	 * 清理已存在的同名容器
+	 * Clean up existing container with same name
 	 */
 	private void cleanupExistingResources(String containName) {
 		try {
-			// 尝试删除同名容器
+			// Try to delete container with same name
 			dockerClient.removeContainerCmd(containName).withForce(true).exec();
 			log.info("Removed existing container: {}", containName);
 		}
@@ -243,10 +244,10 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 	@Override
 	protected String createNewContainer() throws Exception {
 		String containerName = this.generateContainerName();
-		// 先清理可能存在的同名容器
+		// First clean up possibly existing container with same name
 		this.cleanupExistingResources(containerName);
 
-		// 生成临时目录和文件
+		// Generate temporary directory and files
 		Path tempDir = Files.createTempDirectory(containerName);
 		Files.createFile(tempDir.resolve("requirements.txt"));
 		Files.createFile(tempDir.resolve("script.py"));
@@ -255,7 +256,7 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 		this.createWritableFile(tempDir, "stdout.txt");
 		this.createWritableFile(tempDir, "stderr.txt");
 
-		// 创建容器
+		// Create container
 		HostConfig hostConfig = this.createHostConfig(tempDir);
 		CreateContainerResponse container = dockerClient.createContainerCmd(properties.getImageName())
 			.withName(containerName)
@@ -266,14 +267,14 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 					properties.getCodeTimeout()))
 			.exec();
 		String containerId = container.getId();
-		// 保存临时目录对象
+		// Save temporary directory object
 		this.containerTempPath.put(containerId, tempDir);
 		return containerId;
 	}
 
 	@Override
 	protected TaskResponse execTaskInContainer(TaskRequest request, String containerId) throws Exception {
-		// 获取临时目录对象，将数据写入临时目录
+		// Get temporary directory object, write data to temporary directory
 		Path tempDir = this.containerTempPath.get(containerId);
 		if (tempDir == null) {
 			log.error("Container '{}' does not exist work dir", containerId);

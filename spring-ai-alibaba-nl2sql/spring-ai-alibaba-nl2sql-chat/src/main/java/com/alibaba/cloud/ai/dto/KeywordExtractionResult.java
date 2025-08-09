@@ -19,37 +19,38 @@ package com.alibaba.cloud.ai.dto;
 import java.util.List;
 
 /**
- * 关键词提取结果数据结构，用于存储每个问题变体的提取结果
+ * Keyword extraction result data structure, used to store extraction results for each
+ * question variant
  *
  * @author zhangshenghang
  */
 public class KeywordExtractionResult {
 
 	/**
-	 * 问题变体
+	 * Question variant
 	 */
 	private final String question;
 
 	/**
-	 * 提取的证据列表
+	 * Extracted evidence list
 	 */
 	private final List<String> evidences;
 
 	/**
-	 * 提取的关键词列表
+	 * Extracted keyword list
 	 */
 	private final List<String> keywords;
 
 	/**
-	 * 提取是否成功
+	 * Whether extraction was successful
 	 */
 	private final boolean successful;
 
 	/**
-	 * 构造函数 - 成功情况
-	 * @param question 问题变体
-	 * @param evidences 提取的证据列表
-	 * @param keywords 提取的关键词列表
+	 * Constructor - success case
+	 * @param question question variant
+	 * @param evidences extracted evidence list
+	 * @param keywords extracted keyword list
 	 */
 	public KeywordExtractionResult(String question, List<String> evidences, List<String> keywords) {
 		this.question = question;
@@ -59,9 +60,9 @@ public class KeywordExtractionResult {
 	}
 
 	/**
-	 * 构造函数 - 失败情况
-	 * @param question 问题变体
-	 * @param successful 提取是否成功
+	 * Constructor - failure case
+	 * @param question question variant
+	 * @param successful whether extraction was successful
 	 */
 	public KeywordExtractionResult(String question, boolean successful) {
 		this.question = question;
@@ -71,32 +72,32 @@ public class KeywordExtractionResult {
 	}
 
 	/**
-	 * 获取问题变体
-	 * @return 问题变体
+	 * Get question variant
+	 * @return question variant
 	 */
 	public String getQuestion() {
 		return question;
 	}
 
 	/**
-	 * 获取提取的证据列表
-	 * @return 证据列表
+	 * Get extracted evidence list
+	 * @return evidence list
 	 */
 	public List<String> getEvidences() {
 		return evidences;
 	}
 
 	/**
-	 * 获取提取的关键词列表
-	 * @return 关键词列表
+	 * Get extracted keyword list
+	 * @return keyword list
 	 */
 	public List<String> getKeywords() {
 		return keywords;
 	}
 
 	/**
-	 * 提取是否成功
-	 * @return 是否成功
+	 * Whether extraction was successful
+	 * @return whether successful
 	 */
 	public boolean isSuccessful() {
 		return successful;
