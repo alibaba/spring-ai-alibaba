@@ -118,6 +118,7 @@ public class McpConnectionFactory {
 		}
 
 		McpAsyncClient mcpAsyncClient = McpClient.async(transport)
+			.requestTimeout(mcpProperties.getTimeout())
 			.clientInfo(new McpSchema.Implementation(mcpServerName, "1.0.0"))
 			.build();
 
