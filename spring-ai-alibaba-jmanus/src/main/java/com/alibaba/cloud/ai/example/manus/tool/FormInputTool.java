@@ -149,9 +149,19 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 	 */
 	public static class InputItem {
 
+		private String name;
+
 		private String label;
 
 		private String value;
+
+		private String type;
+
+		private Boolean required;
+
+		private String placeholder;
+
+		private List<String> options;
 
 		public InputItem() {
 		}
@@ -159,6 +169,20 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 		public InputItem(String label, String value) {
 			this.label = label;
 			this.value = value;
+		}
+
+		public InputItem(String name, String label, String type) {
+			this.name = name;
+			this.label = label;
+			this.type = type;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
 		}
 
 		public String getLabel() {
@@ -175,6 +199,38 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 		public void setValue(String value) {
 			this.value = value;
+		}
+
+		public String getType() {
+			return type;
+		}
+
+		public void setType(String type) {
+			this.type = type;
+		}
+
+		public Boolean getRequired() {
+			return required;
+		}
+
+		public void setRequired(Boolean required) {
+			this.required = required;
+		}
+
+		public String getPlaceholder() {
+			return placeholder;
+		}
+
+		public void setPlaceholder(String placeholder) {
+			this.placeholder = placeholder;
+		}
+
+		public List<String> getOptions() {
+			return options;
+		}
+
+		public void setOptions(List<String> options) {
+			this.options = options;
 		}
 
 	}
@@ -227,7 +283,7 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 	private InputState inputState = InputState.INPUT_RECEIVED; // Default state
 
 	private UserFormInput currentFormDefinition; // Stores the form structure defined by
-													// LLM and its current values
+	// LLM and its current values
 
 	public InputState getInputState() {
 		return inputState;
@@ -364,8 +420,8 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 		try {
 			StringBuilder stateBuilder = new StringBuilder("FormInputTool Status:\n");
 			stateBuilder
-				.append(String.format("Description: %s\nInput Items: %s\n", currentFormDefinition.getDescription(),
-						objectMapper.writeValueAsString(currentFormDefinition.getInputs())));
+					.append(String.format("Description: %s\nInput Items: %s\n", currentFormDefinition.getDescription(),
+							objectMapper.writeValueAsString(currentFormDefinition.getInputs())));
 			stateBuilder.append(String.format("Current input state: %s\n", inputState.toString()));
 			return stateBuilder.toString();
 		}
