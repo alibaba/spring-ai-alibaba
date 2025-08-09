@@ -17,10 +17,10 @@
   <div class="chat-container">
     <div class="messages" ref="messagesRef">
       <div
-        v-for="message in messages"
-        :key="message.id"
-        class="message"
-        :class="{ user: message.type === 'user', assistant: message.type === 'assistant' }"
+          v-for="message in messages"
+          :key="message.id"
+          class="message"
+          :class="{ user: message.type === 'user', assistant: message.type === 'assistant' }"
       >
         <div class="message-content">
           <!-- User message section -->
@@ -32,8 +32,8 @@
           <div v-else class="assistant-message">
             <!-- 1. JManus Thinking/Processing Section - Only displayed when there is processing content -->
             <div
-              class="thinking-section"
-              v-if="
+                class="thinking-section"
+                v-if="
                 message.thinking ||
                 message.planExecution?.progress !== undefined ||
                 (message.planExecution?.steps?.length ?? 0) > 0
@@ -57,13 +57,13 @@
                 <div class="progress" v-if="message.planExecution?.progress !== undefined">
                   <div class="progress-bar">
                     <div
-                      class="progress-fill"
-                      :style="{ width: message.planExecution.progress + '%' }"
+                        class="progress-fill"
+                        :style="{ width: message.planExecution.progress + '%' }"
                     ></div>
                   </div>
                   <span class="progress-text">{{
-                    message.planExecution.progressText ?? $t('chat.processing') + '...'
-                  }}</span>
+                      message.planExecution.progressText ?? $t('chat.processing') + '...'
+                    }}</span>
                 </div>
 
                 <!-- Step execution details -->
@@ -72,38 +72,38 @@
 
                   <!-- Iterate through all steps -->
                   <div
-                    v-for="(step, index) in message.planExecution?.steps"
-                    :key="index"
-                    class="ai-section"
-                    :class="{
+                      v-for="(step, index) in message.planExecution?.steps"
+                      :key="index"
+                      class="ai-section"
+                      :class="{
                       running: getAgentExecutionStatus(message, index) === 'RUNNING',
                       completed: getAgentExecutionStatus(message, index) === 'FINISHED',
                       pending: getAgentExecutionStatus(message, index) === 'IDLE',
                     }"
-                    @click.stop="handleStepClick(message, index)"
+                      @click.stop="handleStepClick(message, index)"
                   >
                     <div class="section-header">
                       <span class="step-icon">
                         {{
                           getAgentExecutionStatus(message, index) === 'FINISHED'
-                            ? '✓'
-                            : getAgentExecutionStatus(message, index) === 'RUNNING'
-                              ? '▶'
-                              : '○'
+                              ? '✓'
+                              : getAgentExecutionStatus(message, index) === 'RUNNING'
+                                  ? '▶'
+                                  : '○'
                         }}
                       </span>
                       <span class="step-title">
                         {{ step || `${$t('chat.step')} ${index + 1}` }}
                       </span>
                       <span
-                        v-if="getAgentExecutionStatus(message, index) === 'RUNNING'"
-                        class="step-status current"
+                          v-if="getAgentExecutionStatus(message, index) === 'RUNNING'"
+                          class="step-status current"
                       >
                         {{ $t('chat.status.executing') }}
                       </span>
                       <span
-                        v-else-if="getAgentExecutionStatus(message, index) === 'FINISHED'"
-                        class="step-status completed"
+                          v-else-if="getAgentExecutionStatus(message, index) === 'FINISHED'"
+                          class="step-status completed"
                       >
                         {{ $t('chat.status.completed') }}
                       </span>
@@ -114,17 +114,17 @@
 
                     <!-- Display step execution action information -->
                     <div
-                      v-if="message.stepActions && message.stepActions[index]"
-                      class="action-info"
+                        v-if="message.stepActions && message.stepActions[index]"
+                        class="action-info"
                     >
                       <div class="action-description">
                         <span class="action-icon">
                           {{
                             message.stepActions[index]?.status === 'current'
-                              ? '🔄'
-                              : message.stepActions[index]?.status === 'completed'
-                                ? '✓'
-                                : '⏳'
+                                ? '🔄'
+                                : message.stepActions[index]?.status === 'completed'
+                                    ? '✓'
+                                    : '⏳'
                           }}
                         </span>
                         <strong>{{ message.stepActions[index]?.actionDescription }}</strong>
@@ -134,8 +134,8 @@
                         <span class="tool-icon">⚙️</span>
                         <span class="param-label">{{ $t('common.parameters') }}:</span>
                         <pre class="param-content">{{
-                          message.stepActions[index]?.toolParameters
-                        }}</pre>
+                            message.stepActions[index]?.toolParameters
+                          }}</pre>
                       </div>
 
                       <div v-if="message.stepActions[index]?.thinkOutput" class="think-details">
@@ -145,8 +145,8 @@
                         </div>
                         <div class="think-output">
                           <pre class="think-content">{{
-                            message.stepActions[index]?.thinkOutput
-                          }}</pre>
+                              message.stepActions[index]?.thinkOutput
+                            }}</pre>
                         </div>
                       </div>
                     </div>
@@ -159,10 +159,10 @@
                       </div>
                       <div class="sub-plan-step-list">
                         <div
-                          v-for="(subStep, subStepIndex) in getSubPlanSteps(message, index)"
-                          :key="`sub-${index}-${subStepIndex}`"
-                          class="sub-plan-step-item"
-                          :class="{
+                            v-for="(subStep, subStepIndex) in getSubPlanSteps(message, index)"
+                            :key="`sub-${index}-${subStepIndex}`"
+                            class="sub-plan-step-item"
+                            :class="{
                             completed:
                               getSubPlanStepStatus(message, index, subStepIndex) === 'completed',
                             current:
@@ -170,16 +170,16 @@
                             pending:
                               getSubPlanStepStatus(message, index, subStepIndex) === 'pending',
                           }"
-                          @click.stop="handleSubPlanStepClick(message, index, subStepIndex)"
+                            @click.stop="handleSubPlanStepClick(message, index, subStepIndex)"
                         >
                           <div class="sub-step-indicator">
                             <span class="sub-step-icon">
                               {{
                                 getSubPlanStepStatus(message, index, subStepIndex) === 'completed'
-                                  ? '✓'
-                                  : getSubPlanStepStatus(message, index, subStepIndex) === 'current'
-                                    ? '▶'
-                                    : '○'
+                                    ? '✓'
+                                    : getSubPlanStepStatus(message, index, subStepIndex) === 'current'
+                                        ? '▶'
+                                        : '○'
                               }}
                             </span>
                             <span class="sub-step-number">{{ subStepIndex + 1 }}</span>
@@ -194,11 +194,11 @@
 
                     <!-- User input form -->
                     <div
-                      v-if="
+                        v-if="
                         message.planExecution?.userInputWaitState &&
                         getAgentExecutionStatus(message, index) === 'RUNNING'
                       "
-                      class="user-input-form-container"
+                        class="user-input-form-container"
                     >
                       <p class="user-input-message">
                         {{
@@ -207,38 +207,125 @@
                         }}
                       </p>
                       <p
-                        v-if="message.planExecution?.userInputWaitState?.formDescription"
-                        class="form-description"
+                          v-if="message.planExecution?.userInputWaitState?.formDescription"
+                          class="form-description"
                       >
                         {{ message.planExecution?.userInputWaitState?.formDescription }}
                       </p>
 
                       <form
-                        @submit.prevent="handleUserInputSubmit(message)"
-                        class="user-input-form"
+                          @submit.prevent="handleUserInputSubmit(message)"
+                          class="user-input-form"
                       >
                         <template
-                          v-if="
+                            v-if="
                             message.planExecution?.userInputWaitState?.formInputs &&
                             message.planExecution.userInputWaitState.formInputs.length > 0
                           "
                         >
-                          <div
-                            v-for="(input, inputIndex) in message.planExecution?.userInputWaitState
-                              ?.formInputs"
-                            :key="inputIndex"
-                            class="form-group"
-                          >
-                            <label :for="`form-input-${input.label.replace(/\W+/g, '_')}`">
-                              {{ input.label }}:
-                            </label>
-                            <input
-                              type="text"
-                              :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                              :name="input.label"
-                              v-model="formInputsStore[message.id][inputIndex]"
-                              class="form-input"
-                            />
+                          <div class="form-grid">
+                            <div
+                                v-for="(input, inputIndex) in message.planExecution?.userInputWaitState
+                                ?.formInputs"
+                                :key="inputIndex"
+                                class="form-group"
+
+                            >
+                              <label :for="`form-input-${input.label.replace(/\W+/g, '_')}`">
+                                {{ input.label }}{{ isRequired(input.required) ? ' *' : '' }}:
+                              </label>
+
+                              <!-- Text Input -->
+                              <input
+                                  v-if="!input.type || input.type === 'text'"
+                                  type="text"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :placeholder="input.placeholder || ''"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input"
+                              />
+
+                              <!-- Email Input -->
+                              <input
+                                  v-else-if="input.type === 'email'"
+                                  type="email"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :placeholder="input.placeholder || ''"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input"
+                              />
+
+                              <!-- Number Input -->
+                              <input
+                                  v-else-if="input.type === 'number'"
+                                  type="number"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :placeholder="input.placeholder || ''"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input"
+                              />
+
+                              <!-- Password Input -->
+                              <input
+                                  v-else-if="input.type === 'password'"
+                                  type="password"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :placeholder="input.placeholder || ''"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input"
+                              />
+
+                              <!-- Textarea -->
+                              <textarea
+                                  v-else-if="input.type === 'textarea'"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :placeholder="input.placeholder || ''"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input form-textarea"
+                                  rows="3"
+                              ></textarea>
+
+                              <!-- Select -->
+                              <select
+                                  v-else-if="input.type === 'select' && input.options"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input form-select"
+                              >
+                                <option value="">{{ $t('selectCommon.pleaseSelect') }}</option>
+                                <option
+                                    v-for="option in getOptionsArray(input.options)"
+                                    :key="option"
+                                    :value="option"
+                                >
+                                  {{ option }}
+                                </option>
+                              </select>
+
+                              <!-- Fallback to text input -->
+                              <input
+                                  v-else
+                                  type="text"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :placeholder="input.placeholder || ''"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input"
+                              />
+                            </div>
                           </div>
                         </template>
 
@@ -246,11 +333,11 @@
                           <div class="form-group">
                             <label for="form-input-genericInput">{{ $t('common.input') }}:</label>
                             <input
-                              type="text"
-                              id="form-input-genericInput"
-                              name="genericInput"
-                              v-model="message.genericInput"
-                              class="form-input"
+                                type="text"
+                                id="form-input-genericInput"
+                                name="genericInput"
+                                v-model="message.genericInput"
+                                class="form-input"
                             />
                           </div>
                         </template>
@@ -265,13 +352,13 @@
 
                 <!-- Display the default processing state only when there is no final content and processing is in progress -->
                 <div
-                  v-else-if="
+                    v-else-if="
                     !message.content &&
                     (message.thinking ||
                       (message.planExecution?.progress !== undefined &&
                         (message.planExecution?.progress ?? 0) < 100))
                   "
-                  class="default-processing"
+                    class="default-processing"
                 >
                   <div class="processing-indicator">
                     <div class="thinking-dots">
@@ -366,10 +453,10 @@
 
     <!-- Scroll to bottom button -->
     <div
-      v-if="showScrollToBottom"
-      class="scroll-to-bottom-btn"
-      @click="forceScrollToBottom"
-      :title="$t('chat.scrollToBottom')"
+        v-if="showScrollToBottom"
+        class="scroll-to-bottom-btn"
+        @click="forceScrollToBottom"
+        :title="$t('chat.scrollToBottom')"
     >
       <Icon icon="carbon:chevron-down" />
     </div>
@@ -434,11 +521,11 @@ interface Props {
 interface Emits {
   (e: 'step-selected', planId: string, stepIndex: number): void
   (
-    e: 'sub-plan-step-selected',
-    parentPlanId: string,
-    subPlanId: string,
-    stepIndex: number,
-    subStepIndex: number
+      e: 'sub-plan-step-selected',
+      parentPlanId: string,
+      subPlanId: string,
+      stepIndex: number,
+      subStepIndex: number
   ): void
 }
 
@@ -572,7 +659,7 @@ const scrollToBottom = (force = false) => {
 
       // Check if scrolling to the bottom is required
       const isNearBottom =
-        force || container.scrollHeight - container.scrollTop - container.clientHeight < 150
+          force || container.scrollHeight - container.scrollTop - container.clientHeight < 150
 
       if (isNearBottom) {
         // Use smooth scrolling unless forced scrolling is specified.
@@ -685,8 +772,8 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
     for (const thinkActStep of agentExecution.thinkActSteps) {
       if (thinkActStep.subPlanExecutionRecord) {
         console.log(
-          `[ChatComponent] Found sub-plan for step ${stepIndex}:`,
-          thinkActStep.subPlanExecutionRecord
+            `[ChatComponent] Found sub-plan for step ${stepIndex}:`,
+            thinkActStep.subPlanExecutionRecord
         )
         const rawSteps = thinkActStep.subPlanExecutionRecord.steps ?? []
         // Apply the same formatting logic as main steps
@@ -710,9 +797,9 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
 
 // Get sub-plan step status - new feature
 const getSubPlanStepStatus = (
-  message: Message,
-  stepIndex: number,
-  subStepIndex: number
+    message: Message,
+    stepIndex: number,
+    subStepIndex: number
 ): string => {
   try {
     const agentExecutionSequence = message.planExecution?.agentExecutionSequence
@@ -800,11 +887,11 @@ const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepInde
 
     // Emit event with necessary identifiers for parent component to handle
     emit(
-      'sub-plan-step-selected',
-      message.planExecution?.currentPlanId ?? '',
-      subPlan.currentPlanId,
-      stepIndex,
-      subStepIndex
+        'sub-plan-step-selected',
+        message.planExecution?.currentPlanId ?? '',
+        subPlan.currentPlanId,
+        stepIndex,
+        subStepIndex
     )
   } catch (error) {
     console.error('[ChatComponent] Error handling sub-plan step click:', error)
@@ -816,45 +903,45 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
   if (!message.planExecution?.steps) return
 
   console.log(
-    '[ChatComponent] Starting to update step actions, steps count:',
-    message.planExecution.steps.length,
-    'execution sequence:',
-    planDetails.agentExecutionSequence?.length ?? 0
+      '[ChatComponent] Starting to update step actions, steps count:',
+      message.planExecution.steps.length,
+      'execution sequence:',
+      planDetails.agentExecutionSequence?.length ?? 0
   )
 
   const lastStepActions = new Array(message.planExecution.steps.length).fill(null)
 
   if (planDetails.agentExecutionSequence?.length) {
     const sequenceLength = Math.min(
-      planDetails.agentExecutionSequence.length,
-      message.planExecution.steps.length
+        planDetails.agentExecutionSequence.length,
+        message.planExecution.steps.length
     )
 
     for (let index = 0; index < sequenceLength; index++) {
-  const execution = planDetails.agentExecutionSequence[index]
+      const execution = planDetails.agentExecutionSequence[index]
 
-  if (execution.thinkActSteps?.length) {
+      if (execution.thinkActSteps?.length) {
         const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1]
 
         if (latestThinkAct.actionDescription && latestThinkAct.toolParameters) {
           lastStepActions[index] = {
             actionDescription: latestThinkAct.actionDescription,
             toolParameters:
-              typeof latestThinkAct.toolParameters === 'string'
-                ? latestThinkAct.toolParameters
-                : JSON.stringify(latestThinkAct.toolParameters, null, 2),
+                typeof latestThinkAct.toolParameters === 'string'
+                    ? latestThinkAct.toolParameters
+                    : JSON.stringify(latestThinkAct.toolParameters, null, 2),
             thinkInput: latestThinkAct.thinkInput ?? '',
             thinkOutput: latestThinkAct.thinkOutput ?? '',
             status:
-              planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex
-                ? 'completed'
-                : planDetails.currentStepIndex !== undefined && index === planDetails.currentStepIndex
-                ? 'current'
-                : 'pending',
+                planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex
+                    ? 'completed'
+                    : planDetails.currentStepIndex !== undefined && index === planDetails.currentStepIndex
+                        ? 'current'
+                        : 'pending',
           }
 
           console.log(
-            `[ChatComponent] Step ${index} action set: ${lastStepActions[index].actionDescription}`
+              `[ChatComponent] Step ${index} action set: ${lastStepActions[index].actionDescription}`
           )
         } else {
           lastStepActions[index] = {
@@ -877,7 +964,7 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
         }
 
         console.log(
-          `[ChatComponent] Step ${index} has no execution details, status set to: ${lastStepActions[index].status}`
+            `[ChatComponent] Step ${index} has no execution details, status set to: ${lastStepActions[index].status}`
         )
       }
     }
@@ -888,8 +975,8 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
   message.stepActions = [...lastStepActions]
 
   console.log(
-    '[ChatComponent] Step actions update completed:',
-    JSON.stringify(lastStepActions.map(a => a?.actionDescription))
+      '[ChatComponent] Step actions update completed:',
+      JSON.stringify(lastStepActions.map(a => a?.actionDescription))
   )
 
   nextTick(() => {
@@ -904,7 +991,7 @@ const handleDialogRoundStart = (planId: string) => {
   if (planId) {
     // Check if there is already an assistant message for this plan
     const existingAssistantMsg = messages.value.findIndex(
-      m => m.planExecution?.currentPlanId === planId && m.type === 'assistant'
+        m => m.planExecution?.currentPlanId === planId && m.type === 'assistant'
     )
 
     // If there is no existing message, add an assistant message to prepare to display steps
@@ -946,28 +1033,28 @@ const handlePlanUpdate = (rootPlanId: string) => {
 
   // Find the corresponding message - Use the currentPlanId field
   const messageIndex = messages.value.findIndex(
-    m => m.planExecution?.currentPlanId === planDetails.currentPlanId && m.type === 'assistant'
+      m => m.planExecution?.currentPlanId === planDetails.currentPlanId && m.type === 'assistant'
   )
   let message
 
   if (messageIndex !== -1) {
     message = messages.value[messageIndex]
     console.log(
-      '[ChatComponent] Found existing assistant message for currentPlanId:',
-      planDetails.currentPlanId
+        '[ChatComponent] Found existing assistant message for currentPlanId:',
+        planDetails.currentPlanId
     )
   } else {
     console.warn(
-      '[ChatComponent] No existing assistant message found for currentPlanId:',
-      planDetails.currentPlanId
+        '[ChatComponent] No existing assistant message found for currentPlanId:',
+        planDetails.currentPlanId
     )
     console.log(
-      '[ChatComponent] Current messages:',
-      messages.value.map(m => ({
-        type: m.type,
-        planId: m.planExecution?.currentPlanId,
-        content: m.content.substring(0, 50),
-      }))
+        '[ChatComponent] Current messages:',
+        messages.value.map(m => ({
+          type: m.type,
+          planId: m.planExecution?.currentPlanId,
+          content: m.content.substring(0, 50),
+        }))
     )
 
     // If no corresponding message is found, it should have been created by handleDialogRoundStart. Do not create a new message here
@@ -988,8 +1075,8 @@ const handlePlanUpdate = (rootPlanId: string) => {
       }
       message.planExecution.currentPlanId = planDetails.currentPlanId
       console.log(
-        '[ChatComponent] Using last assistant message and updating planExecution.currentPlanId to:',
-        planDetails.currentPlanId
+          '[ChatComponent] Using last assistant message and updating planExecution.currentPlanId to:',
+          planDetails.currentPlanId
       )
     } else {
       console.error('[ChatComponent] No assistant message found at all, this should not happen')
@@ -1014,7 +1101,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
       delete message.thinking
 
       const finalResponse =
-        planDetails.summary ?? planDetails.result ?? planDetails.message ?? t('chat.executionCompleted')
+          planDetails.summary ?? planDetails.result ?? planDetails.message ?? t('chat.executionCompleted')
       // Ensure the response is natural
       message.content = generateNaturalResponse(finalResponse)
 
@@ -1057,8 +1144,8 @@ const handlePlanUpdate = (rootPlanId: string) => {
   // Process the execution sequence and step actions - Refer to the logic in chat-handler.js
   if (planDetails.agentExecutionSequence && planDetails.agentExecutionSequence.length > 0) {
     console.log(
-      '[ChatComponent] Found execution sequence data, count:',
-      planDetails.agentExecutionSequence.length
+        '[ChatComponent] Found execution sequence data, count:',
+        planDetails.agentExecutionSequence.length
     )
 
     // Call updateStepActions to update the step action information
@@ -1075,9 +1162,9 @@ const handlePlanUpdate = (rootPlanId: string) => {
           // If the think output is too long, truncate it
           const maxLength = 150
           const displayOutput =
-            latestThinkAct.thinkOutput.length > maxLength
-              ? latestThinkAct.thinkOutput.substring(0, maxLength) + '...'
-              : latestThinkAct.thinkOutput
+              latestThinkAct.thinkOutput.length > maxLength
+                  ? latestThinkAct.thinkOutput.substring(0, maxLength) + '...'
+                  : latestThinkAct.thinkOutput
 
           message.thinking = `${t('chat.thinking')}: ${displayOutput}`
         }
@@ -1105,10 +1192,15 @@ const handlePlanUpdate = (rootPlanId: string) => {
       message: planDetails.userInputWaitState.message ?? '',
       formDescription: planDetails.userInputWaitState.formDescription ?? '',
       formInputs:
-        planDetails.userInputWaitState.formInputs?.map((input: any) => ({
-          label: input.label,
-          value: input.value || '',
-        })) ?? [],
+          planDetails.userInputWaitState.formInputs?.map((input: any) => ({
+            label: input.label,
+            value: input.value || '',
+            type: input.type || 'text',
+            required: input.required === 'true' || input.required === true,
+            placeholder: input.placeholder || '',
+            name: input.name || input.label,
+            options: input.options || undefined,
+          })) ?? [],
     }
 
     formInputsStore[message.id] ??= {}
@@ -1159,13 +1251,13 @@ const generateNaturalResponse = (text: string): string => {
 
   // If it's already in a natural conversation format, return it directly
   if (
-    text.includes('I ') ||
-    text.includes('you') ||
-    text.includes('hello') ||
-    text.includes('can') ||
-    text.includes('I') ||
-    text.includes('you') ||
-    text.includes('can')
+      text.includes('I ') ||
+      text.includes('you') ||
+      text.includes('hello') ||
+      text.includes('can') ||
+      text.includes('I') ||
+      text.includes('you') ||
+      text.includes('can')
   ) {
     return text
   }
@@ -1202,7 +1294,7 @@ const handlePlanCompleted = (rootPlanId: string) => {
 
   if (details.rootPlanId) {
     const messageIndex = messages.value.findIndex(
-      m => m.planExecution?.currentPlanId === details.rootPlanId
+        m => m.planExecution?.currentPlanId === details.rootPlanId
     );
     if (messageIndex !== -1) {
       const message = messages.value[messageIndex];
@@ -1283,8 +1375,8 @@ const handleUserInputSubmit = async (message: Message) => {
 
     // Submit user input via API
     const response = await CommonApiService.submitFormInput(
-      message.planExecution.currentPlanId,
-      inputData
+        message.planExecution.currentPlanId,
+        inputData
     )
 
     // Clear the user input waiting state
@@ -1385,6 +1477,23 @@ const showMemory = async () => {
 
 const newChat = () => {
   messages.value = []
+}
+
+// Helper function to safely get options array
+const getOptionsArray = (options: string | string[] | undefined): string[] => {
+  if (!options) return []
+  if (Array.isArray(options)) return options
+  if (typeof options === 'string') {
+    return options.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0)
+  }
+  return []
+}
+
+// Helper function to check if field is required
+const isRequired = (required: boolean | string | undefined): boolean => {
+  if (typeof required === 'boolean') return required
+  if (typeof required === 'string') return required === 'true'
+  return false
 }
 
 // Expose methods to parent components for usage
@@ -1560,9 +1669,9 @@ defineExpose({
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 18px;
     background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.12) 0%,
-      rgba(255, 255, 255, 0.06) 100%
+        135deg,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.06) 100%
     );
     overflow: hidden;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
@@ -1581,9 +1690,9 @@ defineExpose({
       gap: 14px;
       padding: 18px 24px 14px 24px;
       background: linear-gradient(
-        135deg,
-        rgba(102, 126, 234, 0.18) 0%,
-        rgba(118, 75, 162, 0.12) 100%
+          135deg,
+          rgba(102, 126, 234, 0.18) 0%,
+          rgba(118, 75, 162, 0.12) 100%
       );
       border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 
@@ -1615,8 +1724,8 @@ defineExpose({
         letter-spacing: 0.8px;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
-          sans-serif;
+            -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+            sans-serif;
       }
     }
 
@@ -1635,8 +1744,8 @@ defineExpose({
           word-spacing: 1.2px;
           text-align: left;
           font-family:
-            -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
-            sans-serif;
+              -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+              sans-serif;
 
           /* Make the text look more like a natural conversation */
           p {
@@ -2143,8 +2252,19 @@ defineExpose({
   }
 
   .user-input-form {
-    .form-group {
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
       margin-bottom: 16px;
+
+      @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 0;
 
       label {
         display: block;
@@ -2172,6 +2292,39 @@ defineExpose({
 
         &::placeholder {
           color: #888888;
+        }
+      }
+
+      .form-textarea {
+        resize: vertical;
+        min-height: 40px;
+        font-family: inherit;
+        line-height: 1.4;
+      }
+
+      /* Special handling for wide fields in grid layout */
+      &.form-group-wide {
+        grid-column: span 2;
+
+        @media (max-width: 600px) {
+          grid-column: span 1;
+        }
+      }
+
+      &.form-group-full {
+        grid-column: span 2;
+
+        @media (max-width: 600px) {
+          grid-column: span 1;
+        }
+      }
+
+      .form-select {
+        cursor: pointer;
+
+        option {
+          background: #2d3748;
+          color: #ffffff;
         }
       }
     }

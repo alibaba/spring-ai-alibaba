@@ -1840,10 +1840,77 @@ export default {
       }
     }
 
+    const validateDatasourceForm = () => {
+      const errors = []
+      
+      if (!datasourceForm.name || datasourceForm.name.trim() === '') {
+        errors.push('数据源名称不能为空')
+      }
+      
+      if (!datasourceForm.type) {
+        errors.push('请选择数据源类型')
+      }
+      
+      if (!datasourceForm.host || datasourceForm.host.trim() === '') {
+        errors.push('主机地址不能为空')
+      }
+      
+      if (!datasourceForm.port || datasourceForm.port <= 0 || datasourceForm.port > 65535) {
+        errors.push('请输入有效的端口号（1-65535）')
+      }
+      
+      if (!datasourceForm.databaseName || datasourceForm.databaseName.trim() === '') {
+        errors.push('数据库名不能为空')
+      }
+      
+      if (!datasourceForm.username || datasourceForm.username.trim() === '') {
+        errors.push('用户名不能为空')
+      }
+      
+      if (!datasourceForm.password || datasourceForm.password.trim() === '') {
+        errors.push('密码不能为空')
+      }
+      
+      return errors
+    }
+
+    const generateConnectionUrl = (type, host, port, databaseName) => {
+      if (type === 'mysql') {
+        return `jdbc:mysql://${host}:${port}/${databaseName}?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai`
+      } else if (type === 'postgresql') {
+        return `jdbc:postgresql://${host}:${port}/${databaseName}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai`
+      }
+      return ''
+    }
+
     const saveDatasource = async () => {
+      // 表单验证
+      const validationErrors = validateDatasourceForm()
+      if (validationErrors.length > 0) {
+        showMessage(validationErrors.join('；'), 'error')
+        return
+      }
+
       try {
+        // 生成连接URL
+        const connectionUrl = generateConnectionUrl(
+          datasourceForm.type,
+          datasourceForm.host,
+          datasourceForm.port,
+          datasourceForm.databaseName
+        )
+
+        console.log('生成的连接URL:', connectionUrl)
+
         // 创建新数据源
-        const newDatasource = await datasourceApi.create({ ...datasourceForm })
+        const datasourceData = {
+          ...datasourceForm,
+          connectionUrl: connectionUrl
+        }
+        
+        console.log('发送到后端的数据源数据:', datasourceData)
+        
+        const newDatasource = await datasourceApi.create(datasourceData)
         console.log('数据源创建成功:', newDatasource)
         
         // 将新数据源添加到智能体

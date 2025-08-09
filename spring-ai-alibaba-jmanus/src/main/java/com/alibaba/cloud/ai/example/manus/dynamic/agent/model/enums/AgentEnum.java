@@ -27,7 +27,9 @@ public enum AgentEnum {
 	MAPREDUCE_FIN_AGENT("MAPREDUCE_FIN_AGENT", "mapreduce_fin_agent"),
 	MAPREDUCE_MAP_TASK_AGENT("MAPREDUCE_MAP_TASK_AGENT", "mapreduce_map_task_agent"),
 	MAPREDUCE_REDUCE_TASK_AGENT("MAPREDUCE_REDUCE_TASK_AGENT", "mapreduce_reduce_task_agent"),
-	PPT_GENERATOR_AGENT("PPT_GENERATOR_AGENT", "ppt_generator_agent");
+	PPT_GENERATOR_AGENT("PPT_GENERATOR_AGENT", "ppt_generator_agent"),
+	JSX_GENERATOR_AGENT("JSX_GENERATOR_AGENT", "jsx_generator_agent"),
+	INTELLIGENT_FORM_AGENT("INTELLIGENT_FORM_AGENT", "intelligent_form_agent");
 
 	private String agentName;
 
