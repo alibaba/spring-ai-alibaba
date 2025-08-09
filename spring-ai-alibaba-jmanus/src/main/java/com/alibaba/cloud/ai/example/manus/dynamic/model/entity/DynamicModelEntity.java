@@ -50,13 +50,13 @@ public class DynamicModelEntity {
 	@Column(nullable = false, columnDefinition = "boolean default false")
 	private boolean isDefault;
 
-	@Column(nullable = true, columnDefinition = "DOUBLE DEFAULT 0.7")
+	@Column
 	private Double temperature;
 
-	@Column(nullable = true, columnDefinition = "DOUBLE DEFAULT NULL")
+	@Column
 	private Double topP;
 
-	@Column(nullable = true)
+	@Column
 	private String completionsPath;
 
 	public DynamicModelEntity() {

@@ -15,25 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.model.service;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
-
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
@@ -46,8 +28,25 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ValidationResul
 import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelRepository;
 import com.alibaba.cloud.ai.example.manus.event.JmanusEventPublisher;
 import com.alibaba.cloud.ai.example.manus.event.ModelChangeEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
 
-import cn.hutool.core.util.StrUtil;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ModelServiceImpl implements ModelService {
@@ -82,6 +81,8 @@ public class ModelServiceImpl implements ModelService {
 	@Override
 	public ModelConfig createModel(ModelConfig config) {
 		try {
+			// Set default values
+			setDefaultConfig(config);
 			// Check if an Model with the same name already exists
 			DynamicModelEntity existingModel = repository.findByModelName(config.getModelName());
 			if (existingModel != null) {
@@ -119,6 +120,7 @@ public class ModelServiceImpl implements ModelService {
 
 	@Override
 	public ModelConfig updateModel(ModelConfig config) {
+		setDefaultConfig(config);
 		DynamicModelEntity entity = repository.findById(config.getId())
 			.orElseThrow(() -> new IllegalArgumentException("Model not found: " + config.getId()));
 
@@ -346,6 +348,15 @@ public class ModelServiceImpl implements ModelService {
 		entity.setTemperature(config.getTemperature());
 		entity.setTopP(config.getTopP());
 		entity.setCompletionsPath(config.getCompletionsPath());
+	}
+
+	private void setDefaultConfig(ModelConfig modelConfig) {
+		if (modelConfig.getTemperature() == null) {
+			modelConfig.setTemperature(0.7);
+		}
+		if (!StringUtils.hasText(modelConfig.getCompletionsPath())) {
+			modelConfig.setCompletionsPath("/v1/chat/completions");
+		}
 	}
 
 	@Override
