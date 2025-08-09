@@ -75,9 +75,34 @@ public class AgentVectorStoreManager {
 			return;
 		}
 
-		SimpleVectorStore store = getOrCreateVectorStore(agentId);
-		store.add(documents);
-		log.info("Added {} documents to vector store for agent: {}", documents.size(), agentId);
+		try {
+			SimpleVectorStore store = getOrCreateVectorStore(agentId);
+			log.debug("Attempting to add {} documents to vector store for agent: {}", documents.size(), agentId);
+
+			// 验证文档内容
+			for (int i = 0; i < documents.size(); i++) {
+				Document doc = documents.get(i);
+				if (doc == null) {
+					throw new IllegalArgumentException("Document at index " + i + " is null");
+				}
+				if (doc.getId() == null || doc.getId().trim().isEmpty()) {
+					throw new IllegalArgumentException("Document at index " + i + " has null or empty ID");
+				}
+				if (doc.getText() == null || doc.getText().trim().isEmpty()) {
+					log.warn("Document at index {} has null or empty text for agent: {}, ID: {}", i, agentId,
+							doc.getId());
+				}
+			}
+
+			store.add(documents);
+			log.info("Successfully added {} documents to vector store for agent: {}", documents.size(), agentId);
+		}
+		catch (Exception e) {
+			log.error("Failed to add documents to vector store for agent: {}. Documents count: {}, Error: {}", agentId,
+					documents.size(), e.getMessage(), e);
+			throw new RuntimeException(
+					"Failed to add documents to vector store for agent: " + agentId + ". Error: " + e.getMessage(), e);
+		}
 	}
 
 	/**
