@@ -64,8 +64,8 @@ const words: I18nType = {
     successMessage: '配置保存成功！正在跳转到主页面...',
     restartRequired: 'API密钥已保存成功！为了使配置生效，需要重启应用程序。\n\n点击"确定"立即重启，点击"取消"稍后手动重启。',
     simplifiedChinese: '简体中文',
-    completionsPath: 'Completions Path',
-    completionsPathPlaceholder: '聊天模型端点，各平台路径不同。如未填写默认配置是：/v1/chat/completions',
+    completionsPath: 'Completions路径',
+    completionsPathPlaceholder: 'CompletionsPath，资源路径',
   },
 
   // 通用按钮和操作
@@ -312,7 +312,7 @@ const words: I18nType = {
       topP: 'Top P',
       topPPlaceholder: '留空使用模型默认值',
       completionsPath: 'Completions Path',
-      completionsPathPlaceholder: '聊天模型端点，各平台路径不同。如未填写默认配置是：/v1/chat/completions',
+      completionsPathPlaceholder: '留空使用模型默认值',
     },
     // MCP配置页面
     mcpConfig: {
@@ -496,10 +496,6 @@ const words: I18nType = {
         system: '系统',
         performance: '性能',
       },
-      restoreAllDefaults: '恢复到默认配置',
-      restoreAllDefaultsConfirm: '确定要将所有配置恢复到默认值吗？此操作将覆盖所有自定义配置。',
-      restoreAllDefaultsSuccess: '所有配置已恢复到默认值',
-      restoreAllDefaultsFailed: '恢复默认配置失败',
     },
     promptConfig: {
       title: '动态Prompt配置',
@@ -811,8 +807,7 @@ const words: I18nType = {
   direct: {
     planTemplateIdNotFound: '没有找到计划模板ID',
     executionFailedNoPlanId: '执行计划失败：未返回有效的计划ID',
-    executionFailed: '执行计划失败',
-    configuration: '设置'
+    executionFailed: '执行计划失败'
   },
 
   // 模态框
@@ -944,6 +939,14 @@ const words: I18nType = {
         step1Output: '文件的名字',
         step2: '[TEXT_FILE_AGENT] 从novel.md文件获取子标题信息，然后依次完善每一个章节的具体内容，每个轮次只完善一个子章节的内容，用replace来更新内容，每个章节要求有3000字的内容，不要每更新一个章节就查询一下文档的全部内容',
         step2Output: '文件的名字',
+      },
+      formInputDemo: {
+        title: 'AI智能动态表单演示',
+        description: '体验AI智能分析用户需求并动态生成相关表单字段的能力',
+        prompt: '演示AI如何根据用户问题智能生成针对性的表单字段',
+        planTitle: 'AI智能动态表单演示计划',
+        step1: '[INTELLIGENT_FORM_AGENT] 启动智能动态表单演示，主动分析用户需求并动态生成相关表单字段，展示AI智能表单生成能力',
+        step1Output: '演示结果，用户交互数据',
       },
     },
   },

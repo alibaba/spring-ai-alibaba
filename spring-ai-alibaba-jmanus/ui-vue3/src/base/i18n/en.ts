@@ -65,7 +65,7 @@ const words: I18nType = {
     restartRequired: 'API key saved successfully! The application needs to be restarted for the configuration to take effect.\n\nClick "OK" to restart now, or "Cancel" to restart manually later.',
     simplifiedChinese: 'Simplified Chinese',
     completionsPath: 'Completions Path',
-    completionsPathPlaceholder: 'If not specified, the default configuration is: /v1/chat/completions',
+    completionsPathPlaceholder: 'Completions Path, Resource Path',
   },
 
   // Common buttons and actions
@@ -310,7 +310,7 @@ const words: I18nType = {
       topP: 'Top P',
       topPPlaceholder: 'Leave empty to use model default',
       completionsPath: 'Completions Path',
-      completionsPathPlaceholder: 'If not specified, the default configuration is: /v1/chat/completions',
+      completionsPathPlaceholder: 'Leave empty to use model default',
       headers: 'Headers',
       headersPlaceholder: 'Request headers (JSON format)',
     },
@@ -498,10 +498,6 @@ const words: I18nType = {
         system: 'System',
         performance: 'Performance',
       },
-      restoreAllDefaults: 'Restore to Default',
-      restoreAllDefaultsConfirm: 'Are you sure you want to restore all configurations to default values? This will overwrite all custom configurations.',
-      restoreAllDefaultsSuccess: 'All configurations have been restored to default values',
-      restoreAllDefaultsFailed: 'Failed to restore default configurations',
     },
     promptConfig: {
       title: 'Dynamic Prompt Configuration',
@@ -844,8 +840,7 @@ const words: I18nType = {
   direct: {
     planTemplateIdNotFound: 'Plan template ID not found',
     executionFailedNoPlanId: 'Plan execution failed: No valid plan ID returned',
-    executionFailed: 'Plan execution failed',
-    configuration: 'config'
+    executionFailed: 'Plan execution failed'
   },
 
   // Modal
@@ -979,6 +974,14 @@ const words: I18nType = {
         step1Output: 'File name',
         step2: '[TEXT_FILE_AGENT] Get chapter title information from novel.md file, then improve each chapter content in sequence, only improve one chapter content per round, use replace to update content, each chapter requires 3000 words, do not query all document content after updating each chapter',
         step2Output: 'File name',
+      },
+      formInputDemo: {
+        title: 'AI Intelligent Dynamic Form Demo',
+        description: 'Experience AI intelligent analysis of user needs and dynamic generation of relevant form fields',
+        prompt: 'Demonstrate how AI intelligently generates targeted form fields based on user questions',
+        planTitle: 'AI Intelligent Dynamic Form Demo Plan',
+        step1: '[INTELLIGENT_FORM_AGENT] Launch intelligent dynamic form demo, actively analyze user needs and dynamically generate relevant form fields, showcasing AI intelligent form generation capabilities',
+        step1Output: 'Demo results, user interaction data',
       },
     },
   },
