@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
@@ -33,24 +32,12 @@ import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
 import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
-
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -59,13 +46,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
-import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
-import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.StateGraph.*;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -116,6 +100,8 @@ public class CompiledGraph {
 	 * The Compile config.
 	 */
 	public final CompileConfig compileConfig;
+
+	private static String INTERRUPT_AFTER = "__INTERRUPTED__";
 
 	/**
 	 * Constructs a CompiledGraph with the given StateGraph.
@@ -360,10 +346,12 @@ public class CompiledGraph {
 	}
 
 	private boolean shouldInterruptAfter(String nodeId, String previousNodeId) {
-		if (nodeId == null) { // FIX RESUME ERROR
+		if (nodeId == null || Objects.equals(nodeId, previousNodeId)) { // FIX RESUME
+																		// ERROR
 			return false;
 		}
-		return compileConfig.interruptsAfter().contains(nodeId);
+		return (compileConfig.interruptBeforeEdge() && Objects.equals(nodeId, INTERRUPT_AFTER))
+				|| compileConfig.interruptsAfter().contains(nodeId);
 	}
 
 	private Optional<Checkpoint> addCheckpoint(RunnableConfig config, String nodeId, Map<String, Object> state,
@@ -575,40 +563,78 @@ public class CompiledGraph {
 	 */
 	public class AsyncNodeGenerator<Output extends NodeOutput> implements AsyncGenerator<Output> {
 
-		/**
-		 * The Current state.
-		 */
+		final Cursor cursor;
+
+		// String currentNodeId;
+		// String nextNodeId;
+		int iteration = 0;
+
+		final RunnableConfig config;
+
+		volatile boolean returnFromEmbed = false;
+
 		Map<String, Object> currentState;
-
-		/**
-		 * The Current node id.
-		 */
-		String currentNodeId;
-
-		/**
-		 * The Next node id.
-		 */
-		String nextNodeId;
 
 		/**
 		 * The Over all state.
 		 */
 		OverAllState overAllState;
 
-		/**
-		 * The Iteration.
-		 */
-		int iteration = 0;
+		static class Cursor {
 
-		/**
-		 * The Config.
-		 */
-		RunnableConfig config;
+			private String currentNodeId;
 
-		/**
-		 * The Resumed from embed.
-		 */
-		boolean resumedFromEmbed = false;
+			private String nextNodeId;
+
+			private String resumeFrom;
+
+			Cursor() {
+				currentNodeId = START;
+				nextNodeId = null;
+				resumeFrom = null;
+			}
+
+			Cursor(Checkpoint cp) {
+				currentNodeId = null;
+				nextNodeId = cp.getNextNodeId();
+				resumeFrom = cp.getNodeId();
+			}
+
+			void reset() {
+				currentNodeId = null;
+				nextNodeId = null;
+				resumeFrom = null;
+			}
+
+			boolean isResumed() {
+				return resumeFrom != null;
+			}
+
+			String nextNodeId() {
+				return nextNodeId;
+			}
+
+			void setNextNodeId(String value) {
+				nextNodeId = value;
+			}
+
+			String currentNodeId() {
+				return currentNodeId;
+			}
+
+			void setCurrentNodeId(String value) {
+				currentNodeId = value;
+			}
+
+			String resumeFrom() {
+				return resumeFrom;
+			}
+
+			void setResumeFrom(String value) {
+				resumeFrom = value;
+			}
+
+		}
 
 		/**
 		 * Instantiates a new Async node generator.
@@ -628,13 +654,14 @@ public class CompiledGraph {
 					.orElseThrow(() -> (new IllegalStateException("Resume request without a saved checkpoint!")));
 
 				this.currentState = startCheckpoint.getState();
-
-				// Reset checkpoint id
+				this.cursor = new Cursor(startCheckpoint);
 				this.config = config.withCheckPointId(null);
 				this.overAllState = overAllState.input(this.currentState);
-				this.nextNodeId = startCheckpoint.getNextNodeId();
-				this.currentNodeId = null;
 				log.trace("RESUME FROM {}", startCheckpoint.getNodeId());
+
+				// this.nextNodeId = startCheckpoint.getNextNodeId();
+				// this.currentNodeId = null;
+				// log.trace("RESUME FROM {}", startCheckpoint.getNodeId());
 			}
 			else {
 
@@ -647,8 +674,9 @@ public class CompiledGraph {
 				// patch for backward support of AppendableValue
 				this.currentState = getInitialState(inputs, config);
 				this.overAllState = overAllState.input(currentState);
-				this.nextNodeId = null;
-				this.currentNodeId = START;
+				this.cursor = new Cursor();
+				// this.nextNodeId = null;
+				// this.currentNodeId = START;
 				this.config = config;
 			}
 		}
@@ -798,64 +826,76 @@ public class CompiledGraph {
 			}
 
 			// Get next node command
-			var nextNodeCommand = nextNodeId(currentNodeId, overAllState, currentState, config);
-			nextNodeId = nextNodeCommand.gotoNode();
+			var nextNodeCommand = nextNodeId(cursor.currentNodeId(), currentState, config);
+			cursor.setNextNodeId(nextNodeCommand.gotoNode());
 			currentState = nextNodeCommand.update();
-			resumedFromEmbed = true;
+			returnFromEmbed = true;
 		}
 
 		private CompletableFuture<Data<Output>> evaluateAction(AsyncNodeActionWithConfig action,
 				OverAllState withState) {
-			if (action instanceof ParallelNode.AsyncParallelNodeAction) {
-				return getDataCompletableFuture(action, withState, true);
-			}
-			else {
+			try {
 				doListeners(NODE_BEFORE, null);
-				return getDataCompletableFuture(action, withState, false);
-			}
+				return action.apply(withState, config).thenApply(updateState -> {
+					try {
+						if (action instanceof CommandNode.AsyncCommandNodeActionWithConfig) {
+							AsyncCommandAction commandAction = (AsyncCommandAction) updateState.get("command");
+							Command command = commandAction.apply(withState, config).join();
 
-		}
+							this.currentState = OverAllState.updateState(currentState, command.update(),
+									keyStrategyMap);
+							this.overAllState.updateState(command.update());
+							cursor.setNextNodeId(command.gotoNode());
+							return Data.of(getNodeOutput());
+						}
 
-		@NotNull
-		private CompletableFuture<Data<Output>> getDataCompletableFuture(AsyncNodeActionWithConfig action,
-				OverAllState withState, Boolean isParallel) {
-			return action.apply(withState, config).thenApply(updateState -> {
-				try {
-					if (action instanceof CommandNode.AsyncCommandNodeActionWithConfig) {
-						AsyncCommandAction commandAction = (AsyncCommandAction) updateState.get("command");
-						Command command = commandAction.apply(withState, config).join();
+						Optional<Data<Output>> embed = getEmbedGenerator(updateState);
+						if (embed.isPresent()) {
+							return embed.get();
+						}
 
-						this.currentState = OverAllState.updateState(currentState, command.update(), keyStrategyMap);
-						this.overAllState.updateState(command.update());
-						nextNodeId = command.gotoNode();
+						this.currentState = OverAllState.updateState(currentState, updateState, keyStrategyMap);
+						this.overAllState.updateState(updateState);
+						if (compileConfig.interruptBeforeEdge()
+								&& compileConfig.interruptsAfter().contains(cursor.currentNodeId())) {
+							// nextNodeId = INTERRUPT_AFTER;
+							cursor.setNextNodeId(INTERRUPT_AFTER);
+						}
+						else {
+							var nextNodeCommand = nextNodeId(cursor.currentNodeId(), currentState, config);
+							// nextNodeId = nextNodeCommand.gotoNode();
+							cursor.setNextNodeId(nextNodeCommand.gotoNode());
+							currentState = nextNodeCommand.update();
+
+						}
+
 						return Data.of(getNodeOutput());
 					}
-
-					Optional<Data<Output>> embed = getEmbedGenerator(updateState);
-					if (embed.isPresent()) {
-						return embed.get();
+					catch (Exception e) {
+						throw new CompletionException(e);
 					}
+				}).whenComplete((outputData, throwable) -> doListeners(NODE_AFTER, null));
+			}
+			catch (Exception e) {
+				return failedFuture(e);
+			}
 
-					this.currentState = OverAllState.updateState(currentState, updateState, keyStrategyMap);
-					this.overAllState.updateState(updateState);
-					var nextNodeCommand = nextNodeId(currentNodeId, overAllState, currentState, config);
-					nextNodeId = nextNodeCommand.gotoNode();
-					this.currentState = nextNodeCommand.update();
-
-					return Data.of(getNodeOutput());
-				}
-				catch (Exception e) {
-					throw new CompletionException(e);
-				}
-			}).whenComplete((outputData, throwable) -> {
-				if (!isParallel)
-					doListeners(NODE_AFTER, null);
-			});
 		}
 
-		private Command nextNodeId(String nodeId, OverAllState overAllState, Map<String, Object> state,
-				RunnableConfig config) throws Exception {
-			EdgeValue route = edges.get(nodeId);
+		/**
+		 * Determines the next node ID based on the current node ID and state.
+		 * @param nodeId the current node ID
+		 * @param state the current state
+		 * @return the next node command
+		 * @throws Exception if there is an error determining the next node ID
+		 */
+		private Command nextNodeId(String nodeId, Map<String, Object> state, RunnableConfig config) throws Exception {
+			return nextNodeId(edges.get(nodeId), state, nodeId, config);
+
+		}
+
+		private Command nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, RunnableConfig config)
+				throws Exception {
 
 			if (route == null) {
 				throw RunnableErrors.missingEdge.exception(nodeId);
@@ -864,7 +904,8 @@ public class CompiledGraph {
 				return new Command(route.id(), state);
 			}
 			if (route.value() != null) {
-				var command = route.value().action().apply(overAllState, config).get();
+
+				var command = route.value().action().apply(this.overAllState, config).get();
 
 				var newRoute = command.gotoNode();
 
@@ -874,42 +915,16 @@ public class CompiledGraph {
 				}
 
 				var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
-
-				overAllState.updateState(command.update());
-
+				this.overAllState.updateState(command.update());
 				return new Command(result, currentState);
 			}
 			throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 		}
 
-		/**
-		 * evaluate Action without nested support
-		 */
-		private CompletableFuture<Output> evaluateActionWithoutNested(AsyncNodeAction action, OverAllState withState) {
-
-			return action.apply(withState).thenApply(partialState -> {
-				try {
-					currentState = OverAllState.updateState(currentState, partialState, keyStrategyMap);
-
-					var nextNodeCommand = nextNodeId(currentNodeId, overAllState, currentState, config);
-					nextNodeId = nextNodeCommand.gotoNode();
-					currentState = nextNodeCommand.update();
-
-					Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);
-					return (cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
-							? buildStateSnapshot(cp.get()) : buildNodeOutput(currentNodeId);
-
-				}
-				catch (Exception e) {
-					throw new CompletionException(e);
-				}
-			});
-		}
-
 		private CompletableFuture<Output> getNodeOutput() throws Exception {
-			Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);
+			Optional<Checkpoint> cp = addCheckpoint(config, cursor.currentNodeId(), currentState, cursor.nextNodeId());
 			return completedFuture((cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
-					? buildStateSnapshot(cp.get()) : buildNodeOutput(currentNodeId));
+					? buildStateSnapshot(cp.get()) : buildNodeOutput(cursor.currentNodeId()));
 		}
 
 		@Override
@@ -924,55 +939,77 @@ public class CompiledGraph {
 				}
 
 				// GUARD: CHECK IF IT IS END
-				if (nextNodeId == null && currentNodeId == null) {
+				if (cursor.nextNodeId() == null && cursor.currentNodeId() == null) {
 					return releaseThread().map(Data::<Output>done).orElseGet(() -> Data.done(currentState));
 				}
 
 				// IS IT A RESUME FROM EMBED ?
-				if (resumedFromEmbed) {
+				if (returnFromEmbed) {
 					final CompletableFuture<Output> future = getNodeOutput();
-					resumedFromEmbed = false;
+					returnFromEmbed = false;
 					return Data.of(future);
 				}
 
-				if (START.equals(currentNodeId)) {
+				if (cursor.currentNodeId() != null && config.isInterrupted(cursor.currentNodeId())) {
+					config.withNodeResumed(cursor.currentNodeId());
+					return Data.done(currentState);
+				}
+
+				if (START.equals(cursor.currentNodeId())) {
 					doListeners(START, null);
 					var nextNodeCommand = getEntryPoint(currentState, config);
-					nextNodeId = nextNodeCommand.gotoNode();
+					cursor.setNextNodeId(nextNodeCommand.gotoNode());
 					currentState = nextNodeCommand.update();
 
-					var cp = addCheckpoint(config, START, currentState, nextNodeId);
+					var cp = addCheckpoint(config, START, currentState, cursor.nextNodeId());
 
 					var output = (cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
-							? buildStateSnapshot(cp.get()) : buildNodeOutput(currentNodeId);
+							? buildStateSnapshot(cp.get()) : buildNodeOutput(cursor.currentNodeId());
 
-					currentNodeId = nextNodeId;
+					cursor.setCurrentNodeId(cursor.nextNodeId());
+					// currentNodeId = nextNodeId;
 
 					return Data.of(output);
 				}
 
-				if (END.equals(nextNodeId)) {
-					nextNodeId = null;
-					currentNodeId = null;
+				if (END.equals(cursor.nextNodeId())) {
+					cursor.reset();
 					doListeners(END, null);
+					// nextNodeId = null;
+					// currentNodeId = null;
 					return Data.of(buildNodeOutput(END));
 				}
 
+				if (cursor.isResumed()) {
+
+					if (compileConfig.interruptBeforeEdge() && Objects.equals(cursor.nextNodeId(), INTERRUPT_AFTER)) {
+						var nextNodeCommand = nextNodeId(cursor.resumeFrom(), currentState, config);
+						// nextNodeId = nextNodeCommand.gotoNode();
+						cursor.setNextNodeId(nextNodeCommand.gotoNode());
+
+						currentState = nextNodeCommand.update();
+						cursor.setCurrentNodeId(null);
+
+					}
+
+					cursor.setResumeFrom(null);
+
+				}
+
 				// check on previous node
-				if (shouldInterruptAfter(currentNodeId, nextNodeId)) {
-					return Data.done(currentNodeId);
+				if (shouldInterruptAfter(cursor.currentNodeId(), cursor.nextNodeId())) {
+					return Data.done(cursor.currentNodeId());
 				}
 
-				if (shouldInterruptBefore(nextNodeId, currentNodeId)) {
-					return Data.done(nextNodeId);
+				if (shouldInterruptBefore(cursor.nextNodeId(), cursor.currentNodeId())) {
+					return Data.done(cursor.nextNodeId());
 				}
 
-				currentNodeId = nextNodeId;
-
-				var action = nodes.get(currentNodeId);
+				cursor.setCurrentNodeId(cursor.nextNodeId());
+				var action = nodes.get(cursor.currentNodeId());
 
 				if (action == null)
-					throw RunnableErrors.missingNode.exception(currentNodeId);
+					throw RunnableErrors.missingNode.exception(cursor.currentNodeId());
 
 				return evaluateAction(action, this.overAllState).get();
 			}
@@ -985,8 +1022,8 @@ public class CompiledGraph {
 
 		private void doListeners(String scene, Exception e) {
 			Deque<GraphLifecycleListener> listeners = new LinkedBlockingDeque<>(compileConfig.lifecycleListeners());
-			LifeListenerUtil.processListenersLIFO(this.currentNodeId, listeners, this.currentState, this.config, scene,
-					e);
+			LifeListenerUtil.processListenersLIFO(this.cursor.currentNodeId(), listeners, this.currentState,
+					this.config, scene, e);
 		}
 
 	}

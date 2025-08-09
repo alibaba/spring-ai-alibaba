@@ -49,6 +49,8 @@ public class CompileConfig {
 
 	private boolean releaseThread = false;
 
+	private boolean interruptBeforeEdge = false;
+
 	private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 	/**
@@ -99,6 +101,15 @@ public class CompileConfig {
 	@Deprecated
 	public String[] getInterruptAfter() {
 		return interruptsAfter.toArray(new String[0]);
+	}
+
+	/**
+	 * return the current state of option concerning whether to interrupt the graph
+	 * execution before evaluating conditional edges
+	 * @return true if option is enabled, false otherwise
+	 */
+	public boolean interruptBeforeEdge() {
+		return interruptBeforeEdge;
 	}
 
 	/**
@@ -234,6 +245,23 @@ public class CompileConfig {
 		}
 
 		/**
+		 * Sets whether to interrupt the graph execution before evaluating conditional
+		 * edges.
+		 * <p>
+		 * By default, interruptions happen after a node has finished executing. If this
+		 * is set to {@code true}, the interruption will occur after the node finishes but
+		 * *before* any of its conditional edges are evaluated. This allows for inspecting
+		 * the state before a branch is chosen.
+		 * @param interruptBeforeEdge if {@code true}, interrupt before evaluating edges,
+		 * otherwise interrupt after.
+		 * @return The current {@code Builder} instance for method chaining.
+		 */
+		public Builder interruptBeforeEdge(boolean interruptBeforeEdge) {
+			this.config.interruptBeforeEdge = interruptBeforeEdge;
+			return this;
+		}
+
+		/**
 		 * Sets multiple interrupt points that trigger after node execution from a
 		 * collection.
 		 * @param interruptsAfter Collection of strings representing interrupt points.
@@ -283,6 +311,7 @@ public class CompileConfig {
 		this.releaseThread = config.releaseThread;
 		this.lifecycleListeners = config.lifecycleListeners;
 		this.observationRegistry = config.observationRegistry;
+		this.interruptBeforeEdge = config.interruptBeforeEdge;
 	}
 
 }

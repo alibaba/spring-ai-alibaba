@@ -27,6 +27,8 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.alibaba.cloud.ai.service.simple.SimpleVectorStoreService;
+import com.alibaba.cloud.ai.service.DatasourceService;
+import com.alibaba.cloud.ai.entity.Datasource;
 import com.alibaba.fastjson.JSON;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -63,20 +65,23 @@ public class Nl2sqlForGraphController {
 
 	private final SimpleVectorStoreService simpleVectorStoreService;
 
-	private final DbConfig dbConfig;
+	private final DatasourceService datasourceService;
 
 	public Nl2sqlForGraphController(@Qualifier("nl2sqlGraph") StateGraph stateGraph,
-			SimpleVectorStoreService simpleVectorStoreService, DbConfig dbConfig) throws GraphStateException {
+			SimpleVectorStoreService simpleVectorStoreService, DatasourceService datasourceService)
+			throws GraphStateException {
 		this.compiledGraph = stateGraph.compile();
 		this.compiledGraph.setMaxIterations(100);
 		this.simpleVectorStoreService = simpleVectorStoreService;
-		this.dbConfig = dbConfig;
+		this.datasourceService = datasourceService;
 	}
 
 	@GetMapping("/search")
 	public String search(@RequestParam String query, @RequestParam String dataSetId, @RequestParam String agentId)
 			throws Exception {
-		// 初始化向量
+		// 获取智能体的数据源配置用于初始化向量
+		DbConfig dbConfig = getDbConfigForAgent(Integer.valueOf(agentId));
+
 		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
 		schemaInitRequest.setDbConfig(dbConfig);
 		schemaInitRequest
@@ -90,13 +95,66 @@ public class Nl2sqlForGraphController {
 	}
 
 	@GetMapping("/init")
-	public void init() throws Exception {
-		// 初始化向量
+	public void init(@RequestParam(required = false, defaultValue = "1") Integer agentId) throws Exception {
+		// 获取智能体的数据源配置用于初始化向量
+		DbConfig dbConfig = getDbConfigForAgent(agentId);
+
 		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
 		schemaInitRequest.setDbConfig(dbConfig);
 		schemaInitRequest
 			.setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
 		simpleVectorStoreService.schema(schemaInitRequest);
+	}
+
+	/**
+	 * 根据智能体ID获取数据库配置
+	 */
+	private DbConfig getDbConfigForAgent(Integer agentId) {
+		try {
+			// 获取智能体启用的数据源
+			var agentDatasources = datasourceService.getAgentDatasources(agentId);
+			var activeDatasource = agentDatasources.stream()
+				.filter(ad -> ad.getIsActive() == 1)
+				.findFirst()
+				.orElseThrow(() -> new RuntimeException("智能体 " + agentId + " 未配置启用的数据源"));
+
+			// 转换为 DbConfig
+			return createDbConfigFromDatasource(activeDatasource.getDatasource());
+		}
+		catch (Exception e) {
+			logger.error("Failed to get agent datasource config for agent: {}", agentId, e);
+			throw new RuntimeException("获取智能体数据源配置失败: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * 从数据源实体创建数据库配置
+	 */
+	private DbConfig createDbConfigFromDatasource(Datasource datasource) {
+		DbConfig dbConfig = new DbConfig();
+
+		// 设置基本连接信息
+		dbConfig.setUrl(datasource.getConnectionUrl());
+		dbConfig.setUsername(datasource.getUsername());
+		dbConfig.setPassword(datasource.getPassword());
+
+		// 设置数据库类型
+		if ("mysql".equalsIgnoreCase(datasource.getType())) {
+			dbConfig.setConnectionType("jdbc");
+			dbConfig.setDialectType("mysql");
+		}
+		else if ("postgresql".equalsIgnoreCase(datasource.getType())) {
+			dbConfig.setConnectionType("jdbc");
+			dbConfig.setDialectType("postgresql");
+		}
+		else {
+			throw new RuntimeException("不支持的数据库类型: " + datasource.getType());
+		}
+
+		// 设置Schema为数据源的数据库名称
+		dbConfig.setSchema(datasource.getDatabaseName());
+
+		return dbConfig;
 	}
 
 	@GetMapping(value = "/stream/search", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
