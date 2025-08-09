@@ -18,7 +18,7 @@
               >
               </div>
             </div>
-            <button class="close-btn" @click="memoryStore.isCollapsed = false">
+            <button class="close-btn" @click="memoryStore.toggleSidebar()">
               <Icon icon="carbon:close" />
             </button>
           </div>

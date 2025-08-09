@@ -508,6 +508,10 @@ const handleDirectMode = async (query: InputMessage) => {
     if (response.planId) {
       console.log('[ChatComponent] Received planId from direct execution:', response.planId)
 
+      if (response.memoryId) {
+        memoryStore.setMemory(response.memoryId)
+      }
+
       if (!assistantMessage.planExecution) {
         assistantMessage.planExecution = {} as any
       }

@@ -48,6 +48,10 @@ export class MemoryStore {
         this.selectMemoryId = memoryId
     }
 
+    setMemory(memoryId: string) {
+        this.selectMemoryId = memoryId
+    }
+
     defaultMemoryId() {
         this.selectMemoryId = this.generateRandomId()
     }
