@@ -25,7 +25,9 @@ import java.util.List;
 
 public class AnswerNodeData extends NodeData {
 
-	public static final List<Variable> DEFAULT_OUTPUTS = List.of(new Variable("answer", VariableType.STRING.value()));
+	public static List<Variable> getDefaultOutputs() {
+		return List.of(new Variable("answer", VariableType.STRING.value()));
+	}
 
 	// a string template
 	private String answer;

@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
-import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.EmptyNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -82,16 +81,6 @@ public class EmptyNodeDataConverter extends AbstractNodeDataConverter<EmptyNodeD
 	@Override
 	public String generateVarName(int count) {
 		return "__empty__node_" + count;
-	}
-
-	@Override
-	public void postProcess(EmptyNodeData nodeData, String varName) {
-		super.postProcess(nodeData, varName);
-	}
-
-	@Override
-	public Stream<Variable> extractWorkflowVars(EmptyNodeData nodeData) {
-		return super.extractWorkflowVars(nodeData);
 	}
 
 }

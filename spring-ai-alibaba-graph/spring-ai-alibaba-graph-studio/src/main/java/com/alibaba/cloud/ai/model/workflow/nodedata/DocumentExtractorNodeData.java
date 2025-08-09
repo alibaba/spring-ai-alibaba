@@ -28,7 +28,9 @@ import java.util.List;
  */
 public class DocumentExtractorNodeData extends NodeData {
 
-	public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("text", VariableType.ARRAY_STRING.value());
+	public static Variable getDefaultOutputSchema() {
+		return new Variable("text", VariableType.ARRAY_STRING.value());
+	}
 
 	private List<String> fileList;
 

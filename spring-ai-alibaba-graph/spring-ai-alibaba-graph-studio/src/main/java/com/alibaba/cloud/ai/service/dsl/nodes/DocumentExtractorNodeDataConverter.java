@@ -68,10 +68,10 @@ public class DocumentExtractorNodeDataConverter extends AbstractNodeDataConverte
 					.orElse(Collections.emptyList());
 
 				String outputKey = Optional.ofNullable((String) data.get("output_key"))
-					.orElse(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
+					.orElse(DocumentExtractorNodeData.getDefaultOutputSchema().getName());
 
-				return new DocumentExtractorNodeData(inputs, List.of(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA),
-						fileList, outputKey);
+				return new DocumentExtractorNodeData(inputs,
+						List.of(DocumentExtractorNodeData.getDefaultOutputSchema()), fileList, outputKey);
 			}
 
 			@Override
@@ -92,7 +92,7 @@ public class DocumentExtractorNodeDataConverter extends AbstractNodeDataConverte
 				}
 
 				String outputKey = nodeData.getOutputKey();
-				if (!DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA.getName().equals(outputKey)) {
+				if (!DocumentExtractorNodeData.getDefaultOutputSchema().getName().equals(outputKey)) {
 					data.put("output_key", outputKey);
 				}
 
@@ -118,8 +118,10 @@ public class DocumentExtractorNodeDataConverter extends AbstractNodeDataConverte
 	}
 
 	@Override
-	public void postProcess(DocumentExtractorNodeData data, String varName) {
-		data.setOutputs(List.of(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA));
+	public void postProcessOutput(DocumentExtractorNodeData data, String varName) {
+		data.setOutputKey(varName + "_" + DocumentExtractorNodeData.getDefaultOutputSchema().getName());
+		data.setOutputs(List.of(DocumentExtractorNodeData.getDefaultOutputSchema()));
+		super.postProcessOutput(data, varName);
 	}
 
 }

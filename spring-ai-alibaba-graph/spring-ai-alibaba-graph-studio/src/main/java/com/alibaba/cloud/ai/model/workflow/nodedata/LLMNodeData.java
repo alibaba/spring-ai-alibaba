@@ -26,7 +26,9 @@ import java.util.Map;
 
 public class LLMNodeData extends NodeData {
 
-	public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("text", VariableType.STRING.value());
+	public static Variable getDefaultOutputSchema() {
+		return new Variable("text", VariableType.STRING.value());
+	}
 
 	private ModelConfig model;
 

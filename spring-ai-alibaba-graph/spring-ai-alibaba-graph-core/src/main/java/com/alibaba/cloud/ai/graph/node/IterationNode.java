@@ -516,7 +516,7 @@ public class IterationNode {
 							.build()))
 				.addNode(iterationName + "iteration_end",
 						node_async(IterationNode.<ElementInput, ElementOutput>end()
-							.taskIndexListKey(this.tempArrayKey)
+							.taskIndexListKey(this.tempIndexKey)
 							.inputResultKey(this.iteratorResultKey)
 							.outputArrayKey(this.outputArrayJsonKey)
 							.outputContinueIterationKey(this.tempEndFlagKey)

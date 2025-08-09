@@ -51,7 +51,7 @@ public class TemplateTransformNodeSection implements NodeSection {
 
 		sb.append(".build();\n");
 		sb.append("stateGraph.addNode(\"")
-			.append(id)
+			.append(varName)
 			.append("\", AsyncNodeAction.node_async(")
 			.append(varName)
 			.append("));\n\n");

@@ -28,6 +28,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
@@ -111,14 +115,43 @@ public class TemplateTransformNodeDataConverter extends AbstractNodeDataConverte
 	}
 
 	@Override
-	public void postProcess(TemplateTransformNodeData nodeData, String varName) {
-		String origKey = nodeData.getOutputKey();
-		String newKey = varName + "_output";
+	public void postProcessOutput(TemplateTransformNodeData nodeData, String varName) {
+		nodeData.setOutputKey(varName + "_" + TemplateTransformNodeData.getDefaultOutputSchema().getName());
+		nodeData.setOutputs(List.of(TemplateTransformNodeData.getDefaultOutputSchema()));
+		super.postProcessOutput(nodeData, varName);
+	}
 
-		if (origKey == null) {
-			nodeData.setOutputKey(newKey);
+	private String replacePlaceholders(String text, Map<String, String> data) {
+		Pattern pattern = Pattern.compile("\\{\\{\\s*(\\w+)\\s*\\}\\}");
+		Matcher matcher = pattern.matcher(text);
+
+		StringBuilder result = new StringBuilder();
+		while (matcher.find()) {
+			String key = matcher.group(1);
+			String value = data.get(key);
+
+			if (value != null) {
+				String replacement = "{{ " + value + " }}";
+				matcher.appendReplacement(result, replacement);
+			}
 		}
-		nodeData.setOutputs(List.of(new Variable(nodeData.getOutputKey(), VariableType.STRING.value())));
+		matcher.appendTail(result);
+		return result.toString();
+	}
+
+	@Override
+	public BiConsumer<TemplateTransformNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
+				// todo: 支持Jinja2的if、for语句
+				// 将模板中的占位变量替换为工作流的中间变量
+				Map<String, String> argToStateName = nodeData.getInputs()
+					.stream()
+					.collect(Collectors.toMap(VariableSelector::getLabel, VariableSelector::getNameInCode));
+				nodeData.setTemplate(this.replacePlaceholders(nodeData.getTemplate(), argToStateName));
+			});
+			case CUSTOM -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

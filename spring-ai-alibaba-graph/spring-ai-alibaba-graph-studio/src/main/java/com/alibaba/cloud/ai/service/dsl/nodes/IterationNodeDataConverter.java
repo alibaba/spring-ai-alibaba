@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
+import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.IterationNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -27,6 +28,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -71,8 +74,8 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 					.id(id)
 					.inputType(inputType)
 					.outputType(outputType)
-					.inputSelector(new VariableSelector("", inputSelector.get(0), inputSelector.get(1)))
-					.outputSelector(new VariableSelector("", outputSelector.get(0), outputSelector.get(1)))
+					.inputSelector(new VariableSelector(inputSelector.get(0), inputSelector.get(1), ""))
+					.outputSelector(new VariableSelector(outputSelector.get(0), outputSelector.get(1), ""))
 					.startNodeId(startNodeId)
 					.endNodeId(endNodeId)
 					.inputKey(id + "_input")
@@ -112,26 +115,49 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 
 	@Override
 	public String generateVarName(int count) {
-		return "iteration_" + count;
+		return "iteration" + count;
 	}
 
 	@Override
-	public void postProcess(IterationNodeData nodeData, String varName) {
-		nodeData.setOutputKey(varName + "_output");
-		nodeData.setInputKey(varName + "_input");
-		Variable output = new Variable(nodeData.getOutputKey(), nodeData.getOutputType());
-		nodeData.setOutputs(List.of(output));
-		nodeData.setOutput(output);
+	public void postProcessOutput(IterationNodeData nodeData, String varName) {
+		nodeData.setOutputKey(varName + "_" + IterationNodeData.getDefaultOutputSchema().getName());
+		nodeData.setOutputs(List.of(IterationNodeData.getDefaultOutputSchema()));
+		nodeData.setOutput(IterationNodeData.getDefaultOutputSchema());
+		super.postProcessOutput(nodeData, varName);
+	}
+
+	@Override
+	public BiConsumer<IterationNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> super.postProcessConsumer(dialectType).andThen((iterationNodeData, varNames) -> {
+				// 等待所有的节点都生成了变量名后，补充迭代节点的起始名称
+				iterationNodeData
+					.setStartNodeName(varNames.getOrDefault(iterationNodeData.getStartNodeId(), "unknown"));
+				iterationNodeData.setEndNodeName(varNames.getOrDefault(iterationNodeData.getEndNodeId(), "unknown"));
+
+				// 更新迭代节点的输入Key
+				VariableSelector inputSelector = iterationNodeData.getInputs().get(0);
+				iterationNodeData.setInputKey(inputSelector.getNameInCode());
+
+				// 更新迭代节点的ResultKey
+				VariableSelector outputSelector = iterationNodeData.getOutputSelector();
+				iterationNodeData.setInnerItemResultKey(
+						Optional.ofNullable(varNames.get(outputSelector.getNamespace())).orElse("unknown") + "_"
+								+ outputSelector.getName());
+			});
+			case CUSTOM -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 	@Override
 	public Stream<Variable> extractWorkflowVars(IterationNodeData nodeData) {
-		return Stream.of(nodeData.getOutput(), new Variable(nodeData.getInnerArrayKey(), "string"),
-				new Variable(nodeData.getInnerStartFlagKey(), "string"),
-				new Variable(nodeData.getInnerEndFlagKey(), "string"),
-				new Variable(nodeData.getInnerItemKey(), nodeData.getInputType()),
-				new Variable(nodeData.getInnerIndexKey(), "number"),
-				new Variable(nodeData.getInnerItemResultKey(), nodeData.getOutputType()));
+		return Stream.concat(nodeData.getOutputs().stream(),
+				Stream.of(new Variable(nodeData.getInnerArrayKey(), "string"),
+						new Variable(nodeData.getInnerStartFlagKey(), VariableType.STRING.value()),
+						new Variable(nodeData.getInnerEndFlagKey(), VariableType.STRING.value()),
+						new Variable(nodeData.getInnerItemKey(), nodeData.getInputType()),
+						new Variable(nodeData.getInnerIndexKey(), VariableType.NUMBER.value()),
+						new Variable(nodeData.getInnerItemResultKey(), nodeData.getOutputType())));
 	}
 
 }

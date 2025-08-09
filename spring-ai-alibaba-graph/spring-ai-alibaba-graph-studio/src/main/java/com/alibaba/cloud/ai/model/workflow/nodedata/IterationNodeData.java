@@ -18,7 +18,9 @@ package com.alibaba.cloud.ai.model.workflow.nodedata;
 
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
+import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -27,6 +29,10 @@ import java.util.List;
  * @since 2025/7/21
  */
 public class IterationNodeData extends NodeData {
+
+	public static Variable getDefaultOutputSchema() {
+		return new Variable("output", VariableType.ARRAY_STRING.value());
+	}
 
 	private String id;
 
@@ -257,6 +263,12 @@ public class IterationNodeData extends NodeData {
 
 		private String outputKey;
 
+		// 可以不设置，使用默认值"_item"
+		private String itemKey;
+
+		// 可以不设置，使用默认值"_index"
+		private String indexKey;
+
 		public Builder id(String id) {
 			this.id = id;
 			return this;
@@ -302,9 +314,26 @@ public class IterationNodeData extends NodeData {
 			return this;
 		}
 
+		public Builder itemKey(String itemKey) {
+			this.itemKey = itemKey;
+			return this;
+		}
+
+		public Builder indexKey(String indexKey) {
+			this.indexKey = indexKey;
+			return this;
+		}
+
 		public IterationNodeData build() {
-			return new IterationNodeData(id, inputType, outputType, inputSelector, outputSelector, startNodeId,
-					endNodeId, inputKey, outputKey);
+			IterationNodeData data = new IterationNodeData(id, inputType, outputType, inputSelector, outputSelector,
+					startNodeId, endNodeId, inputKey, outputKey);
+			if (StringUtils.hasText(this.itemKey)) {
+				data.setInnerItemKey(this.itemKey);
+			}
+			if (StringUtils.hasText(this.indexKey)) {
+				data.setInnerIndexKey(this.indexKey);
+			}
+			return data;
 		}
 
 	}

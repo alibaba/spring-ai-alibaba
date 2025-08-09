@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.EndNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -58,9 +57,7 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 					String variable = (String) output.get("variable");
 					return new VariableSelector(valueSelector.get(0), valueSelector.get(1)).setLabel(variable);
 				}).toList();
-				List<Variable> outputs = inputs.stream()
-					.map(input -> new Variable(input.getLabel(), VariableType.OBJECT.value()))
-					.toList();
+				List<Variable> outputs = List.of();
 				return new EndNodeData(inputs, outputs);
 			}
 
@@ -95,11 +92,11 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 	}
 
 	@Override
-	public void postProcess(EndNodeData data, String varName) {
-		String outputKey = varName + "_output";
+	public void postProcessOutput(EndNodeData data, String varName) {
+		String outputKey = varName + "_" + EndNodeData.getDefaultOutputSchema().getName();
 		data.setOutputKey(outputKey);
-
-		data.setOutputs(List.of(new Variable(outputKey, VariableType.STRING.value())));
+		data.setOutputs(List.of(EndNodeData.getDefaultOutputSchema()));
+		super.postProcessOutput(data, varName);
 	}
 
 }

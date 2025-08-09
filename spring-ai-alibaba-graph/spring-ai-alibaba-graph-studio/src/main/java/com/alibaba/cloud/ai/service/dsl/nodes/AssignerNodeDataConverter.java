@@ -118,14 +118,14 @@ public class AssignerNodeDataConverter extends AbstractNodeDataConverter<Assigne
 	}
 
 	@Override
-	public void postProcess(AssignerNodeData data, String varName) {
+	public void postProcessOutput(AssignerNodeData data, String varName) {
 		List<Variable> outputs = data.getItems()
 			.stream()
 			.map(item -> new Variable(item.getVariableSelector() != null && !item.getVariableSelector().isEmpty()
-					? item.getVariableSelector().get(item.getVariableSelector().size() - 1) : varName + "_output",
-					"Any"))
+					? item.getVariableSelector().get(item.getVariableSelector().size() - 1) : "output", "Any"))
 			.toList();
 		data.setOutputs(outputs);
+		super.postProcessOutput(data, varName);
 	}
 
 }
