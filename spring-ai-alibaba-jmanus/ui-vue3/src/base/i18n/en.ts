@@ -980,6 +980,14 @@ const words: I18nType = {
         step2: '[TEXT_FILE_AGENT] Get chapter title information from novel.md file, then improve each chapter content in sequence, only improve one chapter content per round, use replace to update content, each chapter requires 3000 words, do not query all document content after updating each chapter',
         step2Output: 'File name',
       },
+      formInputDemo: {
+        title: 'AI Intelligent Dynamic Form Demo',
+        description: 'Experience AI intelligent analysis of user needs and dynamic generation of relevant form fields',
+        prompt: 'Demonstrate how AI intelligently generates targeted form fields based on user questions',
+        planTitle: 'AI Intelligent Dynamic Form Demo Plan',
+        step1: '[INTELLIGENT_FORM_AGENT] Launch intelligent dynamic form demo, actively analyze user needs and dynamically generate relevant form fields, showcasing AI intelligent form generation capabilities',
+        step1Output: 'Demo results, user interaction data',
+      },
     },
   },
 
