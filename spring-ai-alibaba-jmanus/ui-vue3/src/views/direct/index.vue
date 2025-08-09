@@ -256,7 +256,9 @@ onMounted(() => {
     nextTick(() => {
       if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
         console.log('[Direct] Directly executing task via chatRef.handleSendMessage:', taskContent)
-        chatRef.value.handleSendMessage(taskContent)
+        chatRef.value.handleSendMessage({
+          input: taskContent
+        })
       } else {
         console.warn('[Direct] chatRef.handleSendMessage method not available, falling back to prompt')
         prompt.value = taskContent
