@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.internal.reactive.GeneratorSubscriber;
-import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
@@ -32,11 +31,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Function;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
-import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -65,10 +61,6 @@ public class ParallelNode extends Node {
 
 			CompletableFuture<?>[] futures = actions.stream()
 				.map((Function<AsyncNodeActionWithConfig, CompletableFuture<?>>) action -> {
-					LifeListenerUtil.processListenersLIFO(this.nodeId,
-							new LinkedBlockingDeque<>(this.compileConfig.lifecycleListeners()), state.data(), config,
-							NODE_BEFORE, null);
-
 					// 使用线程池异步执行每个action
 					return CompletableFuture.supplyAsync(() -> action.apply(state, config), executor)
 						.thenCompose(Function.identity())
@@ -92,12 +84,7 @@ public class ParallelNode extends Node {
 								}
 							});
 							return action;
-						})
-						.whenCompleteAsync(
-								(asyncNodeActionWithConfig, throwable) -> LifeListenerUtil.processListenersLIFO(
-										this.nodeId, new LinkedBlockingDeque<>(this.compileConfig.lifecycleListeners()),
-										state.data(), config, NODE_AFTER, throwable),
-								executor);
+						});
 				})
 				.toArray(CompletableFuture[]::new);
 
