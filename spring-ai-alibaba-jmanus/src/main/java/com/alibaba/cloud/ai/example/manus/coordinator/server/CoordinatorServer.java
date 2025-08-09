@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import com.alibaba.cloud.ai.example.manus.coordinator.tool.EndPointUtils;
 import com.alibaba.cloud.ai.example.manus.config.CoordinatorToolProperties;
@@ -57,6 +58,17 @@ import reactor.netty.http.server.HttpServer;
 public class CoordinatorServer implements ApplicationListener<ApplicationReadyEvent> {
 
 	private static final Logger log = LoggerFactory.getLogger(CoordinatorServer.class);
+
+	// ==================== 日志常量 ====================
+	private static final String LOG_SEPARATOR = "==========================================";
+	private static final String LOG_SERVER_TITLE = "JManus Multi EndPoint Streamable Http Server";
+	private static final String LOG_SERVICE_LIST_TITLE = "Coordinator Service List:";
+	private static final String LOG_TOOL_FORMAT = "    Tool #{}: {} - {}";
+	private static final String LOG_URL_FORMAT = "  Full URL: {}";
+	private static final String LOG_COUNT_FORMAT = "  Tool Count: {}";
+	private static final String LOG_DIVIDER = "  ----------------------------------------";
+	private static final String LOG_NO_SERVICES = "No coordinator services found";
+	private static final String LOG_STARTUP_COMPLETE = "Coordinator service startup complete, {} endpoints";
 
 	@Autowired
 	private Environment environment;
@@ -137,24 +149,14 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	 * @return Whether registration was successful
 	 */
 	public boolean registerCoordinatorTool(CoordinatorTool tool) {
-		// Check if CoordinatorTool feature is enabled
-		if (!coordinatorToolProperties.isEnabled()) {
-			log.info("CoordinatorTool feature is disabled, skipping tool registration");
+		if (tool == null || tool.getEndpoint() == null || tool.getEndpoint().trim().isEmpty()) {
+			log.warn("Invalid tool parameters");
 			return false;
 		}
-
-		if (tool == null) {
-			log.warn("CoordinatorTool is null, cannot register");
-			return false;
-		}
-
-		String endpoint = tool.getEndpoint();
-		if (endpoint == null || endpoint.trim().isEmpty()) {
-			log.warn("CoordinatorTool's endpoint is empty, cannot register");
-			return false;
-		}
-
-		return toolRegistryManager.registerTool(tool, mcpServerManager, httpServerManager);
+		
+		return executeWithValidation("tool registration", 
+			() -> toolRegistryManager.registerTool(tool, mcpServerManager, httpServerManager),
+			tool.getToolName(), tool.getEndpoint()) != null;
 	}
 
 	/**
@@ -164,23 +166,15 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	 * @return Whether unregistration was successful
 	 */
 	public boolean unregisterCoordinatorTool(String toolName, String endpoint) {
-		// Check if CoordinatorTool feature is enabled
-		if (!coordinatorToolProperties.isEnabled()) {
-			log.info("CoordinatorTool feature is disabled, skipping tool unregistration");
+		if (toolName == null || toolName.trim().isEmpty() || 
+			endpoint == null || endpoint.trim().isEmpty()) {
+			log.warn("Invalid parameters");
 			return false;
 		}
-
-		if (toolName == null || toolName.trim().isEmpty()) {
-			log.warn("Tool name is empty, cannot unregister");
-			return false;
-		}
-
-		if (endpoint == null || endpoint.trim().isEmpty()) {
-			log.warn("Endpoint is empty, cannot unregister");
-			return false;
-		}
-
-		return toolRegistryManager.unregisterTool(toolName, endpoint, mcpServerManager, httpServerManager);
+		
+		return executeWithValidation("tool unregistration",
+			() -> toolRegistryManager.unregisterTool(toolName, endpoint, mcpServerManager, httpServerManager),
+			toolName, endpoint) != null;
 	}
 
 	/**
@@ -190,24 +184,42 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	 * @return Whether refresh was successful
 	 */
 	public boolean refreshTool(String toolName, CoordinatorTool updatedTool) {
-		// Check if CoordinatorTool feature is enabled
+		if (updatedTool == null || toolName == null || 
+			updatedTool.getEndpoint() == null || updatedTool.getEndpoint().trim().isEmpty()) {
+			log.warn("Invalid tool parameters");
+			return false;
+		}
+		
+		return executeWithValidation("tool refresh",
+			() -> toolRegistryManager.refreshTool(toolName, updatedTool, mcpServerManager, httpServerManager),
+			toolName, updatedTool.getEndpoint()) != null;
+	}
+
+	// ==================== 执行模板方法 ====================
+
+	/**
+	 * 执行模板方法，统一处理验证、日志和异常
+	 * @param operation 操作名称
+	 * @param operationSupplier 操作执行函数
+	 * @param operationParams 操作参数
+	 * @return 操作结果
+	 */
+	private <T> T executeWithValidation(String operation, Supplier<T> operationSupplier, 
+	                                   String... operationParams) {
 		if (!coordinatorToolProperties.isEnabled()) {
-			log.info("CoordinatorTool feature is disabled, skipping tool refresh");
-			return false;
+			log.info("CoordinatorTool feature is disabled, skipping {}", operation);
+			return null;
 		}
-
-		if (updatedTool == null || toolName == null) {
-			log.warn("Tool or tool name is empty, cannot refresh");
-			return false;
+		
+		try {
+			log.info("Starting {}: {}", operation, String.join(", ", operationParams));
+			T result = operationSupplier.get();
+			log.info("Successfully completed {}: {}", operation, String.join(", ", operationParams));
+			return result;
+		} catch (Exception e) {
+			log.error("Exception occurred during {}: {}", operation, e.getMessage(), e);
+			return null;
 		}
-
-		String endpoint = updatedTool.getEndpoint();
-		if (endpoint == null || endpoint.trim().isEmpty()) {
-			log.warn("Tool's endpoint is empty, cannot refresh");
-			return false;
-		}
-
-		return toolRegistryManager.refreshTool(toolName, updatedTool, mcpServerManager, httpServerManager);
 	}
 
 	// ==================== 辅助方法 ====================
@@ -216,10 +228,10 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	 * 记录服务器启动日志
 	 */
 	private void logServerStartup() {
-		log.info("==========================================");
-		log.info("JManus Multi EndPoint Streamable Http Server");
-		log.info("==========================================");
-		log.info("Starting JManus Multi EndPoint Streamable Http Server...");
+		log.info(LOG_SEPARATOR);
+		log.info(LOG_SERVER_TITLE);
+		log.info(LOG_SEPARATOR);
+		log.info("Starting {}...", LOG_SERVER_TITLE);
 
 		log.info("Server Information:");
 		log.info("  Full Address: http://{}:{}", EndPointUtils.SERVICE_HOST, EndPointUtils.SERVICE_PORT);
@@ -229,35 +241,34 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	 * 记录服务器启动完成日志
 	 */
 	private void logServerStartupComplete(Map<String, List<CoordinatorTool>> coordinatorToolsByEndpoint) {
-		log.info("JManus Multi EndPoint Streamable Http Server started successfully!");
-		log.info("==========================================");
-		log.info("Coordinator Service List:");
-		log.info("==========================================");
+		log.info("{} started successfully!", LOG_SERVER_TITLE);
+		log.info(LOG_SEPARATOR);
+		log.info(LOG_SERVICE_LIST_TITLE);
+		log.info(LOG_SEPARATOR);
 
 		// Output all coordinator service information
 		if (!coordinatorToolsByEndpoint.isEmpty()) {
-			int serviceIndex = 1;
 			for (Map.Entry<String, List<CoordinatorTool>> entry : coordinatorToolsByEndpoint.entrySet()) {
 				String endpoint = entry.getKey();
 				List<CoordinatorTool> tools = entry.getValue();
-				log.info("  Full URL: {}", EndPointUtils.getUrl(endpoint));
-				log.info("  Tool Count: {}", tools.size());
+				log.info(LOG_URL_FORMAT, EndPointUtils.getUrl(endpoint));
+				log.info(LOG_COUNT_FORMAT, tools.size());
 
 				// Output all tools for this endpoint
 				for (int i = 0; i < tools.size(); i++) {
 					CoordinatorTool tool = tools.get(i);
-					log.info("    Tool #{}: {} - {}", i + 1, tool.getToolName(), tool.getToolDescription());
+					log.info(LOG_TOOL_FORMAT, i + 1, tool.getToolName(), tool.getToolDescription());
 				}
-				log.info("  ----------------------------------------");
+				log.info(LOG_DIVIDER);
 			}
 		}
 		else {
-			log.info("No coordinator services found");
+			log.info(LOG_NO_SERVICES);
 		}
 
-		log.info("==========================================");
-		log.info("Coordinator service startup complete, {} endpoints", coordinatorToolsByEndpoint.size());
-		log.info("==========================================");
+		log.info(LOG_SEPARATOR);
+		log.info(LOG_STARTUP_COMPLETE, coordinatorToolsByEndpoint.size());
+		log.info(LOG_SEPARATOR);
 	}
 
 	// ==================== 内部组件类 ====================
