@@ -46,28 +46,33 @@
               >
                 <div class="message-header">
                   <div class="message-content">
-                    <div class="sender-info" @click.stop="selectMemory(message.memoryId)">
-                      <div style="display: flex; align-items: center;max-width: 90%">
+                    <div class="sender-info">
+                      <div class="sender-div" @click.stop="selectMemory(message.memoryId)">
                         <h3
                             class="sender-name"
                         >
                           {{ message.memoryName }}
                         </h3>
-                        <span
-                            @click.stop="showNameEditModal(message.memoryId, message.memoryName)"
-                        >
-                        <Icon icon="carbon:edit" class="edit-btn"/>
-                      </span>
                       </div>
-                      <div class="toggle-container" @click.stop="toggleMessage(message.memoryId)">
+
+                      <div class="toggle-container" @click.stop="showNameEditModal(message.memoryId, message.memoryName)">
                         <Icon
-                            :id="'toggle-' + message.memoryId"
-                            icon="carbon:chevron-down"
-                            class="down-btn"
+                            icon="carbon:edit"
+                            class="edit-btn"
                         >
                         </Icon>
                       </div>
-
+                      <div class="action-buttons">
+                        <button
+                            class="delete-btn"
+                            @click.stop="toggleMessage(message.memoryId)"
+                        >
+                          <Icon :id="'toggle-' + message.memoryId"
+                                icon="carbon:chevron-down"
+                                class="down-btn"
+                          ></Icon>
+                        </button>
+                      </div>
                       <div class="action-buttons">
                         <button
                             class="delete-btn"
@@ -530,10 +535,16 @@ const confirmDelete = async () => {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 0.25rem;
+}
+
+.sender-div {
+  display: flex;
+  align-items: center;
+  width: 85%;
   cursor: pointer;
 }
 
-.sender-info:hover:not(:has(.edit-btn:hover, .down-btn:hover, .delete-btn:hover)) .sender-name {
+.sender-div:hover:not(:has(.edit-btn:hover, .down-btn:hover, .delete-btn:hover)) .sender-name {
   color: #667eea;
 }
 

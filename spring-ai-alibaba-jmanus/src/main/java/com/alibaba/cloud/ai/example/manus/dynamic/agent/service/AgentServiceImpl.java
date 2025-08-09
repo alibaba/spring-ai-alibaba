@@ -295,7 +295,7 @@ public class AgentServiceImpl implements AgentService {
 	}
 
 	@Override
-	public BaseAgent createDynamicBaseAgent(String name, String planId, String memoryId, String rootPlanId,
+	public BaseAgent createDynamicBaseAgent(String name, String planId, String rootPlanId,
 			Map<String, Object> initialAgentSetting, String expectedReturnInfo) {
 
 		log.info("Create new BaseAgent: {}, planId: {}", name, planId);
@@ -306,7 +306,6 @@ public class AgentServiceImpl implements AgentService {
 
 			// Set planId
 			agent.setCurrentPlanId(planId);
-			agent.setMemoryId(memoryId);
 			agent.setRootPlanId(rootPlanId);
 			// Set tool callback mapping
 			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId, rootPlanId,

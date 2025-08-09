@@ -40,10 +40,9 @@ public interface AgentService {
 	 * createPlanningCoordinator method in PlanningFactory
 	 * @param name Agent name
 	 * @param currentPlanId Plan ID, used to identify the plan the agent belongs to
-	 * @param memoryId Memory ID
 	 * @return Created BaseAgent object
 	 */
-	BaseAgent createDynamicBaseAgent(String name, String currentPlanId, String memoryId, String rootPlanId,
+	BaseAgent createDynamicBaseAgent(String name, String currentPlanId, String rootPlanId,
 			Map<String, Object> initialAgentSetting, String expectedReturnInfo);
 
 }

@@ -68,8 +68,6 @@ public abstract class BaseAgent {
 
 	private String currentPlanId = null;
 
-	private String memoryId = null;
-
 	private String rootPlanId = null;
 
 	// Think-act record ID for sub-plan executions triggered by tool calls
@@ -351,14 +349,6 @@ public abstract class BaseAgent {
 
 	public void setCurrentPlanId(String planId) {
 		this.currentPlanId = planId;
-	}
-
-	public String getMemoryId() {
-		return memoryId;
-	}
-
-	public void setMemoryId(String memoryId) {
-		this.memoryId = memoryId;
 	}
 
 	public void setRootPlanId(String rootPlanId) {
