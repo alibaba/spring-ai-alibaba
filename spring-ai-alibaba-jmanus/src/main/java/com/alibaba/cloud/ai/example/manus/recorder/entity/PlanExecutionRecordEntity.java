@@ -42,7 +42,7 @@ public class PlanExecutionRecordEntity {
 	private Date gmtModified;
 
 	@Convert(converter = StringAttributeConverter.class)
-	@Column(columnDefinition = "longtext")
+	@Column
 	private PlanExecutionRecord planExecutionRecord;
 
 	public Long getId() {

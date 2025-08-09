@@ -423,9 +423,6 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			.filter((request, next) -> next.exchange(request).timeout(Duration.ofMinutes(10)));
 
 		String completionsPath = dynamicModelEntity.getCompletionsPath();
-		if (!StringUtils.hasText(completionsPath)) {
-			completionsPath = "/v1/chat/completions";
-		}
 
 		return new OpenAiApi(dynamicModelEntity.getBaseUrl(), new SimpleApiKey(dynamicModelEntity.getApiKey()),
 				multiValueMap, completionsPath, "/v1/embeddings", restClientBuilder, enhancedWebClientBuilder,
