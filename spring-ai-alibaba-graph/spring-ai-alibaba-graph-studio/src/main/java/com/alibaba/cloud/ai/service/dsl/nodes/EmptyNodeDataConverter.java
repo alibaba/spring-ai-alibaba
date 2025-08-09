@@ -84,9 +84,4 @@ public class EmptyNodeDataConverter extends AbstractNodeDataConverter<EmptyNodeD
 		return "__empty__node_" + count;
 	}
 
-	@Override
-	public Stream<Variable> extractWorkflowVars(EmptyNodeData nodeData) {
-		return super.extractWorkflowVars(nodeData);
-	}
-
 }

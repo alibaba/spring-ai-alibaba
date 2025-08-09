@@ -105,25 +105,12 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 	}
 
 	@Override
-	public Stream<Variable> extractWorkflowVars(StartNodeData data) {
-		return Optional.ofNullable(data.getStartInputs())
-			.stream()
-			.flatMap(List::stream)
-			.map(sel -> new Variable(sel.getVariable(), com.alibaba.cloud.ai.model.VariableType.STRING.value()));
-	}
-
-	@Override
 	public void postProcessOutput(StartNodeData data, String varName) {
-		// todo: start节点的outputKey有实际使用吗
-		// String outputKey = varName + ".";
-		// data.setOutputKey(outputKey);
-
 		List<Variable> vars = new ArrayList<>(data.getStartInputs()
 			.stream()
-			.map(input -> new Variable(input.getVariable(), VariableType.STRING.value()))
+			.map(input -> new Variable(input.getVariable(), input.getType()))
+			.peek(variable -> variable.setName(variable.getName()))
 			.toList());
-
-		// vars.add(new Variable(outputKey, VariableType.STRING.value()));
 		data.setOutputs(vars);
 		super.postProcessOutput(data, varName);
 	}

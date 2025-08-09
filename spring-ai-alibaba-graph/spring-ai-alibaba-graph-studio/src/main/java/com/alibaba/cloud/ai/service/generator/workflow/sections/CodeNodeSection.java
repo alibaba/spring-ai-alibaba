@@ -52,7 +52,7 @@ public class CodeNodeSection implements NodeSection {
 		if (!data.getInputs().isEmpty()) {
 			String params = data.getInputs()
 				.stream()
-				.map(sel -> String.format("\"%s\", \"%s\"", sel.getLabel(), sel.getName()))
+				.map(sel -> String.format("\"%s\", \"%s\"", sel.getLabel(), sel.getNamespace() + "." + sel.getName()))
 				.collect(Collectors.joining(", "));
 			sb.append(String.format("    .params(Map.of(%s))%n", params));
 		}
@@ -62,7 +62,26 @@ public class CodeNodeSection implements NodeSection {
 
 		sb.append("    .build();\n");
 
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
+		// 辅助节点代码，包装codeNode，将他的返回值变量解包
+		String assistantNodeCode = String.format("""
+				(state) -> {
+				            // 将代码运行的结果拆包
+				            Map<String, Object> result = %s.apply(state);
+				            String key = "%s";
+				            Object object = result.get(key);
+				            if(!(object instanceof Map)) {
+				            	return Map.of();
+				            }
+				            return ((Map<String, Object>) object).entrySet().stream()
+				            		.collect(Collectors.toMap(
+				                    	entry -> "%s." + entry.getKey(),
+				                    	Map.Entry::getValue
+				                    ));
+				        }
+				""", varName, data.getOutputKey(), varName);
+
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
+				assistantNodeCode));
 
 		return sb.toString();
 	}

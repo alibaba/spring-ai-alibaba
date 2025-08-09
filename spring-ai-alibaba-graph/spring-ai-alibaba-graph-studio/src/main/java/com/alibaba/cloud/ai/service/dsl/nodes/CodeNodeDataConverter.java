@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 @Component
@@ -108,6 +107,13 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 	@Override
 	public String generateVarName(int count) {
 		return "codeNode" + count;
+	}
+
+	@Override
+	public void postProcessOutput(CodeNodeData nodeData, String varName) {
+		// code节点将返回{"varName.output": {...}}的数据，之后拆包成若干输出数据
+		nodeData.setOutputKey(varName + "." + CodeNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
+		super.postProcessOutput(nodeData, varName);
 	}
 
 }

@@ -17,11 +17,14 @@ package com.alibaba.cloud.ai.model.workflow.nodedata;
 
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
+import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 
 import java.util.List;
 
 public class CodeNodeData extends NodeData {
+
+	public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("output", VariableType.STRING.value());
 
 	private String code;
 

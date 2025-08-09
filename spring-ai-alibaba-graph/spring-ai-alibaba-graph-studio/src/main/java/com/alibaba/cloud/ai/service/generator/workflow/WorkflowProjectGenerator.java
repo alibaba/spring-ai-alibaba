@@ -28,11 +28,9 @@ import com.alibaba.cloud.ai.model.workflow.nodedata.BranchNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.CodeNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.KnowledgeRetrievalNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
-import com.alibaba.cloud.ai.model.workflow.nodedata.StartNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLAdapter;
 import com.alibaba.cloud.ai.service.generator.GraphProjectDescription;
 import com.alibaba.cloud.ai.service.generator.ProjectGenerator;
-import com.google.common.base.CaseFormat;
 import io.spring.initializr.generator.io.template.MustacheTemplateRenderer;
 import io.spring.initializr.generator.io.template.TemplateRenderer;
 import io.spring.initializr.generator.project.ProjectDescription;
@@ -47,7 +45,6 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -67,8 +64,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 	private final String GRAPH_BUILDER_NODE_SECTION = "nodeSection";
 
 	private final String GRAPH_BUILDER_EDGE_SECTION = "edgeSection";
-
-	private final String GRAPH_BUILDER_START_INPUTS_SECTION = "startInputsSection";
 
 	private final String GRAPH_BUILDER_IMPORT_SECTION = "importSection";
 
@@ -122,24 +117,9 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 				GRAPH_BUILDER_STATE_SECTION, stateSectionStr, GRAPH_BUILDER_NODE_SECTION, nodeSectionStr,
 				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr, HAS_RETRIEVER, hasRetriever, GRAPH_BUILDER_IMPORT_SECTION,
 				renderImportSection(workflow), HAS_CODE, hasCode);
-		Map<String, Object> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
-				GRAPH_BUILDER_START_INPUTS_SECTION, renderStartInputSection(workflow));
+		Map<String, Object> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
 		renderAndWriteTemplates(List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
 				List.of(graphBuilderModel, graphRunControllerModel), projectRoot, projectDescription);
-	}
-
-	private Map<String, String> assignVariableNames(List<Node> nodes) {
-		Map<NodeType, Integer> counter = new HashMap<>();
-		Map<String, String> varNames = new HashMap<>();
-		for (Node node : nodes) {
-			NodeType type = NodeType.fromValue(node.getType()).orElseThrow();
-			int idx = counter.merge(type, 1, Integer::sum);
-			// generate similar questionClassifier1, http1, llm1, aggregator1, ...
-			String base = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, type.name());
-			String varName = base + idx;
-			varNames.put(node.getId(), varName);
-		}
-		return varNames;
 	}
 
 	private String renderStateSections(List<Variable> overallStateVars) {
@@ -347,43 +327,15 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return handleId;
 	}
 
-	private String renderStartInputSection(Workflow workflow) {
-		List<Variable> startInputs = workflow.getWorkflowVars()
-			.stream()
-			.filter(v -> workflow.getGraph()
-				.getNodes()
-				.stream()
-				.anyMatch(n -> n.getData() instanceof StartNodeData
-						&& ((StartNodeData) n.getData()).getStartInputs() != null
-						&& ((StartNodeData) n.getData()).getStartInputs()
-							.stream()
-							.anyMatch(i -> i.getVariable().equals(v.getName()))))
-			.toList();
-
-		if (startInputs.isEmpty()) {
-			return "";
-		}
-		StringBuilder sb = new StringBuilder();
-		sb.append("Map<String, Object> startInputs = new HashMap<>();\n");
-		for (Variable var : startInputs) {
-			sb.append(String.format("startInputs.put(\"%s\", inputs.get(\"%s\")); // %s%n", var.getName(),
-					var.getName(), var.getDescription()));
-		}
-		sb.append("return graph.invoke(startInputs).get().data();\n");
-
-		return sb.toString();
-	}
-
 	private String renderImportSection(Workflow workflow) {
 		// construct a list of node types
 		Map<String, List<String>> nodeTypeToClass = Map.ofEntries(
 				Map.entry(NodeType.ANSWER.value(), List.of("com.alibaba.cloud.ai.graph.node.AnswerNode")),
-				Map.entry(NodeType.CODE.value(),
-						List.of("com.alibaba.cloud.ai.graph.node.code.CodeExecutorNodeAction",
-								"com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig",
-								"com.alibaba.cloud.ai.graph.node.code.CodeExecutor",
-								"com.alibaba.cloud.ai.graph.node.code.LocalCommandlineCodeExecutor",
-								"java.io.IOException", "java.nio.file.Files", "java.nio.file.Path")),
+				Map.entry(NodeType.CODE.value(), List.of("com.alibaba.cloud.ai.graph.node.code.CodeExecutorNodeAction",
+						"com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig",
+						"com.alibaba.cloud.ai.graph.node.code.CodeExecutor",
+						"com.alibaba.cloud.ai.graph.node.code.LocalCommandlineCodeExecutor", "java.io.IOException",
+						"java.nio.file.Files", "java.nio.file.Path", "java.util.stream.Collectors")),
 				Map.entry(NodeType.LLM.value(), List.of("com.alibaba.cloud.ai.graph.node.LlmNode")),
 				Map.entry(NodeType.BRANCH.value(),
 						List.of("com.alibaba.cloud.ai.graph.node.BranchNode",
