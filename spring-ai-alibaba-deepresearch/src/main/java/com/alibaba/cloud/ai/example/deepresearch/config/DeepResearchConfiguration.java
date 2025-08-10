@@ -120,7 +120,7 @@ public class DeepResearchConfiguration {
 	@Autowired(required = false)
 	private JinaCrawlerService jinaCrawlerService;
 
-	@Autowired(required = false)
+	@Autowired
 	private RagProperties ragProperties;
 
 	@Autowired
@@ -147,10 +147,10 @@ public class DeepResearchConfiguration {
 	@Autowired(required = false)
 	private SmartAgentDispatcherService smartAgentDispatcher;
 
-	@Autowired(required = false)
+	@Autowired
 	private SmartAgentProperties smartAgentProperties;
 
-	@Autowired(required = false)
+	@Autowired
 	private RagNodeService ragNodeService;
 
 	@Bean
