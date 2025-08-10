@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.ApiResponse;
 import com.alibaba.cloud.ai.example.deepresearch.service.VectorStoreDataIngestionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -158,13 +159,13 @@ public class RagDataController {
 	 * 批量上传文件到专业知识库ES接口
 	 */
 	@PostMapping(value = "/professional-kb/batch-upload", consumes = "multipart/form-data")
-	public ResponseEntity<Map<String, Object>> handleBatchProfessionalKbUpload(
+	public ResponseEntity<ApiResponse<Map<String, Object>>> handleBatchProfessionalKbUpload(
 			@RequestParam("files") List<MultipartFile> files, @RequestParam("kb_id") String kbId,
 			@RequestParam("kb_name") String kbName, @RequestParam("kb_description") String kbDescription,
 			@RequestParam(value = "category", required = false) String category) {
 
 		if (files == null || files.isEmpty()) {
-			return ResponseEntity.badRequest().body(Map.of("error", "No files provided"));
+			return ResponseEntity.badRequest().body(ApiResponse.error("No files provided"));
 		}
 
 		try {
@@ -181,7 +182,7 @@ public class RagDataController {
 			response.put("total_chunks", totalChunks);
 			response.put("filenames", files.stream().map(MultipartFile::getOriginalFilename).toList());
 
-			return ResponseEntity.ok(response);
+			return ResponseEntity.ok(ApiResponse.success(response));
 		}
 		catch (Exception e) {
 			Map<String, Object> errorResponse = new HashMap<>();
@@ -189,7 +190,7 @@ public class RagDataController {
 			errorResponse.put("message", e.getMessage());
 			errorResponse.put("kb_id", kbId);
 			errorResponse.put("file_count", files.size());
-			return ResponseEntity.internalServerError().body(errorResponse);
+			return ResponseEntity.internalServerError().body(ApiResponse.error("Failed to process professional KB batch upload", errorResponse));
 		}
 	}
 
