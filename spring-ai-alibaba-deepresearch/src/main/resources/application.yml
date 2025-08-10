@@ -92,9 +92,9 @@ spring:
           researcher: 4
           coder: 4
         rag:
-          enabled: true
+          enabled: false
           # 可以设置为 'simple' 或 'elasticsearch'
-          vector-store-type: elasticsearch
+          vector-store-type: simple
           data:
             # 启动时加载 classpath下data目录中的所有文件
             locations:
