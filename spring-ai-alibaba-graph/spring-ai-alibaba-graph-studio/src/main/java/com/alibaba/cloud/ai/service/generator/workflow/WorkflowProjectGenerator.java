@@ -18,16 +18,13 @@ package com.alibaba.cloud.ai.service.generator.workflow;
 import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppModeEnum;
 import com.alibaba.cloud.ai.model.Variable;
-import com.alibaba.cloud.ai.model.workflow.Case;
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.Edge;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
-import com.alibaba.cloud.ai.model.workflow.nodedata.BranchNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.CodeNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.KnowledgeRetrievalNodeData;
-import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLAdapter;
 import com.alibaba.cloud.ai.service.generator.GraphProjectDescription;
 import com.alibaba.cloud.ai.service.generator.ProjectGenerator;
@@ -44,14 +41,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Component
 public class WorkflowProjectGenerator implements ProjectGenerator {
@@ -80,10 +75,11 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private final TemplateRenderer templateRenderer;
 
-	private final List<NodeSection> nodeNodeSections;
+	private final List<NodeSection<? extends NodeData>> nodeNodeSections;
 
 	public WorkflowProjectGenerator(@Qualifier("difyDSLAdapter") DSLAdapter dslAdapter,
-			ObjectProvider<MustacheTemplateRenderer> templateRenderer, List<NodeSection> nodeNodeSections) {
+			ObjectProvider<MustacheTemplateRenderer> templateRenderer,
+			List<NodeSection<? extends NodeData>> nodeNodeSections) {
 		this.dslAdapter = dslAdapter;
 		this.templateRenderer = templateRenderer
 			.getIfAvailable(() -> new MustacheTemplateRenderer("classpath:/templates"));
@@ -211,135 +207,18 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 		// conditional edge（aggregate by sourceId）
 		for (Map.Entry<String, List<Edge>> entry : conditionalEdgesMap.entrySet()) {
-			String sourceId = entry.getKey();
-			String srcVar = varNames.get(sourceId);
-			List<Edge> condEdges = entry.getValue();
-			Node sourceNode = nodeMap.get(sourceId);
-			NodeData sourceData = sourceNode.getData();
-
-			List<String> conditions = new ArrayList<>();
-			List<String> mappings = new ArrayList<>();
-
-			// 处理条件边的扩展
-			// todo: 完善条件边的EdgeAction
-			if (sourceData instanceof BranchNodeData branchNodeData) {
-				List<Case> cases = branchNodeData.getCases();
-				// 构造EdgeAction.apply函数
-				StringBuilder conditionsBuffer = new StringBuilder();
-				for (Case c : cases) {
-					String logicalOperator = " " + c.getLogicalOperator().getValue() + " ";
-					List<String> expressions = c.getConditions().stream().map(condition -> {
-						String constValue = condition.getValue();
-						if (condition.getVarType().equalsIgnoreCase("String")) {
-							constValue = "\"" + constValue + "\"";
-						}
-						String objType = switch (condition.getVarType()) {
-							case "string", "String" -> "String.class";
-							case "list", "List", "Array", "array" -> "List.class";
-							default -> condition.getComparisonOperator()
-								.getSupportedClassList()
-								.get(0)
-								.getName()
-								.concat(".class");
-						};
-						String objName = "unknown";
-						try {
-							if (nodeMap.containsKey(condition.getVariableSelector().getNamespace())) {
-								Node inputNode = nodeMap.get(condition.getVariableSelector().getNamespace());
-								objName = inputNode.getData().getOutputs().get(0).getName();
-							}
-						}
-						catch (Exception ignore) {
-						}
-						objName = String.format("state.value(\"%s\", %s).orElseThrow()", objName, objType);
-						return condition.getComparisonOperator().convert(objName, constValue);
-					}).toList();
-					conditionsBuffer.append("if(");
-					// 组合复合条件
-					conditionsBuffer.append(String.join(logicalOperator, expressions));
-					conditionsBuffer.append(") {\n");
-					conditionsBuffer.append(String.format("return \"%s\";", c.getId()));
-					conditionsBuffer.append("}\n");
+			String nodeId = entry.getKey();
+			Node node = nodeMap.get(nodeId);
+			NodeType nodeType = NodeType.fromValue(node.getType()).orElseThrow();
+			for (NodeSection section : nodeNodeSections) {
+				if (section.support(nodeType)) {
+					String edgeCode = section.renderConditionalEdges(node.getData(), nodeMap, entry, varNames);
+					sb.append(edgeCode);
 				}
-				// 最后需要加上else的结果
-				conditionsBuffer.append("return \"false\";");
-
-				// 构建Map
-				Map<String, String> edgeCaseMap = entry.getValue()
-					.stream()
-					.collect(Collectors.toMap(Edge::getSourceHandle, Edge::getTarget));
-				String edgeCaseMapStr = "Map.of(" + edgeCaseMap.entrySet()
-					.stream()
-					.flatMap(e -> Stream.of(e.getKey(), varNames.getOrDefault(e.getValue(), "unknown")))
-					.map(v -> String.format("\"%s\"", v))
-					.collect(Collectors.joining(", ")) + ")";
-
-				// 构建最终代码
-				sb.append("stateGraph.addConditionalEdges(\"")
-					.append(srcVar)
-					.append("\", edge_async(state -> {\n")
-					.append(conditionsBuffer)
-					.append("}), ")
-					.append(edgeCaseMapStr)
-					.append(");\n");
-
-				// 补充结束节点与END的联系（如果有）
-				List<String> endNodeNames = edgeCaseMap.values()
-					.stream()
-					.map(nodeMap::get)
-					.filter(Objects::nonNull)
-					.filter(node -> "end".equalsIgnoreCase(node.getType()))
-					.map(Node::getId)
-					.map(varNames::get)
-					.toList();
-				if (!endNodeNames.isEmpty()) {
-					sb.append("stateGraph");
-					endNodeNames.forEach(varName -> sb.append(String.format("\n.addEdge(\"%s\", END)", varName)));
-					sb.append(";\n");
-				}
-				continue;
 			}
-
-			for (Edge e : condEdges) {
-				Map<String, Object> data = e.getData();
-				String targetType = data != null ? (String) data.get("targetType") : null;
-				String conditionKey = resolveConditionKey(sourceData, e.getSourceHandle());
-				String tgtVar2 = varNames.get(e.getTarget());
-				String targetId = e.getTarget();
-				if ("end".equals(targetType)) {
-					conditions
-						.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
-					mappings.add(String.format("\"%s\", END", conditionKey));
-					continue;
-				}
-				conditions.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
-				mappings.add(String.format("\"%s\", \"%s\"", conditionKey, tgtVar2));
-			}
-
-			String lambdaContent = String.join("\n", conditions);
-			String mapContent = String.join(", ", mappings);
-
-			sb.append(String.format(
-					"stateGraph.addConditionalEdges(\"%s\",%n" + "            edge_async(state -> {%n"
-							+ "String value = state.value(\"%s_output\", String.class).orElse(\"\");%n" + "%s%n"
-							+ "return null;%n" + "            }),%n" + "            Map.of(%s)%n" + ");%n",
-					srcVar, srcVar, lambdaContent, mapContent));
 		}
 
 		return sb.toString();
-	}
-
-	private String resolveConditionKey(NodeData data, String handleId) {
-		if (data instanceof QuestionClassifierNodeData classifier) {
-			return classifier.getClasses()
-				.stream()
-				.filter(c -> c.getId().equals(handleId))
-				.map(QuestionClassifierNodeData.ClassConfig::getText)
-				.findFirst()
-				.orElse(handleId);
-		}
-		// todo: extend to other node types that support conditional edges
-		return handleId;
 	}
 
 	private String renderImportSection(Workflow workflow) {

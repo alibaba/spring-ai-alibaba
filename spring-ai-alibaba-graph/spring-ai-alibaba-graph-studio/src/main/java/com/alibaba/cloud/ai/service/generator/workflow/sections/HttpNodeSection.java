@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-public class HttpNodeSection implements NodeSection {
+public class HttpNodeSection implements NodeSection<HttpNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class LLMNodeSection implements NodeSection {
+public class LLMNodeSection implements NodeSection<LLMNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

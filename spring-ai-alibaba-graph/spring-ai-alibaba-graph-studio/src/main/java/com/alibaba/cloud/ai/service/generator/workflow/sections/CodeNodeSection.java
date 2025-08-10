@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CodeNodeSection implements NodeSection {
+public class CodeNodeSection implements NodeSection<CodeNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

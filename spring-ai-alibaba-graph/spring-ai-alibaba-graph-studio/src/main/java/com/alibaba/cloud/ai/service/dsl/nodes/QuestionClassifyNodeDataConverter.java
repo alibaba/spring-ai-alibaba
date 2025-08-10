@@ -15,9 +15,7 @@
  */
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
-import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -200,15 +198,6 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 		data.setOutputKey(varName + "_" + QuestionClassifierNodeData.getDefaultOutputSchema().getName());
 		data.setOutputs(List.of(QuestionClassifierNodeData.getDefaultOutputSchema()));
 		super.postProcessOutput(data, varName);
-	}
-
-	@Override
-	public Stream<Variable> extractWorkflowVars(QuestionClassifierNodeData data) {
-		Stream<Variable> outVar = Stream.of(new Variable(data.getOutputKey(), VariableType.STRING.value()));
-		Stream<Variable> inVars = data.getInputs()
-			.stream()
-			.map(sel -> new Variable(sel.getName(), VariableType.STRING.value()));
-		return Stream.concat(outVar, inVars);
 	}
 
 }

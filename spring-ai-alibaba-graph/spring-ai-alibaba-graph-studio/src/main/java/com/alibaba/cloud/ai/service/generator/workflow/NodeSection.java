@@ -15,8 +15,13 @@
  */
 package com.alibaba.cloud.ai.service.generator.workflow;
 
+import com.alibaba.cloud.ai.model.workflow.Edge;
 import com.alibaba.cloud.ai.model.workflow.Node;
+import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Render a node data
@@ -24,7 +29,7 @@ import com.alibaba.cloud.ai.model.workflow.NodeType;
  * @author robocanic
  * @since 2025/5/23
  */
-public interface NodeSection {
+public interface NodeSection<T extends NodeData> {
 
 	boolean support(NodeType nodeType);
 
@@ -39,6 +44,21 @@ public interface NodeSection {
 			.replace("\n", "\\n")
 			.replace("\r", "\\r")
 			.replace("\t", "\\t");
+	}
+
+	// todo: 完善条件边的EdgeAction
+	/**
+	 * 生成条件边的SAA代码
+	 * @param nodeData 节点数据
+	 * @param nodeMap nodeId与node的映射
+	 * @param entry 包含当前节点ID与当前节点出发的条件边List
+	 * @param varNames nodeId与nodeVarName的映射
+	 * @return 条件边代码
+	 */
+	default String renderConditionalEdges(T nodeData, Map<String, Node> nodeMap, Map.Entry<String, List<Edge>> entry,
+			Map<String, String> varNames) {
+		System.err.println("Unsupported Conditional Edges!");
+		return "";
 	}
 
 }

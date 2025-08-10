@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class DocumentExtractorNodeSection implements NodeSection {
+public class DocumentExtractorNodeSection implements NodeSection<DocumentExtractorNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

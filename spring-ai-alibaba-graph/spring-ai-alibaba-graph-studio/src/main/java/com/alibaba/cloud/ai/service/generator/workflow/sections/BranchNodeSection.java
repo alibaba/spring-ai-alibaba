@@ -15,13 +15,22 @@
  */
 package com.alibaba.cloud.ai.service.generator.workflow.sections;
 
+import com.alibaba.cloud.ai.model.workflow.Case;
+import com.alibaba.cloud.ai.model.workflow.Edge;
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.BranchNodeData;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 @Component
-public class BranchNodeSection implements NodeSection {
+public class BranchNodeSection implements NodeSection<BranchNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {
@@ -38,6 +47,86 @@ public class BranchNodeSection implements NodeSection {
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(state -> Map.of()));%n%n",
 				varName));
 
+		return sb.toString();
+	}
+
+	@Override
+	public String renderConditionalEdges(BranchNodeData branchNodeData, Map<String, Node> nodeMap,
+			Map.Entry<String, List<Edge>> entry, Map<String, String> varNames) {
+		String srcVar = varNames.get(entry.getKey());
+		StringBuilder sb = new StringBuilder();
+		List<Case> cases = branchNodeData.getCases();
+
+		// 构造EdgeAction.apply函数
+		StringBuilder conditionsBuffer = new StringBuilder();
+		for (Case c : cases) {
+			String logicalOperator = " " + c.getLogicalOperator().getValue() + " ";
+			List<String> expressions = c.getConditions().stream().map(condition -> {
+				String constValue = condition.getValue();
+				if (condition.getVarType().equalsIgnoreCase("String")) {
+					constValue = "\"" + constValue + "\"";
+				}
+				String objType = switch (condition.getVarType()) {
+					case "string", "String" -> "String.class";
+					case "list", "List", "Array", "array" -> "List.class";
+					default ->
+						condition.getComparisonOperator().getSupportedClassList().get(0).getName().concat(".class");
+				};
+				String objName = "unknown";
+				try {
+					if (nodeMap.containsKey(condition.getVariableSelector().getNamespace())) {
+						Node inputNode = nodeMap.get(condition.getVariableSelector().getNamespace());
+						objName = inputNode.getData().getOutputs().get(0).getName();
+					}
+				}
+				catch (Exception ignore) {
+				}
+				objName = String.format("state.value(\"%s\", %s).orElseThrow()", objName, objType);
+				return condition.getComparisonOperator().convert(objName, constValue);
+			}).toList();
+			conditionsBuffer.append("if(");
+			// 组合复合条件
+			conditionsBuffer.append(String.join(logicalOperator, expressions));
+			conditionsBuffer.append(") {\n");
+			conditionsBuffer.append(String.format("return \"%s\";", c.getId()));
+			conditionsBuffer.append("}\n");
+		}
+		// 最后需要加上else的结果
+		conditionsBuffer.append("return \"false\";");
+
+		// 构建Map
+		Map<String, String> edgeCaseMap = entry.getValue()
+			.stream()
+			.collect(Collectors.toMap(Edge::getSourceHandle, Edge::getTarget));
+		String edgeCaseMapStr = "Map.of(" + edgeCaseMap.entrySet()
+			.stream()
+			.flatMap(e -> Stream.of(e.getKey(), varNames.getOrDefault(e.getValue(), "unknown")))
+			.map(v -> String.format("\"%s\"", v))
+			.collect(Collectors.joining(", ")) + ")";
+
+		// 构建最终代码
+		sb.append("stateGraph.addConditionalEdges(\"")
+			.append(srcVar)
+			.append("\", edge_async(state -> {\n")
+			.append(conditionsBuffer)
+			.append("}), ")
+			.append(edgeCaseMapStr)
+			.append(");\n");
+
+		// 补充结束节点与END的联系（如果有）
+		List<String> endNodeNames = edgeCaseMap.values()
+			.stream()
+			.map(nodeMap::get)
+			.filter(Objects::nonNull)
+			.filter(node -> "end".equalsIgnoreCase(node.getType()))
+			.map(Node::getId)
+			.map(varNames::get)
+			.toList();
+		if (!endNodeNames.isEmpty()) {
+			sb.append("stateGraph");
+			endNodeNames.forEach(varName -> sb.append(String.format("\n.addEdge(\"%s\", END)", varName)));
+			sb.append(";\n");
+		}
 		return sb.toString();
 	}
 

@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class ParameterParsingNodeSection implements NodeSection {
+public class ParameterParsingNodeSection implements NodeSection<ParameterParsingNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

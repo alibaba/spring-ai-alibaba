@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class VariableAggregatorNodeSection implements NodeSection {
+public class VariableAggregatorNodeSection implements NodeSection<VariableAggregatorNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

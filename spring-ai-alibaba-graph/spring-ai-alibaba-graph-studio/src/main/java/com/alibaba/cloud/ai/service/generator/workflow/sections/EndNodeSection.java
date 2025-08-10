@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
-public class EndNodeSection implements NodeSection {
+public class EndNodeSection implements NodeSection<EndNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

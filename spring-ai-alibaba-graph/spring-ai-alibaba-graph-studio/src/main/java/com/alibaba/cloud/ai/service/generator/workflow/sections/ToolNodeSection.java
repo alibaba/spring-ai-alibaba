@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class ToolNodeSection implements NodeSection {
+public class ToolNodeSection implements NodeSection<ToolNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

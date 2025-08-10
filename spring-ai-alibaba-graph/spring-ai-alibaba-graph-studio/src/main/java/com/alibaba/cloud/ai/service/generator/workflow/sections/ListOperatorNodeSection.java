@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class ListOperatorNodeSection implements NodeSection {
+public class ListOperatorNodeSection implements NodeSection<ListOperatorNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

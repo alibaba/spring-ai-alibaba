@@ -23,7 +23,7 @@ import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
 @Component
-public class KnowledgeRetrievalNodeSection implements NodeSection {
+public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetrievalNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

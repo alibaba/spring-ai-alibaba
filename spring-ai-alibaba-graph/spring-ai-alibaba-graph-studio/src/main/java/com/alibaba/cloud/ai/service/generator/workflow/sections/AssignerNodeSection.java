@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AssignerNodeSection implements NodeSection {
+public class AssignerNodeSection implements NodeSection<AssignerNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {
