@@ -39,14 +39,8 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 		sb.append(String.format("// —— KnowledgeRetrievalNode [%s] ——%n", id));
 		sb.append(String.format("KnowledgeRetrievalNode %s = KnowledgeRetrievalNode.builder()%n", varName));
 
-		if (d.getInputId() != null && d.getInputField() != null) {
-			sb.append(String.format(".inputId(\"%s\")%n", escape(d.getInputId())));
-			sb.append(String.format(".inputField(\"%s\")%n", escape(d.getInputField())));
-		}
+		sb.append(String.format(".inputKey(\"%s\")%n", d.getInputKey()));
 
-		if (d.getUserPromptKey() != null) {
-			sb.append(String.format(".userPromptKey(\"%s\")%n", escape(d.getUserPromptKey())));
-		}
 		if (d.getUserPrompt() != null) {
 			sb.append(String.format(".userPrompt(\"%s\")%n", escape(d.getUserPrompt())));
 		}
@@ -107,8 +101,32 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 		}
 		sb.append(".vectorStore(vectorStore)\n");
 
-		sb.append(".build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
+		sb.append(".isKeyFirst(false).build();\n");
+
+		// 辅助节点代码
+		String assistNodeCode = String.format(
+				"""
+						(state) -> {
+							String key = "%s";
+							// 将结果转换为Dify工作流中需要的变量
+							Map<String, Object> result = %s.apply(state);
+							Object object = result.get(key);
+							if(object instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Document) {
+								// 返回值为Array[Object]（用List<Map>）
+								List<Document> documentList = (List<Document>) list;
+								List<Map<String, Object>> mapList = documentList.stream().map(document ->
+												Map.of("content", document.getFormattedContent(), "title", document.getId(), "url", "", "icon", "", "metadata", document.getMetadata()))
+										.toList();
+								return Map.of(key, mapList);
+							} else {
+								return Map.of(key, List.of(Map.of("content", object.toString(), "title", "unknown", "url", "unknown", "icon", "unknown", "metadata", object)));
+							}
+						}
+						""",
+				d.getOutputKey(), varName);
+
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
+				assistNodeCode));
 		return sb.toString();
 	}
 

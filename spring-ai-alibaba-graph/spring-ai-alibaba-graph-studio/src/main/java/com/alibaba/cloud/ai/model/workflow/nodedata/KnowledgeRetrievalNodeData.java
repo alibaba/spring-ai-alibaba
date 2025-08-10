@@ -79,10 +79,6 @@ public class KnowledgeRetrievalNodeData extends NodeData {
 
 	private Double vectorWeight;
 
-	private String inputId;
-
-	private String inputField;
-
 	public KnowledgeRetrievalNodeData() {
 		super(Collections.emptyList(), List.of(getDefaultOutputSchema()));
 	}
@@ -259,20 +255,13 @@ public class KnowledgeRetrievalNodeData extends NodeData {
 		this.vectorWeight = vectorWeight;
 	}
 
-	public String getInputId() {
-		return inputId;
+	// KnowledgeRetrieval的用户模板Key就是用户输入Key
+	public String getInputKey() {
+		return this.userPromptKey;
 	}
 
-	public void setInputId(String inputId) {
-		this.inputId = inputId;
-	}
-
-	public String getInputField() {
-		return inputField;
-	}
-
-	public void setInputField(String inputField) {
-		this.inputField = inputField;
+	public void setInputKey(String userPromptKey) {
+		this.userPromptKey = userPromptKey;
 	}
 
 }
