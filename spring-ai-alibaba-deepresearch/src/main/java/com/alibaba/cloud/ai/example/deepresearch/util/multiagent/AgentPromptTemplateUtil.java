@@ -48,10 +48,6 @@ public class AgentPromptTemplateUtil {
 		return ResourceUtil.loadFileContent(CLASSIFIER_PROMPT_PATH);
 	}
 
-	public static String getCitationGuidance(AgentType agentType) {
-		return agentType.getCitationGuidance();
-	}
-
 	/**
 	 * 构建完整的Agent提示词（系统提示词 + 引用指导）
 	 * @param agentType Agent类型
@@ -59,7 +55,7 @@ public class AgentPromptTemplateUtil {
 	 * @throws RuntimeException 当Agent类型不支持或文件加载失败时抛出异常
 	 */
 	public static String buildCompletePrompt(AgentType agentType) {
-		return getSystemPrompt(agentType) + "\n\n" + getCitationGuidance(agentType);
+		return getSystemPrompt(agentType) + "\n\n" + agentType.getCitationGuidance();
 	}
 
 }
