@@ -48,9 +48,14 @@ export const routes: Readonly<RouteRecordType[]> = [
       {
         path: '/knowledge',
         name: 'knowledge',
-        component: () => import('../views/knowledge/index.vue'),
+        component: () => import('../views/knowledge/Management.vue'),
+      },
+      {
+        path: '/knowledge/management',
+        name: 'knowledge-management',
+        component: () => import('../views/knowledge/Management.vue'),
         meta: {
-          icon: 'carbon:book',
+          icon: 'carbon:folder',
           fullscreen: true,
         },
       },
