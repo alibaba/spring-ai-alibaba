@@ -92,36 +92,4 @@ public class NacosMcpServiceDiscovery implements McpServiceDiscovery {
 		return fetchAndCacheService(serviceName);
 	}
 
-	@Override
-	public List<McpServerInfo> getAllServices() {
-		// 这里需要实现获取所有服务的逻辑
-		// 由于当前实现是基于单个服务获取，这里返回缓存中的所有服务
-		return new ArrayList<>(serviceCache.values());
-	}
-
-	@Override
-	public List<McpServerInfo> searchServices(String query, int limit) {
-		// 简单的关键词搜索实现
-		return serviceCache.values()
-			.stream()
-			.filter(s -> s.getName().contains(query)
-					|| (s.getDescription() != null && s.getDescription().contains(query))
-					|| (s.getTags() != null && s.getTags().stream().anyMatch(tag -> tag.contains(query))))
-			.limit(limit)
-			.toList();
-	}
-
-	@Override
-	public boolean refreshService(String serviceName) {
-		try {
-			// 清除缓存，强制重新获取
-			serviceCache.remove(serviceName);
-			serviceVersionCache.remove(serviceName);
-			return fetchAndCacheService(serviceName) != null;
-		}
-		catch (Exception e) {
-			return false;
-		}
-	}
-
 }
