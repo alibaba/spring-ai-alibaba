@@ -509,7 +509,11 @@ export default {
             }
             fullContent += '</div>'
             currentMessages.value[agentMessageIndex].content = fullContent
-            scrollToBottom()
+            
+            // 使用 nextTick 确保 DOM 更新后再滚动
+            nextTick(() => {
+                scrollToBottom()
+            })
         }
 
         eventSource.onmessage = (event) => {
@@ -662,7 +666,10 @@ export default {
     
     const scrollToBottom = () => {
       if (messagesContainer.value) {
+        console.log('滚动到底部 - 当前scrollTop:', messagesContainer.value.scrollTop, '目标scrollHeight:', messagesContainer.value.scrollHeight)
         messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+      } else {
+        console.log('messagesContainer 未找到')
       }
     }
     
@@ -1123,12 +1130,13 @@ export default {
 
 <style scoped>
 .agent-run-page {
-  min-height: 100vh;
+  height: 100vh;
   background: #f0f2f5;
   font-family: var(--font-family);
   width: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* 头部样式 */
