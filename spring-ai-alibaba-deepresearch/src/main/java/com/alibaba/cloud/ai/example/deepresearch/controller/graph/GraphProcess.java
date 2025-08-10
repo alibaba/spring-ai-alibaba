@@ -29,7 +29,6 @@ import com.alibaba.cloud.ai.graph.async.AsyncGeneratorOperators;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
-import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
@@ -41,6 +40,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.http.codec.ServerSentEvent;
 import reactor.core.publisher.Sinks;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -139,9 +139,9 @@ public class GraphProcess {
 					String nodeName = output.node();
 					String content;
 					if (output instanceof StreamingOutput streamingOutput) {
-						logger.debug("Streaming output from node {}: {}", nodeName,
-								streamingOutput.chatResponse().getResult().getOutput().getText());
-						content = buildLLMNodeContent(nodeName, streamingOutput, output);
+						logger.debug("Streaming output from node {}: {}, {}", nodeName,
+								streamingOutput.chatResponse().getResult().getOutput().getText(), graphId);
+						content = buildLLMNodeContent(nodeName, graphId, streamingOutput, output);
 					}
 					else {
 						logger.debug("Normal output from node {}: {}", nodeName, output.state().value("messages"));
@@ -190,7 +190,8 @@ public class GraphProcess {
 		return future.cancel(true);
 	}
 
-	private String buildLLMNodeContent(String nodeName, StreamingOutput streamingOutput, NodeOutput output) {
+	private String buildLLMNodeContent(String nodeName, GraphId graphId, StreamingOutput streamingOutput,
+			NodeOutput output) {
 		StreamNodePrefixEnum prefixEnum = StreamNodePrefixEnum.match(nodeName);
 		if (prefixEnum == null) {
 			return "";
@@ -201,11 +202,21 @@ public class GraphProcess {
 			.map(Generation::getMetadata)
 			.map(ChatGenerationMetadata::getFinishReason)
 			.orElse("");
-		return JSON.toJSONString(Map.of(nodeName, streamingOutput.chatResponse().getResult().getOutput().getText(),
-				"step_title", stepTitle, "visible", prefixEnum.isVisible(), "finishReason", finishReason));
+
+		Map<String, Serializable> response = Map.of(nodeName,
+				streamingOutput.chatResponse().getResult().getOutput().getText(), "step_title", stepTitle, "visible",
+				prefixEnum.isVisible(), "finishReason", finishReason, "graphId", graphId);
+
+		try {
+			return OBJECT_MAPPER.writeValueAsString(response);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException("Failed to serialize NodeResponse", e);
+		}
 	}
 
-	private record NodeResponse(String nodeName, String displayTitle, Object content, Object siteInformation) {
+	private record NodeResponse(String nodeName, GraphId graphId, String displayTitle, Object content,
+			Object siteInformation) {
 	}
 
 	private String buildNormalNodeContent(GraphId graphId, String nodeName, NodeOutput output) {
@@ -218,7 +229,7 @@ public class GraphProcess {
 		content = switch (nodeEnum) {
 			case START -> {
 				String query = output.state().data().get("query").toString();
-				yield Map.of("query", query, "graphId", graphId);
+				yield Map.of("query", query);
 			}
 			case COORDINATOR -> output.state().data().get("deep_research");
 			case REWRITE_MULTI_QUERY, HUMAN_FEEDBACK, END -> output.state().data();
@@ -236,7 +247,7 @@ public class GraphProcess {
 				|| (Objects.equals(content, "") && Objects.equals(site_information, ""))) {
 			return "";
 		}
-		NodeResponse response = new NodeResponse(nodeName, displayTitle, content, site_information);
+		NodeResponse response = new NodeResponse(nodeName, graphId, displayTitle, content, site_information);
 		try {
 			return OBJECT_MAPPER.writeValueAsString(response);
 		}
