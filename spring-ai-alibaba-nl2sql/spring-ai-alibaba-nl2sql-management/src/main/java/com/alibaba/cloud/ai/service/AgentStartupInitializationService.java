@@ -45,7 +45,6 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 	@Autowired
 	private DatasourceService datasourceService;
 
-	// 使用线程池来并行处理多个智能体的初始化，避免阻塞启动过程
 	private final ExecutorService executorService = Executors.newFixedThreadPool(3);
 
 	@Override
@@ -53,7 +52,6 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 		log.info("Starting automatic initialization of published agents...");
 
 		try {
-			// 异步执行初始化，不阻塞应用启动
 			CompletableFuture.runAsync(this::initializePublishedAgents, executorService).exceptionally(throwable -> {
 				log.error("Error during agent initialization", throwable);
 				return null;
@@ -70,7 +68,6 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 	 */
 	private void initializePublishedAgents() {
 		try {
-			// 查询所有已发布状态的智能体
 			List<Agent> publishedAgents = agentService.findByStatus("published");
 
 			if (publishedAgents.isEmpty()) {
@@ -101,7 +98,6 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 					log.error("Error initializing agent: {} (ID: {})", agent.getName(), agent.getId(), e);
 				}
 
-				// 添加短暂延迟，避免对数据库造成过大压力
 				try {
 					Thread.sleep(1000);
 				}
@@ -129,7 +125,6 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 		try {
 			Long agentId = agent.getId();
 
-			// 检查智能体是否已经有向量数据，如果有则跳过初始化
 			Map<String, Object> statistics = agentVectorService.getVectorStatistics(agentId);
 			boolean hasData = (Boolean) statistics.getOrDefault("hasData", false);
 			int documentCount = (Integer) statistics.getOrDefault("documentCount", 0);
@@ -140,7 +135,6 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 				return true;
 			}
 
-			// 获取智能体关联的激活数据源
 			List<AgentDatasource> agentDatasources = datasourceService.getAgentDatasources(agentId.intValue());
 
 			if (agentDatasources.isEmpty()) {
@@ -148,7 +142,6 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 				return false;
 			}
 
-			// 找到激活的数据源
 			AgentDatasource activeDatasource = null;
 			for (AgentDatasource agentDatasource : agentDatasources) {
 				if (agentDatasource.getIsActive() != null && agentDatasource.getIsActive() == 1) {
@@ -164,7 +157,6 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 
 			Integer datasourceId = activeDatasource.getDatasourceId();
 
-			// 获取数据源的所有表
 			List<String> tables = agentVectorService.getDatasourceTables(datasourceId);
 
 			if (tables.isEmpty()) {
@@ -174,7 +166,6 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 
 			log.info("Initializing agent {} with datasource {} and {} tables", agentId, datasourceId, tables.size());
 
-			// 执行数据源初始化
 			Boolean result = agentVectorService.initializeSchemaForAgentWithDatasource(agentId, datasourceId, tables);
 
 			if (result) {
