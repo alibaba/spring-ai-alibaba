@@ -1126,6 +1126,24 @@ const words: I18nType = {
     toolDescriptionRequiredError: '工具描述不能为空',
   },
 
+  // 记忆管理
+  memory: {
+    title: '记忆管理',
+    searchPlaceholder: '搜索记忆...',
+    size: '条记忆',
+    newNamePlaceholder: '输入新名称...',
+    changeName: '修改名称',
+    save: '保存',
+    cancel: '关闭',
+    delete: '删除',
+    deleteHint: '删除提示',
+    deleteHintPrefix: '你确定要删除ID为',
+    deleteHintSuffix: '的消息吗？此操作不可撤销。',
+    selectMemory: '选择记忆',
+    clearMemory: '清除记忆',
+    newChat: '新建对话',
+  },
+
   // 通用占位符
   selectCommon: {
     pleaseSelect: '请选择...',

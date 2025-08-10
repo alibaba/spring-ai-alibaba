@@ -32,6 +32,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  ai:
+    memory:
+      h2:
+        enabled: true
 
   # Spring AI 配置
   ai:
