@@ -32,7 +32,7 @@ const words: I18nType = {
   chat: '聊天',
   knowledge_base: '知识库',
   system_config: '系统配置',
-  knowledge_management: '知识管理',
+  knowledge_management: '知识库管理',
   document_upload: '文档上传',
   knowledge_search: '知识搜索',
 }

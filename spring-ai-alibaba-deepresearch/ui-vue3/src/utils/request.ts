@@ -36,10 +36,17 @@ const request: AxiosInterceptorManager<InternalAxiosRequestConfig> = service.int
 const response: AxiosInterceptorManager<AxiosResponse> = service.interceptors.response
 request.use(
   config => {
-    config.data = JSON.stringify(config.data)
-    config.headers = <AxiosRequestHeaders>{
-      'Content-Type': 'application/json',
+    // 如果是FormData，不要进行JSON序列化和设置Content-Type
+    if (config.data instanceof FormData) {
+      // 删除默认的Content-Type，让浏览器自动设置multipart/form-data
+      delete config.headers['Content-Type']
+    } else {
+      config.data = JSON.stringify(config.data)
+      config.headers = <AxiosRequestHeaders>{
+        'Content-Type': 'application/json',
+      }
     }
+    console.log('请求配置:', config)
     return config
   },
   error => {
@@ -49,6 +56,7 @@ request.use(
 
 response.use(
   response => {
+    console.log('响应数据:', response)
     if (
       response.status === 200 &&
       (response.data.code === 200 || response.data.status === 'success')
