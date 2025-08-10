@@ -37,7 +37,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * MCP Router 核心服务 提供 MCP Server 发现、管理和请求代理功能
@@ -53,15 +52,16 @@ public class McpRouterService {
 
 	private final NacosMcpOperationService nacosMcpOperationService;
 
-	private final Map<String, McpServerConnection> serverConnections = new ConcurrentHashMap<>();
+	private final McpProxyService mcpProxyService;
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	public McpRouterService(McpServiceDiscovery mcpServiceDiscovery, McpServerVectorStore mcpServerVectorStore,
-			NacosMcpOperationService nacosMcpOperationService) {
+			NacosMcpOperationService nacosMcpOperationService, McpProxyService mcpProxyService) {
 		this.mcpServiceDiscovery = mcpServiceDiscovery;
 		this.mcpServerVectorStore = mcpServerVectorStore;
 		this.nacosMcpOperationService = nacosMcpOperationService;
+		this.mcpProxyService = mcpProxyService;
 	}
 
 	/**
@@ -142,7 +142,7 @@ public class McpRouterService {
 			}
 
 			// 3. 建立连接
-			boolean connected = establishConnection(serverInfo);
+			boolean connected = mcpProxyService.establishConnection(mcpServerName);
 			if (!connected) {
 				return String.format(
 						"无法建立与 MCP Server '%s' 的连接。\n" + "服务信息：\n" + "- 协议: %s\n" + "- 端点: %s\n" + "- 版本: %s\n"
@@ -231,21 +231,20 @@ public class McpRouterService {
 			}
 
 			// 检查连接状态
-			McpServerConnection connection = serverConnections.get(serviceName);
-			if (connection == null || !connection.isConnected()) {
-				boolean connected = establishConnection(serverInfo);
+			if (!mcpProxyService.isConnected(serviceName)) {
+				boolean connected = mcpProxyService.establishConnection(serviceName);
 				if (!connected) {
 					return String.format("无法连接到 MCP Server '%s'，请检查服务状态。", serviceName);
 				}
 			}
 
-			// 构建请求
-			String requestBody = buildToolRequest(toolName, parameters);
+			// 解析参数
+			Map<String, Object> args = parseParameters(parameters);
 
-			// 发送请求到目标服务器
-			String response = sendToolRequest(serviceName, requestBody);
+			// 使用代理服务调用工具
+			String result = mcpProxyService.callTool(serviceName, toolName, args);
 
-			return String.format("工具 '%s' 执行结果:\n%s", toolName, response);
+			return String.format("工具 '%s' 执行结果:\n%s", toolName, result);
 
 		}
 		catch (Exception e) {
@@ -348,6 +347,62 @@ public class McpRouterService {
 	}
 
 	/**
+	 * 解析工具参数
+	 */
+	private Map<String, Object> parseParameters(String parameters) {
+		try {
+			if (parameters == null || parameters.trim().isEmpty()) {
+				return new HashMap<>();
+			}
+			JsonNode paramsNode = objectMapper.readTree(parameters);
+			return objectMapper.convertValue(paramsNode, Map.class);
+		}
+		catch (Exception e) {
+			logger.error("解析工具参数时发生错误", e);
+			return new HashMap<>();
+		}
+	}
+
+	/**
+	 * 调试 MCP 服务连接状态
+	 * @param serviceName 服务名称
+	 * @return 调试信息
+	 */
+	@Tool(description = "调试 MCP 服务连接状态，帮助诊断连接问题")
+	public String debugMcpService(@ToolParam(description = "服务名称") String serviceName) {
+		try {
+			StringBuilder result = new StringBuilder();
+			result.append("=== MCP Service Debug ===\n\n");
+
+			// 1. 检查向量存储中的服务信息
+			McpServerInfo serverInfo = mcpServerVectorStore.getServer(serviceName);
+			if (serverInfo == null) {
+				result.append("❌ 服务未在向量存储中找到\n");
+				result.append("请先使用 addMcpServer 方法添加服务\n");
+				return result.toString();
+			}
+			result.append("✅ 服务在向量存储中找到\n");
+			result.append("服务信息：\n");
+			result.append("- 名称: ").append(serverInfo.getName()).append("\n");
+			result.append("- 描述: ").append(serverInfo.getDescription()).append("\n");
+			result.append("- 协议: ").append(serverInfo.getProtocol()).append("\n");
+			result.append("- 端点: ").append(serverInfo.getEndpoint()).append("\n");
+			result.append("- 版本: ").append(serverInfo.getVersion()).append("\n\n");
+
+			// 2. 使用代理服务进行详细调试
+			String proxyDebugInfo = mcpProxyService.debugServiceConnection(serviceName);
+			result.append(proxyDebugInfo);
+
+			return result.toString();
+
+		}
+		catch (Exception e) {
+			logger.error("调试服务时发生错误", e);
+			return "调试服务时发生错误: " + e.getMessage();
+		}
+	}
+
+	/**
 	 * MCP 工具信息类
 	 */
 	private static class McpToolInfo {
@@ -374,112 +429,6 @@ public class McpRouterService {
 
 		public Map<String, String> getParameters() {
 			return parameters;
-		}
-
-	}
-
-	/**
-	 * 建立与 MCP Server 的连接
-	 */
-	private boolean establishConnection(McpServerInfo serverInfo) {
-		try {
-			// 这里应该根据协议类型建立不同的连接
-			// 目前简化实现，实际应该支持 stdio 和 SSE 协议
-			McpServerConnection connection = new McpServerConnection(serverInfo);
-			boolean connected = connection.connect();
-
-			if (connected) {
-				serverConnections.put(serverInfo.getName(), connection);
-				logger.info("成功建立与 MCP Server '{}' 的连接", serverInfo.getName());
-			}
-
-			return connected;
-
-		}
-		catch (Exception e) {
-			logger.error("建立与 MCP Server '{}' 的连接时发生错误", serverInfo.getName(), e);
-			return false;
-		}
-	}
-
-	/**
-	 * 构建工具请求
-	 */
-	private String buildToolRequest(String toolName, String parameters) {
-		try {
-			// 解析参数
-			JsonNode paramsNode = objectMapper.readTree(parameters);
-
-			// 构建 MCP 工具调用请求
-			Map<String, Object> request = Map.of("jsonrpc", "2.0", "id", String.valueOf(System.currentTimeMillis()),
-					"method", "tools/call", "params", Map.of("name", toolName, "arguments", paramsNode));
-
-			return objectMapper.writeValueAsString(request);
-
-		}
-		catch (Exception e) {
-			logger.error("构建工具请求时发生错误", e);
-			throw new RuntimeException("构建工具请求失败", e);
-		}
-	}
-
-	/**
-	 * 发送工具请求到目标服务器
-	 */
-	private String sendToolRequest(String serviceName, String requestBody) {
-		try {
-			McpServerConnection connection = serverConnections.get(serviceName);
-			if (connection == null) {
-				throw new RuntimeException("未找到服务连接");
-			}
-
-			// 这里应该通过连接发送请求
-			// 目前简化实现，返回模拟响应
-			return String.format("模拟响应 - 服务: %s, 请求: %s", serviceName, requestBody);
-
-		}
-		catch (Exception e) {
-			logger.error("发送工具请求时发生错误", e);
-			throw new RuntimeException("发送工具请求失败", e);
-		}
-	}
-
-	/**
-	 * MCP Server 连接封装
-	 */
-	private static class McpServerConnection {
-
-		private final McpServerInfo serverInfo;
-
-		private boolean connected = false;
-
-		public McpServerConnection(McpServerInfo serverInfo) {
-			this.serverInfo = serverInfo;
-		}
-
-		public boolean connect() {
-			// 这里应该根据协议类型实现实际的连接逻辑
-			// 对于 stdio 协议，需要启动进程
-			// 对于 SSE 协议，需要建立 HTTP 连接
-			try {
-				// 模拟连接过程
-				Thread.sleep(100);
-				this.connected = true;
-				return true;
-			}
-			catch (Exception e) {
-				this.connected = false;
-				return false;
-			}
-		}
-
-		public boolean isConnected() {
-			return connected;
-		}
-
-		public void close() {
-			// 关闭连接
-			this.connected = false;
 		}
 
 	}
