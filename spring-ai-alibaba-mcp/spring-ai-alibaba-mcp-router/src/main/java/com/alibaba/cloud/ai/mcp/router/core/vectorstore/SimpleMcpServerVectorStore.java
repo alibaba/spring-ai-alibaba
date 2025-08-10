@@ -179,23 +179,45 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 		try {
 			logger.debug("Searching vector store with query: '{}', limit: {}", query, limit);
 
-			// 策略1：向量相似度搜索
-			SearchRequest searchRequest = SearchRequest.builder().query(query).topK(limit * 2).build();
-			List<Document> documents = vectorStore.similaritySearch(searchRequest);
-			logger.debug("Found {} documents in vector search results", documents.size());
+			List<Document> documents = new ArrayList<>();
 
-			// 策略2：如果向量搜索结果较少，尝试关键词匹配
-			if (documents.size() < limit) {
-				List<Document> keywordResults = searchByKeywords(query, limit);
-				if (CollectionUtils.isNotEmpty(keywordResults)) {
-					documents.addAll(keywordResults);
-				}
+			// 策略1：向量相似度搜索（如果查询不为空）
+			if (query != null && !query.trim().isEmpty()) {
+				SearchRequest searchRequest = SearchRequest.builder().query(query).topK(limit * 2).build();
+				List<Document> vectorResults = vectorStore.similaritySearch(searchRequest);
+				logger.debug("Found {} documents in vector search results", vectorResults.size());
+				documents.addAll(vectorResults);
+			}
+
+			// 策略2：关键词匹配搜索（总是执行，确保能找到结果）
+			List<Document> keywordResults = searchByKeywords(query, limit);
+			if (CollectionUtils.isNotEmpty(keywordResults)) {
+				documents.addAll(keywordResults);
 				logger.debug("Added {} documents from keyword search", keywordResults.size());
+			}
+
+			// 如果仍然没有结果，尝试获取所有服务器
+			if (documents.isEmpty()) {
+				logger.debug("No results found, trying to get all servers");
+				SearchRequest allRequest = SearchRequest.builder().query("").topK(Integer.MAX_VALUE).build();
+				List<Document> allDocuments = vectorStore.similaritySearch(allRequest);
+				documents.addAll(allDocuments);
+				logger.debug("Found {} total documents in vector store", allDocuments.size());
 			}
 
 			// 去重并排序
 			return documents.stream()
-					.filter(doc -> doc.getScore() > 0.1) // 降低阈值以包含更多结果
+					.filter(doc -> {
+						// 降低分数阈值，或者对于关键词匹配的结果不进行分数过滤
+						double score = doc.getScore();
+						Object keywordScore = doc.getMetadata().get("keywordScore");
+						if (keywordScore != null) {
+							// 关键词匹配的结果，使用关键词分数
+							return ((Number) keywordScore).doubleValue() > 0.0;
+						}
+						// 向量搜索的结果，使用较低的阈值
+						return score > 0.05; // 进一步降低阈值
+					})
 					.map(this::convertFromDocument)
 					.filter(Objects::nonNull)
 					.distinct() // 去重
@@ -217,19 +239,35 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 			SearchRequest searchRequest = SearchRequest.builder().query("").topK(Integer.MAX_VALUE).build();
 			List<Document> allDocuments = vectorStore.similaritySearch(searchRequest);
 
-			String lowerQuery = query.toLowerCase();
+			logger.debug("Keyword search: found {} total documents to search in", allDocuments.size());
+
+			// 如果查询为空，返回所有文档
+			if (query == null || query.trim().isEmpty()) {
+				return allDocuments.stream()
+						.map(doc -> {
+							Map<String, Object> newMetadata = new HashMap<>(doc.getMetadata());
+							newMetadata.put("keywordScore", 0.5);
+							return new Document(doc.getId(), doc.getText(), newMetadata);
+						})
+						.limit(limit)
+						.collect(Collectors.toList());
+			}
+
+			String lowerQuery = query.toLowerCase().trim();
 
 			return allDocuments.stream()
 					.filter(doc -> {
 						// 检查服务名称
 						String serviceName = (String) doc.getMetadata().get("serviceName");
 						if (serviceName != null && serviceName.toLowerCase().contains(lowerQuery)) {
+							logger.debug("Keyword match found in serviceName: {}", serviceName);
 							return true;
 						}
 
 						// 检查描述信息
 						String description = (String) doc.getMetadata().get("description");
 						if (description != null && description.toLowerCase().contains(lowerQuery)) {
+							logger.debug("Keyword match found in description: {}", description);
 							return true;
 						}
 
@@ -237,12 +275,28 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 						@SuppressWarnings("unchecked")
 						List<String> tags = (List<String>) doc.getMetadata().get("tags");
 						if (tags != null && tags.stream().anyMatch(tag -> tag.toLowerCase().contains(lowerQuery))) {
+							logger.debug("Keyword match found in tags: {}", tags);
 							return true;
 						}
 
 						// 检查协议
 						String protocol = (String) doc.getMetadata().get("protocol");
 						if (protocol != null && protocol.toLowerCase().contains(lowerQuery)) {
+							logger.debug("Keyword match found in protocol: {}", protocol);
+							return true;
+						}
+
+						// 检查版本
+						String version = (String) doc.getMetadata().get("version");
+						if (version != null && version.toLowerCase().contains(lowerQuery)) {
+							logger.debug("Keyword match found in version: {}", version);
+							return true;
+						}
+
+						// 检查端点
+						String endpoint = (String) doc.getMetadata().get("endpoint");
+						if (endpoint != null && endpoint.toLowerCase().contains(lowerQuery)) {
+							logger.debug("Keyword match found in endpoint: {}", endpoint);
 							return true;
 						}
 
@@ -250,8 +304,6 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 					})
 					.map(doc -> {
 						// 为关键词匹配的结果创建新的Document对象并设置分数
-						Document newDoc = new Document(doc.getId(), doc.getText(), doc.getMetadata());
-						// 由于Document类没有setScore方法，我们通过metadata来传递分数信息
 						Map<String, Object> newMetadata = new HashMap<>(doc.getMetadata());
 						newMetadata.put("keywordScore", 0.5);
 						return new Document(doc.getId(), doc.getText(), newMetadata);
@@ -382,6 +434,80 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 		} catch (Exception e) {
 			logger.error("Failed to convert document to McpServerInfo", e);
 			return null;
+		}
+	}
+
+	/**
+	 * 调试方法：获取向量存储的详细信息
+	 */
+	public void debugVectorStore() {
+		if (vectorStore == null) {
+			logger.warn("Vector store is null - no EmbeddingModel available");
+			return;
+		}
+
+		try {
+			// 获取所有文档
+			SearchRequest searchRequest = SearchRequest.builder().query("").topK(Integer.MAX_VALUE).build();
+			List<Document> allDocuments = vectorStore.similaritySearch(searchRequest);
+
+			logger.info("=== Vector Store Debug Information ===");
+			logger.info("Total documents in vector store: {}", allDocuments.size());
+
+			for (int i = 0; i < allDocuments.size(); i++) {
+				Document doc = allDocuments.get(i);
+				logger.info("Document {}: ID={}, Score={}", i + 1, doc.getId(), doc.getScore());
+				logger.info("  ServiceName: {}", doc.getMetadata().get("serviceName"));
+				logger.info("  Description: {}", doc.getMetadata().get("description"));
+				logger.info("  Protocol: {}", doc.getMetadata().get("protocol"));
+				logger.info("  Version: {}", doc.getMetadata().get("version"));
+				logger.info("  Endpoint: {}", doc.getMetadata().get("endpoint"));
+				logger.info("  Tags: {}", doc.getMetadata().get("tags"));
+				logger.info("  Text content: {}", doc.getText().substring(0, Math.min(100, doc.getText().length())) + "...");
+			}
+			logger.info("=== End Debug Information ===");
+		} catch (Exception e) {
+			logger.error("Failed to debug vector store", e);
+		}
+	}
+
+	/**
+	 * 调试方法：测试特定查询的搜索
+	 */
+	public void debugSearch(String query, int limit) {
+		logger.info("=== Search Debug for query: '{}' ===", query);
+
+		if (vectorStore == null) {
+			logger.warn("Vector store is null");
+			return;
+		}
+
+		try {
+			// 测试向量搜索
+			SearchRequest vectorRequest = SearchRequest.builder().query(query).topK(limit * 2).build();
+			List<Document> vectorResults = vectorStore.similaritySearch(vectorRequest);
+			logger.info("Vector search results: {}", vectorResults.size());
+			for (Document doc : vectorResults) {
+				logger.info("  Vector result: {} (score: {})", doc.getMetadata().get("serviceName"), doc.getScore());
+			}
+
+			// 测试关键词搜索
+			List<Document> keywordResults = searchByKeywords(query, limit);
+			logger.info("Keyword search results: {}", keywordResults.size());
+			for (Document doc : keywordResults) {
+				logger.info("  Keyword result: {} (score: {})", doc.getMetadata().get("serviceName"), doc.getScore());
+			}
+
+			// 测试完整搜索
+			List<McpServerInfo> fullResults = search(query, limit);
+			logger.info("Full search results: {}", fullResults.size());
+			for (McpServerInfo info : fullResults) {
+				logger.info("  Full result: {} (score: {})", info.getName(), info.getScore());
+			}
+
+			logger.info("=== End Search Debug ===");
+		} catch (Exception e) {
+			logger.error("Failed to debug search", e);
 		}
 	}
 
