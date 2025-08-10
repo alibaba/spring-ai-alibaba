@@ -1,6 +1,12 @@
 server:
   port: 8080
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB
+      enabled: true
+      file-size-threshold: 1MB
   profiles:
     # LangFuse和可观测配置以及专业知识库配置
     include: observability, kb
@@ -86,13 +92,18 @@ spring:
           researcher: 4
           coder: 4
         rag:
-          enabled: false
+          enabled: true
           # 可以设置为 'simple' 或 'elasticsearch'
-          vector-store-type: simple
-          data:
-            # 启动时加载 classpath下data目录中的所有文件
-            locations:
-              - "classpath:/data/"
+          vector-store-type: elasticsearch
+#          data:
+#            # 启动时加载 classpath下data目录中的所有文件
+#            locations:
+#              - "classpath:/data/"
+            # Elasticsearch配置
+          elasticsearch:
+            uris: http://localhost:9200
+            similarity-function: cosine
+
         # 报告导出路径配置
         export:
           path: ${AI_DEEPRESEARCH_EXPORT_PATH}
