@@ -23,16 +23,22 @@ import com.alibaba.cloud.ai.parser.bshtml.BsHtmlDocumentParser;
 import com.alibaba.cloud.ai.parser.markdown.MarkdownDocumentParser;
 import com.alibaba.cloud.ai.parser.tika.TikaDocumentParser;
 import com.alibaba.cloud.ai.parser.yaml.YamlDocumentParser;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.ai.document.Document;
-import org.springframework.util.StringUtils;
+import org.springframework.ai.util.json.JsonParser;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -47,12 +53,15 @@ public class DocumentExtractorNode implements NodeAction {
 
 	private final List<String> fileList;
 
+	private final boolean inputIsArray;
+
 	private final Map<String, Function<InputStream, List<Document>>> extractors = new HashMap<>();
 
-	public DocumentExtractorNode(String paramsKey, String outputKey, List<String> fileList) {
+	public DocumentExtractorNode(String paramsKey, String outputKey, List<String> fileList, boolean inputIsArray) {
 		this.paramsKey = paramsKey;
 		this.outputKey = outputKey;
 		this.fileList = fileList;
+		this.inputIsArray = inputIsArray;
 		extractors.put("txt", inputStream -> new TextDocumentParser().parse(inputStream));
 		extractors.put("markdown", inputStream -> new MarkdownDocumentParser().parse(inputStream));
 		extractors.put("md", inputStream -> new MarkdownDocumentParser().parse(inputStream));
@@ -72,35 +81,78 @@ public class DocumentExtractorNode implements NodeAction {
 		extractors.put("pptx", inputStream -> new TikaDocumentParser().parse(inputStream));
 	}
 
+	/**
+	 * 支持本地或者网络获取输入流
+	 */
+	private InputStream getInputStream(String filePath) throws IOException {
+		URI uri;
+		if (filePath.startsWith("http://") || filePath.startsWith("https://") || filePath.startsWith("ftp://")) {
+			uri = URI.create(filePath);
+		}
+		else {
+			uri = Paths.get(filePath).toUri();
+		}
+
+		if (uri.getScheme().equals("file")) {
+			return new BufferedInputStream(Files.newInputStream(Paths.get(uri)));
+		}
+		else {
+			return new BufferedInputStream(uri.toURL().openStream());
+		}
+	}
+
+	private List<String> getDocument(List<String> fileList) {
+		return fileList.stream().map(String::trim).map(file -> {
+			try (InputStream inputStream = this.getInputStream(file.trim())) {
+				return this.extractTextByFileExtension(inputStream, getFileExtension(file));
+			}
+			catch (Exception e) {
+				throw new RuntimeException("Failed to parse test file: " + file, e);
+			}
+		}).toList();
+	}
+
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		if (paramsKey == null && fileList == null) {
 			throw new RuntimeException("File variable not found for selector");
 		}
-		List<String> fileList = (List<String>) state.value(paramsKey).orElse(this.fileList);
-		if (fileList == null || fileList.isEmpty()) {
-			throw new RuntimeException("Variable fileList is not an ArrayFileSegment");
-		}
-		List<String> documentContents = new ArrayList<>(10);
-		for (String file : fileList) {
-			try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(file)) {
-				if (inputStream == null) {
-					throw new IllegalArgumentException("File not found in resources: " + file);
+		List<String> fileList;
+		Object fileObj = state.value(paramsKey).orElse(this.fileList);
+		if (this.inputIsArray) {
+			if (fileObj instanceof List<?>) {
+				fileList = (List<String>) fileObj;
+			}
+			else if (fileObj instanceof String[]) {
+				fileList = Arrays.asList((String[]) fileObj);
+			}
+			else {
+				// 尝试以Json字符串解析，如果失败则说明输入无效
+				try {
+					fileList = JsonParser.fromJson(fileObj.toString(), new TypeReference<List<String>>() {
+					});
 				}
-				String content = extractTextByFileExtension(inputStream, getFileExtension(file));
-				documentContents.add(content);
+				catch (Exception ignore) {
+					fileList = null;
+				}
 			}
-			catch (Exception e) {
-				throw new RuntimeException("Failed to parse test file: " + file, e);
+			if (fileList == null || fileList.isEmpty()) {
+				throw new RuntimeException("Variable fileList is not an ArrayFileSegment");
 			}
 		}
+		else {
+			// 单个文件，直接添加进列表
+			fileList = List.of(fileObj.toString());
+		}
+		List<String> documentContents = this.getDocument(fileList);
 
-		Map<String, Object> updatedState = new HashMap<>();
-		updatedState.put("text", documentContents);
-		if (StringUtils.hasLength(this.outputKey)) {
-			updatedState.put(this.outputKey, documentContents);
+		String key = Optional.ofNullable(this.outputKey).orElse("text");
+		if (this.inputIsArray) {
+			return Map.of(key, documentContents.get(0));
 		}
-		return updatedState;
+		else {
+			return Map.of(key, documentContents);
+		}
 	}
 
 	private String extractTextByFileExtension(InputStream fileContent, String fileExtension) {
@@ -133,6 +185,8 @@ public class DocumentExtractorNode implements NodeAction {
 
 		private List<String> fileList;
 
+		private boolean inputIsArray = false;
+
 		public Builder paramsKey(String paramsKey) {
 			this.paramsKey = paramsKey;
 			return this;
@@ -148,8 +202,13 @@ public class DocumentExtractorNode implements NodeAction {
 			return this;
 		}
 
+		public Builder inputIsArray(boolean inputIsArray) {
+			this.inputIsArray = inputIsArray;
+			return this;
+		}
+
 		public DocumentExtractorNode build() {
-			return new DocumentExtractorNode(paramsKey, outputKey, fileList);
+			return new DocumentExtractorNode(paramsKey, outputKey, fileList, inputIsArray);
 		}
 
 	}

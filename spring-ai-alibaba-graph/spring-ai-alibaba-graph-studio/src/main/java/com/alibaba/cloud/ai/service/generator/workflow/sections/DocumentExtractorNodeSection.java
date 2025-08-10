@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class DocumentExtractorNodeSection implements NodeSection {
@@ -42,21 +41,17 @@ public class DocumentExtractorNodeSection implements NodeSection {
 		sb.append(String.format("// —— DocumentExtractorNode [%s] ——%n", id));
 		sb.append(String.format("DocumentExtractorNode %s = DocumentExtractorNode.builder()%n", varName));
 
-		List<String> fileList = data.getFileList();
-		if (fileList != null && !fileList.isEmpty()) {
-			String joined = fileList.stream().map(f -> "\"" + escape(f) + "\"").collect(Collectors.joining(", "));
-			sb.append(String.format(".fileList(List.of(%s))%n", joined));
-		}
-
 		List<com.alibaba.cloud.ai.model.VariableSelector> inputs = data.getInputs();
 		if (inputs != null && !inputs.isEmpty()) {
 			// Take the name of the first VariableSelector as the paramsKey
-			String key = inputs.get(0).getName();
+			String key = inputs.get(0).getNameInCode();
 			sb.append(String.format(".paramsKey(\"%s\")%n", escape(key)));
 		}
 
 		String outputKey = data.getOutputKey();
 		sb.append(String.format(".outputKey(\"%s\")%n", escape(outputKey)));
+
+		sb.append(String.format(".inputIsArray(%s)%n", data.isArray()));
 
 		sb.append(".build();\n");
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));

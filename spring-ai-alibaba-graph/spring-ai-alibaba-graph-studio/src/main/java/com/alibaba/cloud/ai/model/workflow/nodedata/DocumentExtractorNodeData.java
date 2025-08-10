@@ -32,7 +32,7 @@ public class DocumentExtractorNodeData extends NodeData {
 		return new Variable("text", VariableType.ARRAY_STRING.value());
 	}
 
-	private List<String> fileList;
+	private Boolean isArray;
 
 	private String outputKey;
 
@@ -40,19 +40,11 @@ public class DocumentExtractorNodeData extends NodeData {
 		super(inputs, outputs);
 	}
 
-	public DocumentExtractorNodeData(List<VariableSelector> inputs, List<Variable> outputs, List<String> fileList,
-			String outputKey) {
+	public DocumentExtractorNodeData(List<VariableSelector> inputs, List<Variable> outputs, String outputKey,
+			boolean isArray) {
 		super(inputs, outputs);
-		this.fileList = fileList;
 		this.outputKey = outputKey;
-	}
-
-	public List<String> getFileList() {
-		return fileList;
-	}
-
-	public void setFileList(List<String> fileList) {
-		this.fileList = fileList;
+		this.isArray = isArray;
 	}
 
 	public String getOutputKey() {
@@ -61,6 +53,14 @@ public class DocumentExtractorNodeData extends NodeData {
 
 	public void setOutputKey(String outputKey) {
 		this.outputKey = outputKey;
+	}
+
+	public boolean isArray() {
+		return isArray;
+	}
+
+	public void setArray(boolean array) {
+		isArray = array;
 	}
 
 }
