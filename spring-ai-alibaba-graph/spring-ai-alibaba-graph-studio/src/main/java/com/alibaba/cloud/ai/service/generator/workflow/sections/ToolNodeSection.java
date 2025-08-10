@@ -67,7 +67,12 @@ public class ToolNodeSection implements NodeSection<ToolNodeData> {
 			sb.append(String.format(".toolCallbacks(List.of(%s))%n", joined));
 		}
 
-		sb.append(".toolCallbackResolver(toolCallbackResolver)\n");
+		// todo: 给一些常用的Tool，提供可以直接应用的ToolCallBack
+		sb.append("""
+				.toolCallbackResolver(toolName ->
+				// todo: Implement the corresponding ToolCallBack according to the tool name
+				FunctionToolCallback.builder(toolName, Function.identity()).build())
+				""");
 
 		sb.append(".build();\n");
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));

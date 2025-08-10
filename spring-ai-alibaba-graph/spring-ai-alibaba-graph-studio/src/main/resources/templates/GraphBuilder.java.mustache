@@ -38,6 +38,7 @@ public class GraphBuilder {
         ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
 
         // new stateGraph
+        // todo: Add some non-node variable names, such as sys variables. Format as sys_xxx.
         StateGraph stateGraph = new StateGraph({{stateSection}});
         // add nodes
         {{nodeSection}}
