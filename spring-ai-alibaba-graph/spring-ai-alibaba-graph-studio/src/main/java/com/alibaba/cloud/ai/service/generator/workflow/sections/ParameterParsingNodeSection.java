@@ -21,10 +21,12 @@ import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.ParameterParsingNodeData;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 public class ParameterParsingNodeSection implements NodeSection<ParameterParsingNodeData> {
@@ -49,14 +51,16 @@ public class ParameterParsingNodeSection implements NodeSection<ParameterParsing
 
 		sb.append(".chatClient(chatClient)\n");
 
-		List<Map<String, String>> params = d.getParameters();
-		if (params != null && !params.isEmpty()) {
+		List<Map<String, Object>> params = d.getParameters();
+		if (!CollectionUtils.isEmpty(params)) {
 			String joined = params.stream().map(m -> {
-				String entries = m.entrySet()
-					.stream()
-					.map(e -> String.format("\"%s\", \"%s\"", escape(e.getKey()), escape(e.getValue())))
+				String mapCode = Stream
+					.of("name", m.getOrDefault("name", "unknown").toString(), "type",
+							m.getOrDefault("type", "string").toString(), "description",
+							m.getOrDefault("description", "").toString())
+					.map(s -> "\"" + s + "\"")
 					.collect(Collectors.joining(", "));
-				return String.format("Map.of(%s)", entries);
+				return String.format("Map.of(%s)", mapCode);
 			}).collect(Collectors.joining(", "));
 			sb.append(String.format(".parameters(List.of(%s))%n", joined));
 		}
@@ -66,7 +70,24 @@ public class ParameterParsingNodeSection implements NodeSection<ParameterParsing
 		}
 
 		sb.append(".build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
+
+		// 辅助节点
+		String assistNodeCode = String.format(
+				"""
+						(state) -> {
+							String key = "%s";
+							Map<String, Object> result = %s.apply(state);
+							Object object = result.get("%s");
+							if(!(object instanceof Map<?,?> map)) {
+								return Map.of();
+							}
+							return map.entrySet().stream().collect(Collectors.toMap(e -> key + "_" + e.getKey(), Map.Entry::getValue));
+						}
+						""",
+				varName, varName, d.getOutputKey());
+
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
+				assistNodeCode));
 
 		return sb.toString();
 	}

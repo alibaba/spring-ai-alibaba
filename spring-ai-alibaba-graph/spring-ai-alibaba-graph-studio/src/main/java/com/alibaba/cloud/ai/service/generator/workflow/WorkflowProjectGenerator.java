@@ -245,7 +245,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 						List.of("com.alibaba.cloud.ai.graph.node.QuestionClassifierNode",
 								"static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async")),
 				Map.entry(NodeType.PARAMETER_PARSING.value(),
-						List.of("com.alibaba.cloud.ai.graph.node.ParameterParsingNode")),
+						List.of("com.alibaba.cloud.ai.graph.node.ParameterParsingNode", "java.util.stream.Collectors")),
 				Map.entry(NodeType.TEMPLATE_TRANSFORM.value(),
 						List.of("com.alibaba.cloud.ai.graph.node.TemplateTransformNode")),
 				Map.entry(NodeType.TOOL.value(), List.of("com.alibaba.cloud.ai.graph.node.ToolNode")),
