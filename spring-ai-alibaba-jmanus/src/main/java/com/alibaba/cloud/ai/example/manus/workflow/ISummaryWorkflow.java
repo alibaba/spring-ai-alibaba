@@ -29,10 +29,12 @@ public interface ISummaryWorkflow {
 	 * @param content content
 	 * @param queryKey query key
 	 * @param thinkActRecordId think-act record ID
-	 * @param terminateColumnsString terminate columns string
+	 * @param outputFormatSpecification A file used to describe in what format the data
+	 * should be stored (default is an excel table), the table header of this file is the
+	 * specification description
 	 * @return asynchronous summary result
 	 */
 	CompletableFuture<String> executeSummaryWorkflow(String parentPlanId, String fileName, String content,
-			String queryKey, Long thinkActRecordId, String terminateColumnsString);
+			String queryKey, Long thinkActRecordId, String outputFormatSpecification);
 
 }

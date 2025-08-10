@@ -19,7 +19,7 @@
       <!-- Header -->
       <div class="init-header">
         <div class="logo">
-          <h1>🤖 JManus</h1>
+          <h1><Icon icon="carbon:bot" class="logo-icon" /> JManus</h1>
         </div>
         <h2>{{ currentStep === 1 ? $t('init.welcomeStep') : $t('init.welcome') }}</h2>
         <p class="description">{{ currentStep === 1 ? $t('init.languageStepDescription') : $t('init.description') }}</p>
@@ -50,7 +50,9 @@
                 value="zh"
               />
               <span class="language-content">
-                <span class="language-flag">🇨🇳</span>
+                <span class="language-flag">
+                  <Icon icon="circle-flags:cn" />
+                </span>
                 <span class="language-text">
                   <strong>{{ $t('language.zh') }}</strong>
                   <small>{{ $t('init.simplifiedChinese') }}</small>
@@ -64,7 +66,9 @@
                 value="en"
               />
               <span class="language-content">
-                <span class="language-flag">🇺🇸</span>
+                <span class="language-flag">
+                  <Icon icon="circle-flags:us" />
+                </span>
                 <span class="language-text">
                   <strong>English</strong>
                   <small>English (US)</small>
@@ -142,8 +146,8 @@
                 @click="showDashscopeApiKey = !showDashscopeApiKey"
                 :title="showDashscopeApiKey ? $t('init.hideApiKey') : $t('init.showApiKey')"
               >
-                <span v-if="showDashscopeApiKey">👁️</span>
-                <span v-else>🙈</span>
+                <Icon v-if="showDashscopeApiKey" icon="carbon:view" />
+                <Icon v-else icon="carbon:view-off" />
               </button>
             </div>
             <div class="form-hint">
@@ -198,8 +202,8 @@
                   @click="showCustomApiKey = !showCustomApiKey"
                   :title="showCustomApiKey ? $t('init.hideApiKey') : $t('init.showApiKey')"
                 >
-                  <span v-if="showCustomApiKey">👁️</span>
-                  <span v-else>🙈</span>
+                  <Icon v-if="showCustomApiKey" icon="carbon:view" />
+                  <Icon v-else icon="carbon:view-off" />
                 </button>
               </div>
             </div>
@@ -230,6 +234,18 @@
                 class="form-input"
                 :placeholder="$t('init.modelDisplayNamePlaceholder')"
                 :disabled="loading"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="completionsPath" class="form-label">{{ $t('init.completionsPath') }}</label>
+              <input
+                  id="modelDisplayName"
+                  v-model="form.completionsPath"
+                  type="text"
+                  class="form-input"
+                  :placeholder="$t('init.completionsPathPlaceholder')"
+                  :disabled="loading"
               />
             </div>
           </div>
@@ -288,6 +304,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { Icon } from '@iconify/vue'
 import { LlmCheckService } from '@/utils/llm-check'
 import { changeLanguageWithAgentReset, LOCAL_STORAGE_LOCALE } from '@/base/i18n'
 
@@ -304,7 +321,8 @@ const form = ref({
   apiKey: '',
   baseUrl: '',
   modelName: '',
-  modelDisplayName: ''
+  modelDisplayName: '',
+  completionsPath: ''
 })
 
 const loading = ref(false)
@@ -359,6 +377,7 @@ const onConfigModeChange = () => {
   form.value.baseUrl = ''
   form.value.modelName = ''
   form.value.modelDisplayName = ''
+  form.value.completionsPath = ''
   error.value = ''
   // Reset API key visibility
   showDashscopeApiKey.value = false
@@ -403,6 +422,7 @@ const handleSubmit = async () => {
       requestBody.baseUrl = form.value.baseUrl.trim()
       requestBody.modelName = form.value.modelName.trim()
       requestBody.modelDisplayName = form.value.modelDisplayName.trim() || form.value.modelName.trim()
+      requestBody.completionsPath = form.value.completionsPath.trim()
     }
 
     const response = await fetch('/api/init/save', {
@@ -519,6 +539,17 @@ onMounted(() => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  font-size: 48px !important;
+  color: #667eea !important;
+  background: none !important;
+  -webkit-text-fill-color: #667eea !important;
 }
 
 .init-header h2 {
@@ -664,6 +695,15 @@ onMounted(() => {
 .language-flag {
   font-size: 32px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.language-flag .iconify {
+  font-size: 32px !important;
+  width: 32px !important;
+  height: 32px !important;
 }
 
 .language-text {
@@ -763,6 +803,13 @@ onMounted(() => {
 .api-key-toggle-btn:focus {
   outline: none;
   background: rgba(255, 255, 255, 0.15);
+}
+
+.api-key-toggle-btn .iconify {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  color: #ffffff !important;
 }
 
 .config-mode-selection {
@@ -1115,6 +1162,10 @@ onMounted(() => {
     font-size: 36px;
   }
 
+  .logo-icon {
+    font-size: 36px !important;
+  }
+
   .init-header h2 {
     font-size: 24px;
   }
@@ -1131,6 +1182,10 @@ onMounted(() => {
 
   .logo h1 {
     font-size: 40px;
+  }
+
+  .logo-icon {
+    font-size: 40px !important;
   }
 
   .init-header h2 {
@@ -1153,6 +1208,12 @@ onMounted(() => {
 
   .language-flag {
     font-size: 28px;
+  }
+
+  .language-flag .iconify {
+    font-size: 28px !important;
+    width: 28px !important;
+    height: 28px !important;
   }
 
   .language-text strong {
@@ -1183,6 +1244,10 @@ onMounted(() => {
 
   .logo h1 {
     font-size: 32px;
+  }
+
+  .logo-icon {
+    font-size: 32px !important;
   }
 
   .init-header h2 {
@@ -1219,6 +1284,12 @@ onMounted(() => {
 
   .language-flag {
     font-size: 24px;
+  }
+
+  .language-flag .iconify {
+    font-size: 24px !important;
+    width: 24px !important;
+    height: 24px !important;
   }
 
   .language-text strong {

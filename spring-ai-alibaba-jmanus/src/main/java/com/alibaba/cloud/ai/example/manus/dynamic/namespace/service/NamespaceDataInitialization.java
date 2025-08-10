@@ -47,6 +47,10 @@ public class NamespaceDataInitialization implements CommandLineRunner {
 				namespaceRepository.save(defaultNamespace);
 				log.info("Default namespace initialized successfully");
 			}
+			else {
+				long existingCount = namespaceRepository.count();
+				log.info("{} namespaces already exist, skipping default namespace initialization", existingCount);
+			}
 		}
 		catch (Exception e) {
 			log.error("Error initializing default namespaces: {}", e.getMessage());

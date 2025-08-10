@@ -21,15 +21,20 @@ public class PptInput {
 
 	private String action;
 
-	@com.fasterxml.jackson.annotation.JsonProperty("output_path")
-	private String outputPath;
-
 	private String title;
 
 	private String subtitle;
 
 	@com.fasterxml.jackson.annotation.JsonProperty("slide_contents")
 	private List<SlideContent> slideContents;
+
+	private String path;
+
+	@com.fasterxml.jackson.annotation.JsonProperty("template_content")
+	private String templateContent;
+
+	@com.fasterxml.jackson.annotation.JsonProperty("file_name")
+	private String fileName;
 
 	public static class SlideContent {
 
@@ -77,14 +82,6 @@ public class PptInput {
 		this.action = action;
 	}
 
-	public String getOutputPath() {
-		return outputPath;
-	}
-
-	public void setOutputPath(String outputPath) {
-		this.outputPath = outputPath;
-	}
-
 	public String getTitle() {
 		return title;
 	}
@@ -107,6 +104,30 @@ public class PptInput {
 
 	public void setSlideContents(List<SlideContent> slideContents) {
 		this.slideContents = slideContents;
+	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
+	}
+
+	public String getTemplateContent() {
+		return templateContent;
+	}
+
+	public void setTemplateContent(String templateContent) {
+		this.templateContent = templateContent;
+	}
+
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
 	}
 
 }

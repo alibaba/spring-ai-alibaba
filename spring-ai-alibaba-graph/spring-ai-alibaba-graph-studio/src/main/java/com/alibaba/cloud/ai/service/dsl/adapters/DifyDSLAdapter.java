@@ -130,13 +130,13 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		if (workflowData.containsKey("conversation_variables")) {
 			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData
 				.get("conversation_variables");
-			convVars = variables.stream().map(variable -> objectMapper.convertValue(variable, Variable.class)).toList();
+			convVars = variables.stream().map(variable -> convertToVariable(variable, objectMapper)).toList();
 		}
 
 		if (workflowData.containsKey("environment_variables")) {
 			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("environment_variables");
 			List<Variable> envVars = variables.stream()
-				.map(variable -> objectMapper.convertValue(variable, Variable.class))
+				.map(variable -> convertToVariable(variable, objectMapper))
 				.collect(Collectors.toList());
 			workflow.setEnvVars(envVars);
 		}
@@ -154,7 +154,8 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 				for (VariableSelector sel : cd.getInputs()) {
 					String upstreamId = sel.getNamespace();
 					String upstreamVar = idToVarName.get(upstreamId);
-					sel.setName(upstreamVar + "_output");
+					// 可能来自一个节点的多个变量
+					sel.setName(upstreamVar + "." + sel.getName());
 				}
 			}
 		}
@@ -378,6 +379,22 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 	@Override
 	public Boolean supportDialect(DSLDialectType dialectType) {
 		return DSLDialectType.DIFY.equals(dialectType);
+	}
+
+	private Variable convertToVariable(Map<String, Object> variableMap, ObjectMapper objectMapper) {
+		try {
+			Map<String, Object> processedMap = new HashMap<>(variableMap);
+
+			Object value = processedMap.get("value");
+			if (value != null && !(value instanceof String)) {
+				processedMap.put("value", objectMapper.writeValueAsString(value));
+			}
+
+			return objectMapper.convertValue(processedMap, Variable.class);
+		}
+		catch (Exception e) {
+			throw new IllegalArgumentException("Failed to convert variable: " + variableMap, e);
+		}
 	}
 
 }

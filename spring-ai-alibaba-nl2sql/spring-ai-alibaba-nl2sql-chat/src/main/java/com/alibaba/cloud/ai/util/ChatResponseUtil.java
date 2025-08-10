@@ -54,4 +54,10 @@ public class ChatResponseUtil {
 		return new ChatResponse(List.of(generation));
 	}
 
+	public static ChatResponse createStatusResponse(String statusMessage) {
+		AssistantMessage assistantMessage = new AssistantMessage(statusMessage + "\n");
+		Generation generation = new Generation(assistantMessage);
+		return new ChatResponse(List.of(generation));
+	}
+
 }
