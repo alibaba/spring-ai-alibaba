@@ -256,7 +256,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 						"org.springframework.ai.vectorstore.VectorStore",
 						"org.springframework.beans.factory.annotation.Value", "org.springframework.core.io.Resource")),
 				Map.entry(NodeType.AGGREGATOR.value(),
-						List.of("com.alibaba.cloud.ai.graph.node.VariableAggregatorNode")),
+						List.of("com.alibaba.cloud.ai.graph.node.VariableAggregatorNode",
+								"java.util.stream.Collectors")),
 				Map.entry(NodeType.ASSIGNER.value(), List.of("com.alibaba.cloud.ai.graph.node.AssignerNode")),
 				Map.entry(NodeType.ITERATION.value(), List.of("com.alibaba.cloud.ai.graph.node.IterationNode")));
 

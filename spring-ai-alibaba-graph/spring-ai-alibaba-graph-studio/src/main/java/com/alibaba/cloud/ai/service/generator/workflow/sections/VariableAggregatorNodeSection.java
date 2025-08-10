@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.service.generator.workflow.sections;
 
+import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Component
 public class VariableAggregatorNodeSection implements NodeSection<VariableAggregatorNodeData> {
@@ -41,11 +43,12 @@ public class VariableAggregatorNodeSection implements NodeSection<VariableAggreg
 		StringBuilder sb = new StringBuilder();
 
 		String outputKey = data.getOutputKey();
-		String outputType = data.getOutputType();
 		VariableAggregatorNodeData.AdvancedSettings advancedSettings = data.getAdvancedSettings();
 		List<Groups> groups = advancedSettings.getGroups();
+		boolean hasGroup = advancedSettings != null && groups != null && !groups.isEmpty()
+				&& advancedSettings.isGroupEnabled();
 		// build advancedSettings and group
-		if (advancedSettings != null && groups != null && !groups.isEmpty()) {
+		if (hasGroup) {
 			AtomicInteger idx = new AtomicInteger(1);
 			sb.append("// - Build advancedSettings and group \n");
 			// build group
@@ -54,16 +57,20 @@ public class VariableAggregatorNodeSection implements NodeSection<VariableAggreg
 						idx));
 				sb.append(String.format("    group%s.setGroupName(\"%s\");\n", idx, group.getGroupName()));
 				sb.append(String.format("    group%s.setVariables(List.of(%s));\n", idx,
-						renderVariables(group.getVariables())));
+						renderVariables(group.getVariableSelectors())));
 				sb.append(String.format("    group%s.setGroupId(\"%s\");\n", idx, group.getGroupId()));
 				sb.append(String.format("    group%s.setOutputType(\"%s\");\n", idx, group.getOutputType()));
 				idx.getAndIncrement();
 			});
 			// build advancedSettings
-			sb.append(String.format(
-					"VariableAggregatorNode.AdvancedSettings advancedSettings = new VariableAggregatorNode.AdvancedSettings();\n"));
-			sb.append(String.format("advancedSettings.setGroupEnabled(true);\n"));
-			sb.append(String.format("advancedSettings.setGroups(groups);\n"));
+			sb.append(
+					"VariableAggregatorNode.AdvancedSettings advancedSettings = new VariableAggregatorNode.AdvancedSettings();\n");
+			sb.append("advancedSettings.setGroupEnabled(true);\n");
+			sb.append(String.format("advancedSettings.setGroups(List.of(%s));%n",
+					IntStream.range(1, idx.get())
+						.boxed()
+						.map(i -> String.format("group%s", i))
+						.collect(Collectors.joining(", "))));
 
 		}
 
@@ -73,51 +80,78 @@ public class VariableAggregatorNodeSection implements NodeSection<VariableAggreg
 		sb.append(String.format("VariableAggregatorNode %s = VariableAggregatorNode.builder()\n", varName));
 
 		// .variables
-		List<List<String>> variables = data.getVariables();
-		sb.append(String.format("    .variables(List.of(%s))\n", renderVariables(variables)));
+		sb.append(String.format("    .variables(List.of(%s))\n", renderVariables(data.getInputs())));
 
 		// .outputKey
 		sb.append(String.format("    .outputKey(\"%s\")\n", outputKey));
 
 		// .outputType(...) if present
-		if (outputType != null && !outputType.isEmpty()) {
-			sb.append(String.format("    .outputType(\"%s\")\n", outputType));
-		}
+		sb.append("    .outputType(\"list\")\n");
 
 		// .advancedSettings(...) if present
-		if (advancedSettings != null && groups != null && !groups.isEmpty()) {
-			sb.append(String.format("    .advancedSettings(advancedSettings)\n"));
+		if (hasGroup) {
+			sb.append("    .advancedSettings(advancedSettings)\n");
 		}
 
 		sb.append("    .build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));\n\n", varName, varName));
+
+		// 辅助节点，将节点输出转为Dify定义的格式
+		String assistNodeCode;
+		if (hasGroup) {
+			assistNodeCode = String.format("""
+					(state) -> {
+						Map<String, Object> result = %s.apply(state);
+						String nodeName = "%s";
+						String key = nodeName + "_output";
+						Object object = result.get(key);
+						if ((object instanceof Map<?, ?> map)) {
+							return map.entrySet()
+								.stream()
+								.collect(Collectors.toMap(k -> nodeName + "_" + k.getKey().toString(), v -> {
+									if (v.getValue() instanceof List<?> list) {
+										return list.isEmpty() ? "unknown" : list.get(0);
+									}
+									else {
+										return v.getValue() == null ? "unknown" : v.getValue().toString();
+									}
+								}));
+						}
+						else if (object instanceof List<?> list) {
+							return Map.of(key, list.isEmpty() ? "unknown" : list.get(0));
+						}
+						else {
+							return Map.of(key, object == null ? "unknown" : object.toString());
+						}
+					}
+					""", varName, varName);
+		}
+		else {
+			assistNodeCode = String.format("""
+					(state) -> {
+						Map<String, Object> result = %s.apply(state);
+						String key = "%s";
+						Object object = result.get(key);
+						if (object instanceof List<?> list) {
+							return Map.of(key, list.isEmpty() ? "unknown" : list.get(0));
+						} else {
+							return Map.of(key, object == null ? "unknown" : object.toString());
+						}
+					}
+					""", varName, data.getOutputKey());
+		}
+
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));\n\n", varName,
+				assistNodeCode));
 
 		return sb.toString();
 	}
 
 	// build variables list
-	private String renderVariables(List<List<String>> variables) {
-		if (variables == null || variables.isEmpty()) {
-			return "";
-		}
-
-		StringBuilder sb = new StringBuilder();
-
-		for (int i = 0; i < variables.size(); i++) {
-			List<String> path = variables.get(i);
-			String listStr = "        List.of("
-					+ path.stream().map(s -> "\"" + s.replace("\"", "\\\"") + "\"").collect(Collectors.joining(", "))
-					+ ")";
-			sb.append(listStr);
-
-			if (i < variables.size() - 1) {
-				sb.append(",\n");
-			}
-			else {
-				sb.append("\n");
-			}
-		}
-		return sb.toString();
+	private String renderVariables(List<VariableSelector> variables) {
+		return variables.stream()
+			.map(VariableSelector::getNameInCode)
+			.map(name -> String.format("List.of(\"%s\")", name))
+			.collect(Collectors.joining(", "));
 	}
 
 }
