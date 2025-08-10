@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.enums;
+package com.alibaba.cloud.ai.example.deepresearch.model.enums;
 
 /**
  * 流式节点前缀枚举。 用于标识流式输出节点的类型前缀，给前端用于展示
