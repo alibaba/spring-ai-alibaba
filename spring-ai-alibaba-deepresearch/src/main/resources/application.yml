@@ -95,14 +95,14 @@ spring:
           enabled: true
           # 可以设置为 'simple' 或 'elasticsearch'
           vector-store-type: elasticsearch
-#          data:
-#            # 启动时加载 classpath下data目录中的所有文件
-#            locations:
-#              - "classpath:/data/"
-            # Elasticsearch配置
-          elasticsearch:
-            uris: http://localhost:9200
-            similarity-function: cosine
+          data:
+            # 启动时加载 classpath下data目录中的所有文件
+            locations:
+              - "classpath:/data/"
+          # Elasticsearch配置
+          #elasticsearch:
+          #  uris: http://localhost:9200
+          #  similarity-function: cosine
 
         # 报告导出路径配置
         export:
