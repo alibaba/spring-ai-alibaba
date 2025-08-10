@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.util.Mcp;
+package com.alibaba.cloud.ai.example.deepresearch.util.mcp;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.McpAssignNodeProperties;
 import com.alibaba.cloud.ai.graph.OverAllState;

@@ -16,8 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller.graph;
 
-import com.alibaba.cloud.ai.example.deepresearch.enums.NodeNameEnum;
-import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
+import com.alibaba.cloud.ai.example.deepresearch.model.enums.NodeNameEnum;
+import com.alibaba.cloud.ai.example.deepresearch.model.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.GraphId;
 import com.alibaba.cloud.ai.graph.CompiledGraph;

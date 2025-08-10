@@ -17,8 +17,8 @@
 package com.alibaba.cloud.ai.example.deepresearch.service.multiagent;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
-import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.SmartAgentUtil;
-import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentPromptTemplateUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.SmartAgentUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.AgentPromptTemplateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;

@@ -27,9 +27,10 @@ import java.util.Map;
  * @author Makoto
  * @since 2025/07/17
  */
-@Component
-@ConfigurationProperties(prefix = "spring.ai.alibaba.deepresearch.smart-agents")
+@ConfigurationProperties(prefix = SmartAgentProperties.PREFIX)
 public class SmartAgentProperties {
+
+	public static final String PREFIX = DeepResearchProperties.PREFIX + ".smart-agents";
 
 	private boolean enabled = true;
 
