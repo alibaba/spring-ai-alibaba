@@ -37,50 +37,51 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @Service
 public class RagNodeService {
 
-    @Autowired(required = false)
-    private ChatClient ragAgent;
+	@Autowired(required = false)
+	private ChatClient ragAgent;
 
-    @Autowired(required = false)
-    private UserFileRetrievalStrategy userFileRetrievalStrategy;
+	@Autowired(required = false)
+	private UserFileRetrievalStrategy userFileRetrievalStrategy;
 
-    @Autowired(required = false)
-    private ProfessionalKbEsStrategy professionalKbEsStrategy;
+	@Autowired(required = false)
+	private ProfessionalKbEsStrategy professionalKbEsStrategy;
 
-    @Autowired(required = false)
-    private FusionStrategy fusionStrategy;
+	@Autowired(required = false)
+	private FusionStrategy fusionStrategy;
 
-    @Autowired(required = false)
-    private HybridRagProcessor hybridRagProcessor;
+	@Autowired(required = false)
+	private HybridRagProcessor hybridRagProcessor;
 
-    /**
-     * 创建用户文件RAG节点，优先使用统一的HybridRagProcessor
-     */
-    public AsyncNodeAction createUserFileRagNode() {
-        if (hybridRagProcessor != null) {
-            // 使用统一的RAG处理器，包含完整的前后处理和混合查询逻辑
-            return node_async(new RagNode(hybridRagProcessor, ragAgent));
-        }
-        else {
-            // 回退到传统的策略模式
-            return node_async(
-                    new RagNode(userFileRetrievalStrategy != null ? List.of(userFileRetrievalStrategy) : List.of(),
-                            fusionStrategy, ragAgent));
-        }
-    }
+	/**
+	 * 创建用户文件RAG节点，优先使用统一的HybridRagProcessor
+	 */
+	public AsyncNodeAction createUserFileRagNode() {
+		if (hybridRagProcessor != null) {
+			// 使用统一的RAG处理器，包含完整的前后处理和混合查询逻辑
+			return node_async(new RagNode(hybridRagProcessor, ragAgent));
+		}
+		else {
+			// 回退到传统的策略模式
+			return node_async(
+					new RagNode(userFileRetrievalStrategy != null ? List.of(userFileRetrievalStrategy) : List.of(),
+							fusionStrategy, ragAgent));
+		}
+	}
 
-    /**
-     * 创建专业知识库RAG节点，优先使用统一的HybridRagProcessor
-     */
-    public AsyncNodeAction createProfessionalKbRagNode() {
-        if (hybridRagProcessor != null) {
-            // 使用统一的RAG处理器，包含完整的前后处理和混合查询逻辑
-            return node_async(new RagNode(hybridRagProcessor, ragAgent));
-        }
-        else {
-            // 回退到传统的策略模式
-            return node_async(
-                    new RagNode(professionalKbEsStrategy != null ? List.of(professionalKbEsStrategy) : List.of(),
-                            fusionStrategy, ragAgent));
-        }
-    }
+	/**
+	 * 创建专业知识库RAG节点，优先使用统一的HybridRagProcessor
+	 */
+	public AsyncNodeAction createProfessionalKbRagNode() {
+		if (hybridRagProcessor != null) {
+			// 使用统一的RAG处理器，包含完整的前后处理和混合查询逻辑
+			return node_async(new RagNode(hybridRagProcessor, ragAgent));
+		}
+		else {
+			// 回退到传统的策略模式
+			return node_async(
+					new RagNode(professionalKbEsStrategy != null ? List.of(professionalKbEsStrategy) : List.of(),
+							fusionStrategy, ragAgent));
+		}
+	}
+
 }

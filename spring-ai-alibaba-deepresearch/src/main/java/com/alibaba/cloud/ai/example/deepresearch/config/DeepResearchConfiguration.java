@@ -302,5 +302,4 @@ public class DeepResearchConfiguration {
 		}
 	}
 
-
 }
