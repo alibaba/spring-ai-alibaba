@@ -190,7 +190,8 @@ public class RagDataController {
 			errorResponse.put("message", e.getMessage());
 			errorResponse.put("kb_id", kbId);
 			errorResponse.put("file_count", files.size());
-			return ResponseEntity.internalServerError().body(ApiResponse.error("Failed to process professional KB batch upload", errorResponse));
+			return ResponseEntity.internalServerError()
+				.body(ApiResponse.error("Failed to process professional KB batch upload", errorResponse));
 		}
 	}
 
