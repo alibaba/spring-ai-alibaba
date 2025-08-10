@@ -18,6 +18,7 @@
 package com.alibaba.cloud.ai.mcp.router.core.vectorstore;
 
 import com.alibaba.cloud.ai.mcp.router.model.McpServerInfo;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -33,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.HashMap;
 
 /**
  * 基于 Spring AI SimpleVectorStore 的 MCP 服务向量存储实现
@@ -53,12 +55,11 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 			this.vectorStore = SimpleVectorStore.builder(embeddingModel).build();
 			logger.info("SimpleMcpServerVectorStore initialized with EmbeddingModel: {}",
 					embeddingModel.getClass().getSimpleName());
-		}
-		else {
+		} else {
 			// 如果没有 EmbeddingModel，创建一个空的 SimpleVectorStore
 			this.vectorStore = null;
 			logger
-				.warn("SimpleMcpServerVectorStore initialized without EmbeddingModel - vector store will be disabled");
+					.warn("SimpleMcpServerVectorStore initialized without EmbeddingModel - vector store will be disabled");
 		}
 	}
 
@@ -82,8 +83,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 			vectorStore.add(List.of(document));
 			logger.info("Successfully added server to vector store: {}", serverInfo.getName());
 			return true;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Failed to add server to vector store: {}", serverInfo.getName(), e);
 			return false;
 		}
@@ -111,8 +111,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 			}
 			logger.warn("Server not found in vector store: {}", serviceName);
 			return false;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Failed to remove server from vector store: {}", serviceName, e);
 			return false;
 		}
@@ -138,8 +137,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 			}
 			logger.debug("Server not found in vector store: {}", serviceName);
 			return null;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Failed to get server from vector store: {}", serviceName, e);
 			return null;
 		}
@@ -155,18 +153,17 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 		try {
 			// 获取所有文档
 			SearchRequest searchRequest = SearchRequest.builder()
-				.query("") // 空查询获取所有
-				.topK(Integer.MAX_VALUE)
-				.build();
+					.query("") // 空查询获取所有
+					.topK(Integer.MAX_VALUE)
+					.build();
 
 			List<Document> documents = vectorStore.similaritySearch(searchRequest);
 			logger.debug("Found {} documents in vector store", documents.size());
 			return documents.stream()
-				.map(this::convertFromDocument)
-				.filter(Objects::nonNull)
-				.collect(Collectors.toList());
-		}
-		catch (Exception e) {
+					.map(this::convertFromDocument)
+					.filter(Objects::nonNull)
+					.collect(Collectors.toList());
+		} catch (Exception e) {
 			logger.error("Failed to get all servers from vector store", e);
 			return new ArrayList<>();
 		}
@@ -181,19 +178,88 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 
 		try {
 			logger.debug("Searching vector store with query: '{}', limit: {}", query, limit);
-			SearchRequest searchRequest = SearchRequest.builder().query(query).topK(limit).build();
 
+			// 策略1：向量相似度搜索
+			SearchRequest searchRequest = SearchRequest.builder().query(query).topK(limit * 2).build();
 			List<Document> documents = vectorStore.similaritySearch(searchRequest);
-			logger.debug("Found {} documents in search results", documents.size());
+			logger.debug("Found {} documents in vector search results", documents.size());
 
+			// 策略2：如果向量搜索结果较少，尝试关键词匹配
+			if (documents.size() < limit) {
+				List<Document> keywordResults = searchByKeywords(query, limit);
+				if (CollectionUtils.isNotEmpty(keywordResults)) {
+					documents.addAll(keywordResults);
+				}
+				logger.debug("Added {} documents from keyword search", keywordResults.size());
+			}
+
+			// 去重并排序
 			return documents.stream()
-				.filter(doc -> doc.getScore() > 0.2) // 过滤低分结果
-				.map(this::convertFromDocument)
-				.filter(Objects::nonNull)
-				.collect(Collectors.toList());
-		}
-		catch (Exception e) {
+					.filter(doc -> doc.getScore() > 0.1) // 降低阈值以包含更多结果
+					.map(this::convertFromDocument)
+					.filter(Objects::nonNull)
+					.distinct() // 去重
+					.sorted((a, b) -> Double.compare(b.getScore(), a.getScore())) // 按分数排序
+					.limit(limit)
+					.collect(Collectors.toList());
+		} catch (Exception e) {
 			logger.error("Failed to search vector store with query: '{}'", query, e);
+			return new ArrayList<>();
+		}
+	}
+
+	/**
+	 * 关键词匹配搜索
+	 */
+	private List<Document> searchByKeywords(String query, int limit) {
+		try {
+			// 获取所有文档进行关键词匹配
+			SearchRequest searchRequest = SearchRequest.builder().query("").topK(Integer.MAX_VALUE).build();
+			List<Document> allDocuments = vectorStore.similaritySearch(searchRequest);
+
+			String lowerQuery = query.toLowerCase();
+
+			return allDocuments.stream()
+					.filter(doc -> {
+						// 检查服务名称
+						String serviceName = (String) doc.getMetadata().get("serviceName");
+						if (serviceName != null && serviceName.toLowerCase().contains(lowerQuery)) {
+							return true;
+						}
+
+						// 检查描述信息
+						String description = (String) doc.getMetadata().get("description");
+						if (description != null && description.toLowerCase().contains(lowerQuery)) {
+							return true;
+						}
+
+						// 检查标签
+						@SuppressWarnings("unchecked")
+						List<String> tags = (List<String>) doc.getMetadata().get("tags");
+						if (tags != null && tags.stream().anyMatch(tag -> tag.toLowerCase().contains(lowerQuery))) {
+							return true;
+						}
+
+						// 检查协议
+						String protocol = (String) doc.getMetadata().get("protocol");
+						if (protocol != null && protocol.toLowerCase().contains(lowerQuery)) {
+							return true;
+						}
+
+						return false;
+					})
+					.map(doc -> {
+						// 为关键词匹配的结果创建新的Document对象并设置分数
+						Document newDoc = new Document(doc.getId(), doc.getText(), doc.getMetadata());
+						// 由于Document类没有setScore方法，我们通过metadata来传递分数信息
+						Map<String, Object> newMetadata = new HashMap<>(doc.getMetadata());
+						newMetadata.put("keywordScore", 0.5);
+						return new Document(doc.getId(), doc.getText(), newMetadata);
+					})
+					.limit(limit)
+					.collect(Collectors.toList());
+		} catch (Exception e) {
+			logger.error("Failed to search by keywords with query: '{}'", query, e);
 			return new ArrayList<>();
 		}
 	}
@@ -210,8 +276,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 			List<Document> documents = vectorStore.similaritySearch(searchRequest);
 			logger.debug("Vector store size: {}", documents.size());
 			return documents.size();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Failed to get vector store size", e);
 			return 0;
 		}
@@ -235,8 +300,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 				vectorStore.delete(ids);
 				logger.info("Cleared {} documents from vector store", ids.size());
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Failed to clear vector store", e);
 		}
 	}
@@ -245,9 +309,38 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 	 * 将 McpServerInfo 转换为 Document
 	 */
 	private Document convertToDocument(McpServerInfo serverInfo) {
-		String text = serverInfo.getName() + " "
-				+ (serverInfo.getDescription() != null ? serverInfo.getDescription() : "") + " "
-				+ (serverInfo.getTags() != null ? String.join(" ", serverInfo.getTags()) : "");
+		// 构建更丰富的搜索文本，增加描述信息的权重
+		StringBuilder textBuilder = new StringBuilder();
+
+		// 服务名称（高权重）
+		textBuilder.append(serverInfo.getName()).append(" ");
+
+		// 描述信息（高权重，重复添加以增加权重）
+		if (serverInfo.getDescription() != null && !serverInfo.getDescription().trim().isEmpty()) {
+			textBuilder.append(serverInfo.getDescription()).append(" ");
+			// 再次添加描述信息以增加权重
+			textBuilder.append(serverInfo.getDescription()).append(" ");
+		}
+
+		// 协议信息
+		if (serverInfo.getProtocol() != null && !serverInfo.getProtocol().trim().isEmpty()) {
+			textBuilder.append(serverInfo.getProtocol()).append(" ");
+		}
+
+		// 版本信息
+		if (serverInfo.getVersion() != null && !serverInfo.getVersion().trim().isEmpty()) {
+			textBuilder.append(serverInfo.getVersion()).append(" ");
+		}
+
+		// 端点信息
+		if (serverInfo.getEndpoint() != null && !serverInfo.getEndpoint().trim().isEmpty()) {
+			textBuilder.append(serverInfo.getEndpoint()).append(" ");
+		}
+
+		// 标签信息（中权重）
+		if (serverInfo.getTags() != null && !serverInfo.getTags().isEmpty()) {
+			textBuilder.append(String.join(" ", serverInfo.getTags())).append(" ");
+		}
 
 		Map<String, Object> metadata = Map.of("serviceName", serverInfo.getName(), "description",
 				Optional.ofNullable(serverInfo.getDescription()).orElse(""), "protocol",
@@ -257,7 +350,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 				Optional.ofNullable(serverInfo.getEnabled()).orElse(true), "tags",
 				Optional.ofNullable(serverInfo.getTags()).orElse(List.of()), "vectorType", "mcp_service");
 
-		return new Document(serverInfo.getName(), text, metadata);
+		return new Document(serverInfo.getName(), textBuilder.toString().trim(), metadata);
 	}
 
 	/**
@@ -276,11 +369,17 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 
 			McpServerInfo serverInfo = new McpServerInfo(serviceName, description, protocol, version, endpoint, enabled,
 					tags);
-			serverInfo.setScore(document.getScore());
+
+			// 优先使用关键词搜索的分数，如果没有则使用向量搜索的分数
+			Object keywordScore = document.getMetadata().get("keywordScore");
+			if (keywordScore != null) {
+				serverInfo.setScore(((Number) keywordScore).doubleValue());
+			} else {
+				serverInfo.setScore(document.getScore());
+			}
 
 			return serverInfo;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Failed to convert document to McpServerInfo", e);
 			return null;
 		}

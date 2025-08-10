@@ -66,9 +66,12 @@ public class McpRouterService {
 	 */
 	@Tool(description = "根据任务描述和关键词搜索合适的 MCP Server")
 	public String searchMcpServer(@ToolParam(description = "任务描述") String taskDescription,
-			@ToolParam(description = "关键词，多个关键词用逗号分隔") String keywords,
-			@ToolParam(description = "返回数量限制，默认5") int limit) {
+			@ToolParam(description = "关键词，多个关键词用逗号分隔", required = false) String keywords,
+			@ToolParam(description = "返回数量限制，默认5", required = false) Integer limit) {
 		try {
+			if (limit == null || limit <= 0) {
+				limit = 5; // 默认返回数量限制
+			}
 			// 构建搜索查询
 			String searchQuery = taskDescription;
 			if (keywords != null && !keywords.trim().isEmpty()) {

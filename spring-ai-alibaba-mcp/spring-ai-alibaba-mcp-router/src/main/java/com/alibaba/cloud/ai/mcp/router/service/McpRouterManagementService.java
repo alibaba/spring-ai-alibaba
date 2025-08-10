@@ -138,7 +138,7 @@ public class McpRouterManagementService {
 	public Boolean refreshService(String serviceName) {
 		try {
 			// 先移除旧数据
-			removeService(serviceName);
+//			removeService(serviceName);
 			// 重新添加
 			return addService(serviceName);
 		}
