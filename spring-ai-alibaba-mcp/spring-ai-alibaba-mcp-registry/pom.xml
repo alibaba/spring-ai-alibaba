@@ -11,7 +11,7 @@
 
     <artifactId>spring-ai-alibaba-mcp-registry</artifactId>
     <version>${revision}</version>
-    <name>Spring AI Alibaba MCP Register</name>
+    <name>Spring AI Alibaba MCP Registry</name>
     <description>Spring AI Alibaba MCP Registry</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>

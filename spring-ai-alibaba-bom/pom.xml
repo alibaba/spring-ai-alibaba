@@ -115,22 +115,10 @@
                 <artifactId>spring-ai-alibaba-starter-memory</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
-            <dependency>
-                <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-nacos-mcp-discovery</artifactId>
-                <version>${project.version}</version>
-            </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-nacos-mcp-register</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-mcp-gateway</artifactId>
+                <artifactId>spring-ai-alibaba-starter-mcp-registry</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
