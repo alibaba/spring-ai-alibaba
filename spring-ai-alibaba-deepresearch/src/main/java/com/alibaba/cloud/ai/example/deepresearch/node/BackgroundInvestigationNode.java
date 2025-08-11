@@ -19,18 +19,19 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.SessionHistory;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
-import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SessionContextService;
 import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SearchPlatformSelectionService;
 import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.SmartAgentUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.ToolCallingSearchService;
 import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SmartAgentSelectionHelperService;
 import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.QuestionClassifierService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -66,8 +67,10 @@ public class BackgroundInvestigationNode implements NodeAction {
 	public BackgroundInvestigationNode(JinaCrawlerService jinaCrawlerService, InfoCheckService infoCheckService,
 			SearchFilterService searchFilterService, QuestionClassifierService questionClassifierService,
 			SearchPlatformSelectionService platformSelectionService, SmartAgentProperties smartAgentProperties,
-			ChatClient backgroundAgent, SessionContextService sessionContextService) {
-		this.searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService);
+			ChatClient backgroundAgent, SessionContextService sessionContextService,
+			ToolCallingSearchService toolCallingSearchService) {
+		this.searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService,
+				toolCallingSearchService);
 		this.infoCheckService = infoCheckService;
 		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties, null,
 				questionClassifierService, platformSelectionService);
@@ -85,11 +88,14 @@ public class BackgroundInvestigationNode implements NodeAction {
 		assert queries != null && !queries.isEmpty();
 
 		for (String query : queries) {
-			// 如果mutiAgent功能开启且配置了专用搜索平台，则使用智能搜索引擎选择,否则使用默认的通用搜索引擎
-			SearchEnum searchEnum = getSearchEnum(state, query);
+			// 使用统一的智能搜索选择方法
+			SmartAgentUtil.SearchSelectionResult searchSelection = smartAgentSelectionHelper
+				.intelligentSearchSelection(state, query);
 			List<Map<String, String>> results = new ArrayList<>();
 
-			results = searchInfoService.searchInfo(state.value("enable_search_filter", true), searchEnum, query);
+			// 使用支持工具调用的搜索方法
+			results = searchInfoService.searchInfo(state.value("enable_search_filter", true),
+					searchSelection.getSearchEnum(), query, searchSelection.getSearchPlatform());
 			resultMap.put("site_information", results);
 			resultsList.add(results);
 		}
@@ -138,16 +144,6 @@ public class BackgroundInvestigationNode implements NodeAction {
 		}
 		resultMap.put("background_investigation_next_node", nextStep);
 		return resultMap;
-	}
-
-	/**
-	 * 获取智能选择的搜索引擎
-	 * @param state 全局状态
-	 * @param query 查询内容
-	 * @return 搜索引擎枚举
-	 */
-	private SearchEnum getSearchEnum(OverAllState state, String query) {
-		return smartAgentSelectionHelper.intelligentSearchEngineSelection(state, query);
 	}
 
 }

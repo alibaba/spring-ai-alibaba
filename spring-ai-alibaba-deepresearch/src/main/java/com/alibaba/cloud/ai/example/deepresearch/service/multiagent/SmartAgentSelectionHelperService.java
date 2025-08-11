@@ -20,7 +20,9 @@ import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentDispatchResult;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentSelectionResult;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
+import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.SearchPlatform;
 import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.SmartAgentUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
@@ -75,7 +77,7 @@ public class SmartAgentSelectionHelperService {
 			if (dispatchResult.isSuccess() && dispatchResult.getAgent() != null) {
 				logger.info("选择智能Agent: {} -> {}", questionContent, dispatchResult.getAgentType());
 				return new AgentSelectionResult(dispatchResult.getAgent(), dispatchResult.getAgentType(), true,
-						"智能Agent选择成功");
+						"智能Agent选择成功", dispatchResult.getStateUpdate());
 			}
 			else {
 				logger.warn("智能Agent分派失败: {}", dispatchResult.getErrorMessage());
@@ -91,6 +93,52 @@ public class SmartAgentSelectionHelperService {
 	}
 
 	/**
+	 * 智能搜索选择的核心逻辑（统一的问题分类和平台选择）
+	 */
+	private AgentType classifyQueryAndLog(String query) {
+		AgentType agentType = questionClassifierService.classifyQuestion(query);
+		logger.info("问题分类结果: {} -> {}", query, agentType);
+		return agentType;
+	}
+
+	/**
+	 * 统一的智能搜索选择方法
+	 * @param state 全局状态
+	 * @param query 查询内容
+	 * @return 搜索选择结果
+	 */
+	public SmartAgentUtil.SearchSelectionResult intelligentSearchSelection(OverAllState state, String query) {
+		if (!AgentIntegrationUtil.isSmartAgentAvailable(smartAgentProperties, questionClassifierService,
+				searchPlatformSelectionService)) {
+			SearchEnum fallbackEnum = state.value("search_engine", SearchEnum.class).orElse(SearchEnum.TAVILY);
+			return new SmartAgentUtil.SearchSelectionResult(fallbackEnum, null, AgentType.GENERAL_RESEARCH, false);
+		}
+
+		try {
+			AgentType agentType = classifyQueryAndLog(query);
+			SearchPlatform selectedPlatform = searchPlatformSelectionService.getSelectedSearchPlatform(agentType,
+					query);
+
+			if (SmartAgentUtil.isToolCallingPlatform(selectedPlatform)) {
+				logger.info("选择工具调用搜索: {} (Agent类型: {})", selectedPlatform.getName(), agentType);
+				return new SmartAgentUtil.SearchSelectionResult(SearchEnum.TAVILY, selectedPlatform, agentType, true);
+			}
+			else {
+				List<SearchEnum> platforms = searchPlatformSelectionService.selectSearchPlatforms(agentType, query);
+				SearchEnum searchEnum = platforms != null && !platforms.isEmpty() ? platforms.get(0)
+						: state.value("search_engine", SearchEnum.class).orElse(SearchEnum.TAVILY);
+				logger.info("选择传统搜索: {} (Agent类型: {})", searchEnum, agentType);
+				return new SmartAgentUtil.SearchSelectionResult(searchEnum, selectedPlatform, agentType, false);
+			}
+		}
+		catch (Exception e) {
+			logger.warn("选择失败: {}", e.getMessage());
+			SearchEnum fallbackEnum = state.value("search_engine", SearchEnum.class).orElse(SearchEnum.TAVILY);
+			return new SmartAgentUtil.SearchSelectionResult(fallbackEnum, null, AgentType.GENERAL_RESEARCH, false);
+		}
+	}
+
+	/**
 	 * 智能选择搜索引擎
 	 * @param state 全局状态
 	 * @param query 查询内容
@@ -102,18 +150,51 @@ public class SmartAgentSelectionHelperService {
 			return state.value("search_engine", SearchEnum.class).orElse(SearchEnum.TAVILY);
 		}
 
-		AgentType agentType = questionClassifierService.classifyQuestion(query);
-		logger.info("问题分类结果: {} -> {}", query, agentType);
+		try {
+			AgentType agentType = classifyQueryAndLog(query);
+			List<SearchEnum> platforms = searchPlatformSelectionService.selectSearchPlatforms(agentType, query);
 
-		List<SearchEnum> platforms = searchPlatformSelectionService.selectSearchPlatforms(agentType, query);
-		if (platforms != null && !platforms.isEmpty()) {
-			SearchEnum primaryPlatform = platforms.get(0);
-			logger.info("智能选择搜索平台: {} (Agent类型: {})", primaryPlatform, agentType);
-			return primaryPlatform;
+			if (platforms != null && !platforms.isEmpty()) {
+				SearchEnum primaryPlatform = platforms.get(0);
+				logger.info("选择搜索引擎: {} (Agent类型: {})", primaryPlatform, agentType);
+				return primaryPlatform;
+			}
+		}
+		catch (Exception e) {
+			logger.warn("搜索引擎选择失败: {}", e.getMessage());
 		}
 
 		// 如果没有选择成功，则回退到原有搜索引擎
 		return state.value("search_engine", SearchEnum.class).orElse(SearchEnum.TAVILY);
+	}
+
+	/**
+	 * 智能选择搜索平台
+	 * @param state 全局状态
+	 * @param query 查询内容
+	 * @return 搜索平台枚举
+	 */
+	public SearchPlatform intelligentSearchPlatformSelection(OverAllState state, String query) {
+		if (!AgentIntegrationUtil.isSmartAgentAvailable(smartAgentProperties, questionClassifierService,
+				searchPlatformSelectionService)) {
+			return null; // 智能Agent不可用时返回null，使用传统搜索
+		}
+
+		try {
+			AgentType agentType = classifyQueryAndLog(query);
+			SearchPlatform selectedPlatform = searchPlatformSelectionService.getSelectedSearchPlatform(agentType,
+					query);
+
+			if (SmartAgentUtil.isToolCallingPlatform(selectedPlatform)) {
+				logger.info("选择搜索平台: {} (Agent类型: {})", selectedPlatform.getName(), agentType);
+				return selectedPlatform;
+			}
+		}
+		catch (Exception e) {
+			logger.warn("搜索平台选择失败: {}", e.getMessage());
+		}
+
+		return null;
 	}
 
 }

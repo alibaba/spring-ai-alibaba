@@ -19,11 +19,12 @@ package com.alibaba.cloud.ai.example.deepresearch.util.multiagent;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.SearchPlatform;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
-import com.alibaba.cloud.ai.graph.OverAllState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 智能Agent系统通用工具类 整合开关检查、类型转换、状态管理等通用逻辑
@@ -64,6 +65,51 @@ public class SmartAgentUtil {
 	}
 
 	/**
+	 * 解析AI搜索平台选择结果
+	 * @param aiResponse AI返回的搜索平台选择结果
+	 * @return 解析后的搜索平台类型，如果解析失败返回null
+	 */
+	public static SearchPlatform parseAiSearchPlatformSelection(String aiResponse) {
+		if (aiResponse == null || aiResponse.trim().isEmpty()) {
+			return null;
+		}
+
+		String response = aiResponse.toUpperCase().trim();
+
+		// 移除可能的代码块标记
+		response = response.replace("```", "").trim();
+
+		try {
+			// 尝试直接匹配平台名称
+			for (SearchPlatform platform : SearchPlatform.values()) {
+				if (response.contains(platform.name())) {
+					return platform;
+				}
+			}
+
+			Map<SearchPlatform, List<String>> platformKeywords = Map.of(SearchPlatform.OPENALEX, List.of("OPENALEX"),
+					SearchPlatform.GOOGLE_SCHOLAR, List.of("GOOGLE_SCHOLAR", "SCHOLAR"), SearchPlatform.WIKIPEDIA,
+					List.of("WIKIPEDIA", "WIKI"), SearchPlatform.OPENTRIPMAP, List.of("OPENTRIPMAP", "TRIPMAP"),
+					SearchPlatform.TRIPADVISOR, List.of("TRIPADVISOR"), SearchPlatform.WORLDBANK_DATA,
+					List.of("WORLDBANK", "WORLD_BANK"), SearchPlatform.TAVILY, List.of("TAVILY"),
+					SearchPlatform.ALIYUN_AI_SEARCH, List.of("ALIYUN", "ALIYUN_AI_SEARCH"), SearchPlatform.BAIDU_SEARCH,
+					List.of("BAIDU"), SearchPlatform.SERPAPI, List.of("SERPAPI", "SERP"));
+
+			for (Map.Entry<SearchPlatform, List<String>> entry : platformKeywords.entrySet()) {
+				for (String keyword : entry.getValue()) {
+					if (response.contains(keyword)) {
+						return entry.getKey();
+					}
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.warn("Failed to parse AI search platform selection: {}", aiResponse, e);
+		}
+		return null; // 解析失败时返回null，让调用方使用默认值
+	}
+
+	/**
 	 * 将SearchPlatform转换为SearchEnum
 	 * @param platform 搜索平台枚举
 	 * @return 对应的SearchEnum
@@ -75,13 +121,20 @@ public class SmartAgentUtil {
 			case BAIDU_SEARCH -> SearchEnum.BAIDU;
 			case SERPAPI -> SearchEnum.SERPAPI;
 
-			// TODO: 根据实际情况添加更多映射,并且暂时使用默认引擎
-			case GOOGLE_SCHOLAR -> SearchEnum.SERPAPI;
-			case XIAOHONGSHU -> SearchEnum.BAIDU;
-			case WIKIPEDIA -> SearchEnum.TAVILY;
-			case NATIONAL_STATISTICS -> SearchEnum.ALIYUN;
-			case GOOGLE_TRENDS -> SearchEnum.SERPAPI;
-			case BAIDU_INDEX -> SearchEnum.BAIDU;
+			// 专用工具调用映射 - 返回null表示需要使用工具调用搜索
+			case OPENALEX, OPENTRIPMAP, TRIPADVISOR, WIKIPEDIA, WORLDBANK_DATA, GOOGLE_SCHOLAR -> null;
+		};
+	}
+
+	/**
+	 * 检查是否为工具调用平台
+	 * @param platform 搜索平台
+	 * @return true表示是工具调用平台
+	 */
+	public static boolean isToolCallingPlatform(SearchPlatform platform) {
+		return platform != null && switch (platform) {
+			case OPENALEX, OPENTRIPMAP, TRIPADVISOR, WIKIPEDIA, WORLDBANK_DATA, GOOGLE_SCHOLAR -> true;
+			default -> false;
 		};
 	}
 
@@ -101,26 +154,29 @@ public class SmartAgentUtil {
 	}
 
 	/**
-	 * 更新状态中的智能Agent相关配置
-	 * @param state 全局状态
+	 * 创建智能Agent相关配置的状态更新Map
 	 * @param searchPlatforms 选择的搜索平台列表
 	 * @param agentType Agent类型
+	 * @return 包含智能Agent配置的状态更新Map
 	 */
-	public static void updateStateWithSmartAgentConfig(OverAllState state, List<SearchEnum> searchPlatforms,
+	public static Map<String, Object> createSmartAgentStateUpdate(List<SearchEnum> searchPlatforms,
 			AgentType agentType) {
-		state.data().put("selectedSearchPlatforms", searchPlatforms);
-		state.data().put("agentType", agentType);
-		state.data().put("searchPlatformCount", searchPlatforms.size());
+		Map<String, Object> stateUpdate = new HashMap<>();
+
+		stateUpdate.put("selectedSearchPlatforms", searchPlatforms);
+		stateUpdate.put("agentType", agentType);
+		stateUpdate.put("searchPlatformCount", searchPlatforms.size());
 
 		if (!searchPlatforms.isEmpty()) {
-			state.data().put("primarySearchEngine", searchPlatforms.get(0).name());
+			stateUpdate.put("primarySearchEngine", searchPlatforms.get(0).name());
 		}
 
-		state.data().put("agentTypeName", agentType.getName());
-		state.data().put("agentTypeCode", agentType.getCode());
+		stateUpdate.put("agentTypeName", agentType.getName());
+		stateUpdate.put("agentTypeCode", agentType.getCode());
 
-		logger.debug("Updated state with smart agent config: agentType={}, searchPlatforms={}", agentType,
-				searchPlatforms);
+		logger.debug("Created smart agent state update: agentType={}, searchPlatforms={}", agentType, searchPlatforms);
+
+		return stateUpdate;
 	}
 
 	/**
@@ -136,6 +192,66 @@ public class SmartAgentUtil {
 			case DATA_ANALYSIS -> "优先使用数据和统计平台，重点关注官方数据和市场分析";
 			case GENERAL_RESEARCH -> "使用通用搜索引擎进行综合性研究";
 		};
+	}
+
+	/**
+	 * 统一的搜索选择结果封装
+	 */
+	public static class SearchSelectionResult {
+
+		private final SearchEnum searchEnum;
+
+		private final SearchPlatform searchPlatform;
+
+		private final AgentType agentType;
+
+		private final boolean isToolCalling;
+
+		public SearchSelectionResult(SearchEnum searchEnum, SearchPlatform searchPlatform, AgentType agentType,
+				boolean isToolCalling) {
+			this.searchEnum = searchEnum;
+			this.searchPlatform = searchPlatform;
+			this.agentType = agentType;
+			this.isToolCalling = isToolCalling;
+		}
+
+		public SearchEnum getSearchEnum() {
+			return searchEnum;
+		}
+
+		public SearchPlatform getSearchPlatform() {
+			return searchPlatform;
+		}
+
+		public AgentType getAgentType() {
+			return agentType;
+		}
+
+		public boolean isToolCalling() {
+			return isToolCalling;
+		}
+
+	}
+
+	/**
+	 * 验证搜索平台是否有效且可用
+	 * @param platform 搜索平台
+	 * @param enabledSearchEngines 启用的搜索引擎列表
+	 * @return true表示平台有效且可用
+	 */
+	public static boolean isValidAndEnabledPlatform(SearchPlatform platform, List<String> enabledSearchEngines) {
+		if (platform == null) {
+			return false;
+		}
+
+		// 工具调用平台总是有效的
+		if (isToolCallingPlatform(platform)) {
+			return true;
+		}
+
+		// 传统搜索引擎需要检查是否启用
+		SearchEnum searchEnum = convertToSearchEnum(platform);
+		return searchEnum != null && isSearchEngineEnabled(searchEnum, enabledSearchEngines);
 	}
 
 }

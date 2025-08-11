@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.deepresearch.service.multiagent;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentDispatchResult;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
-import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.SmartAgentUtil;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import org.slf4j.Logger;
@@ -86,8 +85,6 @@ public class SmartAgentDispatcherService {
 			ChatClient selectedAgent = selectAgent(agentType);
 
 			String searchStrategy = searchPlatformSelectionService.getSearchStrategyDescription(agentType);
-
-			SmartAgentUtil.updateStateWithSmartAgentConfig(state, searchPlatforms, agentType);
 
 			return new AgentDispatchResult(selectedAgent, agentType, searchPlatforms, searchStrategy, true, null);
 
