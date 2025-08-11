@@ -43,8 +43,8 @@ import java.util.Properties;
 @EnableConfigurationProperties({ NacosMcpRegisterProperties.class, NacosMcpProperties.class,
 		McpServerProperties.class })
 @AutoConfiguration(after = McpServerAutoConfiguration.class)
-@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(prefix = NacosMcpRegisterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = false)
 public class NacosMcpRegisterAutoConfiguration {
 
 	@Bean
