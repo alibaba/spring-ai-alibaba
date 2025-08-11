@@ -43,12 +43,17 @@ public class AnswerNodeSection implements NodeSection<AnswerNodeData> {
 			sb.append(".answer(\"").append(escape(d.getAnswer())).append("\")\n");
 		}
 
+		sb.append(String.format(".outputKey(\"%s\")%n", d.getOutputKey()));
+
 		sb.append(".build();\n");
 		sb.append("stateGraph.addNode(\"")
 			.append(varName)
 			.append("\", AsyncNodeAction.node_async(")
 			.append(varName)
 			.append("));\n\n");
+
+		// 回答节点直接接END
+		sb.append(String.format("stateGraph.addEdge(\"%s\", END);%n", varName));
 
 		return sb.toString();
 	}
