@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +40,6 @@ import java.util.Map;
 /**
  * MCP Router 核心服务 提供 MCP Server 发现、管理和请求代理功能
  */
-@Service
 public class McpRouterService {
 
 	private static final Logger logger = LoggerFactory.getLogger(McpRouterService.class);

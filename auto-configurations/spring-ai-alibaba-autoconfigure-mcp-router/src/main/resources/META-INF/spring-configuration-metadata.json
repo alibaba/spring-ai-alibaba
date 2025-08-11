@@ -7,10 +7,10 @@
       "description": "Configuration properties for Nacos MCP integration."
     },
     {
-      "name": "spring.ai.alibaba.mcp.gateway.nacos",
-      "type": "com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.gateway.properties.NacosMcpGatewayProperties",
-      "description": "Configuration properties for Nacos MCP gateway service discovery."
+      "name": "spring.ai.alibaba.mcp.router",
+      "type": "com.alibaba.cloud.ai.mcp.router.config.McpRouterProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.router.config.McpRouterProperties",
+      "description": "Configuration properties for MCP router service."
     }
   ],
   "properties": [
@@ -64,10 +64,18 @@
       "defaultValue": ""
     },
     {
-      "name": "spring.ai.alibaba.mcp.gateway.nacos.service-names",
+      "name": "spring.ai.alibaba.mcp.router.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable MCP router service.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.router.config.McpRouterProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.router.service-names",
       "type": "java.util.List<java.lang.String>",
-      "description": "Service names for gateway discovery of MCP servers.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties"
+      "description": "List of MCP service names for router to manage.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.router.config.McpRouterProperties",
+      "defaultValue": []
     }
   ],
   "hints": []
