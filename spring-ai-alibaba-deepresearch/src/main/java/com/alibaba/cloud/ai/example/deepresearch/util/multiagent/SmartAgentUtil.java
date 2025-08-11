@@ -87,20 +87,23 @@ public class SmartAgentUtil {
 				}
 			}
 
-			Map<SearchPlatform, List<String>> platformKeywords = Map.of(SearchPlatform.OPENALEX, List.of("OPENALEX"),
-					SearchPlatform.GOOGLE_SCHOLAR, List.of("GOOGLE_SCHOLAR", "SCHOLAR"), SearchPlatform.WIKIPEDIA,
-					List.of("WIKIPEDIA", "WIKI"), SearchPlatform.OPENTRIPMAP, List.of("OPENTRIPMAP", "TRIPMAP"),
-					SearchPlatform.TRIPADVISOR, List.of("TRIPADVISOR"), SearchPlatform.WORLDBANK_DATA,
-					List.of("WORLDBANK", "WORLD_BANK"), SearchPlatform.TAVILY, List.of("TAVILY"),
-					SearchPlatform.ALIYUN_AI_SEARCH, List.of("ALIYUN", "ALIYUN_AI_SEARCH"), SearchPlatform.BAIDU_SEARCH,
-					List.of("BAIDU"), SearchPlatform.SERPAPI, List.of("SERPAPI", "SERP"));
-
-			for (Map.Entry<SearchPlatform, List<String>> entry : platformKeywords.entrySet()) {
-				for (String keyword : entry.getValue()) {
-					if (response.contains(keyword)) {
-						return entry.getKey();
-					}
-				}
+			if (response.contains("OPENALEX")) {
+				return SearchPlatform.OPENALEX;
+			}
+			else if (response.contains("GOOGLE_SCHOLAR")) {
+				return SearchPlatform.GOOGLE_SCHOLAR;
+			}
+			else if (response.contains("WIKIPEDIA")) {
+				return SearchPlatform.WIKIPEDIA;
+			}
+			else if (response.contains("OPENTRIPMAP")) {
+				return SearchPlatform.OPENTRIPMAP;
+			}
+			else if (response.contains("WORLD_BANK")) {
+				return SearchPlatform.WORLDBANK_DATA;
+			}
+			else if (response.contains("TAVILY")) {
+				return SearchPlatform.TAVILY;
 			}
 		}
 		catch (Exception e) {
