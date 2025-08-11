@@ -100,6 +100,3 @@ logging:
   level:
     com.alibaba.cloud.ai.mapper: debug
     org.springframework.jdbc: debug
-
-
-
