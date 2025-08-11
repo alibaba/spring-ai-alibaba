@@ -75,18 +75,15 @@ public class SmartAgentSelectionHelperService {
 			AgentDispatchResult dispatchResult = smartAgentDispatcher.dispatchToAgent(questionContent, state);
 
 			if (dispatchResult.isSuccess() && dispatchResult.getAgent() != null) {
-				logger.info("选择智能Agent: {} -> {}", questionContent, dispatchResult.getAgentType());
 				return new AgentSelectionResult(dispatchResult.getAgent(), dispatchResult.getAgentType(), true,
 						"智能Agent选择成功", dispatchResult.getStateUpdate());
 			}
 			else {
-				logger.warn("智能Agent分派失败: {}", dispatchResult.getErrorMessage());
 				return new AgentSelectionResult(fallbackAgent, AgentType.GENERAL_RESEARCH, false,
 						"智能Agent分派失败: " + dispatchResult.getErrorMessage());
 			}
 		}
 		catch (Exception e) {
-			logger.warn("智能Agent选择失败，回退到默认Agent: {}", e.getMessage());
 			return new AgentSelectionResult(fallbackAgent, AgentType.GENERAL_RESEARCH, false,
 					"智能Agent选择异常: " + e.getMessage());
 		}
