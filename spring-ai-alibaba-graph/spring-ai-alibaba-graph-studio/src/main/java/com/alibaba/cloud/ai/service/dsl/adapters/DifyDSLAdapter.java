@@ -240,45 +240,6 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			BiConsumer<? super NodeData, Map<String, String>> consumer = postProcessConsumers.get(clazz);
 			consumer.accept(node.getData(), varNames);
 		});
-
-		// // todo: 完善一下
-		// Map<String, String> idToOutputKey = nodes.stream()
-		// .filter(n -> !(n.getData() instanceof EmptyNodeData))
-		// .collect(Collectors.toMap(Node::getId, n -> {
-		// try {
-		// return ((VariableAggregatorNodeData) n.getData()).getOutputKey();
-		// }
-		// catch (ClassCastException e) {
-		// return n.getData().getOutputs().get(0).getName();
-		// }
-		// }));
-		//
-		// // Replace all variable paths in all aggregation nodes.
-		// for (Node node : nodes) {
-		// if (node.getData() instanceof VariableAggregatorNodeData agg) {
-		// List<List<String>> newVars = agg.getVariables().stream().map(path -> {
-		// String srcId = path.get(0);
-		// String tail = path.get(1);
-		// String mapped = idToOutputKey.getOrDefault(srcId, srcId);
-		// return List.of(mapped, tail);
-		// }).toList();
-		// agg.setVariables(newVars);
-		//
-		// var adv = agg.getAdvancedSettings();
-		// if (adv != null && adv.getGroups() != null) {
-		// for (var group : adv.getGroups()) {
-		// List<List<String>> newGroupVars = group.getVariables().stream().map(path -> {
-		// String srcId = path.get(0);
-		// String tail = path.get(1);
-		// String mapped = idToOutputKey.getOrDefault(srcId, srcId);
-		// return List.of(mapped, tail);
-		// }).toList();
-		// group.setVariables(newGroupVars);
-		// }
-		// }
-		// }
-		// }
-
 		return nodes;
 	}
 
