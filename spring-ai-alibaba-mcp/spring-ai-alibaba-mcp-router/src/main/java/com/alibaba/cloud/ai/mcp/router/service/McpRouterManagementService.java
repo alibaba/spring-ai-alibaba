@@ -133,6 +133,28 @@ public class McpRouterManagementService {
 	}
 
 	/**
+	 * 标记初始化完成，后续将使用嵌入模型进行向量搜索
+	 */
+	public void markInitializationComplete() {
+		mcpServerVectorStore.markInitializationComplete();
+	}
+
+	/**
+	 * 检查是否已完成初始化
+	 * @return 是否已完成初始化
+	 */
+	public boolean isInitializationComplete() {
+		return mcpServerVectorStore.isInitializationComplete();
+	}
+
+	/**
+	 * 重置为初始化状态，用于重新初始化
+	 */
+	public void resetInitializationState() {
+		mcpServerVectorStore.resetInitializationState();
+	}
+
+	/**
 	 * 刷新服务信息
 	 * @param serviceName 服务名
 	 * @return 是否成功
