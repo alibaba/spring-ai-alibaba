@@ -15,29 +15,40 @@
  */
 package com.alibaba.cloud.ai.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 
 /**
  * 业务知识管理实体类
  */
+@TableName("business_knowledge")
 public class BusinessKnowledge {
 
+	@TableId(value = "id", type = IdType.AUTO)
 	private Long id;
 
+	@TableField("business_term")
 	private String businessTerm; // 业务名词
 
+	@TableField("description")
 	private String description; // 说明
 
+	@TableField("synonyms")
 	private String synonyms; // 同义词，逗号分隔
 
+	@TableField("default_recall")
 	private Boolean defaultRecall; // 默认召回
 
+	@TableField("dataset_id")
 	private String datasetId; // 关联的数据集ID
 
+	@TableField("agent_id")
 	private String agentId; // 关联的智能体ID
 
+	@TableField(value = "created_time", fill = FieldFill.INSERT)
 	private LocalDateTime createTime;
 
+	@TableField(value = "updated_time", fill = FieldFill.INSERT_UPDATE)
 	private LocalDateTime updateTime;
 
 	public BusinessKnowledge() {
@@ -51,8 +62,6 @@ public class BusinessKnowledge {
 		this.defaultRecall = defaultRecall;
 		this.datasetId = datasetId;
 		this.agentId = null; // 默认为null，保持向后兼容
-		this.createTime = LocalDateTime.now();
-		this.updateTime = LocalDateTime.now();
 	}
 
 	public BusinessKnowledge(String businessTerm, String description, String synonyms, Boolean defaultRecall,
@@ -63,8 +72,6 @@ public class BusinessKnowledge {
 		this.defaultRecall = defaultRecall;
 		this.datasetId = datasetId;
 		this.agentId = agentId;
-		this.createTime = LocalDateTime.now();
-		this.updateTime = LocalDateTime.now();
 	}
 
 	public BusinessKnowledge(Long id, String businessTerm, String description, String synonyms, Boolean defaultRecall,
