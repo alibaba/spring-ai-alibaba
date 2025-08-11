@@ -15,17 +15,18 @@
  */
 
 import { LlmCheckService } from '@/utils/llm-check'
+import type { InputMessage } from "@/stores/memory"
 
 export class DirectApiService {
   private static readonly BASE_URL = '/api/executor'
 
   // Send task directly (direct execution mode)
-  public static async sendMessage(query: string): Promise<any> {
+  public static async sendMessage(query: InputMessage): Promise<any> {
     return LlmCheckService.withLlmCheck(async () => {
       const response = await fetch(`${this.BASE_URL}/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query })
+        body: JSON.stringify(query)
       })
       if (!response.ok) throw new Error(`API request failed: ${response.status}`)
       return await response.json()

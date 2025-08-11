@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentDispatchResult;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentSelectionResult;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
-import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.AgentIntegrationUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
