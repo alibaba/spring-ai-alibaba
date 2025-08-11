@@ -52,16 +52,6 @@ MCP服务(待完善)：
 
 ```json
 {
-    "coderAgent": {
-        "mcp-servers": [
-            {
-                "url": "https://mcp.amap.com/?key={AMAP_MAPS_API_KEY}",
-                "sse-endpoint": null,
-                "description": "这是一个高德地图服务",
-                "enabled": true
-            }
-        ]
-    },
     "researchAgent": {
         "mcp-servers": [
             {
@@ -122,6 +112,7 @@ docker run -d \
 > - dockerConfig目录下有对应应用的配置文件，也可在配置文件中设置key及相关配置信息
 
 **测试用例**
+相关请求可见：[DeepResearch.http](DeepResearch.http)
 
 ```curl
 curl --location 'http://localhost:8080/chat/stream' \

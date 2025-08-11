@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.model;
+package com.alibaba.cloud.ai.example.deepresearch.model.enums;
 
 /**
  * @author yingzi
