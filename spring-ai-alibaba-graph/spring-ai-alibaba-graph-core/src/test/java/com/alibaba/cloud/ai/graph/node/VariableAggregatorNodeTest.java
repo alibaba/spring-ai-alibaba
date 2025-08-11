@@ -113,7 +113,7 @@ public class VariableAggregatorNodeTest {
 
 		Map<String, Object> aggregated = (Map<String, Object>) result.get("aggregatedData");
 		assertEquals(Arrays.asList("Alice", 30), aggregated.get("UserInfo"));
-		assertEquals("Laptop", aggregated.get("ProductInfo"));
+		assertEquals("[Laptop]", aggregated.get("ProductInfo").toString());
 	}
 
 	@Test

@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-public class HttpNodeSection implements NodeSection {
+public class HttpNodeSection implements NodeSection<HttpNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {
@@ -94,7 +94,23 @@ public class HttpNodeSection implements NodeSection {
 		}
 
 		sb.append(".build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
+
+		// 辅助节点，用于转换HttpNode的结果
+		String assistNodeCode = String.format("""
+				state -> {
+				   String varName = "%s";
+				   String key = varName + "_body";
+				   Map<String, Object> result = %s.apply(state);
+				   Object object = result.get(key);
+				   if(!(object instanceof Map<?, ?> map)) {
+				       return Map.of();
+				   }
+				   return Map.of(varName + "_headers", map.get("headers"), key, map.get("body"),
+				       varName + "_status_code", map.get("status"));
+				}
+				""", varName, varName);
+		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
+				assistNodeCode));
 
 		return sb.toString();
 	}

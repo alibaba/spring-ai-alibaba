@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
+import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.ToolNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -184,6 +185,14 @@ public class ToolNodeDataConverter extends AbstractNodeDataConverter<ToolNodeDat
 	@Override
 	public String generateVarName(int count) {
 		return "toolNode" + count;
+	}
+
+	@Override
+	public void postProcessOutput(ToolNodeData nodeData, String varName) {
+		Variable output = ToolNodeData.getDefaultOutputSchema();
+		nodeData.setOutputs(List.of(output));
+		nodeData.setOutputKey(varName + "_" + output.getName());
+		super.postProcessOutput(nodeData, varName);
 	}
 
 }

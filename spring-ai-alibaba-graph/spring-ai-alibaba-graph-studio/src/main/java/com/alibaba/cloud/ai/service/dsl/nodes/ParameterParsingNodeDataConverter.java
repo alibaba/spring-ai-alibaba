@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
+import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.ParameterParsingNodeData;
@@ -23,10 +24,10 @@ import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,52 +56,38 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 			@SuppressWarnings("unchecked")
 			@Override
 			public ParameterParsingNodeData parse(Map<String, Object> data) {
-				ParameterParsingNodeData nd = new ParameterParsingNodeData();
-
-				// variable_selector -> inputs 列表
-				List<String> sel = (List<String>) data.get("variable_selector");
-				if (sel != null && sel.size() == 2) {
-					nd.setInputs(Collections.singletonList(new VariableSelector(sel.get(0), sel.get(1))));
+				// 获取指令
+				String instruction = data.getOrDefault("instruction", "unknown").toString();
+				Object query = data.get("query");
+				// 获取输入
+				VariableSelector input;
+				if (query instanceof List<?> queryList && queryList.size() >= 2) {
+					input = new VariableSelector(queryList.get(0).toString(), queryList.get(1).toString());
 				}
-
-				// input_text_key
-				nd.setInputTextKey((String) data.get("input_text_key"));
-
-				// parameters (List<Map<String, String>>)
-				List<Map<String, String>> plist = (List<Map<String, String>>) data.get("parameters");
-				if (plist != null) {
-					nd.setParameters(plist);
+				else {
+					input = new VariableSelector("unknown", "unknown");
 				}
-
-				// output_key
-				nd.setOutputKey((String) data.get("output_key"));
-
-				return nd;
+				// 获取输出参数
+				List<Map<String, Object>> parametersList = (List<Map<String, Object>>) data.getOrDefault("parameters",
+						List.of());
+				return new ParameterParsingNodeData("input", parametersList, instruction, "output", input);
 			}
 
 			@Override
 			public Map<String, Object> dump(ParameterParsingNodeData nd) {
 				Map<String, Object> m = new LinkedHashMap<>();
 
-				// variable_selector
-				if (nd.getInputs() != null && !nd.getInputs().isEmpty()) {
-					VariableSelector vs = nd.getInputs().get(0);
-					m.put("variable_selector", List.of(vs.getNamespace(), vs.getName()));
+				if (nd.getInstruction() != null) {
+					m.put("instruction", nd.getInstruction());
 				}
 
-				// input_text_key
-				if (nd.getInputTextKey() != null) {
-					m.put("input_text_key", nd.getInputTextKey());
-				}
-
-				// parameters
-				if (nd.getParameters() != null && !nd.getParameters().isEmpty()) {
+				if (nd.getParameters() != null) {
 					m.put("parameters", nd.getParameters());
 				}
 
-				// output_key
-				if (nd.getOutputKey() != null) {
-					m.put("output_key", nd.getOutputKey());
+				if (nd.getInputs() != null && !nd.getInputs().isEmpty()) {
+					VariableSelector selector = nd.getInputs().get(0);
+					m.put("query", List.of(selector.getNamespace(), selector.getName()));
 				}
 
 				return m;
@@ -129,6 +116,29 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 	@Override
 	public String generateVarName(int count) {
 		return "parameterParsingNode" + count;
+	}
+
+	@Override
+	public void postProcessOutput(ParameterParsingNodeData nodeData, String varName) {
+		nodeData.setOutputKey(varName + "_output");
+		List<Variable> variableList = nodeData.getParameters()
+			.stream()
+			.map(mp -> new Variable(mp.getOrDefault("name", "unknown").toString(),
+					mp.getOrDefault("type", "string").toString())
+				.setDescription(mp.getOrDefault("description", "").toString()))
+			.toList();
+		nodeData.setOutputs(variableList);
+		super.postProcessOutput(nodeData, varName);
+	}
+
+	@Override
+	public BiConsumer<ParameterParsingNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, varName) -> {
+				nodeData.setInputTextKey(nodeData.getInputs().get(0).getNameInCode());
+			});
+			case CUSTOM -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

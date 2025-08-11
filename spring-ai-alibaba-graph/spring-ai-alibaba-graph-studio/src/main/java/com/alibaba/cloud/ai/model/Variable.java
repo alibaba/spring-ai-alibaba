@@ -27,6 +27,7 @@ public class Variable {
 
 	private String value;
 
+	// todo: use VariableType Enum
 	private String valueType;
 
 	private String description;

@@ -17,11 +17,12 @@ package com.alibaba.cloud.ai.service.generator.workflow.sections;
 
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.StartNodeData;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
 @Component
-public class StartNodeSection implements NodeSection {
+public class StartNodeSection implements NodeSection<StartNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

@@ -38,6 +38,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -77,6 +79,9 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 	List<Document> documents;
 
+	// 当一些属性同时设置了键和值（例如userPrompt和userPromptKey），优先使用state键里对应的值，还是预设值
+	private boolean isKeyFirst = true;
+
 	private String outputKey;
 
 	private String retrievalMode;
@@ -87,11 +92,9 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 	private Double vectorWeight;
 
-	private String inputId;
-
-	private String inputField;
-
 	private static final Logger logger = LoggerFactory.getLogger(KnowledgeRetrievalNode.class);
+
+	private final Map<String, Optional<Object>> configBackupMap = new ConcurrentHashMap<>();
 
 	public KnowledgeRetrievalNode() {
 	}
@@ -112,6 +115,7 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
+		backupAndRestore(true);
 		initNodeWithState(state);
 		DocumentRetriever documentRetriever = VectorStoreDocumentRetriever.builder()
 			.similarityThreshold(similarityThreshold)
@@ -136,37 +140,63 @@ public class KnowledgeRetrievalNode implements NodeAction {
 		else {
 			updatedState.put("user_prompt", newUserPrompt.toString());
 		}
+		updatedState.put(Optional.ofNullable(this.outputKey).orElse("output"), documents);
+		backupAndRestore(false);
 		return updatedState;
 	}
 
+	private boolean check(Object obj, String key) {
+		return (obj == null && StringUtils.hasLength(key) && !this.isKeyFirst)
+				|| (StringUtils.hasLength(key) && this.isKeyFirst);
+	}
+
+	private void backupAndRestore(boolean isBackup) {
+		if (isBackup) {
+			configBackupMap.put("userPrompt", Optional.ofNullable(this.userPrompt));
+			configBackupMap.put("topK", Optional.ofNullable(this.topK));
+			configBackupMap.put("similarityThreshold", Optional.ofNullable(this.similarityThreshold));
+			configBackupMap.put("filterExpression", Optional.ofNullable(this.filterExpression));
+			configBackupMap.put("enableRanker", Optional.ofNullable(this.enableRanker));
+			configBackupMap.put("rerankModel", Optional.ofNullable(this.rerankModel));
+			configBackupMap.put("rerankOptions", Optional.ofNullable(this.rerankOptions));
+			configBackupMap.put("vectorStore", Optional.ofNullable(this.vectorStore));
+		}
+		else {
+			this.userPrompt = (String) configBackupMap.get("userPrompt").orElse(null);
+			this.topK = (Integer) configBackupMap.get("topK").orElse(null);
+			this.similarityThreshold = (Double) configBackupMap.get("similarityThreshold").orElse(null);
+			this.filterExpression = (Filter.Expression) configBackupMap.get("filterExpression").orElse(null);
+			this.enableRanker = (Boolean) configBackupMap.get("enableRanker").orElse(null);
+			this.rerankModel = (RerankModel) configBackupMap.get("rerankModel").orElse(null);
+			this.vectorStore = (VectorStore) configBackupMap.get("vectorStore").orElse(null);
+		}
+	}
+
 	private void initNodeWithState(OverAllState state) {
-		if (StringUtils.hasLength(userPromptKey)) {
+		if (check(this.userPrompt, this.userPromptKey)) {
 			this.userPrompt = (String) state.value(userPromptKey).orElse(this.userPrompt);
 		}
-		if (StringUtils.hasLength(topKKey)) {
+		if (check(this.topK, this.topKKey)) {
 			this.topK = (Integer) state.value(topKKey).orElse(this.topK);
 		}
 
-		if (StringUtils.hasLength(similarityThresholdKey)) {
+		if (check(this.similarityThreshold, this.similarityThresholdKey)) {
 			this.similarityThreshold = (Double) state.value(similarityThresholdKey).orElse(this.similarityThreshold);
 		}
-		if (StringUtils.hasLength(filterExpressionKey)) {
+		if (check(this.filterExpression, this.filterExpressionKey)) {
 			this.filterExpression = (Filter.Expression) state.value(filterExpressionKey).orElse(this.filterExpression);
 		}
-		if (StringUtils.hasLength(enableRankerKey)) {
+		if (check(this.enableRanker, this.enableRankerKey)) {
 			this.enableRanker = (Boolean) state.value(enableRankerKey).orElse(this.enableRanker);
 		}
-		if (StringUtils.hasLength(rerankModelKey)) {
+		if (check(this.rerankModel, this.rerankModelKey)) {
 			this.rerankModel = (RerankModel) state.value(rerankModelKey).orElse(this.rerankModel);
 		}
-		if (StringUtils.hasLength(rerankOptionsKey)) {
+		if (check(this.rerankOptions, this.rerankOptionsKey)) {
 			this.rerankOptions = (DashScopeRerankOptions) state.value(rerankOptionsKey).orElse(this.rerankOptions);
 		}
-		if (StringUtils.hasLength(vectorStoreKey)) {
+		if (check(this.vectorStore, this.vectorStoreKey)) {
 			this.vectorStore = (VectorStore) state.value(vectorStoreKey).orElse(this.vectorStore);
-		}
-		if (StringUtils.hasLength(outputKey)) {
-			this.outputKey = (String) state.value(outputKey).orElse(this.outputKey);
 		}
 	}
 
@@ -280,12 +310,15 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 		private Double vectorWeight;
 
-		private String inputId;
-
-		private String inputField;
+		private boolean isKeyFirst = true;
 
 		public Builder userPromptKey(String userPromptKey) {
 			this.userPromptKey = userPromptKey;
+			return this;
+		}
+
+		public Builder inputKey(String val) {
+			this.userPromptKey = val;
 			return this;
 		}
 
@@ -389,13 +422,8 @@ public class KnowledgeRetrievalNode implements NodeAction {
 			return this;
 		}
 
-		public Builder inputId(String inputId) {
-			this.inputId = inputId;
-			return this;
-		}
-
-		public Builder inputField(String inputField) {
-			this.inputField = inputField;
+		public Builder isKeyFirst(boolean val) {
+			this.isKeyFirst = val;
 			return this;
 		}
 
@@ -422,8 +450,7 @@ public class KnowledgeRetrievalNode implements NodeAction {
 			knowledgeRetrievalNode.embeddingModelName = this.embeddingModelName;
 			knowledgeRetrievalNode.embeddingProviderName = this.embeddingProviderName;
 			knowledgeRetrievalNode.vectorWeight = this.vectorWeight;
-			knowledgeRetrievalNode.inputId = this.inputId;
-			knowledgeRetrievalNode.inputField = this.inputField;
+			knowledgeRetrievalNode.isKeyFirst = this.isKeyFirst;
 			return knowledgeRetrievalNode;
 		}
 

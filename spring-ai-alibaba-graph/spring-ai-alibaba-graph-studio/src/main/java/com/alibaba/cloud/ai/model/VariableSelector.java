@@ -35,6 +35,11 @@ public class VariableSelector {
 	 */
 	private String label;
 
+	/**
+	 * 在生成代码中使用的名称
+	 */
+	private String nameInCode;
+
 	public VariableSelector() {
 	}
 
@@ -78,6 +83,15 @@ public class VariableSelector {
 
 	public VariableSelector setLabel(String label) {
 		this.label = label;
+		return this;
+	}
+
+	public String getNameInCode() {
+		return nameInCode;
+	}
+
+	public VariableSelector setNameInCode(String nameInCode) {
+		this.nameInCode = nameInCode;
 		return this;
 	}
 

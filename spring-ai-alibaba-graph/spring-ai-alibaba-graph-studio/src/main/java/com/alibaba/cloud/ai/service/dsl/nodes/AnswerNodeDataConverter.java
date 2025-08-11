@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.AnswerNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
+import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.utils.StringTemplateUtil;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 @Component
@@ -56,14 +58,13 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 			public AnswerNodeData parse(Map<String, Object> data) {
 				String difyTmpl = (String) data.get("answer");
 				List<String> variables = new ArrayList<>();
-				String tmpl = StringTemplateUtil.fromDifyTmpl(difyTmpl, variables);
 				List<VariableSelector> inputs = variables.stream().map(variable -> {
 					String[] splits = variable.split("\\.", 2);
 					return new VariableSelector(splits[0], splits[1]);
 				}).toList();
 				String outputKey = (String) data.get("output_key");
 
-				AnswerNodeData nd = new AnswerNodeData(inputs, AnswerNodeData.DEFAULT_OUTPUTS).setAnswer(tmpl);
+				AnswerNodeData nd = new AnswerNodeData(inputs, AnswerNodeData.getDefaultOutputs()).setAnswer(difyTmpl);
 				nd.setOutputKey(outputKey);
 				return nd;
 			}
@@ -94,6 +95,23 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 	@Override
 	public String generateVarName(int count) {
 		return "answerNode" + count;
+	}
+
+	@Override
+	public void postProcessOutput(AnswerNodeData nodeData, String varName) {
+		nodeData.setOutputKey(varName + "_" + AnswerNodeData.getDefaultOutputs().get(0).getName());
+		super.postProcessOutput(nodeData, varName);
+	}
+
+	@Override
+	public BiConsumer<AnswerNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
+				var func = NodeDataConverter.convertVarReserveFunction(dialectType);
+				nodeData.setAnswer(func.apply(nodeData.getAnswer(), idToVarName));
+			});
+			case CUSTOM -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

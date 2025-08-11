@@ -16,19 +16,20 @@
 
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
-import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
+import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -313,21 +314,35 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 	}
 
 	@Override
-	public void postProcess(LLMNodeData data, String varName) {
-		if (data.getOutputKey() == null) {
-			data.setOutputKey(varName + "_output");
-		}
-		data.setOutputs(List.of(new Variable(data.getOutputKey(), VariableType.STRING.value())));
-		UnaryOperator<String> fixRefs = txt -> txt.replaceAll("#(\\d+)\\.", "#" + varName + ".");
-		if (data.getPromptTemplate() != null) {
-			data.getPromptTemplate().forEach(pt -> pt.setText(fixRefs.apply(pt.getText())));
-		}
-		if (data.getSystemPromptTemplate() != null) {
-			data.setSystemPromptTemplate(fixRefs.apply(data.getSystemPromptTemplate()));
-		}
-		if (data.getUserPromptTemplate() != null) {
-			data.setUserPromptTemplate(fixRefs.apply(data.getUserPromptTemplate()));
-		}
+	public void postProcessOutput(LLMNodeData data, String varName) {
+		data.setOutputKey(varName + "_" + LLMNodeData.getDefaultOutputSchema().getName());
+		data.setOutputs(List.of(LLMNodeData.getDefaultOutputSchema()));
+		super.postProcessOutput(data, varName);
+	}
+
+	@Override
+	public BiConsumer<LLMNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> super.postProcessConsumer(dialectType).andThen((data, idToVarName) -> {
+				// 替换Dify的变量占位符
+				UnaryOperator<String> convertString = (
+						prompt) -> NodeDataConverter.convertVarReserveFunction(dialectType).apply(prompt, idToVarName);
+				UnaryOperator<LLMNodeData.PromptTemplate> convertTemplate = (promptTemplate) -> {
+					String prompt = promptTemplate.getText();
+					return promptTemplate.setText(convertString.apply(prompt));
+				};
+				data.setPromptTemplate(Optional.ofNullable(data.getPromptTemplate())
+					.stream()
+					.flatMap(List::stream)
+					.map(convertTemplate)
+					.toList())
+					.setUserPromptTemplate(
+							Optional.ofNullable(data.getUserPromptTemplate()).map(convertString).orElse(null))
+					.setSystemPromptTemplate(
+							Optional.ofNullable(data.getSystemPromptTemplate()).map(convertString).orElse(null));
+			});
+			case CUSTOM -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

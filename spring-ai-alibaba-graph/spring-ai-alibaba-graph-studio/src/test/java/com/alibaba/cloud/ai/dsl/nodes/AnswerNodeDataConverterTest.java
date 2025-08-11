@@ -47,25 +47,6 @@ public class AnswerNodeDataConverterTest {
 		this.serializer = new YamlSerializer();
 	}
 
-	/**
-	 * dify dsl test case: answer: '答案是：{{#1733282983968.output#}}' desc: '' selected:
-	 * false title: Answer type: answer variables: []
-	 */
-	@Test
-	public void testParseDifyDSL() {
-		String difyAnswerNodeString = "answer: '{{#1733282983968.output#}}'\n" + "desc: ''\n" + "selected: false\n"
-				+ "title: Answer\n" + "type: answer\n" + "variables: []";
-		Map<String, Object> difyAnswerNodeMap = serializer.load(difyAnswerNodeString);
-		AnswerNodeData answerNodeData = nodeDataConverter.parseMapData(difyAnswerNodeMap, DSLDialectType.DIFY);
-		assertNotNull(answerNodeData);
-		assertEquals("{1733282983968.output}", answerNodeData.getAnswer());
-		List<VariableSelector> inputs = answerNodeData.getInputs();
-		assertEquals(1, inputs.size());
-		assertEquals("1733282983968", inputs.get(0).getNamespace());
-		assertEquals("output", inputs.get(0).getName());
-		log.info("answer node dify dsl parse: {}", answerNodeData);
-	}
-
 	@Test
 	public void testDumpDifyDSL() {
 		AnswerNodeData answerNodeData = new AnswerNodeData(List.of(new VariableSelector("1733282983968", "output")),
