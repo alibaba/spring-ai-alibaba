@@ -14,9 +14,9 @@
 # limitations under the License.
 #
 
-com.alibaba.cloud.ai.autoconfigure.mcp.gateway.McpGatewayServerAutoConfiguration
-com.alibaba.cloud.ai.autoconfigure.mcp.gateway.McpGatewaySseServerAutoConfiguration
-com.alibaba.cloud.ai.autoconfigure.mcp.gateway.McpGatewayStreamableServerAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.gateway.core.McpGatewayServerAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.gateway.core.McpGatewaySseServerAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.gateway.core.McpGatewayStreamableServerAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.mcp.gateway.nacos.NacosMcpGatewayAutoConfiguration
 
 
