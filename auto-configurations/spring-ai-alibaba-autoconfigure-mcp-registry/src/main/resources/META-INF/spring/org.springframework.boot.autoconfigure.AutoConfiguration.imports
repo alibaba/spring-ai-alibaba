@@ -14,5 +14,10 @@
 # limitations under the License.
 #
 com.alibaba.cloud.ai.autoconfigure.mcp.register.NacosMcpRegisterAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.client.NacosMcpAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.client.NacosMcpClientAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.client.NacosMcpToolCallbackAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.client.NacosMcpTransportBuilderAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.tracing.McpTracingAutoConfiguration
 
 
