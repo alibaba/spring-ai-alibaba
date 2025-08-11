@@ -36,6 +36,7 @@ public class AgentPromptTemplateUtil {
 	public static String getSystemPrompt(AgentType agentType) {
 		return ResourceUtil.loadFileContent(agentType.getPromptFilePath());
 	}
+
 	/**
 	 * 获取问题分类的系统提示词
 	 * @return 分类系统提示词
@@ -53,7 +54,6 @@ public class AgentPromptTemplateUtil {
 	public static String getSearchPlatformSelectionPrompt() {
 		return loadFileContent(SEARCH_PLATFORM_SELECTOR_PROMPT_PATH);
 	}
-
 
 	/**
 	 * 构建完整的Agent提示词（系统提示词 + 引用指导）
