@@ -147,7 +147,7 @@ public class DocumentExtractorNode implements NodeAction {
 		List<String> documentContents = this.getDocument(fileList);
 
 		String key = Optional.ofNullable(this.outputKey).orElse("text");
-		if (this.inputIsArray) {
+		if (!this.inputIsArray) {
 			return Map.of(key, documentContents.get(0));
 		}
 		else {

@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -93,7 +94,7 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(KnowledgeRetrievalNode.class);
 
-	private final HashMap<String, Object> configBackupMap = new HashMap<>();
+	private final Map<String, Optional<Object>> configBackupMap = new ConcurrentHashMap<>();
 
 	public KnowledgeRetrievalNode() {
 	}
@@ -151,23 +152,23 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 	private void backupAndRestore(boolean isBackup) {
 		if (isBackup) {
-			configBackupMap.put("userPrompt", this.userPrompt);
-			configBackupMap.put("topK", this.topK);
-			configBackupMap.put("similarityThreshold", this.similarityThreshold);
-			configBackupMap.put("filterExpression", this.filterExpression);
-			configBackupMap.put("enableRanker", this.enableRanker);
-			configBackupMap.put("rerankModel", this.rerankModel);
-			configBackupMap.put("rerankOptions", this.rerankOptions);
-			configBackupMap.put("vectorStore", this.vectorStore);
+			configBackupMap.put("userPrompt", Optional.ofNullable(this.userPrompt));
+			configBackupMap.put("topK", Optional.ofNullable(this.topK));
+			configBackupMap.put("similarityThreshold", Optional.ofNullable(this.similarityThreshold));
+			configBackupMap.put("filterExpression", Optional.ofNullable(this.filterExpression));
+			configBackupMap.put("enableRanker", Optional.ofNullable(this.enableRanker));
+			configBackupMap.put("rerankModel", Optional.ofNullable(this.rerankModel));
+			configBackupMap.put("rerankOptions", Optional.ofNullable(this.rerankOptions));
+			configBackupMap.put("vectorStore", Optional.ofNullable(this.vectorStore));
 		}
 		else {
-			this.userPrompt = (String) configBackupMap.get("userPrompt");
-			this.topK = (Integer) configBackupMap.get("topK");
-			this.similarityThreshold = (Double) configBackupMap.get("similarityThreshold");
-			this.filterExpression = (Filter.Expression) configBackupMap.get("filterExpression");
-			this.enableRanker = (Boolean) configBackupMap.get("enableRanker");
-			this.rerankModel = (RerankModel) configBackupMap.get("rerankModel");
-			this.vectorStore = (VectorStore) configBackupMap.get("vectorStore");
+			this.userPrompt = (String) configBackupMap.get("userPrompt").orElse(null);
+			this.topK = (Integer) configBackupMap.get("topK").orElse(null);
+			this.similarityThreshold = (Double) configBackupMap.get("similarityThreshold").orElse(null);
+			this.filterExpression = (Filter.Expression) configBackupMap.get("filterExpression").orElse(null);
+			this.enableRanker = (Boolean) configBackupMap.get("enableRanker").orElse(null);
+			this.rerankModel = (RerankModel) configBackupMap.get("rerankModel").orElse(null);
+			this.vectorStore = (VectorStore) configBackupMap.get("vectorStore").orElse(null);
 		}
 	}
 
