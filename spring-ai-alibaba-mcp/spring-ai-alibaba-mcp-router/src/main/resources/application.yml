@@ -11,11 +11,6 @@ spring:
     dashscope:
       api-key: ${DASHSCOPE_API_KEY:your-dashscope-api-key}
 
-    # OpenAI 配置（可选）
-    openai:
-      api-key: ${OPENAI_API_KEY:your-openai-api-key}
-      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
-
     # 向量存储配置
     vectorstore:
       simple:
@@ -40,7 +35,12 @@ spring:
           serverAddr: localhost:8848
           namespace: public
           username: nacos
-          password:
+          password: '4K5T1W5kfY'
+        router:
+          enabled: true
+          service-names:
+            - webflux-mcp-server
+
 
 # 日志配置
 logging:

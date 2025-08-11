@@ -19,12 +19,7 @@ package com.alibaba.cloud.ai.mcp.router.service;
 import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscovery;
 import com.alibaba.cloud.ai.mcp.router.core.vectorstore.McpServerVectorStore;
 import com.alibaba.cloud.ai.mcp.router.model.McpServerInfo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * MCP Router 管理服务 参考 SimpleVectorStoreManagementService 实现模式
@@ -36,33 +31,10 @@ public class McpRouterManagementService {
 
 	private final McpServerVectorStore mcpServerVectorStore;
 
-	@Autowired
 	public McpRouterManagementService(McpServiceDiscovery mcpServiceDiscovery,
 			McpServerVectorStore mcpServerVectorStore) {
 		this.mcpServiceDiscovery = mcpServiceDiscovery;
 		this.mcpServerVectorStore = mcpServerVectorStore;
-	}
-
-	/**
-	 * 初始化 MCP 服务到向量库
-	 * @param serviceNames 要初始化的服务名列表
-	 * @return 是否成功
-	 */
-	public Boolean initializeServices(List<String> serviceNames) {
-		try {
-			// 先清空现有数据
-			clearAllServices();
-
-			// 批量添加服务
-			for (String serviceName : serviceNames) {
-				addService(serviceName);
-			}
-
-			return true;
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Failed to initialize MCP services: " + e.getMessage(), e);
-		}
 	}
 
 	/**
@@ -101,38 +73,6 @@ public class McpRouterManagementService {
 	}
 
 	/**
-	 * 搜索 MCP 服务
-	 * @param query 查询文本
-	 * @param limit 返回数量限制
-	 * @return 匹配的服务列表
-	 */
-	public List<McpServerInfo> searchServices(String query, int limit) {
-		try {
-			return mcpServerVectorStore.search(query, limit);
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Failed to search MCP services: " + e.getMessage(), e);
-		}
-	}
-
-	/**
-	 * 获取所有 MCP 服务
-	 * @return 服务列表
-	 */
-	public List<McpServerInfo> getAllServices() {
-		return mcpServerVectorStore.getAllServers();
-	}
-
-	/**
-	 * 获取指定服务
-	 * @param serviceName 服务名
-	 * @return 服务信息
-	 */
-	public McpServerInfo getService(String serviceName) {
-		return mcpServerVectorStore.getServer(serviceName);
-	}
-
-	/**
 	 * 刷新服务信息
 	 * @param serviceName 服务名
 	 * @return 是否成功
@@ -147,30 +87,6 @@ public class McpRouterManagementService {
 		catch (Exception e) {
 			throw new RuntimeException("Failed to refresh MCP service: " + e.getMessage(), e);
 		}
-	}
-
-	/**
-	 * 清空所有服务
-	 */
-	public void clearAllServices() {
-		try {
-			mcpServerVectorStore.clear();
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Failed to clear all services: " + e.getMessage(), e);
-		}
-	}
-
-	/**
-	 * 获取服务统计信息
-	 * @return 统计信息
-	 */
-	public Map<String, Object> getStatistics() {
-		Map<String, Object> stats = new HashMap<>();
-		stats.put("totalServices", mcpServerVectorStore.size());
-		stats.put("vectorStoreType", mcpServerVectorStore.getClass().getSimpleName());
-		stats.put("discoveryType", mcpServiceDiscovery.getClass().getSimpleName());
-		return stats;
 	}
 
 }

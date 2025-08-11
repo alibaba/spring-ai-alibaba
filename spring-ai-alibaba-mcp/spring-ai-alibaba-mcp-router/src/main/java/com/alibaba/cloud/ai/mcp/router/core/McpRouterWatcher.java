@@ -39,6 +39,10 @@ public class McpRouterWatcher extends AbstractRouterWatcher {
 	@Override
 	protected void handleChange() {
 		logger.debug("McpRouterWatcher polling...");
+		if (serviceNames == null || serviceNames.isEmpty()) {
+			logger.warn("No MCP services configured for refresh.");
+			return;
+		}
 		for (String serviceName : serviceNames) {
 			try {
 				managementService.refreshService(serviceName);
