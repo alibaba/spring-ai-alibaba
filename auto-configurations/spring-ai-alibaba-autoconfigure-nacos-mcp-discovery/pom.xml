@@ -23,7 +23,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-mcp-register</artifactId>
+            <artifactId>spring-ai-alibaba-mcp-registry</artifactId>
             <version>${revision}</version>
         </dependency>
 
