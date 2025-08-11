@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
-import com.alibaba.cloud.ai.model.Variable;
+import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.AssignerNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -28,6 +28,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 @Component
@@ -64,8 +65,15 @@ public class AssignerNodeDataConverter extends AbstractNodeDataConverter<Assigne
 					AssignerNodeData.AssignerItem ai = new AssignerNodeData.AssignerItem();
 					ai.setInputType((String) item.get("input_type"));
 					ai.setOperation((String) item.get("operation"));
-					ai.setValue((List<String>) item.get("value"));
-					ai.setVariableSelector((List<String>) item.get("variable_selector"));
+					Object valueObj = item.get("value");
+					if (valueObj instanceof List<?> valueList && valueList.size() >= 2) {
+						ai.setValue(new VariableSelector(valueList.get(0).toString(), valueList.get(1).toString()));
+					}
+					Object variableObj = item.get("variable_selector");
+					if (variableObj instanceof List<?> variableList && variableList.size() >= 2) {
+						ai.setVariableSelector(
+								new VariableSelector(variableList.get(0).toString(), variableList.get(1).toString()));
+					}
 					ai.setWriteMode((String) item.get("write_mode"));
 					return ai;
 				}).toList();
@@ -119,13 +127,25 @@ public class AssignerNodeDataConverter extends AbstractNodeDataConverter<Assigne
 
 	@Override
 	public void postProcessOutput(AssignerNodeData data, String varName) {
-		List<Variable> outputs = data.getItems()
-			.stream()
-			.map(item -> new Variable(item.getVariableSelector() != null && !item.getVariableSelector().isEmpty()
-					? item.getVariableSelector().get(item.getVariableSelector().size() - 1) : "output", "Any"))
-			.toList();
-		data.setOutputs(outputs);
-		super.postProcessOutput(data, varName);
+		// 赋值节点没有输出
+	}
+
+	@Override
+	public BiConsumer<AssignerNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> {
+				BiConsumer<AssignerNodeData, Map<String, String>> consumer = (nodeData, idToVarName) -> {
+					// 将赋值的多组变量放进Inputs里，方便格式化格式
+					List<VariableSelector> selectors = nodeData.getItems()
+						.stream()
+						.flatMap(item -> Stream.of(item.getValue(), item.getVariableSelector()))
+						.toList();
+					nodeData.setInputs(selectors);
+				};
+				yield consumer.andThen(super.postProcessConsumer(dialectType));
+			}
+			case CUSTOM -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

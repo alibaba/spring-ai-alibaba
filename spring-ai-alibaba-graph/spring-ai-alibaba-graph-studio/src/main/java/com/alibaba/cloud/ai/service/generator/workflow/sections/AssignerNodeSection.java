@@ -38,9 +38,9 @@ public class AssignerNodeSection implements NodeSection<AssignerNodeData> {
 		sb.append(String.format("// —— AssignerNode [%s] ——%n", id));
 		sb.append(String.format("AssignerNode %s = AssignerNode.builder()%n", varName));
 		for (AssignerNodeData.AssignerItem item : data.getItems()) {
-			String targetKey = item.getVariableSelector() != null && !item.getVariableSelector().isEmpty()
-					? item.getVariableSelector().get(item.getVariableSelector().size() - 1) : "target";
-			String inputKey = (item.getValue() != null && item.getValue().size() > 1) ? item.getValue().get(1) : null;
+			String targetKey = item.getVariableSelector() != null ? item.getVariableSelector().getNameInCode()
+					: "target";
+			String inputKey = (item.getValue() != null) ? item.getValue().getNameInCode() : null;
 			String writeMode = item.getWriteMode() != null ? item.getWriteMode().toUpperCase().replace("-", "_")
 					: "OVER_WRITE";
 			sb.append(String.format(".addItem(\"%s\", %s, AssignerNode.WriteMode.%s)%n", targetKey,
