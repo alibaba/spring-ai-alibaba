@@ -88,7 +88,7 @@ public class McpProxyService {
 				case "https":
 					return handleHttpHttpsProtocol(enrichedArgs, remoteConfig, protocol);
 				case "mcp-sse":
-				case "mcp-stream":
+				case "mcp-streamable":
 					return handleMcpStreamProtocol(enrichedArgs, remoteConfig, protocol);
 				default:
 					throw new RuntimeException("Unsupported protocol: " + protocol);
