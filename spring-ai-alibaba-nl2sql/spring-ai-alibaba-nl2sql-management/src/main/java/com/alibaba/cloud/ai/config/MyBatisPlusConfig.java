@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Configuration;
 import java.time.LocalDateTime;
 
 /**
- * MyBatis Plus 配置类 - 管理模块
+ * MyBatis Plus 配置类
  *
  * @author Alibaba Cloud AI
  */
