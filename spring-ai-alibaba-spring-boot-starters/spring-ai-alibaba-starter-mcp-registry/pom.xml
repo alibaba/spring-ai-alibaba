@@ -24,7 +24,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-starte-mcp-registry</artifactId>
+    <artifactId>spring-ai-alibaba-starter-mcp-registry</artifactId>
     <packaging>jar</packaging>
     <name>Spring AI Alibaba Starter Nacos Mcp Registry</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
