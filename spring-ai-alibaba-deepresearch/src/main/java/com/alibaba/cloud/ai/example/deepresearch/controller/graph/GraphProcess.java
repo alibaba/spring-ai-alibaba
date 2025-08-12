@@ -28,7 +28,6 @@ import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
-import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
@@ -42,6 +41,7 @@ import reactor.core.publisher.Sinks;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -69,6 +69,7 @@ public class GraphProcess {
 			{
 			    "nodeName": "__END__",
 			    "displayTitle": "结束",
+			    "graphId": %s
 			    "content": {
 			        "reason": "%s"
 			    }
@@ -103,32 +104,48 @@ public class GraphProcess {
 		processStream(graphId, resultFuture, sink);
 	}
 
+	private String safeObjectToJson(Object object) {
+		try {
+			return OBJECT_MAPPER.writeValueAsString(object);
+		}
+		catch (JsonProcessingException e) {
+			logger.error("JSON processing error: {}", e.getMessage());
+			return "{}";
+		}
+	}
+
 	public void processStream(GraphId graphId, AsyncGenerator<NodeOutput> generator,
 			Sinks.Many<ServerSentEvent<String>> sink) {
+		final String graphIdStr = this.safeObjectToJson(graphId);
 		// 创建一个任务，且遇见中断时停止图的运行
 		Future<?> future = executor.submit(() -> {
 			AsyncGenerator.Data<NodeOutput> next;
 
-			do {
+			while (true) {
 				NodeOutput output;
 				// 另外发起一个线程，用于迭代generator
 				Future<AsyncGenerator.Data<NodeOutput>> nextFuture = executor.submit(generator::next);
 				try {
 					next = nextFuture.get();
+					if (next.isDone()) {
+						break;
+					}
 					// 获取NodeOutput
 					output = next.getData().get();
 				}
-				catch (ExecutionException e) {
+				catch (CancellationException | ExecutionException e) {
 					logger.error("Error in stream processing", e);
 					sink.tryEmitNext(
-							ServerSentEvent.builder(String.format(TASK_STOPPED_MESSAGE_TEMPLATE, "服务异常")).build());
+							ServerSentEvent.builder(String.format(TASK_STOPPED_MESSAGE_TEMPLATE, graphIdStr, "服务异常"))
+								.build());
 					sink.tryEmitError(e);
 					return;
 				}
 				catch (InterruptedException e) {
 					logger.info("Stopped by user.");
 					sink.tryEmitNext(
-							ServerSentEvent.builder(String.format(TASK_STOPPED_MESSAGE_TEMPLATE, "用户终止")).build());
+							ServerSentEvent.builder(String.format(TASK_STOPPED_MESSAGE_TEMPLATE, graphIdStr, "用户终止"))
+								.build());
 					sink.tryEmitComplete();
 					return;
 				}
@@ -152,16 +169,18 @@ public class GraphProcess {
 				if (Thread.currentThread().isInterrupted()) {
 					logger.info("Stopped by user at node: {}", nodeName);
 					sink.tryEmitNext(
-							ServerSentEvent.builder(String.format(TASK_STOPPED_MESSAGE_TEMPLATE, "用户终止")).build());
+							ServerSentEvent.builder(String.format(TASK_STOPPED_MESSAGE_TEMPLATE, graphIdStr, "用户终止"))
+								.build());
 					sink.tryEmitComplete();
 					return;
 				}
 			}
-			while (!next.isDone());
 
 			// 任务正常完成
 			logger.info("Stream processing completed.");
 			sink.tryEmitComplete();
+			// 从任务Map中移出
+			graphTaskFutureMap.remove(graphId);
 		});
 		// 存放到Map中
 		Future<?> oldFuture = graphTaskFutureMap.put(graphId, future);
@@ -199,7 +218,7 @@ public class GraphProcess {
 			.map(Generation::getMetadata)
 			.map(ChatGenerationMetadata::getFinishReason)
 			.orElse("");
-		return JSON.toJSONString(Map.of(nodeName, streamingOutput.chatResponse().getResult().getOutput().getText(),
+		return this.safeObjectToJson(Map.of(nodeName, streamingOutput.chatResponse().getResult().getOutput().getText(),
 				"step_title", stepTitle, "visible", prefixEnum.isVisible(), "finishReason", finishReason));
 	}
 
