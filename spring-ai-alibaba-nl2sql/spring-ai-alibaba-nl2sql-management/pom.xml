@@ -105,7 +105,7 @@
             <artifactId>spring-ai-alibaba-core</artifactId>
             <version>${spring-ai-alibaba.version}</version>
         </dependency>
-        
+
         <!-- Spring AI Alibaba DashScope Starter -->
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
