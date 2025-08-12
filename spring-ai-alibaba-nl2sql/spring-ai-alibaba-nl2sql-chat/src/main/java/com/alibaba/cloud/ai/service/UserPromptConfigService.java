@@ -282,26 +282,4 @@ public class UserPromptConfigService {
 		return getActiveConfigsByType(promptType);
 	}
 
-	/**
-	 * 获取自定义提示词内容，如果没有自定义配置则返回null（兼容旧接口）
-	 * @param promptType 提示词类型
-	 * @return 自定义提示词内容
-	 */
-	public String getCustomPromptContent(String promptType) {
-		List<UserPromptConfig> configs = getActiveConfigsByType(promptType);
-		if (!configs.isEmpty()) {
-			return configs.get(0).getSystemPrompt();
-		}
-		return null;
-	}
-
-	/**
-	 * 检查是否有自定义配置
-	 * @param promptType 提示词类型
-	 * @return 是否有自定义配置
-	 */
-	public boolean hasCustomConfig(String promptType) {
-		return !getActiveConfigsByType(promptType).isEmpty();
-	}
-
 }
