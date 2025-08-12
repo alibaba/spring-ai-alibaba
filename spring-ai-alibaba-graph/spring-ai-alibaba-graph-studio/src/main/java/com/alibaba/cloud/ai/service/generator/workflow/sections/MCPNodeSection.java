@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class MCPNodeSection implements NodeSection {
+public class MCPNodeSection implements NodeSection<MCPNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class HumanNodeSection implements NodeSection {
+public class HumanNodeSection implements NodeSection<HumanNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

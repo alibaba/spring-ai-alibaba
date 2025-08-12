@@ -45,7 +45,7 @@ public class VariableAggregatorNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		Map<String, Object> result = new HashMap<>();
 
-		if ("group".equals(outputType) && advancedSettings != null && advancedSettings.isGroupEnabled()) {
+		if (advancedSettings != null && advancedSettings.isGroupEnabled()) {
 			Map<String, Object> groupedResult = new HashMap<>();
 			for (Group group : advancedSettings.getGroups()) {
 				List<Object> values = new ArrayList<>();
@@ -55,7 +55,7 @@ public class VariableAggregatorNode implements NodeAction {
 						values.add(value);
 					}
 				}
-				groupedResult.put(group.getGroupName(), convertOutput(values, group.getOutputType()));
+				groupedResult.put(group.getGroupName(), values);
 			}
 			result.put(outputKey, groupedResult);
 		}

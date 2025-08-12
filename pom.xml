@@ -163,11 +163,9 @@
 
         <!-- Spring AI Alibaba MCP -->
         <!-- Nacos3 version -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-discovery</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-register</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-registry</module>
 
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-gateway-core</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-gateway-nacos</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-router</module>
 
         <!-- Spring AI Alibaba Nacos Prompt Template -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
@@ -180,9 +178,8 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-prompt</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-discovery</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-register</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-gateway-nacos</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-registry</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-router</module>
 
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>

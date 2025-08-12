@@ -396,6 +396,13 @@ export default {
             }
 
             console.log('更新显示，当前section数量:', streamingSections.value.length)
+            
+            // 自动滚动到底部
+            nextTick(() => {
+                if (resultContainer.value) {
+                    resultContainer.value.scrollTop = resultContainer.value.scrollHeight
+                }
+            })
         }
 
         eventSource.onmessage = (event) => {

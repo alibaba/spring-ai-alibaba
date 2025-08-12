@@ -20,7 +20,9 @@ import com.alibaba.cloud.ai.graph.node.HttpNode.AuthConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.HttpRequestNodeBody;
 import com.alibaba.cloud.ai.graph.node.HttpNode.RetryConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.TimeoutConfig;
+import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
+import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 import org.springframework.http.HttpMethod;
 
@@ -33,6 +35,13 @@ import java.util.Map;
  * Builder.。
  */
 public class HttpNodeData extends NodeData {
+
+	public static List<Variable> getDefaultOutputSchemas() {
+		return List.of(new Variable("body", VariableType.STRING.value()),
+				new Variable("status_code", VariableType.NUMBER.value()),
+				new Variable("headers", VariableType.OBJECT.value()),
+				new Variable("files", VariableType.ARRAY_FILE.value()));
+	}
 
 	/** HTTP method, default GET */
 	private HttpMethod method = HttpMethod.GET;

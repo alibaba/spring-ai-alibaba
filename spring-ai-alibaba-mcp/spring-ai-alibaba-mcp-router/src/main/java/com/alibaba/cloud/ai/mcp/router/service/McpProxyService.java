@@ -33,7 +33,6 @@ import io.modelcontextprotocol.spec.McpSchema.InitializeResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
@@ -44,7 +43,6 @@ import java.util.HashMap;
 /**
  * MCP 代理服务 参考 spring-ai-alibaba-mcp-gateway-nacos 的实现，提供完整的 MCP 服务代理功能
  */
-@Service
 public class McpProxyService {
 
 	private static final Logger logger = LoggerFactory.getLogger(McpProxyService.class);

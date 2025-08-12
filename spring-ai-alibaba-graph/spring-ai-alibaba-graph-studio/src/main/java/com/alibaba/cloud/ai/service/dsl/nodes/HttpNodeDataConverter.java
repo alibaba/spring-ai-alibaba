@@ -20,21 +20,26 @@ import com.alibaba.cloud.ai.graph.node.HttpNode.AuthConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.HttpRequestNodeBody;
 import com.alibaba.cloud.ai.graph.node.HttpNode.RetryConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.TimeoutConfig;
-import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
+import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.springframework.ai.util.json.JsonParser;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -85,8 +90,13 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 				if (headersObj instanceof Map) {
 					headers = (Map<String, String>) headersObj;
 				}
-				else if (headersObj instanceof String && headersObj.equals("")) {
-					headers = Collections.emptyMap();
+				else if (headersObj instanceof String str) {
+					// Dify DSL以"key:value"的形式每行存储一个headers对
+					headers = Arrays.stream(str.split("\\r?\\n"))
+						.map(line -> line.split(":"))
+						.filter(parts -> parts.length == 2)
+						.collect(Collectors.toMap(parts -> parts[0].trim(), parts -> parts[1].trim(),
+								(oldValue, newValue) -> newValue));
 				}
 				else {
 					headers = Collections.emptyMap();
@@ -96,8 +106,13 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 				if (paramsObj instanceof Map) {
 					queryParams = (Map<String, String>) paramsObj;
 				}
-				else if (paramsObj instanceof String && paramsObj.equals("")) {
-					queryParams = Collections.emptyMap();
+				else if (paramsObj instanceof String str) {
+					// Dify DSL以"key:value"的形式每行存储一个params对
+					queryParams = Arrays.stream(str.split("\\r?\\n"))
+						.map(line -> line.split(":"))
+						.filter(parts -> parts.length == 2)
+						.collect(Collectors.toMap(parts -> parts[0].trim(), parts -> parts[1].trim(),
+								(oldValue, newValue) -> newValue));
 				}
 				else {
 					queryParams = Collections.emptyMap();
@@ -239,15 +254,54 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 	}
 
 	@Override
-	public void postProcess(HttpNodeData data, String varName) {
-		String origKey = data.getOutputKey();
-		String newKey = varName + "_output";
+	public void postProcessOutput(HttpNodeData data, String varName) {
+		data.setOutputKey(varName + "_" + HttpNodeData.getDefaultOutputSchemas().get(0).getName());
+		data.setOutputs(HttpNodeData.getDefaultOutputSchemas());
+		super.postProcessOutput(data, varName);
+	}
 
-		if (origKey == null) {
-			data.setOutputKey(newKey);
-		}
-		data.setOutputs(
-				List.of(new Variable(data.getOutputKey(), com.alibaba.cloud.ai.model.VariableType.STRING.value())));
+	@Override
+	public BiConsumer<HttpNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> super.postProcessConsumer(dialectType).andThen((httpNodeData, idToVarName) -> {
+				var function = NodeDataConverter.convertVarReserveFunction(dialectType);
+				// 将headers，params，body的Dify参数占位符转化为SAA中间变量
+				httpNodeData.setHeaders(httpNodeData.getHeaders()
+					.entrySet()
+					.stream()
+					.collect(Collectors.toMap(
+							// HttpNode源代码使用${}的变量格式
+							entry -> function.apply(entry.getKey().replace("{{#", "${{#"), idToVarName),
+							entry -> function.apply(entry.getValue().replace("{{#", "${{#"), idToVarName),
+							(oldVal, newVal) -> newVal)));
+				httpNodeData.setQueryParams(httpNodeData.getQueryParams()
+					.entrySet()
+					.stream()
+					.collect(Collectors.toMap(
+							entry -> function.apply(entry.getKey().replace("{{#", "${{#"), idToVarName),
+							entry -> function.apply(entry.getValue().replace("{{#", "${{#"), idToVarName),
+							(oldVal, newVal) -> newVal)));
+				httpNodeData.getBody().setData(httpNodeData.getBody().getData().stream().peek(data -> {
+					if (data.getKey() != null)
+						data.setKey(function.apply(data.getKey().replace("{{#", "${{#"), idToVarName));
+					if (data.getValue() != null)
+						data.setValue(function.apply(data.getValue().replace("{{#", "${{#"), idToVarName));
+				}).toList());
+				// 处理rawBodyMap
+				Map<String, Object> rawBodyMap = httpNodeData.getRawBodyMap();
+				if (!CollectionUtils.isEmpty(rawBodyMap)) {
+					String json = JsonParser.toJson(rawBodyMap);
+					json = function.apply(json.replace("{{#", "${{#"), idToVarName);
+					try {
+						httpNodeData.setRawBodyMap(JsonParser.fromJson(json, new TypeReference<Map<String, Object>>() {
+						}));
+					}
+					catch (Exception ignore) {
+					}
+				}
+			});
+			case CUSTOM -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

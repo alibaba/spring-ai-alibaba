@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.model.workflow.nodedata;
 
+import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 
 import java.util.List;
@@ -37,9 +38,9 @@ public class AssignerNodeData extends NodeData {
 
 		private String operation;
 
-		private List<String> value;
+		private VariableSelector value;
 
-		private List<String> variableSelector;
+		private VariableSelector variableSelector;
 
 		private String writeMode;
 
@@ -59,19 +60,19 @@ public class AssignerNodeData extends NodeData {
 			this.operation = operation;
 		}
 
-		public List<String> getValue() {
+		public VariableSelector getValue() {
 			return value;
 		}
 
-		public void setValue(List<String> value) {
+		public void setValue(VariableSelector value) {
 			this.value = value;
 		}
 
-		public List<String> getVariableSelector() {
+		public VariableSelector getVariableSelector() {
 			return variableSelector;
 		}
 
-		public void setVariableSelector(List<String> variableSelector) {
+		public void setVariableSelector(VariableSelector variableSelector) {
 			this.variableSelector = variableSelector;
 		}
 

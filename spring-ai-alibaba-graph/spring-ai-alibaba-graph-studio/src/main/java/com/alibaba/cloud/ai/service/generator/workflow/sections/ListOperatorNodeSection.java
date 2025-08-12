@@ -22,11 +22,8 @@ import com.alibaba.cloud.ai.model.workflow.nodedata.ListOperatorNodeData;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Component
-public class ListOperatorNodeSection implements NodeSection {
+public class ListOperatorNodeSection implements NodeSection<ListOperatorNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {
@@ -38,42 +35,69 @@ public class ListOperatorNodeSection implements NodeSection {
 		ListOperatorNodeData d = (ListOperatorNodeData) node.getData();
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
+		String javaType = switch (d.getElementClassType()) {
+			case STRING -> "String";
+			case NUMBER -> "Number";
+			case BOOLEAN -> "Boolean";
+			default -> "Object";
+		};
 
 		sb.append(String.format("// —— ListOperatorNode [%s] ——%n", id));
-		sb.append(String.format("ListOperatorNode %s = ListOperatorNode.builder()%n", varName));
+		if (javaType.equals("Object")) {
+			sb.append(String.format("// todo: define your own class and implement its comparator and filter.%n"));
+		}
+		sb.append(String.format(
+				"ListOperatorNode<%s> %s = ListOperatorNode.<%s>builder().mode(ListOperatorNode.Mode.LIST)%n", javaType,
+				varName, javaType));
 
-		if (d.getInputTextKey() != null) {
-			sb.append(String.format(".inputTextKey(\"%s\")%n", escape(d.getInputTextKey())));
+		if (d.getInputKey() != null) {
+			sb.append(String.format(".inputKey(\"%s\")%n", escape(d.getInputKey())));
 		}
 
-		if (d.getOutputTextKey() != null) {
-			sb.append(String.format(".outputTextKey(\"%s\")%n", escape(d.getOutputTextKey())));
+		if (d.getOutputKey() != null) {
+			sb.append(String.format(".outputKey(\"%s\")%n", escape(d.getOutputKey())));
 		}
 
-		List<String> filters = d.getFilters();
-		if (filters != null && !filters.isEmpty()) {
-			String joined = filters.stream()
-				.map(this::escape)
-				.map(s -> "\"" + s + "\"")
-				.collect(Collectors.joining(", "));
-			sb.append(String.format(".filters(List.of(%s))%n", joined));
+		// 排序
+		if (d.getOrder() != null) {
+			if (javaType.equals("Number")) {
+				if (d.getOrder() == ListOperatorNodeData.Ordered.ASC) {
+					sb.append(String
+						.format(".comparator((n1, n2) -> Double.compare(n1.doubleValue(), n2.doubleValue()))%n"));
+				}
+				else {
+					sb.append(String
+						.format(".comparator((n1, n2) -> Double.compare(n2.doubleValue(), n1.doubleValue()))%n"));
+				}
+			}
+			else {
+				if (d.getOrder() == ListOperatorNodeData.Ordered.ASC) {
+					sb.append(String.format(".comparator(Comparator.naturalOrder())%n"));
+				}
+				else {
+					sb.append(String.format(".comparator(Comparator.reverseOrder())%n"));
+				}
+			}
 		}
 
-		List<String> comps = d.getComparators();
-		if (comps != null && !comps.isEmpty()) {
-			String joined = comps.stream()
-				.map(this::escape)
-				.map(s -> "\"" + s + "\"")
-				.collect(Collectors.joining(", "));
-			sb.append(String.format(".comparators(List.of(%s))%n", joined));
+		// 过滤
+		if (d.getFilters() != null && !d.getFilters().isEmpty()) {
+			ListOperatorNodeData.FilterCondition filterCondition = d.getFilters().get(0);
+			String val = filterCondition.value();
+			if (javaType.equals("String")) {
+				val = "\"" + val + "\"";
+			}
+			String converted = filterCondition.condition().convert("x", val);
+			sb.append(String.format(".filter(x -> %s)%n", converted));
 		}
 
+		// 限制数量
 		if (d.getLimitNumber() != null) {
 			sb.append(String.format(".limitNumber(%d)%n", d.getLimitNumber()));
 		}
 
 		if (d.getElementClassType() != null) {
-			sb.append(String.format(".elementClassType(\"%s\")%n", escape(d.getElementClassType())));
+			sb.append(String.format(".elementClassType(%s.class)%n", javaType));
 		}
 
 		sb.append(".build();\n");

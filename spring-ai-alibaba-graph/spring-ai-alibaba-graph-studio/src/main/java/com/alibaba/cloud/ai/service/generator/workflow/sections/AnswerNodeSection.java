@@ -23,7 +23,7 @@ import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AnswerNodeSection implements NodeSection {
+public class AnswerNodeSection implements NodeSection<AnswerNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {
@@ -43,12 +43,17 @@ public class AnswerNodeSection implements NodeSection {
 			sb.append(".answer(\"").append(escape(d.getAnswer())).append("\")\n");
 		}
 
+		sb.append(String.format(".outputKey(\"%s\")%n", d.getOutputKey()));
+
 		sb.append(".build();\n");
 		sb.append("stateGraph.addNode(\"")
 			.append(varName)
 			.append("\", AsyncNodeAction.node_async(")
 			.append(varName)
 			.append("));\n\n");
+
+		// 回答节点直接接END
+		sb.append(String.format("stateGraph.addEdge(\"%s\", END);%n", varName));
 
 		return sb.toString();
 	}

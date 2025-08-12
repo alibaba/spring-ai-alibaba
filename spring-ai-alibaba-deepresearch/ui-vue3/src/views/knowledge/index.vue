@@ -27,7 +27,7 @@
           <a-card :title="$t('knowledge_management')" class="feature-card">
             <FileTextOutlined class="feature-icon" />
             <p>管理您的知识库文档，组织和分类文档内容</p>
-            <a-button type="primary" block>进入管理</a-button>
+            <a-button type="primary" block @click="goManagement">进入管理</a-button>
           </a-card>
         </a-col>
         
@@ -35,7 +35,7 @@
           <a-card :title="$t('document_upload')" class="feature-card">
             <UploadOutlined class="feature-icon" />
             <p>上传新的文档到知识库，支持多种文件格式</p>
-            <a-button type="primary" block>上传文档</a-button>
+            <a-button type="primary" block disabled>上传文档</a-button>
           </a-card>
         </a-col>
         
@@ -43,7 +43,7 @@
           <a-card :title="$t('knowledge_search')" class="feature-card">
             <SearchOutlined class="feature-icon" />
             <p>在知识库中搜索相关信息和文档内容</p>
-            <a-button type="primary" block>开始搜索</a-button>
+            <a-button type="primary" block disabled>开始搜索</a-button>
           </a-card>
         </a-col>
       </a-row>
@@ -78,11 +78,16 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import {
   FileTextOutlined,
   UploadOutlined,
   SearchOutlined,
 } from '@ant-design/icons-vue'
+
+const router = useRouter()
+const route = useRoute()
+const goManagement = () => router.push('/knowledge/management')
 
 const recentDocuments = ref([
   {

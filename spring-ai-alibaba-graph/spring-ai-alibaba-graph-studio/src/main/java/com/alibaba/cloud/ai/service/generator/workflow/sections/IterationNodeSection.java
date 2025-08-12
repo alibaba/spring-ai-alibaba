@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
  * @since 2025/7/23
  */
 @Component
-public class IterationNodeSection implements NodeSection {
+public class IterationNodeSection implements NodeSection<IterationNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

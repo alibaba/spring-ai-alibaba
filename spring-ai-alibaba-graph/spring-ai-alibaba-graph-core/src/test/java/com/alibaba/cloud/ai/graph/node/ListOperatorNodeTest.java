@@ -17,11 +17,17 @@ package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -32,46 +38,63 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ListOperatorNodeTest {
 
 	@Test
-	public void testNumberListOperatorNode() throws Exception {
+	@DisplayName("Test Array Input and Output")
+	public void testArray() throws Exception {
 		OverAllState t = new OverAllState();
-		t.input(Map.of("input", "[1,3,4,5.6,2,3.5,1,2,0.3,4,5,0.6,7,8,9,23]"));
-		// Define a list operation where the elements are nodes of numbers (integers or
-		// floating-point numbers).
-		ListOperatorNode<ListOperatorNode.NumberElement> node = ListOperatorNode.<ListOperatorNode.NumberElement>builder()
-			.elementClassType(ListOperatorNode.NumberElement.class)
-			.inputTextKey("input")
-			.outputTextKey("output")
-			// Filter the elements to retain only the integer parts of the list.
-			.filter(ListOperatorNode.NumberElement::isInteger)
-			// Sort in descending order.
-			.comparator(ListOperatorNode.NumberElement::compareToReverse)
+		t.input(Map.of("input", new Number[] { 1, 3, 4, 5.6, 2, 3.5, 1, 2, 0.3, 4, 5, 0.6, 7, 8, 9, 23 }));
+		ListOperatorNode<Number> node = ListOperatorNode.<Number>builder()
+			.mode(ListOperatorNode.Mode.ARRAY)
+			.inputKey("input")
+			.outputKey("output")
+			.filter(x -> x instanceof Integer)
+			.comparator(Comparator.comparing(Number::intValue).reversed())
 			.limitNumber(10)
 			.build();
-		assertEquals("[23,9,8,7,5,4,4,3,2,2]", node.apply(t).get("output").toString());
+		Object[] outputs = (Object[]) node.apply(t).getOrDefault("output", null);
+		assertEquals(Arrays.asList(23, 9, 8, 7, 5, 4, 4, 3, 2, 2), Arrays.asList(outputs));
 	}
 
 	@Test
-	public void testStringListOperatorNode() throws Exception {
+	@DisplayName("Test List Input and Output")
+	public void testList() throws Exception {
 		OverAllState t = new OverAllState();
-		t.input(Map.of("input", "[\"123456\", \"12345678\", \"1234\", \"234567\", \"abcdefg\"]"));
+		t.input(Map.of("input", Arrays.asList("123456", "12345678", "1234", "234567", "abcdefg")));
 		// Define a list operation where the elements are nodes of strings.
-		ListOperatorNode<ListOperatorNode.StringElement> node = ListOperatorNode.<ListOperatorNode.StringElement>builder()
-			.elementClassType(ListOperatorNode.StringElement.class)
-			.inputTextKey("input")
-			.outputTextKey("output")
+		ListOperatorNode<String> node = ListOperatorNode.<String>builder()
+			.mode(ListOperatorNode.Mode.LIST)
+			.inputKey("input")
+			.outputKey("output")
 			// Retain strings with the prefix '1234'.
-			.filter(x -> x.getValue().startsWith("1234"))
+			.filter(x -> x.startsWith("1234"))
 			// Retain strings with a length greater than 4.
-			.filter(x -> x.getValue().length() > 4)
+			.filter(x -> x.length() > 4)
 			// Sort in lexicographical ascending order.
-			.comparator(ListOperatorNode.StringElement::compareTo)
+			.comparator(String::compareTo)
 			.limitNumber(10)
 			.build();
-		assertEquals("[\"123456\",\"12345678\"]", node.apply(t).get("output").toString());
+		assertEquals(Arrays.asList("123456", "12345678"), node.apply(t).getOrDefault("output", null));
+	}
+
+	record FileElement(String type, Integer size, String name, String url, String extension,
+			@JsonProperty("mime_type") String mimeType, @JsonProperty("transfer_method") String transferMethod) {
+
+		public boolean sizeNoLessThan(int sz) {
+			return this.size() >= sz;
+		}
+
+		public boolean excludeExtension(String... extensions) {
+			for (String extension : extensions) {
+				if (this.extension().equals(extension)) {
+					return false;
+				}
+			}
+			return true;
+		}
 	}
 
 	@Test
-	public void testFileListOperatorNode() throws Exception {
+	@DisplayName("Test Json Input and Output")
+	public void testJson() throws Exception {
 		OverAllState t = new OverAllState();
 		// Simulate JSON file objects.
 		String jsonList = "["
@@ -83,50 +106,51 @@ public class ListOperatorNodeTest {
 				+ "]";
 		t.input(Map.of("input", jsonList));
 		// Define a list operation where the elements are nodes of file objects.
-		ListOperatorNode<ListOperatorNode.FileElement> node = ListOperatorNode.<ListOperatorNode.FileElement>builder()
-			.elementClassType(ListOperatorNode.FileElement.class)
+		ListOperatorNode<FileElement> node = ListOperatorNode.<FileElement>builder()
+			.elementClassType(FileElement.class)
 			// Exclude file objects with certain extensions.
 			.filter(x -> x.excludeExtension("jpg", "pdf"))
 			// Define the minimum file size.
 			.filter(x -> x.sizeNoLessThan(1))
 			// Sort files by size first.
-			.comparator(ListOperatorNode.FileElement::compareSize)
+			.comparator(Comparator.comparing(FileElement::size))
 			// Then sort by filename.
-			.comparator(ListOperatorNode.FileElement::compareName)
+			.comparator(Comparator.comparing(FileElement::name))
 			.build();
-		assertEquals(
+		ObjectMapper mapper = new ObjectMapper();
+		List<FileElement> exceptList = mapper.readValue(
 				"[{\"type\":\"archive\",\"size\":102400,\"name\":\"data_2023-10.zip\",\"url\":\"https://example.com/archives/data.zip\",\"extension\":\"zip\",\"mime_type\":\"application/zip\",\"transfer_method\":\"sftp\"},{\"type\":\"video\",\"size\":52428800,\"name\":\"demo-video.mp4\",\"url\":\"https://example.com/videos/demo.mp4\",\"extension\":\"mp4\",\"mime_type\":\"video/mp4\",\"transfer_method\":\"ftp\"}]",
-				node.apply(t).get("output").toString());
+				new TypeReference<List<FileElement>>() {
+				});
+		assertEquals(exceptList,
+				mapper.readValue(node.apply(t).get("output").toString(), new TypeReference<List<FileElement>>() {
+				}));
 	}
 
 	@Test
+	@DisplayName("Test Node in Graph")
 	public void testNodeInGraph() throws Exception {
 		// Take NumberElement as an example.
-		ListOperatorNode<ListOperatorNode.NumberElement> node = ListOperatorNode.<ListOperatorNode.NumberElement>builder()
-			.elementClassType(ListOperatorNode.NumberElement.class)
-			.inputTextKey("input")
-			.outputTextKey("output")
-			.filter(ListOperatorNode.NumberElement::isInteger)
-			.comparator(ListOperatorNode.NumberElement::compareToReverse)
+		ListOperatorNode<Number> node = ListOperatorNode.<Number>builder()
+			.mode(ListOperatorNode.Mode.LIST)
+			.inputKey("input")
+			.outputKey("output")
+			.filter(x -> x instanceof Integer)
+			.comparator(Comparator.comparing(Number::intValue).reversed())
 			.limitNumber(10)
 			.build();
-		OverAllStateFactory stateFactory = () -> {
-			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy("input", new ReplaceStrategy());
-			state.registerKeyAndStrategy("output", new ReplaceStrategy());
-			return state;
-		};
-		CompiledGraph compiledGraph = new StateGraph("ListOperatorNode Workflow Demo", stateFactory)
+		CompiledGraph compiledGraph = new StateGraph("ListOperatorNode Workflow Demo",
+				() -> Map.of("input", new ReplaceStrategy(), "output", new ReplaceStrategy()))
 			.addNode("number_list_operator", node_async(node))
 			.addEdge(START, "number_list_operator")
 			.addEdge("number_list_operator", END)
 			.compile();
-		assertEquals("[23,9,8,7,5,4,4,3,2,2]",
-				compiledGraph.invoke(Map.of("input", "[1,3,4,5.6,2,3.5,1,2,0.3,4,5,0.6,7,8,9,23]"))
+		assertEquals(Arrays.asList(23, 9, 8, 7, 5, 4, 4, 3, 2, 2),
+				compiledGraph
+					.invoke(Map.of("input", Arrays.asList(1, 3, 4, 5.6, 2, 3.5, 1, 2, 0.3, 4, 5, 0.6, 7, 8, 9, 23)))
 					.orElseThrow()
 					.value("output")
-					.orElseThrow()
-					.toString());
+					.orElseThrow());
 	}
 
 }

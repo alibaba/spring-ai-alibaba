@@ -88,6 +88,8 @@ public class VariableAggregatorNodeData extends NodeData {
 
 		private List<List<String>> variables;
 
+		private List<VariableSelector> variableSelectors;
+
 		@JsonProperty("group_name")
 		private String groupName;
 
@@ -109,6 +111,14 @@ public class VariableAggregatorNodeData extends NodeData {
 		public Groups setVariables(List<List<String>> variables) {
 			this.variables = variables;
 			return this;
+		}
+
+		public List<VariableSelector> getVariableSelectors() {
+			return variableSelectors;
+		}
+
+		public void setVariableSelectors(List<VariableSelector> variableSelectors) {
+			this.variableSelectors = variableSelectors;
 		}
 
 		public String getGroupName() {

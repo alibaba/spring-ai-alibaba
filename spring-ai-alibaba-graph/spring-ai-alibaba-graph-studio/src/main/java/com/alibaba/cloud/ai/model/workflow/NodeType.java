@@ -44,9 +44,9 @@ public enum NodeType {
 
 	HTTP("http", "http-request"),
 
-	LIST_OPERATOR("list-operator", "variable-operator"),
+	LIST_OPERATOR("list-operator", "list-operator"),
 
-	PARAMETER_PARSING("parameter-parsing", "parameter-parsing"),
+	PARAMETER_PARSING("parameter-parsing", "parameter-extractor"),
 
 	TOOL("tool", "tool"),
 
