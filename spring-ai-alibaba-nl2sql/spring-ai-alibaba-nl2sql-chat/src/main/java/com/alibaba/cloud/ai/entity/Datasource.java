@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -26,38 +27,54 @@ import java.time.LocalDateTime;
  *
  * @author Alibaba Cloud AI
  */
+@TableName("datasource")
 public class Datasource {
 
+	@TableId(value = "id", type = IdType.AUTO)
 	private Integer id;
 
+	@TableField("name")
 	private String name;
 
+	@TableField("type")
 	private String type;
 
+	@TableField("host")
 	private String host;
 
+	@TableField("port")
 	private Integer port;
 
+	@TableField("database_name")
 	private String databaseName;
 
+	@TableField("username")
 	private String username;
 
+	@TableField("password")
 	private String password;
 
+	@TableField("connection_url")
 	private String connectionUrl;
 
+	@TableField("status")
 	private String status;
 
+	@TableField("test_status")
 	private String testStatus;
 
+	@TableField("description")
 	private String description;
 
+	@TableField("creator_id")
 	private Long creatorId;
 
+	@TableField(value = "create_time", fill = FieldFill.INSERT)
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime createTime;
 
+	@TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime updateTime;

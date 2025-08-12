@@ -15,37 +15,34 @@
  * limitations under the License.
  */
 
-import { defineStore } from 'pinia'
-import { type SimpleType } from 'ant-design-x-vue'
-import { reactive } from 'vue'
+import { type MessageInfo } from 'ant-design-x-vue'
 
-type ConfigType = {
-  form: {
-    auto_accepted_plan: boolean
-    optimize_query_num: number
-    max_plan_iterations: number
-    max_step_num: number
-    mcp_settings: any
-    search_engine: 'tavily',
-  }
+/**
+ * 消息状态类型定义
+ */
+export interface MessageState<Message = any> {
+  // 会话 id
+  info: MessageInfo<Message | any>
+  // 是否候选, 是: 不显示在界面上
+  candidate: boolean
+  // 是否展示研究细节
+  deepResearchDetail: boolean
+  // 记录ai内容的类型
+  aiType: 'normal' | 'startDS' | 'onDS' | 'endDS'
+  // 极速模式 或者 深度模式
+  deepResearch?: boolean
+  threadId: string
 }
-export const useConfigStore = () =>
-  defineStore('configStore', {
-    state(): ConfigType {
-      return reactive({
-        form: {
-          auto_accepted_plan: true,
-          optimize_query_num: 3,
-          max_plan_iterations: 1,
-          max_step_num: 3,
-          mcp_settings: {},
-          search_engine: 'tavily',
-        },
-      })
-    },
-    getters: {
-      chatConfig: state => state.form,
-    },
-    actions: {},
-    persist: true,
-  })()
+
+
+/**
+ * 消息存储类型定义
+ */
+export interface MsgType<Message> {
+  convId: string
+  currentState: { [key: string]: MessageState<Message> }
+  // 记录历史
+  history: { [key: string]: MessageInfo<string>[] }
+  htmlReport: { [key: string]: string[] }
+  report: { [key: string]: any[] }
+}

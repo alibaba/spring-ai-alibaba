@@ -22,15 +22,16 @@
               </Flex>
             </Flex>
           </template>
+        <!-- 思考过程 -->
         <div class="message-list" v-if="items && items.length > 0 && !endFlag">
           <ThoughtChain
             :items="items"
             collapsible
           />
         </div>
+        <!-- END 节点返回之后显示的内容 -->
         <div v-else-if="endFlag" class="end-content">
             <MD :content="endContent" />
-            
             <!-- 思考过程 -->
             <a-collapse :bordered="false" class="thought-collapse">
               <a-collapse-panel header="参考来源" key="1" class="thought-panel">
@@ -76,19 +77,21 @@ import { Flex, Button, Modal } from 'ant-design-vue'
 import { CloseOutlined, LoadingOutlined, CheckCircleOutlined, GlobalOutlined, DownloadOutlined } from '@ant-design/icons-vue'
 import { parseJsonTextStrict } from '@/utils/jsonParser';
 import { useMessageStore } from '@/store/MessageStore'
-import { computed, h, watch, onUnmounted, ref } from 'vue'
+import { computed, h, watch, onUnmounted, onMounted, ref } from 'vue'
 import { ThoughtChain, type ThoughtChainProps, type ThoughtChainItem } from 'ant-design-x-vue';
 import MD from '@/components/md/index.vue'
 import HtmlRenderer from '@/components/html/index.vue'
 import ReferenceSources from '@/components/reference-sources/index.vue'
 import { XStreamBody } from '@/utils/stream'
 import request from '@/utils/request'
+import type { NormalNode } from '@/types/node';
 
 const messageStore = useMessageStore()
 
 interface Props {
   visible?: boolean
   convId: string
+  threadId: string
 }
 
 interface Emits {
@@ -98,7 +101,8 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   visible: false,
-  convId: ''
+  convId: '',
+  threadId: ''
 })
 
 // HTML 渲染组件相关状态
@@ -112,45 +116,28 @@ const endContent = ref('')
 const sources = ref([])
 
 const arrayTemp: ThoughtChainProps['items'] = []
-// 用于控制历史记录的显示
-let isLoading = false
 // 用于缓存llm_stream节点的内容
 const llmStreamCache = new Map<string, { item: ThoughtChainItem, content: string }>()
 // 从messageStore 拿出消息，然后进行解析并且渲染
 const items = computed(() => {
     // 思维链显示的列表
     const array: ThoughtChainProps['items'] = []
-    if(!props.convId || !messageStore.history[props.convId]){
+    if(!props.threadId || !messageStore.report[props.threadId]){
       return array
     }
-    // 过滤出非人类的消息
-    const messages = messageStore.history[props.convId].filter(item => item.status != 'local')
+    // TODO 性能问题？
+    const messages = messageStore.report[props.threadId]
+    arrayTemp.length = 0
+    llmStreamCache.clear()
+    endFlag.value = false
+    endContent.value = ''
+    sources.value = []
     // 遍历messages 用于渲染思维链
-    messages.forEach(msg => {
-      // 单个chunk
-      // xchat组件的第一个chunk是 Waiting... 所以需要跳过
-      if(msg.status === 'loading' && msg.message != 'Waiting...') {
-           isLoading = true
-           const node = JSON.parse(msg.message)
-           if(node.nodeName) {
-              processJsonNodeLogic(node)
-           }else{
-             processLlmStreamNodeLogic(node)
-           }
-      }
-      //  完整的text， 历史记录的渲染
-      //  当stream完成，xchat还会返回一次success，为避免思维链重复渲染，如果是loading状态，则不在重复增加节点
-      if(msg.status === 'success' && !isLoading) {
-          isLoading = false
-          const jsonArray = parseJsonTextStrict(msg.message)
-          jsonArray.forEach(node => {
-            if(node.nodeName) {
-              processJsonNodeLogic(node)
-            }else{
-              processLlmStreamNodeLogic(node)
-            }
-          })
-
+    messages.forEach(node => {
+      if(node.nodeName) {
+        processJsonNodeLogic(node)
+      }else{
+        processLlmStreamNodeLogic(node)
       }
     })
 
@@ -159,7 +146,7 @@ const items = computed(() => {
 })
 
 // 处理json节点
-const processJsonNodeLogic = (node: any) => {
+const processJsonNodeLogic = (node: NormalNode) => {
     // 渲染普通节点
     processJsonNode(node)
     // 普通节点处理完后，添加pending节点
@@ -183,7 +170,8 @@ const processLlmStreamNodeLogic = (node: any) => {
   for (const key of llmStreamKeys) {
     // 流式节点：移除pending节点，完成之前的流式节点
     removeLastPendingNode()
-    item = processLlmStreamNode(node, key)
+    const k = node.graphId.thread_id + '-' + key
+    item = processLlmStreamNode(node, key, k)
   }
   if(item) {
     // 检查是否已经存在相同的item（针对llm_stream节点）
@@ -197,7 +185,7 @@ const processLlmStreamNodeLogic = (node: any) => {
 // 移除所有pending状态的节点
 const removeLastPendingNode = () => {
   for (let i = arrayTemp.length - 1; i >= 0; i--) {
-    if (arrayTemp[i].status === 'pending' && arrayTemp[i].title === '【处理中】正在请求后端内容') {
+    if (arrayTemp[i].status === 'pending' && arrayTemp[i].title === '思考中') {
       arrayTemp.splice(i, 1)
     }
   }
@@ -208,18 +196,18 @@ const appendPendingNode = () => {
 
   // 如果不存在pending节点，创建一个新的
   const pendingItem: ThoughtChainItem = {
-      title: '【处理中】正在请求后端内容',
-      description: '正在向后端发送请求并等待响应',
+      title: '思考中',
+      description: '正在等待思考结果',
       icon: h(LoadingOutlined),
       status: 'pending'
     }
     arrayTemp.push(pendingItem)
 }
 
-const processLlmStreamNode = (node: any, key: string): ThoughtChainItem => {
+const processLlmStreamNode = (node: any, key: string, cacheKey: string): ThoughtChainItem => {
   // 检查缓存中是否已存在该节点
-  if (llmStreamCache.has(key)) {
-    const cached = llmStreamCache.get(key)!
+  if (llmStreamCache.has(cacheKey)) {
+    const cached = llmStreamCache.get(cacheKey)!
     // 累积新的内容
     cached.content += node[key]
     // 更新MD组件的内容
@@ -245,7 +233,7 @@ const processLlmStreamNode = (node: any, key: string): ThoughtChainItem => {
     }
 
     // 缓存该节点
-    llmStreamCache.set(key, {
+    llmStreamCache.set(cacheKey, {
       item,
       content: initialContent
     })
@@ -263,7 +251,7 @@ const processJsonNode = (node: any) => {
     switch(node.nodeName) {
       case '__START__':
         title = node.displayTitle
-        description = node.content
+        description = node.content.query
         break
       case 'coordinator':
         title = node.displayTitle
@@ -337,15 +325,20 @@ const processJsonNode = (node: any) => {
     }
     arrayTemp.push(item)
 }
-
-// 监听convId变化，清理缓存
-watch(() => props.convId, () => {
+onMounted(() => {
   llmStreamCache.clear()
+  arrayTemp.length = 0
+})
+// 监听convId变化，清理缓存
+watch(() => props.threadId, () => {
+  llmStreamCache.clear()
+  arrayTemp.length = 0
 })
 
 // 组件卸载时清理缓存
 onUnmounted(() => {
   llmStreamCache.clear()
+  arrayTemp.length = 0
 })
 
 const emit = defineEmits<Emits>()
@@ -367,7 +360,7 @@ const handleOnlineReport = async () => {
     return
   }
 
-  const xStreamBody = new XStreamBody('/api/reports/build-html?threadId=' + props.convId, {
+  const xStreamBody = new XStreamBody('/api/reports/build-html?threadId=' + props.threadId, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -406,7 +399,7 @@ const handleDownloadReport = () => {
     url: '/api/reports/export',
     method: 'POST',
     data: {
-      thread_id: props.convId,
+      thread_id: props.threadId,
       format: 'pdf'
     }
   }).then((response: any) => {

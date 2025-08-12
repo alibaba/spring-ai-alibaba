@@ -69,8 +69,8 @@ public class GraphProcess {
 	public static final String TASK_STOPPED_MESSAGE_TEMPLATE = """
 			{
 			    "nodeName": "__END__",
+			    "graphId": %s,
 			    "displayTitle": "结束",
-			    "graphId": %s
 			    "content": {
 			        "reason": "%s"
 			    }
@@ -223,9 +223,7 @@ public class GraphProcess {
 			.map(ChatGenerationMetadata::getFinishReason)
 			.orElse("");
 		Map<String, Serializable> response = Map.of(nodeName,
-
 				streamingOutput.chatResponse().getResult().getOutput().getText(), "step_title", stepTitle, "visible",
-
 				prefixEnum.isVisible(), "finishReason", finishReason, "graphId", graphId);
 
 		return this.safeObjectToJson(response);
