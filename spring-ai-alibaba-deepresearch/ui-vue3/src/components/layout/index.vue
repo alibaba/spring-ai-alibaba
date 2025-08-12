@@ -100,12 +100,12 @@
         <!-- 知识库模式侧边栏 -->
         <div v-else-if="currentMode === 'knowledge'" class="sidebar-content">
           <a-menu :selectable="false">
-            <a-menu-item key="knowledge_management">
+            <a-menu-item key="knowledge_management" @click="goToKnowledgeManagement">
               <FileTextOutlined />
               <Gap width="2px" />
               <span v-if="!collapse">{{ $t('knowledge_management') }}</span>
             </a-menu-item>
-            <a-menu-item key="document_upload">
+            <!-- <a-menu-item key="document_upload">
               <UploadOutlined />
               <Gap width="2px" />
               <span v-if="!collapse">{{ $t('document_upload') }}</span>
@@ -114,7 +114,7 @@
               <SearchOutlined />
               <Gap width="2px" />
               <span v-if="!collapse">{{ $t('knowledge_search') }}</span>
-            </a-menu-item>
+            </a-menu-item> -->
           </a-menu>
         </div>
         
@@ -186,6 +186,8 @@ import { useMessageStore } from '@/store/MessageStore'
 const router = useRouter()
 const route = useRoute()
 const username = useAuthStore().token
+// add navigation handler for knowledge management
+const goToKnowledgeManagement = () => router.push('/knowledge/management')
 const { useToken } = theme
 const collapse = ref(false)
 const showConfigView = ref(false)
