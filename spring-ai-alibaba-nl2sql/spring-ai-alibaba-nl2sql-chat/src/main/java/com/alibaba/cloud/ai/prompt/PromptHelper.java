@@ -228,28 +228,28 @@ public class PromptHelper {
 	}
 
 	/**
-	 * 构建带自定义提示词的报告生成提示词
+	 * 构建带优化提示词的报告生成提示词
 	 * @param userRequirementsAndPlan 用户需求和计划
 	 * @param analysisStepsAndData 分析步骤和数据
 	 * @param summaryAndRecommendations 总结和建议
-	 * @param customPrompt 用户自定义的提示词内容，如果为null则使用默认提示词
+	 * @param optimizationConfigs 用户配置的优化提示词列表
 	 * @return 构建的提示词
 	 */
-	public static String buildReportGeneratorPromptWithCustom(String userRequirementsAndPlan,
-			String analysisStepsAndData, String summaryAndRecommendations, String customPrompt) {
+	public static String buildReportGeneratorPromptWithOptimization(String userRequirementsAndPlan,
+			String analysisStepsAndData, String summaryAndRecommendations,
+			List<com.alibaba.cloud.ai.entity.UserPromptConfig> optimizationConfigs) {
+
 		Map<String, Object> params = new HashMap<>();
 		params.put("user_requirements_and_plan", userRequirementsAndPlan);
 		params.put("analysis_steps_and_data", analysisStepsAndData);
 		params.put("summary_and_recommendations", summaryAndRecommendations);
 
-		if (customPrompt != null && !customPrompt.trim().isEmpty()) {
-			// 使用自定义提示词
-			return new org.springframework.ai.chat.prompt.PromptTemplate(customPrompt).render(params);
-		}
-		else {
-			// 使用默认提示词
-			return PromptConstant.getReportGeneratorPromptTemplate().render(params);
-		}
+		// 构建优化部分内容
+		String optimizationSection = buildOptimizationSection(optimizationConfigs, params);
+		params.put("optimization_section", optimizationSection);
+
+		// 渲染完整模板
+		return PromptConstant.getReportGeneratorPromptTemplate().render(params);
 	}
 
 	public static String buildSqlErrorFixerPrompt(String question, DbConfig dbConfig, SchemaDTO schemaDTO,
@@ -283,6 +283,51 @@ public class PromptHelper {
 				: StringUtils.join(semanticModelDTOS, ";\n");
 		params.put("semanticModel", semanticModel);
 		return PromptConstant.getSemanticModelPromptTemplate().render(params);
+	}
+
+	/**
+	 * 构建优化提示词部分内容
+	 * @param optimizationConfigs 优化配置列表
+	 * @param params 模板参数
+	 * @return 优化部分的内容
+	 */
+	private static String buildOptimizationSection(
+			List<com.alibaba.cloud.ai.entity.UserPromptConfig> optimizationConfigs, Map<String, Object> params) {
+
+		if (optimizationConfigs == null || optimizationConfigs.isEmpty()) {
+			return "";
+		}
+
+		StringBuilder result = new StringBuilder();
+		result.append("## 优化要求\n");
+
+		for (com.alibaba.cloud.ai.entity.UserPromptConfig config : optimizationConfigs) {
+			String optimizationContent = renderOptimizationPrompt(config.getOptimizationPrompt(), params);
+			if (!optimizationContent.trim().isEmpty()) {
+				result.append("- ").append(optimizationContent).append("\n");
+			}
+		}
+
+		return result.toString().trim();
+	}
+
+	/**
+	 * 渲染优化提示词模板
+	 * @param optimizationPrompt 优化提示词模板
+	 * @param params 参数
+	 * @return 渲染后的内容
+	 */
+	private static String renderOptimizationPrompt(String optimizationPrompt, Map<String, Object> params) {
+		if (optimizationPrompt == null || optimizationPrompt.trim().isEmpty()) {
+			return "";
+		}
+		try {
+			return new org.springframework.ai.chat.prompt.PromptTemplate(optimizationPrompt).render(params);
+		}
+		catch (Exception e) {
+			// 如果模板渲染失败，直接返回原始内容
+			return optimizationPrompt;
+		}
 	}
 
 }

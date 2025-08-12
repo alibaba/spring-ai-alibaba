@@ -19,7 +19,7 @@ package com.alibaba.cloud.ai.entity;
 import java.time.LocalDateTime;
 
 /**
- * 用户自定义提示词配置实体类
+ * 用户提示词优化配置实体类
  *
  * @author Makoto
  */
@@ -41,9 +41,9 @@ public class UserPromptConfig {
 	private String promptType;
 
 	/**
-	 * 用户自定义的系统提示词内容
+	 * 用户添加的优化提示词内容（附加到原始模板）
 	 */
-	private String systemPrompt;
+	private String optimizationPrompt;
 
 	/**
 	 * 是否启用该配置
@@ -77,10 +77,10 @@ public class UserPromptConfig {
 		this.updateTime = LocalDateTime.now();
 	}
 
-	public UserPromptConfig(String promptType, String systemPrompt) {
+	public UserPromptConfig(String promptType, String optimizationPrompt) {
 		this();
 		this.promptType = promptType;
-		this.systemPrompt = systemPrompt;
+		this.optimizationPrompt = optimizationPrompt;
 	}
 
 	// Getters and Setters
@@ -108,12 +108,12 @@ public class UserPromptConfig {
 		this.promptType = promptType;
 	}
 
-	public String getSystemPrompt() {
-		return systemPrompt;
+	public String getOptimizationPrompt() {
+		return optimizationPrompt;
 	}
 
-	public void setSystemPrompt(String systemPrompt) {
-		this.systemPrompt = systemPrompt;
+	public void setOptimizationPrompt(String optimizationPrompt) {
+		this.optimizationPrompt = optimizationPrompt;
 		this.updateTime = LocalDateTime.now();
 	}
 
