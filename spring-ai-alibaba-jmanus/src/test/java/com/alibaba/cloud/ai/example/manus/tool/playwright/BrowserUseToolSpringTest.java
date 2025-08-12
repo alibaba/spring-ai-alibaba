@@ -16,13 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.tool.playwright;
 
 import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
-import com.alibaba.cloud.ai.example.manus.agent.AgentState;
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
@@ -36,22 +30,20 @@ import com.microsoft.playwright.Page;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * BrowserUseTool的Spring集成测试类 使用真实的Spring上下文来测试BrowserUseTool的功能
+ * The Spring integration test class for BrowserUseTool utilizes a real Spring context to
+ * test the functionality of BrowserUseTool
  */
 @SpringBootTest(classes = OpenManusSpringBootApplication.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@Disabled("仅用于本地测试，CI 环境跳过") // 添加这一行
+@Disabled("For local testing only, skipped in CI environment")
 class BrowserUseToolSpringTest {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseToolSpringTest.class);
@@ -62,16 +54,7 @@ class BrowserUseToolSpringTest {
 	private BrowserUseTool browserUseTool;
 
 	@Autowired
-	private LlmService llmService;
-
-	@Autowired
-	private PlanExecutionRecorder planExecutionRecorder;
-
-	@Autowired
 	private ManusProperties manusProperties;
-
-	@Autowired
-	private PromptService promptService;
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -84,99 +67,51 @@ class BrowserUseToolSpringTest {
 		manusProperties.setDebugDetail(true);
 		chromeDriverService.setManusProperties(manusProperties);
 		browserUseTool = new BrowserUseTool(chromeDriverService, innerStorageService, objectMapper);
-		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties, promptService);
 		browserUseTool.setCurrentPlanId("test");
-	}
-
-	private static class DummyBaseAgent extends BaseAgent {
-
-		public DummyBaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-				ManusProperties manusProperties, PromptService promptService) {
-			super(llmService, planExecutionRecorder, manusProperties, new HashMap<>(), promptService);
-
-		}
-
-		@Override
-		public String getName() {
-			return "DummyAgent";
-		}
-
-		@Override
-		public String getDescription() {
-			return "A dummy agent for testing";
-		}
-
-		@Override
-		protected Message getNextStepWithEnvMessage() {
-			return null;
-		}
-
-		@Override
-		public List<ToolCallback> getToolCallList() {
-			return null;
-		}
-
-		@Override
-		public PlanningFactory.ToolCallBackContext getToolCallBackContext(String toolKey) {
-			return null;
-		}
-
-		@Override
-		protected AgentExecResult step() {
-			return new AgentExecResult("Dummy step executed", AgentState.COMPLETED);
-		}
-
-		@Override
-		protected Message getThinkMessage() {
-			return null;
-		}
-
-		@Override
-		public void clearUp(String planId) {
-			return;
-		}
-
 	}
 
 	@Test
 	@Order(1)
-	@DisplayName("测试浏览器搜索'Hello World'")
+	@DisplayName("Test browser search for 'Hello World'")
 	void testHelloWorldSearch() {
 		try {
-			// 步骤1: 导航到百度
-			log.info("步骤1: 导航到百度");
+			// Step 1: Navigate to Baidu
+			log.info("Step 1: Navigate to Baidu");
 			ToolExecuteResult navigateResult = executeAction("navigate", "https://www.baidu.com");
 			Assertions.assertEquals("successfully navigated to https://www.baidu.com", navigateResult.getOutput(),
-					"导航到百度失败");
+					"Failed to navigate to Baidu");
 			Page page = browserUseTool.getDriver().getCurrentPage();
 
-			// 步骤2: 获取并验证可交互元素
-			log.info("步骤2: 获取可交互元素并分析");
+			// Step 2: Obtain and validate interactive elements
+			log.info("Step 2: Obtain interactive elements and analyze them");
 			Map<String, Object> state = browserUseTool.getCurrentState(page);
 			String elements = (String) state.get("interactive_elements");
-			Assertions.assertNotNull(elements, "获取可交互元素失败");
-			log.info("获取到的可交互元素: {}", elements);
+			Assertions.assertNotNull(elements, "Failed to obtain interactive elements");
+			log.info("Obtained interactive elements: {}", elements);
 
-			// 步骤3: 找到搜索框
-			log.info("步骤3: 定位搜索框");
+			// Step 3: Locate the search box
+			log.info("Step 3: Locate the search box");
 			int searchInputIndex = -1;
 			String[] elementLines = elements.split("\n");
 			for (int i = 0; i < elementLines.length; i++) {
-				if (elementLines[i].contains("id=\"chat-textarea\"")) { // 百度搜索框的特征
+				if (elementLines[i].contains("id=\"chat-textarea\"")) { // Features of
+																		// Baidu search
+																		// box
 					searchInputIndex = i;
 					break;
 				}
 			}
-			Assertions.assertNotEquals(-1, searchInputIndex, "未找到搜索框");
-			log.info("找到搜索框索引: {}", searchInputIndex);
+			Assertions.assertNotEquals(-1, searchInputIndex, "Search box not found");
+			log.info("Find the search box index: {}", searchInputIndex);
 
-			// 步骤4: 在搜索框中输入文本
-			log.info("步骤4: 在搜索框中输入'Hello World'");
+			// Step 4: Enter text in the search box
+			log.info("Step 4: Enter 'Hello World' in the search box");
 			ToolExecuteResult inputResult = executeAction("input_text", null, searchInputIndex, "Hello World");
-			Assertions.assertTrue(inputResult.getOutput().contains("Hello World"), "在搜索框输入文本失败");
+			Assertions.assertTrue(inputResult.getOutput().contains("Hello World"),
+					"Failed to enter text into the search box");
 
-			// 步骤5: 重新获取状态并查找搜索按钮
-			log.info("步骤5: 定位搜索按钮");
+			// Step 5: Reacquire the state and locate the search button
+			log.info("Step 5: Locate the search button");
 
 			state = browserUseTool.getCurrentState(page);
 			elements = (String) state.get("interactive_elements");
@@ -188,21 +123,21 @@ class BrowserUseToolSpringTest {
 					break;
 				}
 			}
-			Assertions.assertNotEquals(-1, searchButtonIndex, "未找到搜索按钮");
-			log.info("找到搜索按钮索引: {}", searchButtonIndex);
+			Assertions.assertNotEquals(-1, searchButtonIndex, "Search button not found");
+			log.info("Find the index of the search button: {}", searchButtonIndex);
 
-			// 步骤6: 点击搜索按钮
-			log.info("步骤6: 点击搜索按钮");
+			// Step 6: Click the search button
+			log.info("Step 6: Click the search button");
 			ToolExecuteResult clickResult = executeAction("click", null, searchButtonIndex, null);
 			Assertions.assertTrue(clickResult.getOutput().contains("Successfully clicked"),
-					"点击搜索按钮失败 : " + clickResult.getOutput());
+					"Clicking the search button failed : " + clickResult.getOutput());
 
-			// 步骤7: 等待并验证搜索结果
-			log.info("步骤7: 等待页面加载并获取搜索结果");
-			Thread.sleep(2000); // 等待页面加载
+			// Step 7: Wait for the page to load and obtain the search results
+			log.info("Step 7: Wait for the page to load and obtain the search results");
+			Thread.sleep(2000); // Waiting for page to load
 			ToolExecuteResult textResult = executeAction("get_text", null);
 			String searchResults = textResult.getOutput();
-			Assertions.assertTrue(searchResults.contains("Hello World"), "搜索结果中未找到 'Hello World'");
+			Assertions.assertTrue(searchResults.contains("Hello World"), "'Hello World' not found in search results");
 
 			state = browserUseTool.getCurrentState(page);
 			elements = (String) state.get("interactive_elements");
@@ -216,107 +151,112 @@ class BrowserUseToolSpringTest {
 			}
 			clickResult = executeAction("click", null, searchButtonIndex, null);
 			Assertions.assertTrue(clickResult.getOutput().contains("Successfully clicked"),
-					"点击搜索按钮失败 : " + clickResult.getOutput());
+					"Clicking the search button failed : " + clickResult.getOutput());
 
-			log.info("登录 success ");
+			log.info("login success ");
 
 		}
 		catch (Exception e) {
-			log.error("测试过程中发生错误", e);
-			Assertions.fail("测试执行失败: " + e.getMessage());
+			log.error("test error", e);
+			Assertions.fail("test error: " + e.getMessage());
 		}
 	}
 
 	@Test
 	@Order(2)
-	@DisplayName("测试通过元素名定位并点击百度搜索按钮")
+	@DisplayName("Test by locating and clicking the Baidu search button through element name")
 	void testGetElementPositionAndMoveToClick() {
 		try {
-			// 步骤1: 导航到百度
-			log.info("步骤1: 导航到百度");
+			// Step 1: Navigate to Baidu
+			log.info("Step 1: Navigate to Baidu");
 			ToolExecuteResult navigateResult = executeAction("navigate", "https://www.baidu.com");
 			Assertions.assertEquals("successfully navigated to https://www.baidu.com", navigateResult.getOutput(),
-					"导航到百度失败");
+					"Navigating to Baidu failed");
 			Page page = browserUseTool.getDriver().getCurrentPage();
 
-			// 步骤2: 获取并验证可交互元素
-			log.info("步骤2: 获取可交互元素并分析");
+			// Step 2: Obtain interactive elements and analyze them
+			log.info("Step 2: Obtain interactive elements and analyze them");
 			Map<String, Object> state = browserUseTool.getCurrentState(page);
 			String elements = (String) state.get("interactive_elements");
-			Assertions.assertNotNull(elements, "获取可交互元素失败");
-			log.info("获取到的可交互元素: {}", elements);
+			Assertions.assertNotNull(elements, "Failed to obtain interactive elements");
+			log.info("The obtained interactive elements: {}", elements);
 
-			// 步骤3: 找到搜索框
-			log.info("步骤3: 定位搜索框");
+			// Step 3: Locate the search box
+			log.info("Step 3: Locate the search box");
 			int searchInputIndex = -1;
 			String[] elementLines = elements.split("\n");
 			for (int i = 0; i < elementLines.length; i++) {
-				if (elementLines[i].contains("id=\"chat-textarea\"")) { // 百度搜索框的特征
+				if (elementLines[i].contains("id=\"chat-textarea\"")) { // Features of
+																		// Baidu search
+																		// box
 					searchInputIndex = i;
 					break;
 				}
 			}
-			Assertions.assertNotEquals(-1, searchInputIndex, "未找到搜索框");
-			log.info("找到搜索框索引: {}", searchInputIndex);
+			Assertions.assertNotEquals(-1, searchInputIndex, "Search box not found");
+			log.info("Find the search box index: {}", searchInputIndex);
 
-			// 步骤4: 在搜索框中输入文本
-			log.info("步骤4: 在搜索框中输入'Hello World'");
+			// Step 4: Enter text into the search box
+			log.info("Step 4: Enter 'Hello World' in the search box");
 			ToolExecuteResult inputResult = executeAction("input_text", null, searchInputIndex, "Hello World");
-			Assertions.assertTrue(inputResult.getOutput().contains("Hello World"), "在搜索框输入文本失败");
+			Assertions.assertTrue(inputResult.getOutput().contains("Hello World"),
+					"Failed to enter text into the search box");
 
-			// 步骤5: 使用GetElementPositionByNameAction查找搜索按钮
-			log.info("步骤5: 使用GetElementPositionByNameAction查找'百度一下'按钮");
+			// Step 5: Use GetElementPositionByNameAction to find the search button
+			log.info("Step 5: Use GetElementPositionByNameAction to find the '百度一下' button");
 			BrowserRequestVO positionRequest = new BrowserRequestVO();
 			positionRequest.setElementName("百度一下");
 			GetElementPositionByNameAction positionAction = new GetElementPositionByNameAction(browserUseTool,
 					objectMapper);
 			ToolExecuteResult positionResult = positionAction.execute(positionRequest);
-			log.info("获取到'百度一下'按钮位置信息: {}", positionResult.getOutput());
+			log.info("Obtain the position information of the '百度一下' button: {}", positionResult.getOutput());
 
 			// 解析JSON结果获取坐标
 			List<?> positionsList = objectMapper.readValue(positionResult.getOutput(), new TypeReference<List<?>>() {
 			});
-			Assertions.assertFalse(positionsList.isEmpty(), "未找到'百度一下'按钮");
+			Assertions.assertFalse(positionsList.isEmpty(), "'百度一下' button not found");
 			Map<?, ?> elementPosition = (Map<?, ?>) positionsList.get(0);
 			Double xNumber = (Double) elementPosition.get("x");
 			Double yNumber = (Double) elementPosition.get("y");
 			Double x = xNumber.doubleValue();
 			Double y = yNumber.doubleValue();
-			log.info("'百度一下'按钮坐标: x={}, y={}", x, y);
+			log.info("'百度一下' button coordinates: x={}, y={}", x, y);
 
-			// 步骤6: 使用MoveToAndClickAction点击搜索按钮
-			log.info("步骤6: 使用MoveToAndClickAction点击'百度一下'按钮");
+			// Step 6: Use the MoveToAndClickAction to click the search button
+			log.info("Step 6: Use MoveToAndClickAction to click the '百度一下' button");
 			BrowserRequestVO clickRequest = new BrowserRequestVO();
 			clickRequest.setPositionX(x);
 			clickRequest.setPositionY(y);
 			MoveToAndClickAction clickAction = new MoveToAndClickAction(browserUseTool);
 			ToolExecuteResult clickResult = clickAction.execute(clickRequest);
-			log.info("点击结果: {}", clickResult.getOutput());
-			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"), "点击'百度一下'按钮失败");
+			log.info("result: {}", clickResult.getOutput());
+			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"), "click '百度一下' eoor");
 
-			// 步骤7: 等待并验证搜索结果
-			log.info("步骤7: 等待页面加载并获取搜索结果");
-			Thread.sleep(2000); // 等待页面加载
+			// Step 7: Wait and verify search results
+			log.info("Step 7: Wait and verify search results");
+			Thread.sleep(2000); // Waiting for the page to load
 			ToolExecuteResult textResult = executeAction("get_text", null);
 			String searchResults = textResult.getOutput();
-			Assertions.assertTrue(searchResults.contains("Hello World"), "搜索结果中未找到 'Hello World'");
+			Assertions.assertTrue(searchResults.contains("Hello World"), "'Hello World' not found in search results");
 
-			// 步骤8: 使用GetElementPositionByNameAction查找并点击百度百科链接
-			log.info("步骤8: 使用GetElementPositionByNameAction查找'百度百科'链接");
+			// Step 8: Find and click on the Baidu Baike link using the FHIR
+			// lementPositionByNameAction
+			log.info("Step 8: Find and click on the 百度百科 link using the FHIR lementPositionByNameAction");
 			BrowserRequestVO baikePositionRequest = new BrowserRequestVO();
 			baikePositionRequest.setElementName("百度百科");
 			GetElementPositionByNameAction baikePositionAction = new GetElementPositionByNameAction(browserUseTool,
 					objectMapper);
 			ToolExecuteResult baikePositionResult = baikePositionAction.execute(baikePositionRequest);
-			log.info("获取到'百度百科'链接位置信息: {}", baikePositionResult.getOutput());
+			log.info("get '百度百科' link location information: {}", baikePositionResult.getOutput());
 
-			// 解析JSON结果获取百度百科链接坐标
+			// Parse JSON results to obtain Baidu Baike link coordinates
 			List<?> baikePositionsList = objectMapper.readValue(baikePositionResult.getOutput(),
 					new TypeReference<List<?>>() {
 					});
 
 			if (!baikePositionsList.isEmpty()) {
-				// 查找包含"hello world"相关内容的百度百科链接
+				// Search for Baidu Baike links containing content related to "hello
+				// world"
 				Map<?, ?> targetPosition = null;
 				for (Object positionObj : baikePositionsList) {
 					Map<?, ?> position = (Map<?, ?>) positionObj;
@@ -330,59 +270,62 @@ class BrowserUseToolSpringTest {
 				if (targetPosition != null) {
 					Double baikeX = (Double) targetPosition.get("x");
 					Double baikeY = (Double) targetPosition.get("y");
-					log.info("'百度百科'链接坐标: x={}, y={}", baikeX, baikeY);
+					log.info("'百度百科' link coordinates: x={}, y={}", baikeX, baikeY);
 
-					// 使用MoveToAndClickAction点击百度百科链接
-					log.info("使用MoveToAndClickAction点击'百度百科'链接");
+					// Click on the Baidu Baike link using MoveToAndClickAction
+					log.info("Click on the 百度百科 link using MoveToAndClickAction");
 					BrowserRequestVO baikeClickRequest = new BrowserRequestVO();
 					baikeClickRequest.setPositionX(baikeX);
 					baikeClickRequest.setPositionY(baikeY);
 					MoveToAndClickAction baikeClickAction = new MoveToAndClickAction(browserUseTool);
 					ToolExecuteResult baikeClickResult = baikeClickAction.execute(baikeClickRequest);
-					log.info("百度百科链接点击结果: {}", baikeClickResult.getOutput());
-					Assertions.assertTrue(baikeClickResult.getOutput().contains("Clicked"), "点击'百度百科'链接失败");
-					log.info("成功点击百度百科链接");
+					log.info("Baidu Baike link click results: {}", baikeClickResult.getOutput());
+					Assertions.assertTrue(baikeClickResult.getOutput().contains("Clicked"),
+							"Clicking on the 百度百科 link failed");
+					log.info("Successfully clicked on the 百度百科 link");
 				}
 				else {
-					log.warn("未找到包含'hello world'的百度百科链接");
+					log.warn("No 百度百科 link containing 'hello world' found");
 				}
 			}
 			else {
-				log.warn("未找到'百度百科'链接");
+				log.warn("No 百度百科 link found");
 			}
 
-			log.info("测试成功完成！");
+			log.info("test success!");
 
 		}
 		catch (Exception e) {
-			log.error("测试过程中发生错误", e);
-			Assertions.fail("测试执行失败: " + e.getMessage());
+			log.error("test error", e);
+			Assertions.fail("test error: " + e.getMessage());
 		}
 	}
 
 	/**
-	 * 导航到指定URL并验证可交互元素的通用方法
-	 * @param tool BrowserUseTool实例
-	 * @param url 目标URL
-	 * @param expectedElements 期望在页面中出现的元素关键词列表
-	 * @return 获取到的可交互元素字符串
+	 * A general method for navigating to a specified URL and validating interactive
+	 * elements
+	 * @param tool BrowserUseTool instance
+	 * @param url Target URL
+	 * @param expectedElements List of elements and keywords expected to appear on the
+	 * page
+	 * @return Obtained interactive element string
 	 */
 	private String navigateAndVerifyElements(BrowserUseTool tool, String url, List<String> expectedElements) {
-		// 步骤1: 导航到指定URL
-		log.info("步骤1: 导航到 {}", url);
+		// Step 1: Navigate to the specified URL
+		log.info("Step 1: Navigate to the {}", url);
 		ToolExecuteResult navigateResult = executeAction("navigate", url);
-		Assertions.assertEquals("successfully navigated to " + url, navigateResult.getOutput(), "导航失败");
+		Assertions.assertEquals("successfully navigated to " + url, navigateResult.getOutput(), "Navigation failed");
 
 		Page page = browserUseTool.getDriver().getCurrentPage();
-		// 步骤2: 获取并验证可交互元素
-		log.info("步骤2: 获取可交互元素");
+		// Step 2: Obtain and validate interactive elements
+		log.info("Step 2: Obtain and validate interactive elements");
 		Map<String, Object> state = tool.getCurrentState(page);
 		String elements = (String) state.get("interactive_elements");
-		Assertions.assertNotNull(elements, "获取可交互元素失败");
-		log.info("获取到的可交互元素: {}", elements);
+		Assertions.assertNotNull(elements, "Failed to obtain interactive elements");
+		log.info("Obtained interactive elements: {}", elements);
 
-		// 步骤3: 验证期望的元素
-		log.info("步骤3: 验证期望的元素");
+		// Step 3: Verify the expected elements
+		log.info("Step 3: Verify the expected elements");
 		String[] elementLines = elements.split("\n");
 		boolean foundMatchingElement = false;
 
@@ -396,124 +339,135 @@ class BrowserUseToolSpringTest {
 			}
 			if (allExpectedFound) {
 				foundMatchingElement = true;
-				log.info("找到匹配所有特征的元素: {}", elementLine);
+				log.info("Find elements that match all features: {}", elementLine);
 				break;
 			}
 		}
 
-		Assertions.assertTrue(foundMatchingElement, String.format("未找到同时包含所有期望特征的元素。期望特征: %s", expectedElements));
+		Assertions.assertTrue(foundMatchingElement, String.format(
+				"No elements were found that contain all expected features simultaneously. Expected features: %s",
+				expectedElements));
 
 		return elements;
 	}
 
 	@Test
 	@Order(4)
-	@DisplayName("测试导航到指定URL并获取交互元素")
+	@DisplayName("Test navigating to the specified URL and obtaining interactive elements")
 	void testNavigateAndGetElements() {
 		try {
 			String testUrl = "https://www.bing.com";
 			List<String> expectedElements = Arrays.asList("search", "input");
 
-			// 使用通用方法进行测试
+			// Use universal methods for testing
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
 
-			// 获取截图（可选）
-			log.info("获取页面截图作为证据");
+			// Get screenshot (optional)
+			log.info("Obtain a screenshot of the page as evidence");
 			ToolExecuteResult screenshotResult = executeAction("screenshot", null);
-			Assertions.assertTrue(screenshotResult.getOutput().contains("Screenshot captured"), "获取截图失败");
+			Assertions.assertTrue(screenshotResult.getOutput().contains("Screenshot captured"),
+					"Failed to obtain screenshot");
 
-			log.info("测试成功完成！");
+			log.info("Test successfully completed!");
 
 		}
 		catch (Exception e) {
-			log.error("测试过程中发生错误", e);
-			Assertions.fail("测试执行失败: " + e.getMessage());
+			log.error("test error", e);
+			Assertions.fail("test error: " + e.getMessage());
 		}
 	}
 
 	@Test
 	@Order(5)
-	@DisplayName("测试GitHub搜索页面元素")
+	@DisplayName("Test GitHub search page elements")
 	void testGitHubSearch() {
 		try {
 			String testUrl = "https://github.com/";
-			List<String> expectedElements = Arrays.asList( // GitHub搜索框的name属性
-					"search" // 搜索相关元素
+			List<String> expectedElements = Arrays.asList( // The name attribute of GitHub
+															// search box
+					"search" // Search for related elements
 
 			);
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
-			log.info("GitHub搜索页面测试成功完成！");
+			log.info("GitHub search page test successfully completed!");
 		}
 		catch (Exception e) {
-			log.error("测试过程中发生错误", e);
-			Assertions.fail("测试执行失败: " + e.getMessage());
+			log.error("test error", e);
+			Assertions.fail("test error: " + e.getMessage());
 		}
 	}
 
 	@Test
 	@Order(6)
-	@DisplayName("测试Nacos页面元素")
+	@DisplayName("Test Nacos page elements")
 	void testNacosPageLink() {
 		try {
 			String testUrl = "https://nacos.io/docs/latest/overview";
-			List<String> expectedElements = Arrays.asList( // Nacos页面的特征
-					"Java SDK 容灾" // 搜索相关元素
+			List<String> expectedElements = Arrays.asList( // Characteristics of Nacos
+															// pages
+					"Java SDK 容灾" // Search for related elements
 			);
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
-			log.info("Nacos页面测试成功完成！");
+			log.info("Nacos page testing successfully completed!");
 		}
 		catch (Exception e) {
-			log.error("测试过程中发生错误", e);
-			Assertions.fail("测试执行失败: " + e.getMessage());
+			log.error("test error", e);
+			Assertions.fail("test error: " + e.getMessage());
 		}
 	}
 
 	@Test
 	@Order(6)
-	@DisplayName("测试百度首页元素")
+	@DisplayName("Test Baidu homepage elements")
 	void testBaiduElements() {
 		try {
 			String testUrl = "https://www.baidu.com";
-			List<String> expectedElements = Arrays.asList("id=\"chat-textarea\"", // 百度搜索框的特征
-					"textarea" // 搜索框的另一个特征
+			List<String> expectedElements = Arrays.asList("id=\"chat-textarea\"", // The
+																					// characteristics
+																					// of
+																					// Baidu
+																					// search
+																					// box
+					"textarea" // Another feature of the search box
 			);
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
-			log.info("百度首页测试成功完成！");
+			log.info("Baidu homepage test successfully completed!");
 		}
 		catch (Exception e) {
-			log.error("测试过程中发生错误", e);
-			Assertions.fail("测试执行失败: " + e.getMessage());
+			log.error("test error", e);
+			Assertions.fail("test error: " + e.getMessage());
 		}
 	}
 
 	@Test
 	@Order(7)
-	@DisplayName("测试CSDN网站登录功能")
+	@DisplayName("Test CSDN website login function")
 	void testCsdnLogin() {
 		try {
-			// 步骤1: 导航到CSDN网站
+			// Step 1: Navigate to the CSDN website
 			String testUrl = "https://www.csdn.net/";
-			log.info("步骤1: 导航到CSDN网站");
+			log.info("Step 1: Navigate to the CSDN website");
 			ToolExecuteResult navigateResult = executeAction("navigate", testUrl);
 			Assertions.assertEquals("successfully navigated to " + testUrl, navigateResult.getOutput(), "导航到CSDN网站失败");
 
 			Page page = browserUseTool.getDriver().getCurrentPage();
-			// 获取可交互元素
-			log.info("步骤2: 获取并查找登录元素");
+			// Step 2: Retrieve and search for login elements
+			log.info("Step 2: Retrieve and search for login elements");
 			Map<String, Object> state = browserUseTool.getCurrentState(page);
 			String elements = (String) state.get("interactive_elements");
-			Assertions.assertNotNull(elements, "获取可交互元素失败");
-			log.info("获取到的可交互元素: {}", elements);
+			Assertions.assertNotNull(elements, "Failed to obtain interactive elements");
+			log.info("Obtained interactive elements: {}", elements);
 
-			// 步骤2: 查找"登录"按钮的索引
+			// Step 2: Search for the index of the "Login" button
 			String[] elementLines = elements.split("\n");
 			int loginButtonIndex = -1;
 
 			for (String line : elementLines) {
-				// 从每行开头提取元素的实际索引号，格式如 [195] <input...
+				// Extract the actual index number of the element from the beginning of
+				// each line, in the format of [195] <input
 				if (line.matches("\\[\\d+\\].*")) {
 					int indexEndPos = line.indexOf("]");
 					String indexStr = line.substring(1, indexEndPos);
@@ -521,122 +475,130 @@ class BrowserUseToolSpringTest {
 
 					if (line.contains("登录")) {
 						loginButtonIndex = elementIndex;
-						log.info("找到登录按钮，索引: {}", loginButtonIndex);
+						log.info("Find login button, index: {}", loginButtonIndex);
 						break;
 					}
 				}
 			}
 
-			Assertions.assertNotEquals(-1, loginButtonIndex, "未找到登录按钮");
+			Assertions.assertNotEquals(-1, loginButtonIndex, "Login button not found");
 
-			// 步骤3: 点击"登录"按钮
-			log.info("步骤3: 点击登录按钮");
+			// Step 3: Click on the "Login" button
+			log.info("Step 3: Click on the Login button");
 			ToolExecuteResult clickLoginResult = executeAction("click", null, loginButtonIndex, null);
-			Assertions.assertTrue(clickLoginResult.getOutput().contains("Successfully clicked"), "点击登录按钮失败");
+			Assertions.assertTrue(clickLoginResult.getOutput().contains("Successfully clicked"),
+					"Click login button failed");
 
-			// 等待登录对话框加载
-			log.info("等待登录对话框加载...");
+			// Waiting for the login dialog box to load
+			log.info("Waiting for the login dialog box to load...");
 			Thread.sleep(2000);
 
-			// 获取更新后的交互元素
+			// Obtain updated interaction elements
 			state = browserUseTool.getCurrentState(page);
 			elements = (String) state.get("interactive_elements");
-			elementLines = elements.split("\n"); // 步骤4:
-			// 使用GetElementPositionByNameAction查找"APP登录"元素并通过坐标点击
-			log.info("步骤4: 使用GetElementPositionByNameAction查找'APP登录'元素");
+			elementLines = elements.split("\n");
+			// Step 4: Find the 'APP login' element using the 'FHIR
+			// lementPositionByNameAction' and click on it through the coordinates
+			log.info(
+					"Step 4: Find the 'APP login' element using the 'FHIR lementPositionByNameAction' and click on it through the coordinates");
 
-			// 创建请求对象并设置元素名称
+			// Create request object and set element name
 			BrowserRequestVO positionRequest = new BrowserRequestVO();
 			positionRequest.setElementName("验证码登录");
 
-			// 执行GetElementPositionByNameAction获取元素位置
+			// Execute the Get ElementPositionByNameAction to retrieve the position of the
+			// element
 			GetElementPositionByNameAction positionAction = new GetElementPositionByNameAction(browserUseTool,
 					objectMapper);
 			ToolExecuteResult positionResult = positionAction.execute(positionRequest);
-			log.info("获取到'验证码登录'元素位置信息: {}", positionResult.getOutput());
+			log.info("Obtain the location information of the '验证码登录' element: {}", positionResult.getOutput());
 
-			// 解析JSON结果获取坐标
+			// Parse JSON results to obtain coordinates
 			List<?> positionsList = objectMapper.readValue(positionResult.getOutput(), new TypeReference<List<?>>() {
 			});
-			Assertions.assertFalse(positionsList.isEmpty(), "未找到'APP登录'元素");
+			Assertions.assertFalse(positionsList.isEmpty(), "The 'APP 登录' element was not found");
 
-			// 获取第一个匹配元素的位置信息
+			// Get the position information of the first matching element
 			Map<?, ?> elementPosition = (Map<?, ?>) positionsList.get(0);
 			Double xNumber = (Double) elementPosition.get("x");
 			Double yNumber = (Double) elementPosition.get("y");
-			log.info("验证码登录元素坐标: x={}, y={}", xNumber, yNumber);
+			log.info("Verification code login element coordinates: x={}, y={}", xNumber, yNumber);
 
-			// 使用MoveToAndClickAction通过坐标点击元素
+			// Use MoveToAndClickAction to click on elements through coordinates
 			BrowserRequestVO clickRequest = new BrowserRequestVO();
 			clickRequest.setPositionX(xNumber);
 			clickRequest.setPositionY(yNumber);
 
 			MoveToAndClickAction clickAction = new MoveToAndClickAction(browserUseTool);
 			ToolExecuteResult clickResult = clickAction.execute(clickRequest);
-			log.info("点击结果: {}", clickResult.getOutput());
-			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"), "点击验证码登录元素失败");
+			log.info("result: {}", clickResult.getOutput());
+			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"),
+					"Clicking on the verification code login element failed");
 
-			// 等待密码登录表单加载
-			log.info("等待密码登录表单加载...");
+			// Waiting for password login form to load
+			log.info("Waiting for password login form to load...");
 			Thread.sleep(1000);
 
-			// 获取更新后的交互元素
+			// Obtain updated interaction elements
 			state = browserUseTool.getCurrentState(page);
 			elements = (String) state.get("interactive_elements");
 			elementLines = elements.split("\n");
 
-			// 步骤5: 查找手机号输入框
-			log.info("步骤5: 查找手机号输入框");
+			// Step 5: Search for the phone number input box
+			log.info("Step 5: Search for the phone number input box");
 			int phoneInputIndex = -1;
 			int verifyCodeButtonIndex = -1;
 
 			for (String line : elementLines) {
-				// 从每行开头提取元素的实际索引号，格式如 [195] <input...
+				// Extract the actual index number of the element from the beginning of
+				// each line, in the format of [195] <input...
 				if (line.matches("\\[\\d+\\].*")) {
 					int indexEndPos = line.indexOf("]");
 					String indexStr = line.substring(1, indexEndPos);
 					int elementIndex = Integer.parseInt(indexStr);
 
-					// 查找手机号输入框(可能包含phone、tel或mobile相关的input)
+					// Search for the phone number input box (which may contain phone,
+					// tel, or mobile related inputs)
 					if (line.contains("input") && line.contains("手机号")) {
 						phoneInputIndex = elementIndex;
-						log.info("找到手机号输入框，索引: {}", phoneInputIndex);
+						log.info("Find the phone number input box, index: {}", phoneInputIndex);
 					}
 					// 查找获取验证码按钮
 					else if ((line.contains("button") || line.contains("a ")) && line.contains("获取验证码")) {
 						verifyCodeButtonIndex = elementIndex;
-						log.info("找到获取验证码按钮，索引: {}", verifyCodeButtonIndex);
+						log.info("Find the button to obtain the verification code, index: {}", verifyCodeButtonIndex);
 					}
 				}
 			}
 
-			Assertions.assertNotEquals(-1, phoneInputIndex, "未找到手机号输入框");
+			Assertions.assertNotEquals(-1, phoneInputIndex, "Phone number input box not found");
 
-			// 步骤6: 在手机号输入框中输入"123456789"
-			log.info("步骤6: 在手机号输入框中输入'123456789'");
+			// Step 6: Enter "123456789" in the phone number input box
+			log.info("Step 6: Enter \"123456789\" in the phone number input box");
 			ToolExecuteResult phoneInputResult = executeAction("input_text", null, phoneInputIndex, "123456789");
-			Assertions.assertTrue(phoneInputResult.getOutput().contains("Successfully input"), "在手机号输入框输入文本失败");
+			Assertions.assertTrue(phoneInputResult.getOutput().contains("Successfully input"),
+					"Failed to input text in the phone number input box");
 
-			// 步骤8: 验证手机号输入是否成功
-			log.info("步骤8: 验证手机号输入是否成功");
+			// Step 7: Verify if the phone number input is successful
+			log.info("Step 7: Verify if the phone number input is successful");
 			browserUseTool.getDriver().getInteractiveElementRegistry().refresh(page);
 			state = browserUseTool.getCurrentState(page);
 			String updatedElements = (String) state.get("interactive_elements");
 
-			log.info("CSDN登录测试完成");
+			log.info("CSDN login test completed");
 		}
 		catch (Exception e) {
-			log.error("测试过程中发生错误", e);
-			Assertions.fail("测试执行失败: " + e.getMessage());
+			log.error("test error", e);
+			Assertions.fail("test error: " + e.getMessage());
 		}
 	}
 
-	// 辅助方法：执行浏览器操作
+	// Auxiliary method: Perform browser operations
 	private ToolExecuteResult executeAction(String action, String url) {
 		return executeAction(action, url, null, null);
 	}
 
-	// 辅助方法：执行浏览器操作（带索引和文本）
+	// Auxiliary method: Perform browser operations (with index and text)
 	private ToolExecuteResult executeAction(String action, String url, Integer index, String text) {
 		BrowserRequestVO request = new BrowserRequestVO();
 		request.setAction(action);
