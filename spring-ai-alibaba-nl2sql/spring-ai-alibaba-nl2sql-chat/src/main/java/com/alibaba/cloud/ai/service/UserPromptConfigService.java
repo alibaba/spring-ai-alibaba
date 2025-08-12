@@ -98,7 +98,7 @@ public class UserPromptConfigService {
 
 		// 更新缓存
 		configStorage.put(config.getId(), config);
-		
+
 		// 更新类型映射（支持多个配置）
 		updatePromptTypeMapping(config);
 
@@ -151,7 +151,7 @@ public class UserPromptConfigService {
 		if (dbConfig != null) {
 			return dbConfig;
 		}
-		
+
 		// 备用：从内存缓存获取
 		List<UserPromptConfig> configs = getActiveConfigsByType(promptType);
 		return configs.isEmpty() ? null : configs.get(0);
