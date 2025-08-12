@@ -26,17 +26,21 @@ import java.util.List;
  */
 public enum SearchPlatform {
 
-	GOOGLE_SCHOLAR("google_scholar", "谷歌学术", "学术论文、期刊文章、学术会议论文搜索", List.of(AgentType.ACADEMIC_RESEARCH)),
+	// 学术研究专用工具
+	OPENALEX("openalex", "OpenAlex学术搜索", "学术论文、期刊文章、学术会议论文搜索", List.of(AgentType.ACADEMIC_RESEARCH)),
 
-	XIAOHONGSHU("xiaohongshu", "小红书", "生活方式、旅游攻略、美食推荐、购物指南", List.of(AgentType.LIFESTYLE_TRAVEL)),
+	// 旅游生活专用工具
+	OPENTRIPMAP("opentripmap", "OpenTripMap景点搜索", "全球旅游景点和设施信息", List.of(AgentType.LIFESTYLE_TRAVEL)),
 
+	TRIPADVISOR("tripadvisor", "TripAdvisor旅游搜索", "旅游景点、酒店、餐厅信息", List.of(AgentType.LIFESTYLE_TRAVEL)),
+
+	// 百科知识专用工具
 	WIKIPEDIA("wikipedia", "维基百科", "百科知识、概念解释、历史文化信息", List.of(AgentType.ENCYCLOPEDIA)),
 
-	NATIONAL_STATISTICS("national_statistics", "国家统计局", "官方统计数据、经济指标、人口数据", List.of(AgentType.DATA_ANALYSIS)),
+	// 数据分析专用工具
+	WORLDBANK_DATA("worldbankdata", "世界银行数据", "全球发展指标和国家统计数据", List.of(AgentType.DATA_ANALYSIS)),
 
-	GOOGLE_TRENDS("google_trends", "Google Trends", "搜索趋势、热度分析、话题流行度", List.of(AgentType.DATA_ANALYSIS)),
-
-	BAIDU_INDEX("baidu_index", "百度指数", "中文搜索趋势、关键词热度、用户行为分析", List.of(AgentType.DATA_ANALYSIS)),
+	GOOGLE_SCHOLAR("googlescholar", "Google Scholar", "学术论文、引用分析、学者信息", List.of(AgentType.ACADEMIC_RESEARCH)),
 
 	TAVILY("tavily", "Tavily搜索", "通用web搜索引擎",
 			List.of(AgentType.GENERAL_RESEARCH, AgentType.ACADEMIC_RESEARCH, AgentType.ENCYCLOPEDIA)),
