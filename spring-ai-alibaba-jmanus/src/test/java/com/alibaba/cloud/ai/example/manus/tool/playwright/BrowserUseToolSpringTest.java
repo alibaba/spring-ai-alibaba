@@ -617,5 +617,4 @@ class BrowserUseToolSpringTest {
 
 		return browserUseTool.run(request);
 	}
-
 }
