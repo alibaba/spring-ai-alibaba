@@ -66,7 +66,7 @@ public class UserPromptConfigService {
 			config = userPromptConfigMapper.selectById(configDTO.id());
 			if (config != null) {
 				config.setName(configDTO.name());
-				config.setSystemPrompt(configDTO.systemPrompt());
+				config.setSystemPrompt(configDTO.optimizationPrompt());
 				config.setEnabled(configDTO.enabled());
 				config.setDescription(configDTO.description());
 				userPromptConfigMapper.updateById(config);
@@ -77,7 +77,7 @@ public class UserPromptConfigService {
 				config.setId(configDTO.id());
 				config.setName(configDTO.name());
 				config.setPromptType(configDTO.promptType());
-				config.setSystemPrompt(configDTO.systemPrompt());
+				config.setSystemPrompt(configDTO.optimizationPrompt());
 				config.setEnabled(configDTO.enabled());
 				config.setDescription(configDTO.description());
 				config.setCreator(configDTO.creator());
@@ -89,7 +89,7 @@ public class UserPromptConfigService {
 			config = new UserPromptConfig();
 			config.setName(configDTO.name());
 			config.setPromptType(configDTO.promptType());
-			config.setSystemPrompt(configDTO.systemPrompt());
+			config.setSystemPrompt(configDTO.optimizationPrompt());
 			config.setEnabled(configDTO.enabled());
 			config.setDescription(configDTO.description());
 			config.setCreator(configDTO.creator());
