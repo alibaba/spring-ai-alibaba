@@ -28,6 +28,7 @@ import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.McpToolUtils;
+import org.springframework.ai.mcp.server.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -55,7 +56,7 @@ import java.util.stream.Collectors;
  *
  * @author aias00
  */
-@AutoConfiguration
+@AutoConfiguration(after = { McpServerAutoConfiguration.class })
 @EnableConfigurationProperties({ McpServerProperties.class, McpGatewayProperties.class })
 @ConditionalOnClass({ McpServer.class, McpServerTransportProvider.class })
 @ConditionalOnProperty(name = "spring.ai.alibaba.mcp.gateway.enabled", havingValue = "true", matchIfMissing = true)
@@ -75,10 +76,10 @@ public class McpGatewayServerAutoConfiguration implements ApplicationContextAwar
 			.build();
 	}
 
-	@Bean
+	// @Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<McpServerFeatures.SyncToolSpecification> syncTools(
+	public List<McpServerFeatures.SyncToolSpecification> gatewaySyncTools(
 			ObjectProvider<List<McpServerFeatures.SyncToolSpecification>> tools,
 			List<ToolCallbackProvider> toolCallbackProvider, McpServerProperties serverProperties) {
 		List<SyncToolSpecification> toolSpecifications = new ArrayList<>(tools.stream().flatMap(List::stream).toList());
@@ -116,10 +117,11 @@ public class McpGatewayServerAutoConfiguration implements ApplicationContextAwar
 			.toList();
 	}
 
-	@Bean
+	// @Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public List<McpServerFeatures.AsyncToolSpecification> asyncTools(ObjectProvider<List<AsyncToolSpecification>> tools,
-			List<ToolCallbackProvider> toolCallbackProvider, McpServerProperties serverProperties) {
+	public List<McpServerFeatures.AsyncToolSpecification> gatewayAsyncTools(
+			ObjectProvider<List<AsyncToolSpecification>> tools, List<ToolCallbackProvider> toolCallbackProvider,
+			McpServerProperties serverProperties) {
 
 		List<AsyncToolSpecification> toolSpecifications = new ArrayList<>(
 				tools.stream().flatMap(List::stream).toList());
