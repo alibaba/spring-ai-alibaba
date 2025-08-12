@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 
 /**
@@ -23,64 +24,72 @@ import java.time.LocalDateTime;
  *
  * @author Makoto
  */
+@TableName("user_prompt_config")
 public class UserPromptConfig {
 
 	/**
 	 * 配置ID
 	 */
+	@TableId(value = "id", type = IdType.ASSIGN_UUID)
 	private String id;
 
 	/**
 	 * 配置名称
 	 */
+	@TableField("name")
 	private String name;
 
 	/**
 	 * 提示词类型（如：report-generator, planner等）
 	 */
+	@TableField("prompt_type")
 	private String promptType;
 
 	/**
 	 * 用户添加的优化提示词内容（附加到原始模板）
 	 */
-	private String optimizationPrompt;
+	@TableField("system_prompt")
+	private String systemPrompt;
 
 	/**
 	 * 是否启用该配置
 	 */
+	@TableField("enabled")
 	private Boolean enabled;
 
 	/**
 	 * 配置描述
 	 */
+	@TableField("description")
 	private String description;
 
 	/**
 	 * 创建时间
 	 */
+	@TableField(value = "create_time", fill = FieldFill.INSERT)
 	private LocalDateTime createTime;
 
 	/**
 	 * 更新时间
 	 */
+	@TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
 	private LocalDateTime updateTime;
 
 	/**
 	 * 创建者
 	 */
+	@TableField("creator")
 	private String creator;
 
 	// Constructors
 	public UserPromptConfig() {
 		this.enabled = true;
-		this.createTime = LocalDateTime.now();
-		this.updateTime = LocalDateTime.now();
 	}
 
-	public UserPromptConfig(String promptType, String optimizationPrompt) {
+	public UserPromptConfig(String promptType, String systemPrompt) {
 		this();
 		this.promptType = promptType;
-		this.optimizationPrompt = optimizationPrompt;
+		this.systemPrompt = systemPrompt;
 	}
 
 	// Getters and Setters
@@ -108,13 +117,12 @@ public class UserPromptConfig {
 		this.promptType = promptType;
 	}
 
-	public String getOptimizationPrompt() {
-		return optimizationPrompt;
+	public String getSystemPrompt() {
+		return systemPrompt;
 	}
 
-	public void setOptimizationPrompt(String optimizationPrompt) {
-		this.optimizationPrompt = optimizationPrompt;
-		this.updateTime = LocalDateTime.now();
+	public void setSystemPrompt(String systemPrompt) {
+		this.systemPrompt = systemPrompt;
 	}
 
 	public Boolean getEnabled() {
@@ -123,7 +131,6 @@ public class UserPromptConfig {
 
 	public void setEnabled(Boolean enabled) {
 		this.enabled = enabled;
-		this.updateTime = LocalDateTime.now();
 	}
 
 	public String getDescription() {
@@ -132,7 +139,6 @@ public class UserPromptConfig {
 
 	public void setDescription(String description) {
 		this.description = description;
-		this.updateTime = LocalDateTime.now();
 	}
 
 	public LocalDateTime getCreateTime() {

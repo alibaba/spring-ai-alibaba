@@ -18,8 +18,11 @@ package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.dto.PromptConfigDTO;
 import com.alibaba.cloud.ai.entity.UserPromptConfig;
+import com.alibaba.cloud.ai.mapper.UserPromptConfigMapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -36,8 +39,11 @@ public class UserPromptConfigService {
 
 	private static final Logger logger = LoggerFactory.getLogger(UserPromptConfigService.class);
 
+	@Autowired
+	private UserPromptConfigMapper userPromptConfigMapper;
+
 	/**
-	 * 内存存储，实际项目中可以替换为数据库存储
+	 * 内存存储，用于缓存配置（可选的性能优化）
 	 */
 	private final Map<String, UserPromptConfig> configStorage = new ConcurrentHashMap<>();
 
@@ -55,31 +61,53 @@ public class UserPromptConfigService {
 		logger.info("保存或更新提示词优化配置：{}", configDTO);
 
 		UserPromptConfig config;
-		if (configDTO.id() != null && configStorage.containsKey(configDTO.id())) {
+		if (configDTO.id() != null) {
 			// 更新现有配置
-			config = configStorage.get(configDTO.id());
-			config.setName(configDTO.name());
-			config.setOptimizationPrompt(configDTO.optimizationPrompt());
-			config.setEnabled(configDTO.enabled());
-			config.setDescription(configDTO.description());
-			config.setUpdateTime(LocalDateTime.now());
+			config = userPromptConfigMapper.selectById(configDTO.id());
+			if (config != null) {
+				config.setName(configDTO.name());
+				config.setSystemPrompt(configDTO.systemPrompt());
+				config.setEnabled(configDTO.enabled());
+				config.setDescription(configDTO.description());
+				userPromptConfigMapper.updateById(config);
+			}
+			else {
+				// ID不存在，创建新配置
+				config = new UserPromptConfig();
+				config.setId(configDTO.id());
+				config.setName(configDTO.name());
+				config.setPromptType(configDTO.promptType());
+				config.setSystemPrompt(configDTO.systemPrompt());
+				config.setEnabled(configDTO.enabled());
+				config.setDescription(configDTO.description());
+				config.setCreator(configDTO.creator());
+				userPromptConfigMapper.insert(config);
+			}
 		}
 		else {
 			// 创建新配置
 			config = new UserPromptConfig();
-			config.setId(UUID.randomUUID().toString());
 			config.setName(configDTO.name());
 			config.setPromptType(configDTO.promptType());
-			config.setOptimizationPrompt(configDTO.optimizationPrompt());
+			config.setSystemPrompt(configDTO.systemPrompt());
 			config.setEnabled(configDTO.enabled());
 			config.setDescription(configDTO.description());
 			config.setCreator(configDTO.creator());
+			userPromptConfigMapper.insert(config);
 		}
 
+		// 更新缓存
 		configStorage.put(config.getId(), config);
-
+		
 		// 更新类型映射（支持多个配置）
 		updatePromptTypeMapping(config);
+
+		// 如果配置启用，禁用同类型的其他配置
+		if (Boolean.TRUE.equals(config.getEnabled())) {
+			userPromptConfigMapper.disableAllByPromptType(config.getPromptType());
+			userPromptConfigMapper.enableById(config.getId());
+			logger.info("已启用提示词类型 [{}] 的配置：{}", config.getPromptType(), config.getId());
+		}
 
 		return config;
 	}
@@ -90,7 +118,7 @@ public class UserPromptConfigService {
 	 * @return 配置对象，不存在时返回null
 	 */
 	public UserPromptConfig getConfigById(String id) {
-		return configStorage.get(id);
+		return userPromptConfigMapper.selectById(id);
 	}
 
 	/**
@@ -118,6 +146,13 @@ public class UserPromptConfigService {
 	 * @return 配置对象，不存在时返回null
 	 */
 	public UserPromptConfig getActiveConfigByType(String promptType) {
+		// 优先从数据库获取
+		UserPromptConfig dbConfig = userPromptConfigMapper.selectActiveByPromptType(promptType);
+		if (dbConfig != null) {
+			return dbConfig;
+		}
+		
+		// 备用：从内存缓存获取
 		List<UserPromptConfig> configs = getActiveConfigsByType(promptType);
 		return configs.isEmpty() ? null : configs.get(0);
 	}
@@ -127,7 +162,8 @@ public class UserPromptConfigService {
 	 * @return 配置列表
 	 */
 	public List<UserPromptConfig> getAllConfigs() {
-		return new ArrayList<>(configStorage.values());
+		return userPromptConfigMapper
+			.selectList(Wrappers.<UserPromptConfig>lambdaQuery().orderByDesc(UserPromptConfig::getUpdateTime));
 	}
 
 	/**
@@ -136,11 +172,7 @@ public class UserPromptConfigService {
 	 * @return 配置列表
 	 */
 	public List<UserPromptConfig> getConfigsByType(String promptType) {
-		return configStorage.values()
-			.stream()
-			.filter(config -> promptType.equals(config.getPromptType()))
-			.sorted(Comparator.comparing(UserPromptConfig::getUpdateTime).reversed())
-			.toList();
+		return userPromptConfigMapper.selectByPromptType(promptType);
 	}
 
 	/**
@@ -149,12 +181,17 @@ public class UserPromptConfigService {
 	 * @return 是否删除成功
 	 */
 	public boolean deleteConfig(String id) {
-		UserPromptConfig config = configStorage.remove(id);
+		UserPromptConfig config = userPromptConfigMapper.selectById(id);
 		if (config != null) {
-			// 从类型映射中移除该配置
-			removeFromPromptTypeMapping(config);
-			logger.info("已删除配置：{}", id);
-			return true;
+			// 从数据库删除
+			int deleted = userPromptConfigMapper.deleteById(id);
+			if (deleted > 0) {
+				// 从内存缓存和类型映射中移除该配置
+				configStorage.remove(id);
+				removeFromPromptTypeMapping(config);
+				logger.info("已删除配置：{}", id);
+				return true;
+			}
 		}
 		return false;
 	}
@@ -165,13 +202,21 @@ public class UserPromptConfigService {
 	 * @return 是否操作成功
 	 */
 	public boolean enableConfig(String id) {
-		UserPromptConfig config = configStorage.get(id);
+		UserPromptConfig config = userPromptConfigMapper.selectById(id);
 		if (config != null) {
-			config.setEnabled(true);
-			config.setUpdateTime(LocalDateTime.now());
-			updatePromptTypeMapping(config);
-			logger.info("已启用配置：{}", id);
-			return true;
+			// 先禁用同类型的其他配置
+			userPromptConfigMapper.disableAllByPromptType(config.getPromptType());
+
+			// 启用当前配置
+			int updated = userPromptConfigMapper.enableById(id);
+			if (updated > 0) {
+				// 更新内存缓存
+				config.setEnabled(true);
+				configStorage.put(id, config);
+				updatePromptTypeMapping(config);
+				logger.info("已启用配置：{}", id);
+				return true;
+			}
 		}
 		return false;
 	}
@@ -182,11 +227,14 @@ public class UserPromptConfigService {
 	 * @return 是否操作成功
 	 */
 	public boolean disableConfig(String id) {
-		UserPromptConfig config = configStorage.get(id);
-		if (config != null) {
-			config.setEnabled(false);
-			config.setUpdateTime(LocalDateTime.now());
-			removeFromPromptTypeMapping(config);
+		int updated = userPromptConfigMapper.disableById(id);
+		if (updated > 0) {
+			// 更新内存缓存
+			UserPromptConfig config = configStorage.get(id);
+			if (config != null) {
+				config.setEnabled(false);
+				removeFromPromptTypeMapping(config);
+			}
 			logger.info("已禁用配置：{}", id);
 			return true;
 		}
@@ -243,7 +291,7 @@ public class UserPromptConfigService {
 	public String getCustomPromptContent(String promptType) {
 		List<UserPromptConfig> configs = getActiveConfigsByType(promptType);
 		if (!configs.isEmpty()) {
-			return configs.get(0).getOptimizationPrompt();
+			return configs.get(0).getSystemPrompt();
 		}
 		return null;
 	}
