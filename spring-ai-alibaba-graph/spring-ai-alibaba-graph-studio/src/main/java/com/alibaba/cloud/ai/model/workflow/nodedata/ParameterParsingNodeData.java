@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.model.workflow.nodedata;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -31,43 +30,51 @@ public class ParameterParsingNodeData extends NodeData {
 
 	private String inputTextKey;
 
-	private List<Map<String, String>> parameters;
+	private List<Map<String, Object>> parameters;
+
+	private String instruction;
 
 	private String outputKey;
 
-	public ParameterParsingNodeData() {
-		super(Collections.emptyList(), Collections.emptyList());
-	}
-
-	public ParameterParsingNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs) {
-		super(inputs, outputs);
+	public ParameterParsingNodeData(String inputTextKey, List<Map<String, Object>> parameters, String instruction,
+			String outputKey, VariableSelector input) {
+		super(List.of(input), List.of());
+		this.inputTextKey = inputTextKey;
+		this.parameters = parameters;
+		this.instruction = instruction;
+		this.outputKey = outputKey;
 	}
 
 	public String getInputTextKey() {
 		return inputTextKey;
 	}
 
-	public ParameterParsingNodeData setInputTextKey(String inputTextKey) {
+	public void setInputTextKey(String inputTextKey) {
 		this.inputTextKey = inputTextKey;
-		return this;
 	}
 
-	public List<Map<String, String>> getParameters() {
+	public List<Map<String, Object>> getParameters() {
 		return parameters;
 	}
 
-	public ParameterParsingNodeData setParameters(List<Map<String, String>> parameters) {
+	public void setParameters(List<Map<String, Object>> parameters) {
 		this.parameters = parameters;
-		return this;
+	}
+
+	public String getInstruction() {
+		return instruction;
+	}
+
+	public void setInstruction(String instruction) {
+		this.instruction = instruction;
 	}
 
 	public String getOutputKey() {
 		return outputKey;
 	}
 
-	public ParameterParsingNodeData setOutputKey(String outputKey) {
+	public void setOutputKey(String outputKey) {
 		this.outputKey = outputKey;
-		return this;
 	}
 
 }

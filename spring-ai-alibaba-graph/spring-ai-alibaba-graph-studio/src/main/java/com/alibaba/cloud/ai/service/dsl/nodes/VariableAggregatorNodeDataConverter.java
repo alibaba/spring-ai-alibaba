@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 @Component
 public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConverter<VariableAggregatorNodeData> {
@@ -154,14 +155,59 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
 	}
 
 	@Override
-	public void postProcess(VariableAggregatorNodeData data, String varName) {
-		String origKey = data.getOutputKey();
-		String newKey = varName + "_output";
-
-		if (origKey == null) {
-			data.setOutputKey(newKey);
+	public void postProcessOutput(VariableAggregatorNodeData data, String varName) {
+		if (data.getAdvancedSettings() != null && data.getAdvancedSettings().isGroupEnabled()) {
+			List<Variable> outputs = data.getAdvancedSettings()
+				.getGroups()
+				.stream()
+				.map(group -> new Variable(group.getGroupName(), group.getOutputType()))
+				.toList();
+			data.setOutputs(outputs);
 		}
-		data.setOutputs(List.of(new Variable(data.getOutputKey(), data.getOutputType())));
+		else {
+			Variable output = new Variable("output", data.getOutputType());
+			data.setOutputs(List.of(output));
+		}
+		data.setOutputKey(varName + "_output");
+		super.postProcessOutput(data, varName);
+	}
+
+	@Override
+	public BiConsumer<VariableAggregatorNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> {
+				// 设置输入变量的Selector
+				BiConsumer<VariableAggregatorNodeData, Map<String, String>> consumer = ((nodeData, idToVarName) -> {
+					List<VariableSelector> selectors;
+					if (nodeData.getAdvancedSettings() != null && nodeData.getAdvancedSettings().isGroupEnabled()) {
+						selectors = nodeData.getAdvancedSettings()
+							.getGroups()
+							.stream()
+							.map(VariableAggregatorNodeData.Groups::getVariables)
+							.flatMap(List::stream)
+							.map(list -> new VariableSelector(list.get(0), list.get(1)))
+							.toList();
+						// 设置Group自己的Selector
+						nodeData.getAdvancedSettings().getGroups().forEach(group -> {
+							group.setVariableSelectors(group.getVariables()
+								.stream()
+								.map(list -> new VariableSelector(list.get(0), list.get(1)).setNameInCode(
+										idToVarName.getOrDefault(list.get(0), list.get(0)) + "_" + list.get(1)))
+								.toList());
+						});
+					}
+					else {
+						selectors = nodeData.getVariables()
+							.stream()
+							.map(variable -> new VariableSelector(variable.get(0), variable.get(1)))
+							.toList();
+					}
+					nodeData.setInputs(selectors);
+				});
+				yield consumer.andThen(super.postProcessConsumer(dialectType));
+			}
+			case CUSTOM -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

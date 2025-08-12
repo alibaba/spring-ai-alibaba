@@ -16,7 +16,9 @@
 
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
+import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
+import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.ListOperatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -27,6 +29,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,33 +60,60 @@ public class ListOperatorNodeDataConverter extends AbstractNodeDataConverter<Lis
 			public ListOperatorNodeData parse(Map<String, Object> data) {
 				ListOperatorNodeData nd = new ListOperatorNodeData();
 
-				// inputs => variable_selector
-				List<String> sel = (List<String>) data.get("variable_selector");
+				// inputs => variable
+				List<String> sel = (List<String>) data.get("variable");
 				if (sel != null && sel.size() == 2) {
 					nd.setInputs(Collections.singletonList(new VariableSelector(sel.get(0), sel.get(1))));
 				}
 
-				// input_text_key
-				nd.setInputTextKey((String) data.get("input_text_key"));
+				// 过滤条件
+				Object filterObj = data.get("filter_by");
+				if (filterObj instanceof Map<?, ?>) {
+					Map<String, Object> filterMap = (Map<String, Object>) filterObj;
+					Boolean enabled = (Boolean) filterMap.getOrDefault("enabled", false);
+					if (enabled) {
+						Object conditionObj = filterMap.get("conditions");
+						if (conditionObj instanceof List<?>) {
+							List<Map<String, Object>> conditionList = (List<Map<String, Object>>) conditionObj;
+							List<ListOperatorNodeData.FilterCondition> filterConditions = conditionList.stream()
+								.map(mp -> ListOperatorNodeData.FilterCondition
+									.ofDify(mp.get("comparison_operator").toString(), mp.get("value").toString()))
+								.toList();
+							nd.setFilters(filterConditions);
+						}
+					}
+				}
 
-				// output_text_key
-				nd.setOutputTextKey((String) data.get("output_text_key"));
+				// 限制数量
+				Object limitObj = data.get("limit");
+				if (limitObj instanceof Map<?, ?>) {
+					Map<String, Object> limitMap = (Map<String, Object>) limitObj;
+					Boolean enabled = (Boolean) limitMap.getOrDefault("enabled", false);
+					if (enabled) {
+						Integer size = (Integer) limitMap.get("size");
+						nd.setLimitNumber(size);
+					}
+				}
 
-				// filters（List<String>）
-				List<String> fl = (List<String>) data.get("filters");
-				nd.setFilters(fl != null ? fl : Collections.emptyList());
-
-				// comparators（List<String>）
-				List<String> cm = (List<String>) data.get("comparators");
-				nd.setComparators(cm != null ? cm : Collections.emptyList());
-
-				// limit_number
-				if (data.get("limit_number") != null) {
-					nd.setLimitNumber(((Number) data.get("limit_number")).longValue());
+				// 排序规则
+				Object orderObj = data.get("order_by");
+				if (orderObj instanceof Map<?, ?>) {
+					Map<String, Object> orderMap = (Map<String, Object>) orderObj;
+					Boolean enabled = (Boolean) orderMap.getOrDefault("enabled", false);
+					if (enabled) {
+						String value = orderMap.get("value").toString();
+						if (value.equalsIgnoreCase("asc")) {
+							nd.setOrder(ListOperatorNodeData.Ordered.ASC);
+						}
+						else if (value.equalsIgnoreCase("desc")) {
+							nd.setOrder(ListOperatorNodeData.Ordered.DESC);
+						}
+					}
 				}
 
 				// element_class_type
-				nd.setElementClassType((String) data.get("element_class_type"));
+				nd.setElementClassType(
+						VariableType.fromDifyValue((String) data.get("item_var_type")).orElse(VariableType.OBJECT));
 
 				return nd;
 			}
@@ -92,35 +122,6 @@ public class ListOperatorNodeDataConverter extends AbstractNodeDataConverter<Lis
 			public Map<String, Object> dump(ListOperatorNodeData nd) {
 				Map<String, Object> m = new LinkedHashMap<>();
 
-				// variable_selector
-				if (!nd.getInputs().isEmpty()) {
-					VariableSelector vs = nd.getInputs().get(0);
-					m.put("variable_selector", List.of(vs.getNamespace(), vs.getName()));
-				}
-				// input_text_key
-				if (nd.getInputTextKey() != null) {
-					m.put("input_text_key", nd.getInputTextKey());
-				}
-				// output_text_key
-				if (nd.getOutputTextKey() != null) {
-					m.put("output_text_key", nd.getOutputTextKey());
-				}
-				// filters
-				if (nd.getFilters() != null && !nd.getFilters().isEmpty()) {
-					m.put("filters", nd.getFilters());
-				}
-				// comparators
-				if (nd.getComparators() != null && !nd.getComparators().isEmpty()) {
-					m.put("comparators", nd.getComparators());
-				}
-				// limit_number
-				if (nd.getLimitNumber() != null) {
-					m.put("limit_number", nd.getLimitNumber());
-				}
-				// element_class_type
-				if (nd.getElementClassType() != null) {
-					m.put("element_class_type", nd.getElementClassType());
-				}
 				return m;
 			}
 
@@ -145,6 +146,24 @@ public class ListOperatorNodeDataConverter extends AbstractNodeDataConverter<Lis
 	@Override
 	public String generateVarName(int count) {
 		return "listOperatorNode" + count;
+	}
+
+	@Override
+	public void postProcessOutput(ListOperatorNodeData nodeData, String varName) {
+		Variable output = ListOperatorNodeData.defaultOutputSchema();
+		nodeData.setOutputKey(varName + "_" + output.getName());
+		nodeData.setOutputs(List.of(output));
+		super.postProcessOutput(nodeData, varName);
+	}
+
+	@Override
+	public BiConsumer<ListOperatorNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
+				nodeData.setInputKey(nodeData.getInputs().get(0).getNameInCode());
+			});
+			case CUSTOM -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

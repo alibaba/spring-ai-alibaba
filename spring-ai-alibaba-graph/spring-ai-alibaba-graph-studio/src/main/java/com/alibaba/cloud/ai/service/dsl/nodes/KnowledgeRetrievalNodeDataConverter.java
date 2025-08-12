@@ -18,9 +18,7 @@ package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankOptions;
 import com.alibaba.cloud.ai.model.RerankModel;
-import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.KnowledgeRetrievalNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -31,6 +29,7 @@ import org.springframework.stereotype.Component;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,15 +66,13 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 				if (data.get("variable_selector") != null) {
 					List<String> sel = (List<String>) data.get("variable_selector");
 					if (sel.size() == 2) {
-						nd.setInputId(sel.get(0));
-						nd.setInputField(sel.get(1));
+						nd.setInputs(List.of(new VariableSelector(sel.get(0), sel.get(1))));
 					}
 				}
 				else if (data.get("query_variable_selector") != null) {
 					List<String> sel = (List<String>) data.get("query_variable_selector");
 					if (sel.size() == 2) {
-						nd.setInputId(sel.get(0));
-						nd.setInputField(sel.get(1));
+						nd.setInputs(List.of(new VariableSelector(sel.get(0), sel.get(1))));
 					}
 				}
 				// dataset_ids
@@ -231,14 +228,20 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 	}
 
 	@Override
-	public void postProcess(KnowledgeRetrievalNodeData data, String varName) {
-		String origKey = data.getOutputKey();
-		String newKey = varName + "_output";
+	public void postProcessOutput(KnowledgeRetrievalNodeData data, String varName) {
+		data.setOutputKey(varName + "_" + KnowledgeRetrievalNodeData.getDefaultOutputSchema().getName());
+		data.setOutputs(List.of(KnowledgeRetrievalNodeData.getDefaultOutputSchema()));
+		super.postProcessOutput(data, varName);
+	}
 
-		if (origKey == null) {
-			data.setOutputKey(newKey);
-		}
-		data.setOutputs(List.of(new Variable(data.getOutputKey(), VariableType.ARRAY_OBJECT.value())));
+	@Override
+	public BiConsumer<KnowledgeRetrievalNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
+				nodeData.setInputKey(nodeData.getInputs().get(0).getNameInCode());
+			});
+			case CUSTOM -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

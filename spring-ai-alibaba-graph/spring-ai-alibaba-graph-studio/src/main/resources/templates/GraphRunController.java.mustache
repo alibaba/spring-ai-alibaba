@@ -37,7 +37,7 @@ public class GraphRunController {
 
     @PostMapping(value = "/start")
     public Map<String, Object> startInvoke(@RequestBody Map<String, Object> inputs) throws Exception {
-        {{startInputsSection}}
+        return graph.invoke(inputs).get().data();
     }
 
 
