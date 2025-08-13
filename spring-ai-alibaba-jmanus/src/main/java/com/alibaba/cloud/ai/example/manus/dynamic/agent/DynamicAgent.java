@@ -333,6 +333,14 @@ public class DynamicAgent extends ReActAgent {
 					// Record successfully completed action result
 					recordActionResult(actToolInfoList, lastToolCallResult, ExecutionStatus.FINISHED, null, false);
 
+						// Complete the agent run future with the final tool result for external listeners
+						try {
+							getCompletionFuture().complete(new AgentExecResult(lastToolCallResult, AgentState.COMPLETED));
+						}
+						catch (Exception ex) {
+							log.warn("Failed to complete completionFuture for planId {}: {}", getCurrentPlanId(), ex.getMessage());
+						}
+
 					return new AgentExecResult(lastToolCallResult, AgentState.COMPLETED);
 				}
 				else {
