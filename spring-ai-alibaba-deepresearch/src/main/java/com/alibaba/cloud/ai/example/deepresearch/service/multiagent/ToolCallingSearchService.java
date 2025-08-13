@@ -16,16 +16,21 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.service.multiagent;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.SearchPlatform;
 import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * 工具调用搜索服务，根据不同的Agent类型调用相应的专用工具调用服务
@@ -34,39 +39,44 @@ import java.util.*;
  * @since 2025/07/17
  */
 @Service
-@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+@ConditionalOnProperty(prefix = SmartAgentProperties.PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = false)
 public class ToolCallingSearchService {
 
 	private static final Logger logger = LoggerFactory.getLogger(ToolCallingSearchService.class);
 
 	// 学术研究工具
-	@Autowired(required = false)
-	@Qualifier("openAlex")
-	private SearchService openAlexService;
+	private final SearchService openAlexService;
 
 	// 旅游生活工具
-	@Autowired(required = false)
-	@Qualifier("openTripMapService")
-	private SearchService openTripMapService;
+	private final SearchService openTripMapService;
 
-	@Autowired(required = false)
-	@Qualifier("tripAdvisor")
-	private SearchService tripAdvisorService;
+	private final SearchService tripAdvisorService;
 
 	// 百科知识工具
-	@Autowired(required = false)
-	@Qualifier("searchWikipedia")
-	private SearchService wikipediaService;
+	private final SearchService wikipediaService;
 
 	// 数据分析工具
-	@Autowired(required = false)
-	@Qualifier("worldBankData")
-	private SearchService worldBankDataService;
+	private final SearchService worldBankDataService;
 
-	@Autowired(required = false)
-	@Qualifier("googleScholar")
-	private SearchService googleScholarService;
+	private final SearchService googleScholarService;
+
+	/**
+	 * 构造器注入所有搜索服务依赖
+	 */
+	public ToolCallingSearchService(@Nullable @Qualifier("openAlex") SearchService openAlexService,
+			@Nullable @Qualifier("openTripMapService") SearchService openTripMapService,
+			@Nullable @Qualifier("tripAdvisor") SearchService tripAdvisorService,
+			@Nullable @Qualifier("searchWikipedia") SearchService wikipediaService,
+			@Nullable @Qualifier("worldBankData") SearchService worldBankDataService,
+			@Nullable @Qualifier("googleScholar") SearchService googleScholarService) {
+		this.openAlexService = openAlexService;
+		this.openTripMapService = openTripMapService;
+		this.tripAdvisorService = tripAdvisorService;
+		this.wikipediaService = wikipediaService;
+		this.worldBankDataService = worldBankDataService;
+		this.googleScholarService = googleScholarService;
+	}
 
 	/**
 	 * 根据搜索平台执行工具调用搜索
@@ -82,7 +92,6 @@ public class ToolCallingSearchService {
 				return Collections.emptyList();
 			}
 
-			logger.info("使用工具调用服务进行搜索: {} -> {}", platform.getName(), query);
 			SearchService.Response response = targetService.query(query);
 
 			if (response != null && response.getSearchResult() != null) {
