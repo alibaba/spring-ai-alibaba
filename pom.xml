@@ -126,6 +126,7 @@
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-bilibili</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-youtube</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-elasticsearch</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-archive</module>
 
         <!-- Spring AI Alibaba Document Parsers -->
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-apache-pdfbox</module>
