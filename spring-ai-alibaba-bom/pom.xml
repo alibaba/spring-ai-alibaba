@@ -548,6 +548,12 @@
             <!-- Spring AI Alibaba Document Readers -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-document-reader-archive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-starter-document-reader-arxiv</artifactId>
                 <version>${project.version}</version>
             </dependency>
