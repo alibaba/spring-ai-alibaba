@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.runtime.task.TaskManager;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -54,6 +55,8 @@ import org.springframework.ai.tool.ToolCallback;
 import reactor.core.publisher.Flux;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -90,6 +93,12 @@ public class DynamicAgent extends ReActAgent {
 
 	private final StreamingResponseHandler streamingResponseHandler;
 
+	// Optional: external task manager to orchestrate sub-plans when toolcall indicates so
+	private TaskManager taskManager;
+
+	// Pattern to detect sub-plan trigger in tool result, e.g. "调用了子执行计划，计划id是xxxx"
+	private static final Pattern SUBPLAN_PATTERN = Pattern.compile("调用了子执行计划，计划id是([\\w-]+)");
+
 	public void clearUp(String planId) {
 		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
 		for (ToolCallBackContext toolCallBack : toolCallBackContext.values()) {
@@ -120,6 +129,10 @@ public class DynamicAgent extends ReActAgent {
 		this.userInputService = userInputService;
 		this.model = model;
 		this.streamingResponseHandler = streamingResponseHandler;
+	}
+
+	public void setTaskManager(TaskManager taskManager) {
+		this.taskManager = taskManager;
 	}
 
 	@Override
@@ -327,9 +340,25 @@ public class DynamicAgent extends ReActAgent {
 				}
 			}
 
-			// Record successful action result
-			recordActionResult(actToolInfoList, lastToolCallResult, ExecutionStatus.RUNNING, null, false);
 
+            // Detect sub-plan trigger from tool result
+            List<String> childPlanIds = extractChildPlanIds(lastToolCallResult);
+			if (!childPlanIds.isEmpty()) {
+				log.info("Detected sub-plan trigger for planId {} with children: {}", getCurrentPlanId(), childPlanIds);
+                // Delegate to TaskManager non-blocking orchestration: suspend, schedule, patch, resume
+                if (taskManager != null) {
+                    taskManager.scheduleChildrenPatchAndResumeByPlanId(getCurrentPlanId(), childPlanIds, childId -> {
+                        // External factory hook required; keep placeholder to compile
+                        throw new IllegalStateException("Task factory not provided");
+                    });
+                }
+                // Record action with subPlanCreated=true, keep lastToolCallResult as-is; real result will be patched into memory
+                recordActionResult(actToolInfoList, lastToolCallResult, ExecutionStatus.RUNNING, null, true);
+                return new AgentExecResult(lastToolCallResult, AgentState.IN_PROGRESS);
+			}
+
+			// Record successful action result (no sub-plan)
+			recordActionResult(actToolInfoList, lastToolCallResult, ExecutionStatus.RUNNING, null, false);
 			return new AgentExecResult(lastToolCallResult, AgentState.IN_PROGRESS);
 		}
 		catch (Exception e) {
@@ -355,6 +384,19 @@ public class DynamicAgent extends ReActAgent {
 			processMemory(toolExecutionResult); // Process memory even on error
 			return new AgentExecResult(e.getMessage(), AgentState.FAILED);
 		}
+	}
+
+	// Extract child plan ids from tool result by pattern; return empty list if not matched
+	private List<String> extractChildPlanIds(String toolResult) {
+		if (toolResult == null) {
+			return Collections.emptyList();
+		}
+		Matcher m = SUBPLAN_PATTERN.matcher(toolResult);
+		List<String> ids = new ArrayList<>();
+		while (m.find()) {
+			ids.add(m.group(1));
+		}
+		return ids;
 	}
 
 	/**
