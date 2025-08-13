@@ -29,6 +29,12 @@
     <name>Spring AI Alibaba Graph Examples</name>
 
     <description>Spring AI Alibaba Graph Example</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
 
     <properties>
         <gson.version>2.10.1</gson.version>

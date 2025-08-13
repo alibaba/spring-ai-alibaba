@@ -40,7 +40,7 @@ public class LlmService {
 	/**
 	 * 流式返回用户prompt的回复
 	 * @param prompt 用户输入的提示
-	 * @return Flux<ChatResponse> 流式响应
+	 * @return 流式响应
 	 */
 	public Flux<ChatResponse> streamCall(String prompt) {
 		return chatClient.prompt().user(prompt).stream().chatResponse();
@@ -50,7 +50,7 @@ public class LlmService {
 	 * 流式返回用户prompt的回复，带有系统提示
 	 * @param system 系统提示
 	 * @param user 用户输入
-	 * @return Flux<ChatResponse> 流式响应
+	 * @return 流式响应
 	 */
 	public Flux<ChatResponse> streamCallWithSystemPrompt(String system, String user) {
 		return chatClient.prompt().system(system).user(user).stream().chatResponse();

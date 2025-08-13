@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * @author lizhenning
- * @date 2025/7/8
+ * @since 2025/7/8
  */
 @Service
 public class ModelDataInitialization implements IModelDataInitialization {

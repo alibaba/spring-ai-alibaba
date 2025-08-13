@@ -202,7 +202,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0.3-SNAPSHOT</revision>
+        <revision>1.0.0.3</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -303,6 +303,8 @@
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
         <spotless.version>2.44.5</spotless.version>
+
+        <central.publishing.maven.version>0.7.0</central.publishing.maven.version>
     </properties>
 
     <dependencyManagement>
@@ -589,18 +591,7 @@
         <profile>
             <id>release</id>
 
-            <distributionManagement>
-                <repository>
-                    <id>sonatype-nexus-staging</id>
-                    <name>Nexus Release Repository</name>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-                <snapshotRepository>
-                    <id>sonatype-nexus-snapshots</id>
-                    <name>Sonatype Nexus Snapshots</name>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-                </snapshotRepository>
-            </distributionManagement>
+            <distributionManagement></distributionManagement>
             <build>
                 <plugins>
                     <plugin>
@@ -658,6 +649,15 @@
                                 <phase>clean</phase>
                             </execution>
                         </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${central.publishing.maven.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

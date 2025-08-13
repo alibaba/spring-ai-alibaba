@@ -23,7 +23,7 @@ import java.util.List;
  * Adapts RedisChatMemoryProperties to RedisChatMemoryConnectionDetails.
  *
  * @author benym
- * @date 2025/7/30 20:39
+ * @since 2025/7/30 20:39
  */
 public class RedisChatMemoryConnectionDetails implements RedisConnectionDetails {
 

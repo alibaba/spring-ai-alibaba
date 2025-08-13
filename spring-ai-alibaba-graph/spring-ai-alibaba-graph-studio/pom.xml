@@ -11,10 +11,19 @@
     <artifactId>spring-ai-alibaba-graph-studio</artifactId>
     <name>Spring AI Graph Studio</name>
 
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
+
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
         <spring-initializr.version>0.21.0</spring-initializr.version>
         <org.eclipse.jdt.core.version>3.42.0</org.eclipse.jdt.core.version>
+
+        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencies>
