@@ -571,7 +571,7 @@ mdRenderer.code = ({ text, lang }: { text: string; lang?: string; escaped?: bool
 <div class="md-code-block" data-lang="${label}">
   <div class="md-code-header">
     <span class="md-lang">${label}</span>
-    <button class="md-copy-btn" data-raw="${rawEncoded}" title="复制">复制</button>
+    <button class="md-copy-btn" data-raw="${rawEncoded}" title="copy">copy</button>
   </div>
   <pre><code class="hljs language-${label}">${highlighted}</code></pre>
 </div>`
@@ -1412,12 +1412,12 @@ const handleMessageContainerClick = (event: Event) => {
         document.execCommand('copy')
         document.body.removeChild(ta)
       }
-      btn.textContent = '已复制'
-      setTimeout(() => (btn.textContent = '复制'), 1500)
+      btn.textContent = 'copy'
+      setTimeout(() => (btn.textContent = 'copy'), 1500)
     } catch (err) {
       console.error('Copy failed:', err)
-      btn.textContent = '复制失败'
-      setTimeout(() => (btn.textContent = '复制'), 1500)
+      btn.textContent = 'copy failed'
+      setTimeout(() => (btn.textContent = 'copy'), 1500)
     }
   }
 
