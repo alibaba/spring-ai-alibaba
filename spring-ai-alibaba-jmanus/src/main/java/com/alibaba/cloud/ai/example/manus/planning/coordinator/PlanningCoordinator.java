@@ -97,11 +97,13 @@ public class PlanningCoordinator {
 				return context;
 			}
 			else {
-				// Normal plan execution
-				PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
-				log.info("Selected executor: {} for plan type: {} (planId: {})", executor.getClass().getSimpleName(),
-						plan.getPlanType(), context.getCurrentPlanId());
-				executor.executeAllSteps(context);
+                // Normal plan execution -> wrap into PlanTask and start
+                PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
+                log.info("Selected executor: {} for plan type: {} (planId: {})", executor.getClass().getSimpleName(),
+                        plan.getPlanType(), context.getCurrentPlanId());
+                com.alibaba.cloud.ai.example.manus.runtime.task.PlanTask task =
+                        new com.alibaba.cloud.ai.example.manus.runtime.task.PlanTask(context, null, executor);
+                task.start();
 			}
 		}
 		else {
