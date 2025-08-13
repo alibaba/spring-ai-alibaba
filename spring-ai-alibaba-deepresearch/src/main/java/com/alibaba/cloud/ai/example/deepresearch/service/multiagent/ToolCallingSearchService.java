@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.service.multiagent;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.SearchPlatform;
 import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import org.slf4j.Logger;
@@ -25,8 +26,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 /**
  * 工具调用搜索服务，根据不同的Agent类型调用相应的专用工具调用服务
  *
@@ -34,7 +38,7 @@ import java.util.*;
  * @since 2025/07/17
  */
 @Service
-@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+@ConditionalOnProperty(prefix = SmartAgentProperties.PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = false)
 public class ToolCallingSearchService {
 

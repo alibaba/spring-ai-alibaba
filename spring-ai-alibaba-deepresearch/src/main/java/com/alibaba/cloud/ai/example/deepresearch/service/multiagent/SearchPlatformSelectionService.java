@@ -42,7 +42,7 @@ import java.util.List;
  * @since 2025/07/17
  */
 @Service
-@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+@ConditionalOnProperty(prefix = SmartAgentProperties.PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = false)
 public class SearchPlatformSelectionService {
 
