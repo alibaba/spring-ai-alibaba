@@ -32,7 +32,6 @@ import org.springframework.ai.tool.ToolCallback;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * An abstract base class for implementing AI agents that can execute multi-step tasks.
@@ -92,9 +91,6 @@ public abstract class BaseAgent {
 	private Map<String, Object> envData = new HashMap<>();
 
 	protected PlanExecutionRecorder planExecutionRecorder;
-
-	// A future that completes when a single run() invocation finishes (success or failure)
-	private transient CompletableFuture<AgentExecResult> completionFuture;
 
 	public abstract void clearUp(String planId);
 
@@ -204,16 +200,12 @@ public abstract class BaseAgent {
 			throw new IllegalStateException("Cannot run agent from state: " + state);
 		}
 
-		// Initialize a new future for this run invocation
-		this.completionFuture = new CompletableFuture<>();
-
 		LocalDateTime startTime = LocalDateTime.now();
 		List<String> results = new ArrayList<>();
 		boolean completed = false;
 		boolean stuck = false;
 		String errorMessage = null;
 		String finalResult = null;
-		AgentExecResult finalExecResult = null;
 
 		try {
 			state = AgentState.IN_PROGRESS;
@@ -249,8 +241,6 @@ public abstract class BaseAgent {
 			String status = completed ? "Success" : (stuck ? "Execution stuck" : "Incomplete");
 			finalResult = String.format("Execution %s [Duration: %d seconds] [Steps consumed: %d] ", status,
 					executionTimeSeconds, currentStep);
-			AgentState finalState = completed ? AgentState.COMPLETED : (stuck ? AgentState.FAILED : state);
-			finalExecResult = new AgentExecResult(finalResult, finalState);
 
 		}
 		catch (Exception e) {
@@ -280,22 +270,12 @@ public abstract class BaseAgent {
 				planExecutionRecorder.recordCompleteAgentExecution(params);
 			}
 
-			// Complete the future exceptionally for async listeners
-			if (completionFuture != null && !completionFuture.isDone()) {
-				completionFuture.completeExceptionally(e);
-			}
 			throw e; // Re-throw the exception to let the caller know that an error
 						// occurred
 		}
 		finally {
 			state = AgentState.COMPLETED; // Reset state after execution
 			llmService.clearAgentMemory(currentPlanId);
-			// Complete the future on normal termination if not already completed
-			if (completionFuture != null && !completionFuture.isDone()) {
-				AgentExecResult toComplete = finalExecResult != null ? finalExecResult
-						: new AgentExecResult(finalResult != null ? finalResult : "", state);
-				completionFuture.complete(toComplete);
-			}
 		}
 
 		// Record execution at the end - only once
@@ -319,24 +299,6 @@ public abstract class BaseAgent {
 		}
 
 		return results.isEmpty() ? "" : results.get(results.size() - 1);
-	}
-
-	/**
-	 * Obtain a future that completes when the current {@link #run()} invocation
-	 * finishes. Callers can attach callbacks using {@code whenComplete} to receive
-	 * the final {@link AgentExecResult} or an exception if the run fails.
-	 * <p>
-	 * A new future instance is created at the start of each {@code run()} call.
-	 * If {@code run()} has not been invoked yet, this returns a lazily-initialized
-	 * future which will be completed by the next run, or remain incomplete if the
-	 * agent never runs.
-	 * @return the completion future for the current/next run
-	 */
-	public CompletableFuture<AgentExecResult> getCompletionFuture() {
-		if (this.completionFuture == null) {
-			this.completionFuture = new CompletableFuture<>();
-		}
-		return this.completionFuture;
 	}
 
 	protected abstract AgentExecResult step();

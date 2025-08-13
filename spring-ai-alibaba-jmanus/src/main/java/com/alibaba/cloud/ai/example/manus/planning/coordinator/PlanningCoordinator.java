@@ -21,6 +21,8 @@ import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutor
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
+import com.alibaba.cloud.ai.example.manus.runtime.task.PlanTask;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +91,8 @@ public class PlanningCoordinator {
 				PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
 				log.info("Selected executor: {} for direct response plan (planId: {})",
 						executor.getClass().getSimpleName(), context.getCurrentPlanId());
-				executor.executeAllSteps(context);
+				PlanTask task = new PlanTask(context, null, executor);
+				task.start();
 
 				// Generate direct response using PlanFinalizer
 				planFinalizer.generateDirectResponse(context);
@@ -101,8 +104,8 @@ public class PlanningCoordinator {
                 PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
                 log.info("Selected executor: {} for plan type: {} (planId: {})", executor.getClass().getSimpleName(),
                         plan.getPlanType(), context.getCurrentPlanId());
-                com.alibaba.cloud.ai.example.manus.runtime.task.PlanTask task =
-                        new com.alibaba.cloud.ai.example.manus.runtime.task.PlanTask(context, null, executor);
+                PlanTask task =
+                        new  PlanTask(context, null, executor);
                 task.start();
 			}
 		}
@@ -137,7 +140,8 @@ public class PlanningCoordinator {
 		PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
 		log.info("Selected executor: {} for existing plan type: {} (planId: {})", executor.getClass().getSimpleName(),
 				plan.getPlanType(), context.getCurrentPlanId());
-		executor.executeAllSteps(context);
+		PlanTask task = new PlanTask(context, null, executor);
+		task.start();
 
 		// 2. Generate a summary
 		planFinalizer.generateSummary(context);
@@ -168,7 +172,8 @@ public class PlanningCoordinator {
 		log.info("Using explicit executor: {} for planId: {}", executor.getClass().getSimpleName(),
 				context.getCurrentPlanId());
 
-		executor.executeAllSteps(context);
+		PlanTask task = new PlanTask(context, null, executor);
+		task.start();
 		planFinalizer.generateSummary(context);
 
 		log.info("Plan execution with explicit executor completed successfully for planId: {}",
