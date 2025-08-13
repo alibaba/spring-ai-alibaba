@@ -18,15 +18,17 @@ package com.alibaba.cloud.ai.example.manus.tool.browser;
 import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ConcurrentHashMap;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * A class that manages a collection of interactive elements on a page, providing global
@@ -41,7 +43,7 @@ public class InteractiveElementRegistry {
 	 */
 	private static final String EXTRACT_INTERACTIVE_ELEMENTS_JS = """
 			((index) => {
-
+			const turndownService = new TurndownService()
 			const TMP = []
 			const ID = {"count": index}
 			const COMPUTED_STYLES = new WeakMap();
@@ -88,7 +90,7 @@ public class InteractiveElementRegistry {
 					jManusId = CURRENT_TIMESTAMP + "-" + index;
 					element.setAttribute("jmanus-id", jManusId)
 				}
-				const text = element.innerText
+				const text = turndownService.turndown(element.outerHTML)
 				const outerHtml = element.outerHTML
 				const xpath = getXPathTree(element)
 				RES.push({tagName, text, outerHtml, index, xpath, jManusId})
@@ -409,6 +411,20 @@ public class InteractiveElementRegistry {
 
 	// Removed the static initialization block, directly using string constants
 
+	private static String TURNDOWN_JS;
+
+	static {
+		ClassPathResource resource = new ClassPathResource("tool/turndown.js");
+		try (InputStream is = resource.getInputStream()) {
+			byte[] bytes = new byte[is.available()];
+			is.read(bytes);
+			TURNDOWN_JS = new String(bytes);
+		}
+		catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
 	/**
 	 * A list of all interactive elements, sorted by global index
 	 */
@@ -461,6 +477,7 @@ public class InteractiveElementRegistry {
 		try {
 			int index = 0;
 			for (Frame frame : page.frames()) {
+				frame.evaluate(TURNDOWN_JS);
 				List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) frame
 					.evaluate(EXTRACT_INTERACTIVE_ELEMENTS_JS, index);
 				for (Map<String, Object> elementMap : elementMapList) {
