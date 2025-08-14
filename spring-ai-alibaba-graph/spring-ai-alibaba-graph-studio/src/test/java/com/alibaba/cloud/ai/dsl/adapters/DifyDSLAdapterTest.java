@@ -20,8 +20,6 @@ import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.model.workflow.nodedata.ToolNodeData;
 import com.alibaba.cloud.ai.service.dsl.adapters.DifyDSLAdapter;
 import com.alibaba.cloud.ai.service.dsl.nodes.ToolNodeDataConverter;
-import com.alibaba.cloud.ai.service.dsl.nodes.LLMNodeDataConverter;
-import com.alibaba.cloud.ai.service.dsl.nodes.HttpNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import org.junit.jupiter.api.Test;
 
