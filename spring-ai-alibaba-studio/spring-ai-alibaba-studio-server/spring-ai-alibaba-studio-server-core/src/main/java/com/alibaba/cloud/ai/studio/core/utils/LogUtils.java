@@ -214,7 +214,7 @@ public class LogUtils {
 	/**
 	 * Logs statistics for agent context
 	 */
-	public static void statics(AgentContext context, boolean success) {
+	public static void statistics(AgentContext context, boolean success) {
 		StringBuilder builder = new StringBuilder();
 
 		builder.append(context.getRequestId());
@@ -238,7 +238,7 @@ public class LogUtils {
 	/**
 	 * Logs statistics for workflow context
 	 */
-	public static void statics(WorkflowContext context, boolean success) {
+	public static void statistics(WorkflowContext context, boolean success) {
 		StringBuilder builder = new StringBuilder();
 
 		builder.append(context.getRequestId());

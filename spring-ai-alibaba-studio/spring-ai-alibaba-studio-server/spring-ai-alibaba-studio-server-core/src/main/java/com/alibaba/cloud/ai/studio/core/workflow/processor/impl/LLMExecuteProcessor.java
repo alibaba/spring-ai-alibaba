@@ -295,14 +295,14 @@ public class LLMExecuteProcessor extends AbstractExecuteProcessor {
 					return UserMessage.builder().text(userPrompt).media(media).build();
 				}
 				else if (value instanceof List) {
-					List<Media> medias = ((List<?>) value).stream()
+					List<Media> mediaList = ((List<?>) value).stream()
 						.map(this::constructMedia)
 						.filter(Objects::nonNull)
 						.collect(Collectors.toList());
-					if (CollectionUtils.isEmpty(medias)) {
+					if (CollectionUtils.isEmpty(mediaList)) {
 						return new UserMessage(userPrompt);
 					}
-					return UserMessage.builder().text(userPrompt).media(medias).build();
+					return UserMessage.builder().text(userPrompt).media(mediaList).build();
 				}
 				else {
 					throw new BizException(ErrorCode.WORKFLOW_CONFIG_INVALID

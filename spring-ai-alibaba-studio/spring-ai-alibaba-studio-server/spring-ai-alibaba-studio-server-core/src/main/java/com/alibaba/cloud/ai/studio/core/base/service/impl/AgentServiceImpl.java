@@ -100,7 +100,7 @@ public class AgentServiceImpl implements AgentService {
 		}
 
 		postHandle(context, response);
-		statics(context, SignalType.ON_COMPLETE);
+		statistics(context, SignalType.ON_COMPLETE);
 		return response;
 	}
 
@@ -123,7 +123,7 @@ public class AgentServiceImpl implements AgentService {
 			// post handle
 			.doOnNext(response -> postHandle(context, response))
 			// final call
-			.doFinally(signal -> statics(context, signal));
+			.doFinally(signal -> statistics(context, signal));
 	}
 
 	/**
@@ -265,7 +265,7 @@ public class AgentServiceImpl implements AgentService {
 	/**
 	 * Records statistics and monitoring information for the request
 	 */
-	private void statics(AgentContext context, SignalType signalType) {
+	private void statistics(AgentContext context, SignalType signalType) {
 		long firstResponseTime = context.getFirstResponseTime();
 		long startTime = context.getStartTime();
 		long endTime = context.getEndTime();
@@ -292,7 +292,7 @@ public class AgentServiceImpl implements AgentService {
 			LogUtils.monitor(context, "AgentService", "handleRequests", context.getStartTime(), FAIL, null, response);
 		}
 
-		LogUtils.statics(context, response.getError() == null);
+		LogUtils.statistics(context, response.getError() == null);
 	}
 
 	/**

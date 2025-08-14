@@ -184,7 +184,7 @@ public class AppController {
 					.forEach(nodeParamResult -> stringBuilder.append("Node【")
 						.append(nodeParamResult.getNodeName())
 						.append("】")
-						.append("hava configuration error：\n")
+						.append("have a configuration error：\n")
 						.append(String.join(";\n", nodeParamResult.getErrorInfos()))
 						.append("\n"));
 				throw new BizException(ErrorCode.WORKFLOW_CONFIG_ILLEGAL.toError(stringBuilder.toString()));

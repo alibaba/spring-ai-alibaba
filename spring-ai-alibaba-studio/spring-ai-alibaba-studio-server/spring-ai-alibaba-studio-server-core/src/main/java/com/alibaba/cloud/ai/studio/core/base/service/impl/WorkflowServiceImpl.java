@@ -191,7 +191,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 					context.getError());
 		}
 
-		LogUtils.statics(context, context.getError() == null);
+		LogUtils.statistics(context, context.getError() == null);
 	}
 
 	private void postHandle(WorkflowContext context, WorkflowResponse response) {

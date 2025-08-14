@@ -38,7 +38,7 @@ import java.io.Serializable;
 public class IndexConfig implements Serializable {
 
 	/**
-	 * Name of the index configuration, normally it's vectore store index or collection
+	 * Name of the index configuration, normally it's vector store index or collection
 	 * name
 	 */
 	private String name;

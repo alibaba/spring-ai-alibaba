@@ -428,7 +428,7 @@
   "main.pages.App.Workflow.nodes.Script.schema.logic": "Logic",
   "main.pages.App.Workflow.nodes.Start.panel.input": "Input",
   "main.pages.App.Workflow.nodes.Start.panel.customVariables": "Custom Variable",
-  "main.pages.App.Workflow.nodes.Start.panel.predefinedVariables": "Build-in Variables",
+  "main.pages.App.Workflow.nodes.Start.panel.predefinedVariables": "Built-in Variables",
   "main.pages.App.Workflow.nodes.Start.panel.userQuery": "User's query",
   "main.pages.App.Workflow.nodes.Start.schema.start": "Start",
   "main.pages.App.Workflow.nodes.Start.schema.startNode": "Start",

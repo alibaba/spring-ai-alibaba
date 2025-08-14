@@ -981,7 +981,7 @@ public class OpenApiUtils {
 			throw new YAMLException("Type \"token\" is not allowed.");
 		}
 		if (StringUtils.isNotBlank(type) && "object".equals(type)) {
-			throw new YAMLException("Parameter Not Allow Obeject Type");
+			throw new YAMLException("Parameter Not Allow Object Type");
 		}
 
 		ApiParameter param = new ApiParameter();
