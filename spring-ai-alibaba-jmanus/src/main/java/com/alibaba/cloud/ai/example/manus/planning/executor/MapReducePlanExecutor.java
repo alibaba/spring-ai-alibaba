@@ -34,6 +34,7 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapOutputTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.ReduceOperationTool;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor.PlanExecutionResult;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -120,44 +121,56 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	}
 
 	/**
-	 * Execute all steps of the entire MapReduce plan
+	 * Execute all steps of the entire MapReduce plan asynchronously
 	 * @param context Execution context containing user request and execution process
 	 * information
+	 * @return CompletableFuture containing PlanExecutionResult with all step results
 	 */
 	@Override
-	public void executeAllSteps(ExecutionContext context) {
-		BaseAgent lastExecutor = null;
-		PlanInterface plan = context.getPlan();
+	public CompletableFuture<PlanExecutionResult> executeAllStepsAsync(ExecutionContext context) {
+		return CompletableFuture.supplyAsync(() -> {
+			PlanExecutionResult result = new PlanExecutionResult();
+			BaseAgent lastExecutor = null;
+			PlanInterface plan = context.getPlan();
 
-		if (!(plan instanceof MapReduceExecutionPlan)) {
-			logger.error("MapReducePlanExecutor can only execute MapReduceExecutionPlan, but got: {}",
-					plan.getClass().getSimpleName());
-			throw new IllegalArgumentException("MapReducePlanExecutor can only execute MapReduceExecutionPlan");
-		}
-
-		MapReduceExecutionPlan mapReducePlan = (MapReduceExecutionPlan) plan;
-		plan.updateStepIndices();
-
-		try {
-			recorder.recordPlanExecutionStart(context);
-			List<ExecutionNode> steps = mapReducePlan.getSteps();
-
-			if (CollectionUtil.isNotEmpty(steps)) {
-				for (Object stepNode : steps) {
-					if (stepNode instanceof SequentialNode) {
-						lastExecutor = executeSequentialNode((SequentialNode) stepNode, context, lastExecutor);
-					}
-					else if (stepNode instanceof MapReduceNode) {
-						lastExecutor = executeMapReduceNode((MapReduceNode) stepNode, context, lastExecutor);
-					}
-				}
+			if (!(plan instanceof MapReduceExecutionPlan)) {
+				logger.error("MapReducePlanExecutor can only execute MapReduceExecutionPlan, but got: {}",
+						plan.getClass().getSimpleName());
+				throw new IllegalArgumentException("MapReducePlanExecutor can only execute MapReduceExecutionPlan");
 			}
 
-			context.setSuccess(true);
-		}
-		finally {
-			performCleanup(context, lastExecutor);
-		}
+			MapReduceExecutionPlan mapReducePlan = (MapReduceExecutionPlan) plan;
+			plan.updateStepIndices();
+
+			try {
+				recorder.recordPlanExecutionStart(context);
+				List<ExecutionNode> steps = mapReducePlan.getSteps();
+
+				if (CollectionUtil.isNotEmpty(steps)) {
+					for (Object stepNode : steps) {
+						if (stepNode instanceof SequentialNode) {
+							lastExecutor = executeSequentialNode((SequentialNode) stepNode, context, lastExecutor);
+						}
+						else if (stepNode instanceof MapReduceNode) {
+							lastExecutor = executeMapReduceNode((MapReduceNode) stepNode, context, lastExecutor);
+						}
+					}
+				}
+
+				context.setSuccess(true);
+				result.setSuccess(true);
+				result.setFinalResult(context.getResultSummary());
+				
+			} catch (Exception e) {
+				context.setSuccess(false);
+				result.setSuccess(false);
+				result.setErrorMessage(e.getMessage());
+			} finally {
+				performCleanup(context, lastExecutor);
+			}
+			
+			return result;
+		});
 	}
 
 	/**

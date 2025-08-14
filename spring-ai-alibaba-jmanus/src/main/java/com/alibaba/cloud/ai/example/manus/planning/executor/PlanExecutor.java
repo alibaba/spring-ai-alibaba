@@ -49,13 +49,7 @@ public class PlanExecutor extends AbstractPlanExecutor {
 		super(agents, recorder, agentService, llmService, manusProperties);
 	}
 
-	/**
-	 * Execute all steps of the entire plan
-	 * @param context Execution context containing user request and execution process
-	 * information
-	 */
-	@Override
-	public void executeAllSteps(ExecutionContext context) {
+	private void executeAllSteps(ExecutionContext context) {
 		BaseAgent lastExecutor = null;
 		PlanInterface plan = context.getPlan();
 		plan.updateStepIndices();

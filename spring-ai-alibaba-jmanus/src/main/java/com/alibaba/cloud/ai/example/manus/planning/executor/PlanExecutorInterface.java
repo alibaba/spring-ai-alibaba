@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.executor;
 
+import java.util.concurrent.CompletableFuture;
+
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor.PlanExecutionResult;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 
 /**
@@ -27,6 +30,6 @@ public interface PlanExecutorInterface {
 	 * @param context Execution context containing user request and execution process
 	 * information
 	 */
-	void executeAllSteps(ExecutionContext context);
+	public CompletableFuture<PlanExecutionResult> executeAllStepsAsync(ExecutionContext context);
 
 }

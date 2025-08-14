@@ -37,6 +37,8 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.config.CoordinatorProperties;
 
+
+
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -61,9 +63,7 @@ public class CoordinatorToolExecutor {
 
 	private static final String PLAN_NOT_FOUND_ERROR = "Plan not found: %s";
 
-	private static final String POLLING_TIMEOUT_ERROR = "Polling timeout after %d attempts";
 
-	private static final String POLLING_INTERRUPTED_ERROR = "Polling interrupted: %s";
 
 	@Autowired
 	private PlanTemplateService planTemplateService;
@@ -73,6 +73,8 @@ public class CoordinatorToolExecutor {
 
 	@Autowired
 	private CoordinatorProperties coordinatorProperties;
+
+
 
 	private final ObjectMapper objectMapper;
 
@@ -210,20 +212,19 @@ public class CoordinatorToolExecutor {
 	}
 
 	/**
-	 * Poll plan execution results
+	 * Execute plan and get results using async execution
 	 * @param planId Plan ID
 	 * @return Execution result string
 	 */
 	public String pollPlanResult(String planId) {
-		log.info("{} Starting to poll plan execution results: {}", LOG_PREFIX, planId);
+		log.info("{} Starting async plan execution for: {}", LOG_PREFIX, planId);
 
 		try {
-			// Poll until plan completion
-			PlanExecutionRecord record = pollUntilComplete(planId);
+			// Wait for plan completion
+			PlanExecutionRecord record = waitForPlanCompletion(planId);
 
 			// Extract final result
 			String resultOutput = extractFinalResult(record);
-
 			if (resultOutput != null && !resultOutput.trim().isEmpty()) {
 				log.info("{} Successfully obtained plan execution result: {}", LOG_PREFIX, planId);
 				return resultOutput;
@@ -235,8 +236,8 @@ public class CoordinatorToolExecutor {
 			}
 		}
 		catch (Exception e) {
-			log.error("{} Polling plan results failed: {} - {}", LOG_PREFIX, planId, e.getMessage(), e);
-			throw new RuntimeException("Polling plan results failed: " + e.getMessage(), e);
+			log.error("{} Async plan execution failed: {} - {}", LOG_PREFIX, planId, e.getMessage(), e);
+			throw new RuntimeException("Async plan execution failed: " + e.getMessage(), e);
 		}
 	}
 
@@ -284,30 +285,54 @@ public class CoordinatorToolExecutor {
 	}
 
 	/**
-	 * Poll plan until completion
+	 * Wait for plan completion using efficient polling
 	 * @param planId Plan ID
 	 * @return Completed plan execution record
 	 */
-	private PlanExecutionRecord pollUntilComplete(String planId) {
+	private PlanExecutionRecord waitForPlanCompletion(String planId) {
+		log.debug("{} Starting to wait for plan completion: {}", LOG_PREFIX, planId);
+
+		try {
+			// Get the plan execution record to check if it exists
+			PlanExecutionRecord existingRecord = getPlanExecutionRecord(planId);
+			if (existingRecord == null) {
+				throw new RuntimeException("Plan execution record not found for plan: " + planId);
+			}
+
+			// Wait for completion using efficient polling
+			return waitUntilComplete(planId);
+
+		} catch (Exception e) {
+			log.error("{} Waiting for plan completion failed for plan {}: {}", LOG_PREFIX, planId, e.getMessage(), e);
+			throw new RuntimeException("Waiting for plan completion failed: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Wait for plan completion using efficient polling
+	 * @param planId Plan ID
+	 * @return Completed plan execution record
+	 */
+	private PlanExecutionRecord waitUntilComplete(String planId) {
 		int maxAttempts = coordinatorProperties.getPolling().getMaxAttempts();
 		long pollInterval = coordinatorProperties.getPolling().getPollInterval();
 
-		log.debug("{} Starting to poll plan: {}, max attempts: {}, poll interval: {}ms", LOG_PREFIX, planId,
+		log.debug("{} Starting to wait for plan: {}, max attempts: {}, poll interval: {}ms", LOG_PREFIX, planId,
 				maxAttempts, pollInterval);
 
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-			log.debug("{} Polling plan {} attempt {}", LOG_PREFIX, planId, attempt);
+			log.debug("{} Waiting for plan {} attempt {}", LOG_PREFIX, planId, attempt);
 
 			// Get execution record
 			PlanExecutionRecord planRecord = getPlanExecutionRecord(planId);
 
 			// Check if completed
 			if (planRecord.isCompleted()) {
-				log.info("{} Plan {} completed, polling ended", LOG_PREFIX, planId);
+				log.info("{} Plan {} completed, waiting ended", LOG_PREFIX, planId);
 				return planRecord;
 			}
 
-			log.debug("{} Plan {} not yet completed, continuing to poll", LOG_PREFIX, planId);
+			log.debug("{} Plan {} not yet completed, continuing to wait", LOG_PREFIX, planId);
 
 			// Wait for specified time before continuing to poll
 			if (attempt < maxAttempts) {
@@ -315,7 +340,7 @@ public class CoordinatorToolExecutor {
 			}
 		}
 
-		String errorMsg = String.format(POLLING_TIMEOUT_ERROR, maxAttempts);
+		String errorMsg = String.format("Waiting timeout after %d attempts", maxAttempts);
 		log.warn("{} {}", LOG_PREFIX, errorMsg);
 		throw new RuntimeException(errorMsg);
 	}
@@ -355,7 +380,7 @@ public class CoordinatorToolExecutor {
 		catch (InterruptedException e) {
 			log.warn("{} Polling interrupted: {}", LOG_PREFIX, e.getMessage());
 			Thread.currentThread().interrupt();
-			throw new RuntimeException(String.format(POLLING_INTERRUPTED_ERROR, e.getMessage()));
+			throw new RuntimeException(String.format("Polling interrupted: %s", e.getMessage()));
 		}
 	}
 

@@ -22,8 +22,10 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor.PlanExecutionResult;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,32 +53,47 @@ public class DirectResponseExecutor extends AbstractPlanExecutor {
 	}
 
 	/**
-	 * Execute direct response plan - records plan execution start and marks as successful
+	 * Execute direct response plan asynchronously - records plan execution start and marks as successful
 	 * The actual direct response generation is handled by PlanningCoordinator
 	 * @param context Execution context containing user request and plan information
+	 * @return CompletableFuture containing the execution result
 	 */
 	@Override
-	public void executeAllSteps(ExecutionContext context) {
-		log.info("Executing direct response plan for planId: {}", context.getCurrentPlanId());
+	public CompletableFuture<PlanExecutionResult> executeAllStepsAsync(ExecutionContext context) {
+		return CompletableFuture.<PlanExecutionResult>supplyAsync(() -> {
+			log.info("Executing direct response plan for planId: {}", context.getCurrentPlanId());
 
-		BaseAgent lastExecutor = null;
+			BaseAgent lastExecutor = null;
 
-		try {
-			// Record plan execution start
-			recorder.recordPlanExecutionStart(context);
+			try {
+				// Record plan execution start
+				recorder.recordPlanExecutionStart(context);
 
-			log.info("Direct response executor completed successfully for planId: {}", context.getCurrentPlanId());
-			context.setSuccess(true);
-		}
-		catch (Exception e) {
-			log.error("Error during direct response execution for planId: {}", context.getCurrentPlanId(), e);
-			context.setSuccess(false);
-			// Set error message as result summary
-			context.setResultSummary("Direct response execution failed: " + e.getMessage());
-		}
-		finally {
-			performCleanup(context, lastExecutor);
-		}
+				log.info("Direct response executor completed successfully for planId: {}", context.getCurrentPlanId());
+				context.setSuccess(true);
+				
+				// Create successful result
+				PlanExecutionResult result = new PlanExecutionResult();
+				result.setSuccess(true);
+				result.setFinalResult("Direct response execution completed successfully");
+				return result;
+			}
+			catch (Exception e) {
+				log.error("Error during direct response execution for planId: {}", context.getCurrentPlanId(), e);
+				context.setSuccess(false);
+				// Set error message as result summary
+				context.setResultSummary("Direct response execution failed: " + e.getMessage());
+				
+				// Create failed result
+				PlanExecutionResult result = new PlanExecutionResult();
+				result.setSuccess(false);
+				result.setErrorMessage("Direct response execution failed: " + e.getMessage());
+				return result;
+			}
+			finally {
+				performCleanup(context, lastExecutor);
+			}
+		});
 	}
 
 }

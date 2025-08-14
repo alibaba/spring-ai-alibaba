@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.runtime.task;
 
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor.PlanExecutionResult;
 
 import java.util.Objects;
 import java.util.Collection;
@@ -71,15 +72,22 @@ public class PlanTask {
 			return;
 		}
 		state = TaskState.RUNNING;
-		try {
-			executor.executeAllSteps(context);
-			state = TaskState.COMPLETED;
-			future.complete(context);
-		}
-		catch (Exception e) {
-			state = TaskState.FAILED;
-			future.completeExceptionally(e);
-		}
+		
+		// Execute asynchronously and handle the result
+		executor.executeAllStepsAsync(context)
+			.whenComplete((result, throwable) -> {
+				if (throwable != null) {
+					state = TaskState.FAILED;
+					future.completeExceptionally(throwable);
+				} else {
+					state = TaskState.COMPLETED;
+					// Update the context with the execution result
+					if (result != null && result.isSuccess()) {
+						context.setResultSummary(result.getEffectiveResult());
+					}
+					future.complete(context);
+				}
+			});
 	}
 
     public void resume() {
