@@ -1,0 +1,70 @@
+openapi: "3.0.0"
+info:
+  title: "测试API"
+  version: "1.0.0"
+  description: "请在此填入插件描述"
+servers:
+  - url: "https://example.com/api"
+    description: "请在此填入插件描述"
+paths:
+  "/weatherInfo":
+    get:
+      summary: "API名称"
+      description: "请在此填入插件下面的API描述"
+      operationId: "getWeatherInfo"
+      parameters:
+        - name: "city"
+          in: "query"
+          description: "参数说明"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "成功的响应"
+          content:
+            agentApplication/json:
+              schema:
+                type: "object"
+                properties:
+                  status:
+                    type: "integer"
+                    description: "返回状态"
+                    enum: [ 0, 1 ]
+        "400":
+          description: "错误的请求"
+        "401":
+          description: "未授权"
+        "500":
+          description: "服务器内部错误"
+
+  "/weatherInfo2":
+    post:
+      summary: "API名称"
+      description: "请在此填入插件下面的API描述"
+      operationId: "weatherInfo2"
+      parameters:
+        - name: "city"
+          in: "query"
+          description: "参数说明"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "成功的响应"
+          content:
+            agentApplication/json:
+              schema:
+                type: "object"
+                properties:
+                  status:
+                    type: "integer"
+                    description: "返回状态"
+                    enum: [ 0, 1 ]
+        "400":
+          description: "错误的请求"
+        "401":
+          description: "未授权"
+        "500":
+          description: "服务器内部错误"

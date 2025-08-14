@@ -1,0 +1,121 @@
+.promptEditor {
+  border: 1px solid var(--ag-ant-color-border);
+  border-radius: 6px;
+  min-height: 164px;
+  max-height: 400px;
+  background: var(--ag-ant-color-bg-base);
+  position: relative;
+  padding: 6px 8px;
+
+  &.noHead {
+    .editorContent {
+      height: calc(100% - 28px);
+    }
+  }
+
+  .editorContent {
+    height: calc(100% - 67px);
+  }
+
+  :global {
+    .text-editor .text-editor-content {
+      gap: 0;
+
+      div[data-slate-node="element"] {
+        line-height: 28px;
+      }
+
+      .spark-editor-var-tag {
+        height: 20px;
+        line-height: 20px;
+        margin: 0 4px;
+        color: var(--ag-ant-color-primary);
+        background: var(--ag-ant-color-primary-bg);
+      }
+    }
+  }
+}
+
+.loading {
+  height: 333px;
+  border: 1px solid var(--ag-ant-color-border);
+  border-radius: 6px;
+  padding: 12px;
+  color: var(--ag-ant-color-text-label);
+  overflow-y: auto;
+  cursor: not-allowed;
+  white-space: pre-wrap;
+
+  .loadingIcon {
+    color: var(--ag-ant-color-text-disabled);
+  }
+}
+
+.header {
+  max-height: 58px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ag-ant-color-border);
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  margin: 0 -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+
+  .tag {
+    display: inline-block;
+    margin-right: 6px;
+    cursor: pointer;
+    font-weight: 500;
+
+    &:nth-last-child(1) {
+      margin: 0;
+    }
+
+    &.disabled {
+      cursor: not-allowed;
+    }
+  }
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+
+  .right {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+.popover {
+  z-index: 999;
+
+  :global {
+    .ag-ant-popover-inner {
+      padding: 16px;
+    }
+  }
+}
+
+.popoverCon {
+  display: flex;
+  flex-direction: column;
+
+  span {
+    white-space: pre;
+  }
+
+  .copyBtn {
+    align-self: flex-end;
+    cursor: pointer;
+    color: var(--ag-ant-color-icon);
+
+    span {
+      color: var(--ag-ant-color-text-description);
+    }
+  }
+}

@@ -53,7 +53,7 @@
         <module>spring-ai-alibaba-mcp</module>
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-prompt</module>
-        <module>spring-ai-alibaba-graph</module>
+        <module>spring-ai-alibaba-graph-core</module>
         <module>spring-ai-alibaba-nl2sql</module>
         <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-jmanus</module>
