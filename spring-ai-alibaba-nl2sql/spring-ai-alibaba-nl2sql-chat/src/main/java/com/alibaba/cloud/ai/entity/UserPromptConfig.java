@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 
 /**
@@ -23,58 +24,66 @@ import java.time.LocalDateTime;
  *
  * @author Makoto
  */
+@TableName("user_prompt_config")
 public class UserPromptConfig {
 
 	/**
 	 * Configuration ID
 	 */
+	@TableId(value = "id", type = IdType.ASSIGN_UUID)
 	private String id;
 
 	/**
 	 * Configuration name
 	 */
+	@TableField("name")
 	private String name;
 
 	/**
 	 * Prompt type (e.g., report-generator, planner, etc.)
 	 */
+	@TableField("prompt_type")
 	private String promptType;
 
 	/**
 	 * User-defined system prompt content
 	 */
+	@TableField("system_prompt")
 	private String systemPrompt;
 
 	/**
 	 * Whether to enable this configuration
 	 */
+	@TableField("enabled")
 	private Boolean enabled;
 
 	/**
 	 * Configuration description
 	 */
+	@TableField("description")
 	private String description;
 
 	/**
 	 * Creation time
 	 */
+	@TableField(value = "create_time", fill = FieldFill.INSERT)
 	private LocalDateTime createTime;
 
 	/**
 	 * Update time
 	 */
+	@TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
 	private LocalDateTime updateTime;
 
 	/**
 	 * Creator
 	 */
+	@TableField("creator")
 	private String creator;
 
 	// Constructors
 	public UserPromptConfig() {
 		this.enabled = true;
-		this.createTime = LocalDateTime.now();
-		this.updateTime = LocalDateTime.now();
 	}
 
 	public UserPromptConfig(String promptType, String systemPrompt) {
@@ -114,7 +123,6 @@ public class UserPromptConfig {
 
 	public void setSystemPrompt(String systemPrompt) {
 		this.systemPrompt = systemPrompt;
-		this.updateTime = LocalDateTime.now();
 	}
 
 	public Boolean getEnabled() {
@@ -123,7 +131,6 @@ public class UserPromptConfig {
 
 	public void setEnabled(Boolean enabled) {
 		this.enabled = enabled;
-		this.updateTime = LocalDateTime.now();
 	}
 
 	public String getDescription() {
@@ -132,7 +139,6 @@ public class UserPromptConfig {
 
 	public void setDescription(String description) {
 		this.description = description;
-		this.updateTime = LocalDateTime.now();
 	}
 
 	public LocalDateTime getCreateTime() {

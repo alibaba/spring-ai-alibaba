@@ -945,6 +945,14 @@ const words: I18nType = {
         step2: '[TEXT_FILE_AGENT] 从novel.md文件获取子标题信息，然后依次完善每一个章节的具体内容，每个轮次只完善一个子章节的内容，用replace来更新内容，每个章节要求有3000字的内容，不要每更新一个章节就查询一下文档的全部内容',
         step2Output: '文件的名字',
       },
+      formInputDemo: {
+        title: 'AI智能动态表单演示',
+        description: '体验AI智能分析用户需求并动态生成相关表单字段的能力',
+        prompt: '演示AI如何根据用户问题智能生成针对性的表单字段',
+        planTitle: 'AI智能动态表单演示计划',
+        step1: '[INTELLIGENT_FORM_AGENT] 启动智能动态表单演示，主动分析用户需求并动态生成相关表单字段，展示AI智能表单生成能力',
+        step1Output: '演示结果，用户交互数据',
+      },
     },
   },
 
@@ -1058,6 +1066,25 @@ const words: I18nType = {
     createWithJmanusDesc: '通过AI助手引导创建定时任务',
     createManually: '手动创建',
     createManuallyDesc: '自己填写定时任务信息',
+  },
+  memory: {
+    title: '记忆管理',
+    searchPlaceholder: '搜索记忆...',
+    size: '条记忆',
+    newNamePlaceholder: '输入新名称...',
+    changeName: '修改名称',
+    save: '保存',
+    cancel: '关闭',
+    delete: '删除',
+    deleteHint: '删除提示',
+    deleteHintPrefix: '你确定要删除ID为',
+    deleteHintSuffix: '的消息吗？此操作不可撤销。',
+    selectMemory: '选择记忆',
+    clearMemory: '清除记忆',
+    newChat: '新建对话',
+  },
+  selectCommon: {
+    pleaseSelect: '请选择...',
   },
 }
 

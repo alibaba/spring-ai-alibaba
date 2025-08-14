@@ -23,7 +23,7 @@ import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TemplateTransformNodeSection implements NodeSection {
+public class TemplateTransformNodeSection implements NodeSection<TemplateTransformNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {
@@ -51,7 +51,7 @@ public class TemplateTransformNodeSection implements NodeSection {
 
 		sb.append(".build();\n");
 		sb.append("stateGraph.addNode(\"")
-			.append(id)
+			.append(varName)
 			.append("\", AsyncNodeAction.node_async(")
 			.append(varName)
 			.append("));\n\n");

@@ -87,10 +87,7 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 					}
 				}
 
-				// outputKey
-				String outputKey = (String) data.get("output_key");
-
-				return new BranchNodeData(List.of(), List.of()).setCases(cases).setOutputKey(outputKey);
+				return new BranchNodeData(List.of(), List.of()).setCases(cases);
 			}
 
 			@Override
@@ -133,19 +130,12 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 	}
 
 	@Override
-	public void postProcess(BranchNodeData data, String varName) {
-		if (data.getOutputKey() == null) {
-			data.setOutputKey(varName + "_output");
-		}
-
-		List<Variable> outs = new ArrayList<>();
-		outs.add(new Variable(data.getOutputKey(), VariableType.STRING.value()));
-		data.setOutputs(outs);
+	public void postProcessOutput(BranchNodeData data, String varName) {
 	}
 
 	@Override
 	public Stream<Variable> extractWorkflowVars(BranchNodeData data) {
-		return data.getOutputs().stream();
+		return Stream.empty();
 	}
 
 }

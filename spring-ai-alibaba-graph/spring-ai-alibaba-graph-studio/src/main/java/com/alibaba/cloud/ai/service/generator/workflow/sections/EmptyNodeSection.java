@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
  * @since 2025/7/23
  */
 @Component
-public class EmptyNodeSection implements NodeSection {
+public class EmptyNodeSection implements NodeSection<EmptyNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {

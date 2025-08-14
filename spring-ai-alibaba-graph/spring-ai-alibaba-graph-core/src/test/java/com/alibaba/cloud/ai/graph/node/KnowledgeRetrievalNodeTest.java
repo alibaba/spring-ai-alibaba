@@ -89,7 +89,7 @@ public class KnowledgeRetrievalNodeTest {
 		return modifiableMap;
 	}
 
-	KnowledgeRetrievalNode initNode() {
+	KnowledgeRetrievalNode.Builder initNodeBuilder() {
 		return KnowledgeRetrievalNode.builder()
 			.userPromptKey("user_prompt")
 			.topKKey("top_k")
@@ -98,8 +98,21 @@ public class KnowledgeRetrievalNodeTest {
 			.enableRankerKey("enable_ranker")
 			.rerankModelKey("rerank_model")
 			.rerankOptionsKey("rerank_options")
-			.vectorStoreKey("vector_store")
-			.build();
+			.vectorStoreKey("vector_store");
+	}
+
+	@Test
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	void testValueFirst() throws Exception {
+		simpleVectorStore.add(documents);
+
+		KnowledgeRetrievalNode node = initNodeBuilder().topK(5).isKeyFirst(false).build();
+		Map<String, Object> stateMap = initStateMap();
+		// 修改topk
+		stateMap.put("top_k", 1);
+		Map<String, Object> newState = node.apply(new OverAllState(stateMap));
+		logger.info("文档检索结果加入prompt为{}", newState.get("user_prompt"));
+		assertEquals(2, node.documents.size());
 	}
 
 	@Test
@@ -108,7 +121,7 @@ public class KnowledgeRetrievalNodeTest {
 
 		simpleVectorStore.add(documents);
 
-		KnowledgeRetrievalNode node = initNode();
+		KnowledgeRetrievalNode node = initNodeBuilder().build();
 		Map<String, Object> stateMap = initStateMap();
 		// 原本topk为5
 		Map<String, Object> newState = node.apply(new OverAllState(stateMap));
@@ -128,7 +141,7 @@ public class KnowledgeRetrievalNodeTest {
 
 		simpleVectorStore.add(documents);
 
-		KnowledgeRetrievalNode node = initNode();
+		KnowledgeRetrievalNode node = initNodeBuilder().build();
 		Map<String, Object> stateMap = initStateMap();
 		// 原本similarity_threshold为0，1
 		Map<String, Object> newState = node.apply(new OverAllState(stateMap));
@@ -148,7 +161,7 @@ public class KnowledgeRetrievalNodeTest {
 
 		simpleVectorStore.add(documents);
 
-		KnowledgeRetrievalNode node = initNode();
+		KnowledgeRetrievalNode node = initNodeBuilder().build();
 		Map<String, Object> stateMap = initStateMap();
 		// 原本筛选条件是eq("type", "instruction")
 		Map<String, Object> newState = node.apply(new OverAllState(stateMap));
@@ -168,7 +181,7 @@ public class KnowledgeRetrievalNodeTest {
 
 		simpleVectorStore.add(documents);
 
-		KnowledgeRetrievalNode node = initNode();
+		KnowledgeRetrievalNode node = initNodeBuilder().build();
 		Map<String, Object> stateMap = initStateMap();
 
 		// rerankOptions原本默认topN为3

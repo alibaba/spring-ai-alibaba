@@ -22,20 +22,16 @@ import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.entity.Datasource;
 import com.alibaba.cloud.ai.entity.AgentDatasource;
 import com.alibaba.cloud.ai.enums.ErrorCodeEnum;
+import com.alibaba.cloud.ai.mapper.DatasourceMapper;
+import com.alibaba.cloud.ai.mapper.AgentDatasourceMapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,7 +47,10 @@ public class DatasourceService {
 	private static final Logger log = LoggerFactory.getLogger(DatasourceService.class);
 
 	@Autowired
-	private JdbcTemplate jdbcTemplate;
+	private DatasourceMapper datasourceMapper;
+
+	@Autowired
+	private AgentDatasourceMapper agentDatasourceMapper;
 
 	@Autowired
 	private DBConnectionPoolContext dbConnectionPoolContext;
@@ -60,37 +59,28 @@ public class DatasourceService {
 	 * Get all data source list
 	 */
 	public List<Datasource> getAllDatasources() {
-		String sql = "SELECT * FROM datasource ORDER BY create_time DESC";
-		return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Datasource.class));
+		return datasourceMapper.selectList(Wrappers.<Datasource>lambdaQuery().orderByDesc(Datasource::getCreateTime));
 	}
 
 	/**
 	 * Get data source list by status
 	 */
 	public List<Datasource> getDatasourcesByStatus(String status) {
-		String sql = "SELECT * FROM datasource WHERE status = ? ORDER BY create_time DESC";
-		return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Datasource.class), status);
+		return datasourceMapper.selectByStatus(status);
 	}
 
 	/**
 	 * Get data source list by type
 	 */
 	public List<Datasource> getDatasourcesByType(String type) {
-		String sql = "SELECT * FROM datasource WHERE type = ? ORDER BY create_time DESC";
-		return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Datasource.class), type);
+		return datasourceMapper.selectByType(type);
 	}
 
 	/**
 	 * Get data source details by ID
 	 */
 	public Datasource getDatasourceById(Integer id) {
-		try {
-			String sql = "SELECT * FROM datasource WHERE id = ?";
-			return jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<>(Datasource.class), id);
-		}
-		catch (EmptyResultDataAccessException e) {
-			return null;
-		}
+		return datasourceMapper.selectById(id);
 	}
 
 	/**
@@ -100,33 +90,15 @@ public class DatasourceService {
 		// Generate connection URL
 		datasource.generateConnectionUrl();
 
-		String sql = "INSERT INTO datasource (name, type, host, port, database_name, username, password, "
-				+ "connection_url, status, test_status, description, creator_id) "
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-		KeyHolder keyHolder = new GeneratedKeyHolder();
-		jdbcTemplate.update(connection -> {
-			PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-			ps.setString(1, datasource.getName());
-			ps.setString(2, datasource.getType());
-			ps.setString(3, datasource.getHost());
-			ps.setInt(4, datasource.getPort());
-			ps.setString(5, datasource.getDatabaseName());
-			ps.setString(6, datasource.getUsername());
-			ps.setString(7, datasource.getPassword()); // Note: Encryption is needed in
-														// actual applications
-			ps.setString(8, datasource.getConnectionUrl());
-			ps.setString(9, datasource.getStatus() != null ? datasource.getStatus() : "active");
-			ps.setString(10, datasource.getTestStatus() != null ? datasource.getTestStatus() : "unknown");
-			ps.setString(11, datasource.getDescription());
-			ps.setObject(12, datasource.getCreatorId());
-			return ps;
-		}, keyHolder);
-
-		Number key = keyHolder.getKey();
-		if (key != null) {
-			datasource.setId(key.intValue());
+		// 设置默认值
+		if (datasource.getStatus() == null) {
+			datasource.setStatus("active");
 		}
+		if (datasource.getTestStatus() == null) {
+			datasource.setTestStatus("unknown");
+		}
+
+		datasourceMapper.insert(datasource);
 		return datasource;
 	}
 
@@ -136,15 +108,9 @@ public class DatasourceService {
 	public Datasource updateDatasource(Integer id, Datasource datasource) {
 		// Regenerate connection URL
 		datasource.generateConnectionUrl();
-
-		String sql = "UPDATE datasource SET name = ?, type = ?, host = ?, port = ?, database_name = ?, "
-				+ "username = ?, password = ?, connection_url = ?, status = ?, description = ? " + "WHERE id = ?";
-
-		jdbcTemplate.update(sql, datasource.getName(), datasource.getType(), datasource.getHost(), datasource.getPort(),
-				datasource.getDatabaseName(), datasource.getUsername(), datasource.getPassword(),
-				datasource.getConnectionUrl(), datasource.getStatus(), datasource.getDescription(), id);
-
 		datasource.setId(id);
+
+		datasourceMapper.updateById(datasource);
 		return datasource;
 	}
 
@@ -153,21 +119,21 @@ public class DatasourceService {
 	 */
 	@Transactional
 	public void deleteDatasource(Integer id) {
-		// First delete the association
-		String deleteRelationSql = "DELETE FROM agent_datasource WHERE datasource_id = ?";
-		jdbcTemplate.update(deleteRelationSql, id);
+		// 先删除关联关系
+		agentDatasourceMapper.delete(Wrappers.<AgentDatasource>lambdaQuery().eq(AgentDatasource::getDatasourceId, id));
 
-		// Then delete the data source
-		String deleteDatasourceSql = "DELETE FROM datasource WHERE id = ?";
-		jdbcTemplate.update(deleteDatasourceSql, id);
+		// 再删除数据源
+		datasourceMapper.deleteById(id);
 	}
 
 	/**
 	 * Update data source test status
 	 */
 	public void updateTestStatus(Integer id, String testStatus) {
-		String sql = "UPDATE datasource SET test_status = ? WHERE id = ?";
-		jdbcTemplate.update(sql, testStatus, id);
+		datasourceMapper.update(null,
+				Wrappers.<Datasource>lambdaUpdate()
+					.eq(Datasource::getId, id)
+					.set(Datasource::getTestStatus, testStatus));
 	}
 
 	/**
@@ -244,81 +210,38 @@ public class DatasourceService {
 	 * Get data source list associated with agent
 	 */
 	public List<AgentDatasource> getAgentDatasources(Integer agentId) {
-		String sql = "SELECT ad.*, d.name, d.type, d.host, d.port, d.database_name, "
-				+ "d.connection_url, d.username, d.password, d.status, d.test_status, d.description "
-				+ "FROM agent_datasource ad " + "LEFT JOIN datasource d ON ad.datasource_id = d.id "
-				+ "WHERE ad.agent_id = ? " + "ORDER BY ad.create_time DESC";
+		List<AgentDatasource> agentDatasources = agentDatasourceMapper.selectByAgentIdWithDatasource(agentId);
 
-		return jdbcTemplate.query(sql, (rs, rowNum) -> {
-			AgentDatasource agentDatasource = new AgentDatasource();
-			agentDatasource.setId(rs.getInt("id"));
-			agentDatasource.setAgentId(rs.getInt("agent_id"));
-			agentDatasource.setDatasourceId(rs.getInt("datasource_id"));
-			agentDatasource.setIsActive(rs.getInt("is_active"));
-			agentDatasource.setCreateTime(rs.getTimestamp("create_time").toLocalDateTime());
-			agentDatasource.setUpdateTime(rs.getTimestamp("update_time").toLocalDateTime());
+		// 手动填充数据源信息（因为 MyBatis Plus 不直接支持复杂的联表查询结果映射）
+		for (AgentDatasource agentDatasource : agentDatasources) {
+			if (agentDatasource.getDatasourceId() != null) {
+				Datasource datasource = datasourceMapper.selectById(agentDatasource.getDatasourceId());
+				agentDatasource.setDatasource(datasource);
+			}
+		}
 
-			// Fill data source information
-			Datasource datasource = new Datasource();
-			datasource.setId(rs.getInt("datasource_id"));
-			datasource.setName(rs.getString("name"));
-			datasource.setType(rs.getString("type"));
-			datasource.setHost(rs.getString("host"));
-			datasource.setPort(rs.getInt("port"));
-			datasource.setDatabaseName(rs.getString("database_name"));
-			datasource.setConnectionUrl(rs.getString("connection_url"));
-			datasource.setUsername(rs.getString("username"));
-			datasource.setPassword(rs.getString("password"));
-			datasource.setStatus(rs.getString("status"));
-			datasource.setTestStatus(rs.getString("test_status"));
-			datasource.setDescription(rs.getString("description"));
+		// 先禁用该智能体的其他数据源（一个智能体只能启用一个数据源）
+		agentDatasourceMapper.disableAllByAgentId(agentId);
 
-			agentDatasource.setDatasource(datasource);
-			return agentDatasource;
-		}, agentId);
-	}
+		// 检查是否已存在关联
+		AgentDatasource existing = agentDatasourceMapper.selectByAgentIdAndDatasourceId(agentId, datasourceId);
 
-	/**
-	 * Add data source for agent
-	 */
-	@Transactional
-	public AgentDatasource addDatasourceToAgent(Integer agentId, Integer datasourceId) {
-		// First disable other data sources of the agent (an agent can only enable one
-		// data source)
-		String disableOthersSql = "UPDATE agent_datasource SET is_active = 0 WHERE agent_id = ?";
-		jdbcTemplate.update(disableOthersSql, agentId);
+		if (existing != null) {
+			// 如果已存在，则激活该关联
+			agentDatasourceMapper.update(null,
+					Wrappers.<AgentDatasource>lambdaUpdate()
+						.eq(AgentDatasource::getAgentId, agentId)
+						.eq(AgentDatasource::getDatasourceId, datasourceId)
+						.set(AgentDatasource::getIsActive, 1));
 
-		// Check if association already exists
-		String checkSql = "SELECT COUNT(*) FROM agent_datasource WHERE agent_id = ? AND datasource_id = ?";
-		Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, agentId, datasourceId);
-
-		if (count != null && count > 0) {
-			// If exists, activate the association
-			String activateSql = "UPDATE agent_datasource SET is_active = 1 WHERE agent_id = ? AND datasource_id = ?";
-			jdbcTemplate.update(activateSql, agentId, datasourceId);
-
-			// Query and return the updated association
-			String selectSql = "SELECT * FROM agent_datasource WHERE agent_id = ? AND datasource_id = ?";
-			return jdbcTemplate.queryForObject(selectSql, new BeanPropertyRowMapper<>(AgentDatasource.class), agentId,
-					datasourceId);
+			// 查询并返回更新后的关联
+			return agentDatasourceMapper.selectByAgentIdAndDatasourceId(agentId, datasourceId);
 		}
 		else {
-			// If not exists, create new association
-			String insertSql = "INSERT INTO agent_datasource (agent_id, datasource_id, is_active) VALUES (?, ?, 1)";
-			KeyHolder keyHolder = new GeneratedKeyHolder();
-
-			jdbcTemplate.update(connection -> {
-				PreparedStatement ps = connection.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
-				ps.setInt(1, agentId);
-				ps.setInt(2, datasourceId);
-				return ps;
-			}, keyHolder);
-
+			// 如果不存在，则创建新关联
 			AgentDatasource agentDatasource = new AgentDatasource(agentId, datasourceId);
-			Number key = keyHolder.getKey();
-			if (key != null) {
-				agentDatasource.setId(key.intValue());
-			}
+			agentDatasource.setIsActive(1);
+			agentDatasourceMapper.insert(agentDatasource);
 			return agentDatasource;
 		}
 	}
@@ -327,8 +250,9 @@ public class DatasourceService {
 	 * Remove data source association from agent
 	 */
 	public void removeDatasourceFromAgent(Integer agentId, Integer datasourceId) {
-		String sql = "DELETE FROM agent_datasource WHERE agent_id = ? AND datasource_id = ?";
-		jdbcTemplate.update(sql, agentId, datasourceId);
+		agentDatasourceMapper.delete(Wrappers.<AgentDatasource>lambdaQuery()
+			.eq(AgentDatasource::getAgentId, agentId)
+			.eq(AgentDatasource::getDatasourceId, datasourceId));
 	}
 
 	/**
@@ -337,34 +261,25 @@ public class DatasourceService {
 	public AgentDatasource toggleDatasourceForAgent(Integer agentId, Integer datasourceId, Boolean isActive) {
 		// If enabling data source, first check if there are other enabled data sources
 		if (isActive) {
-			String checkSql = "SELECT COUNT(*) FROM agent_datasource WHERE agent_id = ? AND is_active = 1 AND datasource_id != ?";
-			Integer activeCount = jdbcTemplate.queryForObject(checkSql, Integer.class, agentId, datasourceId);
-			if (activeCount != null && activeCount > 0) {
+			int activeCount = agentDatasourceMapper.countActiveByAgentIdExcluding(agentId, datasourceId);
+			if (activeCount > 0) {
 				throw new RuntimeException("同一智能体下只能启用一个数据源，请先禁用其他数据源后再启用此数据源");
 			}
 		}
 
-		// Update data source status
-		Integer activeValue = isActive ? 1 : 0;
-		String updateSql = "UPDATE agent_datasource SET is_active = ? WHERE agent_id = ? AND datasource_id = ?";
-		int updated = jdbcTemplate.update(updateSql, activeValue, agentId, datasourceId);
+		// 更新数据源状态
+		int updated = agentDatasourceMapper.update(null,
+				Wrappers.<AgentDatasource>lambdaUpdate()
+					.eq(AgentDatasource::getAgentId, agentId)
+					.eq(AgentDatasource::getDatasourceId, datasourceId)
+					.set(AgentDatasource::getIsActive, isActive ? 1 : 0));
 
 		if (updated == 0) {
 			throw new RuntimeException("未找到相关的数据源关联记录");
 		}
 
-		// Return the updated association record
-		String selectSql = "SELECT id, agent_id, datasource_id, is_active, create_time "
-				+ "FROM agent_datasource WHERE agent_id = ? AND datasource_id = ?";
-		return jdbcTemplate.queryForObject(selectSql, (rs, rowNum) -> {
-			AgentDatasource agentDatasource = new AgentDatasource(rs.getInt("agent_id"), rs.getInt("datasource_id"));
-			agentDatasource.setId(rs.getInt("id"));
-			agentDatasource.setIsActive(rs.getInt("is_active"));
-			if (rs.getTimestamp("create_time") != null) {
-				agentDatasource.setCreateTime(rs.getTimestamp("create_time").toLocalDateTime());
-			}
-			return agentDatasource;
-		}, agentId, datasourceId);
+		// 返回更新后的关联记录
+		return agentDatasourceMapper.selectByAgentIdAndDatasourceId(agentId, datasourceId);
 	}
 
 	/**
@@ -373,24 +288,20 @@ public class DatasourceService {
 	public Map<String, Object> getDatasourceStats() {
 		Map<String, Object> stats = new HashMap<>();
 
-		// Total count statistics
-		String totalSql = "SELECT COUNT(*) FROM datasource";
-		Integer total = jdbcTemplate.queryForObject(totalSql, Integer.class);
+		// 总数统计
+		Long total = datasourceMapper.selectCount(null);
 		stats.put("total", total);
 
-		// Statistics by status
-		String statusSql = "SELECT status, COUNT(*) as count FROM datasource GROUP BY status";
-		List<Map<String, Object>> statusStats = jdbcTemplate.queryForList(statusSql);
+		// 按状态统计
+		List<Map<String, Object>> statusStats = datasourceMapper.selectStatusStats();
 		stats.put("byStatus", statusStats);
 
-		// Statistics by type
-		String typeSql = "SELECT type, COUNT(*) as count FROM datasource GROUP BY type";
-		List<Map<String, Object>> typeStats = jdbcTemplate.queryForList(typeSql);
+		// 按类型统计
+		List<Map<String, Object>> typeStats = datasourceMapper.selectTypeStats();
 		stats.put("byType", typeStats);
 
-		// Connection status statistics
-		String testStatusSql = "SELECT test_status, COUNT(*) as count FROM datasource GROUP BY test_status";
-		List<Map<String, Object>> testStats = jdbcTemplate.queryForList(testStatusSql);
+		// 连接状态统计
+		List<Map<String, Object>> testStats = datasourceMapper.selectTestStatusStats();
 		stats.put("byTestStatus", testStats);
 
 		return stats;

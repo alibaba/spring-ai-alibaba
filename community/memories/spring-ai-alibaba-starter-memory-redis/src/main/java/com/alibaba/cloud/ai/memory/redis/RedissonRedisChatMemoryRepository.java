@@ -37,7 +37,7 @@ import java.util.stream.StreamSupport;
  * Redis implementation of ChatMemoryRepository using Redisson
  *
  * @author benym
- * @date 2025/7/30 18:47
+ * @since 2025/7/30 18:47
  */
 public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryRepository {
 

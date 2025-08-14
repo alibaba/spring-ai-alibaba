@@ -149,7 +149,7 @@ public interface StreamingChatGenerator {
 			var processedFlux = flux
 				.filter(response -> response.getResult() != null && response.getResult().getOutput() != null)
 				.doOnNext(mergeMessage)
-				.map(next -> new StreamingOutput(next.getResult().getOutput().getText(), startingNode, startingState));
+				.map(outputMapper);
 
 			return FlowGenerator.fromPublisher(FlowAdapters.toFlowPublisher(processedFlux), () -> {
 				ChatResponse finalResult = result.get();

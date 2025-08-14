@@ -16,13 +16,19 @@
 
 package com.alibaba.cloud.ai.service.generator.workflow.sections;
 
+import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.EndNodeData;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 @Component
-public class EndNodeSection implements NodeSection {
+public class EndNodeSection implements NodeSection<EndNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {
@@ -31,7 +37,25 @@ public class EndNodeSection implements NodeSection {
 
 	@Override
 	public String render(Node node, String varName) {
-		return "";
+		EndNodeData data = (EndNodeData) node.getData();
+		String outputKey = data.getOutputKey();
+		List<VariableSelector> selector = data.getInputs();
+		String id = node.getId();
+		StringBuilder sb = new StringBuilder();
+		sb.append("// EndNode [ ").append(id).append(" ]\n");
+		// 最终节点用于输出用户选中的变量
+		sb.append("stateGraph.addNode(\"")
+			.append(varName)
+			.append("\", AsyncNodeAction.node_async(")
+			.append(String.format("""
+					state -> Map.of("%s", Map.of(%s))
+					""", outputKey,
+					selector.stream()
+						.flatMap(v -> Stream.of(String.format("\"%s\"", v.getLabel()),
+								String.format("state.value(\"%s\").orElse(\"\")", v.getNameInCode())))
+						.collect(Collectors.joining(", "))))
+			.append("));");
+		return sb.toString();
 	}
 
 }

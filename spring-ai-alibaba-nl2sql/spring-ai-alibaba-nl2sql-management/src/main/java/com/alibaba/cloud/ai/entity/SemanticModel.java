@@ -15,35 +15,49 @@
  */
 package com.alibaba.cloud.ai.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 
 /**
  * Semantic Model Configuration Entity Class
  */
+@TableName("semantic_model")
 public class SemanticModel {
 
+	@TableId(value = "id", type = IdType.AUTO)
 	private Long id;
 
-	private Long agentId; // Agent ID
+	@TableField("agent_id")
+	private Long agentId; // 智能体ID
 
-	private String originalFieldName; // Original field name
+	@TableField("original_field_name")
+	private String originalFieldName; // 原始字段名
 
-	private String agentFieldName; // Agent field name
+	@TableField("agent_field_name")
+	private String agentFieldName; // 智能体字段名称
 
-	private String fieldSynonyms; // Field name synonyms, comma separated
+	@TableField("field_synonyms")
+	private String fieldSynonyms; // 字段名称同义词，逗号分隔
 
-	private String fieldDescription; // Field description
+	@TableField("field_description")
+	private String fieldDescription; // 字段描述
 
-	private String fieldType; // Field type
+	@TableField("field_type")
+	private String fieldType; // 字段类型
 
-	private String originalDescription; // Original field description
+	@TableField("original_description")
+	private String originalDescription; // 原始字段描述
 
-	private Boolean defaultRecall; // Default recall
+	@TableField("default_recall")
+	private Boolean defaultRecall; // 默认召回
 
-	private Boolean enabled; // Whether enabled
+	@TableField("enabled")
+	private Boolean enabled; // 是否启用
 
+	@TableField(value = "created_time", fill = FieldFill.INSERT)
 	private LocalDateTime createTime;
 
+	@TableField(value = "updated_time", fill = FieldFill.INSERT_UPDATE)
 	private LocalDateTime updateTime;
 
 	public SemanticModel() {
@@ -61,8 +75,6 @@ public class SemanticModel {
 		this.originalDescription = originalDescription;
 		this.defaultRecall = defaultRecall;
 		this.enabled = enabled;
-		this.createTime = LocalDateTime.now();
-		this.updateTime = LocalDateTime.now();
 	}
 
 	public SemanticModel(Long id, Long agentId, String originalFieldName, String agentFieldName, String fieldSynonyms,
@@ -78,8 +90,6 @@ public class SemanticModel {
 		this.enabled = enabled;
 		this.fieldType = fieldType;
 		this.originalDescription = originalDescription;
-		this.createTime = LocalDateTime.now();
-		this.updateTime = LocalDateTime.now();
 	}
 
 	// Getters and Setters

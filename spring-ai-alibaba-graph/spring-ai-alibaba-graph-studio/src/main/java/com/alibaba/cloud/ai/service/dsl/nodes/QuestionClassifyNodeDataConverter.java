@@ -15,9 +15,7 @@
  */
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
-import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -86,7 +84,7 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 							QuestionClassifierNodeData.CompletionParams.class));
 
 				QuestionClassifierNodeData nodeData = new QuestionClassifierNodeData(inputs,
-						List.of(QuestionClassifierNodeData.DEFAULT_OUTPUT_SCHEMA))
+						List.of(QuestionClassifierNodeData.getDefaultOutputSchema()))
 					.setModel(modelConfig);
 
 				// convert instructions
@@ -196,24 +194,10 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 	}
 
 	@Override
-	public void postProcess(QuestionClassifierNodeData data, String varName) {
-		String origKey = data.getOutputKey();
-		String newKey = varName + "_output";
-
-		if (origKey == null) {
-			data.setOutputKey(newKey);
-		}
-		data.setOutputs(List.of(new com.alibaba.cloud.ai.model.Variable(data.getOutputKey(),
-				com.alibaba.cloud.ai.model.VariableType.STRING.value())));
-	}
-
-	@Override
-	public Stream<Variable> extractWorkflowVars(QuestionClassifierNodeData data) {
-		Stream<Variable> outVar = Stream.of(new Variable(data.getOutputKey(), VariableType.STRING.value()));
-		Stream<Variable> inVars = data.getInputs()
-			.stream()
-			.map(sel -> new Variable(sel.getName(), VariableType.STRING.value()));
-		return Stream.concat(outVar, inVars);
+	public void postProcessOutput(QuestionClassifierNodeData data, String varName) {
+		data.setOutputKey(varName + "_" + QuestionClassifierNodeData.getDefaultOutputSchema().getName());
+		data.setOutputs(List.of(QuestionClassifierNodeData.getDefaultOutputSchema()));
+		super.postProcessOutput(data, varName);
 	}
 
 }

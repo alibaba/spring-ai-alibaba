@@ -29,11 +29,17 @@
           <h2>{{ $t('conversation') }}</h2>
           <div class="header-actions">
             <LanguageSwitcher />
+            <button class="config-button" @click="newChat" :title="$t('memory.newChat')">
+              <Icon icon="carbon:add" width="20" />
+            </button>
             <button class="config-button" @click="handleConfig" :title="$t('direct.configuration')">
               <Icon icon="carbon:settings-adjust" width="20" />
             </button>
             <button class="cron-task-btn" @click="showCronTaskModal = true" :title="$t('cronTask.title')">
               <Icon icon="carbon:alarm" width="20" />
+            </button>
+            <button class="cron-task-btn" @click="memoryStore.toggleSidebar()" :title="$t('memory.selectMemory')">
+              <Icon icon="carbon:calendar" width="20" />
             </button>
           </div>
         </div>
@@ -81,6 +87,11 @@
     <!-- Cron Task Modal -->
     <CronTaskModal v-model="showCronTaskModal" />
 
+    <!-- Memory Modal -->
+    <Memory
+        @memory-selected="memorySelected"
+    />
+
     <!-- Message toast component -->
     <div v-if="message.show" class="message-toast" :class="message.type">
       <div class="message-content">
@@ -96,6 +107,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import Sidebar from '@/components/sidebar/index.vue'
+import Memory from '@/components/memory/index.vue'
 import RightPanel from '@/components/right-panel/index.vue'
 import ChatContainer from '@/components/chat/index.vue'
 import InputArea from '@/components/input/index.vue'
@@ -106,6 +118,8 @@ import { useTaskStore } from '@/stores/task'
 import { sidebarStore } from '@/stores/sidebar'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import { useMessage } from '@/composables/useMessage'
+import { memoryStore } from "@/stores/memory";
+import type { InputMessage } from "@/stores/memory";
 
 const route = useRoute()
 const router = useRouter()
@@ -242,7 +256,9 @@ onMounted(() => {
     nextTick(() => {
       if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
         console.log('[Direct] Directly executing task via chatRef.handleSendMessage:', taskContent)
-        chatRef.value.handleSendMessage(taskContent)
+        chatRef.value.handleSendMessage({
+          input: taskContent
+        })
       } else {
         console.warn('[Direct] chatRef.handleSendMessage method not available, falling back to prompt')
         prompt.value = taskContent
@@ -433,13 +449,13 @@ const shouldProcessEventForCurrentPlan = (rootPlanId: string, allowSpecialIds: b
 }
 
 // New event handler function
-const handleSendMessage = (message: string) => {
-  console.log('[DirectView] Send message from input:', message)
+const handleSendMessage = (message: InputMessage) => {
+  console.log('[DirectView] Send message from input:', JSON.stringify(message))
 
   // In direct mode, only call chat component's handleSendMessage
   // It will handle both UI update and API call via handleDirectMode
   if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
-    console.log('[DirectView] Calling chatRef.handleSendMessage:', message)
+    console.log('[DirectView] Calling chatRef.handleSendMessage:', JSON.stringify(message))
     chatRef.value.handleSendMessage(message)
   } else {
     console.warn('[DirectView] chatRef.handleSendMessage method not available')
@@ -609,6 +625,15 @@ const handlePlanExecutionRequested = async (payload: {
     console.log('[Direct] Plan execution finished, resetting isExecutingPlan flag')
     isExecutingPlan.value = false
   }
+}
+
+const memorySelected = () => {
+  chatRef.value.showMemory()
+}
+
+const newChat = () => {
+  memoryStore.clearMemoryId()
+  chatRef.value.newChat()
 }
 </script>
 

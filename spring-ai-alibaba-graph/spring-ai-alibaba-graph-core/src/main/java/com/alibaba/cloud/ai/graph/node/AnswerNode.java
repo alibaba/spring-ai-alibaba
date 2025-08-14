@@ -29,12 +29,15 @@ import java.util.regex.Pattern;
  */
 public class AnswerNode implements NodeAction {
 
-	private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\{\\s*(.+?)\\s*\\}\\}");
+	private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\s*(.+?)\\s*\\}");
 
 	private final String answerTemplate;
 
-	private AnswerNode(String answerTemplate) {
+	private final String outputKey;
+
+	private AnswerNode(String answerTemplate, String outputKey) {
 		this.answerTemplate = answerTemplate;
+		this.outputKey = outputKey;
 	}
 
 	@Override
@@ -54,7 +57,7 @@ public class AnswerNode implements NodeAction {
 
 		// Write the final result back to the state with the key name fixed to "answer"
 		Map<String, Object> result = new HashMap<>();
-		result.put("answer", resolved);
+		result.put(this.outputKey, resolved);
 		return result;
 	}
 
@@ -66,13 +69,20 @@ public class AnswerNode implements NodeAction {
 
 		private String answerTemplate;
 
+		private String outputKey = "answer";
+
 		public Builder answer(String answerTemplate) {
 			this.answerTemplate = answerTemplate;
 			return this;
 		}
 
+		public Builder outputKey(String outputKey) {
+			this.outputKey = outputKey;
+			return this;
+		}
+
 		public AnswerNode build() {
-			return new AnswerNode(answerTemplate);
+			return new AnswerNode(answerTemplate, outputKey);
 		}
 
 	}

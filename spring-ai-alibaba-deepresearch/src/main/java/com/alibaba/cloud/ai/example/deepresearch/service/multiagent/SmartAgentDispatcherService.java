@@ -16,9 +16,9 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.service.multiagent;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentDispatchResult;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
-import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.SmartAgentUtil;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import org.slf4j.Logger;
@@ -38,7 +38,7 @@ import java.util.List;
  * @since 2025/07/17
  */
 @Component
-@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+@ConditionalOnProperty(prefix = SmartAgentProperties.PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = false)
 public class SmartAgentDispatcherService {
 
@@ -86,8 +86,6 @@ public class SmartAgentDispatcherService {
 			ChatClient selectedAgent = selectAgent(agentType);
 
 			String searchStrategy = searchPlatformSelectionService.getSearchStrategyDescription(agentType);
-
-			SmartAgentUtil.updateStateWithSmartAgentConfig(state, searchPlatforms, agentType);
 
 			return new AgentDispatchResult(selectedAgent, agentType, searchPlatforms, searchStrategy, true, null);
 

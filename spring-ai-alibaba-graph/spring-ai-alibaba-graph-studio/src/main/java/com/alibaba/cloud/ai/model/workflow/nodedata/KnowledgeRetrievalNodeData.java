@@ -33,8 +33,9 @@ import java.util.List;
  */
 public class KnowledgeRetrievalNodeData extends NodeData {
 
-	public static final List<Variable> DEFAULT_OUTPUT_SCHEMA = List
-		.of(new Variable("retrieved_documents", VariableType.ARRAY_OBJECT.value()));
+	public static Variable getDefaultOutputSchema() {
+		return new Variable("result", VariableType.ARRAY_OBJECT.value());
+	}
 
 	private String userPromptKey;
 
@@ -78,12 +79,8 @@ public class KnowledgeRetrievalNodeData extends NodeData {
 
 	private Double vectorWeight;
 
-	private String inputId;
-
-	private String inputField;
-
 	public KnowledgeRetrievalNodeData() {
-		super(Collections.emptyList(), DEFAULT_OUTPUT_SCHEMA);
+		super(Collections.emptyList(), List.of(getDefaultOutputSchema()));
 	}
 
 	public KnowledgeRetrievalNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
@@ -258,20 +255,13 @@ public class KnowledgeRetrievalNodeData extends NodeData {
 		this.vectorWeight = vectorWeight;
 	}
 
-	public String getInputId() {
-		return inputId;
+	// KnowledgeRetrieval的用户模板Key就是用户输入Key
+	public String getInputKey() {
+		return this.userPromptKey;
 	}
 
-	public void setInputId(String inputId) {
-		this.inputId = inputId;
-	}
-
-	public String getInputField() {
-		return inputField;
-	}
-
-	public void setInputField(String inputField) {
-		this.inputField = inputField;
+	public void setInputKey(String userPromptKey) {
+		this.userPromptKey = userPromptKey;
 	}
 
 }

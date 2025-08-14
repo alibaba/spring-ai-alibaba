@@ -38,19 +38,19 @@ public class LlmService {
 	}
 
 	/**
-	 * Stream response to user prompt
-	 * @param prompt user input prompt
-	 * @return Flux<ChatResponse> streaming response
+	 * 流式返回用户prompt的回复
+	 * @param prompt 用户输入的提示
+	 * @return 流式响应
 	 */
 	public Flux<ChatResponse> streamCall(String prompt) {
 		return chatClient.prompt().user(prompt).stream().chatResponse();
 	}
 
 	/**
-	 * Stream response to user prompt with system prompt
-	 * @param system system prompt
-	 * @param user user input
-	 * @return Flux<ChatResponse> streaming response
+	 * 流式返回用户prompt的回复，带有系统提示
+	 * @param system 系统提示
+	 * @param user 用户输入
+	 * @return 流式响应
 	 */
 	public Flux<ChatResponse> streamCallWithSystemPrompt(String system, String user) {
 		return chatClient.prompt().system(system).user(user).stream().chatResponse();

@@ -94,7 +94,6 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	/**
 	 * Marks a node as not interrupted by setting its value to false in the metadata.
 	 * @param nodeId the ID of the node to mark as not interrupted
-	 * @return a new {@code RunnableConfig} instance with the updated metadata
 	 */
 	public void withNodeResumed(String nodeId) {
 		String formattedNodeId = HasMetadata.formatNodeId(nodeId);
@@ -105,7 +104,6 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 * Removes the interrupted marker for a specific node by removing its entry from the
 	 * metadata.
 	 * @param nodeId the ID of the node to remove the interrupted marker for
-	 * @return a new {@code RunnableConfig} instance with the updated metadata
 	 */
 	public void removeInterrupted(String nodeId) {
 		String formattedNodeId = HasMetadata.formatNodeId(nodeId);
@@ -120,7 +118,6 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 * node ID is formatted using {@link #formatNodeId(String)} and associated with a
 	 * value of {@code true} in the metadata map.
 	 * @param nodeId the ID of the node to mark as interrupted; must not be null
-	 * @return this {@code Builder} instance for method chaining
 	 * @throws NullPointerException if nodeId is null
 	 */
 	public void markNodeAsInterrupted(String nodeId) {
@@ -247,7 +244,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 		/**
 		 * Sets the checkpoint ID for the configuration.
-		 * @param {@code checkPointId} - the ID of the checkpoint to be set
+		 * @param checkPointId {@code checkPointId} - the ID of the checkpoint to be set
 		 * @return {@literal this} - a reference to the current `Builder` instance
 		 */
 		public Builder checkPointId(String checkPointId) {

@@ -19,7 +19,7 @@ import java.util.Map;
 
 /**
  * @author lizhenning
- * @date 2025/7/8
+ * @since 2025/7/8
  */
 public class ModelConfig {
 

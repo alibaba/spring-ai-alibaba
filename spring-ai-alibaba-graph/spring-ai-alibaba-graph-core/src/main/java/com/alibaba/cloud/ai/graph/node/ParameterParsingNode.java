@@ -83,25 +83,29 @@ public class ParameterParsingNode implements NodeAction {
 
 			""";
 
-	private ChatClient chatClient;
+	private final ChatClient chatClient;
 
 	private String inputText;
 
 	private final String inputTextKey;
 
-	private List<Map<String, String>> parameters;
+	private final List<Map<String, String>> parameters;
 
-	private SystemPromptTemplate systemPromptTemplate;
+	private final SystemPromptTemplate systemPromptTemplate;
 
 	private final String outputKey;
 
+	// 由用户提供的一个指令
+	private final String instruction;
+
 	public ParameterParsingNode(ChatClient chatClient, String inputTextKey, List<Map<String, String>> parameters,
-			String outputKey) {
+			String outputKey, String instruction) {
 		this.chatClient = chatClient;
 		this.inputTextKey = inputTextKey;
 		this.parameters = parameters;
 		this.outputKey = outputKey;
 		this.systemPromptTemplate = new SystemPromptTemplate(PARAMETER_PARSING_PROMPT_TEMPLATE);
+		this.instruction = instruction;
 	}
 
 	@Override
@@ -112,7 +116,7 @@ public class ParameterParsingNode implements NodeAction {
 		}
 
 		Map<String, Object> promptInput = new HashMap<>();
-		promptInput.put("inputText", inputText);
+		promptInput.put("inputText", String.format("[Instruction: %s]%n", instruction) + inputText);
 		promptInput.put("parameters", formatParameters(parameters));
 
 		List<Message> messages = new ArrayList<>();
@@ -133,6 +137,10 @@ public class ParameterParsingNode implements NodeAction {
 			.chatResponse();
 
 		String rawJson = response.getResult().getOutput().getText();
+		// 去掉Markdown标记
+		if (rawJson != null) {
+			rawJson = rawJson.replace("```json", "").replace("```", "").trim();
+		}
 		ObjectMapper mapper = new ObjectMapper();
 		Map<String, Object> updateState = new HashMap<>();
 		try {
@@ -173,6 +181,8 @@ public class ParameterParsingNode implements NodeAction {
 
 		private String outputKey;
 
+		private String instruction = "";
+
 		public Builder inputTextKey(String input) {
 			this.inputTextKey = input;
 			return this;
@@ -193,8 +203,13 @@ public class ParameterParsingNode implements NodeAction {
 			return this;
 		}
 
+		public Builder instruction(String instruction) {
+			this.instruction = instruction;
+			return this;
+		}
+
 		public ParameterParsingNode build() {
-			return new ParameterParsingNode(chatClient, inputTextKey, parameters, outputKey);
+			return new ParameterParsingNode(chatClient, inputTextKey, parameters, outputKey, instruction);
 		}
 
 	}

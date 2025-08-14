@@ -5,46 +5,6 @@
  */
 
 /**
- * 解析类JSON文本为JSON数组
- * @param text 包含多个JSON对象的文本字符串
- * @returns 解析后的JSON对象数组
- */
-export function parseJsonText(text: string): any[] {
-  if (!text || typeof text !== 'string') {
-    return [];
-  }
-
-  const result: any[] = [];
-  const trimmedText = text.trim();
-
-  if (!trimmedText) {
-    return result;
-  }
-
-  // 使用正则表达式匹配所有的JSON对象
-  // 匹配以 { 开始，以 } 结束的完整JSON对象
-  const jsonRegex = /\{[^{}]*\}/g;
-  const matches = trimmedText.match(jsonRegex);
-
-  if (!matches) {
-    return result;
-  }
-
-  // 解析每个匹配到的JSON字符串
-  for (const match of matches) {
-    try {
-      const jsonObj = JSON.parse(match.trim());
-      result.push(jsonObj);
-    } catch (error) {
-      console.warn('解析JSON对象失败:', match, error);
-      // 继续处理其他JSON对象，不中断整个解析过程
-    }
-  }
-
-  return result;
-}
-
-/**
  * 解析类JSON文本为JSON数组（更严格的版本）
  * 支持嵌套的JSON对象和字符串内的转义字符
  * @param text 包含多个JSON对象的文本字符串
@@ -148,7 +108,9 @@ function findJsonObjectEnd(text: string, startIndex: number): number {
   return -1; // 没有找到完整的JSON对象
 }
 
+
+
 /**
  * 默认导出解析函数
  */
-export default parseJsonText;
+export default parseJsonTextStrict;

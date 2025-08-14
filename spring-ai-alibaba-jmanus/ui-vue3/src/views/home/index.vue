@@ -34,7 +34,7 @@
             <img src="/Java-AI.svg" alt="JManus" class="java-logo" />
             <h1>JManus</h1>
           </div>
-                      <span class="tagline">{{ $t('home.tagline') }}</span>
+          <span class="tagline">{{ $t('home.tagline') }}</span>
         </div>
       </header>
 
@@ -52,12 +52,12 @@
           <div class="input-section">
             <div class="input-container">
               <textarea
-                v-model="userInput"
-                ref="textareaRef"
-                class="main-input"
-                :placeholder="$t('home.inputPlaceholder')"
-                @keydown="handleKeydown"
-                @input="adjustTextareaHeight"
+                  v-model="userInput"
+                  ref="textareaRef"
+                  class="main-input"
+                  :placeholder="$t('home.inputPlaceholder')"
+                  @keydown="handleKeydown"
+                  @input="adjustTextareaHeight"
               ></textarea>
               <button class="send-button" :disabled="!userInput.trim()" @click="handleSend">
                 <Icon icon="carbon:send-alt" />
@@ -69,8 +69,8 @@
             <div class="examples-grid">
               <div v-for="item in allCards" :key="item.title" class="card-with-type">
                 <BlurCard
-                  :content="item"
-                  @clickCard="handleCardClick(item)"
+                    :content="item"
+                    @clickCard="handleCardClick(item)"
                 />
                 <span class="card-type">{{ item.type }}</span>
               </div>
@@ -116,9 +116,10 @@ const examples = computed(() => [
 ])
 const plans = computed(() => [
   { title: t('home.examples.queryplan.title'), type: 'plan-act', description: t('home.examples.queryplan.description'), icon: 'carbon:plan', prompt: t('home.examples.queryplan.prompt'), planJson: { planType: 'simple', title: t('home.examples.queryplan.planTitle'), steps: [{ stepRequirement: t('home.examples.queryplan.step1'), terminateColumns: t('home.examples.queryplan.step1Output') }, { stepRequirement: t('home.examples.queryplan.step2'), terminateColumns: t('home.examples.queryplan.step2Output') }], planId: 'planTemplate-1749200517403' } },
-  { title: t('home.examples.ainovel.title'), type: 'plan-act', description: t('home.examples.ainovel.description'), icon: 'carbon:document-tasks', prompt: t('home.examples.ainovel.prompt'), planJson: { planType: 'simple', title: t('home.examples.ainovel.planTitle'), steps: [{ stepRequirement: t('home.examples.ainovel.step1'), terminateColumns: t('home.examples.ainovel.step1Output') }, { stepRequirement: t('home.examples.ainovel.step2'), terminateColumns: t('home.examples.ainovel.step2Output') }], planId: 'planTemplate-1753622676988' } }
+  { title: t('home.examples.ainovel.title'), type: 'plan-act', description: t('home.examples.ainovel.description'), icon: 'carbon:document-tasks', prompt: t('home.examples.ainovel.prompt'), planJson: { planType: 'simple', title: t('home.examples.ainovel.planTitle'), steps: [{ stepRequirement: t('home.examples.ainovel.step1'), terminateColumns: t('home.examples.ainovel.step1Output') }, { stepRequirement: t('home.examples.ainovel.step2'), terminateColumns: t('home.examples.ainovel.step2Output') }], planId: 'planTemplate-1753622676988' } },
+  { title: t('home.examples.formInputDemo.title'), type: 'plan-act', description: t('home.examples.formInputDemo.description'), icon: 'carbon:watson', prompt: t('home.examples.formInputDemo.prompt'), planJson: { planType: 'simple', title: t('home.examples.formInputDemo.planTitle'), steps: [{ stepRequirement: t('home.examples.formInputDemo.step1'), terminateColumns: t('home.examples.formInputDemo.step1Output') }], planId: 'planTemplate-forminput-demo-2025' } }
 ])
-const allCards = computed(() => [...examples.value, ...plans.value])
+const allCards = computed(() => [...examples.value,  ...plans.value])
 
 const handleCardClick = (item: any) => {
   if (item.type === 'message') {

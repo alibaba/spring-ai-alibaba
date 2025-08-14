@@ -18,6 +18,8 @@ package com.alibaba.cloud.ai.model.workflow.nodedata;
 
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
+import com.alibaba.cloud.ai.model.VariableType;
+import com.alibaba.cloud.ai.model.workflow.ComparisonOperatorType;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 
 import java.util.List;
@@ -29,28 +31,56 @@ import java.util.List;
  */
 public class ListOperatorNodeData extends NodeData {
 
+	public static Variable defaultOutputSchema() {
+		return new Variable("result", VariableType.ARRAY_OBJECT.value());
+	}
+
 	/**
 	 * Input state variable Key to be manipulated (corresponding to input_text_key in DSL)
 	 */
-	private String inputTextKey;
+	private String inputKey;
 
 	/**
 	 * Key of the output state variable to be written to the result of the operation
 	 * (corresponding to output_text_key in the DSL)
 	 */
-	private String outputTextKey;
+	private String outputKey;
+
+	public record FilterCondition(ComparisonOperatorType condition, String value) {
+		public static FilterCondition ofDify(String condition) {
+			return ofDify(condition, null);
+		}
+
+		public static FilterCondition ofDify(String condition, String value) {
+			if (condition == null) {
+				return null;
+			}
+			for (ComparisonOperatorType e : ComparisonOperatorType.values()) {
+				if (e.getDifyValue().equalsIgnoreCase(condition)) {
+					return new FilterCondition(e, value);
+				}
+			}
+			return null;
+		}
+	}
 
 	/** Filter list (filters in DSL) */
-	private List<String> filters;
+	private List<FilterCondition> filters;
 
-	/** Sort the list of comparators (comparators in the DSL) */
-	private List<String> comparators;
+	public enum Ordered {
+
+		ASC, DESC;
+
+	}
+
+	// null则不排序
+	private Ordered order;
 
 	/** Limit number of entries (corresponding to limit_number in DSL) */
-	private Long limitNumber;
+	private Integer limitNumber;
 
 	/** The type of the list element (corresponding to element_class_type in the DSL) */
-	private String elementClassType;
+	private VariableType elementClassType;
 
 	public ListOperatorNodeData() {
 		super(List.of(), List.of());
@@ -60,51 +90,51 @@ public class ListOperatorNodeData extends NodeData {
 		super(inputs, outputs);
 	}
 
-	public String getInputTextKey() {
-		return inputTextKey;
+	public String getInputKey() {
+		return inputKey;
 	}
 
-	public void setInputTextKey(String inputTextKey) {
-		this.inputTextKey = inputTextKey;
+	public void setInputKey(String inputKey) {
+		this.inputKey = inputKey;
 	}
 
-	public String getOutputTextKey() {
-		return outputTextKey;
+	public String getOutputKey() {
+		return outputKey;
 	}
 
-	public void setOutputTextKey(String outputTextKey) {
-		this.outputTextKey = outputTextKey;
+	public void setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
 	}
 
-	public List<String> getFilters() {
+	public List<FilterCondition> getFilters() {
 		return filters;
 	}
 
-	public void setFilters(List<String> filters) {
+	public void setFilters(List<FilterCondition> filters) {
 		this.filters = filters;
 	}
 
-	public List<String> getComparators() {
-		return comparators;
+	public Ordered getOrder() {
+		return order;
 	}
 
-	public void setComparators(List<String> comparators) {
-		this.comparators = comparators;
+	public void setOrder(Ordered order) {
+		this.order = order;
 	}
 
-	public Long getLimitNumber() {
+	public Integer getLimitNumber() {
 		return limitNumber;
 	}
 
-	public void setLimitNumber(Long limitNumber) {
+	public void setLimitNumber(Integer limitNumber) {
 		this.limitNumber = limitNumber;
 	}
 
-	public String getElementClassType() {
+	public VariableType getElementClassType() {
 		return elementClassType;
 	}
 
-	public void setElementClassType(String elementClassType) {
+	public void setElementClassType(VariableType elementClassType) {
 		this.elementClassType = elementClassType;
 	}
 

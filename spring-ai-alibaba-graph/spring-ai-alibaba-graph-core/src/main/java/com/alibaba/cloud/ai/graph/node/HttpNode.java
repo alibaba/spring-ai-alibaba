@@ -277,7 +277,7 @@ public class HttpNode implements NodeAction {
 	 * Parse nested JSON string.
 	 * @param json JSON string
 	 * @return parsed JSON object
-	 * @throws Exception if parsing fails
+	 * @throws JsonProcessingException if parsing fails
 	 */
 	public static Object parseNestedJson(String json) throws JsonProcessingException {
 		JsonNode rootNode = mapper.readTree(json);

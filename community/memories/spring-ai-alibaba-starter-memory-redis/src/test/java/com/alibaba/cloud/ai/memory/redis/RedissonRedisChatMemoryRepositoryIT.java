@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration test using Testcontainers to automatically manage Redis test environment
  *
  * @author benym
- * @date 2025/7/31 16:47
+ * @since 2025/7/31 16:47
  */
 @SpringBootTest(classes = RedissonRedisChatMemoryRepositoryIT.TestConfiguration.class)
 @Testcontainers
