@@ -34,32 +34,32 @@ import java.util.Map;
 public interface DatasourceMapper extends BaseMapper<Datasource> {
 
 	/**
-     * Query data source list by status
-     */
+	 * Query data source list by status
+	 */
 	@Select("SELECT * FROM datasource WHERE status = #{status} ORDER BY create_time DESC")
 	List<Datasource> selectByStatus(@Param("status") String status);
 
 	/**
-     * Query data source list by type
-     */
+	 * Query data source list by type
+	 */
 	@Select("SELECT * FROM datasource WHERE type = #{type} ORDER BY create_time DESC")
 	List<Datasource> selectByType(@Param("type") String type);
 
 	/**
-     * Get data source statistics - by status
-     */
+	 * Get data source statistics - by status
+	 */
 	@Select("SELECT status, COUNT(*) as count FROM datasource GROUP BY status")
 	List<Map<String, Object>> selectStatusStats();
 
 	/**
-     * Get data source statistics - by type
-     */
+	 * Get data source statistics - by type
+	 */
 	@Select("SELECT type, COUNT(*) as count FROM datasource GROUP BY type")
 	List<Map<String, Object>> selectTypeStats();
 
 	/**
-     * Get data source statistics - by test status
-     */
+	 * Get data source statistics - by test status
+	 */
 	@Select("SELECT test_status, COUNT(*) as count FROM datasource GROUP BY test_status")
 	List<Map<String, Object>> selectTestStatusStats();
 

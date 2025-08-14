@@ -33,34 +33,34 @@ import java.util.List;
 public interface BusinessKnowledgeMapper extends BaseMapper<BusinessKnowledge> {
 
 	/**
-     * Query business knowledge list by dataset ID
-     */
+	 * Query business knowledge list by dataset ID
+	 */
 	@Select("SELECT * FROM business_knowledge WHERE dataset_id = #{datasetId} ORDER BY created_time DESC")
 	List<BusinessKnowledge> selectByDatasetId(@Param("datasetId") String datasetId);
 
 	/**
-     * Get all dataset ID list
-     */
+	 * Get all dataset ID list
+	 */
 	@Select("SELECT DISTINCT dataset_id FROM business_knowledge WHERE dataset_id IS NOT NULL ORDER BY dataset_id")
 	List<String> selectDistinctDatasetIds();
 
 	/**
-     * Search business knowledge by keyword
-     */
+	 * Search business knowledge by keyword
+	 */
 	@Select("SELECT * FROM business_knowledge WHERE " + "business_term LIKE CONCAT('%', #{keyword}, '%') OR "
 			+ "description LIKE CONCAT('%', #{keyword}, '%') OR " + "synonyms LIKE CONCAT('%', #{keyword}, '%') "
 			+ "ORDER BY created_time DESC")
 	List<BusinessKnowledge> searchByKeyword(@Param("keyword") String keyword);
 
 	/**
-     * Query business knowledge list by agent ID
-     */
+	 * Query business knowledge list by agent ID
+	 */
 	@Select("SELECT * FROM business_knowledge WHERE agent_id = #{agentId} ORDER BY created_time DESC")
 	List<BusinessKnowledge> selectByAgentId(@Param("agentId") String agentId);
 
 	/**
-     * Query business knowledge by dataset ID and default recall status
-     */
+	 * Query business knowledge by dataset ID and default recall status
+	 */
 	@Select("SELECT * FROM business_knowledge WHERE dataset_id = #{datasetId} AND default_recall = #{defaultRecall} ORDER BY created_time DESC")
 	List<BusinessKnowledge> selectByDatasetIdAndDefaultRecall(@Param("datasetId") String datasetId,
 			@Param("defaultRecall") Boolean defaultRecall);

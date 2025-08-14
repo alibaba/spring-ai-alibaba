@@ -64,8 +64,8 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 	}
 
 	/**
-     * Initialize all published agents
-     */
+	 * Initialize all published agents
+	 */
 	private void initializePublishedAgents() {
 		try {
 			List<Agent> publishedAgents = agentService.findByStatus("published");
@@ -117,10 +117,10 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 	}
 
 	/**
-     * Initialize the data source for a single agent
-     * @param agent The agent
-     * @return Whether the initialization was successful
-     */
+	 * Initialize the data source for a single agent
+	 * @param agent The agent
+	 * @return Whether the initialization was successful
+	 */
 	private boolean initializeAgentDataSource(Agent agent) {
 		try {
 			Long agentId = agent.getId();
@@ -185,8 +185,9 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 	}
 
 	/**
-     * Clean up resources when the application shuts down. Implement the destroy method of the DisposableBean interface
-     */
+	 * Clean up resources when the application shuts down. Implement the destroy method of
+	 * the DisposableBean interface
+	 */
 	@Override
 	public void destroy() throws Exception {
 		if (executorService != null && !executorService.isShutdown()) {

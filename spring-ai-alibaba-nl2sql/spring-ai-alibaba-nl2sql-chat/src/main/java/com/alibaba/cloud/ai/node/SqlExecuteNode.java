@@ -87,11 +87,11 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 	}
 
 	/**
-     * Dynamically get the data source configuration for an agent
-     * @param state The state object containing the agent ID
-     * @return The database configuration corresponding to the agent
-     * @throws RuntimeException If the agent has no enabled data source configured
-     */
+	 * Dynamically get the data source configuration for an agent
+	 * @param state The state object containing the agent ID
+	 * @return The database configuration corresponding to the agent
+	 * @throws RuntimeException If the agent has no enabled data source configured
+	 */
 	private DbConfig getAgentDbConfig(OverAllState state) {
 		try {
 			// Get the agent ID from the state
@@ -128,10 +128,10 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 	}
 
 	/**
-     * Create database configuration from data source entity
-     * @param datasource The data source entity
-     * @return The database configuration object
-     */
+	 * Create database configuration from data source entity
+	 * @param datasource The data source entity
+	 * @return The database configuration object
+	 */
 	private DbConfig createDbConfigFromDatasource(Datasource datasource) {
 		DbConfig dbConfig = new DbConfig();
 

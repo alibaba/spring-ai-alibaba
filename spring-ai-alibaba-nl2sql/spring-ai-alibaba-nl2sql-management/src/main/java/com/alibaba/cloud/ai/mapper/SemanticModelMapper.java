@@ -34,34 +34,34 @@ import java.util.List;
 public interface SemanticModelMapper extends BaseMapper<SemanticModel> {
 
 	/**
-     * Query semantic model list by agent ID
-     */
+	 * Query semantic model list by agent ID
+	 */
 	@Select("SELECT * FROM semantic_model WHERE agent_id = #{agentId} ORDER BY created_time DESC")
 	List<SemanticModel> selectByAgentId(@Param("agentId") Long agentId);
 
 	/**
-     * Search semantic models by keyword
-     */
+	 * Search semantic models by keyword
+	 */
 	@Select("SELECT * FROM semantic_model WHERE " + "agent_field_name LIKE CONCAT('%', #{keyword}, '%') OR "
 			+ "field_description LIKE CONCAT('%', #{keyword}, '%') OR "
 			+ "field_synonyms LIKE CONCAT('%', #{keyword}, '%') " + "ORDER BY created_time DESC")
 	List<SemanticModel> searchByKeyword(@Param("keyword") String keyword);
 
 	/**
-     * Batch enable fields
-     */
+	 * Batch enable fields
+	 */
 	@Update("UPDATE semantic_model SET enabled = 1 WHERE id = #{id}")
 	int enableById(@Param("id") Long id);
 
 	/**
-     * Batch disable fields
-     */
+	 * Batch disable fields
+	 */
 	@Update("UPDATE semantic_model SET enabled = 0 WHERE id = #{id}")
 	int disableById(@Param("id") Long id);
 
 	/**
-     * Query semantic models by agent ID and enabled status
-     */
+	 * Query semantic models by agent ID and enabled status
+	 */
 	@Select("SELECT * FROM semantic_model WHERE agent_id = #{agentId} AND enabled = #{enabled} ORDER BY created_time DESC")
 	List<SemanticModel> selectByAgentIdAndEnabled(@Param("agentId") Long agentId, @Param("enabled") Boolean enabled);
 

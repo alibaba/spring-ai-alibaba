@@ -34,8 +34,8 @@ import java.util.List;
 public interface AgentDatasourceMapper extends BaseMapper<AgentDatasource> {
 
 	/**
-     * Query associated data sources by agent ID (including data source details)
-     */
+	 * Query associated data sources by agent ID (including data source details)
+	 */
 	@Select("SELECT ad.*, d.name, d.type, d.host, d.port, d.database_name, "
 			+ "d.connection_url, d.username, d.password, d.status, d.test_status, d.description "
 			+ "FROM agent_datasource ad " + "LEFT JOIN datasource d ON ad.datasource_id = d.id "
@@ -43,27 +43,28 @@ public interface AgentDatasourceMapper extends BaseMapper<AgentDatasource> {
 	List<AgentDatasource> selectByAgentIdWithDatasource(@Param("agentId") Integer agentId);
 
 	/**
-     * Query associated data sources by agent ID
-     */
+	 * Query associated data sources by agent ID
+	 */
 	@Select("SELECT * FROM agent_datasource WHERE agent_id = #{agentId} ORDER BY create_time DESC")
 	List<AgentDatasource> selectByAgentId(@Param("agentId") Integer agentId);
 
 	/**
-     * Query association by agent ID and data source ID
-     */
+	 * Query association by agent ID and data source ID
+	 */
 	@Select("SELECT * FROM agent_datasource WHERE agent_id = #{agentId} AND datasource_id = #{datasourceId}")
 	AgentDatasource selectByAgentIdAndDatasourceId(@Param("agentId") Integer agentId,
 			@Param("datasourceId") Integer datasourceId);
 
 	/**
-     * Disable all data sources for an agent
-     */
+	 * Disable all data sources for an agent
+	 */
 	@Update("UPDATE agent_datasource SET is_active = 0 WHERE agent_id = #{agentId}")
 	int disableAllByAgentId(@Param("agentId") Integer agentId);
 
 	/**
-     * Count the number of enabled data sources for an agent (excluding the specified data source)
-     */
+	 * Count the number of enabled data sources for an agent (excluding the specified data
+	 * source)
+	 */
 	@Select("SELECT COUNT(*) FROM agent_datasource WHERE agent_id = #{agentId} AND is_active = 1 AND datasource_id != #{excludeDatasourceId}")
 	int countActiveByAgentIdExcluding(@Param("agentId") Integer agentId,
 			@Param("excludeDatasourceId") Integer excludeDatasourceId);

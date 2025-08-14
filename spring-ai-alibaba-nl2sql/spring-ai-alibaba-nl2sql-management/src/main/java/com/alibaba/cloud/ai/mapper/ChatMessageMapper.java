@@ -33,20 +33,20 @@ import java.util.List;
 public interface ChatMessageMapper extends BaseMapper<ChatMessage> {
 
 	/**
-     * Query message list by session ID
-     */
+	 * Query message list by session ID
+	 */
 	@Select("SELECT * FROM chat_message WHERE session_id = #{sessionId} ORDER BY create_time ASC")
 	List<ChatMessage> selectBySessionId(@Param("sessionId") String sessionId);
 
 	/**
-     * Query message count by session ID
-     */
+	 * Query message count by session ID
+	 */
 	@Select("SELECT COUNT(*) FROM chat_message WHERE session_id = #{sessionId}")
 	int countBySessionId(@Param("sessionId") String sessionId);
 
 	/**
-     * Query message list by session ID and role
-     */
+	 * Query message list by session ID and role
+	 */
 	@Select("SELECT * FROM chat_message WHERE session_id = #{sessionId} AND role = #{role} ORDER BY create_time ASC")
 	List<ChatMessage> selectBySessionIdAndRole(@Param("sessionId") String sessionId, @Param("role") String role);
 

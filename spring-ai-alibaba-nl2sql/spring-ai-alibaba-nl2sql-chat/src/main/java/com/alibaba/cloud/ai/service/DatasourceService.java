@@ -212,7 +212,8 @@ public class DatasourceService {
 	public List<AgentDatasource> getAgentDatasources(Integer agentId) {
 		List<AgentDatasource> agentDatasources = agentDatasourceMapper.selectByAgentIdWithDatasource(agentId);
 
-		// Manually fill in the data source information (since MyBatis Plus does not directly support complex join query result mapping)
+		// Manually fill in the data source information (since MyBatis Plus does not
+		// directly support complex join query result mapping)
 		for (AgentDatasource agentDatasource : agentDatasources) {
 			if (agentDatasource.getDatasourceId() != null) {
 				Datasource datasource = datasourceMapper.selectById(agentDatasource.getDatasourceId());
@@ -220,7 +221,8 @@ public class DatasourceService {
 			}
 		}
 
-		// First, disable other data sources for this agent (an agent can only have one enabled data source)
+		// First, disable other data sources for this agent (an agent can only have one
+		// enabled data source)
 		agentDatasourceMapper.disableAllByAgentId(agentId);
 
 		// Check if an association already exists

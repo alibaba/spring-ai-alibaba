@@ -38,20 +38,20 @@ public class LlmService {
 	}
 
 	/**
-     * Stream the response to the user's prompt
-     * @param prompt The user's input prompt
-     * @return Streaming response
-     */
+	 * Stream the response to the user's prompt
+	 * @param prompt The user's input prompt
+	 * @return Streaming response
+	 */
 	public Flux<ChatResponse> streamCall(String prompt) {
 		return chatClient.prompt().user(prompt).stream().chatResponse();
 	}
 
 	/**
-     * Stream the response to the user's prompt with a system prompt
-     * @param system The system prompt
-     * @param user The user's input
-     * @return Streaming response
-     */
+	 * Stream the response to the user's prompt with a system prompt
+	 * @param system The system prompt
+	 * @param user The user's input
+	 * @return Streaming response
+	 */
 	public Flux<ChatResponse> streamCallWithSystemPrompt(String system, String user) {
 		return chatClient.prompt().system(system).user(user).stream().chatResponse();
 	}

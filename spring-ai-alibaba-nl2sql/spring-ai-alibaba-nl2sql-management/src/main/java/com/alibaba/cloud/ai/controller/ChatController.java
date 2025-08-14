@@ -53,8 +53,8 @@ public class ChatController {
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
-     * Get session list for an agent
-     */
+	 * Get session list for an agent
+	 */
 	@GetMapping("/agent/{id}/sessions")
 	public ResponseEntity<List<ChatSession>> getAgentSessions(@PathVariable Integer id) {
 		List<ChatSession> sessions = chatSessionService.findByAgentId(id);
@@ -62,8 +62,8 @@ public class ChatController {
 	}
 
 	/**
-     * Create a new session
-     */
+	 * Create a new session
+	 */
 	@PostMapping("/agent/{id}/sessions")
 	public ResponseEntity<ChatSession> createSession(@PathVariable Integer id,
 			@RequestBody(required = false) Map<String, Object> request) {
@@ -75,8 +75,8 @@ public class ChatController {
 	}
 
 	/**
-     * Clear all sessions for an agent
-     */
+	 * Clear all sessions for an agent
+	 */
 	@DeleteMapping("/agent/{id}/sessions")
 	public ResponseEntity<ApiResponse> clearAgentSessions(@PathVariable Integer id) {
 		chatSessionService.clearSessionsByAgentId(id);
@@ -84,8 +84,8 @@ public class ChatController {
 	}
 
 	/**
-     * Get message list for a session
-     */
+	 * Get message list for a session
+	 */
 	@GetMapping("/sessions/{sessionId}/messages")
 	public ResponseEntity<List<ChatMessage>> getSessionMessages(@PathVariable String sessionId) {
 		List<ChatMessage> messages = chatMessageService.findBySessionId(sessionId);
@@ -93,8 +93,8 @@ public class ChatController {
 	}
 
 	/**
-     * Agent chat interface
-     */
+	 * Agent chat interface
+	 */
 	@PostMapping("/agent/{id}/chat")
 	public ResponseEntity<ChatResponse> chat(@PathVariable Integer id, @RequestBody ChatRequest request) {
 		try {
@@ -179,8 +179,8 @@ public class ChatController {
 	}
 
 	/**
-     * Save message to session
-     */
+	 * Save message to session
+	 */
 	@PostMapping("/sessions/{sessionId}/messages")
 	public ResponseEntity<ChatMessage> saveMessage(@PathVariable String sessionId, @RequestBody ChatMessage message) {
 		try {
@@ -224,8 +224,8 @@ public class ChatController {
 	}
 
 	/**
-     * Rename session
-     */
+	 * Rename session
+	 */
 	@PutMapping("/sessions/{sessionId}/rename")
 	public ResponseEntity<ApiResponse> renameSession(@PathVariable String sessionId,
 			@RequestBody Map<String, Object> request) {
@@ -245,8 +245,8 @@ public class ChatController {
 	}
 
 	/**
-     * Delete a single session
-     */
+	 * Delete a single session
+	 */
 	@DeleteMapping("/sessions/{sessionId}")
 	public ResponseEntity<ApiResponse> deleteSession(@PathVariable String sessionId) {
 		try {

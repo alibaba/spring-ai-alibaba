@@ -36,8 +36,9 @@ import java.time.LocalDateTime;
 public class MyBatisPlusConfig {
 
 	/**
-     * MyBatis Plus Interceptor Configuration. Add pagination plugin, optimistic locking plugin, and anti-full-table update/delete plugin
-     */
+	 * MyBatis Plus Interceptor Configuration. Add pagination plugin, optimistic locking
+	 * plugin, and anti-full-table update/delete plugin
+	 */
 	@Bean
 	public MybatisPlusInterceptor mybatisPlusInterceptor() {
 		MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
@@ -49,8 +50,8 @@ public class MyBatisPlusConfig {
 	}
 
 	/**
-     * Meta object handler for automatic field filling
-     */
+	 * Meta object handler for automatic field filling
+	 */
 	@Bean
 	public MetaObjectHandler metaObjectHandler() {
 		return new MetaObjectHandler() {

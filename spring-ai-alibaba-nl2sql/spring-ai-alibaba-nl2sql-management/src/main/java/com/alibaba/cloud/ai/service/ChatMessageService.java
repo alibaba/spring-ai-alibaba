@@ -36,15 +36,15 @@ public class ChatMessageService {
 	private ChatMessageMapper chatMessageMapper;
 
 	/**
-     * Get message list by session ID
-     */
+	 * Get message list by session ID
+	 */
 	public List<ChatMessage> findBySessionId(String sessionId) {
 		return chatMessageMapper.selectBySessionId(sessionId);
 	}
 
 	/**
-     * Save message
-     */
+	 * Save message
+	 */
 	public ChatMessage saveMessage(ChatMessage message) {
 		chatMessageMapper.insert(message);
 		log.info("Saved message: {} for session: {}", message.getId(), message.getSessionId());
@@ -52,16 +52,16 @@ public class ChatMessageService {
 	}
 
 	/**
-     * Save user message
-     */
+	 * Save user message
+	 */
 	public ChatMessage saveUserMessage(String sessionId, String content) {
 		ChatMessage message = new ChatMessage(sessionId, "user", content, "text");
 		return saveMessage(message);
 	}
 
 	/**
-     * Save assistant message
-     */
+	 * Save assistant message
+	 */
 	public ChatMessage saveAssistantMessage(String sessionId, String content, String messageType, String metadata) {
 		ChatMessage message = new ChatMessage(sessionId, "assistant", content, messageType, metadata);
 		return saveMessage(message);

@@ -107,8 +107,8 @@ public class Nl2sqlForGraphController {
 	}
 
 	/**
-     * Get database configuration by agent ID
-     */
+	 * Get database configuration by agent ID
+	 */
 	private DbConfig getDbConfigForAgent(Integer agentId) {
 		try {
 			// Get the enabled data source for an agent
@@ -128,8 +128,8 @@ public class Nl2sqlForGraphController {
 	}
 
 	/**
-     * Create database configuration from data source entity
-     */
+	 * Create database configuration from data source entity
+	 */
 	private DbConfig createDbConfigFromDatasource(Datasource datasource) {
 		DbConfig dbConfig = new DbConfig();
 

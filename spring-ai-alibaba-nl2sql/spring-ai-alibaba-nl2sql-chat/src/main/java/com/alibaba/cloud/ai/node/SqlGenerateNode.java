@@ -164,8 +164,9 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-     * If the first planned execution fails, regenerate SQL using enhanced SQL with multi-round optimization, security checks, and performance analysis
-     */
+	 * If the first planned execution fails, regenerate SQL using enhanced SQL with
+	 * multi-round optimization, security checks, and performance analysis
+	 */
 	private String regenerateSql(OverAllState state, String input, List<String> evidenceList, SchemaDTO schemaDTO,
 			String exceptionOutputKey, String originalSql) throws Exception {
 		String exceptionMessage = StateUtils.getStringValue(state, exceptionOutputKey);
@@ -228,8 +229,8 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-     * Use ChatClient to generate optimized SQL
-     */
+	 * Use ChatClient to generate optimized SQL
+	 */
 	private String generateOptimizedSql(String previousSql, String exceptionMessage, int round) {
 		try {
 			StringBuilder prompt = new StringBuilder();
@@ -258,8 +259,8 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-     * Evaluate SQL quality
-     */
+	 * Evaluate SQL quality
+	 */
 	private SqlQualityScore evaluateSqlQuality(String sql, SchemaDTO schemaDTO) {
 		SqlQualityScore score = new SqlQualityScore();
 
@@ -279,8 +280,8 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-     * Verify SQL syntax
-     */
+	 * Verify SQL syntax
+	 */
 	private double validateSqlSyntax(String sql) {
 		if (sql == null || sql.trim().isEmpty())
 			return 0.0;
@@ -309,8 +310,8 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-     * Verify SQL security
-     */
+	 * Verify SQL security
+	 */
 	private double validateSqlSecurity(String sql) {
 		if (sql == null)
 			return 0.0;
@@ -340,8 +341,8 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-     * Evaluate SQL performance
-     */
+	 * Evaluate SQL performance
+	 */
 	private double evaluateSqlPerformance(String sql) {
 		if (sql == null)
 			return 0.0;
@@ -365,8 +366,8 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-     * Final verification and cleanup
-     */
+	 * Final verification and cleanup
+	 */
 	private String performFinalValidation(String sql) {
 		if (sql == null || sql.trim().isEmpty()) {
 			throw new IllegalArgumentException("生成的SQL为空");
@@ -387,8 +388,8 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-     * SQL quality score
-     */
+	 * SQL quality score
+	 */
 	private static class SqlQualityScore {
 
 		double syntaxScore = 0.0;

@@ -35,46 +35,46 @@ import java.util.List;
 public interface ChatSessionMapper extends BaseMapper<ChatSession> {
 
 	/**
-     * Query session list by agent ID
-     */
+	 * Query session list by agent ID
+	 */
 	@Select("SELECT * FROM chat_session WHERE agent_id = #{agentId} AND status != 'deleted' ORDER BY is_pinned DESC, update_time DESC")
 	List<ChatSession> selectByAgentId(@Param("agentId") Integer agentId);
 
 	/**
-     * Query session details by session ID
-     */
+	 * Query session details by session ID
+	 */
 	@Select("SELECT * FROM chat_session WHERE id = #{sessionId} AND status != 'deleted'")
 	ChatSession selectBySessionId(@Param("sessionId") String sessionId);
 
 	/**
-     * Soft delete all sessions for an agent
-     */
+	 * Soft delete all sessions for an agent
+	 */
 	@Update("UPDATE chat_session SET status = 'deleted', update_time = #{updateTime} WHERE agent_id = #{agentId}")
 	int softDeleteByAgentId(@Param("agentId") Integer agentId, @Param("updateTime") LocalDateTime updateTime);
 
 	/**
-     * Update session time
-     */
+	 * Update session time
+	 */
 	@Update("UPDATE chat_session SET update_time = #{updateTime} WHERE id = #{sessionId}")
 	int updateSessionTime(@Param("sessionId") String sessionId, @Param("updateTime") LocalDateTime updateTime);
 
 	/**
-     * Update session pinned status
-     */
+	 * Update session pinned status
+	 */
 	@Update("UPDATE chat_session SET is_pinned = #{isPinned}, update_time = #{updateTime} WHERE id = #{sessionId}")
 	int updatePinStatus(@Param("sessionId") String sessionId, @Param("isPinned") boolean isPinned,
 			@Param("updateTime") LocalDateTime updateTime);
 
 	/**
-     * Update session title
-     */
+	 * Update session title
+	 */
 	@Update("UPDATE chat_session SET title = #{title}, update_time = #{updateTime} WHERE id = #{sessionId}")
 	int updateTitle(@Param("sessionId") String sessionId, @Param("title") String title,
 			@Param("updateTime") LocalDateTime updateTime);
 
 	/**
-     * Soft delete session
-     */
+	 * Soft delete session
+	 */
 	@Update("UPDATE chat_session SET status = 'deleted', update_time = #{updateTime} WHERE id = #{sessionId}")
 	int softDeleteById(@Param("sessionId") String sessionId, @Param("updateTime") LocalDateTime updateTime);
 

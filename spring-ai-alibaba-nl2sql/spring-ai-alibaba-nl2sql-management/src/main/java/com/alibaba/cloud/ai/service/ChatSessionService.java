@@ -38,22 +38,22 @@ public class ChatSessionService {
 	private ChatSessionMapper chatSessionMapper;
 
 	/**
-     * Get session list by agent ID
-     */
+	 * Get session list by agent ID
+	 */
 	public List<ChatSession> findByAgentId(Integer agentId) {
 		return chatSessionMapper.selectByAgentId(agentId);
 	}
 
 	/**
-     * Get session by ID
-     */
+	 * Get session by ID
+	 */
 	public ChatSession findById(String sessionId) {
 		return chatSessionMapper.selectBySessionId(sessionId);
 	}
 
 	/**
-     * Create a new session
-     */
+	 * Create a new session
+	 */
 	public ChatSession createSession(Integer agentId, String title, Long userId) {
 		String sessionId = UUID.randomUUID().toString();
 
@@ -65,8 +65,8 @@ public class ChatSessionService {
 	}
 
 	/**
-     * Update session
-     */
+	 * Update session
+	 */
 	public ChatSession updateSession(ChatSession session) {
 		chatSessionMapper.updateById(session);
 		log.info("Updated chat session: {}", session.getId());
@@ -74,8 +74,8 @@ public class ChatSessionService {
 	}
 
 	/**
-     * Clear all sessions for an agent
-     */
+	 * Clear all sessions for an agent
+	 */
 	public void clearSessionsByAgentId(Integer agentId) {
 		LocalDateTime now = LocalDateTime.now();
 		int updated = chatSessionMapper.softDeleteByAgentId(agentId, now);
@@ -83,8 +83,8 @@ public class ChatSessionService {
 	}
 
 	/**
-     * Update the last activity time of a session
-     */
+	 * Update the last activity time of a session
+	 */
 	public void updateSessionTime(String sessionId) {
 		LocalDateTime now = LocalDateTime.now();
 		chatSessionMapper.updateSessionTime(sessionId, now);
@@ -100,8 +100,8 @@ public class ChatSessionService {
 	}
 
 	/**
-     * Rename session
-     */
+	 * Rename session
+	 */
 	public void renameSession(String sessionId, String newTitle) {
 		LocalDateTime now = LocalDateTime.now();
 		chatSessionMapper.updateTitle(sessionId, newTitle, now);
@@ -109,8 +109,8 @@ public class ChatSessionService {
 	}
 
 	/**
-     * Delete a single session
-     */
+	 * Delete a single session
+	 */
 	public void deleteSession(String sessionId) {
 		LocalDateTime now = LocalDateTime.now();
 		chatSessionMapper.softDeleteById(sessionId, now);
