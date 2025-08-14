@@ -125,24 +125,69 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		List<Document> columnDocuments = tableInfoBOS.stream().flatMap(table -> {
 			try {
 				dqp.setTable(table.getName());
-				return dbAccessor.showColumns(dbConfig, dqp).stream().map(column -> convertToDocument(table, column));
+				List<ColumnInfoBO> columns = dbAccessor.showColumns(dbConfig, dqp);
+				log.debug("Found {} columns for table: {}", columns.size(), table.getName());
+				return columns.stream().map(column -> {
+					try {
+						Document doc = convertToDocument(table, column);
+						log.debug("Successfully converted column document: {}", doc.getId());
+						return doc;
+					}
+					catch (Exception e) {
+						log.error("Failed to convert column {} in table {} to document", column.getName(),
+								table.getName(), e);
+						throw new RuntimeException("Document conversion failed for column: " + column.getName(), e);
+					}
+				});
 			}
 			catch (Exception e) {
 				log.error("Error processing columns for table: {}", table.getName(), e);
-				throw new RuntimeException(e);
+				throw new RuntimeException("Failed to process table: " + table.getName(), e);
 			}
 		}).collect(Collectors.toList());
 
 		log.info("Adding {} column documents to vector store", columnDocuments.size());
-		vectorStore.add(columnDocuments);
+		try {
+			if (!columnDocuments.isEmpty()) {
+				vectorStore.add(columnDocuments);
+				log.info("Successfully added {} column documents to vector store", columnDocuments.size());
+			}
+			else {
+				log.warn("No column documents to add to vector store");
+			}
+		}
+		catch (Exception e) {
+			log.error("Failed to add column documents to vector store. Documents count: {}", columnDocuments.size(), e);
+			throw new RuntimeException("Failed to add column documents to vector store: " + e.getMessage(), e);
+		}
 
 		log.debug("Converting tables to documents");
-		List<Document> tableDocuments = tableInfoBOS.stream()
-			.map(this::convertTableToDocument)
-			.collect(Collectors.toList());
+		List<Document> tableDocuments = tableInfoBOS.stream().map(table -> {
+			try {
+				Document doc = convertTableToDocument(table);
+				log.debug("Successfully converted table document: {}", doc.getId());
+				return doc;
+			}
+			catch (Exception e) {
+				log.error("Failed to convert table {} to document", table.getName(), e);
+				throw new RuntimeException("Document conversion failed for table: " + table.getName(), e);
+			}
+		}).collect(Collectors.toList());
 
 		log.info("Adding {} table documents to vector store", tableDocuments.size());
-		vectorStore.add(tableDocuments);
+		try {
+			if (!tableDocuments.isEmpty()) {
+				vectorStore.add(tableDocuments);
+				log.info("Successfully added {} table documents to vector store", tableDocuments.size());
+			}
+			else {
+				log.warn("No table documents to add to vector store");
+			}
+		}
+		catch (Exception e) {
+			log.error("Failed to add table documents to vector store. Documents count: {}", tableDocuments.size(), e);
+			throw new RuntimeException("Failed to add table documents to vector store: " + e.getMessage(), e);
+		}
 
 		log.info("Schema initialization completed successfully. Total documents added: {}",
 				columnDocuments.size() + tableDocuments.size());
@@ -180,26 +225,46 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	public Document convertToDocument(TableInfoBO tableInfoBO, ColumnInfoBO columnInfoBO) {
+		if (tableInfoBO == null) {
+			throw new IllegalArgumentException("TableInfoBO cannot be null");
+		}
+		if (columnInfoBO == null) {
+			throw new IllegalArgumentException("ColumnInfoBO cannot be null");
+		}
+		if (tableInfoBO.getName() == null || tableInfoBO.getName().trim().isEmpty()) {
+			throw new IllegalArgumentException("Table name cannot be null or empty");
+		}
+		if (columnInfoBO.getName() == null || columnInfoBO.getName().trim().isEmpty()) {
+			throw new IllegalArgumentException("Column name cannot be null or empty");
+		}
+
 		log.debug("Converting column to document: table={}, column={}", tableInfoBO.getName(), columnInfoBO.getName());
 
-		String text = Optional.ofNullable(columnInfoBO.getDescription()).orElse(columnInfoBO.getName());
-		String id = tableInfoBO.getName() + "." + columnInfoBO.getName();
-		Map<String, Object> metadata = new HashMap<>();
-		metadata.put("id", id);
-		metadata.put("name", columnInfoBO.getName());
-		metadata.put("tableName", tableInfoBO.getName());
-		metadata.put("description", Optional.ofNullable(columnInfoBO.getDescription()).orElse(""));
-		metadata.put("type", columnInfoBO.getType());
-		metadata.put("primary", columnInfoBO.isPrimary());
-		metadata.put("notnull", columnInfoBO.isNotnull());
-		metadata.put("vectorType", "column");
-		if (columnInfoBO.getSamples() != null) {
-			metadata.put("samples", columnInfoBO.getSamples());
+		try {
+			String text = Optional.ofNullable(columnInfoBO.getDescription()).orElse(columnInfoBO.getName());
+			String id = tableInfoBO.getName() + "." + columnInfoBO.getName();
+			Map<String, Object> metadata = new HashMap<>();
+			metadata.put("id", id);
+			metadata.put("name", columnInfoBO.getName());
+			metadata.put("tableName", tableInfoBO.getName());
+			metadata.put("description", Optional.ofNullable(columnInfoBO.getDescription()).orElse(""));
+			metadata.put("type", columnInfoBO.getType());
+			metadata.put("primary", columnInfoBO.isPrimary());
+			metadata.put("notnull", columnInfoBO.isNotnull());
+			metadata.put("vectorType", "column");
+			if (columnInfoBO.getSamples() != null) {
+				metadata.put("samples", columnInfoBO.getSamples());
+			}
+			Document document = new Document(id, text, metadata);
+			log.debug("Created column document with ID: {}", id);
+			return document;
 		}
-		// 多表重复字段数据会被去重，采用表名+字段名作为唯一标识
-		Document document = new Document(id, text, metadata);
-		log.debug("Created column document with ID: {}", id);
-		return document;
+		catch (Exception e) {
+			String tableName = (tableInfoBO != null) ? tableInfoBO.getName() : "null";
+			String columnName = (columnInfoBO != null) ? columnInfoBO.getName() : "null";
+			log.error("Failed to convert column to document: table={}, column={}", tableName, columnName, e);
+			throw new RuntimeException("Failed to convert column to document: " + e.getMessage(), e);
+		}
 	}
 
 	public Document convertTableToDocument(TableInfoBO tableInfoBO) {
@@ -393,26 +458,77 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		List<Document> columnDocuments = tableInfoBOS.stream().flatMap(table -> {
 			try {
 				dqp.setTable(table.getName());
-				return dbAccessor.showColumns(dbConfig, dqp)
-					.stream()
-					.map(column -> convertToDocumentForAgent(agentId, table, column));
+				List<ColumnInfoBO> columns = dbAccessor.showColumns(dbConfig, dqp);
+				log.debug("Found {} columns for table: {} (agent: {})", columns.size(), table.getName(), agentId);
+				return columns.stream().map(column -> {
+					try {
+						Document doc = convertToDocumentForAgent(agentId, table, column);
+						log.debug("Successfully converted column document: {} for agent: {}", doc.getId(), agentId);
+						return doc;
+					}
+					catch (Exception e) {
+						log.error("Failed to convert column {} in table {} to document for agent {}", column.getName(),
+								table.getName(), agentId, e);
+						throw new RuntimeException("Document conversion failed for column: " + column.getName()
+								+ " in table: " + table.getName() + " for agent: " + agentId, e);
+					}
+				});
 			}
 			catch (Exception e) {
 				log.error("Error processing columns for table: {} and agent: {}", table.getName(), agentId, e);
-				throw new RuntimeException(e);
+				throw new RuntimeException("Failed to process table: " + table.getName() + " for agent: " + agentId, e);
 			}
 		}).collect(Collectors.toList());
 
 		log.info("Adding {} column documents to vector store for agent: {}", columnDocuments.size(), agentId);
-		agentVectorStoreManager.addDocuments(agentId, columnDocuments);
+		try {
+			if (!columnDocuments.isEmpty()) {
+				agentVectorStoreManager.addDocuments(agentId, columnDocuments);
+				log.info("Successfully added {} column documents to vector store for agent: {}", columnDocuments.size(),
+						agentId);
+			}
+			else {
+				log.warn("No column documents to add to vector store for agent: {}", agentId);
+			}
+		}
+		catch (Exception e) {
+			log.error("Failed to add column documents to vector store for agent: {}. Documents count: {}", agentId,
+					columnDocuments.size(), e);
+			throw new RuntimeException("Failed to add column documents to vector store for agent: " + agentId
+					+ ". Error: " + e.getMessage(), e);
+		}
 
 		log.debug("Converting tables to documents for agent: {}", agentId);
-		List<Document> tableDocuments = tableInfoBOS.stream()
-			.map(table -> convertTableToDocumentForAgent(agentId, table))
-			.collect(Collectors.toList());
+		List<Document> tableDocuments = tableInfoBOS.stream().map(table -> {
+			try {
+				Document doc = convertTableToDocumentForAgent(agentId, table);
+				log.debug("Successfully converted table document: {} for agent: {}", doc.getId(), agentId);
+				return doc;
+			}
+			catch (Exception e) {
+				log.error("Failed to convert table {} to document for agent {}", table.getName(), agentId, e);
+				throw new RuntimeException(
+						"Document conversion failed for table: " + table.getName() + " for agent: " + agentId, e);
+			}
+		}).collect(Collectors.toList());
 
 		log.info("Adding {} table documents to vector store for agent: {}", tableDocuments.size(), agentId);
-		agentVectorStoreManager.addDocuments(agentId, tableDocuments);
+		try {
+			if (!tableDocuments.isEmpty()) {
+				agentVectorStoreManager.addDocuments(agentId, tableDocuments);
+				log.info("Successfully added {} table documents to vector store for agent: {}", tableDocuments.size(),
+						agentId);
+			}
+			else {
+				log.warn("No table documents to add to vector store for agent: {}", agentId);
+			}
+		}
+		catch (Exception e) {
+			log.error("Failed to add table documents to vector store for agent: {}. Documents count: {}", agentId,
+					tableDocuments.size(), e);
+			throw new RuntimeException("Failed to add table documents to vector store for agent: " + agentId
+					+ ". Error: " + e.getMessage(), e);
+		}
 
 		log.info("Schema initialization completed successfully for agent: {}. Total documents added: {}", agentId,
 				columnDocuments.size() + tableDocuments.size());
