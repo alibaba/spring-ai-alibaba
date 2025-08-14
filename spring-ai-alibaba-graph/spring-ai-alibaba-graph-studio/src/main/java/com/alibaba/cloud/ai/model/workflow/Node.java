@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.model.workflow;
 
 import com.alibaba.cloud.ai.service.runner.RunnableModel;
+import java.util.List;
 
 public class Node implements RunnableModel {
 
@@ -26,6 +27,8 @@ public class Node implements RunnableModel {
 	private String title;
 
 	private String desc;
+
+	private List<String> listeners;
 
 	private Float width;
 
@@ -78,6 +81,15 @@ public class Node implements RunnableModel {
 
 	public Node setDesc(String desc) {
 		this.desc = desc;
+		return this;
+	}
+
+	public List<String> getListeners() {
+		return listeners;
+	}
+
+	public Node setListeners(List<String> listeners) {
+		this.listeners = listeners;
 		return this;
 	}
 

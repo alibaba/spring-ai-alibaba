@@ -207,6 +207,13 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			Node node = objectMapper.convertValue(nodeMap, Node.class);
 			// set title and desc
 			node.setTitle((String) nodeDataMap.get("title")).setDesc((String) nodeDataMap.get("desc"));
+			
+			// set listeners if present in the node map
+			@SuppressWarnings("unchecked")
+			List<String> listeners = (List<String>) nodeMap.get("listeners");
+			if (listeners != null) {
+				node.setListeners(listeners);
+			}
 
 			// convert node data using specific WorkflowNodeDataConverter
 			@SuppressWarnings("unchecked")

@@ -20,6 +20,8 @@ import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.model.workflow.nodedata.ToolNodeData;
 import com.alibaba.cloud.ai.service.dsl.adapters.DifyDSLAdapter;
 import com.alibaba.cloud.ai.service.dsl.nodes.ToolNodeDataConverter;
+import com.alibaba.cloud.ai.service.dsl.nodes.LLMNodeDataConverter;
+import com.alibaba.cloud.ai.service.dsl.nodes.HttpNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import org.junit.jupiter.api.Test;
 
@@ -606,6 +608,116 @@ public class DifyDSLAdapterTest {
 		});
 
 		System.out.println(" Variable value types edge cases test passed");
+	}
+
+	@Test
+	public void testNodeListenersParsingWithDifyDSL() {
+		// Create converters for the node types we'll use in the test
+		List<com.alibaba.cloud.ai.service.dsl.NodeDataConverter<? extends com.alibaba.cloud.ai.model.workflow.NodeData>> converters = List.of(
+			new ToolNodeDataConverter()
+		);
+		DifyDSLAdapter adapter = new DifyDSLAdapter(converters, null);
+
+		// Create test workflow data with nodes containing listeners
+		Map<String, Object> workflowData = new HashMap<>();
+		workflowData.put("conversation_variables", new ArrayList<>());
+		workflowData.put("environment_variables", new ArrayList<>());
+
+		// Create nodes with listeners
+		List<Map<String, Object>> nodes = new ArrayList<>();
+		
+		// Node B2 with listeners
+		Map<String, Object> nodeB2 = new HashMap<>();
+		nodeB2.put("id", "B2");
+		nodeB2.put("listeners", List.of("beforeNodeExecution", "afterNodeExecution"));
+		
+		Map<String, Object> nodeB2Data = new HashMap<>();
+		nodeB2Data.put("type", "tool");
+		nodeB2Data.put("title", "Tool Node B2");
+		nodeB2Data.put("desc", "Tool Node with listeners");
+		nodeB2Data.put("tool_name", "test_tool");
+		nodeB2.put("data", nodeB2Data);
+		nodes.add(nodeB2);
+		
+		// Node B3 with listeners
+		Map<String, Object> nodeB3 = new HashMap<>();
+		nodeB3.put("id", "B3");
+		nodeB3.put("listeners", List.of("onError", "onComplete"));
+		
+		Map<String, Object> nodeB3Data = new HashMap<>();
+		nodeB3Data.put("type", "tool");
+		nodeB3Data.put("title", "Tool Node B3");
+		nodeB3Data.put("desc", "Tool Node with listeners");
+		nodeB3Data.put("tool_name", "test_tool2");
+		nodeB3.put("data", nodeB3Data);
+		nodes.add(nodeB3);
+		
+		// Node B4 with listeners
+		Map<String, Object> nodeB4 = new HashMap<>();
+		nodeB4.put("id", "B4");
+		nodeB4.put("listeners", List.of("beforeNodeExecution"));
+		
+		Map<String, Object> nodeB4Data = new HashMap<>();
+		nodeB4Data.put("type", "tool");
+		nodeB4Data.put("title", "Tool Node B4");
+		nodeB4Data.put("desc", "Tool Node with listeners");
+		nodeB4Data.put("tool_name", "test_tool3");
+		nodeB4.put("data", nodeB4Data);
+		nodes.add(nodeB4);
+
+		// Create graph with nodes
+		Map<String, Object> graph = new HashMap<>();
+		graph.put("nodes", nodes);
+		graph.put("edges", List.of());
+		workflowData.put("graph", graph);
+
+		Map<String, Object> dslData = new HashMap<>();
+		dslData.put("workflow", workflowData);
+
+		// Parse DSL to Workflow
+		assertDoesNotThrow(() -> {
+			Workflow workflow = adapter.mapToWorkflow(dslData);
+			assertNotNull(workflow);
+			
+			// Verify listeners are correctly parsed for each node
+			List<com.alibaba.cloud.ai.model.workflow.Node> workflowNodes = workflow.getGraph().getNodes();
+			assertNotNull(workflowNodes);
+			assertEquals(3, workflowNodes.size());
+			
+			// Check B2 node listeners
+			com.alibaba.cloud.ai.model.workflow.Node b2Node = workflowNodes.stream()
+				.filter(n -> "B2".equals(n.getId()))
+				.findFirst()
+				.orElse(null);
+			assertNotNull(b2Node);
+			assertNotNull(b2Node.getListeners());
+			assertEquals(2, b2Node.getListeners().size());
+			assertTrue(b2Node.getListeners().contains("beforeNodeExecution"));
+			assertTrue(b2Node.getListeners().contains("afterNodeExecution"));
+			
+			// Check B3 node listeners
+			com.alibaba.cloud.ai.model.workflow.Node b3Node = workflowNodes.stream()
+				.filter(n -> "B3".equals(n.getId()))
+				.findFirst()
+				.orElse(null);
+			assertNotNull(b3Node);
+			assertNotNull(b3Node.getListeners());
+			assertEquals(2, b3Node.getListeners().size());
+			assertTrue(b3Node.getListeners().contains("onError"));
+			assertTrue(b3Node.getListeners().contains("onComplete"));
+			
+			// Check B4 node listeners
+			com.alibaba.cloud.ai.model.workflow.Node b4Node = workflowNodes.stream()
+				.filter(n -> "B4".equals(n.getId()))
+				.findFirst()
+				.orElse(null);
+			assertNotNull(b4Node);
+			assertNotNull(b4Node.getListeners());
+			assertEquals(1, b4Node.getListeners().size());
+			assertTrue(b4Node.getListeners().contains("beforeNodeExecution"));
+		});
+
+		System.out.println("Node listeners parsing test passed");
 	}
 
 }
