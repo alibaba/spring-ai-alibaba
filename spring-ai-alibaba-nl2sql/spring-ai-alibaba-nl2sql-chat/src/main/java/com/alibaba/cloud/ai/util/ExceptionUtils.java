@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Supplier;
 
 /**
- * 异常处理工具类
+ * Exception handling utility class
  *
  * @author zhangshenghang
  */
@@ -31,11 +31,11 @@ public class ExceptionUtils {
 	private static final Logger logger = LoggerFactory.getLogger(ExceptionUtils.class);
 
 	/**
-	 * 安全执行操作，捕获并记录异常
-	 * @param operation 要执行的操作
-	 * @param defaultValue 异常时的默认值
-	 * @param errorMessage 错误消息
-	 * @return 操作结果或默认值
+	 * Safely execute operation, catch and log exceptions
+	 * @param operation operation to execute
+	 * @param defaultValue default value when exception occurs
+	 * @param errorMessage error message
+	 * @return operation result or default value
 	 */
 	public static <T> T safeExecute(Supplier<T> operation, T defaultValue, String errorMessage) {
 		try {
@@ -48,9 +48,9 @@ public class ExceptionUtils {
 	}
 
 	/**
-	 * 安全执行操作，捕获并记录异常
-	 * @param operation 要执行的操作
-	 * @param errorMessage 错误消息
+	 * Safely execute operation, catch and log exceptions
+	 * @param operation operation to execute
+	 * @param errorMessage error message
 	 */
 	public static void safeExecute(Runnable operation, String errorMessage) {
 		try {
@@ -62,10 +62,10 @@ public class ExceptionUtils {
 	}
 
 	/**
-	 * 包装异常为运行时异常
-	 * @param exception 原始异常
-	 * @param message 自定义消息
-	 * @return 运行时异常
+	 * Wrap exception as runtime exception
+	 * @param exception original exception
+	 * @param message custom message
+	 * @return runtime exception
 	 */
 	public static RuntimeException wrapAsRuntimeException(Exception exception, String message) {
 		if (exception instanceof RuntimeException) {
@@ -75,9 +75,9 @@ public class ExceptionUtils {
 	}
 
 	/**
-	 * 获取异常的根本原因
-	 * @param exception 异常
-	 * @return 根本原因
+	 * Get root cause of exception
+	 * @param exception exception
+	 * @return root cause
 	 */
 	public static Throwable getRootCause(Throwable exception) {
 		Throwable cause = exception.getCause();
@@ -88,9 +88,9 @@ public class ExceptionUtils {
 	}
 
 	/**
-	 * 获取简化的异常消息
-	 * @param exception 异常
-	 * @return 简化的异常消息
+	 * Get simplified exception message
+	 * @param exception exception
+	 * @return simplified exception message
 	 */
 	public static String getSimpleMessage(Throwable exception) {
 		Throwable rootCause = getRootCause(exception);

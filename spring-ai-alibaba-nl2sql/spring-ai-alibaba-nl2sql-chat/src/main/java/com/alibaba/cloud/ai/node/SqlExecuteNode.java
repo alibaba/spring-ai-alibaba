@@ -80,21 +80,21 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 		logger.info("Executing SQL query: {}", sqlQuery);
 		logger.info("Step description: {}", toolParameters.getDescription());
 
-		// 动态获取智能体的数据源配置
+		// Dynamically get the data source configuration for an agent
 		DbConfig dbConfig = getAgentDbConfig(state);
 
 		return executeSqlQuery(state, currentStep, sqlQuery, dbConfig);
 	}
 
 	/**
-	 * 动态获取智能体的数据源配置
-	 * @param state 包含智能体ID的状态对象
-	 * @return 智能体对应的数据库配置
-	 * @throws RuntimeException 如果智能体未配置启用的数据源
+	 * Dynamically get the data source configuration for an agent
+	 * @param state The state object containing the agent ID
+	 * @return The database configuration corresponding to the agent
+	 * @throws RuntimeException If the agent has no enabled data source configured
 	 */
 	private DbConfig getAgentDbConfig(OverAllState state) {
 		try {
-			// 从 state 获取智能体ID
+			// Get the agent ID from the state
 			String agentIdStr = StateUtils.getStringValue(state, Constant.AGENT_ID);
 			if (agentIdStr == null || agentIdStr.trim().isEmpty()) {
 				throw new RuntimeException("未找到智能体ID，无法获取数据源配置");
@@ -103,7 +103,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 			Integer agentId = Integer.valueOf(agentIdStr);
 			logger.info("Getting datasource config for agent: {}", agentId);
 
-			// 获取智能体启用的数据源
+			// Get the enabled data source for the agent
 			List<AgentDatasource> agentDatasources = datasourceService.getAgentDatasources(agentId);
 			if (agentDatasources.size() == 0) {
 				// TODO 调试AgentID不一致，暂时手动处理
@@ -114,7 +114,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 				.findFirst()
 				.orElseThrow(() -> new RuntimeException("智能体 " + agentId + " 未配置启用的数据源"));
 
-			// 转换为 DbConfig
+			// Convert to DbConfig
 			DbConfig dbConfig = createDbConfigFromDatasource(activeDatasource.getDatasource());
 			logger.info("Successfully created DbConfig for agent {}: url={}, schema={}, type={}", agentId,
 					dbConfig.getUrl(), dbConfig.getSchema(), dbConfig.getDialectType());
@@ -128,19 +128,19 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 	}
 
 	/**
-	 * 从数据源实体创建数据库配置
-	 * @param datasource 数据源实体
-	 * @return 数据库配置对象
+	 * Create database configuration from data source entity
+	 * @param datasource The data source entity
+	 * @return The database configuration object
 	 */
 	private DbConfig createDbConfigFromDatasource(Datasource datasource) {
 		DbConfig dbConfig = new DbConfig();
 
-		// 设置基本连接信息
+		// Set basic connection information
 		dbConfig.setUrl(datasource.getConnectionUrl());
 		dbConfig.setUsername(datasource.getUsername());
 		dbConfig.setPassword(datasource.getPassword());
 
-		// 设置数据库类型
+		// Set database type
 		if ("mysql".equalsIgnoreCase(datasource.getType())) {
 			dbConfig.setConnectionType("jdbc");
 			dbConfig.setDialectType("mysql");
@@ -153,7 +153,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 			throw new RuntimeException("不支持的数据库类型: " + datasource.getType());
 		}
 
-		// 设置Schema为数据源的数据库名称
+		// Set Schema to the database name of the data source
 		dbConfig.setSchema(datasource.getDatabaseName());
 
 		return dbConfig;
@@ -192,7 +192,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 					resultSetBO.getData() != null ? resultSetBO.getData().size() : 0);
 
 			// Prepare the final result object
-			// 将SQL查询结果的List存储起来，供代码运行节点使用
+			// Store List of SQL query results for use by code execution node
 			Map<String, Object> result = Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedResults,
 					SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, "", Constant.SQL_RESULT_LIST_MEMORY, resultSetBO.getData());
 

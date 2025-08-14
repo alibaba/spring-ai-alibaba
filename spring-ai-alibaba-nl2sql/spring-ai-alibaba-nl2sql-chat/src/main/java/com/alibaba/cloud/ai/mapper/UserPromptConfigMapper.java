@@ -26,7 +26,7 @@ import org.apache.ibatis.annotations.Update;
 import java.util.List;
 
 /**
- * 用户提示词配置 Mapper 接口
+ * User Prompt Configuration Mapper Interface
  *
  * @author Alibaba Cloud AI
  */
@@ -34,31 +34,31 @@ import java.util.List;
 public interface UserPromptConfigMapper extends BaseMapper<UserPromptConfig> {
 
 	/**
-	 * 根据提示词类型查询配置列表
+	 * Query configuration list by prompt type
 	 */
 	@Select("SELECT * FROM user_prompt_config WHERE prompt_type = #{promptType} ORDER BY update_time DESC")
 	List<UserPromptConfig> selectByPromptType(@Param("promptType") String promptType);
 
 	/**
-	 * 根据提示词类型查询启用的配置
+	 * Query enabled configuration by prompt type
 	 */
 	@Select("SELECT * FROM user_prompt_config WHERE prompt_type = #{promptType} AND enabled = 1 LIMIT 1")
 	UserPromptConfig selectActiveByPromptType(@Param("promptType") String promptType);
 
 	/**
-	 * 禁用指定类型的所有配置
+	 * Disable all configurations of a specified type
 	 */
 	@Update("UPDATE user_prompt_config SET enabled = 0 WHERE prompt_type = #{promptType}")
 	int disableAllByPromptType(@Param("promptType") String promptType);
 
 	/**
-	 * 启用指定配置
+	 * Enable a specified configuration
 	 */
 	@Update("UPDATE user_prompt_config SET enabled = 1 WHERE id = #{id}")
 	int enableById(@Param("id") String id);
 
 	/**
-	 * 禁用指定配置
+	 * Disable a specified configuration
 	 */
 	@Update("UPDATE user_prompt_config SET enabled = 0 WHERE id = #{id}")
 	int disableById(@Param("id") String id);

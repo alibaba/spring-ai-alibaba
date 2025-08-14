@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 聊天会话服务类
+ * Chat Session Service Class
  */
 @Service
 public class ChatSessionService {
@@ -38,21 +38,21 @@ public class ChatSessionService {
 	private ChatSessionMapper chatSessionMapper;
 
 	/**
-	 * 根据智能体ID获取会话列表
+	 * Get session list by agent ID
 	 */
 	public List<ChatSession> findByAgentId(Integer agentId) {
 		return chatSessionMapper.selectByAgentId(agentId);
 	}
 
 	/**
-	 * 根据ID获取会话
+	 * Get session by ID
 	 */
 	public ChatSession findById(String sessionId) {
 		return chatSessionMapper.selectBySessionId(sessionId);
 	}
 
 	/**
-	 * 创建新会话
+	 * Create a new session
 	 */
 	public ChatSession createSession(Integer agentId, String title, Long userId) {
 		String sessionId = UUID.randomUUID().toString();
@@ -65,7 +65,7 @@ public class ChatSessionService {
 	}
 
 	/**
-	 * 更新会话
+	 * Update session
 	 */
 	public ChatSession updateSession(ChatSession session) {
 		chatSessionMapper.updateById(session);
@@ -74,7 +74,7 @@ public class ChatSessionService {
 	}
 
 	/**
-	 * 清空智能体的所有会话
+	 * Clear all sessions for an agent
 	 */
 	public void clearSessionsByAgentId(Integer agentId) {
 		LocalDateTime now = LocalDateTime.now();
@@ -83,7 +83,7 @@ public class ChatSessionService {
 	}
 
 	/**
-	 * 更新会话的最后活动时间
+	 * Update the last activity time of a session
 	 */
 	public void updateSessionTime(String sessionId) {
 		LocalDateTime now = LocalDateTime.now();
@@ -100,7 +100,7 @@ public class ChatSessionService {
 	}
 
 	/**
-	 * 重命名会话
+	 * Rename session
 	 */
 	public void renameSession(String sessionId, String newTitle) {
 		LocalDateTime now = LocalDateTime.now();
@@ -109,7 +109,7 @@ public class ChatSessionService {
 	}
 
 	/**
-	 * 删除单个会话
+	 * Delete a single session
 	 */
 	public void deleteSession(String sessionId) {
 		LocalDateTime now = LocalDateTime.now();
