@@ -221,6 +221,14 @@ public class DatasourceService {
 			}
 		}
 
+		return agentDatasources;
+	}
+
+	/**
+	 * Add data source to agent
+	 */
+	@Transactional
+	public AgentDatasource addDatasourceToAgent(Integer agentId, Integer datasourceId) {
 		// First, disable other data sources for this agent (an agent can only have one
 		// enabled data source)
 		agentDatasourceMapper.disableAllByAgentId(agentId);
