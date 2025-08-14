@@ -24,13 +24,13 @@ package com.alibaba.cloud.ai.dto;
 public record PromptConfigDTO(String id, // 配置ID（更新时需要）
 		String name, // 配置名称
 		String promptType, // 提示词类型
-		String systemPrompt, // 用户自定义的系统提示词内容
+		String optimizationPrompt, // 用户添加的优化提示词内容
 		Boolean enabled, // 是否启用该配置
 		String description, // 配置描述
 		String creator // 创建者
 ) {
-	public PromptConfigDTO(String promptType, String systemPrompt) {
-		this(null, null, promptType, systemPrompt, true, null, null);
+	public PromptConfigDTO(String promptType, String optimizationPrompt) {
+		this(null, null, promptType, optimizationPrompt, true, null, null);
 	}
 
 	@Override
@@ -61,8 +61,8 @@ public record PromptConfigDTO(String id, // 配置ID（更新时需要）
 	}
 
 	@Override
-	public String systemPrompt() {
-		return systemPrompt;
+	public String optimizationPrompt() {
+		return optimizationPrompt;
 	}
 
 	@Override

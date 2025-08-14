@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.entity.UserPromptConfig;
 import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -136,14 +137,15 @@ public class ReportGeneratorNode implements NodeAction {
 		// Build analysis steps and data results description
 		String analysisStepsAndData = buildAnalysisStepsAndData(plan, executionResults);
 
-		// Get custom prompt content if available
-		String customPrompt = promptConfigService.getCustomPromptContent("report-generator");
+		// Get optimization configs if available
+		List<UserPromptConfig> optimizationConfigs = promptConfigService.getOptimizationConfigs("report-generator");
 
-		// Use PromptHelper to build report generation prompt with custom prompt support
-		String reportPrompt = PromptHelper.buildReportGeneratorPromptWithCustom(userRequirementsAndPlan,
-				analysisStepsAndData, summaryAndRecommendations, customPrompt);
+		// Use PromptHelper to build report generation prompt with optimization support
+		String reportPrompt = PromptHelper.buildReportGeneratorPromptWithOptimization(userRequirementsAndPlan,
+				analysisStepsAndData, summaryAndRecommendations, optimizationConfigs);
 
-		logger.info("Using {} prompt for report generation", customPrompt != null ? "custom" : "default");
+		logger.info("Using {} prompt for report generation",
+				!optimizationConfigs.isEmpty() ? "optimized (" + optimizationConfigs.size() + " configs)" : "default");
 
 		return chatClient.prompt().user(reportPrompt).stream().chatResponse();
 	}

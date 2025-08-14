@@ -20,7 +20,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 
 /**
- * 用户自定义提示词配置实体类
+ * 用户提示词优化配置实体类
  *
  * @author Makoto
  */
@@ -46,7 +46,7 @@ public class UserPromptConfig {
 	private String promptType;
 
 	/**
-	 * 用户自定义的系统提示词内容
+	 * 用户添加的优化提示词内容（附加到原始模板）
 	 */
 	@TableField("system_prompt")
 	private String systemPrompt;

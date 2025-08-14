@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 用户提示词配置管理
+ * 用户提示词优化配置管理 支持多个优化配置同时生效，增强原始提示词而不是完全替换
  *
  * @author Makoto
  */
@@ -47,30 +47,30 @@ public class PromptConfigController {
 	}
 
 	/**
-	 * 创建或更新提示词配置
+	 * 创建或更新提示词优化配置
 	 * @param configDTO 配置数据
 	 * @return 操作结果
 	 */
 	@PostMapping("/save")
 	public ResponseEntity<Map<String, Object>> saveConfig(@RequestBody PromptConfigDTO configDTO) {
 		try {
-			logger.info("保存提示词配置请求：{}", configDTO);
+			logger.info("保存提示词优化配置请求：{}", configDTO);
 
 			UserPromptConfig savedConfig = promptConfigService.saveOrUpdateConfig(configDTO);
 
 			Map<String, Object> response = new HashMap<>();
 			response.put("success", true);
-			response.put("message", "配置保存成功");
+			response.put("message", "优化配置保存成功");
 			response.put("data", savedConfig);
 
 			return ResponseEntity.ok(response);
 		}
 		catch (Exception e) {
-			logger.error("保存提示词配置失败", e);
+			logger.error("保存提示词优化配置失败", e);
 
 			Map<String, Object> response = new HashMap<>();
 			response.put("success", false);
-			response.put("message", "配置保存失败：" + e.getMessage());
+			response.put("message", "优化配置保存失败：" + e.getMessage());
 
 			return ResponseEntity.badRequest().body(response);
 		}
@@ -165,7 +165,7 @@ public class PromptConfigController {
 	}
 
 	/**
-	 * 获取当前启用的配置
+	 * 获取当前启用的配置（兼容旧接口）
 	 * @param promptType 提示词类型
 	 * @return 当前启用的配置
 	 */
@@ -187,6 +187,35 @@ public class PromptConfigController {
 			Map<String, Object> response = new HashMap<>();
 			response.put("success", false);
 			response.put("message", "获取启用配置失败：" + e.getMessage());
+
+			return ResponseEntity.badRequest().body(response);
+		}
+	}
+
+	/**
+	 * 获取某个类型的所有启用的优化配置
+	 * @param promptType 提示词类型
+	 * @return 启用的优化配置列表
+	 */
+	@GetMapping("/active-all/{promptType}")
+	public ResponseEntity<Map<String, Object>> getActiveConfigs(@PathVariable String promptType) {
+		try {
+			List<UserPromptConfig> configs = promptConfigService.getActiveConfigsByType(promptType);
+
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", true);
+			response.put("data", configs);
+			response.put("total", configs.size());
+			response.put("hasOptimizationConfigs", !configs.isEmpty());
+
+			return ResponseEntity.ok(response);
+		}
+		catch (Exception e) {
+			logger.error("获取启用配置列表失败", e);
+
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "获取启用配置列表失败：" + e.getMessage());
 
 			return ResponseEntity.badRequest().body(response);
 		}

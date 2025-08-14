@@ -49,4 +49,6 @@
 ## 总结建议要求
 {summary_and_recommendations}
 
+{optimization_section}
+
 请根据以上信息生成一份专业、全面的数据分析报告。

@@ -26,9 +26,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 用户提示词配置管理服务 提供提示词配置的增删改查功能，支持运行时配置更新
+ * 用户提示词优化配置管理服务 提供提示词优化配置的增删改查功能，支持多个优化配置同时生效
  *
  * @author Makoto
  */
@@ -41,12 +42,22 @@ public class UserPromptConfigService {
 	private UserPromptConfigMapper userPromptConfigMapper;
 
 	/**
-	 * 创建或更新提示词配置
+	 * 内存存储，用于缓存配置（可选的性能优化）
+	 */
+	private final Map<String, UserPromptConfig> configStorage = new ConcurrentHashMap<>();
+
+	/**
+	 * 根据提示词类型存储启用的配置ID列表（支持多个配置同时启用）
+	 */
+	private final Map<String, List<String>> promptTypeToConfigIds = new ConcurrentHashMap<>();
+
+	/**
+	 * 创建或更新提示词优化配置
 	 * @param configDTO 配置数据传输对象
 	 * @return 保存后的配置对象
 	 */
 	public UserPromptConfig saveOrUpdateConfig(PromptConfigDTO configDTO) {
-		logger.info("保存或更新提示词配置：{}", configDTO);
+		logger.info("保存或更新提示词优化配置：{}", configDTO);
 
 		UserPromptConfig config;
 		if (configDTO.id() != null) {
@@ -54,7 +65,7 @@ public class UserPromptConfigService {
 			config = userPromptConfigMapper.selectById(configDTO.id());
 			if (config != null) {
 				config.setName(configDTO.name());
-				config.setSystemPrompt(configDTO.systemPrompt());
+				config.setSystemPrompt(configDTO.optimizationPrompt());
 				config.setEnabled(configDTO.enabled());
 				config.setDescription(configDTO.description());
 				userPromptConfigMapper.updateById(config);
@@ -65,7 +76,7 @@ public class UserPromptConfigService {
 				config.setId(configDTO.id());
 				config.setName(configDTO.name());
 				config.setPromptType(configDTO.promptType());
-				config.setSystemPrompt(configDTO.systemPrompt());
+				config.setSystemPrompt(configDTO.optimizationPrompt());
 				config.setEnabled(configDTO.enabled());
 				config.setDescription(configDTO.description());
 				config.setCreator(configDTO.creator());
@@ -77,12 +88,18 @@ public class UserPromptConfigService {
 			config = new UserPromptConfig();
 			config.setName(configDTO.name());
 			config.setPromptType(configDTO.promptType());
-			config.setSystemPrompt(configDTO.systemPrompt());
+			config.setSystemPrompt(configDTO.optimizationPrompt());
 			config.setEnabled(configDTO.enabled());
 			config.setDescription(configDTO.description());
 			config.setCreator(configDTO.creator());
 			userPromptConfigMapper.insert(config);
 		}
+
+		// 更新缓存
+		configStorage.put(config.getId(), config);
+
+		// 更新类型映射（支持多个配置）
+		updatePromptTypeMapping(config);
 
 		// 如果配置启用，禁用同类型的其他配置
 		if (Boolean.TRUE.equals(config.getEnabled())) {
@@ -104,12 +121,39 @@ public class UserPromptConfigService {
 	}
 
 	/**
-	 * 根据提示词类型获取启用的配置
+	 * 根据提示词类型获取所有启用的配置
+	 * @param promptType 提示词类型
+	 * @return 配置列表
+	 */
+	public List<UserPromptConfig> getActiveConfigsByType(String promptType) {
+		List<String> configIds = promptTypeToConfigIds.get(promptType);
+		if (configIds == null || configIds.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		return configIds.stream()
+			.map(configStorage::get)
+			.filter(Objects::nonNull)
+			.filter(config -> Boolean.TRUE.equals(config.getEnabled()))
+			.sorted(Comparator.comparing(UserPromptConfig::getUpdateTime).reversed())
+			.toList();
+	}
+
+	/**
+	 * 根据提示词类型获取启用的配置（兼容旧接口）
 	 * @param promptType 提示词类型
 	 * @return 配置对象，不存在时返回null
 	 */
 	public UserPromptConfig getActiveConfigByType(String promptType) {
-		return userPromptConfigMapper.selectActiveByPromptType(promptType);
+		// 优先从数据库获取
+		UserPromptConfig dbConfig = userPromptConfigMapper.selectActiveByPromptType(promptType);
+		if (dbConfig != null) {
+			return dbConfig;
+		}
+
+		// 备用：从内存缓存获取
+		List<UserPromptConfig> configs = getActiveConfigsByType(promptType);
+		return configs.isEmpty() ? null : configs.get(0);
 	}
 
 	/**
@@ -138,8 +182,12 @@ public class UserPromptConfigService {
 	public boolean deleteConfig(String id) {
 		UserPromptConfig config = userPromptConfigMapper.selectById(id);
 		if (config != null) {
+			// 从数据库删除
 			int deleted = userPromptConfigMapper.deleteById(id);
 			if (deleted > 0) {
+				// 从内存缓存和类型映射中移除该配置
+				configStorage.remove(id);
+				removeFromPromptTypeMapping(config);
 				logger.info("已删除配置：{}", id);
 				return true;
 			}
@@ -161,6 +209,10 @@ public class UserPromptConfigService {
 			// 启用当前配置
 			int updated = userPromptConfigMapper.enableById(id);
 			if (updated > 0) {
+				// 更新内存缓存
+				config.setEnabled(true);
+				configStorage.put(id, config);
+				updatePromptTypeMapping(config);
 				logger.info("已启用配置：{}", id);
 				return true;
 			}
@@ -176,6 +228,12 @@ public class UserPromptConfigService {
 	public boolean disableConfig(String id) {
 		int updated = userPromptConfigMapper.disableById(id);
 		if (updated > 0) {
+			// 更新内存缓存
+			UserPromptConfig config = configStorage.get(id);
+			if (config != null) {
+				config.setEnabled(false);
+				removeFromPromptTypeMapping(config);
+			}
 			logger.info("已禁用配置：{}", id);
 			return true;
 		}
@@ -183,32 +241,45 @@ public class UserPromptConfigService {
 	}
 
 	/**
-	 * 禁用指定类型的所有配置
-	 * @param promptType 提示词类型
+	 * 更新提示词类型映射
+	 * @param config 配置对象
 	 */
-	public void disableConfigsByType(String promptType) {
-		userPromptConfigMapper.disableAllByPromptType(promptType);
+	private void updatePromptTypeMapping(UserPromptConfig config) {
+		if (Boolean.TRUE.equals(config.getEnabled())) {
+			promptTypeToConfigIds.computeIfAbsent(config.getPromptType(), k -> new ArrayList<>());
+			List<String> configIds = promptTypeToConfigIds.get(config.getPromptType());
+			if (!configIds.contains(config.getId())) {
+				configIds.add(config.getId());
+				logger.info("已将配置 {} 添加到提示词类型 [{}] 的映射中", config.getId(), config.getPromptType());
+			}
+		}
+		else {
+			removeFromPromptTypeMapping(config);
+		}
 	}
 
 	/**
-	 * 获取自定义提示词内容，如果没有自定义配置则返回null
-	 * @param promptType 提示词类型
-	 * @return 自定义提示词内容
+	 * 从提示词类型映射中移除配置
+	 * @param config 配置对象
 	 */
-	public String getCustomPromptContent(String promptType) {
-		// TODO 需要优化，提示词不能完全替代现有的，仅用作补充使用
-		return null;
-		// UserPromptConfig config = getActiveConfigByType(promptType);
-		// return config != null ? config.getSystemPrompt() : null;
+	private void removeFromPromptTypeMapping(UserPromptConfig config) {
+		List<String> configIds = promptTypeToConfigIds.get(config.getPromptType());
+		if (configIds != null) {
+			configIds.remove(config.getId());
+			if (configIds.isEmpty()) {
+				promptTypeToConfigIds.remove(config.getPromptType());
+			}
+			logger.info("已从提示词类型 [{}] 的映射中移除配置 {}", config.getPromptType(), config.getId());
+		}
 	}
 
 	/**
-	 * 检查是否有自定义配置
+	 * 获取优化提示词内容列表
 	 * @param promptType 提示词类型
-	 * @return 是否有自定义配置
+	 * @return 优化提示词内容列表
 	 */
-	public boolean hasCustomConfig(String promptType) {
-		return getActiveConfigByType(promptType) != null;
+	public List<UserPromptConfig> getOptimizationConfigs(String promptType) {
+		return getActiveConfigsByType(promptType);
 	}
 
 }
