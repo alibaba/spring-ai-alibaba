@@ -1,0 +1,80 @@
+@import '../../index.less';
+
+.spark-flow-drag-node-item-image {
+  padding: 16px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border-radius: 12px;
+  opacity: 0.7;
+  width: 320px;
+
+  &-icon-bg {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+  }
+
+  &-title {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    color: e('var(--@{ant-prefix}-color-text-base)');
+  }
+}
+
+.spark-flow-node-menu {
+  &-group-title {
+    color: e('var(--@{ant-prefix}-color-text-tertiary)');
+    font-weight: 500;
+    padding-left: 8px;
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+  &-item {
+    padding: 0 8px;
+    color: e('var(--@{ant-prefix}-color-text)');
+    font-weight: 500;
+    border-radius: 4px;
+
+    &:hover {
+      background: e('var(--@{ant-prefix}-color-fill-secondary)');
+    }
+  }
+}
+
+.spark-flow-node-menu-item-info {
+  max-width: 274px;
+  margin: 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &-title {
+    font-weight: 600;
+    line-height: 24px;
+  }
+
+  &-desc {
+    font-size: 13px;
+    line-height: 20px;
+    color: e('var(--@{ant-prefix}-color-text)');
+  }
+}
+
+.spark-flow-node-menu-search {
+  padding: 8px 16px 16px;
+}
+
+.spark-flow-popover-node-menu {
+  height: 400px;
+
+  .spark-flow-node-menu-list {
+    padding: 0;
+  }
+
+  .spark-flow-node-menu-search {
+    padding: 4px 0 16px;
+  }
+}

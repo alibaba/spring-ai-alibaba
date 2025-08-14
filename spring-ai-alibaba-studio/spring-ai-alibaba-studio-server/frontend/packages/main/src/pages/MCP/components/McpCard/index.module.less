@@ -1,0 +1,40 @@
+.status-tag {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  white-space: nowrap;
+
+  .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background-color: currentcolor;
+  }
+
+  &[data-color='success'] {
+    color: var(--ag-ant-color-success);
+  }
+
+  &[data-color='error'] {
+    color: var(--ag-ant-color-error);
+  }
+
+  &[data-color='processing'] {
+    color: var(--ag-ant-color-primary);
+  }
+
+  &[data-color='warning'] {
+    color: var(--ag-ant-color-warning);
+  }
+
+  &[data-color='default'] {
+    color: var(--ag-ant-color-text-quaternary);
+  }
+}
+
+.update-time {
+  color: var(--ag-ant-color-text-secondary);
+  font-size: 12px;
+}
