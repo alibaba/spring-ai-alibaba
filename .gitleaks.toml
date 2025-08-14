@@ -1,8 +1,8 @@
 title = "Gitleaks Config"
 
-[allowlist]
+[[allowlists]]
 description = "Ignore known false positives and non-sensitive files"
-files = [
+paths = [
     "spring-ai-alibaba-studio/spring-ai-alibaba-studio-server/docker/middleware/docker-compose.yaml",
     "spring-ai-alibaba-studio/spring-ai-alibaba-studio-server/spring-ai-alibaba-studio-server-admin/src/main/resources/static/3088.async.js",
     "spring-ai-alibaba-studio/spring-ai-alibaba-studio-server/spring-ai-alibaba-studio-server-admin/src/main/resources/static/p__Setting__ModelService__index.async.js",
