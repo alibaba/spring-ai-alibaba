@@ -147,7 +147,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			// post handle
 			.doOnNext(response -> postHandle(context, response))
 			// final call
-			.doFinally(signal -> statics(context, signal));
+			.doFinally(signal -> statistics(context, signal));
 	}
 
 	@Override
@@ -164,7 +164,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 		return workflowExecuteManager.stopTask(request.getTaskId());
 	}
 
-	private void statics(WorkflowContext context, SignalType signalType) {
+	private void statistics(WorkflowContext context, SignalType signalType) {
 		long firstResponseTime = context.getFirstResponseTime();
 		long startTime = context.getStartTime();
 		long endTime = context.getEndTime();
