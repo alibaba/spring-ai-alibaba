@@ -51,7 +51,7 @@ public class UserPromptConfigService {
 
 		UserPromptConfig config;
 		if (configDTO.id() != null) {
-			// 更新现有配置
+			// Update existing configuration
 			config = userPromptConfigMapper.selectById(configDTO.id());
 			if (config != null) {
 				config.setName(configDTO.name());
@@ -85,7 +85,7 @@ public class UserPromptConfigService {
 			userPromptConfigMapper.insert(config);
 		}
 
-		// 如果配置启用，禁用同类型的其他配置
+		// If the configuration is enabled, disable other configurations of the same type
 		if (Boolean.TRUE.equals(config.getEnabled())) {
 			userPromptConfigMapper.disableAllByPromptType(config.getPromptType());
 			userPromptConfigMapper.enableById(config.getId());
@@ -156,10 +156,10 @@ public class UserPromptConfigService {
 	public boolean enableConfig(String id) {
 		UserPromptConfig config = userPromptConfigMapper.selectById(id);
 		if (config != null) {
-			// 先禁用同类型的其他配置
+			// First, disable other configurations of the same type
 			userPromptConfigMapper.disableAllByPromptType(config.getPromptType());
 
-			// 启用当前配置
+			// Enable the current configuration
 			int updated = userPromptConfigMapper.enableById(id);
 			if (updated > 0) {
 				logger.info("已启用配置：{}", id);

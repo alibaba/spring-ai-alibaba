@@ -79,7 +79,7 @@ public class Nl2sqlForGraphController {
 	@GetMapping("/search")
 	public String search(@RequestParam String query, @RequestParam String dataSetId, @RequestParam String agentId)
 			throws Exception {
-		// 获取智能体的数据源配置用于初始化向量
+		// Get the data source configuration for an agent for vector initialization
 		DbConfig dbConfig = getDbConfigForAgent(Integer.valueOf(agentId));
 
 		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
@@ -96,7 +96,7 @@ public class Nl2sqlForGraphController {
 
 	@GetMapping("/init")
 	public void init(@RequestParam(required = false, defaultValue = "1") Integer agentId) throws Exception {
-		// 获取智能体的数据源配置用于初始化向量
+		// Get the data source configuration for an agent for vector initialization
 		DbConfig dbConfig = getDbConfigForAgent(agentId);
 
 		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
@@ -107,18 +107,18 @@ public class Nl2sqlForGraphController {
 	}
 
 	/**
-	 * 根据智能体ID获取数据库配置
-	 */
+     * Get database configuration by agent ID
+     */
 	private DbConfig getDbConfigForAgent(Integer agentId) {
 		try {
-			// 获取智能体启用的数据源
+			// Get the enabled data source for an agent
 			var agentDatasources = datasourceService.getAgentDatasources(agentId);
 			var activeDatasource = agentDatasources.stream()
 				.filter(ad -> ad.getIsActive() == 1)
 				.findFirst()
 				.orElseThrow(() -> new RuntimeException("智能体 " + agentId + " 未配置启用的数据源"));
 
-			// 转换为 DbConfig
+			// Convert to DbConfig
 			return createDbConfigFromDatasource(activeDatasource.getDatasource());
 		}
 		catch (Exception e) {
@@ -128,17 +128,17 @@ public class Nl2sqlForGraphController {
 	}
 
 	/**
-	 * 从数据源实体创建数据库配置
-	 */
+     * Create database configuration from data source entity
+     */
 	private DbConfig createDbConfigFromDatasource(Datasource datasource) {
 		DbConfig dbConfig = new DbConfig();
 
-		// 设置基本连接信息
+		// Set basic connection information
 		dbConfig.setUrl(datasource.getConnectionUrl());
 		dbConfig.setUsername(datasource.getUsername());
 		dbConfig.setPassword(datasource.getPassword());
 
-		// 设置数据库类型
+		// Set database type
 		if ("mysql".equalsIgnoreCase(datasource.getType())) {
 			dbConfig.setConnectionType("jdbc");
 			dbConfig.setDialectType("mysql");
@@ -151,7 +151,7 @@ public class Nl2sqlForGraphController {
 			throw new RuntimeException("不支持的数据库类型: " + datasource.getType());
 		}
 
-		// 设置Schema为数据源的数据库名称
+		// Set Schema to the database name of the data source
 		dbConfig.setSchema(datasource.getDatabaseName());
 
 		return dbConfig;
@@ -160,7 +160,7 @@ public class Nl2sqlForGraphController {
 	@GetMapping(value = "/stream/search", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> streamSearch(@RequestParam String query, @RequestParam String agentId,
 			HttpServletResponse response) throws Exception {
-		// 设置SSE相关的HTTP头
+		// Set SSE-related HTTP headers
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("text/event-stream");
 		response.setHeader("Cache-Control", "no-cache");
@@ -172,7 +172,7 @@ public class Nl2sqlForGraphController {
 
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 
-		// 使用流式处理，传递agentId到状态中
+		// Use streaming processing and pass agentId to the state
 		AsyncGenerator<NodeOutput> generator = compiledGraph
 			.stream(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId));
 
@@ -186,7 +186,7 @@ public class Nl2sqlForGraphController {
 							String chunk = streamingOutput.chunk();
 							if (chunk != null && !chunk.trim().isEmpty()) {
 								logger.debug("Emitting chunk: {}", chunk);
-								// 确保chunk是有效的JSON
+								// Ensure that the chunk is valid JSON
 								ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(chunk))
 									.build();
 								sink.tryEmitNext(event);
@@ -202,16 +202,16 @@ public class Nl2sqlForGraphController {
 					}
 					catch (Exception e) {
 						logger.error("Error processing streaming output: ", e);
-						// 不要抛出异常，继续处理下一个输出
+						// Do not throw exceptions; continue processing the next output
 					}
 				}).thenAccept(v -> {
-					// 发送完成事件
+					// Send completion event
 					logger.info("Stream processing completed successfully");
 					sink.tryEmitNext(ServerSentEvent.builder("complete").event("complete").build());
 					sink.tryEmitComplete();
 				}).exceptionally(e -> {
 					logger.error("Error in stream processing: ", e);
-					// 发送错误事件而不是直接错误
+					// Send error event instead of throwing an error directly
 					sink.tryEmitNext(ServerSentEvent.builder("error: " + e.getMessage()).event("error").build());
 					sink.tryEmitComplete();
 					return null;

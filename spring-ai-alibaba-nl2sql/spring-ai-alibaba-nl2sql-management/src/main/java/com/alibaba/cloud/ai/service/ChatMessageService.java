@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * 聊天消息服务类
+ * Chat Message Service Class
  */
 @Service
 public class ChatMessageService {
@@ -36,15 +36,15 @@ public class ChatMessageService {
 	private ChatMessageMapper chatMessageMapper;
 
 	/**
-	 * 根据会话ID获取消息列表
-	 */
+     * Get message list by session ID
+     */
 	public List<ChatMessage> findBySessionId(String sessionId) {
 		return chatMessageMapper.selectBySessionId(sessionId);
 	}
 
 	/**
-	 * 保存消息
-	 */
+     * Save message
+     */
 	public ChatMessage saveMessage(ChatMessage message) {
 		chatMessageMapper.insert(message);
 		log.info("Saved message: {} for session: {}", message.getId(), message.getSessionId());
@@ -52,16 +52,16 @@ public class ChatMessageService {
 	}
 
 	/**
-	 * 保存用户消息
-	 */
+     * Save user message
+     */
 	public ChatMessage saveUserMessage(String sessionId, String content) {
 		ChatMessage message = new ChatMessage(sessionId, "user", content, "text");
 		return saveMessage(message);
 	}
 
 	/**
-	 * 保存助手消息
-	 */
+     * Save assistant message
+     */
 	public ChatMessage saveAssistantMessage(String sessionId, String content, String messageType, String metadata) {
 		ChatMessage message = new ChatMessage(sessionId, "assistant", content, messageType, metadata);
 		return saveMessage(message);

@@ -164,8 +164,8 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-	 * 因首次计划执行失败，再次升成SQL采用增强的SQL重新生成 - 集成多轮优化、安全检查和性能分析
-	 */
+     * If the first planned execution fails, regenerate SQL using enhanced SQL with multi-round optimization, security checks, and performance analysis
+     */
 	private String regenerateSql(OverAllState state, String input, List<String> evidenceList, SchemaDTO schemaDTO,
 			String exceptionOutputKey, String originalSql) throws Exception {
 		String exceptionMessage = StateUtils.getStringValue(state, exceptionOutputKey);
@@ -208,7 +208,7 @@ public class SqlGenerateNode implements NodeAction {
 					logger.info("第{}轮产生了更好的SQL，总分提升到{}", round, score.totalScore);
 				}
 
-				// 质量足够高时提前结束
+				// End early if the quality is high enough
 				if (score.totalScore >= 0.95) {
 					logger.info("SQL质量分数达到{}，提前结束优化", score.totalScore);
 					break;
@@ -220,7 +220,7 @@ public class SqlGenerateNode implements NodeAction {
 			}
 		}
 
-		// 最终验证和清理
+		// Final verification and cleanup
 		bestSql = performFinalValidation(bestSql);
 
 		logger.info("增强SQL生成完成，最终SQL: {}, 最终评分: {}", bestSql, bestScore);
@@ -228,8 +228,8 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-	 * 使用ChatClient生成优化的SQL
-	 */
+     * Use ChatClient to generate optimized SQL
+     */
 	private String generateOptimizedSql(String previousSql, String exceptionMessage, int round) {
 		try {
 			StringBuilder prompt = new StringBuilder();
@@ -258,29 +258,29 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-	 * 评估SQL质量
-	 */
+     * Evaluate SQL quality
+     */
 	private SqlQualityScore evaluateSqlQuality(String sql, SchemaDTO schemaDTO) {
 		SqlQualityScore score = new SqlQualityScore();
 
-		// 语法检查 (40%权重)
+		// Syntax check (40% weight)
 		score.syntaxScore = validateSqlSyntax(sql);
 
-		// 安全检查 (30%权重)
+		// Security check (30% weight)
 		score.securityScore = validateSqlSecurity(sql);
 
-		// 性能检查 (30%权重)
+		// Performance check (30% weight)
 		score.performanceScore = evaluateSqlPerformance(sql);
 
-		// 计算总分
+		// Calculate total score
 		score.totalScore = (score.syntaxScore * 0.4 + score.securityScore * 0.3 + score.performanceScore * 0.3);
 
 		return score;
 	}
 
 	/**
-	 * 验证SQL语法
-	 */
+     * Verify SQL syntax
+     */
 	private double validateSqlSyntax(String sql) {
 		if (sql == null || sql.trim().isEmpty())
 			return 0.0;
@@ -288,19 +288,19 @@ public class SqlGenerateNode implements NodeAction {
 		double score = 1.0;
 		String upperSql = sql.toUpperCase();
 
-		// 基础语法检查
+		// Basic syntax check
 		if (!upperSql.contains("SELECT"))
 			score -= 0.3;
 		if (!upperSql.contains("FROM"))
 			score -= 0.3;
 
-		// 检查括号匹配
+		// Check bracket matching
 		long openParens = sql.chars().filter(ch -> ch == '(').count();
 		long closeParens = sql.chars().filter(ch -> ch == ')').count();
 		if (openParens != closeParens)
 			score -= 0.2;
 
-		// 检查引号匹配
+		// Check quote matching
 		long singleQuotes = sql.chars().filter(ch -> ch == '\'').count();
 		if (singleQuotes % 2 != 0)
 			score -= 0.2;
@@ -309,8 +309,8 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-	 * 验证SQL安全性
-	 */
+     * Verify SQL security
+     */
 	private double validateSqlSecurity(String sql) {
 		if (sql == null)
 			return 0.0;
@@ -318,7 +318,7 @@ public class SqlGenerateNode implements NodeAction {
 		double score = 1.0;
 		String upperSql = sql.toUpperCase();
 
-		// 检查危险操作
+		// Check for dangerous operations
 		String[] dangerousKeywords = { "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "TRUNCATE" };
 		for (String keyword : dangerousKeywords) {
 			if (upperSql.contains(keyword)) {
@@ -327,7 +327,7 @@ public class SqlGenerateNode implements NodeAction {
 			}
 		}
 
-		// 检查SQL注入模式
+		// Check for SQL injection patterns
 		String[] injectionPatterns = { "--", "/*", "*/", "UNION", "OR 1=1", "OR '1'='1'" };
 		for (String pattern : injectionPatterns) {
 			if (upperSql.contains(pattern.toUpperCase())) {
@@ -340,8 +340,8 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-	 * 评估SQL性能
-	 */
+     * Evaluate SQL performance
+     */
 	private double evaluateSqlPerformance(String sql) {
 		if (sql == null)
 			return 0.0;
@@ -349,13 +349,13 @@ public class SqlGenerateNode implements NodeAction {
 		double score = 1.0;
 		String upperSql = sql.toUpperCase();
 
-		// 检查SELECT *
+		// Check for SELECT *
 		if (upperSql.contains("SELECT *")) {
 			score -= 0.2;
 			logger.warn("检测到SELECT *，建议明确指定字段");
 		}
 
-		// 检查WHERE条件
+		// Check WHERE conditions
 		if (!upperSql.contains("WHERE")) {
 			score -= 0.3;
 			logger.warn("查询缺少WHERE条件，可能影响性能");
@@ -365,20 +365,20 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-	 * 最终验证和清理
-	 */
+     * Final verification and cleanup
+     */
 	private String performFinalValidation(String sql) {
 		if (sql == null || sql.trim().isEmpty()) {
 			throw new IllegalArgumentException("生成的SQL为空");
 		}
 
-		// 基础清理
+		// Basic cleanup
 		sql = sql.trim();
 		if (!sql.endsWith(";")) {
 			sql += ";";
 		}
 
-		// 安全检查
+		// Security check
 		if (validateSqlSecurity(sql) < 0.5) {
 			logger.warn("生成的SQL存在安全风险，但继续执行");
 		}
@@ -387,8 +387,8 @@ public class SqlGenerateNode implements NodeAction {
 	}
 
 	/**
-	 * SQL质量评分
-	 */
+     * SQL quality score
+     */
 	private static class SqlQualityScore {
 
 		double syntaxScore = 0.0;

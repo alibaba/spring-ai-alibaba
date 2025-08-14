@@ -28,31 +28,31 @@ public class SemanticModel {
 	private Long id;
 
 	@TableField("agent_id")
-	private Long agentId; // 智能体ID
+	private Long agentId; // Agent ID
 
 	@TableField("original_field_name")
-	private String originalFieldName; // 原始字段名
+	private String originalFieldName; // Original field name
 
 	@TableField("agent_field_name")
-	private String agentFieldName; // 智能体字段名称
+	private String agentFieldName; // Agent field name
 
 	@TableField("field_synonyms")
-	private String fieldSynonyms; // 字段名称同义词，逗号分隔
+	private String fieldSynonyms; // Field name synonyms, comma-separated
 
 	@TableField("field_description")
-	private String fieldDescription; // 字段描述
+	private String fieldDescription; // Field description
 
 	@TableField("field_type")
-	private String fieldType; // 字段类型
+	private String fieldType; // Field type
 
 	@TableField("original_description")
-	private String originalDescription; // 原始字段描述
+	private String originalDescription; // Original field description
 
 	@TableField("default_recall")
-	private Boolean defaultRecall; // 默认召回
+	private Boolean defaultRecall; // Default recall
 
 	@TableField("enabled")
-	private Boolean enabled; // 是否启用
+	private Boolean enabled; // Whether enabled
 
 	@TableField(value = "created_time", fill = FieldFill.INSERT)
 	private LocalDateTime createTime;

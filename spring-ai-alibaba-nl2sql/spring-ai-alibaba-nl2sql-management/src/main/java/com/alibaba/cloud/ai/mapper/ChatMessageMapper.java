@@ -25,7 +25,7 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 
 /**
- * 聊天消息 Mapper 接口
+ * Chat Message Mapper Interface
  *
  * @author Alibaba Cloud AI
  */
@@ -33,20 +33,20 @@ import java.util.List;
 public interface ChatMessageMapper extends BaseMapper<ChatMessage> {
 
 	/**
-	 * 根据会话ID查询消息列表
-	 */
+     * Query message list by session ID
+     */
 	@Select("SELECT * FROM chat_message WHERE session_id = #{sessionId} ORDER BY create_time ASC")
 	List<ChatMessage> selectBySessionId(@Param("sessionId") String sessionId);
 
 	/**
-	 * 根据会话ID查询消息数量
-	 */
+     * Query message count by session ID
+     */
 	@Select("SELECT COUNT(*) FROM chat_message WHERE session_id = #{sessionId}")
 	int countBySessionId(@Param("sessionId") String sessionId);
 
 	/**
-	 * 根据会话ID和角色查询消息列表
-	 */
+     * Query message list by session ID and role
+     */
 	@Select("SELECT * FROM chat_message WHERE session_id = #{sessionId} AND role = #{role} ORDER BY create_time ASC")
 	List<ChatMessage> selectBySessionIdAndRole(@Param("sessionId") String sessionId, @Param("role") String role);
 

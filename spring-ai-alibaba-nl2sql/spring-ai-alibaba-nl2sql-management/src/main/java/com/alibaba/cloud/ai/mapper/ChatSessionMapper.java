@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 聊天会话 Mapper 接口
+ * Chat Session Mapper Interface
  *
  * @author Alibaba Cloud AI
  */
@@ -35,46 +35,46 @@ import java.util.List;
 public interface ChatSessionMapper extends BaseMapper<ChatSession> {
 
 	/**
-	 * 根据智能体ID查询会话列表
-	 */
+     * Query session list by agent ID
+     */
 	@Select("SELECT * FROM chat_session WHERE agent_id = #{agentId} AND status != 'deleted' ORDER BY is_pinned DESC, update_time DESC")
 	List<ChatSession> selectByAgentId(@Param("agentId") Integer agentId);
 
 	/**
-	 * 根据会话ID查询会话详情
-	 */
+     * Query session details by session ID
+     */
 	@Select("SELECT * FROM chat_session WHERE id = #{sessionId} AND status != 'deleted'")
 	ChatSession selectBySessionId(@Param("sessionId") String sessionId);
 
 	/**
-	 * 软删除智能体的所有会话
-	 */
+     * Soft delete all sessions for an agent
+     */
 	@Update("UPDATE chat_session SET status = 'deleted', update_time = #{updateTime} WHERE agent_id = #{agentId}")
 	int softDeleteByAgentId(@Param("agentId") Integer agentId, @Param("updateTime") LocalDateTime updateTime);
 
 	/**
-	 * 更新会话时间
-	 */
+     * Update session time
+     */
 	@Update("UPDATE chat_session SET update_time = #{updateTime} WHERE id = #{sessionId}")
 	int updateSessionTime(@Param("sessionId") String sessionId, @Param("updateTime") LocalDateTime updateTime);
 
 	/**
-	 * 更新会话置顶状态
-	 */
+     * Update session pinned status
+     */
 	@Update("UPDATE chat_session SET is_pinned = #{isPinned}, update_time = #{updateTime} WHERE id = #{sessionId}")
 	int updatePinStatus(@Param("sessionId") String sessionId, @Param("isPinned") boolean isPinned,
 			@Param("updateTime") LocalDateTime updateTime);
 
 	/**
-	 * 更新会话标题
-	 */
+     * Update session title
+     */
 	@Update("UPDATE chat_session SET title = #{title}, update_time = #{updateTime} WHERE id = #{sessionId}")
 	int updateTitle(@Param("sessionId") String sessionId, @Param("title") String title,
 			@Param("updateTime") LocalDateTime updateTime);
 
 	/**
-	 * 软删除会话
-	 */
+     * Soft delete session
+     */
 	@Update("UPDATE chat_session SET status = 'deleted', update_time = #{updateTime} WHERE id = #{sessionId}")
 	int softDeleteById(@Param("sessionId") String sessionId, @Param("updateTime") LocalDateTime updateTime);
 

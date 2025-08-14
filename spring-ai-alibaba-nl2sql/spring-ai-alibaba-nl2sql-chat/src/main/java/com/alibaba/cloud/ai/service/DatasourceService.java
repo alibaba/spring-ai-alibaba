@@ -90,7 +90,7 @@ public class DatasourceService {
 		// Generate connection URL
 		datasource.generateConnectionUrl();
 
-		// 设置默认值
+		// Set default values
 		if (datasource.getStatus() == null) {
 			datasource.setStatus("active");
 		}
@@ -119,10 +119,10 @@ public class DatasourceService {
 	 */
 	@Transactional
 	public void deleteDatasource(Integer id) {
-		// 先删除关联关系
+		// First, delete the associations
 		agentDatasourceMapper.delete(Wrappers.<AgentDatasource>lambdaQuery().eq(AgentDatasource::getDatasourceId, id));
 
-		// 再删除数据源
+		// Then, delete the data source
 		datasourceMapper.deleteById(id);
 	}
 
@@ -212,7 +212,7 @@ public class DatasourceService {
 	public List<AgentDatasource> getAgentDatasources(Integer agentId) {
 		List<AgentDatasource> agentDatasources = agentDatasourceMapper.selectByAgentIdWithDatasource(agentId);
 
-		// 手动填充数据源信息（因为 MyBatis Plus 不直接支持复杂的联表查询结果映射）
+		// Manually fill in the data source information (since MyBatis Plus does not directly support complex join query result mapping)
 		for (AgentDatasource agentDatasource : agentDatasources) {
 			if (agentDatasource.getDatasourceId() != null) {
 				Datasource datasource = datasourceMapper.selectById(agentDatasource.getDatasourceId());
@@ -220,25 +220,25 @@ public class DatasourceService {
 			}
 		}
 
-		// 先禁用该智能体的其他数据源（一个智能体只能启用一个数据源）
+		// First, disable other data sources for this agent (an agent can only have one enabled data source)
 		agentDatasourceMapper.disableAllByAgentId(agentId);
 
-		// 检查是否已存在关联
+		// Check if an association already exists
 		AgentDatasource existing = agentDatasourceMapper.selectByAgentIdAndDatasourceId(agentId, datasourceId);
 
 		if (existing != null) {
-			// 如果已存在，则激活该关联
+			// If it exists, activate the association
 			agentDatasourceMapper.update(null,
 					Wrappers.<AgentDatasource>lambdaUpdate()
 						.eq(AgentDatasource::getAgentId, agentId)
 						.eq(AgentDatasource::getDatasourceId, datasourceId)
 						.set(AgentDatasource::getIsActive, 1));
 
-			// 查询并返回更新后的关联
+			// Query and return the updated association
 			return agentDatasourceMapper.selectByAgentIdAndDatasourceId(agentId, datasourceId);
 		}
 		else {
-			// 如果不存在，则创建新关联
+			// If it does not exist, create a new association
 			AgentDatasource agentDatasource = new AgentDatasource(agentId, datasourceId);
 			agentDatasource.setIsActive(1);
 			agentDatasourceMapper.insert(agentDatasource);
@@ -267,7 +267,7 @@ public class DatasourceService {
 			}
 		}
 
-		// 更新数据源状态
+		// Update data source status
 		int updated = agentDatasourceMapper.update(null,
 				Wrappers.<AgentDatasource>lambdaUpdate()
 					.eq(AgentDatasource::getAgentId, agentId)
@@ -278,7 +278,7 @@ public class DatasourceService {
 			throw new RuntimeException("未找到相关的数据源关联记录");
 		}
 
-		// 返回更新后的关联记录
+		// Return the updated association record
 		return agentDatasourceMapper.selectByAgentIdAndDatasourceId(agentId, datasourceId);
 	}
 
@@ -288,19 +288,19 @@ public class DatasourceService {
 	public Map<String, Object> getDatasourceStats() {
 		Map<String, Object> stats = new HashMap<>();
 
-		// 总数统计
+		// Total count statistics
 		Long total = datasourceMapper.selectCount(null);
 		stats.put("total", total);
 
-		// 按状态统计
+		// Statistics by status
 		List<Map<String, Object>> statusStats = datasourceMapper.selectStatusStats();
 		stats.put("byStatus", statusStats);
 
-		// 按类型统计
+		// Statistics by type
 		List<Map<String, Object>> typeStats = datasourceMapper.selectTypeStats();
 		stats.put("byType", typeStats);
 
-		// 连接状态统计
+		// Connection status statistics
 		List<Map<String, Object>> testStats = datasourceMapper.selectTestStatusStats();
 		stats.put("byTestStatus", testStats);
 

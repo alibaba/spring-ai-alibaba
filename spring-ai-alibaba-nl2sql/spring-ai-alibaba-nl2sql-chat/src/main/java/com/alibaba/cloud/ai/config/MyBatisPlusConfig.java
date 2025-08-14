@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Configuration;
 import java.time.LocalDateTime;
 
 /**
- * MyBatis Plus 配置类
+ * MyBatis Plus Configuration Class
  *
  * @author Alibaba Cloud AI
  */
@@ -36,21 +36,21 @@ import java.time.LocalDateTime;
 public class MyBatisPlusConfig {
 
 	/**
-	 * MyBatis Plus 拦截器配置 添加分页插件、乐观锁插件和防全表更新删除插件
-	 */
+     * MyBatis Plus Interceptor Configuration. Add pagination plugin, optimistic locking plugin, and anti-full-table update/delete plugin
+     */
 	@Bean
 	public MybatisPlusInterceptor mybatisPlusInterceptor() {
 		MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
-		// 乐观锁插件
+		// Optimistic locking plugin
 		interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
 
 		return interceptor;
 	}
 
 	/**
-	 * 元数据处理器，用于自动填充字段
-	 */
+     * Meta object handler for automatic field filling
+     */
 	@Bean
 	public MetaObjectHandler metaObjectHandler() {
 		return new MetaObjectHandler() {

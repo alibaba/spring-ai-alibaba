@@ -64,8 +64,8 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 	}
 
 	/**
-	 * 初始化所有已发布的智能体
-	 */
+     * Initialize all published agents
+     */
 	private void initializePublishedAgents() {
 		try {
 			List<Agent> publishedAgents = agentService.findByStatus("published");
@@ -117,10 +117,10 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 	}
 
 	/**
-	 * 初始化单个智能体的数据源
-	 * @param agent 智能体
-	 * @return 是否成功初始化
-	 */
+     * Initialize the data source for a single agent
+     * @param agent The agent
+     * @return Whether the initialization was successful
+     */
 	private boolean initializeAgentDataSource(Agent agent) {
 		try {
 			Long agentId = agent.getId();
@@ -185,8 +185,8 @@ public class AgentStartupInitializationService implements ApplicationRunner, Dis
 	}
 
 	/**
-	 * 应用关闭时清理资源 实现 DisposableBean 接口的 destroy 方法
-	 */
+     * Clean up resources when the application shuts down. Implement the destroy method of the DisposableBean interface
+     */
 	@Override
 	public void destroy() throws Exception {
 		if (executorService != null && !executorService.isShutdown()) {
