@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * DB连接池上下文
+ * DB connection pool context
  */
 @Component
 public class DBConnectionPoolContext {
@@ -34,16 +34,16 @@ public class DBConnectionPoolContext {
 	@Autowired
 	public DBConnectionPoolContext(List<DBConnectionPool> pools) {
 		for (DBConnectionPool pool : pools) {
-			// 获取类上的 @Service("xxx")的Bean名
+			// Get bean name from @Service("xxx") annotation on class
 			String beanName = pool.getClass().getAnnotation(Service.class).value();
 			poolMap.put(beanName, pool);
 		}
 	}
 
 	/**
-	 * 根据数据库类型获取对应的DB连接池
-	 * @param type 数据库类型
-	 * @return DB连接池
+	 * Get corresponding DB connection pool based on database type
+	 * @param type database type
+	 * @return DB connection pool
 	 */
 	public DBConnectionPool getPoolByType(String type) {
 		if (type == null || type.trim().isEmpty()) {

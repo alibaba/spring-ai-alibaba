@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * AgentStartupInitializationService 测试类
+ * AgentStartupInitializationService Test Class
  */
 @ExtendWith(MockitoExtension.class)
 class AgentStartupInitializationServiceTest {
@@ -44,16 +44,16 @@ class AgentStartupInitializationServiceTest {
 
 	@Test
     void testRunWithNoPublishedAgents() throws Exception {
-        // 配置没有已发布的智能体
+        // Configuration with no published agents
         when(agentService.findByStatus("published")).thenReturn(new ArrayList<>());
 
-        // 执行
+        // Execute
         agentStartupInitializationService.run(applicationArguments);
 
-        // 等待异步任务完成
+        // Wait for the asynchronous task to complete
         Thread.sleep(500);
 
-        // 验证调用了查询方法
+        // Verify that the query method was called
         verify(agentService).findByStatus("published");
     }
 

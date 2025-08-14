@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 提示词加载器，用于从文件系统加载提示词模板
+ * Prompt loader, used to load prompt templates from file system
  *
  * @author zhangshenghang
  */
@@ -35,9 +35,9 @@ public class PromptLoader {
 	private static final ConcurrentHashMap<String, String> promptCache = new ConcurrentHashMap<>();
 
 	/**
-	 * 从文件加载提示词模板
-	 * @param promptName 提示词文件名（不含路径和扩展名）
-	 * @return 提示词内容
+	 * Load prompt template from file
+	 * @param promptName prompt file name (without path and extension)
+	 * @return prompt content
 	 */
 	public static String loadPrompt(String promptName) {
 		return promptCache.computeIfAbsent(promptName, name -> {
@@ -56,15 +56,15 @@ public class PromptLoader {
 	}
 
 	/**
-	 * 清除提示词缓存
+	 * Clear prompt cache
 	 */
 	public static void clearCache() {
 		promptCache.clear();
 	}
 
 	/**
-	 * 获取缓存大小
-	 * @return 缓存中的提示词数量
+	 * Get cache size
+	 * @return number of prompts in cache
 	 */
 	public static int getCacheSize() {
 		return promptCache.size();
