@@ -58,14 +58,15 @@ class DashscopeRerankerTest {
 		verify(dashscopeReranker, times(1)).process(query, documents);
 	}
 
-//	@Test
-//	void testRerankWithNullQuery() {
-//		// Prepare test data
-//		List<Document> documents = List.of(Document.builder().build());
-//
-//		// Execute and verify
-//		assertThrows(IllegalArgumentException.class, () -> dashscopeReranker.process(null, documents));
-//	}
+	// @Test
+	// void testRerankWithNullQuery() {
+	// // Prepare test data
+	// List<Document> documents = List.of(Document.builder().build());
+	//
+	// // Execute and verify
+	// assertThrows(IllegalArgumentException.class, () -> dashscopeReranker.process(null,
+	// documents));
+	// }
 
 	@Test
 	void testRerankWithNullDocuments() {
@@ -73,18 +74,18 @@ class DashscopeRerankerTest {
 		assertThrows(IllegalArgumentException.class, () -> dashscopeReranker.process(Query.builder().build(), null));
 	}
 
-//	@Test
-//	void testRerankWithEmptyDocuments() {
-//		// Prepare test data
-//		Query query = Query.builder().build();
-//		List<Document> emptyDocs = List.of();
-//
-//		// Execute
-//		List<Document> result = dashscopeReranker.process(query, emptyDocs);
-//
-//		// Verify
-//		assertNotNull(result);
-//		assertTrue(result.isEmpty());
-//	}
+	// @Test
+	// void testRerankWithEmptyDocuments() {
+	// // Prepare test data
+	// Query query = Query.builder().build();
+	// List<Document> emptyDocs = List.of();
+	//
+	// // Execute
+	// List<Document> result = dashscopeReranker.process(query, emptyDocs);
+	//
+	// // Verify
+	// assertNotNull(result);
+	// assertTrue(result.isEmpty());
+	// }
 
 }
