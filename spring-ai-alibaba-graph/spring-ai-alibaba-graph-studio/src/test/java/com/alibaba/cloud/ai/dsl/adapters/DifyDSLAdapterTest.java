@@ -613,9 +613,8 @@ public class DifyDSLAdapterTest {
 	@Test
 	public void testNodeListenersParsingWithDifyDSL() {
 		// Create converters for the node types we'll use in the test
-		List<com.alibaba.cloud.ai.service.dsl.NodeDataConverter<? extends com.alibaba.cloud.ai.model.workflow.NodeData>> converters = List.of(
-			new ToolNodeDataConverter()
-		);
+		List<com.alibaba.cloud.ai.service.dsl.NodeDataConverter<? extends com.alibaba.cloud.ai.model.workflow.NodeData>> converters = List
+			.of(new ToolNodeDataConverter());
 		DifyDSLAdapter adapter = new DifyDSLAdapter(converters, null);
 
 		// Create test workflow data with nodes containing listeners
@@ -625,12 +624,12 @@ public class DifyDSLAdapterTest {
 
 		// Create nodes with listeners
 		List<Map<String, Object>> nodes = new ArrayList<>();
-		
+
 		// Node B2 with listeners
 		Map<String, Object> nodeB2 = new HashMap<>();
 		nodeB2.put("id", "B2");
 		nodeB2.put("listeners", List.of("beforeNodeExecution", "afterNodeExecution"));
-		
+
 		Map<String, Object> nodeB2Data = new HashMap<>();
 		nodeB2Data.put("type", "tool");
 		nodeB2Data.put("title", "Tool Node B2");
@@ -638,12 +637,12 @@ public class DifyDSLAdapterTest {
 		nodeB2Data.put("tool_name", "test_tool");
 		nodeB2.put("data", nodeB2Data);
 		nodes.add(nodeB2);
-		
+
 		// Node B3 with listeners
 		Map<String, Object> nodeB3 = new HashMap<>();
 		nodeB3.put("id", "B3");
 		nodeB3.put("listeners", List.of("onError", "onComplete"));
-		
+
 		Map<String, Object> nodeB3Data = new HashMap<>();
 		nodeB3Data.put("type", "tool");
 		nodeB3Data.put("title", "Tool Node B3");
@@ -651,12 +650,12 @@ public class DifyDSLAdapterTest {
 		nodeB3Data.put("tool_name", "test_tool2");
 		nodeB3.put("data", nodeB3Data);
 		nodes.add(nodeB3);
-		
+
 		// Node B4 with listeners
 		Map<String, Object> nodeB4 = new HashMap<>();
 		nodeB4.put("id", "B4");
 		nodeB4.put("listeners", List.of("beforeNodeExecution"));
-		
+
 		Map<String, Object> nodeB4Data = new HashMap<>();
 		nodeB4Data.put("type", "tool");
 		nodeB4Data.put("title", "Tool Node B4");
@@ -678,12 +677,12 @@ public class DifyDSLAdapterTest {
 		assertDoesNotThrow(() -> {
 			Workflow workflow = adapter.mapToWorkflow(dslData);
 			assertNotNull(workflow);
-			
+
 			// Verify listeners are correctly parsed for each node
 			List<com.alibaba.cloud.ai.model.workflow.Node> workflowNodes = workflow.getGraph().getNodes();
 			assertNotNull(workflowNodes);
 			assertEquals(3, workflowNodes.size());
-			
+
 			// Check B2 node listeners
 			com.alibaba.cloud.ai.model.workflow.Node b2Node = workflowNodes.stream()
 				.filter(n -> "B2".equals(n.getId()))
@@ -694,7 +693,7 @@ public class DifyDSLAdapterTest {
 			assertEquals(2, b2Node.getListeners().size());
 			assertTrue(b2Node.getListeners().contains("beforeNodeExecution"));
 			assertTrue(b2Node.getListeners().contains("afterNodeExecution"));
-			
+
 			// Check B3 node listeners
 			com.alibaba.cloud.ai.model.workflow.Node b3Node = workflowNodes.stream()
 				.filter(n -> "B3".equals(n.getId()))
@@ -705,7 +704,7 @@ public class DifyDSLAdapterTest {
 			assertEquals(2, b3Node.getListeners().size());
 			assertTrue(b3Node.getListeners().contains("onError"));
 			assertTrue(b3Node.getListeners().contains("onComplete"));
-			
+
 			// Check B4 node listeners
 			com.alibaba.cloud.ai.model.workflow.Node b4Node = workflowNodes.stream()
 				.filter(n -> "B4".equals(n.getId()))
