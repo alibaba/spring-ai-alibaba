@@ -31,51 +31,51 @@ public class SemanticModelPersistenceService {
 	@Autowired
 	private SemanticModelMapper semanticModelMapper;
 
-	// 新增智能体字段
+	// Add agent field
 	public void addField(SemanticModelDTO semanticModelDTO) {
 		SemanticModel semanticModel = new SemanticModel();
 		BeanUtils.copyProperties(semanticModelDTO, semanticModel);
 		semanticModelMapper.insert(semanticModel);
 	}
 
-	// 批量新增智能体字段
+	// Batch add agent fields
 	public void addFields(List<SemanticModelDTO> semanticModelDTOS) {
 		for (SemanticModelDTO dto : semanticModelDTOS) {
 			addField(dto);
 		}
 	}
 
-	// 批量启用
+	// Batch enable
 	public void enableFields(List<Long> ids) {
 		for (Long id : ids) {
 			semanticModelMapper.enableById(id);
 		}
 	}
 
-	// 批量禁用
+	// Batch disable
 	public void disableFields(List<Long> ids) {
 		for (Long id : ids) {
 			semanticModelMapper.disableById(id);
 		}
 	}
 
-	// 根据智能体ID获取语义模型
+	// Get semantic model by agent ID
 	public List<SemanticModel> getFieldByAgentId(Long agentId) {
 		return semanticModelMapper.selectByAgentId(agentId);
 	}
 
-	// 搜索
+	// Search
 	public List<SemanticModel> searchFields(String keyword) {
 		Objects.requireNonNull(keyword, "searchKeyword cannot be null");
 		return semanticModelMapper.searchByKeyword(keyword);
 	}
 
-	// 根据id删除智能体字段
+	// Delete agent field by id
 	public void deleteFieldById(long id) {
 		semanticModelMapper.deleteById(id);
 	}
 
-	// 更新智能体字段
+	// Update agent field
 	public void updateField(SemanticModelDTO semanticModelDTO, long id) {
 		SemanticModel semanticModel = new SemanticModel();
 		BeanUtils.copyProperties(semanticModelDTO, semanticModel);

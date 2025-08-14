@@ -31,42 +31,42 @@ public class BusinessKnowledgePersistenceService {
 	@Autowired
 	private BusinessKnowledgeMapper businessKnowledgeMapper;
 
-	// 新增智能体字段
+	// Add agent field
 	public void addKnowledge(BusinessKnowledgeDTO knowledgeDTO) {
 		BusinessKnowledge knowledge = new BusinessKnowledge();
 		BeanUtils.copyProperties(knowledgeDTO, knowledge);
 		businessKnowledgeMapper.insert(knowledge);
 	}
 
-	// 批量新增智能体字段
+	// Batch add agent fields
 	public void addKnowledgeList(List<BusinessKnowledgeDTO> knowledgeDTOList) {
 		for (BusinessKnowledgeDTO dto : knowledgeDTOList) {
 			addKnowledge(dto);
 		}
 	}
 
-	// 获取数据集列表
+	// Get dataset list
 	public List<String> getDataSetIds() {
 		return businessKnowledgeMapper.selectDistinctDatasetIds();
 	}
 
-	// 根据data_set_id获取智能体字段
+	// Get agent fields by data_set_id
 	public List<BusinessKnowledge> getFieldByDataSetId(String dataSetId) {
 		return businessKnowledgeMapper.selectByDatasetId(dataSetId);
 	}
 
-	// 搜索
+	// Search
 	public List<BusinessKnowledge> searchFields(String keyword) {
 		Objects.requireNonNull(keyword, "searchKeyword cannot be null");
 		return businessKnowledgeMapper.searchByKeyword(keyword);
 	}
 
-	// 根据id删除智能体字段
+	// Delete agent field by id
 	public void deleteFieldById(long id) {
 		businessKnowledgeMapper.deleteById(id);
 	}
 
-	// 更新智能体字段
+	// Update agent field
 	public void updateField(BusinessKnowledgeDTO knowledgeDTO, long id) {
 		BusinessKnowledge knowledge = new BusinessKnowledge();
 		BeanUtils.copyProperties(knowledgeDTO, knowledge);
@@ -74,18 +74,18 @@ public class BusinessKnowledgePersistenceService {
 		businessKnowledgeMapper.updateById(knowledge);
 	}
 
-	// 根据智能体ID获取业务知识列表
+	// Get business knowledge list by agent ID
 	public List<BusinessKnowledge> getKnowledgeByAgentId(String agentId) {
 		return businessKnowledgeMapper.selectByAgentId(agentId);
 	}
 
-	// 根据智能体ID删除所有业务知识
+	// Delete all business knowledge by agent ID
 	public void deleteKnowledgeByAgentId(String agentId) {
 		businessKnowledgeMapper.delete(com.baomidou.mybatisplus.core.toolkit.Wrappers.<BusinessKnowledge>lambdaQuery()
 			.eq(BusinessKnowledge::getAgentId, agentId));
 	}
 
-	// 在智能体范围内搜索业务知识
+	// Search business knowledge within agent scope
 	public List<BusinessKnowledge> searchKnowledgeInAgent(String agentId, String keyword) {
 		Objects.requireNonNull(agentId, "agentId cannot be null");
 		Objects.requireNonNull(keyword, "searchKeyword cannot be null");

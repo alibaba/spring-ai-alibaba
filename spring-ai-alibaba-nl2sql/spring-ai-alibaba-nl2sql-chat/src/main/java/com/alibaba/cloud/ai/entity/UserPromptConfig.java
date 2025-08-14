@@ -20,7 +20,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 
 /**
- * 用户自定义提示词配置实体类
+ * User-defined prompt configuration entity class
  *
  * @author Makoto
  */
@@ -28,55 +28,55 @@ import java.time.LocalDateTime;
 public class UserPromptConfig {
 
 	/**
-	 * 配置ID
+	 * Configuration ID
 	 */
 	@TableId(value = "id", type = IdType.ASSIGN_UUID)
 	private String id;
 
 	/**
-	 * 配置名称
+	 * Configuration name
 	 */
 	@TableField("name")
 	private String name;
 
 	/**
-	 * 提示词类型（如：report-generator, planner等）
+	 * Prompt type (e.g., report-generator, planner, etc.)
 	 */
 	@TableField("prompt_type")
 	private String promptType;
 
 	/**
-	 * 用户自定义的系统提示词内容
+	 * User-defined system prompt content
 	 */
 	@TableField("system_prompt")
 	private String systemPrompt;
 
 	/**
-	 * 是否启用该配置
+	 * Whether to enable this configuration
 	 */
 	@TableField("enabled")
 	private Boolean enabled;
 
 	/**
-	 * 配置描述
+	 * Configuration description
 	 */
 	@TableField("description")
 	private String description;
 
 	/**
-	 * 创建时间
+	 * Creation time
 	 */
 	@TableField(value = "create_time", fill = FieldFill.INSERT)
 	private LocalDateTime createTime;
 
 	/**
-	 * 更新时间
+	 * Update time
 	 */
 	@TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
 	private LocalDateTime updateTime;
 
 	/**
-	 * 创建者
+	 * Creator
 	 */
 	@TableField("creator")
 	private String creator;

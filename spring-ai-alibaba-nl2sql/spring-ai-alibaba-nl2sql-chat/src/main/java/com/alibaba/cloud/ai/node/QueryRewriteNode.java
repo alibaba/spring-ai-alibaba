@@ -56,7 +56,7 @@ public class QueryRewriteNode implements NodeAction {
 		logger.info("Entering {} node", this.getClass().getSimpleName());
 
 		String input = StateUtils.getStringValue(state, INPUT_KEY);
-		String agentId = StateUtils.getStringValue(state, AGENT_ID); // 获取智能体ID
+		String agentId = StateUtils.getStringValue(state, AGENT_ID); // Get agent ID
 		logger.info("[{}] Processing user input: {} for agentId: {}", this.getClass().getSimpleName(), input, agentId);
 
 		// Use streaming utility class for content collection and result mapping

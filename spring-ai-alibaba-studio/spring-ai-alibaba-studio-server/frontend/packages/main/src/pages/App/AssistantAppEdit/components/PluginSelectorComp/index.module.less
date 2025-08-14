@@ -1,0 +1,83 @@
+.filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.loading {
+  min-height: calc(100vh - 260px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolSelector {
+  min-height: 350px;
+}
+
+.page {
+  margin-top: 12px;
+  text-align: right;
+}
+
+.titleWrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .title {
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .right {
+    display: flex;
+    align-items: center;
+  }
+}
+
+.container {
+  &.subArea {
+    .title {
+      font-size: 16px;
+      font-weight: normal;
+    }
+  }
+}
+
+.expandBtn {
+  cursor: pointer;
+  line-height: 1;
+
+  &.hidden {
+    transform: rotate(180deg);
+  }
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+
+  .left,
+  .right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .right {
+    gap: 8px;
+  }
+
+  .show {
+    font-size: 12px;
+    min-width: 55px;
+  }
+}
+
+.emptyCon {
+  margin-top: 12.5vh;
+}

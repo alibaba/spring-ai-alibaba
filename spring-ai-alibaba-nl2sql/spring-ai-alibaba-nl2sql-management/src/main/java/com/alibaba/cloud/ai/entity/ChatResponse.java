@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.entity;
 
 /**
- * 聊天响应DTO
+ * Chat Response DTO
  */
 public class ChatResponse {
 
@@ -26,11 +26,11 @@ public class ChatResponse {
 
 	private String messageType; // text, sql, result, error
 
-	private String sql; // 生成的SQL语句
+	private String sql; // Generated SQL statement
 
-	private Object result; // 查询结果
+	private Object result; // Query result
 
-	private String error; // 错误信息
+	private String error; // Error message
 
 	public ChatResponse() {
 	}

@@ -19,7 +19,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 
 /**
- * 聊天会话实体类
+ * Chat Session Entity Class
  */
 @TableName("chat_session")
 public class ChatSession {
@@ -37,7 +37,7 @@ public class ChatSession {
 	private String status; // active, archived, deleted
 
 	@TableField("is_pinned")
-	private Boolean isPinned; // 是否置顶
+	private Boolean isPinned; // Whether pinned
 
 	@TableField("user_id")
 	private Long userId;

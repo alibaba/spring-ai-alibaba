@@ -29,18 +29,18 @@ import java.util.List;
 public class ChatResponseUtil {
 
 	/**
-	 * 创建自定义状态响应
-	 * @param statusMessage 状态消息
-	 * @return ChatResponse 状态响应对象
+	 * Create custom status response
+	 * @param statusMessage status message
+	 * @return ChatResponse status response object
 	 */
 	public static ChatResponse createCustomStatusResponse(String statusMessage) {
 		return createCustomStatusResponse(statusMessage, StreamResponseType.STATUS);
 	}
 
 	/**
-	 * 创建自定义状态响应
-	 * @param statusMessage 状态消息
-	 * @return ChatResponse 状态响应对象
+	 * Create custom status response
+	 * @param statusMessage status message
+	 * @return ChatResponse status response object
 	 */
 	public static ChatResponse createCustomStatusResponse(String statusMessage, StreamResponseType type) {
 		AssistantMessage assistantMessage = new AssistantMessage(JsonUtils.toJson(type, statusMessage + "\n"));

@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.entity;
 
 /**
- * 通用API响应类
+ * Common API Response Class
  */
 public class ApiResponse {
 

@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 数据源 Mapper 接口
+ * Data Source Mapper Interface
  *
  * @author Alibaba Cloud AI
  */
@@ -34,31 +34,31 @@ import java.util.Map;
 public interface DatasourceMapper extends BaseMapper<Datasource> {
 
 	/**
-	 * 根据状态查询数据源列表
+	 * Query data source list by status
 	 */
 	@Select("SELECT * FROM datasource WHERE status = #{status} ORDER BY create_time DESC")
 	List<Datasource> selectByStatus(@Param("status") String status);
 
 	/**
-	 * 根据类型查询数据源列表
+	 * Query data source list by type
 	 */
 	@Select("SELECT * FROM datasource WHERE type = #{type} ORDER BY create_time DESC")
 	List<Datasource> selectByType(@Param("type") String type);
 
 	/**
-	 * 获取数据源统计信息 - 按状态统计
+	 * Get data source statistics - by status
 	 */
 	@Select("SELECT status, COUNT(*) as count FROM datasource GROUP BY status")
 	List<Map<String, Object>> selectStatusStats();
 
 	/**
-	 * 获取数据源统计信息 - 按类型统计
+	 * Get data source statistics - by type
 	 */
 	@Select("SELECT type, COUNT(*) as count FROM datasource GROUP BY type")
 	List<Map<String, Object>> selectTypeStats();
 
 	/**
-	 * 获取数据源统计信息 - 按测试状态统计
+	 * Get data source statistics - by test status
 	 */
 	@Select("SELECT test_status, COUNT(*) as count FROM datasource GROUP BY test_status")
 	List<Map<String, Object>> selectTestStatusStats();

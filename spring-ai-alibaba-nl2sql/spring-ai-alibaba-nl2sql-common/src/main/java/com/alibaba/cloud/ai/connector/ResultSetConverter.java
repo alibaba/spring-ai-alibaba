@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 将 JDBC ResultSet 转换为结构化数据
+ * Convert JDBC ResultSet to structured data
  */
 public class ResultSetConverter {
 
