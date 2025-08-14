@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * Configuration options for file search and retrieval.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

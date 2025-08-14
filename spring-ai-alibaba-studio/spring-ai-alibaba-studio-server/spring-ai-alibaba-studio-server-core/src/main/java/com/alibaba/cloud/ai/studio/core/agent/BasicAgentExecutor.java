@@ -97,7 +97,7 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
  * executions. Provides functionality for both streaming and non-streaming agent
  * responses.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Service()
 @Qualifier("basicAgentExecutor")

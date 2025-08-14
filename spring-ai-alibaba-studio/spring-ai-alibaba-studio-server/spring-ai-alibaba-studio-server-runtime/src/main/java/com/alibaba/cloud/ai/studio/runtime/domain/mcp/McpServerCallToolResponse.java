@@ -26,7 +26,7 @@ import java.util.List;
  * Response model for MCP server tool calls
  *
  * @author guning.lt
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class McpServerCallToolResponse implements Serializable {

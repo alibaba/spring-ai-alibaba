@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
  * Implementation of the tool execution service. Handles the execution of tools and API
  * calls based on tool configurations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Service
 public class ToolExecutionServiceImpl implements ToolExecutionService {

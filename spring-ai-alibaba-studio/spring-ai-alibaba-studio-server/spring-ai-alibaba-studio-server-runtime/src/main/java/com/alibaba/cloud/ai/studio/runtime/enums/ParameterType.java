@@ -28,7 +28,7 @@ import java.util.Optional;
  * Enum representing different parameter types for API parameters. Each type defines
  * validation rules for its corresponding data type.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Getter
 public enum ParameterType {

@@ -24,7 +24,7 @@ import lombok.Getter;
 /**
  * Plugin status enumeration. Represents the current state of a plugin in the system.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

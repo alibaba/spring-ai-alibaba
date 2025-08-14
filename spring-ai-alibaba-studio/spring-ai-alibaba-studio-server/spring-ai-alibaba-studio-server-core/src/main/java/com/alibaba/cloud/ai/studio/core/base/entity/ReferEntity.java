@@ -28,7 +28,7 @@ import java.util.Date;
  * Title: CreateDate: 2025/5/1 14:51
  *
  * @author guning.lt
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  **/
 @Data
 @TableName("reference")

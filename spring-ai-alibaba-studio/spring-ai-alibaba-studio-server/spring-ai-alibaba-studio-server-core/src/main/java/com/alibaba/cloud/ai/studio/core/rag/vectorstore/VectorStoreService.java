@@ -28,7 +28,7 @@ import java.util.List;
  * Service interface for managing vector stores and document chunks. Provides operations
  * for index management and document chunk operations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface VectorStoreService {
 

@@ -33,7 +33,7 @@ import java.util.List;
  * Web configuration class for Spring MVC. Handles CORS, resource mapping, and custom
  * argument resolvers.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {

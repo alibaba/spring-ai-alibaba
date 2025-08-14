@@ -34,7 +34,7 @@ import java.util.Objects;
 /**
  * Controller for managing API keys. Provides CRUD operations for API key management.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @RestController
 @Tag(name = "apikey")

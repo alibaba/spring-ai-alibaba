@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * Plugin model class for managing plugin configurations and metadata.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

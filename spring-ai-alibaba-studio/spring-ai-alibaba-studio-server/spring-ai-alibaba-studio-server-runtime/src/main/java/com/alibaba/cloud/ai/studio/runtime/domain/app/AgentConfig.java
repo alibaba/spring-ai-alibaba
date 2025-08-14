@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Configuration for an agent in the system.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class AgentConfig implements AppConfig, Serializable {

@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Configuration;
  * Configuration class for RocketMQ client setup. Provides beans for client configuration
  * and document index producer.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 @Configuration

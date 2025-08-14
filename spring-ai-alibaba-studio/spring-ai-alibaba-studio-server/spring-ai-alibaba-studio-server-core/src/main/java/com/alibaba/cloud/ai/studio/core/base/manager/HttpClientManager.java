@@ -61,7 +61,7 @@ import java.util.*;
  * requests with different methods (GET, POST, PUT, DELETE, etc.) and supports various
  * content types (JSON, form data, etc.).
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Component
 public class HttpClientManager implements InitializingBean {

@@ -23,7 +23,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * Mapper interface for Model entity. Provides basic CRUD operations for model data
  * persistence.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface ModelMapper extends BaseMapper<ModelEntity> {
 

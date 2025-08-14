@@ -25,7 +25,7 @@ import lombok.Getter;
  * Enum representing different types of applications in the system. Defines the supported
  * application types and their corresponding values.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

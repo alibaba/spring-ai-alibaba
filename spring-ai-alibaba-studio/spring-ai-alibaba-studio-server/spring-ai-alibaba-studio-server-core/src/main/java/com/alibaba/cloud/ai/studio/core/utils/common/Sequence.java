@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * A distributed unique ID generator based on Twitter's Snowflake algorithm. Generates
  * 64-bit unique IDs using timestamp, datacenter ID, worker ID and sequence number.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class Sequence {
 

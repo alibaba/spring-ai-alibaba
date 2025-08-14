@@ -26,7 +26,7 @@ import java.io.Serializable;
  * Configuration for document processing. Defines how documents are split into chunks for
  * processing.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

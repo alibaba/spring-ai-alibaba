@@ -72,7 +72,7 @@ import static com.alibaba.cloud.ai.studio.core.base.constants.CacheConstants.CAC
  * credential management with RSA encryption - Model type and parameter validation -
  * Caching and performance optimization - Comprehensive error handling
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 @RestController

@@ -20,7 +20,7 @@ package com.alibaba.cloud.ai.studio.core.workflow.constants;
  * Title Workflow constants.<br>
  * Description Workflow constants.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 public interface WorkflowConstants {

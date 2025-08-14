@@ -52,7 +52,7 @@ import java.util.Objects;
  * Pipeline for processing and indexing knowledge base documents. Handles document
  * parsing, transformation, and storage in vector store.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Service
 @Slf4j

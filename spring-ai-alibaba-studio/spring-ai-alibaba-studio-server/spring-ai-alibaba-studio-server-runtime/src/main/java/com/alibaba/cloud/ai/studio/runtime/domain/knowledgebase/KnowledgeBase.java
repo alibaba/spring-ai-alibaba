@@ -28,7 +28,7 @@ import java.util.Date;
 /**
  * Represents a knowledge base entity that stores and manages knowledge resources.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class KnowledgeBase implements Serializable {

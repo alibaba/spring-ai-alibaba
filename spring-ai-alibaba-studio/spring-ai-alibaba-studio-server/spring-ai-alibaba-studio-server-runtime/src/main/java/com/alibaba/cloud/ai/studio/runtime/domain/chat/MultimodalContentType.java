@@ -24,7 +24,7 @@ import lombok.Getter;
  * Enum representing different types of multimodal content. Defines the supported content
  * types for multimodal messages.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

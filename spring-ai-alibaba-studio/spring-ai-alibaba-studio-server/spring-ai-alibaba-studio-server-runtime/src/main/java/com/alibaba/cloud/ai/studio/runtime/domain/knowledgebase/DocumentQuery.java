@@ -25,7 +25,7 @@ import lombok.EqualsAndHashCode;
 /**
  * Query model for document operations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @EqualsAndHashCode(callSuper = true)

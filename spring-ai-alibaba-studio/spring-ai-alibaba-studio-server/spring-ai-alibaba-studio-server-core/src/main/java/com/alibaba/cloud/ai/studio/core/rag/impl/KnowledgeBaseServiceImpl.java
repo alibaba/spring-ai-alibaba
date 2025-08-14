@@ -58,7 +58,7 @@ import static com.alibaba.cloud.ai.studio.core.base.constants.CacheConstants.CAC
  * bases including creation, retrieval, updating, and deletion. Manages caching and vector
  * store operations for knowledge bases.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Service
 public class KnowledgeBaseServiceImpl extends ServiceImpl<KnowledgeBaseMapper, KnowledgeBaseEntity>

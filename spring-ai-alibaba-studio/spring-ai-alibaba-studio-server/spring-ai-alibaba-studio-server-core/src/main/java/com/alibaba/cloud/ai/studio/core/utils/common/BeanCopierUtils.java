@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  * Utility class for copying properties between Java beans using CGLIB BeanCopier.
  * Provides efficient and type-safe bean property copying operations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 public class BeanCopierUtils {

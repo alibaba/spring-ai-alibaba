@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * A generic class for handling paginated data lists.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 @AllArgsConstructor

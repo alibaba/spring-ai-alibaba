@@ -44,7 +44,7 @@ import java.util.Objects;
  * Controller for managing knowledge bases and document retrieval operations. Provides
  * REST endpoints for CRUD operations on knowledge bases and document retrieval.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @RestController()
 @Tag(name = "rag_knowledge")

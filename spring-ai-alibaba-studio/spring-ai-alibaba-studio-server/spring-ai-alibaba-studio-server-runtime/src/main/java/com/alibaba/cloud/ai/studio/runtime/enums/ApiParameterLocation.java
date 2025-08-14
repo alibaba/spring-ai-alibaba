@@ -25,7 +25,7 @@ import java.util.Optional;
 /**
  * Enum representing the location of API parameters in HTTP requests.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

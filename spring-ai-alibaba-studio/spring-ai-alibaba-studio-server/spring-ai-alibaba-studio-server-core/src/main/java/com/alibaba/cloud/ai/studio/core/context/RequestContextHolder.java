@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.studio.runtime.domain.RequestContext;
  * A holder class for managing request context in a thread-local manner. Provides methods
  * to set, get and clear the request context for the current thread.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class RequestContextHolder {
 

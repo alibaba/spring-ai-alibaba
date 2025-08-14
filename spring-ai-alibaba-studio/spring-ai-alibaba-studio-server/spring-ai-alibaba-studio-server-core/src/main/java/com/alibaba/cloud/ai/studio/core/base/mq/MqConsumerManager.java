@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * MQ Consumer Manager Manages multiple consumers and provides message consumption
  * capabilities
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 @Component

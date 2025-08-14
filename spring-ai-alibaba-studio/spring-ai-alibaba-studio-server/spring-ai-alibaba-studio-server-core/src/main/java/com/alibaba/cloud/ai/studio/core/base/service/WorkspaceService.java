@@ -24,7 +24,7 @@ import com.alibaba.cloud.ai.studio.runtime.domain.account.Workspace;
  * Service interface for managing workspaces. Provides CRUD operations and workspace
  * listing functionality.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface WorkspaceService {
 

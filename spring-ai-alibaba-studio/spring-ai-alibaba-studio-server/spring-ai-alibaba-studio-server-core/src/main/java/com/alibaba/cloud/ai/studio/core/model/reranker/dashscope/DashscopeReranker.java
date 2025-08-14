@@ -33,7 +33,7 @@ import java.util.List;
  * Implementation of DocumentRanker using DashScope's reranking service. Reranks documents
  * based on their relevance to a given query.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 public class DashscopeReranker implements DocumentPostProcessor {

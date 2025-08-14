@@ -35,7 +35,7 @@ import java.util.List;
  * Service interface for managing documents in the knowledge base. Handles document
  * creation, indexing, and chunk management operations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 public interface DocumentService {

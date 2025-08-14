@@ -44,7 +44,7 @@ import java.util.Objects;
  * Account management controller that handles user account operations. Provides Restful
  * APIs for account CRUD operations and profile management.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @RestController
 @Tag(name = "account")

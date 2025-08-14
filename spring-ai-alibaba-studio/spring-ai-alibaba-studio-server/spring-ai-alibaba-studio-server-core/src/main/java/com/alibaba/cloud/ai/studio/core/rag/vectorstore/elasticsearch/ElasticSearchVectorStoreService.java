@@ -65,7 +65,7 @@ import static com.alibaba.cloud.ai.studio.core.rag.RagConstants.*;
  * vector indices and document chunks in Elasticsearch. Note: Spring AI does not support
  * index management, so we implement it ourselves.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Service
 @Slf4j

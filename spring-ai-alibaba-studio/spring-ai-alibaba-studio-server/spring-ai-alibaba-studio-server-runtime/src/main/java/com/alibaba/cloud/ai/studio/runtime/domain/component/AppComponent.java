@@ -26,7 +26,7 @@ import java.util.Date;
  * Represents an application component in the system.
  *
  * @author guning.lt
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class AppComponent implements Serializable {

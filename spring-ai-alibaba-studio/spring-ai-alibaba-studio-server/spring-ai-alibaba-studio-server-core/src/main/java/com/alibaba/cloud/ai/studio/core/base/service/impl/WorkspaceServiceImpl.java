@@ -49,7 +49,7 @@ import static com.alibaba.cloud.ai.studio.core.base.constants.CacheConstants.CAC
  * Implementation of workspace service that handles workspace CRUD operations. Provides
  * functionality for creating, updating, deleting, and querying workspaces.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Service
 public class WorkspaceServiceImpl extends ServiceImpl<WorkspaceMapper, WorkspaceEntity> implements WorkspaceService {

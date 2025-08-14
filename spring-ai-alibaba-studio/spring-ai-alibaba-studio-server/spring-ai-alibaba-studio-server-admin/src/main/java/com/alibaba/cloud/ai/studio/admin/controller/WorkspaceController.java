@@ -34,7 +34,7 @@ import java.util.Objects;
 /**
  * Controller for managing workspaces. Provides CRUD operations for workspace resources.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @RestController
 @Tag(name = "workspace")

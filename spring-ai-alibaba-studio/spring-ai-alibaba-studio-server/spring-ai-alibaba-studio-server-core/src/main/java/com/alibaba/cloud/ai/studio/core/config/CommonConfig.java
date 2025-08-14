@@ -31,7 +31,7 @@ import static com.alibaba.cloud.ai.studio.runtime.domain.workflow.NodeTypeEnum.S
  * Common configuration class for Studio service. Contains various configuration
  * parameters for conversation, workflow, and system behavior.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Configuration

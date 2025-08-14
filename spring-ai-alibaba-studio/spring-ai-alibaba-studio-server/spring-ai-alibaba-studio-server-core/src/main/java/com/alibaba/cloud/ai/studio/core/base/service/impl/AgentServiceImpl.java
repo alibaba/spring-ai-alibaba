@@ -56,7 +56,7 @@ import static com.alibaba.cloud.ai.studio.core.utils.LogUtils.SUCCESS;
  * Implementation of agent service for handling agent inference requests. Supports both
  * basic and workflow agent types with synchronous and streaming responses.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Service
 public class AgentServiceImpl implements AgentService {

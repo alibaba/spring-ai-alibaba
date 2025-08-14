@@ -25,7 +25,7 @@ import lombok.EqualsAndHashCode;
  * functionality.
  *
  * @author guning.lt
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @EqualsAndHashCode(callSuper = true)
 @Data

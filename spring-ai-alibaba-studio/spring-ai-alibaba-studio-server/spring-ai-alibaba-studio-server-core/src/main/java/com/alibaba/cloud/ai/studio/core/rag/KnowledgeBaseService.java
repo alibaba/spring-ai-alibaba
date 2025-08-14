@@ -26,7 +26,7 @@ import java.util.List;
  * Service interface for managing knowledge bases. Provides CRUD operations and query
  * capabilities for knowledge base resources.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface KnowledgeBaseService {
 

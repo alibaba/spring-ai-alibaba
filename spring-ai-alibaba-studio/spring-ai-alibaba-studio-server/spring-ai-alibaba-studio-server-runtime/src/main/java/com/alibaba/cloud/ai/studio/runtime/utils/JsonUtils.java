@@ -31,7 +31,7 @@ import java.util.Map;
  * Utility class for JSON operations. Provides methods for JSON serialization and
  * deserialization.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class JsonUtils {
 

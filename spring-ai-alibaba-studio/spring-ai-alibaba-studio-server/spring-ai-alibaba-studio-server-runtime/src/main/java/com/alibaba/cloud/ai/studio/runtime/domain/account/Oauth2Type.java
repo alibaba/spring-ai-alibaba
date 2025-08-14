@@ -24,7 +24,7 @@ import lombok.Getter;
  * Title oauth2 type.<br>
  * Description oauth2 type like github, google, wechat.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

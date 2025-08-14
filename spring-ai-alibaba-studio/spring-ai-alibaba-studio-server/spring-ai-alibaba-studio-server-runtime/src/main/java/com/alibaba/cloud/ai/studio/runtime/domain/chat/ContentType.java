@@ -24,7 +24,7 @@ import lombok.Getter;
  * Enum representing different types of content in chat messages. Currently supports text
  * and multimodal content types.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

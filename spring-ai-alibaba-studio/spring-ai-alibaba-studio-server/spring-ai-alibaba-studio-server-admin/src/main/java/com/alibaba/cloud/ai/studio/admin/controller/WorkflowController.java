@@ -97,7 +97,7 @@ import static com.alibaba.cloud.ai.studio.core.utils.LogUtils.FAIL;
  * providing flexibility for different use cases. It integrates with Redis for context
  * management and supports workspace-based isolation.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 @RestController

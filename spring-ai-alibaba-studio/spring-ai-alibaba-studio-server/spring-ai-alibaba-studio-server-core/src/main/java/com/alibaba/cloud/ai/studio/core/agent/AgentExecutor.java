@@ -24,7 +24,7 @@ import reactor.core.publisher.Flux;
  * Interface for executing agent operations. Provides methods for both streaming and
  * synchronous execution of agent tasks.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface AgentExecutor {
 

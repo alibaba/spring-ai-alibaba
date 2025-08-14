@@ -28,7 +28,7 @@ import java.util.List;
  * Service interface for managing applications and their versions. Provides CRUD
  * operations and version management for applications.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface AppService {
 

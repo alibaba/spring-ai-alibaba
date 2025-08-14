@@ -32,7 +32,7 @@ import java.util.UUID;
  * Utility class for logging operations. Provides methods for different log levels and
  * specialized logging for monitoring, tracing, and statistics.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class LogUtils {
 

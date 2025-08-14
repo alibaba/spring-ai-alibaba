@@ -20,7 +20,7 @@ package com.alibaba.cloud.ai.studio.core.utils.common;
  * A callback interface for bean copying operations. Provides a mechanism to customize the
  * copying process between source and target objects.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 public interface BeanCopierUtilsCallback<S, T> {

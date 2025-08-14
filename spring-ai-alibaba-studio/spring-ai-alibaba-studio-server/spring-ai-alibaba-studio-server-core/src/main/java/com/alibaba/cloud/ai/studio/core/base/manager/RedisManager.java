@@ -32,7 +32,7 @@ import java.util.Objects;
  * Redis manager for handling Redis operations. Provides methods for key-value storage,
  * atomic operations, sets, and distributed locking.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 @Component

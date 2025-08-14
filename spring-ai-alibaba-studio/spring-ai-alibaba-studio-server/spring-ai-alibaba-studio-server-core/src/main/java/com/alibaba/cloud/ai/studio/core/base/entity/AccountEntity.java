@@ -29,7 +29,7 @@ import java.util.Date;
 /**
  * Account entity representing user account information.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

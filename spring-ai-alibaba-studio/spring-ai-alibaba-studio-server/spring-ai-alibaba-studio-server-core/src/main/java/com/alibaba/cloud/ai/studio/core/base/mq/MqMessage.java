@@ -31,7 +31,7 @@ import java.util.Map;
  * A generic message class for message queue operations. Supports different message types
  * and properties.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 @Builder

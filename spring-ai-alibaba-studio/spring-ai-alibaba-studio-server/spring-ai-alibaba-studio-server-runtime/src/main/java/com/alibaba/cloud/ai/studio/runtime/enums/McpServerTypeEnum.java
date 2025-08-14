@@ -20,7 +20,7 @@ package com.alibaba.cloud.ai.studio.runtime.enums;
  * Enum representing different types of MCP servers.
  *
  * @author guning.lt
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public enum McpServerTypeEnum {
 

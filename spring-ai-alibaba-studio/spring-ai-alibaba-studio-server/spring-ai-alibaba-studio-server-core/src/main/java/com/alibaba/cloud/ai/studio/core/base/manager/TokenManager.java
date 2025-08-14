@@ -31,7 +31,7 @@ import java.util.Map;
  * JWT token manager for handling authentication tokens. Manages the generation, storage,
  * and validation of access and refresh tokens.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Component
 @RequiredArgsConstructor

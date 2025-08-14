@@ -25,7 +25,7 @@ import lombok.experimental.SuperBuilder;
  * Title web upload policy for oss.<br>
  * Description //TODO.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @EqualsAndHashCode(callSuper = true)

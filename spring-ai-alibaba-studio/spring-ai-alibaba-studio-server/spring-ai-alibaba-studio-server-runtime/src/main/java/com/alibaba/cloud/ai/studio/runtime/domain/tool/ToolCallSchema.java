@@ -24,7 +24,7 @@ import java.io.Serializable;
 /**
  * Schema for tool call definition.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Utility class for managing thread pools in the application.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class ThreadPoolUtils {
 

@@ -28,7 +28,7 @@ import java.util.Map;
 /**
  * Utility class for handling HTTP request streams and headers.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class HttpStreamUtils {
 

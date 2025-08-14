@@ -29,7 +29,7 @@ import java.util.List;
  * Service interface for managing plugins and tools. Provides CRUD operations and
  * management functions for plugins and their associated tools.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface PluginService {
 

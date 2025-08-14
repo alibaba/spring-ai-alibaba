@@ -26,7 +26,7 @@ import java.security.NoSuchAlgorithmException;
  * Utility class for cryptographic operations. Provides methods for string masking and
  * hashing.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class CryptoUtils {
 

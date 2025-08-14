@@ -65,7 +65,7 @@ import static com.alibaba.cloud.ai.studio.core.base.constants.CacheConstants.CAC
  * Account service implementation for managing user accounts and authentication. Handles
  * account operations including login, registration, and profile management.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Service
 @RequiredArgsConstructor

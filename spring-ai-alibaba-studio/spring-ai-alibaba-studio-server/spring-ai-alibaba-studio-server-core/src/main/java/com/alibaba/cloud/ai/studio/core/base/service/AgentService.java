@@ -24,7 +24,7 @@ import reactor.core.publisher.Flux;
  * Agent inference service interface. Provides methods for agent communication and
  * streaming responses.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface AgentService {
 

@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  * A text splitter that splits text based on a regular expression pattern. It supports
  * overlapping segments to maintain context between splits.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class RegexTextSplitter extends TextSplitter {
 

@@ -52,7 +52,7 @@ import static com.alibaba.cloud.ai.studio.core.utils.LogUtils.SUCCESS;
  * A document retriever that searches across multiple vector stores. It supports parallel
  * retrieval from different knowledge bases and optional document reranking.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @RequiredArgsConstructor

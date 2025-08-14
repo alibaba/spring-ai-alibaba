@@ -34,7 +34,7 @@ import org.springframework.context.annotation.FilterType;
  * properties - Graceful shutdown handling - Middleware integration (MySQL, Redis,
  * RocketMQ) - Support for agent and workflow-based AI applications
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 // @SpringBootApplication(scanBasePackages = "com.alibaba.cloud.ai.studio")
 @SpringBootApplication

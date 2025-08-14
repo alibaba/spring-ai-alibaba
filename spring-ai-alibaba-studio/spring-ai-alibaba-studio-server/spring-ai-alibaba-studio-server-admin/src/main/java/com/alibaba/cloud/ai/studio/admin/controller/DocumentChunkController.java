@@ -40,7 +40,7 @@ import java.util.Objects;
  * Controller for managing document chunks in RAG system. Provides CRUD operations for
  * document chunks and supports batch operations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @RestController
 @Tag(name = "rag_chunk")

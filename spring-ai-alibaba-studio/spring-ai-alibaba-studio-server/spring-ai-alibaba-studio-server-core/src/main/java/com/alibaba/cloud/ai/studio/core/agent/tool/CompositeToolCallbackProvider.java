@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  * A composite tool callback provider that manages and provides tool callbacks from
  * multiple sources: plugins, MCP servers, and application components.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 @RequiredArgsConstructor

@@ -52,7 +52,7 @@ import static com.alibaba.cloud.ai.studio.runtime.enums.ErrorCode.APP_COMPONENT_
  * component lifecycle management.
  *
  * @author guning.lt
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 @Service

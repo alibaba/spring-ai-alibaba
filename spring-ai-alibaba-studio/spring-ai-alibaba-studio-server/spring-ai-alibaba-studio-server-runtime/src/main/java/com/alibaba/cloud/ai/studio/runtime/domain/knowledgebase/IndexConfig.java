@@ -28,7 +28,7 @@ import java.io.Serializable;
  * Configuration for knowledge base indexing. Defines the settings required for creating
  * and managing knowledge base indices.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

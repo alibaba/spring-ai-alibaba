@@ -20,7 +20,7 @@ package com.alibaba.cloud.ai.studio.core.base.mq;
  * Interface for handling message sending callbacks. Provides methods to handle successful
  * message delivery and error cases.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface SendCallback {
 

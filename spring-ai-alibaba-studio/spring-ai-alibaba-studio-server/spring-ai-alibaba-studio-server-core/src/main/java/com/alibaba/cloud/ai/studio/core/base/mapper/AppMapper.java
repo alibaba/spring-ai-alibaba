@@ -23,7 +23,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * Mapper interface for application-related database operations. Provides basic CRUD
  * operations for AppEntity using MyBatis-Plus.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface AppMapper extends BaseMapper<AppEntity> {
 

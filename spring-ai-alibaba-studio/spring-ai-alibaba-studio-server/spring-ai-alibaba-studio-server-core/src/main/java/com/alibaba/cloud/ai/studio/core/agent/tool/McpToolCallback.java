@@ -36,7 +36,7 @@ import java.util.Map;
  * MCP tool callback implementation. Handles the execution of MCP tools and manages
  * tool-related operations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @RequiredArgsConstructor
 public class McpToolCallback implements AgentToolCallback {

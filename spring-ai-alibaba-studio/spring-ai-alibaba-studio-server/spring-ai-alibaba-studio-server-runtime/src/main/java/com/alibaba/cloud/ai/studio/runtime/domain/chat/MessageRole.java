@@ -23,7 +23,7 @@ import lombok.Getter;
  * Enum representing different roles in a chat message. Defines the possible roles that
  * can be assigned to messages in a conversation.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Getter
 public enum MessageRole {

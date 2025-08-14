@@ -61,7 +61,7 @@ import static com.alibaba.cloud.ai.studio.core.base.constants.CacheConstants.*;
  * Plugin service implementation for managing plugins and tools. Handles CRUD operations
  * for plugins and their associated tools.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Service
 public class PluginServiceImpl extends ServiceImpl<PluginMapper, PluginEntity> implements PluginService {

@@ -25,7 +25,7 @@ import lombok.Getter;
  * Enum representing different types of plugins in the system. Defines whether a plugin is
  * official or custom.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

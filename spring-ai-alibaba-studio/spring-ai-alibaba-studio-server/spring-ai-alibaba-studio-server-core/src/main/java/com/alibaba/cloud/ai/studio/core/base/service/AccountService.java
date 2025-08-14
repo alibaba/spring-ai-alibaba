@@ -31,7 +31,7 @@ import com.alibaba.cloud.ai.studio.runtime.domain.account.Oauth2User;
  * Account management service interface. Provides operations for user authentication,
  * account management, and profile handling.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface AccountService extends IService<AccountEntity> {
 

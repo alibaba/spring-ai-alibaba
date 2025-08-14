@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Configuration;
  * Configuration class for MyBatis-Plus integration. Provides pagination support and
  * mapper scanning configuration.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Configuration
 @MapperScan("com.alibaba.cloud.ai.studio.core.base.mapper")

@@ -23,7 +23,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * Mapper interface for managing API keys. Provides database operations for API key
  * entities.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface ApiKeyMapper extends BaseMapper<ApiKeyEntity> {
 

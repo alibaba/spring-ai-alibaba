@@ -23,7 +23,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * Mapper interface for Knowledge Base entity. Provides basic CRUD operations for
  * knowledge base management.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface KnowledgeBaseMapper extends BaseMapper<KnowledgeBaseEntity> {
 

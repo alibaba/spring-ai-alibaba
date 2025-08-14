@@ -21,7 +21,7 @@ package com.alibaba.cloud.ai.studio.runtime.domain.audio;
  * available voice types that can be used for text-to-speech or voice-related operations
  * in the system.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public enum Voice {
 

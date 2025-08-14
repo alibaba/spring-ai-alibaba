@@ -24,7 +24,7 @@ import java.io.Serializable;
 /**
  * Request model for changing user password.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class ChangePasswordRequest implements Serializable {

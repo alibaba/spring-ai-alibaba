@@ -71,7 +71,7 @@ import java.util.stream.Collectors;
  * can be referenced by other applications, enabling modular application development.
  *
  * @author guning.lt
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @RestController
 @Tag(name = "app_component")

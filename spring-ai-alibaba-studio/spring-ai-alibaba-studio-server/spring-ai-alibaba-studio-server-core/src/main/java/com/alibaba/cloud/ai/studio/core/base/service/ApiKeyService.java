@@ -24,7 +24,7 @@ import com.alibaba.cloud.ai.studio.runtime.domain.account.ApiKey;
  * Service interface for managing API keys. Provides operations for creating, updating,
  * deleting, and retrieving API keys.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface ApiKeyService {
 

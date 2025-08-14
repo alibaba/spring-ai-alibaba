@@ -25,7 +25,7 @@ import java.io.Serializable;
 /**
  * Query model for document retrieval operations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class DocumentRetrieverQuery implements Serializable {

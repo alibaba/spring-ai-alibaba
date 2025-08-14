@@ -21,7 +21,7 @@ import org.springframework.lang.Nullable;
 /**
  * Interface defining options for reranking results.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface RerankerOptions {
 

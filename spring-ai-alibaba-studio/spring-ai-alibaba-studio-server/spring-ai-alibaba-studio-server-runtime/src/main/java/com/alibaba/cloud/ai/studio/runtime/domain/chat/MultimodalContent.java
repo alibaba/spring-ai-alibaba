@@ -24,7 +24,7 @@ import java.io.Serializable;
  * Represents multimodal content that can contain different types of data (text, images,
  * etc.)
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class MultimodalContent implements Serializable {

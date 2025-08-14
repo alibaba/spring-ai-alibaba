@@ -32,7 +32,7 @@ import java.util.Objects;
  * history with a maximum size limit and provides methods to add, retrieve, and clear
  * messages.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Component
 public class ConversationChatMemory implements ChatMemory {

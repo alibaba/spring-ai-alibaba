@@ -22,7 +22,7 @@ import lombok.Getter;
  * Enum representing the status of MCP server
  *
  * @author guning.lt
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Getter
 public enum McpServerStatusEnum {

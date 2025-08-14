@@ -24,7 +24,7 @@ import java.io.Serializable;
  * Title oauth2 user info.<br>
  * Description oauth2 user info.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

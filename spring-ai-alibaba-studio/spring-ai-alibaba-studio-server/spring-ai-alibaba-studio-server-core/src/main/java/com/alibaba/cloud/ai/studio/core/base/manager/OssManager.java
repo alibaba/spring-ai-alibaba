@@ -54,7 +54,7 @@ import static com.alibaba.cloud.ai.studio.core.utils.LogUtils.SUCCESS;
  * Title oss manager.<br>
  * Description oss manager.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Component
 @Slf4j

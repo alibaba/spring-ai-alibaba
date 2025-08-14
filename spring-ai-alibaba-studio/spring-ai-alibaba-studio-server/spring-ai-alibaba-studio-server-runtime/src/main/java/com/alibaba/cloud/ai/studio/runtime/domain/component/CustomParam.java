@@ -25,7 +25,7 @@ import java.util.List;
  * Custom parameter model for application components and plugins
  *
  * @author guning.lt
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  **/
 @Data
 public class CustomParam implements Serializable {

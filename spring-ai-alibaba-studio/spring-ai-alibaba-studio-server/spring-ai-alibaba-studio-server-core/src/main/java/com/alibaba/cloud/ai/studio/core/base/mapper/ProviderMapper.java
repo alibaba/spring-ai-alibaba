@@ -23,7 +23,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * Mapper interface for managing provider data. Extends BaseMapper to provide basic CRUD
  * operations for ProviderEntity.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface ProviderMapper extends BaseMapper<ProviderEntity> {
 

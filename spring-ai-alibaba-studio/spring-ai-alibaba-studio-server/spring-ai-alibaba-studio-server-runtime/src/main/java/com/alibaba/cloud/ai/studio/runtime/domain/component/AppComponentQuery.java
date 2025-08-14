@@ -27,7 +27,7 @@ import java.util.List;
  * Query parameters for application component operations
  *
  * @author guning.lt
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @EqualsAndHashCode(callSuper = true)

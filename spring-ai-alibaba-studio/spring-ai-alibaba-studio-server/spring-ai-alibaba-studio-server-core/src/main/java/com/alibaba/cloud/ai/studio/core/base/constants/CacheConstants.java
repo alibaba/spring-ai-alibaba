@@ -21,7 +21,7 @@ import java.time.Duration;
 /**
  * Cache-related constants for the application.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface CacheConstants {
 

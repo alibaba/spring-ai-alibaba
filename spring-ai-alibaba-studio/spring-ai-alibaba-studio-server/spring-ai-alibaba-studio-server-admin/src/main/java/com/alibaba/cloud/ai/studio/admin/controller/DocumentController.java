@@ -41,7 +41,7 @@ import java.util.Objects;
  * REST controller for managing documents in knowledge bases. Provides CRUD operations and
  * document management functionality.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @RestController
 @Tag(name = "rag_document")

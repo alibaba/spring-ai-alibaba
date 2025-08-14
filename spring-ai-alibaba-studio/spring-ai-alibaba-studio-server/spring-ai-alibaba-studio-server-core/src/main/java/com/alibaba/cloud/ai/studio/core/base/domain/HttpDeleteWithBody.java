@@ -24,7 +24,7 @@ import java.net.URI;
  * A custom HTTP DELETE request implementation that supports request body. Extends
  * HttpEntityEnclosingRequestBase to enable sending data in the request body.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class HttpDeleteWithBody extends HttpEntityEnclosingRequestBase {
 

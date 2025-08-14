@@ -26,7 +26,7 @@ import java.util.Base64;
  * Password encryption utility using Argon2id algorithm. Provides methods for password
  * hashing and verification.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class PasswordCryptUtils {
 

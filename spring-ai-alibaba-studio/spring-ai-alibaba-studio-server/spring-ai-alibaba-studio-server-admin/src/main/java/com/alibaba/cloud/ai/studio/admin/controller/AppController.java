@@ -42,7 +42,7 @@ import java.util.Objects;
  * REST controller for managing agent applications. Handles CRUD operations, version
  * management, and application lifecycle.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @RestController

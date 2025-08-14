@@ -24,7 +24,7 @@ import lombok.Getter;
  * Enum representing different types of tool calls in the system. Each type corresponds to
  * a specific interaction pattern between the client and tools.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

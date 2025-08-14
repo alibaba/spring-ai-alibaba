@@ -38,7 +38,7 @@ import static com.alibaba.cloud.ai.studio.core.utils.LogUtils.SUCCESS;
  * Authentication and logging aspect for web controllers. Provides request tracing,
  * monitoring, and logging functionality.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 @Component

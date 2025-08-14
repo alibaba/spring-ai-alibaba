@@ -26,7 +26,7 @@ import java.util.Base64;
  * Utility class for handling media data operations. Provides methods for encoding media
  * resources into base64 format.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class MediaDataUtils {
 

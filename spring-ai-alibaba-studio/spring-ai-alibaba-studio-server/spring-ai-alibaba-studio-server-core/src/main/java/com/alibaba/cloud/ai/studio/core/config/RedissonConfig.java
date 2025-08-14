@@ -29,7 +29,7 @@ import org.springframework.context.annotation.Configuration;
  * Title redisson config.<br>
  * Description redisson config.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Configuration

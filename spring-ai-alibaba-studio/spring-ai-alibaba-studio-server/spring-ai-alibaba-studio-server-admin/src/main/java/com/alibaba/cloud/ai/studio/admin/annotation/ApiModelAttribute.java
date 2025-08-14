@@ -25,7 +25,7 @@ import java.lang.annotation.*;
  * Title api model attribute.<br>
  * Description api model attribute.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Target({ ElementType.PARAMETER, ElementType.METHOD })

@@ -20,7 +20,7 @@ package com.alibaba.cloud.ai.studio.core.agent;
  * Abstract base class for agent executors. Provides the foundation for implementing
  * specific agent execution strategies.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public abstract class AbstractAgentExecutor implements AgentExecutor {
 

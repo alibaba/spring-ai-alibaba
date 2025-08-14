@@ -23,7 +23,7 @@ import lombok.Getter;
 /**
  * Represents the status of an agent in the system.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

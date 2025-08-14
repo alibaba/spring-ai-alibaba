@@ -28,7 +28,7 @@ import java.util.Locale;
 /**
  * Utility class for date and time operations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
 

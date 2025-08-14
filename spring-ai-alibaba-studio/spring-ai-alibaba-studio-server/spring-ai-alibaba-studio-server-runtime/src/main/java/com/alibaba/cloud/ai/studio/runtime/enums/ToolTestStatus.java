@@ -24,7 +24,7 @@ import lombok.Getter;
 /**
  * Enum representing the test status of a tool.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

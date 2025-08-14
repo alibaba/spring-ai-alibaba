@@ -22,7 +22,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * Configuration properties for SAA Studio application.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @ConfigurationProperties(StudioProperties.CONFIG_PREFIX)

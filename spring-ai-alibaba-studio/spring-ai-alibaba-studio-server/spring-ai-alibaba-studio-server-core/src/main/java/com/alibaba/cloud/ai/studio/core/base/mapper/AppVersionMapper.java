@@ -23,7 +23,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * Mapper interface for managing application version data. Provides basic CRUD operations
  * for AppVersionEntity.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface AppVersionMapper extends BaseMapper<AppVersionEntity> {
 

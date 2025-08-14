@@ -25,7 +25,7 @@ import com.alibaba.cloud.ai.studio.runtime.domain.Error;
 /**
  * Custom exception class for handling business logic errors in the application.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @EqualsAndHashCode(callSuper = true)

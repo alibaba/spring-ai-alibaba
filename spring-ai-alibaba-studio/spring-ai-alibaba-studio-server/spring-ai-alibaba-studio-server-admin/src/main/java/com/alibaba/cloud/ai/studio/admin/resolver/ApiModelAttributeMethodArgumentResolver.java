@@ -33,7 +33,7 @@ import java.util.Map;
  * Resolver for handling API model attributes in method arguments. Converts request
  * parameters to annotated model objects.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class ApiModelAttributeMethodArgumentResolver implements HandlerMethodArgumentResolver {
 

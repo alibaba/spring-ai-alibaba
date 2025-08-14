@@ -25,7 +25,7 @@ import java.util.Date;
 /**
  * Entity class representing an API key record.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

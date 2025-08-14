@@ -35,7 +35,7 @@ import java.util.Map;
  * Tool callback implementation for app components. Handles the execution of agent and
  * workflow components.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @RequiredArgsConstructor
 public class AppComponentToolCallback implements AgentToolCallback {

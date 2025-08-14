@@ -23,7 +23,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * Mapper interface for account-related database operations. Extends BaseMapper to provide
  * basic CRUD operations for AccountEntity.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface AccountMapper extends BaseMapper<AccountEntity> {
 

@@ -27,7 +27,7 @@ import java.io.Serializable;
 /**
  * Base query class for pagination and filtering.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

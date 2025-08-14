@@ -27,7 +27,7 @@ import java.util.List;
  * Configuration class for application components
  *
  * @author guning.lt
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class AppComponentConfig implements Serializable {

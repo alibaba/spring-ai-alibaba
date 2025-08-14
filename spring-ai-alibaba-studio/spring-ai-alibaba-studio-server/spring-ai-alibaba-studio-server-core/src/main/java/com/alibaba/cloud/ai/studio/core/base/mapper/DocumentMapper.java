@@ -23,7 +23,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * Mapper interface for document operations. Provides basic CRUD operations for document
  * entities.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface DocumentMapper extends BaseMapper<DocumentEntity> {
 

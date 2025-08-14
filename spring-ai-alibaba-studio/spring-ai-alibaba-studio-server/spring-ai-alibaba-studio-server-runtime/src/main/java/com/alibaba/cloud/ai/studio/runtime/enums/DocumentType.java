@@ -25,7 +25,7 @@ import lombok.Getter;
  * Enum representing different types of documents. Defines the supported document source
  * types in the system.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Getter
 @AllArgsConstructor

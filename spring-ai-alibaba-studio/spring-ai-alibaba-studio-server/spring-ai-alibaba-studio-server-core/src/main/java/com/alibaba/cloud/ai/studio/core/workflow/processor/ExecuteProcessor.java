@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * Interface for workflow execution processing
  *
- * @since 1.0.0-beta
+ * @since 1.0.0.3
  */
 public interface ExecuteProcessor {
 

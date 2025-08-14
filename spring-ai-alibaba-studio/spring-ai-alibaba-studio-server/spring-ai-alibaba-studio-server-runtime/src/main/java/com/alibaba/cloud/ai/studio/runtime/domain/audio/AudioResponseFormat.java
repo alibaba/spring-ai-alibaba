@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Audio response format enum. Defines supported audio formats for responses.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public enum AudioResponseFormat {
 

@@ -61,7 +61,7 @@ import static com.alibaba.cloud.ai.studio.core.base.constants.CacheConstants.*;
  * Implementation of the application service. Handles CRUD operations and version
  * management for applications.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Service
 public class AppServiceImpl extends ServiceImpl<AppMapper, AppEntity> implements AppService {

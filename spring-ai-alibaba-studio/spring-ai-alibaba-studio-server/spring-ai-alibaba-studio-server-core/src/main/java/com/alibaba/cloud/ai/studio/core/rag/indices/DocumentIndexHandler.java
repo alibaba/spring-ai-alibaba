@@ -44,7 +44,7 @@ import static com.alibaba.cloud.ai.studio.core.utils.LogUtils.SUCCESS;
  * Handler for document indexing operations. Processes documents through parsing,
  * chunking, and vector storage.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Component
 @RequiredArgsConstructor

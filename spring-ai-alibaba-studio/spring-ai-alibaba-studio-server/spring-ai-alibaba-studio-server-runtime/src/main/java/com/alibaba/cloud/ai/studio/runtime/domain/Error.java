@@ -27,7 +27,7 @@ import java.io.Serializable;
 /**
  * Standard error response model for API responses.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

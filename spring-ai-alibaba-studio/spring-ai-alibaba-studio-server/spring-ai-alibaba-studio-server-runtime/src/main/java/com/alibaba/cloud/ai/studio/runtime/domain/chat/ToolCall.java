@@ -27,7 +27,7 @@ import java.io.Serializable;
  * Represents a tool call in the chat system. Contains information about the tool being
  * called and its execution details.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 @Builder

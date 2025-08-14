@@ -22,7 +22,7 @@ import lombok.Data;
 /**
  * Configuration options for DashScope reranker service.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class DashScopeRerankerOptions implements RerankerOptions {

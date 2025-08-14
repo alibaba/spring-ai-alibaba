@@ -30,7 +30,7 @@ import java.util.Date;
 /**
  * Document entity class representing a document in the system.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

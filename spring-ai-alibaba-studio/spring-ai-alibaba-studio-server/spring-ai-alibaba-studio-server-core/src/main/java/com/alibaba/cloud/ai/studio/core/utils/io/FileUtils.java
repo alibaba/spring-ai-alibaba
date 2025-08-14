@@ -23,7 +23,7 @@ import org.springframework.http.MediaType;
  * Utility class for file operations. Provides methods for handling file-related
  * operations such as content type detection.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class FileUtils {
 

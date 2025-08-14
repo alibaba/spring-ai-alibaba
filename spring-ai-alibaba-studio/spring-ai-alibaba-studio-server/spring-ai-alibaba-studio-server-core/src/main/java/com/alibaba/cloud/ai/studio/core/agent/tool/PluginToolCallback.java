@@ -34,7 +34,7 @@ import java.util.Map;
 /**
  * Plugin tool callback implementation for handling tool execution requests.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class PluginToolCallback implements AgentToolCallback {
 

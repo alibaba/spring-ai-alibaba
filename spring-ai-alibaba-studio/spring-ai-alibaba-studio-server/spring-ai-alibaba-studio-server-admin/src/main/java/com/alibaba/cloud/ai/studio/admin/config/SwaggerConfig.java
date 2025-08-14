@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Configuration;
  * Swagger/OpenAPI configuration for API documentation. Configures API info and JWT
  * authentication security scheme.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Configuration

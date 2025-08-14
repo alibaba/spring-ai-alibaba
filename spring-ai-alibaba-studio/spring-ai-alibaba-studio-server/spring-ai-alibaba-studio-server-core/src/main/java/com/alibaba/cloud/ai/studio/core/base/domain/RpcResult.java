@@ -23,7 +23,7 @@ import lombok.Setter;
  * A wrapper class for RPC (Remote Procedure Call) results. Provides standardized response
  * format with success status, error handling, and response data.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Getter
 @Setter

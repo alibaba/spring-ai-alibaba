@@ -25,7 +25,7 @@ import lombok.Getter;
  * Enum representing different types of knowledge bases. Defines the structure type of
  * knowledge bases used in the system.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

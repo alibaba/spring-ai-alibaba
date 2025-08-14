@@ -23,7 +23,7 @@ import org.springframework.ai.tool.ToolCallback;
  * Title agent tool callback.<br>
  * Description agent tool callback.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 public interface AgentToolCallback extends ToolCallback {

@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * System clock implementation that provides efficient time access. Uses a background
  * thread to update the current time at regular intervals.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class SystemClock {
 

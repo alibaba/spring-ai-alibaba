@@ -24,7 +24,7 @@ import java.io.Serializable;
 /**
  * Model DTO class for representing AI model information.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class Model implements Serializable {

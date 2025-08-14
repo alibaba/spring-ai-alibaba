@@ -33,7 +33,7 @@ import java.nio.charset.StandardCharsets;
  * Utility class for handling HTTP response errors from different model providers.
  * Provides standardized error handling for DashScope and OpenAI API responses.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 public class ErrorHandlerUtils {

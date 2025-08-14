@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * Example model for tool configuration.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 @AllArgsConstructor

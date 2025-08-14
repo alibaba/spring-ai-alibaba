@@ -31,7 +31,7 @@ import java.util.Base64;
 /**
  * Utility class for RSA encryption and decryption operations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class RSACryptUtils {
 

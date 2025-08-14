@@ -28,7 +28,7 @@ import java.util.List;
  * Default implementation of document batching strategy for embedding processing. Splits
  * documents into batches of specified size for efficient processing.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class DefaultBatchingStrategy implements BatchingStrategy {
 

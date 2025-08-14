@@ -51,7 +51,7 @@ import static com.alibaba.cloud.ai.studio.core.utils.LogUtils.FAIL;
  * Global exception handler for the application. Handles various types of exceptions and
  * converts them into standardized error responses.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {

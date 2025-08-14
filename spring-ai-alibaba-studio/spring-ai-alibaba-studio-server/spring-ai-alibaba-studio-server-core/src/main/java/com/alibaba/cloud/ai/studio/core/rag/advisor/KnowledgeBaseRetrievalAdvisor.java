@@ -69,7 +69,7 @@ import static com.alibaba.cloud.ai.studio.core.rag.RagConstants.REQUEST_CONTEXT;
  * context. This advisor retrieves documents based on user queries and augments the system
  * prompt with retrieved content.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class KnowledgeBaseRetrievalAdvisor implements BaseAdvisor {
 

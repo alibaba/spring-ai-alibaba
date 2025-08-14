@@ -26,7 +26,7 @@ import reactor.core.publisher.Flux;
  * Title workflow agent executor.<br>
  * Description workflow agent executor.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Service()

@@ -41,7 +41,7 @@ import java.net.URL;
  * File manager for handling file operations including saving, loading and media type
  * detection.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 @Component

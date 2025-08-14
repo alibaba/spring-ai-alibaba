@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * Request model for creating a document in the knowledge base.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class CreateDocumentRequest implements Serializable {

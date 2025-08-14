@@ -51,7 +51,7 @@ import static com.alibaba.cloud.ai.studio.core.base.constants.CacheConstants.*;
  * Service implementation for managing API keys. Handles CRUD operations for API keys with
  * caching support.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Service
 public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyEntity> implements ApiKeyService {

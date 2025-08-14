@@ -36,7 +36,7 @@ import java.util.List;
  * Manager class for document retrieval operations. Handles the creation and execution of
  * document retrievers for knowledge bases.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Component
 @RequiredArgsConstructor

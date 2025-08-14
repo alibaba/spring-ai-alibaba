@@ -26,7 +26,7 @@ import java.util.Map;
  * MCP server tool call request
  *
  * @author guning.lt
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  **/
 @Data
 public class McpServerCallToolRequest implements Serializable {

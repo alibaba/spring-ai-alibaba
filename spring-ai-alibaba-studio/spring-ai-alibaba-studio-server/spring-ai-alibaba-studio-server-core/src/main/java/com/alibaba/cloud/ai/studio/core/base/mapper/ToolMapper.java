@@ -22,7 +22,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 /**
  * Mapper interface for Tool entity. Provides database operations for tool-related data.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface ToolMapper extends BaseMapper<ToolEntity> {
 

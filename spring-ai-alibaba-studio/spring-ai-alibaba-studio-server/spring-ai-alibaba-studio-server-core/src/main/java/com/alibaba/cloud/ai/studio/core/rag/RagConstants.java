@@ -19,7 +19,7 @@ package com.alibaba.cloud.ai.studio.core.rag;
 /**
  * Constants for RAG (Retrieval-Augmented Generation) service.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface RagConstants {
 

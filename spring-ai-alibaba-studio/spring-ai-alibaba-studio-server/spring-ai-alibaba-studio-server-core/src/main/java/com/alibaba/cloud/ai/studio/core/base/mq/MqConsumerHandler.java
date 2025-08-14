@@ -21,7 +21,7 @@ package com.alibaba.cloud.ai.studio.core.base.mq;
  * messages from a message queue.
  *
  * @param <T> the type of message to be handled
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface MqConsumerHandler<T> {
 

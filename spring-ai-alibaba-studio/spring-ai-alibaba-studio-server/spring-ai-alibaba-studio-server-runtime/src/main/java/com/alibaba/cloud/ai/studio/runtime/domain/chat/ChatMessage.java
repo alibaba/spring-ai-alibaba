@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * Represents a message in a chat conversation.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

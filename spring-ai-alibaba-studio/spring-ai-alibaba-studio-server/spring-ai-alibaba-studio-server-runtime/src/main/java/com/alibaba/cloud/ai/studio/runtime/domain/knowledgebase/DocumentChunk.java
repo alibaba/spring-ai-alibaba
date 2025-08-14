@@ -28,7 +28,7 @@ import java.io.Serializable;
  * Represents a chunk of a document in the knowledge base. Each chunk contains a portion
  * of the document's content along with metadata.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

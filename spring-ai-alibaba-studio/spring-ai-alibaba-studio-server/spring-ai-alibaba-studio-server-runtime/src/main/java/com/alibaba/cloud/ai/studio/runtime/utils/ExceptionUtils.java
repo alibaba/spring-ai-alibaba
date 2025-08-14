@@ -24,7 +24,7 @@ import com.alibaba.cloud.ai.studio.runtime.domain.Error;
  * Utility class for handling exceptions and converting them to standardized error
  * responses.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class ExceptionUtils {
 

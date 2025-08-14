@@ -30,7 +30,7 @@ import java.io.Serializable;
  * A generic result wrapper class for API responses. This class encapsulates the response
  * data, status, and error information.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

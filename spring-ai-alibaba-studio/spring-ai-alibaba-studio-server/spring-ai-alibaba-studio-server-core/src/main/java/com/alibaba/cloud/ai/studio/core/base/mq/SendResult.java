@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 /**
  * Represents the result of a message queue send operation.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

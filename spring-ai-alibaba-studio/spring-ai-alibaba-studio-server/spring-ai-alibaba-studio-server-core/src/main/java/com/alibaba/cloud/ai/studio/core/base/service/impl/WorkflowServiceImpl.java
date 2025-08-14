@@ -79,7 +79,7 @@ import static com.alibaba.cloud.ai.studio.core.utils.LogUtils.SUCCESS;
  * Title workspace service.<br>
  * Description workspace service.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Slf4j

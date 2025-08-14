@@ -33,7 +33,7 @@ import java.util.Map;
  * Example API controller for testing purposes. Provides sample endpoints for
  * order-related operations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @RestController
 @Tag(name = "test_example")

@@ -32,7 +32,7 @@ import java.util.Map;
  * Context class for agent requests and responses. Contains all necessary information for
  * processing agent interactions.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @EqualsAndHashCode(callSuper = true)

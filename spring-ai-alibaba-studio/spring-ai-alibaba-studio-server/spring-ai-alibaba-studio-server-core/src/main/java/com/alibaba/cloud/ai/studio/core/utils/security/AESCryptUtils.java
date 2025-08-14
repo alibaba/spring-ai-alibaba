@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * AES encryption and decryption utility class.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class AESCryptUtils {
 

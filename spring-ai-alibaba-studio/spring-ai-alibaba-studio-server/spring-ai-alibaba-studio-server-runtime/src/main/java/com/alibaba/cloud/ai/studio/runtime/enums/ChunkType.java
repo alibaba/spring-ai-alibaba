@@ -24,7 +24,7 @@ import lombok.Getter;
  * Enum representing different types of text chunking strategies. Each type defines a
  * specific method for dividing text into chunks.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

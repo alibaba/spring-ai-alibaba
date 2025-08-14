@@ -25,7 +25,7 @@ import java.util.Map;
  * Factory class for creating vector store services. Provides a centralized way to obtain
  * the appropriate vector store implementation based on configuration.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Component
 public class VectorStoreFactory {

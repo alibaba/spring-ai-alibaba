@@ -20,7 +20,7 @@ package org.springframework.ai.vectorstore;
  * Title search type.<br>
  * Description search type.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 public enum SearchType {

@@ -37,7 +37,7 @@ import java.util.function.Consumer;
 /**
  * Manages RocketMQ producers and provides message sending capabilities.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 @Component

@@ -29,7 +29,7 @@ import java.io.Serializable;
 /**
  * Policy for file upload operations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

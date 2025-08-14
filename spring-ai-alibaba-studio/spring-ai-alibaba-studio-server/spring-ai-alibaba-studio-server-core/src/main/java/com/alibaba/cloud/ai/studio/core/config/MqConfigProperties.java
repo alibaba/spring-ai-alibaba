@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * RocketMQ configuration properties for multiple producers and consumers
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 @Configuration

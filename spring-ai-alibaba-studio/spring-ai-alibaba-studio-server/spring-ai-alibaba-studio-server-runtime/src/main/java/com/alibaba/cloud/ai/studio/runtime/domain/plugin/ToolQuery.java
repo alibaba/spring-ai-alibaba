@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * Query model for tool-related operations.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @EqualsAndHashCode(callSuper = true)

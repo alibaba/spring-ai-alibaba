@@ -24,7 +24,7 @@ import lombok.Getter;
 /**
  * Account status enum. Represents different states of an account in the system.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

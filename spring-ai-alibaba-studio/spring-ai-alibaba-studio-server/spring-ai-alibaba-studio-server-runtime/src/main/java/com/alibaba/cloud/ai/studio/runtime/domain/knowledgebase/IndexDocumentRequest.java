@@ -24,7 +24,7 @@ import java.io.Serializable;
 /**
  * Request model for indexing documents in the knowledge base.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class IndexDocumentRequest implements Serializable {

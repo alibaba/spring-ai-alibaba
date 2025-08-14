@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * Represents an application in the Spring AI Alibaba Studio system.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 public class Application implements Serializable {

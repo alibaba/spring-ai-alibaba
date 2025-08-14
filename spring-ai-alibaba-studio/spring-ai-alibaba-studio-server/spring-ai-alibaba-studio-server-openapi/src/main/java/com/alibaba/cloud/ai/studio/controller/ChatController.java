@@ -71,7 +71,7 @@ import static com.alibaba.cloud.ai.studio.core.utils.LogUtils.SUCCESS;
  * Controller for handling chat and workflow completions. Provides endpoints for both
  * streaming and non-streaming responses.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 @RestController

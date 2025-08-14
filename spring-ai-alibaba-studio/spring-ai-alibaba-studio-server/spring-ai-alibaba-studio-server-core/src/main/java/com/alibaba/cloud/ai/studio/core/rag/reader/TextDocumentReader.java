@@ -30,7 +30,7 @@ import java.util.List;
  * A document reader implementation for text files. Reads and processes text content from
  * files or resources.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class TextDocumentReader implements DocumentReader {
 

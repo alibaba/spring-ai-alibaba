@@ -21,7 +21,7 @@ import java.util.UUID;
 /**
  * Utility class for generating various types of unique identifiers.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class IdGenerator {
 

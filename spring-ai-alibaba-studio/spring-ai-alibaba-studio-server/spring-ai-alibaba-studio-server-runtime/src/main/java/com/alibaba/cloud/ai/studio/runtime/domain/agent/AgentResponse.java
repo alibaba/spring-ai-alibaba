@@ -31,7 +31,7 @@ import java.io.Serializable;
 /**
  * Response model for agent completion requests.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

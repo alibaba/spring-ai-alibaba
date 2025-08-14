@@ -32,7 +32,7 @@ import java.util.Date;
  * Represents a document in the knowledge base system. Contains metadata and processing
  * information for documents.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

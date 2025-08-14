@@ -26,7 +26,7 @@ import java.io.Serializable;
 /**
  * Represents an audio output response containing audio data and metadata.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

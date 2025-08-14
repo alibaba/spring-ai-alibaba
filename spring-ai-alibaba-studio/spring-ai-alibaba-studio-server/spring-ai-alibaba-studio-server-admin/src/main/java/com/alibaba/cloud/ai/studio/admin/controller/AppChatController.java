@@ -46,7 +46,7 @@ import static com.alibaba.cloud.ai.studio.core.utils.LogUtils.SUCCESS;
  * Controller for handling chat completions and streaming responses. Provides endpoints
  * for both synchronous and streaming chat interactions.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @RestController
 @Tag(name = "app_chat")

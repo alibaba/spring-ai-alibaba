@@ -25,7 +25,7 @@ import java.util.Map;
  * Title tool arguments helper.<br>
  * Description tool arguments helper.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 public class ToolArgumentsHelper {

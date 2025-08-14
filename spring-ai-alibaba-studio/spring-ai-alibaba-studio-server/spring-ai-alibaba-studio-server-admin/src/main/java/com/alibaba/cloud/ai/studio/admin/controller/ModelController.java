@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  * model information. It supports: 1. Model selection by type and provider 2. Grouping
  * models by provider 3. Filtering enabled providers and their models
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 @RestController

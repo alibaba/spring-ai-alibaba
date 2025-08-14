@@ -75,7 +75,7 @@ import java.util.Optional;
  * Implementation of document service for managing documents in RAG (Retrieval-Augmented
  * Generation) system. Handles document CRUD operations, indexing, and chunk management.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Service

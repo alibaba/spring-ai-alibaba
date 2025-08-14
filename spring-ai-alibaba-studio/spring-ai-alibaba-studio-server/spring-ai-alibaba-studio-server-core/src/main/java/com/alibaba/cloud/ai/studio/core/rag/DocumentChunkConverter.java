@@ -29,7 +29,7 @@ import static com.alibaba.cloud.ai.studio.core.rag.RagConstants.*;
  * Utility class for converting between Document and DocumentChunk objects. Provides
  * methods to transform document data between different formats.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class DocumentChunkConverter {
 

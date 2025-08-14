@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  * Utility class for managing embedding model dimensions. Provides methods to retrieve
  * dimension information for different embedding models.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class EmbeddingModelDimension {
 

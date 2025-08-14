@@ -23,7 +23,7 @@ import org.springframework.util.MultiValueMap;
  * Utility class for API-related operations. Provides methods for generating user agent
  * strings and HTTP headers.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class ApiUtils {
 

@@ -29,7 +29,7 @@ import java.util.Date;
 /**
  * Entity class representing a plugin in the system.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Data
 @TableName("plugin")

@@ -25,7 +25,7 @@ import lombok.Getter;
  * Enum representing the status of document indexing process. Tracks the lifecycle of
  * document processing from upload to completion.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

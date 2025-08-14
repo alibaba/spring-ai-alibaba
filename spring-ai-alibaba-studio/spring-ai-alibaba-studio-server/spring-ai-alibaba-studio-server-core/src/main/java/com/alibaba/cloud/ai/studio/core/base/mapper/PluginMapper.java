@@ -23,7 +23,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * Mapper interface for plugin operations. Provides database access methods for plugin
  * entities.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public interface PluginMapper extends BaseMapper<PluginEntity> {
 

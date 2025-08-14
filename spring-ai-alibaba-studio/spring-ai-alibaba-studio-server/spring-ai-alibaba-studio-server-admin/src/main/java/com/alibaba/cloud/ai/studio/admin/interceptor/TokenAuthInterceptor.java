@@ -43,7 +43,7 @@ import java.io.IOException;
  * Interceptor for handling token-based authentication for console API access. Validates
  * access tokens and sets up request context for authenticated users.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Slf4j
 @Component

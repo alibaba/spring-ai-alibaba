@@ -24,7 +24,7 @@ import lombok.Getter;
  * Title global upload type.<br>
  * Description global upload type.<br>
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Getter

@@ -43,7 +43,7 @@ import java.io.IOException;
  * Interceptor for API key authentication in OpenAPI requests. Validates API keys and sets
  * up request context for authenticated users.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Component
 @RequiredArgsConstructor

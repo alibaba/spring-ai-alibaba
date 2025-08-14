@@ -51,7 +51,7 @@ import java.util.*;
  * Utility class for handling OpenAPI operations. Provides methods for parsing, converting
  * and manipulating OpenAPI specifications.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 public class OpenApiUtils {
 

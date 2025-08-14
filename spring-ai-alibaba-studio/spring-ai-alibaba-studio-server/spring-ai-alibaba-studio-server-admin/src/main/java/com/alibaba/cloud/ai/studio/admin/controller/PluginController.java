@@ -44,7 +44,7 @@ import java.util.Objects;
  * Controller for managing plugins and tools. Provides REST APIs for plugin and tool CRUD
  * operations, testing, and publishing.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @RestController

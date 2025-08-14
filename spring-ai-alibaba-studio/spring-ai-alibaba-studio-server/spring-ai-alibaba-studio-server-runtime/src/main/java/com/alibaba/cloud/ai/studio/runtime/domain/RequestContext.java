@@ -25,7 +25,7 @@ import java.io.Serializable;
 /**
  * Request context for tracking request metadata and user information.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 
 @Data

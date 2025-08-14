@@ -22,7 +22,7 @@ import lombok.Getter;
  * Enum representing different types of vector stores supported by the system. Currently
  * supports Elasticsearch as a vector store implementation.
  *
- * @since 1.0.0-M1
+ * @since 1.0.0.3
  */
 @Getter
 public enum VectorStoreType {
