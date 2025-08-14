@@ -50,7 +50,7 @@ import java.util.Properties;
  */
 @EnableConfigurationProperties({ McpRouterProperties.class, NacosMcpProperties.class, McpServerProperties.class })
 @ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+		matchIfMissing = false)
 public class NacosMcpRouterAutoConfiguration {
 
 	private static final Logger log = LoggerFactory.getLogger(NacosMcpRouterAutoConfiguration.class);
