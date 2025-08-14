@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
 @AutoConfiguration(after = { McpServerAutoConfiguration.class })
 @EnableConfigurationProperties({ McpServerProperties.class, McpGatewayProperties.class })
 @ConditionalOnClass({ McpServer.class, McpServerTransportProvider.class })
-@ConditionalOnProperty(name = "spring.ai.alibaba.mcp.gateway.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "spring.ai.alibaba.mcp.gateway.enabled", havingValue = "true", matchIfMissing = false)
 public class McpGatewayServerAutoConfiguration implements ApplicationContextAware {
 
 	private static final Logger log = LoggerFactory.getLogger(McpGatewayServerAutoConfiguration.class);
