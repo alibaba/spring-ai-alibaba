@@ -75,6 +75,7 @@ header:
     - '**/*.npmrc'
     - '**/*.mts'
     - '**/*.sh'
+    - '**/*.toml'
     - '**/*.properties'
     - 'tools/linter/codespell/.codespell.ignorewords'
     - 'tools/linter/codespell/.codespell.skip'
