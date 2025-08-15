@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.service;
 
+import com.alibaba.cloud.ai.entity.Nl2SqlProcess;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -22,6 +23,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,42 +89,69 @@ public class Nl2SqlService {
 
 	/**
 	 * 自然语言转SQL，允许记录中间执行过程
-	 * @param nodeOutputConsumer 处理节点运行结果的Consumer
+	 * @param nl2SqlProcessConsumer 处理节点运行结果的Consumer
 	 * @param naturalQuery 自然语言
 	 * @param agentId Agent Id
 	 * @param runnableConfig Runnable Config
 	 * @return CompletableFuture
 	 * @throws GraphRunnerException 图运行异常
 	 */
-	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<NodeOutput> nodeOutputConsumer, String naturalQuery,
-			String agentId, RunnableConfig runnableConfig) throws GraphRunnerException {
+	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer,
+			String naturalQuery, String agentId, RunnableConfig runnableConfig) throws GraphRunnerException {
 		Map<String, Object> stateMap = Map.of(IS_ONLY_NL2SQL, true, INPUT_KEY, naturalQuery, AGENT_ID, agentId);
-		return this.nl2sqlGraph.stream(stateMap, runnableConfig).forEachAsync(nodeOutputConsumer);
+		Consumer<NodeOutput> consumer = (output) -> {
+			Nl2SqlProcess sqlProcess = this.nodeOutputToNl2sqlProcess(output);
+			nl2SqlProcessConsumer.accept(sqlProcess);
+		};
+		return this.nl2sqlGraph.stream(stateMap, runnableConfig).forEachAsync(consumer);
 	}
 
 	/**
 	 * 自然语言转SQL，允许记录中间执行过程
-	 * @param nodeOutputConsumer 处理节点运行结果的Consumer
+	 * @param nl2SqlProcessConsumer 处理节点运行结果的Consumer
 	 * @param naturalQuery 自然语言
 	 * @param agentId Agent Id
 	 * @return CompletableFuture
 	 * @throws GraphRunnerException 图运行异常
 	 */
-	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<NodeOutput> nodeOutputConsumer, String naturalQuery,
-			String agentId) throws GraphRunnerException {
-		return this.nl2sqlWithProcess(nodeOutputConsumer, naturalQuery, agentId, RunnableConfig.builder().build());
+	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer,
+			String naturalQuery, String agentId) throws GraphRunnerException {
+		return this.nl2sqlWithProcess(nl2SqlProcessConsumer, naturalQuery, agentId, RunnableConfig.builder().build());
 	}
 
 	/**
 	 * 自然语言转SQL，允许记录中间执行过程
-	 * @param nodeOutputConsumer 处理节点运行结果的Consumer
+	 * @param nl2SqlProcessConsumer 处理节点运行结果的Consumer
 	 * @param naturalQuery 自然语言
 	 * @return CompletableFuture
 	 * @throws GraphRunnerException 图运行异常
 	 */
-	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<NodeOutput> nodeOutputConsumer, String naturalQuery)
-			throws GraphRunnerException {
-		return this.nl2sqlWithProcess(nodeOutputConsumer, naturalQuery, "");
+	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer,
+			String naturalQuery) throws GraphRunnerException {
+		return this.nl2sqlWithProcess(nl2SqlProcessConsumer, naturalQuery, "");
+	}
+
+	/**
+	 * 将NodeOutput转为NlSqlProcess实体类（用于nl2sqlWithProcess的consumer中记录转化过程）
+	 * @param output NodeOutput
+	 * @return NlSqlProcess
+	 */
+	private Nl2SqlProcess nodeOutputToNl2sqlProcess(NodeOutput output) {
+		// 将节点运行结果进行包装
+		String nodeRes = "";
+		if (output instanceof StreamingOutput streamingOutput) {
+			nodeRes = streamingOutput.chunk();
+		}
+		else {
+			nodeRes = output.toString();
+		}
+
+		// 如果是结束节点，取出最终生成结果
+		if (StateGraph.END.equals(output.node())) {
+			String result = output.state().value(ONLY_NL2SQL_OUTPUT, "");
+			return Nl2SqlProcess.success(result, output.node(), nodeRes);
+		}
+		return Nl2SqlProcess.processing(output.node(), nodeRes);
 	}
 
 }

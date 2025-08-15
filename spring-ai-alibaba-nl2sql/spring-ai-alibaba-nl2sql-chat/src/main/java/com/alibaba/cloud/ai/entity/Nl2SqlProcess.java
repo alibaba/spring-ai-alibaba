@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.entity;
 
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -67,6 +68,26 @@ public class Nl2SqlProcess {
 		this.result = result;
 		this.currentNodeName = currentNodeName;
 		this.currentNodeOutput = currentNodeOutput;
+	}
+
+	public static Nl2SqlProcess success(String result, String currentNodeName, String currentNodeOutput) {
+		return new Nl2SqlProcess(true, true, result, currentNodeName, currentNodeOutput);
+	}
+
+	public static Nl2SqlProcess success(String result) {
+		return success(result, StateGraph.END, "");
+	}
+
+	public static Nl2SqlProcess fail(String reason, String currentNodeName, String currentNodeOutput) {
+		return new Nl2SqlProcess(true, false, reason, currentNodeName, currentNodeOutput);
+	}
+
+	public static Nl2SqlProcess fail(String reason) {
+		return fail(reason, StateGraph.END, "");
+	}
+
+	public static Nl2SqlProcess processing(String currentNodeName, String currentNodeOutput) {
+		return new Nl2SqlProcess(false, false, "", currentNodeName, currentNodeOutput);
 	}
 
 	public Boolean getFinished() {

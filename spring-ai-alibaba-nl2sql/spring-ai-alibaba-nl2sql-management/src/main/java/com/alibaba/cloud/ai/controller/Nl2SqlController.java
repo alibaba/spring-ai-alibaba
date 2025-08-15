@@ -16,9 +16,7 @@
 package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.entity.Nl2SqlProcess;
-import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.service.Nl2SqlService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
@@ -53,13 +51,10 @@ public class Nl2SqlController {
 
 	private final Nl2SqlService nl2SqlService;
 
-	private final ObjectMapper objectMapper;
-
 	private final ExecutorService executorService;
 
 	public Nl2SqlController(Nl2SqlService nl2SqlService) {
 		this.nl2SqlService = nl2SqlService;
-		this.objectMapper = new ObjectMapper();
 		this.executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	}
 
@@ -102,22 +97,9 @@ public class Nl2SqlController {
 		logger.info("Starting nl2sql for query: {} with agentId: {}", query, agentId);
 
 		Sinks.Many<ServerSentEvent<Nl2SqlProcess>> sink = Sinks.many().unicast().onBackpressureBuffer();
-		Consumer<NodeOutput> consumer = (output) -> {
-			// 将节点运行结果包装发送给前端
-			String nodeRes = "";
-			if (output instanceof StreamingOutput streamingOutput) {
-				nodeRes = streamingOutput.chunk();
-			}
-			else {
-				nodeRes = output.toString();
-			}
-			sink.tryEmitNext(
-					ServerSentEvent.builder(new Nl2SqlProcess(false, false, "", output.node(), nodeRes)).build());
-			// 如果是结束节点，取出最终生成结果
-			if (StateGraph.END.equals(output.node())) {
-				String result = output.state().value(ONLY_NL2SQL_OUTPUT, "");
-				sink.tryEmitNext(
-						ServerSentEvent.builder(new Nl2SqlProcess(true, true, result, output.node(), nodeRes)).build());
+		Consumer<Nl2SqlProcess> consumer = (process) -> {
+			sink.tryEmitNext(ServerSentEvent.builder(process).build());
+			if (process.getFinished()) {
 				sink.tryEmitComplete();
 			}
 		};
@@ -128,9 +110,9 @@ public class Nl2SqlController {
 			}
 			catch (Exception e) {
 				logger.error("nl2sql Exception: {}", e.getMessage(), e);
-				sink.tryEmitNext(ServerSentEvent
-					.builder(new Nl2SqlProcess(true, false, e.getMessage(), StateGraph.END, e.getMessage()))
-					.build());
+				sink.tryEmitNext(
+						ServerSentEvent.builder(Nl2SqlProcess.fail(e.getMessage(), StateGraph.END, e.getMessage()))
+							.build());
 				sink.tryEmitError(e);
 			}
 		});
