@@ -18,10 +18,17 @@ package com.alibaba.cloud.ai.example.manus.subplan.model.vo;
 import com.alibaba.cloud.ai.example.manus.subplan.model.po.SubplanToolDef;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
+import com.alibaba.cloud.ai.example.manus.runtime.vo.PlanExecutionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Wrapper class that extends AbstractBaseTool for SubplanToolDef
@@ -34,6 +41,9 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
     
     private final SubplanToolDef subplanTool;
     
+    @Autowired
+    private PlanTemplateService planTemplateService;
+    
     public SubplanToolWrapper(SubplanToolDef subplanTool, String currentPlanId, String rootPlanId) {
         this.subplanTool = subplanTool;
         this.currentPlanId = currentPlanId;
@@ -42,7 +52,7 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
     
     @Override
     public String getServiceGroup() {
-        return "subplan-tools";
+        return subplanTool.getServiceGroup();
     }
     
     @Override
@@ -70,11 +80,47 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
     
     @Override
     public ToolExecuteResult run(Map<String, Object> input) {
-        // This is where the subplan execution logic would be implemented
-        // For now, return a placeholder result
-        String inputInfo = input != null ? " with " + input.size() + " parameters" : "";
-        return new ToolExecuteResult("Subplan tool '" + subplanTool.getToolName() + 
-                                   "' executed" + inputInfo + ". Template: " + subplanTool.getPlanTemplateId());
+        try {
+            logger.info("Executing subplan tool: {} with template: {}", 
+                       subplanTool.getToolName(), subplanTool.getPlanTemplateId());
+            
+            // Execute the subplan using PlanTemplateService
+            CompletableFuture<PlanExecutionResult> future = planTemplateService.executePlanByTemplateId(
+                subplanTool.getPlanTemplateId(),
+                rootPlanId,
+                currentPlanId,
+                input
+            );
+            
+            PlanExecutionResult result = future.get();
+            
+            if (result.isSuccess()) {
+                String output = result.getEffectiveResult();
+                if (output == null || output.trim().isEmpty()) {
+                    output = "Subplan executed successfully but no output was generated";
+                }
+                logger.info("Subplan execution completed successfully: {}", output);
+                return new ToolExecuteResult(output);
+            } else {
+                String errorMsg = result.getErrorMessage() != null ? result.getErrorMessage() : "Subplan execution failed";
+                logger.error("Subplan execution failed: {}", errorMsg);
+                return new ToolExecuteResult("Subplan execution failed: " + errorMsg);
+            }
+            
+        }  catch (InterruptedException e) {
+            String errorMsg = "Subplan execution was interrupted";
+            logger.error("{} for tool: {}", errorMsg, subplanTool.getToolName(), e);
+            Thread.currentThread().interrupt(); // Restore interrupt status
+            return new ToolExecuteResult(errorMsg);
+        } catch (ExecutionException e) {
+            String errorMsg = "Subplan execution failed with exception: " + e.getCause().getMessage();
+            logger.error("{} for tool: {}", errorMsg, subplanTool.getToolName(), e);
+            return new ToolExecuteResult(errorMsg);
+        } catch (Exception e) {
+            String errorMsg = "Unexpected error during subplan execution: " + e.getMessage();
+            logger.error("{} for tool: {}", errorMsg, subplanTool.getToolName(), e);
+            return new ToolExecuteResult(errorMsg);
+        }
     }
     
     @Override

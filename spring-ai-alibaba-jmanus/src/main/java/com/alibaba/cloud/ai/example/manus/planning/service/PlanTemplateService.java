@@ -397,62 +397,53 @@ public class PlanTemplateService implements IPlanTemplateService {
 		}
 	}
 
-	/**
-	 * Execute a plan template by its ID (root plan execution).
-	 * This method fetches the latest plan version and then executes it as a root plan.
-	 * @param planTemplateId The ID of the plan template to execute.
-	 * @return A CompletableFuture that completes with the execution result.
-	 */
-	public CompletableFuture<PlanExecutionResult> executePlanByTemplateId(String planTemplateId,) {
-		return executePlanByTemplateId(planTemplateId, null);
-	}
 
-	/**
-	 * Execute plan by plan template ID (internal method for controller).
-	 * This method is designed to work with the controller and returns ResponseEntity.
-	 * @param planTemplateId Plan template ID
-	 * @param rawParam Raw parameters (can be null)
-	 * @param parentPlanId Parent plan ID (can be null for root plans)
-	 * @return ResponseEntity containing execution status and result
-	 */
-	public ResponseEntity<Map<String, PlanExecutionResult>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam, String parentPlanId) {
-		try {
-			// Execute the plan asynchronously
-			CompletableFuture<PlanExecutionResult> future = executePlanByTemplateId(planTemplateId, parentPlanId);
+	// /**
+	//  * Execute plan by plan template ID (internal method for controller).
+	//  * This method is designed to work with the controller and returns ResponseEntity.
+	//  * @param planTemplateId Plan template ID
+	//  * @param rawParam Raw parameters (can be null)
+	//  * @param parentPlanId Parent plan ID (can be null for root plans)
+	//  * @return ResponseEntity containing execution status and result
+	//  */
+	// public ResponseEntity<Map<String, PlanExecutionResult>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam, String parentPlanId) {
+	// 	try {
+	// 		// Execute the plan asynchronously
+	// 		CompletableFuture<PlanExecutionResult> future = executePlanByTemplateId(planTemplateId, parentPlanId);
 			
-			// For now, we'll return immediately with a "started" status
-			// In a real implementation, you might want to wait for completion or return a task ID
-			Map<String, Object> response = new HashMap<>();
-			response.put("status", "started");
-			response.put("planTemplateId", planTemplateId);
-			response.put("message", "Plan execution started successfully");
+	// 		// For now, we'll return immediately with a "started" status
+	// 		// In a real implementation, you might want to wait for completion or return a task ID
+	// 		Map<String, Object> response = new HashMap<>();
+	// 		response.put("status", "started");
+	// 		response.put("planTemplateId", planTemplateId);
+	// 		response.put("message", "Plan execution started successfully");
 			
-			// Generate a plan ID for tracking
-			String planId = planTemplateId + "-" + System.currentTimeMillis();
-			response.put("planId", planId);
+	// 		// Generate a plan ID for tracking
+	// 		String planId = planTemplateId + "-" + System.currentTimeMillis();
+	// 		response.put("planId", planId);
 			
-			// Handle the execution result asynchronously
-			future.whenComplete((result, throwable) -> {
-				if (throwable != null) {
-					logger.error("Plan execution failed for template: {}", planTemplateId, throwable);
-				} else {
-					if (result.isSuccess()) {
-						logger.info("Plan execution completed successfully for template: {}", planTemplateId);
-					} else {
-						logger.warn("Plan execution failed for template: {} - {}", planTemplateId, result.getErrorMessage());
-					}
-				}
-			});
+	// 		// Handle the execution result asynchronously
+	// 		future.whenComplete((result, throwable) -> {
+	// 			if (throwable != null) {
+	// 				logger.error("Plan execution failed for template: {}", planTemplateId, throwable);
+	// 			} else {
+	// 				if (result.isSuccess()) {
+	// 					logger.info("Plan execution completed successfully for template: {}", planTemplateId);
+	// 				} else {
+	// 					logger.warn("Plan execution failed for template: {} - {}", planTemplateId, result.getErrorMessage());
+	// 				}
+	// 			}
+	// 		});
 			
-			return ResponseEntity.ok(response);
+	// 		return ResponseEntity.ok(response);
 			
-		} catch (Exception e) {
-			logger.error("Failed to start plan execution for template: {}", planTemplateId, e);
-			Map<String, Object> errorResponse = new HashMap<>();
-			errorResponse.put("error", "Failed to start plan execution: " + e.getMessage());
-			errorResponse.put("planTemplateId", planTemplateId);
-			return ResponseEntity.internalServerError().body(errorResponse);
-		}
-	}
+	// 	} catch (Exception e) {
+	// 		logger.error("Failed to start plan execution for template: {}", planTemplateId, e);
+	// 		Map<String, Object> errorResponse = new HashMap<>();
+	// 		errorResponse.put("error", "Failed to start plan execution: " + e.getMessage());
+	// 		errorResponse.put("planTemplateId", planTemplateId);
+	// 		return ResponseEntity.internalServerError().body(errorResponse);
+	// 	}
+	// }
 
 }

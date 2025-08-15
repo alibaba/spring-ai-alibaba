@@ -33,12 +33,17 @@ public class SubplanToolDef {
     @Column(name = "endpoint", nullable = false, length = 255)
     private String endpoint;
     
+    @Column(name = "service_group", nullable = false, length = 100)
+    private String serviceGroup;
+    
     // Constructor
     public SubplanToolDef() {
+        this.serviceGroup = "subplan-tools"; // Default service group
     }
     
     public SubplanToolDef(Long id) {
         this.id = id;
+        this.serviceGroup = "subplan-tools"; // Default service group
     }
     
     // Helper methods for managing the relationship
@@ -104,6 +109,14 @@ public class SubplanToolDef {
         this.endpoint = endpoint;
     }
     
+    public String getServiceGroup() {
+        return serviceGroup;
+    }
+    
+    public void setServiceGroup(String serviceGroup) {
+        this.serviceGroup = serviceGroup;
+    }
+    
     @Override
     public String toString() {
         return "SubplanToolDef{" +
@@ -112,6 +125,7 @@ public class SubplanToolDef {
                 ", toolDescription='" + toolDescription + '\'' +
                 ", planTemplateId='" + planTemplateId + '\'' +
                 ", endpoint='" + endpoint + '\'' +
+                ", serviceGroup='" + serviceGroup + '\'' +
                 ", inputSchemaSize=" + (inputSchema != null ? inputSchema.size() : 0) +
                 '}';
     }
