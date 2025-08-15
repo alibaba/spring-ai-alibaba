@@ -414,7 +414,7 @@ public class InteractiveElementRegistry {
 
 	// Removed the static initialization block, directly using string constants
 
-	private static final String ConverseFrameToMarkdown = """
+	private static final String CONVERSE_FRAME_TO_MARKDOWN_JS = """
 			    (() => {
 			        var documentClone = window.document.cloneNode(true);
 			        const reader = new Readability(documentClone);
@@ -504,7 +504,7 @@ public class InteractiveElementRegistry {
 			for (Frame frame : page.frames()) {
 				frame.evaluate(READABILITY_JS);
 				frame.evaluate(TURNDOWNSERVICE_JS);
-				String frameText = (String) frame.evaluate(ConverseFrameToMarkdown);
+				String frameText = (String) frame.evaluate(CONVERSE_FRAME_TO_MARKDOWN_JS);
 				List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) frame
 					.evaluate(EXTRACT_INTERACTIVE_ELEMENTS_JS, index);
 				for (Map<String, Object> elementMap : elementMapList) {
