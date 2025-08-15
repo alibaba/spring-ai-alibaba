@@ -124,7 +124,6 @@ public class ChatController {
 
 		return sink.asFlux()
 			.doOnCancel(() -> logger.info("Client disconnected from stream"))
-			.doOnError(e -> logger.error("Error occurred during streaming", e))
 			.onErrorResume(throwable -> {
 				logger.error("Error occurred during streaming", throwable);
 				return Mono.just(ServerSentEvent.<String>builder()
