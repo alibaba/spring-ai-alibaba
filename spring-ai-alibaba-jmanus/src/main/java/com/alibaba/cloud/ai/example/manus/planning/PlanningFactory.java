@@ -85,6 +85,7 @@ import com.alibaba.cloud.ai.example.manus.tool.mapreduce.ReduceOperationTool;
 import com.alibaba.cloud.ai.example.manus.tool.tableProcessor.TableProcessingService;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
+import com.alibaba.cloud.ai.example.manus.tool.UploadedFileLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.pptGenerator.PptGeneratorOperator;
 import com.alibaba.cloud.ai.example.manus.tool.jsxGenerator.JsxGeneratorOperator;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
@@ -256,6 +257,7 @@ public class PlanningFactory implements IPlanningFactory {
 			toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper));
 			toolDefinitions.add(new DocLoaderTool());
 			toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
+			toolDefinitions.add(new UploadedFileLoaderTool(unifiedDirectoryManager, innerStorageService));
 			// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
 			// toolDefinitions.add(pptGeneratorOperator);
 			// toolDefinitions.add(jsxGeneratorOperator);
@@ -290,19 +292,24 @@ public class PlanningFactory implements IPlanningFactory {
 
 		// Create FunctionToolCallback for each tool
 		for (ToolCallBiFunctionDef<?> toolDefinition : toolDefinitions) {
-			FunctionToolCallback<?, ToolExecuteResult> functionToolcallback = FunctionToolCallback
-				.builder(toolDefinition.getName(), toolDefinition)
-				.description(toolDefinition.getDescription())
-				.inputSchema(toolDefinition.getParameters())
-				.inputType(toolDefinition.getInputType())
-				.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
-				.build();
-			toolDefinition.setCurrentPlanId(planId);
-			toolDefinition.setRootPlanId(rootPlanId);
-			log.info("Registering tool: {}", toolDefinition.getName());
-			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
-					toolDefinition);
-			toolCallbackMap.put(toolDefinition.getName(), functionToolcallbackContext);
+			try {
+				FunctionToolCallback<?, ToolExecuteResult> functionToolcallback = FunctionToolCallback
+					.builder(toolDefinition.getName(), toolDefinition)
+					.description(toolDefinition.getDescription())
+					.inputSchema(toolDefinition.getParameters())
+					.inputType(toolDefinition.getInputType())
+					.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
+					.build();
+				toolDefinition.setCurrentPlanId(planId);
+				toolDefinition.setRootPlanId(rootPlanId);
+				log.info("Registering tool: {}", toolDefinition.getName());
+				ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
+						toolDefinition);
+				toolCallbackMap.put(toolDefinition.getName(), functionToolcallbackContext);
+			}
+			catch (Exception e) {
+				log.error("Failed to register tool: {} - {}", toolDefinition.getName(), e.getMessage(), e);
+			}
 		}
 		return toolCallbackMap;
 	}

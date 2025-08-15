@@ -594,11 +594,15 @@ public class DynamicAgent extends ReActAgent {
 	}
 
 	protected String collectEnvData(String toolCallName) {
+		log.info("🔍 collectEnvData called for tool: {}", toolCallName);
 		ToolCallBackContext context = toolCallbackProvider.getToolCallBackContext().get(toolCallName);
 		if (context != null) {
-			return context.getFunctionInstance().getCurrentToolStateString();
+			String envData = context.getFunctionInstance().getCurrentToolStateString();
+			log.info("📊 Tool '{}' env data: {}", toolCallName, envData);
+			return envData;
 		}
 		// If corresponding tool callback context is not found, return empty string
+		log.warn("⚠️ No context found for tool: {}", toolCallName);
 		return "";
 	}
 

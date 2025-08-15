@@ -91,20 +91,27 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	 * @return Task ID and status
 	 */
 	@PostMapping("/execute")
-	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, String> request) {
-		String query = request.get("input");
+	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, Object> request) {
+		String query = (String) request.get("input");
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Query content cannot be empty"));
 		}
 		ExecutionContext context = new ExecutionContext();
 		context.setUserRequest(query);
-		// Use PlanIdDispatcher to generate a unique plan ID
-		String planId = planIdDispatcher.generatePlanId();
-		context.setCurrentPlanId(planId);
-		context.setRootPlanId(planId);
+
+		// Generate plan ID if not already set from uploaded files
+		String planId;
+		if (context.getCurrentPlanId() == null) {
+			planId = planIdDispatcher.generatePlanId();
+			context.setCurrentPlanId(planId);
+			context.setRootPlanId(planId);
+		}
+		else {
+			planId = context.getCurrentPlanId();
+		}
 		context.setNeedSummary(true);
 
-		String memoryId = request.get("memoryId");
+		String memoryId = (String) request.get("memoryId");
 
 		if (!StringUtils.hasText(memoryId)) {
 			memoryId = RandomStringUtils.randomAlphabetic(8);

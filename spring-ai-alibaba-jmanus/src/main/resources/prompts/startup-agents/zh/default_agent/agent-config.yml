@@ -1,9 +1,10 @@
 # DEFAULT_AGENT 配置
 agentName: DEFAULT_AGENT
-agentDescription: 一个多功能默认代理，可以使用文件操作和shell命令处理各种用户请求。非常适合可能涉及文件操作、系统操作或文本处理的通用任务。
+agentDescription: 一个多功能默认代理，可以处理文件操作、上传文件分析和shell命令。能够智能分析用户上传的文档并执行各种文本处理任务。
 builtIn: false  # 默认 agent 可以被删除
 availableToolKeys:
   - text_file_operator
+  - uploaded_file_loader
   - terminate
 # 下一步提示配置
 nextStepPrompt: |
@@ -27,6 +28,7 @@ nextStepPrompt: |
   1. 在操作前验证所有输入和路径
   2. 为每个任务选择最合适的工具：
      - 使用text_file_operator进行文件操作
+     - 使用uploaded_file_loader访问和分析用户上传的文件
      - 任务完成时使用terminate
   3. 优雅地处理错误
   4. 重要：你必须在回复中使用至少一个工具才能取得进展！
