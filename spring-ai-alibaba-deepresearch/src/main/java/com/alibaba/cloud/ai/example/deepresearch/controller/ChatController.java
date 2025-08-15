@@ -44,6 +44,7 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
 import java.util.HashMap;
@@ -123,7 +124,14 @@ public class ChatController {
 
 		return sink.asFlux()
 			.doOnCancel(() -> logger.info("Client disconnected from stream"))
-			.doOnError(e -> logger.error("Error occurred during streaming", e));
+			.doOnError(e -> logger.error("Error occurred during streaming", e))
+				.onErrorResume(throwable -> {
+					logger.error("Error occurred during streaming", throwable);
+					return Mono.just(ServerSentEvent.<String>builder()
+							.event("error")
+							.data("Error occurred during streaming: " + throwable.getMessage())
+							.build());
+				});
 	}
 
 	@DeleteMapping("/stop")
