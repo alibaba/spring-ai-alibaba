@@ -15,33 +15,35 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.service;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-
-import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplateVersion;
 import com.alibaba.cloud.ai.example.manus.planning.repository.PlanTemplateRepository;
 import com.alibaba.cloud.ai.example.manus.planning.repository.PlanTemplateVersionRepository;
+import com.alibaba.cloud.ai.example.manus.runtime.task.TaskManager;
+import com.alibaba.cloud.ai.example.manus.runtime.task.PlanTask;
+import com.alibaba.cloud.ai.example.manus.runtime.vo.PlanExecutionResult;
+import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import org.springframework.http.ResponseEntity;
 
 /**
  * Plan template service class that provides business logic related to plan templates
@@ -58,11 +60,10 @@ public class PlanTemplateService implements IPlanTemplateService {
 	private PlanTemplateVersionRepository versionRepository;
 
 	@Autowired
-	private PlanIdDispatcher planIdDispatcher;
+	private TaskManager taskManager;
 
 	@Autowired
-	@Lazy
-	private PlanningFactory planningFactory;
+	private PlanExecutorFactory planExecutorFactory;
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -331,97 +332,126 @@ public class PlanTemplateService implements IPlanTemplateService {
 	}
 
 	/**
-	 * Internal common method for executing plans (version with URL parameters)
-	 * @param planTemplateId Plan template ID
-	 * @param rawParam URL query parameters
-	 * @return Result status
+	 * Execute a plan template by its ID.
+	 * This method fetches the latest plan version and then executes it.
+	 * @param planTemplateId The ID of the plan template to execute.
+	 * @param parentPlanId The ID of the parent plan (can be null for root plans).
+	 * @return A CompletableFuture that completes with the execution result.
 	 */
-	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam,
-			String planId) {
-		try {
-			// Step 1: Get execution JSON from repository by planTemplateId
-			PlanTemplate template = getPlanTemplate(planTemplateId);
-			if (template == null) {
-				return ResponseEntity.notFound().build();
-			}
-
-			// Get the latest version of the plan JSON
-			List<String> versions = getPlanVersions(planTemplateId);
-			if (versions.isEmpty()) {
-				return ResponseEntity.internalServerError()
-					.body(Map.of("error", "Plan template has no executable version"));
-			}
-			String planJson = getPlanVersion(planTemplateId, versions.size() - 1);
-			if (planJson == null || planJson.trim().isEmpty()) {
-				return ResponseEntity.internalServerError().body(Map.of("error", "Cannot get plan JSON data"));
-			}
-
-			// Generate a new plan ID based on sessionId
-			String newPlanId;
-			if (planId != null && !planId.trim().isEmpty()) {
-				newPlanId = planId;
-			}
-			else {
-				newPlanId = planIdDispatcher.generatePlanId();
-			}
-
-			// Get planning flow, using the new plan ID
-			PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(newPlanId);
-			ExecutionContext context = new ExecutionContext();
-			context.setCurrentPlanId(newPlanId);
-			context.setRootPlanId(newPlanId);
-			context.setNeedSummary(true); // We need to generate a summary
-
-			try {
-				// Use Jackson to deserialize JSON to PlanInterface object (supports
-				// polymorphism)
-				PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
-
-				// Set new plan ID, overriding ID in JSON
-				plan.setCurrentPlanId(newPlanId);
-				plan.setRootPlanId(newPlanId);
-				// Set URL parameters to plan
-				if (rawParam != null && !rawParam.isEmpty()) {
-					logger.info("Set execution parameters to plan: {}", rawParam);
-					plan.setExecutionParams(rawParam);
-				}
-
-				// Set plan to context
-				context.setPlan(plan);
-
-				// Get user request from recorder
-				context.setUserRequest(template.getTitle());
-			}
-			catch (Exception e) {
-				logger.error("Failed to parse plan JSON or get user request", e);
-				context.setUserRequest("Execute plan: " + newPlanId + "\nFrom template: " + planTemplateId);
-
-				// If parsing fails, record the error but continue with the flow
-				logger.warn("Using original JSON to continue execution", e);
-			}
-
-			// Execute the plan asynchronously
-			CompletableFuture.runAsync(() -> {
-				// Execute the plan and summary steps, skipping the create plan step
-				planningCoordinator.executeExistingPlan(context);
-				logger.info("Plan execution successful: {}", newPlanId);
-			}).exceptionally(e -> {
-				logger.error("Plan execution failed", e);
-				return null;
-			});
-
-			// Return task ID and initial status
-			Map<String, Object> response = new HashMap<>();
-			response.put("planId", newPlanId);
-			response.put("status", "processing");
-			response.put("message", "Plan execution request submitted, processing");
-
-			return ResponseEntity.ok(response);
+	public CompletableFuture<PlanExecutionResult> executePlanByTemplateId(String planTemplateId, String rootPlanId,String parentPlanId, Map<String, Object> rawParam) {
+		String planJson = getLatestPlanVersion(planTemplateId);
+		if (planJson == null) {
+			PlanExecutionResult errorResult = new PlanExecutionResult();
+			errorResult.setSuccess(false);
+			errorResult.setErrorMessage("No plan version found for template " + planTemplateId);
+			return CompletableFuture.completedFuture(errorResult);
 		}
-		catch (Exception e) {
-			logger.error("Plan execution failed", e);
-			return ResponseEntity.internalServerError()
-				.body(Map.of("error", "Plan execution failed: " + e.getMessage()));
+
+		try {
+			// Create ExecutionContext
+			ExecutionContext context = new ExecutionContext();
+			context.setCurrentPlanId(planTemplateId);
+			context.setRootPlanId(parentPlanId != null ? parentPlanId : planTemplateId);
+			context.setUserRequest("Execute plan template: " + planTemplateId);
+			context.setNeedSummary(true);
+			context.setUseMemory(false);
+
+			// Parse plan JSON and set to context
+			PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
+			context.setPlan(plan);
+
+			// Create task factory that creates PlanTask instances
+			Function<String, PlanTask> taskFactory = planId -> {
+				ExecutionContext taskContext = new ExecutionContext();
+				taskContext.setCurrentPlanId(planId);
+				taskContext.setRootPlanId(parentPlanId != null ? parentPlanId : planId);
+				taskContext.setUserRequest("Execute plan template: " + planTemplateId);
+				taskContext.setNeedSummary(true);
+				taskContext.setUseMemory(false);
+				taskContext.setPlan(plan);
+				
+				return new PlanTask(taskContext, parentPlanId, planExecutorFactory);
+			};
+
+			// Execute using TaskManager
+			Collection<String> planIds = Collections.singleton(planTemplateId);
+			return taskManager.scheduleChildren(planIds, taskFactory)
+				.thenApply(resultsMap -> {
+					PlanExecutionResult result = resultsMap.get(planTemplateId);
+					return result != null ? result : new PlanExecutionResult();
+				})
+				.exceptionally(throwable -> {
+					logger.error("Failed to execute plan template: {}", planTemplateId, throwable);
+					PlanExecutionResult errorResult = new PlanExecutionResult();
+					errorResult.setSuccess(false);
+					errorResult.setErrorMessage("Execution failed: " + throwable.getMessage());
+					return errorResult;
+				});
+
+		} catch (Exception e) {
+			logger.error("Failed to parse plan JSON for template: {}", planTemplateId, e);
+			PlanExecutionResult errorResult = new PlanExecutionResult();
+			errorResult.setSuccess(false);
+			errorResult.setErrorMessage("Failed to parse plan JSON: " + e.getMessage());
+			return CompletableFuture.completedFuture(errorResult);
+		}
+	}
+
+	/**
+	 * Execute a plan template by its ID (root plan execution).
+	 * This method fetches the latest plan version and then executes it as a root plan.
+	 * @param planTemplateId The ID of the plan template to execute.
+	 * @return A CompletableFuture that completes with the execution result.
+	 */
+	public CompletableFuture<PlanExecutionResult> executePlanByTemplateId(String planTemplateId,) {
+		return executePlanByTemplateId(planTemplateId, null);
+	}
+
+	/**
+	 * Execute plan by plan template ID (internal method for controller).
+	 * This method is designed to work with the controller and returns ResponseEntity.
+	 * @param planTemplateId Plan template ID
+	 * @param rawParam Raw parameters (can be null)
+	 * @param parentPlanId Parent plan ID (can be null for root plans)
+	 * @return ResponseEntity containing execution status and result
+	 */
+	public ResponseEntity<Map<String, PlanExecutionResult>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam, String parentPlanId) {
+		try {
+			// Execute the plan asynchronously
+			CompletableFuture<PlanExecutionResult> future = executePlanByTemplateId(planTemplateId, parentPlanId);
+			
+			// For now, we'll return immediately with a "started" status
+			// In a real implementation, you might want to wait for completion or return a task ID
+			Map<String, Object> response = new HashMap<>();
+			response.put("status", "started");
+			response.put("planTemplateId", planTemplateId);
+			response.put("message", "Plan execution started successfully");
+			
+			// Generate a plan ID for tracking
+			String planId = planTemplateId + "-" + System.currentTimeMillis();
+			response.put("planId", planId);
+			
+			// Handle the execution result asynchronously
+			future.whenComplete((result, throwable) -> {
+				if (throwable != null) {
+					logger.error("Plan execution failed for template: {}", planTemplateId, throwable);
+				} else {
+					if (result.isSuccess()) {
+						logger.info("Plan execution completed successfully for template: {}", planTemplateId);
+					} else {
+						logger.warn("Plan execution failed for template: {} - {}", planTemplateId, result.getErrorMessage());
+					}
+				}
+			});
+			
+			return ResponseEntity.ok(response);
+			
+		} catch (Exception e) {
+			logger.error("Failed to start plan execution for template: {}", planTemplateId, e);
+			Map<String, Object> errorResponse = new HashMap<>();
+			errorResponse.put("error", "Failed to start plan execution: " + e.getMessage());
+			errorResponse.put("planTemplateId", planTemplateId);
+			return ResponseEntity.internalServerError().body(errorResponse);
 		}
 	}
 

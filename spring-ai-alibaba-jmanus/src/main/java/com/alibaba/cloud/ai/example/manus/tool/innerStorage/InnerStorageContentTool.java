@@ -21,10 +21,10 @@ import java.nio.file.Path;
 import java.util.List;
 
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.subplan.SummaryWorkflow;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
-import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

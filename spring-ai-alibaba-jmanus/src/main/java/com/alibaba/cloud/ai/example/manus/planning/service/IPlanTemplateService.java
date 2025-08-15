@@ -16,10 +16,8 @@
 package com.alibaba.cloud.ai.example.manus.planning.service;
 
 import java.util.List;
-import java.util.Map;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
-import org.springframework.http.ResponseEntity;
 
 /**
  * Plan template service interface providing business logic related to plan templates
@@ -124,12 +122,6 @@ public interface IPlanTemplateService {
 	 */
 	boolean deletePlanTemplate(String planTemplateId);
 
-	/**
-	 * Execute by plan template
-	 * @param planTemplateId Template ID
-	 * @return Whether execution was successful
-	 */
-	ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam,
-			String sessionId);
+
 
 }

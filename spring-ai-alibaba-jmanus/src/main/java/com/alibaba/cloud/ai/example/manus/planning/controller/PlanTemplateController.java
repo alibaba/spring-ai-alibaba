@@ -35,13 +35,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 
 /**
  * Plan template controller, handles API requests for the plan template page
@@ -67,7 +67,6 @@ public class PlanTemplateController {
 
 	@Autowired
 	private ObjectMapper objectMapper;
-
 	/**
 	 * Serialize plan object to JSON string
 	 * @param plan Plan object
@@ -116,12 +115,12 @@ public class PlanTemplateController {
 		context.setNeedSummary(false); // We don't need to generate a summary, because we
 										// only need the plan
 
-		// Get planning flow
-		PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(planTemplateId);
-
 		try {
-			// Immediately execute the create plan stage, not asynchronously
-			planningCoordinator.createPlan(context);
+			// Create PlanCreator using PlanningFactory
+			PlanCreator planCreator = planningFactory.createPlanCreator();
+			
+			// Create plan using PlanCreator directly
+			planCreator.createPlanWithoutMemory(context);
 			logger.info("Plan generation successful: {}", planTemplateId);
 
 			// Get the generated plan from the recorder
@@ -491,11 +490,11 @@ public class PlanTemplateController {
 										// only need the plan
 
 		// Get planning flow
-		PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(planId);
+		// planningCoordinator.createPlan(context); // This line is removed as per the new_code
 
 		try {
 			// Immediately execute the create plan stage, not asynchronously
-			planningCoordinator.createPlan(context);
+			// planningCoordinator.createPlan(context); // This line is removed as per the new_code
 			logger.info("Plan template updated successfully: {}", planId);
 
 			// Get the generated plan from the recorder

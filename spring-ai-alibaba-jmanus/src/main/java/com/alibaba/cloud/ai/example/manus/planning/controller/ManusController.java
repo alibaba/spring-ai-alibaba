@@ -18,14 +18,12 @@ package com.alibaba.cloud.ai.example.manus.planning.controller;
 import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
 import com.alibaba.cloud.ai.example.manus.event.PlanExceptionEvent;
 import com.alibaba.cloud.ai.example.manus.exception.PlanException;
-import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.runtime.service.PlanExecutionService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -34,14 +32,12 @@ import com.google.common.cache.CacheBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -54,9 +50,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	private final Cache<String, Throwable> exceptionCache;
 
-	@Autowired
-	@Lazy
-	private PlanningFactory planningFactory;
+
 
 	@Autowired
 	private PlanExecutionRecorder planExecutionRecorder;
@@ -66,6 +60,9 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	@Autowired
 	private UserInputService userInputService;
+
+	@Autowired
+	private PlanExecutionService planExecutionService;
 
 	@Autowired
 	public ManusController(ObjectMapper objectMapper) {
@@ -89,27 +86,11 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Query content cannot be empty"));
 		}
-		ExecutionContext context = new ExecutionContext();
-		context.setUserRequest(query);
 		// Use PlanIdDispatcher to generate a unique plan ID
 		String planId = planIdDispatcher.generatePlanId();
-		context.setCurrentPlanId(planId);
-		context.setRootPlanId(planId);
-		context.setNeedSummary(true);
 
-		// Get or create planning flow
-		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(context);
-
-		// Asynchronous execution of task
-		CompletableFuture.supplyAsync(() -> {
-			try {
-				return planningFlow.executePlan(context);
-			}
-			catch (Exception e) {
-				logger.error("Failed to execute plan", e);
-				throw new RuntimeException("Failed to execute plan: " + e.getMessage(), e);
-			}
-		});
+		// Asynchronous execution of task using PlanExecutionService
+		planExecutionService.submitSinglePlanByUserRequest(planId, query);
 
 		// Return task ID and initial status
 		Map<String, Object> response = new HashMap<>();

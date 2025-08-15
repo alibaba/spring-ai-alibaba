@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -55,11 +54,11 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderServ
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.subplan.SummaryWorkflow;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
@@ -87,7 +86,6 @@ import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
 import com.alibaba.cloud.ai.example.manus.tool.pptGenerator.PptGeneratorOperator;
 import com.alibaba.cloud.ai.example.manus.tool.jsxGenerator.JsxGeneratorOperator;
-import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -177,42 +175,56 @@ public class PlanningFactory implements IPlanningFactory {
 		this.tableProcessingService = tableProcessingService;
 	}
 
-	public PlanningCoordinator createPlanningCoordinator(ExecutionContext context) {
-		// Add all dynamic agents from the database
-		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAgents(context);
+	// public PlanningCoordinator createPlanningCoordinator(ExecutionContext context) {
+	// 	// Add all dynamic agents from the database
+	// 	List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAgents(context);
 
+	// 	PlanCreator planCreator = createPlanCreator(agentEntities);
+
+	// 	PlanFinalizer planFinalizer = createPlanFinalizer();
+
+	// 	PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
+	// 			planFinalizer);
+
+	// 	return planningCoordinator;
+	// }
+
+	// // Use the enhanced PlanningCoordinator with dynamic executor selection
+	// public PlanningCoordinator createPlanningCoordinator(String planId) {
+
+	// 	// Add all dynamic agents from the database
+	// 	List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
+
+	// 	PlanCreator planCreator = createPlanCreator(agentEntities);
+
+	// 	PlanFinalizer planFinalizer = createPlanFinalizer();
+
+	// 	PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
+	// 			planFinalizer);
+
+	// 	return planningCoordinator;
+	// }
+
+	/**
+	 * Create a PlanCreator instance with the given agents
+	 * @return configured PlanCreator instance
+	 */
+	public PlanCreator createPlanCreator() {
+		// Get all dynamic agents from the database
+		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
+		
 		PlanningToolInterface planningTool = new PlanningTool();
-
-		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
+		return new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
 				manusProperties, streamingResponseHandler);
-
-		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties,
-				streamingResponseHandler);
-
-		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
-				planFinalizer);
-
-		return planningCoordinator;
 	}
 
-	// Use the enhanced PlanningCoordinator with dynamic executor selection
-	public PlanningCoordinator createPlanningCoordinator(String planId) {
-
-		// Add all dynamic agents from the database
-		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
-
-		PlanningToolInterface planningTool = new PlanningTool();
-
-		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
-				manusProperties, streamingResponseHandler);
-
-		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties,
+	/**
+	 * Create a PlanFinalizer instance
+	 * @return configured PlanFinalizer instance
+	 */
+	public PlanFinalizer createPlanFinalizer() {
+		return new PlanFinalizer(llmService, recorder, promptService, manusProperties,
 				streamingResponseHandler);
-
-		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
-				planFinalizer);
-
-		return planningCoordinator;
 	}
 
 	public static class ToolCallBackContext {

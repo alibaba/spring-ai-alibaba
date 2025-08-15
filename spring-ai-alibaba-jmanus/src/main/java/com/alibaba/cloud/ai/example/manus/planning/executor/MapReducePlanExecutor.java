@@ -34,7 +34,7 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapOutputTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.ReduceOperationTool;
-import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor.PlanExecutionResult;
+import com.alibaba.cloud.ai.example.manus.runtime.vo.PlanExecutionResult;
 
 import java.util.ArrayList;
 import java.util.HashMap;

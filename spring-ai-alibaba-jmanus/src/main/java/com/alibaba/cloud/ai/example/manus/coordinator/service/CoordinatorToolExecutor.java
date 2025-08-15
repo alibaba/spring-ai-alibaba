@@ -189,7 +189,7 @@ public class CoordinatorToolExecutor {
 	 * @param rawParam Raw parameters
 	 * @param planId Plan ID
 	 */
-	private void executePlanTemplate(String toolName, String rawParam, String planId) {
+	private void executePlanTemplate(String toolName, Map<String rawParam, String planId) {
 		log.info("{} Executing plan template: {}, parameters: {}, planId: {}", LOG_PREFIX, toolName, rawParam, planId);
 
 		ResponseEntity<Map<String, Object>> responseEntity = planTemplateService

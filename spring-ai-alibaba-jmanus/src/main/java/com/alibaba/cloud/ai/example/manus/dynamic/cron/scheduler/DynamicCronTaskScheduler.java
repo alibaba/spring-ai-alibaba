@@ -20,15 +20,12 @@ import com.alibaba.cloud.ai.example.manus.dynamic.cron.enums.TaskStatus;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.repository.CronRepository;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alibaba.cloud.ai.example.manus.runtime.service.PlanExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
@@ -37,7 +34,6 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
@@ -65,7 +61,7 @@ public class DynamicCronTaskScheduler {
 	private PlanTemplateService planTemplateService;
 
 	@Autowired
-	private ObjectMapper objectMapper;
+	private PlanExecutionService planExecutionService;
 
 	// Store running tasks
 	private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
@@ -109,26 +105,10 @@ public class DynamicCronTaskScheduler {
 		String planDesc = cronEntity.getPlanDesc();
 		log.info("Executing scheduled task: {} - {}", cronEntity.getCronName(), planDesc);
 
-		ExecutionContext context = new ExecutionContext();
-		context.setUserRequest(planDesc);
-
 		String planId = planIdDispatcher.generatePlanId();
-		context.setCurrentPlanId(planId);
-		context.setRootPlanId(planId);
-		context.setNeedSummary(true);
 
-		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(planId);
-
-		// Execute task asynchronously
-		CompletableFuture.supplyAsync(() -> {
-			try {
-				return planningFlow.executePlan(context);
-			}
-			catch (Exception e) {
-				log.error("Plan execution failed: {} - {}", cronEntity.getCronName(), e.getMessage());
-				throw new RuntimeException("Plan execution failed: " + e.getMessage(), e);
-			}
-		});
+		// Execute task asynchronously using PlanExecutionService
+		planExecutionService.submitSinglePlanByUserRequest(planId, planDesc);
 	}
 
 	/**
@@ -137,25 +117,37 @@ public class DynamicCronTaskScheduler {
 	 */
 	private void executePlanTemplate(String planTemplateId) {
 		try {
-			log.info("Using PlanTemplateController to execute plan template: {}", planTemplateId);
+			log.info("Executing plan template: {}", planTemplateId);
 
-			// Call PlanTemplateController's public method executePlanByTemplateId
-			ResponseEntity<Map<String, Object>> response = planTemplateService
-				.executePlanByTemplateIdInternal(planTemplateId, null, null);
+			// Get the plan template to check if it exists
+			com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate template = 
+				planTemplateService.getPlanTemplate(planTemplateId);
+			if (template == null) {
+				log.error("Plan template not found: {}", planTemplateId);
+				return;
+			}
 
-			if (response.getStatusCode().is2xxSuccessful()) {
-				Map<String, Object> responseBody = response.getBody();
-				if (responseBody != null) {
-					String planId = (String) responseBody.get("planId");
-					log.info("Plan template execution successful, new plan ID: {}", planId);
-				}
-				else {
-					log.warn("Plan template execution successful, but response body is empty");
-				}
+			// Get the latest version of the plan JSON
+			String planJson = planTemplateService.getLatestPlanVersion(planTemplateId);
+			if (planJson == null || planJson.trim().isEmpty()) {
+				log.error("Plan template has no executable version: {}", planTemplateId);
+				return;
 			}
-			else {
-				log.error("Plan template execution failed, status code: {}", response.getStatusCode());
-			}
+
+			// Generate a new plan ID
+			String newPlanId = planIdDispatcher.generatePlanId();
+
+			// Execute the plan asynchronously using PlanExecutionService
+			planExecutionService.submitSinglePlanByPlanTemplate(newPlanId, planTemplateId, planJson)
+				.thenAccept(result -> {
+					log.info("Plan template execution successful: {}", newPlanId);
+				})
+				.exceptionally(throwable -> {
+					log.error("Plan execution failed for template {}: {}", planTemplateId, throwable.getMessage());
+					return null;
+				});
+
+			log.info("Plan template execution started, new plan ID: {}", newPlanId);
 		}
 		catch (Exception e) {
 			log.error("Failed to execute plan template: {}", planTemplateId, e);

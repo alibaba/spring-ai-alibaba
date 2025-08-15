@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.executor;
 
-import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
@@ -28,9 +27,8 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import com.alibaba.cloud.ai.example.manus.runtime.vo.PlanExecutionResult;
+import com.alibaba.cloud.ai.example.manus.runtime.vo.StepResult;
 
 /**
  * Basic implementation class responsible for executing plans
@@ -49,30 +47,30 @@ public class PlanExecutor extends AbstractPlanExecutor {
 		super(agents, recorder, agentService, llmService, manusProperties);
 	}
 
-	private void executeAllSteps(ExecutionContext context) {
-		BaseAgent lastExecutor = null;
-		PlanInterface plan = context.getPlan();
-		plan.updateStepIndices();
+	// private void executeAllSteps(ExecutionContext context) {
+	// 	BaseAgent lastExecutor = null;
+	// 	PlanInterface plan = context.getPlan();
+	// 	plan.updateStepIndices();
 
-		try {
-			recorder.recordPlanExecutionStart(context);
-			List<ExecutionStep> steps = plan.getAllSteps();
+	// 	try {
+	// 		recorder.recordPlanExecutionStart(context);
+	// 		List<ExecutionStep> steps = plan.getAllSteps();
 
-			if (steps != null && !steps.isEmpty()) {
-				for (ExecutionStep step : steps) {
-					BaseAgent stepExecutor = executeStep(step, context);
-					if (stepExecutor != null) {
-						lastExecutor = stepExecutor;
-					}
-				}
-			}
+	// 		if (steps != null && !steps.isEmpty()) {
+	// 			for (ExecutionStep step : steps) {
+	// 				BaseAgent stepExecutor = executeStep(step, context);
+	// 				if (stepExecutor != null) {
+	// 					lastExecutor = stepExecutor;
+	// 				}
+	// 			}
+	// 		}
 
-			context.setSuccess(true);
-		}
-		finally {
-			performCleanup(context, lastExecutor);
-		}
-	}
+	// 		context.setSuccess(true);
+	// 	}
+	// 	finally {
+	// 		performCleanup(context, lastExecutor);
+	// 	}
+	// }
 
 	/**
 	 * Execute all steps asynchronously and return a CompletableFuture with execution results
@@ -150,79 +148,4 @@ public class PlanExecutor extends AbstractPlanExecutor {
 			return result;
 		});
 	}
-
-	/**
-	 * Result class containing execution results for all steps
-	 */
-	public static class PlanExecutionResult {
-		private boolean success;
-		private String finalResult;
-		private String errorMessage;
-		private List<StepResult> stepResults = new ArrayList<>();
-		
-		// Getters and setters
-		public boolean isSuccess() { return success; }
-		public void setSuccess(boolean success) { this.success = success; }
-		
-		public String getFinalResult() { return finalResult; }
-		public void setFinalResult(String finalResult) { this.finalResult = finalResult; }
-		
-		public String getErrorMessage() { return errorMessage; }
-		public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
-		
-		public List<StepResult> getStepResults() { return stepResults; }
-		public void setStepResults(List<StepResult> stepResults) { this.stepResults = stepResults; }
-		
-		public void addStepResult(StepResult stepResult) {
-			this.stepResults.add(stepResult);
-		}
-		
-		/**
-		 * Get the final result from the last successful step
-		 * @return Final result string or error message
-		 */
-		public String getEffectiveResult() {
-			if (!success) {
-				return errorMessage != null ? errorMessage : "Execution failed";
-			}
-			
-			// Try to get result from last step's result
-			for (int i = stepResults.size() - 1; i >= 0; i--) {
-				StepResult step = stepResults.get(i);
-				if (step.getResult() != null && !step.getResult().isEmpty()) {
-					return step.getResult();
-				}
-			}
-			
-			return finalResult != null ? finalResult : "No result available";
-		}
-	}
-
-	/**
-	 * Result class for individual step execution
-	 */
-	public static class StepResult {
-		private Integer stepIndex;
-		private String stepRequirement;
-		private String result;
-		private AgentState status;
-		private String agentName;
-		
-		// Getters and setters
-		public Integer getStepIndex() { return stepIndex; }
-		public void setStepIndex(Integer stepIndex) { this.stepIndex = stepIndex; }
-		
-		public String getStepRequirement() { return stepRequirement; }
-		public void setStepRequirement(String stepRequirement) { this.stepRequirement = stepRequirement; }
-		
-		public String getResult() { return result; }
-		public void setResult(String result) { this.result = result; }
-		
-		public AgentState getStatus() { return status; }
-		public void setStatus(AgentState status) { this.status = status; }
-		
-		public String getAgentName() { return agentName; }
-		public void setAgentName(String agentName) { this.agentName = agentName; }
-	}
-
 }

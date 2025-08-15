@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.workflow;
+package com.alibaba.cloud.ai.example.manus.subplan;
 
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
@@ -169,9 +169,12 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 			throw new RuntimeException("Failed to build MapReduce summary execution plan: " + e.getMessage(), e);
 		}
 	}
+	
 
 	/**
 	 * Execute MapReduce plan - supports sub-plan context
+	 * 
+	 * 
 	 */
 	private CompletableFuture<String> executeMapReducePlanWithContext(String rootPlanId,
 			MapReduceExecutionPlan executionPlan, Long thinkActRecordId) {

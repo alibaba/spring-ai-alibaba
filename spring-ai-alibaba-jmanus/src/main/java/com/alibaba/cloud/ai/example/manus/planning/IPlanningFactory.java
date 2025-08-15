@@ -17,23 +17,21 @@ package com.alibaba.cloud.ai.example.manus.planning;
 
 import java.util.Map;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import org.springframework.web.client.RestClient;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 
 /**
  * Planning factory interface, providing planning-related object creation functionality
  */
 public interface IPlanningFactory {
 
-	/**
-	 * Create planning coordinator
-	 * @param context
-	 * @return Planning coordinator
-	 */
-	PlanningCoordinator createPlanningCoordinator(ExecutionContext context);
+	// /**
+	//  * Create planning coordinator
+	//  * @param context
+	//  * @return Planning coordinator
+	//  */
+	// PlanningCoordinator createPlanningCoordinator(ExecutionContext context);
 
 	/**
 	 * Create tool callback mapping

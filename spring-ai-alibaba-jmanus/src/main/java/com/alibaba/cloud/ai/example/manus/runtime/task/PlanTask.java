@@ -17,7 +17,8 @@ package com.alibaba.cloud.ai.example.manus.runtime.task;
 
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor.PlanExecutionResult;
+import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
+import com.alibaba.cloud.ai.example.manus.runtime.vo.PlanExecutionResult;
 
 import java.util.Objects;
 import java.util.Collection;
@@ -33,9 +34,9 @@ public class PlanTask {
 	private final String id = UUID.randomUUID().toString();
 	private final String parentPlanId; // null for root
 	private final ExecutionContext context;
-	private final PlanExecutorInterface executor;
+	private final PlanExecutorFactory planExecutorFactory;
 	private volatile TaskState state = TaskState.READY;
-	private final CompletableFuture<ExecutionContext> future = new CompletableFuture<>();
+	private final CompletableFuture<PlanExecutionResult> future = new CompletableFuture<>();
     private volatile int nextStepIndex = 0; // internal checkpoint placeholder
 
     // Children coordination placeholders (managed externally by a TaskManager)
@@ -45,10 +46,10 @@ public class PlanTask {
 
 	// Replacement result is stored locally; external manager should patch ChatMemory
 
-	public PlanTask(ExecutionContext context, String parentPlanId, PlanExecutorInterface executor) {
+	public PlanTask(ExecutionContext context, String parentPlanId, PlanExecutorFactory planExecutorFactory) {
 		this.context = Objects.requireNonNull(context, "context must not be null");
 		this.parentPlanId = parentPlanId; // may be null
-		this.executor = Objects.requireNonNull(executor, "executor must not be null");
+		this.planExecutorFactory = Objects.requireNonNull(planExecutorFactory, "planExecutorFactory must not be null");
 	}
 
 	public String getId() {
@@ -73,21 +74,26 @@ public class PlanTask {
 		}
 		state = TaskState.RUNNING;
 		
-		// Execute asynchronously and handle the result
-		executor.executeAllStepsAsync(context)
-			.whenComplete((result, throwable) -> {
-				if (throwable != null) {
-					state = TaskState.FAILED;
-					future.completeExceptionally(throwable);
-				} else {
-					state = TaskState.COMPLETED;
-					// Update the context with the execution result
-					if (result != null && result.isSuccess()) {
-						context.setResultSummary(result.getEffectiveResult());
+		try {
+			// Create executor based on the plan type
+			PlanExecutorInterface executor = planExecutorFactory.createExecutor(context.getPlan());
+			
+			// Execute asynchronously and handle the result
+			executor.executeAllStepsAsync(context)
+				.whenComplete((result, throwable) -> {
+					if (throwable != null) {
+						state = TaskState.FAILED;
+						future.completeExceptionally(throwable);
+					} else {
+						state = TaskState.COMPLETED;
+						// Complete the future with the PlanExecutionResult
+						future.complete(result);
 					}
-					future.complete(context);
-				}
-			});
+				});
+		} catch (Exception e) {
+			state = TaskState.FAILED;
+			future.completeExceptionally(e);
+		}
 	}
 
     public void resume() {
@@ -102,7 +108,7 @@ public class PlanTask {
 		}
 	}
 
-	public CompletionStage<?> getFuture() {
+	public CompletionStage<PlanExecutionResult> getFuture() {
 		return future;
 	}
 

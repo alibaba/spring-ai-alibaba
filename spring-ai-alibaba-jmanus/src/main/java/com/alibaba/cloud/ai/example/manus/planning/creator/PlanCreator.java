@@ -72,18 +72,40 @@ public class PlanCreator {
 		this.streamingResponseHandler = streamingResponseHandler;
 	}
 
+
 	/**
-	 * Create an execution plan based on the user request
+	 * Create an execution plan with memory support
 	 * @param context execution context, containing the user request and the execution
 	 * process information
-	 * @return plan creation result
 	 */
-	public void createPlan(ExecutionContext context) {
-		boolean useMemory = context.isUseMemory();
+	public void createPlanWithMemory(ExecutionContext context) {
+		createPlanInternal(context, true);
+	}
+
+	/**
+	 * Create an execution plan without memory support
+	 * @param context execution context, containing the user request and the execution
+	 * process information
+	 */
+	public void createPlanWithoutMemory(ExecutionContext context) {
+		createPlanInternal(context, false);
+	}
+
+	/**
+	 * Internal method that handles the common plan creation logic
+	 * @param context execution context, containing the user request and the execution
+	 * process information
+	 * @param useMemory whether to use memory support
+	 */
+	private void createPlanInternal(ExecutionContext context, boolean useMemory) {
 		String planId = context.getCurrentPlanId();
 		if (planId == null || planId.isEmpty()) {
 			throw new IllegalArgumentException("Plan ID cannot be null or empty");
 		}
+		
+		// Define memory type string at method level for consistent usage
+		String memoryType = useMemory ? "with memory" : "without memory";
+		
 		try {
 			// Build agent information
 			String agentsInfo = buildAgentsInfo(agents);
@@ -97,7 +119,7 @@ public class PlanCreator {
 			int maxRetries = 3;
 			for (int attempt = 1; attempt <= maxRetries; attempt++) {
 				try {
-					log.info("Attempting to create plan, attempt: {}/{}", attempt, maxRetries);
+					log.info("Attempting to create plan {}, attempt: {}/{}", memoryType, attempt, maxRetries);
 
 					// Use LLM to generate the plan
 					PromptTemplate promptTemplate = new PromptTemplate(planPrompt);
@@ -106,9 +128,10 @@ public class PlanCreator {
 					ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
 						.prompt(prompt)
 						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
+					
+					// Add memory advisors if memory is enabled
 					if (useMemory) {
-						requestSpec.advisors(
-								memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
+						requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
 						requestSpec.advisors(MessageChatMemoryAdvisor
 							.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
 							.build());
@@ -117,7 +140,7 @@ public class PlanCreator {
 					// Use streaming response handler for plan creation
 					Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
 					String planCreationText = streamingResponseHandler.processStreamingTextResponse(responseFlux,
-							"Plan creation", context.getCurrentPlanId());
+							"Plan creation " + memoryType, context.getCurrentPlanId());
 					outputText = planCreationText;
 
 					executionPlan = planningTool.getCurrentPlan();
@@ -125,19 +148,19 @@ public class PlanCreator {
 					if (executionPlan != null) {
 						// Set the user input part of the plan, for later storage and use.
 						executionPlan.setUserRequest(context.getUserRequest());
-						log.info("Plan created successfully on attempt {}: {}", attempt, executionPlan);
+						log.info("Plan created successfully {} on attempt {}: {}", memoryType, attempt, executionPlan);
 						break;
 					}
 					else {
 						log.warn("Plan creation attempt {} failed: planningTool.getCurrentPlan() returned null",
 								attempt);
 						if (attempt == maxRetries) {
-							log.error("Failed to create plan after {} attempts", maxRetries);
+							log.error("Failed to create plan {} after {} attempts", memoryType, maxRetries);
 						}
 					}
 				}
 				catch (Exception e) {
-					log.warn("Exception during plan creation attempt {}: {}", attempt, e.getMessage());
+					log.warn("Exception during plan creation {} attempt {}: {}", memoryType, attempt, e.getMessage());
 					e.printStackTrace();
 					if (attempt == maxRetries) {
 						throw e;
@@ -154,16 +177,16 @@ public class PlanCreator {
 				currentPlan.setPlanningThinking(outputText);
 			}
 			else {
-				throw new RuntimeException("Failed to create a valid execution plan after retries");
+				throw new RuntimeException("Failed to create a valid execution plan " + memoryType + " after retries");
 			}
 
 			context.setPlan(currentPlan);
 
 		}
 		catch (Exception e) {
-			log.error("Error creating plan for request: {}", context.getUserRequest(), e);
+			log.error("Error creating plan {} for request: {}", memoryType, context.getUserRequest(), e);
 			// Handle the exception
-			throw new RuntimeException("Failed to create plan", e);
+			throw new RuntimeException("Failed to create plan " + memoryType, e);
 		}
 	}
 
