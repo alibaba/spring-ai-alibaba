@@ -125,13 +125,13 @@ public class ChatController {
 		return sink.asFlux()
 			.doOnCancel(() -> logger.info("Client disconnected from stream"))
 			.doOnError(e -> logger.error("Error occurred during streaming", e))
-				.onErrorResume(throwable -> {
-					logger.error("Error occurred during streaming", throwable);
-					return Mono.just(ServerSentEvent.<String>builder()
-							.event("error")
-							.data("Error occurred during streaming: " + throwable.getMessage())
-							.build());
-				});
+			.onErrorResume(throwable -> {
+				logger.error("Error occurred during streaming", throwable);
+				return Mono.just(ServerSentEvent.<String>builder()
+					.event("error")
+					.data("Error occurred during streaming: " + throwable.getMessage())
+					.build());
+			});
 	}
 
 	@DeleteMapping("/stop")
