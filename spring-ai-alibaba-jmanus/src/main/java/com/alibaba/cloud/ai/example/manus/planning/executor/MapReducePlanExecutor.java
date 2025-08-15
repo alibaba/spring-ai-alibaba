@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.ExecutionNode;
@@ -34,7 +35,6 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.MapOutputTool;
 import com.alibaba.cloud.ai.example.manus.tool.mapreduce.ReduceOperationTool;
-import com.alibaba.cloud.ai.example.manus.runtime.vo.PlanExecutionResult;
 
 import java.util.ArrayList;
 import java.util.HashMap;

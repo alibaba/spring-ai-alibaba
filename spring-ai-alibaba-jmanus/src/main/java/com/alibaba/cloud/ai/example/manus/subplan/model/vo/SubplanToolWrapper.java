@@ -18,8 +18,9 @@ package com.alibaba.cloud.ai.example.manus.subplan.model.vo;
 import com.alibaba.cloud.ai.example.manus.subplan.model.po.SubplanToolDef;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
-import com.alibaba.cloud.ai.example.manus.runtime.vo.PlanExecutionResult;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Wrapper class that extends AbstractBaseTool for SubplanToolDef

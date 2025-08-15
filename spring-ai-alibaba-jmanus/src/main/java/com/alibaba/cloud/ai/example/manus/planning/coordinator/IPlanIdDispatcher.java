@@ -58,6 +58,6 @@ public interface IPlanIdDispatcher {
 	/**
 	 * Generate sub-plan ID
 	 */
-	String generateSubPlanId(String parentPlanId, Long thinkActRecordId);
+	String generateSubPlanId(String parentPlanId);
 
 }

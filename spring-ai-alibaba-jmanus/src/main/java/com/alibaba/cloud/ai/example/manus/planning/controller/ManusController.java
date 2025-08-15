@@ -62,9 +62,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	private UserInputService userInputService;
 
 	@Autowired
-	private PlanExecutionService planExecutionService;
-
-	@Autowired
 	public ManusController(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
 		// Register JavaTimeModule to handle LocalDateTime serialization/deserialization

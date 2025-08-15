@@ -21,8 +21,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntit
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.runtime.vo.PlanExecutionResult;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

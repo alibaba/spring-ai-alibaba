@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.example.manus.planning.executor;
 import java.util.concurrent.CompletableFuture;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.runtime.vo.PlanExecutionResult;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 
 /**
  * Plan executor interface defining basic behaviors for plan execution
