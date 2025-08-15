@@ -500,7 +500,7 @@ Readability.prototype = {
             }
         });
 
-        var medias = this._getAllNodesWithTag(articleContent, [
+        var mediums = this._getAllNodesWithTag(articleContent, [
             "img",
             "picture",
             "figure",
@@ -509,7 +509,7 @@ Readability.prototype = {
             "source",
         ]);
 
-        this._forEachNode(medias, function (media) {
+        this._forEachNode(mediums, function (media) {
             var src = media.getAttribute("src");
             var poster = media.getAttribute("poster");
             var srcset = media.getAttribute("srcset");
@@ -2324,7 +2324,7 @@ Readability.prototype = {
             var sizeInfo = this._getRowAndColumnCount(table);
 
             if (sizeInfo.columns == 1 || sizeInfo.rows == 1) {
-                // single colum/row tables are commonly used for page layout purposes.
+                // single column/row tables are commonly used for page layout purposes.
                 table._readabilityDataTable = false;
                 continue;
             }
