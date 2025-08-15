@@ -43,7 +43,6 @@ public class InteractiveElementRegistry {
 	 */
 	private static final String EXTRACT_INTERACTIVE_ELEMENTS_JS = """
 			((index) => {
-			const turndownService = new TurndownService()
 			const TMP = []
 			const ID = {"count": index}
 			const COMPUTED_STYLES = new WeakMap();
@@ -64,6 +63,10 @@ public class InteractiveElementRegistry {
 				"fieldset",   // Form fieldsets (can be interactive with legend)
 				"legend",     // Fieldset legends
 			]);
+
+			const turndownService = new TurndownService({
+			    headingStyle: 'atx',
+			});
 
 			extract(document.body)
 			return parseElement()
@@ -411,17 +414,39 @@ public class InteractiveElementRegistry {
 
 	// Removed the static initialization block, directly using string constants
 
-	private static String TURNDOWN_JS;
+	private static final String ConverseFrameToMarkdown = """
+			    (() => {
+			        var documentClone = window.document.cloneNode(true);
+			        const reader = new Readability(documentClone);
+			        const article = reader.parse();
+			        const html = article.content;
+			        const turndownService = new TurndownService({
+			            headingStyle: 'atx',
+			        });
+			        return turndownService.turndown(html);
+			    })
+			""";
+
+	private static String READABILITY_JS;
+
+	private static String TURNDOWNSERVICE_JS;
 
 	static {
-		ClassPathResource resource = new ClassPathResource("tool/turndown.js");
-		try (InputStream is = resource.getInputStream()) {
+		ClassPathResource readabilityResource = new ClassPathResource("tool/Readability.js");
+		try (InputStream is = readabilityResource.getInputStream()) {
 			byte[] bytes = new byte[is.available()];
 			is.read(bytes);
-			TURNDOWN_JS = new String(bytes);
+			READABILITY_JS = new String(bytes);
 		}
 		catch (IOException e) {
-			throw new IllegalStateException(e);
+		}
+		ClassPathResource turndownResource = new ClassPathResource("tool/turndown.js");
+		try (InputStream is = turndownResource.getInputStream()) {
+			byte[] bytes = new byte[is.available()];
+			is.read(bytes);
+			TURNDOWNSERVICE_JS = new String(bytes);
+		}
+		catch (IOException e) {
 		}
 	}
 
@@ -477,12 +502,14 @@ public class InteractiveElementRegistry {
 		try {
 			int index = 0;
 			for (Frame frame : page.frames()) {
-				frame.evaluate(TURNDOWN_JS);
+				frame.evaluate(READABILITY_JS);
+				frame.evaluate(TURNDOWNSERVICE_JS);
+				String frameText = (String) frame.evaluate(ConverseFrameToMarkdown);
 				List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) frame
 					.evaluate(EXTRACT_INTERACTIVE_ELEMENTS_JS, index);
 				for (Map<String, Object> elementMap : elementMapList) {
 					Integer globalIndex = (Integer) elementMap.get("index");
-					InteractiveElement element = new InteractiveElement(globalIndex, frame, elementMap);
+					InteractiveElement element = new InteractiveElement(globalIndex, frame, elementMap, frameText);
 					interactiveElements.add(element);
 					indexToElementMap.put(globalIndex, element);
 				}
