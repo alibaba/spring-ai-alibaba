@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.controller;
 import com.alibaba.cloud.ai.entity.Nl2SqlProcess;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.service.Nl2SqlService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,8 +33,6 @@ import reactor.core.publisher.Sinks;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-
-import static com.alibaba.cloud.ai.constant.Constant.ONLY_NL2SQL_OUTPUT;
 
 /**
  * NL2SQL接口预留
