@@ -42,8 +42,6 @@ public class StateGraphRepresentationTest {
 		return CompletableFuture.completedFuture("");
 	}
 
-	private OverAllStateFactory overAllStateFactory = () -> new OverAllState();
-
 	private KeyStrategyFactory keyStrategyFactory = () -> {
 		HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 		return new HashMap<>();

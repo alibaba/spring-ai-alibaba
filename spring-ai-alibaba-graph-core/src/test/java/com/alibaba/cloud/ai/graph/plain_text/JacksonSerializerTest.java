@@ -40,12 +40,12 @@ public class JacksonSerializerTest {
 
 		assertEquals(OverAllState.class, type);
 
-		byte[] bytes = serializer.writeObject(state);
+		byte[] bytes = serializer.objectToBytes(state);
 
 		assertNotNull(bytes);
 		assertTrue(bytes.length > 0);
 
-		OverAllState deserializedState = serializer.readObject(bytes);
+		OverAllState deserializedState = serializer.bytesToObject(bytes);
 
 		assertNotNull(deserializedState);
 		assertEquals(1, deserializedState.data().size());
