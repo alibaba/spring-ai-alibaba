@@ -326,7 +326,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 			if (!Files.exists(uploadsDirectory)) {
 				log.info("No uploads directory found for plan: {}", currentPlanId);
-				return new ToolExecuteResult("当前计划没有上传的文件。");
+				return new ToolExecuteResult("No uploaded files found for current plan");
 			}
 
 			Map<String, Object> result = new HashMap<>();
@@ -346,14 +346,14 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			result.put("totalCount", fileList.size());
 
 			return new ToolExecuteResult(
-					"📁 上传文件列表:\n" + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+					"📁 Uploaded Files List:\n" + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
 					
 		} catch (IOException e) {
 			log.error("IO error listing uploaded files for plan {}: {}", currentPlanId, e.getMessage(), e);
-			return new ToolExecuteResult("错误: 无法读取上传文件目录 - " + e.getMessage());
+			return new ToolExecuteResult("Error: Unable to read uploads directory - " + e.getMessage());
 		} catch (Exception e) {
 			log.error("Unexpected error listing uploaded files for plan {}: {}", currentPlanId, e.getMessage(), e);
-			return new ToolExecuteResult("错误: 列表文件失败 - " + e.getMessage());
+			return new ToolExecuteResult("Error: Failed to list files - " + e.getMessage());
 		}
 	}
 	
@@ -384,7 +384,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	private ToolExecuteResult loadSingleFile(String fileName) {
 		if (StringUtils.isEmpty(fileName)) {
 			log.warn("loadSingleFile called with empty fileName");
-			return new ToolExecuteResult("错误: file_name 参数为必需参数");
+			return new ToolExecuteResult("Error: file_name parameter is required");
 		}
 
 		try {
@@ -393,12 +393,12 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 			if (!Files.exists(filePath)) {
 				log.warn("File not found: {} in plan: {}", fileName, currentPlanId);
-				return new ToolExecuteResult("文件未找到: " + fileName);
+				return new ToolExecuteResult("Error: File not found: " + fileName);
 			}
 			
 			if (!Files.isRegularFile(filePath)) {
 				log.warn("Path is not a regular file: {}", filePath);
-				return new ToolExecuteResult("错误: 指定路径不是一个正常文件: " + fileName);
+				return new ToolExecuteResult("Error: Specified path is not a regular file: " + fileName);
 			}
 			
 			long fileSize = Files.size(filePath);
@@ -408,7 +408,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			
 			if (fileContent == null || fileContent.trim().isEmpty()) {
 				log.warn("File content is empty or null: {}", fileName);
-				return new ToolExecuteResult("警告: 文件 '" + fileName + "' 为空或无法读取内容");
+				return new ToolExecuteResult("Warning: File '" + fileName + "' is empty or unreadable");
 			}
 
 			// Use smart content saving service to handle large files
@@ -416,20 +416,20 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 			if (smartResult.getFileName() != null) {
 				return new ToolExecuteResult(
-						String.format("📄 文件 '%s' 加载和处理完成。内容已保存到存储: %s\n📊 摘要: %s", fileName,
+						String.format("📄 File '%s' loaded and processed successfully. Content saved to storage: %s\n📊 Summary: %s", fileName,
 								smartResult.getFileName(), smartResult.getSummary()));
 			}
 			else {
 				return new ToolExecuteResult(
-						String.format("✅ 文件 '%s' 加载成功:\n%s", fileName, smartResult.getSummary()));
+						String.format("✅ File '%s' loaded successfully:\n%s", fileName, smartResult.getSummary()));
 			}
 			
 		} catch (IOException e) {
 			log.error("IO error loading file {}: {}", fileName, e.getMessage(), e);
-			return new ToolExecuteResult("错误: 无法加载文件 '" + fileName + "' - " + e.getMessage());
+			return new ToolExecuteResult("Error: Unable to load file '" + fileName + "' - " + e.getMessage());
 		} catch (Exception e) {
 			log.error("Unexpected error loading file {}: {}", fileName, e.getMessage(), e);
-			return new ToolExecuteResult("错误: 加载文件失败 - " + e.getMessage());
+			return new ToolExecuteResult("Error: Failed to load file - " + e.getMessage());
 		}
 	}
 
@@ -441,10 +441,10 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			Path planDirectory = directoryManager.getRootPlanDirectory(currentPlanId);
 			Path uploadsDirectory = planDirectory.resolve("uploads");
 
-			if (!Files.exists(uploadsDirectory)) {
-				log.info("No uploads directory found for plan: {}", currentPlanId);
-				return new ToolExecuteResult("当前计划没有上传的文件。");
-			}
+					if (!Files.exists(uploadsDirectory)) {
+			log.info("No uploads directory found for plan: {}", currentPlanId);
+			return new ToolExecuteResult("No uploaded files found for current plan");
+		}
 
 			int limit = maxFiles != null && maxFiles > 0 ? Math.min(maxFiles, 100) : DEFAULT_MAX_FILES;
 			StringBuilder combinedContent = new StringBuilder();
@@ -468,29 +468,29 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 					String content = loadFileContent(file);
 					
 					if (content != null && !content.trim().isEmpty()) {
-						combinedContent.append("📄 === 文件: ").append(fileName).append(" ===\n");
+						combinedContent.append("📄 === File: ").append(fileName).append(" ===\n");
 						combinedContent.append(content);
 						combinedContent.append("\n\n");
 						processedCount++;
 					} else {
 						log.warn("File {} is empty or unreadable", fileName);
-						combinedContent.append("⚠️ === 文件: ").append(fileName).append(" (空文件或无法读取) ===\n\n");
+						combinedContent.append("⚠️ === File: ").append(fileName).append(" (empty or unreadable) ===\n\n");
 						errorCount++;
 					}
 				}
 				catch (Exception e) {
 					log.warn("Error loading file {}: {}", file.getFileName(), e.getMessage());
-					combinedContent.append("❌ === 加载文件失败: ").append(file.getFileName()).append(" ===\n");
-					combinedContent.append("错误: ").append(e.getMessage()).append("\n\n");
+					combinedContent.append("❌ === Failed to load file: ").append(file.getFileName()).append(" ===\n");
+					combinedContent.append("Error: ").append(e.getMessage()).append("\n\n");
 					errorCount++;
 				}
 			}
 
 			if (processedCount == 0) {
 				if (errorCount > 0) {
-					return new ToolExecuteResult("错误: 所有匹配的文件都加载失败。模式: " + filePattern);
+					return new ToolExecuteResult("Error: All matching files failed to load. Pattern: " + filePattern);
 				} else {
-					return new ToolExecuteResult("未找到匹配的文件。模式: " + filePattern);
+					return new ToolExecuteResult("No matching files found. Pattern: " + filePattern);
 				}
 			}
 
@@ -501,12 +501,12 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			String resultMessage;
 			if (smartResult.getFileName() != null) {
 				resultMessage = String.format(
-						"📊 成功加载 %d 个文件，%d 个错误。合并内容已保存到存储: %s\n📝 摘要: %s",
+						"📊 Successfully loaded %d files with %d errors. Combined content saved to storage: %s\n📝 Summary: %s",
 						processedCount, errorCount, smartResult.getFileName(), smartResult.getSummary());
 			}
 			else {
 				resultMessage = String.format(
-						"✅ 成功加载 %d 个文件，%d 个错误:\n%s",
+						"✅ Successfully loaded %d files with %d errors:\n%s",
 						processedCount, errorCount, smartResult.getSummary());
 			}
 			
@@ -514,10 +514,10 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			
 		} catch (IOException e) {
 			log.error("IO error loading multiple files: {}", e.getMessage(), e);
-			return new ToolExecuteResult("错误: IO 错误 - " + e.getMessage());
+			return new ToolExecuteResult("Error: IO error - " + e.getMessage());
 		} catch (Exception e) {
 			log.error("Unexpected error loading multiple files: {}", e.getMessage(), e);
-			return new ToolExecuteResult("错误: 加载多个文件失败 - " + e.getMessage());
+			return new ToolExecuteResult("Error: Failed to load multiple files - " + e.getMessage());
 		}
 	}
 
@@ -574,14 +574,14 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 		try (PDDocument document = PDDocument.load(filePath.toFile())) {
 			if (document.isEncrypted()) {
 				log.warn("PDF file is encrypted: {}", fileName);
-				return "错误: PDF文件已加密，无法提取文本内容。";
+				return "Error: PDF file is encrypted and cannot extract text content.";
 			}
 			
 			int pageCount = document.getNumberOfPages();
 			log.debug("PDF has {} pages", pageCount);
 			
 			if (pageCount == 0) {
-				return "警告: PDF文件为空，没有页面内容。";
+				return "Warning: PDF file is empty with no page content.";
 			}
 			
 			PDFTextStripper pdfStripper = new PDFTextStripper();
@@ -593,7 +593,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			String extractedText = pdfStripper.getText(document);
 			
 			if (extractedText == null || extractedText.trim().isEmpty()) {
-				return "警告: PDF文件中未提取到文本内容，可能是图片或手写PDF。";
+				return "Warning: No text content extracted from PDF, may be image-based or handwritten PDF.";
 			}
 			
 			log.debug("Successfully extracted {} characters from PDF: {}", extractedText.length(), fileName);
@@ -601,7 +601,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			
 		} catch (IOException e) {
 			log.error("Error loading PDF content from {}: {}", fileName, e.getMessage());
-			throw new IOException("无法加载PDF文件内容: " + e.getMessage(), e);
+			throw new IOException("Unable to load PDF file content: " + e.getMessage(), e);
 		}
 	}
 
@@ -635,10 +635,10 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 		try {
 			Path uploadsDir = directoryManager.getRootPlanDirectory(currentPlanId).resolve("uploads");
 
-			if (!Files.exists(uploadsDir)) {
-				log.info("No uploads directory found for plan: {}", currentPlanId);
-				return new ToolExecuteResult("未找到计划的上传目录: " + currentPlanId);
-			}
+					if (!Files.exists(uploadsDir)) {
+			log.info("No uploads directory found for plan: {}", currentPlanId);
+			return new ToolExecuteResult("Uploads directory not found for plan: " + currentPlanId);
+		}
 
 			List<Path> files;
 			try (var stream = Files.list(uploadsDir)) {
@@ -648,10 +648,10 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 						.collect(Collectors.toList());
 			}
 
-			if (files.isEmpty()) {
-				log.info("No files found in uploads directory for plan: {}", currentPlanId);
-				return new ToolExecuteResult("上传目录中未找到文件");
-			}
+					if (files.isEmpty()) {
+			log.info("No files found in uploads directory for plan: {}", currentPlanId);
+			return new ToolExecuteResult("No files found in uploads directory");
+		}
 			
 			log.info("Starting smart analysis of {} files", files.size());
 
@@ -731,10 +731,10 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			
 		} catch (IOException e) {
 			log.error("IO error during smart analysis: {}", e.getMessage(), e);
-			return new ToolExecuteResult("错误: 无法访问文件目录 - " + e.getMessage());
+			return new ToolExecuteResult("Error: Unable to access file directory - " + e.getMessage());
 		} catch (Exception e) {
 			log.error("Unexpected error during smart analysis: {}", e.getMessage(), e);
-			return new ToolExecuteResult("错误: 智能分析失败 - " + e.getMessage());
+			return new ToolExecuteResult("Error: Smart analysis failed - " + e.getMessage());
 		}
 	}
 
@@ -814,12 +814,12 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 				return getTextFilePreview(file, fileName);
 			}
 			else {
-				return "二进制或不支持的文件类型，无法预览";
+				return "Binary or unsupported file type, cannot preview";
 			}
 		}
 		catch (Exception e) {
 			log.warn("Error getting preview for {}: {}", fileName, e.getMessage());
-			return "预览失败: " + e.getMessage();
+			return "Preview failed: " + e.getMessage();
 		}
 	}
 	
@@ -848,11 +848,11 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			String preview = text.length() > MAX_PREVIEW_LENGTH ? 
 					text.substring(0, MAX_PREVIEW_LENGTH) + "..." : text;
 					
-			return String.format("%s (共%d页)", preview.replaceAll("\\s+", " "), pageCount);
+			return String.format("%s (Total %d pages)", preview.replaceAll("\\s+", " "), pageCount);
 			
 		} catch (Exception e) {
 			log.warn("Error getting PDF preview for {}: {}", fileName, e.getMessage());
-			return "PDF预览失败: " + e.getMessage();
+			return "PDF preview failed: " + e.getMessage();
 		}
 	}
 	
@@ -887,12 +887,12 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			}
 			
 			String result = preview.toString();
-			return result.isEmpty() ? "只有空行" : 
-					String.format("%s (共%d行)", result, lines.size());
+			return result.isEmpty() ? "Only empty lines" : 
+					String.format("%s (Total %d lines)", result, lines.size());
 			
 		} catch (Exception e) {
 			log.warn("Error getting text preview for {}: {}", fileName, e.getMessage());
-			return "文本预览失败: " + e.getMessage();
+			return "Text preview failed: " + e.getMessage();
 		}
 	}
 
