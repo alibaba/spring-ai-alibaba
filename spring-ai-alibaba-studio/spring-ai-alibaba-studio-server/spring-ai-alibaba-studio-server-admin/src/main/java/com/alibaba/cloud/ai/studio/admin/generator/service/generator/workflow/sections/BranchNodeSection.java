@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.s
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -114,20 +113,6 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 			.append(edgeCaseMapStr)
 			.append(");\n");
 
-		// 补充结束节点与END的联系（如果有）
-		List<String> endNodeNames = edgeCaseMap.values()
-			.stream()
-			.map(nodeMap::get)
-			.filter(Objects::nonNull)
-			.filter(node -> "end".equalsIgnoreCase(node.getType()))
-			.map(Node::getId)
-			.map(varNames::get)
-			.toList();
-		if (!endNodeNames.isEmpty()) {
-			sb.append("stateGraph");
-			endNodeNames.forEach(varName -> sb.append(String.format("\n.addEdge(\"%s\", END)", varName)));
-			sb.append(";\n");
-		}
 		return sb.toString();
 	}
 

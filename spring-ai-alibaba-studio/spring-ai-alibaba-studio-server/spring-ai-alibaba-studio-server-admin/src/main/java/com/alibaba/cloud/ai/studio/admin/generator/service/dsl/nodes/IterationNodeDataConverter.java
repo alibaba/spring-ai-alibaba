@@ -56,8 +56,9 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 				Pattern typePattern = Pattern.compile("array\\[(.*?)]");
 				String inputType = "object";
 				String outputType = "object";
-				Matcher inputTypeMatcher = typePattern.matcher((String) data.get("iterator_input_type"));
-				Matcher outputTypeMatcher = typePattern.matcher((String) data.get("output_type"));
+				Matcher inputTypeMatcher = typePattern
+					.matcher((String) data.getOrDefault("iterator_input_type", "object"));
+				Matcher outputTypeMatcher = typePattern.matcher((String) data.getOrDefault("output_type", "object"));
 				if (inputTypeMatcher.find()) {
 					inputType = inputTypeMatcher.group(1);
 				}
