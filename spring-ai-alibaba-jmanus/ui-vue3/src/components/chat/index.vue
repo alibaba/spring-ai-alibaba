@@ -15,7 +15,7 @@
 -->
 <template>
   <div class="chat-container">
-    <div class="messages" ref="messagesRef">
+    <div class="messages" ref="messagesRef" @click="handleMessageContainerClick">
       <div
           v-for="message in messages"
           :key="message.id"
@@ -476,6 +476,10 @@ import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-exe
 import type { InputMessage } from "@/stores/memory"
 import {memoryStore} from "@/stores/memory";
 import {MemoryApiService} from "@/api/memory-api-service";
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github-dark.css'
 
 /**
  * Chat message interface that includes PlanExecutionRecord for plan-based messages
@@ -540,6 +544,38 @@ const { t } = useI18n()
 
 // Use the plan execution manager
 const planExecution = usePlanExecution()
+
+// Configure marked once with GFM and line breaks
+marked.setOptions({ gfm: true, breaks: true })
+
+// Custom renderer: highlight code blocks, add copy button (markdown fenced code treated same as code)
+const mdRenderer = new marked.Renderer()
+mdRenderer.code = ({ text, lang }: { text: string; lang?: string; escaped?: boolean }): string => {
+  const langRaw = (lang || '').trim()
+  const langLower = langRaw.toLowerCase()
+
+  let highlighted = ''
+  try {
+    if (langLower && hljs.getLanguage(langLower)) {
+      highlighted = hljs.highlight(text, { language: langLower }).value
+    } else {
+      highlighted = hljs.highlightAuto(text).value
+    }
+  } catch (e) {
+    highlighted = text
+  }
+
+  const rawEncoded = encodeURIComponent(text)
+  const label = langLower || 'text'
+  return `
+<div class="md-code-block" data-lang="${label}">
+  <div class="md-code-header">
+    <span class="md-lang">${label}</span>
+    <button class="md-copy-btn" data-raw="${rawEncoded}" title="copy">copy</button>
+  </div>
+  <pre><code class="hljs language-${label}">${highlighted}</code></pre>
+</div>`
+}
 
 const messagesRef = ref<HTMLElement>()
 const isLoading = ref(false)
@@ -1333,18 +1369,59 @@ const handlePlanError = (message: string) => {
 const formatResponseText = (text: string): string => {
   if (!text) return ''
 
-  // Convert line breaks to HTML line breaks
-  let formatted = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>')
+  try {
+    const rawHtml = marked.parse(text, { renderer: mdRenderer })
+    // Sanitize to avoid XSS
+    return DOMPurify.sanitize(rawHtml as string)
+  } catch (e) {
+    console.error('Markdown render error:', e)
+    // Fallback: preserve original simple formatting
+    let fallback = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>')
+    fallback = fallback.replace(/(<br><br>)/g, '</p><p>')
+    if (fallback.includes('</p><p>')) fallback = `<p>${fallback}</p>`
+    return fallback
+  }
+}
 
-  // Add appropriate paragraph spacing and formatting
-  formatted = formatted.replace(/(<br><br>)/g, '</p><p>')
+// Copy button handler (event delegation)
+const handleMessageContainerClick = (event: Event) => {
+  const target = event.target as HTMLElement
+  if (!target) return
+  const btn = target.closest('.md-copy-btn') as HTMLElement | null
+  if (!btn) return
 
-  // Wrap with p tags if there are multiple paragraphs
-  if (formatted.includes('</p><p>')) {
-    formatted = `<p>${formatted}</p>`
+  const raw = btn.getAttribute('data-raw') || ''
+  let textToCopy = ''
+  try {
+    textToCopy = decodeURIComponent(raw)
+  } catch {
+    textToCopy = raw
   }
 
-  return formatted
+  const doCopy = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(textToCopy)
+      } else {
+        const ta = document.createElement('textarea')
+        ta.value = textToCopy
+        ta.style.position = 'fixed'
+        ta.style.left = '-9999px'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+      }
+      btn.textContent = 'copy'
+      setTimeout(() => (btn.textContent = 'copy'), 1500)
+    } catch (err) {
+      console.error('Copy failed:', err)
+      btn.textContent = 'copy failed'
+      setTimeout(() => (btn.textContent = 'copy'), 1500)
+    }
+  }
+
+  doCopy()
 }
 
 // Handle user input form submission
@@ -1767,6 +1844,115 @@ defineExpose({
             color: #e2e8f0;
             font-style: italic;
           }
+
+            /* Headings */
+            h1, h2, h3, h4, h5, h6 {
+              margin: 12px 0 8px;
+              font-weight: 700;
+              line-height: 1.4;
+            }
+            h1 { font-size: 22px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; }
+            h2 { font-size: 20px; margin-top: 16px; }
+            h3 { font-size: 18px; }
+
+            /* Lists */
+            ul, ol {
+              margin: 6px 0 12px 22px;
+              padding-left: 18px;
+            }
+            li { margin: 4px 0; }
+
+            /* Blockquote */
+            blockquote {
+              margin: 10px 0;
+              padding: 8px 12px;
+              border-left: 3px solid #667eea;
+              background: rgba(102, 126, 234, 0.08);
+              color: #e5e7eb;
+            }
+
+            /* Inline code */
+            code {
+              background: rgba(0,0,0,0.35);
+              padding: 2px 6px;
+              border-radius: 4px;
+              font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+                'Courier New', monospace;
+              font-size: 13px;
+            }
+
+            /* Code blocks */
+            pre {
+              background: rgba(0,0,0,0.5);
+              border: 1px solid rgba(255, 255, 255, 0.08);
+              border-radius: 8px;
+              padding: 12px 14px;
+              overflow: auto;
+              margin: 10px 0 14px;
+            }
+            pre code {
+              background: transparent;
+              padding: 0;
+              font-size: 13px;
+              line-height: 1.6;
+              color: #e5e7eb;
+              white-space: pre;
+            }
+
+            /* Enhanced code block container with toolbar */
+            :deep(.md-code-block) {
+              position: relative;
+              margin: 12px 0 16px;
+              border: 1px solid #30363d; /* GitHub dark border */
+              border-radius: 8px;
+              background: #0d1117; /* GitHub dark bg */
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+            }
+            :deep(.md-code-block .md-code-header) {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 8px 10px;
+              border-bottom: 1px solid #30363d;
+              background: #161b22; /* GitHub dark header */
+              border-top-left-radius: 8px;
+              border-top-right-radius: 8px;
+            }
+            :deep(.md-code-block .md-code-header .md-lang) {
+              margin-right: auto;
+            }
+            :deep(.md-code-block .md-code-header .md-copy-btn) {
+              margin-left: auto; /* ensure right aligned */
+            }
+            :deep(.md-code-block .md-lang) {
+              font-size: 12px;
+              color: #8b949e;
+              text-transform: lowercase;
+            }
+            :deep(.md-code-block .md-copy-btn) {
+              height: 22px;
+              padding: 0 8px;
+              background: #21262d; /* GitHub dark button bg */
+              color: #c9d1d9; /* GitHub dark text */
+              border: 1px solid #30363d;
+              border-radius: 6px;
+              font-size: 12px;
+              cursor: pointer;
+              transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+            }
+            :deep(.md-code-block .md-copy-btn:hover) {
+              background: #30363d; /* GitHub dark hover bg */
+              color: #f0f6fc;
+              border-color: #8b949e;
+              transform: translateY(-1px);
+            }
+            :deep(.md-code-block pre) {
+              margin: 0;
+              border: none;
+              border-bottom-left-radius: 8px;
+              border-bottom-right-radius: 8px;
+              background: #0d1117; /* match container */
+            }
         }
       }
 
