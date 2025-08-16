@@ -169,7 +169,7 @@ public final class OverAllState implements Serializable {
 	 */
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume) {
 		this.data = data;
-		this.keyStrategies = keyStrategies;
+		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = resume;
 	}
