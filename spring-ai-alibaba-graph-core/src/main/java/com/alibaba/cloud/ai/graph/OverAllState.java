@@ -29,8 +29,6 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.entryOf;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.ofNullable;
@@ -157,7 +155,6 @@ public final class OverAllState implements Serializable {
 	public OverAllState() {
 		this.data = new HashMap<>();
 		this.keyStrategies = new HashMap<>();
-		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = false;
 	}
 
@@ -170,7 +167,6 @@ public final class OverAllState implements Serializable {
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume) {
 		this.data = data;
 		this.keyStrategies = keyStrategies;
-		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = resume;
 	}
 
@@ -319,8 +315,13 @@ public final class OverAllState implements Serializable {
 	 */
 	public Map<String, Object> updateState(Map<String, Object> partialState) {
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
-		partialState.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
-			this.data.put(key, keyStrategies.get(key).apply(value(key, null), partialState.get(key)));
+		partialState.keySet().forEach(key -> {
+			KeyStrategy strategy = keyStrategies != null ? keyStrategies.get(key) : null;
+			// If no specific strategy is found, use the default REPLACE strategy
+			if (strategy == null) {
+				strategy = KeyStrategy.REPLACE;
+			}
+			this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
 		});
 		return data();
 	}
@@ -343,11 +344,13 @@ public final class OverAllState implements Serializable {
 	}
 
 	/**
-	 * Key verify boolean.
+	 * Key verify boolean. Since we now support default key strategies, verification
+	 * always passes.
 	 * @return the boolean
 	 */
 	protected boolean keyVerify() {
-		return hasCommonKey(this.data, getKeyStrategies());
+		// With default key strategy support, all keys are valid
+		return true;
 	}
 
 	private Map<?, ?> getKeyStrategies() {
@@ -412,18 +415,20 @@ public final class OverAllState implements Serializable {
 	 */
 	private static Map<String, Object> updatePartialStateFromSchema(Map<String, Object> state,
 			Map<String, Object> partialState, Map<String, KeyStrategy> keyStrategies) {
-		if (keyStrategies == null || keyStrategies.isEmpty()) {
+		if (partialState == null || partialState.isEmpty()) {
 			return partialState;
 		}
-		return partialState.entrySet().stream().map(entry -> {
 
-			KeyStrategy channel = keyStrategies.get(entry.getKey());
-			if (channel != null) {
-				Object newValue = channel.apply(state.get(entry.getKey()), entry.getValue());
-				return entryOf(entry.getKey(), newValue);
+		return partialState.entrySet().stream().map(entry -> {
+			KeyStrategy channel = keyStrategies != null ? keyStrategies.get(entry.getKey()) : null;
+
+			// If no specific strategy is found, use the default REPLACE strategy
+			if (channel == null) {
+				channel = KeyStrategy.REPLACE;
 			}
 
-			return entry;
+			Object newValue = channel.apply(state.get(entry.getKey()), entry.getValue());
+			return entryOf(entry.getKey(), newValue);
 		}).collect(toMapAllowingNulls(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
