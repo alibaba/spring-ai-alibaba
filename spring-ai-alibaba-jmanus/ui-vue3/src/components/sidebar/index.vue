@@ -250,24 +250,72 @@
                 />
                 {{ sidebarStore.isExecuting ? $t('sidebar.executing') : $t('sidebar.executePlan') }}
               </button>
+              <button
+                class="btn publish-mcp-btn"
+                @click="handlePublishMcpService"
+                :disabled="!sidebarStore.currentPlanTemplateId"
+                v-if="showPublishButton"
+              >
+                <Icon icon="carbon:application" width="16" />
+                {{ t('sidebar.publishMcpService') }}
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- 发布MCP服务模态框 -->
+  <PublishMcpServiceModal
+    v-model="showPublishMcpModal"
+    :plan-template-id="sidebarStore.currentPlanTemplateId || ''"
+    :plan-title="sidebarStore.selectedTemplate?.title || ''"
+    :plan-description="sidebarStore.selectedTemplate?.description || ''"
+    @published="handleMcpServicePublished"
+  />
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { sidebarStore } from '@/stores/sidebar'
+import PublishMcpServiceModal from '@/components/publish-mcp-service-modal/index.vue'
+import type { CoordinatorToolVO, CoordinatorToolConfig } from '@/api/coordinator-tool-api-service'
+import { CoordinatorToolApiService } from '@/api/coordinator-tool-api-service'
 
 const { t } = useI18n()
 
 // Fields to hide in JSON editor
 const hiddenFields = ['currentPlanId', 'userRequest', 'rootPlanId']
+
+// CoordinatorTool配置
+const coordinatorToolConfig = ref<CoordinatorToolConfig>({
+  enabled: true,
+  success: true
+})
+
+// 计算属性：是否显示发布MCP服务按钮
+const showPublishButton = computed(() => {
+  return coordinatorToolConfig.value.enabled
+})
+
+// 加载CoordinatorTool配置
+const loadCoordinatorToolConfig = async () => {
+  try {
+    const config = await CoordinatorToolApiService.getCoordinatorToolConfig()
+    coordinatorToolConfig.value = config
+  } catch (error) {
+    console.error('加载CoordinatorTool配置失败:', error)
+    // 使用默认配置
+    coordinatorToolConfig.value = {
+      enabled: true,
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
 
 // Computed property for formatted JSON content
 const formattedJsonContent = computed({
@@ -395,6 +443,33 @@ const handleExecutePlan = async () => {
   }
 }
 
+// 发布MCP服务相关状态
+const showPublishMcpModal = ref(false)
+
+const handlePublishMcpService = () => {
+  console.log('[Sidebar] 发布MCP服务按钮被点击')
+  console.log('[Sidebar] currentPlanTemplateId:', sidebarStore.currentPlanTemplateId)
+  
+  if (!sidebarStore.currentPlanTemplateId) {
+    console.log('[Sidebar] 没有选择计划模板，显示警告')
+    alert(t('mcpService.selectPlanTemplateFirst'))
+    return
+  }
+  
+  console.log('[Sidebar] 打开发布MCP服务模态框')
+  showPublishMcpModal.value = true
+}
+
+const handleMcpServicePublished = (tool: CoordinatorToolVO | null) => {
+  if (tool === null) {
+    console.log('MCP服务删除成功')
+    // 可以在这里添加删除成功后的处理逻辑，比如刷新列表等
+  } else {
+    console.log('MCP服务发布成功:', tool)
+    // 可以在这里添加发布成功后的处理逻辑
+  }
+}
+
 // Utility functions
 const getRelativeTimeString = (date: Date): string => {
   // Check if date is valid
@@ -425,6 +500,7 @@ const truncateText = (text: string, maxLength: number): string => {
 // Lifecycle
 onMounted(() => {
   sidebarStore.loadPlanTemplateList()
+  loadCoordinatorToolConfig()
 })
 
 // Expose methods for parent component to call
@@ -737,10 +813,17 @@ defineExpose({
             }
           }
 
-          .execute-btn {
+          .execute-btn,
+          .publish-mcp-btn {
             padding: 10px 16px;
             font-size: 13px;
             font-weight: 500;
+            width: 100%;
+            margin-bottom: 8px;
+          }
+
+          .publish-mcp-btn {
+            margin-bottom: 0;
           }
         }
       }
@@ -783,6 +866,17 @@ defineExpose({
       &:hover:not(:disabled) {
         background: rgba(255, 255, 255, 0.2);
         color: white;
+      }
+    }
+
+    &.publish-mcp-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      border: none;
+
+      &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
       }
     }
 

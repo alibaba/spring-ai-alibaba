@@ -336,7 +336,7 @@ public class PlanTemplateService implements IPlanTemplateService {
 	 * @param rawParam URL query parameters
 	 * @return Result status
 	 */
-	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam) {
+	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam, String planId) {
 		try {
 			// Step 1: Get execution JSON from repository by planTemplateId
 			PlanTemplate template = getPlanTemplate(planTemplateId);
@@ -355,8 +355,13 @@ public class PlanTemplateService implements IPlanTemplateService {
 				return ResponseEntity.internalServerError().body(Map.of("error", "Cannot get plan JSON data"));
 			}
 
-			// Generate a new plan ID, not using the template ID
-			String newPlanId = planIdDispatcher.generatePlanId();
+			// Generate a new plan ID based on sessionId
+			String newPlanId;
+			if (planId != null && !planId.trim().isEmpty()) {
+				newPlanId = planId;
+			} else {
+				newPlanId = planIdDispatcher.generatePlanId();
+			}
 
 			// Get planning flow, using the new plan ID
 			PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(newPlanId);
