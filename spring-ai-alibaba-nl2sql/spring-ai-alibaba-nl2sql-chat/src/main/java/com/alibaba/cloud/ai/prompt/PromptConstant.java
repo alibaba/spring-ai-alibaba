@@ -62,6 +62,10 @@ public class PromptConstant {
 		return new PromptTemplate(PromptLoader.loadPrompt("planner"));
 	}
 
+	public static PromptTemplate getPlannerNl2sqlOnlyTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("planner-nl2sql-only"));
+	}
+
 	public static PromptTemplate getReportGeneratorPromptTemplate() {
 		return new PromptTemplate(PromptLoader.loadPrompt("report-generator"));
 	}

@@ -15,13 +15,24 @@
  */
 package com.alibaba.cloud.ai.controller;
 
+import com.alibaba.cloud.ai.entity.Nl2SqlProcess;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.service.Nl2SqlService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /**
  * NL2SQL接口预留
@@ -33,26 +44,80 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/nl2sql")
 public class Nl2SqlController {
 
-	private static final Logger log = LoggerFactory.getLogger(Nl2SqlController.class);
+	private static final Logger logger = LoggerFactory.getLogger(Nl2SqlController.class);
 
 	private final Nl2SqlService nl2SqlService;
 
+	private final ExecutorService executorService;
+
 	public Nl2SqlController(Nl2SqlService nl2SqlService) {
 		this.nl2SqlService = nl2SqlService;
+		this.executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	}
 
+	/**
+	 * 直接返回NL2SQL的结果
+	 * @param query 自然语言
+	 * @param agentId Agent Id
+	 * @return sql结果
+	 */
 	@GetMapping("/nl2sql")
-	public String nl2sql(@RequestParam("query") String query) {
+	public String nl2sql(@RequestParam String query,
+			@RequestParam(required = false, defaultValue = "") String agentId) {
 		try {
-			return this.nl2SqlService.apply(query);
-		}
-		catch (IllegalArgumentException e) {
-			return "Error: " + e.getMessage();
+			return this.nl2SqlService.nl2sql(query, agentId);
 		}
 		catch (Exception e) {
-			log.error("nl2sql Exception: {}", e.getMessage(), e);
+			logger.error("nl2sql Exception: {}", e.getMessage(), e);
 			return "Error: " + e.getMessage();
 		}
+	}
+
+	/**
+	 * 执行NL2SQL的过程（带中间过程输出）
+	 * @param query 自然语言
+	 * @param agentId Agent Id
+	 * @param response Servlet Response
+	 * @return NL2SQL执行过程
+	 */
+	@GetMapping(value = "/stream/nl2sql", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public Flux<ServerSentEvent<Nl2SqlProcess>> nl2sqlWithProcess(@RequestParam String query,
+			@RequestParam(required = false, defaultValue = "") String agentId, HttpServletResponse response) {
+		// Set SSE-related HTTP headers
+		response.setCharacterEncoding("UTF-8");
+		response.setContentType("text/event-stream");
+		response.setHeader("Cache-Control", "no-cache");
+		response.setHeader("Connection", "keep-alive");
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Headers", "Cache-Control");
+
+		logger.info("Starting nl2sql for query: {} with agentId: {}", query, agentId);
+
+		Sinks.Many<ServerSentEvent<Nl2SqlProcess>> sink = Sinks.many().unicast().onBackpressureBuffer();
+		Consumer<Nl2SqlProcess> consumer = (process) -> {
+			sink.tryEmitNext(ServerSentEvent.builder(process).build());
+			if (process.getFinished()) {
+				sink.tryEmitComplete();
+			}
+		};
+
+		executorService.submit(() -> {
+			try {
+				this.nl2SqlService.nl2sqlWithProcess(consumer, query, agentId);
+			}
+			catch (Exception e) {
+				logger.error("nl2sql Exception: {}", e.getMessage(), e);
+				sink.tryEmitNext(
+						ServerSentEvent.builder(Nl2SqlProcess.fail(e.getMessage(), StateGraph.END, e.getMessage()))
+							.build());
+				sink.tryEmitError(e);
+			}
+		});
+		return sink.asFlux()
+			.doOnSubscribe(subscription -> logger.info("Client subscribed to stream"))
+			.doOnCancel(() -> logger.info("Client disconnected from stream"))
+			.doOnError(e -> logger.error("Error occurred during streaming: ", e))
+			.doOnComplete(() -> logger.info("Stream completed successfully"));
 	}
 
 }
