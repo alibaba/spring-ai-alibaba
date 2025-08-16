@@ -92,11 +92,6 @@ public class StateGraph {
 	final Edges edges = new Edges();
 
 	/**
-	 * Factory for creating overall state instances.
-	 */
-	private OverAllStateFactory overAllStateFactory;
-
-	/**
 	 * Factory for providing key strategies.
 	 */
 	private KeyStrategyFactory keyStrategyFactory;
@@ -172,57 +167,6 @@ public class StateGraph {
 	}
 
 	/**
-	 * Deprecated constructor that initializes a StateGraph with the specified name,
-	 * overall state factory, and state serializer.
-	 * @param name the name of the graph
-	 * @param overAllStateFactory the factory for creating overall state instances
-	 * @param plainTextStateSerializer the plain text state serializer to use
-	 */
-	@Deprecated
-	public StateGraph(String name, OverAllStateFactory overAllStateFactory,
-			PlainTextStateSerializer plainTextStateSerializer) {
-		this.name = name;
-		this.overAllStateFactory = overAllStateFactory;
-		this.stateSerializer = plainTextStateSerializer;
-	}
-
-	/**
-	 * Deprecated constructor that initializes a StateGraph with the specified name and
-	 * overall state factory.
-	 * @param name the name of the graph
-	 * @param overAllStateFactory the factory for creating overall state instances
-	 */
-	@Deprecated
-	public StateGraph(String name, OverAllStateFactory overAllStateFactory) {
-		this.name = name;
-		this.overAllStateFactory = overAllStateFactory;
-		this.stateSerializer = new JacksonSerializer();
-	}
-
-	/**
-	 * Deprecated constructor that initializes a StateGraph with the provided overall
-	 * state factory.
-	 * @param overAllStateFactory the factory for creating overall state instances
-	 */
-	@Deprecated
-	public StateGraph(OverAllStateFactory overAllStateFactory) {
-		this.overAllStateFactory = overAllStateFactory;
-		this.stateSerializer = new JacksonSerializer();
-	}
-
-	/**
-	 * Deprecated constructor that initializes a StateGraph with the provided overall
-	 * state factory and state serializer.
-	 * @param overAllStateFactory the factory for creating overall state instances
-	 * @param plainTextStateSerializer the plain text state serializer to use
-	 */
-	@Deprecated
-	public StateGraph(OverAllStateFactory overAllStateFactory, PlainTextStateSerializer plainTextStateSerializer) {
-		this.overAllStateFactory = overAllStateFactory;
-		this.stateSerializer = plainTextStateSerializer;
-	}
-
-	/**
 	 * Default constructor that initializes a StateGraph with a Gson-based state
 	 * serializer.
 	 */
@@ -253,15 +197,6 @@ public class StateGraph {
 	 */
 	public final AgentStateFactory<OverAllState> getStateFactory() {
 		return stateSerializer.stateFactory();
-	}
-
-	/**
-	 * Gets the overall state factory.
-	 * @return the overall state factory
-	 */
-	@Deprecated
-	public final OverAllStateFactory getOverAllStateFactory() {
-		return overAllStateFactory;
 	}
 
 	/**

@@ -48,17 +48,6 @@ public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 		return format("%s(%s)", INTERRUPT_PREFIX, requireNonNull(nodeId, "nodeId cannot be null!"));
 	}
 
-	/**
-	 * return metadata value for key
-	 * @param key given metadata key
-	 * @return metadata value for key if any
-	 * @deprecated use {@link #metadata(String)} instead
-	 */
-	@Deprecated(forRemoval = true)
-	default Optional<Object> getMetadata(String key) {
-		return metadata(key);
-	};
-
 	class Builder<B extends Builder<B>> {
 
 		private Map<String, Object> metadata;
