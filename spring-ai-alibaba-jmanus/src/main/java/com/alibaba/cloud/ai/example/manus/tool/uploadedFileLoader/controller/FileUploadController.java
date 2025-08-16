@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.controller;
+package com.alibaba.cloud.ai.example.manus.tool.uploadedFileLoader.controller;
 
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import org.slf4j.Logger;
@@ -52,9 +52,6 @@ public class FileUploadController {
 	private static final Set<String> SUPPORTED_EXTENSIONS = Set.of(".pdf", ".txt", ".md", ".doc", ".docx", ".csv",
 			".xlsx", ".xls", ".json", ".xml", ".html", ".htm", ".log", ".java", ".py", ".js", ".ts", ".sql", ".sh",
 			".bat", ".yaml", ".yml", ".properties", ".conf", ".ini");
-
-	// Maximum file size (50MB)
-	private static final long MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 	/**
 	 * Upload multiple files to a specific plan
@@ -224,12 +221,6 @@ public class FileUploadController {
 		String originalFilename = file.getOriginalFilename();
 		if (originalFilename == null || originalFilename.trim().isEmpty()) {
 			result.put("error", "Invalid file name");
-			return result;
-		}
-
-		// Check file size
-		if (file.getSize() > MAX_FILE_SIZE) {
-			result.put("error", "File size exceeds limit (50MB): " + originalFilename);
 			return result;
 		}
 

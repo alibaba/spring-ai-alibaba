@@ -85,7 +85,7 @@ import com.alibaba.cloud.ai.example.manus.tool.mapreduce.ReduceOperationTool;
 import com.alibaba.cloud.ai.example.manus.tool.tableProcessor.TableProcessingService;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
-import com.alibaba.cloud.ai.example.manus.tool.UploadedFileLoaderTool;
+import com.alibaba.cloud.ai.example.manus.tool.uploadedFileLoader.UploadedFileLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.pptGenerator.PptGeneratorOperator;
 import com.alibaba.cloud.ai.example.manus.tool.jsxGenerator.JsxGeneratorOperator;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;

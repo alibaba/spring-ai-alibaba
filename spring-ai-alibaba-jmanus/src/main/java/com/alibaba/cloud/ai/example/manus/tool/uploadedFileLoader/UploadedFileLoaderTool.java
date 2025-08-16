@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool;
+package com.alibaba.cloud.ai.example.manus.tool.uploadedFileLoader;
 
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
