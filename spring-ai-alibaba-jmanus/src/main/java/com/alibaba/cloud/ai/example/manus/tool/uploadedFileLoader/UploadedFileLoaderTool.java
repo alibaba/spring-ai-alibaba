@@ -945,13 +945,17 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 		// Type recommendations - using correct tool names
 		switch (extension) {
 			case ".pdf" -> advice.append("Use doc_loader to extract PDF text content");
-			case ".csv", ".xlsx", ".xls" -> advice.append("Use database_use to import to database for structured analysis");
+			case ".csv", ".xlsx", ".xls" ->
+				advice.append("Use database_use to import to database for structured analysis");
 			case ".json" -> advice.append("Use text_file_operator to parse JSON structure and extract key fields");
 			case ".xml" -> advice.append("Use text_file_operator to parse XML structure and extract node information");
-			case ".log" -> advice.append("Use text_file_operator for time-series analysis to extract errors and key events");
-			case ".java", ".py", ".js", ".ts" -> advice.append("Use text_file_operator for code structure analysis to extract functions and class information");
+			case ".log" ->
+				advice.append("Use text_file_operator for time-series analysis to extract errors and key events");
+			case ".java", ".py", ".js", ".ts" -> advice.append(
+					"Use text_file_operator for code structure analysis to extract functions and class information");
 			case ".html", ".htm" -> advice.append("Use browser_use for web content parsing and DOM analysis");
-			case ".md" -> advice.append("Use text_file_operator to parse Markdown format and extract document structure");
+			case ".md" ->
+				advice.append("Use text_file_operator to parse Markdown format and extract document structure");
 			default -> advice.append("Use text_file_operator for text content analysis and extract key information");
 		}
 
@@ -991,11 +995,13 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			recommendations.append("📊 Spreadsheet files detected, recommend using database_use for data analysis\n");
 		}
 		if (filesByType.containsKey(".log")) {
-			recommendations.append("📋 Log files detected, recommend using text_file_operator for time-series anomaly analysis\n");
+			recommendations
+				.append("📋 Log files detected, recommend using text_file_operator for time-series anomaly analysis\n");
 		}
 		if (filesByType.containsKey(".java") || filesByType.containsKey(".py") || filesByType.containsKey(".js")
 				|| filesByType.containsKey(".ts")) {
-			recommendations.append("💻 Code files detected, recommend using text_file_operator for code structure analysis\n");
+			recommendations
+				.append("💻 Code files detected, recommend using text_file_operator for code structure analysis\n");
 		}
 		if (filesByType.containsKey(".html") || filesByType.containsKey(".htm")) {
 			recommendations.append("🌐 HTML files detected, recommend using browser_use for web parsing\n");
