@@ -15,10 +15,17 @@
  */
 package com.alibaba.cloud.ai.service.impl;
 
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.GraphInitData;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.PersistentConfig;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
@@ -193,7 +200,7 @@ public class GraphServiceImpl implements GraphService, ApplicationContextAware {
 
 	private CompileConfig compileConfig(PersistentConfig config) {
 		return CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build()) // .stateSerializer(stateSerializer)
+			.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), new MemorySaver()).build()) // .stateSerializer(stateSerializer)
 			.build();
 	}
 

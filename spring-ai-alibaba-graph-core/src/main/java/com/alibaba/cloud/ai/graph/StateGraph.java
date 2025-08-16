@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import com.alibaba.cloud.ai.graph.exception.Errors;
@@ -90,11 +90,6 @@ public class StateGraph {
 	 * Collection of edges in the graph.
 	 */
 	final Edges edges = new Edges();
-
-	/**
-	 * Factory for creating overall state instances.
-	 */
-	private OverAllStateFactory overAllStateFactory;
 
 	/**
 	 * Factory for providing key strategies.
@@ -172,57 +167,6 @@ public class StateGraph {
 	}
 
 	/**
-	 * Deprecated constructor that initializes a StateGraph with the specified name,
-	 * overall state factory, and state serializer.
-	 * @param name the name of the graph
-	 * @param overAllStateFactory the factory for creating overall state instances
-	 * @param plainTextStateSerializer the plain text state serializer to use
-	 */
-	@Deprecated
-	public StateGraph(String name, OverAllStateFactory overAllStateFactory,
-			PlainTextStateSerializer plainTextStateSerializer) {
-		this.name = name;
-		this.overAllStateFactory = overAllStateFactory;
-		this.stateSerializer = plainTextStateSerializer;
-	}
-
-	/**
-	 * Deprecated constructor that initializes a StateGraph with the specified name and
-	 * overall state factory.
-	 * @param name the name of the graph
-	 * @param overAllStateFactory the factory for creating overall state instances
-	 */
-	@Deprecated
-	public StateGraph(String name, OverAllStateFactory overAllStateFactory) {
-		this.name = name;
-		this.overAllStateFactory = overAllStateFactory;
-		this.stateSerializer = new JacksonSerializer();
-	}
-
-	/**
-	 * Deprecated constructor that initializes a StateGraph with the provided overall
-	 * state factory.
-	 * @param overAllStateFactory the factory for creating overall state instances
-	 */
-	@Deprecated
-	public StateGraph(OverAllStateFactory overAllStateFactory) {
-		this.overAllStateFactory = overAllStateFactory;
-		this.stateSerializer = new JacksonSerializer();
-	}
-
-	/**
-	 * Deprecated constructor that initializes a StateGraph with the provided overall
-	 * state factory and state serializer.
-	 * @param overAllStateFactory the factory for creating overall state instances
-	 * @param plainTextStateSerializer the plain text state serializer to use
-	 */
-	@Deprecated
-	public StateGraph(OverAllStateFactory overAllStateFactory, PlainTextStateSerializer plainTextStateSerializer) {
-		this.overAllStateFactory = overAllStateFactory;
-		this.stateSerializer = plainTextStateSerializer;
-	}
-
-	/**
 	 * Default constructor that initializes a StateGraph with a Gson-based state
 	 * serializer.
 	 */
@@ -253,15 +197,6 @@ public class StateGraph {
 	 */
 	public final AgentStateFactory<OverAllState> getStateFactory() {
 		return stateSerializer.stateFactory();
-	}
-
-	/**
-	 * Gets the overall state factory.
-	 * @return the overall state factory
-	 */
-	@Deprecated
-	public final OverAllStateFactory getOverAllStateFactory() {
-		return overAllStateFactory;
 	}
 
 	/**
@@ -510,7 +445,9 @@ public class StateGraph {
 	 * @throws GraphStateException if there are errors related to the graph state
 	 */
 	public CompiledGraph compile() throws GraphStateException {
-		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+		SaverConfig saverConfig = SaverConfig.builder()
+			.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+			.build();
 		return compile(CompileConfig.builder().saverConfig(saverConfig).build());
 	}
 

@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import io.micrometer.observation.ObservationRegistry;
 
@@ -28,7 +29,6 @@ import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.stream.Collectors;
 
-import static com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant.MEMORY;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -38,7 +38,7 @@ import static java.util.Optional.ofNullable;
  */
 public class CompileConfig {
 
-	private SaverConfig saverConfig = new SaverConfig().register(MEMORY, new MemorySaver());
+	private SaverConfig saverConfig = new SaverConfig().register(SaverEnum.MEMORY.getValue(), new MemorySaver());
 
 	private Deque<GraphLifecycleListener> lifecycleListeners = new LinkedBlockingDeque<>(25);
 
@@ -77,30 +77,6 @@ public class CompileConfig {
 	 */
 	public ObservationRegistry observationRegistry() {
 		return observationRegistry;
-	}
-
-	/**
-	 * Returns the array of interrupts that will occur before the specified node
-	 * (deprecated).
-	 * @return An array of interruptible nodes.
-	 * @deprecated Use {@link #interruptsBefore()} instead for better immutability and
-	 * type safety.
-	 */
-	@Deprecated
-	public String[] getInterruptBefore() {
-		return interruptsBefore.toArray(new String[0]);
-	}
-
-	/**
-	 * Returns the array of interrupts that will occur after the specified node
-	 * (deprecated).
-	 * @return An array of interruptible nodes.
-	 * @deprecated Use {@link #interruptsAfter()} instead for better immutability and type
-	 * safety.
-	 */
-	@Deprecated
-	public String[] getInterruptAfter() {
-		return interruptsAfter.toArray(new String[0]);
 	}
 
 	/**

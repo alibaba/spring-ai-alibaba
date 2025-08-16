@@ -111,14 +111,12 @@ public class CompiledGraph {
 	 */
 	protected CompiledGraph(StateGraph stateGraph, CompileConfig compileConfig) throws GraphStateException {
 		this.stateGraph = stateGraph;
-		this.keyStrategyMap = Objects.isNull(stateGraph.getOverAllStateFactory())
-				? stateGraph.getKeyStrategyFactory()
-					.apply()
-					.entrySet()
-					.stream()
-					.map(e -> Map.entry(e.getKey(), e.getValue()))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
-				: stateGraph.getOverAllStateFactory().create().keyStrategies();
+		this.keyStrategyMap = stateGraph.getKeyStrategyFactory()
+			.apply()
+			.entrySet()
+			.stream()
+			.map(e -> Map.entry(e.getKey(), e.getValue()))
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);
 
@@ -466,16 +464,12 @@ public class CompiledGraph {
 	}
 
 	private OverAllState stateCreate(Map<String, Object> inputs) {
-		// Creates a new OverAllState instance based on the presence of an
-		// OverAllStateFactory in the stateGraph.
-		// If no factory is present, constructs a new state using key strategies from
-		// the
-		// graph and provided input data.
-		// If a factory exists, uses it to create the state and applies the input data.
-		return Objects.isNull(stateGraph.getOverAllStateFactory()) ? OverAllStateBuilder.builder()
+		// Creates a new OverAllState instance using key strategies from the graph
+		// and provided input data.
+		return OverAllStateBuilder.builder()
 			.withKeyStrategies(stateGraph.getKeyStrategyFactory().apply())
 			.withData(inputs)
-			.build() : stateGraph.getOverAllStateFactory().create().input(inputs);
+			.build();
 	}
 
 	/**

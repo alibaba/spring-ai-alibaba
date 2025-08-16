@@ -13,16 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.graph.checkpoint.constant;
 
-public interface SaverConstant {
+/**
+ * @author yingzi
+ * @since 2025/8/15
+ */
 
-	String DB = "db";
+public enum SaverEnum {
 
-	String REDIS = "redis";
+	DB("db"),
 
-	String MEMORY = "memory";
+	REDIS("redis"),
 
-	String FILE = "file";
+	MEMORY("memory"),
+
+	FILE("file"),
+
+	NONE("none");
+
+	final String value;
+
+	SaverEnum(String value) {
+		this.value = value;
+	}
+
+	public String getValue() {
+		return value;
+	}
 
 }

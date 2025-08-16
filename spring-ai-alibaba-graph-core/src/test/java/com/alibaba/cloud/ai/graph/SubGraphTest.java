@@ -15,9 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.*;
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.action.CommandAction;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
@@ -225,7 +229,7 @@ public class SubGraphTest {
 		var B_B2 = SubGraphNode.formatId("B", "B2");
 		var B_C = SubGraphNode.formatId("B", "C");
 
-		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+		SaverConfig saver = SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), new MemorySaver()).build();
 
 		var withSaver = workflowParent.compile(CompileConfig.builder().saverConfig(saver).build());
 
@@ -340,7 +344,7 @@ public class SubGraphTest {
 		var B_B2 = SubGraphNode.formatId("B", "B2");
 		var B_C = SubGraphNode.formatId("B", "C");
 
-		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+		SaverConfig saver = SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), new MemorySaver()).build();
 
 		var withSaver = workflowParent.compile(CompileConfig.builder().saverConfig(saver).build());
 
@@ -394,7 +398,7 @@ public class SubGraphTest {
 	@Test
 	public void testCheckpointWithSubgraph() throws Exception {
 
-		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+		SaverConfig saver = SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), new MemorySaver()).build();
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 		var workflowChild = new StateGraph().addNode("step_1", _makeNode("child:step1"))
@@ -433,7 +437,7 @@ public class SubGraphTest {
 	 */
 	@Test
 	public void testOtherCreateSubgraph2() throws Exception {
-		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+		SaverConfig saver = SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), new MemorySaver()).build();
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 		var workflowChild = new StateGraph(createKeyStrategyFactory()).addNode("step_1", _makeNode("child:step1"))
@@ -522,7 +526,7 @@ public class SubGraphTest {
 
 	@Test
 	public void testNestedSubgraph() throws Exception {
-		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+		SaverConfig saver = SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), new MemorySaver()).build();
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 
