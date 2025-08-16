@@ -29,6 +29,8 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.entryOf;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.ofNullable;
@@ -155,6 +157,7 @@ public final class OverAllState implements Serializable {
 	public OverAllState() {
 		this.data = new HashMap<>();
 		this.keyStrategies = new HashMap<>();
+		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = false;
 	}
 
@@ -167,6 +170,7 @@ public final class OverAllState implements Serializable {
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume) {
 		this.data = data;
 		this.keyStrategies = keyStrategies;
+		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = resume;
 	}
 
@@ -344,13 +348,11 @@ public final class OverAllState implements Serializable {
 	}
 
 	/**
-	 * Key verify boolean. Since we now support default key strategies, verification
-	 * always passes.
+	 * Key verify boolean.
 	 * @return the boolean
 	 */
 	protected boolean keyVerify() {
-		// With default key strategy support, all keys are valid
-		return true;
+		return hasCommonKey(this.data, getKeyStrategies());
 	}
 
 	private Map<?, ?> getKeyStrategies() {
