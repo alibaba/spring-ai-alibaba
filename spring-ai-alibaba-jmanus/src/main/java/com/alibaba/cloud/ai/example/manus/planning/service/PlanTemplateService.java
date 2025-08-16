@@ -468,27 +468,30 @@ public class PlanTemplateService implements IPlanTemplateService {
 			// Extract planIds from template for hierarchy support
 			String finalCurrentPlanId = planId;
 			String finalRootPlanId = planId;
-			
+
 			try {
 				com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
 				com.fasterxml.jackson.databind.JsonNode planNode = mapper.readTree(planJson);
-				
-				String templateCurrentPlanId = planNode.has("currentPlanId") ? planNode.get("currentPlanId").asText() : null;
+
+				String templateCurrentPlanId = planNode.has("currentPlanId") ? planNode.get("currentPlanId").asText()
+						: null;
 				String templateRootPlanId = planNode.has("rootPlanId") ? planNode.get("rootPlanId").asText() : null;
-				
+
 				// Create hierarchy for uploaded files if template defines different IDs
-				if (uploadedFiles != null && !uploadedFiles.isEmpty() 
-					&& templateCurrentPlanId != null && templateRootPlanId != null 
-					&& !templateCurrentPlanId.equals(templateRootPlanId)) {
+				if (uploadedFiles != null && !uploadedFiles.isEmpty() && templateCurrentPlanId != null
+						&& templateRootPlanId != null && !templateCurrentPlanId.equals(templateRootPlanId)) {
 					finalCurrentPlanId = planId + "-" + templateCurrentPlanId;
 					finalRootPlanId = planId + "-" + templateRootPlanId;
-					logger.info("Created hierarchy for uploaded files: root={}, current={}", finalRootPlanId, finalCurrentPlanId);
-				} else if (uploadedFiles == null || uploadedFiles.isEmpty()) {
+					logger.info("Created hierarchy for uploaded files: root={}, current={}", finalRootPlanId,
+							finalCurrentPlanId);
+				}
+				else if (uploadedFiles == null || uploadedFiles.isEmpty()) {
 					// No uploaded files, use template settings directly
 					finalCurrentPlanId = templateCurrentPlanId != null ? templateCurrentPlanId : planId;
 					finalRootPlanId = templateRootPlanId != null ? templateRootPlanId : planId;
 				}
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				logger.warn("Failed to parse template planIds, using default: {}", e.getMessage());
 			}
 

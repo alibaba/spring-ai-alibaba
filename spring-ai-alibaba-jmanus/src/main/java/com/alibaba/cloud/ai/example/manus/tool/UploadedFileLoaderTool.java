@@ -36,9 +36,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Tool for processing uploaded files in a plan. Supports various file types including PDF,
- * text files, CSV, etc. Provides intelligent file analysis and processing recommendations.
- * 
+ * Tool for processing uploaded files in a plan. Supports various file types including
+ * PDF, text files, CSV, etc. Provides intelligent file analysis and processing
+ * recommendations.
+ *
  * @author Jmanus Team
  * @version 2.0
  * @since 1.0
@@ -49,42 +50,45 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 	// Constants
 	private static final String TOOL_NAME = "uploaded_file_loader";
+
 	private static final int DEFAULT_MAX_FILES = 10;
+
 	private static final int PREVIEW_LINES = 3;
+
 	private static final int MAX_LINE_LENGTH = 100;
+
 	private static final int MAX_PREVIEW_LENGTH = 200;
+
 	private static final long LARGE_FILE_THRESHOLD = 50L * 1024 * 1024; // 50MB
-	private static final long MEDIUM_FILE_THRESHOLD = 5L * 1024 * 1024;  // 5MB
-	
+
+	private static final long MEDIUM_FILE_THRESHOLD = 5L * 1024 * 1024; // 5MB
+
 	// File type constants
-	private static final Set<String> TEXT_FILE_EXTENSIONS = Set.of(
-		".txt", ".md", ".csv", ".json", ".xml", ".html", ".htm", 
-		".log", ".java", ".py", ".js", ".ts", ".css", ".sql",
-		".yaml", ".yml", ".properties", ".conf", ".ini", ".sh", ".bat"
-	);
-	
-	private static final Set<String> CODE_FILE_EXTENSIONS = Set.of(
-		".java", ".py", ".js", ".ts", ".css", ".sql", ".sh", ".bat"
-	);
-	
-	private static final Set<String> DATA_FILE_EXTENSIONS = Set.of(
-		".csv", ".xlsx", ".xls", ".json", ".xml"
-	);
+	private static final Set<String> TEXT_FILE_EXTENSIONS = Set.of(".txt", ".md", ".csv", ".json", ".xml", ".html",
+			".htm", ".log", ".java", ".py", ".js", ".ts", ".css", ".sql", ".yaml", ".yml", ".properties", ".conf",
+			".ini", ".sh", ".bat");
+
+	private static final Set<String> CODE_FILE_EXTENSIONS = Set.of(".java", ".py", ".js", ".ts", ".css", ".sql", ".sh",
+			".bat");
+
+	private static final Set<String> DATA_FILE_EXTENSIONS = Set.of(".csv", ".xlsx", ".xls", ".json", ".xml");
 
 	private final UnifiedDirectoryManager directoryManager;
+
 	private final SmartContentSavingService smartContentSavingService;
+
 	private final ObjectMapper objectMapper;
 
 	/**
 	 * Constructor for manual instantiation
-	 * 
 	 * @param directoryManager the directory manager for file operations
 	 * @param smartContentSavingService the service for handling large content
 	 */
 	public UploadedFileLoaderTool(UnifiedDirectoryManager directoryManager,
 			SmartContentSavingService smartContentSavingService) {
 		this.directoryManager = Objects.requireNonNull(directoryManager, "DirectoryManager cannot be null");
-		this.smartContentSavingService = Objects.requireNonNull(smartContentSavingService, "SmartContentSavingService cannot be null");
+		this.smartContentSavingService = Objects.requireNonNull(smartContentSavingService,
+				"SmartContentSavingService cannot be null");
 		this.objectMapper = new ObjectMapper();
 	}
 
@@ -153,7 +157,8 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	public OpenAiApi.FunctionTool getToolDefinition() {
 		String description = getDescription();
 		String parameters = getParameters();
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, TOOL_NAME, parameters);
+		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, TOOL_NAME,
+				parameters);
 		return new OpenAiApi.FunctionTool(function);
 	}
 
@@ -242,24 +247,24 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			log.warn("getCurrentToolStateString called with null or empty planId");
 			return "Uploaded Files State: No plan ID available";
 		}
-		
+
 		log.debug("🔍 getCurrentToolStateString called for planId: {}", currentPlanId);
-		
+
 		try {
 			Path uploadsDir = directoryManager.getRootPlanDirectory(currentPlanId).resolve("uploads");
-			
+
 			if (!Files.exists(uploadsDir)) {
 				log.debug("No uploads directory found for plan: {}", currentPlanId);
 				return "Uploaded Files State: No uploads directory found for plan " + currentPlanId;
 			}
-			
+
 			long fileCount;
 			try (var stream = Files.list(uploadsDir)) {
 				fileCount = stream.filter(Files::isRegularFile).count();
 			}
-			
+
 			log.debug("📁 Found {} files in uploads directory for plan {}", fileCount, currentPlanId);
-			
+
 			if (fileCount > 0) {
 				String result = String.format("""
 						上传文件可用: 计划 %s 中有 %d 个文件
@@ -284,7 +289,8 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			return "Uploaded Files State: IO error reading uploads directory - " + e.getMessage();
 		}
 		catch (Exception e) {
-			log.error("💥 Unexpected error in getCurrentToolStateString for plan {}: {}", currentPlanId, e.getMessage(), e);
+			log.error("💥 Unexpected error in getCurrentToolStateString for plan {}: {}", currentPlanId, e.getMessage(),
+					e);
 			return "Uploaded Files State: Unexpected error - " + e.getMessage();
 		}
 	}
@@ -335,28 +341,29 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 			List<Map<String, Object>> fileList;
 			try (var stream = Files.list(uploadsDirectory)) {
-				fileList = stream
-						.filter(Files::isRegularFile)
-						.map(this::createFileInfoMap)
-						.filter(Objects::nonNull)
-						.collect(Collectors.toList());
+				fileList = stream.filter(Files::isRegularFile)
+					.map(this::createFileInfoMap)
+					.filter(Objects::nonNull)
+					.collect(Collectors.toList());
 			}
 
 			result.put("files", fileList);
 			result.put("totalCount", fileList.size());
 
-			return new ToolExecuteResult(
-					"📁 Uploaded Files List:\n" + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
-					
-		} catch (IOException e) {
+			return new ToolExecuteResult("📁 Uploaded Files List:\n"
+					+ objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+
+		}
+		catch (IOException e) {
 			log.error("IO error listing uploaded files for plan {}: {}", currentPlanId, e.getMessage(), e);
 			return new ToolExecuteResult("Error: Unable to read uploads directory - " + e.getMessage());
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Unexpected error listing uploaded files for plan {}: {}", currentPlanId, e.getMessage(), e);
 			return new ToolExecuteResult("Error: Failed to list files - " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * Create file info map with proper error handling
 	 */
@@ -395,39 +402,42 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 				log.warn("File not found: {} in plan: {}", fileName, currentPlanId);
 				return new ToolExecuteResult("Error: File not found: " + fileName);
 			}
-			
+
 			if (!Files.isRegularFile(filePath)) {
 				log.warn("Path is not a regular file: {}", filePath);
 				return new ToolExecuteResult("Error: Specified path is not a regular file: " + fileName);
 			}
-			
+
 			long fileSize = Files.size(filePath);
 			log.info("Loading file: {} (size: {})", fileName, formatFileSize(fileSize));
 
 			String fileContent = loadFileContent(filePath);
-			
+
 			if (fileContent == null || fileContent.trim().isEmpty()) {
 				log.warn("File content is empty or null: {}", fileName);
 				return new ToolExecuteResult("Warning: File '" + fileName + "' is empty or unreadable");
 			}
 
 			// Use smart content saving service to handle large files
-			var smartResult = smartContentSavingService.processContent(currentPlanId, fileContent, "uploaded_file_loader");
+			var smartResult = smartContentSavingService.processContent(currentPlanId, fileContent,
+					"uploaded_file_loader");
 
 			if (smartResult.getFileName() != null) {
-				return new ToolExecuteResult(
-						String.format("📄 File '%s' loaded and processed successfully. Content saved to storage: %s\n📊 Summary: %s", fileName,
-								smartResult.getFileName(), smartResult.getSummary()));
+				return new ToolExecuteResult(String.format(
+						"📄 File '%s' loaded and processed successfully. Content saved to storage: %s\n📊 Summary: %s",
+						fileName, smartResult.getFileName(), smartResult.getSummary()));
 			}
 			else {
 				return new ToolExecuteResult(
 						String.format("✅ File '%s' loaded successfully:\n%s", fileName, smartResult.getSummary()));
 			}
-			
-		} catch (IOException e) {
+
+		}
+		catch (IOException e) {
 			log.error("IO error loading file {}: {}", fileName, e.getMessage(), e);
 			return new ToolExecuteResult("Error: Unable to load file '" + fileName + "' - " + e.getMessage());
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Unexpected error loading file {}: {}", fileName, e.getMessage(), e);
 			return new ToolExecuteResult("Error: Failed to load file - " + e.getMessage());
 		}
@@ -441,10 +451,10 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			Path planDirectory = directoryManager.getRootPlanDirectory(currentPlanId);
 			Path uploadsDirectory = planDirectory.resolve("uploads");
 
-					if (!Files.exists(uploadsDirectory)) {
-			log.info("No uploads directory found for plan: {}", currentPlanId);
-			return new ToolExecuteResult("No uploaded files found for current plan");
-		}
+			if (!Files.exists(uploadsDirectory)) {
+				log.info("No uploads directory found for plan: {}", currentPlanId);
+				return new ToolExecuteResult("No uploaded files found for current plan");
+			}
 
 			int limit = maxFiles != null && maxFiles > 0 ? Math.min(maxFiles, 100) : DEFAULT_MAX_FILES;
 			StringBuilder combinedContent = new StringBuilder();
@@ -453,28 +463,30 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 			List<Path> matchingFiles;
 			try (var stream = Files.list(uploadsDirectory)) {
-				matchingFiles = stream
-						.filter(Files::isRegularFile)
-						.filter(file -> filePattern == null || file.getFileName().toString().contains(filePattern))
-						.limit(limit)
-						.collect(Collectors.toList());
+				matchingFiles = stream.filter(Files::isRegularFile)
+					.filter(file -> filePattern == null || file.getFileName().toString().contains(filePattern))
+					.limit(limit)
+					.collect(Collectors.toList());
 			}
-			
+
 			log.info("Found {} matching files for pattern: {}", matchingFiles.size(), filePattern);
 
 			for (Path file : matchingFiles) {
 				try {
 					String fileName = file.getFileName().toString();
 					String content = loadFileContent(file);
-					
+
 					if (content != null && !content.trim().isEmpty()) {
 						combinedContent.append("📄 === File: ").append(fileName).append(" ===\n");
 						combinedContent.append(content);
 						combinedContent.append("\n\n");
 						processedCount++;
-					} else {
+					}
+					else {
 						log.warn("File {} is empty or unreadable", fileName);
-						combinedContent.append("⚠️ === File: ").append(fileName).append(" (empty or unreadable) ===\n\n");
+						combinedContent.append("⚠️ === File: ")
+							.append(fileName)
+							.append(" (empty or unreadable) ===\n\n");
 						errorCount++;
 					}
 				}
@@ -489,7 +501,8 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			if (processedCount == 0) {
 				if (errorCount > 0) {
 					return new ToolExecuteResult("Error: All matching files failed to load. Pattern: " + filePattern);
-				} else {
+				}
+				else {
 					return new ToolExecuteResult("No matching files found. Pattern: " + filePattern);
 				}
 			}
@@ -505,17 +518,18 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 						processedCount, errorCount, smartResult.getFileName(), smartResult.getSummary());
 			}
 			else {
-				resultMessage = String.format(
-						"✅ Successfully loaded %d files with %d errors:\n%s",
-						processedCount, errorCount, smartResult.getSummary());
+				resultMessage = String.format("✅ Successfully loaded %d files with %d errors:\n%s", processedCount,
+						errorCount, smartResult.getSummary());
 			}
-			
+
 			return new ToolExecuteResult(resultMessage);
-			
-		} catch (IOException e) {
+
+		}
+		catch (IOException e) {
 			log.error("IO error loading multiple files: {}", e.getMessage(), e);
 			return new ToolExecuteResult("Error: IO error - " + e.getMessage());
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Unexpected error loading multiple files: {}", e.getMessage(), e);
 			return new ToolExecuteResult("Error: Failed to load multiple files - " + e.getMessage());
 		}
@@ -536,20 +550,21 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 		if (filePath == null || !Files.exists(filePath)) {
 			throw new IOException("File path is null or file does not exist: " + filePath);
 		}
-		
+
 		String fileName = filePath.getFileName().toString();
 		String extension = getFileExtension(fileName).toLowerCase();
 		long fileSize = Files.size(filePath);
-		
+
 		log.debug("Loading file content: {} ({}), size: {}", fileName, extension, formatFileSize(fileSize));
 
 		try {
 			return switch (extension) {
 				case ".pdf" -> loadPdfContent(filePath);
-				case ".txt", ".md", ".csv", ".json", ".xml", ".html", ".htm", ".log", ".java", ".py", ".js", ".ts", ".sql",
-						".sh", ".bat", ".yaml", ".yml", ".properties", ".conf", ".ini" -> {
+				case ".txt", ".md", ".csv", ".json", ".xml", ".html", ".htm", ".log", ".java", ".py", ".js", ".ts",
+						".sql", ".sh", ".bat", ".yaml", ".yml", ".properties", ".conf", ".ini" -> {
 					if (fileSize > LARGE_FILE_THRESHOLD) {
-						log.warn("Large text file detected: {} ({}), reading may be slow", fileName, formatFileSize(fileSize));
+						log.warn("Large text file detected: {} ({}), reading may be slow", fileName,
+								formatFileSize(fileSize));
 					}
 					yield Files.readString(filePath, StandardCharsets.UTF_8);
 				}
@@ -558,7 +573,8 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 					yield "不支持的文件类型: " + extension + " (文件: " + fileName + ")";
 				}
 			};
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			log.error("Error reading file content for {}: {}", fileName, e.getMessage());
 			throw e;
 		}
@@ -570,36 +586,37 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	private String loadPdfContent(Path filePath) throws IOException {
 		String fileName = filePath.getFileName().toString();
 		log.debug("Loading PDF content from: {}", fileName);
-		
+
 		try (PDDocument document = PDDocument.load(filePath.toFile())) {
 			if (document.isEncrypted()) {
 				log.warn("PDF file is encrypted: {}", fileName);
 				return "Error: PDF file is encrypted and cannot extract text content.";
 			}
-			
+
 			int pageCount = document.getNumberOfPages();
 			log.debug("PDF has {} pages", pageCount);
-			
+
 			if (pageCount == 0) {
 				return "Warning: PDF file is empty with no page content.";
 			}
-			
+
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 			// For very large PDFs, consider limiting page range
 			if (pageCount > 100) {
 				log.warn("Large PDF detected ({} pages), this may take time to process", pageCount);
 			}
-			
+
 			String extractedText = pdfStripper.getText(document);
-			
+
 			if (extractedText == null || extractedText.trim().isEmpty()) {
 				return "Warning: No text content extracted from PDF, may be image-based or handwritten PDF.";
 			}
-			
+
 			log.debug("Successfully extracted {} characters from PDF: {}", extractedText.length(), fileName);
 			return extractedText;
-			
-		} catch (IOException e) {
+
+		}
+		catch (IOException e) {
 			log.error("Error loading PDF content from {}: {}", fileName, e.getMessage());
 			throw new IOException("Unable to load PDF file content: " + e.getMessage(), e);
 		}
@@ -629,30 +646,30 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	}
 
 	/**
-	 * Smart analyze all uploaded files with automatic tool selection and enhanced reporting
+	 * Smart analyze all uploaded files with automatic tool selection and enhanced
+	 * reporting
 	 */
 	private ToolExecuteResult smartAnalyzeAllFiles() {
 		try {
 			Path uploadsDir = directoryManager.getRootPlanDirectory(currentPlanId).resolve("uploads");
 
-					if (!Files.exists(uploadsDir)) {
-			log.info("No uploads directory found for plan: {}", currentPlanId);
-			return new ToolExecuteResult("Uploads directory not found for plan: " + currentPlanId);
-		}
+			if (!Files.exists(uploadsDir)) {
+				log.info("No uploads directory found for plan: {}", currentPlanId);
+				return new ToolExecuteResult("Uploads directory not found for plan: " + currentPlanId);
+			}
 
 			List<Path> files;
 			try (var stream = Files.list(uploadsDir)) {
-				files = stream
-						.filter(Files::isRegularFile)
-						.sorted((f1, f2) -> f1.getFileName().toString().compareToIgnoreCase(f2.getFileName().toString()))
-						.collect(Collectors.toList());
+				files = stream.filter(Files::isRegularFile)
+					.sorted((f1, f2) -> f1.getFileName().toString().compareToIgnoreCase(f2.getFileName().toString()))
+					.collect(Collectors.toList());
 			}
 
-					if (files.isEmpty()) {
-			log.info("No files found in uploads directory for plan: {}", currentPlanId);
-			return new ToolExecuteResult("No files found in uploads directory");
-		}
-			
+			if (files.isEmpty()) {
+				log.info("No files found in uploads directory for plan: {}", currentPlanId);
+				return new ToolExecuteResult("No files found in uploads directory");
+			}
+
 			log.info("Starting smart analysis of {} files", files.size());
 
 			StringBuilder analysis = new StringBuilder();
@@ -664,19 +681,20 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 			// 按文件类型分组分析
 			Map<String, List<Path>> filesByType = files.stream()
-					.collect(Collectors.groupingBy(file -> getFileExtension(file.getFileName().toString()).toLowerCase()));
+				.collect(Collectors.groupingBy(file -> getFileExtension(file.getFileName().toString()).toLowerCase()));
 
 			analysis.append("📊 文件类型统计:\n");
 			analysis.append("-".repeat(30)).append("\n");
-			
+
 			// 按文件数量排序
-			filesByType.entrySet().stream()
-					.sorted((e1, e2) -> Integer.compare(e2.getValue().size(), e1.getValue().size()))
-					.forEach(entry -> {
-						String extension = entry.getKey().isEmpty() ? "无扩展名" : entry.getKey();
-						analysis.append(String.format("  %s: %d 个文件 (%s)\n", 
-								extension, entry.getValue().size(), getFileTypeDescription(entry.getKey())));
-					});
+			filesByType.entrySet()
+				.stream()
+				.sorted((e1, e2) -> Integer.compare(e2.getValue().size(), e1.getValue().size()))
+				.forEach(entry -> {
+					String extension = entry.getKey().isEmpty() ? "无扩展名" : entry.getKey();
+					analysis.append(String.format("  %s: %d 个文件 (%s)\n", extension, entry.getValue().size(),
+							getFileTypeDescription(entry.getKey())));
+				});
 			analysis.append("\n");
 
 			// 智能分析每个文件
@@ -707,14 +725,14 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 					// 智能处理建议
 					String processingAdvice = getProcessingAdvice(extension, fileSize);
 					analysis.append(String.format("   💡 处理建议: %s\n", processingAdvice));
-					
+
 					successCount++;
 
 				}
 				catch (Exception e) {
 					log.warn("Error analyzing file {}: {}", file.getFileName(), e.getMessage());
-					analysis.append(String.format("\n❌ [%d/%d] %s - 分析失败: %s\n", 
-							i + 1, files.size(), file.getFileName(), e.getMessage()));
+					analysis.append(String.format("\n❌ [%d/%d] %s - 分析失败: %s\n", i + 1, files.size(),
+							file.getFileName(), e.getMessage()));
 					errorCount++;
 				}
 			}
@@ -725,14 +743,16 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			analysis.append(String.format("✅ 成功分析: %d 个文件\n", successCount));
 			analysis.append(String.format("❌ 分析失败: %d 个文件\n\n", errorCount));
 			analysis.append(generateOverallRecommendations(filesByType, files));
-			
+
 			log.info("Smart analysis completed: {} success, {} errors", successCount, errorCount);
 			return new ToolExecuteResult(analysis.toString());
-			
-		} catch (IOException e) {
+
+		}
+		catch (IOException e) {
 			log.error("IO error during smart analysis: {}", e.getMessage(), e);
 			return new ToolExecuteResult("Error: Unable to access file directory - " + e.getMessage());
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Unexpected error during smart analysis: {}", e.getMessage(), e);
 			return new ToolExecuteResult("Error: Smart analysis failed - " + e.getMessage());
 		}
@@ -798,15 +818,15 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	 */
 	private String getContentPreview(Path file, String extension) {
 		String fileName = file.getFileName().toString();
-		
+
 		try {
 			long fileSize = Files.size(file);
-			
+
 			// Skip preview for very large files
 			if (fileSize > LARGE_FILE_THRESHOLD) {
 				return String.format("文件过大 (%s)，跳过预览", formatFileSize(fileSize));
 			}
-			
+
 			if (".pdf".equals(extension)) {
 				return getPdfPreview(file, fileName);
 			}
@@ -822,7 +842,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			return "Preview failed: " + e.getMessage();
 		}
 	}
-	
+
 	/**
 	 * Get PDF file preview
 	 */
@@ -831,31 +851,31 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			if (document.isEncrypted()) {
 				return "PDF文件已加密，无法预览";
 			}
-			
+
 			int pageCount = document.getNumberOfPages();
 			if (pageCount == 0) {
 				return "PDF文件为空";
 			}
-			
+
 			PDFTextStripper stripper = new PDFTextStripper();
 			stripper.setEndPage(1); // 只读第一页
 			String text = stripper.getText(document).trim();
-			
+
 			if (text.isEmpty()) {
 				return String.format("PDF第一页无文本内容 (共%d页)", pageCount);
 			}
-			
-			String preview = text.length() > MAX_PREVIEW_LENGTH ? 
-					text.substring(0, MAX_PREVIEW_LENGTH) + "..." : text;
-					
+
+			String preview = text.length() > MAX_PREVIEW_LENGTH ? text.substring(0, MAX_PREVIEW_LENGTH) + "..." : text;
+
 			return String.format("%s (Total %d pages)", preview.replaceAll("\\s+", " "), pageCount);
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			log.warn("Error getting PDF preview for {}: {}", fileName, e.getMessage());
 			return "PDF preview failed: " + e.getMessage();
 		}
 	}
-	
+
 	/**
 	 * Get text file preview
 	 */
@@ -868,29 +888,30 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 			StringBuilder preview = new StringBuilder();
 			int previewLines = Math.min(PREVIEW_LINES, lines.size());
-			
+
 			for (int i = 0; i < previewLines; i++) {
 				String line = lines.get(i).trim();
 				if (line.isEmpty()) {
 					continue; // 跳过空行
 				}
-				
+
 				if (line.length() > MAX_LINE_LENGTH) {
 					preview.append(line.substring(0, MAX_LINE_LENGTH)).append("...");
-				} else {
+				}
+				else {
 					preview.append(line);
 				}
-				
+
 				if (i < previewLines - 1 && preview.length() > 0) {
 					preview.append(" | ");
 				}
 			}
-			
+
 			String result = preview.toString();
-			return result.isEmpty() ? "Only empty lines" : 
-					String.format("%s (Total %d lines)", result, lines.size());
-			
-		} catch (Exception e) {
+			return result.isEmpty() ? "Only empty lines" : String.format("%s (Total %d lines)", result, lines.size());
+
+		}
+		catch (Exception e) {
 			log.warn("Error getting text preview for {}: {}", fileName, e.getMessage());
 			return "Text preview failed: " + e.getMessage();
 		}
@@ -971,8 +992,8 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 		if (filesByType.containsKey(".log")) {
 			recommendations.append("📋 检测到日志文件，建议使用text_file_operator按时间序列进行异常分析\n");
 		}
-		if (filesByType.containsKey(".java") || filesByType.containsKey(".py") || 
-				filesByType.containsKey(".js") || filesByType.containsKey(".ts")) {
+		if (filesByType.containsKey(".java") || filesByType.containsKey(".py") || filesByType.containsKey(".js")
+				|| filesByType.containsKey(".ts")) {
 			recommendations.append("💻 检测到代码文件，建议使用text_file_operator进行代码结构分析\n");
 		}
 		if (filesByType.containsKey(".html") || filesByType.containsKey(".htm")) {
