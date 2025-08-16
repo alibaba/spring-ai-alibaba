@@ -102,7 +102,7 @@ export const useTaskStore = defineStore('task', () => {
   const emitPlanExecutionRequested = (payload: { title: string; planData: any; params?: string }) => {
     console.log('[TaskStore] emitPlanExecutionRequested called with payload:', payload)
 
-    // 用户就在direct页面，直接发送事件
+    // User is on direct page, send event directly
     window.dispatchEvent(new CustomEvent('plan-execution-requested', { detail: payload }))
   }
 

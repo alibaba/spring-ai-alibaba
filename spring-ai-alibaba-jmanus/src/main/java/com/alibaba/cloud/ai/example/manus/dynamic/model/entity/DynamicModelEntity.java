@@ -50,11 +50,14 @@ public class DynamicModelEntity {
 	@Column(nullable = false, columnDefinition = "boolean default false")
 	private boolean isDefault;
 
-	@Column(nullable = true, columnDefinition = "DOUBLE DEFAULT 0.7")
+	@Column
 	private Double temperature;
 
-	@Column(nullable = true, columnDefinition = "DOUBLE DEFAULT NULL")
+	@Column
 	private Double topP;
+
+	@Column
+	private String completionsPath;
 
 	public DynamicModelEntity() {
 	}
@@ -144,6 +147,14 @@ public class DynamicModelEntity {
 		this.topP = topP;
 	}
 
+	public String getCompletionsPath() {
+		return completionsPath;
+	}
+
+	public void setCompletionsPath(String completionsPath) {
+		this.completionsPath = completionsPath;
+	}
+
 	public ModelConfig mapToModelConfig() {
 		ModelConfig config = new ModelConfig();
 		config.setId(this.getId());
@@ -156,6 +167,7 @@ public class DynamicModelEntity {
 		config.setIsDefault(this.getIsDefault());
 		config.setTemperature(this.getTemperature());
 		config.setTopP(this.getTopP());
+		config.setCompletionsPath(this.getCompletionsPath());
 		return config;
 	}
 

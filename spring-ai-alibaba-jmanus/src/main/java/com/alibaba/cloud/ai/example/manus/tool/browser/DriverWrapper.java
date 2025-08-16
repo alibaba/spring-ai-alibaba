@@ -78,7 +78,7 @@ public class DriverWrapper {
 
 	}
 
-	// ObjectMapper配置移到构造器
+	// Move ObjectMapper configuration to constructor
 
 	public DriverWrapper(Playwright playwright, Browser browser, Page currentPage, String cookieDir,
 			ObjectMapper objectMapper) {
@@ -87,7 +87,7 @@ public class DriverWrapper {
 		this.browser = browser;
 		this.interactiveElementRegistry = new InteractiveElementRegistry();
 		this.objectMapper = objectMapper;
-		// 配置 ObjectMapper
+		// Configure ObjectMapper
 		this.objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 		this.objectMapper.addMixIn(Cookie.class, PlaywrightCookieMixin.class);
 

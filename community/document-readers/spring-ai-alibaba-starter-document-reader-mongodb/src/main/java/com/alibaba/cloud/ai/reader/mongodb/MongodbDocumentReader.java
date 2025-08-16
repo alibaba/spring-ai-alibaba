@@ -245,7 +245,7 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
 		if (criteriaDefinition == null) {
 			return Collections.emptyList();
 		}
-		// 校验集合
+		// Validate collection
 		validateConfiguration();
 
 		return processDocuments(new Query(criteriaDefinition));

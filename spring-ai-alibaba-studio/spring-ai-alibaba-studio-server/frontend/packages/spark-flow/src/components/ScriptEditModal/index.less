@@ -1,0 +1,23 @@
+.spark-flow-script-edit-modal {
+  :global {
+    .ag-ant-modal-header {
+      position: relative;
+      
+      .ag-ant-segmented {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+    }
+  }
+
+  &-editor {
+    :global {
+      .cm-theme, .cm-editor {
+        height: 60vh;
+        min-width: 400px;
+      }
+    }
+  }
+}

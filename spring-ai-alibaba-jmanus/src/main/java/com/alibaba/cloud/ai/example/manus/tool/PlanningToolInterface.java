@@ -20,25 +20,25 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 /**
- * 规划工具的通用接口，定义了所有规划工具的基本行为
+ * Common interface for planning tools, defining basic behaviors of all planning tools
  */
 public interface PlanningToolInterface {
 
 	/**
-	 * 获取当前计划的ID
-	 * @return 当前计划的ID，如果没有计划则返回null
+	 * Get current plan ID
+	 * @return Current plan ID, returns null if no plan exists
 	 */
 	String getCurrentPlanId();
 
 	/**
-	 * 获取当前的执行计划
-	 * @return 当前的执行计划，如果没有计划则返回null
+	 * Get current execution plan
+	 * @return Current execution plan, returns null if no plan exists
 	 */
 	PlanInterface getCurrentPlan();
 
 	/**
-	 * 获取函数工具回调，用于与LLM集成
-	 * @return FunctionToolCallback实例
+	 * Get function tool callback for LLM integration
+	 * @return FunctionToolCallback instance
 	 */
 	FunctionToolCallback<?, ToolExecuteResult> getFunctionToolCallback();
 

@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.planning.creator;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.advisor.CustomMessageChatMemoryAdvisor;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
@@ -28,7 +29,6 @@ import com.alibaba.cloud.ai.example.manus.tool.PlanningToolInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -106,18 +106,19 @@ public class PlanCreator {
 					ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
 						.prompt(prompt)
 						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
-					if (useMemory) {
-						requestSpec.advisors(
-								memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
-						requestSpec.advisors(MessageChatMemoryAdvisor
-							.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
+					if (useMemory && attempt == 1) {
+						requestSpec
+							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
+						requestSpec.advisors(CustomMessageChatMemoryAdvisor
+							.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()),
+									context.getUserRequest(), CustomMessageChatMemoryAdvisor.AdvisorType.BEFORE)
 							.build());
 					}
 
 					// Use streaming response handler for plan creation
 					Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
 					String planCreationText = streamingResponseHandler.processStreamingTextResponse(responseFlux,
-							"Plan creation");
+							"Plan creation", context.getCurrentPlanId());
 					outputText = planCreationText;
 
 					executionPlan = planningTool.getCurrentPlan();
@@ -146,7 +147,7 @@ public class PlanCreator {
 			}
 
 			PlanInterface currentPlan;
-			// 检查计划是否创建成功
+			// Check if plan was created successfully
 			if (executionPlan != null) {
 				currentPlan = planningTool.getCurrentPlan();
 				currentPlan.setCurrentPlanId(planId);

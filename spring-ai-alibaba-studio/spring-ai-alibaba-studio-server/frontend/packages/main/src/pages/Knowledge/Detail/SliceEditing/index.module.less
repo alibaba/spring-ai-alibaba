@@ -1,0 +1,45 @@
+.container {
+  padding: 20px;
+  padding-bottom: 20px;
+}
+
+.chunk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.chunk-list-header {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+}
+
+.pagination-wrapper {
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.footer {
+  width: 100%;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  gap: 12px;
+  background: var(--ag-ant-color-bg-base);
+  box-sizing: border-box;
+  border-width: 1px 0px 0px 0px;
+  border-style: solid;
+  border-color: var(--ag-ant-color-border-secondary);
+  position: absolute;
+  left: 0;
+  bottom: 0;
+}
+.empty-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}

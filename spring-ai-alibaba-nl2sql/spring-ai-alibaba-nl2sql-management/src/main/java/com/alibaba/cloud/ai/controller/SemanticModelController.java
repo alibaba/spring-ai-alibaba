@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.entity.SemanticModel;
 import com.alibaba.cloud.ai.service.SemanticModelService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -25,15 +24,18 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 语义模型配置控制器
+ * Semantic Model Configuration Controller
  */
 @Controller
 @RequestMapping("/api/semantic-model")
 @CrossOrigin(origins = "*")
 public class SemanticModelController {
 
-	@Autowired
-	private SemanticModelService semanticModelService;
+	private final SemanticModelService semanticModelService;
+
+	public SemanticModelController(SemanticModelService semanticModelService) {
+		this.semanticModelService = semanticModelService;
+	}
 
 	@GetMapping
 	@ResponseBody

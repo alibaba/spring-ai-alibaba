@@ -1,0 +1,28 @@
+@import '../../index.less';
+
+.spark-flow-edge-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: e('var(--@{ant-prefix}-color-bg-base)');
+  box-shadow: 0 4px 24px 0 rgb(0 0 0 / 15%);
+  color: e('var(--@{ant-prefix}-color-primary)');
+  position: absolute;
+  pointer-events: all;
+  transform-origin: center;
+  cursor: pointer;
+  z-index: 1003 !important;
+}
+
+.spark-flow-animate-gradient-edge {
+  animation: gradientAnimation 2s linear infinite;
+}
+
+@keyframes gradientAnimation {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

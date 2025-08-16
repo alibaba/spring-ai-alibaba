@@ -61,7 +61,7 @@ public class AnalyticVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 默认 filter 的搜索接口
+	 * Search interface with default filter
 	 */
 	@Override
 	public List<Document> searchWithVectorType(SearchRequest searchRequestDTO) {
@@ -74,7 +74,7 @@ public class AnalyticVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 自定义 filter 的搜索接口
+	 * Search interface with custom filter
 	 */
 	@Override
 	public List<Document> searchWithFilter(SearchRequest searchRequestDTO) {
@@ -84,7 +84,7 @@ public class AnalyticVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 构建基础查询请求对象
+	 * Build basic query request object
 	 */
 	private QueryCollectionDataRequest buildBaseRequest(SearchRequest searchRequestDTO) {
 		QueryCollectionDataRequest queryCollectionDataRequest = new QueryCollectionDataRequest()
@@ -104,7 +104,7 @@ public class AnalyticVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 执行实际查询并解析结果
+	 * Execute actual query and parse results
 	 */
 	private List<Document> executeQuery(QueryCollectionDataRequest request) {
 		try {
@@ -117,7 +117,7 @@ public class AnalyticVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 解析响应数据为 Document 列表
+	 * Parse response data into Document list
 	 */
 	private List<Document> parseDocuments(QueryCollectionDataResponse response) throws Exception {
 		return response.getBody()

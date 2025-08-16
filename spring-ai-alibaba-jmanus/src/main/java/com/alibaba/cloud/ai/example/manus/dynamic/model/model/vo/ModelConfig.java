@@ -19,7 +19,7 @@ import java.util.Map;
 
 /**
  * @author lizhenning
- * @date 2025/7/8
+ * @since 2025/7/8
  */
 public class ModelConfig {
 
@@ -42,6 +42,8 @@ public class ModelConfig {
 	private Double temperature;
 
 	private Double topP;
+
+	private String completionsPath;
 
 	public Long getId() {
 		return id;
@@ -121,6 +123,14 @@ public class ModelConfig {
 
 	public void setTopP(Double topP) {
 		this.topP = topP;
+	}
+
+	public String getCompletionsPath() {
+		return completionsPath;
+	}
+
+	public void setCompletionsPath(String completionsPath) {
+		this.completionsPath = completionsPath;
 	}
 
 }

@@ -31,6 +31,7 @@ import AgentList from './views/AgentList.vue'
 import AgentDetail from './views/AgentDetail.vue'
 import CreateAgent from './views/CreateAgent.vue'
 import AgentWorkspace from './views/AgentWorkspace.vue'
+import AgentRun from './views/AgentRun.vue'
 
 // 创建路由
 const routes = [
@@ -78,6 +79,11 @@ const routes = [
     path: '/agent/:id',
     name: 'AgentDetail',
     component: AgentDetail
+  },
+  {
+    path: '/agent/:id/run',
+    name: 'AgentRun',
+    component: AgentRun
   },
   {
     path: '/workspace',

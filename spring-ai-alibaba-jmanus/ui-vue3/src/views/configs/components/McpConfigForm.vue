@@ -1,7 +1,7 @@
 <template>
   <div class="mcp-config-form">
     <div class="form-item">
-      <label>MCP名称 <span class="required">*</span></label>
+      <label>{{ $t('config.mcpConfig.mcpName') }} <span class="required">*</span></label>
       <input
         :value="formData.mcpServerName || ''"
         @input="handleInput('mcpServerName', $event)"
@@ -22,7 +22,7 @@
       />
     </div>
 
-    <!-- Command 字段 - 仅当选择STUDIO时显示 -->
+    <!-- Command field - only show when STUDIO is selected -->
     <div class="form-item" v-if="formData.connectionType === 'STUDIO'">
       <label>{{ t('config.mcpConfig.command') }} <span class="required">*</span></label>
       <input
@@ -34,7 +34,7 @@
       />
     </div>
 
-    <!-- URL 字段 - 仅当选择SSE或STREAMING时显示 -->
+    <!-- URL field - only show when SSE or STREAMING is selected -->
     <div class="form-item" v-if="formData.connectionType === 'SSE' || formData.connectionType === 'STREAMING'">
       <label>{{ t('config.mcpConfig.url') }} <span class="required">*</span></label>
       <input
@@ -46,7 +46,7 @@
       />
     </div>
 
-    <!-- Args 字段 - 仅当选择STUDIO时显示 -->
+    <!-- Args field - only show when STUDIO is selected -->
     <div class="form-item" v-if="formData.connectionType === 'STUDIO'">
       <label>{{ t('config.mcpConfig.args') }} <span class="required">*</span></label>
       <textarea
@@ -58,7 +58,7 @@
       />
     </div>
 
-    <!-- Env 字段 - 仅当选择STUDIO时显示 -->
+    <!-- Env field - only show when STUDIO is selected -->
     <div class="form-item" v-if="formData.connectionType === 'STUDIO'">
       <label>{{ t('config.mcpConfig.env') }}</label>
       <textarea
@@ -70,33 +70,33 @@
       />
     </div>
 
-    <!-- 使用说明 -->
+    <!-- Usage instructions -->
     <div class="usage-instructions">
       <div class="instructions-header">
         <Icon icon="carbon:information" class="instructions-icon" />
-        <h4>使用说明</h4>
+        <h4>{{ $t('config.mcpConfig.usageInstructions') }}</h4>
       </div>
       <div class="instructions-content">
         <ol class="instructions-list">
           <li>
-            <strong>获取MCP服务列表</strong>
+            <strong>{{ $t('config.mcpConfig.getMcpServiceList') }}</strong>
             <ul>
-              <li>可以在<code>mcp.higress.ai</code>，<code>mcp.so</code>,<code>modelscope.cn</code>上查找可用的MCP服务</li>
-              <li>如果需要批量配置MCP服务，可以使用右上角的全部导入功能</li>
+              <li>{{ $t('config.mcpConfig.findMcpServices') }}</li>
+              <li>{{ $t('config.mcpConfig.batchImportTip') }}</li>
             </ul>
           </li>
           <li>
-            <strong>配置MCP服务</strong>
+            <strong>{{ $t('config.mcpConfig.configureMcpService') }}</strong>
             <ul>
-              <li>填写服务名称:</li>
-              <li>选择连接类型:本地选择 <code>STUDIO</code> 以及输入 Command、Args和Env。远程选择 <code>SSE</code> 或 <code>STREAMING</code> 以及输入 URL</li>
-              <li>点击保存按钮完成MCP配置，MCP工具将自动注册到系统中</li>
+              <li>{{ $t('config.mcpConfig.fillServiceName') }}</li>
+              <li>{{ $t('config.mcpConfig.selectConnectionType') }}</li>
+              <li>{{ $t('config.mcpConfig.clickSaveToComplete') }}</li>
             </ul>
           </li>
           <li>
-            <strong>配置Agent使用</strong>
+            <strong>{{ $t('config.mcpConfig.configureAgentUsage') }}</strong>
             <ul>
-              <li>在Agent配置页面创建新的Agent，为Agent添加刚配置的MCP服务，这样可以减少工具冲突，提高Agent选择工具的准确性</li>
+              <li>{{ $t('config.mcpConfig.createAgentTip') }}</li>
             </ul>
           </li>
         </ol>
@@ -134,38 +134,38 @@ const emit = defineEmits<{
   'update:formData': [data: any]
 }>()
 
-// 连接类型选项
+// Connection type options
 const connectionTypes = [
   { id: 'STUDIO', name: 'STUDIO' },
   { id: 'SSE', name: 'SSE' },
   { id: 'STREAMING', name: 'STREAMING' }
 ]
 
-// 处理输入事件
+// Handle input events
 const handleInput = (field: string, event: Event) => {
   const target = event.target as HTMLInputElement | HTMLTextAreaElement
   if (props.isEditMode) {
-    // 编辑模式：直接修改formData
+    // Edit mode: directly modify formData
     ;(props.formData as any)[field] = target.value
   } else {
-    // 新增模式：通过emit通知父组件
+    // Add mode: notify parent component via emit
     emit('update:formData', { ...props.formData, [field]: target.value })
   }
 }
 
-// 处理连接类型更新
+// Handle connection type update
 const handleConnectionTypeUpdate = (value: string | null) => {
   if (!value) return
-  
+
   if (props.isEditMode) {
-    // 编辑模式：直接修改formData
+    // Edit mode: directly modify formData
     ;(props.formData as any).connectionType = value
   } else {
-    // 新增模式：通过emit通知父组件
+    // Add mode: notify parent component via emit
     emit('update:formData', { ...props.formData, connectionType: value })
   }
-  
-  // 触发连接类型变化事件
+
+  // Trigger connection type change event
   emit('connection-type-change')
 }
 </script>
@@ -219,7 +219,7 @@ const handleConnectionTypeUpdate = (value: string | null) => {
   color: rgba(255, 255, 255, 0.4);
 }
 
-/* 使用说明样式 */
+/* Usage instructions styles */
 .usage-instructions {
   margin-top: 24px;
   padding: 16px;
@@ -327,31 +327,31 @@ const handleConnectionTypeUpdate = (value: string | null) => {
   border: 1px solid rgba(102, 126, 234, 0.2);
 }
 
-/* 响应式设计 */
+/* Responsive design */
 @media (max-width: 768px) {
   .usage-instructions {
     margin-top: 20px;
     padding: 12px;
   }
-  
+
   .instructions-header h4 {
     font-size: 15px;
   }
-  
+
   .instructions-content {
     font-size: 13px;
   }
-  
+
   .instructions-list {
     padding-left: 12px;
   }
-  
+
   .instructions-list > li {
     margin-bottom: 10px;
   }
-  
+
   .instructions-list ul li {
     font-size: 12px;
   }
 }
-</style> 
+</style>

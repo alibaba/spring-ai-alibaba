@@ -1,6 +1,12 @@
 server:
   port: 8080
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB
+      enabled: true
+      file-size-threshold: 1MB
   profiles:
     # LangFuse和可观测配置以及专业知识库配置
     include: observability, kb
@@ -50,6 +56,21 @@ spring:
           api-key: ${ALIYUN_AI_SEARCH_API_KEY}
           base-url: ${ALIYUN_AI_SEARCH_BASE_URL}
           enabled: true
+        # 学术研究工具调用配置
+        openalex:
+          enabled: false
+        # 旅游生活工具调用配置
+        opentripmap:
+          enabled: false
+          api-key: ${OPENTRIPMAP_API_KEY}
+        # 百科知识工具调用配置
+        wikipedia:
+          enabled: false
+        # 数据分析工具调用配置
+        worldbankdata:
+          enabled: false
+        googlescholar:
+          enabled: false
       deepresearch:
         # 图执行的最大迭代次数
         max-iterations: 50
@@ -59,26 +80,19 @@ spring:
           - aliyun
           - baidu
           - serpapi
-        # TODO: 搜索引擎配置
-        #  - google_scholar  # 学术
-        #  - xiaohongshu     # 生活
-        #  - wikipedia       # 百科
-        #  - national_statistics  # 数据分析
-        #  - google_trends   # 趋势分析
-        #  - baidu_index     # 中文趋势分析
         smart-agents:
           enabled: false
-          # search-platform-mapping:
-          #   academic_research:
-          #     primary: google_scholar
-          #   lifestyle_travel:
-          #     primary: xiaohongshu
-          #   encyclopedia:
-          #     primary: wikipedia
-          #   data_analysis:
-          #     primary: national_statistics
-          #   general_research:
-          #     primary: tavily
+          search-platform-mapping:
+            academic_research:
+              primary: openalex
+            lifestyle_travel:
+              primary: opentripmap
+            encyclopedia:
+              primary: wikipedia
+            data_analysis:
+              primary: worldbankdata
+            general_research:
+              primary: tavily
         mcp:
           enabled: false
           config-location: classpath:mcp-config.json
@@ -93,6 +107,11 @@ spring:
             # 启动时加载 classpath下data目录中的所有文件
             locations:
               - "classpath:/data/"
+          # Elasticsearch配置
+          #elasticsearch:
+          #  uris: http://localhost:9200
+          #  similarity-function: cosine
+
         # 报告导出路径配置
         export:
           path: ${AI_DEEPRESEARCH_EXPORT_PATH}

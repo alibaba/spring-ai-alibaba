@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.model.exception;
 
 /**
- * 网络异常
+ * Network exception
  */
 public class NetworkException extends RuntimeException {
 

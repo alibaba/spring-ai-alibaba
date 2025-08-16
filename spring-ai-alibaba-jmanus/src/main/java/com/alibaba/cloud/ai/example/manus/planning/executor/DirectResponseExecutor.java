@@ -72,7 +72,7 @@ public class DirectResponseExecutor extends AbstractPlanExecutor {
 			log.error("Error during direct response execution for planId: {}", context.getCurrentPlanId(), e);
 			context.setSuccess(false);
 			// Set error message as result summary
-			context.setResultSummary("直接回复执行失败: " + e.getMessage());
+			context.setResultSummary("Direct response execution failed: " + e.getMessage());
 		}
 		finally {
 			performCleanup(context, lastExecutor);

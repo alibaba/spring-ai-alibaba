@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<!-- 
-   No API interface available for now 
+<!--
+   No API interface available for now
 
    Features:
     - Add, edit and delete namespaces
@@ -246,7 +246,7 @@ const loadData = async () => {
     }
     namespaces.splice(0, namespaces.length, ...loadedNamespaces)
   } catch (err: any) {
-    console.error('加载数据失败:', err)
+    console.error('Failed to load data:', err)
     error(t('config.namespaceConfig.loadDataFailed') + ': ' + err.message)
   } finally {
     loading.value = false
@@ -757,7 +757,7 @@ onMounted(() => {
   }
 }
 
-/* 弹窗样式 */
+/* Modal styles */
 .modal-form {
   display: flex;
   flex-direction: column;

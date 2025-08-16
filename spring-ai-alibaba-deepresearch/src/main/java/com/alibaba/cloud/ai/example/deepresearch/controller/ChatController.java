@@ -21,8 +21,15 @@ import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
 import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.FeedbackRequest;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.GraphId;
+import com.alibaba.cloud.ai.example.deepresearch.model.response.ReportResponse;
 import com.alibaba.cloud.ai.example.deepresearch.util.SearchBeanUtil;
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
@@ -42,6 +49,7 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
 import java.util.HashMap;
@@ -60,6 +68,8 @@ public class ChatController {
 
 	private final CompiledGraph compiledGraph;
 
+	private final GraphProcess graphProcess;
+
 	private final SearchBeanUtil searchBeanUtil;
 
 	@Autowired
@@ -75,6 +85,7 @@ public class ChatController {
 			.build());
 		this.compiledGraph.setMaxIterations(deepResearchProperties.getMaxIterations());
 		this.searchBeanUtil = searchBeanUtil;
+		this.graphProcess = new GraphProcess(this.compiledGraph);
 		logger.info("ChatController initialized with graph maxIterations: {}",
 				deepResearchProperties.getMaxIterations());
 	}
@@ -93,28 +104,44 @@ public class ChatController {
 		if (searchBeanUtil.getSearchService(chatRequest.searchEngine()).isEmpty()) {
 			throw new IllegalArgumentException("Search Engine not available.");
 		}
+
+		// 创建线程ID
+		GraphId graphId = graphProcess.createNewGraphId(chatRequest.sessionId());
+		chatRequest = ChatRequestProcess.updateThreadId(chatRequest, graphId.threadId());
+
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
 
 		Map<String, Object> objectMap = new HashMap<>();
 		// Create a unicast sink to emit ServerSentEvents
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 
-		GraphProcess graphProcess = new GraphProcess(this.compiledGraph);
 		// Handle human feedback if auto-accept is disabled and feedback is provided
 		if (!chatRequest.autoAcceptPlan() && StringUtils.hasText(chatRequest.interruptFeedback())) {
-			graphProcess.handleHumanFeedback(chatRequest, objectMap, runnableConfig, sink);
+			graphProcess.handleHumanFeedback(graphId, chatRequest, objectMap, runnableConfig, sink);
 		}
 		// First question
 		else {
 			ChatRequestProcess.initializeObjectMap(chatRequest, objectMap);
 			logger.info("init inputs: {}", objectMap);
 			AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(objectMap, runnableConfig);
-			graphProcess.processStream(resultFuture, sink);
+			graphProcess.processStream(graphId, resultFuture, sink);
 		}
 
 		return sink.asFlux()
 			.doOnCancel(() -> logger.info("Client disconnected from stream"))
-			.doOnError(e -> logger.error("Error occurred during streaming", e));
+			.onErrorResume(throwable -> {
+				logger.error("Error occurred during streaming", throwable);
+				return Mono.just(ServerSentEvent.<String>builder()
+					.event("error")
+					.data("Error occurred during streaming: " + throwable.getMessage())
+					.build());
+			});
+	}
+
+	@DeleteMapping("/stop")
+	public ReportResponse<?> stopGraph(@RequestBody GraphId graphId) {
+		return graphProcess.stopGraph(graphId) ? ReportResponse.success(graphId.threadId(), "Success", null)
+				: ReportResponse.error(graphId.threadId(), "Failure");
 	}
 
 	@PostMapping(value = "/resume", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -135,7 +162,8 @@ public class ChatController {
 		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
 
 		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.streamFromInitialNode(state, runnableConfig);
-		graphProcess.processStream(resultFuture, sink);
+		graphProcess.processStream(new GraphId(humanFeedback.sessionId(), humanFeedback.threadId()), resultFuture,
+				sink);
 
 		return sink.asFlux()
 			.doOnCancel(() -> logger.info("Client disconnected from stream"))

@@ -84,7 +84,8 @@ public class NamespaceServiceImpl implements NamespaceService {
 			}
 			catch (Exception e) {
 				log.error("Failed to initialize prompts for namespace: {}", config.getCode(), e);
-				// 不抛出异常，因为即使提示初始化失败，命名空间创建本身是成功的
+				// Don't throw exception, because even if prompt initialization fails,
+				// namespace creation itself is successful
 			}
 
 			log.info("Successfully created new Namespace: {}", config.getName());

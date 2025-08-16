@@ -1,0 +1,76 @@
+.parameterWrapper {
+  margin-top: 12px;
+  .title {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+    color: var(--ag-ant-color-text);
+  }
+}
+.paramItem {
+  &:last-child {
+    margin: 0;
+  }
+
+  .labelMulti {
+    display: inline-block;
+    color: var(--ag-ant-color-text);
+  }
+
+  :global {
+    ag-ant-form-item:not(ag-ant-form-item-with-help) {
+      margin-bottom: 0 !important;
+    }
+    ag-ant-input-number {
+      width: 100% !important;
+    }
+    ag-ant-form-item-required-mark-optional {
+      padding: 0 !important;
+    }
+  }
+}
+
+.keyHeader {
+  display: flex;
+  align-items: center;
+  color: var(--ag-ant-color-text-description);
+  margin: 12px 0;
+
+  > span {
+    width: 160px;
+  }
+}
+
+.emptyWrap,
+.loading {
+  height: calc(100% - 32px);
+}
+
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tabs {
+  :global {
+    ag-ant-tabs-tab-btn {
+      font-size: 14px !important;
+    }
+  }
+}
+
+.subTitle {
+  font-weight: 500;
+}
+
+.configFormConMulti {
+  padding: 12px;
+  background-color: var(--ag-ant-color-bg-layout);
+  border-radius: 6px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}

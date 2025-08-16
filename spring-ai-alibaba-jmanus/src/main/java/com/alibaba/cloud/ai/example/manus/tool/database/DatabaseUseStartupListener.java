@@ -47,18 +47,18 @@ public class DatabaseUseStartupListener implements ApplicationListener<Applicati
 		try {
 			log.info("Starting to initialize database configurations...");
 
-			// 使用配置解析工具类
+			// Use configuration parser utility class
 			DatabaseConfigParser configParser = new DatabaseConfigParser(environment);
 			Map<String, Map<String, String>> datasourceConfigs = configParser.parseDatasourceConfigs();
 
 			if (datasourceConfigs.isEmpty()) {
 				log.warn("No database configurations found. This is normal if no datasources are configured.");
-				// 输出空的摘要信息
+				// Output empty summary information
 				printDatasourceSummary(new HashMap<>());
 				return;
 			}
 
-			// 遍历并初始化每个数据源
+			// Iterate and initialize each data source
 			for (Map.Entry<String, Map<String, String>> entry : datasourceConfigs.entrySet()) {
 				String datasourceName = entry.getKey();
 				Map<String, String> config = entry.getValue();
@@ -67,7 +67,7 @@ public class DatabaseUseStartupListener implements ApplicationListener<Applicati
 
 			log.info("Database configurations initialized with {} datasources", dataSourceService.getDataSourceCount());
 
-			// 输出数据源清单
+			// Output data source list
 			printDatasourceSummary(datasourceConfigs);
 
 		}
@@ -95,7 +95,7 @@ public class DatabaseUseStartupListener implements ApplicationListener<Applicati
 				return;
 			}
 
-			// 创建数据源
+			// Create data source
 			dataSourceService.addDataSource(datasourceName, url, username, password, driverClassName, type);
 			log.info("Initialized datasource '{}' (type: {})", datasourceName, type);
 

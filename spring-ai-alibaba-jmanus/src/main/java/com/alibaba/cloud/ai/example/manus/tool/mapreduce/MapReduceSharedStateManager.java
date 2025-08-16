@@ -24,7 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * MapReduce工具共享状态管理器 用于管理不同Agent实例之间的共享状态信息，确保MapReduce流程的一致性
+ * MapReduce tool shared state manager for managing shared state information between
+ * different Agent instances, ensuring MapReduce process consistency
  */
 @Component
 public class MapReduceSharedStateManager implements IMapReduceSharedStateManager {
@@ -32,31 +33,31 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 	private static final Logger log = LoggerFactory.getLogger(MapReduceSharedStateManager.class);
 
 	/**
-	 * 计划状态信息 Key: planId, Value: PlanState
+	 * Plan state information Key: planId, Value: PlanState
 	 */
 	private final Map<String, PlanState> planStates = new ConcurrentHashMap<>();
 
 	/**
-	 * 计划状态内部类 包含单个计划的所有共享状态信息
+	 * Plan state inner class containing all shared state information for a single plan
 	 */
 	public static class PlanState {
 
-		// Map任务状态管理
+		// Map task status management
 		private final Map<String, TaskStatus> mapTaskStatuses = new ConcurrentHashMap<>();
 
-		// 任务计数器，用于生成任务ID
+		// Task counter for generating task IDs
 		private final AtomicInteger taskCounter = new AtomicInteger(1);
 
-		// 分割结果列表
+		// Split results list
 		private final List<String> splitResults = Collections.synchronizedList(new ArrayList<>());
 
-		// 最后操作结果
+		// Last operation result
 		private volatile String lastOperationResult = "";
 
-		// 最后处理的文件
+		// Last processed file
 		private volatile String lastProcessedFile = "";
 
-		// 创建时间戳
+		// Creation timestamp
 		private final long createTime = System.currentTimeMillis();
 
 		public Map<String, TaskStatus> getMapTaskStatuses() {
@@ -94,7 +95,7 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 	}
 
 	/**
-	 * 任务状态类
+	 * Task status class
 	 */
 	public static class TaskStatus {
 
@@ -119,45 +120,45 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 	}
 
 	/**
-	 * 获取或创建计划状态
-	 * @param planId 计划ID
-	 * @return 计划状态
+	 * Get or create plan state
+	 * @param planId Plan ID
+	 * @return Plan state
 	 */
 	public PlanState getOrCreatePlanState(String planId) {
 		if (planId == null || planId.trim().isEmpty()) {
-			throw new IllegalArgumentException("planId不能为空");
+			throw new IllegalArgumentException("planId cannot be empty");
 		}
 
 		return planStates.computeIfAbsent(planId, id -> {
-			log.info("为计划 {} 创建新的共享状态", id);
+			log.info("Creating new shared state for plan {}", id);
 			return new PlanState();
 		});
 	}
 
 	/**
-	 * 获取计划状态（如果不存在则返回null）
-	 * @param planId 计划ID
-	 * @return 计划状态，不存在则返回null
+	 * Get plan state (return null if not exists)
+	 * @param planId Plan ID
+	 * @return Plan state, return null if not exists
 	 */
 	public PlanState getPlanState(String planId) {
 		return planStates.get(planId);
 	}
 
 	/**
-	 * 清理计划状态
-	 * @param planId 计划ID
+	 * Clean up plan state
+	 * @param planId Plan ID
 	 */
 	public void cleanupPlanState(String planId) {
 		PlanState removed = planStates.remove(planId);
 		if (removed != null) {
-			log.info("已清理计划 {} 的共享状态", planId);
+			log.info("Cleaned up shared state for plan {}", planId);
 		}
 	}
 
 	/**
-	 * 获取下一个任务ID
-	 * @param planId 计划ID
-	 * @return 任务ID
+	 * Get next task ID
+	 * @param planId Plan ID
+	 * @return Task ID
 	 */
 	public String getNextTaskId(String planId) {
 		PlanState planState = getOrCreatePlanState(planId);
@@ -166,20 +167,20 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 	}
 
 	/**
-	 * 添加分割结果
-	 * @param planId 计划ID
-	 * @param taskDirectory 任务目录
+	 * Add split result
+	 * @param planId Plan ID
+	 * @param taskDirectory Task directory
 	 */
 	public void addSplitResult(String planId, String taskDirectory) {
 		PlanState planState = getOrCreatePlanState(planId);
 		planState.getSplitResults().add(taskDirectory);
-		log.debug("为计划 {} 添加分割结果: {}", planId, taskDirectory);
+		log.debug("Added split result for plan {}: {}", planId, taskDirectory);
 	}
 
 	/**
-	 * 获取分割结果列表
-	 * @param planId 计划ID
-	 * @return 分割结果列表的副本
+	 * Get split result list
+	 * @param planId Plan ID
+	 * @return Copy of split result list
 	 */
 	public List<String> getSplitResults(String planId) {
 		PlanState planState = getPlanState(planId);
@@ -190,34 +191,34 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 	}
 
 	/**
-	 * 设置分割结果列表
-	 * @param planId 计划ID
-	 * @param splitResults 分割结果列表
+	 * Set split result list
+	 * @param planId Plan ID
+	 * @param splitResults Split result list
 	 */
 	public void setSplitResults(String planId, List<String> splitResults) {
 		PlanState planState = getOrCreatePlanState(planId);
 		planState.getSplitResults().clear();
 		planState.getSplitResults().addAll(splitResults);
-		log.info("为计划 {} 设置分割结果，共 {} 个任务", planId, splitResults.size());
+		log.info("Set split results for plan {}, total {} tasks", planId, splitResults.size());
 	}
 
 	/**
-	 * 记录Map任务状态
-	 * @param planId 计划ID
-	 * @param taskId 任务ID
-	 * @param taskStatus 任务状态
+	 * Record Map task status
+	 * @param planId Plan ID
+	 * @param taskId Task ID
+	 * @param taskStatus Task status
 	 */
 	public void recordMapTaskStatus(String planId, String taskId, TaskStatus taskStatus) {
 		PlanState planState = getOrCreatePlanState(planId);
 		planState.getMapTaskStatuses().put(taskId, taskStatus);
-		log.debug("为计划 {} 记录任务 {} 状态: {}", planId, taskId, taskStatus.status);
+		log.debug("Recorded task {} status for plan {}: {}", taskId, planId, taskStatus.status);
 	}
 
 	/**
-	 * 获取Map任务状态
-	 * @param planId 计划ID
-	 * @param taskId 任务ID
-	 * @return 任务状态
+	 * Get Map task status
+	 * @param planId Plan ID
+	 * @param taskId Task ID
+	 * @return Task status
 	 */
 	public TaskStatus getMapTaskStatus(String planId, String taskId) {
 		PlanState planState = getPlanState(planId);
@@ -228,9 +229,9 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 	}
 
 	/**
-	 * 获取所有Map任务状态
-	 * @param planId 计划ID
-	 * @return 任务状态映射的副本
+	 * Get all Map task statuses
+	 * @param planId Plan ID
+	 * @return Copy of task status mapping
 	 */
 	public Map<String, TaskStatus> getAllMapTaskStatuses(String planId) {
 		PlanState planState = getPlanState(planId);
@@ -241,9 +242,9 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 	}
 
 	/**
-	 * 设置最后操作结果
-	 * @param planId 计划ID
-	 * @param result 操作结果
+	 * Set last operation result
+	 * @param planId Plan ID
+	 * @param result Operation result
 	 */
 	public void setLastOperationResult(String planId, String result) {
 		PlanState planState = getOrCreatePlanState(planId);
@@ -251,9 +252,9 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 	}
 
 	/**
-	 * 获取最后操作结果
-	 * @param planId 计划ID
-	 * @return 最后操作结果
+	 * Get last operation result
+	 * @param planId Plan ID
+	 * @return Last operation result
 	 */
 	public String getLastOperationResult(String planId) {
 		PlanState planState = getPlanState(planId);
@@ -264,9 +265,9 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 	}
 
 	/**
-	 * 设置最后处理的文件
-	 * @param planId 计划ID
-	 * @param filePath 文件路径
+	 * Set last processed file
+	 * @param planId Plan ID
+	 * @param filePath File path
 	 */
 	public void setLastProcessedFile(String planId, String filePath) {
 		PlanState planState = getOrCreatePlanState(planId);
@@ -274,9 +275,9 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 	}
 
 	/**
-	 * 获取最后处理的文件
-	 * @param planId 计划ID
-	 * @return 最后处理的文件路径
+	 * Get last processed file
+	 * @param planId Plan ID
+	 * @return Last processed file path
 	 */
 	public String getLastProcessedFile(String planId) {
 		PlanState planState = getPlanState(planId);
@@ -287,44 +288,45 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 	}
 
 	/**
-	 * 获取当前工具状态字符串
-	 * @param planId 计划ID
-	 * @return 状态字符串
+	 * Get current tool status string
+	 * @param planId Plan ID
+	 * @return Status string
 	 */
 	public String getCurrentToolStateString(String planId) {
 		PlanState planState = getPlanState(planId);
 		if (planState == null) {
-			return "reduce_operation_tool 当前状态:\n- Plan ID: " + planId + " (状态不存在)\n";
+			return "reduce_operation_tool current status:\n- Plan ID: " + planId + " (status does not exist)\n";
 		}
 
 		StringBuilder sb = new StringBuilder();
-		sb.append("reduce_operation_tool 当前状态:\n");
+		sb.append("reduce_operation_tool current status:\n");
 		sb.append("- Plan ID: ").append(planId).append("\n");
-		sb.append("- 最后处理文件: ")
-			.append(planState.getLastProcessedFile().isEmpty() ? "无" : planState.getLastProcessedFile())
+		sb.append("- Last processed file: ")
+			.append(planState.getLastProcessedFile().isEmpty() ? "None" : planState.getLastProcessedFile())
 			.append("\n");
-		sb.append("- 最后操作结果: ")
-			.append(planState.getLastOperationResult().isEmpty() ? "无" : "已完成: " + planState.getLastOperationResult())
+		sb.append("- Last operation result: ")
+			.append(planState.getLastOperationResult().isEmpty() ? "None"
+					: "Completed: " + planState.getLastOperationResult())
 			.append("\n");
 		return sb.toString();
 	}
 
 	/**
-	 * 获取所有计划的状态概览
-	 * @return 状态概览字符串
+	 * Get status overview of all plans
+	 * @return Status overview string
 	 */
 	public String getAllPlansOverview() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("MapReduce共享状态管理器概览:\n");
-		sb.append("- 活跃计划数: ").append(planStates.size()).append("\n");
+		sb.append("MapReduce Shared State Manager Overview:\n");
+		sb.append("- Active plan count: ").append(planStates.size()).append("\n");
 
 		for (Map.Entry<String, PlanState> entry : planStates.entrySet()) {
 			String planId = entry.getKey();
 			PlanState planState = entry.getValue();
-			sb.append("  - 计划 ").append(planId).append(": ");
-			sb.append("任务数=").append(planState.getSplitResults().size());
-			sb.append(", 状态数=").append(planState.getMapTaskStatuses().size());
-			sb.append(", 计数器=").append(planState.getTaskCounter().get());
+			sb.append("  - Plan ").append(planId).append(": ");
+			sb.append("Task count=").append(planState.getSplitResults().size());
+			sb.append(", Status count=").append(planState.getMapTaskStatuses().size());
+			sb.append(", Counter=").append(planState.getTaskCounter().get());
 			sb.append("\n");
 		}
 
@@ -332,12 +334,12 @@ public class MapReduceSharedStateManager implements IMapReduceSharedStateManager
 	}
 
 	/**
-	 * 清理所有计划状态
+	 * Clean up all plan states
 	 */
 	public void cleanupAllPlanStates() {
 		int count = planStates.size();
 		planStates.clear();
-		log.info("已清理所有计划状态，共 {} 个计划", count);
+		log.info("Cleaned up all plan states, total {} plans", count);
 	}
 
 }

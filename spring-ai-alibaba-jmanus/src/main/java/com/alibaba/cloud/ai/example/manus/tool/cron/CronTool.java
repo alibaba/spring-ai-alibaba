@@ -15,14 +15,13 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.cron;
 
-import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
-import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.service.CronService;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.vo.CronConfig;
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.openai.api.OpenAiApi;
 
 public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 
@@ -39,11 +38,11 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 
 	public static class CronToolInput {
 
-		private String cronName; // 任务名称
+		private String cronName; // Task name
 
-		private String cronTime; // 定时时间
+		private String cronTime; // Scheduled time
 
-		private String planDesc; // 计划描述
+		private String planDesc; // Plan description
 
 		CronToolInput() {
 		}
@@ -80,56 +79,26 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 
 	}
 
-	private static String PARAMETERS = """
-			{
-				"type": "object",
-				"properties": {
-					"cronName": {
-						"type": "string",
-						"description": "定时任务名称"
-					},
-					"cronTime": {
-						"type": "string",
-						"description": "cron格式的任务定时执行的时间(六位)，例如：0 0 0/2 * * ?"
-					},
-					"planDesc": {
-						"type": "string",
-						"description": "要执行的任务内容，不能包含时间相关信息"
-					}
-				},
-				"required": ["cronTime","originTime","planDesc"]
-			}
-			""";
-
 	private final String name = "cron_tool";
-
-	private final String description = """
-			    定时任务工具，能存储定时任务到db中。
-			""";
-
-	public OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
-		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
-		return functionTool;
-	}
 
 	@Override
 	public ToolExecuteResult run(CronToolInput input) {
 		try {
 			log.info("cron input:{}", objectMapper.writeValueAsString(input));
 
-			// 创建CronConfig对象
+			// Create CronConfig object
 			CronConfig cronConfig = new CronConfig();
 			cronConfig.setCronName(input.getCronName());
 			cronConfig.setCronTime(input.getCronTime());
 			cronConfig.setPlanDesc(input.getPlanDesc());
 			cronConfig.setStatus(0);
 
-			// 保存到数据库
+			// Save to database
 			CronConfig savedConfig = cronService.createCronTask(cronConfig);
 
-			String result = String.format("OK 写入定时任务成功，任务ID: %d, 描述: %s, 定时时间: %s", savedConfig.getId(),
-					savedConfig.getPlanDesc(), savedConfig.getCronTime());
+			String result = String.format(
+					"OK Scheduled task created successfully, Task ID: %d, Description: %s, Schedule time: %s",
+					savedConfig.getId(), savedConfig.getPlanDesc(), savedConfig.getCronTime());
 			return new ToolExecuteResult(objectMapper.writeValueAsString(result));
 		}
 		catch (Exception e) {
@@ -145,12 +114,33 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 
 	@Override
 	public String getDescription() {
-		return description;
+		return """
+				Create and manage scheduled cron tasks. This tool allows you to create recurring tasks that will be executed automatically at specified times using cron expressions.
+				""";
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "cronName": {
+				            "type": "string",
+				            "description": "Name of the cron task"
+				        },
+				        "cronTime": {
+				            "type": "string",
+				            "description": "Cron expression for scheduling (e.g., '0 0 8 * * ?' for daily at 8 AM，need 6 parameters)"
+				        },
+				        "planDesc": {
+				            "type": "string",
+				            "description": "Description of what this cron task does"
+				        }
+				    },
+				    "required": ["cronName", "cronTime", "planDesc"]
+				}
+				""";
 	}
 
 	@Override
@@ -166,7 +156,7 @@ public class CronTool extends AbstractBaseTool<CronTool.CronToolInput> {
 	@Override
 	public String getCurrentToolStateString() {
 		return String.format("""
-				写入定时任务状态： %s
+				Write scheduled task status: %s
 				""", "yes");
 	}
 

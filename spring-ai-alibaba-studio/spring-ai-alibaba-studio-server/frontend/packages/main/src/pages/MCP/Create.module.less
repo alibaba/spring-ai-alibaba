@@ -1,0 +1,148 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.alert {
+  flex-shrink: 0;
+  font-size: 12px;
+  border-radius: 0;
+
+  .link {
+    font-weight: 500;
+  }
+}
+
+.container {
+  flex: 1;
+  height: 100px;
+
+  .footer-wrap {
+    flex-shrink: 0;
+  }
+
+  .content,
+  .footer {
+    margin: 0 auto;
+    max-width: 960px;
+    width: 80%;
+  }
+
+  .content-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px 20px 24px;
+
+    :global {
+      .ag-ant-form-item-label > label {
+        display: block;
+      }
+    }
+  }
+
+  .coder {
+    border: 1px solid var(--ag-ant-color-border) !important;
+    border-radius: 6px !important;
+    overflow: hidden;
+    > div {
+      min-height: 400px;
+    }
+  }
+}
+
+.bottom-container {
+  display: flex;
+  gap: 8px;
+  width: 80%;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.custom-label-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-label {
+  display: inline-flex;
+  align-items: center;
+
+  .mark {
+    color: var(--ag-ant-color-error);
+    margin-left: 4px;
+  }
+}
+
+.label-desc {
+  color: var(--ag-ant-color-text-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+  margin-left: 4px;
+}
+
+.mcp-install-type-item {
+  width: calc((100% - 40px) / 3);
+}
+
+.status {
+  flex-shrink: 0;
+  color: var(--ag-ant-color-text-tertiary);
+  font-size: 12px;
+  line-height: 20px;
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ag-ant-color-text-tertiary);
+  }
+
+  &.deploy {
+    color: var(--ag-ant-color-success);
+
+    .dot {
+      background: var(--ag-ant-color-success);
+    }
+  }
+
+  &.deploying {
+    color: var(--ag-ant-color-primary);
+
+    .dot {
+      background: var(--ag-ant-color-primary);
+      animation: breathing 1.5s infinite ease-in-out;
+    }
+  }
+
+  &.deploy-error {
+    color: var(--ag-ant-color-error);
+
+    .dot {
+      background: var(--ag-ant-color-error);
+    }
+  }
+}
+
+@keyframes breathing {
+  0% {
+    opacity: 0.3;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.3;
+  }
+}
+
+.fixed-width {
+  width: 640px;
+}
+
+.price {
+  color: var(--ag-ant-color-warning);
+}

@@ -18,48 +18,51 @@
 import { defineStore } from 'pinia'
 import { type MessageInfo, type SimpleType } from 'ant-design-x-vue'
 import { reactive } from 'vue'
-type MsgType<Message> = {
-  convId: string
-  currentState: {
-    [key: string]: {
-      // 会话 id
-      info: MessageInfo<Message | any>
-      // 是否候选, 是: 不显示在界面上
-      candidate: boolean
-      // 是否勾选了 deepresearch
-      deepResearch: boolean
-      // 是否展示研究细节
-      deepResearchDetail: boolean
-      // 记录ai内容的类型
-      aiType: 'normal' | 'startDS' | 'onDS' | 'endDS'
-    }
-  }
-  // 记录历史
-  history: { [key: string]: MessageInfo<any>[] },
-  htmlReport: { [key:string]: string[] },
-
-}
+import { type MessageState, type MsgType } from '@/types/message'
+import { parseJsonTextStrict } from '@/utils/jsonParser'
+import type { LlmStreamNode, NormalNode } from '@/types/node'
 export const useMessageStore = <Message extends SimpleType>() =>
   defineStore('messageStore', {
     state(): MsgType<Message> {
       return reactive({
         convId: '',
-        currentState: {},
-        history: {},
-        htmlReport: {},
+        currentState: {} as { [key: string]: MessageState<Message> },
+        // { 会话id: [{ 线程id: 消息列表 }] }
+        history: {} as { [key: string]: MessageInfo<any>[] },
+        htmlReport: {} as { [key: string]: string[] },
+        report: {} as { [key: string]: any[] },
       })
     },
     getters: {
-      messages: (state): any => {
+      // 获取消息列表
+      messages: (state): MessageInfo<string>[]  => {
+        const res: MessageInfo<string>[] = []
         if (state.convId) {
-          return state.history[state.convId]
+          const messages = state.history[state.convId]
+          const threadId = state.currentState[state.convId].threadId
+          if(!messages) {
+            return []
+          }
+          for(const msg of messages) {
+            if(!msg.message) {
+              continue
+            }
+            const jsonArray = parseJsonTextStrict(msg.message)
+            jsonArray.forEach(item => {
+              if(item.graphId.thread_id === threadId) {
+                res.push(msg)
+              }
+            })
+          }
         }
-        return null
+        return res
       },
-      current: (state): any => {
+      // 获取当下消息状态
+      current: (state): MessageState<Message> => {
         if (state.convId) {
           return state.currentState[state.convId]
         }
+        return {} as MessageState<Message>
       }
     },
     actions: {
@@ -73,8 +76,29 @@ export const useMessageStore = <Message extends SimpleType>() =>
         } else {
           this.current.aiType = 'normal'
         }
-        console.log('nextAIType', this.current.aiType)
       },
+      addReport(report: any) {
+        if(!report) {
+          return
+        }
+        const node = JSON.parse(report)
+        if(!this.report[node.graphId.thread_id]) {
+          this.report[node.graphId.thread_id] = []
+        }
+        this.report[node.graphId.thread_id].push(node) 
+      },
+      isEnd(threadId: string): boolean {
+        const report = this.report[threadId]
+        if(!report) {
+          return false
+        }
+        for(const item of report) {
+          if(item.nodeName === '__END__') {
+            return true
+          }
+        }
+        return false
+      }
     },
     persist: true,
   })()

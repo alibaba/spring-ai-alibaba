@@ -1,0 +1,38 @@
+.extract-param-item {
+  padding: 10px 12px;
+  border: 1px solid var(--ag-ant-color-border-secondary);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 20px;
+  transition: 0.4s ease-in-out;
+  cursor: pointer;
+
+  &-key {
+    font-weight: 500;
+    max-width: 200px !important;
+  }
+
+  &-info,
+  &-type,
+  &-desc {
+    color: var(--ag-ant-color-text-secondary);
+  }
+
+  &-actions {
+    display: none;
+  }
+
+  &:hover {
+    box-shadow: var(--ag-ant-box-shadow);
+    border-color: var(--ag-ant-color-primary);
+
+    .extract-param-item-info {
+      display: none;
+    }
+
+    .extract-param-item-actions {
+      display: flex;
+      font-size: 16px;
+    }
+  }
+}

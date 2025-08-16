@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.service;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.McpAssignNodeProperties;
-import com.alibaba.cloud.ai.example.deepresearch.util.Mcp.McpClientUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.mcp.McpClientUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;

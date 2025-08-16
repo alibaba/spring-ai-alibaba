@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * @author lizhenning
- * @date 2025/7/8
+ * @since 2025/7/8
  */
 @Service
 public class ModelDataInitialization implements IModelDataInitialization {
@@ -95,7 +95,7 @@ public class ModelDataInitialization implements IModelDataInitialization {
 	 * configuration
 	 */
 	private void createModelFromEnvironmentVariablesIfNeeded() {
-		// 首先检查数据库中是否已经存在默认模型
+		// First check if default model already exists in database
 		DynamicModelEntity existingDefaultModel = repository.findByIsDefaultTrue();
 		if (existingDefaultModel != null) {
 			log.info("Default model already exists: {}, skipping environment variable model creation",

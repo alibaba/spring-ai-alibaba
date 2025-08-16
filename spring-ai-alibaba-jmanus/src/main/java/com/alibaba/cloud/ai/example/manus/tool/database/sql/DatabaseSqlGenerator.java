@@ -20,14 +20,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 数据库SQL生成器，根据不同的数据库类型生成相应的SQL语句
+ * Database SQL generator, generates corresponding SQL statements based on different
+ * database types
  */
 public class DatabaseSqlGenerator {
 
 	private static final Logger log = LoggerFactory.getLogger(DatabaseSqlGenerator.class);
 
 	/**
-	 * 生成获取表信息的SQL
+	 * Generate SQL for getting table information
 	 */
 	public static String generateTableInfoSql(String databaseType, boolean fuzzy, String fuzzyText) {
 		switch (normalizeDatabaseType(databaseType)) {
@@ -49,7 +50,7 @@ public class DatabaseSqlGenerator {
 	}
 
 	/**
-	 * 生成获取表字段信息的SQL
+	 * Generate SQL for getting table field information
 	 */
 	public static String generateColumnInfoSql(String databaseType, String inClause) {
 		switch (normalizeDatabaseType(databaseType)) {
@@ -71,7 +72,7 @@ public class DatabaseSqlGenerator {
 	}
 
 	/**
-	 * 生成获取表索引信息的SQL
+	 * Generate SQL for getting table index information
 	 */
 	public static String generateIndexInfoSql(String databaseType, String inClause) {
 		switch (normalizeDatabaseType(databaseType)) {
@@ -93,16 +94,16 @@ public class DatabaseSqlGenerator {
 	}
 
 	/**
-	 * 标准化数据库类型名称
+	 * Normalize database type name
 	 */
 	private static String normalizeDatabaseType(String databaseType) {
 		if (databaseType == null) {
-			return "mysql"; // 默认使用MySQL
+			return "mysql"; // Default to MySQL
 		}
 		return databaseType.toLowerCase().trim();
 	}
 
-	// MySQL/MariaDB SQL生成方法
+	// MySQL/MariaDB SQL generation methods
 	private static String generateMysqlTableInfoSql(boolean fuzzy, String fuzzyText) {
 		if (fuzzy) {
 			return "SELECT TABLE_NAME, TABLE_COMMENT FROM information_schema.TABLES "
@@ -126,7 +127,7 @@ public class DatabaseSqlGenerator {
 				+ "ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX";
 	}
 
-	// PostgreSQL SQL生成方法
+	// PostgreSQL SQL generation methods
 	private static String generatePostgresqlTableInfoSql(boolean fuzzy, String fuzzyText) {
 		if (fuzzy) {
 			return "SELECT tablename as TABLE_NAME, obj_description(c.oid) as TABLE_COMMENT "
@@ -158,7 +159,7 @@ public class DatabaseSqlGenerator {
 				+ "ORDER BY t.relname, i.relname, a.attnum";
 	}
 
-	// Oracle SQL生成方法
+	// Oracle SQL generation methods
 	private static String generateOracleTableInfoSql(boolean fuzzy, String fuzzyText) {
 		if (fuzzy) {
 			return "SELECT table_name as TABLE_NAME, comments as TABLE_COMMENT " + "FROM user_tab_comments "
@@ -186,7 +187,7 @@ public class DatabaseSqlGenerator {
 				+ "ORDER BY t.table_name, i.index_name, c.column_position";
 	}
 
-	// SQL Server SQL生成方法
+	// SQL Server SQL generation methods
 	private static String generateSqlServerTableInfoSql(boolean fuzzy, String fuzzyText) {
 		if (fuzzy) {
 			return "SELECT t.name as TABLE_NAME, ep.value as TABLE_COMMENT " + "FROM sys.tables t "
@@ -221,7 +222,7 @@ public class DatabaseSqlGenerator {
 				+ "WHERE t.name IN (" + inClause + ") " + "ORDER BY t.name, i.name, ic.key_ordinal";
 	}
 
-	// H2 SQL生成方法
+	// H2 SQL generation methods
 	private static String generateH2TableInfoSql(boolean fuzzy, String fuzzyText) {
 		if (fuzzy) {
 			return "SELECT table_name as TABLE_NAME, remarks as TABLE_COMMENT " + "FROM information_schema.tables "

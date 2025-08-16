@@ -29,7 +29,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigStatus;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServerConfig;
 
 /**
- * MCP配置验证器
+ * MCP configuration validator
  */
 @Component
 public class McpConfigValidator {
@@ -43,24 +43,24 @@ public class McpConfigValidator {
 	}
 
 	/**
-	 * 验证MCP配置实体
-	 * @param mcpConfigEntity MCP配置实体
-	 * @throws IOException 验证失败时抛出异常
+	 * Validate MCP configuration entity
+	 * @param mcpConfigEntity MCP configuration entity
+	 * @throws IOException Thrown when validation fails
 	 */
 	public void validateMcpConfigEntity(McpConfigEntity mcpConfigEntity) throws IOException {
 		String serverName = mcpConfigEntity.getMcpServerName();
 
-		// 验证服务器名称
+		// Validate server name
 		if (serverName == null || serverName.trim().isEmpty()) {
 			throw new IOException("Server name is required");
 		}
 
-		// 验证连接类型
+		// Validate connection type
 		if (mcpConfigEntity.getConnectionType() == null) {
 			throw new IOException("Connection type is required for server: " + serverName);
 		}
 
-		// 验证连接配置
+		// Validate connection configuration
 		if (mcpConfigEntity.getConnectionConfig() == null || mcpConfigEntity.getConnectionConfig().trim().isEmpty()) {
 			throw new IOException("Connection config is required for server: " + serverName);
 		}
@@ -69,23 +69,23 @@ public class McpConfigValidator {
 	}
 
 	/**
-	 * 验证服务器配置
-	 * @param serverConfig 服务器配置
-	 * @param serverName 服务器名称
-	 * @throws IOException 验证失败时抛出异常
+	 * Validate server configuration
+	 * @param serverConfig Server configuration
+	 * @param serverName Server name
+	 * @throws IOException Thrown when validation fails
 	 */
 	public void validateServerConfig(McpServerConfig serverConfig, String serverName) throws IOException {
 		if (serverConfig == null) {
 			throw new IOException("Server config is null for server: " + serverName);
 		}
 
-		// 根据连接类型验证必需字段
+		// Validate required fields based on connection type
 		if (serverConfig.getCommand() != null && !serverConfig.getCommand().trim().isEmpty()) {
-			// STUDIO类型：验证command
+			// STUDIO type: validate command
 			validateCommand(serverConfig.getCommand(), serverName);
 		}
 		else {
-			// SSE/STREAMING类型：验证URL
+			// SSE/STREAMING type: validate URL
 			validateUrl(serverConfig.getUrl(), serverName);
 		}
 
@@ -93,10 +93,10 @@ public class McpConfigValidator {
 	}
 
 	/**
-	 * 验证命令配置
-	 * @param command 命令
-	 * @param serverName 服务器名称
-	 * @throws IOException 验证失败时抛出异常
+	 * Validate command configuration
+	 * @param command Command
+	 * @param serverName Server name
+	 * @throws IOException Thrown when validation fails
 	 */
 	public void validateCommand(String command, String serverName) throws IOException {
 		if (command == null || command.trim().isEmpty()) {
@@ -105,10 +105,10 @@ public class McpConfigValidator {
 	}
 
 	/**
-	 * 验证URL配置
+	 * Validate URL configuration
 	 * @param url URL
-	 * @param serverName 服务器名称
-	 * @throws IOException 验证失败时抛出异常
+	 * @param serverName Server name
+	 * @throws IOException Thrown when validation fails
 	 */
 	public void validateUrl(String url, String serverName) throws IOException {
 		if (url == null || url.trim().isEmpty()) {
@@ -124,10 +124,10 @@ public class McpConfigValidator {
 	}
 
 	/**
-	 * 验证SSE URL格式
+	 * Validate SSE URL format
 	 * @param url URL
-	 * @param serverName 服务器名称
-	 * @throws IOException 验证失败时抛出异常
+	 * @param serverName Server name
+	 * @throws IOException Thrown when validation fails
 	 */
 	public void validateSseUrl(String url, String serverName) throws IOException {
 		validateUrl(url, serverName);
@@ -136,7 +136,7 @@ public class McpConfigValidator {
 			URL parsedUrl = new URL(url.trim());
 			String path = parsedUrl.getPath();
 
-			// 检查路径是否包含sse
+			// Check if path contains sse
 			boolean pathContainsSse = path != null && path.toLowerCase().contains("sse");
 
 			if (!pathContainsSse) {
@@ -150,19 +150,19 @@ public class McpConfigValidator {
 	}
 
 	/**
-	 * 检查配置是否启用
-	 * @param mcpConfigEntity MCP配置实体
-	 * @return true如果启用，false如果禁用
+	 * Check if configuration is enabled
+	 * @param mcpConfigEntity MCP configuration entity
+	 * @return true if enabled, false if disabled
 	 */
 	public boolean isEnabled(McpConfigEntity mcpConfigEntity) {
 		return mcpConfigEntity.getStatus() != null && mcpConfigEntity.getStatus() == McpConfigStatus.ENABLE;
 	}
 
 	/**
-	 * 验证服务器名称是否已存在
-	 * @param serverName 服务器名称
-	 * @param existingServer 已存在的服务器
-	 * @throws IOException 如果服务器名称已存在
+	 * Validate if server name already exists
+	 * @param serverName Server name
+	 * @param existingServer Existing server
+	 * @throws IOException If server name already exists
 	 */
 	public void validateServerNameNotExists(String serverName, Object existingServer) throws IOException {
 		if (existingServer != null) {
@@ -171,10 +171,10 @@ public class McpConfigValidator {
 	}
 
 	/**
-	 * 验证服务器是否存在
-	 * @param serverName 服务器名称
-	 * @param existingServer 已存在的服务器
-	 * @throws IOException 如果服务器不存在
+	 * Validate if server exists
+	 * @param serverName Server name
+	 * @param existingServer Existing server
+	 * @throws IOException If server does not exist
 	 */
 	public void validateServerExists(String serverName, Object existingServer) throws IOException {
 		if (existingServer == null) {

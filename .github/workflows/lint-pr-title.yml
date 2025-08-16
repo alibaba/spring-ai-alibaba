@@ -60,6 +60,7 @@ jobs:
             autoconf
             ci
             nl2sql
+            community
           # e.g. feat(core): add new feature
           # if false: feat: add new feature
           requireScope: true

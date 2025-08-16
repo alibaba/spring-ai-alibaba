@@ -120,12 +120,12 @@ public class DateTimeUtil {
 
 	public static String buildDateTimeComment(List<String> expressions) {
 		LocalDate now = LocalDate.now();
-		// 获取年，月，日
+		// Get year, month, day
 		int year = now.getYear();
 		int month = now.getMonthValue();
 		int day = now.getDayOfMonth();
 
-		// 获取当年的季度
+		// Get current year's quarter
 		int quarter = now.get(IsoFields.QUARTER_OF_YEAR);
 
 		String todayComment = String.format("今天是%d年%02d月%02d日，是%d年的第%d季度", year, month, day, year, quarter);
@@ -585,9 +585,9 @@ public class DateTimeUtil {
 
 	public static final String getWeekDayEx(LocalDate now, int x) {
 
-		// 计算本周第一天（周一）的日期
+		// Calculate date of first day of week (Monday)
 		LocalDate monday = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-		// 通过加上(x - 1)天来得到本周第x天的日期
+		// Get date of xth day of week by adding (x - 1) days
 		LocalDate desiredDay = monday.plusDays(x - 1);
 
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日");
@@ -904,7 +904,7 @@ public class DateTimeUtil {
 
 	public static String getQuarterEx(LocalDate now, String quarterEx) {
 		int currentQuarter = now.get(IsoFields.QUARTER_OF_YEAR);
-		// 计算上一个季度和下一个季度
+		// Calculate previous and next quarters
 		int lastQuarter = currentQuarter == 1 ? 4 : currentQuarter - 1;
 		int nextQuarter = currentQuarter == 4 ? 1 : currentQuarter + 1;
 		int currentYear = now.getYear();

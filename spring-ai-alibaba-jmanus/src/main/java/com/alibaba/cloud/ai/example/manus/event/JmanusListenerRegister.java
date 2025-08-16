@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 /**
  * @author dahua
  * @time 2025/7/15
- * @desc jmanus 事件监听器注册
+ * @desc jmanus event listener registration
  */
 @Component
 public class JmanusListenerRegister implements BeanPostProcessor {

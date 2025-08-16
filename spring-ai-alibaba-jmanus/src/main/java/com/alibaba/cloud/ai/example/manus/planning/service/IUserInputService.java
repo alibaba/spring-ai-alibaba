@@ -21,51 +21,51 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 
 /**
- * 用户输入服务接口，管理用户输入相关功能
+ * User input service interface managing user input related functions
  */
 public interface IUserInputService {
 
 	/**
-	 * 存储表单输入工具
-	 * @param planId 计划ID
-	 * @param tool 表单输入工具
+	 * Store form input tool
+	 * @param planId Plan ID
+	 * @param tool Form input tool
 	 */
 	void storeFormInputTool(String planId, FormInputTool tool);
 
 	/**
-	 * 获取表单输入工具
-	 * @param planId 计划ID
-	 * @return 表单输入工具
+	 * Get form input tool
+	 * @param planId Plan ID
+	 * @return Form input tool
 	 */
 	FormInputTool getFormInputTool(String planId);
 
 	/**
-	 * 移除表单输入工具
-	 * @param planId 计划ID
+	 * Remove form input tool
+	 * @param planId Plan ID
 	 */
 	void removeFormInputTool(String planId);
 
 	/**
-	 * 创建用户输入等待状态
-	 * @param planId 计划ID
-	 * @param message 消息
-	 * @param formInputTool 表单输入工具
-	 * @return 用户输入等待状态
+	 * Create user input waiting state
+	 * @param planId Plan ID
+	 * @param message Message
+	 * @param formInputTool Form input tool
+	 * @return User input waiting state
 	 */
 	UserInputWaitState createUserInputWaitState(String planId, String message, FormInputTool formInputTool);
 
 	/**
-	 * 获取等待状态
-	 * @param planId 计划ID
-	 * @return 用户输入等待状态
+	 * Get waiting state
+	 * @param planId Plan ID
+	 * @return User input waiting state
 	 */
 	UserInputWaitState getWaitState(String planId);
 
 	/**
-	 * 提交用户输入
-	 * @param planId 计划ID
-	 * @param inputs 输入数据
-	 * @return 是否提交成功
+	 * Submit user input
+	 * @param planId Plan ID
+	 * @param inputs Input data
+	 * @return Whether submission was successful
 	 */
 	boolean submitUserInputs(String planId, Map<String, String> inputs);
 

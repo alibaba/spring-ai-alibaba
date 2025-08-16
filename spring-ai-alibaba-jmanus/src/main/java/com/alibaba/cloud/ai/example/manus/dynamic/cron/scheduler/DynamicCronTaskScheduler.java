@@ -42,7 +42,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
 /**
- * 动态任务调度器 负责管理所有动态定时任务的生命周期
+ * Dynamic task scheduler responsible for managing the lifecycle of all dynamic scheduled
+ * tasks
  */
 @Component
 public class DynamicCronTaskScheduler {
@@ -66,7 +67,7 @@ public class DynamicCronTaskScheduler {
 	@Autowired
 	private ObjectMapper objectMapper;
 
-	// 存储正在运行的任务
+	// Store running tasks
 	private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
 
 	@Autowired
@@ -76,19 +77,19 @@ public class DynamicCronTaskScheduler {
 	}
 
 	/**
-	 * 执行定时任务
-	 * @param cronEntity 任务实体
+	 * Execute scheduled task
+	 * @param cronEntity Task entity
 	 */
 	private void executeTask(CronEntity cronEntity) {
 		try {
-			// 更新任务执行时间
+			// Update task execution time
 			cronEntity.setLastExecutedTime(LocalDateTime.now());
 			cronRepository.save(cronEntity);
 
 			String planTemplateId = cronEntity.getPlanTemplateId();
 
 			if (planTemplateId != null && !planTemplateId.trim().isEmpty()) {
-				// 如果存在计划模板ID，则按计划模板执行
+				// If plan template ID exists, execute according to plan template
 				executePlanTemplate(planTemplateId);
 			}
 			else {
@@ -96,17 +97,17 @@ public class DynamicCronTaskScheduler {
 			}
 		}
 		catch (Exception e) {
-			log.error("任务执行失败: {} - {}", cronEntity.getCronName(), e.getMessage());
+			log.error("Task execution failed: {} - {}", cronEntity.getCronName(), e.getMessage());
 		}
 	}
 
 	/**
-	 * 生成计划并执行
-	 * @param cronEntity 任务实体
+	 * Generate plan and execute
+	 * @param cronEntity Task entity
 	 */
 	private void executePlan(CronEntity cronEntity) {
 		String planDesc = cronEntity.getPlanDesc();
-		log.info("执行定时任务: {} - {}", cronEntity.getCronName(), planDesc);
+		log.info("Executing scheduled task: {} - {}", cronEntity.getCronName(), planDesc);
 
 		ExecutionContext context = new ExecutionContext();
 		context.setUserRequest(planDesc);
@@ -118,27 +119,27 @@ public class DynamicCronTaskScheduler {
 
 		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(planId);
 
-		// 异步执行任务
+		// Execute task asynchronously
 		CompletableFuture.supplyAsync(() -> {
 			try {
 				return planningFlow.executePlan(context);
 			}
 			catch (Exception e) {
-				log.error("计划执行失败: {} - {}", cronEntity.getCronName(), e.getMessage());
-				throw new RuntimeException("计划执行失败: " + e.getMessage(), e);
+				log.error("Plan execution failed: {} - {}", cronEntity.getCronName(), e.getMessage());
+				throw new RuntimeException("Plan execution failed: " + e.getMessage(), e);
 			}
 		});
 	}
 
 	/**
-	 * 执行计划模板
-	 * @param planTemplateId 计划模板ID
+	 * Execute plan template
+	 * @param planTemplateId Plan template ID
 	 */
 	private void executePlanTemplate(String planTemplateId) {
 		try {
-			log.info("使用PlanTemplateController执行计划模板: {}", planTemplateId);
+			log.info("Using PlanTemplateController to execute plan template: {}", planTemplateId);
 
-			// 调用PlanTemplateController的公共方法executePlanByTemplateId
+			// Call PlanTemplateController's public method executePlanByTemplateId
 			ResponseEntity<Map<String, Object>> response = planTemplateService
 				.executePlanByTemplateIdInternal(planTemplateId, null);
 
@@ -146,23 +147,23 @@ public class DynamicCronTaskScheduler {
 				Map<String, Object> responseBody = response.getBody();
 				if (responseBody != null) {
 					String planId = (String) responseBody.get("planId");
-					log.info("计划模板执行成功，新计划ID: {}", planId);
+					log.info("Plan template execution successful, new plan ID: {}", planId);
 				}
 				else {
-					log.warn("计划模板执行成功，但响应体为空");
+					log.warn("Plan template execution successful, but response body is empty");
 				}
 			}
 			else {
-				log.error("计划模板执行失败，状态码: {}", response.getStatusCode());
+				log.error("Plan template execution failed, status code: {}", response.getStatusCode());
 			}
 		}
 		catch (Exception e) {
-			log.error("执行计划模板失败: {}", planTemplateId, e);
+			log.error("Failed to execute plan template: {}", planTemplateId, e);
 		}
 	}
 
 	/**
-	 * 添加定时任务
+	 * Add scheduled task
 	 */
 	public boolean addTask(CronEntity cronEntity) {
 		try {
@@ -178,17 +179,17 @@ public class DynamicCronTaskScheduler {
 					new CronTrigger(cronEntity.getCronTime()));
 
 			scheduledTasks.put(cronEntity.getId(), future);
-			log.info("添加定时任务: {} [{}]", cronEntity.getCronName(), cronEntity.getCronTime());
+			log.info("Adding scheduled task: {} [{}]", cronEntity.getCronName(), cronEntity.getCronTime());
 			return true;
 		}
 		catch (Exception e) {
-			log.error("添加任务失败: {} - {}", cronEntity.getCronName(), e.getMessage());
+			log.error("Failed to add task: {} - {}", cronEntity.getCronName(), e.getMessage());
 			return false;
 		}
 	}
 
 	/**
-	 * 移除定时任务
+	 * Remove scheduled task
 	 */
 	public boolean removeTask(Long taskId) {
 		try {
@@ -200,24 +201,24 @@ public class DynamicCronTaskScheduler {
 			return false;
 		}
 		catch (Exception e) {
-			log.error("移除任务失败: {} - {}", taskId, e.getMessage());
+			log.error("Failed to remove task: {} - {}", taskId, e.getMessage());
 			return false;
 		}
 	}
 
 	/**
-	 * 根据任务ID立即执行任务
+	 * Execute task immediately by task ID
 	 */
 	public void executeTaskById(Long taskId) {
 		CronEntity cronEntity = cronRepository.findById(taskId)
 			.orElseThrow(() -> new IllegalArgumentException("Cron task not found: " + taskId));
 
-		log.info("手动执行定时任务: {} - {}", cronEntity.getCronName(), cronEntity.getPlanDesc());
+		log.info("Manually executing scheduled task: {} - {}", cronEntity.getCronName(), cronEntity.getPlanDesc());
 		executeTask(cronEntity);
 	}
 
 	/**
-	 * 获取当前运行的任务ID集合
+	 * Get set of currently running task IDs
 	 */
 	public Set<Long> getRunningTaskIds() {
 		return new HashSet<>(scheduledTasks.keySet());

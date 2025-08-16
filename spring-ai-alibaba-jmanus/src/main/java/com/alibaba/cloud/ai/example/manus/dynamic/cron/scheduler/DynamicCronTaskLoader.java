@@ -48,7 +48,7 @@ public class DynamicCronTaskLoader implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 		loadAllEnabledTasks();
-		log.info("定时任务加载完成");
+		log.info("Scheduled task loading completed");
 	}
 
 	@Scheduled(fixedRate = 10000)
@@ -69,7 +69,7 @@ public class DynamicCronTaskLoader implements CommandLineRunner {
 				}
 			}
 
-			// 检查需要删除的任务
+			// Check tasks that need to be deleted
 			Set<Long> dbTaskIds = dbTasks.stream().map(CronEntity::getId).collect(Collectors.toSet());
 			for (Long runningTaskId : runningTaskIds) {
 				if (!dbTaskIds.contains(runningTaskId)) {
@@ -78,7 +78,7 @@ public class DynamicCronTaskLoader implements CommandLineRunner {
 			}
 		}
 		catch (Exception e) {
-			log.error("同步定时任务状态失败: {}", e.getMessage(), e);
+			log.error("Failed to sync scheduled task status: {}", e.getMessage(), e);
 		}
 	}
 
@@ -89,7 +89,7 @@ public class DynamicCronTaskLoader implements CommandLineRunner {
 				.filter(task -> TaskStatus.ENABLED.getCode().equals(task.getStatus()))
 				.toList();
 
-			log.info("加载 {} 个启用的定时任务", enabledTasks.size());
+			log.info("Loaded {} enabled scheduled tasks", enabledTasks.size());
 
 			int successCount = 0;
 			for (CronEntity task : enabledTasks) {
@@ -99,11 +99,11 @@ public class DynamicCronTaskLoader implements CommandLineRunner {
 			}
 
 			if (successCount < enabledTasks.size()) {
-				log.warn("部分任务加载失败，成功: {}, 总数: {}", successCount, enabledTasks.size());
+				log.warn("Some tasks failed to load, successful: {}, total: {}", successCount, enabledTasks.size());
 			}
 		}
 		catch (Exception e) {
-			log.error("加载定时任务失败: {}", e.getMessage(), e);
+			log.error("Failed to load scheduled tasks: {}", e.getMessage(), e);
 		}
 	}
 

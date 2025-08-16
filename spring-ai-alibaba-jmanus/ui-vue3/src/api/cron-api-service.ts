@@ -20,7 +20,7 @@ export class CronApiService {
   private static readonly BASE_URL = '/api/cron-tasks'
 
   /**
-   * 获取所有定时任务
+   * Get all cron tasks
    */
   static async getAllCronTasks(): Promise<CronConfig[]> {
     try {
@@ -34,7 +34,7 @@ export class CronApiService {
   }
 
   /**
-   * 根据ID获取定时任务
+   * Get cron task by ID
    */
   static async getCronTaskById(id: string): Promise<CronConfig> {
     try {
@@ -48,7 +48,7 @@ export class CronApiService {
   }
 
   /**
-   * 创建定时任务
+   * Create cron task
    */
   static async createCronTask(cronConfig: CronConfig): Promise<CronConfig> {
     try {
@@ -68,7 +68,7 @@ export class CronApiService {
   }
 
   /**
-   * 更新定时任务
+   * Update cron task
    */
   static async updateCronTask(id: number, cronConfig: CronConfig): Promise<CronConfig> {
     try {
@@ -88,7 +88,7 @@ export class CronApiService {
   }
 
   /**
-   * 更新任务状态
+   * Update task status
    */
   static async updateTaskStatus(id: string, status: number): Promise<void> {
     try {
@@ -103,7 +103,7 @@ export class CronApiService {
   }
 
   /**
-   * 删除定时任务
+   * Delete cron task
    */
   static async deleteCronTask(id: string): Promise<void> {
     try {

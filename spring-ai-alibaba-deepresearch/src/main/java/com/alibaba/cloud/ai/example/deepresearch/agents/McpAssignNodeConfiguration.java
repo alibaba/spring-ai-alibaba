@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.McpAssignNodeProperties;
-import com.alibaba.cloud.ai.example.deepresearch.util.Mcp.McpConfigMergeUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.mcp.McpConfigMergeUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -16,19 +16,19 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.cron.enums;
 
 /**
- * 定时任务状态枚举
+ * Scheduled task status enumeration
  */
 public enum TaskStatus {
 
 	/**
-	 * 启用状态
+	 * Enabled status
 	 */
-	ENABLED(0, "启用"),
+	ENABLED(0, "Enabled"),
 
 	/**
-	 * 禁用状态
+	 * Disabled status
 	 */
-	DISABLED(1, "禁用");
+	DISABLED(1, "Disabled");
 
 	private final Integer code;
 

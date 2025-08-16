@@ -1,0 +1,139 @@
+.tool-card {
+  box-shadow: none;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  background-color: var(--ag-ant-color-fill-tertiary) !important;
+  border: none !important;
+
+  :global {
+    .spark-title,
+    .spark-info {
+      display: none;
+    }
+
+    .ag-ant-card-body {
+      padding: 20px;
+    }
+
+    .ag-spark-card-wrapper {
+      gap: 0 !important;
+      padding: 0;
+    }
+
+    .ant-form-item-label {
+      padding: 0 0 4px !important;
+    }
+
+    .ant-form-item-label > label {
+      line-height: 0;
+      padding: 0;
+    }
+  }
+}
+
+.tool-header {
+  cursor: pointer;
+
+  .header-main {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+
+      .tool-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ag-ant-color-text);
+        margin-right: 8px;
+        line-height: 24px;
+      }
+
+      .expand-icon {
+        font-size: 20px;
+        transition: transform 0.3s;
+      }
+
+      .tool-icon {
+        display: flex;
+        align-items: center;
+        width: 20px;
+        height: 20px;
+        gap: 8px;
+        color: var(--ag-ant-color-text);
+        background-color: var(--ag-ant-color-bg-base);
+        border-radius: 4px;
+        font-size: 16px !important;
+      }
+    }
+  }
+}
+
+.tool-description {
+  color: var(--ag-ant-color-text-tertiary);
+  font-size: 14px;
+  line-height: 24px;
+  margin-top: 4px;
+}
+
+.tool-content {
+  margin-top: 20px;
+
+  .tool-form {
+    .form-label {
+      display: flex;
+      height: 20px;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ag-ant-color-text);
+
+      .required {
+        line-height: 1;
+        margin-top: 5px;
+        color: var(--ag-ant-color-error);
+      }
+    }
+
+    .form-label-type {
+      color: var(--ag-ant-color-text-tertiary);
+      font-weight: 400;
+    }
+
+    .form-description {
+      color: var(--ag-ant-color-text-tertiary);
+      font-size: 12px;
+      line-height: 20px;
+      margin: 4px 0 0 0;
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .execute-status {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--ag-ant-color-success);
+
+        .success-icon {
+          font-size: 14px;
+        }
+      }
+    }
+  }
+
+  .result-container {
+    height: 160px;
+    margin-top: 16px;
+    overflow: scroll;
+  }
+}

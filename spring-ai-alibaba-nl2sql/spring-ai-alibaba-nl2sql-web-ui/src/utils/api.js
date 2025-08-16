@@ -447,6 +447,11 @@ export const datasourceApi = {
   // 启用/禁用智能体的数据源
   toggleDatasource(agentId, datasourceId, isActive) {
     return put(`/datasource/agent/${agentId}/${datasourceId}/toggle`, { isActive })
+  },
+
+  // 获取数据源的表列表
+  getTables(datasourceId) {
+    return get(`/datasource/${datasourceId}/tables`)
   }
 }
 

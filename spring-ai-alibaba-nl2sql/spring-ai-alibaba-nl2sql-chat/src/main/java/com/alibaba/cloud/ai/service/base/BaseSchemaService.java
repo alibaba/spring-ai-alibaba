@@ -42,7 +42,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Schema 服务基类，提供共同的方法实现
+ * Schema service base class, providing common method implementations
  */
 public abstract class BaseSchemaService {
 
@@ -51,7 +51,7 @@ public abstract class BaseSchemaService {
 	protected final Gson gson;
 
 	/**
-	 * 向量存储服务
+	 * Vector storage service
 	 */
 	protected final BaseVectorStoreService vectorStoreService;
 
@@ -62,17 +62,32 @@ public abstract class BaseSchemaService {
 	}
 
 	/**
-	 * 基于 RAG 构建 schema
-	 * @param query 查询
-	 * @param keywords 关键词列表
+	 * Build schema based on RAG
+	 * @param query query
+	 * @param keywords keyword list
 	 * @return SchemaDTO
 	 */
 	public SchemaDTO mixRag(String query, List<String> keywords) {
-		SchemaDTO schemaDTO = new SchemaDTO();
-		extractDatabaseName(schemaDTO); // 设置数据库名或模式名
+		return mixRagForAgent(null, query, keywords);
+	}
 
-		List<Document> tableDocuments = getTableDocuments(query); // 获取表文档
-		List<List<Document>> columnDocumentList = getColumnDocumentsByKeywords(keywords); // 获取列文档列表
+	/**
+	 * Build schema based on RAG - supports agent isolation
+	 * @param agentId agent ID
+	 * @param query query
+	 * @param keywords keyword list
+	 * @return SchemaDTO
+	 */
+	public SchemaDTO mixRagForAgent(String agentId, String query, List<String> keywords) {
+		SchemaDTO schemaDTO = new SchemaDTO();
+		extractDatabaseName(schemaDTO); // Set database name or schema name
+
+		List<Document> tableDocuments = getTableDocuments(query, agentId); // Get table
+																			// documents
+		List<List<Document>> columnDocumentList = getColumnDocumentsByKeywords(keywords, agentId); // Get
+																									// column
+																									// document
+																									// list
 
 		buildSchemaFromDocuments(columnDocumentList, tableDocuments, schemaDTO);
 
@@ -81,25 +96,25 @@ public abstract class BaseSchemaService {
 
 	public void buildSchemaFromDocuments(List<List<Document>> columnDocumentList, List<Document> tableDocuments,
 			SchemaDTO schemaDTO) {
-		// 处理列权重，并按表关联排序
+		// Process column weights and sort by table association
 		processColumnWeights(columnDocumentList, tableDocuments);
 
-		// 初始化列选择器， TODO 上限100存在问题
+		// Initialize column selector, TODO upper limit 100 has issues
 		Map<String, Document> weightedColumns = selectWeightedColumns(columnDocumentList, 100);
 
 		Set<String> foreignKeySet = extractForeignKeyRelations(tableDocuments);
 
-		// 构建表列表
+		// Build table list
 		List<TableDTO> tableList = buildTableListFromDocuments(tableDocuments);
 
-		// 补充缺失的外键对应表
+		// Supplement missing foreign key corresponding tables
 		expandTableDocumentsWithForeignKeys(tableDocuments, foreignKeySet, "table");
 		expandColumnDocumentsWithForeignKeys(weightedColumns, foreignKeySet, "column");
 
-		// 将加权列附加到对应的表中
+		// Attach weighted columns to corresponding tables
 		attachColumnsToTables(weightedColumns, tableList);
 
-		// 最终组装 SchemaDTO
+		// Finally assemble SchemaDTO
 		schemaDTO.setTable(tableList);
 
 		Set<String> foreignKeys = tableDocuments.stream()
@@ -111,21 +126,63 @@ public abstract class BaseSchemaService {
 	}
 
 	/**
-	 * 根据关键词获取所有表文档
+	 * Get all table documents by keywords
 	 */
 	public List<Document> getTableDocuments(String query) {
-		return vectorStoreService.getDocuments(query, "table");
+		return getTableDocuments(query, null);
 	}
 
 	/**
-	 * 根据关键词获取所有列文档
+	 * Get all table documents by keywords - supports agent isolation
+	 */
+	public List<Document> getTableDocuments(String query, String agentId) {
+		if (agentId != null) {
+			return vectorStoreService.getDocumentsForAgent(agentId, query, "table");
+		}
+		else {
+			return vectorStoreService.getDocuments(query, "table");
+		}
+	}
+
+	/**
+	 * Get all table documents by keywords for specified agent
+	 */
+	public List<Document> getTableDocumentsForAgent(String agentId, String query) {
+		return vectorStoreService.getDocumentsForAgent(agentId, query, "table");
+	}
+
+	/**
+	 * Get all column documents by keywords
 	 */
 	public List<List<Document>> getColumnDocumentsByKeywords(List<String> keywords) {
-		return keywords.stream().map(kw -> vectorStoreService.getDocuments(kw, "column")).collect(Collectors.toList());
+		return getColumnDocumentsByKeywords(keywords, null);
 	}
 
 	/**
-	 * 扩展列文档（通过外键补充缺失的列）
+	 * Get all column documents by keywords - supports agent isolation
+	 */
+	public List<List<Document>> getColumnDocumentsByKeywords(List<String> keywords, String agentId) {
+		if (agentId != null) {
+			return getColumnDocumentsByKeywordsForAgent(agentId, keywords);
+		}
+		else {
+			return keywords.stream()
+				.map(kw -> vectorStoreService.getDocuments(kw, "column"))
+				.collect(Collectors.toList());
+		}
+	}
+
+	/**
+	 * Get all column documents by keywords for specified agent
+	 */
+	public List<List<Document>> getColumnDocumentsByKeywordsForAgent(String agentId, List<String> keywords) {
+		return keywords.stream()
+			.map(kw -> vectorStoreService.getDocumentsForAgent(agentId, kw, "column"))
+			.collect(Collectors.toList());
+	}
+
+	/**
+	 * Expand column documents (supplement missing columns through foreign keys)
 	 */
 	private void expandColumnDocumentsWithForeignKeys(Map<String, Document> weightedColumns, Set<String> foreignKeySet,
 			String vectorType) {
@@ -145,7 +202,7 @@ public abstract class BaseSchemaService {
 	}
 
 	/**
-	 * 扩展表文档（通过外键补充缺失的表）
+	 * Expand table documents (supplement missing tables through foreign keys)
 	 */
 	private void expandTableDocumentsWithForeignKeys(List<Document> tableDocuments, Set<String> foreignKeySet,
 			String vectorType) {
@@ -170,7 +227,7 @@ public abstract class BaseSchemaService {
 	}
 
 	/**
-	 * 添加缺失的表文档
+	 * Add missing table documents
 	 * @param tableDocuments
 	 * @param tableName
 	 * @param vectorType
@@ -181,7 +238,7 @@ public abstract class BaseSchemaService {
 			String vectorType);
 
 	/**
-	 * 按照权重选取最多 maxCount 个列
+	 * Select up to maxCount columns by weight
 	 */
 	protected Map<String, Document> selectWeightedColumns(List<List<Document>> columnDocumentList, int maxCount) {
 		Map<String, Document> result = new HashMap<>();
@@ -208,9 +265,9 @@ public abstract class BaseSchemaService {
 	}
 
 	/**
-	 * 从文档构建表列表
-	 * @param documents 文档列表
-	 * @return 表列表
+	 * Build table list from documents
+	 * @param documents document list
+	 * @return table list
 	 */
 	protected List<TableDTO> buildTableListFromDocuments(List<Document> documents) {
 		List<TableDTO> tableList = new ArrayList<>();
@@ -231,7 +288,7 @@ public abstract class BaseSchemaService {
 	}
 
 	/**
-	 * 给每个列打分（结合其所在表的评分）
+	 * Score each column (combining with its table's score)
 	 */
 	public void processColumnWeights(List<List<Document>> columnDocuments, List<Document> tableDocuments) {
 		columnDocuments.replaceAll(docs -> docs.stream()
@@ -256,9 +313,9 @@ public abstract class BaseSchemaService {
 	}
 
 	/**
-	 * 提取外键关系
-	 * @param tableDocuments 表文档列表
-	 * @return 外键关系集合
+	 * Extract foreign key relationships
+	 * @param tableDocuments table document list
+	 * @return foreign key relationship set
 	 */
 	protected Set<String> extractForeignKeyRelations(List<Document> tableDocuments) {
 		Set<String> result = new HashSet<>();
@@ -280,7 +337,7 @@ public abstract class BaseSchemaService {
 	}
 
 	/**
-	 * 将列文档附加到对应的表中
+	 * Attach column documents to corresponding tables
 	 */
 	protected void attachColumnsToTables(Map<String, Document> weightedColumns, List<TableDTO> tableList) {
 		if (CollectionUtils.isEmpty(weightedColumns.values())) {
@@ -310,9 +367,9 @@ public abstract class BaseSchemaService {
 	}
 
 	/**
-	 * 获取表元数据
-	 * @param tableName 表名
-	 * @return 表元数据
+	 * Get table metadata
+	 * @param tableName table name
+	 * @return table metadata
 	 */
 	protected Map<String, Object> getTableMetadata(String tableName) {
 		List<Document> tableDocuments = getTableDocuments(tableName);
@@ -326,7 +383,7 @@ public abstract class BaseSchemaService {
 	}
 
 	/**
-	 * 提取数据库名称
+	 * Extract database name
 	 * @param schemaDTO SchemaDTO
 	 */
 	public void extractDatabaseName(SchemaDTO schemaDTO) {
@@ -344,7 +401,7 @@ public abstract class BaseSchemaService {
 	}
 
 	/**
-	 * 通用文档查询处理模板，减少子类冗余代码。
+	 * Common document query processing template to reduce subclass redundant code.
 	 */
 	protected void handleDocumentQuery(List<Document> targetList, String key, String vectorType,
 			Function<String, SearchRequest> requestBuilder, Function<SearchRequest, List<Document>> searchFunc) {

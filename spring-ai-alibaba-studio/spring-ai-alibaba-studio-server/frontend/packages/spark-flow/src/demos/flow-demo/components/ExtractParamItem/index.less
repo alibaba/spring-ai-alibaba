@@ -1,0 +1,34 @@
+@import '../../index.less';
+
+.spark-flow-panel-extract-param-item {
+  padding: 10px 20px;
+  border: 1px solid e('var(--@{ant-prefix}-color-border-secondary)');
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 20px;
+  transition: 0.4s ease-in-out;
+  cursor: pointer;
+
+  &-info,
+  &-type {
+    color: e('var(--@{ant-prefix}-color-text-secondary)');
+  }
+
+  &-actions {
+    display: none;
+  }
+
+  &:hover {
+    box-shadow: e('var(--@{ant-prefix}-box-shadow)');
+    border-color: e('var(--@{ant-prefix}-color-primary)');
+
+    .spark-flow-panel-extract-param-item-info {
+      display: none;
+    }
+
+    .spark-flow-panel-extract-param-item-actions {
+      display: flex;
+      font-size: 16px;
+    }
+  }
+}

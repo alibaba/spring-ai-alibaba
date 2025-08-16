@@ -1,0 +1,68 @@
+@import '../index.less';
+
+.spark-flow-small-padding-popover {
+  &.@{ant-prefix}-popover .@{ant-prefix}-popover-inner {
+    padding: 4px 8px;
+  }
+}
+
+.spark-var-type {
+  font-family: Menlo, monospace;
+  margin: 0;
+}
+
+.spark-flow-container-wrap {
+  height: 100%;
+  width: 100%;
+}
+
+.spark-flow-container {
+  position: relative;
+  height: 100%;
+  width: 100%;
+
+  .react-flow__background {
+    background-color: e('var(--@{ant-prefix}-color-bg-layout)');
+  }
+}
+
+.spark-flow-icon {
+  font-size: 16px;
+}
+
+.spark-flow-operator-icon-with-bg {
+  transition: 0.4s ease-in-out;
+  cursor: pointer;
+
+  .spark-flow-node-action-btn {
+    color: e('var(--@{ant-prefix}-color-text-secondary)');
+  }
+
+  &:hover {
+    background: e('var(--@{ant-prefix}-color-primary-bg)');
+
+    .spark-flow-node-action-btn {
+      color: e('var(--@{ant-prefix}-color-primary)');
+    }
+  }
+}
+
+.spark-flow-text-btn {
+  font-size: 12px;
+  padding: 0;
+  gap: 4px;
+}
+
+.spark-flow-icon-base-color {
+  color: e('var(--@{ant-prefix}-color-text-tertiary)');
+}
+
+.text-desc {
+  color: e('var(--@{ant-prefix}-color-text-tertiary)');
+  font-size: 12px;
+}
+
+.spark-flow-disabled-icon-btn {
+  color: e('var(--@{ant-prefix}-color-text-disabled)');
+  cursor: not-allowed;
+}

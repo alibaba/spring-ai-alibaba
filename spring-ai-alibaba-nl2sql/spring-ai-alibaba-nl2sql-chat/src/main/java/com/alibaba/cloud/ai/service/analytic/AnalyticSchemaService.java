@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Schema 构建服务，支持基于 RAG 的混合查询。
+ * Schema building service, supports RAG-based hybrid queries.
  */
 
 @Service

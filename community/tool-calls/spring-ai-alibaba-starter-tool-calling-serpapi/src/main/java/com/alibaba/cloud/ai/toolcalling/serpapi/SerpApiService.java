@@ -62,7 +62,7 @@ public class SerpApiService implements SearchService, Function<SerpApiService.Re
 	}
 
 	/**
-	 * 使用serpai API 搜索数据
+	 * Use serpapi API to search data
 	 * @param request the function argument
 	 * @return responseMono
 	 */
@@ -113,7 +113,7 @@ public class SerpApiService implements SearchService, Function<SerpApiService.Re
 				String link = (String) result.get("link");
 				String snippet = (String) result.get("snippet");
 
-				// 提取 icon
+				// Extract icon
 				String icon = null;
 				Object aboutThisResultObj = result.get("about_this_result");
 				if (aboutThisResultObj instanceof Map) {

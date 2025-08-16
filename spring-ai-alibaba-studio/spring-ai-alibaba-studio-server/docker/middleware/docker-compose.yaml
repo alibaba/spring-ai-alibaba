@@ -1,0 +1,197 @@
+services:
+  mysql:
+    container_name: mysql
+    restart: always
+    image: mysql:8.0.35
+    user: "${UID}:${GID}"
+    env_file:
+      - ./.env
+      - ./mysql.env
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/mysql/data:/var/lib/mysql
+      - ${MIDDLEWARE_HOME:-.}/mysql/log:/var/log
+      - ${MIDDLEWARE_HOME:-.}/conf/mysql:/etc/mysql/conf.d
+      - ${MIDDLEWARE_HOME:-.}/init/mysql:/docker-entrypoint-initdb.d/
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  redis:
+    restart: always
+    image: redis:7.2.5
+    container_name: redis
+    user: "${UID}:${GID}"
+    env_file:
+      - ./.env
+    ports:
+      - "6379:6379"
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/redis/data:/data
+    command: redis-server
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+    container_name: elasticsearch
+    user: "1000:1000"
+    restart: always
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/elasticsearch/data:/usr/share/elasticsearch/data
+    env_file:
+      - ./elasticsearch.env
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.2
+    container_name: kibana
+    user: "1000:1000"
+    restart: always
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/kibana/data:/usr/share/kibana/data
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - monitoring.ui.container.elasticsearch.enabled=true
+      - ELASTICSEARCH_USERNAME=kibana
+      - ELASTICSEARCH_PASSWORD=123456
+      - JAVA_OPTS=-Xms64M -Xmx256M
+    depends_on:
+      - elasticsearch
+    networks:
+      - elasticsearch
+
+  rmq_namesrv:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq_namesrv
+    user: "${UID}:${GID}"
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      - NAMESRV_ADDR=rmq_namesrv:9876
+      - HEAP_OPTS=-Xms128M -Xmx256M -Xmn128M
+    ports:
+      - "9876:9876"
+    networks:
+      - rocketmq
+    command: sh mqnamesrv
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "ps aux | grep mqnamesrv | grep -v grep || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  rmq_broker:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq_broker
+    user: "${UID}:${GID}"
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      - NAMESRV_ADDR=rmq_namesrv:9876
+      - HEAP_OPTS=-Xms256M -Xmx512M -Xmn256M -XX:MaxDirectMemorySize=128M
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/rocketmq/store:/home/rocketmq/store
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    depends_on:
+      - rmq_namesrv
+    networks:
+      - rocketmq
+    command: sh mqbroker
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "ps aux | grep mqbroker | grep -v grep || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  rmq_proxy:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq_proxy
+    user: "${UID}:${GID}"
+    restart: always
+    env_file:
+      - ./.env
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/conf/rocketmq:/home/rocketmq/conf
+    environment:
+      - NAMESRV_ADDR=rmq_namesrv:9876
+      - HEAP_OPTS=-Xms128M -Xmx256M -Xmn128M
+    networks:
+      - rocketmq
+    depends_on:
+      - rmq_broker
+      - rmq_namesrv
+    ports:
+      - "18080:18080"
+      - "18081:18081"
+    command: sh mqproxy -pc /home/rocketmq/conf/rmq-proxy.json
+  nacos:
+    image: nacos/nacos-server:latest
+    container_name: nacos-standalone-derby
+    user: "${UID}:${GID}"
+    profiles:
+      - nacos
+    env_file:
+      - ./.env
+    environment:
+      - MODE=standalone
+      - NACOS_AUTH_TOKEN=SecretKey012345678901234567890123456789012345678901234567890123456789
+      - NACOS_AUTH_IDENTITY_KEY=serveridentity
+      - NACOS_AUTH_IDENTITY_VALUE=security
+    ports:
+      - "8080:8080"
+      - "8848:8848"
+      - "9848:9848"
+    restart: always
+    volumes:
+      - ./volumes/tacos:/home/nacos/data
+    networks:
+      - nacos-network
+  init-topic:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq-init-topic
+    user: "${UID}:${GID}"
+    restart: "no"
+    env_file:
+      - ./.env
+    depends_on:
+      rmq_namesrv:
+        condition: service_healthy
+      rmq_broker:
+        condition: service_healthy
+    networks:
+      - rocketmq
+    entrypoint: >
+      sh -c "
+        echo 'Waiting for RocketMQ to be ready...' &&
+        sleep 60 &&
+        until sh mqadmin clusterList -n rmq_namesrv:9876; do
+          echo 'Waiting for RocketMQ to be fully ready...' &&
+          sleep 10
+        done &&
+        echo 'Creating topic...' &&
+        sh mqadmin updateTopic -n rmq_namesrv:9876 -t topic_saa_studio_document_index -c DefaultCluster -a +message.type=NORMAL &&
+        sh mqadmin updateSubGroup -n rmq_namesrv:9876 -g group_saa_studio_document_index -c DefaultCluster &&
+        echo 'Verifying topic creation...' &&
+        sh mqadmin topicList -n rmq_namesrv:9876 &&
+        echo 'Topic creation completed'"
+
+networks:
+  elasticsearch:
+    driver: bridge
+  rocketmq:
+    driver: bridge
+  nacos-network:
+    driver: bridge

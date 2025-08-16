@@ -48,39 +48,39 @@ public class MapReducePlanningTool
 			    "type": "object",
 			    "properties": {
 			        "command": {
-			            "description": "MapReducePlanningTool 接受JSON格式输入创建执行计划，必需参数包括command固定为create、planId作为唯一标识、title作为计划标题、steps数组包含执行节点，每个节点有type字段指定sequential顺序执行或mapreduce分布式处理两种类型，sequential节点包含steps数组，mapreduce节点包含dataPreparedSteps（数据准备阶段，串行执行）、mapSteps（Map阶段，并行执行）和reduceSteps（Reduce阶段，串行执行）数组，每个步骤对象包含stepRequirement描述具体任务内容建议用方括号标明代理类型，工具会自动为步骤添加类型前缀，支持在同一计划中组合多种节点类型形成复杂工作流。 所有的jsonkey都必须是完全符合要求的英文",
+			            "description": "MapReducePlanningTool accepts JSON format input to create execution plans. Required parameters include command (fixed as 'create'), planId as unique identifier, title as plan title, steps array containing execution nodes. Each node has a type field specifying either sequential (sequential execution) or mapreduce (distributed processing). Sequential nodes contain steps array, mapreduce nodes contain dataPreparedSteps (data preparation phase, serial execution), mapSteps (Map phase, parallel execution) and reduceSteps (Reduce phase, serial execution) arrays. Each step object contains stepRequirement describing specific task content, suggest using square brackets to indicate agent type. The tool automatically adds type prefixes to steps, supports combining multiple node types in the same plan to form complex workflows. All JSON keys must be in proper English format.",
 			            "enum": [
 			                "create"
 			            ],
 			            "type": "string"
 			        },
 			        "planId": {
-			            "description": "计划的唯一标识符",
+			            "description": "Unique identifier for the plan",
 			            "type": "string"
 			        },
 			        "title": {
-			            "description": "计划的标题",
+			            "description": "Title of the plan",
 			            "type": "string"
 			        },
 			        "steps": {
-			            "description": "计划步骤列表，支持顺序和MapReduce两种节点类型",
+			            "description": "List of plan steps, supporting both sequential and MapReduce node types",
 			            "type": "array",
 			            "items": {
 			                "type": "object",
 			                "properties": {
 			                    "type": {
-			                        "description": "节点类型：sequential（顺序）、mapreduce（MapReduce）",
+			                        "description": "Node type: sequential (sequential execution) or mapreduce (MapReduce processing)",
 			                        "enum": ["sequential", "mapreduce"],
 			                        "type": "string"
 			                    },
 			                    "steps": {
-			                        "description": "顺序节点的步骤列表",
+			                        "description": "Step list for sequential nodes",
 			                        "type": "array",
 			                        "items": {
 			                            "type": "object",
 			                            "properties": {
 			                                "stepRequirement": {
-			                                    "description": "步骤要求描述",
+			                                    "description": "Step requirement description",
 			                                    "type": "string"
 			                                }
 			                            },
@@ -88,13 +88,13 @@ public class MapReducePlanningTool
 			                        }
 			                    },
 			                    "dataPreparedSteps": {
-			                        "description": "MapReduce节点的数据准备阶段步骤列表，在Map阶段之前串行执行，用于数据预处理、分割、清洗等准备工作",
+			                        "description": "Data preparation phase step list for MapReduce nodes, executed serially before Map phase, used for data preprocessing, splitting, cleaning and other preparation work",
 			                        "type": "array",
 			                        "items": {
 			                            "type": "object",
 			                            "properties": {
 			                                "stepRequirement": {
-			                                    "description": "数据准备步骤要求描述",
+			                                    "description": "Data preparation step requirement description",
 			                                    "type": "string"
 			                                }
 			                            },
@@ -102,13 +102,13 @@ public class MapReducePlanningTool
 			                        }
 			                    },
 			                    "mapSteps": {
-			                        "description": "MapReduce节点的Map阶段步骤列表，在数据准备阶段之后并行执行",
+			                        "description": "Map phase step list for MapReduce nodes, executed in parallel after data preparation phase",
 			                        "type": "array",
 			                        "items": {
 			                            "type": "object",
 			                            "properties": {
 			                                "stepRequirement": {
-			                                    "description": "Map步骤要求描述",
+			                                    "description": "Map step requirement description",
 			                                    "type": "string"
 			                                }
 			                            },
@@ -116,13 +116,13 @@ public class MapReducePlanningTool
 			                        }
 			                    },
 			                    "reduceSteps": {
-			                        "description": "MapReduce节点的Reduce阶段步骤列表",
+			                        "description": "Reduce phase step list for MapReduce nodes",
 			                        "type": "array",
 			                        "items": {
 			                            "type": "object",
 			                            "properties": {
 			                                "stepRequirement": {
-			                                    "description": "Reduce步骤要求描述",
+			                                    "description": "Reduce step requirement description",
 			                                    "type": "string"
 			                                }
 			                            },
@@ -145,7 +145,7 @@ public class MapReducePlanningTool
 
 	private static final String name = "mapreduce_planning";
 
-	private static final String description = "MapReduce计划工具，用于管理支持顺序和MapReduce模式的复杂任务执行计划，MapReduce模式包含数据准备（DataPrepared）、Map和Reduce三个阶段";
+	private static final String description = "MapReduce planning tool for managing complex task execution plans supporting both sequential and MapReduce modes, with MapReduce mode including three phases: Data Preparation, Map, and Reduce";
 
 	public FunctionTool getToolDefinition() {
 		return new FunctionTool(new FunctionTool.Function(description, name, PARAMETERS));
@@ -173,22 +173,23 @@ public class MapReducePlanningTool
 		return switch (command) {
 			case "create" -> createMapReducePlan(planId, title, steps);
 			default -> {
-				log.info("收到无效的命令: {}", command);
+				log.info("Received invalid command: {}", command);
 				throw new IllegalArgumentException("Invalid command: " + command);
 			}
 		};
 	}
 
 	/**
-	 * 创建MapReduce执行计划
-	 * @param planId 计划ID
-	 * @param title 计划标题
-	 * @param steps 步骤列表
-	 * @return 工具执行结果
+	 * Create MapReduce execution plan
+	 * @param planId Plan ID
+	 * @param title Plan title
+	 * @param steps Step list
+	 * @return Tool execution result
 	 */
 	public ToolExecuteResult createMapReducePlan(String planId, String title, List<Map<String, Object>> steps) {
 		if (planId == null || title == null || steps == null || steps.isEmpty()) {
-			log.info("创建MapReduce计划时缺少必要参数: planId={}, title={}, steps={}", planId, title, steps);
+			log.info("Missing required parameters when creating MapReduce plan: planId={}, title={}, steps={}", planId,
+					title, steps);
 			return new ToolExecuteResult("Required parameters missing");
 		}
 
@@ -201,7 +202,7 @@ public class MapReducePlanningTool
 				case "sequential" -> processSequentialNode(plan, stepNode);
 				case "mapreduce" -> processMapReduceNode(plan, stepNode);
 				default -> {
-					log.warn("未知的节点类型: {}", nodeType);
+					log.warn("Unknown node type: {}", nodeType);
 					return new ToolExecuteResult("Unknown node type: " + nodeType);
 				}
 			}
@@ -213,9 +214,9 @@ public class MapReducePlanningTool
 	}
 
 	/**
-	 * 处理顺序节点
-	 * @param plan 执行计划
-	 * @param stepNode 步骤节点
+	 * Process sequential node
+	 * @param plan Execution plan
+	 * @param stepNode Step node
 	 */
 	private void processSequentialNode(MapReduceExecutionPlan plan, Map<String, Object> stepNode) {
 		@SuppressWarnings("unchecked")
@@ -233,14 +234,14 @@ public class MapReducePlanningTool
 	}
 
 	/**
-	 * 处理MapReduce节点
-	 * @param plan 执行计划
-	 * @param stepNode 步骤节点
+	 * Process MapReduce node
+	 * @param plan Execution plan
+	 * @param stepNode Step node
 	 */
 	private void processMapReduceNode(MapReduceExecutionPlan plan, Map<String, Object> stepNode) {
 		MapReduceNode node = new MapReduceNode();
 
-		// 处理数据准备步骤
+		// Process data preparation steps
 		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> dataPreparedSteps = (List<Map<String, Object>>) stepNode.get("dataPreparedSteps");
 		if (dataPreparedSteps != null) {
@@ -250,7 +251,7 @@ public class MapReducePlanningTool
 			}
 		}
 
-		// 处理Map步骤
+		// Process Map steps
 		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> mapSteps = (List<Map<String, Object>>) stepNode.get("mapSteps");
 		if (mapSteps != null) {
@@ -260,7 +261,7 @@ public class MapReducePlanningTool
 			}
 		}
 
-		// 处理Reduce步骤
+		// Process Reduce steps
 		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> reduceSteps = (List<Map<String, Object>>) stepNode.get("reduceSteps");
 		if (reduceSteps != null) {
@@ -270,7 +271,7 @@ public class MapReducePlanningTool
 			}
 		}
 
-		// 处理后处理步骤
+		// Process post-processing steps
 		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> postProcessSteps = (List<Map<String, Object>>) stepNode.get("postProcessSteps");
 		if (postProcessSteps != null) {
@@ -284,9 +285,9 @@ public class MapReducePlanningTool
 	}
 
 	/**
-	 * 从Map创建ExecutionStep
-	 * @param stepMap 步骤Map
-	 * @return 创建的ExecutionStep实例
+	 * Create ExecutionStep from Map
+	 * @param stepMap Step Map
+	 * @return Created ExecutionStep instance
 	 */
 	private ExecutionStep createExecutionStepFromMap(Map<String, Object> stepMap) {
 		String stepRequirement = (String) stepMap.get("stepRequirement");

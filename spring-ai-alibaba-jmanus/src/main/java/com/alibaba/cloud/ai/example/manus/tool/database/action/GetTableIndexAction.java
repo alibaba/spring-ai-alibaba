@@ -46,8 +46,8 @@ public class GetTableIndexAction extends AbstractDatabaseAction {
 
 		if (text == null || text.trim().isEmpty()) {
 			log.warn("GetTableIndexAction failed: missing text parameter, datasourceName={}", datasourceName);
-			return new ToolExecuteResult(
-					"Datasource: " + (datasourceName != null ? datasourceName : "default") + "\n缺少查询语句");
+			return new ToolExecuteResult("Datasource: " + (datasourceName != null ? datasourceName : "default")
+					+ "\nMissing query statement");
 		}
 		String[] tableNames = text.split(",");
 		StringBuilder inClause = new StringBuilder();
@@ -56,11 +56,11 @@ public class GetTableIndexAction extends AbstractDatabaseAction {
 			if (i < tableNames.length - 1)
 				inClause.append(",");
 		}
-		// 获取数据库类型
+		// Get database type
 		String databaseType = datasourceName != null && !datasourceName.trim().isEmpty()
 				? dataSourceService.getDataSourceType(datasourceName) : dataSourceService.getDataSourceType();
 
-		// 根据数据库类型生成SQL
+		// Generate SQL based on database type
 		String sql = DatabaseSqlGenerator.generateIndexInfoSql(databaseType, inClause.toString());
 
 		try (Connection conn = datasourceName != null && !datasourceName.trim().isEmpty()
@@ -89,7 +89,7 @@ public class GetTableIndexAction extends AbstractDatabaseAction {
 					}
 					indexMeta.getRefColumnNames().add(columnName);
 				}
-				// 合并所有表的所有索引为一个列表
+				// Merge all indexes from all tables into one list
 				java.util.List<IndexMeta> allIndexes = new java.util.ArrayList<>();
 				for (java.util.Map<String, IndexMeta> indexMap : tableIndexMap.values()) {
 					allIndexes.addAll(indexMap.values());
@@ -106,7 +106,7 @@ public class GetTableIndexAction extends AbstractDatabaseAction {
 			log.error("GetTableIndexAction failed with exception, datasourceName={}, error={}", datasourceName,
 					e.getMessage(), e);
 			return new ToolExecuteResult("Datasource: " + (datasourceName != null ? datasourceName : "default")
-					+ "\n执行查询时出错: " + e.getMessage());
+					+ "\nError executing query: " + e.getMessage());
 		}
 	}
 

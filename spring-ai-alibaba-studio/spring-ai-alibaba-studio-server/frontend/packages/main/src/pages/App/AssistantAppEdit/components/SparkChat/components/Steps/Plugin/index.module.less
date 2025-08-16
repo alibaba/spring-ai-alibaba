@@ -1,0 +1,24 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  .jsonContainer {
+    border: 1px solid;
+    border-color: var(--ag-ant-color-border-secondary);
+    .header {
+      height: 28px;
+      padding: 3px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      line-height: 22px;
+      font-size: 12px;
+      color: var(--ag-ant-color-text);
+      background-color: var(--ag-ant-color-fill-tertiary);
+    }
+  }
+  .codeMirror {
+    border-radius: 0;
+    border: none;
+  }
+}

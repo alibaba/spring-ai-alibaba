@@ -1,0 +1,64 @@
+@import '../../index.less';
+
+.spark-flow-var-input-text-area {
+  padding: 8px 12px 3px;
+  border: 1px solid e('var(--@{ant-prefix}-color-border-secondary)');
+  border-radius: 6px;
+  min-height: 100px;
+  max-height: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: e('var(--@{ant-prefix}-color-bg-container)');
+
+  span[data-slate-placeholder="true"] {
+    padding-left: 1px;
+  }
+
+  .text-editor {
+    flex: 1;
+    overflow-y: auto;
+
+    .text-editor-content {
+      gap: 0;
+
+      div[data-slate-node="element"] {
+        line-height: 28px;
+      }
+
+      .spark-editor-var-tag {
+        height: 20px;
+        line-height: 20px;
+        margin: 0 4px;
+      }
+    }
+  }
+
+  &-footer {
+    font-size: 10px;
+    color: e('var(--@{ant-prefix}-color-text-tertiary)');
+  }
+
+  &.spark-flow-var-input-text-area-disabled {
+    cursor: not-allowed;
+    background: e('var(--@{ant-prefix}-color-bg-container-disabled)');
+  }
+}
+
+.spark-flow-var-input-var-tag {
+  height: 100%;
+  align-items: center;
+
+  .spark-flow-var-input-var-tag-icon {
+    font-size: 12px !important;
+  }
+  .spark-flow-var-input-var-tag-key {
+    color: e('var(--@{ant-prefix}-color-primary)');
+    font-weight: 500;
+  }
+
+  .spark-flow-var-input-var-tag-label, .spark-flow-var-input-var-tag-key {
+    max-width: 148px;
+    font-size: 12px;
+  }
+}

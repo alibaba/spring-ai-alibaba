@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Spring AI Alibaba NL2SQL Web UI based on Vue 3",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
     "serve": "vite preview"

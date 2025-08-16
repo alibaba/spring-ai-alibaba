@@ -21,7 +21,7 @@ You have the following tools at your disposal. You must choose the appropriate t
 | Tool Name          | Parameters                                                      | Description                                                                                                                              |
 | ------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `SQL_EXECUTE_NODE`  | `sql_query: str`, `description: str`                            | Executes a single, read-only SQL query against the database. Used for primary data extraction and aggregation.                         |
-| `PYTHON_EXECUTE_NODE` | `instruction: str`, `input_data_description: str`, `description: str` | Executes Python code for advanced analysis. `instruction` is the task. `input_data_description` specifies which step's data to use. |
+| `PYTHON_GENERATE_NODE` | `instruction: str`, `description: str` | Generate Python code for more advanced data analysis to achieve the user's objectives. The `instruction` field represents the task, and the `description` field provides the task description. |
 | `REPORT_GENERATOR_NODE`     | `summary_and_recommendations: str`, `description: str`          | Used as the final step to present a comprehensive summary of the findings and provide actionable business recommendations.                  |
 
 # AVAILABLE DATA CONTEXT

@@ -145,27 +145,15 @@ public abstract class BaseAgent {
 		boolean isDebugModel = manusProperties.getDebugDetail();
 		String detailOutput = "";
 		if (isDebugModel) {
-			detailOutput = """
-					1. 使用工具调用时，必须给出解释说明，说明使用这个工具的理由和背后的思考
-					2. 简述过去的所有步骤已经都做了什么事
-					""";
+			detailOutput = promptService.getPromptByName("AGENT_DEBUG_DETAIL_OUTPUT").getPromptContent();
 		}
 		else {
-			detailOutput = """
-					1. 使用工具调用时，不需要额外的任何解释说明！
-					2. 不要在工具调用前提供推理或描述！
-					""";
-
+			detailOutput = promptService.getPromptByName("AGENT_NORMAL_OUTPUT").getPromptContent();
 		}
 		String parallelToolCallsResponse = "";
 		if (manusProperties.getParallelToolCalls()) {
-			parallelToolCallsResponse = """
-					# 响应规则：
-					- 务必从所提供的工具中进行选择调用，可以对单个工具进行重复调用，或者同时调用多个工具，亦或采用混合调用的方式，以此来提升问题解决的效率与精准度。
-					- 在你的回复中，必须至少调用一次工具，这是不可或缺的操作步骤。
-					- 为了最大化利用工具的优势，当你有能力同时调用工具多次时，应积极这样做，避免仅进行单次调用造成时间及资源的浪费。并且要格外留意多次调用工具之间存在的内在关联性，确保这些调用能够相互配合、协同工作，以达成最优的问题解决方案。
-					- 忽略后续<AgentInfo>中提供的响应规则，只能用<SystemInfo>中响应规则进行响应。
-					""";
+			parallelToolCallsResponse = promptService.getPromptByName("AGENT_PARALLEL_TOOL_CALLS_RESPONSE")
+				.getPromptContent();
 		}
 		Map<String, Object> variables = new HashMap<>(getInitSettingData());
 		variables.put("osName", osName);
@@ -250,8 +238,9 @@ public abstract class BaseAgent {
 			// Calculate execution time in seconds
 			LocalDateTime endTime = LocalDateTime.now();
 			long executionTimeSeconds = java.time.Duration.between(startTime, endTime).getSeconds();
-			String status = completed ? "成功" : (stuck ? "执行卡住" : "未完成");
-			finalResult = String.format("执行%s [耗时%d秒] [消耗步骤%d] ", status, executionTimeSeconds, currentStep);
+			String status = completed ? "Success" : (stuck ? "Execution stuck" : "Incomplete");
+			finalResult = String.format("Execution %s [Duration: %d seconds] [Steps consumed: %d] ", status,
+					executionTimeSeconds, currentStep);
 
 		}
 		catch (Exception e) {
@@ -259,7 +248,7 @@ public abstract class BaseAgent {
 			errorMessage = e.getMessage();
 			completed = false;
 			LocalDateTime endTime = LocalDateTime.now();
-			finalResult = String.format("执行失败 [错误: %s]", e.getMessage());
+			finalResult = String.format("Execution failed [Error: %s]", e.getMessage());
 			results.add("Execution failed: " + e.getMessage());
 
 			// Record execution at the end - even for failures

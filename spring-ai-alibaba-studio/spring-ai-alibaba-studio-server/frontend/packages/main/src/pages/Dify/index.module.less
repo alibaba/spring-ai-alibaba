@@ -1,0 +1,204 @@
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 32px;
+
+  h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #262626;
+    margin: 0;
+  }
+}
+
+.description {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 32px;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #262626;
+    margin: 0 0 16px 0;
+  }
+}
+
+.instructionList {
+  .instruction {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .step {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      background: #1890ff;
+      color: white;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 12px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    span:last-child {
+      color: #595959;
+      line-height: 1.5;
+    }
+  }
+}
+
+.uploadSection {
+  margin-bottom: 32px;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #262626;
+    margin: 0 0 16px 0;
+  }
+
+  .uploader {
+    border: 2px dashed #d9d9d9;
+    border-radius: 8px;
+    background: #fafafa;
+    transition: all 0.3s;
+
+    &:hover {
+      border-color: #1890ff;
+      background: #f6f9ff;
+    }
+
+    .ant-upload-drag-icon {
+      font-size: 48px;
+      color: #1890ff;
+    }
+
+    .ant-upload-text {
+      font-size: 16px;
+      color: #262626;
+      margin: 16px 0 8px 0;
+    }
+
+    .ant-upload-hint {
+      color: #8c8c8c;
+      font-size: 14px;
+    }
+  }
+
+  .selectedFile {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #f6ffed;
+    border: 1px solid #b7eb8f;
+    border-radius: 6px;
+
+    .fileName {
+      font-weight: 600;
+      color: #389e0d;
+      margin-left: 8px;
+    }
+  }
+}
+
+.actionSection {
+  text-align: center;
+  margin-bottom: 32px;
+
+  .convertButton {
+    font-size: 16px;
+    height: 48px;
+    padding: 0 32px;
+    border-radius: 6px;
+  }
+}
+
+.resultSection {
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 24px;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #262626;
+    margin: 0 0 16px 0;
+  }
+
+  .successText {
+    color: #52c41a;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+
+  .fileList {
+    background: #fafafa;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 24px;
+
+    .fileItem {
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .filePath {
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 13px;
+        color: #262626;
+        background: #fff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px solid #d9d9d9;
+      }
+    }
+  }
+
+  .downloadSection {
+    text-align: center;
+
+    .downloadButton {
+      font-size: 14px;
+      height: 40px;
+      padding: 0 24px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header h2 {
+    font-size: 20px;
+  }
+
+  .description,
+  .uploadSection {
+    margin-bottom: 24px;
+  }
+
+  .actionSection .convertButton {
+    width: 100%;
+  }
+}

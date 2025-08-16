@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "declaration": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "jsx": "react",
+    "baseUrl": "./",
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "paths": {
+      "@@/*": [".dumi/tmp/*"],
+      "@/*": ["src/*"],
+      "@spark-ai/flow": ["src"],
+      "@spark-ai/flow/*": ["src/*", "*"]
+    }
+  },
+  "module": "ESNext",
+  "include": [".dumirc.ts", "src/**/*"]
+}

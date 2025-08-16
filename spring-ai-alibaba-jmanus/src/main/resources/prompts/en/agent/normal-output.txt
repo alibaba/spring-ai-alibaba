@@ -1,0 +1,2 @@
+1. When using tool calls, no additional explanations are needed!
+2. Do not provide reasoning or descriptions before tool calls!

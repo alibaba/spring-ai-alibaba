@@ -32,32 +32,32 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * Map output recording tool for MapReduce workflow Responsible for recording Map stage
- * processing results and task status management
+ * Map output recording tool for MapReduce workflow. Responsible for recording Map stage
+ * processing results and task status management.
  */
 public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput> implements TerminableTool {
 
 	private static final Logger log = LoggerFactory.getLogger(MapOutputTool.class);
 
-	// ==================== 配置常量 ====================
+	// ==================== Configuration Constants ====================
 
 	/**
-	 * Task directory name All tasks are stored under this directory
+	 * Task directory name. All tasks are stored under this directory.
 	 */
 	private static final String TASKS_DIRECTORY_NAME = "tasks";
 
 	/**
-	 * Task status file name Stores task execution status information
+	 * Task status file name. Stores task execution status information.
 	 */
 	private static final String TASK_STATUS_FILE_NAME = "status.json";
 
 	/**
-	 * Task output file name Stores results after Map stage processing completion
+	 * Task output file name. Stores results after Map stage processing completion.
 	 */
 	private static final String TASK_OUTPUT_FILE_NAME = "output.md";
 
 	/**
-	 * Task input file name Stores document fragment content after splitting
+	 * Task input file name. Stores document fragment content after splitting.
 	 */
 	private static final String TASK_INPUT_FILE_NAME = "input.md";
 
@@ -72,7 +72,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 		@com.fasterxml.jackson.annotation.JsonProperty("task_id")
 		private String taskId;
 
-		private List<List<Object>> data;
+		private String data;
 
 		@com.fasterxml.jackson.annotation.JsonProperty("has_value")
 		private boolean hasValue;
@@ -88,11 +88,11 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 			this.taskId = taskId;
 		}
 
-		public List<List<Object>> getData() {
+		public String getData() {
 			return data;
 		}
 
-		public void setData(List<List<Object>> data) {
+		public void setData(String data) {
 			this.data = data;
 		}
 
@@ -108,51 +108,31 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 	private static final String TOOL_NAME = "map_output_tool";
 
-	private static String getToolDescription(List<String> terminateColumns) {
+	private static String getToolDescription() {
 		String baseDescription = """
 				Map output recording tool for MapReduce workflow.
-				接受 Map 阶段处理完成后的内容，自动生成文件名并创建输出文件。
-				记录任务状态并管理结构化数据输出。
+				Accepts content after Map stage processing is completed, automatically generates file names and creates output files.
+				Records task status and manages structured data output.
 
-				**重要参数说明：**
-				- task_id: 字符串，任务ID标识符，用于标识当前正在处理的Map任务（必需）
-				- has_value: 布尔值，表示是否有有效数据
-				  - 如果没有找到任何有效数据，设置为 false
-				  - 如果有数据需要输出，设置为 true
-				- data: 当 has_value 为 true 时必须提供数据
+				**Important parameter description:**
+				- task_id: String, task ID identifier, used to identify the currently processing Map task (required)
+				- has_value: Boolean, indicates whether there is valid data
+				  - Set to false if no valid data is found
+				  - Set to true if there is data to output
+				- data: Data must be provided when has_value is true. You need to output information in a structured manner as required by the return data, in markdown format.
+
 				""";
-
-		if (terminateColumns != null && !terminateColumns.isEmpty()) {
-			String columnsFormat = String.join(", ", terminateColumns);
-			baseDescription += String.format("""
-
-					**数据格式要求（当 has_value=true 时）：**
-					您必须按照以下固定格式提供数据，每行数据包含：[%s]
-
-					示例格式：
-					[
-					  ["%s示例1", "%s示例1"],
-					  ["%s示例2", "%s示例2"]
-					]
-					""", columnsFormat, terminateColumns.get(0),
-					terminateColumns.size() > 1 ? terminateColumns.get(1) : "数据", terminateColumns.get(0),
-					terminateColumns.size() > 1 ? terminateColumns.get(1) : "数据");
-		}
 
 		return baseDescription;
 	}
 
 	/**
 	 * Generate parameters JSON for MapOutputTool with predefined columns format
-	 * @param terminateColumns the columns specification (e.g., "url,说明")
+	 * @param terminateColumns the columns specification (e.g., "url")
 	 * @return JSON string for parameters schema
 	 */
-	private static String generateParametersJson(List<String> terminateColumns) {
-		// Generate columns description from terminateColumns
-		String columnsDesc = "数据行列表";
-		if (terminateColumns != null && !terminateColumns.isEmpty()) {
-			columnsDesc = "数据行列表，每行按照以下格式：[" + String.join(", ", terminateColumns) + "]";
-		}
+	private static String generateParametersJson() {
+		String columnsDesc = "data row list";
 
 		return """
 				{
@@ -160,48 +140,40 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 				    "properties": {
 				        "task_id": {
 				            "type": "string",
-				            "description": "任务ID标识符，用于标识当前正在处理的Map任务"
+				            "description": "Task ID identifier for identifying the currently processing Map task"
 				        },
 				        "has_value": {
 				            "type": "boolean",
-				            "description": "是否有有效数据。如果没有找到任何有效数据设置为false，有数据时设置为true"
+				            "description": "Whether there is valid data. Set to false if no valid data is found, set to true when there is data"
 				        },
 				        "data": {
-				            "type": "array",
-				            "items": {
-				                "type": "array",
-				                "items": {"type": "string"}
-				            },
-				            "description": "%s（仅当has_value为true时需要提供）"
+				            "type": "string",
+				            "description": "%s (only required when has_value is true)"
 				        }
 				    },
 				    "required": ["task_id", "has_value"],
 				    "additionalProperties": false
 				}
-				""".formatted(columnsDesc);
+				"""
+			.formatted(columnsDesc);
 	}
 
 	private UnifiedDirectoryManager unifiedDirectoryManager;
 
-	// 共享状态管理器，用于管理多个Agent实例间的共享状态
+	// Shared state manager for managing shared state between multiple Agent instances
 	private MapReduceSharedStateManager sharedStateManager;
-
-	// Class-level terminate columns configuration - takes precedence over input
-	// parameters
-	private List<String> terminateColumns;
 
 	// Track if map output recording has completed, allowing termination
 	private volatile boolean mapOutputRecorded = false;
 
 	private final ObjectMapper objectMapper;
 
-	// Main constructor with List<String> terminateColumns
+	// Main constructor
 	public MapOutputTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager,
-			UnifiedDirectoryManager unifiedDirectoryManager, List<String> terminateColumns, ObjectMapper objectMapper) {
+			UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper) {
 		this.currentPlanId = planId;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
-		this.terminateColumns = terminateColumns;
 		this.objectMapper = objectMapper;
 	}
 
@@ -216,7 +188,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	}
 
 	/**
-	 * 设置共享状态管理器
+	 * Set shared state manager
 	 */
 	public void setSharedStateManager(MapReduceSharedStateManager sharedStateManager) {
 		this.sharedStateManager = sharedStateManager;
@@ -229,12 +201,12 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 	@Override
 	public String getDescription() {
-		return getToolDescription(terminateColumns);
+		return getToolDescription();
 	}
 
 	@Override
 	public String getParameters() {
-		return generateParametersJson(terminateColumns);
+		return generateParametersJson();
 	}
 
 	@Override
@@ -248,13 +220,8 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	}
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
-		// Use default terminate columns for static tool definition
-		return getToolDefinition(null);
-	}
-
-	public static OpenAiApi.FunctionTool getToolDefinition(List<String> terminateColumns) {
-		String parameters = generateParametersJson(terminateColumns);
-		String description = getToolDescription(terminateColumns);
+		String parameters = generateParametersJson();
+		String description = getToolDescription();
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, TOOL_NAME,
 				parameters);
 		return new OpenAiApi.FunctionTool(function);
@@ -268,18 +235,12 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 		log.info("MapOutputTool input: taskId={}, hasValue={}", input.getTaskId(), input.isHasValue());
 		try {
 			String taskId = input.getTaskId();
-			List<List<Object>> data = input.getData();
+			String data = input.getData();
 			boolean hasValue = input.isHasValue();
 
 			// Validate taskId
 			if (taskId == null || taskId.trim().isEmpty()) {
 				return new ToolExecuteResult("Error: task_id parameter is required");
-			}
-
-			// Use class-level terminateColumns
-			List<String> effectiveTerminateColumns = this.terminateColumns;
-			if (effectiveTerminateColumns == null || effectiveTerminateColumns.isEmpty()) {
-				return new ToolExecuteResult("Error: terminate columns not configured for this tool");
 			}
 
 			// Check hasValue logic
@@ -289,7 +250,7 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 					return new ToolExecuteResult("Error: data parameter is required when has_value is true");
 				}
 				// Convert structured data to content string
-				String content = formatStructuredData(effectiveTerminateColumns, data);
+				String content = formatStructuredData(data);
 				return recordMapTaskOutput(content, taskId);
 			}
 			else {
@@ -306,23 +267,19 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 
 	/**
 	 * Format structured data similar to TerminateTool
-	 * @param terminateColumns the column names
 	 * @param data the data rows
 	 * @return formatted string representation of the structured data
 	 */
-	private String formatStructuredData(List<String> terminateColumns, List<List<Object>> data) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("Columns: ").append(terminateColumns).append("\n");
-		sb.append("Data:\n");
-		for (List<Object> row : data) {
-			sb.append("  ").append(row).append("\n");
+	private String formatStructuredData(String data) {
+		if (data == null || data.isEmpty()) {
+			return "";
 		}
-		return sb.toString();
+		return data;
 	}
 
 	/**
-	 * Record Map task output result with completed status by default Task ID is provided
-	 * as parameter instead of being obtained from the current execution context
+	 * Record Map task output result with completed status by default. Task ID is provided
+	 * as parameter instead of being obtained from the current execution context.
 	 */
 	private ToolExecuteResult recordMapTaskOutput(String content, String taskId) {
 		try {
@@ -455,10 +412,8 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	 * @return terminate columns as comma-separated string
 	 */
 	public String getTerminateColumns() {
-		if (this.terminateColumns == null || this.terminateColumns.isEmpty()) {
-			return null;
-		}
-		return String.join(",", this.terminateColumns);
+		// Since terminateColumns is removed, always return null
+		return null;
 	}
 
 	/**
@@ -466,7 +421,8 @@ public class MapOutputTool extends AbstractBaseTool<MapOutputTool.MapOutputInput
 	 * @return terminate columns as List<String>
 	 */
 	public List<String> getTerminateColumnsList() {
-		return this.terminateColumns == null ? null : new ArrayList<>(this.terminateColumns);
+		// Since terminateColumns is removed, always return null
+		return null;
 	}
 
 	/**

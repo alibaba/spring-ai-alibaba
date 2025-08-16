@@ -15,18 +15,18 @@
  */
 
 /**
- * LLM配置检查工具类
- * 在进行LLM相关操作前检查是否已配置模型
+ * LLM configuration check utility class
+ * Check if model is configured before performing LLM-related operations
  */
 export class LlmCheckService {
   private static cachedStatus: { initialized: boolean; lastCheck: number } | null = null
-  private static readonly CACHE_DURATION = 30000 // 30秒缓存
+  private static readonly CACHE_DURATION = 30000 // 30 seconds cache
 
   /**
-   * 检查LLM是否已配置
+   * Check if LLM is configured
    */
   public static async checkLlmConfiguration(): Promise<{ initialized: boolean; message?: string }> {
-    // 检查缓存
+    // Check cache
     const now = Date.now()
     if (this.cachedStatus && (now - this.cachedStatus.lastCheck) < this.CACHE_DURATION) {
       return { initialized: this.cachedStatus.initialized }
@@ -35,73 +35,73 @@ export class LlmCheckService {
     try {
       const response = await fetch('/api/init/status')
       if (!response.ok) {
-        throw new Error(`检查失败: ${response.status}`)
+        throw new Error(`Check failed: ${response.status}`)
       }
-      
+
       const result = await response.json()
       const initialized = result.success && result.initialized
-      
-      // 更新缓存
+
+      // Update cache
       this.cachedStatus = {
         initialized,
         lastCheck: now
       }
-      
+
       if (!initialized) {
         return {
           initialized: false,
-          message: '系统尚未配置LLM模型，请先通过初始化页面配置API密钥。'
+          message: 'System has not configured LLM model yet, please configure API key through initialization page first.'
         }
       }
-      
+
       return { initialized: true }
     } catch (error) {
-      console.error('[LlmCheckService] 检查LLM配置失败:', error)
+      console.error('[LlmCheckService] Failed to check LLM configuration:', error)
       return {
         initialized: false,
-        message: '无法检查LLM配置状态，请确保系统正常运行。'
+        message: 'Unable to check LLM configuration status, please ensure system is running normally.'
       }
     }
   }
 
   /**
-   * 确保LLM已配置，如果未配置则抛出错误或跳转到初始化页面
+   * Ensure LLM is configured, throw error or redirect to initialization page if not configured
    */
   public static async ensureLlmConfigured(options?: {
     showAlert?: boolean
     redirectToInit?: boolean
   }): Promise<void> {
     const { showAlert = true, redirectToInit = true } = options || {}
-    
+
     const checkResult = await this.checkLlmConfiguration()
-    
+
     if (!checkResult.initialized) {
-      const message = checkResult.message || '请先配置LLM模型'
-      
+      const message = checkResult.message || 'Please configure LLM model first'
+
       if (showAlert) {
         alert(message)
       }
-      
+
       if (redirectToInit) {
-        // 清除初始化状态，强制跳转到初始化页面
+        // Clear initialization status, force redirect to initialization page
         localStorage.removeItem('hasInitialized')
         window.location.href = '/ui/#/init'
         throw new Error('Redirecting to initialization page')
       }
-      
+
       throw new Error(message)
     }
   }
 
   /**
-   * 清除缓存状态
+   * Clear cache status
    */
   public static clearCache(): void {
     this.cachedStatus = null
   }
 
   /**
-   * 包装API调用，在调用前自动检查LLM配置
+   * Wrap API calls, automatically check LLM configuration before calling
    */
   public static async withLlmCheck<T>(
     apiCall: () => Promise<T>,
@@ -113,4 +113,4 @@ export class LlmCheckService {
     await this.ensureLlmConfigured(options)
     return apiCall()
   }
-} 
+}

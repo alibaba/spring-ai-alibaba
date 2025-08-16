@@ -16,19 +16,19 @@
 package com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce;
 
 /**
- * MapReduce步骤类型枚举
+ * MapReduce step type enumeration
  */
 public enum MapReduceStepType {
 
 	/**
-	 * 顺序执行步骤
+	 * Sequential execution step
 	 */
-	SEQUENTIAL("顺序执行", "sequential"),
+	SEQUENTIAL("Sequential Execution", "sequential"),
 
 	/**
-	 * MapReduce模式执行步骤
+	 * MapReduce mode execution step
 	 */
-	MAPREDUCE("MapReduce模式", "mapreduce");
+	MAPREDUCE("MapReduce Mode", "mapreduce");
 
 	private final String description;
 
@@ -44,8 +44,8 @@ public enum MapReduceStepType {
 	}
 
 	/**
-	 * 获取 JSON 序列化时使用的类型名称
-	 * @return JSON 类型名称
+	 * Get type name used for JSON serialization
+	 * @return JSON type name
 	 */
 	public String getJsonTypeName() {
 		return jsonTypeName;

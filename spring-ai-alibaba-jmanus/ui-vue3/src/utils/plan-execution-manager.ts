@@ -28,6 +28,7 @@ interface EventCallbacks {
   onDialogRoundStart?: (rootPlanId: string) => void
   onChatInputUpdateState?: (rootPlanId: string) => void
   onChatInputClear?: () => void
+  onPlanError?: (message: string) => void
 }
 
 interface ExecutionState {
@@ -55,7 +56,7 @@ export class PlanExecutionManager {
 
   // Cache for PlanExecutionRecord by rootPlanId
   private planExecutionCache = new Map<string, PlanExecutionRecord>()
-  
+
   // Cache for UI state by rootPlanId
   private uiStateCache = new Map<string, UIStateData>()
 
@@ -120,10 +121,10 @@ export class PlanExecutionManager {
   clearAllCachedRecords(): void {
     const planCacheSize = this.planExecutionCache.size
     const uiStateCacheSize = this.uiStateCache.size
-    
+
     this.planExecutionCache.clear()
     this.uiStateCache.clear()
-    
+
     console.log(`[PlanExecutionManager] Cleared all caches - Plans: ${planCacheSize}, UI States: ${uiStateCacheSize}`)
   }
 
@@ -185,7 +186,7 @@ export class PlanExecutionManager {
       // Set UI state to enabled for error recovery
       const errorPlanId = this.state.activePlanId ?? 'error'
       this.setCachedUIState(errorPlanId, { enabled: true })
-      
+
       this.emitChatInputUpdateState(errorPlanId)
       this.state.activePlanId = null
     }
@@ -199,7 +200,7 @@ export class PlanExecutionManager {
 
     if (planId) {
       this.state.activePlanId = planId
-      this.initiatePlanExecutionSequence(query ?? '执行计划', planId)
+      this.initiatePlanExecutionSequence(query ?? 'Execute Plan', planId)
     } else {
       console.error('[PlanExecutionManager] Invalid plan execution request: missing planId')
     }
@@ -210,7 +211,7 @@ export class PlanExecutionManager {
    */
   public handleCachedPlanExecution(rootPlanId: string, query?: string): boolean {
     const cachedRecord = this.getCachedPlanRecord(rootPlanId)
-    
+
     if (cachedRecord?.currentPlanId) {
       console.log(`[PlanExecutionManager] Found cached plan execution record for rootPlanId: ${rootPlanId}`)
       this.handlePlanExecutionRequested(cachedRecord.currentPlanId, query)
@@ -237,7 +238,7 @@ export class PlanExecutionManager {
 
     // Clear input and set to disabled state
     this.emitChatInputClear()
-    
+
     // Cache UI state data first
     const uiStatePlanId = this.state.activePlanId ?? 'ui-state'
     this.setCachedUIState(uiStatePlanId, { enabled: false, placeholder: 'Processing...' })
@@ -252,7 +253,9 @@ export class PlanExecutionManager {
   private async sendUserMessageAndSetPlanId(query: string): Promise<any> {
     try {
       // Use direct execution mode API to send message
-      const response = await DirectApiService.sendMessage(query)
+      const response = await DirectApiService.sendMessage({
+        input: query
+      })
 
       if (response?.planId) {
         this.state.activePlanId = response.planId
@@ -276,13 +279,13 @@ export class PlanExecutionManager {
    */
   public initiatePlanExecutionSequence(query: string, planId: string): void {
     console.log(`[PlanExecutionManager] Starting plan execution sequence for query: "${query}", planId: ${planId}`)
-    
+
     // Use planId as rootPlanId for now (assume they are the same initially)
     const rootPlanId = planId
-    
+
     // Try to emit dialog start
     this.emitDialogRoundStart(rootPlanId)
-    
+
     this.startPolling()
   }
 
@@ -316,6 +319,28 @@ export class PlanExecutionManager {
     }
   }
 
+  private handlePlanError(details: PlanExecutionRecord): void {
+    this.emitPlanError(details.message ?? "");
+    this.state.lastSequenceSize = 0
+    this.stopPolling()
+
+    // Delay deletion of plan execution record
+    try {
+      setTimeout(async () => {
+        if (this.state.activePlanId) {
+          try {
+            await PlanActApiService.deletePlanTemplate(this.state.activePlanId)
+            console.log(`[PlanExecutionManager] Plan template ${this.state.activePlanId} deleted successfully`)
+          } catch (error: any) {
+            console.log(`Delete plan execution record failed: ${error.message}`)
+          }
+        }
+      }, 5000)
+    } catch (error: any) {
+      console.log(`Delete plan execution record failed: ${error.message}`)
+    }
+  }
+
   /**
    * Poll plan execution status
    */
@@ -338,6 +363,11 @@ export class PlanExecutionManager {
       if (!details) {
         console.warn('[PlanExecutionManager] No details received from API')
         return
+      }
+
+      if(details.status && details.status === 'failed'){
+        this.handlePlanError(details)
+        return;
       }
 
       // Update cache with latest plan details if rootPlanId exists
@@ -372,17 +402,21 @@ export class PlanExecutionManager {
     try {
       // Use CommonApiService's getDetails method
       const details = await CommonApiService.getDetails(planId)
-      
+
       // Cache the plan execution record by rootPlanId if it exists
       if (details?.rootPlanId) {
         this.planExecutionCache.set(details.rootPlanId, details)
         console.log(`[PlanExecutionManager] Cached plan execution record for rootPlanId: ${details.rootPlanId}`)
       }
-      
+
       return details
     } catch (error: any) {
       console.error('[PlanExecutionManager] Failed to get plan details:', error)
-      return null
+      return {
+        currentPlanId: planId,
+        status: 'failed',
+        message: error instanceof Error ? error.message : 'Failed to get plan'
+      }
     }
   }
 
@@ -428,7 +462,7 @@ export class PlanExecutionManager {
     this.state.activePlanId = null
     this.state.lastSequenceSize = 0
     this.state.isPolling = false
-    
+
     // Clear all cached plan execution records
     this.clearAllCachedRecords()
   }
@@ -461,6 +495,12 @@ export class PlanExecutionManager {
   private emitPlanCompleted(rootPlanId: string): void {
     if (this.callbacks.onPlanCompleted) {
       this.callbacks.onPlanCompleted(rootPlanId)
+    }
+  }
+
+  private emitPlanError(message: string): void {
+    if (this.callbacks.onPlanError) {
+      this.callbacks.onPlanError(message)
     }
   }
 }

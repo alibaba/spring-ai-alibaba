@@ -14,58 +14,137 @@
  * limitations under the License.
 -->
 <template>
-  <div>
-    <HeaderComponent 
-      title="语义模型配置"
-      subtitle="对数据集字段进行语义重新设定，提升智能体自动选择数据集和问答的准确性"
-      icon="bi bi-diagram-3"
-    />
-
-    <div class="container">
-      <div class="toolbar">
-        <div class="search-container">
-          <input 
-            type="text" 
-            v-model="searchKeyword"
-            class="search-input" 
-            placeholder="搜索字段名称或同义词..."
-            @keyup.enter="searchModel"
-          >
-          <button class="btn btn-primary" @click="searchModel">
-            <i class="bi bi-search"></i> 搜索
+  <div class="semantic-model-page">
+    <!-- 现代化头部导航 -->
+    <header class="page-header">
+      <div class="header-content">
+        <div class="brand-section">
+          <div class="brand-logo">
+            <i class="bi bi-robot"></i>
+            <span class="brand-text">智能体管理</span>
+          </div>
+          <nav class="header-nav">
+            <div class="nav-item" @click="goToAgentList">
+              <i class="bi bi-grid-3x3-gap"></i>
+              <span>智能体列表</span>
+            </div>
+            <div class="nav-item" @click="goToWorkspace">
+              <i class="bi bi-chat-square-dots"></i>
+              <span>工作台</span>
+            </div>
+            <div class="nav-item active">
+              <i class="bi bi-graph-up-arrow"></i>
+              <span>分析报告</span>
+            </div>
+          </nav>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline btn-sm">
+            <i class="bi bi-question-circle"></i>
+            帮助
+          </button>
+          <button class="btn btn-primary" @click="goToAgentList">
+            <i class="bi bi-plus-lg"></i>
+            创建智能体
           </button>
         </div>
-        <div class="batch-actions">
-          <select v-model="selectedDataset" class="dataset-filter" @change="filterByDataset">
+      </div>
+    </header>
+
+    <div class="main-content">
+      <!-- 页面头部信息 -->
+      <div class="page-header">
+        <div class="header-info">
+          <h1 class="page-title">语义模型管理</h1>
+          <p class="page-description">配置数据字段的语义映射和同义词，提升AI数据理解能力</p>
+        </div>
+        <div class="header-stats">
+          <div class="stat-card">
+            <div class="stat-number">{{ modelList.length }}</div>
+            <div class="stat-label">字段配置</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ modelList.filter(m => m.enabled).length }}</div>
+            <div class="stat-label">已启用</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ datasets.length }}</div>
+            <div class="stat-label">数据集</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作工具栏 -->
+      <div class="toolbar-section">
+        <div class="search-area">
+          <div class="search-box">
+            <i class="search-icon bi bi-search"></i>
+            <input 
+              type="text" 
+              v-model="searchKeyword"
+              class="form-control" 
+              placeholder="搜索字段名称、同义词或描述..."
+              @keyup.enter="searchModel"
+            >
+            <button 
+              v-if="searchKeyword"
+              class="clear-btn"
+              @click="clearSearch"
+            >
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+          <button class="btn btn-outline" @click="searchModel">
+            <i class="bi bi-search"></i>
+            搜索
+          </button>
+        </div>
+        
+        <div class="filter-area">
+          <select v-model="selectedDataset" class="form-control dataset-filter" @change="filterByDataset">
             <option value="">所有数据集</option>
             <option v-for="dataset in datasets" :key="dataset" :value="dataset">
               {{ dataset }}
             </option>
           </select>
+        </div>
+      </div>
+
+      <!-- 批量操作栏 -->
+      <div class="batch-actions-section">
+        <div class="selection-info">
+          <span class="selection-count">已选择 {{ selectedItems.length }} 项</span>
+        </div>
+        <div class="batch-buttons">
           <button 
-            class="btn btn-info" 
+            class="btn btn-outline btn-sm" 
             @click="batchEnableByDataset(true)"
             :disabled="!selectedDataset"
-            title="按数据集批量启用"
+            data-tooltip="按数据集批量启用"
           >
-            <i class="bi bi-database-check"></i> 数据集启用
+            <i class="bi bi-database-check"></i>
+            数据集启用
           </button>
           <button 
-            class="btn btn-warning" 
+            class="btn btn-outline btn-sm" 
             @click="batchEnableByDataset(false)"
             :disabled="!selectedDataset"
-            title="按数据集批量禁用"
+            data-tooltip="按数据集批量禁用"
           >
-            <i class="bi bi-database-x"></i> 数据集禁用
+            <i class="bi bi-database-x"></i>
+            数据集禁用
           </button>
-          <button class="btn btn-success" @click="batchUpdateSelectedItems(true)">
-            <i class="bi bi-check-circle"></i> 批量启用
+          <button class="btn btn-success btn-sm" @click="batchUpdateSelectedItems(true)">
+            <i class="bi bi-check-circle"></i>
+            批量启用
           </button>
-          <button class="btn btn-warning" @click="batchUpdateSelectedItems(false)">
-            <i class="bi bi-x-circle"></i> 批量禁用
+          <button class="btn btn-warning btn-sm" @click="batchUpdateSelectedItems(false)">
+            <i class="bi bi-x-circle"></i>
+            批量禁用
           </button>
           <button class="btn btn-primary" @click="showAddModal">
-            <i class="bi bi-plus-circle"></i> 新增配置
+            <i class="bi bi-plus-lg"></i>
+            新增配置
           </button>
         </div>
       </div>
@@ -679,6 +758,11 @@ export default {
       }
     }
 
+    const clearSearch = () => {
+      searchKeyword.value = ''
+      loadModelList()
+    }
+
     const formatDateTime = (dateTimeStr) => {
       if (!dateTimeStr) return '-'
       const date = new Date(dateTimeStr)
@@ -703,6 +787,7 @@ export default {
       filteredModelList,
       loadModelList,
       searchModel,
+      clearSearch,
       filterByDataset,
       toggleSelectAll,
       showAddModal,
@@ -719,10 +804,601 @@ export default {
 </script>
 
 <style scoped>
-.container {
+.semantic-model-page {
+  min-height: 100vh;
+  background: var(--bg-layout);
+  font-family: var(--font-family);
+}
+
+.main-content {
   max-width: 100%;
   margin: 0 auto;
-  padding: 1rem 2rem;
+  padding: var(--space-lg);
+}
+
+/* 页面头部信息 */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-2xl);
+  padding: var(--space-xl);
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+}
+
+.header-info {
+  flex: 1;
+}
+
+.page-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-sm) 0;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-description {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.header-stats {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.stat-card {
+  text-align: center;
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-tertiary);
+  min-width: 80px;
+}
+
+.stat-number {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--primary-color);
+  margin-bottom: var(--space-xs);
+}
+
+.stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 操作工具栏 */
+.toolbar-section {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.search-area {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+}
+
+.filter-area {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.dataset-filter {
+  min-width: 180px;
+}
+
+/* 批量操作栏 */
+.batch-actions-section {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg) var(--space-xl);
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.selection-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.selection-count {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.batch-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+/* 数据表格区域 */
+.card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  overflow: hidden;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  min-width: 1400px;
+}
+
+.table th {
+  background: var(--bg-secondary);
+  padding: var(--space-md) var(--space-lg);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-secondary);
+  font-size: var(--font-size-sm);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table td {
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-tertiary);
+  color: var(--text-secondary);
+  vertical-align: top;
+}
+
+.table tbody tr:hover {
+  background: var(--bg-tertiary);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.synonyms-cell,
+.description-cell {
+  max-width: 200px;
+  word-wrap: break-word;
+  line-height: 1.5;
+}
+
+/* 复选框样式 */
+.row-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+}
+
+.row-checkbox:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 徽章样式 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-primary {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border: 1px solid rgba(95, 112, 225, 0.2);
+}
+
+.badge-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-primary);
+}
+
+.badge-success {
+  background: var(--success-light);
+  color: var(--success-color);
+  border: 1px solid rgba(82, 196, 26, 0.2);
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.btn-sm {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  min-width: 60px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+/* 加载和空状态 */
+.loading {
+  text-align: center;
+  padding: var(--space-4xl);
+  color: var(--text-secondary);
+}
+
+.loading .spinner {
+  margin-right: var(--space-sm);
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-4xl);
+  color: var(--text-tertiary);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-lg);
+  color: var(--text-quaternary);
+}
+
+/* 模态框样式 */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal);
+}
+
+.modal.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-secondary);
+  animation: slideInUp 0.3s ease-out;
+}
+
+.modal-header {
+  padding: var(--space-xl);
+  border-bottom: 1px solid var(--border-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-secondary);
+}
+
+.modal-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  color: var(--text-tertiary);
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+}
+
+.close-btn:hover {
+  background: var(--error-light);
+  color: var(--error-color);
+}
+
+.modal-body {
+  padding: var(--space-xl);
+}
+
+.modal-footer {
+  padding: var(--space-lg) var(--space-xl);
+  border-top: 1px solid var(--border-secondary);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  background: var(--bg-tertiary);
+}
+
+/* 表单样式 */
+.form-group {
+  margin-bottom: var(--space-lg);
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--space-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.form-control {
+  width: 100%;
+  padding: var(--space-sm) var(--space-base);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  transition: all var(--transition-base);
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.form-control::placeholder {
+  color: var(--text-quaternary);
+}
+
+.form-control[type="checkbox"] {
+  width: auto;
+  margin-right: var(--space-sm);
+  accent-color: var(--primary-color);
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.checkbox-group .form-label {
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+/* 工具提示 */
+.batch-buttons [data-tooltip] {
+  position: relative;
+}
+
+.batch-buttons [data-tooltip]::before,
+.batch-buttons [data-tooltip]::after {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--transition-base);
+  z-index: var(--z-tooltip);
+}
+
+.batch-buttons [data-tooltip]::before {
+  content: attr(data-tooltip);
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+}
+
+.batch-buttons [data-tooltip]::after {
+  content: '';
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--text-primary);
+}
+
+.batch-buttons [data-tooltip]:hover::before,
+.batch-buttons [data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 动画定义 */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 1400px) {
+  .main-content {
+    padding: var(--space-lg);
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-lg);
+  }
+  
+  .header-stats {
+    align-self: stretch;
+    justify-content: space-around;
+  }
+}
+
+@media (max-width: 1200px) {
+  .toolbar-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-md);
+  }
+  
+  .search-area {
+    max-width: none;
+  }
+  
+  .batch-actions-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-md);
+  }
+  
+  .batch-buttons {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: var(--space-md);
+  }
+  
+  .page-header {
+    padding: var(--space-lg);
+  }
+  
+  .page-title {
+    font-size: var(--font-size-2xl);
+  }
+  
+  .toolbar-section,
+  .batch-actions-section {
+    padding: var(--space-md);
+  }
+  
+  .table-container {
+    font-size: var(--font-size-xs);
+  }
+  
+  .table th,
+  .table td {
+    padding: var(--space-sm);
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  
+  .btn-sm {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .batch-buttons {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  
+  .modal-content {
+    margin: var(--space-md);
+    width: auto;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .header-stats {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  
+  .stat-card {
+    padding: var(--space-sm);
+  }
+  
+  .synonyms-cell,
+  .description-cell {
+    max-width: 150px;
+  }
+  
+  /* 隐藏部分列以适应小屏幕 */
+  .table th:nth-child(5),
+  .table td:nth-child(5),
+  .table th:nth-child(7),
+  .table td:nth-child(7),
+  .table th:nth-child(10),
+  .table td:nth-child(10) {
+    display: none;
+  }
 }
 
 .toolbar {

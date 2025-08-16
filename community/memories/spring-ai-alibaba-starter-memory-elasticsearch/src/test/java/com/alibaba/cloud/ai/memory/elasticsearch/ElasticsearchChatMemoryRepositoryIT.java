@@ -55,7 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 class ElasticsearchChatMemoryRepositoryIT {
 
-	// 使用较为稳定的版本
+	// Use a more stable version
 	private static final DockerImageName ELASTICSEARCH_IMAGE = DockerImageName
 		.parse("docker.elastic.co/elasticsearch/elasticsearch:7.17.0");
 
@@ -81,13 +81,13 @@ class ElasticsearchChatMemoryRepositoryIT {
 
 	@BeforeEach
 	void setUp() throws Exception {
-		// 确保每个测试前索引是空的
+		// Ensure the index is empty before each test
 		if (chatMemoryRepository instanceof ElasticsearchChatMemoryRepository) {
 			ElasticsearchChatMemoryRepository elasticsearchRepository = (ElasticsearchChatMemoryRepository) chatMemoryRepository;
 			elasticsearchRepository.recreateIndex();
 		}
 
-		// 给Elasticsearch一些时间处理请求
+		// Give Elasticsearch some time to process the request
 		Thread.sleep(1000);
 	}
 
@@ -117,7 +117,7 @@ class ElasticsearchChatMemoryRepositoryIT {
 
 		chatMemoryRepository.saveAll(conversationId, List.of(message));
 
-		// 给Elasticsearch一些时间索引文档
+		// Give Elasticsearch some time to index documents
 		Thread.sleep(2000);
 
 		var messages = chatMemoryRepository.findByConversationId(conversationId);
@@ -137,7 +137,7 @@ class ElasticsearchChatMemoryRepositoryIT {
 
 		chatMemoryRepository.saveAll(conversationId, messages);
 
-		// 给Elasticsearch一些时间索引文档
+		// Give Elasticsearch some time to index documents
 		Thread.sleep(1000);
 
 		var savedMessages = chatMemoryRepository.findByConversationId(conversationId);
@@ -156,7 +156,7 @@ class ElasticsearchChatMemoryRepositoryIT {
 
 		chatMemoryRepository.saveAll(conversationId, List.of(new UserMessage("Hello")));
 
-		// 给Elasticsearch一些时间索引文档
+		// Give Elasticsearch some time to index documents
 		Thread.sleep(1000);
 
 		count = chatMemoryRepository.findByConversationId(conversationId).size();
@@ -173,13 +173,14 @@ class ElasticsearchChatMemoryRepositoryIT {
 
 		chatMemoryRepository.saveAll(conversationId, messages);
 
-		// 给Elasticsearch一些时间索引文档
+		// Give Elasticsearch some time to index documents
 		Thread.sleep(1000);
 
 		var results = chatMemoryRepository.findByConversationId(conversationId);
 
 		assertThat(results.size()).isEqualTo(messages.size());
-		// 修改断言，使用列表大小和内容比较，而不是直接比较对象
+		// Modify assertions to use list size and content comparison instead of direct
+		// object comparison
 		assertThat(results.size()).isEqualTo(messages.size());
 		for (int i = 0; i < messages.size(); i++) {
 			assertThat(results.get(i).getText()).isEqualTo(messages.get(i).getText());
@@ -196,23 +197,23 @@ class ElasticsearchChatMemoryRepositoryIT {
 
 		chatMemoryRepository.saveAll(conversationId, messages);
 
-		// 给Elasticsearch一些时间索引文档
+		// Give Elasticsearch some time to index documents
 		Thread.sleep(1000);
 
-		// 确认数据已成功保存
+		// Confirm data was successfully saved
 		var savedMessages = chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(savedMessages.size()).isEqualTo(messages.size());
 
-		// 确保使用强类型的ElasticsearchChatMemoryRepository进行操作
+		// Ensure using strongly typed ElasticsearchChatMemoryRepository for operations
 		ElasticsearchChatMemoryRepository repo = (ElasticsearchChatMemoryRepository) chatMemoryRepository;
 
-		// 显式删除并手动刷新索引
+		// Explicitly delete and manually refresh the index
 		repo.deleteByConversationId(conversationId);
 
-		// 给Elasticsearch更多时间处理删除
-		Thread.sleep(5000); // 增加等待时间确保操作完成
+		// Give Elasticsearch more time to handle deletion
+		Thread.sleep(5000); // Increase wait time to ensure operation completion
 
-		// 使用已有的原始查询功能检查删除结果
+		// Use existing raw query functionality to check deletion results
 		var response = repo.rawSearchQuery(conversationId);
 		System.out.println("After deletion - raw search result: " + response);
 
@@ -231,24 +232,25 @@ class ElasticsearchChatMemoryRepositoryIT {
 
 		chatMemoryRepository.saveAll(conversationId, messages);
 
-		// 给Elasticsearch一些时间索引文档
+		// Give Elasticsearch some time to index documents
 		Thread.sleep(1000);
 
-		// 验证所有消息都已保存
+		// Verify all messages have been saved
 		var savedMessages = chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(savedMessages.size()).isEqualTo(messages.size());
 
-		// 执行清理操作，设置最大限制为3，删除数量为2
+		// Perform cleanup operation, set max limit to 3, delete count to 2
 		ElasticsearchChatMemoryRepository elasticsearchRepository = (ElasticsearchChatMemoryRepository) chatMemoryRepository;
 		elasticsearchRepository.clearOverLimit(conversationId, 3, 2);
 
-		// 给Elasticsearch一些时间处理操作
+		// Give Elasticsearch some time to process the operation
 		Thread.sleep(1000);
 
-		// 验证只保留了后3个消息
+		// Verify only the last 3 messages are retained
 		savedMessages = chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(savedMessages.size()).isEqualTo(3);
-		// 由于排序可能不完全可靠，检查存在性而不是确切位置
+		// Since sorting may not be completely reliable, check existence rather than exact
+		// position
 		boolean foundMessage2 = false;
 		boolean foundMessage3 = false;
 		boolean foundMessage4 = false;

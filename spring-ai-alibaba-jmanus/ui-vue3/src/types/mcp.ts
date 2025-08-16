@@ -1,6 +1,6 @@
-// MCP相关类型定义
+// MCP related type definitions
 
-// 基础MCP服务器接口
+// Basic MCP server interface
 export interface McpServer {
   id: number
   mcpServerName: string
@@ -9,15 +9,15 @@ export interface McpServer {
   status: 'ENABLE' | 'DISABLE'
 }
 
-// 扩展MCP服务器接口（包含UI字段）
+// Extended MCP server interface (includes UI fields)
 export interface ExtendedMcpServer extends McpServer {
-  args?: string // 前端显示为JSON字符串
-  env?: string // 前端显示为JSON字符串
+  args?: string // Frontend display as JSON string
+  env?: string // Frontend display as JSON string
   url?: string
   command?: string
 }
 
-// MCP服务器字段请求接口
+// MCP server field request interface
 export interface McpServerFieldRequest {
   connectionType: 'STUDIO' | 'SSE' | 'STREAMING'
   mcpServerName: string
@@ -28,53 +28,53 @@ export interface McpServerFieldRequest {
   env?: Record<string, string>
 }
 
-// MCP服务器保存请求接口（合并新增和更新）
+// MCP server save request interface (merge create and update)
 export interface McpServerSaveRequest extends McpServerFieldRequest {
-  id?: number // 可选，有id则为更新，无id则为新增
+  id?: number // Optional, with id for update, without id for create
 }
 
-// MCP服务器JSON导入请求接口
+// MCP server JSON import request interface
 export interface McpServerRequest {
   connectionType: 'STUDIO' | 'SSE' | 'STREAMING'
   configJson: string
 }
 
-// API响应接口
+// API response interface
 export interface ApiResponse<T = any> {
   success: boolean
   message?: string
   data?: T
 }
 
-// 表单数据接口
+// Form data interface
 export interface McpConfigFormData {
   mcpServerName: string
   connectionType: 'STUDIO' | 'SSE' | 'STREAMING'
   command: string
   url: string
-  args: string // 前端输入为JSON字符串
-  env: string // 前端输入为JSON字符串
+  args: string // Frontend input as JSON string
+  env: string // Frontend input as JSON string
   status: 'ENABLE' | 'DISABLE'
 }
 
-// 消息类型
+// Message type
 export type MessageType = 'success' | 'error' | 'info'
 
-// 消息接口
+// Message interface
 export interface Message {
   show: boolean
   text: string
   type: MessageType
 }
 
-// Tab配置接口
+// Tab configuration interface
 export interface TabConfig {
   name: string
   label: string
 }
 
-// JSON校验结果接口
+// JSON validation result interface
 export interface JsonValidationResult {
   isValid: boolean
   errors?: string[]
-} 
+}

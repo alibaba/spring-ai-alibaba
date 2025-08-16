@@ -29,12 +29,12 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 	private List<ExecutionStep> steps;
 
 	/**
-	 * 计划类型，用于 Jackson 多态反序列化
+	 * Plan type for Jackson polymorphic deserialization
 	 */
 	private String planType = "simple";
 
 	/**
-	 * 默认构造函数 - Jackson 反序列化需要
+	 * Default constructor - required for Jackson deserialization
 	 */
 	public ExecutionPlan() {
 		super();
@@ -55,7 +55,7 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 		this.planType = planType;
 	}
 
-	// ExecutionPlan 特有的方法
+	// ExecutionPlan specific methods
 
 	public List<ExecutionStep> getSteps() {
 		return steps;
@@ -70,7 +70,7 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 		return steps.size();
 	}
 
-	// AbstractExecutionPlan 抽象方法的实现
+	// Implementation of AbstractExecutionPlan abstract methods
 
 	@Override
 	@JsonIgnore

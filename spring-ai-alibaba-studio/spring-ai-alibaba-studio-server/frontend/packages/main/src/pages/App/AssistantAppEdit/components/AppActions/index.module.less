@@ -1,0 +1,55 @@
+.desc {
+  font-size: 12px;
+  color: var(--ag-ant-color-text-description);
+  min-width: 0;
+}
+
+.scaleBtn {
+  min-width: 32px;
+}
+
+.confirmWrap {
+  :global {
+    .ag-ant-popover-inner {
+      margin-right: 24px;
+      padding: 16px;
+    }
+  }
+  .info {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    > * {
+      flex-shrink: 0;
+    }
+
+    .warnIcon {
+      color: var(--ag-ant-color-warning);
+    }
+
+    .tipText {
+      width: 280px;
+      margin-top: -4px;
+    }
+  }
+
+  .confirmFooter {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .checkWrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+}

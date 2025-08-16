@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.model.model.enums;
 
 /**
  * @author lizhenning
- * @date 2025/7/8
+ * @since 2025/7/8
  */
 public enum ModelType {
 

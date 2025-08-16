@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.QUERY_REWRITE_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.RESULT;
@@ -55,13 +56,14 @@ public class QueryRewriteNode implements NodeAction {
 		logger.info("Entering {} node", this.getClass().getSimpleName());
 
 		String input = StateUtils.getStringValue(state, INPUT_KEY);
-		logger.info("[{}] Processing user input: {}", this.getClass().getSimpleName(), input);
+		String agentId = StateUtils.getStringValue(state, AGENT_ID); // Get agent ID
+		logger.info("[{}] Processing user input: {} for agentId: {}", this.getClass().getSimpleName(), input, agentId);
 
 		// Use streaming utility class for content collection and result mapping
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
 				"开始进行问题重写...", "问题重写完成！",
 				finalResult -> Map.of(QUERY_REWRITE_NODE_OUTPUT, finalResult, RESULT, finalResult),
-				baseNl2SqlService.rewriteStream(input), StreamResponseType.REWRITE);
+				baseNl2SqlService.rewriteStream(input, agentId), StreamResponseType.REWRITE);
 
 		return Map.of(QUERY_REWRITE_NODE_OUTPUT, generator);
 	}

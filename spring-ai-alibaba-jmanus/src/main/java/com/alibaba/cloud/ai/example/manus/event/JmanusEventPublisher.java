@@ -29,14 +29,14 @@ public class JmanusEventPublisher {
 
 	private static final Logger logger = LoggerFactory.getLogger(JmanusEventPublisher.class);
 
-	// 监听器无法动态注册，无需线程安全
+	// Listeners cannot be dynamically registered, no need for thread safety
 	private Map<Class<? extends JmanusEvent>, List<JmanusListener<? super JmanusEvent>>> listeners = new HashMap<>();
 
 	public void publish(JmanusEvent event) {
 		Class<? extends JmanusEvent> eventClass = event.getClass();
 		for (Map.Entry<Class<? extends JmanusEvent>, List<JmanusListener<? super JmanusEvent>>> entry : listeners
 			.entrySet()) {
-			// 这里父类也可以通知
+			// Parent classes can also be notified here
 			if (entry.getKey().isAssignableFrom(eventClass)) {
 				for (JmanusListener<? super JmanusEvent> listener : entry.getValue()) {
 					try {

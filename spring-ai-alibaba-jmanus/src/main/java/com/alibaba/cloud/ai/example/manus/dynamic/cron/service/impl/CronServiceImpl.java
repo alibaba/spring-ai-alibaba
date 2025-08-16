@@ -60,25 +60,25 @@ public class CronServiceImpl implements CronService {
 	@Override
 	public CronConfig createCronTask(CronConfig config) {
 		try {
-			// 校验cron表达式
+			// Validate cron expression
 			validateCronExpression(config.getCronTime());
 
 			CronEntity entity = new CronEntity();
 			convertEntityFromConfig(entity, config);
 			entity.setCreateTime(LocalDateTime.now());
 			entity = repository.save(entity);
-			log.info("创建定时任务: {}", config.getPlanDesc());
+			log.info("Creating scheduled task: {}", config.getPlanDesc());
 			return entity.mapToCronConfig();
 		}
 		catch (Exception e) {
-			log.error("创建定时任务失败: {} - {}", config.getPlanDesc(), e.getMessage());
+			log.error("Failed to create scheduled task: {} - {}", config.getPlanDesc(), e.getMessage());
 			throw e;
 		}
 	}
 
 	@Override
 	public CronConfig updateCronTask(CronConfig config) {
-		// 校验cron表达式
+		// Validate cron expression
 		validateCronExpression(config.getCronTime());
 
 		CronEntity entity = repository.findById(config.getId())
@@ -86,7 +86,7 @@ public class CronServiceImpl implements CronService {
 		convertEntityFromConfig(entity, config);
 		entity = repository.save(entity);
 
-		// 移除旧任务，等待调度器重新加载
+		// Remove old task, wait for scheduler to reload
 		taskScheduler.removeTask(entity.getId());
 		return entity.mapToCronConfig();
 	}
@@ -122,7 +122,7 @@ public class CronServiceImpl implements CronService {
 		if (config.getStatus() != null) {
 			entity.setStatus(config.getStatus());
 		}
-		// 无论planTemplateId是否为空都进行更新
+		// Update regardless of whether planTemplateId is empty or not
 		entity.setPlanTemplateId(config.getPlanTemplateId());
 	}
 
@@ -135,7 +135,7 @@ public class CronServiceImpl implements CronService {
 			CronExpression.parse(cronExpression);
 		}
 		catch (IllegalArgumentException e) {
-			log.error("无效的cron表达式: {}", cronExpression);
+			log.error("Invalid cron expression: {}", cronExpression);
 			throw new IllegalArgumentException("Invalid cron expression: " + cronExpression + ". " + e.getMessage());
 		}
 	}

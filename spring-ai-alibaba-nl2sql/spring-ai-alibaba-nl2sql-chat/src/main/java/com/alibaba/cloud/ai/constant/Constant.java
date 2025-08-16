@@ -23,6 +23,8 @@ public class Constant {
 
 	public static final String INPUT_KEY = "input";
 
+	public static final String AGENT_ID = "agentId";
+
 	public static final String RESULT = "result";
 
 	public static final String NL2SQL_GRAPH_NAME = "nl2sqlGraph";
@@ -40,6 +42,10 @@ public class Constant {
 	public static final String COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT = "COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT";
 
 	public static final String TABLE_RELATION_OUTPUT = "TABLE_RELATION_OUTPUT";
+
+	public static final String BUSINESS_KNOWLEDGE = "BUSINESS_KNOWLEDGE";
+
+	public static final String SEMANTIC_MODEL = "SEMANTIC_MODEL";
 
 	public static final String SQL_GENERATE_OUTPUT = "SQL_GENERATE_OUTPUT";
 
@@ -63,8 +69,6 @@ public class Constant {
 
 	public static final String SQL_EXECUTE_NODE_EXCEPTION_OUTPUT = "SQL_EXECUTE_NODE_EXCEPTION_OUTPUT";
 
-	public static final String PYTHON_EXECUTE_NODE_OUTPUT = "PYTHON_EXECUTE_NODE_OUTPUT";
-
 	// Plan当前需要执行的步骤编号
 	public static final String PLAN_CURRENT_STEP = "PLAN_CURRENT_STEP";
 
@@ -78,7 +82,7 @@ public class Constant {
 
 	public static final String PLAN_REPAIR_COUNT = "PLAN_REPAIR_COUNT";
 
-	// 节点KEY
+	// Node KEY
 	public static final String PLANNER_NODE = "PLANNER_NODE";
 
 	public static final String PLAN_EXECUTOR_NODE = "PLAN_EXECUTOR_NODE";
@@ -99,12 +103,31 @@ public class Constant {
 
 	public static final String SQL_EXECUTE_NODE = "SQL_EXECUTE_NODE";
 
-	public static final String PYTHON_EXECUTE_NODE = "PYTHON_EXECUTE_NODE";
-
 	public static final String SEMANTIC_CONSISTENCY_NODE = "SEMANTIC_CONSISTENCY_NODE";
 
 	public static final String SMALL_TALK_REJECT = "闲聊拒识";
 
 	public static final String INTENT_UNCLEAR = "意图模糊需要澄清";
+
+	// Keys related to Python code execution
+	public static final String PYTHON_GENERATE_NODE = "PYTHON_GENERATE_NODE";
+
+	public static final String PYTHON_EXECUTE_NODE = "PYTHON_EXECUTE_NODE";
+
+	public static final String PYTHON_ANALYZE_NODE = "PYTHON_ANALYZE_NODE";
+
+	public static final String SQL_RESULT_LIST_MEMORY = "SQL_RESULT_LIST_MEMORY";
+
+	public static final String PYTHON_IS_SUCCESS = "PYTHON_IS_SUCCESS";
+
+	public static final String PYTHON_TRIES_COUNT = "PYTHON_TRIES_COUNT";
+
+	// If code execution succeeds, output code running result; if fails, output error
+	// information
+	public static final String PYTHON_EXECUTE_NODE_OUTPUT = "PYTHON_EXECUTE_NODE_OUTPUT";
+
+	public static final String PYTHON_GENERATE_NODE_OUTPUT = "PYTHON_GENERATE_NODE_OUTPUT";
+
+	public static final String PYTHON_ANALYSIS_NODE_OUTPUT = "PYTHON_ANALYSIS_NODE_OUTPUT";
 
 }

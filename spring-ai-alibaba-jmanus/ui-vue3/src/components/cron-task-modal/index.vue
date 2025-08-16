@@ -867,7 +867,7 @@ watch(() => props.modelValue, (newValue) => {
   cursor: not-allowed;
 }
 
-/* 过渡动画 */
+/* Transition animations */
 .modal-enter-active,
 .modal-leave-active {
   transition: opacity 0.3s ease;
@@ -878,7 +878,7 @@ watch(() => props.modelValue, (newValue) => {
   opacity: 0;
 }
 
-/* 确认模态框样式 */
+/* Confirmation modal styles */
 .confirm-modal {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.15));
   border: 1px solid rgba(255, 255, 255, 0.1);

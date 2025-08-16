@@ -16,10 +16,12 @@
 package com.alibaba.cloud.ai.example.manus.tool.database;
 
 /**
- * 数据库工具请求对象，用于封装数据库操作请求参数
+ * Database tool request object for encapsulating database operation request parameters
  *
  * <p>
- * 该对象包含执行数据库操作所需的所有参数，支持多种数据库操作类型， 包括SQL执行、表信息查询、索引查询等。
+ * This object contains all parameters required for database operations, supporting
+ * multiple database operation types, including SQL execution, table information queries,
+ * index queries, etc.
  * </p>
  *
  * @author Spring AI Alibaba Team
@@ -28,108 +30,113 @@ package com.alibaba.cloud.ai.example.manus.tool.database;
 public class DatabaseRequest {
 
 	/**
-	 * 数据库操作类型
+	 * Database operation type
 	 *
 	 * <p>
-	 * 支持的操作类型包括：
+	 * Supported operation types include:
 	 * </p>
 	 * <ul>
-	 * <li>{@code execute_sql} - 执行SQL查询</li>
-	 * <li>{@code get_table_name} - 获取表名列表</li>
-	 * <li>{@code get_table_meta} - 获取表元数据信息</li>
-	 * <li>{@code get_table_index} - 获取表索引信息</li>
-	 * <li>{@code get_datasource_info} - 获取数据源信息</li>
+	 * <li>{@code execute_sql} - Execute SQL queries</li>
+	 * <li>{@code get_table_name} - Get table name list</li>
+	 * <li>{@code get_table_meta} - Get table metadata information</li>
+	 * <li>{@code get_table_index} - Get table index information</li>
+	 * <li>{@code get_datasource_info} - Get data source information</li>
 	 * </ul>
 	 */
 	private String action;
 
 	/**
-	 * SQL查询语句
+	 * SQL query statement
 	 *
 	 * <p>
-	 * 当操作类型为 {@code execute_sql} 时使用此字段。 包含要执行的SQL查询语句。
+	 * Used when operation type is {@code execute_sql}. Contains the SQL query statement
+	 * to execute.
 	 * </p>
 	 */
 	private String query;
 
 	/**
-	 * 文本参数
+	 * Text parameter
 	 *
 	 * <p>
-	 * 用于指定表名、注释或其他文本信息。 当操作类型为 {@code get_table_name}、{@code get_table_meta}、
-	 * {@code get_table_index} 时使用此字段进行过滤。
+	 * Used to specify table names, comments or other text information. Used for filtering
+	 * when operation type is {@code get_table_name}, {@code get_table_meta},
+	 * {@code get_table_index}.
 	 * </p>
 	 */
 	private String text;
 
 	/**
-	 * 数据源名称
+	 * Data source name
 	 *
 	 * <p>
-	 * 指定要使用的数据源名称。如果为空或未指定，则使用默认数据源。 支持多数据源环境下的数据源切换。
+	 * Specifies the data source name to use. If empty or not specified, the default data
+	 * source will be used. Supports data source switching in multi-data source
+	 * environments.
 	 * </p>
 	 */
 	private String datasourceName;
 
 	/**
-	 * 获取数据库操作类型
-	 * @return 操作类型字符串，如 "execute_sql"、"get_table_name" 等
+	 * Get database operation type
+	 * @return Operation type string, such as "execute_sql", "get_table_name", etc.
 	 */
 	public String getAction() {
 		return action;
 	}
 
 	/**
-	 * 设置数据库操作类型
-	 * @param action 操作类型字符串，不能为null
+	 * Set database operation type
+	 * @param action Operation type string, cannot be null
 	 */
 	public void setAction(String action) {
 		this.action = action;
 	}
 
 	/**
-	 * 获取SQL查询语句
-	 * @return SQL查询语句，可能为null
+	 * Get SQL query statement
+	 * @return SQL query statement, may be null
 	 */
 	public String getQuery() {
 		return query;
 	}
 
 	/**
-	 * 设置SQL查询语句
-	 * @param query SQL查询语句，当操作类型为 "execute_sql" 时使用
+	 * Set SQL query statement
+	 * @param query SQL query statement, used when operation type is "execute_sql"
 	 */
 	public void setQuery(String query) {
 		this.query = query;
 	}
 
 	/**
-	 * 获取文本参数
-	 * @return 文本参数，用于表名过滤等，可能为null
+	 * Get text parameter
+	 * @return Text parameter for table name filtering etc., may be null
 	 */
 	public String getText() {
 		return text;
 	}
 
 	/**
-	 * 设置文本参数
-	 * @param text 文本参数，用于指定表名、注释或其他过滤条件
+	 * Set text parameter
+	 * @param text Text parameter for specifying table names, comments or other filter
+	 * conditions
 	 */
 	public void setText(String text) {
 		this.text = text;
 	}
 
 	/**
-	 * 获取数据源名称
-	 * @return 数据源名称，如果为null或空则使用默认数据源
+	 * Get data source name
+	 * @return Data source name, if null or empty then use default data source
 	 */
 	public String getDatasourceName() {
 		return datasourceName;
 	}
 
 	/**
-	 * 设置数据源名称
-	 * @param datasourceName 数据源名称，用于指定要使用的数据源
+	 * Set data source name
+	 * @param datasourceName Data source name, used to specify the data source to use
 	 */
 	public void setDatasourceName(String datasourceName) {
 		this.datasourceName = datasourceName;

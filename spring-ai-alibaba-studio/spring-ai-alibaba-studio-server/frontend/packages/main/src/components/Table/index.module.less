@@ -1,0 +1,26 @@
+.table {
+  :global {
+    .ant-table-content {
+      --ag-ant-table-header-bg: transparent;
+      --ag-ant-table-header-color: var(--ag-ant-color-text-tertiary);
+      --ag-ant-table-cell-padding-block: 10px;
+      --ag-ant-table-cell-padding-inline: 20px;
+    }
+
+    thead.ant-table-thead > tr > th {
+      border-top: 1px solid var(--ag-ant-color-border-secondary);
+      font-weight: normal;
+      line-height: 20px;
+      font-size: 12px;
+    }
+
+    tbody.ant-table-tbody > tr > td {
+      --ag-ant-table-cell-padding-block: 12px;
+      line-height: 24px;
+    }
+
+    thead.ant-table-thead > tr > th::before {
+      content: none !important;
+    }
+  }
+}

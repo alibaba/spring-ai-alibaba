@@ -40,8 +40,8 @@ public class ExecuteSqlAction extends AbstractDatabaseAction {
 
 		if (query == null || query.trim().isEmpty()) {
 			log.warn("ExecuteSqlAction failed: missing query statement, datasourceName={}", datasourceName);
-			return new ToolExecuteResult(
-					"Datasource: " + (datasourceName != null ? datasourceName : "default") + "\n错误: 缺少查询语句");
+			return new ToolExecuteResult("Datasource: " + (datasourceName != null ? datasourceName : "default")
+					+ "\nError: Missing query statement");
 		}
 		String[] statements = query.split(";");
 		List<String> results = new ArrayList<>();
@@ -60,7 +60,7 @@ public class ExecuteSqlAction extends AbstractDatabaseAction {
 				}
 				else {
 					int updateCount = stmt.getUpdateCount();
-					results.add("执行成功。影响行数: " + updateCount);
+					results.add("Execution successful. Affected rows: " + updateCount);
 				}
 			}
 			log.info("ExecuteSqlAction completed successfully, datasourceName={}, statements={}", datasourceName,
@@ -73,21 +73,21 @@ public class ExecuteSqlAction extends AbstractDatabaseAction {
 			log.error("ExecuteSqlAction failed with SQLException, datasourceName={}, error={}", datasourceName,
 					e.getMessage(), e);
 			return new ToolExecuteResult("Datasource: " + (datasourceName != null ? datasourceName : "default")
-					+ "\nSQL执行失败: " + e.getMessage());
+					+ "\nSQL execution failed: " + e.getMessage());
 		}
 	}
 
 	private String formatResultSet(ResultSet rs) throws SQLException {
 		StringBuilder sb = new StringBuilder();
 		int columnCount = rs.getMetaData().getColumnCount();
-		// 列名
+		// Column names
 		for (int i = 1; i <= columnCount; i++) {
 			sb.append(rs.getMetaData().getColumnName(i));
 			if (i < columnCount)
 				sb.append(",");
 		}
 		sb.append("\n");
-		// 数据
+		// Data
 		while (rs.next()) {
 			for (int i = 1; i <= columnCount; i++) {
 				Object val = rs.getObject(i);

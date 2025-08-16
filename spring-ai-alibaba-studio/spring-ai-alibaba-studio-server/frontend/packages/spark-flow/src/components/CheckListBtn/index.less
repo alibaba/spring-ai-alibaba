@@ -1,0 +1,113 @@
+@import '../../index.less';
+
+.spark-flow-check-list-btn {
+  .@{ant-prefix}-popover .@{ant-prefix}-popover-inner {
+    padding: 0;
+  }
+}
+
+.spark-flow-check-list-header {
+  height: 44px;
+  padding: 0 12px 0 16px;
+  gap: 16px;
+
+  &-title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: e('var(--@{ant-prefix}-color-text)');
+  }
+}
+
+.spark-flow-check-list-btn-child {
+  position: relative;
+  width: 32px;
+
+  .spark-flow-check-list-btn-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+  }
+}
+
+.spark-flow-check-list-content {
+  max-height: calc(75vh - 44px);
+  overflow-y: auto;
+}
+
+.spark-flow-node-check-container {
+  border-radius: 6px;
+  width: 304px;
+  background: e('var(--@{ant-prefix}-color-bg-white)');
+  border: 1px solid e('var(--@{ant-prefix}-color-border-secondary)');
+  transition: 0.4s ease-in-out;
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: e('var(--@{ant-prefix}-box-shadow)');
+  }
+
+  &-header {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    gap: 6px;
+    border-radius: 6px 6px 0 0;
+    background: e('var(--@{ant-prefix}-color-fill-tertiary)');
+
+    * {
+      flex-shrink: 0;
+    }
+
+    &-title {
+      flex: 1;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 20px;
+      color: e('var(--@{ant-prefix}-color-text-secondary)');
+    }
+  }
+
+  &-content {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    gap: 4px;
+
+    &-item {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+
+      &-icon {
+        color: e('var(--@{ant-prefix}-color-warning)');
+      }
+
+      &-title {
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 20px;
+        color: e('var(--@{ant-prefix}-color-text)');
+      }
+  
+      &-error {
+        font-size: 12px;
+        line-height: 20px;
+        color: e('var(--@{ant-prefix}-color-text)');
+      }
+    }
+  }
+}
+
+.spark-flow-check-list-empty {
+  gap: 8px;
+  width: 320px;
+  padding: 58px 0 70px;
+
+  &-title {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: e('var(--@{ant-prefix}-color-text)');
+  }
+}

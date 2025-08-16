@@ -24,7 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(PostgresChatMemoryProperties.CONFIG_PREFIX)
 public class PostgresChatMemoryProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.jdbc.postgres";
+	public static final String CONFIG_PREFIX = "spring.ai.memory.postgres";
 
 	private boolean initializeSchema = true;
 

@@ -29,6 +29,12 @@ const words: I18nType = {
   welcome: '你好',
   create_new_conversation: '新的对话',
   help: '帮助',
+  chat: '聊天',
+  knowledge_base: '知识库',
+  system_config: '系统配置',
+  knowledge_management: '知识库管理',
+  document_upload: '文档上传',
+  knowledge_search: '知识搜索',
 }
 
 export default words

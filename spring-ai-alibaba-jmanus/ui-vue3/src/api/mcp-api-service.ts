@@ -43,9 +43,9 @@ export interface McpServerFieldRequest {
   status: 'ENABLE' | 'DISABLE'
 }
 
-// 合并新增和更新的请求接口
+// Merged request interface for adding and updating
 export interface McpServerSaveRequest extends McpServerFieldRequest {
-  id?: number // 可选，有id则为更新，无id则为新增
+  id?: number // Optional, if present it's an update, otherwise it's a new addition
 }
 
 export interface ApiResponse<T = any> {
@@ -82,7 +82,7 @@ export class McpApiService {
       })
       
       if (!response.ok) {
-        // 读取响应体中的详细错误信息
+        // Read detailed error information from the response body
         const errorText = await response.text()
         throw new Error(`Failed to add MCP server: ${response.status} - ${errorText}`)
       }
@@ -114,7 +114,7 @@ export class McpApiService {
       })
       
       if (!response.ok) {
-        // 读取响应体中的详细错误信息
+        // Read detailed error information from the response body
         const errorText = await response.text()
         throw new Error(`Failed to import MCP servers: ${response.status} - ${errorText}`)
       }
@@ -145,7 +145,7 @@ export class McpApiService {
       })
       
       if (!response.ok) {
-        // 读取响应体中的详细错误信息
+        // Read detailed error information from the response body
         const errorText = await response.text()
         const action = mcpConfig.id !== undefined ? 'update' : 'add'
         throw new Error(`Failed to ${action} MCP server: ${response.status} - ${errorText}`)

@@ -47,6 +47,7 @@ public class InfoCheckService {
 
 	public String backgroundInfoCheck(List<Map<String, String>> results, String query)
 			throws JsonProcessingException, InterruptedException {
+		// 可复用
 
 		List<String> correctedPost = new ArrayList<>();
 		// load template & replace the placeholder

@@ -12,17 +12,17 @@ export function useRequest() {
     try {
       loading.value = true
       const result = await requestFn()
-      
+
       if (result.success && successMessage) {
-        // 这里需要外部传入showMessage函数，避免循环依赖
+        // Need to pass showMessage function from outside to avoid circular dependencies
         console.log(successMessage)
       } else if (!result.success && errorMessage) {
         console.error(errorMessage)
       }
-      
+
       return result
     } catch (error) {
-      console.error('请求执行失败:', error)
+      console.error('Request execution failed:', error)
       if (errorMessage) {
         console.error(errorMessage)
       }
@@ -36,4 +36,4 @@ export function useRequest() {
     loading,
     executeRequest
   }
-} 
+}

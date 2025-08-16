@@ -1,0 +1,20 @@
+@import '../../index.less';
+
+.spark-flow-node-icon-wrap {
+  border-radius: 4px;
+  background: e('var(--@{ant-prefix}-color-primary)');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: e('var(--@{ant-prefix}-color-text-white)');
+
+  &.spark-node-icon-small {
+    .spark-flow-type-icon {
+      font-size: 12px !important;
+    }
+  }
+
+  &.spark-flow-node-icon-no-bg {
+    color: e('var(--@{ant-prefix}-color-text)');
+  }
+}

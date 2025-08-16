@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- https://github.com/spring-projects/spring-boot/blob/v1.5.13.RELEASE/spring-boot/src/main/resources/org/springframework/boot/logging/logback/defaults.xml -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <property name="FILE_LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-4relative [%thread]  %-5level %logger{35} - %msg%n"/>
+    <property name="APP_NAME" value="${APP_NAME}"/>
+    <property name="APP_LOG_PATH" value="${user.home}/${APP_NAME}/logs"/>
+    <property name="APPLICATION_LOG_FILE" value="${APP_LOG_PATH}/agentApplication.log"/>
+    <property name="MONITOR_LOG_FILE" value="${APP_LOG_PATH}/monitor.log"/>
+    <property name="TRACE_LOG_FILE" value="${APP_LOG_PATH}/trace/trace.log"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="APPLICATION"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${APPLICATION_LOG_FILE}</file>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${APPLICATION_LOG_FILE}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxHistory>2</maxHistory>
+            <maxFileSize>50MB</maxFileSize>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="MONITOR-LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${MONITOR_LOG_FILE}</file>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${MONITOR_LOG_FILE}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+            <maxFileSize>50MB</maxFileSize>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="TRACE-LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${TRACE_LOG_FILE}</file>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${TRACE_LOG_FILE}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxHistory>2</maxHistory>
+            <maxFileSize>200MB</maxFileSize>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!--异步日志-->
+    <appender name="APPLICATION_ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <param name="neverBlock" value="true"/>
+        <appender-ref ref="APPLICATION"/>
+    </appender>
+    <!--异步日志-->
+    <appender name="MONITOR_ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <param name="neverBlock" value="true"/>
+        <appender-ref ref="MONITOR-LOG"/>
+    </appender>
+<!--    <appender name="dubboAppenderAsync" class="ch.qos.logback.classic.AsyncAppender">-->
+<!--        <param name="neverBlock" value="true"/>-->
+<!--        <appender-ref ref="dubboAppender"/>-->
+<!--    </appender>-->
+    <appender name="TRACE-LOG-ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <param name="neverBlock" value="true"/>
+        <appender-ref ref="TRACE-LOG"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APPLICATION_ASYNC"/>
+    </root>
+
+    <logger name="monitor-log" level="INFO" additivity="false">
+        <appender-ref ref="MONITOR_ASYNC"/>
+    </logger>
+
+    <logger name="trace-log" level="INFO" additivity="false">
+        <appender-ref ref="TRACE-LOG-ASYNC"/>
+    </logger>
+
+    <logger name="io.agentscope.core.base.mapper" level="DEBUG">
+        <appender-ref ref="APPLICATION_ASYNC"/>
+    </logger>
+
+<!--
+    <logger name="druid.sql.Statement" level="debug" additivity="true">
+        <appender-ref ref="APPLICATION_ASYNC"/>
+    </logger>
+    <logger name="org.apache.dubbo" level="INFO" additivity="false">
+        <appender-ref ref="dubboAppenderAsync"/>
+    </logger>
+-->
+
+    <logger name="agentApplication" level="INFO" additivity="true">
+        <appender-ref ref="APPLICATION_ASYNC"/>
+    </logger>
+
+</configuration>

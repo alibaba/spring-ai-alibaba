@@ -21,13 +21,12 @@ import { reactive } from 'vue'
 
 type ConfigType = {
   form: {
-    enable_background_investigation: boolean
     auto_accepted_plan: boolean
     optimize_query_num: number
     max_plan_iterations: number
     max_step_num: number
     mcp_settings: any
-    search_engine: 'tavily'
+    search_engine: 'tavily',
   }
 }
 export const useConfigStore = () =>
@@ -35,7 +34,6 @@ export const useConfigStore = () =>
     state(): ConfigType {
       return reactive({
         form: {
-          enable_background_investigation: true,
           auto_accepted_plan: true,
           optimize_query_num: 3,
           max_plan_iterations: 1,

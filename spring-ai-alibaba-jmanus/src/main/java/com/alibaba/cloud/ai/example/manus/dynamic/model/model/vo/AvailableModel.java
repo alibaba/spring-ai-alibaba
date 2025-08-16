@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo;
 
 /**
- * 可用模型数据传输对象
+ * Available model data transfer object
  */
 public class AvailableModel {
 

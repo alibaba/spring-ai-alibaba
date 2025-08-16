@@ -1,0 +1,20 @@
+.filter-selector {
+  :global {
+    .ag-ant-tag-checkable {
+      font-size: 14px;
+      padding: 4px 12px;
+      height: auto;
+      margin: 0;
+      background: transparent;
+      &:hover {
+        background: var(--ag-ant-control-item-bg-hover);
+        color: var(--ag-ant-color-text);
+      }
+
+      &.ag-ant-tag-checkable-checked {
+        background: var(--ag-ant-control-item-bg-active);
+        color: var(--ag-ant-color-primary);
+      }
+    }
+  }
+}

@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.entity.Agent;
 import com.alibaba.cloud.ai.service.AgentService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -25,18 +24,21 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 智能体管理控制器
+ * Agent Management Controller
  */
 @Controller
 @RequestMapping("/api/agent")
 @CrossOrigin(origins = "*")
 public class AgentController {
 
-	@Autowired
-	private AgentService agentService;
+	private final AgentService agentService;
+
+	public AgentController(AgentService agentService) {
+		this.agentService = agentService;
+	}
 
 	/**
-	 * 获取智能体列表
+	 * Get agent list
 	 */
 	@GetMapping
 	@ResponseBody
@@ -56,7 +58,7 @@ public class AgentController {
 	}
 
 	/**
-	 * 根据ID获取智能体详情
+	 * Get agent details by ID
 	 */
 	@GetMapping("/{id}")
 	@ResponseBody
@@ -69,12 +71,12 @@ public class AgentController {
 	}
 
 	/**
-	 * 创建智能体
+	 * Create agent
 	 */
 	@PostMapping
 	@ResponseBody
 	public ResponseEntity<Agent> create(@RequestBody Agent agent) {
-		// 设置默认状态
+		// Set default status
 		if (agent.getStatus() == null || agent.getStatus().trim().isEmpty()) {
 			agent.setStatus("draft");
 		}
@@ -83,7 +85,7 @@ public class AgentController {
 	}
 
 	/**
-	 * 更新智能体
+	 * Update agent
 	 */
 	@PutMapping("/{id}")
 	@ResponseBody
@@ -97,7 +99,7 @@ public class AgentController {
 	}
 
 	/**
-	 * 删除智能体
+	 * Delete agent
 	 */
 	@DeleteMapping("/{id}")
 	@ResponseBody
@@ -110,7 +112,7 @@ public class AgentController {
 	}
 
 	/**
-	 * 发布智能体
+	 * Publish agent
 	 */
 	@PostMapping("/{id}/publish")
 	@ResponseBody
@@ -125,7 +127,7 @@ public class AgentController {
 	}
 
 	/**
-	 * 下线智能体
+	 * Offline agent
 	 */
 	@PostMapping("/{id}/offline")
 	@ResponseBody

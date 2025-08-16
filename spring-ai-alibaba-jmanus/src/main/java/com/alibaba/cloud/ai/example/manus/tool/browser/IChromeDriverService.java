@@ -20,65 +20,65 @@ import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingSe
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 
 /**
- * Chrome驱动服务接口，提供浏览器驱动管理功能
+ * Chrome driver service interface providing browser driver management functions
  */
 public interface IChromeDriverService {
 
 	/**
-	 * 获取共享目录
-	 * @return 共享目录路径
+	 * Get shared directory
+	 * @return Shared directory path
 	 */
 	String getSharedDir();
 
 	/**
-	 * 将所有驱动的cookies保存到全局共享目录
+	 * Save cookies from all drivers to global shared directory
 	 */
 	void saveCookiesToSharedDir();
 
 	/**
-	 * 从全局共享目录加载cookies到所有驱动
+	 * Load cookies from global shared directory to all drivers
 	 */
 	void loadCookiesFromSharedDir();
 
 	/**
-	 * 获取指定计划ID的驱动包装器
-	 * @param planId 计划ID
-	 * @return 驱动包装器
+	 * Get driver wrapper for specified plan ID
+	 * @param planId Plan ID
+	 * @return Driver wrapper
 	 */
 	DriverWrapper getDriver(String planId);
 
 	/**
-	 * 关闭指定计划的驱动
-	 * @param planId 计划ID
+	 * Close driver for specified plan
+	 * @param planId Plan ID
 	 */
 	void closeDriverForPlan(String planId);
 
 	/**
-	 * 清理所有资源
+	 * Clean up all resources
 	 */
 	void cleanup();
 
 	/**
-	 * 设置Manus属性
-	 * @param manusProperties Manus属性
+	 * Set Manus properties
+	 * @param manusProperties Manus properties
 	 */
 	void setManusProperties(IManusProperties manusProperties);
 
 	/**
-	 * 获取Manus属性
-	 * @return Manus属性
+	 * Get Manus properties
+	 * @return Manus properties
 	 */
 	IManusProperties getManusProperties();
 
 	/**
-	 * 获取内部存储服务
-	 * @return 内部存储服务
+	 * Get internal storage service
+	 * @return Internal storage service
 	 */
 	SmartContentSavingService getInnerStorageService();
 
 	/**
-	 * 获取统一目录管理器
-	 * @return 统一目录管理器
+	 * Get unified directory manager
+	 * @return Unified directory manager
 	 */
 	UnifiedDirectoryManager getUnifiedDirectoryManager();
 

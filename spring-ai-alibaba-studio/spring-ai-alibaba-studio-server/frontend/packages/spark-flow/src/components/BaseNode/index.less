@@ -1,0 +1,257 @@
+@import '../../index.less';
+
+.spark-flow-node-container {
+  --angle: 0deg;
+  border: 1px solid e('var(--@{ant-prefix}-color-border-secondary)');
+  background: e('var(--@{ant-prefix}-color-bg-base)');
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+  border-radius: 12px;
+  position: relative;
+  transition: 0.4s ease-in-out;
+  width: auto;
+  height: auto;
+  min-height: 58px;
+
+  &.spark-flow-node-container-group {
+    min-width: 320px;
+    width: 100%;
+    height: 100%;
+    padding: 16px;
+
+    .spark-flow-group-node-sub-flow {
+      flex: 1;
+
+      .react-flow__background {
+        border-radius: 6px;
+        z-index: 1;
+        border: 1px solid e('var(--@{ant-prefix}-color-border-secondary)');
+      }
+    }
+
+    &.spark-flow-node-container-hovered {
+      box-shadow: 0px 2px 8px 0px rgba(38, 36, 76, 0.3);
+      border-color: e('var(--@{ant-prefix}-color-primary)');
+    }
+  }
+
+  &-success {
+    border-color: e('var(--@{ant-prefix}-color-success)');
+  }
+
+  &-fail {
+    border-color: e('var(--@{ant-prefix}-color-error)');
+  }
+
+  @keyframes rotate {
+    to {
+      --angle: 360deg;
+    }
+  }
+
+  &.spark-flow-node-container-executing {
+    border: 2px solid transparent;
+    background:
+      linear-gradient(
+          e('var(--@{ant-prefix}-color-bg-base)'),
+          e('var(--@{ant-prefix}-color-bg-base)')
+        )
+        padding-box,
+      conic-gradient(
+          from var(--angle),
+          e('var(--@{ant-prefix}-color-primary)') 0deg,
+          transparent 90deg,
+          transparent 270deg,
+          e('var(--@{ant-prefix}-color-primary)') 360deg
+        )
+        border-box;
+    animation: rotate 2s linear infinite;
+  }
+
+  .spark-flow-node-label {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+
+  .spark-flow-source-handle,
+  .spark-flow-target-handle {
+    width: 10px;
+    height: 10px;
+    background: e('var(--@{ant-prefix}-color-bg-base)');
+    border: 1px solid e('var(--@{ant-prefix}-color-primary)');
+    border-radius: 50%;
+    transition-duration: 0.2s;
+
+    &-add-btn {
+      color: e('var(--@{ant-prefix}-color-bg-base)');
+      font-size: 16px;
+      height: 16px;
+      display: none;
+      pointer-events: none;
+    }
+  }
+
+  .spark-flow-fail-branch-handle {
+    border-color: e('var(--@{ant-prefix}-color-orange)');
+  }
+
+  &:hover {
+    box-shadow: 0px 4px 36px 0px rgba(60, 52, 197, 0.08);
+    .spark-flow-target-handle {
+      box-shadow: 0 0 0 2px rgb(105 83 245 / 15%);
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .spark-flow-target-handle-full {
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    transform: none;
+    background: transparent;
+    border-radius: 0;
+    z-index: 100;
+    border: none;
+  }
+
+  .spark-flow-source-handle.spark-flow-source-handle-open,
+  &:hover .spark-flow-source-handle {
+    background: e('var(--@{ant-prefix}-color-primary)');
+    width: 16px;
+    height: 16px;
+    border-width: 0;
+
+    .spark-flow-source-handle-add-btn {
+      display: block;
+    }
+  }
+
+  &:hover .spark-flow-fail-branch-handle,
+  .spark-flow-fail-branch-handle.spark-flow-source-handle-open {
+    background: e('var(--@{ant-prefix}-color-orange-hover)');
+    width: 16px;
+    height: 16px;
+    border-width: 0;
+
+    .spark-flow-source-handle-add-btn {
+      display: block;
+    }
+  }
+}
+
+.react-flow__node.selected
+  .spark-flow-node-container:not(
+    .spark-flow-node-container-success,
+    .spark-flow-node-container-fail,
+    .spark-flow-node-container-executing,
+    .spark-flow-node-container-stop,
+    .spark-flow-node-container-pause
+  ) {
+  border-color: e('var(--@{ant-prefix}-color-primary)');
+  box-shadow:
+    0 0 0 2px rgb(105 83 245 / 15%),
+    0 4px 36px 0 rgb(60 52 197 / 8%);
+}
+
+.react-flow__node:has(div.isDraggingAdd) {
+  pointer-events: none !important;
+}
+
+.spark-flow-judge-branch {
+  color: e('var(--@{ant-prefix}-color-text-secondary)');
+  background: e('var(--@{ant-prefix}-color-fill-tertiary)');
+  border-radius: 6px;
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 24px;
+  height: 24px;
+  position: relative;
+
+  .spark-flow-judge-branch-handle {
+    right: -16px;
+  }
+
+  .spark-flow-fail-branch-label,
+  .spark-flow-fail-branch-label-right {
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+  .spark-flow-fail-branch-label {
+    color: e('var(--@{ant-prefix}-color-text-tertiary)');
+  }
+
+  .spark-flow-fail-branch-label-right {
+    font-weight: 500;
+    color: e('var(--@{ant-prefix}-color-text-secondary)');
+  }
+}
+
+.spark-flow-node-copy-btn {
+  &-icon {
+    color: e('var(--@{ant-prefix}-color-text-tertiary)');
+    opacity: 0;
+    transition: 0.4s ease-in-out;
+  }
+
+  &-tag {
+    line-height: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    background: e('var(--@{ant-prefix}-color-mauve-bg)');
+    color: e('var(--@{ant-prefix}-color-mauve)');
+    padding: 0 4px;
+    border-radius: 4px;
+    margin: 0;
+    align-items: center;
+    display: flex;
+
+    > .anticon + span {
+      margin-inline-start: 4px;
+    }
+  }
+}
+
+.spark-flow-node-dropdown {
+  .@{ant-prefix}-dropdown-menu-item:hover {
+    .spark-flow-node-copy-btn-icon {
+      opacity: 1;
+    }
+  }
+}
+
+.spark-flow-status-icon {
+  &-success {
+    color: e('var(--@{ant-prefix}-color-success)');
+  }
+
+  &-fail {
+    color: e('var(--@{ant-prefix}-color-error)');
+  }
+
+  &-executing {
+    color: e('var(--@{ant-prefix}-color-primary)');
+    animation: executing-animation 3s linear infinite;
+  }
+}
+
+@keyframes executing-animation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spark-flow-node-desc {
+  font-size: 14px;
+  line-height: 24px;
+  color: e('var(--@{ant-prefix}-color-text-secondary)');
+  margin: 0 !important;
+}

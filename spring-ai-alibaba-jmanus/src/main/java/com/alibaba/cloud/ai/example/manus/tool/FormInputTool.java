@@ -35,25 +35,84 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	private static final Logger log = LoggerFactory.getLogger(FormInputTool.class);
 
-	private static final String PARAMETERS = """
+	private String getToolParameters() {
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "description": {
+				            "type": "string",
+				            "description": "Description of the form and what information is being collected"
+				        },
+				        "inputs": {
+				            "type": "array",
+				            "items": {
+				                "type": "object",
+				                "properties": {
+				                    "name": {
+				                        "type": "string",
+				                        "description": "Name/ID of the input field"
+				                    },
+				                    "label": {
+				                        "type": "string",
+				                        "description": "Display label for the input field"
+				                    },
+				                    "type": {
+				                        "type": "string",
+				                        "enum": ["text", "number", "email", "password", "textarea", "select", "checkbox", "radio"],
+				                        "description": "Type of input field"
+				                    },
+				                    "required": {
+				                        "type": "boolean",
+				                        "description": "Whether this field is required"
+				                    },
+				                    "placeholder": {
+				                        "type": "string",
+				                        "description": "Placeholder text for the input field"
+				                    },
+				                    "options": {
+				                        "type": "array",
+				                        "items": {
+				                            "type": "string"
+				                        },
+				                        "description": "Options for select, checkbox, or radio inputs"
+				                    }
+				                },
+				                "required": ["name", "label", "type"]
+				            },
+				            "description": "Array of input field definitions"
+				        }
+				    },
+				    "required": ["description", "inputs"]
+				}
+				""";
+	}
+
+	private String getToolDescription() {
+		return """
+				Create interactive forms to collect user input. This tool allows you to define form fields and collect structured data from users through a web interface.
+				""";
+	}
+
+	private static final String LEGACY_PARAMETERS = """
 			{
 			  "type": "object",
 			  "properties": {
 			    "inputs": {
 			      "type": "array",
-			      "description": "输入项列表，每项包含 label 和 value 字段",
+			      "description": "List of input items, each containing label and value fields",
 			      "items": {
 			        "type": "object",
 			        "properties": {
-			          "label": { "type": "string", "description": "输入项标签" },
-			          "value": { "type": "string", "description": "输入内容" }
+			          "label": { "type": "string", "description": "Input item label" },
+			          "value": { "type": "string", "description": "Input content" }
 			        },
 			        "required": ["label"]
 			      }
 			    },
 			    "description": {
 			      "type": "string",
-			      "description": "如何填写这些输入项的说明"
+			      "description": "Instructions on how to fill these input items"
 			    }
 			  },
 			  "required": [ "description"]
@@ -62,17 +121,26 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	public static final String name = "form_input";
 
-	private static final String description = """
-			提供一个带标签的多输入项表单工具。
+	private static final String LEGACY_DESCRIPTION = """
+			Provides a labeled multi-input form tool.
 
-			LLM可通过本工具 让用户 提交0个或多个输入项（每项有label和内容），并附带填写说明。
-			允许用户提交0个输入项。
-			适用于需要结构化输入的场景也可以用于模型需要等待用户输入然后再继续的场景.
+			LLM can use this tool to let users submit 0 or more input items (each with label and content), along with filling instructions.
+			Allows users to submit 0 input items.
+			Suitable for scenarios requiring structured input and can also be used when the model needs to wait for user input before continuing.
 			""";
 
-	public static OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
-		return new OpenAiApi.FunctionTool(function);
+	public OpenAiApi.FunctionTool getToolDefinition() {
+		try {
+			OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(getToolDescription(), name,
+					getToolParameters());
+			return new OpenAiApi.FunctionTool(function);
+		}
+		catch (Exception e) {
+			log.warn("Failed to load prompt-based tool definition, using legacy configuration", e);
+			OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(LEGACY_DESCRIPTION, name,
+					LEGACY_PARAMETERS);
+			return new OpenAiApi.FunctionTool(function);
+		}
 	}
 
 	// Data structures:
@@ -81,9 +149,19 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 	 */
 	public static class InputItem {
 
+		private String name;
+
 		private String label;
 
 		private String value;
+
+		private String type;
+
+		private Boolean required;
+
+		private String placeholder;
+
+		private List<String> options;
 
 		public InputItem() {
 		}
@@ -91,6 +169,20 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 		public InputItem(String label, String value) {
 			this.label = label;
 			this.value = value;
+		}
+
+		public InputItem(String name, String label, String type) {
+			this.name = name;
+			this.label = label;
+			this.type = type;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
 		}
 
 		public String getLabel() {
@@ -107,6 +199,38 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 		public void setValue(String value) {
 			this.value = value;
+		}
+
+		public String getType() {
+			return type;
+		}
+
+		public void setType(String type) {
+			this.type = type;
+		}
+
+		public Boolean getRequired() {
+			return required;
+		}
+
+		public void setRequired(Boolean required) {
+			this.required = required;
+		}
+
+		public String getPlaceholder() {
+			return placeholder;
+		}
+
+		public void setPlaceholder(String placeholder) {
+			this.placeholder = placeholder;
+		}
+
+		public List<String> getOptions() {
+			return options;
+		}
+
+		public void setOptions(List<String> options) {
+			this.options = options;
 		}
 
 	}
@@ -159,7 +283,8 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 	private InputState inputState = InputState.INPUT_RECEIVED; // Default state
 
 	private UserFormInput currentFormDefinition; // Stores the form structure defined by
-													// LLM and its current values
+
+	// LLM and its current values
 
 	public InputState getInputState() {
 		return inputState;
@@ -255,12 +380,12 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	@Override
 	public String getDescription() {
-		return description;
+		return getToolDescription();
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return getToolParameters();
 	}
 
 	@Override
@@ -290,18 +415,21 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 	@Override
 	public String getCurrentToolStateString() {
 		if (currentFormDefinition == null) {
-			return String.format("FormInputTool 状态：未定义表单。当前输入状态: %s", inputState.toString());
+			return String.format("FormInputTool Status: No form defined. Current input state: %s",
+					inputState.toString());
 		}
 		try {
-			StringBuilder stateBuilder = new StringBuilder("FormInputTool 状态：\n");
-			stateBuilder.append(String.format("说明：%s\n输入项：%s\n", currentFormDefinition.getDescription(),
-					objectMapper.writeValueAsString(currentFormDefinition.getInputs())));
-			stateBuilder.append(String.format("当前输入状态: %s\n", inputState.toString()));
+			StringBuilder stateBuilder = new StringBuilder("FormInputTool Status:\n");
+			stateBuilder
+				.append(String.format("Description: %s\nInput Items: %s\n", currentFormDefinition.getDescription(),
+						objectMapper.writeValueAsString(currentFormDefinition.getInputs())));
+			stateBuilder.append(String.format("Current input state: %s\n", inputState.toString()));
 			return stateBuilder.toString();
 		}
 		catch (JsonProcessingException e) {
 			log.error("Error serializing currentFormDefinition for state string", e);
-			return String.format("FormInputTool 状态：序列化输入项时出错。当前输入状态: %s", inputState.toString());
+			return String.format("FormInputTool Status: Error serializing input items. Current input state: %s",
+					inputState.toString());
 		}
 	}
 

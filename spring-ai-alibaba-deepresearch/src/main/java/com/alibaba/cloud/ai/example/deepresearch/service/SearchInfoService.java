@@ -15,11 +15,15 @@
  */
 package com.alibaba.cloud.ai.example.deepresearch.service;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.SearchPlatform;
+import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.ToolCallingSearchService;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.SmartAgentUtil;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -48,9 +52,13 @@ public class SearchInfoService {
 
 	private final SearchFilterService searchFilterService;
 
-	public SearchInfoService(JinaCrawlerService jinaCrawlerService, SearchFilterService searchFilterService) {
+	private final @Nullable ToolCallingSearchService toolCallingSearchService;
+
+	public SearchInfoService(JinaCrawlerService jinaCrawlerService, SearchFilterService searchFilterService,
+			@Nullable ToolCallingSearchService toolCallingSearchService) {
 		this.jinaCrawlerService = jinaCrawlerService;
 		this.searchFilterService = searchFilterService;
+		this.toolCallingSearchService = toolCallingSearchService;
 	}
 
 	public List<Map<String, String>> searchInfo(boolean enableSearchFilter, SearchEnum searchEnum, String query)
@@ -103,10 +111,46 @@ public class SearchInfoService {
 			}
 			catch (Exception e) {
 				logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
-				Thread.sleep(RETRY_DELAY_MS);
+				try {
+					Thread.sleep(RETRY_DELAY_MS);
+				}
+				catch (InterruptedException e1) {
+					logger.info("Thread interrupted... {}", e1.getMessage());
+					Thread.currentThread().interrupt();
+				}
 			}
 		}
 		return results;
+	}
+
+	/**
+	 * 支持工具调用的搜索方法
+	 * @param enableSearchFilter 是否启用搜索过滤
+	 * @param searchEnum 搜索引擎枚举
+	 * @param query 搜索查询
+	 * @param searchPlatform 搜索平台（用于工具调用）
+	 * @return 搜索结果列表
+	 * @throws InterruptedException 中断异常
+	 */
+	public List<Map<String, String>> searchInfo(boolean enableSearchFilter, SearchEnum searchEnum, String query,
+			SearchPlatform searchPlatform) throws InterruptedException {
+
+		// 如果是工具调用搜索且工具调用服务可用
+		if (SmartAgentUtil.isToolCallingPlatform(searchPlatform) && toolCallingSearchService != null) {
+			try {
+				List<Map<String, String>> toolCallingResults = toolCallingSearchService
+					.performToolCallingSearch(searchPlatform, query);
+				if (!toolCallingResults.isEmpty()) {
+					return toolCallingResults;
+				}
+			}
+			catch (Exception e) {
+				logger.error("工具调用搜索失败，回退到传统搜索: {}", e.getMessage());
+			}
+		}
+
+		// 回退到传统搜索方法
+		return searchInfo(enableSearchFilter, searchEnum != null ? searchEnum : SearchEnum.TAVILY, query);
 	}
 
 	public String getIcon(String url) {

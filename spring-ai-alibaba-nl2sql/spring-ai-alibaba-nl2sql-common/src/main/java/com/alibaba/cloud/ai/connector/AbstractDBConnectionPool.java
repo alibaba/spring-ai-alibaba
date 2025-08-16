@@ -45,17 +45,17 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 	private static final ConcurrentHashMap<String, DataSource> DATA_SOURCE_CACHE = new ConcurrentHashMap<>();
 
 	/**
-	 * 方言
+	 * Dialect
 	 */
 	public abstract DatabaseDialectEnum getDialect();
 
 	/**
-	 * 驱动
+	 * Driver
 	 */
 	public abstract String getDriver();
 
 	/**
-	 * 错误信息映射
+	 * Error message mapping
 	 */
 	public abstract ErrorCodeEnum errorMapping(String sqlState);
 

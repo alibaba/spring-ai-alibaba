@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.List;
 
 /**
- * 执行节点接口，定义了所有执行节点的公共行为
+ * Execution node interface defining common behaviors for all execution nodes
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
 		visible = true)
@@ -31,26 +31,26 @@ import java.util.List;
 public interface ExecutionNode {
 
 	/**
-	 * 获取节点类型
-	 * @return 节点类型
+	 * Get node type
+	 * @return Node type
 	 */
 	MapReduceStepType getType();
 
 	/**
-	 * 获取节点中的所有执行步骤
-	 * @return 执行步骤列表
+	 * Get all execution steps in the node
+	 * @return Execution step list
 	 */
 	List<ExecutionStep> getAllSteps();
 
 	/**
-	 * 获取节点的总步骤数量
-	 * @return 总步骤数
+	 * Get total number of steps in the node
+	 * @return Total step count
 	 */
 	int getTotalStepCount();
 
 	/**
-	 * 获取节点的字符串表示
-	 * @return 节点字符串
+	 * Get string representation of the node
+	 * @return Node string
 	 */
 	String getNodeInStr();
 

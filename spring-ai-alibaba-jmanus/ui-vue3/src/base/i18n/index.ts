@@ -22,7 +22,7 @@ import zh from './zh'
 export const LOCAL_STORAGE_LOCALE = 'LOCAL_STORAGE_LOCALE'
 
 export const localeConfig = reactive({
-  locale: localStorage.getItem(LOCAL_STORAGE_LOCALE) ?? 'zh',
+  locale: localStorage.getItem(LOCAL_STORAGE_LOCALE) ?? 'en',
   opts: [
     {
       value: 'en',
@@ -38,15 +38,66 @@ export const localeConfig = reactive({
 export const i18n = createI18n({
   legacy: false,
   locale: localeConfig.locale,
-  fallbackLocale: 'zh',
+  fallbackLocale: 'en',
   messages: {
     en: en,
     zh: zh,
   },
 })
 
-export const changeLanguage = (locale: string) => {
+export const changeLanguage = async (locale: string) => {
   localStorage.setItem(LOCAL_STORAGE_LOCALE, locale)
   i18n.global.locale.value = locale as 'zh' | 'en'
   localeConfig.locale = locale
+
+  // Only switch frontend language, do not reset backend prompt language
+  console.log(`Successfully switched frontend language to: ${locale}`)
+}
+
+/**
+ * Change language during initialization and reset all agents and prompts
+ * This function is used during the initial setup process
+ */
+export const changeLanguageWithAgentReset = async (locale: string) => {
+  // First change the frontend language
+  await changeLanguage(locale)
+
+  try {
+    // Reset prompts to the new language
+    const promptResponse = await fetch(`/admin/prompts/switch-language?language=${locale}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (promptResponse.ok) {
+      console.log(`Successfully reset prompts to language: ${locale}`)
+    } else {
+      const promptError = await promptResponse.text()
+      console.error(`Failed to reset prompts to language: ${locale}`, promptError)
+      // Continue with agent initialization even if prompt reset fails
+    }
+
+    // Initialize agents with the new language (used during initial setup)
+    const agentResponse = await fetch('/api/agent-management/initialize', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ language: locale }),
+    })
+
+    if (agentResponse.ok) {
+      const result = await agentResponse.json()
+      console.log(`Successfully initialized agents with language: ${locale}`, result)
+    } else {
+      const error = await agentResponse.json()
+      console.error(`Failed to initialize agents with language: ${locale}`, error)
+      throw new Error(error.error || 'Failed to initialize agents')
+    }
+  } catch (error) {
+    console.error('Error initializing agents and prompts during language change:', error)
+    throw error
+  }
 }

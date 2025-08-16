@@ -16,14 +16,14 @@
 
 export interface CronConfig {
   id?: number | string
-  cronName: string // 对应API返回的cronName字段
-  cronTime: string // 对应API返回的cronTime字段（cron表达式）
-  planDesc: string // 对应API返回的planDesc字段（任务描述）
-  status: number // 0: 禁用, 1: 启用
-  linkTemplate?: boolean // 是否关联计划模板
-  templateId?: string // 关联的计划模板ID
-  planTemplateId?: string // 后台接口使用的计划模板ID字段
-  executionParams?: any // 执行参数
+  cronName: string // Corresponds to cronName field returned by API
+  cronTime: string // Corresponds to cronTime field returned by API (cron expression)
+  planDesc: string // Corresponds to planDesc field returned by API (task description)
+  status: number // 0: disabled, 1: enabled
+  linkTemplate?: boolean // Whether to link plan template
+  templateId?: string // Linked plan template ID
+  planTemplateId?: string // Plan template ID field used by backend API
+  executionParams?: any // Execution parameters
   createTime?: string
   updateTime?: string
 }

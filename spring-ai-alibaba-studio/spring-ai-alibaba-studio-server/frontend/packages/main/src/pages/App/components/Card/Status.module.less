@@ -1,0 +1,46 @@
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+}
+
+.dot {
+  box-sizing: content-box;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.text {
+  font-size: 12px;
+}
+
+.published {
+  .dot {
+    background: var(--ag-ant-color-success);
+    border: 2px solid var(--ag-ant-color-success-bg-hover);
+  }
+  .text {
+    color: var(--ag-ant-color-success);
+  }
+}
+
+.editing {
+  .dot {
+    background: var(--ag-ant-color-info);
+    border: 2px solid var(--ag-ant-color-info-bg-hover);
+  }
+  .text {
+    color: var(--ag-ant-color-info);
+  }
+}
+
+.draft {
+  .dot {
+    background: var(--ag-ant-color-fill-disable);
+  }
+  .text {
+    color: var(--ag-ant-color-text-quaternary);
+  }
+}

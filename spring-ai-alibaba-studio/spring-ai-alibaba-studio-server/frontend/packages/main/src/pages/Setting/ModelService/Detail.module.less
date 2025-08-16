@@ -1,0 +1,121 @@
+.container {
+  width: 80%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.info {
+  margin-bottom: 24px;
+
+  .title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ag-ant-color-text);
+    margin-bottom: 16px;
+  }
+}
+
+.table-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--ag-ant-color-bg-base);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 24px;
+
+  .table {
+    width: 100%;
+  }
+
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+
+  .table-title {
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+
+    .count {
+      color: var(--ag-ant-color-text-tertiary);
+      font-size: 14px;
+      font-weight: normal;
+      margin-left: 4px;
+    }
+  }
+
+  .disabled {
+    color: var(--ag-ant-color-text-tertiary);
+    pointer-events: none;
+  }
+}
+
+.model-name {
+  display: flex;
+  align-items: center;
+
+  .model-icon {
+    color: var(--ag-ant-color-primary);
+    font-size: 16px;
+    margin-right: 8px;
+  }
+}
+
+.capabilities {
+  display: flex;
+  gap: 4px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  color: var(--ag-ant-color-primary);
+  font-weight: 500;
+}
+
+.api-card {
+  margin-bottom: 24px;
+}
+
+.form-item {
+  margin-bottom: 20px;
+
+  .label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: var(--ag-ant-color-text-secondary);
+
+    .required {
+      color: var(--ag-ant-color-error);
+      margin-left: 4px;
+    }
+  }
+
+  .link-wrapper {
+    display: flex;
+    align-items: center;
+  }
+
+  .link {
+    color: var(--ag-ant-color-primary);
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+
+    .icon {
+      font-size: 20px;
+      margin-left: 8px;
+    }
+  }
+}

@@ -44,7 +44,7 @@ public class McpConfigVO {
 
 	private final ObjectMapper objectMapper;
 
-	// 新增字段化属性
+	// New field-based properties
 	private String command;
 
 	private String url;
@@ -78,12 +78,12 @@ public class McpConfigVO {
 		this.toolNames = new ArrayList<>(); // Initialize as empty list, may need to get
 											// from other places in actual use
 
-		// 解析connectionConfig到字段化属性
+		// Parse connectionConfig to field-based properties
 		parseConnectionConfig();
 	}
 
 	/**
-	 * 解析connectionConfig JSON到字段化属性
+	 * Parse connectionConfig JSON to field-based properties
 	 */
 	private void parseConnectionConfig() {
 		if (connectionConfig == null || connectionConfig.trim().isEmpty()) {
@@ -95,23 +95,23 @@ public class McpConfigVO {
 			objectMapper.registerModule(new JavaTimeModule());
 			JsonNode configNode = objectMapper.readTree(connectionConfig);
 
-			// 解析command
+			// Parse command
 			if (configNode.has("command")) {
 				this.command = configNode.get("command").asText();
 			}
 
-			// 解析url
+			// Parse url
 			if (configNode.has("url")) {
 				this.url = configNode.get("url").asText();
 			}
 
-			// 解析args
+			// Parse args
 			if (configNode.has("args")) {
 				this.args = objectMapper.readValue(configNode.get("args").toString(),
 						objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
 			}
 
-			// 解析env
+			// Parse env
 			if (configNode.has("env")) {
 				this.env = objectMapper.readValue(configNode.get("env").toString(),
 						objectMapper.getTypeFactory().constructMapType(Map.class, String.class, String.class));
@@ -119,12 +119,12 @@ public class McpConfigVO {
 
 		}
 		catch (JsonProcessingException e) {
-			// 如果解析失败，保持字段为空
+			// If parsing fails, keep fields empty
 			System.err.println("Failed to parse connectionConfig: " + e.getMessage());
 		}
 	}
 
-	// Static method to convert VO list to entity list，增加 ObjectMapper 参数
+	// Static method to convert VO list to entity list, add ObjectMapper parameter
 	public static List<McpConfigVO> fromEntities(List<McpConfigEntity> entities, ObjectMapper objectMapper) {
 		List<McpConfigVO> vos = new ArrayList<>();
 		if (entities != null) {
@@ -176,7 +176,7 @@ public class McpConfigVO {
 		this.toolNames = toolNames;
 	}
 
-	// 新增字段的getter和setter
+	// Getter and setter for new fields
 	public String getCommand() {
 		return command;
 	}

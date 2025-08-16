@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.model.exception;
 
 /**
- * 频率限制异常
+ * Rate limit exception
  */
 public class RateLimitException extends RuntimeException {
 

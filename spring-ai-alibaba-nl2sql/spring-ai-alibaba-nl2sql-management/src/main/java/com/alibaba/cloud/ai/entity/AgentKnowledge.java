@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 
 /**
- * 智能体知识实体类
+ * Agent Knowledge Entity Class
  */
 public class AgentKnowledge {
 
@@ -59,11 +59,11 @@ public class AgentKnowledge {
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime updateTime;
 
-	// 默认构造函数
+	// Default constructor
 	public AgentKnowledge() {
 	}
 
-	// 全参数构造函数
+	// All-args constructor
 	public AgentKnowledge(Integer id, Integer agentId, String title, String content, String type, String category,
 			String tags, String status, String sourceUrl, String filePath, Long fileSize, String fileType,
 			String embeddingStatus, Long creatorId, LocalDateTime createTime, LocalDateTime updateTime) {

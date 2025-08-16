@@ -108,9 +108,9 @@ class EmlEmailDocumentReaderTest {
 
 		// Then
 		assertNotNull(documents);
-		assertEquals(2, documents.size()); // 应该生成两个文档
+		assertEquals(2, documents.size()); // Should generate two documents
 
-		// 验证第一个文档（邮件正文）
+		// Verify first document (email body)
 		Document emailDoc = documents.get(0);
 		Map<String, Object> metadata = emailDoc.getMetadata();
 
@@ -127,9 +127,9 @@ class EmlEmailDocumentReaderTest {
 		assertTrue(content.contains("@reviewer commented on this pull request"));
 		assertTrue(content.contains("是否需要删除这个依赖吗？"));
 
-		// 验证第二个文档（评论内容）
+		// Verify second document (comment content)
 		Document commentDoc = documents.get(1);
-		// 验证评论内容
+		// Verify comment content
 		String commentContent = commentDoc.getText();
 		assertTrue(commentContent.contains("是否需要删除这个依赖吗？"));
 	}
@@ -147,7 +147,7 @@ class EmlEmailDocumentReaderTest {
 		assertNotNull(documents);
 		assertEquals(3, documents.size());
 
-		// 验证邮件正文
+		// Verify email body
 		Document emailDoc = documents.get(0);
 		Map<String, Object> metadata = emailDoc.getMetadata();
 
@@ -159,7 +159,7 @@ class EmlEmailDocumentReaderTest {
 		String content = emailDoc.getText();
 		assertTrue(content.contains("测试下html类型的附件"));
 
-		// 验证附件
+		// Verify attachment
 		Document attachmentDoc = documents.get(2);
 		Map<String, Object> attachmentMetadata = attachmentDoc.getMetadata();
 
@@ -192,7 +192,7 @@ class EmlEmailDocumentReaderTest {
 			Document emailDoc = documents.get(0);
 			Map<String, Object> metadata = emailDoc.getMetadata();
 
-			// 验证解码后的主题
+			// Verify decoded subject
 			assertEquals("Re: [test/project] feat(document-readers): add new feature (PR #789)",
 					metadata.get("subject"));
 		}

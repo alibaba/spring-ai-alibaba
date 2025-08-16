@@ -15,19 +15,37 @@
 -->
 <template>
   <div class="agent-workspace">
-    <!-- 头部导航 -->
-    <div class="top-nav">
-      <div class="nav-items">
-        <span class="nav-item logo-item">
-          <i class="bi bi-robot"></i>
-          数据智能体
-        </span>
-        <span class="nav-item clickable" @click="goToAgentList">智能体</span>
-        <span class="nav-item clickable active">智能体工作台</span>
+    <!-- 现代化头部导航 -->
+    <header class="page-header">
+      <div class="header-content">
+        <div class="brand-section">
+          <div class="brand-logo" @click="goToHome">
+            <i class="bi bi-robot"></i>
+            <span class="brand-text">数据智能体</span>
+          </div>
+          <nav class="header-nav">
+            <div class="nav-item" @click="goToAgentList">
+              <i class="bi bi-grid-3x3-gap"></i>
+              <span>智能体列表</span>
+            </div>
+            <div class="nav-item active">
+              <i class="bi bi-chat-square-dots"></i>
+              <span>智能体工作台</span>
+            </div>
+          </nav>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline" @click="openHelp">
+            <i class="bi bi-question-circle"></i>
+            帮助
+          </button>
+          <button class="btn btn-primary" @click="createNewAgent">
+            <i class="bi bi-plus-lg"></i>
+            创建智能体
+          </button>
+        </div>
       </div>
-      <div class="nav-right">
-      </div>
-    </div>
+    </header>
 
     <!-- 主要内容区域 -->
     <div class="main-content">
@@ -242,7 +260,7 @@ export default {
       scrollToBottom();
 
       try {
-        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(messageText)}`);
+        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(messageText)}&agentId=${selectedAgent.value.id}`);
         
         const agentMessageIndex = chatMessages.value.length;
         chatMessages.value.push({ 
@@ -265,6 +283,8 @@ export default {
           'schema_deep_recall': { title: 'Schema深度召回', icon: 'bi bi-database-fill-gear' },
           'sql': { title: '生成的SQL', icon: 'bi bi-code-square' },
           'execute_sql': { title: '执行SQL', icon: 'bi bi-play-circle' },
+          'python_execute': { title: 'Python执行', icon: 'bi bi-play-circle-fill' },
+          'python_generate': { title: 'Python代码生成', icon: 'bi bi-code-square-fill' },
           'python_analysis': { title: 'Python分析执行', icon: 'bi bi-code-slash' },
           'validation': { title: '校验', icon: 'bi bi-check-circle' },
           'output_report': { title: '输出报告', icon: 'bi bi-file-earmark-text' },
@@ -274,18 +294,21 @@ export default {
         };
 
         const updateDisplay = () => {
-            let fullContent = '';
+            let fullContent = '<div class="agent-responses-container" style="display: flex; flex-direction: column; width: 100%; gap: 0.75rem;">';
             for (const type of streamState.typeOrder) {
                 const typeInfo = typeMapping[type] || { title: type, icon: 'bi bi-file-text' };
                 const content = streamState.contentByType[type] || '';
                 const formattedSubContent = formatContentByType(type, content);
-                fullContent += `<div class="agent-response-block">
-                                  <div class="agent-response-title">
-                                    <i class="${typeInfo.icon}"></i> ${typeInfo.title}
-                                  </div>
-                                  <div class="agent-response-content">${formattedSubContent}</div>
-                                </div>`;
+                fullContent += `
+<div class="agent-response-block" style="display: block !important; width: 100% !important;">
+  <div class="agent-response-title">
+    <i class="${typeInfo.icon}"></i> ${typeInfo.title}
+  </div>
+  <div class="agent-response-content">${formattedSubContent}</div>
+</div>
+`;
             }
+            fullContent += '</div>';
             chatMessages.value[agentMessageIndex].content = fullContent;
             scrollToBottom();
         };
@@ -332,9 +355,14 @@ export default {
                 // 对数据进行预处理
                 let processedData = actualData;
                 
+                // 处理转义的换行符
+                if (typeof processedData === 'string') {
+                    processedData = processedData.replace(/\\n/g, '\n');
+                }
+                
                 // 只对SQL类型进行Markdown代码块标记的预清理
-                if (actualType === 'sql' && typeof actualData === 'string') {
-                    processedData = actualData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
+                if (actualType === 'sql' && typeof processedData === 'string') {
+                    processedData = processedData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
                 }
                 
                 // 累积数据到对应的类型
@@ -396,6 +424,8 @@ export default {
 
         if (type === 'sql') {
             let cleanedData = data.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
+            // 处理SQL中的转义换行符
+            cleanedData = cleanedData.replace(/\\n/g, '\n');
             return `<pre><code class="language-sql">${cleanedData}</code></pre>`;
         } 
         
@@ -403,43 +433,13 @@ export default {
             return convertJsonToHTMLTable(data);
         }
 
-        // 处理其他类型的数据
+        // 直接处理数据，简化逻辑
         let processedData = data;
-        if (typeof data === 'string') {
-            // 检查数据是否包含多个JSON对象连接在一起
-            const jsonPattern = /\{"[^"]+":"[^"]*"[^}]*\}/g;
-            const jsonMatches = data.match(jsonPattern);
-            
-            if (jsonMatches && jsonMatches.length > 1) {
-                // 多个JSON对象，分别解析并提取data字段
-                let extractedContent = [];
-                jsonMatches.forEach(jsonStr => {
-                    try {
-                        const jsonObj = JSON.parse(jsonStr);
-                        if (jsonObj.data) {
-                            extractedContent.push(jsonObj.data.replace(/\\n/g, '\n'));
-                        }
-                    } catch (e) {
-                        extractedContent.push(jsonStr);
-                    }
-                });
-                processedData = extractedContent.join('');
-            } else {
-                // 单个JSON对象或普通文本
-                try {
-                    const jsonData = JSON.parse(data);
-                    if (jsonData && typeof jsonData === 'object') {
-                        if (jsonData.data) {
-                            processedData = jsonData.data;
-                        } else {
-                            processedData = JSON.stringify(jsonData, null, 2);
-                        }
-                    }
-                } catch (e) {
-                    // 不是JSON，保持原始数据
-                    processedData = data;
-                }
-            }
+        
+        // 如果是字符串，直接处理转义的换行符
+        if (typeof processedData === 'string') {
+            // 将所有的 \n 转换为真正的换行符
+            processedData = processedData.replace(/\\n/g, '\n');
         }
 
         // 检查是否是Markdown格式
@@ -463,7 +463,10 @@ export default {
                 // 处理剩余的文本（将换行转换为<br>）
                 return htmlContent.replace(/\n/g, '<br>');
             } else {
-                return processedData.toString().replace(/\n/g, '<br>');
+                // 优化换行处理，保持合理的换行显示
+                return processedData.toString()
+                    .replace(/\n\s*\n\s*\n+/g, '\n\n') // 将3个或以上连续空行替换为2个换行
+                    .replace(/\n/g, '<br>'); // 保持单个换行的显示
             }
         }
     };
@@ -530,15 +533,16 @@ export default {
         html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
         
         // 处理Markdown表格
-        html = html.replace(/(\|[^|\n]*\|[^|\n]*\|[^\n]*\n\|[-:\s|]*\|[^\n]*\n(?:\|[^|\n]*\|[^\n]*\n?)*)/gm, (match) => {
+        html = html.replace(/(\|[^|\r\n]*\|[^|\r\n]*\|[^\r\n]*\r?\n\|[-:\s|]*\|[^\r\n]*\r?\n(?:\|[^|\r\n]*\|[^\r\n]*\r?\n?)*)/gm, (match) => {
             return convertMarkdownTableToHTML(match);
         });
         
         // 处理链接
         html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
         
-        // 处理换行
-        html = html.replace(/\n/g, '<br>');
+        // 处理换行，减少空白行
+        html = html.replace(/\n\s*\n\s*\n/g, '\n\n') // 将多个连续空行替换为最多两个换行
+             .replace(/\n/g, '<br>'); // 保持换行符，不去除首尾空白
         
         return `<div class="markdown-content">${html}</div>`;
     };
@@ -614,6 +618,18 @@ export default {
       router.push('/agents');
     };
 
+    const createNewAgent = () => {
+      router.push('/agent/create');
+    };
+
+    const openHelp = () => {
+      window.open('https://github.com/alibaba/spring-ai-alibaba/blob/main/spring-ai-alibaba-nl2sql/README.md', '_blank');
+    };
+
+    const goToHome = () => {
+      router.push('/');
+    };
+
     const getRandomColor = (id) => {
       const colors = ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2', '#eb2f96'];
       return colors[id % colors.length];
@@ -641,6 +657,9 @@ export default {
       sendMessage,
       clearChat,
       goToAgentList,
+      createNewAgent,
+      openHelp,
+      goToHome,
       getRandomColor,
       getRandomIcon
     };
@@ -651,90 +670,104 @@ export default {
 <style scoped>
 .agent-workspace {
   min-height: 100vh;
-  background-color: #f5f8fa;
+  background: var(--bg-layout);
+  font-family: var(--font-family);
 }
 
-/* 头部导航样式 */
-.top-nav {
-  background: white;
-  border-bottom: 1px solid #e5e5e5;
-  padding: 0 24px;
+/* 现代化头部导航 */
+.page-header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-xs);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+.header-content {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--space-xl);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 60px;
+  height: 64px;
 }
 
-.nav-items {
-  display: flex;
-  gap: 32px;
-}
-
-.nav-item {
-  padding: 8px 16px;
-  color: #666;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.nav-item.logo-item {
-  cursor: default;
-  font-weight: 600;
-  color: #1890ff;
+.brand-section {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2xl);
 }
 
-.nav-item.logo-item i {
-  font-size: 18px;
-}
-
-.nav-item.clickable {
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--primary-color);
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
-.nav-item.active,
-.nav-item.clickable:hover {
-  color: #1890ff;
-  background: #f0f8ff;
+.brand-logo i {
+  font-size: var(--font-size-xl);
+  color: var(--accent-color);
 }
 
-.nav-right {
+.brand-text {
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-nav {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.header-nav .nav-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-}
-
-
-
-.nav-item.active {
-  background-color: #e6f7ff;
-  color: #1890ff;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: none;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-base);
+  border: 1px solid transparent;
+}
+
+.header-nav .nav-item:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+.header-nav .nav-item.active {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.header-nav .nav-item i {
+  font-size: var(--font-size-base);
+}
+
+.header-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
+  gap: var(--space-md);
 }
 
-.btn-outline {
-  background-color: transparent;
-  border: 1px solid #d9d9d9;
-  color: #666;
-}
 
-.btn-outline:hover {
-  border-color: #1890ff;
-  color: #1890ff;
-}
 
 /* 主要内容区域 */
 .main-content {
@@ -950,7 +983,7 @@ export default {
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .welcome-message {
@@ -990,23 +1023,34 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .example-query {
   padding: 0.5rem 1rem;
-  background-color: rgba(255, 255, 255, 0.8);
-  border: 1px solid #d1ecf1;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e1e8ed;
   border-radius: 20px;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s;
-  color: #0c5460;
+  transition: all 0.3s ease;
+  color: #475569;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .example-query:hover {
-  background-color: white;
-  border-color: #1890ff;
-  color: #1890ff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+}
+
+.example-query:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.2);
 }
 
 /* 消息样式 */
@@ -1035,25 +1079,67 @@ export default {
   color: #1890ff;
 }
 
+.agent-message {
+  width: 100% !important;
+  max-width: 100% !important;
+  align-items: flex-start !important;
+  gap: 1rem !important;
+}
+
+.agent-message .message-content {
+  flex: 1 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.agent-message .message-avatar {
+  flex-shrink: 0 !important;
+  width: 44px !important;
+  margin-top: 0.25rem;
+}
+
 .agent-message .message-avatar .avatar-icon {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 2px solid #ffffff;
 }
 
 .agent-message .message-content {
-  background-color: #f8f9fa;
-  color: #333;
-  padding: 1rem 1.25rem;
-  border-radius: 4px 18px 18px 18px;
-  max-width: 80%;
+  display: block !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  color: #334155;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 100%;
   word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
   line-height: 1.6;
+  box-sizing: border-box;
+  margin-left: 0;
+  position: relative;
+}
+
+/* 智能体消息悬停效果 */
+.agent-message .message-content:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+.agent-message .message-content {
+  transition: all 0.2s ease;
 }
 
 /* 正在输入指示器 */
@@ -1156,82 +1242,171 @@ export default {
 
 /* Styles for dynamically generated content */
 :deep(.agent-response-block) {
-  margin-bottom: 1rem;
+  display: block !important;
+  width: 100% !important;
+  margin-bottom: 0.75rem !important;
+  border: 1px solid #e1e5e9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+  max-width: 100%;
+  box-sizing: border-box;
 }
-:deep(.agent-response-block:last-child) {
+
+.agent-response-block:last-child {
   margin-bottom: 0;
 }
 
-:deep(.agent-response-title) {
+.agent-response-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.85rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #333;
+  color: #334155;
+  min-height: auto;
+  box-sizing: border-box;
 }
 
-:deep(.agent-response-content) {
-  border-radius: 8px;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  background-color: #f9f9f9;
-  padding: 1rem;
-  border: 1px solid #e8e8e8;
+.agent-response-title i {
+  color: #3b82f6;
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
-:deep(pre) {
-  background-color: #282c34;
-  color: #abb2bf;
+.agent-response-content {
+  display: block !important;
+  width: 100% !important;
   padding: 1rem;
-  border-radius: 6px;
-  overflow-x: auto;
-  margin: 0;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 0.9rem;
   line-height: 1.5;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+  color: #475569;
+  background: #ffffff;
+  min-height: auto;
+  box-sizing: border-box;
+  white-space: pre-wrap; /* 确保换行符和空格能正确显示 */
 }
 
-:deep(code) {
-    white-space: pre-wrap !important;
-    word-wrap: break-word !important;
+/* 确保br标签能正确显示换行 - 最紧凑的行间距 */
+:deep(.agent-response-content br) {
+  display: block !important;
+  content: "" !important;
+  margin: 0 !important;
+  line-height: 0.1 !important;
+  height: 0.1em !important;
+  visibility: visible !important;
 }
 
-:deep(.dynamic-table) {
+/* 确保agent-response-content内的所有br标签都能正确显示 - 最紧凑的行间距 */
+.agent-response-content br {
+  display: block !important;
+  content: "" !important;
+  margin: 0 !important;
+  line-height: 0.1 !important;
+  height: 0.1em !important;
+  visibility: visible !important;
+}
+
+/* 优化智能体回复内容的空白行处理 - 保留必要的换行 */
+:deep(.agent-response-content) br + br + br + br {
+  display: none; /* 只隐藏4个或以上连续的换行符 */
+}
+
+/* 优化段落间距 */
+:deep(.agent-response-content) p {
+  margin: 0.5rem 0;
+}
+
+:deep(.agent-response-content) p:first-child {
+  margin-top: 0;
+}
+
+:deep(.agent-response-content) p:last-child {
+  margin-bottom: 0;
+}
+
+/* 代码块样式 */
+.agent-response-content pre {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 1rem !important;
+  margin: 0.75rem 0 !important;
+  overflow-x: auto;
+  font-family: 'SFMono-Regular', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.agent-response-content code {
+  background: #f1f5f9;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-size: 0.85rem;
+  color: #3b82f6;
+  border: 1px solid #e2e8f0;
+}
+
+.agent-response-content pre code {
+  background: none !important;
+  padding: 0 !important;
+  color: #1e293b;
+  border: none;
+}
+
+/* 动态表格样式 */
+.dynamic-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 0;
-  background-color: #fff;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
 }
 
-:deep(.dynamic-table th),
-:deep(.dynamic-table td) {
-  padding: 0.75rem;
-  border: 1px solid #e8e8e8;
+.dynamic-table th {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 0.75rem 1rem;
   text-align: left;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  max-width: 200px;
+  font-weight: 600;
+  color: #334155;
+  border-bottom: 2px solid #e2e8f0;
 }
 
-:deep(.dynamic-table th) {
-  background-color: #fafafa;
-  font-weight: 500;
+.dynamic-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
 }
 
-:deep(.dynamic-table tr:nth-child(even)) {
-  background-color: #f9f9f9;
+.dynamic-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.dynamic-table tbody tr:hover {
+  background: #eff6ff;
+  transition: background-color 0.2s ease;
+}
+
+.dynamic-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 /* Markdown 内容样式 */
 :deep(.markdown-content) {
-  line-height: 1.6;
-  color: #333;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
+  line-height: 1.7;
+  color: #475569;
 }
 
 :deep(.markdown-content h1),
@@ -1240,139 +1415,320 @@ export default {
 :deep(.markdown-content h4),
 :deep(.markdown-content h5),
 :deep(.markdown-content h6) {
-  margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
+  margin: 1.5rem 0 1rem 0;
   font-weight: 600;
-  line-height: 1.25;
-  color: #2c3e50;
+  color: #1e293b;
+  line-height: 1.4;
 }
 
 :deep(.markdown-content h1) {
-  font-size: 1.8rem;
-  border-bottom: 2px solid #eee;
+  font-size: 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
   padding-bottom: 0.5rem;
 }
 
 :deep(.markdown-content h2) {
-  font-size: 1.5rem;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.3rem;
+  font-size: 1.25rem;
+  color: #3b82f6;
 }
 
 :deep(.markdown-content h3) {
-  font-size: 1.3rem;
-}
-
-:deep(.markdown-content h4) {
-  font-size: 1.1rem;
+  font-size: 1.125rem;
+  color: #475569;
 }
 
 :deep(.markdown-content p) {
   margin-bottom: 1rem;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
+  color: #475569;
 }
 
 :deep(.markdown-content ul),
 :deep(.markdown-content ol) {
   margin-bottom: 1rem;
-  padding-left: 2rem;
+  padding-left: 1.5rem;
 }
 
 :deep(.markdown-content li) {
-  margin-bottom: 0.25rem;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-
-:deep(.markdown-content blockquote) {
-  margin: 1rem 0;
-  padding: 0.5rem 1rem;
-  border-left: 4px solid #1890ff;
-  background-color: #f8f9fa;
-  font-style: italic;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
+  margin-bottom: 0.5rem;
+  color: #475569;
 }
 
 :deep(.markdown-content code) {
-  background-color: #f1f3f4;
-  border-radius: 3px;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 0.9em;
-  padding: 0.2em 0.4em;
+  background: #f1f5f9;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-size: 0.85rem;
+  color: #3b82f6;
+  border: 1px solid #e2e8f0;
 }
 
-:deep(.markdown-content pre) {
-  background-color: #282c34;
-  color: #abb2bf;
-  border-radius: 6px;
-  overflow-x: auto;
-  padding: 1rem;
+:deep(.markdown-content blockquote) {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
   margin: 1rem 0;
-  border: 1px solid #444;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-:deep(.markdown-content pre code) {
-  background-color: transparent;
-  color: inherit;
-  padding: 0;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 0 6px 6px 0;
 }
 
 :deep(.markdown-content strong) {
   font-weight: 600;
+  color: #1e293b;
 }
 
 :deep(.markdown-content em) {
   font-style: italic;
+  color: #64748b;
 }
 
-/* 响应式设计 */
-@media (max-width: 1024px) {
-  .workspace-layout {
-    flex-direction: column;
-    height: auto;
+:deep(.markdown-content table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+:deep(.markdown-content table th),
+:deep(.markdown-content table td) {
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+:deep(.markdown-content table th) {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  font-weight: 600;
+  color: #334155;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+:deep(.markdown-content table tr:nth-child(even)) {
+  background: #f8fafc;
+}
+
+:deep(.markdown-content table tr:hover) {
+  background: #eff6ff;
+}
+
+/* 打字指示器 */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+}
+
+.typing-indicator span {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--primary-color);
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typing {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
   }
-  
-  .agent-sidebar {
-    width: 100%;
-    max-height: 300px;
-  }
-  
-  .chat-area {
-    min-height: 500px;
+  40% {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
+/* 输入区域 */
+.chat-input-area {
+  padding: var(--space-lg) var(--space-xl);
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-secondary);
+}
+
+.input-container {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-end;
+  max-width: 100%;
+}
+
+.chat-input {
+  flex: 1;
+  padding: var(--space-md) var(--space-lg);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-2xl);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  transition: all var(--transition-base);
+  resize: none;
+  min-height: 44px;
+  max-height: 120px;
+  box-sizing: border-box;
+}
+
+.chat-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.chat-input:disabled {
+  background: var(--bg-secondary);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+.chat-input::placeholder {
+  color: var(--text-quaternary);
+}
+
+.send-button {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-base);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.send-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0));
+  pointer-events: none;
+}
+
+.send-button:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+.send-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.send-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  background: var(--bg-tertiary);
+  color: var(--text-disabled);
+}
+
+.send-button:disabled::before {
+  display: none;
+}
+
+.send-button .spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-full);
+  border-top-color: var(--bg-primary);
+  animation: spin 1s linear infinite;
+}
+
+/* 移动端智能体消息优化 */
 @media (max-width: 768px) {
-  .main-content {
-    padding: 1rem;
+  .agent-message .message-content {
+    padding: 1.25rem !important;
+    border-radius: 12px !important;
+    margin-left: 0 !important;
   }
   
-  .top-nav {
-    padding: 1rem;
+  .agent-message .message-avatar .avatar-icon {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 1rem !important;
   }
   
-  .nav-items {
-    gap: 1rem;
+  .agent-message .message-avatar {
+    width: 36px !important;
   }
   
-  .example-queries {
-    flex-direction: column;
+  .message {
+    gap: 0.75rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+}
+
+/* 悬停效果 */
+:deep(.agent-response-block:hover) {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* 内容淡入动画 */
+.agent-response-block {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .agent-response-block {
+    margin-bottom: 1rem !important;
+    border-radius: 8px;
   }
   
-  .example-query {
-    text-align: center;
+  .agent-response-title {
+    padding: 0.875rem 1rem !important;
+    font-size: 0.85rem !important;
+    gap: 0.5rem;
+  }
+  
+  .agent-response-content {
+    padding: 1rem !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .dynamic-table th,
+  .dynamic-table td {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  :deep(.agent-responses-container) {
+    gap: 1rem !important;
   }
 }
 </style>

@@ -1,0 +1,39 @@
+.form-title {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.form-item {
+  display: flex;
+  gap: 4px;
+  flex-direction: column;
+
+  .label {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+    color: var(--ag-ant-color-text);
+  }
+
+  .value {
+    font-size: 14px;
+    line-height: 24px;
+    color: var(--ag-ant-color-text-secondary);
+  }
+}
+
+.form-drawer {
+  :global {
+    .ag-ant-drawer-body {
+      padding: 0;
+    }
+  }
+}
+
+.form-con {
+  padding: 20px 24px;
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--ag-ant-color-border-secondary);
+  }
+}

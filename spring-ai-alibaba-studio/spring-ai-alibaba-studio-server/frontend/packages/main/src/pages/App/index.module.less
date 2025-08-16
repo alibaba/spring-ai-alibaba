@@ -1,0 +1,107 @@
+.homeContainer {
+  padding: 16px 24px;
+  min-height: calc(100vh - 200px);
+}
+
+.section {
+  margin-bottom: 32px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0 0 20px 0;
+  text-align: left;
+
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    margin-right: 10px;
+    vertical-align: middle;
+    border-radius: 2px;
+  }
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  max-width: none;
+  margin: 0;
+
+  /* Responsive design for smaller screens */
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cardItem {
+  min-height: 180px;
+}
+
+.clickableCard {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.clickableCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.disabledCard {
+  cursor: not-allowed;
+  opacity: 0.6;
+  filter: grayscale(70%);
+  transition: all 0.3s ease;
+  height: 100%;
+
+  &:hover {
+    transform: none;
+    box-shadow: none;
+    opacity: 0.5;
+  }
+}
+
+.cardIcon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+}
+
+.cardIconDisabled {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%);
+  border-radius: 12px;
+}
+
+.iconImage {
+  width: 32px;
+  height: 32px;
+  filter: brightness(0) invert(1);
+}

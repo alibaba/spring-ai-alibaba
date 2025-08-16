@@ -6,3 +6,7 @@ spring:
     password: 123456
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  ai:
+    memory:
+      postgres:
+        enabled: true

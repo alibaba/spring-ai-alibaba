@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 顺序执行节点
+ * Sequential execution node
  */
 public class SequentialNode extends AbstractExecutionNode {
 
@@ -40,8 +40,8 @@ public class SequentialNode extends AbstractExecutionNode {
 	}
 
 	/**
-	 * 获取节点类型的字符串表示，用于 Jackson 序列化/反序列化
-	 * @return 类型字符串
+	 * Get string representation of node type for Jackson serialization/deserialization
+	 * @return Type string
 	 */
 	@JsonProperty("type")
 	public String getTypeString() {
@@ -49,12 +49,12 @@ public class SequentialNode extends AbstractExecutionNode {
 	}
 
 	/**
-	 * 设置节点类型，用于 Jackson 反序列化，实际不执行任何操作
-	 * @param typeString 类型字符串
+	 * Set node type for Jackson deserialization, actually performs no operation
+	 * @param typeString Type string
 	 */
 	@JsonProperty("type")
 	public void setTypeString(String typeString) {
-		// 反序列化时忽略此字段，类型已在构造函数中设置
+		// Ignore this field during deserialization, type is already set in constructor
 	}
 
 	public List<ExecutionStep> getSteps() {
@@ -104,14 +104,14 @@ public class SequentialNode extends AbstractExecutionNode {
 	}
 
 	/**
-	 * 获取节点的字符串表示
-	 * @return 节点字符串
+	 * Get string representation of the node
+	 * @return Node string
 	 */
 	@JsonIgnore
 	public String getNodeInStr() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("=== 顺序执行节点 ===\n");
-		sb.append("步骤数量: ").append(getStepCount()).append("\n");
+		sb.append("=== Sequential Execution Node ===\n");
+		sb.append("Step Count: ").append(getStepCount()).append("\n");
 
 		if (steps != null) {
 			for (int i = 0; i < steps.size(); i++) {

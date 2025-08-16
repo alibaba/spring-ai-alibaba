@@ -1,0 +1,73 @@
+# Copyright 2024-2025 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: "3.8"
+
+# Custom named volumes
+volumes:
+  deep-research-data:
+    driver: local
+
+services:
+  # Redis container configuration
+  deep-research-redis:
+    image: redis:7.0
+    container_name: deep-research-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./dockerConfig/redis.conf:/usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+
+  # ElasticSearch container configuration
+  deep-research-es:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
+    container_name: deep-research-es
+    restart: always
+    privileged: true
+    environment:
+      - "cluster.name=elasticsearch"
+      - "discovery.type=single-node"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - "bootstrap.memory_lock=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./dockerConfig/es.yaml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - deep-research-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1G
+        reservations:
+          memory: 200M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:9200 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 3

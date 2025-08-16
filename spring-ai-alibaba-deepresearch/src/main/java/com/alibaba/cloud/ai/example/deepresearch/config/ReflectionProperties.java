@@ -24,8 +24,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author sixiyida
  * @since 2025/7/10
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.deepresearch.reflection")
+@ConfigurationProperties(prefix = ReflectionProperties.PREFIX)
 public class ReflectionProperties {
+
+	public static final String PREFIX = DeepResearchProperties.PREFIX + ".reflection";
 
 	/**
 	 * enable reflection or not

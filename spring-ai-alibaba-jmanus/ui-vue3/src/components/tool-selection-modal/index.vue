@@ -1,4 +1,4 @@
-<!-- 
+<!--
  * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,7 @@
 <template>
   <Modal
     v-model="visible"
-    title="选择工具"
+    :title="$t('toolSelection.title')"
     @confirm="handleConfirm"
     @update:model-value="handleCancel"
   >
@@ -28,14 +28,14 @@
             v-model="searchQuery"
             type="text"
             class="search-input"
-            placeholder="搜索工具..."
+            :placeholder="$t('toolSelection.searchPlaceholder')"
           />
         </div>
         <div class="sort-container">
           <select v-model="sortBy" class="sort-select">
-            <option value="group">按服务组排序</option>
-            <option value="name">按名称排序</option>
-            <option value="enabled">按启用状态排序</option>
+            <option value="group">{{ $t('toolSelection.sortByGroup') }}</option>
+            <option value="name">{{ $t('toolSelection.sortByName') }}</option>
+            <option value="enabled">{{ $t('toolSelection.sortByStatus') }}</option>
           </select>
         </div>
       </div>
@@ -43,8 +43,11 @@
       <!-- Tool Statistics -->
       <div class="tool-summary">
         <span class="summary-text">
-          共 {{ groupedTools.size }} 个服务组，{{ totalTools }} 个工具
-          (已选择 {{ selectedTools.length }} 个)
+          {{ $t('toolSelection.summary', {
+            groups: groupedTools.size,
+            tools: totalTools,
+            selected: selectedTools.length
+          }) }}
         </span>
       </div>
 
@@ -56,14 +59,14 @@
           class="tool-group"
         >
           <!-- Group Header -->
-          <div 
+          <div
             class="tool-group-header"
             :class="{ collapsed: collapsedGroups.has(groupName) }"
             @click="toggleGroupCollapse(groupName)"
           >
             <div class="group-title-area">
-              <Icon 
-                :icon="collapsedGroups.has(groupName) ? 'carbon:chevron-right' : 'carbon:chevron-down'" 
+              <Icon
+                :icon="collapsedGroups.has(groupName) ? 'carbon:chevron-right' : 'carbon:chevron-down'"
                 class="collapse-icon"
               />
               <Icon icon="carbon:folder" class="group-icon" />
@@ -81,13 +84,13 @@
                   @change="toggleGroupSelection(tools, $event)"
                   :data-group="groupName"
                 />
-                <span class="enable-label">启用全部</span>
+                <span class="enable-label">{{ $t('toolSelection.enableAll') }}</span>
               </label>
             </div>
           </div>
 
           <!-- Group Content -->
-          <div 
+          <div
             class="tool-group-content"
             :class="{ collapsed: collapsedGroups.has(groupName) }"
           >
@@ -121,7 +124,7 @@
       <!-- Empty State -->
       <div v-else class="empty-state">
         <Icon icon="carbon:tools" class="empty-icon" />
-        <p>没有找到工具</p>
+        <p>{{ $t('toolSelection.noToolsFound') }}</p>
       </div>
     </div>
   </Modal>
@@ -207,8 +210,8 @@ const filteredTools = computed(() => {
     case 'group':
     default:
       filtered = [...filtered].sort((a, b) => {
-        const groupA = a.serviceGroup ?? '未分组'
-        const groupB = b.serviceGroup ?? '未分组'
+        const groupA = a.serviceGroup ?? 'Ungrouped'
+        const groupB = b.serviceGroup ?? 'Ungrouped'
         if (groupA !== groupB) {
           return groupA.localeCompare(groupB)
         }
@@ -223,9 +226,9 @@ const filteredTools = computed(() => {
 // Tools grouped by service group
 const groupedTools = computed(() => {
   const groups = new Map<string, Tool[]>()
-  
+
   filteredTools.value.forEach(tool => {
-    const groupName = tool.serviceGroup ?? '未分组'
+    const groupName = tool.serviceGroup ?? 'Ungrouped'
     if (!groups.has(groupName)) {
       groups.set(groupName, [])
     }
@@ -261,13 +264,13 @@ const toggleToolSelection = (toolKey: string, event: Event) => {
   event.stopPropagation()
   const target = event.target as HTMLInputElement
   const isChecked = target.checked
-  
+
   // Prevent undefined toolKey
   if (!toolKey) {
     console.error('toolKey is undefined, cannot proceed')
     return
   }
-  
+
   if (isChecked) {
     // Add the tool to the selected list
     if (!selectedTools.value.includes(toolKey)) {
@@ -298,7 +301,7 @@ const toggleGroupSelection = (tools: Tool[], event: Event) => {
   const target = event.target as HTMLInputElement
   const isChecked = target.checked
   const toolKeys = tools.map(tool => tool.key)
-  
+
   if (isChecked) {
     // Select all tools in the group - Use a new array to avoid reference issues
     const newSelected = [...selectedTools.value]

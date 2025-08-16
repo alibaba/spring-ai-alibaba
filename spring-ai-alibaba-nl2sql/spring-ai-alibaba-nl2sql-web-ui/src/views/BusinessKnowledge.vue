@@ -14,30 +14,105 @@
  * limitations under the License.
 -->
 <template>
-  <div>
-    <HeaderComponent 
-      title="业务知识管理配置"
-      subtitle="管理企业知识引擎，配置业务术语、黑话和常用表达"
-      icon="bi bi-book"
-    />
-
-    <div class="container">
-      <div class="toolbar">
-        <div class="search-container">
-          <input 
-            type="text" 
-            v-model="searchKeyword"
-            class="search-input" 
-            placeholder="搜索业务名词、说明或同义词..."
-            @keyup.enter="searchKnowledge"
-          >
-          <button class="btn btn-primary" @click="searchKnowledge">
-            <i class="bi bi-search"></i> 搜索
+  <div class="business-knowledge-page">
+    <!-- 现代化头部导航 -->
+    <header class="page-header">
+      <div class="header-content">
+        <div class="brand-section">
+          <div class="brand-logo">
+            <i class="bi bi-robot"></i>
+            <span class="brand-text">智能体管理</span>
+          </div>
+          <nav class="header-nav">
+            <div class="nav-item" @click="goToAgentList">
+              <i class="bi bi-grid-3x3-gap"></i>
+              <span>智能体列表</span>
+            </div>
+            <div class="nav-item" @click="goToWorkspace">
+              <i class="bi bi-chat-square-dots"></i>
+              <span>工作台</span>
+            </div>
+            <div class="nav-item active">
+              <i class="bi bi-graph-up-arrow"></i>
+              <span>分析报告</span>
+            </div>
+          </nav>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline btn-sm">
+            <i class="bi bi-question-circle"></i>
+            帮助
+          </button>
+          <button class="btn btn-primary" @click="goToAgentList">
+            <i class="bi bi-plus-lg"></i>
+            创建智能体
           </button>
         </div>
-        <button class="btn btn-success" @click="showAddModal">
-          <i class="bi bi-plus-circle"></i> 新增知识
-        </button>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <!-- 页面头部信息 -->
+      <div class="page-header">
+        <div class="header-info">
+          <h1 class="page-title">业务知识库</h1>
+          <p class="page-description">管理业务术语、同义词和专业表达，提升AI理解准确性</p>
+        </div>
+        <div class="header-stats">
+          <div class="stat-card">
+            <div class="stat-number">{{ knowledgeList.length }}</div>
+            <div class="stat-label">知识条目</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ knowledgeList.filter(k => k.defaultRecall).length }}</div>
+            <div class="stat-label">默认召回</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ new Set(knowledgeList.map(k => k.datasetId).filter(Boolean)).size }}</div>
+            <div class="stat-label">数据集</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作工具栏 -->
+      <div class="toolbar-section">
+        <div class="search-area">
+          <div class="search-box">
+            <i class="search-icon bi bi-search"></i>
+            <input 
+              type="text" 
+              v-model="searchKeyword"
+              class="form-control" 
+              placeholder="搜索业务名词、说明或同义词..."
+              @keyup.enter="searchKnowledge"
+            >
+            <button 
+              v-if="searchKeyword"
+              class="clear-btn"
+              @click="clearSearch"
+            >
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+          <button class="btn btn-outline" @click="searchKnowledge">
+            <i class="bi bi-search"></i>
+            搜索
+          </button>
+        </div>
+        <div class="action-area">
+          <button class="btn btn-outline" @click="exportKnowledge">
+            <i class="bi bi-download"></i>
+            导出
+          </button>
+          <button class="btn btn-outline" @click="importKnowledge">
+            <i class="bi bi-upload"></i>
+            导入
+          </button>
+          <button class="btn btn-primary" @click="showAddModal">
+            <i class="bi bi-plus-lg"></i>
+            新增知识
+          </button>
+        </div>
       </div>
 
       <div class="card">
@@ -412,6 +487,21 @@ export default {
       }
     }
 
+    const clearSearch = () => {
+      searchKeyword.value = ''
+      loadKnowledgeList()
+    }
+
+    const exportKnowledge = () => {
+      // 导出功能实现
+      console.log('导出知识库')
+    }
+
+    const importKnowledge = () => {
+      // 导入功能实现
+      console.log('导入知识库')
+    }
+
     const formatDateTime = (dateTimeStr) => {
       if (!dateTimeStr) return '-'
       const date = new Date(dateTimeStr)
@@ -431,6 +521,9 @@ export default {
       formData,
       loadKnowledgeList,
       searchKnowledge,
+      clearSearch,
+      exportKnowledge,
+      importKnowledge,
       showAddModal,
       showEditModal,
       closeModal,
@@ -443,10 +536,479 @@ export default {
 </script>
 
 <style scoped>
-.container {
+.business-knowledge-page {
+  min-height: 100vh;
+  background: var(--bg-layout);
+  font-family: var(--font-family);
+}
+
+.main-content {
   max-width: 100%;
   margin: 0 auto;
-  padding: 1rem 2rem;
+  padding: var(--space-lg);
+}
+
+/* 页面头部信息 */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-2xl);
+  padding: var(--space-xl);
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+}
+
+.header-info {
+  flex: 1;
+}
+
+.page-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-sm) 0;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-description {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.header-stats {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.stat-card {
+  text-align: center;
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-tertiary);
+  min-width: 80px;
+}
+
+.stat-number {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--primary-color);
+  margin-bottom: var(--space-xs);
+}
+
+.stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 操作工具栏 */
+.toolbar-section {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.search-area {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+}
+
+.action-area {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+/* 数据表格区域 */
+.card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  overflow: hidden;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.table th {
+  background: var(--bg-secondary);
+  padding: var(--space-md) var(--space-lg);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.table td {
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-tertiary);
+  color: var(--text-secondary);
+  vertical-align: top;
+}
+
+.table tbody tr:hover {
+  background: var(--bg-tertiary);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.description-cell {
+  max-width: 300px;
+  word-wrap: break-word;
+  line-height: 1.5;
+}
+
+/* 徽章样式 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-success {
+  background: var(--success-light);
+  color: var(--success-color);
+  border: 1px solid rgba(82, 196, 26, 0.2);
+}
+
+.badge-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-primary);
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.btn-sm {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  min-width: 60px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+/* 加载和空状态 */
+.loading {
+  text-align: center;
+  padding: var(--space-4xl);
+  color: var(--text-secondary);
+}
+
+.loading .spinner {
+  margin-right: var(--space-sm);
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-4xl);
+  color: var(--text-tertiary);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-lg);
+  color: var(--text-quaternary);
+}
+
+/* 模态框样式 */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal);
+}
+
+.modal.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-secondary);
+  animation: slideInUp 0.3s ease-out;
+}
+
+.modal-header {
+  padding: var(--space-xl);
+  border-bottom: 1px solid var(--border-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-secondary);
+}
+
+.modal-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  color: var(--text-tertiary);
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+}
+
+.close-btn:hover {
+  background: var(--error-light);
+  color: var(--error-color);
+}
+
+.modal-body {
+  padding: var(--space-xl);
+}
+
+.modal-footer {
+  padding: var(--space-lg) var(--space-xl);
+  border-top: 1px solid var(--border-secondary);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  background: var(--bg-tertiary);
+}
+
+/* 表单样式 */
+.form-group {
+  margin-bottom: var(--space-lg);
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--space-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.form-control {
+  width: 100%;
+  padding: var(--space-sm) var(--space-base);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  transition: all var(--transition-base);
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.form-control::placeholder {
+  color: var(--text-quaternary);
+}
+
+.form-control[type="checkbox"] {
+  width: auto;
+  margin-right: var(--space-sm);
+  accent-color: var(--primary-color);
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.checkbox-group .form-label {
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+/* 动画定义 */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .main-content {
+    padding: var(--space-lg);
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-lg);
+  }
+  
+  .header-stats {
+    align-self: stretch;
+    justify-content: space-around;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: var(--space-md);
+  }
+  
+  .page-header {
+    padding: var(--space-lg);
+  }
+  
+  .page-title {
+    font-size: var(--font-size-2xl);
+  }
+  
+  .toolbar-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-md);
+  }
+  
+  .search-area {
+    max-width: none;
+  }
+  
+  .action-area {
+    justify-content: center;
+  }
+  
+  .table-container {
+    font-size: var(--font-size-xs);
+  }
+  
+  .table th,
+  .table td {
+    padding: var(--space-sm);
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  
+  .btn-sm {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .modal-content {
+    margin: var(--space-md);
+    width: auto;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .header-stats {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  
+  .stat-card {
+    padding: var(--space-sm);
+  }
+  
+  .toolbar-section {
+    padding: var(--space-md);
+  }
+  
+  .description-cell {
+    max-width: 200px;
+  }
+  
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    display: none;
+  }
 }
 
 .toolbar {

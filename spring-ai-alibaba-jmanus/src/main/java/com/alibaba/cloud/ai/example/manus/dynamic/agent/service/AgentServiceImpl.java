@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -46,12 +45,6 @@ import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 
 @Service
 public class AgentServiceImpl implements AgentService {
-
-	private static final String DEFAULT_AGENT_NAME = "DEFAULT_AGENT";
-
-	// MapReduce protected agent names - cannot be deleted by users
-	private static final String[] PROTECTED_MAPREDUCE_AGENTS = { "MAPREDUCE_DATA_PREPARE_AGENT", "MAPREDUCE_FIN_AGENT",
-			"MAPREDUCE_MAP_TASK_AGENT", "MAPREDUCE_REDUCE_TASK_AGENT" };
 
 	private static final Logger log = LoggerFactory.getLogger(AgentServiceImpl.class);
 
@@ -158,14 +151,9 @@ public class AgentServiceImpl implements AgentService {
 		DynamicAgentEntity entity = repository.findById(Long.parseLong(id))
 			.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + id));
 
-		// Protect default agent from deletion
-		if (DEFAULT_AGENT_NAME.equals(entity.getAgentName())) {
-			throw new IllegalArgumentException("Cannot delete default Agent");
-		}
-
-		// Protect MapReduce system agents from deletion
-		if (Arrays.asList(PROTECTED_MAPREDUCE_AGENTS).contains(entity.getAgentName())) {
-			throw new IllegalArgumentException("Cannot delete protected system Agent: " + entity.getAgentName());
+		// Protect built-in agents from deletion
+		if (Boolean.TRUE.equals(entity.getBuiltIn())) {
+			throw new IllegalArgumentException("Cannot delete built-in Agent: " + entity.getAgentName());
 		}
 
 		repository.deleteById(Long.parseLong(id));
@@ -174,9 +162,10 @@ public class AgentServiceImpl implements AgentService {
 	public List<Tool> getAvailableTools() {
 
 		String uuid = UUID.randomUUID().toString();
-		List<String> columns = Arrays.asList("dummyColumn1", "dummyColumn2");
+		String expectedReturnInfo = "dummyColumn1, dummyColumn2";
 		try {
-			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid, uuid, columns);
+			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid, uuid,
+					expectedReturnInfo);
 			return toolcallContext.entrySet().stream().map(entry -> {
 				Tool tool = new Tool();
 				tool.setKey(entry.getKey());
@@ -204,6 +193,7 @@ public class AgentServiceImpl implements AgentService {
 		config.setAvailableTools(entity.getAvailableToolKeys());
 		config.setClassName(entity.getClassName());
 		config.setNamespace(entity.getNamespace());
+		config.setBuiltIn(entity.getBuiltIn());
 		DynamicModelEntity model = entity.getModel();
 		config.setModel(model == null ? null : model.mapToModelConfig());
 		return config;
@@ -279,6 +269,12 @@ public class AgentServiceImpl implements AgentService {
 
 		// 4. Set the user-selected namespace
 		entity.setNamespace(config.getNamespace());
+
+		// 5. Set builtIn if provided (only allow setting to false for existing built-in
+		// agents)
+		if (config.getBuiltIn() != null) {
+			entity.setBuiltIn(config.getBuiltIn());
+		}
 	}
 
 	private DynamicAgentEntity mergePrompts(DynamicAgentEntity entity, String agentName) {
@@ -300,7 +296,7 @@ public class AgentServiceImpl implements AgentService {
 
 	@Override
 	public BaseAgent createDynamicBaseAgent(String name, String planId, String rootPlanId,
-			Map<String, Object> initialAgentSetting, List<String> columns) {
+			Map<String, Object> initialAgentSetting, String expectedReturnInfo) {
 
 		log.info("Create new BaseAgent: {}, planId: {}", name, planId);
 
@@ -313,24 +309,18 @@ public class AgentServiceImpl implements AgentService {
 			agent.setRootPlanId(rootPlanId);
 			// Set tool callback mapping
 			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId, rootPlanId,
-					columns);
+					expectedReturnInfo);
 			agent.setToolCallbackProvider(new ToolCallbackProvider() {
 
 				@Override
 				public Map<String, ToolCallBackContext> getToolCallBackContext() {
 					return toolCallbackMap;
 				}
-
 			});
-
-			log.info("Successfully loaded BaseAgent: {}, available tools count: {}", name,
-					agent.getToolCallList().size());
-
 			return agent;
 		}
 		catch (Exception e) {
-			log.error("Exception occurred during BaseAgent loading: {}, error message: {}", name, e.getMessage(), e);
-			throw new RuntimeException("Failed to load BaseAgent: " + e.getMessage(), e);
+			throw new RuntimeException("Failed to create dynamic base agent: " + name, e);
 		}
 	}
 

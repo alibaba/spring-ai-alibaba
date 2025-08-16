@@ -58,7 +58,7 @@ public class DeepResearchStateSerializer extends PlainTextStateSerializer {
 	}
 
 	@Override
-	public String mimeType() {
+	public String contentType() {
 		return "application/json";
 	}
 

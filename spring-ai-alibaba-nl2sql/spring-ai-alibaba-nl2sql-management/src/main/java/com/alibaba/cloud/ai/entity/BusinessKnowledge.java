@@ -15,29 +15,40 @@
  */
 package com.alibaba.cloud.ai.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 
 /**
- * 业务知识管理实体类
+ * Business Knowledge Management Entity Class
  */
+@TableName("business_knowledge")
 public class BusinessKnowledge {
 
+	@TableId(value = "id", type = IdType.AUTO)
 	private Long id;
 
-	private String businessTerm; // 业务名词
+	@TableField("business_term")
+	private String businessTerm; // Business term
 
-	private String description; // 说明
+	@TableField("description")
+	private String description; // Description
 
-	private String synonyms; // 同义词，逗号分隔
+	@TableField("synonyms")
+	private String synonyms; // Synonyms, comma-separated
 
-	private Boolean defaultRecall; // 默认召回
+	@TableField("default_recall")
+	private Boolean defaultRecall; // Default recall
 
-	private String datasetId; // 关联的数据集ID
+	@TableField("dataset_id")
+	private String datasetId; // Associated dataset ID
 
-	private String agentId; // 关联的智能体ID
+	@TableField("agent_id")
+	private String agentId; // Associated agent ID
 
+	@TableField(value = "created_time", fill = FieldFill.INSERT)
 	private LocalDateTime createTime;
 
+	@TableField(value = "updated_time", fill = FieldFill.INSERT_UPDATE)
 	private LocalDateTime updateTime;
 
 	public BusinessKnowledge() {
@@ -50,9 +61,7 @@ public class BusinessKnowledge {
 		this.synonyms = synonyms;
 		this.defaultRecall = defaultRecall;
 		this.datasetId = datasetId;
-		this.agentId = null; // 默认为null，保持向后兼容
-		this.createTime = LocalDateTime.now();
-		this.updateTime = LocalDateTime.now();
+		this.agentId = null; // Defaults to null for backward compatibility
 	}
 
 	public BusinessKnowledge(String businessTerm, String description, String synonyms, Boolean defaultRecall,
@@ -63,8 +72,6 @@ public class BusinessKnowledge {
 		this.defaultRecall = defaultRecall;
 		this.datasetId = datasetId;
 		this.agentId = agentId;
-		this.createTime = LocalDateTime.now();
-		this.updateTime = LocalDateTime.now();
 	}
 
 	public BusinessKnowledge(Long id, String businessTerm, String description, String synonyms, Boolean defaultRecall,

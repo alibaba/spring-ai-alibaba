@@ -1,0 +1,22 @@
+@import '../../index.less';
+.spark-flow-variable-from-select {
+  height: auto !important;
+
+  .@{ant-prefix}-select-selection-item {
+    height: 30px;
+  }
+}
+
+.spark-flow-var-label {
+  .spark-flow-var-name {
+    font-weight: 500;
+    flex: 1;
+    width: 1px;
+    color: e('var(--@{ant-prefix}-color-primary)');
+  }
+}
+
+.spark-flow-var-type {
+  color: e('var(--@{ant-prefix}-color-text-tertiary)');
+  font-family: Menlo, monospace;
+}

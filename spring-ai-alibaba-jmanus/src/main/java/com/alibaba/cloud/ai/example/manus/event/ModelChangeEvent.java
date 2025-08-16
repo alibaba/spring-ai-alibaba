@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntit
 /**
  * @author dahua
  * @time 2025/7/15
- * @desc jmanus模型变化事件类
+ * @desc jmanus model change event class
  */
 public class ModelChangeEvent implements JmanusEvent {
 

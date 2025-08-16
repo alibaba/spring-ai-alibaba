@@ -1,0 +1,42 @@
+.checkItem {
+  padding: 16px;
+  border: 1px solid var(--ag-ant-color-border-secondary);
+  background-color: var(--ag-ant-color-bg-container);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.4s ease;
+
+  &:hover:not(.selected) {
+    box-shadow: var(--ag-ant-box-shadow);
+    border-color: var(--ag-ant-color-primary);
+  }
+
+  &.selected {
+    box-shadow: 0px 4px 6px 0px var(--ag-ant-color-bg-text-hover);
+    border: 1px solid var(--ag-ant-color-primary);
+  }
+
+  .desc {
+    color: var(--ag-ant-color-text-tertiary);
+  }
+
+  .title {
+    line-height: 24px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  img {
+    width: 40px;
+    border: 1px solid e('var(--@{ant-prefix}-color-border-secondary)');
+    border-radius: 6px;
+  }
+}
+
+.footerDesc {
+  color: var(--ag-ant-color-text-tertiary);
+}
+
+.search {
+  width: 220px;
+}

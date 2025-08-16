@@ -18,22 +18,23 @@ package com.alibaba.cloud.ai.example.manus.tool.innerStorage;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 
 /**
- * 智能内容保存服务接口，用于MapReduce流程中存储中间数据
+ * Smart content saving service interface for storing intermediate data in MapReduce
+ * processes
  */
 public interface ISmartContentSavingService {
 
 	/**
-	 * 获取Manus属性
-	 * @return Manus属性
+	 * Get Manus properties
+	 * @return Manus properties
 	 */
 	ManusProperties getManusProperties();
 
 	/**
-	 * 处理内容，如果内容过长则自动存储
-	 * @param planId 计划ID
-	 * @param content 内容
-	 * @param callingMethod 调用的方法名
-	 * @return 处理结果，包含文件名和摘要
+	 * Process content, automatically store if content is too long
+	 * @param planId Plan ID
+	 * @param content Content
+	 * @param callingMethod Calling method name
+	 * @return Processing result containing filename and summary
 	 */
 	SmartContentSavingService.SmartProcessResult processContent(String planId, String content, String callingMethod);
 

@@ -1,0 +1,51 @@
+@import '../../index.less';
+
+.spark-flow-inputs-form-label {
+  font-size: 12px;
+  color: e('var(--@{ant-prefix}-color-text-secondary)');
+}
+
+.spark-flow-inputs-form-parent-node {
+  position: relative;
+
+  &:not(&-hidden)::after {
+    content: '';
+    height: calc(100% - 24px);
+    bottom: 0;
+    left: -10.5px;
+    width: 1px;
+    background: e('var(--@{ant-prefix}-color-border-secondary)');
+    position: absolute;
+  }
+
+  .spark-flow-inputs-expand-btn {
+    transition: transform 0.3s ease-in-out;
+    position: absolute;
+    top: 4px;
+    left: -18px;
+  }
+
+  &-hidden {
+    .spark-flow-inputs-expand-btn {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.spark-flow-inputs-form-item {
+  .ant-select-sm .ant-select-selector,
+  .ant-input-sm {
+    font-size: 12px;
+    line-height: 22px;
+  }
+}
+
+.spark-flow-variable-type-select {
+  .@{ant-prefix}-cascader-dropdown .@{ant-prefix}-cascader-menu {
+    height: auto;
+  }
+  
+  .@{ant-prefix}-select-selection-item {
+    height: 30px;
+  }
+}

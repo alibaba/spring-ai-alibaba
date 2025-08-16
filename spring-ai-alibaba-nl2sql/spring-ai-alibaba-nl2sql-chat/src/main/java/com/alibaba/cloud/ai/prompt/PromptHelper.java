@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.prompt;
 
 import com.alibaba.cloud.ai.enums.BizDataSourceTypeEnum;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
+import com.alibaba.cloud.ai.dto.BusinessKnowledgeDTO;
+import com.alibaba.cloud.ai.dto.SemanticModelDTO;
 import com.alibaba.cloud.ai.dto.schema.ColumnDTO;
 import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.dto.schema.TableDTO;
@@ -225,13 +227,29 @@ public class PromptHelper {
 		return PromptConstant.SEMANTIC_CONSISTENCY_PROMPT_TEMPLATE.render(params);
 	}
 
-	public static String buildReportGeneratorPrompt(String userRequirementsAndPlan, String analysisStepsAndData,
-			String summaryAndRecommendations) {
+	/**
+	 * Build report generation prompt with custom prompt
+	 * @param userRequirementsAndPlan user requirements and plan
+	 * @param analysisStepsAndData analysis steps and data
+	 * @param summaryAndRecommendations summary and recommendations
+	 * @param customPrompt user-defined prompt content, use default prompt if null
+	 * @return built prompt
+	 */
+	public static String buildReportGeneratorPromptWithCustom(String userRequirementsAndPlan,
+			String analysisStepsAndData, String summaryAndRecommendations, String customPrompt) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("user_requirements_and_plan", userRequirementsAndPlan);
 		params.put("analysis_steps_and_data", analysisStepsAndData);
 		params.put("summary_and_recommendations", summaryAndRecommendations);
-		return PromptConstant.getReportGeneratorPromptTemplate().render(params);
+
+		if (customPrompt != null && !customPrompt.trim().isEmpty()) {
+			// Use custom prompt
+			return new org.springframework.ai.chat.prompt.PromptTemplate(customPrompt).render(params);
+		}
+		else {
+			// Use default prompt
+			return PromptConstant.getReportGeneratorPromptTemplate().render(params);
+		}
 	}
 
 	public static String buildSqlErrorFixerPrompt(String question, DbConfig dbConfig, SchemaDTO schemaDTO,
@@ -249,6 +267,22 @@ public class PromptHelper {
 		params.put("error_message", errorMessage);
 
 		return PromptConstant.getSqlErrorFixerPromptTemplate().render(params);
+	}
+
+	public static String buildBusinessKnowledgePrompt(List<BusinessKnowledgeDTO> businessKnowledgeDTOS) {
+		Map<String, Object> params = new HashMap<>();
+		String businessKnowledge = CollectionUtils.isEmpty(businessKnowledgeDTOS) ? ""
+				: StringUtils.join(businessKnowledgeDTOS, ";\n");
+		params.put("businessKnowledge", businessKnowledge);
+		return PromptConstant.getBusinessKnowledgePromptTemplate().render(params);
+	}
+
+	public static String buildSemanticModelPrompt(List<SemanticModelDTO> semanticModelDTOS) {
+		Map<String, Object> params = new HashMap<>();
+		String semanticModel = CollectionUtils.isEmpty(semanticModelDTOS) ? ""
+				: StringUtils.join(semanticModelDTOS, ";\n");
+		params.put("semanticModel", semanticModel);
+		return PromptConstant.getSemanticModelPromptTemplate().render(params);
 	}
 
 }

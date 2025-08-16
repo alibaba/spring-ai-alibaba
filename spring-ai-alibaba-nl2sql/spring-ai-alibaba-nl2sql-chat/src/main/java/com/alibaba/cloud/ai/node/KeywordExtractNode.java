@@ -63,9 +63,10 @@ public class KeywordExtractNode implements NodeAction {
 	}
 
 	/**
-	 * 处理多个问题变体，提取关键词并合并结果 使用并行流处理提高多问题处理效率
-	 * @param questions 问题变体列表
-	 * @return 提取结果列表
+	 * Process multiple question variants, extract keywords and merge results Use parallel
+	 * stream processing to improve multi-question processing efficiency
+	 * @param questions list of question variants
+	 * @return list of extraction results
 	 */
 	private List<KeywordExtractionResult> processMultipleQuestions(List<String> questions) {
 		return questions.parallelStream().map(question -> {
@@ -86,10 +87,11 @@ public class KeywordExtractNode implements NodeAction {
 	}
 
 	/**
-	 * 合并多个问题变体的关键词，去重并保持原始问题关键词优先
-	 * @param extractionResults 提取结果列表
-	 * @param originalQuestion 原始问题
-	 * @return 合并后的关键词列表
+	 * Merge keywords from multiple question variants, deduplicate and keep original
+	 * question keywords priority
+	 * @param extractionResults list of extraction results
+	 * @param originalQuestion original question
+	 * @return merged keyword list
 	 */
 	private List<String> mergeKeywords(List<KeywordExtractionResult> extractionResults, String originalQuestion) {
 		if (extractionResults.isEmpty()) {
@@ -111,9 +113,9 @@ public class KeywordExtractNode implements NodeAction {
 	}
 
 	/**
-	 * 合并多个问题变体的证据，去重
-	 * @param extractionResults 提取结果列表
-	 * @return 合并后的证据列表
+	 * Merge evidences from multiple question variants, deduplicate
+	 * @param extractionResults list of extraction results
+	 * @return merged evidence list
 	 */
 	private List<String> mergeEvidences(List<KeywordExtractionResult> extractionResults) {
 		Set<String> mergedEvidences = new HashSet<>();
@@ -166,43 +168,42 @@ public class KeywordExtractNode implements NodeAction {
 	}
 
 	/**
-	 * 创建增强的流式响应
-	 * @param extractionResults 提取结果列表
-	 * @param mergedKeywords 合并后的关键词
-	 * @param mergedEvidences 合并后的证据
-	 * @return 流式响应
+	 * Create enhanced streaming response
+	 * @param extractionResults list of extraction results
+	 * @param mergedKeywords merged keywords
+	 * @param mergedEvidences merged evidences
+	 * @return streaming response
 	 */
 	private Flux<ChatResponse> createEnhancedDisplayFlux(List<KeywordExtractionResult> extractionResults,
 			List<String> mergedKeywords, List<String> mergedEvidences) {
 		return Flux.create(emitter -> {
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("开始增强关键词提取..."));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("正在扩展问题理解..."));
+			emitter.next(ChatResponseUtil.createStatusResponse("开始增强关键词提取..."));
+			emitter.next(ChatResponseUtil.createStatusResponse("正在扩展问题理解..."));
 
 			for (KeywordExtractionResult result : extractionResults) {
 				if (result.isSuccessful()) {
-					emitter
-						.next(ChatResponseUtil.createCustomStatusResponse("处理问题变体: \"" + result.getQuestion() + "\""));
+					emitter.next(ChatResponseUtil.createStatusResponse("处理问题变体: \"" + result.getQuestion() + "\""));
 					emitter.next(ChatResponseUtil
-						.createCustomStatusResponse("提取的证据: " + String.join(", ", result.getEvidences())));
+						.createStatusResponse("提取的证据: " + String.join(", ", result.getEvidences())));
 					emitter.next(ChatResponseUtil
-						.createCustomStatusResponse("提取的关键词: " + String.join(", ", result.getKeywords())));
+						.createStatusResponse("提取的关键词: " + String.join(", ", result.getKeywords())));
 				}
 			}
 
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("合并多个问题变体的结果..."));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("合并后的证据: " + String.join(", ", mergedEvidences)));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("合并后的关键词: " + String.join(", ", mergedKeywords)));
-			emitter.next(ChatResponseUtil.createCustomStatusResponse("关键词提取完成."));
+			emitter.next(ChatResponseUtil.createStatusResponse("合并多个问题变体的结果..."));
+			emitter.next(ChatResponseUtil.createStatusResponse("合并后的证据: " + String.join(", ", mergedEvidences)));
+			emitter.next(ChatResponseUtil.createStatusResponse("合并后的关键词: " + String.join(", ", mergedKeywords)));
+			emitter.next(ChatResponseUtil.createStatusResponse("关键词提取完成."));
 			emitter.complete();
 		});
 	}
 
 	/**
-	 * 回退到原始处理方法
-	 * @param state 状态
-	 * @param input 输入
-	 * @return 处理结果
-	 * @throws Exception 处理异常
+	 * Fallback to original processing method
+	 * @param state state
+	 * @param input input
+	 * @return processing result
+	 * @throws Exception processing exception
 	 */
 	private Map<String, Object> fallbackToOriginalProcessing(OverAllState state, String input) throws Exception {
 
