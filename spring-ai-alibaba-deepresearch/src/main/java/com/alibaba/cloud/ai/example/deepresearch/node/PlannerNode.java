@@ -65,7 +65,7 @@ public class PlannerNode implements NodeAction {
 		// 1.1 添加预置提示消息
 		messages.add(TemplateUtil.getMessage("planner", state));
 		// 1.2 添加用户提问
-		messages.add(TemplateUtil.getOptQuryMessage(state));
+		messages.add(TemplateUtil.getOptQueryMessage(state));
 		// 1.3 添加背景调查消息
 		if (state.value("enable_deepresearch", true)) {
 			List<String> backgroundInvestigationResults = state.value("background_investigation_results",
