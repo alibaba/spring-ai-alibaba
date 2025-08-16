@@ -62,6 +62,7 @@
           :disabled="isLoading"
           :placeholder="isLoading ? t('input.waiting') : t('input.placeholder')"
           :initial-value="prompt"
+          :plan-id="currentRootPlanId"
           @send="handleSendMessage"
           @clear="handleInputClear"
           @focus="handleInputFocus"
