@@ -175,16 +175,16 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 									smartContentSavingService)
 								.run(input))
 			.description("""
-					智能文件加载和分析工具。用于处理用户上传的各种类型文件。
+					Intelligent file loading and analysis tool for processing various types of uploaded files.
 
-					可用操作:
-					- list_files: 列出所有上传的文件
-					- load_file: 加载指定文件内容
-					- load_multiple: 加载匹配模式的多个文件
-					- process_all: 处理所有上传文件并返回合并内容
-					- smart_analyze: 智能分析，自动文件类型检测和工具推荐
+					Available actions:
+					- list_files: List all uploaded files
+					- load_file: Load specific file content
+					- load_multiple: Load multiple files matching pattern
+					- process_all: Process all uploaded files and return merged content
+					- smart_analyze: Smart analysis with automatic file type detection and tool recommendations
 
-					使用此工具访问和智能分析用户上传的文件。
+					Use this tool to access and intelligently analyze user uploaded files.
 					""")
 			.inputType(UploadedFileInput.class)
 			.build();
@@ -198,8 +198,8 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	@Override
 	public String getDescription() {
 		return """
-				智能文件加载和分析工具。处理用户上传的各种文件类型，提供智能分析和工具推荐。
-				支持PDF、文本、表格、代码等多种文件格式的自动识别和处理。
+				Intelligent file loading and analysis tool. Processes various types of uploaded files, provides smart analysis and tool recommendations.
+				Supports automatic recognition and processing of PDF, text, spreadsheet, code and other file formats.
 				""";
 	}
 
@@ -268,15 +268,15 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 			if (fileCount > 0) {
 				String result = String.format("""
-						上传文件可用: 计划 %s 中有 %d 个文件
+						Uploaded files available: %d files found in plan %s
 
-						🔧 要访问这些文件，您必须调用 'uploaded_file_loader' 工具:
-						- 使用 action "list_files" 查看可用文件
-						- 使用 action "smart_analyze" 进行自动文件分析
-						- 使用 action "process_all" 加载所有文件内容
+						🔧 To access these files, you must call the 'uploaded_file_loader' tool:
+						- Use action "list_files" to view available files
+						- Use action "smart_analyze" for automatic file analysis
+						- Use action "process_all" to load all file contents
 
-						示例: 调用 uploaded_file_loader 并传入 {"action": "list_files"}
-						""", currentPlanId, fileCount);
+						Example: Call uploaded_file_loader with {"action": "list_files"}
+						""", fileCount, currentPlanId);
 				log.debug("🎯 Returning tool state with {} files", fileCount);
 				return result;
 			}
@@ -571,7 +571,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 				}
 				default -> {
 					log.warn("Unsupported file type: {} for file: {}", extension, fileName);
-					yield "不支持的文件类型: " + extension + " (文件: " + fileName + ")";
+					yield "Unsupported file type: " + extension + " (file: " + fileName + ")";
 				}
 			};
 		}
@@ -674,32 +674,32 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			log.info("Starting smart analysis of {} files", files.size());
 
 			StringBuilder analysis = new StringBuilder();
-			analysis.append("🤖 智能文件分析报告\n");
+			analysis.append("🤖 Smart File Analysis Report\n");
 			analysis.append("=".repeat(50)).append("\n\n");
-			analysis.append(String.format("📂 分析范围: %d 个文件\n", files.size()));
-			analysis.append(String.format("📁 存储位置: %s\n", uploadsDir));
-			analysis.append(String.format("🕰️ 分析时间: %s\n\n", java.time.LocalDateTime.now().toString()));
+			analysis.append(String.format("📂 Analysis scope: %d files\n", files.size()));
+			analysis.append(String.format("📁 Storage location: %s\n", uploadsDir));
+			analysis.append(String.format("🕰️ Analysis time: %s\n\n", java.time.LocalDateTime.now().toString()));
 
-			// 按文件类型分组分析
+			// Group files by type for analysis
 			Map<String, List<Path>> filesByType = files.stream()
 				.collect(Collectors.groupingBy(file -> getFileExtension(file.getFileName().toString()).toLowerCase()));
 
-			analysis.append("📊 文件类型统计:\n");
+			analysis.append("📊 File Type Statistics:\n");
 			analysis.append("-".repeat(30)).append("\n");
 
-			// 按文件数量排序
+			// Sort by file count
 			filesByType.entrySet()
 				.stream()
 				.sorted((e1, e2) -> Integer.compare(e2.getValue().size(), e1.getValue().size()))
 				.forEach(entry -> {
-					String extension = entry.getKey().isEmpty() ? "无扩展名" : entry.getKey();
-					analysis.append(String.format("  %s: %d 个文件 (%s)\n", extension, entry.getValue().size(),
+					String extension = entry.getKey().isEmpty() ? "No extension" : entry.getKey();
+					analysis.append(String.format("  %s: %d files (%s)\n", extension, entry.getValue().size(),
 							getFileTypeDescription(entry.getKey())));
 				});
 			analysis.append("\n");
 
-			// 智能分析每个文件
-			analysis.append("🔍 详细文件分析:\n");
+			// Smart analysis of each file
+			analysis.append("🔍 Detailed File Analysis:\n");
 			analysis.append("-".repeat(40)).append("\n");
 
 			int successCount = 0;
@@ -713,36 +713,36 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 					long fileSize = Files.size(file);
 
 					analysis.append(String.format("\n📄 [%d/%d] %s\n", i + 1, files.size(), fileName));
-					analysis.append(String.format("   📏 大小: %s\n", formatFileSize(fileSize)));
-					analysis.append(String.format("   🏷️ 类型: %s\n", getFileTypeDescription(extension)));
-					analysis.append(String.format("   🛠️ 推荐工具: %s\n", getRecommendedTool(extension)));
+					analysis.append(String.format("   📏 Size: %s\n", formatFileSize(fileSize)));
+					analysis.append(String.format("   🏷️ Type: %s\n", getFileTypeDescription(extension)));
+					analysis.append(String.format("   🛠️ Recommended Tool: %s\n", getRecommendedTool(extension)));
 
-					// 尝试读取文件内容片段
+					// Try to read file content preview
 					String contentPreview = getContentPreview(file, extension);
 					if (contentPreview != null && !contentPreview.trim().isEmpty()) {
-						analysis.append(String.format("   📖 内容预览: %s\n", contentPreview.trim()));
+						analysis.append(String.format("   📖 Content Preview: %s\n", contentPreview.trim()));
 					}
 
-					// 智能处理建议
+					// Smart processing recommendations
 					String processingAdvice = getProcessingAdvice(extension, fileSize);
-					analysis.append(String.format("   💡 处理建议: %s\n", processingAdvice));
+					analysis.append(String.format("   💡 Processing Advice: %s\n", processingAdvice));
 
 					successCount++;
 
 				}
 				catch (Exception e) {
 					log.warn("Error analyzing file {}: {}", file.getFileName(), e.getMessage());
-					analysis.append(String.format("\n❌ [%d/%d] %s - 分析失败: %s\n", i + 1, files.size(),
+					analysis.append(String.format("\n❌ [%d/%d] %s - Analysis failed: %s\n", i + 1, files.size(),
 							file.getFileName(), e.getMessage()));
 					errorCount++;
 				}
 			}
 
-			// 生成总体建议
+			// Generate overall recommendations
 			analysis.append("\n").append("=".repeat(50)).append("\n");
-			analysis.append("🎯 总体分析结果:\n");
-			analysis.append(String.format("✅ 成功分析: %d 个文件\n", successCount));
-			analysis.append(String.format("❌ 分析失败: %d 个文件\n\n", errorCount));
+			analysis.append("🎯 Overall Analysis Results:\n");
+			analysis.append(String.format("✅ Successfully analyzed: %d files\n", successCount));
+			analysis.append(String.format("❌ Analysis failed: %d files\n\n", errorCount));
 			analysis.append(generateOverallRecommendations(filesByType, files));
 
 			log.info("Smart analysis completed: {} success, {} errors", successCount, errorCount);
@@ -783,19 +783,19 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	 */
 	private String getFileTypeDescription(String extension) {
 		return switch (extension) {
-			case ".pdf" -> "PDF文档";
-			case ".txt" -> "纯文本文件";
-			case ".md" -> "Markdown文档";
-			case ".csv" -> "CSV数据表";
-			case ".xlsx", ".xls" -> "Excel表格";
-			case ".docx", ".doc" -> "Word文档";
-			case ".json" -> "JSON数据";
-			case ".xml" -> "XML文档";
-			case ".html", ".htm" -> "HTML网页";
-			case ".log" -> "日志文件";
-			case ".java", ".py", ".js", ".ts" -> "源代码文件";
-			case ".png", ".jpg", ".jpeg", ".gif" -> "图片文件";
-			default -> "未知类型";
+			case ".pdf" -> "PDF Document";
+			case ".txt" -> "Text File";
+			case ".md" -> "Markdown Document";
+			case ".csv" -> "CSV Data";
+			case ".xlsx", ".xls" -> "Excel Spreadsheet";
+			case ".docx", ".doc" -> "Word Document";
+			case ".json" -> "JSON Data";
+			case ".xml" -> "XML Document";
+			case ".html", ".htm" -> "HTML Webpage";
+			case ".log" -> "Log File";
+			case ".java", ".py", ".js", ".ts" -> "Source Code";
+			case ".png", ".jpg", ".jpeg", ".gif" -> "Image File";
+			default -> "Unknown Type";
 		};
 	}
 
@@ -804,13 +804,13 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	 */
 	private String getRecommendedTool(String extension) {
 		return switch (extension) {
-			case ".pdf" -> "doc_loader (PDF专用文档加载器)";
-			case ".txt", ".md", ".log" -> "text_file_operator (文本文件处理器)";
-			case ".csv", ".xlsx", ".xls" -> "database_use (数据库分析工具)";
-			case ".json", ".xml" -> "text_file_operator (结构化文本解析器)";
-			case ".html", ".htm" -> "browser_use (网页内容解析器)";
-			case ".java", ".py", ".js", ".ts" -> "text_file_operator (代码分析器)";
-			default -> "text_file_operator (通用文本处理器)";
+			case ".pdf" -> "doc_loader (PDF Document Loader)";
+			case ".txt", ".md", ".log" -> "text_file_operator (Text File Processor)";
+			case ".csv", ".xlsx", ".xls" -> "database_use (Database Analysis Tool)";
+			case ".json", ".xml" -> "text_file_operator (Structured Text Parser)";
+			case ".html", ".htm" -> "browser_use (Web Content Parser)";
+			case ".java", ".py", ".js", ".ts" -> "text_file_operator (Code Analyzer)";
+			default -> "text_file_operator (General Text Processor)";
 		};
 	}
 
@@ -825,7 +825,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 			// Skip preview for very large files
 			if (fileSize > LARGE_FILE_THRESHOLD) {
-				return String.format("文件过大 (%s)，跳过预览", formatFileSize(fileSize));
+				return String.format("File too large (%s), skipping preview", formatFileSize(fileSize));
 			}
 
 			if (".pdf".equals(extension)) {
@@ -850,20 +850,20 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	private String getPdfPreview(Path file, String fileName) {
 		try (PDDocument document = PDDocument.load(file.toFile())) {
 			if (document.isEncrypted()) {
-				return "PDF文件已加密，无法预览";
+				return "PDF file is encrypted, cannot preview";
 			}
 
 			int pageCount = document.getNumberOfPages();
 			if (pageCount == 0) {
-				return "PDF文件为空";
+				return "PDF file is empty";
 			}
 
 			PDFTextStripper stripper = new PDFTextStripper();
-			stripper.setEndPage(1); // 只读第一页
+			stripper.setEndPage(1); // Read first page only
 			String text = stripper.getText(document).trim();
 
 			if (text.isEmpty()) {
-				return String.format("PDF第一页无文本内容 (共%d页)", pageCount);
+				return String.format("PDF first page has no text content (total %d pages)", pageCount);
 			}
 
 			String preview = text.length() > MAX_PREVIEW_LENGTH ? text.substring(0, MAX_PREVIEW_LENGTH) + "..." : text;
@@ -884,7 +884,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 		try {
 			List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
 			if (lines.isEmpty()) {
-				return "空文件";
+				return "Empty file";
 			}
 
 			StringBuilder preview = new StringBuilder();
@@ -893,7 +893,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			for (int i = 0; i < previewLines; i++) {
 				String line = lines.get(i).trim();
 				if (line.isEmpty()) {
-					continue; // 跳过空行
+					continue; // Skip empty lines
 				}
 
 				if (line.length() > MAX_LINE_LENGTH) {
@@ -931,28 +931,28 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	private String getProcessingAdvice(String extension, long fileSize) {
 		StringBuilder advice = new StringBuilder();
 
-		// 大小建议
+		// Size recommendations
 		if (fileSize > LARGE_FILE_THRESHOLD) {
-			advice.append("大文件(>50MB)，建议使用MapReduce并行处理; ");
+			advice.append("Large file (>50MB), recommend using MapReduce parallel processing; ");
 		}
 		else if (fileSize > MEDIUM_FILE_THRESHOLD) {
-			advice.append("中等文件(>5MB)，建议使用SmartContentSaving智能缓存; ");
+			advice.append("Medium file (>5MB), recommend using SmartContentSaving intelligent caching; ");
 		}
 		else {
-			advice.append("小文件(<5MB)，可直接加载处理; ");
+			advice.append("Small file (<5MB), can be processed directly; ");
 		}
 
-		// 类型建议 - 使用正确的工具名称
+		// Type recommendations - using correct tool names
 		switch (extension) {
-			case ".pdf" -> advice.append("使用doc_loader提取PDF文本内容");
-			case ".csv", ".xlsx", ".xls" -> advice.append("使用database_use导入数据库进行结构化分析");
-			case ".json" -> advice.append("使用text_file_operator解析JSON结构，提取关键字段");
-			case ".xml" -> advice.append("使用text_file_operator解析XML结构，提取节点信息");
-			case ".log" -> advice.append("使用text_file_operator按时间序列分析，提取错误和关键事件");
-			case ".java", ".py", ".js", ".ts" -> advice.append("使用text_file_operator进行代码结构分析，提取函数和类信息");
-			case ".html", ".htm" -> advice.append("使用browser_use进行网页内容解析和DOM分析");
-			case ".md" -> advice.append("使用text_file_operator解析Markdown格式，提取文档结构");
-			default -> advice.append("使用text_file_operator进行文本内容分析，提取关键信息");
+			case ".pdf" -> advice.append("Use doc_loader to extract PDF text content");
+			case ".csv", ".xlsx", ".xls" -> advice.append("Use database_use to import to database for structured analysis");
+			case ".json" -> advice.append("Use text_file_operator to parse JSON structure and extract key fields");
+			case ".xml" -> advice.append("Use text_file_operator to parse XML structure and extract node information");
+			case ".log" -> advice.append("Use text_file_operator for time-series analysis to extract errors and key events");
+			case ".java", ".py", ".js", ".ts" -> advice.append("Use text_file_operator for code structure analysis to extract functions and class information");
+			case ".html", ".htm" -> advice.append("Use browser_use for web content parsing and DOM analysis");
+			case ".md" -> advice.append("Use text_file_operator to parse Markdown format and extract document structure");
+			default -> advice.append("Use text_file_operator for text content analysis and extract key information");
 		}
 
 		return advice.toString();
@@ -974,39 +974,39 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			}
 		}).sum();
 
-		recommendations.append(String.format("📊 总计大小: %s\n", formatFileSize(totalSize)));
+		recommendations.append(String.format("📊 Total size: %s\n", formatFileSize(totalSize)));
 
 		if (totalSize > 100 * 1024 * 1024) {
-			recommendations.append("🔄 建议使用MapReduce工作流进行并行处理\n");
+			recommendations.append("🔄 Recommend using MapReduce workflow for parallel processing\n");
 		}
 		else {
-			recommendations.append("⚡ 可使用常规工具链进行处理\n");
+			recommendations.append("⚡ Can use regular tool chain for processing\n");
 		}
 
-		// 按文件类型给出正确的工具建议
+		// Provide correct tool recommendations by file type
 		if (filesByType.containsKey(".pdf")) {
-			recommendations.append("📄 检测到PDF文件，优先使用doc_loader工具\n");
+			recommendations.append("📄 PDF files detected, prioritize using doc_loader tool\n");
 		}
 		if (filesByType.containsKey(".csv") || filesByType.containsKey(".xlsx") || filesByType.containsKey(".xls")) {
-			recommendations.append("📊 检测到表格文件，建议使用database_use进行数据分析\n");
+			recommendations.append("📊 Spreadsheet files detected, recommend using database_use for data analysis\n");
 		}
 		if (filesByType.containsKey(".log")) {
-			recommendations.append("📋 检测到日志文件，建议使用text_file_operator按时间序列进行异常分析\n");
+			recommendations.append("📋 Log files detected, recommend using text_file_operator for time-series anomaly analysis\n");
 		}
 		if (filesByType.containsKey(".java") || filesByType.containsKey(".py") || filesByType.containsKey(".js")
 				|| filesByType.containsKey(".ts")) {
-			recommendations.append("💻 检测到代码文件，建议使用text_file_operator进行代码结构分析\n");
+			recommendations.append("💻 Code files detected, recommend using text_file_operator for code structure analysis\n");
 		}
 		if (filesByType.containsKey(".html") || filesByType.containsKey(".htm")) {
-			recommendations.append("🌐 检测到HTML文件，建议使用browser_use进行网页解析\n");
+			recommendations.append("🌐 HTML files detected, recommend using browser_use for web parsing\n");
 		}
 
-		recommendations.append("\n💡 智能处理流程建议:\n");
-		recommendations.append("1. 📋 使用推荐工具提取各文件内容\n");
-		recommendations.append("2. 🔄 合并相同类型文件的分析结果\n");
-		recommendations.append("3. 🔗 生成跨文件的关联分析报告\n");
-		recommendations.append("4. 📊 输出结构化的综合分析结果\n");
-		recommendations.append("5. 💾 使用SmartContentSaving处理大文件内容\n");
+		recommendations.append("\n💡 Smart Processing Workflow Recommendations:\n");
+		recommendations.append("1. 📋 Use recommended tools to extract content from each file\n");
+		recommendations.append("2. 🔄 Merge analysis results from same file types\n");
+		recommendations.append("3. 🔗 Generate cross-file correlation analysis reports\n");
+		recommendations.append("4. 📊 Output structured comprehensive analysis results\n");
+		recommendations.append("5. 💾 Use SmartContentSaving to handle large file content\n");
 
 		return recommendations.toString();
 	}
