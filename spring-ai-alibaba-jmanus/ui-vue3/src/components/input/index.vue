@@ -16,7 +16,15 @@
 <template>
   <div class="input-area">
     <div class="input-container">
-      <button class="attach-btn" :title="$t('input.attachFile')">
+      <input 
+        ref="fileInputRef"
+        type="file" 
+        style="display: none" 
+        @change="handleFileSelect"
+        multiple
+        accept=".txt,.csv,.xlsx,.xls,.json,.xml,.md,.pdf,.docx,.doc,.pptx,.ppt,.zip"
+      />
+      <button class="attach-btn" :title="$t('input.attachFile')" @click="triggerFileUpload">
         <Icon icon="carbon:attachment" />
       </button>
       <textarea
@@ -65,6 +73,7 @@ interface Emits {
   (e: 'clear'): void
   (e: 'update-state', enabled: boolean, placeholder?: string): void
   (e: 'plan-mode-clicked'): void
+  (e: 'files-uploaded', files: File[]): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -76,9 +85,12 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const inputRef = ref<HTMLTextAreaElement>()
+const fileInputRef = ref<HTMLInputElement>()
 const currentInput = ref('')
 const defaultPlaceholder = computed(() => props.placeholder || t('input.placeholder'))
 const currentPlaceholder = ref(defaultPlaceholder.value)
+const uploadedFiles = ref<File[]>([])
+const currentPlanId = ref<string>('')
 
 // Computed property to ensure 'disabled' is a boolean type
 const isDisabled = computed(() => Boolean(props.disabled))
@@ -117,6 +129,79 @@ const handleSend = () => {
 const handlePlanModeClick = () => {
   // Trigger the plan mode toggle event
   emit('plan-mode-clicked')
+}
+
+/**
+ * Trigger file upload dialog
+ */
+const triggerFileUpload = () => {
+  if (fileInputRef.value) {
+    fileInputRef.value.click()
+  }
+}
+
+/**
+ * Handle file selection
+ */
+const handleFileSelect = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const files = Array.from(target.files || [])
+  
+  if (files.length === 0) return
+  
+  try {
+    // Get current plan ID from memory store
+    currentPlanId.value = memoryStore.selectMemoryId || 'default'
+    
+    // Upload files to sandbox
+    for (const file of files) {
+      await uploadFileToSandbox(file)
+    }
+    
+    // Store uploaded files
+    uploadedFiles.value.push(...files)
+    
+    // Emit files uploaded event
+    emit('files-uploaded', files)
+    
+    // Show success message
+    console.log(`Successfully uploaded ${files.length} file(s) to sandbox`)
+    
+    // Update input placeholder to indicate files are ready
+    if (files.length > 0) {
+      currentPlaceholder.value = t('input.filesUploaded', { count: uploadedFiles.value.length })
+    }
+    
+  } catch (error) {
+    console.error('Error uploading files:', error)
+    // Could emit an error event here if needed
+  } finally {
+    // Clear the file input
+    if (target) {
+      target.value = ''
+    }
+  }
+}
+
+/**
+ * Upload single file to sandbox
+ */
+const uploadFileToSandbox = async (file: File): Promise<void> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  const response = await fetch(`/api/file-sandbox/upload/${currentPlanId.value}`, {
+    method: 'POST',
+    body: formData
+  })
+  
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.message || 'Upload failed')
+  }
+  
+  const result = await response.json()
+  console.log('File uploaded successfully:', result)
 }
 
 /**

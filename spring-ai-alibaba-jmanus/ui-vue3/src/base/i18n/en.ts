@@ -755,6 +755,7 @@ const words: I18nType = {
     maxLength: 'Max Length',
     charactersRemaining: 'Characters Remaining',
     attachFile: 'Attach File',
+    filesUploaded: '{count} file(s) uploaded to sandbox',
   },
 
   // Sidebar
