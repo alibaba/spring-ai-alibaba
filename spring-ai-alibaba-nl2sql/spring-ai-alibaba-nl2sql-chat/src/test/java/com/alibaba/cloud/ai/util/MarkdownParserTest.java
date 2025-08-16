@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class MarkdownParserTest {
 
-	// 常量定义，提高测试的可维护性
+	// Constant definitions to improve test maintainability
 	private static final String SIMPLE_CODE_BLOCK = "```\nHello World\nSecond Line\n```";
 
 	private static final String JAVA_CODE_BLOCK = "```java\npublic class Test {\n    public static void main(String[] args) {\n        System.out.println(\"Hello\");\n    }\n}\n```";
@@ -48,7 +48,7 @@ public class MarkdownParserTest {
 
 	@BeforeEach
 	void setUp() {
-		// 每个测试前的准备工作（如有需要）
+		// Preparation before each test (if needed)
 	}
 
 	@Nested
@@ -220,12 +220,12 @@ public class MarkdownParserTest {
 		@Test
 		@DisplayName("极端长度内容处理")
 		void handleExtremeLengthContent() {
-			// 测试非常短的内容
+			// Test very short content
 			String veryShort = "```\na\n```";
 			String shortResult = MarkdownParser.extractText(veryShort);
 			assertEquals("a", shortResult.trim(), "单字符代码块应正确处理");
 
-			// 测试长内容
+			// Test long content
 			StringBuilder longContent = new StringBuilder("```\n");
 			String repeatedLine = "This is a very long line with multiple words and symbols !@#$%^&*()_+{}|:<>?[]\\;',./\n";
 			for (int i = 0; i < 100; i++) {
@@ -333,7 +333,7 @@ public class MarkdownParserTest {
 								"extractText应等于NewLineParser.format(extractRawText(...))"),
 						() -> {
 							if (testCase.contains("```") && testCase.lastIndexOf("```") > testCase.indexOf("```")) {
-								// 有效代码块的情况
+								// Valid code block case
 								if (!rawResult.trim().isEmpty()) {
 									assertFalse(formattedResult.contains("\n"), "格式化结果不应包含换行符");
 								}
@@ -403,15 +403,16 @@ public class MarkdownParserTest {
 			String result = MarkdownParser.extractText(nestedMarkdown);
 			String rawResult = MarkdownParser.extractRawText(nestedMarkdown);
 
-			// 根据实际行为进行验证，而不是预期行为
+			// Verify based on actual behavior, not expected behavior
 			assertAll("嵌套代码块结构处理验证", () -> assertNotNull(result, "结果不应为null"),
 					() -> assertNotNull(rawResult, "原始结果不应为null"), () -> {
-						// 如果结果为空，说明解析器无法处理这种嵌套结构
+						// If result is empty, it means parser cannot handle this nested
+						// structure
 						if (result.trim().isEmpty()) {
 							assertTrue(true, "嵌套代码块可能无法正确解析，这是已知行为");
 						}
 						else {
-							// 如果有结果，验证其内容
+							// If there are results, verify their content
 							assertFalse(result.contains("The above shows"), "不应包含代码块外的文本");
 						}
 					});
@@ -426,11 +427,11 @@ public class MarkdownParserTest {
 		@Test
 		@DisplayName("大型内容性能测试")
 		void testPerformanceWithLargeContent() {
-			// 创建一个大型代码块
+			// Create a large code block
 			StringBuilder largeContent = new StringBuilder("```java\n");
 			String line = "// This is a test line with some content that repeats multiple times for performance testing.\n";
 
-			// 添加5000行内容
+			// Add 5000 lines of content
 			for (int i = 0; i < 5000; i++) {
 				largeContent.append("Line ").append(i).append(": ").append(line);
 			}
@@ -465,12 +466,12 @@ public class MarkdownParserTest {
 			List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<>());
 			AtomicInteger successCount = new AtomicInteger(0);
 
-			// 创建并启动线程
+			// Create and start threads
 			for (int i = 0; i < threadCount; i++) {
 				final int threadIndex = i;
 				Thread thread = new Thread(() -> {
 					try {
-						startLatch.await(); // 等待所有线程准备就绪
+						startLatch.await(); // Wait for all threads to be ready
 
 						for (int j = 0; j < iterationsPerThread; j++) {
 							String input = testInputs[j % testInputs.length];
@@ -490,10 +491,10 @@ public class MarkdownParserTest {
 				thread.start();
 			}
 
-			// 启动所有线程
+			// Start all threads
 			startLatch.countDown();
 
-			// 等待所有线程完成，最多等待10秒
+			// Wait for all threads to complete, maximum wait 10 seconds
 			boolean completed = completionLatch.await(10, TimeUnit.SECONDS);
 
 			assertAll("并发安全性验证", () -> assertTrue(completed, "所有线程应在超时前完成"),
@@ -501,7 +502,8 @@ public class MarkdownParserTest {
 							"不应有异常: " + exceptions.stream().map(Throwable::getMessage).toList()),
 					() -> assertEquals(threadCount * iterationsPerThread, allResults.size(), "结果数量应等于总操作数"),
 					() -> assertEquals(threadCount * iterationsPerThread, successCount.get(), "成功操作数应等于总操作数"), () -> {
-						// 验证结果的一致性 - 相同输入应产生相同输出
+						// Verify result consistency - same input should produce same
+						// output
 						for (String input : testInputs) {
 							String expectedResult = MarkdownParser.extractText(input);
 							long matchingCount = allResults.stream()
@@ -518,20 +520,20 @@ public class MarkdownParserTest {
 			Runtime runtime = Runtime.getRuntime();
 			long initialMemory = runtime.totalMemory() - runtime.freeMemory();
 
-			// 执行多次操作
+			// Execute multiple operations
 			for (int i = 0; i < 1000; i++) {
 				String result = MarkdownParser.extractText(JAVA_CODE_BLOCK);
-				assertNotNull(result); // 确保操作成功
+				assertNotNull(result); // Ensure operation succeeded
 			}
 
-			// 强制垃圾回收
+			// Force garbage collection
 			System.gc();
 			Thread.yield();
 
 			long finalMemory = runtime.totalMemory() - runtime.freeMemory();
 			long memoryIncrease = finalMemory - initialMemory;
 
-			// 内存增长应该是合理的（小于10MB）
+			// Memory growth should be reasonable (less than 10MB)
 			assertTrue(memoryIncrease < 10 * 1024 * 1024, "内存增长应小于10MB，实际增长: " + (memoryIncrease / 1024 / 1024) + "MB");
 		}
 
@@ -562,7 +564,7 @@ public class MarkdownParserTest {
 
 			assertAll("代码块标识符变种处理", () -> {
 				String result1 = MarkdownParser.extractText(fourBackticks);
-				// 根据实际实现行为进行验证
+				// Verify based on actual implementation behavior
 				assertNotNull(result1, "四个反引号的结果不应为null");
 			}, () -> {
 				String result2 = MarkdownParser.extractText(moreBackticks);
@@ -576,9 +578,14 @@ public class MarkdownParserTest {
 		@Test
 		@DisplayName("特殊内容回归测试")
 		void regressionTestSpecialContent() {
-			// 测试可能导致解析问题的特殊内容
+			// Test special content that might cause parsing issues
 			String[] specialCases = { "```\n```nested```\n```", "```\nCode with\n\n\nmultiple empty lines\n```",
-					"```\nCode with trailing spaces   \n```", "```\n\n\n```", // 只有空行的代码块
+					"```\nCode with trailing spaces   \n```", "```\n\n\n```", // Code
+																				// block
+																				// with
+																				// only
+																				// empty
+																				// lines
 					"```json\n{\"key\": \"value\"}\n```" };
 
 			for (String testCase : specialCases) {

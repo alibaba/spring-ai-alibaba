@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 语义模型配置控制器
+ * Semantic Model Configuration Controller
  */
 @Controller
 @RequestMapping("/api/semantic-model")

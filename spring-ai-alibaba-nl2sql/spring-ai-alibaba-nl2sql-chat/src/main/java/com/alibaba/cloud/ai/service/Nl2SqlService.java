@@ -49,9 +49,10 @@ public class Nl2SqlService {
 	}
 
 	/**
-	 * 根据Nl2Sql-Graph的定义，抽取其自然语言转化为sql的功能代码
-	 * @param query 自然语言
-	 * @return sql语言
+	 * Extract natural language to SQL conversion function code according to Nl2Sql-Graph
+	 * definition
+	 * @param query natural language
+	 * @return SQL language
 	 */
 	public String apply(String query) throws Exception {
 		// 1. query rewrite

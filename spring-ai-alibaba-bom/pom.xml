@@ -20,7 +20,7 @@
 
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-bom</artifactId>
-    <version>1.0.0.3-SNAPSHOT</version>
+    <version>1.0.0.4-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
@@ -546,6 +546,12 @@
             </dependency>
 
             <!-- Spring AI Alibaba Document Readers -->
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-document-reader-archive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-starter-document-reader-arxiv</artifactId>

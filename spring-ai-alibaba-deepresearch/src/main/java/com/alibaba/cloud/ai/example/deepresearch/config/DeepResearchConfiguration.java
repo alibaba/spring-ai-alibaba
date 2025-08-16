@@ -49,6 +49,7 @@ import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SmartAgentDi
 import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.ToolCallingSearchService;
 import com.alibaba.cloud.ai.example.deepresearch.util.ReflectionProcessor;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
@@ -138,6 +139,10 @@ public class DeepResearchConfiguration {
 	@Autowired
 	private SearchFilterService searchFilterService;
 
+	// 可选的工具调用服务（智能平台用）
+	@Autowired(required = false)
+	private ToolCallingSearchService toolCallingSearchService;
+
 	@Autowired(required = false)
 	private QuestionClassifierService questionClassifierService;
 
@@ -224,7 +229,7 @@ public class DeepResearchConfiguration {
 			.addNode("background_investigator",
 					node_async(new BackgroundInvestigationNode(jinaCrawlerService, infoCheckService,
 							searchFilterService, questionClassifierService, searchPlatformSelectionService,
-							smartAgentProperties, backgroundAgent, sessionContextService)))
+							smartAgentProperties, backgroundAgent, sessionContextService, toolCallingSearchService)))
 			.addNode("user_file_rag", ragNodeService.createUserFileRagNode())
 			.addNode("planner", node_async((new PlannerNode(plannerAgent))))
 			.addNode("professional_kb_decision",

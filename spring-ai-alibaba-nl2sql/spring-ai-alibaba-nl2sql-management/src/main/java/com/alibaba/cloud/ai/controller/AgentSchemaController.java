@@ -32,7 +32,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 智能体Schema初始化控制器 处理智能体的数据库Schema初始化到向量存储
+ * Agent Schema Initialization Controller Handles agent's database Schema initialization
+ * to vector storage
  */
 @Controller
 @RequestMapping("/api/agent/{agentId}/schema")
@@ -52,7 +53,8 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * 为智能体初始化数据库Schema到向量存储 对应前端页面的"初始化信息源"功能
+	 * Initialize agent's database Schema to vector storage Corresponds to the "Initialize
+	 * Information Source" function on the frontend
 	 */
 	@PostMapping("/init")
 	@ResponseBody
@@ -64,11 +66,11 @@ public class AgentSchemaController {
 		try {
 			log.info("Initializing schema for agent: {}", agentId);
 
-			// 从请求中提取数据源ID和表列表
+			// Extract data source ID and table list from request
 			Integer datasourceId = null;
 			List<String> tables = null;
 
-			// 尝试从不同的请求格式中提取数据
+			// Try to extract data from different request formats
 			if (requestData.containsKey("datasourceId")) {
 				datasourceId = (Integer) requestData.get("datasourceId");
 			}
@@ -83,7 +85,7 @@ public class AgentSchemaController {
 				tables = (List<String>) requestData.get("tables");
 			}
 
-			// 验证请求参数
+			// Validate request parameters
 			if (datasourceId == null) {
 				response.put("success", false);
 				response.put("message", "数据源ID不能为空");
@@ -96,7 +98,7 @@ public class AgentSchemaController {
 				return ResponseEntity.badRequest().body(response);
 			}
 
-			// 执行Schema初始化
+			// Execute Schema initialization
 			Boolean result = agentVectorService.initializeSchemaForAgentWithDatasource(agentId, datasourceId, tables);
 
 			if (result) {
@@ -125,7 +127,7 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * 获取智能体的向量存储统计信息
+	 * Get agent's vector storage statistics
 	 */
 	@GetMapping("/statistics")
 	@ResponseBody
@@ -149,7 +151,7 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * 清空智能体的所有向量数据
+	 * Clear all vector data of agent
 	 */
 	@DeleteMapping("/clear")
 	@ResponseBody
@@ -178,7 +180,7 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * 获取智能体配置的数据源列表
+	 * Get list of data sources configured for agent
 	 */
 	@GetMapping("/datasources")
 	@ResponseBody
@@ -208,7 +210,7 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * 获取数据源的表列表
+	 * Get table list of data source
 	 */
 	@GetMapping("/datasources/{datasourceId}/tables")
 	@ResponseBody
@@ -238,7 +240,8 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * 智能体聊天接口 - 流式响应 直接调用Nl2sqlForGraphController的streamSearch方法
+	 * Agent chat interface - Streaming response Directly call streamSearch method of
+	 * Nl2sqlForGraphController
 	 */
 	@PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	@ResponseBody
@@ -255,7 +258,7 @@ public class AgentSchemaController {
 
 			log.info("Agent {} chat request: {}", agentId, query);
 
-			// 直接调用Nl2sqlForGraphController的streamSearch方法
+			// Directly call streamSearch method of Nl2sqlForGraphController
 			return nl2sqlForGraphController.streamSearch(query.trim(), String.valueOf(agentId), response);
 
 		}

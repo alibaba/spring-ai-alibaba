@@ -71,7 +71,7 @@ public class SchemaRecallNode implements NodeAction {
 		List<Document> tableDocuments;
 		List<List<Document>> columnDocumentsByKeywords;
 
-		// 如果有agentId，使用智能体特定的搜索，否则使用全局搜索
+		// If agentId exists, use agent-specific search, otherwise use global search
 		if (agentId != null && !agentId.trim().isEmpty()) {
 			logger.info("Using agent-specific schema recall for agent: {}", agentId);
 			tableDocuments = baseSchemaService.getTableDocumentsForAgent(agentId, input);

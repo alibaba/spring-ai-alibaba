@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  * Redis implementation of ChatMemoryRepository using Lettuce
  *
  * @author benym
- * @date 2025/7/31 14:40
+ * @since 2025/7/31 14:40
  */
 public class LettuceRedisChatMemoryRepository extends BaseRedisChatMemoryRepository {
 

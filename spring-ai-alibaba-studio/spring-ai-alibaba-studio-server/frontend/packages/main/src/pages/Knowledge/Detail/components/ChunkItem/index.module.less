@@ -1,0 +1,139 @@
+.chunk-item {
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid var(--ag-ant-color-border-secondary);
+  background: var(--ag-ant-color-bg-base);
+
+  .expanded {
+    -webkit-line-clamp: unset;
+    max-height: 195px;
+    overflow: auto;
+  }
+
+  .disable {
+    color: var(--ag-ant-color-fill-disable);
+  }
+
+  .edit-button {
+    opacity: 1;
+    transition: opacity 0.3s;
+  }
+
+  &:hover {
+    border-radius: 2px;
+    background: var(--ag-ant-color-fill-tertiary);
+    .edit-button {
+      opacity: 1;
+    }
+    .chunk-actions {
+      opacity: 1;
+    }
+  }
+
+  :global {
+    .ag-ant-input {
+      background-color: var(--ag-ant-color-bg-base);
+    }
+  }
+
+}
+
+.chunk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .chunk-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .chunk-title {
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 20px;
+    color: var(--ag-ant-color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .divider {
+    width: 1px;
+    height: 12px;
+    background: var(--ag-ant-color-border-secondary)
+  }
+
+  .chunk-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 24px;
+    opacity: 0;
+    transition: opacity 0.3s;
+
+    .divider {
+      width: 1px;
+      height: 12px;
+      background: var(--ag-ant-color-border-secondary);
+    }
+
+    .expand {
+      color: var(--ag-ant-color-primary);
+      cursor: pointer;
+    }
+  }
+
+  .display-status {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 20px;
+    letter-spacing: normal;
+    color: var(--ag-ant-color-text);
+  }
+
+  .enabled {
+    color: var(--ag-ant-color-text-tertiary);
+  }
+
+  &.disable {
+    .chunk-title {
+      color: var(--ag-ant-color-fill-disable);
+    }
+  }
+  .view-all{
+    color: var(--ag-ant-color-primary);
+    cursor: pointer;
+    
+  }
+}
+
+.chunk-content {
+  color: var(--ag-ant-color-text);
+  font-size: 12px;
+  line-height: 22px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.edit-content {
+  color: var(--ag-ant-color-text);
+  font-size: 12px;
+  line-height: 22px;
+  border: none;
+  padding: 0;
+  box-shadow: none !important;
+}
+
+.chunk-source {
+  color: var(--ag-ant-color-text-secondary);
+  font-size: 12px;
+  line-height: 22px;
+}

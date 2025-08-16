@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.entity;
 
 /**
- * 聊天请求DTO
+ * Chat Request DTO
  */
 public class ChatRequest {
 

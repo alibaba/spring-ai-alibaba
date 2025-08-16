@@ -46,7 +46,6 @@ public class AgentIntegrationUtil {
 
 	public static boolean isSmartAgentAvailable(SmartAgentProperties smartAgentProperties, Object... services) {
 		if (smartAgentProperties == null || !smartAgentProperties.isEnabled()) {
-			logger.debug("智能Agent功能未开启");
 			return false;
 		}
 
