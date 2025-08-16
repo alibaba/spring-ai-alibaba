@@ -131,7 +131,7 @@ public class FileSandboxTool extends AbstractBaseTool<FileSandboxTool.SandboxInp
 					},
 					"sandboxId": {
 					  "type": "string",
-					  "description": "Sandbox instance ID (optional, uses current plan's sandbox if not specified)"
+					  "description": "Sandbox instance ID (optional). Use 'shared' to access user uploaded files in shared directory, or omit to use current plan's sandbox"
 					}
 				  },
 				  "required": ["action"],
@@ -150,7 +150,7 @@ public class FileSandboxTool extends AbstractBaseTool<FileSandboxTool.SandboxInp
 					},
 					"sandboxId": {
 					  "type": "string",
-					  "description": "Sandbox instance ID (optional)"
+					  "description": "Sandbox instance ID (optional). Use 'shared' to access user uploaded files in shared directory, or omit to use current plan's sandbox"
 					}
 				  },
 				  "required": ["action", "fileName"],
@@ -169,7 +169,7 @@ public class FileSandboxTool extends AbstractBaseTool<FileSandboxTool.SandboxInp
 					},
 					"sandboxId": {
 					  "type": "string",
-					  "description": "Sandbox instance ID (optional)"
+					  "description": "Sandbox instance ID (optional). Use 'shared' to access user uploaded files in shared directory, or omit to use current plan's sandbox"
 					}
 				  },
 				  "required": ["action", "fileName"],
@@ -203,7 +203,7 @@ public class FileSandboxTool extends AbstractBaseTool<FileSandboxTool.SandboxInp
 					},
 					"sandboxId": {
 					  "type": "string",
-					  "description": "Sandbox instance ID (optional)"
+					  "description": "Sandbox instance ID (optional). Use 'shared' to access user uploaded files in shared directory, or omit to use current plan's sandbox"
 					}
 				  },
 				  "required": ["action", "fileName"],
@@ -226,7 +226,7 @@ public class FileSandboxTool extends AbstractBaseTool<FileSandboxTool.SandboxInp
 					},
 					"sandboxId": {
 					  "type": "string",
-					  "description": "Sandbox instance ID (optional)"
+					  "description": "Sandbox instance ID (optional). Use 'shared' to access user uploaded files in shared directory, or omit to use current plan's sandbox"
 					}
 				  },
 				  "required": ["action", "fileName", "content"],
@@ -245,7 +245,9 @@ public class FileSandboxTool extends AbstractBaseTool<FileSandboxTool.SandboxInp
 	public String getDescription() {
 		return "Provides secure access to user-uploaded files within a sandboxed environment. "
 				+ "Supports reading, processing, and analyzing files safely. "
-				+ "All file operations are restricted to the current plan's sandbox for security.";
+				+ "User uploaded files are stored in a 'shared' directory and can be accessed without specifying a sandboxId. "
+				+ "Plan-specific files are stored in individual plan directories. "
+				+ "Use 'shared' as sandboxId to access shared files, or omit sandboxId to use current plan's sandbox.";
 	}
 
 	@Override
@@ -259,7 +261,10 @@ public class FileSandboxTool extends AbstractBaseTool<FileSandboxTool.SandboxInp
 			log.info("FileSandboxTool input: action={}, fileName={}, sandboxId={}", input.getAction(),
 					input.getFileName(), input.getSandboxId());
 
-			// Use current plan's sandbox if sandboxId not specified
+			// Determine which sandbox to use:
+			// - "shared" -> shared directory for user uploaded files
+			// - null/empty -> current plan's sandbox
+			// - other -> specific plan sandbox
 			String activeSandboxId = input.getSandboxId() != null ? input.getSandboxId() : currentPlanId;
 
 			switch (input.getAction()) {
@@ -285,15 +290,26 @@ public class FileSandboxTool extends AbstractBaseTool<FileSandboxTool.SandboxInp
 
 	private ToolExecuteResult listFiles(String sandboxId) {
 		try {
-			List<SandboxFile> files = sandboxManager.listFiles(sandboxId);
+			List<SandboxFile> files;
+			String location;
 
-			StringBuilder result = new StringBuilder("Files in sandbox:\n");
+			if ("shared".equals(sandboxId)) {
+				files = sandboxManager.listSharedFiles();
+				location = "shared directory";
+			}
+			else {
+				files = sandboxManager.listFiles(sandboxId);
+				location = "sandbox " + (sandboxId != null ? sandboxId : "current plan");
+			}
+
+			StringBuilder result = new StringBuilder("Files in " + location + ":\n");
 			if (files.isEmpty()) {
-				result.append("No files found in the sandbox.");
+				result.append("No files found in the " + location + ".");
 			}
 			else {
 				for (SandboxFile file : files) {
-					result.append(String.format("- %s (%s, %d bytes, uploaded: %s)\n", file.getName(), file.getType(),
+					result.append(String.format("- %s (%s, %d bytes, uploaded: %s)\n",
+							file.getOriginalName() != null ? file.getOriginalName() : file.getName(), file.getType(),
 							file.getSize(), file.getUploadTime()));
 				}
 			}
@@ -307,7 +323,13 @@ public class FileSandboxTool extends AbstractBaseTool<FileSandboxTool.SandboxInp
 
 	private ToolExecuteResult readFile(String sandboxId, String fileName) {
 		try {
-			String content = sandboxManager.readFile(sandboxId, fileName);
+			String content;
+			if ("shared".equals(sandboxId)) {
+				content = sandboxManager.readSharedFile(fileName);
+			}
+			else {
+				content = sandboxManager.readFile(sandboxId, fileName);
+			}
 			return new ToolExecuteResult("File content:\n" + content);
 		}
 		catch (Exception e) {
@@ -317,18 +339,28 @@ public class FileSandboxTool extends AbstractBaseTool<FileSandboxTool.SandboxInp
 
 	private ToolExecuteResult getFileInfo(String sandboxId, String fileName) {
 		try {
-			SandboxFile fileInfo = sandboxManager.getFileInfo(sandboxId, fileName);
+			SandboxFile fileInfo;
+			if ("shared".equals(sandboxId)) {
+				fileInfo = sandboxManager.getSharedFileInfo(fileName);
+			}
+			else {
+				fileInfo = sandboxManager.getFileInfo(sandboxId, fileName);
+			}
 
 			String info = String.format("""
 					File Information:
 					- Name: %s
+					- Original Name: %s
 					- Type: %s
 					- Size: %d bytes
 					- Upload Time: %s
 					- MIME Type: %s
 					- Status: %s
-					""", fileInfo.getName(), fileInfo.getType(), fileInfo.getSize(), fileInfo.getUploadTime(),
-					fileInfo.getMimeType(), fileInfo.getStatus());
+					- Location: %s
+					""", fileInfo.getName(),
+					fileInfo.getOriginalName() != null ? fileInfo.getOriginalName() : fileInfo.getName(),
+					fileInfo.getType(), fileInfo.getSize(), fileInfo.getUploadTime(), fileInfo.getMimeType(),
+					fileInfo.getStatus(), "shared".equals(sandboxId) ? "shared directory" : "plan sandbox");
 
 			return new ToolExecuteResult(info);
 		}
@@ -375,16 +407,35 @@ public class FileSandboxTool extends AbstractBaseTool<FileSandboxTool.SandboxInp
 			status.append("FileSandboxTool Status:\n");
 			status.append("- Current Plan ID: ").append(currentPlanId != null ? currentPlanId : "Not set").append("\n");
 
+			// Show shared files
+			try {
+				var sharedFiles = sandboxManager.listSharedFiles();
+				status.append("- Files in Shared Directory: ").append(sharedFiles.size()).append("\n");
+				for (var file : sharedFiles) {
+					status.append("  * ")
+						.append(file.getOriginalName() != null ? file.getOriginalName() : file.getName())
+						.append(" (")
+						.append(file.getType())
+						.append(")\n");
+				}
+			}
+			catch (Exception e) {
+				status.append("- Files in Shared Directory: Error loading (").append(e.getMessage()).append(")\n");
+			}
+
+			// Show current plan files if available
 			if (currentPlanId != null) {
 				try {
 					var files = sandboxManager.listFiles(currentPlanId);
-					status.append("- Files in Sandbox: ").append(files.size()).append("\n");
+					status.append("- Files in Current Plan Sandbox: ").append(files.size()).append("\n");
 					for (var file : files) {
 						status.append("  * ").append(file.getName()).append(" (").append(file.getType()).append(")\n");
 					}
 				}
 				catch (Exception e) {
-					status.append("- Files in Sandbox: Error loading (").append(e.getMessage()).append(")\n");
+					status.append("- Files in Current Plan Sandbox: Error loading (")
+						.append(e.getMessage())
+						.append(")\n");
 				}
 			}
 

@@ -755,7 +755,10 @@ const words: I18nType = {
     maxLength: 'Max Length',
     charactersRemaining: 'Characters Remaining',
     attachFile: 'Attach File',
+    noPlanForUpload: 'Please start a conversation to enable file upload feature',
     filesUploaded: '{count} file(s) uploaded to sandbox',
+    sharedFiles: 'Shared Files',
+    deleteFile: 'Delete File',
   },
 
   // Sidebar

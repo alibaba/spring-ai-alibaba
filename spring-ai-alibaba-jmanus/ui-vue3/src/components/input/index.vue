@@ -24,7 +24,11 @@
         multiple
         accept=".txt,.csv,.xlsx,.xls,.json,.xml,.md,.pdf,.docx,.doc,.pptx,.ppt,.zip"
       />
-      <button class="attach-btn" :title="$t('input.attachFile')" @click="triggerFileUpload">
+      <button 
+        class="attach-btn" 
+        :title="$t('input.attachFile')" 
+        @click="triggerFileUpload"
+      >
         <Icon icon="carbon:attachment" />
       </button>
       <textarea
@@ -50,6 +54,34 @@
         {{ $t('input.send') }}
       </button>
     </div>
+    
+    <!-- File Bar for Shared Files -->
+    <div v-if="sharedFiles.length > 0" class="file-bar">
+      <div class="file-bar-header">
+        <Icon icon="carbon:document" />
+        <span>{{ $t('input.sharedFiles') }} ({{ sharedFiles.length }})</span>
+      </div>
+      <div class="file-list">
+        <div 
+          v-for="file in sharedFiles" 
+          :key="file.name" 
+          class="file-item"
+        >
+          <div class="file-info">
+            <Icon :icon="getFileIcon(file)" class="file-icon" />
+            <span class="file-name">{{ file.originalName || file.name }}</span>
+            <span class="file-size">{{ formatFileSize(file.size) }}</span>
+          </div>
+          <button 
+            class="file-delete-btn" 
+            @click="deleteSharedFile(file.name)"
+            :title="$t('input.deleteFile')"
+          >
+            <Icon icon="carbon:close" />
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -66,6 +98,7 @@ interface Props {
   placeholder?: string
   disabled?: boolean
   initialValue?: string
+  planId?: string | null
 }
 
 interface Emits {
@@ -80,6 +113,7 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: '',
   disabled: false,
   initialValue: '',
+  planId: null,
 })
 
 const emit = defineEmits<Emits>()
@@ -90,6 +124,7 @@ const currentInput = ref('')
 const defaultPlaceholder = computed(() => props.placeholder || t('input.placeholder'))
 const currentPlaceholder = ref(defaultPlaceholder.value)
 const uploadedFiles = ref<File[]>([])
+const sharedFiles = ref<any[]>([])
 const currentPlanId = ref<string>('')
 
 // Computed property to ensure 'disabled' is a boolean type
@@ -150,12 +185,13 @@ const handleFileSelect = async (event: Event) => {
   if (files.length === 0) return
   
   try {
-    // Get current plan ID from memory store
-    currentPlanId.value = memoryStore.selectMemoryId || 'default'
-    
-    // Upload files to sandbox
+    // Upload files to shared directory by default, or to specific plan if available
     for (const file of files) {
-      await uploadFileToSandbox(file)
+      if (currentPlanId.value) {
+        await uploadFileToSandbox(file)
+      } else {
+        await uploadFileToShared(file)
+      }
     }
     
     // Store uploaded files
@@ -165,7 +201,7 @@ const handleFileSelect = async (event: Event) => {
     emit('files-uploaded', files)
     
     // Show success message
-    console.log(`Successfully uploaded ${files.length} file(s) to sandbox`)
+    console.log(`Successfully uploaded ${files.length} file(s) to unified directory - visible in FileBrowser`)
     
     // Update input placeholder to indicate files are ready
     if (files.length > 0) {
@@ -184,7 +220,32 @@ const handleFileSelect = async (event: Event) => {
 }
 
 /**
+ * Upload single file to shared directory
+ */
+const uploadFileToShared = async (file: File): Promise<void> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  const response = await fetch('/api/file-sandbox/upload-shared', {
+    method: 'POST',
+    body: formData
+  })
+  
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.message || 'Upload failed')
+  }
+  
+  const result = await response.json()
+  console.log('File uploaded to shared directory:', result)
+  
+  // Refresh shared files list
+  await loadSharedFiles()
+}
+
+/**
  * Upload single file to sandbox
+ * Files are now saved directly to the plan root directory for FileBrowser compatibility
  */
 const uploadFileToSandbox = async (file: File): Promise<void> => {
   const formData = new FormData()
@@ -201,7 +262,47 @@ const uploadFileToSandbox = async (file: File): Promise<void> => {
   }
   
   const result = await response.json()
-  console.log('File uploaded successfully:', result)
+  console.log('File uploaded in:', currentPlanId.value)
+  console.log('File uploaded to unified directory:', result)
+}
+
+/**
+ * Load shared files list
+ */
+const loadSharedFiles = async () => {
+  try {
+    const response = await fetch('/api/file-sandbox/files-shared')
+    if (response.ok) {
+      const result = await response.json()
+      if (result.success) {
+        sharedFiles.value = result.files
+      }
+    }
+  } catch (error) {
+    console.error('Error loading shared files:', error)
+  }
+}
+
+/**
+ * Delete shared file
+ */
+const deleteSharedFile = async (fileName: string) => {
+  try {
+    const response = await fetch(`/api/file-sandbox/file-shared/${encodeURIComponent(fileName)}`, {
+      method: 'DELETE'
+    })
+    
+    if (response.ok) {
+      const result = await response.json()
+      if (result.success) {
+        console.log('File deleted successfully:', fileName)
+        // Refresh shared files list
+        await loadSharedFiles()
+      }
+    }
+  } catch (error) {
+    console.error('Error deleting shared file:', error)
+  }
 }
 
 /**
@@ -242,6 +343,51 @@ const getQuery = () => {
   return currentInput.value.trim()
 }
 
+/**
+ * Get file icon based on file type
+ */
+const getFileIcon = (file: any): string => {
+  if (!file || !file.name) return 'carbon:document'
+  
+  const fileName = file.name.toLowerCase()
+  
+  // Programming languages
+  if (fileName.endsWith('.js')) return 'vscode-icons:file-type-js'
+  if (fileName.endsWith('.ts')) return 'vscode-icons:file-type-typescript'
+  if (fileName.endsWith('.vue')) return 'vscode-icons:file-type-vue'
+  if (fileName.endsWith('.java')) return 'vscode-icons:file-type-java'
+  if (fileName.endsWith('.py')) return 'vscode-icons:file-type-python'
+  if (fileName.endsWith('.json')) return 'vscode-icons:file-type-json'
+  if (fileName.endsWith('.xml')) return 'vscode-icons:file-type-xml'
+  if (fileName.endsWith('.html')) return 'vscode-icons:file-type-html'
+  if (fileName.endsWith('.css')) return 'vscode-icons:file-type-css'
+  if (fileName.endsWith('.md')) return 'vscode-icons:file-type-markdown'
+  if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) return 'vscode-icons:file-type-yaml'
+  
+  // Documents
+  if (fileName.endsWith('.pdf')) return 'vscode-icons:file-type-pdf2'
+  if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) return 'vscode-icons:file-type-word'
+  if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) return 'vscode-icons:file-type-excel'
+  if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) return 'vscode-icons:file-type-powerpoint'
+  
+  // Archives
+  if (fileName.match(/\.(zip|rar|7z|tar|gz)$/)) return 'carbon:archive'
+  
+  // Default
+  return 'carbon:document'
+}
+
+/**
+ * Format file size
+ */
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
 // Watch for initialValue changes
 watch(
   () => props.initialValue,
@@ -250,6 +396,18 @@ watch(
       currentInput.value = newValue
       adjustInputHeight()
     }
+  },
+  { immediate: true }
+)
+
+// Watch for planId changes to update currentPlanId
+watch(
+  () => props.planId,
+  (newPlanId) => {
+    if (newPlanId) {
+      currentPlanId.value = newPlanId
+      console.log('Plan ID updated in input component:', newPlanId)
+    } 
   },
   { immediate: true }
 )
@@ -264,7 +422,8 @@ defineExpose({
 })
 
 onMounted(() => {
-  // Initialization logic after component mounting
+  // Load shared files on component mount
+  loadSharedFiles()
 })
 
 onUnmounted(() => {
@@ -316,9 +475,14 @@ onUnmounted(() => {
   justify-content: center;
   transition: all 0.2s ease;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.1);
     transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 
@@ -396,5 +560,115 @@ onUnmounted(() => {
 .clear-memory-btn{
   width: 1.5em;
   height: 1.5em;
+}
+
+/* File Bar Styles */
+.file-bar {
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.file-bar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.file-list {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+.file-item:last-child {
+  border-bottom: none;
+}
+
+.file-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.file-name {
+  color: #ffffff;
+  font-size: 13px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-size {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.file-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.file-delete-btn:hover {
+  background: rgba(220, 38, 38, 0.2);
+  color: #ef4444;
+}
+
+/* Scrollbar for file list */
+.file-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.file-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.file-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.file-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 </style>

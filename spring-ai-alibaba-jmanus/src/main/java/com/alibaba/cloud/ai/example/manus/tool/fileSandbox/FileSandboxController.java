@@ -40,6 +40,38 @@ public class FileSandboxController {
 	private FileSandboxManager sandboxManager;
 
 	/**
+	 * Upload file to shared directory (without planId)
+	 */
+	@PostMapping("/upload-shared")
+	public ResponseEntity<?> uploadFileToShared(@RequestParam("file") MultipartFile file) {
+		try {
+			logger.info("Uploading file to shared directory: fileName={}, size={}", file.getOriginalFilename(),
+					file.getSize());
+
+			// Validate file
+			if (file.isEmpty()) {
+				return ResponseEntity.badRequest().body(createErrorResponse("File is empty"));
+			}
+
+			// Store file in shared directory
+			SandboxFile sandboxFile = sandboxManager.storeUploadedFileToShared(file.getOriginalFilename(),
+					file.getBytes(), file.getContentType());
+
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", true);
+			response.put("message", "File uploaded to shared directory successfully");
+			response.put("file", createFileResponse(sandboxFile));
+
+			return ResponseEntity.ok(response);
+
+		}
+		catch (Exception e) {
+			logger.error("Error uploading file to shared directory: fileName={}", file.getOriginalFilename(), e);
+			return ResponseEntity.internalServerError().body(createErrorResponse("Upload failed: " + e.getMessage()));
+		}
+	}
+
+	/**
 	 * Upload file to sandbox
 	 */
 	@PostMapping("/upload/{planId}")
@@ -110,6 +142,56 @@ public class FileSandboxController {
 		catch (Exception e) {
 			logger.error("Error uploading multiple files to sandbox: planId={}", planId, e);
 			return ResponseEntity.internalServerError().body(createErrorResponse("Upload failed: " + e.getMessage()));
+		}
+	}
+
+	/**
+	 * List files in shared directory
+	 */
+	@GetMapping("/files-shared")
+	public ResponseEntity<?> listSharedFiles() {
+		try {
+			List<SandboxFile> files = sandboxManager.listSharedFiles();
+
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", true);
+			response.put("files", files.stream().map(this::createFileResponse).toList());
+
+			return ResponseEntity.ok(response);
+
+		}
+		catch (Exception e) {
+			logger.error("Error listing files in shared directory", e);
+			return ResponseEntity.internalServerError()
+				.body(createErrorResponse("Failed to list shared files: " + e.getMessage()));
+		}
+	}
+
+	/**
+	 * Delete file from shared directory
+	 */
+	@DeleteMapping("/file-shared/{fileName}")
+	public ResponseEntity<?> deleteSharedFile(@PathVariable("fileName") String fileName) {
+		try {
+			boolean deleted = sandboxManager.deleteSharedFile(fileName);
+
+			Map<String, Object> response = new HashMap<>();
+			if (deleted) {
+				response.put("success", true);
+				response.put("message", "File deleted successfully");
+			}
+			else {
+				response.put("success", false);
+				response.put("message", "File not found");
+			}
+
+			return ResponseEntity.ok(response);
+
+		}
+		catch (Exception e) {
+			logger.error("Error deleting shared file: fileName={}", fileName, e);
+			return ResponseEntity.internalServerError()
+				.body(createErrorResponse("Failed to delete file: " + e.getMessage()));
 		}
 	}
 

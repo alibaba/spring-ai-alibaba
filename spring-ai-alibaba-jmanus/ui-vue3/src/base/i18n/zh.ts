@@ -723,7 +723,10 @@ const words: I18nType = {
     maxLength: '最大长度',
     charactersRemaining: '剩余字符',
     attachFile: '附加文件',
+    noPlanForUpload: '请先开始对话以启用文件上传功能',
     filesUploaded: '已上传 {count} 个文件到沙箱',
+    sharedFiles: '共享文件',
+    deleteFile: '删除文件',
   },
 
   // 侧边栏
