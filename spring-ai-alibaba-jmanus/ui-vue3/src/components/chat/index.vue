@@ -1512,29 +1512,29 @@ defineExpose({
 
 <style lang="less" scoped>
 .chat-container {
-  flex: 1; /* Occupy the remaining space of the parent container */
+  flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%; /* Fill the height of the parent container */
-  min-height: 0; /* Allow shrinking */
-  overflow: hidden; /* Prevent container overflow */
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .messages {
   padding: 24px;
-  flex: 1; /* Use flex: 1 instead of height: 100% */
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto; /* Use auto instead of scroll */
-  min-height: 0; /* Ensure it can shrink */
-  /* Add smooth scrolling */
+  overflow-y: auto;
+  min-height: 0;
+
   scroll-behavior: smooth;
-  /* Improve scrollbar style */
+
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
 
-  /* WebKit scrollbar styling */
+
   &::-webkit-scrollbar {
     width: 8px;
   }
@@ -1589,7 +1589,7 @@ defineExpose({
 }
 
 .assistant-message {
-  /* 1. JManus Thinking/Processing Section Style */
+
   .thinking-section {
     margin-bottom: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1665,7 +1665,7 @@ defineExpose({
     }
   }
 
-  /* 2. JManus Final Response Section Style - Simulate Human Conversation Unit */
+
   .response-section {
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 18px;
@@ -1748,7 +1748,7 @@ defineExpose({
               -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
               sans-serif;
 
-          /* Make the text look more like a natural conversation */
+
           p {
             margin: 0 0 12px 0;
 
@@ -1757,7 +1757,7 @@ defineExpose({
             }
           }
 
-          /* Enhance readability */
+
           strong {
             color: #f8fafc;
             font-weight: 600;
@@ -2026,7 +2026,7 @@ defineExpose({
         }
       }
 
-      /* Sub-plan Step Style - New Feature */
+
       .sub-plan-steps {
         margin-top: 8px;
         padding: 8px 16px;
@@ -2067,7 +2067,7 @@ defineExpose({
           border-radius: 4px;
           cursor: pointer;
           transition: all 0.2s ease;
-          margin-left: 20px; /* Indent to show parent-child relationship */
+          margin-left: 20px;
 
           &:hover {
             background: rgba(255, 255, 255, 0.05);
@@ -2258,21 +2258,53 @@ defineExpose({
       grid-template-columns: repeat(2, 1fr);
       gap: 16px;
       margin-bottom: 16px;
+      align-items: end;
 
-      @media (max-width: 600px) {
+      @media (max-width: 768px) {
         grid-template-columns: 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+
+      @media (max-width: 480px) {
+        gap: 8px;
       }
     }
 
     .form-group {
       margin-bottom: 0;
+      display: grid;
+      grid-template-rows: 1fr 40px;
+      height: 68px;
+      align-content: stretch;
+      gap: 5px;
+      
+      @media (max-width: 768px) {
+        grid-template-rows: 1fr 42px;
+        height: auto;
+        min-height: 70px;
+        align-content: stretch;
+        gap: 4px;
+      }
 
       label {
         display: block;
-        margin-bottom: 6px;
+        margin-bottom: 0;
         font-size: 13px;
         font-weight: 500;
         color: #ffffff;
+        line-height: 1.3;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        grid-row: 1;
+        align-self: end;
+        justify-self: start;
+        
+        @media (max-width: 768px) {
+          font-size: 12px;
+          align-self: start;
+        }
       }
 
       .form-input {
@@ -2283,7 +2315,12 @@ defineExpose({
         border-radius: 6px;
         color: #ffffff;
         font-size: 14px;
+        line-height: 1.4;
+        height: 40px;
+        box-sizing: border-box;
         transition: border-color 0.2s ease;
+        grid-row: 2;
+        align-self: stretch;
 
         &:focus {
           outline: none;
@@ -2294,20 +2331,50 @@ defineExpose({
         &::placeholder {
           color: #888888;
         }
+        
+        @media (max-width: 768px) {
+          font-size: 14px;
+          height: 42px;
+        }
       }
 
       .form-textarea {
         resize: vertical;
-        min-height: 40px;
+        min-height: 60px;
+        height: 60px;
         font-family: inherit;
         line-height: 1.4;
+        box-sizing: border-box;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: #ffffff;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+        grid-row: 2;
+        align-self: stretch;
+        
+        &:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        &::placeholder {
+          color: #888888;
+        }
+        
+        @media (max-width: 768px) {
+          height: 65px;
+        }
       }
 
-      /* Special handling for wide fields in grid layout */
+
       &.form-group-wide {
         grid-column: span 2;
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
           grid-column: span 1;
         }
       }
@@ -2315,17 +2382,61 @@ defineExpose({
       &.form-group-full {
         grid-column: span 2;
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
           grid-column: span 1;
+        }
+      }
+
+      &:has(.form-textarea) {
+        grid-template-rows: 1fr 60px;
+        height: 88px;
+        
+        @media (max-width: 768px) {
+          grid-template-rows: 1fr 65px;
+          height: auto;
+          min-height: 93px;
+        }
+      }
+
+      &.form-group-textarea {
+        grid-template-rows: 1fr 60px;
+        height: 88px;
+        
+        @media (max-width: 768px) {
+          grid-template-rows: 1fr 65px;
+          height: auto;
+          min-height: 93px;
         }
       }
 
       .form-select {
         cursor: pointer;
+        height: 40px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: #ffffff;
+        font-size: 14px;
+        line-height: 1.4;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease;
+        grid-row: 2;
+        align-self: stretch;
+
+        &:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
 
         option {
           background: #2d3748;
           color: #ffffff;
+        }
+        
+        @media (max-width: 768px) {
+          height: 42px;
         }
       }
     }
@@ -2353,10 +2464,10 @@ defineExpose({
   }
 }
 
-/* Scroll to Bottom Button */
+
 .scroll-to-bottom-btn {
   position: absolute;
-  bottom: 120px; /* Above the input field */
+  bottom: 120px;
   right: 24px;
   width: 48px;
   height: 48px;
@@ -2384,7 +2495,7 @@ defineExpose({
     color: #ffffff;
   }
 
-  /* Add pulse animation */
+
   animation: pulse-glow 2s infinite;
 }
 

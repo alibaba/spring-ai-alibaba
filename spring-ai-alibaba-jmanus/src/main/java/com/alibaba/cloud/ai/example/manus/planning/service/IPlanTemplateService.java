@@ -131,4 +131,7 @@ public interface IPlanTemplateService {
 	 */
 	ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam);
 
+	ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam,
+			List<Map<String, Object>> uploadedFiles);
+
 }
