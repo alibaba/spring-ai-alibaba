@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
