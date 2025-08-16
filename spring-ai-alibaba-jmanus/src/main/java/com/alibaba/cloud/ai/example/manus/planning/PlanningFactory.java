@@ -137,9 +137,6 @@ public class PlanningFactory implements IPlanningFactory {
 	@Lazy
 	private SummaryWorkflow summaryWorkflow;
 
-	@Autowired
-	@Lazy
-	private PlanExecutorFactory planExecutorFactory;
 
 	@Autowired
 	private PromptService promptService;
@@ -174,36 +171,6 @@ public class PlanningFactory implements IPlanningFactory {
 		this.dataSourceService = dataSourceService;
 		this.tableProcessingService = tableProcessingService;
 	}
-
-	// public PlanningCoordinator createPlanningCoordinator(ExecutionContext context) {
-	// 	// Add all dynamic agents from the database
-	// 	List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAgents(context);
-
-	// 	PlanCreator planCreator = createPlanCreator(agentEntities);
-
-	// 	PlanFinalizer planFinalizer = createPlanFinalizer();
-
-	// 	PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
-	// 			planFinalizer);
-
-	// 	return planningCoordinator;
-	// }
-
-	// // Use the enhanced PlanningCoordinator with dynamic executor selection
-	// public PlanningCoordinator createPlanningCoordinator(String planId) {
-
-	// 	// Add all dynamic agents from the database
-	// 	List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
-
-	// 	PlanCreator planCreator = createPlanCreator(agentEntities);
-
-	// 	PlanFinalizer planFinalizer = createPlanFinalizer();
-
-	// 	PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
-	// 			planFinalizer);
-
-	// 	return planningCoordinator;
-	// }
 
 	/**
 	 * Create a PlanCreator instance with the given agents

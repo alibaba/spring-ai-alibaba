@@ -448,7 +448,6 @@ public class PlanTemplateService implements IPlanTemplateService {
 		try {
 			// Generate a unique sub-plan ID for this execution
 			String subPlanId = planIdDispatcher.generateSubPlanId(parentPlanId != null ? parentPlanId : planTemplateId);
-			这里需要额外处理 参数映射问题
 			// Create ExecutionContext
 			ExecutionContext context = new ExecutionContext();
 			context.setCurrentPlanId(subPlanId);
