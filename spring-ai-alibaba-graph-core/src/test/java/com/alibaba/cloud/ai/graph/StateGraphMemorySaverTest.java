@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.graph.action.EdgeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.VersionedMemorySaver;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
@@ -109,7 +109,10 @@ public class StateGraphMemorySaverTest {
 		var saver = new MemorySaver();
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().register(SaverConstant.MEMORY, saver).type(SaverConstant.MEMORY).build())
+			.saverConfig(SaverConfig.builder()
+				.register(SaverEnum.MEMORY.getValue(), saver)
+				.type(SaverEnum.MEMORY.getValue())
+				.build())
 			.build();
 
 		var runnableConfig = RunnableConfig.builder().build();
@@ -192,7 +195,10 @@ public class StateGraphMemorySaverTest {
 		var saver = new VersionedMemorySaver();
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().register(SaverConstant.MEMORY, saver).type(SaverConstant.MEMORY).build())
+			.saverConfig(SaverConfig.builder()
+				.register(SaverEnum.MEMORY.getValue(), saver)
+				.type(SaverEnum.MEMORY.getValue())
+				.build())
 			.build();
 
 		var app = workflow.compile(compileConfig);
@@ -264,7 +270,10 @@ public class StateGraphMemorySaverTest {
 		var saver = new MemorySaver();
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().register(SaverConstant.MEMORY, saver).type(SaverConstant.MEMORY).build())
+			.saverConfig(SaverConfig.builder()
+				.register(SaverEnum.MEMORY.getValue(), saver)
+				.type(SaverEnum.MEMORY.getValue())
+				.build())
 			.build();
 
 		var app = workflow.compile(compileConfig);
@@ -344,7 +353,10 @@ public class StateGraphMemorySaverTest {
 		var saver = new MemorySaver();
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().register(SaverConstant.MEMORY, saver).type(SaverConstant.MEMORY).build())
+			.saverConfig(SaverConfig.builder()
+				.register(SaverEnum.MEMORY.getValue(), saver)
+				.type(SaverEnum.MEMORY.getValue())
+				.build())
 			.interruptBefore("tools")
 			.build();
 

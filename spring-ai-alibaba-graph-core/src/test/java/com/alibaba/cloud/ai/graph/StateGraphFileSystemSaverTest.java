@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import org.junit.jupiter.api.Test;
@@ -71,7 +71,10 @@ public class StateGraphFileSystemSaverTest {
 				workflow.getStateSerializer());
 
 		CompileConfig compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().type(SaverConstant.FILE).register(SaverConstant.FILE, saver).build())
+			.saverConfig(SaverConfig.builder()
+				.type(SaverEnum.FILE.getValue())
+				.register(SaverEnum.FILE.getValue(), saver)
+				.build())
 			.build();
 
 		CompiledGraph app = workflow.compile(compileConfig);
@@ -161,7 +164,10 @@ public class StateGraphFileSystemSaverTest {
 				workflow.getStateSerializer());
 
 		CompileConfig compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().type(SaverConstant.FILE).register(SaverConstant.FILE, saver).build())
+			.saverConfig(SaverConfig.builder()
+				.type(SaverEnum.FILE.getValue())
+				.register(SaverEnum.FILE.getValue(), saver)
+				.build())
 			.build();
 
 		CompiledGraph app = workflow.compile(compileConfig);
@@ -256,7 +262,10 @@ public class StateGraphFileSystemSaverTest {
 				workflow.getStateSerializer());
 
 		CompileConfig compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().type(SaverConstant.FILE).register(SaverConstant.FILE, saver).build())
+			.saverConfig(SaverConfig.builder()
+				.type(SaverEnum.FILE.getValue())
+				.register(SaverEnum.FILE.getValue(), saver)
+				.build())
 			.releaseThread(true)
 			.build();
 
