@@ -17,7 +17,7 @@ import java.util.HashMap;
 @RestController("/run")
 public class GraphRunController {
 
-    private CompiledGraph graph;
+    private final CompiledGraph graph;
 
     public GraphRunController(@Qualifier("buildGraph") CompiledGraph graph){
         this.graph = graph;
@@ -37,7 +37,7 @@ public class GraphRunController {
 
     @PostMapping(value = "/start")
     public Map<String, Object> startInvoke(@RequestBody Map<String, Object> inputs) throws Exception {
-        {{startInputsSection}}
+        return graph.invoke(inputs).get().data();
     }
 
 
