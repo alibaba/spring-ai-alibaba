@@ -169,7 +169,7 @@ public final class OverAllState implements Serializable {
 	 */
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume) {
 		this.data = data;
-		this.keyStrategies = keyStrategies;
+		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = resume;
 	}
@@ -319,8 +319,13 @@ public final class OverAllState implements Serializable {
 	 */
 	public Map<String, Object> updateState(Map<String, Object> partialState) {
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
-		partialState.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
-			this.data.put(key, keyStrategies.get(key).apply(value(key, null), partialState.get(key)));
+		partialState.keySet().forEach(key -> {
+			KeyStrategy strategy = keyStrategies != null ? keyStrategies.get(key) : null;
+			// If no specific strategy is found, use the default REPLACE strategy
+			if (strategy == null) {
+				strategy = KeyStrategy.REPLACE;
+			}
+			this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
 		});
 		return data();
 	}
@@ -412,18 +417,20 @@ public final class OverAllState implements Serializable {
 	 */
 	private static Map<String, Object> updatePartialStateFromSchema(Map<String, Object> state,
 			Map<String, Object> partialState, Map<String, KeyStrategy> keyStrategies) {
-		if (keyStrategies == null || keyStrategies.isEmpty()) {
+		if (partialState == null || partialState.isEmpty()) {
 			return partialState;
 		}
-		return partialState.entrySet().stream().map(entry -> {
 
-			KeyStrategy channel = keyStrategies.get(entry.getKey());
-			if (channel != null) {
-				Object newValue = channel.apply(state.get(entry.getKey()), entry.getValue());
-				return entryOf(entry.getKey(), newValue);
+		return partialState.entrySet().stream().map(entry -> {
+			KeyStrategy channel = keyStrategies != null ? keyStrategies.get(entry.getKey()) : null;
+
+			// If no specific strategy is found, use the default REPLACE strategy
+			if (channel == null) {
+				channel = KeyStrategy.REPLACE;
 			}
 
-			return entry;
+			Object newValue = channel.apply(state.get(entry.getKey()), entry.getValue());
+			return entryOf(entry.getKey(), newValue);
 		}).collect(toMapAllowingNulls(Map.Entry::getKey, Map.Entry::getValue));
 	}
 

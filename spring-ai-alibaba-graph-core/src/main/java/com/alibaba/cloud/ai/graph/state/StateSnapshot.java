@@ -37,22 +37,6 @@ public final class StateSnapshot extends NodeOutput {
 		return config;
 	}
 
-	/**
-	 * @deprecated Use {@link #config()} instead.
-	 */
-	@Deprecated
-	public RunnableConfig getConfig() {
-		return config();
-	}
-
-	/**
-	 * @deprecated Use {@link #next()} instead.
-	 */
-	@Deprecated
-	public String getNext() {
-		return next();
-	}
-
 	private StateSnapshot(String node, OverAllState state, RunnableConfig config) {
 		super(node, state);
 		this.config = config;
