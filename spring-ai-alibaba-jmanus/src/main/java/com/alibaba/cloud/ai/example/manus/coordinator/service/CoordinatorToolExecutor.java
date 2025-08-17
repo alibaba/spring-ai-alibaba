@@ -23,7 +23,6 @@ import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -111,7 +110,7 @@ public class CoordinatorToolExecutor {
 			// 1. Validate and extract parameters
 			Map<String, Object> arguments = request.arguments();
 			String planId = validateAndExtractPlanId(arguments);
-			
+
 			// Use IPlanParameterMappingService to process parameters
 			Map<String, Object> processedParams = processParameters(arguments);
 

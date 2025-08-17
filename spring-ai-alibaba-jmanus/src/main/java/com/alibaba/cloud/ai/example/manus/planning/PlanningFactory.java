@@ -55,7 +55,6 @@ import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
-import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.subplan.SummaryWorkflow;

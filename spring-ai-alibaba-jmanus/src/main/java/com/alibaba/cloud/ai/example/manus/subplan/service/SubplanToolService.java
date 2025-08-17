@@ -19,7 +19,6 @@ import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.subplan.model.po.SubplanToolDef;
 import com.alibaba.cloud.ai.example.manus.subplan.model.vo.SubplanToolWrapper;
 import com.alibaba.cloud.ai.example.manus.subplan.repository.SubplanToolDefRepository;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;

@@ -25,8 +25,6 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 
 	private static final String PLACEHOLDER_SUFFIX = ">>";
 
-
-
 	@Override
 	public ParameterValidationResult validateParameters(String planJson, Map<String, Object> rawParams) {
 		ParameterValidationResult result = new ParameterValidationResult();
@@ -88,10 +86,6 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 		return placeholders;
 	}
 
-
-
-
-
 	/**
 	 * 获取参数占位符的正则表达式模式 用于外部测试或调试
 	 */
@@ -129,7 +123,8 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 		Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
 
 		while (matcher.find()) {
-			String placeholder = matcher.group(0); // Complete placeholder, e.g., <<args1>>
+			String placeholder = matcher.group(0); // Complete placeholder, e.g.,
+													// <<args1>>
 			String paramName = matcher.group(1); // Parameter name, e.g., args1
 
 			// Get value from raw parameters
@@ -144,7 +139,8 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 				logger.debug("Parameter replacement successful: {} -> {}", placeholder, stringValue);
 			}
 			else {
-				logger.warn("Parameter {} not found in raw parameters, keeping placeholder: {}", paramName, placeholder);
+				logger.warn("Parameter {} not found in raw parameters, keeping placeholder: {}", paramName,
+						placeholder);
 			}
 		}
 

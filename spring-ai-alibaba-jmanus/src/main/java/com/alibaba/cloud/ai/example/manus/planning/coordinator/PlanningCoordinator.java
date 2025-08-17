@@ -23,9 +23,7 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.example.manus.planning.service.IPlanRelationshipService;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import java.util.concurrent.CompletableFuture;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,12 +64,60 @@ public class PlanningCoordinator {
 		this(planCreator, planExecutorFactory, planFinalizer, null, null);
 	}
 
-
+	/**
+	 * Execute plan by user query using plan creator and then execute the created plan
+	 * @param userQuery The user's query/request
+	 * @param rootPlanId The root plan ID for the execution context
+	 * @param parentPlanId The ID of the parent plan (can be null for root plans)
+	 * @param currentPlanId The current plan ID for execution
+	 * @return A CompletableFuture that completes with the execution result
+	 */
 	public CompletableFuture<PlanExecutionResult> executeByUserQuery(String userQuery, String rootPlanId,
-    String parentPlanId, String currentPlanId)
-    {
+			String parentPlanId, String currentPlanId) {
 
-    }
+		if (userQuery == null || userQuery.trim().isEmpty()) {
+			log.error("User query is null or empty for plan: {}", currentPlanId);
+			PlanExecutionResult errorResult = new PlanExecutionResult();
+			errorResult.setSuccess(false);
+			errorResult.setErrorMessage("User query cannot be null or empty");
+			return CompletableFuture.completedFuture(errorResult);
+		}
+
+		try {
+			// Create execution context for plan creation
+			ExecutionContext context = new ExecutionContext();
+			context.setCurrentPlanId(currentPlanId);
+			context.setRootPlanId(rootPlanId);
+			context.setUserRequest(userQuery);
+			context.setNeedSummary(false);
+			context.setUseMemory(false);
+
+			// Create plan using plan creator
+			planCreator.createPlanWithoutMemory(context);
+
+			// Get the created plan from context
+			PlanInterface plan = context.getPlan();
+			if (plan == null) {
+				log.error("Failed to create plan from user query: {}", userQuery);
+				PlanExecutionResult errorResult = new PlanExecutionResult();
+				errorResult.setSuccess(false);
+				errorResult.setErrorMessage("Failed to create plan from user query");
+				return CompletableFuture.completedFuture(errorResult);
+			}
+
+			// Execute the created plan using executeByPlan
+			log.info("Plan created successfully from user query, executing plan: {}", currentPlanId);
+			return executeByPlan(plan, rootPlanId, parentPlanId, currentPlanId);
+
+		}
+		catch (Exception e) {
+			log.error("Failed to execute by user query: {}", userQuery, e);
+			PlanExecutionResult errorResult = new PlanExecutionResult();
+			errorResult.setSuccess(false);
+			errorResult.setErrorMessage("Execution failed: " + e.getMessage());
+			return CompletableFuture.completedFuture(errorResult);
+		}
+	}
 
 	/**
 	 * Execute a common plan with the given plan interface. This method handles the core
