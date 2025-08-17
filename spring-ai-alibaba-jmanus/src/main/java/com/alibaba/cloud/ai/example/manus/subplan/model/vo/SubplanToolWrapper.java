@@ -19,7 +19,10 @@ import com.alibaba.cloud.ai.example.manus.subplan.model.po.SubplanToolDef;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +47,12 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 
 	@Autowired
 	private PlanTemplateService planTemplateService;
+
+	@Autowired
+	private PlanningCoordinator planningCoordinator;
+
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	public SubplanToolWrapper(SubplanToolDef subplanTool, String currentPlanId, String rootPlanId) {
 		this.subplanTool = subplanTool;
@@ -85,9 +94,20 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 			logger.info("Executing subplan tool: {} with template: {}", subplanTool.getToolName(),
 					subplanTool.getPlanTemplateId());
 
-			// Execute the subplan using PlanTemplateService
-			CompletableFuture<PlanExecutionResult> future = planTemplateService
-				.executePlanByTemplateId(subplanTool.getPlanTemplateId(), rootPlanId, currentPlanId, input);
+			// Get the plan template from PlanTemplateService
+			String planJson = planTemplateService.getLatestPlanVersion(subplanTool.getPlanTemplateId());
+			if (planJson == null) {
+				String errorMsg = "Plan template not found: " + subplanTool.getPlanTemplateId();
+				logger.error(errorMsg);
+				return new ToolExecuteResult(errorMsg);
+			}
+
+			// Parse the JSON to create a PlanInterface
+			PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
+
+			// Execute the plan using PlanningCoordinator
+			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByPlan(
+					plan, rootPlanId, currentPlanId, currentPlanId);
 
 			PlanExecutionResult result = future.get();
 
