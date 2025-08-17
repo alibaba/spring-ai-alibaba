@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.example.manus.planning.service.IPlanRelationshipService;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import java.util.concurrent.CompletableFuture;
 import java.util.Map;
 
@@ -45,12 +46,15 @@ public class PlanningCoordinator {
 
 	private final IPlanRelationshipService planRelationshipService;
 
+	private final PlanIdDispatcher planIdDispatcher;
+
 	public PlanningCoordinator(PlanCreator planCreator, PlanExecutorFactory planExecutorFactory,
-			PlanFinalizer planFinalizer, IPlanRelationshipService planRelationshipService) {
+			PlanFinalizer planFinalizer, IPlanRelationshipService planRelationshipService, PlanIdDispatcher planIdDispatcher) {
 		this.planCreator = planCreator;
 		this.planExecutorFactory = planExecutorFactory;
 		this.planFinalizer = planFinalizer;
 		this.planRelationshipService = planRelationshipService;
+		this.planIdDispatcher = planIdDispatcher;
 	}
 
 	/**
@@ -58,12 +62,12 @@ public class PlanningCoordinator {
 	 */
 	public PlanningCoordinator(PlanCreator planCreator, PlanExecutorFactory planExecutorFactory,
 			PlanFinalizer planFinalizer) {
-		this(planCreator, planExecutorFactory, planFinalizer, null);
+		this(planCreator, planExecutorFactory, planFinalizer, null, null);
 	}
 
 	/**
 	 * Execute a common plan with the given plan interface.
-	 * This is a private method that handles the core execution logic.
+	 * This method handles the core execution logic and can be called from external classes.
 	 * 
 	 * @param plan The plan interface to execute
 	 * @param rootPlanId The root plan ID for the execution context
@@ -71,7 +75,7 @@ public class PlanningCoordinator {
 	 * @param currentPlanId The current plan ID for execution
 	 * @return A CompletableFuture that completes with the execution result
 	 */
-	private CompletableFuture<PlanExecutionResult> executeCommonPlan(PlanInterface plan, String rootPlanId, 
+	public CompletableFuture<PlanExecutionResult> executeCommonPlan(PlanInterface plan, String rootPlanId, 
 			String parentPlanId, String currentPlanId) {
 		
 		if (plan == null) {
@@ -119,5 +123,6 @@ public class PlanningCoordinator {
 			return CompletableFuture.completedFuture(errorResult);
 		}
 	}
+
     
 }
