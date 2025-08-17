@@ -35,6 +35,8 @@ import java.util.concurrent.ExecutionException;
  * This allows integration with the existing tool registry system
  */
 public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
+
+    public static final String PARENT_PLAN_ID_ARG_NAME = "PLAN_PARENT_ID_ARG_NAME";
     
     private static final Logger logger = LoggerFactory.getLogger(SubplanToolWrapper.class);
     

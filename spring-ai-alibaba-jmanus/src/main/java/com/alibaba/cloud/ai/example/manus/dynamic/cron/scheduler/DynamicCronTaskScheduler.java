@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.cron.enums.TaskStatus;
 import com.alibaba.cloud.ai.example.manus.dynamic.cron.repository.CronRepository;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
+import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.runtime.service.PlanExecutionService;
 import org.slf4j.Logger;
@@ -120,7 +121,7 @@ public class DynamicCronTaskScheduler {
 			log.info("Executing plan template: {}", planTemplateId);
 
 			// Get the plan template to check if it exists
-			com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate template = 
+			PlanTemplate template = 
 				planTemplateService.getPlanTemplate(planTemplateId);
 			if (template == null) {
 				log.error("Plan template not found: {}", planTemplateId);
