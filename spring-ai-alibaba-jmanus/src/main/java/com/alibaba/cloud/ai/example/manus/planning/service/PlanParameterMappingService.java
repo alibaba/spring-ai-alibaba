@@ -110,6 +110,54 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 		return PLACEHOLDER_SUFFIX;
 	}
 
+	@Override
+	public String replaceParametersInJson(String planJson, Map<String, Object> rawParams) {
+		if (planJson == null || rawParams == null) {
+			logger.warn("Plan template or raw parameters are null, skipping parameter replacement");
+			return planJson;
+		}
+
+		if (rawParams.isEmpty()) {
+			logger.debug("Raw parameters are empty, no parameter replacement needed");
+			return planJson;
+		}
+
+		String result = planJson;
+		int replacementCount = 0;
+
+		// Find all parameter placeholders
+		Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
+
+		while (matcher.find()) {
+			String placeholder = matcher.group(0); // Complete placeholder, e.g., <<args1>>
+			String paramName = matcher.group(1); // Parameter name, e.g., args1
+
+			// Get value from raw parameters
+			Object paramValue = rawParams.get(paramName);
+
+			if (paramValue != null) {
+				// Replace placeholder
+				String stringValue = paramValue.toString();
+				result = result.replace(placeholder, stringValue);
+				replacementCount++;
+
+				logger.debug("Parameter replacement successful: {} -> {}", placeholder, stringValue);
+			}
+			else {
+				logger.warn("Parameter {} not found in raw parameters, keeping placeholder: {}", paramName, placeholder);
+			}
+		}
+
+		if (replacementCount > 0) {
+			logger.info("Parameter replacement completed, replaced {} parameter placeholders", replacementCount);
+		}
+		else {
+			logger.debug("No parameter placeholders found for replacement");
+		}
+
+		return result;
+	}
+
 	/**
 	 * 检查参数名是否有效 参数名只能包含字母、数字和下划线
 	 */

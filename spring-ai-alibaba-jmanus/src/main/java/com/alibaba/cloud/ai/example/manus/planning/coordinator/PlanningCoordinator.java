@@ -66,6 +66,13 @@ public class PlanningCoordinator {
 		this(planCreator, planExecutorFactory, planFinalizer, null, null);
 	}
 
+
+	public CompletableFuture<PlanExecutionResult> executeByUserQuery(String userQuery, String rootPlanId,
+    String parentPlanId, String currentPlanId)
+    {
+
+    }
+
 	/**
 	 * Execute a common plan with the given plan interface. This method handles the core
 	 * execution logic and can be called from external classes.
@@ -75,7 +82,7 @@ public class PlanningCoordinator {
 	 * @param currentPlanId The current plan ID for execution
 	 * @return A CompletableFuture that completes with the execution result
 	 */
-	public CompletableFuture<PlanExecutionResult> executeCommonPlan(PlanInterface plan, String rootPlanId,
+	public CompletableFuture<PlanExecutionResult> executeByPlan(PlanInterface plan, String rootPlanId,
 			String parentPlanId, String currentPlanId) {
 
 		if (plan == null) {

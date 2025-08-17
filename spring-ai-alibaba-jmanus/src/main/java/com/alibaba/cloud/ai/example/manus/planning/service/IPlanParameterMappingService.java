@@ -25,4 +25,12 @@ public interface IPlanParameterMappingService {
 	 */
 	List<String> extractParameterPlaceholders(String planJson);
 
+	/**
+	 * Replace parameters in JSON and return the replaced plan JSON
+	 * @param planJson Plan template JSON string
+	 * @param rawParams Raw parameters dictionary
+	 * @return Replaced plan JSON string
+	 */
+	String replaceParametersInJson(String planJson, Map<String, Object> rawParams);
+
 }
