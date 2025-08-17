@@ -23,7 +23,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 
 /**
- * 智能体数据源关联实体类
+ * Agent Data Source Association Entity Class
  *
  * @author Alibaba Cloud AI
  */
@@ -52,11 +52,11 @@ public class AgentDatasource {
 	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime updateTime;
 
-	// 关联的数据源对象（用于联查）
+	// Associated data source object (for joint query)
 	@TableField(exist = false)
 	private Datasource datasource;
 
-	// 构造函数
+	// Constructor
 	public AgentDatasource() {
 	}
 

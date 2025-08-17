@@ -31,7 +31,7 @@ import org.springframework.context.annotation.Bean;
  * Auto-configuration for Redis Chat Memory using Lettuce.
  *
  * @author benym
- * @date 2025/7/31 16:23
+ * @since 2025/7/31 16:23
  */
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ LettuceRedisChatMemoryRepository.class, RedisClient.class })

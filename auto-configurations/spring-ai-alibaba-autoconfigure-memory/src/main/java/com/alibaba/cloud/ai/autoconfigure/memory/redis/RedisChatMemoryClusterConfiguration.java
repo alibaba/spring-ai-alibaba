@@ -21,7 +21,7 @@ import java.util.List;
  * Configuration for Redis Memory using Redis Cluster
  *
  * @author benym
- * @date 2025/7/30 21:33
+ * @since 2025/7/30 21:33
  */
 public record RedisChatMemoryClusterConfiguration(List<String> nodeAddresses, String username, String password,
 		int timeout) {

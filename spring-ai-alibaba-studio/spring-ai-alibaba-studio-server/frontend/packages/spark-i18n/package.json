@@ -1,0 +1,28 @@
+{
+  "name": "@spark-i18n/core",
+  "version": "1.0.0",
+  "description": "Spark I18n core library",
+  "keywords": [
+    "i18n",
+    "internationalization",
+    "localization"
+  ],
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "translate:spark-flow": "node ./src/must/run.js -t patch -c spark-flow",
+    "translate:spark-flow:check": "node ./src/must/run.js -t check -c spark-flow",
+    "translate:spark-flow:init": "node ./src/must/run.js -t init -c spark-flow",
+    "translate:main": "node ./src/must/run.js -t patch -c main",
+    "translate:main:check": "node ./src/must/run.js -t check -c main",
+    "translate:main:init": "node ./src/must/run.js -t init -c main"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5",
+    "find": "^0.2.9",
+    "fs-extra": "^6.0.1"
+  }
+}
