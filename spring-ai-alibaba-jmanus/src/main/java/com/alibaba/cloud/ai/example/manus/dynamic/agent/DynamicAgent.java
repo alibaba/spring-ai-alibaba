@@ -93,7 +93,6 @@ public class DynamicAgent extends ReActAgent {
 
 	private final StreamingResponseHandler streamingResponseHandler;
 
-
 	// Pattern to detect sub-plan trigger in tool result, e.g. "调用了子执行计划，计划id是xxxx"
 	private static final Pattern SUBPLAN_PATTERN = Pattern.compile("调用了子执行计划，计划id是([\\w-]+)");
 
@@ -334,21 +333,22 @@ public class DynamicAgent extends ReActAgent {
 				}
 			}
 
-
-            // Detect sub-plan trigger from tool result
-            List<String> childPlanIds = extractChildPlanIds(lastToolCallResult);
+			// Detect sub-plan trigger from tool result
+			List<String> childPlanIds = extractChildPlanIds(lastToolCallResult);
 			if (!childPlanIds.isEmpty()) {
 				log.info("Detected sub-plan trigger for planId {} with children: {}", getCurrentPlanId(), childPlanIds);
-                // Delegate to TaskManager non-blocking orchestration: suspend, schedule, patch, resume
-                if (taskManager != null) {
-                    taskManager.scheduleChildrenPatchAndResumeByPlanId(getCurrentPlanId(), childPlanIds, childId -> {
-                        // External factory hook required; keep placeholder to compile
-                        throw new IllegalStateException("Task factory not provided");
-                    });
-                }
-                // Record action with subPlanCreated=true, keep lastToolCallResult as-is; real result will be patched into memory
-                recordActionResult(actToolInfoList, lastToolCallResult, ExecutionStatus.RUNNING, null, true);
-                return new AgentExecResult(lastToolCallResult, AgentState.IN_PROGRESS);
+				// Delegate to TaskManager non-blocking orchestration: suspend, schedule,
+				// patch, resume
+				if (taskManager != null) {
+					taskManager.scheduleChildrenPatchAndResumeByPlanId(getCurrentPlanId(), childPlanIds, childId -> {
+						// External factory hook required; keep placeholder to compile
+						throw new IllegalStateException("Task factory not provided");
+					});
+				}
+				// Record action with subPlanCreated=true, keep lastToolCallResult as-is;
+				// real result will be patched into memory
+				recordActionResult(actToolInfoList, lastToolCallResult, ExecutionStatus.RUNNING, null, true);
+				return new AgentExecResult(lastToolCallResult, AgentState.IN_PROGRESS);
 			}
 
 			// Record successful action result (no sub-plan)
@@ -380,7 +380,8 @@ public class DynamicAgent extends ReActAgent {
 		}
 	}
 
-	// Extract child plan ids from tool result by pattern; return empty list if not matched
+	// Extract child plan ids from tool result by pattern; return empty list if not
+	// matched
 	private List<String> extractChildPlanIds(String toolResult) {
 		if (toolResult == null) {
 			return Collections.emptyList();

@@ -122,6 +122,4 @@ public interface IPlanTemplateService {
 	 */
 	boolean deletePlanTemplate(String planTemplateId);
 
-
-
 }

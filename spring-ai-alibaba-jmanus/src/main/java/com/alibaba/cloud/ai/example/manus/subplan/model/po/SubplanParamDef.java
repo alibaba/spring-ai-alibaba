@@ -5,125 +5,121 @@ import java.util.Objects;
 
 /**
  * SubplanParamDef - Subplan Parameter Definition
- * 
+ *
  * Represents a parameter definition for subplan tools
  */
 @Entity
 @Table(name = "subplan_param_def")
 public class SubplanParamDef {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(name = "name", nullable = false, length = 255)
-    private String name; // Parameter name
 
-    @Column(name = "type", nullable = false, length = 50)
-    private String type; // Parameter type, default "String"
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description; // Parameter description
+	@Column(name = "name", nullable = false, length = 255)
+	private String name; // Parameter name
 
-    @Column(name = "required", nullable = false)
-    private boolean required; // Whether required, default true
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tool_def_id", nullable = false)
-    private SubplanToolDef toolDef;
+	@Column(name = "type", nullable = false, length = 50)
+	private String type; // Parameter type, default "String"
 
-    // Constructor
-    public SubplanParamDef() {
-        this.type = "String";
-        this.required = true;
-    }
+	@Column(name = "description", columnDefinition = "TEXT")
+	private String description; // Parameter description
 
-    public SubplanParamDef(String name, String type, String description, boolean required) {
-        this.name = name;
-        this.type = type != null ? type : "String";
-        this.description = description;
-        this.required = required;
-    }
+	@Column(name = "required", nullable = false)
+	private boolean required; // Whether required, default true
 
-    public SubplanParamDef(String name, String description) {
-        this.name = name;
-        this.type = "String";
-        this.description = description;
-        this.required = true;
-    }
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "tool_def_id", nullable = false)
+	private SubplanToolDef toolDef;
 
-    // Getter and Setter methods
-    public Long getId() {
-        return id;
-    }
+	// Constructor
+	public SubplanParamDef() {
+		this.type = "String";
+		this.required = true;
+	}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	public SubplanParamDef(String name, String type, String description, boolean required) {
+		this.name = name;
+		this.type = type != null ? type : "String";
+		this.description = description;
+		this.required = required;
+	}
 
-    public String getName() {
-        return name;
-    }
+	public SubplanParamDef(String name, String description) {
+		this.name = name;
+		this.type = "String";
+		this.description = description;
+		this.required = true;
+	}
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	// Getter and Setter methods
+	public Long getId() {
+		return id;
+	}
 
-    public String getType() {
-        return type;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public void setType(String type) {
-        this.type = type != null ? type : "String";
-    }
+	public String getName() {
+		return name;
+	}
 
-    public String getDescription() {
-        return description;
-    }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+	public String getType() {
+		return type;
+	}
 
-    public boolean isRequired() {
-        return required;
-    }
+	public void setType(String type) {
+		this.type = type != null ? type : "String";
+	}
 
-    public void setRequired(boolean required) {
-        this.required = required;
-    }
-    
-    public SubplanToolDef getToolDef() {
-        return toolDef;
-    }
+	public String getDescription() {
+		return description;
+	}
 
-    public void setToolDef(SubplanToolDef toolDef) {
-        this.toolDef = toolDef;
-    }
+	public void setDescription(String description) {
+		this.description = description;
+	}
 
-    @Override
-    public String toString() {
-        return "SubplanParamDef{" + 
-                "id=" + id +
-                ", name='" + name + '\'' + 
-                ", type='" + type + '\'' + 
-                ", description='" + description + '\'' + 
-                ", required=" + required + 
-                '}';
-    }
+	public boolean isRequired() {
+		return required;
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        SubplanParamDef that = (SubplanParamDef) o;
-        return Objects.equals(id, that.id);
-    }
+	public void setRequired(boolean required) {
+		this.required = required;
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
+	public SubplanToolDef getToolDef() {
+		return toolDef;
+	}
+
+	public void setToolDef(SubplanToolDef toolDef) {
+		this.toolDef = toolDef;
+	}
+
+	@Override
+	public String toString() {
+		return "SubplanParamDef{" + "id=" + id + ", name='" + name + '\'' + ", type='" + type + '\'' + ", description='"
+				+ description + '\'' + ", required=" + required + '}';
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		SubplanParamDef that = (SubplanParamDef) o;
+		return Objects.equals(id, that.id);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id);
+	}
+
 }

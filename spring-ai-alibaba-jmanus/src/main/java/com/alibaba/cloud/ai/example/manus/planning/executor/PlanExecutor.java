@@ -48,37 +48,37 @@ public class PlanExecutor extends AbstractPlanExecutor {
 	}
 
 	// private void executeAllSteps(ExecutionContext context) {
-	// 	BaseAgent lastExecutor = null;
-	// 	PlanInterface plan = context.getPlan();
-	// 	plan.updateStepIndices();
+	// BaseAgent lastExecutor = null;
+	// PlanInterface plan = context.getPlan();
+	// plan.updateStepIndices();
 
-	// 	try {
-	// 		recorder.recordPlanExecutionStart(context);
-	// 		List<ExecutionStep> steps = plan.getAllSteps();
+	// try {
+	// recorder.recordPlanExecutionStart(context);
+	// List<ExecutionStep> steps = plan.getAllSteps();
 
-	// 		if (steps != null && !steps.isEmpty()) {
-	// 			for (ExecutionStep step : steps) {
-	// 				BaseAgent stepExecutor = executeStep(step, context);
-	// 				if (stepExecutor != null) {
-	// 					lastExecutor = stepExecutor;
-	// 				}
-	// 			}
-	// 		}
+	// if (steps != null && !steps.isEmpty()) {
+	// for (ExecutionStep step : steps) {
+	// BaseAgent stepExecutor = executeStep(step, context);
+	// if (stepExecutor != null) {
+	// lastExecutor = stepExecutor;
+	// }
+	// }
+	// }
 
-	// 		context.setSuccess(true);
-	// 	}
-	// 	finally {
-	// 		performCleanup(context, lastExecutor);
-	// 	}
+	// context.setSuccess(true);
+	// }
+	// finally {
+	// performCleanup(context, lastExecutor);
+	// }
 	// }
 
 	/**
-	 * Execute all steps asynchronously and return a CompletableFuture with execution results
-	 * 
-	 * Usage example:
-	 * <pre>
+	 * Execute all steps asynchronously and return a CompletableFuture with execution
+	 * results
+	 *
+	 * Usage example: <pre>
 	 * CompletableFuture<PlanExecutionResult> future = planExecutor.executeAllStepsAsync(context);
-	 * 
+	 *
 	 * future.whenComplete((result, throwable) -> {
 	 *     if (throwable != null) {
 	 *         // Handle execution error
@@ -88,7 +88,7 @@ public class PlanExecutor extends AbstractPlanExecutor {
 	 *         if (result.isSuccess()) {
 	 *             String finalResult = result.getEffectiveResult();
 	 *             System.out.println("Final result: " + finalResult);
-	 *             
+	 *
 	 *             // Access individual step results
 	 *             for (StepResult step : result.getStepResults()) {
 	 *                 System.out.println("Step " + step.getStepIndex() + ": " + step.getResult());
@@ -99,8 +99,8 @@ public class PlanExecutor extends AbstractPlanExecutor {
 	 *     }
 	 * });
 	 * </pre>
-	 * 
-	 * @param context Execution context containing user request and execution process information
+	 * @param context Execution context containing user request and execution process
+	 * information
 	 * @return CompletableFuture containing PlanExecutionResult with all step results
 	 */
 	public CompletableFuture<PlanExecutionResult> executeAllStepsAsync(ExecutionContext context) {
@@ -119,7 +119,7 @@ public class PlanExecutor extends AbstractPlanExecutor {
 						BaseAgent stepExecutor = executeStep(step, context);
 						if (stepExecutor != null) {
 							lastExecutor = stepExecutor;
-							
+
 							// Collect step result
 							StepResult stepResult = new StepResult();
 							stepResult.setStepIndex(step.getStepIndex());
@@ -127,7 +127,7 @@ public class PlanExecutor extends AbstractPlanExecutor {
 							stepResult.setResult(step.getResult());
 							stepResult.setStatus(step.getStatus());
 							stepResult.setAgentName(stepExecutor.getName());
-							
+
 							result.addStepResult(stepResult);
 						}
 					}
@@ -136,16 +136,19 @@ public class PlanExecutor extends AbstractPlanExecutor {
 				context.setSuccess(true);
 				result.setSuccess(true);
 				result.setFinalResult(context.getResultSummary());
-				
-			} catch (Exception e) {
+
+			}
+			catch (Exception e) {
 				context.setSuccess(false);
 				result.setSuccess(false);
 				result.setErrorMessage(e.getMessage());
-			} finally {
+			}
+			finally {
 				performCleanup(context, lastExecutor);
 			}
-			
+
 			return result;
 		});
 	}
+
 }

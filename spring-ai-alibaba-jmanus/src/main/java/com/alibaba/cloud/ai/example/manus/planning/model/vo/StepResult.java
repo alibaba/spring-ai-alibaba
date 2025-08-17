@@ -21,50 +21,56 @@ import com.alibaba.cloud.ai.example.manus.agent.AgentState;
  * Result class for individual step execution
  */
 public class StepResult {
-    private Integer stepIndex;
-    private String stepRequirement;
-    private String result;
-    private AgentState status;
-    private String agentName;
-    
-    // Getters and setters
-    public Integer getStepIndex() { 
-        return stepIndex; 
-    }
-    
-    public void setStepIndex(Integer stepIndex) { 
-        this.stepIndex = stepIndex; 
-    }
-    
-    public String getStepRequirement() { 
-        return stepRequirement; 
-    }
-    
-    public void setStepRequirement(String stepRequirement) { 
-        this.stepRequirement = stepRequirement; 
-    }
-    
-    public String getResult() { 
-        return result; 
-    }
-    
-    public void setResult(String result) { 
-        this.result = result; 
-    }
-    
-    public AgentState getStatus() { 
-        return status; 
-    }
-    
-    public void setStatus(AgentState status) { 
-        this.status = status; 
-    }
-    
-    public String getAgentName() { 
-        return agentName; 
-    }
-    
-    public void setAgentName(String agentName) { 
-        this.agentName = agentName; 
-    }
+
+	private Integer stepIndex;
+
+	private String stepRequirement;
+
+	private String result;
+
+	private AgentState status;
+
+	private String agentName;
+
+	// Getters and setters
+	public Integer getStepIndex() {
+		return stepIndex;
+	}
+
+	public void setStepIndex(Integer stepIndex) {
+		this.stepIndex = stepIndex;
+	}
+
+	public String getStepRequirement() {
+		return stepRequirement;
+	}
+
+	public void setStepRequirement(String stepRequirement) {
+		this.stepRequirement = stepRequirement;
+	}
+
+	public String getResult() {
+		return result;
+	}
+
+	public void setResult(String result) {
+		this.result = result;
+	}
+
+	public AgentState getStatus() {
+		return status;
+	}
+
+	public void setStatus(AgentState status) {
+		this.status = status;
+	}
+
+	public String getAgentName() {
+		return agentName;
+	}
+
+	public void setAgentName(String agentName) {
+		this.agentName = agentName;
+	}
+
 }

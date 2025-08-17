@@ -125,7 +125,7 @@ public class PlanTemplateController {
 		try {
 			// Create PlanCreator using PlanningFactory
 			PlanCreator planCreator = planningFactory.createPlanCreator();
-			
+
 			// Create plan using PlanCreator directly
 			planCreator.createPlanWithoutMemory(context);
 			logger.info("Plan generation successful: {}", planTemplateId);
@@ -191,31 +191,34 @@ public class PlanTemplateController {
 	 * @param parentPlanId The parent plan ID (can be null for root plans)
 	 * @return ResponseEntity with execution result
 	 */
-	private ResponseEntity<Map<String, Object>> executePlanAndBuildResponse(String planTemplateId, String rawParam, String parentPlanId) {
+	private ResponseEntity<Map<String, Object>> executePlanAndBuildResponse(String planTemplateId, String rawParam,
+			String parentPlanId) {
 		try {
 			// Execute the plan template using the new method
 			CompletableFuture<PlanExecutionResult> future = executePlanTemplate(planTemplateId, rawParam, parentPlanId);
-			
+
 			// For now, we'll wait for the result synchronously
 			// In a real implementation, you might want to handle this asynchronously
 			PlanExecutionResult result = future.get();
-			
+
 			Map<String, Object> response = new HashMap<>();
 			response.put("planTemplateId", planTemplateId);
 			response.put("status", result.isSuccess() ? "completed" : "failed");
 			response.put("success", result.isSuccess());
-			
+
 			if (result.isSuccess()) {
 				response.put("message", "Plan execution completed successfully");
 				response.put("result", result.getEffectiveResult());
-			} else {
+			}
+			else {
 				response.put("message", "Plan execution failed");
 				response.put("error", result.getErrorMessage());
 			}
-			
+
 			return ResponseEntity.ok(response);
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			logger.error("Failed to execute plan template: {}", planTemplateId, e);
 			Map<String, Object> errorResponse = new HashMap<>();
 			errorResponse.put("planTemplateId", planTemplateId);
@@ -228,15 +231,15 @@ public class PlanTemplateController {
 	}
 
 	/**
-	 * Execute a plan template by its ID using PlanningCoordinator
-	 * This method fetches the plan template and executes it using the common execution logic.
-	 * 
+	 * Execute a plan template by its ID using PlanningCoordinator This method fetches the
+	 * plan template and executes it using the common execution logic.
 	 * @param planTemplateId The ID of the plan template to execute
 	 * @param rawParam Raw parameters for the execution (can be null)
 	 * @param parentPlanId The ID of the parent plan (can be null for root plans)
 	 * @return A CompletableFuture that completes with the execution result
 	 */
-	private CompletableFuture<PlanExecutionResult> executePlanTemplate(String planTemplateId, String rawParam, String parentPlanId) {
+	private CompletableFuture<PlanExecutionResult> executePlanTemplate(String planTemplateId, String rawParam,
+			String parentPlanId) {
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			logger.error("Plan template ID is null or empty");
 			PlanExecutionResult errorResult = new PlanExecutionResult();
@@ -247,12 +250,13 @@ public class PlanTemplateController {
 
 		try {
 			// Generate a unique plan ID for this execution
-			String currentPlanId = planIdDispatcher.generateSubPlanId(parentPlanId != null ? parentPlanId : planTemplateId);
+			String currentPlanId = planIdDispatcher
+				.generateSubPlanId(parentPlanId != null ? parentPlanId : planTemplateId);
 			String rootPlanId = parentPlanId != null ? parentPlanId : currentPlanId;
 
 			// Fetch the plan template from PlanTemplateService
 			PlanInterface plan = createPlanFromTemplate(planTemplateId, rawParam);
-			
+
 			if (plan == null) {
 				PlanExecutionResult errorResult = new PlanExecutionResult();
 				errorResult.setSuccess(false);
@@ -263,7 +267,8 @@ public class PlanTemplateController {
 			// Execute using the PlanningCoordinator's common execution logic
 			return planningCoordinator.executeCommonPlan(plan, rootPlanId, parentPlanId, currentPlanId);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Failed to execute plan template: {}", planTemplateId, e);
 			PlanExecutionResult errorResult = new PlanExecutionResult();
 			errorResult.setSuccess(false);
@@ -273,9 +278,8 @@ public class PlanTemplateController {
 	}
 
 	/**
-	 * Create a plan interface from template ID and parameters.
-	 * Fetches the plan template from PlanTemplateService and converts it to PlanInterface.
-	 * 
+	 * Create a plan interface from template ID and parameters. Fetches the plan template
+	 * from PlanTemplateService and converts it to PlanInterface.
 	 * @param planTemplateId The template ID
 	 * @param rawParam Raw parameters
 	 * @return PlanInterface object or null if creation fails
@@ -284,7 +288,7 @@ public class PlanTemplateController {
 		try {
 			// Fetch the latest plan version from template service
 			String planJson = planTemplateService.getLatestPlanVersion(planTemplateId);
-			
+
 			if (planJson == null) {
 				logger.error("No plan version found for template: {}", planTemplateId);
 				return null;
@@ -292,11 +296,12 @@ public class PlanTemplateController {
 
 			// Parse the JSON to create a PlanInterface
 			PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
-			
+
 			logger.info("Successfully created plan interface from template: {}", planTemplateId);
 			return plan;
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			logger.error("Failed to create plan interface from template: {}", planTemplateId, e);
 			return null;
 		}
@@ -615,11 +620,13 @@ public class PlanTemplateController {
 										// only need the plan
 
 		// Get planning flow
-		// planningCoordinator.createPlan(context); // This line is removed as per the new_code
+		// planningCoordinator.createPlan(context); // This line is removed as per the
+		// new_code
 
 		try {
 			// Immediately execute the create plan stage, not asynchronously
-			// planningCoordinator.createPlan(context); // This line is removed as per the new_code
+			// planningCoordinator.createPlan(context); // This line is removed as per the
+			// new_code
 			logger.info("Plan template updated successfully: {}", planId);
 
 			// Get the generated plan from the recorder

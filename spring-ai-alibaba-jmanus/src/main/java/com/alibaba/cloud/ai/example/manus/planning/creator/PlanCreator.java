@@ -72,7 +72,6 @@ public class PlanCreator {
 		this.streamingResponseHandler = streamingResponseHandler;
 	}
 
-
 	/**
 	 * Create an execution plan with memory support
 	 * @param context execution context, containing the user request and the execution
@@ -102,10 +101,10 @@ public class PlanCreator {
 		if (planId == null || planId.isEmpty()) {
 			throw new IllegalArgumentException("Plan ID cannot be null or empty");
 		}
-		
+
 		// Define memory type string at method level for consistent usage
 		String memoryType = useMemory ? "with memory" : "without memory";
-		
+
 		try {
 			// Build agent information
 			String agentsInfo = buildAgentsInfo(agents);
@@ -128,10 +127,11 @@ public class PlanCreator {
 					ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
 						.prompt(prompt)
 						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
-					
+
 					// Add memory advisors if memory is enabled
 					if (useMemory) {
-						requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
+						requestSpec.advisors(
+								memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
 						requestSpec.advisors(MessageChatMemoryAdvisor
 							.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
 							.build());

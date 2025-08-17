@@ -22,65 +22,70 @@ import java.util.List;
  * Result class containing execution results for all steps
  */
 public class PlanExecutionResult {
-    private boolean success;
-    private String finalResult;
-    private String errorMessage;
-    private List<StepResult> stepResults = new ArrayList<>();
-    
-    // Getters and setters
-    public boolean isSuccess() { 
-        return success; 
-    }
-    
-    public void setSuccess(boolean success) { 
-        this.success = success; 
-    }
-    
-    public String getFinalResult() { 
-        return finalResult; 
-    }
-    
-    public void setFinalResult(String finalResult) { 
-        this.finalResult = finalResult; 
-    }
-    
-    public String getErrorMessage() { 
-        return errorMessage; 
-    }
-    
-    public void setErrorMessage(String errorMessage) { 
-        this.errorMessage = errorMessage; 
-    }
-    
-    public List<StepResult> getStepResults() { 
-        return stepResults; 
-    }
-    
-    public void setStepResults(List<StepResult> stepResults) { 
-        this.stepResults = stepResults; 
-    }
-    
-    public void addStepResult(StepResult stepResult) {
-        this.stepResults.add(stepResult);
-    }
-    
-    /**
-     * Get the final result from the last successful step
-     * @return Final result string or error message
-     */
-    public String getEffectiveResult() {
-        if (!success) {
-            return errorMessage != null ? errorMessage : "Execution failed";
-        }
-        
-        // Try to get result from last step's result
-        for (int i = stepResults.size() - 1; i >= 0; i--) {
-            StepResult step = stepResults.get(i);
-            if (step.getResult() != null && !step.getResult().isEmpty()) {
-                return step.getResult();
-            }
-        }
-        
-        return finalResult != null ? finalResult : "No result available";
-    }
+
+	private boolean success;
+
+	private String finalResult;
+
+	private String errorMessage;
+
+	private List<StepResult> stepResults = new ArrayList<>();
+
+	// Getters and setters
+	public boolean isSuccess() {
+		return success;
+	}
+
+	public void setSuccess(boolean success) {
+		this.success = success;
+	}
+
+	public String getFinalResult() {
+		return finalResult;
+	}
+
+	public void setFinalResult(String finalResult) {
+		this.finalResult = finalResult;
+	}
+
+	public String getErrorMessage() {
+		return errorMessage;
+	}
+
+	public void setErrorMessage(String errorMessage) {
+		this.errorMessage = errorMessage;
+	}
+
+	public List<StepResult> getStepResults() {
+		return stepResults;
+	}
+
+	public void setStepResults(List<StepResult> stepResults) {
+		this.stepResults = stepResults;
+	}
+
+	public void addStepResult(StepResult stepResult) {
+		this.stepResults.add(stepResult);
+	}
+
+	/**
+	 * Get the final result from the last successful step
+	 * @return Final result string or error message
+	 */
+	public String getEffectiveResult() {
+		if (!success) {
+			return errorMessage != null ? errorMessage : "Execution failed";
+		}
+
+		// Try to get result from last step's result
+		for (int i = stepResults.size() - 1; i >= 0; i--) {
+			StepResult step = stepResults.get(i);
+			if (step.getResult() != null && !step.getResult().isEmpty()) {
+				return step.getResult();
+			}
+		}
+
+		return finalResult != null ? finalResult : "No result available";
+	}
+
 }

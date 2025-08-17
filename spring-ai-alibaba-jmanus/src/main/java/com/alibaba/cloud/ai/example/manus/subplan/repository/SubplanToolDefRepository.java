@@ -26,86 +26,87 @@ import java.util.Optional;
 
 /**
  * Repository interface for SubplanToolDef entity
- * 
+ *
  * Provides data access methods for subplan tool definitions
  */
 @Repository
 public interface SubplanToolDefRepository extends JpaRepository<SubplanToolDef, Long> {
 
-    /**
-     * Find all subplan tools
-     * @return List of all subplan tool definitions
-     */
-    List<SubplanToolDef> findAll();
+	/**
+	 * Find all subplan tools
+	 * @return List of all subplan tool definitions
+	 */
+	List<SubplanToolDef> findAll();
 
-    /**
-     * Find subplan tool by tool name
-     * @param toolName the tool name
-     * @return Optional containing the subplan tool if found
-     */
-    Optional<SubplanToolDef> findByToolName(String toolName);
+	/**
+	 * Find subplan tool by tool name
+	 * @param toolName the tool name
+	 * @return Optional containing the subplan tool if found
+	 */
+	Optional<SubplanToolDef> findByToolName(String toolName);
 
-    /**
-     * Find subplan tools by plan template ID
-     * @param planTemplateId the plan template ID
-     * @return List of subplan tools associated with the plan template
-     */
-    List<SubplanToolDef> findByPlanTemplateId(String planTemplateId);
+	/**
+	 * Find subplan tools by plan template ID
+	 * @param planTemplateId the plan template ID
+	 * @return List of subplan tools associated with the plan template
+	 */
+	List<SubplanToolDef> findByPlanTemplateId(String planTemplateId);
 
-    /**
-     * Find subplan tools by endpoint
-     * @param endpoint the endpoint
-     * @return List of subplan tools for the specified endpoint
-     */
-    List<SubplanToolDef> findByEndpoint(String endpoint);
+	/**
+	 * Find subplan tools by endpoint
+	 * @param endpoint the endpoint
+	 * @return List of subplan tools for the specified endpoint
+	 */
+	List<SubplanToolDef> findByEndpoint(String endpoint);
 
-    /**
-     * Check if subplan tool exists by tool name
-     * @param toolName the tool name
-     * @return true if exists, false otherwise
-     */
-    boolean existsByToolName(String toolName);
+	/**
+	 * Check if subplan tool exists by tool name
+	 * @param toolName the tool name
+	 * @return true if exists, false otherwise
+	 */
+	boolean existsByToolName(String toolName);
 
-    /**
-     * Delete subplan tool by tool name
-     * @param toolName the tool name
-     */
-    void deleteByToolName(String toolName);
+	/**
+	 * Delete subplan tool by tool name
+	 * @param toolName the tool name
+	 */
+	void deleteByToolName(String toolName);
 
-    /**
-     * Find subplan tools by tool description containing the given text
-     * @param description the description text to search for
-     * @return List of subplan tools with matching descriptions
-     */
-    List<SubplanToolDef> findByToolDescriptionContainingIgnoreCase(String description);
+	/**
+	 * Find subplan tools by tool description containing the given text
+	 * @param description the description text to search for
+	 * @return List of subplan tools with matching descriptions
+	 */
+	List<SubplanToolDef> findByToolDescriptionContainingIgnoreCase(String description);
 
-    /**
-     * Custom query to find all subplan tools with their parameters loaded
-     * @return List of subplan tools with parameters
-     */
-    @Query("SELECT DISTINCT s FROM SubplanToolDef s LEFT JOIN FETCH s.inputSchema")
-    List<SubplanToolDef> findAllWithParameters();
+	/**
+	 * Custom query to find all subplan tools with their parameters loaded
+	 * @return List of subplan tools with parameters
+	 */
+	@Query("SELECT DISTINCT s FROM SubplanToolDef s LEFT JOIN FETCH s.inputSchema")
+	List<SubplanToolDef> findAllWithParameters();
 
-    /**
-     * Custom query to find subplan tools by plan template ID with parameters loaded
-     * @param planTemplateId the plan template ID
-     * @return List of subplan tools with parameters for the specified plan template
-     */
-    @Query("SELECT DISTINCT s FROM SubplanToolDef s LEFT JOIN FETCH s.inputSchema WHERE s.planTemplateId = :planTemplateId")
-    List<SubplanToolDef> findByPlanTemplateIdWithParameters(@Param("planTemplateId") String planTemplateId);
+	/**
+	 * Custom query to find subplan tools by plan template ID with parameters loaded
+	 * @param planTemplateId the plan template ID
+	 * @return List of subplan tools with parameters for the specified plan template
+	 */
+	@Query("SELECT DISTINCT s FROM SubplanToolDef s LEFT JOIN FETCH s.inputSchema WHERE s.planTemplateId = :planTemplateId")
+	List<SubplanToolDef> findByPlanTemplateIdWithParameters(@Param("planTemplateId") String planTemplateId);
 
-    /**
-     * Count subplan tools by endpoint
-     * @param endpoint the endpoint
-     * @return count of subplan tools for the endpoint
-     */
-    long countByEndpoint(String endpoint);
+	/**
+	 * Count subplan tools by endpoint
+	 * @param endpoint the endpoint
+	 * @return count of subplan tools for the endpoint
+	 */
+	long countByEndpoint(String endpoint);
 
-    /**
-     * Find subplan tools by tool name pattern (using LIKE)
-     * @param toolNamePattern the tool name pattern (e.g., "%analysis%")
-     * @return List of subplan tools matching the pattern
-     */
-    @Query("SELECT s FROM SubplanToolDef s WHERE s.toolName LIKE %:toolNamePattern%")
-    List<SubplanToolDef> findByToolNamePattern(@Param("toolNamePattern") String toolNamePattern);
+	/**
+	 * Find subplan tools by tool name pattern (using LIKE)
+	 * @param toolNamePattern the tool name pattern (e.g., "%analysis%")
+	 * @return List of subplan tools matching the pattern
+	 */
+	@Query("SELECT s FROM SubplanToolDef s WHERE s.toolName LIKE %:toolNamePattern%")
+	List<SubplanToolDef> findByToolNamePattern(@Param("toolNamePattern") String toolNamePattern);
+
 }

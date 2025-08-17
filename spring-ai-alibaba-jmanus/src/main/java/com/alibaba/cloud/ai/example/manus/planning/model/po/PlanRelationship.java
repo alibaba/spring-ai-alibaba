@@ -19,177 +19,171 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * JPA entity for storing parent-child relationships between plans
- * This entity tracks the execution hierarchy and relationships between different plan executions
+ * JPA entity for storing parent-child relationships between plans This entity tracks the
+ * execution hierarchy and relationships between different plan executions
  */
 @Entity
-@Table(name = "plan_relationships", indexes = {
-    @Index(name = "idx_parent_plan_id", columnList = "parent_plan_id"),
-    @Index(name = "idx_child_plan_id", columnList = "child_plan_id"),
-    @Index(name = "idx_root_plan_id", columnList = "root_plan_id"),
-    @Index(name = "idx_created_time", columnList = "created_time")
-})
+@Table(name = "plan_relationships",
+		indexes = { @Index(name = "idx_parent_plan_id", columnList = "parent_plan_id"),
+				@Index(name = "idx_child_plan_id", columnList = "child_plan_id"),
+				@Index(name = "idx_root_plan_id", columnList = "root_plan_id"),
+				@Index(name = "idx_created_time", columnList = "created_time") })
 public class PlanRelationship {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    /**
-     * Parent plan ID (can be null for root plans)
-     */
-    @Column(name = "parent_plan_id", length = 255)
-    private String parentPlanId;
+	/**
+	 * Parent plan ID (can be null for root plans)
+	 */
+	@Column(name = "parent_plan_id", length = 255)
+	private String parentPlanId;
 
-    /**
-     * Child plan ID (current executing plan)
-     */
-    @Column(name = "child_plan_id", length = 255, nullable = false)
-    private String childPlanId;
+	/**
+	 * Child plan ID (current executing plan)
+	 */
+	@Column(name = "child_plan_id", length = 255, nullable = false)
+	private String childPlanId;
 
-    /**
-     * Root plan ID (top-level parent plan)
-     */
-    @Column(name = "root_plan_id", length = 255, nullable = false)
-    private String rootPlanId;
+	/**
+	 * Root plan ID (top-level parent plan)
+	 */
+	@Column(name = "root_plan_id", length = 255, nullable = false)
+	private String rootPlanId;
 
-    /**
-     * Plan template ID if this is a template-based execution
-     */
-    @Column(name = "plan_template_id", length = 255)
-    private String planTemplateId;
+	/**
+	 * Plan template ID if this is a template-based execution
+	 */
+	@Column(name = "plan_template_id", length = 255)
+	private String planTemplateId;
 
-    /**
-     * Relationship type (e.g., "subplan", "template", "user-query")
-     */
-    @Column(name = "relationship_type", length = 100)
-    private String relationshipType;
+	/**
+	 * Relationship type (e.g., "subplan", "template", "user-query")
+	 */
+	@Column(name = "relationship_type", length = 100)
+	private String relationshipType;
 
-    /**
-     * When this relationship record was created
-     */
-    @Column(name = "created_time", nullable = false)
-    private LocalDateTime createdTime;
+	/**
+	 * When this relationship record was created
+	 */
+	@Column(name = "created_time", nullable = false)
+	private LocalDateTime createdTime;
 
-    /**
-     * When this relationship record was last updated
-     */
-    @Column(name = "updated_time", nullable = false)
-    private LocalDateTime updatedTime;
+	/**
+	 * When this relationship record was last updated
+	 */
+	@Column(name = "updated_time", nullable = false)
+	private LocalDateTime updatedTime;
 
-    // Default constructor
-    public PlanRelationship() {
-        this.createdTime = LocalDateTime.now();
-        this.updatedTime = LocalDateTime.now();
-    }
+	// Default constructor
+	public PlanRelationship() {
+		this.createdTime = LocalDateTime.now();
+		this.updatedTime = LocalDateTime.now();
+	}
 
-    // Constructor with required fields
-    public PlanRelationship(String childPlanId, String rootPlanId) {
-        this();
-        this.childPlanId = childPlanId;
-        this.rootPlanId = rootPlanId;
-    }
+	// Constructor with required fields
+	public PlanRelationship(String childPlanId, String rootPlanId) {
+		this();
+		this.childPlanId = childPlanId;
+		this.rootPlanId = rootPlanId;
+	}
 
-    // Constructor with parent-child relationship
-    public PlanRelationship(String parentPlanId, String childPlanId, String rootPlanId) {
-        this(childPlanId, rootPlanId);
-        this.parentPlanId = parentPlanId;
-    }
+	// Constructor with parent-child relationship
+	public PlanRelationship(String parentPlanId, String childPlanId, String rootPlanId) {
+		this(childPlanId, rootPlanId);
+		this.parentPlanId = parentPlanId;
+	}
 
-    // Constructor with all fields
-    public PlanRelationship(String parentPlanId, String childPlanId, String rootPlanId, 
-                          String planTemplateId, String relationshipType) {
-        this(parentPlanId, childPlanId, rootPlanId);
-        this.planTemplateId = planTemplateId;
-        this.relationshipType = relationshipType;
-    }
+	// Constructor with all fields
+	public PlanRelationship(String parentPlanId, String childPlanId, String rootPlanId, String planTemplateId,
+			String relationshipType) {
+		this(parentPlanId, childPlanId, rootPlanId);
+		this.planTemplateId = planTemplateId;
+		this.relationshipType = relationshipType;
+	}
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+	// Getters and Setters
+	public Long getId() {
+		return id;
+	}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public String getParentPlanId() {
-        return parentPlanId;
-    }
+	public String getParentPlanId() {
+		return parentPlanId;
+	}
 
-    public void setParentPlanId(String parentPlanId) {
-        this.parentPlanId = parentPlanId;
-        this.updatedTime = LocalDateTime.now();
-    }
+	public void setParentPlanId(String parentPlanId) {
+		this.parentPlanId = parentPlanId;
+		this.updatedTime = LocalDateTime.now();
+	}
 
-    public String getChildPlanId() {
-        return childPlanId;
-    }
+	public String getChildPlanId() {
+		return childPlanId;
+	}
 
-    public void setChildPlanId(String childPlanId) {
-        this.childPlanId = childPlanId;
-        this.updatedTime = LocalDateTime.now();
-    }
+	public void setChildPlanId(String childPlanId) {
+		this.childPlanId = childPlanId;
+		this.updatedTime = LocalDateTime.now();
+	}
 
-    public String getRootPlanId() {
-        return rootPlanId;
-    }
+	public String getRootPlanId() {
+		return rootPlanId;
+	}
 
-    public void setRootPlanId(String rootPlanId) {
-        this.rootPlanId = rootPlanId;
-        this.updatedTime = LocalDateTime.now();
-    }
+	public void setRootPlanId(String rootPlanId) {
+		this.rootPlanId = rootPlanId;
+		this.updatedTime = LocalDateTime.now();
+	}
 
-    public String getPlanTemplateId() {
-        return planTemplateId;
-    }
+	public String getPlanTemplateId() {
+		return planTemplateId;
+	}
 
-    public void setPlanTemplateId(String planTemplateId) {
-        this.planTemplateId = planTemplateId;
-        this.updatedTime = LocalDateTime.now();
-    }
+	public void setPlanTemplateId(String planTemplateId) {
+		this.planTemplateId = planTemplateId;
+		this.updatedTime = LocalDateTime.now();
+	}
 
-    public String getRelationshipType() {
-        return relationshipType;
-    }
+	public String getRelationshipType() {
+		return relationshipType;
+	}
 
-    public void setRelationshipType(String relationshipType) {
-        this.relationshipType = relationshipType;
-        this.updatedTime = LocalDateTime.now();
-    }
+	public void setRelationshipType(String relationshipType) {
+		this.relationshipType = relationshipType;
+		this.updatedTime = LocalDateTime.now();
+	}
 
-    public LocalDateTime getCreatedTime() {
-        return createdTime;
-    }
+	public LocalDateTime getCreatedTime() {
+		return createdTime;
+	}
 
-    public void setCreatedTime(LocalDateTime createdTime) {
-        this.createdTime = createdTime;
-    }
+	public void setCreatedTime(LocalDateTime createdTime) {
+		this.createdTime = createdTime;
+	}
 
-    public LocalDateTime getUpdatedTime() {
-        return updatedTime;
-    }
+	public LocalDateTime getUpdatedTime() {
+		return updatedTime;
+	}
 
-    public void setUpdatedTime(LocalDateTime updatedTime) {
-        this.updatedTime = updatedTime;
-    }
+	public void setUpdatedTime(LocalDateTime updatedTime) {
+		this.updatedTime = updatedTime;
+	}
 
-    // Utility methods
-    public boolean isRootPlan() {
-        return parentPlanId == null;
-    }
+	// Utility methods
+	public boolean isRootPlan() {
+		return parentPlanId == null;
+	}
 
-    @Override
-    public String toString() {
-        return "PlanRelationship{" +
-                "id=" + id +
-                ", parentPlanId='" + parentPlanId + '\'' +
-                ", childPlanId='" + childPlanId + '\'' +
-                ", rootPlanId='" + rootPlanId + '\'' +
-                ", planTemplateId='" + planTemplateId + '\'' +
-                ", relationshipType='" + relationshipType + '\'' +
-                ", createdTime=" + createdTime +
-                ", updatedTime=" + updatedTime +
-                '}';
-    }
+	@Override
+	public String toString() {
+		return "PlanRelationship{" + "id=" + id + ", parentPlanId='" + parentPlanId + '\'' + ", childPlanId='"
+				+ childPlanId + '\'' + ", rootPlanId='" + rootPlanId + '\'' + ", planTemplateId='" + planTemplateId
+				+ '\'' + ", relationshipType='" + relationshipType + '\'' + ", createdTime=" + createdTime
+				+ ", updatedTime=" + updatedTime + '}';
+	}
+
 }

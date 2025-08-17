@@ -137,7 +137,6 @@ public class PlanningFactory implements IPlanningFactory {
 	@Lazy
 	private SummaryWorkflow summaryWorkflow;
 
-
 	@Autowired
 	private PromptService promptService;
 
@@ -179,10 +178,10 @@ public class PlanningFactory implements IPlanningFactory {
 	public PlanCreator createPlanCreator() {
 		// Get all dynamic agents from the database
 		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
-		
+
 		PlanningToolInterface planningTool = new PlanningTool();
-		return new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
-				manusProperties, streamingResponseHandler);
+		return new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService, manusProperties,
+				streamingResponseHandler);
 	}
 
 	/**
@@ -190,8 +189,7 @@ public class PlanningFactory implements IPlanningFactory {
 	 * @return configured PlanFinalizer instance
 	 */
 	public PlanFinalizer createPlanFinalizer() {
-		return new PlanFinalizer(llmService, recorder, promptService, manusProperties,
-				streamingResponseHandler);
+		return new PlanFinalizer(llmService, recorder, promptService, manusProperties, streamingResponseHandler);
 	}
 
 	public static class ToolCallBackContext {

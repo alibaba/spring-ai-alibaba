@@ -153,9 +153,9 @@ public class PlanIdDispatcher implements IPlanIdDispatcher {
 	}
 
 	/**
-	 * Generate a unique sub-plan ID based on parent plan ID.
-	 * This method ensures the sub-plan ID is completely different from parent plan ID to
-	 * prevent data corruption and mapping conflicts in the UI
+	 * Generate a unique sub-plan ID based on parent plan ID. This method ensures the
+	 * sub-plan ID is completely different from parent plan ID to prevent data corruption
+	 * and mapping conflicts in the UI
 	 * @param parentPlanId the parent plan ID
 	 * @return unique sub-plan ID that is guaranteed to be different from parent plan ID
 	 */
@@ -164,14 +164,16 @@ public class PlanIdDispatcher implements IPlanIdDispatcher {
 			throw new IllegalArgumentException("Parent plan ID cannot be null");
 		}
 
-		// Use a different prefix to ensure sub-plan ID is never identical to parent plan ID
+		// Use a different prefix to ensure sub-plan ID is never identical to parent plan
+		// ID
 		String subPlanPrefix = "subplan-";
 
 		// Generate unique sub-plan ID with multiple uniqueness factors:
 		// 1. Different prefix ("subplan-" vs "plan-")
 		// 2. Current timestamp in nanoseconds for high precision
 		// 3. Random component for additional uniqueness
-		// 4. Hash of parent plan ID to maintain some relationship while ensuring uniqueness
+		// 4. Hash of parent plan ID to maintain some relationship while ensuring
+		// uniqueness
 		long timestamp = System.nanoTime();
 		int randomComponent = (int) (Math.random() * 10000);
 		int parentIdHash = Math.abs(parentPlanId.hashCode()) % 10000;

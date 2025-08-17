@@ -49,7 +49,8 @@ public class PlanningCoordinator {
 	private final PlanIdDispatcher planIdDispatcher;
 
 	public PlanningCoordinator(PlanCreator planCreator, PlanExecutorFactory planExecutorFactory,
-			PlanFinalizer planFinalizer, IPlanRelationshipService planRelationshipService, PlanIdDispatcher planIdDispatcher) {
+			PlanFinalizer planFinalizer, IPlanRelationshipService planRelationshipService,
+			PlanIdDispatcher planIdDispatcher) {
 		this.planCreator = planCreator;
 		this.planExecutorFactory = planExecutorFactory;
 		this.planFinalizer = planFinalizer;
@@ -66,18 +67,17 @@ public class PlanningCoordinator {
 	}
 
 	/**
-	 * Execute a common plan with the given plan interface.
-	 * This method handles the core execution logic and can be called from external classes.
-	 * 
+	 * Execute a common plan with the given plan interface. This method handles the core
+	 * execution logic and can be called from external classes.
 	 * @param plan The plan interface to execute
 	 * @param rootPlanId The root plan ID for the execution context
 	 * @param parentPlanId The ID of the parent plan (can be null for root plans)
 	 * @param currentPlanId The current plan ID for execution
 	 * @return A CompletableFuture that completes with the execution result
 	 */
-	public CompletableFuture<PlanExecutionResult> executeCommonPlan(PlanInterface plan, String rootPlanId, 
+	public CompletableFuture<PlanExecutionResult> executeCommonPlan(PlanInterface plan, String rootPlanId,
 			String parentPlanId, String currentPlanId) {
-		
+
 		if (plan == null) {
 			log.error("Plan interface is null for plan: {}", currentPlanId);
 			PlanExecutionResult errorResult = new PlanExecutionResult();
@@ -89,14 +89,19 @@ public class PlanningCoordinator {
 		try {
 			// Log plan relationship if relationship service is available
 			if (planRelationshipService != null) {
-				planRelationshipService.recordPlanRelationship(
-					parentPlanId,           // Parent plan ID (can be null for root plans)
-					currentPlanId,          // Child plan ID (current executing plan)
-					rootPlanId,             // Root plan ID (top-level parent plan)
-					null,                   // Plan template ID (not applicable for common plans)
-					"common-plan-execution" // Relationship type
+				planRelationshipService.recordPlanRelationship(parentPlanId, // Parent
+																				// plan ID
+																				// (can be
+																				// null
+																				// for
+																				// root
+																				// plans)
+						currentPlanId, // Child plan ID (current executing plan)
+						rootPlanId, // Root plan ID (top-level parent plan)
+						null, // Plan template ID (not applicable for common plans)
+						"common-plan-execution" // Relationship type
 				);
-				log.info("Recorded plan relationship for common plan execution: parent={}, child={}, root={}", 
+				log.info("Recorded plan relationship for common plan execution: parent={}, child={}, root={}",
 						parentPlanId, currentPlanId, rootPlanId);
 			}
 
@@ -115,7 +120,8 @@ public class PlanningCoordinator {
 			PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
 			return executor.executeAllStepsAsync(context);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Failed to execute common plan: {}", currentPlanId, e);
 			PlanExecutionResult errorResult = new PlanExecutionResult();
 			errorResult.setSuccess(false);
@@ -124,5 +130,4 @@ public class PlanningCoordinator {
 		}
 	}
 
-    
 }

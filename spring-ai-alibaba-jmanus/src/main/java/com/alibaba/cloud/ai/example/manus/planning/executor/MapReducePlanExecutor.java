@@ -160,15 +160,17 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 				context.setSuccess(true);
 				result.setSuccess(true);
 				result.setFinalResult(context.getResultSummary());
-				
-			} catch (Exception e) {
+
+			}
+			catch (Exception e) {
 				context.setSuccess(false);
 				result.setSuccess(false);
 				result.setErrorMessage(e.getMessage());
-			} finally {
+			}
+			finally {
 				performCleanup(context, lastExecutor);
 			}
-			
+
 			return result;
 		});
 	}

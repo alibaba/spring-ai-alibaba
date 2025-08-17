@@ -169,12 +169,11 @@ public class SummaryWorkflow implements ISummaryWorkflow {
 			throw new RuntimeException("Failed to build MapReduce summary execution plan: " + e.getMessage(), e);
 		}
 	}
-	
 
 	/**
 	 * Execute MapReduce plan - supports sub-plan context
-	 * 
-	 * 
+	 *
+	 *
 	 */
 	private CompletableFuture<String> executeMapReducePlanWithContext(String rootPlanId,
 			MapReduceExecutionPlan executionPlan, Long thinkActRecordId) {

@@ -27,10 +27,10 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 public interface IPlanningFactory {
 
 	// /**
-	//  * Create planning coordinator
-	//  * @param context
-	//  * @return Planning coordinator
-	//  */
+	// * Create planning coordinator
+	// * @param context
+	// * @return Planning coordinator
+	// */
 	// PlanningCoordinator createPlanningCoordinator(ExecutionContext context);
 
 	/**

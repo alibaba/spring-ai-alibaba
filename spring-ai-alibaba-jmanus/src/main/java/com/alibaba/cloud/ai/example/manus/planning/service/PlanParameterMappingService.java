@@ -10,210 +10,213 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 计划参数映射服务实现类
- * 提供处理计划模板中参数占位符的具体实现
+ * 计划参数映射服务实现类 提供处理计划模板中参数占位符的具体实现
  */
 @Service
 public class PlanParameterMappingService implements IPlanParameterMappingService {
-    
-    private static final Logger logger = LoggerFactory.getLogger(PlanParameterMappingService.class);
-    
-    // 参数占位符的正则表达式模式：匹配 <<参数名>> 格式
-    private static final Pattern PARAMETER_PATTERN = Pattern.compile("<<(\\w+)>>");
-    
-    // 参数占位符的前缀和后缀
-    private static final String PLACEHOLDER_PREFIX = "<<";
-    private static final String PLACEHOLDER_SUFFIX = ">>";
-    
-    @Override
-    public String mapParametersToPlan(String planJson, Map<String, Object> rawParams) {
-        if (planJson == null || rawParams == null) {
-            logger.warn("计划模板或原始参数为空，跳过参数映射");
-            return planJson;
-        }
-        
-        if (rawParams.isEmpty()) {
-            logger.debug("原始参数为空，无需进行参数映射");
-            return planJson;
-        }
-        
-        String result = planJson;
-        int replacementCount = 0;
-        
-        // 查找所有参数占位符
-        Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
-        
-        while (matcher.find()) {
-            String placeholder = matcher.group(0);  // 完整的占位符，如 <<args1>>
-            String paramName = matcher.group(1);   // 参数名，如 args1
-            
-            // 从原始参数中获取值
-            Object paramValue = rawParams.get(paramName);
-            
-            if (paramValue != null) {
-                // 替换占位符
-                String stringValue = paramValue.toString();
-                result = result.replace(placeholder, stringValue);
-                replacementCount++;
-                
-                logger.debug("参数映射成功: {} -> {}", placeholder, stringValue);
-            } else {
-                logger.warn("参数 {} 在原始参数中未找到，保持占位符: {}", paramName, placeholder);
-            }
-        }
-        
-        if (replacementCount > 0) {
-            logger.info("参数映射完成，共替换 {} 个参数占位符", replacementCount);
-        } else {
-            logger.debug("未发现需要替换的参数占位符");
-        }
-        
-        return result;
-    }
-    
-    @Override
-    public ParameterValidationResult validateParameters(String planJson, Map<String, Object> rawParams) {
-        ParameterValidationResult result = new ParameterValidationResult();
-        
-        if (planJson == null || rawParams == null) {
-            result.setValid(false);
-            result.setMessage("计划模板或原始参数为空");
-            return result;
-        }
-        
-        List<String> missingParams = new ArrayList<>();
-        List<String> foundParams = new ArrayList<>();
-        
-        // 查找所有参数占位符
-        Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
-        
-        while (matcher.find()) {
-            String paramName = matcher.group(1);
-            
-            if (rawParams.containsKey(paramName)) {
-                foundParams.add(paramName);
-                logger.debug("参数验证通过: {}", paramName);
-            } else {
-                missingParams.add(paramName);
-                logger.warn("参数验证失败: {} 未在原始参数中找到", paramName);
-            }
-        }
-        
-        result.setFoundParameters(foundParams);
-        result.setMissingParameters(missingParams);
-        result.setValid(missingParams.isEmpty());
-        
-        if (missingParams.isEmpty()) {
-            result.setMessage("所有参数验证通过，共找到 " + foundParams.size() + " 个参数");
-        } else {
-            result.setMessage("缺少以下参数: " + String.join(", ", missingParams) + 
-                            "，共找到 " + foundParams.size() + " 个参数");
-        }
-        
-        logger.info("参数验证结果: {}", result.getMessage());
-        return result;
-    }
-    
-    @Override
-    public List<String> extractParameterPlaceholders(String planJson) {
-        List<String> placeholders = new ArrayList<>();
-        
-        if (planJson == null) {
-            return placeholders;
-        }
-        
-        Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
-        while (matcher.find()) {
-            placeholders.add(matcher.group(1));  // 只返回参数名，不包含 <<>>
-        }
-        
-        logger.debug("提取到 {} 个参数占位符: {}", placeholders.size(), placeholders);
-        return placeholders;
-    }
-    
-    @Override
-    public boolean hasParameterPlaceholders(String planJson) {
-        if (planJson == null) {
-            return false;
-        }
-        
-        Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
-        boolean hasPlaceholders = matcher.find();
-        
-        logger.debug("计划模板{}参数占位符", hasPlaceholders ? "包含" : "不包含");
-        return hasPlaceholders;
-    }
-    
-    @Override
-    public Map<String, Object> getMappingStatistics(String planJson, Map<String, Object> rawParams) {
-        Map<String, Object> stats = new HashMap<>();
-        
-        if (planJson == null || rawParams == null) {
-            stats.put("error", "计划模板或原始参数为空");
-            return stats;
-        }
-        
-        List<String> placeholders = extractParameterPlaceholders(planJson);
-        ParameterValidationResult validationResult = validateParameters(planJson, rawParams);
-        
-        stats.put("totalPlaceholders", placeholders.size());
-        stats.put("foundParameters", validationResult.getFoundParameterCount());
-        stats.put("missingParameters", validationResult.getMissingParameterCount());
-        stats.put("validationPassed", validationResult.isValid());
-        stats.put("rawParamsCount", rawParams.size());
-        stats.put("placeholders", placeholders);
-        stats.put("missingParams", validationResult.getMissingParameters());
-        stats.put("foundParams", validationResult.getFoundParameters());
-        
-        // 计算映射覆盖率
-        if (placeholders.size() > 0) {
-            double coverage = (double) validationResult.getFoundParameterCount() / placeholders.size();
-            stats.put("coverage", String.format("%.2f%%", coverage * 100));
-        } else {
-            stats.put("coverage", "100.00%");
-        }
-        
-        logger.debug("参数映射统计信息: {}", stats);
-        return stats;
-    }
-    
-    /**
-     * 获取参数占位符的正则表达式模式
-     * 用于外部测试或调试
-     */
-    public static Pattern getParameterPattern() {
-        return PARAMETER_PATTERN;
-    }
-    
-    /**
-     * 获取参数占位符的前缀和后缀
-     */
-    public static String getPlaceholderPrefix() {
-        return PLACEHOLDER_PREFIX;
-    }
-    
-    public static String getPlaceholderSuffix() {
-        return PLACEHOLDER_SUFFIX;
-    }
-    
-    /**
-     * 检查参数名是否有效
-     * 参数名只能包含字母、数字和下划线
-     */
-    public static boolean isValidParameterName(String paramName) {
-        if (paramName == null || paramName.trim().isEmpty()) {
-            return false;
-        }
-        return paramName.matches("^[a-zA-Z_][a-zA-Z0-9_]*$");
-    }
-    
-    /**
-     * 安全地构建参数占位符
-     */
-    public static String buildPlaceholder(String paramName) {
-        if (!isValidParameterName(paramName)) {
-            throw new IllegalArgumentException("无效的参数名: " + paramName);
-        }
-        return PLACEHOLDER_PREFIX + paramName + PLACEHOLDER_SUFFIX;
-    }
+
+	private static final Logger logger = LoggerFactory.getLogger(PlanParameterMappingService.class);
+
+	// 参数占位符的正则表达式模式：匹配 <<参数名>> 格式
+	private static final Pattern PARAMETER_PATTERN = Pattern.compile("<<(\\w+)>>");
+
+	// 参数占位符的前缀和后缀
+	private static final String PLACEHOLDER_PREFIX = "<<";
+
+	private static final String PLACEHOLDER_SUFFIX = ">>";
+
+	@Override
+	public String mapParametersToPlan(String planJson, Map<String, Object> rawParams) {
+		if (planJson == null || rawParams == null) {
+			logger.warn("计划模板或原始参数为空，跳过参数映射");
+			return planJson;
+		}
+
+		if (rawParams.isEmpty()) {
+			logger.debug("原始参数为空，无需进行参数映射");
+			return planJson;
+		}
+
+		String result = planJson;
+		int replacementCount = 0;
+
+		// 查找所有参数占位符
+		Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
+
+		while (matcher.find()) {
+			String placeholder = matcher.group(0); // 完整的占位符，如 <<args1>>
+			String paramName = matcher.group(1); // 参数名，如 args1
+
+			// 从原始参数中获取值
+			Object paramValue = rawParams.get(paramName);
+
+			if (paramValue != null) {
+				// 替换占位符
+				String stringValue = paramValue.toString();
+				result = result.replace(placeholder, stringValue);
+				replacementCount++;
+
+				logger.debug("参数映射成功: {} -> {}", placeholder, stringValue);
+			}
+			else {
+				logger.warn("参数 {} 在原始参数中未找到，保持占位符: {}", paramName, placeholder);
+			}
+		}
+
+		if (replacementCount > 0) {
+			logger.info("参数映射完成，共替换 {} 个参数占位符", replacementCount);
+		}
+		else {
+			logger.debug("未发现需要替换的参数占位符");
+		}
+
+		return result;
+	}
+
+	@Override
+	public ParameterValidationResult validateParameters(String planJson, Map<String, Object> rawParams) {
+		ParameterValidationResult result = new ParameterValidationResult();
+
+		if (planJson == null || rawParams == null) {
+			result.setValid(false);
+			result.setMessage("计划模板或原始参数为空");
+			return result;
+		}
+
+		List<String> missingParams = new ArrayList<>();
+		List<String> foundParams = new ArrayList<>();
+
+		// 查找所有参数占位符
+		Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
+
+		while (matcher.find()) {
+			String paramName = matcher.group(1);
+
+			if (rawParams.containsKey(paramName)) {
+				foundParams.add(paramName);
+				logger.debug("参数验证通过: {}", paramName);
+			}
+			else {
+				missingParams.add(paramName);
+				logger.warn("参数验证失败: {} 未在原始参数中找到", paramName);
+			}
+		}
+
+		result.setFoundParameters(foundParams);
+		result.setMissingParameters(missingParams);
+		result.setValid(missingParams.isEmpty());
+
+		if (missingParams.isEmpty()) {
+			result.setMessage("所有参数验证通过，共找到 " + foundParams.size() + " 个参数");
+		}
+		else {
+			result.setMessage("缺少以下参数: " + String.join(", ", missingParams) + "，共找到 " + foundParams.size() + " 个参数");
+		}
+
+		logger.info("参数验证结果: {}", result.getMessage());
+		return result;
+	}
+
+	@Override
+	public List<String> extractParameterPlaceholders(String planJson) {
+		List<String> placeholders = new ArrayList<>();
+
+		if (planJson == null) {
+			return placeholders;
+		}
+
+		Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
+		while (matcher.find()) {
+			placeholders.add(matcher.group(1)); // 只返回参数名，不包含 <<>>
+		}
+
+		logger.debug("提取到 {} 个参数占位符: {}", placeholders.size(), placeholders);
+		return placeholders;
+	}
+
+	@Override
+	public boolean hasParameterPlaceholders(String planJson) {
+		if (planJson == null) {
+			return false;
+		}
+
+		Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
+		boolean hasPlaceholders = matcher.find();
+
+		logger.debug("计划模板{}参数占位符", hasPlaceholders ? "包含" : "不包含");
+		return hasPlaceholders;
+	}
+
+	@Override
+	public Map<String, Object> getMappingStatistics(String planJson, Map<String, Object> rawParams) {
+		Map<String, Object> stats = new HashMap<>();
+
+		if (planJson == null || rawParams == null) {
+			stats.put("error", "计划模板或原始参数为空");
+			return stats;
+		}
+
+		List<String> placeholders = extractParameterPlaceholders(planJson);
+		ParameterValidationResult validationResult = validateParameters(planJson, rawParams);
+
+		stats.put("totalPlaceholders", placeholders.size());
+		stats.put("foundParameters", validationResult.getFoundParameterCount());
+		stats.put("missingParameters", validationResult.getMissingParameterCount());
+		stats.put("validationPassed", validationResult.isValid());
+		stats.put("rawParamsCount", rawParams.size());
+		stats.put("placeholders", placeholders);
+		stats.put("missingParams", validationResult.getMissingParameters());
+		stats.put("foundParams", validationResult.getFoundParameters());
+
+		// 计算映射覆盖率
+		if (placeholders.size() > 0) {
+			double coverage = (double) validationResult.getFoundParameterCount() / placeholders.size();
+			stats.put("coverage", String.format("%.2f%%", coverage * 100));
+		}
+		else {
+			stats.put("coverage", "100.00%");
+		}
+
+		logger.debug("参数映射统计信息: {}", stats);
+		return stats;
+	}
+
+	/**
+	 * 获取参数占位符的正则表达式模式 用于外部测试或调试
+	 */
+	public static Pattern getParameterPattern() {
+		return PARAMETER_PATTERN;
+	}
+
+	/**
+	 * 获取参数占位符的前缀和后缀
+	 */
+	public static String getPlaceholderPrefix() {
+		return PLACEHOLDER_PREFIX;
+	}
+
+	public static String getPlaceholderSuffix() {
+		return PLACEHOLDER_SUFFIX;
+	}
+
+	/**
+	 * 检查参数名是否有效 参数名只能包含字母、数字和下划线
+	 */
+	public static boolean isValidParameterName(String paramName) {
+		if (paramName == null || paramName.trim().isEmpty()) {
+			return false;
+		}
+		return paramName.matches("^[a-zA-Z_][a-zA-Z0-9_]*$");
+	}
+
+	/**
+	 * 安全地构建参数占位符
+	 */
+	public static String buildPlaceholder(String paramName) {
+		if (!isValidParameterName(paramName)) {
+			throw new IllegalArgumentException("无效的参数名: " + paramName);
+		}
+		return PLACEHOLDER_PREFIX + paramName + PLACEHOLDER_SUFFIX;
+	}
+
 }

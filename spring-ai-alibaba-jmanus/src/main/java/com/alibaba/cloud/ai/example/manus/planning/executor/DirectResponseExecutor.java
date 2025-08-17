@@ -53,8 +53,9 @@ public class DirectResponseExecutor extends AbstractPlanExecutor {
 	}
 
 	/**
-	 * Execute direct response plan asynchronously - records plan execution start and marks as successful
-	 * The actual direct response generation is handled by PlanningCoordinator
+	 * Execute direct response plan asynchronously - records plan execution start and
+	 * marks as successful The actual direct response generation is handled by
+	 * PlanningCoordinator
 	 * @param context Execution context containing user request and plan information
 	 * @return CompletableFuture containing the execution result
 	 */
@@ -71,7 +72,7 @@ public class DirectResponseExecutor extends AbstractPlanExecutor {
 
 				log.info("Direct response executor completed successfully for planId: {}", context.getCurrentPlanId());
 				context.setSuccess(true);
-				
+
 				// Create successful result
 				PlanExecutionResult result = new PlanExecutionResult();
 				result.setSuccess(true);
@@ -83,7 +84,7 @@ public class DirectResponseExecutor extends AbstractPlanExecutor {
 				context.setSuccess(false);
 				// Set error message as result summary
 				context.setResultSummary("Direct response execution failed: " + e.getMessage());
-				
+
 				// Create failed result
 				PlanExecutionResult result = new PlanExecutionResult();
 				result.setSuccess(false);

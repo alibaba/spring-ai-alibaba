@@ -56,8 +56,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	private final Cache<String, Throwable> exceptionCache;
 
-
-
 	@Autowired
 	@Lazy
 	private PlanExecutorFactory planExecutorFactory;
@@ -96,7 +94,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Query content cannot be empty"));
 		}
-		
+
 		// Use PlanIdDispatcher to generate a unique plan ID
 		String planId = planIdDispatcher.generatePlanId();
 
@@ -120,18 +118,20 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			}
 
 			// Execute the plan asynchronously using PlanExecutorInterface
-			PlanExecutorInterface executor =planExecutorFactory.createExecutor(context.getPlan());
-			CompletableFuture<com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult> future = 
-				executor.executeAllStepsAsync(context);
+			PlanExecutorInterface executor = planExecutorFactory.createExecutor(context.getPlan());
+			CompletableFuture<com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult> future = executor
+				.executeAllStepsAsync(context);
 
 			// Handle the execution result asynchronously
 			future.whenComplete((result, throwable) -> {
 				if (throwable != null) {
 					logger.error("Plan execution failed for planId: {}", planId, throwable);
-				} else {
+				}
+				else {
 					if (result.isSuccess()) {
 						logger.info("Plan execution completed successfully for planId: {}", planId);
-					} else {
+					}
+					else {
 						logger.warn("Plan execution failed for planId: {} - {}", planId, result.getErrorMessage());
 					}
 				}
@@ -144,8 +144,9 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			response.put("message", "Task submitted, processing");
 
 			return ResponseEntity.ok(response);
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			logger.error("Failed to start plan execution for planId: {}", planId, e);
 			Map<String, Object> errorResponse = new HashMap<>();
 			errorResponse.put("error", "Failed to start plan execution: " + e.getMessage());
