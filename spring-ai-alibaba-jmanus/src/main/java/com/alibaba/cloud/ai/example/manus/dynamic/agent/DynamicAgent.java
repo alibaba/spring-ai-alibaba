@@ -24,7 +24,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
-import com.alibaba.cloud.ai.example.manus.runtime.task.TaskManager;
+
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -93,8 +93,6 @@ public class DynamicAgent extends ReActAgent {
 
 	private final StreamingResponseHandler streamingResponseHandler;
 
-	// Optional: external task manager to orchestrate sub-plans when toolcall indicates so
-	private TaskManager taskManager;
 
 	// Pattern to detect sub-plan trigger in tool result, e.g. "调用了子执行计划，计划id是xxxx"
 	private static final Pattern SUBPLAN_PATTERN = Pattern.compile("调用了子执行计划，计划id是([\\w-]+)");
@@ -129,10 +127,6 @@ public class DynamicAgent extends ReActAgent {
 		this.userInputService = userInputService;
 		this.model = model;
 		this.streamingResponseHandler = streamingResponseHandler;
-	}
-
-	public void setTaskManager(TaskManager taskManager) {
-		this.taskManager = taskManager;
 	}
 
 	@Override

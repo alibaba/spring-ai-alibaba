@@ -25,6 +25,9 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
+import com.alibaba.cloud.ai.example.manus.planning.service.IPlanRelationshipService;
+import com.alibaba.cloud.ai.example.manus.planning.service.IPlanParameterMappingService;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ParameterValidationResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -67,6 +70,8 @@ public class PlanTemplateService implements IPlanTemplateService {
 
 	@Autowired
 	private PlanIdDispatcher planIdDispatcher;
+	@Autowired(required = false)
+	private IPlanParameterMappingService parameterMappingService;
 
 	/**
 	 * Save plan template and its first version
@@ -330,162 +335,5 @@ public class PlanTemplateService implements IPlanTemplateService {
 			return false;
 		}
 	}
-
-	/**
-	 * Execute a plan template by its ID.
-	 * This method fetches the latest plan version and then executes it.
-	 * @param planTemplateId The ID of the plan template to execute.
-	 * @param rootPlanId The root plan ID for the execution context.
-	 * @param parentPlanId The ID of the parent plan (can be null for root plans).
-	 * @param rawParam Raw parameters for the execution.
-	 * @return A CompletableFuture that completes with the execution result.
-	 */
-	public CompletableFuture<PlanExecutionResult> executePlanByTemplateId(String planTemplateId, String rootPlanId, String parentPlanId, Map<String, Object> rawParam) {
-		// Use the concurrent method with a single argument
-		List<Map<String, Object>> singleArgList = Collections.singletonList(rawParam);
-		return executePlanByTemplateIdConcurrent(planTemplateId, rootPlanId, parentPlanId, singleArgList)
-			.thenApply(resultsMap -> {
-				PlanExecutionResult result = resultsMap.get(0);
-				return result != null ? result : new PlanExecutionResult();
-			});
-	}
-
-	
-	/**
-	 * Execute a plan template by its ID with multiple argument sets concurrently.
-	 * This method processes a list of arguments in parallel and returns results for all executions.
-	 * 
-	 * @param planTemplateId The ID of the plan template to execute.
-	 * @param rootPlanId The root plan ID for the execution context.
-	 * @param parentPlanId The ID of the parent plan (can be null for root plans).
-	 * @param argumentsList List of argument maps to process concurrently.
-	 * @return A CompletableFuture that completes with a map of argument index to execution result.
-	 */
-	public CompletableFuture<Map<Integer, PlanExecutionResult>> executePlanByTemplateIdConcurrent(
-			String planTemplateId, 
-			String rootPlanId, 
-			String parentPlanId, 
-			List<Map<String, Object>> argumentsList) {
-		
-		if (argumentsList == null || argumentsList.isEmpty()) {
-			logger.warn("Arguments list is null or empty for template: {}", planTemplateId);
-			Map<Integer, PlanExecutionResult> emptyResult = new HashMap<>();
-			return CompletableFuture.completedFuture(emptyResult);
-		}
-
-		logger.info("Starting concurrent execution of plan template: {} with {} argument sets", 
-				   planTemplateId, argumentsList.size());
-
-		// Create a list of CompletableFuture for each argument set
-		List<CompletableFuture<Map.Entry<Integer, PlanExecutionResult>>> futures = new ArrayList<>();
-		
-		for (int i = 0; i < argumentsList.size(); i++) {
-			final int index = i;
-			final Map<String, Object> arguments = argumentsList.get(i);
-			
-			CompletableFuture<Map.Entry<Integer, PlanExecutionResult>> future = 
-				executePlanByTemplateIdInternal(planTemplateId, rootPlanId, parentPlanId, arguments)
-					.thenApply(result -> Map.entry(index, result))
-					.exceptionally(throwable -> {
-						logger.error("Failed to execute plan template: {} with arguments index: {}", 
-								   planTemplateId, index, throwable);
-						PlanExecutionResult errorResult = new PlanExecutionResult();
-						errorResult.setSuccess(false);
-						errorResult.setErrorMessage("Execution failed for arguments index " + index + ": " + throwable.getMessage());
-						return Map.entry(index, errorResult);
-					});
-			
-			futures.add(future);
-		}
-
-		// Wait for all futures to complete and collect results
-		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-			.thenApply(v -> {
-				Map<Integer, PlanExecutionResult> results = new HashMap<>();
-				for (CompletableFuture<Map.Entry<Integer, PlanExecutionResult>> future : futures) {
-					try {
-						Map.Entry<Integer, PlanExecutionResult> entry = future.get();
-						results.put(entry.getKey(), entry.getValue());
-					} catch (Exception e) {
-						logger.error("Failed to get result from future for template: {}", planTemplateId, e);
-						// This shouldn't happen since we handle exceptions in the future itself
-					}
-				}
-				return results;
-			})
-			.exceptionally(throwable -> {
-				logger.error("Failed to execute concurrent plan template: {}", planTemplateId, throwable);
-				Map<Integer, PlanExecutionResult> errorResults = new HashMap<>();
-				for (int i = 0; i < argumentsList.size(); i++) {
-					PlanExecutionResult errorResult = new PlanExecutionResult();
-					errorResult.setSuccess(false);
-					errorResult.setErrorMessage("Concurrent execution failed: " + throwable.getMessage());
-					errorResults.put(i, errorResult);
-				}
-				return errorResults;
-			});
-	}
-
-	/**
-	 * Internal method that contains the core execution logic for a single plan template execution.
-	 * This method is used by both the single and concurrent execution methods.
-	 * 
-	 * @param planTemplateId The ID of the plan template to execute.
-	 * @param rootPlanId The root plan ID for the execution context.
-	 * @param parentPlanId The ID of the parent plan (can be null for root plans).
-	 * @param rawParam Raw parameters for the execution.
-	 * @return A CompletableFuture that completes with the execution result.
-	 */
-	private CompletableFuture<PlanExecutionResult> executePlanByTemplateIdInternal(String planTemplateId, String rootPlanId, String parentPlanId, Map<String, Object> rawParam) {
-		String planJson = getLatestPlanVersion(planTemplateId);
-		if (planJson == null) {
-			PlanExecutionResult errorResult = new PlanExecutionResult();
-			errorResult.setSuccess(false);
-			errorResult.setErrorMessage("No plan version found for template " + planTemplateId);
-			return CompletableFuture.completedFuture(errorResult);
-		}
-
-		try {
-			// Generate a unique sub-plan ID for this execution
-			String subPlanId = planIdDispatcher.generateSubPlanId(parentPlanId != null ? parentPlanId : planTemplateId);
-			// Create ExecutionContext
-			ExecutionContext context = new ExecutionContext();
-			context.setCurrentPlanId(subPlanId);
-			context.setRootPlanId(rootPlanId);
-			context.setUserRequest("Execute plan template: " + planTemplateId);
-			context.setNeedSummary(true);
-			context.setUseMemory(false);
-
-			// Parse plan JSON and set to context
-			PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
-			context.setPlan(plan);
-
-			// Execute directly using PlanExecutorFactory and PlanExecutorInterface
-			PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
-			return executor.executeAllStepsAsync(context);
-
-		} catch (Exception e) {
-			logger.error("Failed to execute plan template: {}", planTemplateId, e);
-			PlanExecutionResult errorResult = new PlanExecutionResult();
-			errorResult.setSuccess(false);
-			errorResult.setErrorMessage("Execution failed: " + e.getMessage());
-			return CompletableFuture.completedFuture(errorResult);
-		}
-	}
-
-	/**
-	 * Execute a plan template by its ID with multiple argument sets concurrently (simplified version).
-	 * This method uses the current plan ID as both root and parent plan ID.
-	 * 
-	 * @param planTemplateId The ID of the plan template to execute.
-	 * @param argumentsList List of argument maps to process concurrently.
-	 * @return A CompletableFuture that completes with a map of argument index to execution result.
-	 */
-	public CompletableFuture<Map<Integer, PlanExecutionResult>> executePlanByTemplateIdConcurrent(
-			String planTemplateId, 
-			List<Map<String, Object>> argumentsList) {
-		return executePlanByTemplateIdConcurrent(planTemplateId, planTemplateId, planTemplateId, argumentsList);
-	}
-
 
 }
