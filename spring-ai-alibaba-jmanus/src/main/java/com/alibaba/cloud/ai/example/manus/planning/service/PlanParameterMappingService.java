@@ -25,53 +25,7 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 
 	private static final String PLACEHOLDER_SUFFIX = ">>";
 
-	@Override
-	public String mapParametersToPlan(String planJson, Map<String, Object> rawParams) {
-		if (planJson == null || rawParams == null) {
-			logger.warn("计划模板或原始参数为空，跳过参数映射");
-			return planJson;
-		}
 
-		if (rawParams.isEmpty()) {
-			logger.debug("原始参数为空，无需进行参数映射");
-			return planJson;
-		}
-
-		String result = planJson;
-		int replacementCount = 0;
-
-		// 查找所有参数占位符
-		Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
-
-		while (matcher.find()) {
-			String placeholder = matcher.group(0); // 完整的占位符，如 <<args1>>
-			String paramName = matcher.group(1); // 参数名，如 args1
-
-			// 从原始参数中获取值
-			Object paramValue = rawParams.get(paramName);
-
-			if (paramValue != null) {
-				// 替换占位符
-				String stringValue = paramValue.toString();
-				result = result.replace(placeholder, stringValue);
-				replacementCount++;
-
-				logger.debug("参数映射成功: {} -> {}", placeholder, stringValue);
-			}
-			else {
-				logger.warn("参数 {} 在原始参数中未找到，保持占位符: {}", paramName, placeholder);
-			}
-		}
-
-		if (replacementCount > 0) {
-			logger.info("参数映射完成，共替换 {} 个参数占位符", replacementCount);
-		}
-		else {
-			logger.debug("未发现需要替换的参数占位符");
-		}
-
-		return result;
-	}
 
 	@Override
 	public ParameterValidationResult validateParameters(String planJson, Map<String, Object> rawParams) {
@@ -134,52 +88,9 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 		return placeholders;
 	}
 
-	@Override
-	public boolean hasParameterPlaceholders(String planJson) {
-		if (planJson == null) {
-			return false;
-		}
 
-		Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
-		boolean hasPlaceholders = matcher.find();
 
-		logger.debug("计划模板{}参数占位符", hasPlaceholders ? "包含" : "不包含");
-		return hasPlaceholders;
-	}
 
-	@Override
-	public Map<String, Object> getMappingStatistics(String planJson, Map<String, Object> rawParams) {
-		Map<String, Object> stats = new HashMap<>();
-
-		if (planJson == null || rawParams == null) {
-			stats.put("error", "计划模板或原始参数为空");
-			return stats;
-		}
-
-		List<String> placeholders = extractParameterPlaceholders(planJson);
-		ParameterValidationResult validationResult = validateParameters(planJson, rawParams);
-
-		stats.put("totalPlaceholders", placeholders.size());
-		stats.put("foundParameters", validationResult.getFoundParameterCount());
-		stats.put("missingParameters", validationResult.getMissingParameterCount());
-		stats.put("validationPassed", validationResult.isValid());
-		stats.put("rawParamsCount", rawParams.size());
-		stats.put("placeholders", placeholders);
-		stats.put("missingParams", validationResult.getMissingParameters());
-		stats.put("foundParams", validationResult.getFoundParameters());
-
-		// 计算映射覆盖率
-		if (placeholders.size() > 0) {
-			double coverage = (double) validationResult.getFoundParameterCount() / placeholders.size();
-			stats.put("coverage", String.format("%.2f%%", coverage * 100));
-		}
-		else {
-			stats.put("coverage", "100.00%");
-		}
-
-		logger.debug("参数映射统计信息: {}", stats);
-		return stats;
-	}
 
 	/**
 	 * 获取参数占位符的正则表达式模式 用于外部测试或调试
