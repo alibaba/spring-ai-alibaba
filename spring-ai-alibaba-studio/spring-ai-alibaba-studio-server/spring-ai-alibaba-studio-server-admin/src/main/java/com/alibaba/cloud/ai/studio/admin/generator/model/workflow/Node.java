@@ -21,6 +21,7 @@ public class Node implements RunnableModel {
 
 	private String id;
 
+	// todo: 使用NodeTypeEnum
 	private String type;
 
 	private String title;
