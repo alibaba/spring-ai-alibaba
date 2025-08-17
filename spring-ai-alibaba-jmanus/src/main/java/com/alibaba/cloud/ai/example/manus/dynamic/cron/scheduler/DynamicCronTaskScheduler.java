@@ -116,7 +116,7 @@ public class DynamicCronTaskScheduler {
 		String planId = planIdDispatcher.generatePlanId();
 
 		// Execute task asynchronously using PlanningCoordinator
-		executePlanByDescription(planId, planDesc);
+		executePlanByuserQueryDesc(planId, planDesc);
 	}
 
 	/**
@@ -205,22 +205,34 @@ public class DynamicCronTaskScheduler {
 	}
 
 	/**
-	 * Execute plan by description using PlanningCoordinator
+	 * Execute plan by user query description using PlanningCoordinator
 	 * @param planId The plan ID to execute
-	 * @param planDesc The plan description
+	 * @param planDesc The plan description/user query
 	 */
-	private void executePlanByDescription(String planId, String planDesc) {
+	private void executePlanByuserQueryDesc(String planId, String planDesc) {
 		try {
-			log.info("Executing plan by description: {} - {}", planId, planDesc);
+			log.info("Executing plan by user query description: {} - {}", planId, planDesc);
 
-			// Create a simple plan execution context
-			// For now, we'll use a basic approach - in a real implementation,
-			// you might want to create a proper ExecutionContext
-			log.info("Plan execution started for description: {}", planDesc);
+			// Use PlanningCoordinator to execute the plan by user query
+			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByUserQuery(planDesc, planId,
+					null, planId);
+
+			// Handle the execution result asynchronously
+			future.thenAccept(result -> {
+				if (result.isSuccess()) {
+					log.info("Plan execution successful for description: {}", planDesc);
+				}
+				else {
+					log.error("Plan execution failed for description: {}: {}", planDesc, result.getErrorMessage());
+				}
+			}).exceptionally(throwable -> {
+				log.error("Plan execution failed for description: {}", planDesc, throwable);
+				return null;
+			});
 
 		}
 		catch (Exception e) {
-			log.error("Failed to execute plan by description: {}", planId, e);
+			log.error("Failed to execute plan by user query description: {}", planId, e);
 		}
 	}
 
@@ -259,7 +271,7 @@ public class DynamicCronTaskScheduler {
 			}
 
 			// Execute using the PlanningCoordinator's common execution logic
-			return planningCoordinator.executeCommonPlan(plan, rootPlanId, parentPlanId, currentPlanId);
+			return planningCoordinator.executeByPlan(plan, rootPlanId, parentPlanId, currentPlanId);
 
 		}
 		catch (Exception e) {

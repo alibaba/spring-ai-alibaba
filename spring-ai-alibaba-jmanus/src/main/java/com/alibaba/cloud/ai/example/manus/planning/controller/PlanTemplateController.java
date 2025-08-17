@@ -265,7 +265,7 @@ public class PlanTemplateController {
 			}
 
 			// Execute using the PlanningCoordinator's common execution logic
-			return planningCoordinator.executeCommonPlan(plan, rootPlanId, parentPlanId, currentPlanId);
+			return planningCoordinator.executeByPlan(plan, rootPlanId, parentPlanId, currentPlanId);
 
 		}
 		catch (Exception e) {
