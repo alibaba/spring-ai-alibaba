@@ -88,6 +88,11 @@ class OverAllStateBuilderTest {
 		// Assert
 		assertThat(state.containStrategy(OverAllState.DEFAULT_INPUT_KEY)).isTrue();
 		assertThat(state.value("otherKey", String.class)).hasValue("value");
+
+		// Test that default REPLACE strategy works at runtime
+		Map<String, Object> updates = Map.of("otherKey", "newValue");
+		state.updateState(updates);
+		assertThat(state.value("otherKey", String.class)).hasValue("newValue");
 	}
 
 	@Test

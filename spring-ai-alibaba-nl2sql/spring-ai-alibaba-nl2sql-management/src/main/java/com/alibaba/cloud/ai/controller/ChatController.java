@@ -126,7 +126,7 @@ public class ChatController {
 			if (nl2SqlService != null) {
 				try {
 					// Use the NL2SQL service to generate SQL
-					String sql = nl2SqlService.apply(userMessage);
+					String sql = nl2SqlService.nl2sql(userMessage);
 
 					// Create a response
 					response.setMessage("我为您生成了以下SQL查询：");

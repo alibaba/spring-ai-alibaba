@@ -24,7 +24,12 @@ import com.alibaba.cloud.ai.example.deepresearch.model.req.FeedbackRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.GraphId;
 import com.alibaba.cloud.ai.example.deepresearch.model.response.ReportResponse;
 import com.alibaba.cloud.ai.example.deepresearch.util.SearchBeanUtil;
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
@@ -44,6 +49,7 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
 import java.util.HashMap;
@@ -123,7 +129,13 @@ public class ChatController {
 
 		return sink.asFlux()
 			.doOnCancel(() -> logger.info("Client disconnected from stream"))
-			.doOnError(e -> logger.error("Error occurred during streaming", e));
+			.onErrorResume(throwable -> {
+				logger.error("Error occurred during streaming", throwable);
+				return Mono.just(ServerSentEvent.<String>builder()
+					.event("error")
+					.data("Error occurred during streaming: " + throwable.getMessage())
+					.build());
+			});
 	}
 
 	@DeleteMapping("/stop")

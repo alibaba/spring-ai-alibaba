@@ -16,18 +16,17 @@
 package com.alibaba.cloud.ai.graph.checkpoint.config;
 
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import jodd.util.StringUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant.MEMORY;
-
 public class SaverConfig {
 
 	private Map<String, BaseCheckpointSaver> savers = new ConcurrentHashMap<>();
 
-	private String type = MEMORY;
+	private String type = SaverEnum.MEMORY.getValue();
 
 	public String getType() {
 		return type;
