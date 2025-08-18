@@ -25,7 +25,7 @@ package com.alibaba.cloud.ai.dto;
 public record PromptConfigDTO(String id, // Configuration ID (required for update)
 		String name, // Configuration name
 		String promptType, // Prompt type
-		String systemPrompt, // User-defined system prompt content
+		String optimizationPrompt, // User-defined system prompt content
 		Boolean enabled, // Whether to enable this configuration
 		String description, // Configuration description
 		String creator // Creator
