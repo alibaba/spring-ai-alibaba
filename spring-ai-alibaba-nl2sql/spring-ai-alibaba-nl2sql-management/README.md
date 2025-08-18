@@ -14,14 +14,14 @@
 - **知识配置**: 支持对“证据”（即业务逻辑的文字解释）进行增删操作，并将其存入向量库。
 - **可视化界面**: 包含一个 Web UI，方便用户与 NL2SQL 服务进行交互。
 - **流式聊天**: 提供流式聊天接口，实时返回自然语言查询到 SQL 的转换结果。
-- **多向量库支持**: 同时支持 AnalyticDB 和 SimpleVectorStore 作为向量存储和检索方案。
+- **多向量库支持**: 同时支持 AnalyticDB 和 SimpleVectorStore，Milvus作为向量存储和检索方案。
 
 ---
 
 ## 技术栈
 
 - **后端**: Java 17+ (Spring Boot)
-- **向量库**: AnalyticDB, SimpleVectorStore
+- **向量库**: AnalyticDB, SimpleVectorStore，Milvus
 - **嵌入模型**: DashScope Embedding Model
 
 ---
@@ -82,7 +82,7 @@
 ## 核心类说明
 
 - **`Nl2sqlForGraphController`**: 处理 NL2SQL 请求（包括流式请求）的核心控制器。
-- **`VectorStoreManagementService`**: 用于管理向量库的接口，包含了对 `AnalyticDB` 和 `SimpleVectorStore` 的具体实现。
+- **`VectorStoreManagementService`**: 用于管理向量库的接口，包含了对 `AnalyticDB` 和 `SimpleVectorStore` 以及`Milvus`的具体实现。
 - **`Application`**: Spring Boot 应用的主启动类。
 
 ---
