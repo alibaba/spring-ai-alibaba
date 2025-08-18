@@ -192,7 +192,43 @@
                 </div>
                 <div class="assistant-message-body">
                   <div class="text-message">
-                    <div v-html="message.type === 'streaming' ? message.content : formatMessage(message.content)"></div>
+                    <!-- 报告格式选择按钮 - 嵌入到报告内容中 -->
+                    <div v-if="isReportMessage(message)" class="report-controls-inline">
+                      <div class="format-section">
+                        <span class="format-label">查看格式：</span>
+                        <div class="format-selector">
+                          <button 
+                            class="format-btn"
+                            :class="{ active: getMessageFormat(message.id) === 'markdown' }"
+                            @click="setMessageFormat(message.id, 'markdown')"
+                            title="切换到Markdown格式查看"
+                          >
+                            <i class="bi bi-markdown"></i>
+                            Markdown
+                          </button>
+                          <button 
+                            class="format-btn"
+                            :class="{ active: getMessageFormat(message.id) === 'html' }"
+                            @click="setMessageFormat(message.id, 'html')"
+                            title="切换到HTML格式查看"
+                          >
+                            <i class="bi bi-code-slash"></i>
+                            HTML
+                          </button>
+                        </div>
+                      </div>
+                      <div class="export-actions">
+                        <button 
+                          class="export-btn"
+                          @click="exportMessageReport(message)"
+                          title="导出当前格式的报告文件"
+                        >
+                          <i class="bi bi-download"></i>
+                          导出报告
+                        </button>
+                      </div>
+                    </div>
+                    <div v-html="message.type === 'streaming' ? message.content : formatMessageWithFormat(message)"></div>
                   </div>
                 </div>
               </template>
@@ -266,6 +302,9 @@ export default {
     const showRenameModal = ref(false)
     const renameTitle = ref('')
     const currentRenameSession = ref(null)
+    
+    // 消息格式管理
+    const messageFormats = ref({}) // 存储每个消息的显示格式，默认为html
     
     // API方法
     const loadAgentInfo = async () => {
@@ -880,6 +919,11 @@ export default {
       if (!event.target.closest('.dropdown')) {
         activeDropdown.value = null
       }
+      
+      // 关闭导出下拉菜单
+      if (!event.target.closest('.export-dropdown-menu') && !event.target.closest('.export-btn')) {
+        activeExportDropdown.value = null
+      }
     }
 
     const formatContentByType = (type, data) => {
@@ -1059,6 +1103,230 @@ export default {
       }
     }
     
+    // 报告格式管理方法
+    const isReportMessage = (message) => {
+      if (!message.content) return false
+      
+      // 检查消息是否包含报告内容
+      const reportKeywords = [
+        '数据分析报告',
+        '输出报告', 
+        'output_report',
+        '执行摘要',
+        '关键发现',
+        '业务洞察',
+        '建议和行动计划',
+        '数据分析过程',
+        '详细分析结果'
+      ]
+      
+      const hasKeyword = reportKeywords.some(keyword => message.content.includes(keyword))
+      const hasStructuredContent = message.content.includes('1.') && message.content.includes('2.') && 
+                                  (message.content.includes('用户') || message.content.includes('分析') || message.content.includes('数据'))
+      
+      const isReport = hasKeyword || hasStructuredContent
+      
+      // 调试输出
+      if (message.content.includes('数据分析报告') || message.content.includes('执行摘要')) {
+        console.log('检测报告消息:', {
+          messageId: message.id,
+          hasKeyword,
+          hasStructuredContent,
+          isReport,
+          contentPreview: message.content.substring(0, 200)
+        })
+      }
+      
+      return isReport
+    }
+    
+    const getMessageFormat = (messageId) => {
+      return messageFormats.value[messageId] || 'html'
+    }
+    
+    const setMessageFormat = (messageId, format) => {
+      messageFormats.value[messageId] = format
+      // 重新渲染该消息
+      const messageIndex = currentMessages.value.findIndex(m => m.id === messageId)
+      if (messageIndex !== -1) {
+        // 触发响应式更新
+        currentMessages.value[messageIndex] = { ...currentMessages.value[messageIndex] }
+        nextTick(() => {
+          // 确保DOM更新后的处理
+        })
+      }
+    }
+    
+    // 新增：根据格式显示消息内容
+    const formatMessageWithFormat = (message) => {
+      const format = getMessageFormat(message.id)
+      const originalContent = formatMessage(message.content)
+      
+      if (!isReportMessage(message)) {
+        return originalContent
+      }
+      
+      if (format === 'markdown') {
+        // 将HTML内容转换为Markdown显示
+        const markdownContent = convertHtmlToMarkdown(originalContent)
+        return `
+          <div class="markdown-container">
+            <div class="format-indicator">
+              <i class="bi bi-markdown"></i>
+              <span>Markdown 格式</span>
+            </div>
+            <pre class="markdown-content">${escapeHtml(markdownContent)}</pre>
+          </div>
+        `
+      } else {
+        // HTML格式，添加格式指示器
+        return `
+          <div class="html-container">
+            <div class="format-indicator">
+              <i class="bi bi-code-slash"></i>
+              <span>HTML 格式</span>
+            </div>
+            <div class="html-content">${originalContent}</div>
+          </div>
+        `
+      }
+    }
+    
+    const exportMessageReport = (message) => {
+      const format = getMessageFormat(message.id)
+      const content = extractReportContent(message.content, format)
+      
+      let filename = ''
+      let blob = null
+      
+      if (format === 'html') {
+        const htmlContent = generateHTMLReportFromMessage(content)
+        filename = `report_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.html`
+        blob = new Blob([htmlContent], { type: 'text/html' })
+      } else {
+        const markdownContent = extractMarkdownFromMessage(content)
+        filename = `report_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.md`
+        blob = new Blob([markdownContent], { type: 'text/markdown' })
+      }
+      
+      // 创建下载链接
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    }
+    
+    const extractReportContent = (messageContent, format) => {
+      // 从消息内容中提取报告部分
+      
+      // 方法1: 尝试提取"输出报告"部分的内容
+      const reportSectionMatch = messageContent.match(/<div class="agent-response-block"[^>]*>\s*<i class="bi bi-file-earmark-text"><\/i>\s*输出报告[\s\S]*?<\/div>\s*<div class="agent-response-content">([\s\S]*?)<\/div>/i)
+      
+      if (reportSectionMatch) {
+        const reportContent = reportSectionMatch[1]
+        if (format === 'markdown') {
+          return convertHtmlToMarkdown(reportContent)
+        } else {
+          return reportContent
+        }
+      }
+      
+      // 方法2: 查找最后一个包含"数据分析报告"的agent-response-content部分
+      const allResponseBlocks = messageContent.match(/<div class="agent-response-content">([\s\S]*?)<\/div>/g)
+      if (allResponseBlocks) {
+        // 从后往前查找包含"数据分析报告"的部分
+        for (let i = allResponseBlocks.length - 1; i >= 0; i--) {
+          const blockMatch = allResponseBlocks[i].match(/<div class="agent-response-content">([\s\S]*?)<\/div>/)
+          if (blockMatch && blockMatch[1].includes('数据分析报告')) {
+            const reportContent = blockMatch[1]
+            if (format === 'markdown') {
+              return convertHtmlToMarkdown(reportContent)
+            } else {
+              return reportContent
+            }
+          }
+        }
+      }
+      
+      // 方法3: 简单的文本匹配（后备方案）
+      if (format === 'markdown') {
+        const markdownMatch = messageContent.match(/数据分析报告[\s\S]*/i)
+        return markdownMatch ? markdownMatch[0] : messageContent
+      } else {
+        const htmlReportMatch = messageContent.match(/(.*?数据分析报告[\s\S]*)/i)
+        if (htmlReportMatch) {
+          return htmlReportMatch[1]
+        }
+        return messageContent
+      }
+    }
+    
+    // 添加HTML转Markdown的辅助函数
+    const convertHtmlToMarkdown = (htmlContent) => {
+      return htmlContent
+        .replace(/<h([1-6])>/g, (match, level) => '#'.repeat(parseInt(level)) + ' ')
+        .replace(/<\/h[1-6]>/g, '\n')
+        .replace(/<p>/g, '\n')
+        .replace(/<\/p>/g, '\n')
+        .replace(/<br\s*\/?>/g, '\n')
+        .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
+        .replace(/<em>(.*?)<\/em>/g, '*$1*')
+        .replace(/<code>(.*?)<\/code>/g, '`$1`')
+        .replace(/<pre><code[^>]*>([\s\S]*?)<\/code><\/pre>/g, '```\n$1\n```')
+        .replace(/<li>/g, '- ')
+        .replace(/<\/li>/g, '\n')
+        .replace(/<ul>/g, '\n')
+        .replace(/<\/ul>/g, '\n')
+        .replace(/<ol>/g, '\n')
+        .replace(/<\/ol>/g, '\n')
+        .replace(/<[^>]+>/g, '') // 移除剩余的HTML标签
+        .replace(/\n\s*\n\s*\n/g, '\n\n') // 清理多余的空行
+        .trim()
+    }
+    
+    const generateHTMLReportFromMessage = (content) => {
+      return `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据分析报告</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; margin: 40px; }
+        .report-header { border-bottom: 2px solid #e9ecef; padding-bottom: 20px; margin-bottom: 30px; }
+        .report-title { font-size: 2em; font-weight: bold; color: #2c3e50; }
+        .report-meta { color: #6c757d; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #dee2e6; padding: 8px 12px; text-align: left; }
+        th { background-color: #e9ecef; font-weight: 600; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        code { background: #e9ecef; padding: 2px 4px; border-radius: 3px; }
+        h1, h2, h3 { color: #2c3e50; }
+        .agent-response-block { margin: 20px 0; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <div class="report-title">数据分析报告</div>
+        <div class="report-meta">导出时间: ${new Date().toLocaleString('zh-CN')}</div>
+    </div>
+    <div class="report-content">
+        ${content}
+    </div>
+</body>
+</html>`
+    }
+    
+    const extractMarkdownFromMessage = (content) => {
+      // 直接返回提取的内容，因为extractReportContent已经处理了格式转换
+      return `# 数据分析报告\n\n> 导出时间: ${new Date().toLocaleString('zh-CN')}\n\n---\n\n${content}`
+    }
+    
     // 生命周期
     onMounted(async () => {
       // 加载智能体信息
@@ -1101,6 +1369,7 @@ export default {
       showRenameModal,
       renameTitle,
       currentRenameSession,
+      messageFormats,
       
       // 方法
       goBack,
@@ -1122,7 +1391,13 @@ export default {
       closeRenameDialog,
       confirmRename,
       deleteSession,
-      escapeHtml
+      escapeHtml,
+      // 报告格式管理方法
+      isReportMessage,
+      getMessageFormat,
+      setMessageFormat,
+      formatMessageWithFormat,
+      exportMessageReport
     }
   }
 }
@@ -1900,6 +2175,224 @@ export default {
   word-wrap: break-word;
   overflow-wrap: break-word;
   max-width: 100%;
+}
+
+/* 报告控制按钮样式 */
+.report-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+/* 内联报告控制按钮样式 */
+.report-controls-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  margin: 0 0 16px 0;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e6f3ff 100%);
+  border-radius: 8px;
+  border: 1px solid #d6e4ff;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.report-controls-inline:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.format-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.format-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.format-selector {
+  display: flex;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  overflow: hidden;
+  background: white;
+}
+
+.format-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  border-right: 1px solid #dee2e6;
+  position: relative;
+  overflow: hidden;
+}
+
+.format-btn:last-child {
+  border-right: none;
+}
+
+.format-btn:hover {
+  background-color: #f0f7ff;
+  color: #1890ff;
+  transform: translateY(-1px);
+}
+
+.format-btn.active {
+  background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.format-btn.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+
+.export-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(82, 196, 26, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.export-btn:hover {
+  background: linear-gradient(135deg, #73d13d 0%, #95de64 100%);
+  box-shadow: 0 4px 8px rgba(82, 196, 26, 0.4);
+  transform: translateY(-2px);
+}
+
+.export-btn:active {
+  transform: translateY(0px);
+  box-shadow: 0 2px 4px rgba(82, 196, 26, 0.3);
+}
+
+.export-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+
+/* 格式容器样式 */
+.markdown-container,
+.html-container {
+  margin: 12px 0;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  transition: all 0.4s ease;
+  opacity: 0;
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.format-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #f6f8fa;
+  border-bottom: 1px solid #e1e4e8;
+  font-size: 12px;
+  color: #586069;
+  font-weight: 500;
+}
+
+.format-indicator i {
+  font-size: 14px;
+}
+
+.markdown-content {
+  margin: 0;
+  padding: 16px;
+  background: #f8f9fa;
+  font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  border: none;
+  color: #24292e;
+}
+
+.html-content {
+  padding: 16px;
+  background: #ffffff;
+}
+
+/* Markdown格式特殊样式 */
+.markdown-container .format-indicator {
+  background: #e3f2fd;
+  color: #1565c0;
+  border-bottom-color: #bbdefb;
+}
+
+.markdown-container .format-indicator i {
+  color: #1976d2;
+}
+
+/* HTML格式特殊样式 */
+.html-container .format-indicator {
+  background: #fff3e0;
+  color: #e65100;
+  border-bottom-color: #ffcc02;
+}
+
+.html-container .format-indicator i {
+  color: #ff9800;
 }
 
 .message-avatar {
