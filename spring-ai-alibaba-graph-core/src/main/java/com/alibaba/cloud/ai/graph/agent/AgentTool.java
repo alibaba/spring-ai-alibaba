@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 public class AgentTool implements BiFunction<OverAllState, ToolContext, OverAllState> {
@@ -58,7 +57,7 @@ public class AgentTool implements BiFunction<OverAllState, ToolContext, OverAllS
 	public static ToolCallback getFunctionToolCallback(ReactAgent2 agent) {
 		return FunctionToolCallback.builder(agent.name(), AgentTool.create(agent))
 				.description(agent.description())
-				.inputType(String.class)
+				.inputType(OverAllState.class)
 				.build();
 	}
 }

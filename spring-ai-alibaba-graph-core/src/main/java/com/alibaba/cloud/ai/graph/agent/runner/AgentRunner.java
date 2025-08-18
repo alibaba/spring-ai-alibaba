@@ -21,24 +21,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
+import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.node.LlmNode;
-import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import org.apache.james.mime4j.field.address.BaseNode;
+import org.w3c.dom.Node;
 
 import org.springframework.ai.chat.model.ChatModel;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class AgentRunner {
@@ -68,11 +66,15 @@ public class AgentRunner {
 			};
 		}
 
-		StateGraph graph = new StateGraph(agent.name(), keyStrategyFactory)
-				.addNode("agent", node_async(agent));
+		StateGraph graph = new StateGraph(agent.name(), keyStrategyFactory);
 
+		// add root agent
+		graph.addNode(agent.name, agent.stateGraph());
+
+		// add starting edge
+		graph.addEdge(START, agent.name);
 		// Use recursive method to add all sub-agents
-		addSubAgentsRecursively(graph, "agent", agent.subAgents);
+		addSubAgentsRecursively(graph,  agent, agent.subAgents);
 
 		return graph;
 	}
@@ -80,21 +82,37 @@ public class AgentRunner {
 	/**
 	 * Recursively adds sub-agents and their nested sub-agents to the graph
 	 * @param graph the StateGraph to add nodes and edges to
-	 * @param parentNodeName the name of the parent node
+	 * @param parentAgent the name of the parent node
 	 * @param subAgents the list of sub-agents to process
 	 */
-	private void addSubAgentsRecursively(StateGraph graph, String parentNodeName, List<? extends BaseNodeAgent> subAgents) throws GraphStateException {
-		for (BaseNodeAgent subAgent : subAgents) {
-			// Add the current sub-agent as a node
-			graph.addNode(subAgent.name(), node_async(subAgent));
-			// Recursively process this sub-agent's sub-agents if they exist
-			if (subAgent.subAgents != null && !subAgent.subAgents.isEmpty()) {
-				addSubAgentsRecursively(graph, subAgent.name(), subAgent.subAgents);
-			}
-		}
+	private void addSubAgentsRecursively(StateGraph graph, NodeAgent parentAgent, List<? extends BaseNodeAgent> subAgents) throws GraphStateException {
+		if (parentAgent instanceof NodeAgent) {
+			for (BaseNodeAgent baseNodeAgent : subAgents) {
+				NodeAgent subAgent = (NodeAgent) baseNodeAgent;
+				// Add the current sub-agent as a node
+				graph.addNode(subAgent.name(), subAgent.stateGraph());
 
-		// Connect parent to this sub-agent
-		graph.addConditionalEdges(parentNodeName, new RoutingEdgeAction(chatModel, subAgents), Map.of());
+				// Recursively process this sub-agent's sub-agents if they exist
+				if (subAgent.subAgents != null && !subAgent.subAgents.isEmpty()) {
+					addSubAgentsRecursively(graph, parentAgent, subAgent.subAgents);
+				} else {
+					graph.addEdge(subAgent.name(), END);
+				}
+			}
+
+			// Connect parent to this sub-agent
+			graph.addConditionalEdges(parentAgent.name, AsyncEdgeAction.edge_async(new RoutingEdgeAction(chatModel, this.agent, subAgents)), Map.of());
+		} else if (parentAgent instanceof SequentialFlowAgent) {
+			for (BaseNodeAgent baseNodeAgent : subAgents) {
+				NodeAgent subAgent = (NodeAgent) baseNodeAgent;
+				// Add the current sub-agent as a node
+				graph.addNode(subAgent.name(), subAgent.stateGraph());
+				graph.addEdge(parentAgent.name(), subAgent.name());
+				parentAgent = subAgent;
+			}
+			// parent agent is the last one in the sub agent list, so we connect it to END
+			graph.addEdge(parentAgent.name(), END);
+		}
 
 	}
 

@@ -23,13 +23,13 @@ import com.google.common.collect.ImmutableList;
 
 public abstract class BaseNodeAgent implements NodeAction {
 	/** The agent's name. Must be a unique identifier within the graph. */
-	protected final String name;
+	protected String name;
 
 	/**
 	 * One line description about the agent's capability. The system can use this for decision-making
 	 * when delegating control to different agents.
 	 */
-	protected final String description;
+	protected String description;
 
 
 	protected final List<? extends BaseNodeAgent> subAgents;

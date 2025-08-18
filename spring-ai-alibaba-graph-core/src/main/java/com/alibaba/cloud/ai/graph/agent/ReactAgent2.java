@@ -55,6 +55,7 @@ public class ReactAgent2 extends BaseAgent {
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 	private String description;
 	private String outputKey;
+	private KeyStrategyFactory keyStrategyFactory;
 
 	private StateGraph graph;
 	private CompiledGraph compiledGraph;
@@ -65,6 +66,7 @@ public class ReactAgent2 extends BaseAgent {
 		this.shouldContinueFunc = builder.shouldContinueFunc;
 		this.description = builder.description;
 		this.outputKey = builder.outputKey;
+		this.keyStrategyFactory = builder.keyStrategyFactory;
 		this.graph = initGraph(llmNode, toolNode);
 	}
 
@@ -194,7 +196,8 @@ public class ReactAgent2 extends BaseAgent {
 		public ReactAgent2 build() throws GraphStateException {
 			subAgents.forEach(agent -> {
 				if (agent instanceof ReactAgent2) {
-					AgentTool agentTool = AgentTool.create((ReactAgent2) agent);
+					ToolCallback toolCallback = AgentTool.getFunctionToolCallback((ReactAgent2) agent);
+					this.tools.add(toolCallback);
 				}
 			});
 

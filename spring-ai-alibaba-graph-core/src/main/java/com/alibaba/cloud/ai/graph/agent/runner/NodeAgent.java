@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.graph.agent.runner;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
@@ -29,6 +30,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.AgentTool;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
@@ -47,25 +49,27 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class NodeAgent extends BaseNodeAgent {
-	private int iterations = 0;
-	private int max_iterations = 10;
-	private Function<OverAllState, Boolean> shouldContinueFunc;
-	private String description;
+	private String instruction;
 	private String outputKey;
+
+	private KeyStrategyFactory keyStrategyFactory;
 
 	private StateGraph graph;
 	private CompiledGraph compiledGraph;
 
-	protected NodeAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
+	protected NodeAgent(Builder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.subAgents);
-		this.max_iterations = builder.maxIterations;
-		this.shouldContinueFunc = builder.shouldContinueFunc;
-		this.description = builder.description;
+		this.instruction = builder.instruction;
 		this.outputKey = builder.outputKey;
 		this.graph = initGraph(llmNode, toolNode);
 	}
 
-	private StateGraph initGraph(LlmNode llmNode, ToolNode toolNode) throws GraphStateException {
+	public Optional<OverAllState> run(Map<String, Object> inputs) throws GraphStateException, GraphRunnerException {
+		CompiledGraph compiledGraph = this.graph.compile();
+		return compiledGraph.invoke(inputs);
+	}
+
+	private StateGraph initGraph(NodeAgent agent) throws GraphStateException {
 		if (keyStrategyFactory == null) {
 			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
@@ -74,16 +78,46 @@ public class NodeAgent extends BaseNodeAgent {
 			};
 		}
 
-		StateGraph graph = new StateGraph(name, keyStrategyFactory)
-				.addNode("agent", node_async(llmNode))
-				.addNode("tool", node_async(toolNode))
+		StateGraph graph = new StateGraph(agent.name(), keyStrategyFactory)
+				.addNode("agent", node_async(agent));
 
-				.addEdge(START, "agent")
-				.addConditionalEdges("agent", edge_async(this::think),
-						Map.of("continue", "tool", "end", END));
+		// Use recursive method to add all sub-agents
+		addSubAgentsRecursively(graph, "agent", agent.subAgents);
+
+		return graph;
+	}
+
+	/**
+	 * Recursively adds sub-agents and their nested sub-agents to the graph
+	 * @param graph the StateGraph to add nodes and edges to
+	 * @param parentNodeName the name of the parent node
+	 * @param subAgents the list of sub-agents to process
+	 */
+	private void addSubAgentsRecursively(StateGraph graph, String parentNodeName, List<? extends BaseNodeAgent> subAgents) throws GraphStateException {
+		for (BaseNodeAgent subAgent : subAgents) {
+			// Add the current sub-agent as a node
+			graph.addNode(subAgent.name(), node_async(subAgent));
+			// Recursively process this sub-agent's sub-agents if they exist
+			if (subAgent.subAgents != null && !subAgent.subAgents.isEmpty()) {
+				addSubAgentsRecursively(graph, subAgent.name(), subAgent.subAgents);
+			}
+		}
+
+		// Connect parent to this sub-agent
+		graph.addConditionalEdges(parentNodeName, new RoutingEdgeAction(chatModel, this, subAgents), Map.of());
+
+	}
 
 
+	String instruction() {
+		return instruction;
+	}
 
+	String outputKey() {
+		return outputKey;
+	}
+
+	StateGraph stateGraph() {
 		return graph;
 	}
 
