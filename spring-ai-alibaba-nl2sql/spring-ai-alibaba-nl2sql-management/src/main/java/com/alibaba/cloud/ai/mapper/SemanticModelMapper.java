@@ -26,7 +26,7 @@ import org.apache.ibatis.annotations.Update;
 import java.util.List;
 
 /**
- * 语义模型 Mapper 接口
+ * Semantic Model Mapper Interface
  *
  * @author Alibaba Cloud AI
  */
@@ -34,13 +34,13 @@ import java.util.List;
 public interface SemanticModelMapper extends BaseMapper<SemanticModel> {
 
 	/**
-	 * 根据智能体ID查询语义模型列表
+	 * Query semantic model list by agent ID
 	 */
 	@Select("SELECT * FROM semantic_model WHERE agent_id = #{agentId} ORDER BY created_time DESC")
 	List<SemanticModel> selectByAgentId(@Param("agentId") Long agentId);
 
 	/**
-	 * 根据关键词搜索语义模型
+	 * Search semantic models by keyword
 	 */
 	@Select("SELECT * FROM semantic_model WHERE " + "agent_field_name LIKE CONCAT('%', #{keyword}, '%') OR "
 			+ "field_description LIKE CONCAT('%', #{keyword}, '%') OR "
@@ -48,19 +48,19 @@ public interface SemanticModelMapper extends BaseMapper<SemanticModel> {
 	List<SemanticModel> searchByKeyword(@Param("keyword") String keyword);
 
 	/**
-	 * 批量启用字段
+	 * Batch enable fields
 	 */
 	@Update("UPDATE semantic_model SET enabled = 1 WHERE id = #{id}")
 	int enableById(@Param("id") Long id);
 
 	/**
-	 * 批量禁用字段
+	 * Batch disable fields
 	 */
 	@Update("UPDATE semantic_model SET enabled = 0 WHERE id = #{id}")
 	int disableById(@Param("id") Long id);
 
 	/**
-	 * 根据智能体ID和启用状态查询语义模型
+	 * Query semantic models by agent ID and enabled status
 	 */
 	@Select("SELECT * FROM semantic_model WHERE agent_id = #{agentId} AND enabled = #{enabled} ORDER BY created_time DESC")
 	List<SemanticModel> selectByAgentIdAndEnabled(@Param("agentId") Long agentId, @Param("enabled") Boolean enabled);

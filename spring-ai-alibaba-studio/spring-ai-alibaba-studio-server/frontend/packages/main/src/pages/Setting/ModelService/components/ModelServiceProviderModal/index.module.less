@@ -1,0 +1,51 @@
+.provider-modal {
+  .protocol-type-radio {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  :global {
+    .ag-ant-form-item-label > label {
+      width: 100%;
+
+      &::after {
+        display: none;
+      }
+    }
+  }
+}
+
+.form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.api-key-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+
+  .required-mark {
+    color: var(--ag-ant-color-error);
+    margin-right: 4px;
+    position: relative;
+    top: 4px;
+    display: inline-block;
+  }
+
+  .link-button {
+    color: var(--ag-ant-color-primary);
+    font-size: 14px;
+    white-space: nowrap;
+    text-decoration: none;
+
+    .arrow-icon {
+      font-size: 16px;
+      position: relative;
+      top: 1px;
+    }
+  }
+}

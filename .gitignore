@@ -65,3 +65,12 @@ modified_mcp_config.json
 
 # ignore code copilot local index
 .idea/LocalCodeIndex/
+
+
+/spring-ai-alibaba-studio/spring-ai-alibaba-studio-server/docker/middleware/elasticsearch/*
+!/spring-ai-alibaba-studio/spring-ai-alibaba-studio-server/docker/middleware/elasticsearch/data/
+!/spring-ai-alibaba-studio/spring-ai-alibaba-studio-server/docker/middleware/elasticsearch/data/.gitkeep
+
+/spring-ai-alibaba-studio/spring-ai-alibaba-studio-server/docker/middleware/kibana/*
+!/spring-ai-alibaba-studio/spring-ai-alibaba-studio-server/docker/middleware/kibana/data/
+!/spring-ai-alibaba-studio/spring-ai-alibaba-studio-server/docker/middleware/kibana/data/.gitkeep

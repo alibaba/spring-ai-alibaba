@@ -65,12 +65,16 @@ public class NacosMcpGatewayAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnProperty(prefix = "spring.ai.alibaba.mcp.gateway", name = "enabled", havingValue = "true",
+			matchIfMissing = false)
 	public McpGatewayToolsInitializer nacosMcpGatewayToolsInitializer(NacosMcpOperationService nacosMcpOperationService,
 			NacosMcpGatewayProperties nacosMcpGatewayProperties) {
 		return new NacosMcpGatewayToolsInitializer(nacosMcpOperationService, nacosMcpGatewayProperties);
 	}
 
 	@Bean(destroyMethod = "stop")
+	@ConditionalOnProperty(prefix = "spring.ai.alibaba.mcp.gateway", name = "enabled", havingValue = "true",
+			matchIfMissing = false)
 	public NacosMcpGatewayToolsWatcher nacosInstanceWatcher(final McpGatewayToolManager mcpGatewayToolManager,
 			NacosMcpOperationService nacosMcpOperationService, NacosMcpGatewayProperties nacosMcpGatewayProperties) {
 		return new NacosMcpGatewayToolsWatcher(mcpGatewayToolManager, nacosMcpOperationService,
@@ -80,6 +84,8 @@ public class NacosMcpGatewayAutoConfiguration {
 	@Bean
 	@ConditionalOnBean(McpAsyncServer.class)
 	@ConditionalOnMissingBean(McpGatewayToolManager.class)
+	@ConditionalOnProperty(prefix = "spring.ai.alibaba.mcp.gateway", name = "enabled", havingValue = "true",
+			matchIfMissing = false)
 	public McpGatewayToolManager nacosMcpGatewayAsyncToolsProvider(final McpAsyncServer mcpAsyncServer) {
 		return new NacosMcpAsyncGatewayToolsProvider(mcpAsyncServer);
 	}
@@ -87,6 +93,8 @@ public class NacosMcpGatewayAutoConfiguration {
 	@Bean
 	@ConditionalOnBean(McpSyncServer.class)
 	@ConditionalOnMissingBean(McpGatewayToolManager.class)
+	@ConditionalOnProperty(prefix = "spring.ai.alibaba.mcp.gateway", name = "enabled", havingValue = "true",
+			matchIfMissing = false)
 	public McpGatewayToolManager nacosMcpGatewaySyncToolsProvider(final McpSyncServer mcpSyncServer) {
 		return new NacosMcpSyncGatewayToolsProvider(mcpSyncServer);
 	}

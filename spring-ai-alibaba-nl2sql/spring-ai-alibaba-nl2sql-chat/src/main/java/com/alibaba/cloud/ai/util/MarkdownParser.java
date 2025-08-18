@@ -19,7 +19,8 @@ public class MarkdownParser {
 
 	public static String extractText(String markdownCode) {
 		String code = extractRawText(markdownCode);
-		// 正确处理各种换行符类型：\r\n, \n, \r，但保持与NewLineParser.format()的兼容性
+		// Correctly handle various newline character types: \r\n, \n, \r, but maintain
+		// compatibility with NewLineParser.format()
 		return code.replaceAll("\r\n", " ").replaceAll("\n", " ").replaceAll("\r", " ");
 	}
 

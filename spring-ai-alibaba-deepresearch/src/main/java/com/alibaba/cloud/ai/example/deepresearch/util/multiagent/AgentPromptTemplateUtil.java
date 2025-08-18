@@ -19,6 +19,8 @@ package com.alibaba.cloud.ai.example.deepresearch.util.multiagent;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
 import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 
+import static com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil.loadFileContent;
+
 /**
  * Agent提示词模板工具类 从classpath加载markdown文件作为提示词模板
  *
@@ -29,12 +31,8 @@ public class AgentPromptTemplateUtil {
 
 	private static final String CLASSIFIER_PROMPT_PATH = "prompts/multiagent/classifier.md";
 
-	/**
-	 * 获取指定Agent类型的系统提示词
-	 * @param agentType Agent类型
-	 * @return 系统提示词
-	 * @throws RuntimeException 当文件加载失败时抛出异常
-	 */
+	private static final String SEARCH_PLATFORM_SELECTOR_PROMPT_PATH = "prompts/multiagent/search-platform-selector.md";
+
 	public static String getSystemPrompt(AgentType agentType) {
 		return ResourceUtil.loadFileContent(agentType.getPromptFilePath());
 	}
@@ -45,7 +43,16 @@ public class AgentPromptTemplateUtil {
 	 * @throws RuntimeException 当文件加载失败时抛出异常
 	 */
 	public static String getClassificationPrompt() {
-		return ResourceUtil.loadFileContent(CLASSIFIER_PROMPT_PATH);
+		return loadFileContent(CLASSIFIER_PROMPT_PATH);
+	}
+
+	/**
+	 * 获取搜索平台选择的系统提示词
+	 * @return 搜索平台选择系统提示词
+	 * @throws RuntimeException 当文件加载失败时抛出异常
+	 */
+	public static String getSearchPlatformSelectionPrompt() {
+		return loadFileContent(SEARCH_PLATFORM_SELECTOR_PROMPT_PATH);
 	}
 
 	/**

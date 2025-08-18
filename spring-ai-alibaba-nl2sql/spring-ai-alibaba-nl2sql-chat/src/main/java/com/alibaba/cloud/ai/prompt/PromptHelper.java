@@ -228,12 +228,12 @@ public class PromptHelper {
 	}
 
 	/**
-	 * 构建带优化提示词的报告生成提示词
-	 * @param userRequirementsAndPlan 用户需求和计划
-	 * @param analysisStepsAndData 分析步骤和数据
-	 * @param summaryAndRecommendations 总结和建议
-	 * @param optimizationConfigs 用户配置的优化提示词列表
-	 * @return 构建的提示词
+	 * Build report generation prompt with custom prompt
+	 * @param userRequirementsAndPlan user requirements and plan
+	 * @param analysisStepsAndData analysis steps and data
+	 * @param summaryAndRecommendations summary and recommendations
+	 * @param customPrompt user-defined prompt content, use default prompt if null
+	 * @return built prompt
 	 */
 	public static String buildReportGeneratorPromptWithOptimization(String userRequirementsAndPlan,
 			String analysisStepsAndData, String summaryAndRecommendations,
@@ -244,12 +244,14 @@ public class PromptHelper {
 		params.put("analysis_steps_and_data", analysisStepsAndData);
 		params.put("summary_and_recommendations", summaryAndRecommendations);
 
-		// 构建优化部分内容
-		String optimizationSection = buildOptimizationSection(optimizationConfigs, params);
-		params.put("optimization_section", optimizationSection);
-
-		// 渲染完整模板
-		return PromptConstant.getReportGeneratorPromptTemplate().render(params);
+		if (customPrompt != null && !customPrompt.trim().isEmpty()) {
+			// Use custom prompt
+			return new org.springframework.ai.chat.prompt.PromptTemplate(customPrompt).render(params);
+		}
+		else {
+			// Use default prompt
+			return PromptConstant.getReportGeneratorPromptTemplate().render(params);
+		}
 	}
 
 	public static String buildSqlErrorFixerPrompt(String question, DbConfig dbConfig, SchemaDTO schemaDTO,

@@ -53,9 +53,11 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 	private static final Logger log = LoggerFactory.getLogger(SimpleVectorStoreService.class);
 
-	private final SimpleVectorStore vectorStore; // 保留原有的全局存储，用于向后兼容
+	private final SimpleVectorStore vectorStore; // Keep original global storage for
+													// backward compatibility
 
-	private final AgentVectorStoreManager agentVectorStoreManager; // 新增的智能体向量存储管理器
+	private final AgentVectorStoreManager agentVectorStoreManager; // New agent vector
+																	// storage manager
 
 	private final Gson gson;
 
@@ -76,7 +78,9 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		this.dbConfig = dbConfig;
 		this.embeddingModel = embeddingModel;
 		this.agentVectorStoreManager = agentVectorStoreManager;
-		this.vectorStore = SimpleVectorStore.builder(embeddingModel).build(); // 保留原有实现
+		this.vectorStore = SimpleVectorStore.builder(embeddingModel).build(); // Keep
+																				// original
+																				// implementation
 		log.info("SimpleVectorStoreService initialized successfully with AgentVectorStoreManager");
 	}
 
@@ -86,9 +90,9 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 初始化数据库 schema 到向量库
-	 * @param schemaInitRequest schema 初始化请求
-	 * @throws Exception 如果发生错误
+	 * Initialize database schema to vector store
+	 * @param schemaInitRequest schema initialization request
+	 * @throws Exception if an error occurs
 	 */
 	public Boolean schema(SchemaInitRequest schemaInitRequest) throws Exception {
 		log.info("Starting schema initialization for database: {}, schema: {}, tables: {}",
@@ -100,7 +104,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			.setSchema(dbConfig.getSchema())
 			.setTables(schemaInitRequest.getTables());
 
-		// 清理旧的schema数据
+		// Clean up old schema data
 		DeleteRequest deleteRequest = new DeleteRequest();
 		deleteRequest.setVectorType("column");
 		deleteDocuments(deleteRequest);
@@ -196,7 +200,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		if (columnInfoBO.getSamples() != null) {
 			metadata.put("samples", columnInfoBO.getSamples());
 		}
-		// 多表重复字段数据会被去重，采用表名+字段名作为唯一标识
+		// Multi-table duplicate field data will be deduplicated, using table name + field
+		// name as unique identifier
 		Document document = new Document(id, text, metadata);
 		log.debug("Created column document with ID: {}", id);
 		return document;
@@ -231,9 +236,9 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 删除指定条件的向量数据
-	 * @param deleteRequest 删除请求
-	 * @return 是否删除成功
+	 * Delete vector data with specified conditions
+	 * @param deleteRequest delete request
+	 * @return whether deletion succeeded
 	 */
 	public Boolean deleteDocuments(DeleteRequest deleteRequest) throws Exception {
 		log.info("Starting delete operation with request: id={}, vectorType={}", deleteRequest.getId(),
@@ -277,7 +282,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 默认 filter 的搜索接口
+	 * Search interface with default filter
 	 */
 	@Override
 	public List<Document> searchWithVectorType(SearchRequest searchRequestDTO) {
@@ -303,15 +308,16 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 自定义 filter 的搜索接口
+	 * Search interface with custom filter
 	 */
 	@Override
 	public List<Document> searchWithFilter(SearchRequest searchRequestDTO) {
 		log.debug("Searching with custom filter: vectorType={}, query={}, topK={}", searchRequestDTO.getVectorType(),
 				searchRequestDTO.getQuery(), searchRequestDTO.getTopK());
 
-		// 这里需要根据实际情况解析 filterFormatted 字段，转换为 FilterExpressionBuilder 的表达式
-		// 简化实现，仅作示例
+		// Need to parse filterFormatted field according to actual situation here, convert
+		// to FilterExpressionBuilder expression
+		// Simplified implementation, for demonstration only
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 		Filter.Expression expression = b.eq("vectorType", searchRequestDTO.getVectorType()).build();
 
@@ -356,10 +362,10 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	// ==================== 智能体相关的新方法 ====================
 
 	/**
-	 * 为指定智能体初始化数据库 schema 到向量库
-	 * @param agentId 智能体ID
-	 * @param schemaInitRequest schema 初始化请求
-	 * @throws Exception 如果发生错误
+	 * Initialize database schema to vector store for specified agent
+	 * @param agentId agent ID
+	 * @param schemaInitRequest schema initialization request
+	 * @throws Exception if an error occurs
 	 */
 	public Boolean schemaForAgent(String agentId, SchemaInitRequest schemaInitRequest) throws Exception {
 		log.info("Starting schema initialization for agent: {}, database: {}, schema: {}, tables: {}", agentId,
@@ -371,7 +377,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			.setSchema(dbConfig.getSchema())
 			.setTables(schemaInitRequest.getTables());
 
-		// 清理智能体的旧数据
+		// Clean up agent's old data
 		agentVectorStoreManager.deleteDocumentsByType(agentId, "column");
 		agentVectorStoreManager.deleteDocumentsByType(agentId, "table");
 
@@ -420,7 +426,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 为智能体转换列信息为文档
+	 * Convert column information to documents for agent
 	 */
 	private Document convertToDocumentForAgent(String agentId, TableInfoBO tableInfoBO, ColumnInfoBO columnInfoBO) {
 		log.debug("Converting column to document for agent: {}, table={}, column={}", agentId, tableInfoBO.getName(),
@@ -448,7 +454,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 为智能体转换表信息为文档
+	 * Convert table information to documents for agent
 	 */
 	private Document convertTableToDocumentForAgent(String agentId, TableInfoBO tableInfoBO) {
 		log.debug("Converting table to document for agent: {}, table: {}", agentId, tableInfoBO.getName());
@@ -470,7 +476,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 为指定智能体搜索向量数据
+	 * Search vector data for specified agent
 	 */
 	public List<Document> searchWithVectorTypeForAgent(String agentId, SearchRequest searchRequestDTO) {
 		log.debug("Searching for agent: {}, vectorType: {}, query: {}, topK: {}", agentId,
@@ -485,7 +491,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 为指定智能体删除向量数据
+	 * Delete vector data for specified agent
 	 */
 	public Boolean deleteDocumentsForAgent(String agentId, DeleteRequest deleteRequest) throws Exception {
 		log.info("Starting delete operation for agent: {}, id={}, vectorType={}", agentId, deleteRequest.getId(),
@@ -516,14 +522,15 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 获取智能体向量存储管理器（供其他服务使用）
+	 * Get agent vector storage manager (for other services to use)
 	 */
 	public AgentVectorStoreManager getAgentVectorStoreManager() {
 		return agentVectorStoreManager;
 	}
 
 	/**
-	 * 为指定智能体获取向量库中的文档 重写父类方法，使用智能体特定的向量存储
+	 * Get documents from vector store for specified agent Override parent method, use
+	 * agent-specific vector storage
 	 */
 	@Override
 	public List<Document> getDocumentsForAgent(String agentId, String query, String vectorType) {
@@ -535,7 +542,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		}
 
 		try {
-			// 使用智能体向量存储管理器进行搜索
+			// Use agent vector storage manager for search
 			List<Document> results = agentVectorStoreManager.similaritySearchWithFilter(agentId, query, 100, // topK
 					vectorType);
 

@@ -26,7 +26,7 @@ import java.util.List;
  * Base Redis Memory Connection Configuration
  *
  * @author benym
- * @date 2025/7/30 21:24
+ * @since 2025/7/30 21:24
  */
 public abstract class RedisChatMemoryConnectionAutoConfiguration<T extends ChatMemoryRepository> {
 

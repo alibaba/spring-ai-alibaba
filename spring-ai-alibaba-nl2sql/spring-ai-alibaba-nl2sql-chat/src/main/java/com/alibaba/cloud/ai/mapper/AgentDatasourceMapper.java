@@ -26,7 +26,7 @@ import org.apache.ibatis.annotations.Update;
 import java.util.List;
 
 /**
- * 智能体数据源关联 Mapper 接口
+ * Agent Data Source Association Mapper Interface
  *
  * @author Alibaba Cloud AI
  */
@@ -34,7 +34,7 @@ import java.util.List;
 public interface AgentDatasourceMapper extends BaseMapper<AgentDatasource> {
 
 	/**
-	 * 根据智能体ID查询关联的数据源（包含数据源详细信息）
+	 * Query associated data sources by agent ID (including data source details)
 	 */
 	@Select("SELECT ad.*, d.name, d.type, d.host, d.port, d.database_name, "
 			+ "d.connection_url, d.username, d.password, d.status, d.test_status, d.description "
@@ -43,26 +43,27 @@ public interface AgentDatasourceMapper extends BaseMapper<AgentDatasource> {
 	List<AgentDatasource> selectByAgentIdWithDatasource(@Param("agentId") Integer agentId);
 
 	/**
-	 * 根据智能体ID查询关联的数据源
+	 * Query associated data sources by agent ID
 	 */
 	@Select("SELECT * FROM agent_datasource WHERE agent_id = #{agentId} ORDER BY create_time DESC")
 	List<AgentDatasource> selectByAgentId(@Param("agentId") Integer agentId);
 
 	/**
-	 * 根据智能体ID和数据源ID查询关联关系
+	 * Query association by agent ID and data source ID
 	 */
 	@Select("SELECT * FROM agent_datasource WHERE agent_id = #{agentId} AND datasource_id = #{datasourceId}")
 	AgentDatasource selectByAgentIdAndDatasourceId(@Param("agentId") Integer agentId,
 			@Param("datasourceId") Integer datasourceId);
 
 	/**
-	 * 禁用智能体的所有数据源
+	 * Disable all data sources for an agent
 	 */
 	@Update("UPDATE agent_datasource SET is_active = 0 WHERE agent_id = #{agentId}")
 	int disableAllByAgentId(@Param("agentId") Integer agentId);
 
 	/**
-	 * 统计智能体启用的数据源数量（排除指定数据源）
+	 * Count the number of enabled data sources for an agent (excluding the specified data
+	 * source)
 	 */
 	@Select("SELECT COUNT(*) FROM agent_datasource WHERE agent_id = #{agentId} AND is_active = 1 AND datasource_id != #{excludeDatasourceId}")
 	int countActiveByAgentIdExcluding(@Param("agentId") Integer agentId,

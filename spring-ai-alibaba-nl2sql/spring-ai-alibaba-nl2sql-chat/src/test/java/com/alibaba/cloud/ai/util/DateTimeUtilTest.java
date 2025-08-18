@@ -29,7 +29,7 @@ class DateTimeUtilTest {
 
 	@BeforeEach
 	void setUp() {
-		// 设置测试基准日期为 2024年5月15日 (周三)
+		// Set test base date to May 15, 2024 (Wednesday)
 		testDate = LocalDate.of(2024, 5, 15);
 	}
 
@@ -223,7 +223,7 @@ class DateTimeUtilTest {
 		assertNotNull(result);
 		assertEquals(expressions.size(), result.size());
 
-		// 验证每个表达式都有对应的转换结果
+		// Verify each expression has corresponding conversion result
 		for (int i = 0; i < expressions.size(); i++) {
 			String expression = expressions.get(i);
 			String resultExpression = result.get(i);
@@ -233,17 +233,17 @@ class DateTimeUtilTest {
 
 	@Test
 	void testEdgeCases() {
-		// 测试年底边界情况
+		// Test year-end boundary case
 		LocalDate yearEnd = LocalDate.of(2023, 12, 31);
 		String nextYear = DateTimeUtil.getYearEx(yearEnd, "明年", true);
 		assertEquals("2024年", nextYear);
 
-		// 测试月初边界情况
+		// Test month-start boundary case
 		LocalDate monthStart = LocalDate.of(2024, 1, 1);
 		String lastMonth = DateTimeUtil.getMonthEx(monthStart, "上月");
 		assertEquals("2023年12月", lastMonth);
 
-		// 测试闰年情况
+		// Test leap year case
 		LocalDate intercalarYear = LocalDate.of(2024, 2, 29);
 		String today = DateTimeUtil.getDayEx(intercalarYear, "今天");
 		assertEquals("2024年02月29日", today);

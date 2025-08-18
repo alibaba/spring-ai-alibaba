@@ -23,7 +23,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 
 /**
- * 数据源实体类
+ * Data Source Entity Class
  *
  * @author Alibaba Cloud AI
  */
@@ -79,7 +79,7 @@ public class Datasource {
 	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime updateTime;
 
-	// 构造函数
+	// Constructor
 	public Datasource() {
 	}
 
@@ -218,7 +218,7 @@ public class Datasource {
 	}
 
 	/**
-	 * 生成连接URL
+	 * Generate connection URL
 	 */
 	public void generateConnectionUrl() {
 		if (host != null && port != null && databaseName != null) {

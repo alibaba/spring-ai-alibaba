@@ -26,7 +26,7 @@ import org.springframework.context.annotation.Import;
  * Auto-configuration for Redis Memory support.
  *
  * @author benym
- * @date 2025/7/30 23:35
+ * @since 2025/7/30 23:35
  */
 @AutoConfiguration
 @EnableConfigurationProperties(RedisChatMemoryProperties.class)
