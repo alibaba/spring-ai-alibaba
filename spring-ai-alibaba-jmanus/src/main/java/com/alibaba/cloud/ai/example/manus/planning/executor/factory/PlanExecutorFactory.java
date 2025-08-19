@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.IDynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.planning.executor.DirectResponseExecutor;
+import com.alibaba.cloud.ai.example.manus.planning.executor.LevelBasedExecutorPool;
 import com.alibaba.cloud.ai.example.manus.planning.executor.MapReducePlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
@@ -56,15 +57,18 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 
 	private final ObjectMapper objectMapper;
 
+	private final LevelBasedExecutorPool levelBasedExecutorPool;
+
 	public PlanExecutorFactory(IDynamicAgentLoader dynamicAgentLoader, ILlmService llmService,
 			AgentService agentService, PlanExecutionRecorder recorder, ManusProperties manusProperties,
-			ObjectMapper objectMapper) {
+			ObjectMapper objectMapper, LevelBasedExecutorPool levelBasedExecutorPool) {
 		this.dynamicAgentLoader = dynamicAgentLoader;
 		this.llmService = llmService;
 		this.agentService = agentService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
 		this.objectMapper = objectMapper;
+		this.levelBasedExecutorPool = levelBasedExecutorPool;
 	}
 
 	/**
@@ -109,7 +113,7 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 	private PlanExecutorInterface createSimpleExecutor() {
 		log.debug("Creating simple plan executor");
 		List<DynamicAgentEntity> agents = dynamicAgentLoader.getAllAgents();
-		return new PlanExecutor(agents, recorder, agentService, llmService, manusProperties);
+		return new PlanExecutor(agents, recorder, agentService, llmService, manusProperties, levelBasedExecutorPool);
 	}
 
 	/**

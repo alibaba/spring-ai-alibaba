@@ -18,8 +18,9 @@ package com.alibaba.cloud.ai.example.manus.planning.executor.factory;
 import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.IDynamicAgentLoader;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.planning.executor.LevelBasedExecutorPool;
 import com.alibaba.cloud.ai.example.manus.planning.executor.MapReducePlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
@@ -50,10 +51,10 @@ class PlanExecutorFactorySpringTest {
 	private static final Logger log = LoggerFactory.getLogger(PlanExecutorFactorySpringTest.class);
 
 	@Autowired
-	private DynamicAgentLoader dynamicAgentLoader;
+	private IDynamicAgentLoader dynamicAgentLoader;
 
 	@Autowired
-	private LlmService llmService;
+	private ILlmService llmService;
 
 	@Autowired
 	private AgentService agentService;
@@ -64,6 +65,9 @@ class PlanExecutorFactorySpringTest {
 	@Autowired
 	private ManusProperties manusProperties;
 
+	@Autowired
+	private LevelBasedExecutorPool levelBasedExecutorPool;
+
 	private PlanExecutorFactory planExecutorFactory;
 
 	@Autowired
@@ -73,7 +77,7 @@ class PlanExecutorFactorySpringTest {
 	void setUp() {
 		log.info("Setting up PlanExecutorFactory test environment");
 		planExecutorFactory = new PlanExecutorFactory(dynamicAgentLoader, llmService, agentService, recorder,
-				manusProperties, objectMapper);
+				manusProperties, objectMapper, levelBasedExecutorPool);
 
 		// Verify that required dependencies are properly injected
 		Assertions.assertNotNull(dynamicAgentLoader, "DynamicAgentLoader should be autowired");
@@ -81,6 +85,7 @@ class PlanExecutorFactorySpringTest {
 		Assertions.assertNotNull(agentService, "AgentService should be autowired");
 		Assertions.assertNotNull(recorder, "PlanExecutionRecorder should be autowired");
 		Assertions.assertNotNull(manusProperties, "ManusProperties should be autowired");
+		Assertions.assertNotNull(levelBasedExecutorPool, "LevelBasedExecutorPool should be autowired");
 		Assertions.assertNotNull(planExecutorFactory, "PlanExecutorFactory should be created");
 	}
 
