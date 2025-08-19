@@ -16,36 +16,33 @@
  */
 package com.alibaba.cloud.ai.graph.agent.runner;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import org.w3c.dom.Node;
 
 import org.springframework.ai.chat.model.ChatModel;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class AgentRunner {
-	private NodeAgent agent;
+	private BaseAgent agent;
+	private String inputKey;
 	private KeyStrategyFactory keyStrategyFactory;
 	private StateGraph graph;
 	private ChatModel chatModel;
 
-	public AgentRunner(NodeAgent agent, KeyStrategyFactory keyStrategyFactory, ChatModel chatModel) throws GraphStateException {
+	public AgentRunner(BaseAgent agent, KeyStrategyFactory keyStrategyFactory, ChatModel chatModel) throws GraphStateException {
 		this.keyStrategyFactory = keyStrategyFactory;
 		this.agent = agent;
 		this.chatModel = chatModel;
@@ -57,24 +54,16 @@ public class AgentRunner {
 		return compiledGraph.invoke(inputs);
 	}
 
-	private StateGraph initGraph(NodeAgent agent) throws GraphStateException {
-		if (keyStrategyFactory == null) {
-			this.keyStrategyFactory = () -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				return keyStrategyHashMap;
-			};
-		}
-
+	private StateGraph initGraph(BaseAgent agent) throws GraphStateException {
 		StateGraph graph = new StateGraph(agent.name(), keyStrategyFactory);
 
 		// add root agent
-		graph.addNode(agent.name, agent.stateGraph());
+		graph.addNode(agent.name(), agent.asAsyncNodeAction(inputKey, agent.outputKey()));
 
 		// add starting edge
-		graph.addEdge(START, agent.name);
+		graph.addEdge(START, agent.name());
 		// Use recursive method to add all sub-agents
-		addSubAgentsRecursively(graph,  agent, agent.subAgents);
+		addSubAgentsRecursively(graph,  agent, agent.subAgents());
 
 		return graph;
 	}
@@ -85,28 +74,26 @@ public class AgentRunner {
 	 * @param parentAgent the name of the parent node
 	 * @param subAgents the list of sub-agents to process
 	 */
-	private void addSubAgentsRecursively(StateGraph graph, NodeAgent parentAgent, List<? extends BaseNodeAgent> subAgents) throws GraphStateException {
-		if (parentAgent instanceof NodeAgent) {
-			for (BaseNodeAgent baseNodeAgent : subAgents) {
-				NodeAgent subAgent = (NodeAgent) baseNodeAgent;
+	private void addSubAgentsRecursively(StateGraph graph, BaseAgent parentAgent, List<? extends BaseAgent> subAgents) throws GraphStateException {
+		if (parentAgent instanceof ReactAgent) {
+			for (BaseAgent subAgent : subAgents) {
 				// Add the current sub-agent as a node
-				graph.addNode(subAgent.name(), subAgent.stateGraph());
+				graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(parentAgent.outputKey(), subAgent.outputKey()));
 
 				// Recursively process this sub-agent's sub-agents if they exist
-				if (subAgent.subAgents != null && !subAgent.subAgents.isEmpty()) {
-					addSubAgentsRecursively(graph, parentAgent, subAgent.subAgents);
+				if (subAgent.subAgents() != null && !subAgent.subAgents().isEmpty()) {
+					addSubAgentsRecursively(graph, parentAgent, subAgent.subAgents());
 				} else {
 					graph.addEdge(subAgent.name(), END);
 				}
 			}
 
 			// Connect parent to this sub-agent
-			graph.addConditionalEdges(parentAgent.name, AsyncEdgeAction.edge_async(new RoutingEdgeAction(chatModel, this.agent, subAgents)), Map.of());
-		} else if (parentAgent instanceof SequentialFlowAgent) {
-			for (BaseNodeAgent baseNodeAgent : subAgents) {
-				NodeAgent subAgent = (NodeAgent) baseNodeAgent;
+			graph.addConditionalEdges(parentAgent.name(), AsyncEdgeAction.edge_async(new RoutingEdgeAction(chatModel, this.agent, subAgents)), Map.of());
+		} else if (parentAgent instanceof SequentialAgent) {
+			for (BaseAgent subAgent : subAgents) {
 				// Add the current sub-agent as a node
-				graph.addNode(subAgent.name(), subAgent.stateGraph());
+				graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(parentAgent.outputKey(), subAgent.outputKey()));
 				graph.addEdge(parentAgent.name(), subAgent.name());
 				parentAgent = subAgent;
 			}

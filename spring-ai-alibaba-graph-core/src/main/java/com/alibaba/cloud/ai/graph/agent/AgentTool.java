@@ -28,9 +28,9 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 public class AgentTool implements BiFunction<OverAllState, ToolContext, OverAllState> {
-	private ReactAgent2 agent;
+	private ReactAgent agent;
 
-	public AgentTool(ReactAgent2 agent) {
+	public AgentTool(ReactAgent agent) {
 		this.agent = agent;
 	}
 
@@ -50,11 +50,11 @@ public class AgentTool implements BiFunction<OverAllState, ToolContext, OverAllS
 		}
 	}
 
-	public static AgentTool create(ReactAgent2 agent) {
+	public static AgentTool create(ReactAgent agent) {
 		return new AgentTool(agent);
 	}
 
-	public static ToolCallback getFunctionToolCallback(ReactAgent2 agent) {
+	public static ToolCallback getFunctionToolCallback(ReactAgent agent) {
 		return FunctionToolCallback.builder(agent.name(), AgentTool.create(agent))
 				.description(agent.description())
 				.inputType(OverAllState.class)
