@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -48,6 +49,7 @@ public class PlanningCoordinator {
 
 	private final PlanIdDispatcher planIdDispatcher;
 
+	@Autowired
 	public PlanningCoordinator(PlanCreator planCreator, PlanExecutorFactory planExecutorFactory,
 			PlanFinalizer planFinalizer, IPlanRelationshipService planRelationshipService,
 			PlanIdDispatcher planIdDispatcher) {
@@ -61,6 +63,7 @@ public class PlanningCoordinator {
 	/**
 	 * Constructor for backward compatibility when relationship service is not available
 	 */
+	@Autowired
 	public PlanningCoordinator(PlanCreator planCreator, PlanExecutorFactory planExecutorFactory,
 			PlanFinalizer planFinalizer) {
 		this(planCreator, planExecutorFactory, planFinalizer, null, null);
