@@ -29,11 +29,15 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Basic implementation class responsible for executing plans
+ * Now uses level-based executor pools for different hierarchy depths
  */
 public class PlanExecutor extends AbstractPlanExecutor {
+
+	private final LevelBasedExecutorPool levelBasedExecutorPool;
 
 	/**
 	 * Constructor for PlanExecutor
@@ -41,40 +45,18 @@ public class PlanExecutor extends AbstractPlanExecutor {
 	 * @param recorder Plan execution recorder
 	 * @param agentService Agent service
 	 * @param llmService LLM service
+	 * @param manusProperties Manus properties
+	 * @param levelBasedExecutorPool Level-based executor pool for depth-based execution
 	 */
 	public PlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, AgentService agentService,
-			ILlmService llmService, ManusProperties manusProperties) {
+			ILlmService llmService, ManusProperties manusProperties, LevelBasedExecutorPool levelBasedExecutorPool) {
 		super(agents, recorder, agentService, llmService, manusProperties);
+		this.levelBasedExecutorPool = levelBasedExecutorPool;
 	}
-
-	// private void executeAllSteps(ExecutionContext context) {
-	// BaseAgent lastExecutor = null;
-	// PlanInterface plan = context.getPlan();
-	// plan.updateStepIndices();
-
-	// try {
-	// recorder.recordPlanExecutionStart(context);
-	// List<ExecutionStep> steps = plan.getAllSteps();
-
-	// if (steps != null && !steps.isEmpty()) {
-	// for (ExecutionStep step : steps) {
-	// BaseAgent stepExecutor = executeStep(step, context);
-	// if (stepExecutor != null) {
-	// lastExecutor = stepExecutor;
-	// }
-	// }
-	// }
-
-	// context.setSuccess(true);
-	// }
-	// finally {
-	// performCleanup(context, lastExecutor);
-	// }
-	// }
 
 	/**
 	 * Execute all steps asynchronously and return a CompletableFuture with execution
-	 * results
+	 * results. Uses level-based executor pools based on plan depth.
 	 *
 	 * Usage example: <pre>
 	 * CompletableFuture<PlanExecutionResult> future = planExecutor.executeAllStepsAsync(context);
@@ -104,6 +86,12 @@ public class PlanExecutor extends AbstractPlanExecutor {
 	 * @return CompletableFuture containing PlanExecutionResult with all step results
 	 */
 	public CompletableFuture<PlanExecutionResult> executeAllStepsAsync(ExecutionContext context) {
+		// Get the plan depth from context to determine which executor pool to use
+		int planDepth = context.getPlanDepth();
+		
+		// Get the appropriate executor for this depth level
+		ExecutorService executor = levelBasedExecutorPool.getExecutorForLevel(planDepth);
+		
 		return CompletableFuture.supplyAsync(() -> {
 			PlanExecutionResult result = new PlanExecutionResult();
 			BaseAgent lastExecutor = null;
@@ -148,7 +136,6 @@ public class PlanExecutor extends AbstractPlanExecutor {
 			}
 
 			return result;
-		});
+		}, executor);
 	}
-
 }
