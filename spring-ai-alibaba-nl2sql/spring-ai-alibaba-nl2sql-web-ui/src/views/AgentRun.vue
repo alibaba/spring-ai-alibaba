@@ -14,11 +14,11 @@
  * limitations under the License.
 -->
 <template>
-  <div class="agent-run-page">
+  <div class="agent-run-page" :class="{ 'with-preview': showReportPreview }">
 
 
     <!-- 主要聊天区域 -->
-    <div class="chat-container">
+    <div class="chat-container" :class="{ 'with-preview': showReportPreview }">
       <!-- 左侧智能体信息 -->
       <div class="chat-sidebar">
         <!-- 智能体信息头部 -->
@@ -197,7 +197,7 @@
                       <div class="format-section">
                         <span class="format-label">查看格式：</span>
                         <div class="format-selector">
-                          <button 
+                          <button
                             class="format-btn"
                             :class="{ active: getMessageFormat(message.id) === 'markdown' }"
                             @click="setMessageFormat(message.id, 'markdown')"
@@ -206,7 +206,7 @@
                             <i class="bi bi-markdown"></i>
                             Markdown
                           </button>
-                          <button 
+                          <button
                             class="format-btn"
                             :class="{ active: getMessageFormat(message.id) === 'html' }"
                             @click="setMessageFormat(message.id, 'html')"
@@ -218,7 +218,7 @@
                         </div>
                       </div>
                       <div class="export-actions">
-                        <button 
+                        <button
                           class="export-btn"
                           @click="exportMessageReport(message)"
                           title="导出当前格式的报告文件"
@@ -229,6 +229,18 @@
                       </div>
                     </div>
                     <div v-html="message.type === 'streaming' ? message.content : formatMessageWithFormat(message)"></div>
+
+                    <!-- 报告预览按钮 - 在报告内容后显示，只在流式输出完成后显示 -->
+                    <div v-if="isReportMessage(message) && hasHtmlContent(message) && message.type !== 'streaming'" class="report-preview-section">
+                      <button
+                        class="preview-report-btn"
+                        @click="openReportPreview(message)"
+                        title="在右侧面板中预览完整报告"
+                      >
+                        <i class="bi bi-eye"></i>
+                        预览完整报告
+                      </button>
+                    </div>
                   </div>
                 </div>
               </template>
@@ -262,6 +274,41 @@
         </div>
       </div>
     </div>
+
+    <!-- 报告预览面板 -->
+    <div v-if="showReportPreview" class="report-preview-panel" :class="{ 'show': showReportPreview }">
+      <div class="report-preview-header">
+        <div class="report-preview-title">
+          <i class="bi bi-file-earmark-text"></i>
+          <span>报告预览</span>
+        </div>
+        <div class="report-preview-actions">
+          <button class="preview-action-btn" @click="refreshReportPreview" title="刷新">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+          <button class="preview-action-btn" @click="exportCurrentPreviewReport" title="导出">
+            <i class="bi bi-download"></i>
+          </button>
+          <button class="preview-action-btn" @click="closeReportPreview" title="关闭">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="report-preview-content">
+        <div class="report-preview-iframe-container">
+          <iframe
+            ref="reportPreviewFrame"
+            class="report-preview-iframe"
+            :srcdoc="previewReportContent"
+            frameborder="0"
+            sandbox="allow-same-origin"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- 移动端遮罩层 -->
+    <div v-if="showReportPreview" class="mobile-preview-overlay" @click="closeReportPreview"></div>
   </div>
 </template>
 
@@ -305,6 +352,12 @@ export default {
     
     // 消息格式管理
     const messageFormats = ref({}) // 存储每个消息的显示格式，默认为html
+
+    // 报告预览相关状态
+    const showReportPreview = ref(false)
+    const previewReportContent = ref('')
+    const currentPreviewMessage = ref(null)
+    const reportPreviewFrame = ref(null)
     
     // API方法
     const loadAgentInfo = async () => {
@@ -617,17 +670,30 @@ export default {
           console.log('流式输出完成')
           isLoading.value = false
           eventSource.close()
-          
-          // 保存AI回复消息到数据库
+
+          // 更新消息类型为完成状态
           const assistantMessage = currentMessages.value[agentMessageIndex]
-          if (assistantMessage && assistantMessage.content) {
-            await saveMessage({
-              sessionId: currentSessionId.value,
-              role: 'assistant',
-              content: assistantMessage.content,
-              messageType: 'streaming'
-            })
+          if (assistantMessage) {
+            assistantMessage.type = 'completed'
+            console.log('消息更新为完成状态，内容长度:', assistantMessage.content?.length)
+
+            // 触发响应式更新
+            currentMessages.value[agentMessageIndex] = { ...assistantMessage }
+
+            // 保存AI回复消息到数据库
+            if (assistantMessage.content) {
+              await saveMessage({
+                sessionId: currentSessionId.value,
+                role: 'assistant',
+                content: assistantMessage.content,
+                messageType: 'completed'
+              })
+            }
           }
+
+          // 确保DOM更新后滚动到底部
+          await nextTick()
+          scrollToBottom()
         })
 
         eventSource.onerror = (error) => {
@@ -959,27 +1025,50 @@ export default {
         if (isMarkdown(processedData)) {
             return renderMarkdown(processedData);
         } else {
+            // 检查是否包含HTML代码块
+            const htmlCodeBlockRegex = /```\s*html?\s*([\s\S]*?)```/gi;
+            const htmlMatches = processedData.match(htmlCodeBlockRegex);
+
+            if (htmlMatches && htmlMatches.length > 0) {
+                let htmlContent = processedData;
+
+                // 处理HTML代码块 - 直接渲染HTML内容
+                htmlContent = htmlContent.replace(htmlCodeBlockRegex, (match, htmlCode) => {
+                    let cleanedHTML = htmlCode.trim();
+                    // 基本的HTML清理，移除潜在的脚本标签
+                    cleanedHTML = cleanedHTML.replace(/<script[\s\S]*?<\/script>/gi, '');
+                    cleanedHTML = cleanedHTML.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+                    // 直接返回HTML内容，让浏览器渲染
+                    return `<div class="html-rendered-content">${cleanedHTML}</div>`;
+                });
+
+                // 处理其他文本内容，保持换行
+                htmlContent = htmlContent.replace(/\n/g, '<br>');
+                return htmlContent;
+            }
+
+            // 检查是否包含SQL代码块
             const sqlCodeBlockRegex = /```\s*sql?\s*([\s\S]*?)```/gi;
             const sqlMatches = processedData.match(sqlCodeBlockRegex);
-            
+
             if (sqlMatches && sqlMatches.length > 0) {
                 let htmlContent = processedData;
-                
+
                 htmlContent = htmlContent.replace(sqlCodeBlockRegex, (match, sqlContent) => {
                     let cleanedSQL = sqlContent.trim();
                     return `<pre><code class="language-sql">${cleanedSQL}</code></pre>`;
                 });
-                
+
                 return htmlContent.replace(/\n/g, '<br>');
             } else {
                 // 对于长文本，确保正确换行
                 let result = processedData.toString()
                     .replace(/\n\s*\n\s*\n+/g, '\n\n')
                     .replace(/\n/g, '<br>');
-                
+
                 // 对所有文本都添加强制换行样式，确保不会溢出
                 result = `<div style="word-break: break-all; overflow-wrap: break-word; white-space: pre-wrap; max-width: 100%; overflow-x: auto;">${result}</div>`;
-                
+
                 return result;
             }
         }
@@ -1326,6 +1415,373 @@ export default {
       // 直接返回提取的内容，因为extractReportContent已经处理了格式转换
       return `# 数据分析报告\n\n> 导出时间: ${new Date().toLocaleString('zh-CN')}\n\n---\n\n${content}`
     }
+
+    // 报告预览相关方法
+    const hasHtmlContent = (message) => {
+      if (!message.content) return false
+
+      console.log('检查HTML内容，消息ID:', message.id)
+
+      // 方法1: 检查是否包含HTML代码块
+      const htmlCodeBlockRegex = /```\s*html?\s*([\s\S]*?)```/gi
+      if (htmlCodeBlockRegex.test(message.content)) {
+        console.log('发现HTML代码块')
+        return true
+      }
+
+      // 方法2: 检查是否包含language-html代码块
+      if (message.content.includes('language-html')) {
+        console.log('发现language-html代码块')
+        return true
+      }
+
+      // 方法3: 检查是否包含已渲染的HTML内容
+      if (message.content.includes('html-rendered-content')) {
+        console.log('发现html-rendered-content')
+        return true
+      }
+
+      // 方法4: 检查是否是报告消息且包含表格等HTML元素
+      if (isReportMessage(message)) {
+        const hasTableElements = /<table[\s\S]*?<\/table>/i.test(message.content) ||
+                                /<thead[\s\S]*?<\/thead>/i.test(message.content) ||
+                                /<tbody[\s\S]*?<\/tbody>/i.test(message.content) ||
+                                message.content.includes('<!DOCTYPE html')
+        if (hasTableElements) {
+          console.log('发现表格或HTML文档元素')
+          return true
+        }
+      }
+
+      console.log('未发现HTML内容')
+      return false
+    }
+
+    const openReportPreview = (message) => {
+      currentPreviewMessage.value = message
+      previewReportContent.value = generatePreviewReportContent(message)
+      showReportPreview.value = true
+
+      // 确保DOM更新后再处理iframe
+      nextTick(() => {
+        // 可以在这里添加额外的iframe处理逻辑
+      })
+    }
+
+    const closeReportPreview = () => {
+      showReportPreview.value = false
+      previewReportContent.value = ''
+      currentPreviewMessage.value = null
+    }
+
+    const refreshReportPreview = () => {
+      if (currentPreviewMessage.value) {
+        previewReportContent.value = generatePreviewReportContent(currentPreviewMessage.value)
+      }
+    }
+
+    const exportCurrentPreviewReport = () => {
+      if (currentPreviewMessage.value) {
+        exportMessageReport(currentPreviewMessage.value)
+      }
+    }
+
+    const generatePreviewReportContent = (message) => {
+      // 提取HTML内容
+      const htmlContent = extractHtmlContentFromMessage(message.content)
+
+      // 生成完整的HTML页面
+      return `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据分析报告</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #ffffff;
+            color: #333333;
+        }
+        .report-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .report-header {
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .report-title {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0;
+        }
+        .report-meta {
+            color: #6c757d;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 12px 16px;
+            text-align: left;
+        }
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        tr:hover {
+            background: #e3f2fd;
+            transition: background-color 0.3s ease;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: #2c3e50;
+            margin: 24px 0 12px 0;
+        }
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            color: #2c3e50;
+        }
+        h2 {
+            font-size: 1.8em;
+            color: #34495e;
+        }
+        h3 {
+            font-size: 1.4em;
+            color: #34495e;
+        }
+        p {
+            margin: 12px 0;
+            line-height: 1.7;
+            color: #333333;
+        }
+        ul, ol {
+            margin: 16px 0;
+            padding-left: 24px;
+            color: #333333;
+        }
+        li {
+            margin: 8px 0;
+            line-height: 1.6;
+            color: #333333;
+        }
+        strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        em {
+            color: #6c757d;
+            font-style: italic;
+        }
+        .highlight {
+            background: linear-gradient(120deg, #e3f2fd 0%, #f3e5f5 100%);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #333333;
+        }
+        .metric-card {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: #333333;
+        }
+        .trend-up {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .trend-down {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .trend-stable {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        /* 确保打印时也是明亮主题 */
+        @media print {
+            body {
+                margin: 0;
+                padding: 15px;
+                background: #ffffff !important;
+                color: #333333 !important;
+            }
+            .report-container {
+                max-width: none;
+                background: #ffffff !important;
+            }
+            * {
+                background: #ffffff !important;
+                color: #333333 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <div class="report-header">
+            <h1 class="report-title">数据分析报告</h1>
+            <div class="report-meta">生成时间: ${new Date().toLocaleString('zh-CN')}</div>
+        </div>
+        <div class="report-content">
+            ${htmlContent}
+        </div>
+    </div>
+</body>
+</html>`
+    }
+
+    const extractHtmlContentFromMessage = (messageContent) => {
+      console.log('提取HTML内容，原始消息内容:', messageContent.substring(0, 500) + '...')
+
+      let htmlContent = ''
+      let match
+
+      // 方法1: 直接从原始消息内容中提取HTML代码块
+      const htmlCodeBlockRegex = /```\s*html?\s*([\s\S]*?)```/gi
+      htmlCodeBlockRegex.lastIndex = 0
+
+      while ((match = htmlCodeBlockRegex.exec(messageContent)) !== null) {
+        const extractedHtml = match[1].trim()
+        console.log('找到HTML代码块:', extractedHtml.substring(0, 200) + '...')
+        htmlContent += extractedHtml + '\n'
+      }
+
+      // 方法2: 从<code class="language-html">标签中提取（处理markdown渲染后的情况）
+      if (!htmlContent) {
+        console.log('尝试从language-html代码块中提取...')
+        const codeHtmlRegex = /<code class="language-html">([\s\S]*?)<\/code>/gi
+        codeHtmlRegex.lastIndex = 0
+
+        while ((match = codeHtmlRegex.exec(messageContent)) !== null) {
+          let extractedHtml = match[1].trim()
+          // 处理HTML实体编码和br标签
+          extractedHtml = extractedHtml
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&#x27;/g, "'")
+          console.log('从language-html中提取HTML:', extractedHtml.substring(0, 200) + '...')
+          htmlContent += extractedHtml + '\n'
+        }
+      }
+
+      // 方法3: 从已渲染的html-rendered-content中提取
+      if (!htmlContent) {
+        console.log('尝试从html-rendered-content中提取...')
+        const htmlRenderedRegex = /<div class="html-rendered-content">([\s\S]*?)<\/div>/g
+        htmlRenderedRegex.lastIndex = 0
+
+        while ((match = htmlRenderedRegex.exec(messageContent)) !== null) {
+          const extractedHtml = match[1].trim()
+          console.log('从渲染内容中提取HTML:', extractedHtml.substring(0, 200) + '...')
+          htmlContent += extractedHtml + '\n'
+        }
+      }
+
+      // 方法4: 从markdown-content中的pre code标签提取
+      if (!htmlContent) {
+        console.log('尝试从markdown-content中提取...')
+        const markdownCodeRegex = /<div class="markdown-content">[\s\S]*?<pre><code class="language-html">([\s\S]*?)<\/code><\/pre>[\s\S]*?<\/div>/gi
+        markdownCodeRegex.lastIndex = 0
+
+        while ((match = markdownCodeRegex.exec(messageContent)) !== null) {
+          let extractedHtml = match[1].trim()
+          // 处理HTML实体编码和br标签
+          extractedHtml = extractedHtml
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&#x27;/g, "'")
+          console.log('从markdown-content中提取HTML:', extractedHtml.substring(0, 200) + '...')
+          htmlContent += extractedHtml + '\n'
+        }
+      }
+
+      // 方法5: 查找包含"输出报告"的response block
+      if (!htmlContent) {
+        console.log('尝试从agent-response-content中提取...')
+        const reportBlockRegex = /<div class="agent-response-block"[^>]*>[\s\S]*?<i class="bi bi-file-earmark-text"><\/i>\s*输出报告[\s\S]*?<div class="agent-response-content">([\s\S]*?)<\/div>/gi
+        reportBlockRegex.lastIndex = 0
+
+        while ((match = reportBlockRegex.exec(messageContent)) !== null) {
+          const blockContent = match[1]
+          console.log('找到报告块内容:', blockContent.substring(0, 200) + '...')
+
+          // 尝试从块内容中提取各种格式的HTML
+          const patterns = [
+            /<div class="html-rendered-content">([\s\S]*?)<\/div>/g,
+            /<code class="language-html">([\s\S]*?)<\/code>/g,
+            /```\s*html?\s*([\s\S]*?)```/gi
+          ]
+
+          for (const pattern of patterns) {
+            pattern.lastIndex = 0
+            while ((match = pattern.exec(blockContent)) !== null) {
+              let extractedHtml = match[1].trim()
+              if (pattern.source.includes('language-html')) {
+                extractedHtml = extractedHtml
+                  .replace(/<br\s*\/?>/gi, '\n')
+                  .replace(/&lt;/g, '<')
+                  .replace(/&gt;/g, '>')
+                  .replace(/&amp;/g, '&')
+                  .replace(/&quot;/g, '"')
+                  .replace(/&#x27;/g, "'")
+              }
+              htmlContent += extractedHtml + '\n'
+            }
+          }
+        }
+      }
+
+      // 清理和格式化HTML内容
+      if (htmlContent) {
+        htmlContent = htmlContent
+          .replace(/\\n/g, '\n')  // 处理转义的换行符
+          .replace(/class="dark"/gi, '')  // 移除暗色模式class
+          .replace(/class='dark'/gi, '')  // 移除暗色模式class（单引号）
+          .replace(/<html[^>]*class="[^"]*dark[^"]*"[^>]*>/gi, '<html lang="zh-CN">')  // 移除html标签上的dark class
+          .replace(/<html[^>]*class='[^']*dark[^']*'[^>]*>/gi, '<html lang="zh-CN">')  // 移除html标签上的dark class（单引号）
+          .trim()
+
+        console.log('最终提取的HTML内容长度:', htmlContent.length)
+        console.log('最终提取的HTML内容预览:', htmlContent.substring(0, 300) + '...')
+        return htmlContent
+      }
+
+      console.log('未找到任何HTML内容')
+      return '<div style="text-align: center; padding: 40px; color: #666;"><h2>未找到HTML报告内容</h2><p>请确保报告包含HTML格式的内容</p></div>'
+    }
     
     // 生命周期
     onMounted(async () => {
@@ -1370,7 +1826,11 @@ export default {
       renameTitle,
       currentRenameSession,
       messageFormats,
-      
+      showReportPreview,
+      previewReportContent,
+      currentPreviewMessage,
+      reportPreviewFrame,
+
       // 方法
       goBack,
       startNewChat,
@@ -1397,7 +1857,13 @@ export default {
       getMessageFormat,
       setMessageFormat,
       formatMessageWithFormat,
-      exportMessageReport
+      exportMessageReport,
+      // 报告预览方法
+      hasHtmlContent,
+      openReportPreview,
+      closeReportPreview,
+      refreshReportPreview,
+      exportCurrentPreviewReport
     }
   }
 }
@@ -2619,6 +3085,284 @@ export default {
   white-space: pre-wrap !important;
   word-break: break-all;
   overflow-wrap: break-word;
+}
+
+/* HTML渲染内容样式 */
+.html-rendered-content {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 16px;
+  margin: 8px 0;
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+.html-rendered-content * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.html-rendered-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.html-rendered-content th,
+.html-rendered-content td {
+  border: 1px solid #dee2e6;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.html-rendered-content th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+.html-rendered-content h1,
+.html-rendered-content h2,
+.html-rendered-content h3,
+.html-rendered-content h4,
+.html-rendered-content h5,
+.html-rendered-content h6 {
+  margin: 16px 0 8px 0;
+  color: #2c3e50;
+}
+
+.html-rendered-content p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.html-rendered-content ul,
+.html-rendered-content ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.html-rendered-content li {
+  margin: 4px 0;
+}
+
+.html-rendered-content pre {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.html-rendered-content code {
+  background: #f8f9fa;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+}
+
+/* 报告预览按钮样式 */
+.report-preview-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
+  text-align: center;
+}
+
+.preview-report-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.preview-report-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.preview-report-btn:active {
+  transform: translateY(0);
+}
+
+.preview-report-btn i {
+  font-size: 16px;
+}
+
+/* 当显示预览时，主页面缩小 */
+.agent-run-page.with-preview {
+  width: 50%;
+  transition: width 0.3s ease-in-out;
+}
+
+.chat-container.with-preview {
+  width: 100%;
+  transition: width 0.3s ease-in-out;
+}
+
+/* 报告预览面板样式 */
+.report-preview-panel {
+  position: fixed;
+  top: 0;
+  right: -50%;
+  width: 50%;
+  height: 100vh;
+  background: white;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transition: right 0.3s ease-in-out;
+}
+
+.report-preview-panel.show {
+  right: 0;
+}
+
+.report-preview-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.report-preview-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.report-preview-title i {
+  font-size: 18px;
+}
+
+.report-preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.preview-action-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview-action-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.preview-action-btn i {
+  font-size: 14px;
+}
+
+.report-preview-content {
+  flex: 1;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+.report-preview-iframe-container {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.report-preview-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: white;
+}
+
+/* 移动端遮罩层 */
+.mobile-preview-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-preview-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .agent-run-page.with-preview {
+    width: 40%;
+  }
+
+  .report-preview-panel {
+    width: 60%;
+    right: -60%;
+  }
+}
+
+@media (max-width: 768px) {
+  .agent-run-page.with-preview {
+    width: 100%;
+    position: relative;
+  }
+
+  .report-preview-panel {
+    width: 100%;
+    right: -100%;
+    position: fixed;
+    z-index: 1001;
+  }
+
+  .preview-report-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .report-preview-header {
+    padding: 12px 16px;
+  }
+
+  .report-preview-title {
+    font-size: 14px;
+  }
+
+  .preview-action-btn {
+    width: 32px;
+    height: 32px;
+  }
 }
 
 .dynamic-table {
