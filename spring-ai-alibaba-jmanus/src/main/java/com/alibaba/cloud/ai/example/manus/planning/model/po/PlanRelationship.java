@@ -24,10 +24,12 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "plan_relationships",
-		indexes = { @Index(name = "idx_parent_plan_id", columnList = "parent_plan_id"),
-				@Index(name = "idx_child_plan_id", columnList = "child_plan_id"),
-				@Index(name = "idx_root_plan_id", columnList = "root_plan_id"),
-				@Index(name = "idx_created_time", columnList = "created_time") })
+		indexes = { 
+			@Index(columnList = "parent_plan_id"),
+			@Index(columnList = "child_plan_id"),
+			@Index(columnList = "root_plan_id"),
+			@Index(columnList = "created_time") 
+		})
 public class PlanRelationship {
 
 	@Id

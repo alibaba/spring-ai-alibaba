@@ -26,8 +26,6 @@ spring:
       leak-detection-threshold: 60000
   # JPA Configuration
   jpa:
-    hibernate:
-      ddl-auto: update
     show-sql: false
     properties:
       hibernate:

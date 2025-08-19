@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
 import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -119,7 +120,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 			// Execute the plan asynchronously using PlanExecutorInterface
 			PlanExecutorInterface executor = planExecutorFactory.createExecutor(context.getPlan());
-			CompletableFuture<com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult> future = executor
+			CompletableFuture<PlanExecutionResult> future = executor
 				.executeAllStepsAsync(context);
 
 			// Handle the execution result asynchronously

@@ -18,11 +18,11 @@ package com.alibaba.cloud.ai.example.manus.planning.coordinator;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
 import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
-import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.example.manus.planning.service.IPlanRelationshipService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
@@ -39,23 +39,19 @@ public class PlanningCoordinator {
 
 	private static final Logger log = LoggerFactory.getLogger(PlanningCoordinator.class);
 
-	private final PlanCreator planCreator;
+	private final PlanningFactory planningFactory;
 
 	private final PlanExecutorFactory planExecutorFactory;
-
-	private PlanFinalizer planFinalizer;
 
 	private final IPlanRelationshipService planRelationshipService;
 
 	private final PlanIdDispatcher planIdDispatcher;
 
 	@Autowired
-	public PlanningCoordinator(PlanCreator planCreator, PlanExecutorFactory planExecutorFactory,
-			PlanFinalizer planFinalizer, IPlanRelationshipService planRelationshipService,
-			PlanIdDispatcher planIdDispatcher) {
-		this.planCreator = planCreator;
+	public PlanningCoordinator(PlanningFactory planningFactory, PlanExecutorFactory planExecutorFactory,
+			IPlanRelationshipService planRelationshipService, PlanIdDispatcher planIdDispatcher) {
+		this.planningFactory = planningFactory;
 		this.planExecutorFactory = planExecutorFactory;
-		this.planFinalizer = planFinalizer;
 		this.planRelationshipService = planRelationshipService;
 		this.planIdDispatcher = planIdDispatcher;
 	}
@@ -63,10 +59,9 @@ public class PlanningCoordinator {
 	/**
 	 * Constructor for backward compatibility when relationship service is not available
 	 */
-	@Autowired
-	public PlanningCoordinator(PlanCreator planCreator, PlanExecutorFactory planExecutorFactory,
-			PlanFinalizer planFinalizer) {
-		this(planCreator, planExecutorFactory, planFinalizer, null, null);
+	public PlanningCoordinator(PlanningFactory planningFactory, PlanExecutorFactory planExecutorFactory,
+			PlanIdDispatcher planIdDispatcher) {
+		this(planningFactory, planExecutorFactory, null, planIdDispatcher);
 	}
 
 	/**
@@ -79,55 +74,46 @@ public class PlanningCoordinator {
 	 */
 	public CompletableFuture<PlanExecutionResult> executeByUserQuery(String userQuery, String rootPlanId,
 			String parentPlanId, String currentPlanId) {
-
-		if (userQuery == null || userQuery.trim().isEmpty()) {
-			log.error("User query is null or empty for plan: {}", currentPlanId);
-			PlanExecutionResult errorResult = new PlanExecutionResult();
-			errorResult.setSuccess(false);
-			errorResult.setErrorMessage("User query cannot be null or empty");
-			return CompletableFuture.completedFuture(errorResult);
-		}
-
 		try {
-			// Create execution context for plan creation
+			log.info("Starting plan execution for user query: {}", userQuery);
+
+			// Create execution context
 			ExecutionContext context = new ExecutionContext();
 			context.setCurrentPlanId(currentPlanId);
 			context.setRootPlanId(rootPlanId);
 			context.setUserRequest(userQuery);
-			context.setNeedSummary(false);
+			context.setNeedSummary(true);
 			context.setUseMemory(false);
 
-			// Create plan using plan creator
+			// Create plan using PlanningFactory
+			PlanCreator planCreator = planningFactory.createPlanCreator();
 			planCreator.createPlanWithoutMemory(context);
 
-			// Get the created plan from context
-			PlanInterface plan = context.getPlan();
-			if (plan == null) {
-				log.error("Failed to create plan from user query: {}", userQuery);
+			// Check if plan was created successfully
+			if (context.getPlan() == null) {
 				PlanExecutionResult errorResult = new PlanExecutionResult();
 				errorResult.setSuccess(false);
-				errorResult.setErrorMessage("Failed to create plan from user query");
+				errorResult.setErrorMessage("Plan creation failed, cannot create execution plan");
 				return CompletableFuture.completedFuture(errorResult);
 			}
 
-			// Execute the created plan using executeByPlan
-			log.info("Plan created successfully from user query, executing plan: {}", currentPlanId);
-			return executeByPlan(plan, rootPlanId, parentPlanId, currentPlanId);
+			// Execute the plan using PlanExecutorFactory
+			PlanExecutorInterface executor = planExecutorFactory.createExecutor(context.getPlan());
+			return executor.executeAllStepsAsync(context);
 
 		}
 		catch (Exception e) {
-			log.error("Failed to execute by user query: {}", userQuery, e);
+			log.error("Error during plan execution", e);
 			PlanExecutionResult errorResult = new PlanExecutionResult();
 			errorResult.setSuccess(false);
-			errorResult.setErrorMessage("Execution failed: " + e.getMessage());
+			errorResult.setErrorMessage("Plan execution failed: " + e.getMessage());
 			return CompletableFuture.completedFuture(errorResult);
 		}
 	}
 
 	/**
-	 * Execute a common plan with the given plan interface. This method handles the core
-	 * execution logic and can be called from external classes.
-	 * @param plan The plan interface to execute
+	 * Execute a plan directly using the provided plan interface
+	 * @param plan The plan to execute
 	 * @param rootPlanId The root plan ID for the execution context
 	 * @param parentPlanId The ID of the parent plan (can be null for root plans)
 	 * @param currentPlanId The current plan ID for execution
@@ -135,64 +121,27 @@ public class PlanningCoordinator {
 	 */
 	public CompletableFuture<PlanExecutionResult> executeByPlan(PlanInterface plan, String rootPlanId,
 			String parentPlanId, String currentPlanId) {
-
-		if (plan == null) {
-			log.error("Plan interface is null for plan: {}", currentPlanId);
-			PlanExecutionResult errorResult = new PlanExecutionResult();
-			errorResult.setSuccess(false);
-			errorResult.setErrorMessage("Plan interface is null");
-			return CompletableFuture.completedFuture(errorResult);
-		}
-
 		try {
-			// Log plan relationship if relationship service is available
-			if (planRelationshipService != null) {
-				planRelationshipService.recordPlanRelationship(parentPlanId, // Parent
-																				// plan ID
-																				// (can be
-																				// null
-																				// for
-																				// root
-																				// plans)
-						currentPlanId, // Child plan ID (current executing plan)
-						rootPlanId, // Root plan ID (top-level parent plan)
-						null, // Plan template ID (not applicable for common plans)
-						"common-plan-execution" // Relationship type
-				);
-				log.info("Recorded plan relationship for common plan execution: parent={}, child={}, root={}",
-						parentPlanId, currentPlanId, rootPlanId);
-			}
+			log.info("Starting direct plan execution for plan: {}", plan.getCurrentPlanId());
 
 			// Create execution context
 			ExecutionContext context = new ExecutionContext();
 			context.setCurrentPlanId(currentPlanId);
 			context.setRootPlanId(rootPlanId);
-			context.setUserRequest("Execute common plan: " + currentPlanId);
-			context.setNeedSummary(false);
-			context.setUseMemory(false);
-			
-			// Set the plan depth if relationship service is available
-			Integer planDepth = planRelationshipService.getPlanDepth(currentPlanId);
-			if (planDepth != null) {
-				context.setPlanDepth(planDepth);
-				log.debug("Set plan depth to {} for plan: {}", planDepth, currentPlanId);
-			} else {
-				log.warn("Could not determine plan depth for plan: {}", currentPlanId);
-				context.setPlanDepth(0); // Default to root level if depth cannot be determined
-			}
-			// Set the plan directly to context (no need to parse JSON)
 			context.setPlan(plan);
+			context.setNeedSummary(true);
+			context.setUseMemory(false);
 
-			// Execute directly using PlanExecutorFactory and PlanExecutorInterface
+			// Execute the plan using PlanExecutorFactory
 			PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
 			return executor.executeAllStepsAsync(context);
 
 		}
 		catch (Exception e) {
-			log.error("Failed to execute common plan: {}", currentPlanId, e);
+			log.error("Error during direct plan execution", e);
 			PlanExecutionResult errorResult = new PlanExecutionResult();
 			errorResult.setSuccess(false);
-			errorResult.setErrorMessage("Execution failed: " + e.getMessage());
+			errorResult.setErrorMessage("Direct plan execution failed: " + e.getMessage());
 			return CompletableFuture.completedFuture(errorResult);
 		}
 	}
