@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.slf4j.Logger;
@@ -50,6 +51,9 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 
 	@Autowired
 	private PlanningCoordinator planningCoordinator;
+
+	@Autowired
+	private PlanIdDispatcher planIdDispatcher;
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -105,9 +109,12 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 			// Parse the JSON to create a PlanInterface
 			PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
 
+            
 			// Execute the plan using PlanningCoordinator
+			// Generate a new plan ID for this subplan execution using PlanIdDispatcher
+			String newPlanId = planIdDispatcher.generateSubPlanId(rootPlanId);
 			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByPlan(
-					plan, rootPlanId, currentPlanId, currentPlanId);
+					plan, rootPlanId, currentPlanId, newPlanId);
 
 			PlanExecutionResult result = future.get();
 

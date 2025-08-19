@@ -332,25 +332,6 @@ public class DynamicAgent extends ReActAgent {
 					log.info("TerminableTool cannot terminate yet for planId: {}", getCurrentPlanId());
 				}
 			}
-
-			// Detect sub-plan trigger from tool result
-			List<String> childPlanIds = extractChildPlanIds(lastToolCallResult);
-			if (!childPlanIds.isEmpty()) {
-				log.info("Detected sub-plan trigger for planId {} with children: {}", getCurrentPlanId(), childPlanIds);
-				// Delegate to TaskManager non-blocking orchestration: suspend, schedule,
-				// patch, resume
-				if (taskManager != null) {
-					taskManager.scheduleChildrenPatchAndResumeByPlanId(getCurrentPlanId(), childPlanIds, childId -> {
-						// External factory hook required; keep placeholder to compile
-						throw new IllegalStateException("Task factory not provided");
-					});
-				}
-				// Record action with subPlanCreated=true, keep lastToolCallResult as-is;
-				// real result will be patched into memory
-				recordActionResult(actToolInfoList, lastToolCallResult, ExecutionStatus.RUNNING, null, true);
-				return new AgentExecResult(lastToolCallResult, AgentState.IN_PROGRESS);
-			}
-
 			// Record successful action result (no sub-plan)
 			recordActionResult(actToolInfoList, lastToolCallResult, ExecutionStatus.RUNNING, null, false);
 			return new AgentExecResult(lastToolCallResult, AgentState.IN_PROGRESS);
@@ -380,19 +361,6 @@ public class DynamicAgent extends ReActAgent {
 		}
 	}
 
-	// Extract child plan ids from tool result by pattern; return empty list if not
-	// matched
-	private List<String> extractChildPlanIds(String toolResult) {
-		if (toolResult == null) {
-			return Collections.emptyList();
-		}
-		Matcher m = SUBPLAN_PATTERN.matcher(toolResult);
-		List<String> ids = new ArrayList<>();
-		while (m.find()) {
-			ids.add(m.group(1));
-		}
-		return ids;
-	}
 
 	/**
 	 * Set act tool info results for all executed tools

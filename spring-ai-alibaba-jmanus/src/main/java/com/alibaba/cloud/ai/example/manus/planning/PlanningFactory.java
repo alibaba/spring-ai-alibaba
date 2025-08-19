@@ -57,7 +57,6 @@ import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.subplan.SummaryWorkflow;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
@@ -85,6 +84,7 @@ import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
 import com.alibaba.cloud.ai.example.manus.tool.pptGenerator.PptGeneratorOperator;
 import com.alibaba.cloud.ai.example.manus.tool.jsxGenerator.JsxGeneratorOperator;
+import com.alibaba.cloud.ai.example.manus.subplan.service.ISubplanToolService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -132,9 +132,6 @@ public class PlanningFactory implements IPlanningFactory {
 	@Autowired
 	private MapReduceSharedStateManager sharedStateManager;
 
-	@Autowired
-	@Lazy
-	private SummaryWorkflow summaryWorkflow;
 
 	@Autowired
 	private PromptService promptService;
@@ -145,6 +142,9 @@ public class PlanningFactory implements IPlanningFactory {
 	@Autowired
 	@Lazy
 	private CronService cronService;
+
+	@Autowired
+	private ISubplanToolService subplanToolService;
 
 	@Autowired
 	private PptGeneratorOperator pptGeneratorOperator;
@@ -235,7 +235,7 @@ public class PlanningFactory implements IPlanningFactory {
 			// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
 			// toolDefinitions.add(pptGeneratorOperator);
 			// toolDefinitions.add(jsxGeneratorOperator);
-			toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, summaryWorkflow, recorder));
+			toolDefinitions.add(new InnerStorageContentTool(unifiedDirectoryManager, recorder));
 			toolDefinitions.add(new FileMergeTool(unifiedDirectoryManager));
 			// toolDefinitions.add(new GoogleSearch());
 			// toolDefinitions.add(new PythonExecute());
@@ -280,6 +280,19 @@ public class PlanningFactory implements IPlanningFactory {
 					toolDefinition);
 			toolCallbackMap.put(toolDefinition.getName(), functionToolcallbackContext);
 		}
+
+		// 添加子计划工具注册
+		if (subplanToolService != null) {
+			try {
+				Map<String, PlanningFactory.ToolCallBackContext> subplanToolCallbacks = 
+					subplanToolService.createSubplanToolCallbacks(planId, rootPlanId, expectedReturnInfo);
+				toolCallbackMap.putAll(subplanToolCallbacks);
+				log.info("Registered {} subplan tools", subplanToolCallbacks.size());
+			} catch (Exception e) {
+				log.warn("Failed to register subplan tools: {}", e.getMessage());
+			}
+		}
+
 		return toolCallbackMap;
 	}
 

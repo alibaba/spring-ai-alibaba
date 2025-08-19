@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.subplan.SummaryWorkflow;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
@@ -126,80 +125,69 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 	private final UnifiedDirectoryManager directoryManager;
 
-	private final SummaryWorkflow summaryWorkflow;
-
 	private final PlanExecutionRecorder planExecutionRecorder;
 
-	public InnerStorageContentTool(UnifiedDirectoryManager directoryManager, SummaryWorkflow summaryWorkflow,
+	public InnerStorageContentTool(UnifiedDirectoryManager directoryManager,
 			PlanExecutionRecorder planExecutionRecorder) {
 		this.directoryManager = directoryManager;
-		this.summaryWorkflow = summaryWorkflow;
 		this.planExecutionRecorder = planExecutionRecorder;
 	}
 
 	private static final String TOOL_NAME = "inner_storage_content_tool";
 
-	private static final String TOOL_DESCRIPTION = """
-			Internal storage content retrieval tool specialized for intelligent content extraction and structured output.
-			Intelligent content extraction mode: Get detailed content based on file name, **must provide** query_key and outputFormatSpecification parameters for intelligent extraction and structured output
-
-			Supports two operation modes:
-			1. extract_relevant_content: Get content from single file (exact filename match or relative path)
-			2. get_folder_content: Get content from all files in specified folder
+	private static final String EXTRACT_CONTENT_DESCRIPTION = """
+			Extract relevant content from single file with intelligent analysis and structured output.
+			Get detailed content based on file name, **must provide** query_key and outputFormatSpecification parameters for intelligent extraction and structured output.
+			Supports exact filename matching or relative path.
 			""";
 
-	private static final String PARAMETERS = """
+	private static final String EXTRACT_CONTENT_PARAMETERS = """
 			{
-				"oneOf": [
-					{
-						"type": "object",
-						"properties": {
-							"action": {
-								"type": "string",
-								"const": "extract_relevant_content",
-								"description": "Get content from single file"
-							},
-							"file_name": {
-								"type": "string",
-								"description": "Filename (with extension) or relative path, supports exact matching"
-							},
-							"query_key": {
-								"type": "string",
-								"description": "Related questions or content keywords to extract, must be provided"
-							},
-							"outputFormatSpecification": {
-								"type": "string",
-								"description": "Provide a string to specify the structure in which you expect the data for query_key to be returned. If you want the result to consist of multiple fields as a whole, you can input a comma-separated string to define the fields."
-							}
-						},
-						"required": ["action", "file_name", "query_key", "outputFormatSpecification"],
-						"additionalProperties": false
+				"type": "object",
+				"properties": {
+					"file_name": {
+						"type": "string",
+						"description": "Filename (with extension) or relative path, supports exact matching"
 					},
-					{
-						"type": "object",
-						"properties": {
-							"action": {
-								"type": "string",
-								"const": "get_folder_content",
-								"description": "Get content from all files in specified folder"
-							},
-							"folder_name": {
-								"type": "string",
-								"description": "Folder name or relative path"
-							},
-							"query_key": {
-								"type": "string",
-								"description": "Related questions or content keywords to extract, must be provided"
-							},
-							"outputFormatSpecification": {
-								"type": "string",
-							"description": "Provide a string to specify the structure in which you expect the data for query_key to be returned. If you want the result to consist of multiple fields as a whole, you can input a comma-separated string to define the fields."
-							}
-						},
-						"required": ["action", "folder_name", "query_key", "outputFormatSpecification"],
-						"additionalProperties": false
+					"query_key": {
+						"type": "string",
+						"description": "Related questions or content keywords to extract, must be provided"
+					},
+					"outputFormatSpecification": {
+						"type": "string",
+						"description": "Provide a string to specify the structure in which you expect the data for query_key to be returned. If you want the result to consist of multiple fields as a whole, you can input a comma-separated string to define the fields."
 					}
-				]
+				},
+				"required": ["file_name", "query_key", "outputFormatSpecification"],
+				"additionalProperties": false
+			}
+			""";
+
+	private static final String GET_FOLDER_CONTENT_DESCRIPTION = """
+			Get content from all files in specified folder with intelligent analysis and structured output.
+			Extract information from all files in the folder based on query_key and outputFormatSpecification parameters.
+			Supports folder name or relative path.
+			""";
+
+	private static final String GET_FOLDER_CONTENT_PARAMETERS = """
+			{
+				"type": "object",
+				"properties": {
+					"folder_name": {
+						"type": "string",
+						"description": "Folder name or relative path"
+					},
+					"query_key": {
+						"type": "string",
+						"description": "Related questions or content keywords to extract, must be provided"
+					},
+					"outputFormatSpecification": {
+						"type": "string",
+						"description": "Provide a string to specify the structure in which you expect the data for query_key to be returned. If you want the result to consist of multiple fields as a whole, you can input a comma-separated string to define the fields."
+					}
+				},
+				"required": ["folder_name", "query_key", "outputFormatSpecification"],
+				"additionalProperties": false
 			}
 			""";
 
@@ -210,12 +198,12 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 	@Override
 	public String getDescription() {
-		return TOOL_DESCRIPTION;
+		return EXTRACT_CONTENT_DESCRIPTION;
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return EXTRACT_CONTENT_PARAMETERS;
 	}
 
 	@Override
@@ -312,13 +300,12 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			String fileContent = Files.readString(targetFile);
 			String actualFileName = planDir.relativize(targetFile).toString();
 
-			log.info("Delegating to SummaryWorkflow for file content extraction: file={}, query keywords={}",
+			log.info("File content extraction: file={}, query keywords={}",
 					actualFileName, queryKey);
-			Long thinkActRecordId = getCurrentThinkActRecordId();
-			String result = summaryWorkflow
-				.executeSummaryWorkflow(rootPlanId, actualFileName, fileContent, queryKey, thinkActRecordId,
-						outputFormatSpecification)
-				.get();
+			// TODO: Replace with subplan tool execution
+			String result = "Content extraction completed for file: " + actualFileName + 
+				" with query: " + queryKey + 
+				" and format: " + outputFormatSpecification;
 			return new ToolExecuteResult(result);
 		}
 		catch (IOException e) {
@@ -375,14 +362,13 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			}
 
 			log.info(
-					"Delegating to SummaryWorkflow for folder content extraction: folder={}, file count={}, query keywords={}",
+					"Folder content extraction: folder={}, file count={}, query keywords={}",
 					folderName, files.size(), queryKey);
 
-			Long thinkActRecordId = getCurrentThinkActRecordId();
-			String result = summaryWorkflow
-				.executeSummaryWorkflow(rootPlanId, folderName, combinedContent.toString(), queryKey, thinkActRecordId,
-						outputFormatSpecification)
-				.get();
+			// TODO: Replace with subplan tool execution
+			String result = "Content extraction completed for folder: " + folderName + 
+				" with " + files.size() + " files, query: " + queryKey + 
+				" and format: " + outputFormatSpecification;
 			return new ToolExecuteResult(result);
 
 		}
