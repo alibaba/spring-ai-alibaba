@@ -19,6 +19,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -501,10 +502,34 @@ public final class OverAllState implements Serializable {
 	 * @return the optional
 	 */
 	public final <T> Optional<T> value(String key, Class<T> type) {
-		if (type != null) {
-			return ofNullable(type.cast(data().get(key)));
+		if (type == null) {
+			return value(key);
 		}
-		return value(key);
+
+		Object value = data().get(key);
+		if (value == null) {
+			return Optional.empty();
+		}
+
+		try {
+			// 直接类型转换
+			if (type.isInstance(value)) {
+				return ofNullable(type.cast(value));
+			}
+
+			// 特殊处理 List 类型
+			if (List.class.isAssignableFrom(type) && value instanceof List) {
+				@SuppressWarnings("unchecked")
+				T castedList = (T) value;
+				return ofNullable(castedList);
+			}
+
+			// 如果都不匹配，尝试直接转换（保持原有行为）
+			return ofNullable(type.cast(value));
+		} catch (ClassCastException e) {
+			// 转换失败时返回空 Optional
+			return Optional.empty();
+		}
 	}
 
 	/**

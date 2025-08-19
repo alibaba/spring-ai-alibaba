@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.runner;
+package com.alibaba.cloud.ai.graph.agent.flow;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.EdgeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import org.apache.tika.utils.StringUtils;
@@ -27,19 +28,23 @@ import org.apache.tika.utils.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 
-public class RoutingEdgeAction implements EdgeAction {
+public class RoutingEdgeAction implements AsyncEdgeAction {
 
 	private ChatClient chatClient;
+	private String taskKey;
 
 	public RoutingEdgeAction(ChatModel chatModel, BaseAgent current, List<? extends BaseAgent> subAgents) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("You are responsible for task routing in a graph-based AI system. Here's the task and instructions that you are responsible for: " );
+		sb.append("You are responsible for task routing in a graph-based AI system.\n" );
 
 		if (current instanceof ReactAgent reactAgent) {
+			sb.append("The instruction that you should follow is to finish this task is: ");
 			sb.append(StringUtils.isEmpty(reactAgent.instruction()) ? reactAgent.description() : reactAgent.instruction());
 		} else {
+			sb.append("Your role seen by the user is: ");
 			sb.append(current.description());
 		}
+
 		sb.append("\n\n");
 		sb.append("There're a few agents that can handle this task, you can delegate the task to one of the following.");
 		sb.append("The agents ability are listed in a 'name:description' format as below:\n");
@@ -52,11 +57,20 @@ public class RoutingEdgeAction implements EdgeAction {
 		this.chatClient = ChatClient.builder(chatModel)
 				.defaultSystem(sb.toString())
 				.build();
+		this.taskKey = current.outputKey();
 	}
 
 	@Override
-	public String apply(OverAllState state) throws Exception {
-		return this.chatClient.prompt().call().content();
+	public CompletableFuture<String> apply(OverAllState state) {
+		CompletableFuture<String> result = new CompletableFuture<>();
+		try {
+			String taskDetail = state.value(taskKey, "");
+			result.complete(this.chatClient.prompt(taskDetail).call().content());
+		}
+		catch (Exception e) {
+			result.completeExceptionally(e);
+		}
+		return result;
 	}
 
 }

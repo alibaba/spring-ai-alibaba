@@ -16,8 +16,13 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 /**
  * Abstract base class for all agents in the graph system.
@@ -37,22 +42,17 @@ public abstract class BaseAgent {
 	/** The output key for the agent's result */
 	protected String outputKey;
 
-	/** List of sub-agents that this agent can delegate to */
-	protected List<? extends BaseAgent> subAgents;
-
 	/**
 	 * Protected constructor for initializing all base agent properties.
 	 *
 	 * @param name the unique name of the agent
 	 * @param description the description of the agent's capability
 	 * @param outputKey the output key for the agent's result
-	 * @param subAgents the list of sub-agents that this agent can delegate to
 	 */
-	protected BaseAgent(String name, String description, String outputKey, List<? extends BaseAgent> subAgents) {
+	protected BaseAgent(String name, String description, String outputKey) {
 		this.name = name;
 		this.description = description;
 		this.outputKey = outputKey;
-		this.subAgents = subAgents;
 	}
 
 	/**
@@ -94,10 +94,8 @@ public abstract class BaseAgent {
 	 *
 	 * @return the list of sub-agents.
 	 */
-	public List<? extends BaseAgent> subAgents() {
-		return subAgents;
-	}
+	public abstract AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException;
 
-	public abstract AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent);
+	public abstract Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException;
 
 }

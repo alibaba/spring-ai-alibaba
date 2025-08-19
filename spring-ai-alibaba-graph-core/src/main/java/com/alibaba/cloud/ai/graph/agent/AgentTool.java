@@ -16,6 +16,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -23,31 +24,38 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class AgentTool implements BiFunction<OverAllState, ToolContext, OverAllState> {
-	private ReactAgent agent;
+public class AgentTool implements BiFunction<String, ToolContext, String> {
+	private final ReactAgent agent;
 
 	public AgentTool(ReactAgent agent) {
 		this.agent = agent;
 	}
 
 	@Override
-	public OverAllState apply(OverAllState s, ToolContext toolContext) {
+	public String apply(@ToolParam(description = "The original user query that triggered this tool call") String originalUserQuery, ToolContext toolContext) {
 		OverAllState state = (OverAllState)toolContext.getContext().get("state");
-		Optional<OverAllState> resultState = null;
+		String toolResult = "";
 		try {
-			resultState = agent.getCompiledGraph().invoke(state.data());
-			return resultState.orElseThrow(() -> new RuntimeException("Failed to run agent: " + agent.name()));
+			Optional<OverAllState> resultState = agent.getAndCompileGraph().invoke(state.data());
+			Optional<List> messages = resultState.flatMap(overAllState -> overAllState.value("messages", List.class));
+			if (messages.isPresent()) {
+				@SuppressWarnings("unchecked")
+				List<Message> messageList = (List<Message>) messages.get();
+				// 使用 messageList
+				Message toolResponseMessage = messageList.get(messageList.size() - 1);
+				toolResult = toolResponseMessage.getText();
+			}
 		}
-		catch (GraphRunnerException e) {
+		catch (GraphRunnerException | GraphStateException e) {
 			throw new RuntimeException(e);
 		}
-		catch (GraphStateException e) {
-			throw new RuntimeException(e);
-		}
+		return toolResult;
 	}
 
 	public static AgentTool create(ReactAgent agent) {
@@ -57,7 +65,7 @@ public class AgentTool implements BiFunction<OverAllState, ToolContext, OverAllS
 	public static ToolCallback getFunctionToolCallback(ReactAgent agent) {
 		return FunctionToolCallback.builder(agent.name(), AgentTool.create(agent))
 				.description(agent.description())
-				.inputType(OverAllState.class)
+				.inputType(String.class)
 				.build();
 	}
 }

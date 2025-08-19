@@ -21,8 +21,10 @@ import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -155,9 +157,9 @@ public class LlmNode implements NodeAction {
 
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec() {
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-			.messages(messages)
-			.advisors(advisors)
-			.toolCallbacks(toolCallbacks);
+				.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).internalToolExecutionEnabled(false).build())
+				.messages(messages)
+				.advisors(advisors);
 
 		if (StringUtils.hasLength(systemPrompt)) {
 			if (!params.isEmpty()) {

@@ -87,7 +87,6 @@ public class ReactAgent extends BaseAgent {
 		this.description = builder.description;
 		this.instruction = builder.instruction;
 		this.outputKey = builder.outputKey;
-		this.subAgents = builder.subAgents != null ? builder.subAgents : List.of();
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
 		this.keyStrategyFactory = builder.keyStrategyFactory;
@@ -136,13 +135,16 @@ public class ReactAgent extends BaseAgent {
 		return this.compiledGraph;
 	}
 
-	public NodeAction asNodeAction(String inputKeyFromParent, String outputKeyToParent) {
+	public NodeAction asNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException {
+		if (this.compiledGraph == null) {
+			this.compiledGraph = getAndCompileGraph();
+		}
 		return new SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph);
 	}
 
-	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) {
+	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException {
 		if (this.compiledGraph == null) {
-			throw new IllegalStateException("ReactAgent not compiled yet");
+			this.compiledGraph = getAndCompileGraph();
 		}
 		return node_async(new SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
 	}
@@ -221,12 +223,6 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		return "end";
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public List<ReactAgent> subAgents() {
-		return (List<ReactAgent>) subAgents;
 	}
 
 	public String instruction() {
@@ -311,8 +307,6 @@ public class ReactAgent extends BaseAgent {
 
 		private String outputKey;
 
-		private List<ReactAgent> subAgents;
-
 		private ChatModel model;
 
 		private ChatOptions chatOptions;
@@ -346,6 +340,16 @@ public class ReactAgent extends BaseAgent {
 
 		public Builder chatClient(ChatClient chatClient) {
 			this.chatClient = chatClient;
+			return this;
+		}
+
+		public Builder model(ChatModel model) {
+			this.model = model;
+			return this;
+		}
+
+		public Builder chatOptions(ChatOptions chatOptions) {
+			this.chatOptions = chatOptions;
 			return this;
 		}
 
@@ -383,8 +387,8 @@ public class ReactAgent extends BaseAgent {
 			return this;
 		}
 
-		public Builder subAgents(List<ReactAgent> subAgents) {
-			this.subAgents = subAgents;
+		public Builder instruction(String instruction) {
+			this.instruction = instruction;
 			return this;
 		}
 
@@ -425,9 +429,6 @@ public class ReactAgent extends BaseAgent {
 				if (instruction != null) {
 					clientBuilder.defaultSystem(instruction);
 				}
-				if (CollectionUtils.isNotEmpty(tools)) {
-					clientBuilder.defaultToolCallbacks(tools);
-				}
 				chatClient = clientBuilder.build();
 			}
 
@@ -436,6 +437,7 @@ public class ReactAgent extends BaseAgent {
 				llmNodeBuilder.toolCallbacks(tools);
 			}
 			LlmNode llmNode = llmNodeBuilder.build();
+
 			ToolNode toolNode = null;
 			if (resolver != null) {
 				toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
@@ -444,7 +446,7 @@ public class ReactAgent extends BaseAgent {
 				toolNode = ToolNode.builder().toolCallbacks(tools).build();
 			}
 			else {
-				throw new IllegalArgumentException("Either tools or resolver must be provided");
+				toolNode = ToolNode.builder().build();
 			}
 
 			return new ReactAgent(llmNode, toolNode, this);
@@ -460,7 +462,7 @@ public class ReactAgent extends BaseAgent {
 
 		private CompiledGraph childGraph;
 
-		SubGraphNodeAdapter(String inputKeyFromParent, String outputKeyToParent, CompiledGraph childGraph) {
+		public SubGraphNodeAdapter(String inputKeyFromParent, String outputKeyToParent, CompiledGraph childGraph) {
 			this.inputKeyFromParent = inputKeyFromParent;
 			this.outputKeyToParent = outputKeyToParent;
 			this.childGraph = childGraph;

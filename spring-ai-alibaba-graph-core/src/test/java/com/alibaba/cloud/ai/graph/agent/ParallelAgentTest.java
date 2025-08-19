@@ -22,21 +22,20 @@ import java.util.Optional;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.agent.flow.ParallelAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.SequentialAgent;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
-class AgentToolTest {
+class ParallelAgentTest {
 
 	private ChatModel chatModel;
 
@@ -54,30 +53,44 @@ class AgentToolTest {
 	}
 
 	@Test
-	public void testAgentTool() throws Exception {
+	public void testParallelAgent() throws Exception {
+		KeyStrategyFactory stateFactory = () -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("input", new ReplaceStrategy());
+			keyStrategyHashMap.put("topic", new ReplaceStrategy());
+			keyStrategyHashMap.put("article", new ReplaceStrategy());
+			keyStrategyHashMap.put("reviewed_article", new ReplaceStrategy());
+			return keyStrategyHashMap;
+		};
+
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_agent")
 				.model(chatModel)
-				.description("可以写文章。")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+				.description("可以写散文。")
+				.instruction("你是一个知名的作家，擅长散文。请根据用户的提问进行回答。")
+				.outputKey("article")
 				.build();
 
-		ReactAgent reviewerAgent = ReactAgent.builder()
-				.name("reviewer_agent")
+		ReactAgent writerAgent2 = ReactAgent.builder()
+				.name("writer_agent2")
 				.model(chatModel)
-				.description("可以对文章进行评论和修改。")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
+				.description("可以写文章。")
+				.instruction("你是一个知名的作家，擅长叙事小说。请根据用户的提问进行回答。")
+				.outputKey("poem")
 				.build();
 
-		ReactAgent blogAgent = ReactAgent.builder()
+		ParallelAgent blogAgent = ParallelAgent.builder()
 				.name("blog_agent")
 				.model(chatModel)
-				.instruction("首先，根据用户给定的主题写一篇文章，然后将文章交给评论员进行审核，必要时做出修改。")
-				.tools(List.of(AgentTool.getFunctionToolCallback(writerAgent), AgentTool.getFunctionToolCallback(reviewerAgent)))
+				.state(stateFactory)
+				.description("可以根据用户给定的主题写一篇文章。")
+				.inputKey("input")
+				.outputKey("topic")
+				.subAgents(List.of(writerAgent, writerAgent2))
 				.build();
 
 		try {
-			Optional<OverAllState> result = blogAgent.invoke(Map.of("messages", List.of(new UserMessage("帮我写一个100字左右的散文"))));
+			Optional<OverAllState> result = blogAgent.invoke(Map.of("input", "帮我写一个100字左右的文章，主题任定。"));
 			System.out.println(result.get());
 		}
 		catch (java.util.concurrent.CompletionException e) {
