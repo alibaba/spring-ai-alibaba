@@ -20,7 +20,6 @@ import com.alibaba.cloud.ai.entity.AgentPresetQuestion;
 import com.alibaba.cloud.ai.service.AgentPresetQuestionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,11 +33,14 @@ public class AgentPresetQuestionController {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentPresetQuestionController.class);
 
-	@Autowired
-	private AgentPresetQuestionService presetQuestionService;
+	private final AgentPresetQuestionService presetQuestionService;
+
+	public AgentPresetQuestionController(AgentPresetQuestionService presetQuestionService) {
+		this.presetQuestionService = presetQuestionService;
+	}
 
 	/**
-	 * 获取智能体的预设问题列表
+	 * Get preset question list of agent
 	 */
 	@GetMapping("/{agentId}/preset-questions")
 	public ResponseEntity<List<AgentPresetQuestion>> getPresetQuestions(@PathVariable Long agentId) {
@@ -53,13 +55,13 @@ public class AgentPresetQuestionController {
 	}
 
 	/**
-	 * 批量保存智能体的预设问题
+	 * Batch save preset questions of agent
 	 */
 	@PostMapping("/{agentId}/preset-questions")
 	public ResponseEntity<Map<String, String>> savePresetQuestions(@PathVariable Long agentId,
 			@RequestBody List<Map<String, String>> questionsData) {
 		try {
-			// 转换为实体对象
+			// Convert to entity object
 			List<AgentPresetQuestion> questions = questionsData.stream().map(data -> {
 				AgentPresetQuestion question = new AgentPresetQuestion();
 				question.setQuestion(data.get("question"));
@@ -76,7 +78,7 @@ public class AgentPresetQuestionController {
 	}
 
 	/**
-	 * 删除预设问题
+	 * Delete preset question
 	 */
 	@DeleteMapping("/{agentId}/preset-questions/{questionId}")
 	public ResponseEntity<Map<String, String>> deletePresetQuestion(@PathVariable Long agentId,

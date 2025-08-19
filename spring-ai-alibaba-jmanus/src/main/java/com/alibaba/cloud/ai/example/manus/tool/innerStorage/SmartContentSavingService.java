@@ -181,7 +181,7 @@ public class SmartContentSavingService implements ISmartContentSavingService {
 						### Operation 1: Use inner_storage_content_tool to get specific content
 						```json
 						{
-						  "action": "get_content",
+						  "action": "extract_relevant_content",
 						  "file_name": "%s",
 						  "query_key": "Keywords or questions you want to query, be specific and don't miss any requirements from user requests"
 						}

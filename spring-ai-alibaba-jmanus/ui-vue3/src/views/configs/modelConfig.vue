@@ -143,12 +143,22 @@
         <div class="form-item">
           <label>{{ t('config.modelConfig.apiKey') }} <span class="required">*</span></label>
           <div class="api-key-container">
-            <input
-              type="text"
-              v-model="selectedModel.apiKey"
-              :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
-              required
-            />
+            <div class="api-key-input-wrapper">
+              <input
+                :type="showSelectedApiKey ? 'text' : 'password'"
+                v-model="selectedModel.apiKey"
+                :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
+                required
+              />
+              <button
+                type="button"
+                class="api-key-toggle-btn"
+                @click="showSelectedApiKey = !showSelectedApiKey"
+                :title="showSelectedApiKey ? t('config.modelConfig.hideApiKey') : t('config.modelConfig.showApiKey')"
+              >
+                <Icon :icon="showSelectedApiKey ? 'carbon:view-off' : 'carbon:view'" />
+              </button>
+            </div>
             <button
               class="check-btn"
               @click="handleValidateConfig"
@@ -217,6 +227,15 @@
             max="1"
           />
         </div>
+
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.completionsPath') }}</label>
+          <input
+              type="text"
+              v-model="selectedModel.completionsPath"
+              :placeholder="t('config.modelConfig.completionsPathPlaceholder')"
+          />
+        </div>
       </div>
 
       <!-- Empty state -->
@@ -259,12 +278,22 @@
         <div class="form-item">
           <label>{{ t('config.modelConfig.apiKey') }} <span class="required">*</span></label>
           <div class="api-key-container">
-            <input
-              type="text"
-              v-model="newModel.apiKey"
-              :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
-              required
-            />
+            <div class="api-key-input-wrapper">
+              <input
+                :type="showNewApiKey ? 'text' : 'password'"
+                v-model="newModel.apiKey"
+                :placeholder="t('config.modelConfig.apiKeyPlaceholder')"
+                required
+              />
+              <button
+                type="button"
+                class="api-key-toggle-btn"
+                @click="showNewApiKey = !showNewApiKey"
+                :title="showNewApiKey ? t('config.modelConfig.hideApiKey') : t('config.modelConfig.showApiKey')"
+              >
+                <Icon :icon="showNewApiKey ? 'carbon:view-off' : 'carbon:view'" />
+              </button>
+            </div>
             <button
               class="check-btn"
               @click="handleNewModelValidateConfig"
@@ -331,6 +360,15 @@
             max="1"
           />
         </div>
+
+        <div class="form-item">
+          <label>{{ t('config.modelConfig.completionsPath') }}</label>
+          <input
+              type="text"
+              v-model="newModel.completionsPath"
+              :placeholder="t('config.modelConfig.completionsPathPlaceholder')"
+          />
+        </div>
       </div>
     </Modal>
 
@@ -368,7 +406,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted,computed } from 'vue'
-// 其余代码保持不变
+// Rest of the code remains unchanged
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import ConfigPanel from './components/configPanel.vue'
@@ -391,11 +429,15 @@ const showModal = ref(false)
 const showDeleteModal = ref(false)
 const validating = ref(false)
 const settingDefault = ref(false)
-// 为每个模型存储独立的可用模型列表
+// Store independent available model lists for each model
 const modelAvailableModels = ref<Map<string, Model[]>>(new Map())
-// 新建Model弹窗的验证状态和可用模型列表
+// Validation state and available model list for new Model modal
 const newModelValidating = ref(false)
 const newModelAvailableModels = ref<Model[]>([])
+
+// API key visibility state
+const showSelectedApiKey = ref(false)
+const showNewApiKey = ref(false)
 
 const selectedHeadersJson = computed({
   get() {
@@ -404,7 +446,7 @@ const selectedHeadersJson = computed({
   },
   set(val) {
       if (!selectedModel.value) return
-      // 空值处理
+      // Handle empty values
       selectedModel.value.headers = val.trim() ? JSON.parse(val) : null
     }
 })
@@ -441,7 +483,7 @@ const showMessage = (msg: string, type: 'success' | 'error' | 'info') => {
       error.value = ''
     }, 5000)
   } else if (type === 'info') {
-    // 显示信息消息，使用success样式但时间短一些
+    // Show info message, use success style but shorter duration
     success.value = msg
     setTimeout(() => {
       success.value = ''
@@ -470,7 +512,7 @@ const loadData = async () => {
       await selectModel(normalizedModels[0])
     }
   } catch (err: any) {
-    console.error('加载数据失败:', err)
+    console.error('Failed to load data:', err)
     showMessage(t('config.modelConfig.loadDataFailed') + ': ' + err.message, 'error')
   } finally {
     loading.value = false
@@ -485,10 +527,12 @@ const selectModel = async (model: Model) => {
     selectedModel.value = {
       ...detailedModel,
     }
-    // 切换模型时，清除验证状态，但保留该模型的可用模型列表
+    // When switching models, clear validation state but keep available model list for that model
     validating.value = false
+    // Reset API key visibility when switching models
+    showSelectedApiKey.value = false
   } catch (err: any) {
-    console.error('加载Model详情失败:', err)
+    console.error('Failed to load Model details:', err)
     showMessage(t('config.modelConfig.loadDetailsFailed') + ': ' + err.message, 'error')
     // Use basic information as a fallback
     selectedModel.value = {
@@ -507,13 +551,15 @@ const showAddModelModal = () => {
   newModel.type = ''
   delete newModel.temperature
   delete newModel.topP
-  // 清除新建Model弹窗的状态
+  // Clear new Model modal state
   newModelValidating.value = false
   newModelAvailableModels.value = []
+  // Reset API key visibility
+  showNewApiKey.value = false
   showModal.value = true
 }
 
-// 验证配置
+// Validate configuration
 const handleValidateConfig = async () => {
   if (!selectedModel.value?.baseUrl || !selectedModel.value?.apiKey) {
     showMessage(t('config.modelConfig.pleaseEnterBaseUrlAndApiKey'), 'error')
@@ -529,11 +575,11 @@ const handleValidateConfig = async () => {
 
     if (result.valid) {
       showMessage(t('config.modelConfig.validationSuccess') + ` - ${t('config.modelConfig.getModelsCount', { count: result.availableModels?.length || 0 })}`, 'success')
-      // 为当前选中的模型保存独立的可用模型列表
+      // Save independent available model list for currently selected model
       if (selectedModel.value?.id) {
         modelAvailableModels.value.set(selectedModel.value.id, result.availableModels || [])
       }
-      // 如果有可用模型，自动选择第一个并填充描述
+      // If available models exist, auto-select first one and fill description
       if (result.availableModels && result.availableModels.length > 0) {
         selectedModel.value.modelName = result.availableModels[0].modelName
         selectedModel.value.modelDescription =  getModelDescription(result.availableModels[0].modelName)
@@ -548,7 +594,7 @@ const handleValidateConfig = async () => {
   }
 }
 
-// 获取模型分类
+// Get model category
 const getModelCategory = (modelName: string): string => {
   const name = modelName.toLowerCase()
   if (name.includes('turbo')) return 'Turbo'
@@ -561,20 +607,20 @@ const getModelCategory = (modelName: string): string => {
   return 'Standard'
 }
 
-// 获取模型描述
+// Get model description
 const getModelDescription = (modelName: string): string => {
   const name = modelName.toLowerCase()
-  if (name.includes('turbo')) return 'Turbo 模型，快速响应'
-  if (name.includes('plus')) return 'Plus 模型，平衡性能'
-  if (name.includes('max')) return 'Max 模型，最强性能'
-  if (name.includes('coder') || name.includes('code')) return 'Coder 模型，代码生成专用'
-  if (name.includes('math')) return 'Math 模型，数学计算专用'
-  if (name.includes('vision') || name.includes('vl')) return 'Vision 模型，视觉理解专用'
-  if (name.includes('tts')) return 'TTS 模型，文本转语音专用'
-  return '标准模型'
+  if (name.includes('turbo')) return 'Turbo model, fast response'
+  if (name.includes('plus')) return 'Plus model, balanced performance'
+  if (name.includes('max')) return 'Max model, strongest performance'
+  if (name.includes('coder') || name.includes('code')) return 'Coder model, specialized for code generation'
+  if (name.includes('math')) return 'Math model, specialized for mathematical calculations'
+  if (name.includes('vision') || name.includes('vl')) return 'Vision model, specialized for visual understanding'
+  if (name.includes('tts')) return 'TTS model, specialized for text-to-speech'
+  return 'Standard model'
 }
 
-// 获取当前选中模型的可用模型列表
+// Get available model list for currently selected model
 const getCurrentAvailableModels = (): Model[] => {
   if (!selectedModel.value?.id) {
     return []
@@ -582,10 +628,10 @@ const getCurrentAvailableModels = (): Model[] => {
   return modelAvailableModels.value.get(selectedModel.value.id) || []
 }
 
-// 处理模型选择
+// Handle model selection
 const handleModelSelection = (selectedModelName: string) => {
   if (selectedModel.value && selectedModelName) {
-    // 从可用模型列表中找到对应的模型，使用其description
+    // Find corresponding model from available model list, use its description
     const availableModels = getCurrentAvailableModels()
     const selectedModelData = availableModels.find(model => model.modelName === selectedModelName)
     if (selectedModelData) {
@@ -594,7 +640,7 @@ const handleModelSelection = (selectedModelName: string) => {
   }
 }
 
-// 新建Model弹窗的验证配置
+// Validate configuration for new Model modal
 const handleNewModelValidateConfig = async () => {
   if (!newModel.baseUrl || !newModel.apiKey) {
     showMessage(t('config.modelConfig.pleaseEnterBaseUrlAndApiKey'), 'error')
@@ -610,9 +656,9 @@ const handleNewModelValidateConfig = async () => {
 
     if (result.valid) {
       showMessage(t('config.modelConfig.validationSuccess') + ` - ${t('config.modelConfig.getModelsCount', { count: result.availableModels?.length || 0 })}`, 'success')
-      // 保存可用模型列表
+      // Save available model list
       newModelAvailableModels.value = result.availableModels || []
-      // 如果有可用模型，自动选择第一个并填充描述
+      // If available models exist, auto-select first one and fill description
       if (result.availableModels && result.availableModels.length > 0) {
         newModel.modelName = result.availableModels[0].modelName
         newModel.modelDescription =  getModelDescription(result.availableModels[0].modelName)
@@ -627,10 +673,10 @@ const handleNewModelValidateConfig = async () => {
   }
 }
 
-// 处理新建Model的模型选择
+// Handle model selection for new Model
 const handleNewModelSelection = (selectedModelName: string) => {
   if (selectedModelName) {
-    // 从可用模型列表中找到对应的模型，使用其description
+    // Find corresponding model from available model list, use its description
     const selectedModelData = newModelAvailableModels.value.find(model => model.modelName === selectedModelName)
     if (selectedModelData) {
       newModel.modelDescription = getModelDescription(selectedModelName)
@@ -645,15 +691,15 @@ const handleAddModel = async () => {
     return
   }
 
-  // 强制校验API Key可用性
+  // Force validate API Key availability
   if (!newModel.baseUrl.trim() || !newModel.apiKey.trim()) {
     showMessage(t('config.modelConfig.pleaseEnterBaseUrlAndApiKey'), 'error')
     return
   }
 
-  // 在创建前必须先校验API Key可用性
+  // Must validate API Key availability before creating
   showMessage(t('config.modelConfig.validatingBeforeSave'), 'info')
-  
+
   try {
     const validationResult = await ModelApiService.validateConfig({
       baseUrl: newModel.baseUrl.trim(),
@@ -679,6 +725,7 @@ const handleAddModel = async () => {
       type: newModel.type.trim(),
       temperature: isNaN(newModel.temperature!) ? null : newModel.temperature,
       topP: isNaN(newModel.topP!) ? null : newModel.topP,
+      completionsPath: newModel.completionsPath?.trim()
     } as Omit<Model, 'id'>
 
     const createdModel = await ModelApiService.createModel(modelData)
@@ -700,19 +747,19 @@ const handleSave = async () => {
     return
   }
 
-  // 强制校验API Key可用性
+  // Force validate API Key availability
   if (!selectedModel.value.baseUrl || !selectedModel.value.apiKey) {
     showMessage(t('config.modelConfig.pleaseEnterBaseUrlAndApiKey'), 'error')
     return
   }
 
-  // 如果API Key被修改了（不包含*），需要重新校验
-  const needsValidation = !selectedModel.value.apiKey.includes('*') || 
+  // If API Key was modified (doesn't contain *), need to re-validate
+  const needsValidation = !selectedModel.value.apiKey.includes('*') ||
     !modelAvailableModels.value.has(selectedModel.value.id)
 
   if (needsValidation) {
     showMessage(t('config.modelConfig.validatingBeforeSave'), 'info')
-    
+
     try {
       const validationResult = await ModelApiService.validateConfig({
         baseUrl: selectedModel.value.baseUrl,
@@ -724,7 +771,7 @@ const handleSave = async () => {
         return
       }
 
-      // 校验成功，更新可用模型列表
+      // Validation successful, update available model list
       modelAvailableModels.value.set(selectedModel.value.id, validationResult.availableModels || [])
     } catch (err: any) {
       showMessage(t('config.modelConfig.validationFailedCannotSave') + ': ' + err.message, 'error')
@@ -733,13 +780,13 @@ const handleSave = async () => {
   }
 
   try {
-    // 处理NaN值，转换为null以便正确序列化和传输
+    // Handle NaN values, convert to null for proper serialization and transmission
     const modelToSave = {
       ...selectedModel.value,
       temperature: isNaN(selectedModel.value.temperature!) ? null : selectedModel.value.temperature,
       topP: isNaN(selectedModel.value.topP!) ? null : selectedModel.value.topP,
     }
-    
+
     const savedModel = await ModelApiService.updateModel(
       selectedModel.value.id,
       modelToSave as Model
@@ -1134,7 +1181,7 @@ onMounted(() => {
   }
 }
 
-/* 弹窗样式 */
+/* Modal styles */
 .modal-form {
   display: flex;
   flex-direction: column;
@@ -1259,8 +1306,44 @@ onMounted(() => {
   align-items: center;
 }
 
-.api-key-container input {
+.api-key-input-wrapper {
+  position: relative;
   flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.api-key-input-wrapper input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.api-key-toggle-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.api-key-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.api-key-toggle-btn:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 1);
 }
 
 .check-btn {
@@ -1300,7 +1383,7 @@ onMounted(() => {
   }
 }
 
-/* 提示消息 */
+/* Toast messages */
 .error-toast,
 .success-toast {
   position: fixed;

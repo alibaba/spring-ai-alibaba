@@ -15,11 +15,8 @@
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
 
     <modules>
-        <module>spring-ai-alibaba-mcp-discovery</module>
-        <module>spring-ai-alibaba-mcp-register</module>
+        <module>spring-ai-alibaba-mcp-registry</module>
         <module>spring-ai-alibaba-mcp-common</module>
-        <module>spring-ai-alibaba-mcp-gateway</module>
-        <module>spring-ai-alibaba-mcp-recovery</module>
         <module>spring-ai-alibaba-mcp-router</module>
     </modules>
 

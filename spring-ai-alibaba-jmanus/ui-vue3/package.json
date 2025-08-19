@@ -21,7 +21,9 @@
     "refactor:check": "pnpm run type-check && pnpm run lint:check",
     "refactor:fix": "pnpm run lint && pnpm run format",
     "check:all": "pnpm run type-check && pnpm run lint:check && pnpm run test:unit",
-    "dev:strict": "vite --mode development"
+    "dev:strict": "vite --mode development",
+    "check:chinese": "python3 scripts/check-chinese-content.py --dir src",
+    "check:chinese:fail": "python3 scripts/check-chinese-content.py --dir src --fail-on-found"
   },
   "dependencies": {
     "@ant-design/icons-vue": "^7.0.1",
@@ -30,7 +32,10 @@
     "ant-design-vue": "^4.0.8",
     "axios": "^1.6.2",
     "dayjs": "^1.11.10",
+    "dompurify": "^3.2.6",
     "lodash": "^4.17.21",
+    "marked": "^16.1.2",
+    "highlight.js": "^11.11.1",
     "monaco-editor": "^0.45.0",
     "nprogress": "^0.2.0",
     "pinia": "^2.3.1",

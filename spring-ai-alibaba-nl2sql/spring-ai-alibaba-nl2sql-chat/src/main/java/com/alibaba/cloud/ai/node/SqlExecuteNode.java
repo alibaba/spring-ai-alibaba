@@ -21,9 +21,13 @@ import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.connector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.constant.Constant;
+
 import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.model.execution.ExecutionStep;
+import com.alibaba.cloud.ai.service.DatasourceService;
+import com.alibaba.cloud.ai.entity.AgentDatasource;
+import com.alibaba.cloud.ai.entity.Datasource;
 import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StepResultUtils;
@@ -34,6 +38,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE_EXCEPTION_OUTPUT;
@@ -52,14 +57,14 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 	private static final Logger logger = LoggerFactory.getLogger(SqlExecuteNode.class);
 
-	private final DbConfig dbConfig;
-
 	private final Accessor dbAccessor;
 
-	public SqlExecuteNode(Accessor dbAccessor, DbConfig dbConfig) {
+	private final DatasourceService datasourceService;
+
+	public SqlExecuteNode(Accessor dbAccessor, DatasourceService datasourceService) {
 		super();
 		this.dbAccessor = dbAccessor;
-		this.dbConfig = dbConfig;
+		this.datasourceService = datasourceService;
 	}
 
 	@Override
@@ -75,7 +80,83 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 		logger.info("Executing SQL query: {}", sqlQuery);
 		logger.info("Step description: {}", toolParameters.getDescription());
 
-		return executeSqlQuery(state, currentStep, sqlQuery);
+		// Dynamically get the data source configuration for an agent
+		DbConfig dbConfig = getAgentDbConfig(state);
+
+		return executeSqlQuery(state, currentStep, sqlQuery, dbConfig);
+	}
+
+	/**
+	 * Dynamically get the data source configuration for an agent
+	 * @param state The state object containing the agent ID
+	 * @return The database configuration corresponding to the agent
+	 * @throws RuntimeException If the agent has no enabled data source configured
+	 */
+	private DbConfig getAgentDbConfig(OverAllState state) {
+		try {
+			// Get the agent ID from the state
+			String agentIdStr = StateUtils.getStringValue(state, Constant.AGENT_ID);
+			if (agentIdStr == null || agentIdStr.trim().isEmpty()) {
+				throw new RuntimeException("未找到智能体ID，无法获取数据源配置");
+			}
+
+			Integer agentId = Integer.valueOf(agentIdStr);
+			logger.info("Getting datasource config for agent: {}", agentId);
+
+			// Get the enabled data source for the agent
+			List<AgentDatasource> agentDatasources = datasourceService.getAgentDatasources(agentId);
+			if (agentDatasources.size() == 0) {
+				// TODO 调试AgentID不一致，暂时手动处理
+				agentDatasources = datasourceService.getAgentDatasources(agentId - 999999);
+			}
+			AgentDatasource activeDatasource = agentDatasources.stream()
+				.filter(ad -> ad.getIsActive() == 1)
+				.findFirst()
+				.orElseThrow(() -> new RuntimeException("智能体 " + agentId + " 未配置启用的数据源"));
+
+			// Convert to DbConfig
+			DbConfig dbConfig = createDbConfigFromDatasource(activeDatasource.getDatasource());
+			logger.info("Successfully created DbConfig for agent {}: url={}, schema={}, type={}", agentId,
+					dbConfig.getUrl(), dbConfig.getSchema(), dbConfig.getDialectType());
+
+			return dbConfig;
+		}
+		catch (Exception e) {
+			logger.error("Failed to get agent datasource config", e);
+			throw new RuntimeException("获取智能体数据源配置失败: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Create database configuration from data source entity
+	 * @param datasource The data source entity
+	 * @return The database configuration object
+	 */
+	private DbConfig createDbConfigFromDatasource(Datasource datasource) {
+		DbConfig dbConfig = new DbConfig();
+
+		// Set basic connection information
+		dbConfig.setUrl(datasource.getConnectionUrl());
+		dbConfig.setUsername(datasource.getUsername());
+		dbConfig.setPassword(datasource.getPassword());
+
+		// Set database type
+		if ("mysql".equalsIgnoreCase(datasource.getType())) {
+			dbConfig.setConnectionType("jdbc");
+			dbConfig.setDialectType("mysql");
+		}
+		else if ("postgresql".equalsIgnoreCase(datasource.getType())) {
+			dbConfig.setConnectionType("jdbc");
+			dbConfig.setDialectType("postgresql");
+		}
+		else {
+			throw new RuntimeException("不支持的数据库类型: " + datasource.getType());
+		}
+
+		// Set Schema to the database name of the data source
+		dbConfig.setSchema(datasource.getDatabaseName());
+
+		return dbConfig;
 	}
 
 	/**
@@ -87,10 +168,12 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 	 * @param state The overall state containing execution context
 	 * @param currentStep The current step number in the execution plan
 	 * @param sqlQuery The SQL query to execute
+	 * @param dbConfig The database configuration to use for execution
 	 * @return Map containing the generator for streaming output
 	 */
 	@SuppressWarnings("unchecked")
-	private Map<String, Object> executeSqlQuery(OverAllState state, Integer currentStep, String sqlQuery) {
+	private Map<String, Object> executeSqlQuery(OverAllState state, Integer currentStep, String sqlQuery,
+			DbConfig dbConfig) {
 		// Execute business logic first - actual SQL execution
 		DbQueryParameter dbQueryParameter = new DbQueryParameter();
 		dbQueryParameter.setSql(sqlQuery);
@@ -109,16 +192,16 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 					resultSetBO.getData() != null ? resultSetBO.getData().size() : 0);
 
 			// Prepare the final result object
-			// 将SQL查询结果的List存储起来，供代码运行节点使用
+			// Store List of SQL query results for use by code execution node
 			Map<String, Object> result = Map.of(SQL_EXECUTE_NODE_OUTPUT, updatedResults,
 					SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, "", Constant.SQL_RESULT_LIST_MEMORY, resultSetBO.getData());
 
 			// Create display flux for user experience only
 			Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("开始执行SQL..."));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("执行SQL查询"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("```" + sqlQuery + "```"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("执行SQL完成"));
+				emitter.next(ChatResponseUtil.createStatusResponse("开始执行SQL..."));
+				emitter.next(ChatResponseUtil.createStatusResponse("执行SQL查询"));
+				emitter.next(ChatResponseUtil.createStatusResponse("```" + sqlQuery + "```"));
+				emitter.next(ChatResponseUtil.createStatusResponse("执行SQL完成"));
 				emitter.complete();
 			});
 
@@ -138,9 +221,9 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 			// Create error display flux
 			Flux<ChatResponse> errorDisplayFlux = Flux.create(emitter -> {
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("开始执行SQL..."));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("执行SQL查询"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("SQL执行失败: " + errorMessage));
+				emitter.next(ChatResponseUtil.createStatusResponse("开始执行SQL..."));
+				emitter.next(ChatResponseUtil.createStatusResponse("执行SQL查询"));
+				emitter.next(ChatResponseUtil.createStatusResponse("SQL执行失败: " + errorMessage));
 				emitter.complete();
 			});
 

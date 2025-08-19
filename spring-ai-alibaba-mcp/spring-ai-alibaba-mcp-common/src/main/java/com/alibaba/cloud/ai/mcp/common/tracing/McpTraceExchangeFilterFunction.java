@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.mcp.common.tracing;
 
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
@@ -24,7 +23,6 @@ import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Method;
 
-@Component
 public class McpTraceExchangeFilterFunction implements ExchangeFilterFunction {
 
 	private final Object tracer;

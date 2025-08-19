@@ -93,7 +93,26 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 	 * @return agent configuration
 	 */
 	public AgentConfig loadAgentConfig(String agentName) {
-		String configPath = CONFIG_BASE_PATH + agentName.toLowerCase() + "/agent-config.yml";
+		return loadAgentConfig(agentName, null);
+	}
+
+	/**
+	 * Load agent configuration information with language support
+	 * @param agentName agent name
+	 * @param language language code (optional, if null uses default path)
+	 * @return agent configuration
+	 */
+	public AgentConfig loadAgentConfig(String agentName, String language) {
+		String configPath;
+		if (language != null && !language.trim().isEmpty()) {
+			// Multi-language path: prompts/startup-agents/zh/agent_name/agent-config.yml
+			configPath = CONFIG_BASE_PATH + language + "/" + agentName.toLowerCase() + "/agent-config.yml";
+		}
+		else {
+			// Default path: prompts/startup-agents/agent_name/agent-config.yml
+			configPath = CONFIG_BASE_PATH + agentName.toLowerCase() + "/agent-config.yml";
+		}
+
 		String configContent = loadConfigContent(configPath);
 
 		if (configContent.isEmpty()) {
@@ -114,6 +133,15 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 			config.setAgentName((String) yamlData.getOrDefault("agentName", agentName));
 			config.setAgentDescription((String) yamlData.getOrDefault("agentDescription", ""));
 			config.setNextStepPrompt((String) yamlData.getOrDefault("nextStepPrompt", ""));
+
+			// Parse builtIn field (default: false)
+			Object builtInObj = yamlData.get("builtIn");
+			if (builtInObj instanceof Boolean) {
+				config.setBuiltIn((Boolean) builtInObj);
+			}
+			else {
+				config.setBuiltIn(false); // Default: not built-in (deletable)
+			}
 
 			// Process tool list
 			Object toolKeysObj = yamlData.get("availableToolKeys");
@@ -198,6 +226,8 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 
 		private List<String> availableToolKeys;
 
+		private Boolean builtIn = false; // Default: not built-in (deletable)
+
 		// Getters and Setters
 		public String getAgentName() {
 			return agentName;
@@ -229,6 +259,14 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 
 		public void setAvailableToolKeys(List<String> availableToolKeys) {
 			this.availableToolKeys = availableToolKeys;
+		}
+
+		public Boolean getBuiltIn() {
+			return builtIn;
+		}
+
+		public void setBuiltIn(Boolean builtIn) {
+			this.builtIn = builtIn;
 		}
 
 	}

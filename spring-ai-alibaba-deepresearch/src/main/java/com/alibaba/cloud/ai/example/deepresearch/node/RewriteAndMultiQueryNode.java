@@ -72,7 +72,7 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 		Query rewriteQuery = queryTransformer.transform(query);
 
 		// 查询拓展
-		int optimizeQueryNum = state.value("optimize_query_num", 3);
+		int optimizeQueryNum = StateUtil.getOptimizeQueryNum(state);
 		optimizeQueryNum = Math.max(MinOptimizeQueryNum, Math.min(MaxOptimizeQueryNum, optimizeQueryNum));
 		QueryExpander queryExpander = MultiQueryExpander.builder()
 			.chatClientBuilder(rewriteAndMultiQueryAgentBuilder)
@@ -83,15 +83,12 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 		List<Query> multiQueries = queryExpander.expand(rewriteQuery);
 		List<String> newQueries = multiQueries.stream().map(Query::text).collect(Collectors.toList());
 		updated.put("optimize_queries", newQueries);
-		// 判断是否需要背景调查
-		if (state.value("enable_background_investigation", true)) {
-			nextStep = "background_investigator";
-		}
-		else if (state.value("user_upload_file", false)) {
+		// 判断是否需要用户上传
+		if (state.value("user_upload_file", false)) {
 			nextStep = "user_file_rag";
 		}
 		else {
-			nextStep = "planner";
+			nextStep = "background_investigator";
 		}
 		updated.put("rewrite_multi_query_next_node", nextStep);
 		return updated;

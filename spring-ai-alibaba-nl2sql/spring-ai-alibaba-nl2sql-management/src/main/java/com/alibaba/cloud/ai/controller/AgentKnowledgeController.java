@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.entity.AgentKnowledge;
 import com.alibaba.cloud.ai.service.AgentKnowledgeService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.alibaba.cloud.ai.service.AgentVectorService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,18 +27,25 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 智能体知识管理控制器
+ * Agent Knowledge Management Controller
  */
 @RestController
 @RequestMapping("/api/agent-knowledge")
 @CrossOrigin(origins = "*")
 public class AgentKnowledgeController {
 
-	@Autowired
-	private AgentKnowledgeService agentKnowledgeService;
+	private final AgentKnowledgeService agentKnowledgeService;
+
+	private final AgentVectorService agentVectorService;
+
+	public AgentKnowledgeController(AgentKnowledgeService agentKnowledgeService,
+			AgentVectorService agentVectorService) {
+		this.agentKnowledgeService = agentKnowledgeService;
+		this.agentVectorService = agentVectorService;
+	}
 
 	/**
-	 * 根据智能体ID查询知识列表
+	 * Query knowledge list by agent ID
 	 */
 	@GetMapping("/agent/{agentId}")
 	public ResponseEntity<Map<String, Object>> getKnowledgeByAgentId(@PathVariable Integer agentId,
@@ -51,19 +58,19 @@ public class AgentKnowledgeController {
 			List<AgentKnowledge> knowledgeList;
 
 			if (keyword != null && !keyword.trim().isEmpty()) {
-				// 搜索知识
+				// Search knowledge
 				knowledgeList = agentKnowledgeService.searchKnowledge(agentId, keyword.trim());
 			}
 			else if (type != null && !type.trim().isEmpty()) {
-				// 按类型筛选
+				// Filter by type
 				knowledgeList = agentKnowledgeService.getKnowledgeByType(agentId, type);
 			}
 			else if (status != null && !status.trim().isEmpty()) {
-				// 按状态筛选
+				// Filter by status
 				knowledgeList = agentKnowledgeService.getKnowledgeByStatus(agentId, status);
 			}
 			else {
-				// 查询所有知识
+				// Query all knowledge
 				knowledgeList = agentKnowledgeService.getKnowledgeByAgentId(agentId);
 			}
 
@@ -81,7 +88,7 @@ public class AgentKnowledgeController {
 	}
 
 	/**
-	 * 根据ID查询知识详情
+	 * Query knowledge details by ID
 	 */
 	@GetMapping("/{id}")
 	public ResponseEntity<Map<String, Object>> getKnowledgeById(@PathVariable Integer id) {
@@ -108,14 +115,14 @@ public class AgentKnowledgeController {
 	}
 
 	/**
-	 * 创建知识
+	 * Create knowledge
 	 */
 	@PostMapping
 	public ResponseEntity<Map<String, Object>> createKnowledge(@RequestBody AgentKnowledge knowledge) {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
-			// 验证必填字段
+			// Validate required fields
 			if (knowledge.getAgentId() == null) {
 				response.put("success", false);
 				response.put("message", "智能体ID不能为空");
@@ -128,7 +135,28 @@ public class AgentKnowledgeController {
 				return ResponseEntity.badRequest().body(response);
 			}
 
+			// Create knowledge in database
 			AgentKnowledge createdKnowledge = agentKnowledgeService.createKnowledge(knowledge);
+
+			// If knowledge content is not empty and status is active, add to vector store
+			if (createdKnowledge.getContent() != null && !createdKnowledge.getContent().trim().isEmpty()
+					&& "active".equals(createdKnowledge.getStatus())) {
+				try {
+					agentVectorService.addKnowledgeToVector(Long.valueOf(createdKnowledge.getAgentId()),
+							createdKnowledge);
+					// Update embedding status to completed
+					createdKnowledge.setEmbeddingStatus("completed");
+					agentKnowledgeService.updateKnowledge(createdKnowledge.getId(), createdKnowledge);
+				}
+				catch (Exception vectorException) {
+					// Vector storage failed, update embedding status to failed
+					createdKnowledge.setEmbeddingStatus("failed");
+					agentKnowledgeService.updateKnowledge(createdKnowledge.getId(), createdKnowledge);
+					// Log but don't affect main process
+					response.put("vectorWarning", "知识已保存，但向量化失败：" + vectorException.getMessage());
+				}
+			}
+
 			response.put("success", true);
 			response.put("data", createdKnowledge);
 			response.put("message", "知识创建成功");
@@ -143,7 +171,7 @@ public class AgentKnowledgeController {
 	}
 
 	/**
-	 * 更新知识
+	 * Update knowledge
 	 */
 	@PutMapping("/{id}")
 	public ResponseEntity<Map<String, Object>> updateKnowledge(@PathVariable Integer id,
@@ -152,15 +180,64 @@ public class AgentKnowledgeController {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
-			// 验证必填字段
+			// Validate required fields
 			if (knowledge.getTitle() == null || knowledge.getTitle().trim().isEmpty()) {
 				response.put("success", false);
 				response.put("message", "知识标题不能为空");
 				return ResponseEntity.badRequest().body(response);
 			}
 
+			// First get original knowledge information
+			AgentKnowledge originalKnowledge = agentKnowledgeService.getKnowledgeById(id);
+			if (originalKnowledge == null) {
+				response.put("success", false);
+				response.put("message", "知识不存在");
+				return ResponseEntity.notFound().build();
+			}
+
+			// Update knowledge in database
 			AgentKnowledge updatedKnowledge = agentKnowledgeService.updateKnowledge(id, knowledge);
 			if (updatedKnowledge != null) {
+				// Handle vector storage update
+				try {
+					Long agentId = Long.valueOf(updatedKnowledge.getAgentId());
+
+					// If content changes or status becomes active, need to re-vectorize
+					boolean contentChanged = !java.util.Objects.equals(originalKnowledge.getContent(),
+							updatedKnowledge.getContent());
+					boolean statusChangedToActive = !"active".equals(originalKnowledge.getStatus())
+							&& "active".equals(updatedKnowledge.getStatus());
+					boolean statusChangedFromActive = "active".equals(originalKnowledge.getStatus())
+							&& !"active".equals(updatedKnowledge.getStatus());
+
+					if (statusChangedFromActive) {
+						// Status changes from active to other, delete vector data
+						agentVectorService.deleteKnowledgeFromVector(agentId, id);
+						updatedKnowledge.setEmbeddingStatus("pending");
+					}
+					else if ((contentChanged || statusChangedToActive) && "active".equals(updatedKnowledge.getStatus())
+							&& updatedKnowledge.getContent() != null
+							&& !updatedKnowledge.getContent().trim().isEmpty()) {
+						// Content changes or status becomes active, re-vectorize
+						agentVectorService.deleteKnowledgeFromVector(agentId, id); // First
+																					// delete
+																					// old
+						agentVectorService.addKnowledgeToVector(agentId, updatedKnowledge); // Then
+																							// add
+																							// new
+						updatedKnowledge.setEmbeddingStatus("completed");
+						agentKnowledgeService.updateKnowledge(id, updatedKnowledge); // Update
+																						// embedding
+																						// status
+					}
+				}
+				catch (Exception vectorException) {
+					// Vector storage operation failed, update embedding status to failed
+					updatedKnowledge.setEmbeddingStatus("failed");
+					agentKnowledgeService.updateKnowledge(id, updatedKnowledge);
+					response.put("vectorWarning", "知识已更新，但向量化失败：" + vectorException.getMessage());
+				}
+
 				response.put("success", true);
 				response.put("data", updatedKnowledge);
 				response.put("message", "知识更新成功");
@@ -168,8 +245,8 @@ public class AgentKnowledgeController {
 			}
 			else {
 				response.put("success", false);
-				response.put("message", "知识不存在或更新失败");
-				return ResponseEntity.notFound().build();
+				response.put("message", "知识更新失败");
+				return ResponseEntity.badRequest().body(response);
 			}
 		}
 		catch (Exception e) {
@@ -180,23 +257,42 @@ public class AgentKnowledgeController {
 	}
 
 	/**
-	 * 删除知识
+	 * Delete knowledge
 	 */
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Map<String, Object>> deleteKnowledge(@PathVariable Integer id) {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
+			// First get knowledge information, used to delete vector data
+			AgentKnowledge knowledge = agentKnowledgeService.getKnowledgeById(id);
+			if (knowledge == null) {
+				response.put("success", false);
+				response.put("message", "知识不存在");
+				return ResponseEntity.notFound().build();
+			}
+
+			// Delete knowledge in database
 			boolean deleted = agentKnowledgeService.deleteKnowledge(id);
 			if (deleted) {
+				// Also delete vector data
+				try {
+					Long agentId = Long.valueOf(knowledge.getAgentId());
+					agentVectorService.deleteKnowledgeFromVector(agentId, id);
+				}
+				catch (Exception vectorException) {
+					// Vector deletion failed, log warning but don't affect main process
+					response.put("vectorWarning", "知识已删除，但向量数据删除失败：" + vectorException.getMessage());
+				}
+
 				response.put("success", true);
 				response.put("message", "知识删除成功");
 				return ResponseEntity.ok(response);
 			}
 			else {
 				response.put("success", false);
-				response.put("message", "知识不存在或删除失败");
-				return ResponseEntity.notFound().build();
+				response.put("message", "知识删除失败");
+				return ResponseEntity.badRequest().body(response);
 			}
 		}
 		catch (Exception e) {
@@ -207,7 +303,7 @@ public class AgentKnowledgeController {
 	}
 
 	/**
-	 * 批量更新知识状态
+	 * Batch update knowledge status
 	 */
 	@PutMapping("/batch/status")
 	public ResponseEntity<Map<String, Object>> batchUpdateStatus(@RequestBody Map<String, Object> request) {
@@ -246,7 +342,7 @@ public class AgentKnowledgeController {
 	}
 
 	/**
-	 * 获取智能体知识统计信息
+	 * Get agent knowledge statistics
 	 */
 	@GetMapping("/statistics/{agentId}")
 	public ResponseEntity<Map<String, Object>> getKnowledgeStatistics(@PathVariable Integer agentId) {

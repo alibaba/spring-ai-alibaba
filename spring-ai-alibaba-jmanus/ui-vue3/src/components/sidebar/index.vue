@@ -324,8 +324,8 @@ const formattedJsonContent = computed({
 })
 
 // Use pinia store
-// 使用 TS 对象实现的 sidebarStore
-// 直接使用 sidebarStore 实例，无需 pinia
+// Use TS object-implemented sidebarStore
+// Use sidebarStore instance directly, no pinia needed
 
 // Emits - Keep some events for communication with external components
 const emit = defineEmits<{
@@ -438,7 +438,7 @@ defineExpose({
 <style scoped>
 .sidebar-wrapper {
   position: relative;
-  width: 600px;
+  width: 26%;
   height: 100vh;
   background: rgba(255, 255, 255, 0.05);
   border-right: 1px solid rgba(255, 255, 255, 0.1);

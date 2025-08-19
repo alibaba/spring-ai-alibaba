@@ -53,7 +53,11 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 	private static final Logger log = LoggerFactory.getLogger(SimpleVectorStoreService.class);
 
-	private final SimpleVectorStore vectorStore;
+	private final SimpleVectorStore vectorStore; // Keep original global storage for
+													// backward compatibility
+
+	private final AgentVectorStoreManager agentVectorStoreManager; // New agent vector
+																	// storage manager
 
 	private final Gson gson;
 
@@ -65,15 +69,19 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 	@Autowired
 	public SimpleVectorStoreService(EmbeddingModel embeddingModel, Gson gson,
-			@Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig) {
+			@Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig,
+			AgentVectorStoreManager agentVectorStoreManager) {
 		log.info("Initializing SimpleVectorStoreService with EmbeddingModel: {}",
 				embeddingModel.getClass().getSimpleName());
 		this.gson = gson;
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
 		this.embeddingModel = embeddingModel;
-		this.vectorStore = SimpleVectorStore.builder(embeddingModel).build();
-		log.info("SimpleVectorStoreService initialized successfully");
+		this.agentVectorStoreManager = agentVectorStoreManager;
+		this.vectorStore = SimpleVectorStore.builder(embeddingModel).build(); // Keep
+																				// original
+																				// implementation
+		log.info("SimpleVectorStoreService initialized successfully with AgentVectorStoreManager");
 	}
 
 	@Override
@@ -82,9 +90,9 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 初始化数据库 schema 到向量库
-	 * @param schemaInitRequest schema 初始化请求
-	 * @throws Exception 如果发生错误
+	 * Initialize database schema to vector store
+	 * @param schemaInitRequest schema initialization request
+	 * @throws Exception if an error occurs
 	 */
 	public Boolean schema(SchemaInitRequest schemaInitRequest) throws Exception {
 		log.info("Starting schema initialization for database: {}, schema: {}, tables: {}",
@@ -96,11 +104,12 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			.setSchema(dbConfig.getSchema())
 			.setTables(schemaInitRequest.getTables());
 
+		// Clean up old schema data
 		DeleteRequest deleteRequest = new DeleteRequest();
 		deleteRequest.setVectorType("column");
-		// deleteDocuments(deleteRequest);
+		deleteDocuments(deleteRequest);
 		deleteRequest.setVectorType("table");
-		// deleteDocuments(deleteRequest);
+		deleteDocuments(deleteRequest);
 
 		log.debug("Fetching foreign keys from database");
 		List<ForeignKeyInfoBO> foreignKeyInfoBOS = dbAccessor.showForeignKeys(dbConfig, dqp);
@@ -191,7 +200,8 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		if (columnInfoBO.getSamples() != null) {
 			metadata.put("samples", columnInfoBO.getSamples());
 		}
-		// 多表重复字段数据会被去重，采用表名+字段名作为唯一标识
+		// Multi-table duplicate field data will be deduplicated, using table name + field
+		// name as unique identifier
 		Document document = new Document(id, text, metadata);
 		log.debug("Created column document with ID: {}", id);
 		return document;
@@ -226,9 +236,9 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 删除指定条件的向量数据
-	 * @param deleteRequest 删除请求
-	 * @return 是否删除成功
+	 * Delete vector data with specified conditions
+	 * @param deleteRequest delete request
+	 * @return whether deletion succeeded
 	 */
 	public Boolean deleteDocuments(DeleteRequest deleteRequest) throws Exception {
 		log.info("Starting delete operation with request: id={}, vectorType={}", deleteRequest.getId(),
@@ -237,7 +247,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		try {
 			if (deleteRequest.getId() != null && !deleteRequest.getId().isEmpty()) {
 				log.debug("Deleting documents by ID: {}", deleteRequest.getId());
-				vectorStore.delete(Arrays.asList("comment_count"));
+				vectorStore.delete(Arrays.asList(deleteRequest.getId()));
 				log.info("Successfully deleted documents by ID");
 			}
 			else if (deleteRequest.getVectorType() != null && !deleteRequest.getVectorType().isEmpty()) {
@@ -272,7 +282,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 默认 filter 的搜索接口
+	 * Search interface with default filter
 	 */
 	@Override
 	public List<Document> searchWithVectorType(SearchRequest searchRequestDTO) {
@@ -298,15 +308,16 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	}
 
 	/**
-	 * 自定义 filter 的搜索接口
+	 * Search interface with custom filter
 	 */
 	@Override
 	public List<Document> searchWithFilter(SearchRequest searchRequestDTO) {
 		log.debug("Searching with custom filter: vectorType={}, query={}, topK={}", searchRequestDTO.getVectorType(),
 				searchRequestDTO.getQuery(), searchRequestDTO.getTopK());
 
-		// 这里需要根据实际情况解析 filterFormatted 字段，转换为 FilterExpressionBuilder 的表达式
-		// 简化实现，仅作示例
+		// Need to parse filterFormatted field according to actual situation here, convert
+		// to FilterExpressionBuilder expression
+		// Simplified implementation, for demonstration only
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 		Filter.Expression expression = b.eq("vectorType", searchRequestDTO.getVectorType()).build();
 
@@ -346,6 +357,202 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		log.info("Search by name completed. Found {} documents for name: {}", results.size(),
 				searchRequestDTO.getName());
 		return results;
+	}
+
+	// ==================== 智能体相关的新方法 ====================
+
+	/**
+	 * Initialize database schema to vector store for specified agent
+	 * @param agentId agent ID
+	 * @param schemaInitRequest schema initialization request
+	 * @throws Exception if an error occurs
+	 */
+	public Boolean schemaForAgent(String agentId, SchemaInitRequest schemaInitRequest) throws Exception {
+		log.info("Starting schema initialization for agent: {}, database: {}, schema: {}, tables: {}", agentId,
+				schemaInitRequest.getDbConfig().getUrl(), schemaInitRequest.getDbConfig().getSchema(),
+				schemaInitRequest.getTables());
+
+		DbConfig dbConfig = schemaInitRequest.getDbConfig();
+		DbQueryParameter dqp = DbQueryParameter.from(dbConfig)
+			.setSchema(dbConfig.getSchema())
+			.setTables(schemaInitRequest.getTables());
+
+		// Clean up agent's old data
+		agentVectorStoreManager.deleteDocumentsByType(agentId, "column");
+		agentVectorStoreManager.deleteDocumentsByType(agentId, "table");
+
+		log.debug("Fetching foreign keys from database for agent: {}", agentId);
+		List<ForeignKeyInfoBO> foreignKeyInfoBOS = dbAccessor.showForeignKeys(dbConfig, dqp);
+		log.debug("Found {} foreign keys for agent: {}", foreignKeyInfoBOS.size(), agentId);
+		Map<String, List<String>> foreignKeyMap = buildForeignKeyMap(foreignKeyInfoBOS);
+
+		log.debug("Fetching tables from database for agent: {}", agentId);
+		List<TableInfoBO> tableInfoBOS = dbAccessor.fetchTables(dbConfig, dqp);
+		log.info("Found {} tables to process for agent: {}", tableInfoBOS.size(), agentId);
+
+		for (TableInfoBO tableInfoBO : tableInfoBOS) {
+			log.debug("Processing table: {} for agent: {}", tableInfoBO.getName(), agentId);
+			processTable(tableInfoBO, dqp, dbConfig, foreignKeyMap);
+		}
+
+		log.debug("Converting columns to documents for agent: {}", agentId);
+		List<Document> columnDocuments = tableInfoBOS.stream().flatMap(table -> {
+			try {
+				dqp.setTable(table.getName());
+				return dbAccessor.showColumns(dbConfig, dqp)
+					.stream()
+					.map(column -> convertToDocumentForAgent(agentId, table, column));
+			}
+			catch (Exception e) {
+				log.error("Error processing columns for table: {} and agent: {}", table.getName(), agentId, e);
+				throw new RuntimeException(e);
+			}
+		}).collect(Collectors.toList());
+
+		log.info("Adding {} column documents to vector store for agent: {}", columnDocuments.size(), agentId);
+		agentVectorStoreManager.addDocuments(agentId, columnDocuments);
+
+		log.debug("Converting tables to documents for agent: {}", agentId);
+		List<Document> tableDocuments = tableInfoBOS.stream()
+			.map(table -> convertTableToDocumentForAgent(agentId, table))
+			.collect(Collectors.toList());
+
+		log.info("Adding {} table documents to vector store for agent: {}", tableDocuments.size(), agentId);
+		agentVectorStoreManager.addDocuments(agentId, tableDocuments);
+
+		log.info("Schema initialization completed successfully for agent: {}. Total documents added: {}", agentId,
+				columnDocuments.size() + tableDocuments.size());
+		return true;
+	}
+
+	/**
+	 * Convert column information to documents for agent
+	 */
+	private Document convertToDocumentForAgent(String agentId, TableInfoBO tableInfoBO, ColumnInfoBO columnInfoBO) {
+		log.debug("Converting column to document for agent: {}, table={}, column={}", agentId, tableInfoBO.getName(),
+				columnInfoBO.getName());
+
+		String text = Optional.ofNullable(columnInfoBO.getDescription()).orElse(columnInfoBO.getName());
+		String id = agentId + ":" + tableInfoBO.getName() + "." + columnInfoBO.getName();
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("id", id);
+		metadata.put("agentId", agentId);
+		metadata.put("name", columnInfoBO.getName());
+		metadata.put("tableName", tableInfoBO.getName());
+		metadata.put("description", Optional.ofNullable(columnInfoBO.getDescription()).orElse(""));
+		metadata.put("type", columnInfoBO.getType());
+		metadata.put("primary", columnInfoBO.isPrimary());
+		metadata.put("notnull", columnInfoBO.isNotnull());
+		metadata.put("vectorType", "column");
+		if (columnInfoBO.getSamples() != null) {
+			metadata.put("samples", columnInfoBO.getSamples());
+		}
+
+		Document document = new Document(id, text, metadata);
+		log.debug("Created column document with ID: {} for agent: {}", id, agentId);
+		return document;
+	}
+
+	/**
+	 * Convert table information to documents for agent
+	 */
+	private Document convertTableToDocumentForAgent(String agentId, TableInfoBO tableInfoBO) {
+		log.debug("Converting table to document for agent: {}, table: {}", agentId, tableInfoBO.getName());
+
+		String text = Optional.ofNullable(tableInfoBO.getDescription()).orElse(tableInfoBO.getName());
+		String id = agentId + ":" + tableInfoBO.getName();
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("agentId", agentId);
+		metadata.put("schema", Optional.ofNullable(tableInfoBO.getSchema()).orElse(""));
+		metadata.put("name", tableInfoBO.getName());
+		metadata.put("description", Optional.ofNullable(tableInfoBO.getDescription()).orElse(""));
+		metadata.put("foreignKey", Optional.ofNullable(tableInfoBO.getForeignKey()).orElse(""));
+		metadata.put("primaryKey", Optional.ofNullable(tableInfoBO.getPrimaryKey()).orElse(""));
+		metadata.put("vectorType", "table");
+
+		Document document = new Document(id, text, metadata);
+		log.debug("Created table document with ID: {} for agent: {}", id, agentId);
+		return document;
+	}
+
+	/**
+	 * Search vector data for specified agent
+	 */
+	public List<Document> searchWithVectorTypeForAgent(String agentId, SearchRequest searchRequestDTO) {
+		log.debug("Searching for agent: {}, vectorType: {}, query: {}, topK: {}", agentId,
+				searchRequestDTO.getVectorType(), searchRequestDTO.getQuery(), searchRequestDTO.getTopK());
+
+		List<Document> results = agentVectorStoreManager.similaritySearchWithFilter(agentId,
+				searchRequestDTO.getQuery(), searchRequestDTO.getTopK(), searchRequestDTO.getVectorType());
+
+		log.info("Search completed for agent: {}. Found {} documents for vectorType: {}", agentId, results.size(),
+				searchRequestDTO.getVectorType());
+		return results;
+	}
+
+	/**
+	 * Delete vector data for specified agent
+	 */
+	public Boolean deleteDocumentsForAgent(String agentId, DeleteRequest deleteRequest) throws Exception {
+		log.info("Starting delete operation for agent: {}, id={}, vectorType={}", agentId, deleteRequest.getId(),
+				deleteRequest.getVectorType());
+
+		try {
+			if (deleteRequest.getId() != null && !deleteRequest.getId().isEmpty()) {
+				log.debug("Deleting documents by ID for agent: {}, ID: {}", agentId, deleteRequest.getId());
+				agentVectorStoreManager.deleteDocuments(agentId, Arrays.asList(deleteRequest.getId()));
+				log.info("Successfully deleted documents by ID for agent: {}", agentId);
+			}
+			else if (deleteRequest.getVectorType() != null && !deleteRequest.getVectorType().isEmpty()) {
+				log.debug("Deleting documents by vectorType for agent: {}, vectorType: {}", agentId,
+						deleteRequest.getVectorType());
+				agentVectorStoreManager.deleteDocumentsByType(agentId, deleteRequest.getVectorType());
+				log.info("Successfully deleted documents by vectorType for agent: {}", agentId);
+			}
+			else {
+				log.warn("Invalid delete request for agent: {}: either id or vectorType must be specified", agentId);
+				throw new IllegalArgumentException("Either id or vectorType must be specified.");
+			}
+			return true;
+		}
+		catch (Exception e) {
+			log.error("Failed to delete documents for agent: {}: {}", agentId, e.getMessage(), e);
+			throw new Exception("Failed to delete collection data for agent " + agentId + ": " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Get agent vector storage manager (for other services to use)
+	 */
+	public AgentVectorStoreManager getAgentVectorStoreManager() {
+		return agentVectorStoreManager;
+	}
+
+	/**
+	 * Get documents from vector store for specified agent Override parent method, use
+	 * agent-specific vector storage
+	 */
+	@Override
+	public List<Document> getDocumentsForAgent(String agentId, String query, String vectorType) {
+		log.debug("Getting documents for agent: {}, query: {}, vectorType: {}", agentId, query, vectorType);
+
+		if (agentId == null || agentId.trim().isEmpty()) {
+			log.warn("AgentId is null or empty, falling back to global search");
+			return getDocuments(query, vectorType);
+		}
+
+		try {
+			// Use agent vector storage manager for search
+			List<Document> results = agentVectorStoreManager.similaritySearchWithFilter(agentId, query, 100, // topK
+					vectorType);
+
+			log.info("Found {} documents for agent: {}, vectorType: {}", results.size(), agentId, vectorType);
+			return results;
+		}
+		catch (Exception e) {
+			log.error("Error getting documents for agent: {}, falling back to global search", agentId, e);
+			return getDocuments(query, vectorType);
+		}
 	}
 
 }

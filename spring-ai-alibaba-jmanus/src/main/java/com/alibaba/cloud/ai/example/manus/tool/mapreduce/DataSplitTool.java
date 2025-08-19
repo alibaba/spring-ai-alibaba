@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.tool.tableProcessor.TableProcessingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,29 +81,29 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	 */
 	public static class DataSplitInput {
 
-		@com.fasterxml.jackson.annotation.JsonProperty("file_path")
-		private String filePath;
+		@com.fasterxml.jackson.annotation.JsonProperty("input_file_to_split")
+		private String inputFileToSplit;
 
-		@com.fasterxml.jackson.annotation.JsonProperty("terminate_columns")
-		private List<String> terminateColumns;
+		@com.fasterxml.jackson.annotation.JsonProperty("expected_output_fields")
+		private java.util.List<String> expectedOutputFields;
 
 		public DataSplitInput() {
 		}
 
-		public String getFilePath() {
-			return filePath;
+		public String getInputFileToSplit() {
+			return inputFileToSplit;
 		}
 
-		public void setFilePath(String filePath) {
-			this.filePath = filePath;
+		public void setInputFileToSplit(String inputFileToSplit) {
+			this.inputFileToSplit = inputFileToSplit;
 		}
 
-		public List<String> getTerminateColumns() {
-			return terminateColumns;
+		public java.util.List<String> getExpectedOutputFields() {
+			return expectedOutputFields;
 		}
 
-		public void setTerminateColumns(List<String> terminateColumns) {
-			this.terminateColumns = terminateColumns;
+		public void setExpectedOutputFields(java.util.List<String> expectedOutputFields) {
+			this.expectedOutputFields = expectedOutputFields;
 		}
 
 	}
@@ -125,19 +126,19 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			{
 			    "type": "object",
 			    "properties": {
-			        "file_path": {
+			        "input_file_to_split": {
 			            "type": "string",
-			            "description": "File or folder path to process"
+			            "description": "Input file or folder path to be split"
 			        },
-			        "terminate_columns": {
+			        "expected_output_fields": {
 			            "type": "array",
+			            "description": "List of expected output field names",
 			            "items": {
 			                "type": "string"
-			            },
-			            "description": "Column names for termination results, used for structured output"
+			            }
 			        }
 			    },
-			    "required": ["file_path"],
+			    "required": ["input_file_to_split"],
 			    "additionalProperties": false
 			}
 			""";
@@ -154,13 +155,17 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 
 	private final ObjectMapper objectMapper;
 
+	private final TableProcessingService tableProcessingService;
+
 	public DataSplitTool(String planId, ManusProperties manusProperties, MapReduceSharedStateManager sharedStateManager,
-			UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper) {
+			UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper,
+			TableProcessingService tableProcessingService) {
 		this.currentPlanId = planId;
 		this.manusProperties = manusProperties;
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.sharedStateManager = sharedStateManager;
 		this.objectMapper = objectMapper;
+		this.tableProcessingService = tableProcessingService;
 	}
 
 	/**
@@ -206,14 +211,15 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	 */
 	@Override
 	public ToolExecuteResult run(DataSplitInput input) {
-		log.info("DataSplitTool input: filePath={}", input.getFilePath());
+		log.info("DataSplitTool input: inputFileToSplit={}, expectedOutputFields={}", input.getInputFileToSplit(),
+				input.getExpectedOutputFields());
 		try {
-			String filePath = input.getFilePath();
-			if (filePath == null) {
-				return new ToolExecuteResult("Error: file_path parameter is required");
+			String inputFileToSplit = input.getInputFileToSplit();
+			if (inputFileToSplit == null) {
+				return new ToolExecuteResult("Error: input_file_to_split parameter is required");
 			}
 
-			return processFileOrDirectory(filePath);
+			return processFileOrDirectory(inputFileToSplit, input.getExpectedOutputFields());
 
 		}
 		catch (Exception e) {
@@ -225,7 +231,8 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 	/**
 	 * Process complete workflow for file or directory: validate existence -> split data
 	 */
-	private ToolExecuteResult processFileOrDirectory(String filePath) {
+	private ToolExecuteResult processFileOrDirectory(String inputFileToSplit,
+			java.util.List<String> expectedOutputFields) {
 		try {
 			// Ensure planId exists, use default if empty
 			if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
@@ -241,10 +248,10 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 			boolean foundInInnerStorage = false;
 
 			// First, try to find file in inner storage directory
-			if (!Paths.get(filePath).isAbsolute()) {
+			if (!Paths.get(inputFileToSplit).isAbsolute()) {
 				// Check in inner storage first
 				Path planDir = getPlanDirectory(rootPlanId);
-				Path innerStoragePath = planDir.resolve(filePath);
+				Path innerStoragePath = planDir.resolve(inputFileToSplit);
 
 				if (Files.exists(innerStoragePath)) {
 					path = innerStoragePath;
@@ -255,13 +262,13 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 
 			// If not found in inner storage, try working directory
 			if (path == null) {
-				if (Paths.get(filePath).isAbsolute()) {
+				if (Paths.get(inputFileToSplit).isAbsolute()) {
 					// If absolute path, use directly
-					path = Paths.get(filePath);
+					path = Paths.get(inputFileToSplit);
 				}
 				else {
 					// If relative path, resolve based on working directory
-					path = Paths.get(workingDirectoryPath).resolve(filePath);
+					path = Paths.get(workingDirectoryPath).resolve(inputFileToSplit);
 				}
 				log.info("Checking file in working directory: {}", path.toAbsolutePath());
 			}
@@ -271,7 +278,7 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 					// Also check if file exists in inner storage and provide helpful
 					// message
 					Path planDir = getPlanDirectory(currentPlanId);
-					Path innerStoragePath = planDir.resolve(filePath);
+					Path innerStoragePath = planDir.resolve(inputFileToSplit);
 					if (Files.exists(innerStoragePath)) {
 						errorMsg += "\nNote: File exists in inner storage at: "
 								+ innerStoragePath.toAbsolutePath().toString();
@@ -325,9 +332,16 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 				sharedStateManager.setSplitResults(currentPlanId, allTaskDirs);
 			}
 
-			// Generate concise return result
+			// Generate concise return result with table header information if it's a
+			// table file
 			StringBuilder result = new StringBuilder();
-			result.append("File splitting successful");
+			result.append("Split successful");
+
+			// If expectedOutputFields is provided, include information about it
+			if (expectedOutputFields != null && !expectedOutputFields.isEmpty()) {
+				result.append(", expected output fields: ").append(expectedOutputFields);
+			}
+
 			result.append(", created ").append(allTaskDirs.size()).append(" task directories");
 
 			String resultStr = result.toString();
@@ -446,8 +460,9 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 		// Create input.md file
 		Path inputFile = taskDir.resolve(TASK_INPUT_FILE_NAME);
 		StringBuilder inputContent = new StringBuilder();
-		inputContent.append("# Document Fragment\n\n");
-		inputContent.append("**Original File:** ").append(originalFileName).append("\n\n");
+		// inputContent.append("# Document Fragment\n\n");
+		// inputContent.append("**Original File:**
+		// ").append(originalFileName).append("\n\n");
 		inputContent.append("**Task ID:** ").append(taskId).append("\n\n");
 		inputContent.append("## Content\n\n");
 		inputContent.append("```\n");
@@ -480,6 +495,15 @@ public class DataSplitTool extends AbstractBaseTool<DataSplitTool.DataSplitInput
 				|| lowercaseFileName.endsWith(".log") || lowercaseFileName.endsWith(".json")
 				|| lowercaseFileName.endsWith(".xml") || lowercaseFileName.endsWith(".yaml")
 				|| lowercaseFileName.endsWith(".yml") || lowercaseFileName.endsWith(".md");
+	}
+
+	/**
+	 * Check if file is a table file
+	 */
+	private boolean isTableFile(String fileName) {
+		String lowercaseFileName = fileName.toLowerCase();
+		return lowercaseFileName.endsWith(".csv") || lowercaseFileName.endsWith(".tsv")
+				|| lowercaseFileName.endsWith(".xls") || lowercaseFileName.endsWith(".xlsx");
 	}
 
 	@Override

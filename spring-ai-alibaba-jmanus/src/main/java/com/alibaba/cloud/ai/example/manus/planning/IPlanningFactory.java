@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.planning;
 
 import java.util.Map;
 
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import org.springframework.web.client.RestClient;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
@@ -29,20 +30,20 @@ public interface IPlanningFactory {
 
 	/**
 	 * Create planning coordinator
-	 * @param planId Plan ID
+	 * @param context
 	 * @return Planning coordinator
 	 */
-	PlanningCoordinator createPlanningCoordinator(String planId);
+	PlanningCoordinator createPlanningCoordinator(ExecutionContext context);
 
 	/**
 	 * Create tool callback mapping
 	 * @param planId Plan ID
 	 * @param rootPlanId Root plan ID
-	 * @param terminateColumns Terminate columns
+	 * @param expectedReturnInfo Expected return information
 	 * @return Tool callback mapping
 	 */
 	Map<String, PlanningFactory.ToolCallBackContext> toolCallbackMap(String planId, String rootPlanId,
-			java.util.List<String> terminateColumns);
+			String expectedReturnInfo);
 
 	/**
 	 * Create RestClient

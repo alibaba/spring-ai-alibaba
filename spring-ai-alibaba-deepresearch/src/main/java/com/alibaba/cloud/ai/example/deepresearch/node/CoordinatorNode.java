@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.SessionHistory;
+import com.alibaba.cloud.ai.example.deepresearch.service.SessionContextService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -32,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
@@ -46,8 +49,11 @@ public class CoordinatorNode implements NodeAction {
 
 	private final ChatClient coordinatorAgent;
 
-	public CoordinatorNode(ChatClient coordinatorAgent) {
+	private final SessionContextService sessionContextService;
+
+	public CoordinatorNode(ChatClient coordinatorAgent, SessionContextService sessionContextService) {
 		this.coordinatorAgent = coordinatorAgent;
+		this.sessionContextService = sessionContextService;
 	}
 
 	@Override
@@ -57,6 +63,20 @@ public class CoordinatorNode implements NodeAction {
 		// 1. 添加消息
 		// 1.1 添加预置提示消息
 		messages.add(TemplateUtil.getMessage("coordinator"));
+
+		// 添加前几次同一会话的报告
+		String sessionId = StateUtil.getSessionId(state);
+		List<SessionHistory> reports = sessionContextService.getRecentReports(sessionId);
+		Message lastReportMessage;
+		if (reports != null && !reports.isEmpty()) {
+			lastReportMessage = new AssistantMessage("这是用户前几次使用DeepResearch的报告：\r\n"
+					+ reports.stream().map(SessionHistory::toString).collect(Collectors.joining("\r\n\r\n")));
+		}
+		else {
+			lastReportMessage = new AssistantMessage("这是用户的第一次询问，因此没有上下文。");
+		}
+		messages.add(lastReportMessage);
+
 		// 1.2 添加用户提问
 		messages.add(new UserMessage(StateUtil.getQuery(state)));
 		logger.debug("Current Coordinator messages: {}", messages);
@@ -65,6 +85,7 @@ public class CoordinatorNode implements NodeAction {
 		ChatResponse response = coordinatorAgent.prompt().messages(messages).call().chatResponse();
 
 		String nextStep = END;
+		boolean deepResearch = false;
 		Map<String, Object> updated = new HashMap<>();
 
 		// 获取 assistant 消息内容
@@ -74,6 +95,7 @@ public class CoordinatorNode implements NodeAction {
 		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
 			logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
 			nextStep = "rewrite_multi_query";
+			deepResearch = true;
 		}
 		else {
 			logger.warn("❌ 未触发工具调用");
@@ -81,6 +103,7 @@ public class CoordinatorNode implements NodeAction {
 			updated.put("output", assistantMessage.getText());
 		}
 		updated.put("coordinator_next_node", nextStep);
+		updated.put("deep_research", deepResearch);
 		return updated;
 	}
 

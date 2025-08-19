@@ -20,28 +20,17 @@
       <div class="header">
         <a-flex justify="space-between">
           <h1>Deep Research Config</h1>
-          <a-button @click="back" type="text"><CloseOutlined /></a-button>
+          <!-- <a-button @click="back" type="text"><CloseOutlined /></a-button> -->
         </a-flex>
       </div>
       <a-divider />
 
       <a-form :model="form" :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }">
         <Title>一般配置</Title>
-
-        <a-form-item label="是否开启背景调查">
-          <a-switch v-model:checked="form.enable_background_investigation"></a-switch>
-        </a-form-item>
         <a-form-item label="是否自动接受计划">
           <a-switch v-model:checked="form.auto_accepted_plan"></a-switch>
         </a-form-item>
         <a-form-item label="扩展优化后查询数量">
-          <!--      enable_background_investigation: true,
-                auto_accepted_plan: true,
-                optimize_query_num: 3,
-                max_plan_iterations: 3,
-                max_step_num: 1,
-                mcp_settings: {},
-                search_engine: 'tavily',-->
           <a-input-number v-model:value="form.optimize_query_num"></a-input-number>
         </a-form-item>
         <a-form-item label="计划最大步骤数量">
@@ -68,7 +57,6 @@
 <script setup lang="ts">
 import Title from '@/components/toolkit/Title.vue'
 import { useConfigStore } from '@/store/ConfigStore'
-import { CloseOutlined } from '@ant-design/icons-vue'
 import { useRouter } from 'vue-router'
 import { useRouterStore } from '@/store/RouterStore'
 

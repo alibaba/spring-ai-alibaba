@@ -21,8 +21,6 @@ import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscovery;
 import com.alibaba.cloud.ai.mcp.router.model.McpServerInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,11 +28,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Component
 public class NacosMcpServiceDiscovery implements McpServiceDiscovery {
 
-	@Autowired
-	private NacosMcpOperationService nacosMcpOperationService;
+	private final NacosMcpOperationService nacosMcpOperationService;
+
+	public NacosMcpServiceDiscovery(final NacosMcpOperationService nacosMcpOperationService) {
+		this.nacosMcpOperationService = nacosMcpOperationService;
+	}
 
 	// 本地缓存：serviceName -> McpServerInfo
 	private final Map<String, McpServerInfo> serviceCache = new ConcurrentHashMap<>();
@@ -88,38 +88,6 @@ public class NacosMcpServiceDiscovery implements McpServiceDiscovery {
 	@Override
 	public McpServerInfo getService(String serviceName) {
 		return fetchAndCacheService(serviceName);
-	}
-
-	@Override
-	public List<McpServerInfo> getAllServices() {
-		// 这里需要实现获取所有服务的逻辑
-		// 由于当前实现是基于单个服务获取，这里返回缓存中的所有服务
-		return new ArrayList<>(serviceCache.values());
-	}
-
-	@Override
-	public List<McpServerInfo> searchServices(String query, int limit) {
-		// 简单的关键词搜索实现
-		return serviceCache.values()
-			.stream()
-			.filter(s -> s.getName().contains(query)
-					|| (s.getDescription() != null && s.getDescription().contains(query))
-					|| (s.getTags() != null && s.getTags().stream().anyMatch(tag -> tag.contains(query))))
-			.limit(limit)
-			.toList();
-	}
-
-	@Override
-	public boolean refreshService(String serviceName) {
-		try {
-			// 清除缓存，强制重新获取
-			serviceCache.remove(serviceName);
-			serviceVersionCache.remove(serviceName);
-			return fetchAndCacheService(serviceName) != null;
-		}
-		catch (Exception e) {
-			return false;
-		}
 	}
 
 }

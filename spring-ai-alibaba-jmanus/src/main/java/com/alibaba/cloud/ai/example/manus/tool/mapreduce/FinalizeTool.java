@@ -221,10 +221,22 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 	 */
 	private ToolExecuteResult exportFile(String newFileName) {
 		try {
-			// Get root plan directory
-			Path rootPlanDir = getPlanDirectory(rootPlanId);
-			Path sourceFilePath = rootPlanDir.resolve(REDUCE_FILE_NAME);
-			Path targetFilePath = rootPlanDir.resolve(newFileName);
+			// Get plan directory with hierarchical structure
+			Path planDir = getPlanDirectory();
+			Path sourceFilePath = planDir.resolve(REDUCE_FILE_NAME);
+
+			// Target file path - export to parent directory or root storage directory
+			Path targetFilePath;
+			if (rootPlanId != null && !rootPlanId.equals(currentPlanId)) {
+				// If hierarchical structure exists, export to parent directory
+				// (rootPlanId level)
+				targetFilePath = getInnerStorageRoot().resolve(rootPlanId).resolve(newFileName);
+			}
+			else {
+				// If no hierarchy, throw an exception
+				return new ToolExecuteResult(
+						"Error: Cannot export file - no hierarchical structure found. The tool requires a root plan ID different from the current plan ID.");
+			}
 
 			// Check if source file exists
 			if (!Files.exists(sourceFilePath)) {
@@ -241,38 +253,41 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 
 			log.info("File exported successfully: {} -> {}", REDUCE_FILE_NAME, newFileName);
 
-			// Read the target file and get first 3 lines to confirm the copy
+			// Read the target file and check its size
 			List<String> lines = Files.readAllLines(targetFilePath);
-			StringBuilder result = new StringBuilder();
+			StringBuilder fileContent = new StringBuilder();
+			for (String line : lines) {
+				fileContent.append(line).append("\n");
+			}
 
-			result.append(String.format("File exported successfully , file name is : %s", newFileName)).append("\n\n");
-			result.append("Preview of exported file:\n");
-			result.append("-".repeat(30)).append("\n");
-
-			int totalLines = lines.size();
 			int charLimit = getInfiniteContextTaskContextSize();
-			int charCount = result.length();
-			boolean truncated = false;
+			int contentLength = fileContent.length();
 
-			for (int i = 0; i < totalLines; i++) {
-				String lineStr = String.format("%4d: %s\n", i + 1, lines.get(i));
-				if (charCount + lineStr.length() > charLimit) {
-					truncated = true;
-					break;
-				}
-				result.append(lineStr);
-				charCount += lineStr.length();
-			}
-
-			if (truncated) {
-				result.append(String.format("... (total %d lines)\n", totalLines));
+			// If content size is less than required content size, include the entire
+			// content in the result
+			if (contentLength <= charLimit) {
+				StringBuilder result = new StringBuilder();
 				result.append(String.format(
-						"Note: Content has been truncated due to size limit. You can access the complete file content by reading the exported file directly: %s\n",
+						"The function call was successful. The content has been saved to the file(%s). the file content is :\n",
 						newFileName));
+				result.append(fileContent.toString());
+				return new ToolExecuteResult(result.toString());
 			}
-
-			return new ToolExecuteResult(result.toString());
-
+			// If the file content size exceeds the required context size, indicate that
+			// the content is still too large
+			else {
+				StringBuilder result = new StringBuilder();
+				result.append("The function call was successful. The content has been saved to the file(");
+				result.append(newFileName);
+				result.append("). The file content size is ");
+				result.append(contentLength);
+				result.append(" characters, which exceeds the limit of ");
+				result.append(charLimit);
+				result.append(" characters. The content is still too large and has been saved to the new file. ");
+				result.append(
+						"The user can read the file directly or use other functions to further process the oversized file.");
+				return new ToolExecuteResult(result.toString());
+			}
 		}
 		catch (IOException e) {
 			log.error("Failed to export file", e);
@@ -313,10 +328,18 @@ public class FinalizeTool extends AbstractBaseTool<FinalizeTool.FinalizeInput> i
 	}
 
 	/**
-	 * Get plan directory path
+	 * Get plan directory path with hierarchical structure support
 	 */
-	private Path getPlanDirectory(String planId) {
-		return getInnerStorageRoot().resolve(planId);
+	private Path getPlanDirectory() {
+		Path innerStorageRoot = getInnerStorageRoot();
+		if (rootPlanId != null && !rootPlanId.equals(currentPlanId)) {
+			// Use hierarchical structure: inner_storage/{rootPlanId}/{currentPlanId}
+			return innerStorageRoot.resolve(rootPlanId).resolve(currentPlanId);
+		}
+		else {
+			// Use flat structure: inner_storage/{planId}
+			return innerStorageRoot.resolve(currentPlanId);
+		}
 	}
 
 	/**

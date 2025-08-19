@@ -13,3 +13,10 @@ spring:
   # JPA configuration
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  ai:
+    memory:
+      h2:
+        enabled: true

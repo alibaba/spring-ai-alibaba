@@ -16,35 +16,37 @@
 package com.alibaba.cloud.ai.dto;
 
 /**
- * 语义模型配置实体类
+ * Semantic model configuration entity class
  */
 public class SemanticModelDTO {
 
-	private String datasetId; // 数据集ID
+	private Long id; // Unique identifier
 
-	private String originalFieldName; // 原始字段名
+	private String agentId; // Agent ID
 
-	private String agentFieldName; // 智能体字段名称
+	private String originalFieldName; // Original field name
 
-	private String fieldSynonyms; // 字段名称同义词，逗号分隔
+	private String agentFieldName; // Agent field name
 
-	private String fieldDescription; // 字段描述
+	private String fieldSynonyms; // Field name synonyms, comma separated
 
-	private Boolean defaultRecall; // 默认召回
+	private String fieldDescription; // Field description
 
-	private Boolean enabled; // 是否启用
+	private Boolean defaultRecall; // Default recall
 
-	private String fieldType; // 字段类型
+	private Boolean enabled; // Whether enabled
 
-	private String originalDescription; // 原始字段描述
+	private String fieldType; // Field type
+
+	private String originalDescription; // Original field description
 
 	public SemanticModelDTO() {
 	}
 
-	public SemanticModelDTO(String datasetId, String originalFieldName, String agentFieldName, String fieldSynonyms,
+	public SemanticModelDTO(String agentId, String originalFieldName, String agentFieldName, String fieldSynonyms,
 			String fieldDescription, Boolean defaultRecall, Boolean enabled, String fieldType,
 			String originalDescription) {
-		this.datasetId = datasetId;
+		this.agentId = agentId;
 		this.originalFieldName = originalFieldName;
 		this.agentFieldName = agentFieldName;
 		this.fieldSynonyms = fieldSynonyms;
@@ -55,13 +57,35 @@ public class SemanticModelDTO {
 		this.originalDescription = originalDescription;
 	}
 
-	// Getters and Setters
-	public String getDatasetId() {
-		return datasetId;
+	public SemanticModelDTO(String originalFieldName, String agentFieldName, String fieldSynonyms,
+			String fieldDescription, String fieldType, String originalDescription, Boolean defaultRecall,
+			Boolean enabled) {
+		this.originalFieldName = originalFieldName;
+		this.agentFieldName = agentFieldName;
+		this.fieldSynonyms = fieldSynonyms;
+		this.fieldDescription = fieldDescription;
+		this.fieldType = fieldType;
+		this.originalDescription = originalDescription;
+		this.defaultRecall = defaultRecall;
+		this.enabled = enabled;
 	}
 
-	public void setDatasetId(String datasetId) {
-		this.datasetId = datasetId;
+	// Getters and Setters
+	public String getAgentId() {
+		return agentId;
+	}
+
+	public void setAgentId(String agentId) {
+		this.agentId = agentId;
+	}
+
+	// Getters and Setters
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
 	}
 
 	public String getOriginalFieldName() {

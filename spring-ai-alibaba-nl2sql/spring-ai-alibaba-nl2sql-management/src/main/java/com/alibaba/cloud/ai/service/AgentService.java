@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.entity.Agent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,13 +31,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 智能体服务类
+ * Agent Service Class
  */
 @Service
 public class AgentService {
 
+	private static final Logger log = LoggerFactory.getLogger(AgentService.class);
+
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
+
+	@Autowired(required = false)
+	private AgentVectorService agentVectorService;
 
 	private static final String SELECT_ALL = """
 			SELECT * FROM agent ORDER BY create_time DESC
@@ -92,7 +99,7 @@ public class AgentService {
 		LocalDateTime now = LocalDateTime.now();
 
 		if (agent.getId() == null) {
-			// 新增
+			// Add
 			agent.setCreateTime(now);
 			agent.setUpdateTime(now);
 
@@ -118,7 +125,7 @@ public class AgentService {
 			}
 		}
 		else {
-			// 更新
+			// Update
 			agent.setUpdateTime(now);
 			jdbcTemplate.update(UPDATE, agent.getName(), agent.getDescription(), agent.getAvatar(), agent.getStatus(),
 					agent.getPrompt(), agent.getCategory(), agent.getAdminId(), agent.getTags(), agent.getUpdateTime(),
@@ -129,7 +136,28 @@ public class AgentService {
 	}
 
 	public void deleteById(Long id) {
-		jdbcTemplate.update(DELETE, id);
+		try {
+			// Delete agent record from database
+			jdbcTemplate.update(DELETE, id);
+
+			// Also clean up the agent's vector data
+			if (agentVectorService != null) {
+				try {
+					agentVectorService.deleteAllVectorDataForAgent(id);
+					log.info("Successfully deleted vector data for agent: {}", id);
+				}
+				catch (Exception vectorException) {
+					log.warn("Failed to delete vector data for agent: {}, error: {}", id, vectorException.getMessage());
+					// Vector data deletion failure does not affect the main process
+				}
+			}
+
+			log.info("Successfully deleted agent: {}", id);
+		}
+		catch (Exception e) {
+			log.error("Failed to delete agent: {}", id, e);
+			throw e;
+		}
 	}
 
 }

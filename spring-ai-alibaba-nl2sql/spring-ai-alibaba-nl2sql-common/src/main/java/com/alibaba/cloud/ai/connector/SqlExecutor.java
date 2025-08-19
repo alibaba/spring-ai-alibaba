@@ -29,7 +29,7 @@ import java.sql.Statement;
 import java.util.List;
 
 /**
- * 负责执行 SQL 并返回结构化结果。
+ * Responsible for executing SQL and returning structured results.
  */
 public class SqlExecutor {
 
@@ -38,11 +38,11 @@ public class SqlExecutor {
 	public static final Integer STATEMENT_TIMEOUT = 30;
 
 	/**
-	 * 执行 SQL 查询并返回结构化结果（带列信息）
-	 * @param connection 数据库连接
-	 * @param sql SQL 语句
-	 * @return ResultSetBO 结构化结果
-	 * @throws SQLException SQL 执行异常
+	 * Execute SQL query and return structured results (with column information)
+	 * @param connection database connection
+	 * @param sql SQL statement
+	 * @return ResultSetBO structured result
+	 * @throws SQLException SQL execution exception
 	 */
 	public static ResultSetBO executeSqlAndReturnObject(Connection connection, String schema, String sql)
 			throws SQLException {
@@ -66,11 +66,11 @@ public class SqlExecutor {
 	}
 
 	/**
-	 * 执行 SQL 查询并返回字符串二维数组格式结果
-	 * @param connection 数据库连接
-	 * @param sql SQL 语句
-	 * @return 二维数组结果
-	 * @throws SQLException SQL 执行异常
+	 * Execute SQL query and return string two-dimensional array format result
+	 * @param connection database connection
+	 * @param sql SQL statement
+	 * @return two-dimensional array result
+	 * @throws SQLException SQL execution exception
 	 */
 	public static String[][] executeSqlAndReturnArr(Connection connection, String sql) throws SQLException {
 		List<String[]> list = executeQuery(connection, sql);

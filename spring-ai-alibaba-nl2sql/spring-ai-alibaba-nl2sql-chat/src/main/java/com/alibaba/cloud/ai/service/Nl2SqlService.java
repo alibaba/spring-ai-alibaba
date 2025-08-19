@@ -15,17 +15,29 @@
  */
 package com.alibaba.cloud.ai.service;
 
-import com.alibaba.cloud.ai.constant.Constant;
-import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
-import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
-import com.alibaba.cloud.ai.service.base.BaseSchemaService;
+import com.alibaba.cloud.ai.entity.Nl2SqlProcess;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.Document;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+
+import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
+import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
+import static com.alibaba.cloud.ai.constant.Constant.IS_ONLY_NL2SQL;
+import static com.alibaba.cloud.ai.constant.Constant.ONLY_NL2SQL_OUTPUT;
 
 /**
  * NL2SQL接口预留
@@ -36,54 +48,110 @@ import java.util.List;
 @Service
 public class Nl2SqlService {
 
-	private static final Logger log = LoggerFactory.getLogger(Nl2SqlService.class);
+	private static final Logger logger = LoggerFactory.getLogger(Nl2SqlService.class);
 
-	private final BaseNl2SqlService baseNl2SqlService;
+	private final CompiledGraph nl2sqlGraph;
 
-	private final BaseSchemaService baseSchemaService;
-
-	public Nl2SqlService(@Qualifier("nl2SqlServiceImpl") BaseNl2SqlService baseNl2SqlService,
-			@Qualifier("schemaServiceImpl") BaseSchemaService baseSchemaService) {
-		this.baseNl2SqlService = baseNl2SqlService;
-		this.baseSchemaService = baseSchemaService;
+	public Nl2SqlService(@Qualifier("nl2sqlGraph") StateGraph stateGraph) throws GraphStateException {
+		this.nl2sqlGraph = stateGraph.compile();
+		this.nl2sqlGraph.setMaxIterations(100);
 	}
 
 	/**
-	 * 根据Nl2Sql-Graph的定义，抽取其自然语言转化为sql的功能代码
-	 * @param query 自然语言
-	 * @return sql语言
+	 * 自然语言转SQL，仅返回SQL代码结果
+	 * @param naturalQuery 自然语言
+	 * @param agentId Agent Id
+	 * @return SQL结果
+	 * @throws GraphRunnerException 图运行异常
 	 */
-	public String apply(String query) throws Exception {
-		// 1. query rewrite
-		query = baseNl2SqlService.rewrite(query);
-		if (Constant.INTENT_UNCLEAR.equals(query) || Constant.SMALL_TALK_REJECT.equals(query)) {
-			throw new IllegalArgumentException("输入的自然语言属于【".concat(query).concat("】，无法转为SQL语言"));
+	public String nl2sql(String naturalQuery, String agentId) throws GraphRunnerException {
+		if (agentId == null) {
+			agentId = "";
 		}
-		log.info("问题重写结果：{}", query);
+		Map<String, Object> stateMap = Map.of(IS_ONLY_NL2SQL, true, INPUT_KEY, naturalQuery, AGENT_ID, agentId);
+		Optional<OverAllState> invoke = this.nl2sqlGraph.invoke(stateMap);
+		OverAllState state = invoke.orElseThrow(() -> {
+			logger.error("Nl2SqlService invoke fail, stateMap: {}", stateMap);
+			return new GraphRunnerException("图运行失败");
+		});
+		return state.value(ONLY_NL2SQL_OUTPUT, "");
+	}
 
-		// 2. keyword extract
-		List<String> expandedQuestions = baseNl2SqlService.expandQuestion(query);
-		log.info("问题扩展结果: {}", expandedQuestions);
-		List<String> evidences = baseNl2SqlService.extractEvidences(query);
-		List<String> keywords = baseNl2SqlService.extractKeywords(query, evidences);
-		log.info("增强提取结果 - 证据: {}, 关键词: {}", evidences, keywords);
+	/**
+	 * 自然语言转SQL，仅返回SQL代码结果
+	 * @param naturalQuery 自然语言
+	 * @return SQL结果
+	 * @throws GraphRunnerException 图运行异常
+	 */
+	public String nl2sql(String naturalQuery) throws GraphRunnerException {
+		return this.nl2sql(naturalQuery, "");
+	}
 
-		// 3. schema recall
-		List<Document> tableDocuments = baseSchemaService.getTableDocuments(query);
-		List<List<Document>> columnDocumentsByKeywords = baseSchemaService.getColumnDocumentsByKeywords(keywords);
-		log.info("Schema recall results - table documents count: {}, keyword-related column document groups: {}",
-				tableDocuments.size(), columnDocumentsByKeywords.size());
+	/**
+	 * 自然语言转SQL，允许记录中间执行过程
+	 * @param nl2SqlProcessConsumer 处理节点运行结果的Consumer
+	 * @param naturalQuery 自然语言
+	 * @param agentId Agent Id
+	 * @param runnableConfig Runnable Config
+	 * @return CompletableFuture
+	 * @throws GraphRunnerException 图运行异常
+	 */
+	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer,
+			String naturalQuery, String agentId, RunnableConfig runnableConfig) throws GraphRunnerException {
+		Map<String, Object> stateMap = Map.of(IS_ONLY_NL2SQL, true, INPUT_KEY, naturalQuery, AGENT_ID, agentId);
+		Consumer<NodeOutput> consumer = (output) -> {
+			Nl2SqlProcess sqlProcess = this.nodeOutputToNl2sqlProcess(output);
+			nl2SqlProcessConsumer.accept(sqlProcess);
+		};
+		return this.nl2sqlGraph.stream(stateMap, runnableConfig).forEachAsync(consumer);
+	}
 
-		// 4. table relation
-		SchemaDTO schemaDTO = new SchemaDTO();
-		baseSchemaService.extractDatabaseName(schemaDTO);
-		baseSchemaService.buildSchemaFromDocuments(columnDocumentsByKeywords, tableDocuments, schemaDTO);
-		log.info("Executing regular schema selection");
-		schemaDTO = baseNl2SqlService.fineSelect(schemaDTO, query, evidences);
-		log.info("Schema result: {}", schemaDTO);
+	/**
+	 * 自然语言转SQL，允许记录中间执行过程
+	 * @param nl2SqlProcessConsumer 处理节点运行结果的Consumer
+	 * @param naturalQuery 自然语言
+	 * @param agentId Agent Id
+	 * @return CompletableFuture
+	 * @throws GraphRunnerException 图运行异常
+	 */
+	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer,
+			String naturalQuery, String agentId) throws GraphRunnerException {
+		return this.nl2sqlWithProcess(nl2SqlProcessConsumer, naturalQuery, agentId, RunnableConfig.builder().build());
+	}
 
-		// 5. nl2sql
-		return baseNl2SqlService.generateSql(evidences, query, schemaDTO);
+	/**
+	 * 自然语言转SQL，允许记录中间执行过程
+	 * @param nl2SqlProcessConsumer 处理节点运行结果的Consumer
+	 * @param naturalQuery 自然语言
+	 * @return CompletableFuture
+	 * @throws GraphRunnerException 图运行异常
+	 */
+	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer,
+			String naturalQuery) throws GraphRunnerException {
+		return this.nl2sqlWithProcess(nl2SqlProcessConsumer, naturalQuery, "");
+	}
+
+	/**
+	 * 将NodeOutput转为NlSqlProcess实体类（用于nl2sqlWithProcess的consumer中记录转化过程）
+	 * @param output NodeOutput
+	 * @return NlSqlProcess
+	 */
+	private Nl2SqlProcess nodeOutputToNl2sqlProcess(NodeOutput output) {
+		// 将节点运行结果进行包装
+		String nodeRes = "";
+		if (output instanceof StreamingOutput streamingOutput) {
+			nodeRes = streamingOutput.chunk();
+		}
+		else {
+			nodeRes = output.toString();
+		}
+
+		// 如果是结束节点，取出最终生成结果
+		if (StateGraph.END.equals(output.node())) {
+			String result = output.state().value(ONLY_NL2SQL_OUTPUT, "");
+			return Nl2SqlProcess.success(result, output.node(), nodeRes);
+		}
+		return Nl2SqlProcess.processing(output.node(), nodeRes);
 	}
 
 }

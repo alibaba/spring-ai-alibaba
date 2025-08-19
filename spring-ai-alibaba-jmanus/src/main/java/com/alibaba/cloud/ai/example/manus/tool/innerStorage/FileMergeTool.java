@@ -15,19 +15,17 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.innerStorage;
 
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
-
-import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
-import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
  * File merge tool for merging single files into specified target folders, merging one
@@ -87,34 +85,6 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 
 	private static final String TOOL_NAME = "file_merge_tool";
 
-	private static final String TOOL_DESCRIPTION = """
-			File merge tool for merging single files into specified target folders.
-			Each call merges one file to the target folder, supports fuzzy filename matching.
-			""";
-
-	private static final String PARAMETERS = """
-			{
-				"type": "object",
-				"properties": {
-					"action": {
-						"type": "string",
-						"enum": ["merge_file"],
-						"description": "Operation type, currently supports merge_file"
-					},
-					"file_name": {
-						"type": "string",
-						"description": "Filename to merge (supports fuzzy matching)"
-					},
-					"target_folder": {
-						"type": "string",
-						"description": "Target folder path where the file will be copied"
-					}
-				},
-				"required": ["action", "file_name", "target_folder"],
-				"additionalProperties": false
-			}
-			""";
-
 	@Override
 	public String getName() {
 		return TOOL_NAME;
@@ -122,12 +92,37 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 
 	@Override
 	public String getDescription() {
-		return TOOL_DESCRIPTION;
+		return """
+				Merge multiple files into a single file. This tool can combine content from multiple source files and create a merged output file.
+				""";
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "source_files": {
+				            "type": "array",
+				            "items": {
+				                "type": "string"
+				            },
+				            "description": "List of source file paths to merge"
+				        },
+				        "output_file": {
+				            "type": "string",
+				            "description": "Output file path for the merged content"
+				        },
+				        "merge_strategy": {
+				            "type": "string",
+				            "enum": ["concatenate", "interleave"],
+				            "description": "Strategy for merging files: concatenate (append all files) or interleave (alternate between files)"
+				        }
+				    },
+				    "required": ["source_files", "output_file"]
+				}
+				""";
 	}
 
 	@Override
@@ -138,12 +133,6 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 	@Override
 	public String getServiceGroup() {
 		return "default-service-group";
-	}
-
-	public static OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(TOOL_DESCRIPTION, TOOL_NAME,
-				PARAMETERS);
-		return new OpenAiApi.FunctionTool(function);
 	}
 
 	/**

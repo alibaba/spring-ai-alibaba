@@ -100,9 +100,9 @@ public class AiConfiguration {
 	}
 
 	/**
-	 * DashScope EmbeddingModel 配置
+	 * DashScope EmbeddingModel configuration
 	 * <p>
-	 * 当配置了 spring.ai.dashscope.api-key 时启用，优先级最高
+	 * Enabled when spring.ai.dashscope.api-key is configured, highest priority
 	 */
 	@Bean("embeddingModel")
 	@Primary
@@ -117,11 +117,11 @@ public class AiConfiguration {
 	}
 
 	/**
-	 * 自定义 OpenAI EmbeddingModel 配置
+	 * Custom OpenAI EmbeddingModel configuration
 	 * <p>
-	 * 当没有配置 DashScope API Key 时使用
+	 * Used when DashScope API Key is not configured
 	 * <p>
-	 * 使用 @ConditionalOnMissingBean 避免与自动配置冲突
+	 * Use @ConditionalOnMissingBean to avoid conflict with auto-configuration
 	 */
 	@Bean("embeddingModel")
 	@Primary

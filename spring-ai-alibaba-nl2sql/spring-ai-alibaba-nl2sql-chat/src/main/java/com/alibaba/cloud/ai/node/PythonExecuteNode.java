@@ -62,13 +62,13 @@ public class PythonExecuteNode extends AbstractPlanBasedNode implements NodeActi
 		this.logNodeEntry();
 
 		try {
-			// 获取上下文
+			// Get context
 			String pythonCode = StateUtils.getStringValue(state, PYTHON_GENERATE_NODE_OUTPUT);
 			List<Map<String, String>> sqlResults = StateUtils.getListValue(state, SQL_RESULT_LIST_MEMORY);
 			CodePoolExecutorService.TaskRequest taskRequest = new CodePoolExecutorService.TaskRequest(pythonCode,
 					objectMapper.writeValueAsString(sqlResults), null);
 
-			// 运行Python代码
+			// Run Python code
 			CodePoolExecutorService.TaskResponse taskResponse = this.codePoolExecutor.runTask(taskRequest);
 			if (!taskResponse.isSuccess()) {
 				String errorMsg = "Python Execute Failed!\nStdOut: " + taskResponse.stdOut() + "\nStdErr: "
@@ -80,11 +80,11 @@ public class PythonExecuteNode extends AbstractPlanBasedNode implements NodeActi
 
 			// Create display flux for user experience only
 			Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("开始执行Python代码..."));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("标准输出：\n```"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse(taskResponse.stdOut()));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("\n```"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("Python代码执行成功！"));
+				emitter.next(ChatResponseUtil.createStatusResponse("开始执行Python代码..."));
+				emitter.next(ChatResponseUtil.createStatusResponse("标准输出：\n```"));
+				emitter.next(ChatResponseUtil.createStatusResponse(taskResponse.stdOut()));
+				emitter.next(ChatResponseUtil.createStatusResponse("\n```"));
+				emitter.next(ChatResponseUtil.createStatusResponse("Python代码执行成功！"));
 				emitter.complete();
 			});
 

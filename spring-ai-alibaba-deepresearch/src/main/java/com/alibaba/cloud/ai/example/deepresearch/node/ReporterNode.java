@@ -16,10 +16,13 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.enums.StreamNodePrefixEnum;
-import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
+import com.alibaba.cloud.ai.example.deepresearch.model.enums.StreamNodePrefixEnum;
+import com.alibaba.cloud.ai.example.deepresearch.model.enums.ParallelEnum;
+import com.alibaba.cloud.ai.example.deepresearch.model.SessionHistory;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.GraphId;
 import com.alibaba.cloud.ai.example.deepresearch.service.ReportService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SessionContextService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -52,48 +55,60 @@ public class ReporterNode implements NodeAction {
 
 	private final ReportService reportService;
 
+	private final SessionContextService sessionContextService;
+
 	private static final String RESEARCH_FORMAT = "# Research Requirements\n\n## Task\n\n{0}\n\n## Description\n\n{1}";
 
-	public ReporterNode(ChatClient reporterAgent, ReportService reportService) {
+	public ReporterNode(ChatClient reporterAgent, ReportService reportService,
+			SessionContextService sessionContextService) {
 		this.reporterAgent = reporterAgent;
 		this.reportService = reportService;
+		this.sessionContextService = sessionContextService;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("reporter node is running.");
-		Plan currentPlan = state.value("current_plan", Plan.class)
-			.orElseThrow(() -> new IllegalArgumentException("current_plan is missing"));
 
 		// 从 OverAllState 中获取线程ID
-		String threadId = state.value("thread_id", String.class)
-			.orElseThrow(() -> new IllegalArgumentException("thread_id is missing from state"));
+		String threadId = StateUtil.getThreadId(state);
+		String sessionId = StateUtil.getSessionId(state);
 		logger.info("Thread ID from state: {}", threadId);
-		// 1. 添加消息
+		logger.info("Session ID from state: {}", sessionId);
+
+		// 添加消息
 		List<Message> messages = new ArrayList<>();
-		// 1.1 研究报告格式消息
-		messages.add(new UserMessage(
-				MessageFormat.format(RESEARCH_FORMAT, currentPlan.getTitle(), currentPlan.getThought())));
-		// 1.2 添加背景调查的消息
-		if (state.value("enable_background_investigation", true)) {
-			List<String> backgroundInvestigationResults = state.value("background_investigation_results",
-					(List<String>) null);
-			assert backgroundInvestigationResults != null && !backgroundInvestigationResults.isEmpty();
-			for (String backgroundInvestigationResult : backgroundInvestigationResults) {
-				if (StringUtils.hasText(backgroundInvestigationResult)) {
-					messages.add(new UserMessage(backgroundInvestigationResult));
-				}
+
+		// 添加背景调查的信息
+		List<String> backgroundInvestigationResults = state.value("background_investigation_results",
+				(List<String>) null);
+		assert backgroundInvestigationResults != null && !backgroundInvestigationResults.isEmpty();
+		for (String backgroundInvestigationResult : backgroundInvestigationResults) {
+			if (StringUtils.hasText(backgroundInvestigationResult)) {
+				messages.add(new UserMessage(backgroundInvestigationResult));
 			}
 		}
-		// 1.4 添加研究组节点返回的信息
-		List<String> researcherTeam = List.of(ParallelEnum.RESEARCHER.getValue(), ParallelEnum.CODER.getValue());
-		for (String content : StateUtil.getParallelMessages(state, researcherTeam, StateUtil.getMaxStepNum(state))) {
-			logger.info("researcherTeam_content: {}", content);
-			messages.add(new UserMessage(content));
-		}
-		// 1.5 添加专业知识库决策节点返回的信息
-		if (state.value("use_professional_kb", false) && StringUtils.hasText(StateUtil.getRagContent(state))) {
-			messages.add(new UserMessage(StateUtil.getRagContent(state)));
+
+		// 添加深度研究信息
+		if (state.value("enable_deepresearch", true)) {
+			Plan currentPlan = StateUtil.getPlan(state);
+
+			// 1.1 研究报告格式消息
+			messages.add(new UserMessage(
+					MessageFormat.format(RESEARCH_FORMAT, currentPlan.getTitle(), currentPlan.getThought())));
+
+			// 1.2 添加研究组节点返回的信息
+			List<String> researcherTeam = List.of(ParallelEnum.RESEARCHER.getValue(), ParallelEnum.CODER.getValue());
+			for (String content : StateUtil.getParallelMessages(state, researcherTeam,
+					StateUtil.getMaxStepNum(state))) {
+				logger.info("researcherTeam_content: {}", content);
+				messages.add(new UserMessage(content));
+			}
+
+			// 1.3 添加专业知识库决策节点返回的信息
+			if (state.value("use_professional_kb", false) && StringUtils.hasText(StateUtil.getRagContent(state))) {
+				messages.add(new UserMessage(StateUtil.getRagContent(state)));
+			}
 		}
 
 		logger.debug("reporter node messages: {}", messages);
@@ -113,7 +128,10 @@ public class ReporterNode implements NodeAction {
 			.mapResult(response -> {
 				String finalReport = Objects.requireNonNull(response.getResult().getOutput().getText());
 				try {
-					reportService.saveReport(threadId, finalReport);
+					GraphId graphId = new GraphId(sessionId, threadId);
+					String userQuery = state.value("query", String.class).orElse("UNKNOWN");
+					sessionContextService.addSessionHistory(graphId,
+							SessionHistory.builder().graphId(graphId).userQuery(userQuery).report(finalReport).build());
 					logger.info("Report saved successfully, Thread ID: {}", threadId);
 				}
 				catch (Exception e) {

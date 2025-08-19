@@ -15,12 +15,12 @@
 -->
 <template>
   <div class="chat-container">
-    <div class="messages" ref="messagesRef">
+    <div class="messages" ref="messagesRef" @click="handleMessageContainerClick">
       <div
-        v-for="message in messages"
-        :key="message.id"
-        class="message"
-        :class="{ user: message.type === 'user', assistant: message.type === 'assistant' }"
+          v-for="message in messages"
+          :key="message.id"
+          class="message"
+          :class="{ user: message.type === 'user', assistant: message.type === 'assistant' }"
       >
         <div class="message-content">
           <!-- User message section -->
@@ -30,10 +30,10 @@
 
           <!-- Three-part structure of assistant message -->
           <div v-else class="assistant-message">
-            <!-- 1. TaskPilot Thinking/Processing Section - Only displayed when there is processing content -->
+            <!-- 1. JManus Thinking/Processing Section - Only displayed when there is processing content -->
             <div
-              class="thinking-section"
-              v-if="
+                class="thinking-section"
+                v-if="
                 message.thinking ||
                 message.planExecution?.progress !== undefined ||
                 (message.planExecution?.steps?.length ?? 0) > 0
@@ -57,53 +57,53 @@
                 <div class="progress" v-if="message.planExecution?.progress !== undefined">
                   <div class="progress-bar">
                     <div
-                      class="progress-fill"
-                      :style="{ width: message.planExecution.progress + '%' }"
+                        class="progress-fill"
+                        :style="{ width: message.planExecution.progress + '%' }"
                     ></div>
                   </div>
                   <span class="progress-text">{{
-                    message.planExecution.progressText ?? $t('chat.processing') + '...'
-                  }}</span>
+                      message.planExecution.progressText ?? $t('chat.processing') + '...'
+                    }}</span>
                 </div>
 
                 <!-- Step execution details -->
                 <div class="steps-container" v-if="(message.planExecution?.steps?.length ?? 0) > 0">
                   <h4 class="steps-title">{{ $t('chat.stepExecutionDetails') }}</h4>
 
-                  <!-- 遍历所有步骤 -->
+                  <!-- Iterate through all steps -->
                   <div
-                    v-for="(step, index) in message.planExecution?.steps"
-                    :key="index"
-                    class="ai-section"
-                    :class="{
+                      v-for="(step, index) in message.planExecution?.steps"
+                      :key="index"
+                      class="ai-section"
+                      :class="{
                       running: getAgentExecutionStatus(message, index) === 'RUNNING',
                       completed: getAgentExecutionStatus(message, index) === 'FINISHED',
                       pending: getAgentExecutionStatus(message, index) === 'IDLE',
                     }"
-                    @click.stop="handleStepClick(message, index)"
+                      @click.stop="handleStepClick(message, index)"
                   >
                     <div class="section-header">
                       <span class="step-icon">
                         {{
                           getAgentExecutionStatus(message, index) === 'FINISHED'
-                            ? '✓'
-                            : getAgentExecutionStatus(message, index) === 'RUNNING'
-                              ? '▶'
-                              : '○'
+                              ? '✓'
+                              : getAgentExecutionStatus(message, index) === 'RUNNING'
+                                  ? '▶'
+                                  : '○'
                         }}
                       </span>
                       <span class="step-title">
                         {{ step || `${$t('chat.step')} ${index + 1}` }}
                       </span>
                       <span
-                        v-if="getAgentExecutionStatus(message, index) === 'RUNNING'"
-                        class="step-status current"
+                          v-if="getAgentExecutionStatus(message, index) === 'RUNNING'"
+                          class="step-status current"
                       >
                         {{ $t('chat.status.executing') }}
                       </span>
                       <span
-                        v-else-if="getAgentExecutionStatus(message, index) === 'FINISHED'"
-                        class="step-status completed"
+                          v-else-if="getAgentExecutionStatus(message, index) === 'FINISHED'"
+                          class="step-status completed"
                       >
                         {{ $t('chat.status.completed') }}
                       </span>
@@ -114,17 +114,17 @@
 
                     <!-- Display step execution action information -->
                     <div
-                      v-if="message.stepActions && message.stepActions[index]"
-                      class="action-info"
+                        v-if="message.stepActions && message.stepActions[index]"
+                        class="action-info"
                     >
                       <div class="action-description">
                         <span class="action-icon">
                           {{
                             message.stepActions[index]?.status === 'current'
-                              ? '🔄'
-                              : message.stepActions[index]?.status === 'completed'
-                                ? '✓'
-                                : '⏳'
+                                ? '🔄'
+                                : message.stepActions[index]?.status === 'completed'
+                                    ? '✓'
+                                    : '⏳'
                           }}
                         </span>
                         <strong>{{ message.stepActions[index]?.actionDescription }}</strong>
@@ -134,8 +134,8 @@
                         <span class="tool-icon">⚙️</span>
                         <span class="param-label">{{ $t('common.parameters') }}:</span>
                         <pre class="param-content">{{
-                          message.stepActions[index]?.toolParameters
-                        }}</pre>
+                            message.stepActions[index]?.toolParameters
+                          }}</pre>
                       </div>
 
                       <div v-if="message.stepActions[index]?.thinkOutput" class="think-details">
@@ -145,8 +145,8 @@
                         </div>
                         <div class="think-output">
                           <pre class="think-content">{{
-                            message.stepActions[index]?.thinkOutput
-                          }}</pre>
+                              message.stepActions[index]?.thinkOutput
+                            }}</pre>
                         </div>
                       </div>
                     </div>
@@ -155,14 +155,14 @@
                     <div v-if="getSubPlanSteps(message, index)?.length > 0" class="sub-plan-steps">
                       <div class="sub-plan-header">
                         <Icon icon="carbon:tree-view" class="sub-plan-icon" />
-                        <span class="sub-plan-title">子执行计划</span>
+                        <span class="sub-plan-title">{{ $t('rightPanel.subPlan') }}</span>
                       </div>
                       <div class="sub-plan-step-list">
                         <div
-                          v-for="(subStep, subStepIndex) in getSubPlanSteps(message, index)"
-                          :key="`sub-${index}-${subStepIndex}`"
-                          class="sub-plan-step-item"
-                          :class="{
+                            v-for="(subStep, subStepIndex) in getSubPlanSteps(message, index)"
+                            :key="`sub-${index}-${subStepIndex}`"
+                            class="sub-plan-step-item"
+                            :class="{
                             completed:
                               getSubPlanStepStatus(message, index, subStepIndex) === 'completed',
                             current:
@@ -170,23 +170,23 @@
                             pending:
                               getSubPlanStepStatus(message, index, subStepIndex) === 'pending',
                           }"
-                          @click.stop="handleSubPlanStepClick(message, index, subStepIndex)"
+                            @click.stop="handleSubPlanStepClick(message, index, subStepIndex)"
                         >
                           <div class="sub-step-indicator">
                             <span class="sub-step-icon">
                               {{
                                 getSubPlanStepStatus(message, index, subStepIndex) === 'completed'
-                                  ? '✓'
-                                  : getSubPlanStepStatus(message, index, subStepIndex) === 'current'
-                                    ? '▶'
-                                    : '○'
+                                    ? '✓'
+                                    : getSubPlanStepStatus(message, index, subStepIndex) === 'current'
+                                        ? '▶'
+                                        : '○'
                               }}
                             </span>
                             <span class="sub-step-number">{{ subStepIndex + 1 }}</span>
                           </div>
                           <div class="sub-step-content">
                             <span class="sub-step-title">{{ subStep }}</span>
-                            <span class="sub-step-badge">子步骤</span>
+                            <span class="sub-step-badge">{{ $t('rightPanel.subStep') }}</span>
                           </div>
                         </div>
                       </div>
@@ -194,11 +194,11 @@
 
                     <!-- User input form -->
                     <div
-                      v-if="
+                        v-if="
                         message.planExecution?.userInputWaitState &&
                         getAgentExecutionStatus(message, index) === 'RUNNING'
                       "
-                      class="user-input-form-container"
+                        class="user-input-form-container"
                     >
                       <p class="user-input-message">
                         {{
@@ -207,38 +207,125 @@
                         }}
                       </p>
                       <p
-                        v-if="message.planExecution?.userInputWaitState?.formDescription"
-                        class="form-description"
+                          v-if="message.planExecution?.userInputWaitState?.formDescription"
+                          class="form-description"
                       >
                         {{ message.planExecution?.userInputWaitState?.formDescription }}
                       </p>
 
                       <form
-                        @submit.prevent="handleUserInputSubmit(message)"
-                        class="user-input-form"
+                          @submit.prevent="handleUserInputSubmit(message)"
+                          class="user-input-form"
                       >
                         <template
-                          v-if="
+                            v-if="
                             message.planExecution?.userInputWaitState?.formInputs &&
                             message.planExecution.userInputWaitState.formInputs.length > 0
                           "
                         >
-                          <div
-                            v-for="(input, inputIndex) in message.planExecution?.userInputWaitState
-                              ?.formInputs"
-                            :key="inputIndex"
-                            class="form-group"
-                          >
-                            <label :for="`form-input-${input.label.replace(/\W+/g, '_')}`">
-                              {{ input.label }}:
-                            </label>
-                            <input
-                              type="text"
-                              :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                              :name="input.label"
-                              v-model="formInputsStore[message.id][inputIndex]"
-                              class="form-input"
-                            />
+                          <div class="form-grid">
+                            <div
+                                v-for="(input, inputIndex) in message.planExecution?.userInputWaitState
+                                ?.formInputs"
+                                :key="inputIndex"
+                                class="form-group"
+
+                            >
+                              <label :for="`form-input-${input.label.replace(/\W+/g, '_')}`">
+                                {{ input.label }}{{ isRequired(input.required) ? ' *' : '' }}:
+                              </label>
+
+                              <!-- Text Input -->
+                              <input
+                                  v-if="!input.type || input.type === 'text'"
+                                  type="text"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :placeholder="input.placeholder || ''"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input"
+                              />
+
+                              <!-- Email Input -->
+                              <input
+                                  v-else-if="input.type === 'email'"
+                                  type="email"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :placeholder="input.placeholder || ''"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input"
+                              />
+
+                              <!-- Number Input -->
+                              <input
+                                  v-else-if="input.type === 'number'"
+                                  type="number"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :placeholder="input.placeholder || ''"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input"
+                              />
+
+                              <!-- Password Input -->
+                              <input
+                                  v-else-if="input.type === 'password'"
+                                  type="password"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :placeholder="input.placeholder || ''"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input"
+                              />
+
+                              <!-- Textarea -->
+                              <textarea
+                                  v-else-if="input.type === 'textarea'"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :placeholder="input.placeholder || ''"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input form-textarea"
+                                  rows="3"
+                              ></textarea>
+
+                              <!-- Select -->
+                              <select
+                                  v-else-if="input.type === 'select' && input.options"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input form-select"
+                              >
+                                <option value="">{{ $t('selectCommon.pleaseSelect') }}</option>
+                                <option
+                                    v-for="option in getOptionsArray(input.options)"
+                                    :key="option"
+                                    :value="option"
+                                >
+                                  {{ option }}
+                                </option>
+                              </select>
+
+                              <!-- Fallback to text input -->
+                              <input
+                                  v-else
+                                  type="text"
+                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                                  :name="input.label"
+                                  :placeholder="input.placeholder || ''"
+                                  :required="isRequired(input.required)"
+                                  v-model="formInputsStore[message.id][inputIndex]"
+                                  class="form-input"
+                              />
+                            </div>
                           </div>
                         </template>
 
@@ -246,11 +333,11 @@
                           <div class="form-group">
                             <label for="form-input-genericInput">{{ $t('common.input') }}:</label>
                             <input
-                              type="text"
-                              id="form-input-genericInput"
-                              name="genericInput"
-                              v-model="message.genericInput"
-                              class="form-input"
+                                type="text"
+                                id="form-input-genericInput"
+                                name="genericInput"
+                                v-model="message.genericInput"
+                                class="form-input"
                             />
                           </div>
                         </template>
@@ -265,13 +352,13 @@
 
                 <!-- Display the default processing state only when there is no final content and processing is in progress -->
                 <div
-                  v-else-if="
+                    v-else-if="
                     !message.content &&
                     (message.thinking ||
                       (message.planExecution?.progress !== undefined &&
                         (message.planExecution?.progress ?? 0) < 100))
                   "
-                  class="default-processing"
+                    class="default-processing"
                 >
                   <div class="processing-indicator">
                     <div class="thinking-dots">
@@ -285,7 +372,7 @@
               </div>
             </div>
 
-            <!-- 2. TaskPilot Final Response Section - Independent humanized dialogue unit -->
+            <!-- 2. JManus Final Response Section - Independent humanized dialogue unit -->
             <div class="response-section">
               <div class="response-header">
                 <div class="response-avatar">
@@ -366,10 +453,10 @@
 
     <!-- Scroll to bottom button -->
     <div
-      v-if="showScrollToBottom"
-      class="scroll-to-bottom-btn"
-      @click="forceScrollToBottom"
-      :title="$t('chat.scrollToBottom')"
+        v-if="showScrollToBottom"
+        class="scroll-to-bottom-btn"
+        @click="forceScrollToBottom"
+        :title="$t('chat.scrollToBottom')"
     >
       <Icon icon="carbon:chevron-down" />
     </div>
@@ -386,6 +473,13 @@ import { DirectApiService } from '@/api/direct-api-service'
 import { usePlanExecution } from '@/utils/use-plan-execution'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
+import type { InputMessage } from "@/stores/memory"
+import {memoryStore} from "@/stores/memory";
+import {MemoryApiService} from "@/api/memory-api-service";
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github-dark.css'
 
 /**
  * Chat message interface that includes PlanExecutionRecord for plan-based messages
@@ -431,11 +525,11 @@ interface Props {
 interface Emits {
   (e: 'step-selected', planId: string, stepIndex: number): void
   (
-    e: 'sub-plan-step-selected',
-    parentPlanId: string,
-    subPlanId: string,
-    stepIndex: number,
-    subStepIndex: number
+      e: 'sub-plan-step-selected',
+      parentPlanId: string,
+      subPlanId: string,
+      stepIndex: number,
+      subStepIndex: number
   ): void
 }
 
@@ -450,6 +544,38 @@ const { t } = useI18n()
 
 // Use the plan execution manager
 const planExecution = usePlanExecution()
+
+// Configure marked once with GFM and line breaks
+marked.setOptions({ gfm: true, breaks: true })
+
+// Custom renderer: highlight code blocks, add copy button (markdown fenced code treated same as code)
+const mdRenderer = new marked.Renderer()
+mdRenderer.code = ({ text, lang }: { text: string; lang?: string; escaped?: boolean }): string => {
+  const langRaw = (lang || '').trim()
+  const langLower = langRaw.toLowerCase()
+
+  let highlighted = ''
+  try {
+    if (langLower && hljs.getLanguage(langLower)) {
+      highlighted = hljs.highlight(text, { language: langLower }).value
+    } else {
+      highlighted = hljs.highlightAuto(text).value
+    }
+  } catch (e) {
+    highlighted = text
+  }
+
+  const rawEncoded = encodeURIComponent(text)
+  const label = langLower || 'text'
+  return `
+<div class="md-code-block" data-lang="${label}">
+  <div class="md-code-header">
+    <span class="md-lang">${label}</span>
+    <button class="md-copy-btn" data-raw="${rawEncoded}" title="copy">copy</button>
+  </div>
+  <pre><code class="hljs language-${label}">${highlighted}</code></pre>
+</div>`
+}
 
 const messagesRef = ref<HTMLElement>()
 const isLoading = ref(false)
@@ -490,13 +616,13 @@ const updateLastMessage = (updates: Partial<Message>) => {
   }
 }
 
-const handleDirectMode = async (query: string) => {
+const handleDirectMode = async (query: InputMessage) => {
   try {
     isLoading.value = true
 
     // Add a thinking state message
     const assistantMessage = addMessage('assistant', '', {
-      thinking: '正在理解您的请求并准备回复...',
+      thinking: t('chat.thinkingProcessing'),
     })
 
     // Execute directly
@@ -505,12 +631,16 @@ const handleDirectMode = async (query: string) => {
     if (response.planId) {
       console.log('[ChatComponent] Received planId from direct execution:', response.planId)
 
+      if (response.memoryId) {
+        memoryStore.setMemory(response.memoryId)
+      }
+
       if (!assistantMessage.planExecution) {
         assistantMessage.planExecution = {} as any
       }
       assistantMessage.planExecution!.currentPlanId = response.planId
 
-      planExecutionManager.handlePlanExecutionRequested(response.planId, query)
+      planExecutionManager.handlePlanExecutionRequested(response.planId, query.input)
 
       delete assistantMessage.thinking
 
@@ -519,7 +649,7 @@ const handleDirectMode = async (query: string) => {
       delete assistantMessage.thinking
 
       // Generate a natural and human-like response
-      const finalResponse = generateDirectModeResponse(response, query)
+      const finalResponse = generateDirectModeResponse(response, query.input)
       assistantMessage.content = finalResponse
     }
   } catch (error: any) {
@@ -539,23 +669,23 @@ const generateDirectModeResponse = (response: any, _originalQuery: string): stri
 
 // Generate an error response
 const generateErrorResponse = (error: any): string => {
-  const errorMsg = error?.message ?? error?.toString() ?? '未知错误'
+  const errorMsg = error?.message ?? error?.toString() ?? t('chat.unknownError')
 
   // Common error types with friendly prompts
-  if (errorMsg.includes('网络') || errorMsg.includes('network') || errorMsg.includes('timeout')) {
-    return `抱歉，似乎网络连接有些问题。请检查您的网络连接后再试一次，或者稍等几分钟再重新提问。`
+  if (errorMsg.includes('network') || errorMsg.includes('timeout')) {
+    return t('chat.networkError')
   }
 
-  if (errorMsg.includes('认证') || errorMsg.includes('权限') || errorMsg.includes('auth')) {
-    return `抱歉，访问权限出现了问题。这可能是系统配置的问题，请联系管理员或稍后再试。`
+  if (errorMsg.includes('auth') || errorMsg.includes('unauthorized')) {
+    return t('chat.authError')
   }
 
-  if (errorMsg.includes('格式') || errorMsg.includes('参数') || errorMsg.includes('invalid')) {
-    return `抱歉，您的请求格式可能有些问题。能否请您重新表述一下您的需求？我会尽力理解并帮助您。`
+  if (errorMsg.includes('invalid') || errorMsg.includes('format') || errorMsg.includes('parameter')) {
+    return t('chat.formatError')
   }
 
   // Generic error response
-  return `抱歉，处理您的请求时遇到了一些问题（${errorMsg}）。请稍后再试，或者换个方式表达您的需求，我会尽力帮助您的。`
+  return `${t('chat.unknownError')} (${errorMsg})`
 }
 
 const scrollToBottom = (force = false) => {
@@ -565,7 +695,7 @@ const scrollToBottom = (force = false) => {
 
       // Check if scrolling to the bottom is required
       const isNearBottom =
-        force || container.scrollHeight - container.scrollTop - container.clientHeight < 150
+          force || container.scrollHeight - container.scrollTop - container.clientHeight < 150
 
       if (isNearBottom) {
         // Use smooth scrolling unless forced scrolling is specified.
@@ -608,15 +738,15 @@ const removeScrollListener = () => {
   }
 }
 
-const handleSendMessage = (message: string) => {
+const handleSendMessage = (message: InputMessage) => {
   // First, add the user message to the UI.
-  addMessage('user', message)
+  addMessage('user', message.input)
 
   // Handle messages according to the mode
   if (props.mode === 'plan') {
     // In plan mode, only add UI message, parent component handles the API call
     // This prevents double API calls
-    console.log('[ChatComponent] Plan mode message sent, parent should handle:', message)
+    console.log('[ChatComponent] Plan mode message sent, parent should handle:', message.input)
     // Don't call any API here, just add to UI
   } else {
     // Direct mode is still handled directly
@@ -627,7 +757,7 @@ const handleSendMessage = (message: string) => {
 // Get agent execution status based on index
 const getAgentExecutionStatus = (message: Message, index: number): string => {
   const agentExecutionSequence = message.planExecution?.agentExecutionSequence ?? []
-  // 使用安全的索引检查来避免越界访问
+  // Use safe index checking to avoid out-of-bounds access
   if (index < 0 || index >= agentExecutionSequence.length) {
     return 'IDLE'
   }
@@ -678,8 +808,8 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
     for (const thinkActStep of agentExecution.thinkActSteps) {
       if (thinkActStep.subPlanExecutionRecord) {
         console.log(
-          `[ChatComponent] Found sub-plan for step ${stepIndex}:`,
-          thinkActStep.subPlanExecutionRecord
+            `[ChatComponent] Found sub-plan for step ${stepIndex}:`,
+            thinkActStep.subPlanExecutionRecord
         )
         const rawSteps = thinkActStep.subPlanExecutionRecord.steps ?? []
         // Apply the same formatting logic as main steps
@@ -687,9 +817,9 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
           if (typeof step === 'string') {
             return step
           } else if (typeof step === 'object' && step !== null) {
-            return step.title || step.description || `子步骤`
+            return step.title || step.description || t('rightPanel.subStep')
           }
-          return `子步骤`
+          return t('rightPanel.subStep')
         })
       }
     }
@@ -703,9 +833,9 @@ const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
 
 // Get sub-plan step status - new feature
 const getSubPlanStepStatus = (
-  message: Message,
-  stepIndex: number,
-  subStepIndex: number
+    message: Message,
+    stepIndex: number,
+    subStepIndex: number
 ): string => {
   try {
     const agentExecutionSequence = message.planExecution?.agentExecutionSequence
@@ -793,11 +923,11 @@ const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepInde
 
     // Emit event with necessary identifiers for parent component to handle
     emit(
-      'sub-plan-step-selected',
-      message.planExecution?.currentPlanId ?? '',
-      subPlan.currentPlanId,
-      stepIndex,
-      subStepIndex
+        'sub-plan-step-selected',
+        message.planExecution?.currentPlanId ?? '',
+        subPlan.currentPlanId,
+        stepIndex,
+        subStepIndex
     )
   } catch (error) {
     console.error('[ChatComponent] Error handling sub-plan step click:', error)
@@ -809,50 +939,50 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
   if (!message.planExecution?.steps) return
 
   console.log(
-    '[ChatComponent] Starting to update step actions, steps count:',
-    message.planExecution.steps.length,
-    'execution sequence:',
-    planDetails.agentExecutionSequence?.length ?? 0
+      '[ChatComponent] Starting to update step actions, steps count:',
+      message.planExecution.steps.length,
+      'execution sequence:',
+      planDetails.agentExecutionSequence?.length ?? 0
   )
 
   const lastStepActions = new Array(message.planExecution.steps.length).fill(null)
 
   if (planDetails.agentExecutionSequence?.length) {
     const sequenceLength = Math.min(
-      planDetails.agentExecutionSequence.length,
-      message.planExecution.steps.length
+        planDetails.agentExecutionSequence.length,
+        message.planExecution.steps.length
     )
 
     for (let index = 0; index < sequenceLength; index++) {
-  const execution = planDetails.agentExecutionSequence[index]
+      const execution = planDetails.agentExecutionSequence[index]
 
-  if (execution.thinkActSteps?.length) {
+      if (execution.thinkActSteps?.length) {
         const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1]
 
         if (latestThinkAct.actionDescription && latestThinkAct.toolParameters) {
           lastStepActions[index] = {
             actionDescription: latestThinkAct.actionDescription,
             toolParameters:
-              typeof latestThinkAct.toolParameters === 'string'
-                ? latestThinkAct.toolParameters
-                : JSON.stringify(latestThinkAct.toolParameters, null, 2),
+                typeof latestThinkAct.toolParameters === 'string'
+                    ? latestThinkAct.toolParameters
+                    : JSON.stringify(latestThinkAct.toolParameters, null, 2),
             thinkInput: latestThinkAct.thinkInput ?? '',
             thinkOutput: latestThinkAct.thinkOutput ?? '',
             status:
-              planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex
-                ? 'completed'
-                : planDetails.currentStepIndex !== undefined && index === planDetails.currentStepIndex
-                ? 'current'
-                : 'pending',
+                planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex
+                    ? 'completed'
+                    : planDetails.currentStepIndex !== undefined && index === planDetails.currentStepIndex
+                        ? 'current'
+                        : 'pending',
           }
 
           console.log(
-            `[ChatComponent] Step ${index} action set: ${lastStepActions[index].actionDescription}`
+              `[ChatComponent] Step ${index} action set: ${lastStepActions[index].actionDescription}`
           )
         } else {
           lastStepActions[index] = {
-            actionDescription: '思考中',
-            toolParameters: '等待决策',
+            actionDescription: t('chat.thinking'),
+            toolParameters: t('chat.waitingDecision'),
             thinkInput: latestThinkAct.thinkInput ?? '',
             thinkOutput: latestThinkAct.thinkOutput ?? '',
             status: planDetails.currentStepIndex !== undefined && index === planDetails.currentStepIndex ? 'current' : 'pending',
@@ -862,27 +992,27 @@ const updateStepActions = (message: Message, planDetails: PlanExecutionRecord) =
         }
       } else {
         lastStepActions[index] = {
-          actionDescription: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? '已完成' : '等待中',
-          toolParameters: '无工具参数',
+          actionDescription: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? t('chat.status.completed') : t('chat.status.pending'),
+          toolParameters: t('chat.noToolParameters'),
           thinkInput: '',
           thinkOutput: '',
           status: planDetails.currentStepIndex !== undefined && index < planDetails.currentStepIndex ? 'completed' : 'pending',
         }
 
         console.log(
-          `[ChatComponent] 步骤 ${index} 无执行细节, 状态设为: ${lastStepActions[index].status}`
+            `[ChatComponent] Step ${index} has no execution details, status set to: ${lastStepActions[index].status}`
         )
       }
     }
   } else {
-    console.log('[ChatComponent] 没有执行序列数据')
+    console.log('[ChatComponent] No execution sequence data')
   }
 
   message.stepActions = [...lastStepActions]
 
   console.log(
-    '[ChatComponent] 步骤动作更新完成:',
-    JSON.stringify(lastStepActions.map(a => a?.actionDescription))
+      '[ChatComponent] Step actions update completed:',
+      JSON.stringify(lastStepActions.map(a => a?.actionDescription))
   )
 
   nextTick(() => {
@@ -897,14 +1027,14 @@ const handleDialogRoundStart = (planId: string) => {
   if (planId) {
     // Check if there is already an assistant message for this plan
     const existingAssistantMsg = messages.value.findIndex(
-      m => m.planExecution?.currentPlanId === planId && m.type === 'assistant'
+        m => m.planExecution?.currentPlanId === planId && m.type === 'assistant'
     )
 
     // If there is no existing message, add an assistant message to prepare to display steps
     if (existingAssistantMsg === -1) {
       addMessage('assistant', '', {
         planExecution: { currentPlanId: planId } as PlanExecutionRecord,
-        thinking: '正在准备执行计划...',
+        thinking: t('chat.preparingExecution'),
       })
       console.log('[ChatComponent] Created new assistant message for planId:', planId)
     } else {
@@ -939,28 +1069,28 @@ const handlePlanUpdate = (rootPlanId: string) => {
 
   // Find the corresponding message - Use the currentPlanId field
   const messageIndex = messages.value.findIndex(
-    m => m.planExecution?.currentPlanId === planDetails.currentPlanId && m.type === 'assistant'
+      m => m.planExecution?.currentPlanId === planDetails.currentPlanId && m.type === 'assistant'
   )
   let message
 
   if (messageIndex !== -1) {
     message = messages.value[messageIndex]
     console.log(
-      '[ChatComponent] Found existing assistant message for currentPlanId:',
-      planDetails.currentPlanId
+        '[ChatComponent] Found existing assistant message for currentPlanId:',
+        planDetails.currentPlanId
     )
   } else {
     console.warn(
-      '[ChatComponent] No existing assistant message found for currentPlanId:',
-      planDetails.currentPlanId
+        '[ChatComponent] No existing assistant message found for currentPlanId:',
+        planDetails.currentPlanId
     )
     console.log(
-      '[ChatComponent] Current messages:',
-      messages.value.map(m => ({
-        type: m.type,
-        planId: m.planExecution?.currentPlanId,
-        content: m.content.substring(0, 50),
-      }))
+        '[ChatComponent] Current messages:',
+        messages.value.map(m => ({
+          type: m.type,
+          planId: m.planExecution?.currentPlanId,
+          content: m.content.substring(0, 50),
+        }))
     )
 
     // If no corresponding message is found, it should have been created by handleDialogRoundStart. Do not create a new message here
@@ -975,14 +1105,14 @@ const handlePlanUpdate = (rootPlanId: string) => {
 
     if (lastAssistantIndex !== -1) {
       message = messages.value[lastAssistantIndex]
-      // 更新 planExecution 以确保后续更新能找到它
+      // Update planExecution to ensure subsequent updates can find it
       if (!message.planExecution) {
         message.planExecution = {} as PlanExecutionRecord
       }
       message.planExecution.currentPlanId = planDetails.currentPlanId
       console.log(
-        '[ChatComponent] Using last assistant message and updating planExecution.currentPlanId to:',
-        planDetails.currentPlanId
+          '[ChatComponent] Using last assistant message and updating planExecution.currentPlanId to:',
+          planDetails.currentPlanId
       )
     } else {
       console.error('[ChatComponent] No assistant message found at all, this should not happen')
@@ -1003,11 +1133,11 @@ const handlePlanUpdate = (rootPlanId: string) => {
     console.log('[ChatComponent] Handling simple response without steps')
 
     if (planDetails.completed) {
-      // 直接设置最终回复，清除所有处理状态
+      // Directly set the final response, clear all processing states
       delete message.thinking
 
       const finalResponse =
-        planDetails.summary ?? planDetails.result ?? planDetails.message ?? '处理完成'
+          planDetails.summary ?? planDetails.result ?? planDetails.message ?? t('chat.executionCompleted')
       // Ensure the response is natural
       message.content = generateNaturalResponse(finalResponse)
 
@@ -1015,7 +1145,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
     } else {
       // If there is a title or status information, update the thinking state
       if (planDetails.title) {
-        message.thinking = `正在执行: ${planDetails.title}`
+        message.thinking = `${t('chat.thinkingExecuting', { title: planDetails.title })}`
       }
     }
 
@@ -1037,9 +1167,9 @@ const handlePlanUpdate = (rootPlanId: string) => {
     }
     // If it's an object, extract the title for display
     else if (typeof step === 'object' && step !== null) {
-      return step.title || step.description || `步骤`
+      return step.title || step.description || t('chat.step')
     }
-    return `步骤`
+    return t('chat.step')
   })
 
   // Update the step information in planExecution
@@ -1050,8 +1180,8 @@ const handlePlanUpdate = (rootPlanId: string) => {
   // Process the execution sequence and step actions - Refer to the logic in chat-handler.js
   if (planDetails.agentExecutionSequence && planDetails.agentExecutionSequence.length > 0) {
     console.log(
-      '[ChatComponent] 发现执行序列数据，数量:',
-      planDetails.agentExecutionSequence.length
+        '[ChatComponent] Found execution sequence data, count:',
+        planDetails.agentExecutionSequence.length
     )
 
     // Call updateStepActions to update the step action information
@@ -1068,11 +1198,11 @@ const handlePlanUpdate = (rootPlanId: string) => {
           // If the think output is too long, truncate it
           const maxLength = 150
           const displayOutput =
-            latestThinkAct.thinkOutput.length > maxLength
-              ? latestThinkAct.thinkOutput.substring(0, maxLength) + '...'
-              : latestThinkAct.thinkOutput
+              latestThinkAct.thinkOutput.length > maxLength
+                  ? latestThinkAct.thinkOutput.substring(0, maxLength) + '...'
+                  : latestThinkAct.thinkOutput
 
-          message.thinking = `正在思考: ${displayOutput}`
+          message.thinking = `${t('chat.thinking')}: ${displayOutput}`
         }
       }
     }
@@ -1082,13 +1212,13 @@ const handlePlanUpdate = (rootPlanId: string) => {
       const currentStepIndex = message.planExecution.currentStepIndex ?? 0
       const currentStep = message.planExecution.steps?.[currentStepIndex]
       const stepTitle = typeof currentStep === 'string' ? currentStep : ''
-      message.thinking = `正在执行: ${stepTitle}`
+      message.thinking = `${t('chat.thinkingExecuting', { title: stepTitle })}`
     }
   }
 
   // Handle the user input waiting state
   if (planDetails.userInputWaitState && message.planExecution) {
-    console.log('[ChatComponent] 需要用户输入:', planDetails.userInputWaitState)
+    console.log('[ChatComponent] User input required:', planDetails.userInputWaitState)
 
     // Attach the user input waiting state to planExecution
     if (!message.planExecution.userInputWaitState) {
@@ -1098,15 +1228,20 @@ const handlePlanUpdate = (rootPlanId: string) => {
       message: planDetails.userInputWaitState.message ?? '',
       formDescription: planDetails.userInputWaitState.formDescription ?? '',
       formInputs:
-        planDetails.userInputWaitState.formInputs?.map((input: any) => ({
-          label: input.label,
-          value: input.value || '',
-        })) ?? [],
+          planDetails.userInputWaitState.formInputs?.map((input: any) => ({
+            label: input.label,
+            value: input.value || '',
+            type: input.type || 'text',
+            required: input.required === 'true' || input.required === true,
+            placeholder: input.placeholder || '',
+            name: input.name || input.label,
+            options: input.options || undefined,
+          })) ?? [],
     }
 
     formInputsStore[message.id] ??= {}
     // Clear the thinking state and display the message waiting for user input
-    message.thinking = '等待用户输入...'
+    message.thinking = t('input.waiting')
   } else {
     // If there is no user input waiting state, clear the previous state
     if (message.planExecution?.userInputWaitState) {
@@ -1127,7 +1262,7 @@ const handlePlanUpdate = (rootPlanId: string) => {
     } else if (planDetails.result) {
       finalResponse = planDetails.result
     } else {
-      finalResponse = '任务已完成'
+      finalResponse = t('chat.executionCompleted')
     }
 
     // Generate natural, human-like responses
@@ -1148,31 +1283,34 @@ const handlePlanUpdate = (rootPlanId: string) => {
 
 // Helper function to generate natural responses
 const generateNaturalResponse = (text: string): string => {
-  if (!text) return '我明白了，还有什么我可以帮您的吗？'
+  if (!text) return t('chat.defaultResponse')
 
   // If it's already in a natural conversation format, return it directly
   if (
-    text.includes('我') ||
-    text.includes('您') ||
-    text.includes('您好') ||
-    text.includes('可以')
+      text.includes('I ') ||
+      text.includes('you') ||
+      text.includes('hello') ||
+      text.includes('can') ||
+      text.includes('I') ||
+      text.includes('you') ||
+      text.includes('can')
   ) {
     return text
   }
 
   // Generate a more natural response based on the text content
   if (text.length < 10) {
-    return `${text}！还有什么需要我帮助的吗？`
+    return `${text}! ${t('chat.anythingElse')}`
   } else if (text.length < 50) {
-    return `好的，${text}。如果您还有其他问题，请随时告诉我。`
+    return `${t('chat.okayDone', { text })}. ${t('chat.ifOtherQuestions')}`
   } else {
-    return `${text}\n\n希望这个回答对您有帮助！还有什么我可以为您做的吗？`
+    return `${text}\n\n${t('chat.hopeHelpful')} ${t('chat.anythingElse')}`
   }
 }
 
 // Generate a natural response for a completed plan
 const generateCompletedPlanResponse = (text: string): string => {
-  if (!text) return '任务已完成！还有什么我可以帮您的吗？'
+  if (!text) return `${t('chat.executionCompleted')}! ${t('chat.anythingElse')}`
   else{
     return `${text}`;
   }
@@ -1192,19 +1330,19 @@ const handlePlanCompleted = (rootPlanId: string) => {
 
   if (details.rootPlanId) {
     const messageIndex = messages.value.findIndex(
-      m => m.planExecution?.currentPlanId === details.rootPlanId
+        m => m.planExecution?.currentPlanId === details.rootPlanId
     );
     if (messageIndex !== -1) {
       const message = messages.value[messageIndex];
       delete message.thinking;
 
-      const summary = details.summary ?? details.result ?? '任务已完成';
+      const summary = details.summary ?? details.result ?? t('chat.executionCompleted');
       let finalResponse = summary;
-      if (!finalResponse.includes('我') && !finalResponse.includes('您')) {
-        if (finalResponse.includes('成功') || finalResponse.includes('完成')) {
-          finalResponse = `很好！${finalResponse}。如果您还有其他需要帮助的地方，请随时告诉我。`;
+      if (!finalResponse.includes('I') && !finalResponse.includes('you')) {
+        if (finalResponse.includes('success') || finalResponse.includes('complete') || finalResponse.includes('finished')) {
+          finalResponse = `${t('chat.great')}${finalResponse}. ${t('chat.ifOtherHelp')}`;
         } else {
-          finalResponse = `我已经完成了您的请求：${finalResponse}`;
+          finalResponse = `${t('chat.completedRequest', { result: finalResponse })}`;
         }
       }
 
@@ -1231,24 +1369,65 @@ const handlePlanError = (message: string) => {
 const formatResponseText = (text: string): string => {
   if (!text) return ''
 
-  // Convert line breaks to HTML line breaks
-  let formatted = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>')
+  try {
+    const rawHtml = marked.parse(text, { renderer: mdRenderer })
+    // Sanitize to avoid XSS
+    return DOMPurify.sanitize(rawHtml as string)
+  } catch (e) {
+    console.error('Markdown render error:', e)
+    // Fallback: preserve original simple formatting
+    let fallback = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>')
+    fallback = fallback.replace(/(<br><br>)/g, '</p><p>')
+    if (fallback.includes('</p><p>')) fallback = `<p>${fallback}</p>`
+    return fallback
+  }
+}
 
-  // Add appropriate paragraph spacing and formatting
-  formatted = formatted.replace(/(<br><br>)/g, '</p><p>')
+// Copy button handler (event delegation)
+const handleMessageContainerClick = (event: Event) => {
+  const target = event.target as HTMLElement
+  if (!target) return
+  const btn = target.closest('.md-copy-btn') as HTMLElement | null
+  if (!btn) return
 
-  // Wrap with p tags if there are multiple paragraphs
-  if (formatted.includes('</p><p>')) {
-    formatted = `<p>${formatted}</p>`
+  const raw = btn.getAttribute('data-raw') || ''
+  let textToCopy = ''
+  try {
+    textToCopy = decodeURIComponent(raw)
+  } catch {
+    textToCopy = raw
   }
 
-  return formatted
+  const doCopy = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(textToCopy)
+      } else {
+        const ta = document.createElement('textarea')
+        ta.value = textToCopy
+        ta.style.position = 'fixed'
+        ta.style.left = '-9999px'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+      }
+      btn.textContent = 'copy'
+      setTimeout(() => (btn.textContent = 'copy'), 1500)
+    } catch (err) {
+      console.error('Copy failed:', err)
+      btn.textContent = 'copy failed'
+      setTimeout(() => (btn.textContent = 'copy'), 1500)
+    }
+  }
+
+  doCopy()
 }
 
 // Handle user input form submission
 const handleUserInputSubmit = async (message: Message) => {
   if (!message.planExecution?.currentPlanId || !message.planExecution.userInputWaitState) {
-    console.error('[ChatComponent] 缺少planExecution.currentPlanId或userInputWaitState')
+    console.error('[ChatComponent] Missing planExecution.currentPlanId or userInputWaitState')
     return
   }
 
@@ -1269,12 +1448,12 @@ const handleUserInputSubmit = async (message: Message) => {
       inputData.genericInput = message.genericInput ?? ''
     }
 
-    console.log('[ChatComponent] 提交用户输入:', inputData)
+    console.log('[ChatComponent] Submitting user input:', inputData)
 
     // Submit user input via API
     const response = await CommonApiService.submitFormInput(
-      message.planExecution.currentPlanId,
-      inputData
+        message.planExecution.currentPlanId,
+        inputData
     )
 
     // Clear the user input waiting state
@@ -1285,11 +1464,11 @@ const handleUserInputSubmit = async (message: Message) => {
     // Continue polling for plan updates (should resume automatically after submission)
     planExecution.startPolling()
 
-    console.log('[ChatComponent] 用户输入提交成功:', response)
+    console.log('[ChatComponent] User input submitted successfully:', response)
   } catch (error: any) {
-    console.error('[ChatComponent] 用户输入提交失败:', error)
-    // 可以在UI中显示错误消息
-    alert(`提交失败: ${error?.message || '未知错误'}`)
+    console.error('[ChatComponent] User input submission failed:', error)
+    // Can display error message in UI
+    alert(`${t('common.submitFailed')}: ${error?.message || t('common.unknownError')}`)
   }
 }
 
@@ -1300,7 +1479,9 @@ watch(
     if (newPrompt && typeof newPrompt === 'string' && newPrompt.trim() && newPrompt !== oldPrompt) {
       console.log('[ChatComponent] Processing changed initial prompt:', newPrompt)
       nextTick(() => {
-        handleSendMessage(newPrompt)
+        handleSendMessage({
+          input: newPrompt
+        })
       })
     }
   },
@@ -1330,7 +1511,9 @@ onMounted(() => {
   if (props.initialPrompt && typeof props.initialPrompt === 'string' && props.initialPrompt.trim()) {
     console.log('[ChatComponent] Processing initial prompt:', props.initialPrompt)
     nextTick(() => {
-      handleSendMessage(props.initialPrompt!)
+      handleSendMessage({
+        input: props.initialPrompt!
+      })
     })
   }
 })
@@ -1353,6 +1536,44 @@ onUnmounted(() => {
   Object.keys(formInputsStore).forEach(key => delete formInputsStore[key])
 })
 
+
+const showMemory = async () => {
+  if(memoryStore.selectMemoryId) {
+    const memory = await MemoryApiService.getMemory(memoryStore.selectMemoryId);
+    messages.value = []
+    memory.messages.map(message => {
+      if(message.messageType.toLowerCase() === 'user') {
+        addMessage('user',message.text)
+      }
+      if(message.messageType.toLowerCase() === 'assistant') {
+        addMessage('assistant',message.text)
+      }
+    });
+    forceScrollToBottom()
+  }
+}
+
+const newChat = () => {
+  messages.value = []
+}
+
+// Helper function to safely get options array
+const getOptionsArray = (options: string | string[] | undefined): string[] => {
+  if (!options) return []
+  if (Array.isArray(options)) return options
+  if (typeof options === 'string') {
+    return options.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0)
+  }
+  return []
+}
+
+// Helper function to check if field is required
+const isRequired = (required: boolean | string | undefined): boolean => {
+  if (typeof required === 'boolean') return required
+  if (typeof required === 'string') return required === 'true'
+  return false
+}
+
 // Expose methods to parent components for usage
 defineExpose({
   handleSendMessage,
@@ -1360,7 +1581,9 @@ defineExpose({
   handlePlanCompleted,
   handleDialogRoundStart,
   addMessage,
-  handlePlanError
+  handlePlanError,
+  showMemory,
+  newChat
 })
 </script>
 
@@ -1443,7 +1666,7 @@ defineExpose({
 }
 
 .assistant-message {
-  /* 1. TaskPilot Thinking/Processing Section Style */
+  /* 1. JManus Thinking/Processing Section Style */
   .thinking-section {
     margin-bottom: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1519,14 +1742,14 @@ defineExpose({
     }
   }
 
-  /* 2. TaskPilot Final Response Section Style - Simulate Human Conversation Unit */
+  /* 2. JManus Final Response Section Style - Simulate Human Conversation Unit */
   .response-section {
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 18px;
     background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.12) 0%,
-      rgba(255, 255, 255, 0.06) 100%
+        135deg,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.06) 100%
     );
     overflow: hidden;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
@@ -1545,9 +1768,9 @@ defineExpose({
       gap: 14px;
       padding: 18px 24px 14px 24px;
       background: linear-gradient(
-        135deg,
-        rgba(102, 126, 234, 0.18) 0%,
-        rgba(118, 75, 162, 0.12) 100%
+          135deg,
+          rgba(102, 126, 234, 0.18) 0%,
+          rgba(118, 75, 162, 0.12) 100%
       );
       border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 
@@ -1579,8 +1802,8 @@ defineExpose({
         letter-spacing: 0.8px;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
-          sans-serif;
+            -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+            sans-serif;
       }
     }
 
@@ -1599,8 +1822,8 @@ defineExpose({
           word-spacing: 1.2px;
           text-align: left;
           font-family:
-            -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
-            sans-serif;
+              -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+              sans-serif;
 
           /* Make the text look more like a natural conversation */
           p {
@@ -1621,6 +1844,115 @@ defineExpose({
             color: #e2e8f0;
             font-style: italic;
           }
+
+            /* Headings */
+            h1, h2, h3, h4, h5, h6 {
+              margin: 12px 0 8px;
+              font-weight: 700;
+              line-height: 1.4;
+            }
+            h1 { font-size: 22px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; }
+            h2 { font-size: 20px; margin-top: 16px; }
+            h3 { font-size: 18px; }
+
+            /* Lists */
+            ul, ol {
+              margin: 6px 0 12px 22px;
+              padding-left: 18px;
+            }
+            li { margin: 4px 0; }
+
+            /* Blockquote */
+            blockquote {
+              margin: 10px 0;
+              padding: 8px 12px;
+              border-left: 3px solid #667eea;
+              background: rgba(102, 126, 234, 0.08);
+              color: #e5e7eb;
+            }
+
+            /* Inline code */
+            code {
+              background: rgba(0,0,0,0.35);
+              padding: 2px 6px;
+              border-radius: 4px;
+              font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+                'Courier New', monospace;
+              font-size: 13px;
+            }
+
+            /* Code blocks */
+            pre {
+              background: rgba(0,0,0,0.5);
+              border: 1px solid rgba(255, 255, 255, 0.08);
+              border-radius: 8px;
+              padding: 12px 14px;
+              overflow: auto;
+              margin: 10px 0 14px;
+            }
+            pre code {
+              background: transparent;
+              padding: 0;
+              font-size: 13px;
+              line-height: 1.6;
+              color: #e5e7eb;
+              white-space: pre;
+            }
+
+            /* Enhanced code block container with toolbar */
+            :deep(.md-code-block) {
+              position: relative;
+              margin: 12px 0 16px;
+              border: 1px solid #30363d; /* GitHub dark border */
+              border-radius: 8px;
+              background: #0d1117; /* GitHub dark bg */
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+            }
+            :deep(.md-code-block .md-code-header) {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 8px 10px;
+              border-bottom: 1px solid #30363d;
+              background: #161b22; /* GitHub dark header */
+              border-top-left-radius: 8px;
+              border-top-right-radius: 8px;
+            }
+            :deep(.md-code-block .md-code-header .md-lang) {
+              margin-right: auto;
+            }
+            :deep(.md-code-block .md-code-header .md-copy-btn) {
+              margin-left: auto; /* ensure right aligned */
+            }
+            :deep(.md-code-block .md-lang) {
+              font-size: 12px;
+              color: #8b949e;
+              text-transform: lowercase;
+            }
+            :deep(.md-code-block .md-copy-btn) {
+              height: 22px;
+              padding: 0 8px;
+              background: #21262d; /* GitHub dark button bg */
+              color: #c9d1d9; /* GitHub dark text */
+              border: 1px solid #30363d;
+              border-radius: 6px;
+              font-size: 12px;
+              cursor: pointer;
+              transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+            }
+            :deep(.md-code-block .md-copy-btn:hover) {
+              background: #30363d; /* GitHub dark hover bg */
+              color: #f0f6fc;
+              border-color: #8b949e;
+              transform: translateY(-1px);
+            }
+            :deep(.md-code-block pre) {
+              margin: 0;
+              border: none;
+              border-bottom-left-radius: 8px;
+              border-bottom-right-radius: 8px;
+              background: #0d1117; /* match container */
+            }
         }
       }
 
@@ -1921,7 +2253,7 @@ defineExpose({
           border-radius: 4px;
           cursor: pointer;
           transition: all 0.2s ease;
-          margin-left: 20px; /* 缩进显示父子关系 */
+          margin-left: 20px; /* Indent to show parent-child relationship */
 
           &:hover {
             background: rgba(255, 255, 255, 0.05);
@@ -2107,8 +2439,19 @@ defineExpose({
   }
 
   .user-input-form {
-    .form-group {
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
       margin-bottom: 16px;
+
+      @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 0;
 
       label {
         display: block;
@@ -2136,6 +2479,39 @@ defineExpose({
 
         &::placeholder {
           color: #888888;
+        }
+      }
+
+      .form-textarea {
+        resize: vertical;
+        min-height: 40px;
+        font-family: inherit;
+        line-height: 1.4;
+      }
+
+      /* Special handling for wide fields in grid layout */
+      &.form-group-wide {
+        grid-column: span 2;
+
+        @media (max-width: 600px) {
+          grid-column: span 1;
+        }
+      }
+
+      &.form-group-full {
+        grid-column: span 2;
+
+        @media (max-width: 600px) {
+          grid-column: span 1;
+        }
+      }
+
+      .form-select {
+        cursor: pointer;
+
+        option {
+          background: #2d3748;
+          color: #ffffff;
         }
       }
     }

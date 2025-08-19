@@ -15,14 +15,12 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
@@ -31,33 +29,69 @@ import java.util.Map;
 /**
  * LLM form input tool: supports multiple input items with labels and descriptions.
  */
-@Component
 public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput> {
 
 	private final ObjectMapper objectMapper;
 
-	private final PromptService promptService;
-
 	private static final Logger log = LoggerFactory.getLogger(FormInputTool.class);
 
 	private String getToolParameters() {
-		try {
-			return promptService.getPromptByName("FORM_INPUT_TOOL_PARAMETERS").getPromptContent();
-		}
-		catch (Exception e) {
-			log.warn("Failed to load prompt-based tool parameters, using legacy configuration", e);
-			return LEGACY_PARAMETERS;
-		}
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "description": {
+				            "type": "string",
+				            "description": "Description of the form and what information is being collected"
+				        },
+				        "inputs": {
+				            "type": "array",
+				            "items": {
+				                "type": "object",
+				                "properties": {
+				                    "name": {
+				                        "type": "string",
+				                        "description": "Name/ID of the input field"
+				                    },
+				                    "label": {
+				                        "type": "string",
+				                        "description": "Display label for the input field"
+				                    },
+				                    "type": {
+				                        "type": "string",
+				                        "enum": ["text", "number", "email", "password", "textarea", "select", "checkbox", "radio"],
+				                        "description": "Type of input field"
+				                    },
+				                    "required": {
+				                        "type": "boolean",
+				                        "description": "Whether this field is required"
+				                    },
+				                    "placeholder": {
+				                        "type": "string",
+				                        "description": "Placeholder text for the input field"
+				                    },
+				                    "options": {
+				                        "type": "array",
+				                        "items": {
+				                            "type": "string"
+				                        },
+				                        "description": "Options for select, checkbox, or radio inputs"
+				                    }
+				                },
+				                "required": ["name", "label", "type"]
+				            },
+				            "description": "Array of input field definitions"
+				        }
+				    },
+				    "required": ["description", "inputs"]
+				}
+				""";
 	}
 
 	private String getToolDescription() {
-		try {
-			return promptService.getPromptByName("FORM_INPUT_TOOL_DESCRIPTION").getPromptContent();
-		}
-		catch (Exception e) {
-			log.warn("Failed to load prompt-based tool description, using legacy configuration", e);
-			return LEGACY_DESCRIPTION;
-		}
+		return """
+				Create interactive forms to collect user input. This tool allows you to define form fields and collect structured data from users through a web interface.
+				""";
 	}
 
 	private static final String LEGACY_PARAMETERS = """
@@ -115,9 +149,19 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 	 */
 	public static class InputItem {
 
+		private String name;
+
 		private String label;
 
 		private String value;
+
+		private String type;
+
+		private Boolean required;
+
+		private String placeholder;
+
+		private List<String> options;
 
 		public InputItem() {
 		}
@@ -125,6 +169,20 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 		public InputItem(String label, String value) {
 			this.label = label;
 			this.value = value;
+		}
+
+		public InputItem(String name, String label, String type) {
+			this.name = name;
+			this.label = label;
+			this.type = type;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
 		}
 
 		public String getLabel() {
@@ -141,6 +199,38 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 		public void setValue(String value) {
 			this.value = value;
+		}
+
+		public String getType() {
+			return type;
+		}
+
+		public void setType(String type) {
+			this.type = type;
+		}
+
+		public Boolean getRequired() {
+			return required;
+		}
+
+		public void setRequired(Boolean required) {
+			this.required = required;
+		}
+
+		public String getPlaceholder() {
+			return placeholder;
+		}
+
+		public void setPlaceholder(String placeholder) {
+			this.placeholder = placeholder;
+		}
+
+		public List<String> getOptions() {
+			return options;
+		}
+
+		public void setOptions(List<String> options) {
+			this.options = options;
 		}
 
 	}
@@ -180,9 +270,8 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	}
 
-	public FormInputTool(ObjectMapper objectMapper, PromptService promptService) {
+	public FormInputTool(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
-		this.promptService = promptService;
 	}
 
 	public enum InputState {
@@ -194,7 +283,8 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 	private InputState inputState = InputState.INPUT_RECEIVED; // Default state
 
 	private UserFormInput currentFormDefinition; // Stores the form structure defined by
-													// LLM and its current values
+
+	// LLM and its current values
 
 	public InputState getInputState() {
 		return inputState;

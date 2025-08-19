@@ -16,12 +16,14 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.entity.UserPromptConfig;
 import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.model.execution.ExecutionStep;
 import com.alibaba.cloud.ai.model.execution.Plan;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
+import com.alibaba.cloud.ai.service.UserPromptConfigService;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
 import org.slf4j.Logger;
@@ -60,10 +62,13 @@ public class ReportGeneratorNode implements NodeAction {
 
 	private final BeanOutputConverter<Plan> converter;
 
-	public ReportGeneratorNode(ChatClient.Builder chatClientBuilder) {
+	private final UserPromptConfigService promptConfigService;
+
+	public ReportGeneratorNode(ChatClient.Builder chatClientBuilder, UserPromptConfigService promptConfigService) {
 		this.chatClient = chatClientBuilder.build();
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
 		});
+		this.promptConfigService = promptConfigService;
 	}
 
 	@Override
@@ -132,9 +137,15 @@ public class ReportGeneratorNode implements NodeAction {
 		// Build analysis steps and data results description
 		String analysisStepsAndData = buildAnalysisStepsAndData(plan, executionResults);
 
-		// Use PromptHelper to build report generation prompt
-		String reportPrompt = PromptHelper.buildReportGeneratorPrompt(userRequirementsAndPlan, analysisStepsAndData,
-				summaryAndRecommendations);
+		// Get optimization configs if available
+		List<UserPromptConfig> optimizationConfigs = promptConfigService.getOptimizationConfigs("report-generator");
+
+		// Use PromptHelper to build report generation prompt with optimization support
+		String reportPrompt = PromptHelper.buildReportGeneratorPromptWithOptimization(userRequirementsAndPlan,
+				analysisStepsAndData, summaryAndRecommendations, optimizationConfigs);
+
+		logger.info("Using {} prompt for report generation",
+				!optimizationConfigs.isEmpty() ? "optimized (" + optimizationConfigs.size() + " configs)" : "default");
 
 		return chatClient.prompt().user(reportPrompt).stream().chatResponse();
 	}

@@ -91,7 +91,8 @@ public class WikipediaService implements SearchService, Function<WikipediaServic
 
 			// Get content for the top results
 			if (request.includeContent()) {
-				enrichPagesWithContent(pages.subList(0, Math.min(3, pages.size()))); // 只获取前3个页面的详细内容
+				// Only get detailed content of the first 3 pages
+				enrichPagesWithContent(pages.subList(0, Math.min(3, pages.size())));
 			}
 
 			String summary = String.format("找到 %d 个相关页面", pages.size());
@@ -211,7 +212,7 @@ public class WikipediaService implements SearchService, Function<WikipediaServic
 			return new SearchService.SearchResult(this.pages()
 				.stream()
 				.map(page -> new SearchService.SearchContent(page.title(),
-						// 使用content（如果有）或者snippet作为内容
+						// Use content (if available) or snippet as content
 						page.content() != null ? page.content() : page.snippet(),
 						// Wikipedia页面URL - 构建基于页面ID的URL更可靠
 						buildWikipediaUrl(page.title()), null // Wikipedia没有特定图标

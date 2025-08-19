@@ -56,6 +56,9 @@ public class DynamicAgentEntity {
 	@Column(nullable = true)
 	private String namespace;
 
+	@Column(name = "built_in", nullable = true)
+	private Boolean builtIn = false;
+
 	// Getters and Setters
 	public Long getId() {
 		return id;
@@ -139,6 +142,14 @@ public class DynamicAgentEntity {
 
 	public void setNamespace(String namespace) {
 		this.namespace = namespace;
+	}
+
+	public Boolean getBuiltIn() {
+		return builtIn;
+	}
+
+	public void setBuiltIn(Boolean builtIn) {
+		this.builtIn = builtIn;
 	}
 
 }

@@ -28,12 +28,12 @@ import java.util.stream.IntStream;
 public abstract class BaseVectorStoreService {
 
 	/**
-	 * 获取嵌入模型
+	 * Get embedding model
 	 */
 	protected abstract EmbeddingModel getEmbeddingModel();
 
 	/**
-	 * 将文本转换为 Double 类型的向量
+	 * Convert text to Double type vector
 	 */
 	public List<Double> embedDouble(String text) {
 		return convertToDoubleList(getEmbeddingModel().embed(text));
@@ -44,14 +44,14 @@ public abstract class BaseVectorStoreService {
 	}
 
 	/**
-	 * 将文本转换为 Float 类型的向量
+	 * Convert text to Float type vector
 	 */
 	public List<Float> embedFloat(String text) {
 		return convertToFloatList(getEmbeddingModel().embed(text));
 	}
 
 	/**
-	 * 获取向量库中的文档
+	 * Get documents from vector store
 	 */
 	public List<Document> getDocuments(String query, String vectorType) {
 		SearchRequest request = new SearchRequest();
@@ -62,24 +62,32 @@ public abstract class BaseVectorStoreService {
 	}
 
 	/**
-	 * 默认 filter 的搜索接口
+	 * Get documents from vector store for specified agent
+	 */
+	public List<Document> getDocumentsForAgent(String agentId, String query, String vectorType) {
+		// Default implementation: if subclass doesn't override, use global search
+		return getDocuments(query, vectorType);
+	}
+
+	/**
+	 * Search interface with default filter
 	 */
 	public abstract List<Document> searchWithVectorType(SearchRequest searchRequestDTO);
 
 	/**
-	 * 自定义 filter 的搜索接口
+	 * Search interface with custom filter
 	 */
 	public abstract List<Document> searchWithFilter(SearchRequest searchRequestDTO);
 
 	/**
-	 * 获取表的文档
+	 * Get documents for tables
 	 */
 	public List<Document> searchTableByNameAndVectorType(SearchRequest searchRequestDTO) {
 		throw new UnsupportedOperationException("Not implemented.");
 	}
 
 	/**
-	 * 将 float[] 转换为 Double List
+	 * Convert float[] to Double List
 	 */
 	protected List<Double> convertToDoubleList(float[] array) {
 		return IntStream.range(0, array.length)
@@ -89,7 +97,7 @@ public abstract class BaseVectorStoreService {
 	}
 
 	/**
-	 * 将 float[] 转换为 Float List
+	 * Convert float[] to Float List
 	 */
 	protected List<Float> convertToFloatList(float[] array) {
 		return IntStream.range(0, array.length).mapToObj(i -> array[i]).collect(Collectors.toList());

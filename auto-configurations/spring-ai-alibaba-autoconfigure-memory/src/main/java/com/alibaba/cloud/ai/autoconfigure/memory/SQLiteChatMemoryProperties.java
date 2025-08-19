@@ -21,7 +21,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(SQLiteChatMemoryProperties.CONFIG_PREFIX)
 public class SQLiteChatMemoryProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.jdbc.sqlite";
+	public static final String CONFIG_PREFIX = "spring.ai.memory.sqlite";
 
 	private boolean initializeSchema = true;
 

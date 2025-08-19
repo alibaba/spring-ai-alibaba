@@ -1,0 +1,6 @@
+mysql/data/
+mysql/log/
+redis/data/
+elasticsearch/data/
+kibana/data/
+rocketmq/store/

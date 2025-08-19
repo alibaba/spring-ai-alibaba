@@ -15,16 +15,15 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.code;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.ai.openai.api.OpenAiApi;
 
 public class PythonExecute extends AbstractBaseTool<PythonExecute.PythonInput> {
 
@@ -58,40 +57,7 @@ public class PythonExecute extends AbstractBaseTool<PythonExecute.PythonInput> {
 
 	private Boolean arm64 = true;
 
-	public static final String LLMMATH_PYTHON_CODE = """
-			import sys
-			import math
-			import numpy as np
-			import numexpr as ne
-			input = '%s'
-			res = ne.evaluate(input)
-			print(res)
-			""";
-
-	private static String PARAMETERS = """
-			{
-			    "type": "object",
-			    "properties": {
-			        "code": {
-			            "type": "string",
-			            "description": "The Python code to execute."
-			        }
-			    },
-			    "required": ["code"]
-			}
-			""";
-
 	private static final String name = "python_execute";
-
-	private static final String description = """
-			Executes Python code string. Note: Only print outputs are visible, function return values are not captured. Use print statements to see results.
-			""";
-
-	public static OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
-		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
-		return functionTool;
-	}
 
 	private String lastCode = "";
 
@@ -202,12 +168,23 @@ public class PythonExecute extends AbstractBaseTool<PythonExecute.PythonInput> {
 
 	@Override
 	public String getDescription() {
-		return description;
+		return "Executes Python code string. Note: Only print outputs are visible, function return values are not captured. Use print statements to see results.";
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "code": {
+				            "type": "string",
+				            "description": "The Python code to execute."
+				        }
+				    },
+				    "required": ["code"]
+				}
+				""";
 	}
 
 	@Override

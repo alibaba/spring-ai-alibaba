@@ -151,7 +151,7 @@ public class ArxivResult {
 
 	public void setLinks(List<ArxivLink> links) {
 		this.links = links;
-		// 设置PDF URL
+		// Set PDF URL
 		this.pdfUrl = links.stream()
 			.filter(link -> "pdf".equals(link.getTitle()))
 			.findFirst()
@@ -173,7 +173,7 @@ public class ArxivResult {
 	}
 
 	/**
-	 * 生成默认的文件名
+	 * Generate default filename
 	 */
 	public String getDefaultFilename(String extension) {
 		String nonEmptyTitle = title != null && !title.isEmpty() ? title : "UNTITLED";
@@ -197,7 +197,7 @@ public class ArxivResult {
 	}
 
 	/**
-	 * 表示文章作者的内部类
+	 * Inner class representing article author
 	 */
 	public static class ArxivAuthor {
 
@@ -238,7 +238,7 @@ public class ArxivResult {
 	}
 
 	/**
-	 * 表示相关链接的内部类
+	 * Inner class representing related links
 	 */
 	public static class ArxivLink {
 
