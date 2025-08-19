@@ -27,7 +27,7 @@ public class PlanRelationshipService implements IPlanRelationshipService {
 
 	@Override
 	@Transactional
-	public int recordPlanRelationship(String parentPlanId, String childPlanId, String rootPlanId,
+	public void recordPlanRelationship(String parentPlanId, String childPlanId, String rootPlanId,
 			String planTemplateId, String relationshipType) {
 		try {
 			PlanRelationship relationship = new PlanRelationship(parentPlanId, childPlanId, rootPlanId, planTemplateId,
@@ -37,17 +37,11 @@ public class PlanRelationshipService implements IPlanRelationshipService {
 			logger.info("Recorded plan relationship: parent={}, child={}, root={}, type={}", parentPlanId, childPlanId,
 					rootPlanId, relationshipType);
 
-			// Calculate and return the depth of the newly created plan using the optimized method
-			int depth = getPlanDepth(childPlanId);
-			logger.debug("Plan {} recorded at depth {}", childPlanId, depth);
-			return depth;
-
 		}
 		catch (Exception e) {
 			logger.error("Failed to record plan relationship: parent={}, child={}, root={}", parentPlanId, childPlanId,
 					rootPlanId, e);
 			// Don't throw exception to avoid breaking the main execution flow
-			return -1; // Return -1 to indicate failure
 		}
 	}
 
@@ -76,15 +70,15 @@ public class PlanRelationshipService implements IPlanRelationshipService {
 	}
 
 	@Override
-	public int getPlanDepth(String planId) {
+	public Integer getPlanDepth(String planId) {
 		if (planId == null) {
-			return -1;
+			return null;
 		}
 
 		// First, get the relationship for the target plan to find its rootPlanId
 		PlanRelationship targetRelationship = getRelationshipByChildId(planId);
 		if (targetRelationship == null) {
-			return -1; // Plan not found
+			return null; // Plan not found
 		}
 
 		String rootPlanId = targetRelationship.getRootPlanId();

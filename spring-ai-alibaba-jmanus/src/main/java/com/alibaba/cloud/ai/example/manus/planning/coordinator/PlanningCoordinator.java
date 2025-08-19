@@ -165,7 +165,16 @@ public class PlanningCoordinator {
 			context.setUserRequest("Execute common plan: " + currentPlanId);
 			context.setNeedSummary(false);
 			context.setUseMemory(false);
-
+			
+			// Set the plan depth if relationship service is available
+			Integer planDepth = planRelationshipService.getPlanDepth(currentPlanId);
+			if (planDepth != null) {
+				context.setPlanDepth(planDepth);
+				log.debug("Set plan depth to {} for plan: {}", planDepth, currentPlanId);
+			} else {
+				log.warn("Could not determine plan depth for plan: {}", currentPlanId);
+				context.setPlanDepth(0); // Default to root level if depth cannot be determined
+			}
 			// Set the plan directly to context (no need to parse JSON)
 			context.setPlan(plan);
 

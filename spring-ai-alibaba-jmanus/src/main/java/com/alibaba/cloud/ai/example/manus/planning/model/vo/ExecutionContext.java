@@ -63,6 +63,9 @@ public class ExecutionContext {
 	/** Flag indicating whether plan execution was successful */
 	private boolean success = false;
 
+	/** The depth of the plan in the execution hierarchy (0 for root, 1 for first level, etc.) */
+	private int planDepth = 0;
+
 	/**
 	 * Whether to use memory, scenario is if only building plan, then memory should not be
 	 * used, otherwise memory cannot be deleted
@@ -220,6 +223,14 @@ public class ExecutionContext {
 
 	public void setUseMemory(boolean useMemory) {
 		this.useMemory = useMemory;
+	}
+
+	public int getPlanDepth() {
+		return planDepth;
+	}
+
+	public void setPlanDepth(int planDepth) {
+		this.planDepth = planDepth;
 	}
 
 }

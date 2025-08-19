@@ -11,15 +11,14 @@ import java.util.List;
 public interface IPlanRelationshipService {
 
 	/**
-	 * Record a new plan relationship and return the depth of the created plan
+	 * Record a new plan relationship
 	 * @param parentPlanId The parent plan ID (can be null for root plans)
 	 * @param childPlanId The child plan ID (current executing plan)
 	 * @param rootPlanId The root plan ID (top-level parent plan)
 	 * @param planTemplateId The plan template ID if applicable
 	 * @param relationshipType The type of relationship
-	 * @return The depth of the newly created plan (0 for root, 1 for first level, etc.), -1 if failed
 	 */
-	int recordPlanRelationship(String parentPlanId, String childPlanId, String rootPlanId, String planTemplateId,
+	void recordPlanRelationship(String parentPlanId, String childPlanId, String rootPlanId, String planTemplateId,
 			String relationshipType);
 
 	/**
@@ -46,8 +45,8 @@ public interface IPlanRelationshipService {
 	/**
 	 * Get the depth of a plan in the execution hierarchy
 	 * @param planId The plan ID
-	 * @return The depth level (0 for root, 1 for first level children, etc.)
+	 * @return The depth level (0 for root, 1 for first level children, etc.), null if plan not found
 	 */
-	int getPlanDepth(String planId);
+	Integer getPlanDepth(String planId);
 
 }
