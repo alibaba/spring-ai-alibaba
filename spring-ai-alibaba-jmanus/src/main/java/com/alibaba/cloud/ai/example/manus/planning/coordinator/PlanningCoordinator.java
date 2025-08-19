@@ -27,11 +27,13 @@ import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 /**
  * Enhanced Planning Coordinator that uses PlanExecutorFactory to dynamically select the
  * appropriate executor based on plan type
  */
+@Service
 public class PlanningCoordinator {
 
 	private static final Logger log = LoggerFactory.getLogger(PlanningCoordinator.class);
