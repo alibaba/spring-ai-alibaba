@@ -22,8 +22,11 @@ import com.alibaba.cloud.ai.dto.SemanticModelDTO;
 import com.alibaba.cloud.ai.dto.schema.ColumnDTO;
 import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.dto.schema.TableDTO;
+import com.alibaba.cloud.ai.entity.UserPromptConfig;
+
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.util.*;
@@ -235,21 +238,20 @@ public class PromptHelper {
 	 * @param customPrompt user-defined prompt content, use default prompt if null
 	 * @return built prompt
 	 */
-	public static String buildReportGeneratorPromptWithCustom(String userRequirementsAndPlan,
-			String analysisStepsAndData, String summaryAndRecommendations, String customPrompt) {
+	public static String buildReportGeneratorPromptWithOptimization(String userRequirementsAndPlan,
+			String analysisStepsAndData, String summaryAndRecommendations, List<UserPromptConfig> optimizationConfigs) {
+
 		Map<String, Object> params = new HashMap<>();
 		params.put("user_requirements_and_plan", userRequirementsAndPlan);
 		params.put("analysis_steps_and_data", analysisStepsAndData);
 		params.put("summary_and_recommendations", summaryAndRecommendations);
 
-		if (customPrompt != null && !customPrompt.trim().isEmpty()) {
-			// Use custom prompt
-			return new org.springframework.ai.chat.prompt.PromptTemplate(customPrompt).render(params);
-		}
-		else {
-			// Use default prompt
-			return PromptConstant.getReportGeneratorPromptTemplate().render(params);
-		}
+		// Build optional optimization section content from user configs
+		String optimizationSection = buildOptimizationSection(optimizationConfigs, params);
+		params.put("optimization_section", optimizationSection);
+
+		// Render using the default report generator template
+		return PromptConstant.getReportGeneratorPromptTemplate().render(params);
 	}
 
 	public static String buildSqlErrorFixerPrompt(String question, DbConfig dbConfig, SchemaDTO schemaDTO,
@@ -283,6 +285,51 @@ public class PromptHelper {
 				: StringUtils.join(semanticModelDTOS, ";\n");
 		params.put("semanticModel", semanticModel);
 		return PromptConstant.getSemanticModelPromptTemplate().render(params);
+	}
+
+	/**
+	 * 构建优化提示词部分内容
+	 * @param optimizationConfigs 优化配置列表
+	 * @param params 模板参数
+	 * @return 优化部分的内容
+	 */
+	private static String buildOptimizationSection(List<UserPromptConfig> optimizationConfigs,
+			Map<String, Object> params) {
+
+		if (optimizationConfigs == null || optimizationConfigs.isEmpty()) {
+			return "";
+		}
+
+		StringBuilder result = new StringBuilder();
+		result.append("## 优化要求\n");
+
+		for (UserPromptConfig config : optimizationConfigs) {
+			String optimizationContent = renderOptimizationPrompt(config.getSystemPrompt(), params);
+			if (!optimizationContent.trim().isEmpty()) {
+				result.append("- ").append(optimizationContent).append("\n");
+			}
+		}
+
+		return result.toString().trim();
+	}
+
+	/**
+	 * 渲染优化提示词模板
+	 * @param optimizationPrompt 优化提示词模板
+	 * @param params 参数
+	 * @return 渲染后的内容
+	 */
+	private static String renderOptimizationPrompt(String optimizationPrompt, Map<String, Object> params) {
+		if (optimizationPrompt == null || optimizationPrompt.trim().isEmpty()) {
+			return "";
+		}
+		try {
+			return new PromptTemplate(optimizationPrompt).render(params);
+		}
+		catch (Exception e) {
+			// 如果模板渲染失败，直接返回原始内容
+			return optimizationPrompt;
+		}
 	}
 
 }
