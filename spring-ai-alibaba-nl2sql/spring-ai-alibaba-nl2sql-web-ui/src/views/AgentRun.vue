@@ -402,13 +402,36 @@ export default {
         if (response.ok) {
           const data = await response.json()
           // 将数据库消息转换为前端格式
-          currentMessages.value = data.map(dbMessage => ({
-            id: dbMessage.id,
-            role: dbMessage.role,
-            type: dbMessage.messageType || 'text',
-            content: dbMessage.content,
-            timestamp: new Date(dbMessage.createTime)
-          })) || []
+          currentMessages.value = data.map(dbMessage => {
+            const message = {
+              id: dbMessage.id,
+              role: dbMessage.role,
+              type: dbMessage.messageType || 'text',
+              content: dbMessage.content,
+              timestamp: new Date(dbMessage.createTime)
+            }
+
+            // 🎯 从metadata中恢复原始内容
+            if (dbMessage.metadata) {
+              try {
+                const metadata = JSON.parse(dbMessage.metadata)
+                if (metadata.originalContent) {
+                  message.originalContent = metadata.originalContent
+                  console.log('🔄 从metadata恢复消息原始内容，ID:', dbMessage.id, '长度:', metadata.originalContent.length)
+
+                  // 同时更新全局保存的内容（用于预览功能）
+                  if (metadata.originalContent.includes('```html')) {
+                    window.lastReportContent = metadata.originalContent
+                    console.log('🔄 更新全局原始内容用于预览')
+                  }
+                }
+              } catch (e) {
+                console.warn('解析metadata失败:', e)
+              }
+            }
+
+            return message
+          }) || []
           await nextTick()
           scrollToBottom()
         }
@@ -686,12 +709,28 @@ export default {
 
             // 保存AI回复消息到数据库
             if (assistantMessage.content) {
-              await saveMessage({
+              const messageToSave = {
                 sessionId: currentSessionId.value,
                 role: 'assistant',
                 content: assistantMessage.content,
                 messageType: 'completed'
-              })
+              }
+
+              // 🎯 如果有原始内容或全局保存的内容，保存到metadata中
+              let metadata = {}
+              if (assistantMessage.originalContent) {
+                metadata.originalContent = assistantMessage.originalContent
+                console.log('💾 保存消息时包含原始内容，长度:', assistantMessage.originalContent.length)
+              } else if (window.lastReportContent && window.lastReportContent.includes('```html')) {
+                metadata.originalContent = window.lastReportContent
+                console.log('💾 保存消息时使用全局原始内容，长度:', window.lastReportContent.length)
+              }
+
+              if (Object.keys(metadata).length > 0) {
+                messageToSave.metadata = JSON.stringify(metadata)
+              }
+
+              await saveMessage(messageToSave)
             }
           }
 
@@ -3896,7 +3935,7 @@ export default {
 
 /* 当显示预览时，主页面缩小 */
 .agent-run-page.with-preview {
-  width: 60%;
+  width: 50%;
   transition: width 0.3s ease-in-out;
 }
 
@@ -3909,8 +3948,8 @@ export default {
 .report-preview-panel {
   position: fixed;
   top: 0;
-  right: -40%;
-  width: 40%;
+  right: -50%;
+  width: 50%;
   height: 100vh;
   background: white;
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
@@ -4088,12 +4127,12 @@ export default {
 /* 响应式设计 */
 @media (max-width: 1024px) {
   .agent-run-page.with-preview {
-    width: 50%;
+    width: 40%;
   }
 
   .report-preview-panel {
-    width: 50%;
-    right: -50%;
+    width: 60%;
+    right: -60%;
   }
 }
 
