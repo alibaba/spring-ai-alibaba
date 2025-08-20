@@ -970,7 +970,7 @@ const words: I18nType = {
         planTitle: 'Query all information about Shenxun Ali (to demonstrate infinite context capability)',
         step1: '[BROWSER_AGENT] Search for Shenxun Ali through Baidu, get the first page HTML data, merge and aggregate to html_data directory',
         step1Output: 'Storage directory path',
-        step2: '[BROWSER_AGENT] Find all valid web links about Shenxun Ali from html_data directory, output to link.md',
+        step2: '[TEXT_FILE_AGENT] Find all valid web links about Shenxun Ali from html_data directory, output to link.md',
         step2Output: 'URL address, description',
       },
       ainovel: {

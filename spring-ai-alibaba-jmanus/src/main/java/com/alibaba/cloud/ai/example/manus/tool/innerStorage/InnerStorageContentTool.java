@@ -56,12 +56,6 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 		@com.fasterxml.jackson.annotation.JsonProperty("outputFormatSpecification")
 		private String outputFormatSpecification;
 
-		@com.fasterxml.jackson.annotation.JsonProperty("start_line")
-		private Integer startLine;
-
-		@com.fasterxml.jackson.annotation.JsonProperty("end_line")
-		private Integer endLine;
-
 		public InnerStorageContentInput() {
 		}
 
@@ -103,22 +97,6 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 
 		public void setOutputFormatSpecification(String outputFormatSpecification) {
 			this.outputFormatSpecification = outputFormatSpecification;
-		}
-
-		public Integer getStartLine() {
-			return startLine;
-		}
-
-		public void setStartLine(Integer startLine) {
-			this.startLine = startLine;
-		}
-
-		public Integer getEndLine() {
-			return endLine;
-		}
-
-		public void setEndLine(Integer endLine) {
-			this.endLine = endLine;
 		}
 
 	}
@@ -163,33 +141,6 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			}
 			""";
 
-	private static final String GET_FOLDER_CONTENT_DESCRIPTION = """
-			Get content from all files in specified folder with intelligent analysis and structured output.
-			Extract information from all files in the folder based on query_key and outputFormatSpecification parameters.
-			Supports folder name or relative path.
-			""";
-
-	private static final String GET_FOLDER_CONTENT_PARAMETERS = """
-			{
-				"type": "object",
-				"properties": {
-					"folder_name": {
-						"type": "string",
-						"description": "Folder name or relative path"
-					},
-					"query_key": {
-						"type": "string",
-						"description": "Related questions or content keywords to extract, must be provided"
-					},
-					"outputFormatSpecification": {
-						"type": "string",
-						"description": "Provide a string to specify the structure in which you expect the data for query_key to be returned. If you want the result to consist of multiple fields as a whole, you can input a comma-separated string to define the fields."
-					}
-				},
-				"required": ["folder_name", "query_key", "outputFormatSpecification"],
-				"additionalProperties": false
-			}
-			""";
 
 	@Override
 	public String getName() {

@@ -935,7 +935,7 @@ const words: I18nType = {
         planTitle: '查询 沈询 阿里的所有信息（用于展示无限上下文能力）',
         step1: '[BROWSER_AGENT] 通过 百度 查询 沈询 阿里 ， 获取第一页的html 百度数据，合并聚拢 到 html_data 的目录里',
         step1Output: '存放的目录路径',
-        step2: '[BROWSER_AGENT] 从 html_data 目录中找到所有的有效关于沈询 阿里 的网页链接，输出到 link.md里面',
+        step2: '[TEXT_FILE_AGENT] 从 html_data 目录中找到所有的有效关于沈询 阿里 的网页链接，输出到 link.md里面',
         step2Output: 'url地址，说明',
       },
       ainovel: {
