@@ -27,6 +27,8 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.lang.Nullable;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 
 import java.util.Arrays;
 import java.util.List;
@@ -52,6 +54,8 @@ public class AgentNode implements NodeAction {
 
 	private final String outputKey;
 
+	private final RetryTemplate retryTemplate;
+
 	public enum Strategy {
 
 		REACT, TOOL_CALLING
@@ -69,6 +73,14 @@ public class AgentNode implements NodeAction {
 		if (this.chatClient == null) {
 			throw new IllegalArgumentException("ChatClient is required");
 		}
+
+		// 初始化retryTemplate
+		this.retryTemplate = new RetryTemplate();
+		SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+		retryPolicy.setMaxAttempts(this.maxIterations);
+		this.retryTemplate.setRetryPolicy(retryPolicy);
+
+		// 初始化toolCallbacks
 		this.toolCallbacks = Arrays.stream(toolCallbacks).map(toolCallback -> {
 			// ToolCalling策略调用完工具后直接返回，需要包装一层使得returnDirect为true
 			if (this.strategy == Strategy.TOOL_CALLING && !toolCallback.getToolMetadata().returnDirect()) {
@@ -109,25 +121,25 @@ public class AgentNode implements NodeAction {
 		String systemPrompt = new PromptTemplate(this.systemPrompt).render(state.data());
 		String output = switch (this.strategy) {
 			case TOOL_CALLING, REACT -> {
-				int count = this.maxIterations;
 				// 重试机制
-				while (count-- > 0) {
-					try {
+				try {
+					yield this.retryTemplate.execute(retryContext -> {
 						String content = this.chatClient.prompt(systemPrompt)
 							.toolCallbacks(this.toolCallbacks)
 							.user(userPrompt)
 							.call()
 							.content();
-						if (content != null) {
+						if (content == null) {
 							logger.warn("ChatClient Call Return Null...");
-							yield content;
+							throw new RuntimeException("ChatClient Call Return Null...");
 						}
-					}
-					catch (Exception e) {
-						logger.warn("ChatClient Call Fail: {}", e.getMessage());
-					}
+						return content;
+					});
 				}
-				yield null;
+				catch (Exception e) {
+					logger.error("Attempted to the maximum number of times but still failed!");
+					yield null;
+				}
 			}
 		};
 		return Map.of(this.outputKey, output == null ? "" : output);
