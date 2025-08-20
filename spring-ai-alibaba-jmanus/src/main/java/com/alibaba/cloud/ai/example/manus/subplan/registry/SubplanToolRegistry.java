@@ -27,111 +27,115 @@ import java.util.Map;
 
 /**
  * Registry for subplan tools that integrates with PlanningFactory
- * 
+ *
  * Automatically registers all subplan tools when the application starts
  */
 @Component
 public class SubplanToolRegistry {
 
-    private static final Logger logger = LoggerFactory.getLogger(SubplanToolRegistry.class);
+	private static final Logger logger = LoggerFactory.getLogger(SubplanToolRegistry.class);
 
-    @Autowired
-    private ISubplanToolService subplanToolService;
+	@Autowired
+	private ISubplanToolService subplanToolService;
 
+	/**
+	 * Initialize and register subplan tools after construction
+	 */
+	@PostConstruct
+	public void initialize() {
+		registerAllTools();
+	}
 
-    /**
-     * Initialize and register subplan tools after construction
-     */
-    @PostConstruct
-    public void initialize() {
-        registerAllTools();
-    }
+	/**
+	 * Register all subplan tools with PlanningFactory
+	 */
+	public void registerAllTools() {
+		try {
+			logger.info("Starting registration of all subplan tools...");
 
-    /**
-     * Register all subplan tools with PlanningFactory
-     */
-    public void registerAllTools() {
-        try {
-            logger.info("Starting registration of all subplan tools...");
-            
-            // Get all subplan tools from the service
-            Map<String, PlanningFactory.ToolCallBackContext> toolCallbacks = 
-                subplanToolService.createSubplanToolCallbacks("system", "system", "Subplan tool execution");
-            
-            if (toolCallbacks.isEmpty()) {
-                logger.warn("No subplan tools found to register");
-                return;
-            }
+			// Get all subplan tools from the service
+			Map<String, PlanningFactory.ToolCallBackContext> toolCallbacks = subplanToolService
+				.createSubplanToolCallbacks("system", "system", "Subplan tool execution");
 
-            // Register tools with PlanningFactory
-            for (Map.Entry<String, PlanningFactory.ToolCallBackContext> entry : toolCallbacks.entrySet()) {
-                String toolName = entry.getKey();
-                PlanningFactory.ToolCallBackContext context = entry.getValue();
-                
-                try {
-                    // Register the tool (this would need to be implemented in PlanningFactory)
-                    // planningFactory.registerTool(toolName, context);
-                    logger.info("Successfully registered subplan tool: {}", toolName);
-                } catch (Exception e) {
-                    logger.error("Failed to register subplan tool: {}", toolName, e);
-                }
-            }
-            
-            logger.info("Completed registration of {} subplan tools", toolCallbacks.size());
-            
-        } catch (Exception e) {
-            logger.error("Failed to register subplan tools", e);
-        }
-    }
+			if (toolCallbacks.isEmpty()) {
+				logger.warn("No subplan tools found to register");
+				return;
+			}
 
-    /**
-     * Register a specific subplan tool by name
-     * @param toolName Name of the tool to register
-     * @return true if registration was successful, false otherwise
-     */
-    public boolean registerTool(String toolName) {
-        try {
-            logger.info("Registering specific subplan tool: {}", toolName);
-            
-            // Get tool callbacks for the specific tool
-            Map<String, PlanningFactory.ToolCallBackContext> toolCallbacks = 
-                subplanToolService.createSubplanToolCallbacks("system", "system", "Subplan tool execution");
-            
-            PlanningFactory.ToolCallBackContext context = toolCallbacks.get(toolName);
-            if (context == null) {
-                logger.warn("Tool not found: {}", toolName);
-                return false;
-            }
-            
-            // Register the tool (this would need to be implemented in PlanningFactory)
-            // planningFactory.registerTool(toolName, context);
-            logger.info("Successfully registered subplan tool: {}", toolName);
-            return true;
-            
-        } catch (Exception e) {
-            logger.error("Failed to register subplan tool: {}", toolName, e);
-            return false;
-        }
-    }
+			// Register tools with PlanningFactory
+			for (Map.Entry<String, PlanningFactory.ToolCallBackContext> entry : toolCallbacks.entrySet()) {
+				String toolName = entry.getKey();
+				PlanningFactory.ToolCallBackContext context = entry.getValue();
 
-    /**
-     * Unregister a specific subplan tool by name
-     * @param toolName Name of the tool to unregister
-     * @return true if unregistration was successful, false otherwise
-     */
-    public boolean unregisterTool(String toolName) {
-        try {
-            logger.info("Unregistering subplan tool: {}", toolName);
-            
-            // Unregister the tool (this would need to be implemented in PlanningFactory)
-            // planningFactory.unregisterTool(toolName);
-            logger.info("Successfully unregistered subplan tool: {}", toolName);
-            return true;
-            
-        } catch (Exception e) {
-            logger.error("Failed to unregister subplan tool: {}", toolName, e);
-            return false;
-        }
-    }
+				try {
+					// Register the tool (this would need to be implemented in
+					// PlanningFactory)
+					// planningFactory.registerTool(toolName, context);
+					logger.info("Successfully registered subplan tool: {}", toolName);
+				}
+				catch (Exception e) {
+					logger.error("Failed to register subplan tool: {}", toolName, e);
+				}
+			}
+
+			logger.info("Completed registration of {} subplan tools", toolCallbacks.size());
+
+		}
+		catch (Exception e) {
+			logger.error("Failed to register subplan tools", e);
+		}
+	}
+
+	/**
+	 * Register a specific subplan tool by name
+	 * @param toolName Name of the tool to register
+	 * @return true if registration was successful, false otherwise
+	 */
+	public boolean registerTool(String toolName) {
+		try {
+			logger.info("Registering specific subplan tool: {}", toolName);
+
+			// Get tool callbacks for the specific tool
+			Map<String, PlanningFactory.ToolCallBackContext> toolCallbacks = subplanToolService
+				.createSubplanToolCallbacks("system", "system", "Subplan tool execution");
+
+			PlanningFactory.ToolCallBackContext context = toolCallbacks.get(toolName);
+			if (context == null) {
+				logger.warn("Tool not found: {}", toolName);
+				return false;
+			}
+
+			// Register the tool (this would need to be implemented in PlanningFactory)
+			// planningFactory.registerTool(toolName, context);
+			logger.info("Successfully registered subplan tool: {}", toolName);
+			return true;
+
+		}
+		catch (Exception e) {
+			logger.error("Failed to register subplan tool: {}", toolName, e);
+			return false;
+		}
+	}
+
+	/**
+	 * Unregister a specific subplan tool by name
+	 * @param toolName Name of the tool to unregister
+	 * @return true if unregistration was successful, false otherwise
+	 */
+	public boolean unregisterTool(String toolName) {
+		try {
+			logger.info("Unregistering subplan tool: {}", toolName);
+
+			// Unregister the tool (this would need to be implemented in PlanningFactory)
+			// planningFactory.unregisterTool(toolName);
+			logger.info("Successfully unregistered subplan tool: {}", toolName);
+			return true;
+
+		}
+		catch (Exception e) {
+			logger.error("Failed to unregister subplan tool: {}", toolName, e);
+			return false;
+		}
+	}
 
 }

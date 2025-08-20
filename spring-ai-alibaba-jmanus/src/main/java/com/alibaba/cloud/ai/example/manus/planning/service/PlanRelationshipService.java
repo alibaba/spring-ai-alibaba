@@ -82,25 +82,26 @@ public class PlanRelationshipService implements IPlanRelationshipService {
 		}
 
 		String rootPlanId = targetRelationship.getRootPlanId();
-		
+
 		// Get all relationships for this root plan in one database call
 		List<PlanRelationship> allRelationships = getChildrenByRootId(rootPlanId);
-		
+
 		// Build a map for efficient parent-child lookup
 		Map<String, String> parentChildMap = new HashMap<>();
 		for (PlanRelationship rel : allRelationships) {
 			parentChildMap.put(rel.getChildPlanId(), rel.getParentPlanId());
 		}
-		
+
 		// Calculate depth using the in-memory map
 		int depth = 0;
 		String currentPlanId = planId;
-		
+
 		while (parentChildMap.containsKey(currentPlanId) && parentChildMap.get(currentPlanId) != null) {
 			depth++;
 			currentPlanId = parentChildMap.get(currentPlanId);
 		}
-		
+
 		return depth;
 	}
+
 }

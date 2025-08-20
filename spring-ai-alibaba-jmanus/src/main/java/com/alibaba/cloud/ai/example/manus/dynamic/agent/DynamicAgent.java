@@ -360,7 +360,6 @@ public class DynamicAgent extends ReActAgent {
 		}
 	}
 
-
 	/**
 	 * Set act tool info results for all executed tools
 	 */

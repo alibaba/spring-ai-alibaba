@@ -24,11 +24,7 @@ import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
-import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
-import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutorFactory;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -44,7 +40,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -59,7 +54,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	@Autowired
 	@Lazy
-	private PlanExecutorFactory planExecutorFactory;
+	private PlanningCoordinator planningCoordinator;
 
 	@Autowired
 	private PlanExecutionRecorder planExecutionRecorder;
@@ -85,7 +80,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	}
 
 	/**
-	 * Asynchronous execution of Manus request
+	 * Asynchronous execution of Manus request using PlanningCoordinator
 	 * @param request Request containing user query
 	 * @return Task ID and status
 	 */
@@ -100,43 +95,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		String planId = planIdDispatcher.generatePlanId();
 
 		try {
-			// Create execution context
-			ExecutionContext context = new ExecutionContext();
-			context.setCurrentPlanId(planId);
-			context.setRootPlanId(planId);
-			context.setUserRequest(query);
-			context.setNeedSummary(true);
-			context.setUseMemory(false);
-
-			// Create plan using PlanningFactory and PlanCreator
-			PlanCreator planCreator = planningFactory.createPlanCreator();
-			planCreator.createPlanWithoutMemory(context);
-
-			// Check if plan was created successfully
-			if (context.getPlan() == null) {
-				return ResponseEntity.internalServerError()
-					.body(Map.of("error", "Plan creation failed, cannot create execution plan"));
-			}
-
-			// Execute the plan asynchronously using PlanExecutorInterface
-			PlanExecutorInterface executor = planExecutorFactory.createExecutor(context.getPlan());
-			CompletableFuture<PlanExecutionResult> future = executor
-				.executeAllStepsAsync(context);
-
-			// Handle the execution result asynchronously
-			future.whenComplete((result, throwable) -> {
-				if (throwable != null) {
-					logger.error("Plan execution failed for planId: {}", planId, throwable);
-				}
-				else {
-					if (result.isSuccess()) {
-						logger.info("Plan execution completed successfully for planId: {}", planId);
-					}
-					else {
-						logger.warn("Plan execution failed for planId: {} - {}", planId, result.getErrorMessage());
-					}
-				}
-			});
+			// Execute the plan using PlanningCoordinator (fire and forget)
+			planningCoordinator.executeByUserQuery(query, planId, planId, planId);
 
 			// Return task ID and initial status
 			Map<String, Object> response = new HashMap<>();

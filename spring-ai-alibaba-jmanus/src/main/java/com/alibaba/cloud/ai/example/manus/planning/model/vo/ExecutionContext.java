@@ -63,7 +63,10 @@ public class ExecutionContext {
 	/** Flag indicating whether plan execution was successful */
 	private boolean success = false;
 
-	/** The depth of the plan in the execution hierarchy (0 for root, 1 for first level, etc.) */
+	/**
+	 * The depth of the plan in the execution hierarchy (0 for root, 1 for first level,
+	 * etc.)
+	 */
 	private int planDepth = 0;
 
 	/**

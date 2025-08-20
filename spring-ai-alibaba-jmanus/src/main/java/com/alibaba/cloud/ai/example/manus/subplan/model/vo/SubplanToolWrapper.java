@@ -109,17 +109,16 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 			// Parse the JSON to create a PlanInterface
 			PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
 
-            
 			// Execute the plan using PlanningCoordinator
 			// Generate a new plan ID for this subplan execution using PlanIdDispatcher
 			String newPlanId = planIdDispatcher.generateSubPlanId(rootPlanId);
-			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByPlan(
-					plan, rootPlanId, currentPlanId, newPlanId);
+			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByPlan(plan, rootPlanId,
+					currentPlanId, newPlanId);
 
 			PlanExecutionResult result = future.get();
 
 			if (result.isSuccess()) {
-				String output = result.getEffectiveResult();
+				String output = result.getFinalResult();
 				if (output == null || output.trim().isEmpty()) {
 					output = "Subplan executed successfully but no output was generated";
 				}

@@ -45,7 +45,8 @@ public interface IPlanRelationshipService {
 	/**
 	 * Get the depth of a plan in the execution hierarchy
 	 * @param planId The plan ID
-	 * @return The depth level (0 for root, 1 for first level children, etc.), null if plan not found
+	 * @return The depth level (0 for root, 1 for first level children, etc.), null if
+	 * plan not found
 	 */
 	Integer getPlanDepth(String planId);
 

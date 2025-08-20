@@ -208,7 +208,7 @@ public class PlanTemplateController {
 
 			if (result.isSuccess()) {
 				response.put("message", "Plan execution completed successfully");
-				response.put("result", result.getEffectiveResult());
+				response.put("result", result.getFinalResult());
 			}
 			else {
 				response.put("message", "Plan execution failed");

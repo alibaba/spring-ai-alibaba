@@ -32,109 +32,114 @@ import java.util.Map;
 
 /**
  * Initializer for subplan tools and plan templates
- * 
+ *
  * Automatically creates predefined tools and plan templates when the application starts
  */
 @Component
 public class SubplanToolInitializer {
 
-    private static final Logger logger = LoggerFactory.getLogger(SubplanToolInitializer.class);
+	private static final Logger logger = LoggerFactory.getLogger(SubplanToolInitializer.class);
 
-    @Autowired
-    private ISubplanToolService subplanToolService;
+	@Autowired
+	private ISubplanToolService subplanToolService;
 
-    @Autowired
-    private PlanTemplateService planTemplateService;
+	@Autowired
+	private PlanTemplateService planTemplateService;
 
-    /**
-     * Initialize subplan tools and plan templates when application is ready
-     */
-    @EventListener(ApplicationReadyEvent.class)
-    public void initializeSubplanTools() {
-        logger.info("Starting subplan tools initialization...");
-        
-        try {
-            // Initialize plan templates first
-            initializePlanTemplates();
-            
-            // Initialize predefined tools
-            initializePredefinedTools();
-            
-            logger.info("Subplan tools initialization completed successfully");
-        } catch (Exception e) {
-            logger.error("Failed to initialize subplan tools", e);
-        }
-    }
+	/**
+	 * Initialize subplan tools and plan templates when application is ready
+	 */
+	@EventListener(ApplicationReadyEvent.class)
+	public void initializeSubplanTools() {
+		logger.info("Starting subplan tools initialization...");
 
-    /**
-     * Initialize plan templates for subplan tools
-     */
-    private void initializePlanTemplates() {
-        logger.info("Initializing plan templates...");
-        
-        // Get all predefined plan templates
-        Map<String, String> templates = SubplanPlanTemplates.getAllPlanTemplates();
-        
-        for (Map.Entry<String, String> entry : templates.entrySet()) {
-            String templateId = entry.getKey();
-            String templateContent = entry.getValue();
-            
-            if (planTemplateService.getPlanTemplate(templateId) == null) {
-                String title = extractTitleFromTemplate(templateContent);
-                planTemplateService.savePlanTemplate(templateId, title, 
-                    "Predefined subplan tool template", templateContent);
-                logger.info("Created plan template: {} with title: {}", templateId, title);
-            } else {
-                logger.debug("Plan template already exists: {}", templateId);
-            }
-        }
-    }
+		try {
+			// Initialize plan templates first
+			initializePlanTemplates();
 
-    /**
-     * Initialize predefined subplan tools
-     */
-    private void initializePredefinedTools() {
-        logger.info("Initializing predefined subplan tools...");
-        
-        // Get all predefined tools
-        List<SubplanToolDef> predefinedTools = PredefinedSubplanTools.getAllPredefinedTools();
-        
-        for (SubplanToolDef tool : predefinedTools) {
-            if (subplanToolService.existsByToolName(tool.getToolName())) {
-                logger.debug("Tool already exists: {}", tool.getToolName());
-                continue;
-            }
+			// Initialize predefined tools
+			initializePredefinedTools();
 
-            try {
-                // Register the tool
-                SubplanToolDef registeredTool = subplanToolService.registerSubplanTool(tool);
-                logger.info("Successfully registered tool: {} with ID: {}", 
-                    registeredTool.getToolName(), registeredTool.getId());
-                    
-            } catch (Exception e) {
-                logger.error("Failed to initialize tool: {}", tool.getToolName(), e);
-            }
-        }
-    }
+			logger.info("Subplan tools initialization completed successfully");
+		}
+		catch (Exception e) {
+			logger.error("Failed to initialize subplan tools", e);
+		}
+	}
 
-    /**
-     * Extract title from plan template JSON
-     * @param templateContent Plan template JSON content
-     * @return Extracted title or default title
-     */
-    private String extractTitleFromTemplate(String templateContent) {
-        try {
-            // Simple JSON parsing to extract title
-            if (templateContent.contains("\"title\"")) {
-                int titleStart = templateContent.indexOf("\"title\"") + 8;
-                int titleEnd = templateContent.indexOf("\"", titleStart);
-                if (titleEnd > titleStart) {
-                    return templateContent.substring(titleStart, titleEnd);
-                }
-            }
-        } catch (Exception e) {
-            logger.warn("Failed to extract title from template, using default", e);
-        }
-        return "Untitled Plan Template";
-    }
+	/**
+	 * Initialize plan templates for subplan tools
+	 */
+	private void initializePlanTemplates() {
+		logger.info("Initializing plan templates...");
+
+		// Get all predefined plan templates
+		Map<String, String> templates = SubplanPlanTemplates.getAllPlanTemplates();
+
+		for (Map.Entry<String, String> entry : templates.entrySet()) {
+			String templateId = entry.getKey();
+			String templateContent = entry.getValue();
+
+			if (planTemplateService.getPlanTemplate(templateId) == null) {
+				String title = extractTitleFromTemplate(templateContent);
+				planTemplateService.savePlanTemplate(templateId, title, "Predefined subplan tool template",
+						templateContent);
+				logger.info("Created plan template: {} with title: {}", templateId, title);
+			}
+			else {
+				logger.debug("Plan template already exists: {}", templateId);
+			}
+		}
+	}
+
+	/**
+	 * Initialize predefined subplan tools
+	 */
+	private void initializePredefinedTools() {
+		logger.info("Initializing predefined subplan tools...");
+
+		// Get all predefined tools
+		List<SubplanToolDef> predefinedTools = PredefinedSubplanTools.getAllPredefinedTools();
+
+		for (SubplanToolDef tool : predefinedTools) {
+			if (subplanToolService.existsByToolName(tool.getToolName())) {
+				logger.debug("Tool already exists: {}", tool.getToolName());
+				continue;
+			}
+
+			try {
+				// Register the tool
+				SubplanToolDef registeredTool = subplanToolService.registerSubplanTool(tool);
+				logger.info("Successfully registered tool: {} with ID: {}", registeredTool.getToolName(),
+						registeredTool.getId());
+
+			}
+			catch (Exception e) {
+				logger.error("Failed to initialize tool: {}", tool.getToolName(), e);
+			}
+		}
+	}
+
+	/**
+	 * Extract title from plan template JSON
+	 * @param templateContent Plan template JSON content
+	 * @return Extracted title or default title
+	 */
+	private String extractTitleFromTemplate(String templateContent) {
+		try {
+			// Simple JSON parsing to extract title
+			if (templateContent.contains("\"title\"")) {
+				int titleStart = templateContent.indexOf("\"title\"") + 8;
+				int titleEnd = templateContent.indexOf("\"", titleStart);
+				if (titleEnd > titleStart) {
+					return templateContent.substring(titleStart, titleEnd);
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.warn("Failed to extract title from template, using default", e);
+		}
+		return "Untitled Plan Template";
+	}
+
 }

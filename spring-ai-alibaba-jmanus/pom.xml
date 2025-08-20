@@ -131,6 +131,12 @@
             <artifactId>reactor-netty-http</artifactId>
         </dependency>
         
+        <!-- Reactor Netty core for additional netty functionality -->
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty</artifactId>
+        </dependency>
+        
         <!-- Spring WebFlux -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

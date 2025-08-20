@@ -132,7 +132,6 @@ public class PlanningFactory implements IPlanningFactory {
 	@Autowired
 	private MapReduceSharedStateManager sharedStateManager;
 
-
 	@Autowired
 	private PromptService promptService;
 
@@ -284,11 +283,12 @@ public class PlanningFactory implements IPlanningFactory {
 		// 添加子计划工具注册
 		if (subplanToolService != null) {
 			try {
-				Map<String, PlanningFactory.ToolCallBackContext> subplanToolCallbacks = 
-					subplanToolService.createSubplanToolCallbacks(planId, rootPlanId, expectedReturnInfo);
+				Map<String, PlanningFactory.ToolCallBackContext> subplanToolCallbacks = subplanToolService
+					.createSubplanToolCallbacks(planId, rootPlanId, expectedReturnInfo);
 				toolCallbackMap.putAll(subplanToolCallbacks);
 				log.info("Registered {} subplan tools", subplanToolCallbacks.size());
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.warn("Failed to register subplan tools: {}", e.getMessage());
 			}
 		}

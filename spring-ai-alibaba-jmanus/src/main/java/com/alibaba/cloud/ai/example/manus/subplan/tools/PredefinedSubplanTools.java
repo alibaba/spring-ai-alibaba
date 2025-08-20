@@ -23,121 +23,97 @@ import java.util.List;
 
 /**
  * Predefined subplan tools configuration
- * 
+ *
  * Contains definitions for all built-in subplan tools that will be automatically
  * registered when the application starts
  */
 public class PredefinedSubplanTools {
 
-    /**
-     * Get all predefined subplan tool definitions
-     * @return List of predefined subplan tool definitions
-     */
-    public static List<SubplanToolDef> getAllPredefinedTools() {
-        List<SubplanToolDef> tools = new ArrayList<>();
-        
-        // Add content extraction tools
-        tools.add(createExtractRelevantContentTool());
-        tools.add(createGetFolderContentTool());
-        
-        return tools;
-    }
+	/**
+	 * Get all predefined subplan tool definitions
+	 * @return List of predefined subplan tool definitions
+	 */
+	public static List<SubplanToolDef> getAllPredefinedTools() {
+		List<SubplanToolDef> tools = new ArrayList<>();
 
-    /**
-     * Create extract relevant content tool definition
-     * @return Extract relevant content tool definition
-     */
-    public static SubplanToolDef createExtractRelevantContentTool() {
-        SubplanToolDef tool = new SubplanToolDef();
-        tool.setToolName("extract_relevant_content");
-        tool.setToolDescription("Extract relevant content from single file with intelligent analysis and structured output");
-        tool.setPlanTemplateId("extract_relevant_content_template");
-        tool.setEndpoint("/api/subplan/extract-content");
-        tool.setServiceGroup("content-processing");
+		// Add content extraction tools
+		tools.add(createExtractRelevantContentTool());
+		tools.add(createGetFolderContentTool());
 
-        // Define tool parameters
-        List<SubplanParamDef> parameters = new ArrayList<>();
-        
-        // File name parameter
-        SubplanParamDef fileNameParam = new SubplanParamDef(
-            "fileName", 
-            "String", 
-            "File name to be processed", 
-            true
-        );
-        
-        // Query key parameter
-        SubplanParamDef queryKeyParam = new SubplanParamDef(
-            "queryKey", 
-            "String", 
-            "Query keywords for information extraction", 
-            true
-        );
-        
-        // Output format specification parameter
-        SubplanParamDef outputFormatParam = new SubplanParamDef(
-            "outputFormatSpecification", 
-            "String", 
-            "Output format specification for data storage", 
-            true
-        );
+		return tools;
+	}
 
-        // Add parameters to tool
-        parameters.add(fileNameParam);
-        parameters.add(queryKeyParam);
-        parameters.add(outputFormatParam);
-        
-        tool.setInputSchema(parameters);
-        return tool;
-    }
+	/**
+	 * Create extract relevant content tool definition
+	 * @return Extract relevant content tool definition
+	 */
+	public static SubplanToolDef createExtractRelevantContentTool() {
+		SubplanToolDef tool = new SubplanToolDef();
+		tool.setToolName("extract_relevant_content");
+		tool.setToolDescription(
+				"Extract relevant content from single file with intelligent analysis and structured output");
+		tool.setPlanTemplateId("extract_relevant_content_template");
+		tool.setEndpoint("/api/subplan/extract-content");
+		tool.setServiceGroup("content-processing");
 
-    /**
-     * Create get folder content tool definition
-     * @return Get folder content tool definition
-     */
-    public static SubplanToolDef createGetFolderContentTool() {
-        SubplanToolDef tool = new SubplanToolDef();
-        tool.setToolName("get_folder_content");
-        tool.setToolDescription("Get content from all files in specified folder with intelligent analysis and structured output");
-        tool.setPlanTemplateId("get_folder_content_template");
-        tool.setEndpoint("/api/subplan/folder-content");
-        tool.setServiceGroup("content-processing");
+		// Define tool parameters
+		List<SubplanParamDef> parameters = new ArrayList<>();
 
-        // Define tool parameters
-        List<SubplanParamDef> parameters = new ArrayList<>();
-        
-        // Folder name parameter
-        SubplanParamDef folderNameParam = new SubplanParamDef(
-            "folderName", 
-            "String", 
-            "Folder name or relative path", 
-            true
-        );
-        
-        // Query key parameter
-        SubplanParamDef queryKeyParam = new SubplanParamDef(
-            "queryKey", 
-            "String", 
-            "Query keywords for information extraction", 
-            true
-        );
-        
-        // Output format specification parameter
-        SubplanParamDef outputFormatParam = new SubplanParamDef(
-            "outputFormatSpecification", 
-            "String", 
-            "Output format specification for data storage", 
-            true
-        );
+		// File name parameter
+		SubplanParamDef fileNameParam = new SubplanParamDef("fileName", "String", "File name to be processed", true);
 
-        // Add parameters to tool
-        parameters.add(folderNameParam);
-        parameters.add(queryKeyParam);
-        parameters.add(outputFormatParam);
-        
-        tool.setInputSchema(parameters);
-        return tool;
-    }
+		// Query key parameter
+		SubplanParamDef queryKeyParam = new SubplanParamDef("queryKey", "String",
+				"Query keywords for information extraction", true);
 
+		// Output format specification parameter
+		SubplanParamDef outputFormatParam = new SubplanParamDef("outputFormatSpecification", "String",
+				"Output format specification for data storage", true);
+
+		// Add parameters to tool
+		parameters.add(fileNameParam);
+		parameters.add(queryKeyParam);
+		parameters.add(outputFormatParam);
+
+		tool.setInputSchema(parameters);
+		return tool;
+	}
+
+	/**
+	 * Create get folder content tool definition
+	 * @return Get folder content tool definition
+	 */
+	public static SubplanToolDef createGetFolderContentTool() {
+		SubplanToolDef tool = new SubplanToolDef();
+		tool.setToolName("get_folder_content");
+		tool.setToolDescription(
+				"Get content from all files in specified folder with intelligent analysis and structured output");
+		tool.setPlanTemplateId("get_folder_content_template");
+		tool.setEndpoint("/api/subplan/folder-content");
+		tool.setServiceGroup("content-processing");
+
+		// Define tool parameters
+		List<SubplanParamDef> parameters = new ArrayList<>();
+
+		// Folder name parameter
+		SubplanParamDef folderNameParam = new SubplanParamDef("folderName", "String", "Folder name or relative path",
+				true);
+
+		// Query key parameter
+		SubplanParamDef queryKeyParam = new SubplanParamDef("queryKey", "String",
+				"Query keywords for information extraction", true);
+
+		// Output format specification parameter
+		SubplanParamDef outputFormatParam = new SubplanParamDef("outputFormatSpecification", "String",
+				"Output format specification for data storage", true);
+
+		// Add parameters to tool
+		parameters.add(folderNameParam);
+		parameters.add(queryKeyParam);
+		parameters.add(outputFormatParam);
+
+		tool.setInputSchema(parameters);
+		return tool;
+	}
 
 }

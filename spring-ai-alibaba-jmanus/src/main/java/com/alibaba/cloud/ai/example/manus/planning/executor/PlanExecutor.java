@@ -32,8 +32,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 /**
- * Basic implementation class responsible for executing plans
- * Now uses level-based executor pools for different hierarchy depths
+ * Basic implementation class responsible for executing plans Now uses level-based
+ * executor pools for different hierarchy depths
  */
 public class PlanExecutor extends AbstractPlanExecutor {
 
@@ -88,10 +88,10 @@ public class PlanExecutor extends AbstractPlanExecutor {
 	public CompletableFuture<PlanExecutionResult> executeAllStepsAsync(ExecutionContext context) {
 		// Get the plan depth from context to determine which executor pool to use
 		int planDepth = context.getPlanDepth();
-		
+
 		// Get the appropriate executor for this depth level
 		ExecutorService executor = levelBasedExecutorPool.getExecutorForLevel(planDepth);
-		
+
 		return CompletableFuture.supplyAsync(() -> {
 			PlanExecutionResult result = new PlanExecutionResult();
 			BaseAgent lastExecutor = null;
@@ -138,4 +138,5 @@ public class PlanExecutor extends AbstractPlanExecutor {
 			return result;
 		}, executor);
 	}
+
 }

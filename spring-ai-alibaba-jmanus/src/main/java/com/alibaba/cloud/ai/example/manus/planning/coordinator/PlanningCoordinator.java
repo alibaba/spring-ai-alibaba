@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.example.manus.planning.service.IPlanRelationshipService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
@@ -43,15 +44,19 @@ public class PlanningCoordinator {
 
 	private final PlanExecutorFactory planExecutorFactory;
 
+	private final PlanFinalizer planFinalizer;
+
 	private final IPlanRelationshipService planRelationshipService;
 
 	private final PlanIdDispatcher planIdDispatcher;
 
 	@Autowired
 	public PlanningCoordinator(PlanningFactory planningFactory, PlanExecutorFactory planExecutorFactory,
-			IPlanRelationshipService planRelationshipService, PlanIdDispatcher planIdDispatcher) {
+			PlanFinalizer planFinalizer, IPlanRelationshipService planRelationshipService,
+			PlanIdDispatcher planIdDispatcher) {
 		this.planningFactory = planningFactory;
 		this.planExecutorFactory = planExecutorFactory;
+		this.planFinalizer = planFinalizer;
 		this.planRelationshipService = planRelationshipService;
 		this.planIdDispatcher = planIdDispatcher;
 	}
@@ -60,8 +65,8 @@ public class PlanningCoordinator {
 	 * Constructor for backward compatibility when relationship service is not available
 	 */
 	public PlanningCoordinator(PlanningFactory planningFactory, PlanExecutorFactory planExecutorFactory,
-			PlanIdDispatcher planIdDispatcher) {
-		this(planningFactory, planExecutorFactory, null, planIdDispatcher);
+			PlanFinalizer planFinalizer, PlanIdDispatcher planIdDispatcher) {
+		this(planningFactory, planExecutorFactory, planFinalizer, null, planIdDispatcher);
 	}
 
 	/**
@@ -99,7 +104,18 @@ public class PlanningCoordinator {
 
 			// Execute the plan using PlanExecutorFactory
 			PlanExecutorInterface executor = planExecutorFactory.createExecutor(context.getPlan());
-			return executor.executeAllStepsAsync(context);
+			CompletableFuture<PlanExecutionResult> executionFuture = executor.executeAllStepsAsync(context);
+
+			// Add post-execution processing
+			return executionFuture.thenCompose(result -> {
+				try {
+					return handlePostExecution(context, result);
+				}
+				catch (Exception e) {
+					log.error("Error during post-execution processing for plan: {}", context.getCurrentPlanId(), e);
+					return CompletableFuture.failedFuture(e);
+				}
+			});
 
 		}
 		catch (Exception e) {
@@ -134,7 +150,18 @@ public class PlanningCoordinator {
 
 			// Execute the plan using PlanExecutorFactory
 			PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
-			return executor.executeAllStepsAsync(context);
+			CompletableFuture<PlanExecutionResult> executionFuture = executor.executeAllStepsAsync(context);
+
+			// Add post-execution processing
+			return executionFuture.thenCompose(result -> {
+				try {
+					return handlePostExecution(context, result);
+				}
+				catch (Exception e) {
+					log.error("Error during post-execution processing for plan: {}", context.getCurrentPlanId(), e);
+					return CompletableFuture.failedFuture(e);
+				}
+			});
 
 		}
 		catch (Exception e) {
@@ -144,6 +171,43 @@ public class PlanningCoordinator {
 			errorResult.setErrorMessage("Direct plan execution failed: " + e.getMessage());
 			return CompletableFuture.completedFuture(errorResult);
 		}
+	}
+
+	/**
+	 * Handle post-execution processing based on context requirements
+	 * @param context Execution context
+	 * @param result Execution result
+	 * @return A CompletableFuture that completes with the execution result
+	 */
+	private CompletableFuture<PlanExecutionResult> handlePostExecution(ExecutionContext context,
+			PlanExecutionResult result) {
+		if (context == null || result == null) {
+			return CompletableFuture.completedFuture(result);
+		}
+
+		try {
+			// Check if we need to generate a summary
+			if (context.isNeedSummary() && result.isSuccess()) {
+				log.debug("Generating summary for plan: {}", context.getCurrentPlanId());
+				planFinalizer.generateSummary(context);
+			}
+
+			// Check if this is a direct response plan
+			if (context.getPlan() != null && context.getPlan().isDirectResponse()) {
+				log.debug("Generating direct response for plan: {}", context.getCurrentPlanId());
+				planFinalizer.generateDirectResponse(context);
+			}
+
+			log.debug("Post-execution processing completed for plan: {}", context.getCurrentPlanId());
+
+		}
+		catch (Exception e) {
+			log.warn("Error during post-execution processing for plan: {}, but continuing", context.getCurrentPlanId(),
+					e);
+			// Don't fail the entire execution for post-processing errors
+		}
+
+		return CompletableFuture.completedFuture(result);
 	}
 
 }

@@ -13,103 +13,160 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "manus.executor.level-based")
 public class LevelBasedExecutorConfig {
 
-    /**
-     * Maximum depth level supported (default: 20)
-     */
-    private int maxDepthLevel = 20;
+	/**
+	 * Maximum depth level supported (default: 20)
+	 */
+	private int maxDepthLevel = 20;
 
-    /**
-     * Default core pool size for each level (default: 5)
-     */
-    private int defaultCorePoolSize = 5;
+	/**
+	 * Default core pool size for each level (default: 5)
+	 */
+	private int defaultCorePoolSize = 5;
 
-    /**
-     * Default maximum pool size for each level (default: 20)
-     */
-    private int defaultMaxPoolSize = 20;
+	/**
+	 * Default maximum pool size for each level (default: 20)
+	 */
+	private int defaultMaxPoolSize = 20;
 
-    /**
-     * Default queue capacity for each level (default: 100)
-     */
-    private int defaultQueueCapacity = 100;
+	/**
+	 * Default queue capacity for each level (default: 100)
+	 */
+	private int defaultQueueCapacity = 100;
 
-    /**
-     * Default keep-alive time in seconds (default: 60)
-     */
-    private long defaultKeepAliveTime = 60L;
+	/**
+	 * Default keep-alive time in seconds (default: 60)
+	 */
+	private long defaultKeepAliveTime = 60L;
 
-    /**
-     * Custom pool configurations for specific levels
-     * Key: depth level, Value: pool configuration
-     */
-    private Map<Integer, LevelPoolConfig> levelConfigs = new HashMap<>();
+	/**
+	 * Custom pool configurations for specific levels Key: depth level, Value: pool
+	 * configuration
+	 */
+	private Map<Integer, LevelPoolConfig> levelConfigs = new HashMap<>();
 
-    /**
-     * Configuration for a specific level pool
-     */
-    public static class LevelPoolConfig {
-        private int corePoolSize;
-        private int maxPoolSize;
-        private int queueCapacity;
-        private long keepAliveTime;
+	/**
+	 * Configuration for a specific level pool
+	 */
+	public static class LevelPoolConfig {
 
-        public LevelPoolConfig() {}
+		private int corePoolSize;
 
-        public LevelPoolConfig(int corePoolSize, int maxPoolSize, int queueCapacity, long keepAliveTime) {
-            this.corePoolSize = corePoolSize;
-            this.maxPoolSize = maxPoolSize;
-            this.queueCapacity = queueCapacity;
-            this.keepAliveTime = keepAliveTime;
-        }
+		private int maxPoolSize;
 
-        // Getters and setters
-        public int getCorePoolSize() { return corePoolSize; }
-        public void setCorePoolSize(int corePoolSize) { this.corePoolSize = corePoolSize; }
+		private int queueCapacity;
 
-        public int getMaxPoolSize() { return maxPoolSize; }
-        public void setMaxPoolSize(int maxPoolSize) { this.maxPoolSize = maxPoolSize; }
+		private long keepAliveTime;
 
-        public int getQueueCapacity() { return queueCapacity; }
-        public void setQueueCapacity(int queueCapacity) { this.queueCapacity = queueCapacity; }
+		public LevelPoolConfig() {
+		}
 
-        public long getKeepAliveTime() { return keepAliveTime; }
-        public void setKeepAliveTime(long keepAliveTime) { this.keepAliveTime = keepAliveTime; }
-    }
+		public LevelPoolConfig(int corePoolSize, int maxPoolSize, int queueCapacity, long keepAliveTime) {
+			this.corePoolSize = corePoolSize;
+			this.maxPoolSize = maxPoolSize;
+			this.queueCapacity = queueCapacity;
+			this.keepAliveTime = keepAliveTime;
+		}
 
-    // Getters and setters
-    public int getMaxDepthLevel() { return maxDepthLevel; }
-    public void setMaxDepthLevel(int maxDepthLevel) { this.maxDepthLevel = maxDepthLevel; }
+		// Getters and setters
+		public int getCorePoolSize() {
+			return corePoolSize;
+		}
 
-    public int getDefaultCorePoolSize() { return defaultCorePoolSize; }
-    public void setDefaultCorePoolSize(int defaultCorePoolSize) { this.defaultCorePoolSize = defaultCorePoolSize; }
+		public void setCorePoolSize(int corePoolSize) {
+			this.corePoolSize = corePoolSize;
+		}
 
-    public int getDefaultMaxPoolSize() { return defaultMaxPoolSize; }
-    public void setDefaultMaxPoolSize(int defaultMaxPoolSize) { this.defaultMaxPoolSize = defaultMaxPoolSize; }
+		public int getMaxPoolSize() {
+			return maxPoolSize;
+		}
 
-    public int getDefaultQueueCapacity() { return defaultQueueCapacity; }
-    public void setDefaultQueueCapacity(int defaultQueueCapacity) { this.defaultQueueCapacity = defaultQueueCapacity; }
+		public void setMaxPoolSize(int maxPoolSize) {
+			this.maxPoolSize = maxPoolSize;
+		}
 
-    public long getDefaultKeepAliveTime() { return defaultKeepAliveTime; }
-    public void setDefaultKeepAliveTime(long defaultKeepAliveTime) { this.defaultKeepAliveTime = defaultKeepAliveTime; }
+		public int getQueueCapacity() {
+			return queueCapacity;
+		}
 
-    public Map<Integer, LevelPoolConfig> getLevelConfigs() { return levelConfigs; }
-    public void setLevelConfigs(Map<Integer, LevelPoolConfig> levelConfigs) { this.levelConfigs = levelConfigs; }
+		public void setQueueCapacity(int queueCapacity) {
+			this.queueCapacity = queueCapacity;
+		}
 
-    /**
-     * Get configuration for a specific level
-     * @param level The depth level
-     * @return LevelPoolConfig for the level, or null if not configured
-     */
-    public LevelPoolConfig getLevelConfig(int level) {
-        return levelConfigs.get(level);
-    }
+		public long getKeepAliveTime() {
+			return keepAliveTime;
+		}
 
-    /**
-     * Add custom configuration for a specific level
-     * @param level The depth level
-     * @param config The pool configuration
-     */
-    public void addLevelConfig(int level, LevelPoolConfig config) {
-        levelConfigs.put(level, config);
-    }
+		public void setKeepAliveTime(long keepAliveTime) {
+			this.keepAliveTime = keepAliveTime;
+		}
+
+	}
+
+	// Getters and setters
+	public int getMaxDepthLevel() {
+		return maxDepthLevel;
+	}
+
+	public void setMaxDepthLevel(int maxDepthLevel) {
+		this.maxDepthLevel = maxDepthLevel;
+	}
+
+	public int getDefaultCorePoolSize() {
+		return defaultCorePoolSize;
+	}
+
+	public void setDefaultCorePoolSize(int defaultCorePoolSize) {
+		this.defaultCorePoolSize = defaultCorePoolSize;
+	}
+
+	public int getDefaultMaxPoolSize() {
+		return defaultMaxPoolSize;
+	}
+
+	public void setDefaultMaxPoolSize(int defaultMaxPoolSize) {
+		this.defaultMaxPoolSize = defaultMaxPoolSize;
+	}
+
+	public int getDefaultQueueCapacity() {
+		return defaultQueueCapacity;
+	}
+
+	public void setDefaultQueueCapacity(int defaultQueueCapacity) {
+		this.defaultQueueCapacity = defaultQueueCapacity;
+	}
+
+	public long getDefaultKeepAliveTime() {
+		return defaultKeepAliveTime;
+	}
+
+	public void setDefaultKeepAliveTime(long defaultKeepAliveTime) {
+		this.defaultKeepAliveTime = defaultKeepAliveTime;
+	}
+
+	public Map<Integer, LevelPoolConfig> getLevelConfigs() {
+		return levelConfigs;
+	}
+
+	public void setLevelConfigs(Map<Integer, LevelPoolConfig> levelConfigs) {
+		this.levelConfigs = levelConfigs;
+	}
+
+	/**
+	 * Get configuration for a specific level
+	 * @param level The depth level
+	 * @return LevelPoolConfig for the level, or null if not configured
+	 */
+	public LevelPoolConfig getLevelConfig(int level) {
+		return levelConfigs.get(level);
+	}
+
+	/**
+	 * Add custom configuration for a specific level
+	 * @param level The depth level
+	 * @param config The pool configuration
+	 */
+	public void addLevelConfig(int level, LevelPoolConfig config) {
+		levelConfigs.put(level, config);
+	}
+
 }

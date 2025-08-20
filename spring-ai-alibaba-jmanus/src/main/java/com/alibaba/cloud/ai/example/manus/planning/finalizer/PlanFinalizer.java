@@ -30,6 +30,7 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -40,6 +41,7 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 /**
  * The class responsible for generating the execution summary of the plan
  */
+@Service
 public class PlanFinalizer {
 
 	private final ILlmService llmService;

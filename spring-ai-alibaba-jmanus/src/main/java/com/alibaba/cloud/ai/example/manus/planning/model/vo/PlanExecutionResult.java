@@ -68,24 +68,4 @@ public class PlanExecutionResult {
 		this.stepResults.add(stepResult);
 	}
 
-	/**
-	 * Get the final result from the last successful step
-	 * @return Final result string or error message
-	 */
-	public String getEffectiveResult() {
-		if (!success) {
-			return errorMessage != null ? errorMessage : "Execution failed";
-		}
-
-		// Try to get result from last step's result
-		for (int i = stepResults.size() - 1; i >= 0; i--) {
-			StepResult step = stepResults.get(i);
-			if (step.getResult() != null && !step.getResult().isEmpty()) {
-				return step.getResult();
-			}
-		}
-
-		return finalResult != null ? finalResult : "No result available";
-	}
-
 }

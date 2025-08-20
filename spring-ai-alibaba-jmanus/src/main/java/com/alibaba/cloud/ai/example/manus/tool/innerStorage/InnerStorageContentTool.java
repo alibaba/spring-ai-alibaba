@@ -300,12 +300,10 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			String fileContent = Files.readString(targetFile);
 			String actualFileName = planDir.relativize(targetFile).toString();
 
-			log.info("File content extraction: file={}, query keywords={}",
-					actualFileName, queryKey);
+			log.info("File content extraction: file={}, query keywords={}", actualFileName, queryKey);
 			// TODO: Replace with subplan tool execution
-			String result = "Content extraction completed for file: " + actualFileName + 
-				" with query: " + queryKey + 
-				" and format: " + outputFormatSpecification;
+			String result = "Content extraction completed for file: " + actualFileName + " with query: " + queryKey
+					+ " and format: " + outputFormatSpecification;
 			return new ToolExecuteResult(result);
 		}
 		catch (IOException e) {
@@ -361,14 +359,12 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 				combinedContent.append("\n\n");
 			}
 
-			log.info(
-					"Folder content extraction: folder={}, file count={}, query keywords={}",
-					folderName, files.size(), queryKey);
+			log.info("Folder content extraction: folder={}, file count={}, query keywords={}", folderName, files.size(),
+					queryKey);
 
 			// TODO: Replace with subplan tool execution
-			String result = "Content extraction completed for folder: " + folderName + 
-				" with " + files.size() + " files, query: " + queryKey + 
-				" and format: " + outputFormatSpecification;
+			String result = "Content extraction completed for folder: " + folderName + " with " + files.size()
+					+ " files, query: " + queryKey + " and format: " + outputFormatSpecification;
 			return new ToolExecuteResult(result);
 
 		}
