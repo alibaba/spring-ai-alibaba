@@ -362,7 +362,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	 * Check if file is text-based using predefined constants with improved logic
 	 */
 	private boolean isTextFile(String extension) {
-		// 扩展文本文件类型列表
+		// Extended text file type list
 		Set<String> TEXT_FILE_EXTENSIONS = Set.of(".txt", ".md", ".csv", ".json", ".xml", ".html", ".htm", ".log",
 				".java", ".py", ".js", ".ts", ".css", ".sql", ".yaml", ".yml", ".properties", ".conf", ".ini", ".sh",
 				".bat", ".ps1", ".bash", ".r", ".php", ".rb", ".go", ".rs", ".cpp", ".c", ".h", ".hpp", ".cs", ".vb",
