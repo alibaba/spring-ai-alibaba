@@ -79,11 +79,11 @@ public class HttpNode implements NodeAction {
 	private static final Function<Object, Object> DEFAULT_VARIABLE_FILTER = jsonTemplate -> {
 		if (jsonTemplate instanceof String && StringUtils.hasText((String) jsonTemplate)) {
 			return ((String) jsonTemplate).replace("```json", "")
-					.replace("```", "")
-					.replace("\n", "")
-					.replace("\r", "")
-					.replace("\t", "")
-					.replace("\"", "\\\"");
+				.replace("```", "")
+				.replace("\n", "")
+				.replace("\r", "")
+				.replace("\t", "")
+				.replace("\"", "\\\"");
 		}
 		return jsonTemplate;
 	};
@@ -136,15 +136,15 @@ public class HttpNode implements NodeAction {
 			URI finalUri = uriBuilder.build().toUri();
 
 			WebClient.RequestBodySpec requestSpec = webClient.method(method)
-					.uri(finalUri)
-					.headers(headers -> headers.setAll(finalHeaders));
+				.uri(finalUri)
+				.headers(headers -> headers.setAll(finalHeaders));
 
 			applyAuth(requestSpec);
 			initBody(body, requestSpec, state);
 
 			Mono<ResponseEntity<byte[]>> responseMono = requestSpec
-					.exchangeToMono((ClientResponse resp) -> resp.toEntity(byte[].class))
-					.retryWhen(Retry.backoff(retryConfig.maxRetries, Duration.ofMillis(retryConfig.maxRetryInterval)));
+				.exchangeToMono((ClientResponse resp) -> resp.toEntity(byte[].class))
+				.retryWhen(Retry.backoff(retryConfig.maxRetries, Duration.ofMillis(retryConfig.maxRetryInterval)));
 			ResponseEntity<byte[]> responseEntity = responseMono.block();
 			Map<String, Object> httpResponse = processResponse(responseEntity, state);
 
@@ -157,11 +157,11 @@ public class HttpNode implements NodeAction {
 		}
 		catch (WebClientResponseException e) {
 			throw RunnableErrors.nodeInterrupt
-					.exception(format("%s HTTP request failed: %s", this.outputKey, e.getStatusText()));
+				.exception(format("%s HTTP request failed: %s", this.outputKey, e.getStatusText()));
 		}
 		catch (RestClientException e) {
 			throw RunnableErrors.nodeInterrupt
-					.exception(format("%s HTTP request failed: %s", this.outputKey, e.getMessage()));
+				.exception(format("%s HTTP request failed: %s", this.outputKey, e.getMessage()));
 		}
 	}
 
@@ -339,8 +339,8 @@ public class HttpNode implements NodeAction {
 		if (isFileResponse(responseEntity)) {
 			String filename = extractFilename(responseEntity.getHeaders());
 			String mimeType = Optional.ofNullable(responseEntity.getHeaders().getContentType())
-					.map(MediaType::toString)
-					.orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+				.map(MediaType::toString)
+				.orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
 			InMemoryFileStorage.FileRecord record = InMemoryFileStorage.save(body, mimeType, filename);
 
@@ -814,7 +814,7 @@ public class HttpNode implements NodeAction {
 	}
 
 	public record TimeoutConfig(int connect, int read, int write, int maxConnectTimeout, int maxReadTimeout,
-								int maxWriteTimeout) {
+			int maxWriteTimeout) {
 
 	}
 
