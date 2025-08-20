@@ -33,6 +33,7 @@ import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -77,10 +78,12 @@ public class ReactAgent {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
+	private String llmInputMessagesKey = "messages";
+
 	private ReactAgent(String name, LlmNode llmNode, ToolNode toolNode, int maxIterations,
 			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig,
 			Function<OverAllState, Boolean> shouldContinueFunc, NodeAction preLlmHook, NodeAction postLlmHook,
-			NodeAction preToolHook, NodeAction postToolHook) throws GraphStateException {
+			NodeAction preToolHook, NodeAction postToolHook, String messageKey) throws GraphStateException {
 		this.name = name;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
@@ -92,6 +95,7 @@ public class ReactAgent {
 		this.postLlmHook = postLlmHook;
 		this.preToolHook = preToolHook;
 		this.postToolHook = postToolHook;
+		this.llmInputMessagesKey = messageKey != null ? messageKey : "messages";
 		this.graph = initGraph();
 	}
 
@@ -104,15 +108,17 @@ public class ReactAgent {
 		this.keyStrategyFactory = keyStrategyFactory;
 		this.compileConfig = compileConfig;
 		this.shouldContinueFunc = shouldContinueFunc;
+		this.llmInputMessagesKey = "messages";
 		this.graph = initGraph();
 	}
 
 	public ReactAgent(String name, ChatClient chatClient, List<ToolCallback> tools, int maxIterations)
 			throws GraphStateException {
 		this.name = name;
-		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
+		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey(llmInputMessagesKey).build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
+		this.llmInputMessagesKey = "messages";
 		this.graph = initGraph();
 	}
 
@@ -120,11 +126,12 @@ public class ReactAgent {
 			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig,
 			Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
 		this.name = name;
-		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
+		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey(llmInputMessagesKey).build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.keyStrategyFactory = keyStrategyFactory;
 		this.compileConfig = compileConfig;
+		this.llmInputMessagesKey = "messages";
 		this.graph = initGraph();
 	}
 
@@ -134,10 +141,11 @@ public class ReactAgent {
 		this.llmNode = LlmNode.builder()
 			.chatClient(chatClient)
 			// .userPromptTemplate(prompt)
-			.messagesKey("messages")
+			.messagesKey(llmInputMessagesKey)
 			.build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 		this.max_iterations = maxIterations;
+		this.llmInputMessagesKey = "messages";
 		this.graph = initGraph();
 	}
 
@@ -145,12 +153,13 @@ public class ReactAgent {
 			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig,
 			Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
 		this.name = name;
-		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
+		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey(llmInputMessagesKey).build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 		this.max_iterations = maxIterations;
 		this.keyStrategyFactory = keyStrategyFactory;
 		this.compileConfig = compileConfig;
 		this.shouldContinueFunc = shouldContinueFunc;
+		this.llmInputMessagesKey = "messages";
 		this.graph = initGraph();
 	}
 
@@ -198,11 +207,19 @@ public class ReactAgent {
 		if (keyStrategyFactory == null) {
 			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put(llmInputMessagesKey, new ReplaceStrategy());
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				return keyStrategyHashMap;
+			};
+		} else {
+			KeyStrategyFactory originalFactory = this.keyStrategyFactory;
+			this.keyStrategyFactory = () -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>(originalFactory.apply());
 				keyStrategyHashMap.put("messages", new AppendStrategy());
 				return keyStrategyHashMap;
 			};
 		}
-
+		
 		StateGraph graph = new StateGraph(name, this.keyStrategyFactory);
 
 		if (preLlmHook != null) {
@@ -348,6 +365,8 @@ public class ReactAgent {
 
 		private NodeAction postToolHook;
 
+		private String messageKey = "messages";
+
 		public Builder name(String name) {
 			this.name = name;
 			return this;
@@ -408,8 +427,13 @@ public class ReactAgent {
 			return this;
 		}
 
+		public Builder llmInputMessagesKey(String llmInputMessagesKey) {
+			this.messageKey = llmInputMessagesKey;
+			return this;
+		}
+
 		public ReactAgent build() throws GraphStateException {
-			LlmNode llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
+			LlmNode llmNode = LlmNode.builder().chatClient(chatClient).messagesKey(messageKey).build();
 			ToolNode toolNode = null;
 			if (resolver != null) {
 				toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
@@ -422,7 +446,7 @@ public class ReactAgent {
 			}
 
 			return new ReactAgent(name, llmNode, toolNode, maxIterations, keyStrategyFactory, compileConfig,
-					shouldContinueFunc, preLlmHook, postLlmHook, preToolHook, postToolHook);
+					shouldContinueFunc, preLlmHook, postLlmHook, preToolHook, postToolHook, messageKey);
 		}
 
 	}
