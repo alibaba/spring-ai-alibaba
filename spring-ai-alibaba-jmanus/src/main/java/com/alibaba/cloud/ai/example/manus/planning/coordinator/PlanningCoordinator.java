@@ -142,11 +142,16 @@ public class PlanningCoordinator {
 
 			// Create execution context
 			ExecutionContext context = new ExecutionContext();
+			String userRequest = plan.getUserRequest();
+			if (userRequest == null) {
+				userRequest = plan.getTitle();
+			}
+			context.setUserRequest(userRequest);
 			context.setCurrentPlanId(currentPlanId);
 			context.setRootPlanId(rootPlanId);
 			context.setPlan(plan);
 			context.setNeedSummary(true);
-			context.setUseMemory(false);
+			context.setUseMemory(true);
 
 			// Execute the plan using PlanExecutorFactory
 			PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);

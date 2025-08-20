@@ -93,7 +93,7 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 	@Override
 	public String getDescription() {
 		return """
-				Merge multiple files into a single file. This tool can combine content from multiple source files and create a merged output file.
+				Copy a single file to a specified target folder. This tool searches for files containing the specified name and copies the found file to the target folder.
 				""";
 	}
 
@@ -103,24 +103,16 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 				{
 				    "type": "object",
 				    "properties": {
-				        "source_files": {
-				            "type": "array",
-				            "items": {
-				                "type": "string"
-				            },
-				            "description": "List of source file paths to merge"
-				        },
-				        "output_file": {
+				        "file_name": {
 				            "type": "string",
-				            "description": "Output file path for the merged content"
+				            "description": "Name or partial name of the file to copy"
 				        },
-				        "merge_strategy": {
+				        "target_folder": {
 				            "type": "string",
-				            "enum": ["concatenate", "interleave"],
-				            "description": "Strategy for merging files: concatenate (append all files) or interleave (alternate between files)"
+				            "description": "Target folder where the file will be copied"
 				        }
 				    },
-				    "required": ["source_files", "output_file"]
+				    "required": ["file_name", "target_folder"]
 				}
 				""";
 	}
