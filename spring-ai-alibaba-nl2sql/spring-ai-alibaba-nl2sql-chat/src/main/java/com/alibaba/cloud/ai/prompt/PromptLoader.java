@@ -51,7 +51,6 @@ public class PromptLoader {
 				return StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
 			}
 			catch (IOException e) {
-				// todo: 这里抛出异常后会直接卡死，需要准备一个默认策略
 				logger.error("加载提示词失败！{}", e.getMessage(), e);
 				throw new RuntimeException("加载提示词失败: " + name, e);
 			}
