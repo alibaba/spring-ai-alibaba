@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -328,6 +329,54 @@ class ReactAgentTest {
         Optional<OverAllState> result = graph.invoke(Map.of("messages", messages));
         System.out.println(result);
 
+    }
+
+    
+
+
+    /**
+     * 测试ReactAgent中KeyStrategyFactory的逻辑
+     * 验证当llmInputMessagesKey不为null时，是否正确添加到策略映射中
+     */
+    @Test
+    public void testReactAgentKeyStrategyFactory() throws Exception {
+        // 创建工具回调解析器
+        ToolCallbackResolver dataToolResolver = toolName -> {
+            if ("weather_tool".equals(toolName)) {
+                return ToolCallbacks.from(new WeatherTool())[0];
+            }
+            return ToolCallbacks.from(new WeatherTool())[0];
+        };
+
+        // 测试场景1：llmInputMessagesKey不为null
+        ReactAgent agent1 = ReactAgent.builder()
+                .name("testAgent1")
+                .chatClient(chatClient)
+                .resolver(dataToolResolver)
+                .llmInputMessagesKey("llm_input_messages") // 设置自定义的llmInputMessagesKey
+                .build();
+
+        KeyStrategyFactory keyStrategyFactory = agent1.getKeyStrategyFactory();
+        Map<String, KeyStrategy> keyStrategyMap = keyStrategyFactory.apply();
+        assertTrue(keyStrategyMap.containsKey("llm_input_messages"));
+        assertTrue(keyStrategyMap.containsKey("messages"));
+
+        ReactAgent agent2 = ReactAgent.builder()
+                .name("testAgent2")
+                .chatClient(chatClient)
+                .resolver(dataToolResolver)
+                .llmInputMessagesKey("llm_input_messages")
+                .state(()->{
+                    Map<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+                    keyStrategyHashMap.put("llm_input_messages",new AppendStrategy());
+                    return keyStrategyHashMap;
+                })
+                .build();
+
+        KeyStrategyFactory keyStrategyFactory2 = agent2.getKeyStrategyFactory();
+        Map<String, KeyStrategy> keyStrategyMap2 = keyStrategyFactory2.apply();
+        assertTrue(keyStrategyMap2.containsKey("llm_input_messages"));
+        assertTrue(keyStrategyMap2.containsKey("messages"));
     }
 
 
