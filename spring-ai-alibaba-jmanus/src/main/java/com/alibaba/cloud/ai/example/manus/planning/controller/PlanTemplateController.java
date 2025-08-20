@@ -181,51 +181,39 @@ public class PlanTemplateController {
 		}
 
 		String rawParam = request.get("rawParam");
-		return executePlanAndBuildResponse(planTemplateId, rawParam, null);
+		return executePlanAndBuildResponse(planTemplateId, rawParam);
 	}
 
 	/**
 	 * Execute plan by template ID and build response
+	 * Note: This method submits the execution task asynchronously and returns immediately.
+	 * The actual execution happens in the background. To track execution status,
+	 * you may need to implement a separate status checking endpoint.
+	 * 
 	 * @param planTemplateId The plan template ID to execute
 	 * @param rawParam Raw parameters for execution (can be null)
 	 * @param parentPlanId The parent plan ID (can be null for root plans)
-	 * @return ResponseEntity with execution result
+	 * @return ResponseEntity with submission status
 	 */
-	private ResponseEntity<Map<String, Object>> executePlanAndBuildResponse(String planTemplateId, String rawParam,
-			String parentPlanId) {
+	private ResponseEntity<Map<String, Object>> executePlanAndBuildResponse(String planTemplateId, String rawParam) {
 		try {
-			// Execute the plan template using the new method
-			CompletableFuture<PlanExecutionResult> future = executePlanTemplate(planTemplateId, rawParam, parentPlanId);
+			// Submit the plan execution task asynchronously
+			String rootPlanId = executePlanTemplate(planTemplateId, rawParam);
 
-			// For now, we'll wait for the result synchronously
-			// In a real implementation, you might want to handle this asynchronously
-			PlanExecutionResult result = future.get();
-
+			// Return success immediately when task is submitted
 			Map<String, Object> response = new HashMap<>();
-			response.put("planTemplateId", planTemplateId);
-			response.put("status", result.isSuccess() ? "completed" : "failed");
-			response.put("success", result.isSuccess());
-
-			if (result.isSuccess()) {
-				response.put("message", "Plan execution completed successfully");
-				response.put("result", result.getFinalResult());
-			}
-			else {
-				response.put("message", "Plan execution failed");
-				response.put("error", result.getErrorMessage());
-			}
+			response.put("planId", rootPlanId);
+			response.put("status", "processing");
+			response.put("message", "Task submitted, processing");
 
 			return ResponseEntity.ok(response);
 
 		}
 		catch (Exception e) {
-			logger.error("Failed to execute plan template: {}", planTemplateId, e);
+			logger.error("Failed to submit plan execution task: {}", planTemplateId, e);
 			Map<String, Object> errorResponse = new HashMap<>();
-			errorResponse.put("planTemplateId", planTemplateId);
-			errorResponse.put("status", "error");
-			errorResponse.put("success", false);
-			errorResponse.put("message", "Plan execution failed");
-			errorResponse.put("error", e.getMessage());
+			errorResponse.put("error", "Failed to submit plan execution task: " + e.getMessage());
+			errorResponse.put("planId", planTemplateId);
 			return ResponseEntity.internalServerError().body(errorResponse);
 		}
 	}
@@ -236,44 +224,36 @@ public class PlanTemplateController {
 	 * @param planTemplateId The ID of the plan template to execute
 	 * @param rawParam Raw parameters for the execution (can be null)
 	 * @param parentPlanId The ID of the parent plan (can be null for root plans)
-	 * @return A CompletableFuture that completes with the execution result
+	 * @return The root plan ID for this execution
 	 */
-	private CompletableFuture<PlanExecutionResult> executePlanTemplate(String planTemplateId, String rawParam,
-			String parentPlanId) {
+	private String executePlanTemplate(String planTemplateId, String rawParam) {
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			logger.error("Plan template ID is null or empty");
-			PlanExecutionResult errorResult = new PlanExecutionResult();
-			errorResult.setSuccess(false);
-			errorResult.setErrorMessage("Plan template ID cannot be null or empty");
-			return CompletableFuture.completedFuture(errorResult);
+			throw new IllegalArgumentException("Plan template ID cannot be null or empty");
 		}
 
 		try {
 			// Generate a unique plan ID for this execution
-			String currentPlanId = planIdDispatcher
-				.generateSubPlanId(parentPlanId != null ? parentPlanId : planTemplateId);
-			String rootPlanId = parentPlanId != null ? parentPlanId : currentPlanId;
+			String currentPlanId = planIdDispatcher.generatePlanId();
+			String rootPlanId = currentPlanId;
 
 			// Fetch the plan template from PlanTemplateService
 			PlanInterface plan = createPlanFromTemplate(planTemplateId, rawParam);
 
 			if (plan == null) {
-				PlanExecutionResult errorResult = new PlanExecutionResult();
-				errorResult.setSuccess(false);
-				errorResult.setErrorMessage("Failed to create plan from template: " + planTemplateId);
-				return CompletableFuture.completedFuture(errorResult);
+				throw new RuntimeException("Failed to create plan from template: " + planTemplateId);
 			}
 
 			// Execute using the PlanningCoordinator's common execution logic
-			return planningCoordinator.executeByPlan(plan, rootPlanId, parentPlanId, currentPlanId);
+			planningCoordinator.executeByPlan(plan, rootPlanId, null, currentPlanId);
+
+			// Return the root plan ID
+			return rootPlanId;
 
 		}
 		catch (Exception e) {
 			logger.error("Failed to execute plan template: {}", planTemplateId, e);
-			PlanExecutionResult errorResult = new PlanExecutionResult();
-			errorResult.setSuccess(false);
-			errorResult.setErrorMessage("Execution failed: " + e.getMessage());
-			return CompletableFuture.completedFuture(errorResult);
+			throw new RuntimeException("Execution failed: " + e.getMessage(), e);
 		}
 	}
 
@@ -324,7 +304,7 @@ public class PlanTemplateController {
 		logger.info("Execute plan template, ID: {}, parameters: {}", planTemplateId, allParams);
 		String rawParam = allParams != null ? allParams.get("rawParam") : null;
 		// If there are URL parameters, use the method with parameters
-		return executePlanAndBuildResponse(planTemplateId, rawParam, null);
+		return executePlanAndBuildResponse(planTemplateId, rawParam);
 	}
 
 	/**

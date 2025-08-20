@@ -137,6 +137,13 @@
             <artifactId>reactor-netty</artifactId>
         </dependency>
         
+        <!-- MacOS DNS resolver for better DNS resolution on MacOS -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver-dns-native-macos</artifactId>
+            <classifier>osx-x86_64</classifier>
+        </dependency>
+        
         <!-- Spring WebFlux -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

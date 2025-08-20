@@ -96,6 +96,8 @@ public class PlanExecutor extends AbstractPlanExecutor {
 			PlanExecutionResult result = new PlanExecutionResult();
 			BaseAgent lastExecutor = null;
 			PlanInterface plan = context.getPlan();
+			plan.setCurrentPlanId(context.getCurrentPlanId());
+			plan.setRootPlanId(context.getRootPlanId());
 			plan.updateStepIndices();
 
 			try {

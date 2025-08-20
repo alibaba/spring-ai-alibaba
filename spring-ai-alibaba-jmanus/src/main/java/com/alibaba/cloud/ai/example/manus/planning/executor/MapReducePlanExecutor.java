@@ -132,6 +132,8 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			PlanExecutionResult result = new PlanExecutionResult();
 			BaseAgent lastExecutor = null;
 			PlanInterface plan = context.getPlan();
+			plan.setCurrentPlanId(context.getCurrentPlanId());
+			plan.setRootPlanId(context.getRootPlanId());
 
 			if (!(plan instanceof MapReduceExecutionPlan)) {
 				logger.error("MapReducePlanExecutor can only execute MapReduceExecutionPlan, but got: {}",
