@@ -207,13 +207,14 @@ public class ReactAgent {
 		if (keyStrategyFactory == null) {
 			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-                if (llmInputMessagesKey != null){
+				if (llmInputMessagesKey != null) {
 					keyStrategyHashMap.put(llmInputMessagesKey, new ReplaceStrategy());
 				}
 				keyStrategyHashMap.put("messages", new AppendStrategy());
 				return keyStrategyHashMap;
 			};
-		} else {
+		}
+		else {
 			KeyStrategyFactory originalFactory = this.keyStrategyFactory;
 			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>(originalFactory.apply());
@@ -221,7 +222,7 @@ public class ReactAgent {
 				return keyStrategyHashMap;
 			};
 		}
-		
+
 		StateGraph graph = new StateGraph(name, this.keyStrategyFactory);
 
 		if (preLlmHook != null) {
