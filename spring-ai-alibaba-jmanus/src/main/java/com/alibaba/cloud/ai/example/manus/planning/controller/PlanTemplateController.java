@@ -175,7 +175,7 @@ public class PlanTemplateController {
 		}
 
 		String rawParam = request.get("rawParam");
-		return planTemplateService.executePlanByTemplateIdInternal(planTemplateId, rawParam);
+		return planTemplateService.executePlanByTemplateIdInternal(planTemplateId, rawParam,null);
 	}
 
 	/**
@@ -195,7 +195,7 @@ public class PlanTemplateController {
 		logger.info("Execute plan template, ID: {}, parameters: {}", planTemplateId, allParams);
 		String rawParam = allParams != null ? allParams.get("rawParam") : null;
 		// If there are URL parameters, use the method with parameters
-		return planTemplateService.executePlanByTemplateIdInternal(planTemplateId, rawParam);
+		return planTemplateService.executePlanByTemplateIdInternal(planTemplateId, rawParam,null);
 	}
 
 	/**
