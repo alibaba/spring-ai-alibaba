@@ -46,22 +46,24 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 
 	private final SubplanToolDef subplanTool;
 
-	@Autowired
-	private PlanTemplateService planTemplateService;
+	private final PlanTemplateService planTemplateService;
 
-	@Autowired
-	private PlanningCoordinator planningCoordinator;
+	private final PlanningCoordinator planningCoordinator;
 
-	@Autowired
-	private PlanIdDispatcher planIdDispatcher;
+	private final PlanIdDispatcher planIdDispatcher;
 
-	@Autowired
-	private ObjectMapper objectMapper;
+	private final ObjectMapper objectMapper;
 
-	public SubplanToolWrapper(SubplanToolDef subplanTool, String currentPlanId, String rootPlanId) {
+	public SubplanToolWrapper(SubplanToolDef subplanTool, String currentPlanId, String rootPlanId,
+			PlanTemplateService planTemplateService, PlanningCoordinator planningCoordinator,
+			PlanIdDispatcher planIdDispatcher, ObjectMapper objectMapper) {
 		this.subplanTool = subplanTool;
 		this.currentPlanId = currentPlanId;
 		this.rootPlanId = rootPlanId;
+		this.planTemplateService = planTemplateService;
+		this.planningCoordinator = planningCoordinator;
+		this.planIdDispatcher = planIdDispatcher;
+		this.objectMapper = objectMapper;
 	}
 
 	@Override

@@ -16,6 +16,9 @@
 package com.alibaba.cloud.ai.example.manus.subplan.service;
 
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
+import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.subplan.model.po.SubplanToolDef;
 import com.alibaba.cloud.ai.example.manus.subplan.model.vo.SubplanToolWrapper;
 import com.alibaba.cloud.ai.example.manus.subplan.repository.SubplanToolDefRepository;
@@ -50,6 +53,15 @@ public class SubplanToolService implements ISubplanToolService {
 
 	@Autowired
 	private ObjectMapper objectMapper;
+
+	@Autowired
+	private PlanTemplateService planTemplateService;
+
+	@Autowired
+	private PlanningCoordinator planningCoordinator;
+
+	@Autowired
+	private PlanIdDispatcher planIdDispatcher;
 
 	@Override
 	public List<SubplanToolDef> getAllSubplanTools() {
@@ -91,7 +103,8 @@ public class SubplanToolService implements ISubplanToolService {
 			for (SubplanToolDef subplanTool : subplanTools) {
 				try {
 					// Create a SubplanToolWrapper that extends AbstractBaseTool
-					SubplanToolWrapper toolWrapper = new SubplanToolWrapper(subplanTool, planId, rootPlanId);
+					SubplanToolWrapper toolWrapper = new SubplanToolWrapper(subplanTool, planId, rootPlanId,
+							planTemplateService, planningCoordinator, planIdDispatcher, objectMapper);
 
 					// Create FunctionToolCallback
 					FunctionToolCallback<Map<String, Object>, ToolExecuteResult> functionToolCallback = FunctionToolCallback
