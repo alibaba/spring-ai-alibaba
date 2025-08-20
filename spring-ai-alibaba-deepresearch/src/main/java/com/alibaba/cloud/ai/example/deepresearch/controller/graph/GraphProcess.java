@@ -131,6 +131,28 @@ public class GraphProcess {
 					if (next.isDone()) {
 						break;
 					}
+
+					if (next.isError()) {
+						try {
+							next.getData().get(); // 这会抛出 ExecutionException
+						}
+						catch (ExecutionException ee) {
+							Throwable error = ee.getCause();
+							logger.error("Node execution error detected: {}", error.getMessage(), error);
+
+							sink.tryEmitNext(ServerSentEvent
+								.builder(String.format(TASK_STOPPED_MESSAGE_TEMPLATE, graphIdStr,
+										"节点执行异常: " + error.getMessage()))
+								.build());
+
+							// 向 sink 传播错误，触发错误处理链
+							sink.tryEmitError(error);
+
+							graphTaskFutureMap.remove(graphId);
+							return;
+						}
+					}
+
 					// 获取NodeOutput
 					output = next.getData().get();
 				}
