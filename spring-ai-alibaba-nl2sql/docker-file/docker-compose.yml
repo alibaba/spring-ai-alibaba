@@ -50,7 +50,7 @@ services:
       mysql-data:
         condition: service_healthy
       postgres-data:
-        condition: service_started
+        condition: service_healthy
     networks:
       - app-network
     restart: no
@@ -101,7 +101,6 @@ services:
       - app-network
     volumes:
       - ./config/postgres:/docker-entrypoint-initdb.d
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 30s
