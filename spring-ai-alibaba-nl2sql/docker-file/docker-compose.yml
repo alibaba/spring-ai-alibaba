@@ -37,8 +37,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - AI_DASHSCOPE_API_KEY=${AI_DASHSCOPE_API_KEY}
-    expose:
-      - "8065"
+    ports:
+      - "8065:8065"
     volumes:
       - ./config/application.yml:/app/config/application.yml
     depends_on:

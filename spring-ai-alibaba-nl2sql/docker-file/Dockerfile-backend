@@ -18,12 +18,12 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 
 # 从构建阶段复制jar文件（版本号需要根据构建结果进行更新）
-COPY spring-ai-alibaba-nl2sql-management/target/spring-ai-alibaba-nl2sql-management-1.0.0.3.jar app.jar
+COPY spring-ai-alibaba-nl2sql-management/target/spring-ai-alibaba-nl2sql-management-1.0.0.4-SNAPSHOT.jar app.jar
 
 # 创建配置文件目录
 RUN mkdir -p /app/config
 
-# COPY docker-file/config/application.yml config/application.yml
+COPY docker-file/config/application.yml config/application.yml
 
 EXPOSE 8065
 
