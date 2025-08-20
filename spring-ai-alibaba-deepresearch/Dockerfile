@@ -12,46 +12,151 @@
 #See the License for the specific language governing permissions and
 #limitations under the License.
 
-# Use Alibaba Dragonwell 17 Ubuntu base image
-FROM dragonwell-registry.cn-hangzhou.cr.aliyuncs.com/dragonwell/dragonwell:17-ubuntu
+# ========================================
+# Build Stage 1: Frontend Build
+# ========================================
+FROM node:21-alpine AS frontend-builder
 
-# Set working directory
+# Install pnpm
+RUN npm install -g pnpm
+
+# Set working directory for frontend
+WORKDIR /app/ui-vue3
+
+# Copy frontend package files
+COPY ui-vue3/package*.json ./
+COPY ui-vue3/pnpm-lock.yaml* ./
+
+# Install frontend dependencies
+RUN pnpm install
+
+# Copy frontend source code
+COPY ui-vue3/ .
+
+# Build frontend
+RUN pnpm build-only
+
+# ========================================
+# Build Stage 2: Backend Build
+# ========================================
+FROM dragonwell-registry.cn-hangzhou.cr.aliyuncs.com/dragonwell/dragonwell:17-ubuntu AS backend-builder
+
+# Install Maven
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends maven && \
+    rm -rf /var/lib/apt/lists/*
+
+# Configure Maven to use Alibaba Cloud mirror
+RUN mkdir -p /root/.m2 && \
+    cat > /root/.m2/settings.xml <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+          http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <mirrors>
+    <mirror>
+      <id>aliyunmaven</id>
+      <mirrorOf>*</mirrorOf>
+      <name>阿里云公共仓库</name>
+      <url>https://maven.aliyun.com/repository/public</url>
+    </mirror>
+  </mirrors>
+</settings>
+EOF
+
+# Set working directory for backend
 WORKDIR /app
 
-# Update package index and install basic dependencies
+
+# Copy source code
+COPY . ./
+
+# Build the application (dependencies will be downloaded automatically)
+RUN mvn clean package -Dcheckstyle.skip=true -DskipTests
+
+# ========================================
+# Runtime Stage: Final Image
+# ========================================
+FROM dragonwell-registry.cn-hangzhou.cr.aliyuncs.com/dragonwell/dragonwell:17-ubuntu
+
+# Install nginx and other runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    gnupg \
-    lsb-release \
-    software-properties-common \
+    nginx \
+    supervisor \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js 16.x (LTS)
-RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
-    apt-get install -y --no-install-recommends nodejs \
-    && rm -rf /var/lib/apt/lists/*
+# Create application directory
+WORKDIR /app
 
-# Replace Docker official GPG key and repository with Alibaba Cloud mirror
-RUN mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://mirrors.aliyun.com/docker-ce/linux/ubuntu \
-    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
-    apt-get update && \
-    apt-get install -y docker-ce-cli
+# Copy built JAR from backend builder
+COPY --from=backend-builder /app/target/spring-ai-alibaba-deepresearch-*.jar app.jar
 
-# Verify installations
-RUN java -version && \
-    node --version && \
-    npm --version && \
-    docker --version
+# Copy built frontend from frontend builder
+COPY --from=frontend-builder /app/ui-vue3/ui/ /var/www/html/ui/
 
-# Copy application JAR
-COPY target/spring-ai-alibaba-deepresearch-0.1.0.jar app.jar
+# Create nginx configuration
+RUN cat > /etc/nginx/conf.d/default.conf <<'EOF'
+server {
+    listen 80;
+    server_name localhost;
 
-# Expose port (modify as needed)
-EXPOSE 8080
+    # Serve static files
+    location /ui/ {
+        alias /var/www/html/ui/;
+        try_files $uri $uri/ /ui/index.html;
+        index index.html;
+    }
 
-# Set entrypoint to run application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+    # Proxy API requests to Spring Boot
+    location /deep-research/ {
+        proxy_pass http://localhost:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    # Redirect root to UI
+    location = / {
+         return 301 http://$http_host/ui/;
+    }
+}
+EOF
+
+# Create supervisor configuration
+RUN cat > /etc/supervisor/conf.d/supervisord.conf <<'EOF'
+[supervisord]
+nodaemon=true
+user=root
+
+[program:nginx]
+command=nginx -g "daemon off;"
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/supervisor/nginx.err.log
+stdout_logfile=/var/log/supervisor/nginx.out.log
+priority=1
+
+[program:spring-boot]
+command=java -jar /app/app.jar
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/supervisor/spring-boot.err.log
+stdout_logfile=/var/log/supervisor/spring-boot.out.log
+environment=SPRING_PROFILES_ACTIVE=docker
+priority=2
+EOF
+
+# Remove default nginx site and ensure nginx configuration is correct
+RUN rm -f /etc/nginx/sites-enabled/default && \
+    nginx -t
+
+# Create log directory and verify supervisord installation
+RUN mkdir -p /var/log/supervisor &
+
+# Expose ports
+EXPOSE 80 8080
+
+# Start supervisor to manage both nginx and spring boot
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
