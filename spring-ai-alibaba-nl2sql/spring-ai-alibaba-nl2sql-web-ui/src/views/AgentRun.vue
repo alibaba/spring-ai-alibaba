@@ -228,9 +228,11 @@
                         </button>
                       </div>
                     </div>
-                    <div v-html="message.type === 'streaming' ? message.content : formatMessageWithFormat(message)"></div>
+                    <!-- 🔥 统一使用getDisplayContent处理，在函数内部处理报告隐藏 -->
+                    <div v-html="getDisplayContent(message)"></div>
 
-                    <!-- 报告预览按钮 - 在报告内容后显示，只在流式输出完成后显示 -->
+                    <!-- 报告预览按钮 - 暂时禁用来排查问题 -->
+                    <!--
                     <div v-if="isReportMessage(message) && hasHtmlContent(message) && message.type !== 'streaming'" class="report-preview-section">
                       <button
                         class="preview-report-btn"
@@ -241,6 +243,7 @@
                         预览完整报告
                       </button>
                     </div>
+                    -->
                   </div>
                 </div>
               </template>
@@ -346,6 +349,7 @@ export default {
     
     // 下拉菜单和重命名对话框状态
     const activeDropdown = ref(null)
+    const activeExportDropdown = ref(null)
     const showRenameModal = ref(false)
     const renameTitle = ref('')
     const currentRenameSession = ref(null)
@@ -993,14 +997,85 @@ export default {
     }
 
     const formatContentByType = (type, data) => {
+        console.log('📞📞📞 formatContentByType被调用！类型:', type, '数据长度:', data?.toString().length)
+
         if (data === null || data === undefined) return '';
+
+        // 🔥 强制隐藏输出报告类型 - 始终显示隐藏状态
+        if (type === 'output_report') {
+            console.log('🔥🔥🔥 formatContentByType处理output_report类型！！！')
+            const dataStr = data.toString()
+            console.log('🔥 数据内容长度:', dataStr.length)
+            console.log('🔥 数据内容预览:', dataStr.substring(0, 500))
+
+            // 🎯 关键修复：在formatContentByType阶段保存原始内容
+            if (dataStr.includes('```html') || dataStr.includes('Created by Autobots')) {
+                console.log('💾 在formatContentByType阶段保存原始HTML内容')
+                // 将原始内容保存到全局变量或当前消息中
+                window.lastReportContent = dataStr
+                console.log('💾 已保存到window.lastReportContent，长度:', dataStr.length)
+            }
+
+            // dataStr已在上面声明，这里直接使用
+            const charCount = dataStr.length;
+
+            // 检查是否包含HTML内容（报告生成完成的标志）
+            const hasHtmlContent = /```\s*html?\s*([\s\S]*?)```/gi.test(dataStr) ||
+                                 dataStr.includes('html-rendered-content') ||
+                                 dataStr.includes('language-html');
+
+            console.log('🔥 output_report包含HTML内容:', hasHtmlContent)
+            console.log('🔥 output_report内容长度:', charCount)
+
+            if (hasHtmlContent) {
+                console.log('🔥🔥🔥 output_report包含HTML，返回隐藏状态！！！')
+                // 报告生成完成，显示隐藏状态 - 使用简单的onclick避免字符串转义问题
+                return `
+                    <div class="report-generation-complete" style="padding: 16px; border-radius: 8px; background: #f8f9fa; border: 1px solid #e9ecef; margin: 0; line-height: 1.4; white-space: normal;">
+                        <div class="generation-status" style="display: flex; align-items: center; margin-bottom: 8px; font-size: 15px; line-height: 1.2;">
+                            <i class="bi bi-check-circle-fill" style="color: #27ae60; margin-right: 8px;"></i>
+                            <span style="color: #27ae60; font-weight: 600;">报告生成完成</span>
+                        </div>
+                        <div class="generation-info" style="margin-left: 24px; margin-bottom: 0;">
+                            <span style="color: #6c757d; font-size: 14px;">
+                                已生成 ${charCount.toLocaleString()} 个字符的完整报告
+                            </span>
+                        </div>
+                        <div class="report-preview-section" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e9ecef; text-align: center;">
+                            <button class="preview-report-btn" onclick="window.openReportPreviewByType && window.openReportPreviewByType('output_report')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
+                                <i class="bi bi-eye"></i>
+                                预览完整报告
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                console.log('🔥 output_report生成中，显示进度')
+                // 报告生成中，显示进度信息
+                return `
+                    <div class="report-generation-progress" style="padding: 16px; border-radius: 8px; background: #f8f9fa; border: 1px solid #e9ecef; margin: 0; line-height: 1.4; white-space: normal;">
+                        <div class="generation-status" style="display: flex; align-items: center; margin-bottom: 8px; font-size: 15px; line-height: 1.2;">
+                            <div class="spinner-border spinner-border-sm" role="status" style="margin-right: 8px; display: inline-block; width: 0.875rem; height: 0.875rem; border: 0.125em solid currentcolor; border-right-color: transparent; border-radius: 50%; animation: spinner-border 0.75s linear infinite;">
+                                <span style="position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important;">Loading...</span>
+                            </div>
+                            <span style="color: #667eea; font-weight: 600;">正在生成报告...</span>
+                        </div>
+                        <div class="generation-info" style="margin-left: 24px; margin-bottom: 0;">
+                            <span style="color: #6c757d; font-size: 14px;">
+                                已生成 ${charCount.toLocaleString()} 个字符
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
 
         if (type === 'sql') {
             let cleanedData = data.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
             cleanedData = cleanedData.replace(/\\n/g, '\n');
             return `<pre style="max-width: 100%; overflow-x: auto; word-wrap: break-word; white-space: pre-wrap;"><code class="language-sql">${cleanedData}</code></pre>`;
-        } 
-        
+        }
+
         if (type === 'result') {
             return convertJsonToHTMLTable(data);
         }
@@ -1025,26 +1100,42 @@ export default {
         if (isMarkdown(processedData)) {
             return renderMarkdown(processedData);
         } else {
-            // 检查是否包含HTML代码块
+            // 检查是否包含HTML代码块或报告相关内容
             const htmlCodeBlockRegex = /```\s*html?\s*([\s\S]*?)```/gi;
             const htmlMatches = processedData.match(htmlCodeBlockRegex);
+            const hasAutobots = processedData.includes('Created by Autobots') || processedData.includes('页面内容均由 AI 生成')
+            const hasButtonCode = processedData.includes('预览完整报告') && processedData.includes('style=')
+            const hasComplexHtml = processedData.includes('<div') && processedData.includes('</div>') && processedData.length > 1000
+            const hasReportContent = processedData.includes('商品销售') || processedData.includes('深度分析') || processedData.includes('报告')
 
-            if (htmlMatches && htmlMatches.length > 0) {
-                let htmlContent = processedData;
+            if (htmlMatches && htmlMatches.length > 0 || hasAutobots || hasButtonCode || (hasComplexHtml && hasReportContent)) {
+                console.log(`检测到${type}类型包含HTML或报告内容，隐藏显示`)
+                console.log(`- HTML代码块: ${htmlMatches ? htmlMatches.length : 0}`)
+                console.log(`- Autobots标识: ${hasAutobots}`)
+                console.log(`- 按钮代码: ${hasButtonCode}`)
+                console.log(`- 复杂HTML: ${hasComplexHtml}`)
+                console.log(`- 报告内容: ${hasReportContent}`)
 
-                // 处理HTML代码块 - 直接渲染HTML内容
-                htmlContent = htmlContent.replace(htmlCodeBlockRegex, (match, htmlCode) => {
-                    let cleanedHTML = htmlCode.trim();
-                    // 基本的HTML清理，移除潜在的脚本标签
-                    cleanedHTML = cleanedHTML.replace(/<script[\s\S]*?<\/script>/gi, '');
-                    cleanedHTML = cleanedHTML.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
-                    // 直接返回HTML内容，让浏览器渲染
-                    return `<div class="html-rendered-content">${cleanedHTML}</div>`;
-                });
-
-                // 处理其他文本内容，保持换行
-                htmlContent = htmlContent.replace(/\n/g, '<br>');
-                return htmlContent;
+                // 对于包含HTML内容的任何类型，都隐藏HTML内容，只显示提示信息
+                const charCount = processedData.length;
+                return `
+                    <div style="padding: 16px; border-radius: 8px; background: #f8f9fa; border: 1px solid #e9ecef; margin: 0; line-height: 1.4; white-space: normal;">
+                        <div style="display: flex; align-items: center; margin-bottom: 8px; font-size: 15px; line-height: 1.2;">
+                            <i class="bi bi-file-earmark-text" style="color: #667eea; margin-right: 8px;"></i>
+                            <span style="color: #667eea; font-weight: 600;">包含报告内容</span>
+                        </div>
+                        <div style="margin-left: 24px; margin-bottom: 0;">
+                            <span style="color: #6c757d; font-size: 14px;">
+                                此部分包含 ${charCount.toLocaleString()} 个字符的报告内容，已隐藏显示
+                            </span>
+                        </div>
+                        <div style="margin-top: 12px; margin-left: 24px;">
+                            <span style="color: #856404; font-size: 13px; font-style: italic;">
+                                💡 请使用上方的"预览完整报告"按钮查看完整内容
+                            </span>
+                        </div>
+                    </div>
+                `;
             }
 
             // 检查是否包含SQL代码块
@@ -1246,15 +1337,515 @@ export default {
       }
     }
     
+    // 🔥 模板层面的报告内容隐藏检查 - 精确检测
+    const shouldHideReportContent = (message) => {
+      if (message.role !== 'assistant' || message.type === 'streaming') {
+        return false
+      }
+
+      console.log('🔥 模板层面检查是否隐藏报告内容，消息ID:', message.id)
+      console.log('内容长度:', message.content.length)
+      console.log('内容预览:', message.content.substring(0, 200))
+
+      // 更精确的检测条件：必须同时满足多个条件才隐藏
+      const hasHtmlContent = message.content.includes('<!DOCTYPE html') ||
+                            /```\s*html?\s*([\s\S]*?)```/gi.test(message.content)
+
+      const hasReportKeywords = message.content.includes('Created by Autobots') ||
+                               message.content.includes('页面内容均由 AI 生成')
+
+      const hasReportTitle = message.content.includes('商品销售') &&
+                            (message.content.includes('深度分析') || message.content.includes('报告'))
+
+      const isVeryLongContent = message.content.length > 15000  // 提高阈值，只有非常长的内容才考虑隐藏
+
+      const hasCompleteReport = message.content.includes('html-rendered-content') ||
+                               (message.content.includes('agent-responses-container') && isVeryLongContent)
+
+      // 必须是真正的完整报告才隐藏：包含HTML内容 AND (报告关键词 OR 报告标题 OR 完整报告结构)
+      const shouldHide = hasHtmlContent && (hasReportKeywords || hasReportTitle || hasCompleteReport)
+
+      console.log('🔥 精确检测结果:')
+      console.log('- HTML内容:', hasHtmlContent)
+      console.log('- 报告关键词:', hasReportKeywords)
+      console.log('- 报告标题:', hasReportTitle)
+      console.log('- 超长内容:', isVeryLongContent)
+      console.log('- 完整报告:', hasCompleteReport)
+      console.log('- 最终决定隐藏:', shouldHide)
+
+      return shouldHide
+    }
+
+    // 新增：获取消息的显示内容（统一处理所有显示逻辑）
+    const getDisplayContent = (message) => {
+      console.log('🚨🚨🚨 getDisplayContent 开始处理 🚨🚨🚨')
+      console.log('消息ID:', message.id)
+      console.log('消息类型:', message.type)
+      console.log('消息角色:', message.role)
+      console.log('内容长度:', message.content?.length)
+      console.log('内容预览:', message.content?.substring(0, 500))
+
+      // 🎯 智能处理：检查并处理包含output_report的内容
+      if (message.role === 'assistant' && message.type !== 'streaming') {
+        console.log('🎯 getDisplayContent: 检查消息内容类型')
+        console.log('消息长度:', message.content.length)
+        console.log('消息类型:', message.type)
+
+        // 🔍 关键调试：检查隐藏标记的具体情况
+        const hasHiddenCompleteDiv = message.content.includes('<div class="report-generation-complete"')
+        const hasHiddenProgressDiv = message.content.includes('<div class="report-generation-progress"')
+        const hasHiddenText = message.content.includes('report-generation-complete') || message.content.includes('report-generation-progress')
+
+        // 🎯 关键修复：在任何处理之前先保存原始内容
+        if (message.content.includes('输出报告') && message.content.includes('```html') && !message.originalContent) {
+          message.originalContent = message.content
+          console.log('💾 提前保存原始内容，长度:', message.originalContent.length)
+        }
+
+        console.log('🔍 隐藏标记检查:')
+        console.log('- 包含隐藏完成div:', hasHiddenCompleteDiv)
+        console.log('- 包含隐藏进度div:', hasHiddenProgressDiv)
+        console.log('- 包含隐藏相关文本:', hasHiddenText)
+        console.log('- 包含输出报告:', message.content.includes('输出报告'))
+        console.log('- 包含HTML代码块:', message.content.includes('```html'))
+        console.log('- 已保存原始内容:', !!message.originalContent)
+
+        // 🎯 核心解决方案：分离显示内容和预览内容
+        if (hasHiddenCompleteDiv || hasHiddenProgressDiv) {
+          console.log('✅ 包含隐藏标记，检查是否需要分离显示和预览内容')
+
+          // 检查是否同时包含HTML代码块（说明原始报告内容还在）
+          const hasHtmlBlocks = message.content.includes('```html')
+          console.log('🔍 同时包含HTML代码块:', hasHtmlBlocks)
+
+          if (hasHtmlBlocks) {
+            console.log('🎯 实施分离策略：保留原始数据，生成清理后的显示内容')
+
+            // 1. 将原始完整内容存储到消息对象中（用于预览）
+            if (!message.originalContent) {
+              message.originalContent = message.content
+              console.log('💾 保存原始内容用于预览，长度:', message.originalContent.length)
+            }
+
+            // 2. 生成清理后的显示内容
+            let displayContent = message.content
+
+            console.log('🧹 开始清理，原始长度:', displayContent.length)
+
+            // 移除HTML代码块
+            const beforeHtmlClean = displayContent.length
+            displayContent = displayContent.replace(/```html[\s\S]*?```/gi, '')
+            console.log('🧹 移除HTML代码块后，长度从', beforeHtmlClean, '变为', displayContent.length)
+
+            // 移除包含"Created by Autobots"的大段HTML内容
+            const beforeAutobotClean = displayContent.length
+            displayContent = displayContent.replace(/<div[^>]*>[\s\S]*?Created by Autobots[\s\S]*?<\/div>/gi, '')
+            console.log('🧹 移除Autobots内容后，长度从', beforeAutobotClean, '变为', displayContent.length)
+
+            // 3. 检查预览按钮修复（谨慎处理，避免重复添加）
+            const buttonCount = (displayContent.match(/onclick="window\.openReportPreviewFromContent/g) || []).length
+            console.log('🔍 当前预览按钮数量:', buttonCount)
+
+            if (buttonCount > 0) {
+              console.log('🔧 修复预览按钮，使用新的预览方法')
+              // 替换所有有问题的onclick为新的简单调用
+              displayContent = displayContent.replace(
+                /onclick="window\.openReportPreviewFromContent[^"]*"/g,
+                `onclick="window.openReportPreviewByType && window.openReportPreviewByType('output_report')"`
+              )
+            } else {
+              console.log('⚠️ 没有找到预览按钮，可能清理过度了')
+            }
+
+            console.log('🎯 分离完成:')
+            console.log('- 原始内容长度:', message.originalContent.length, '(用于预览)')
+            console.log('- 显示内容长度:', displayContent.length, '(用于聊天框)')
+
+            return displayContent
+          } else {
+            console.log('✅ 只有隐藏标记，没有原始内容，直接返回')
+            return message.content
+          }
+        }
+
+        // 如果只是包含文本但没有div，说明是误判，继续处理
+        if (hasHiddenText && !hasHiddenCompleteDiv && !hasHiddenProgressDiv) {
+          console.log('⚠️ 只包含隐藏相关文本，但没有真正的隐藏div，继续处理')
+        }
+
+        // 检查是否包含agent-responses-container结构且包含输出报告
+        if (message.content.includes('agent-responses-container') &&
+            message.content.includes('输出报告')) {
+          console.log('🎯 检测到包含输出报告的流式结构，需要处理隐藏')
+
+          // 查找并替换输出报告块中的HTML内容
+          let processedContent = message.content
+
+          // 使用正则表达式查找输出报告块
+          const reportBlockRegex = /<div class="agent-response-block"[^>]*>\s*<div class="agent-response-title">\s*<i class="bi bi-file-earmark-text"><\/i>\s*输出报告\s*<\/div>\s*<div class="agent-response-content">([\s\S]*?)<\/div>\s*<\/div>/g
+
+          let match
+          while ((match = reportBlockRegex.exec(message.content)) !== null) {
+            const reportContent = match[1]
+            console.log('🎯 找到输出报告块，内容长度:', reportContent.length)
+
+            // 检查是否包含HTML内容
+            const hasHtmlContent = /```\s*html?\s*([\s\S]*?)```/gi.test(reportContent) ||
+                                  reportContent.includes('html-rendered-content') ||
+                                  reportContent.includes('Created by Autobots')
+
+            if (hasHtmlContent) {
+              console.log('🎯 输出报告包含HTML内容，替换为隐藏状态')
+
+              const hiddenReportBlock = `<div class="agent-response-block" style="display: block !important; width: 100% !important;">
+  <div class="agent-response-title">
+    <i class="bi bi-file-earmark-text"></i> 输出报告
+  </div>
+  <div class="agent-response-content">
+    <div class="report-generation-complete" style="padding: 16px; border-radius: 8px; background: #f8f9fa; border: 1px solid #e9ecef; margin: 0; line-height: 1.4; white-space: normal;">
+      <div class="generation-status" style="display: flex; align-items: center; margin-bottom: 8px; font-size: 15px; line-height: 1.2;">
+        <i class="bi bi-check-circle-fill" style="color: #27ae60; margin-right: 8px;"></i>
+        <span style="color: #27ae60; font-weight: 600;">报告生成完成</span>
+      </div>
+      <div class="generation-info" style="margin-left: 24px; margin-bottom: 0;">
+        <span style="color: #6c757d; font-size: 14px;">
+          已生成 ${reportContent.length.toLocaleString()} 个字符的完整报告
+        </span>
+      </div>
+      <div class="report-preview-section" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e9ecef; text-align: center;">
+        <button class="preview-report-btn" onclick="window.openReportPreviewFromContent && window.openReportPreviewFromContent('${message.content.replace(/'/g, "\\'")}', '${reportContent.length}')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
+          <i class="bi bi-eye"></i>
+          预览完整报告
+        </button>
+      </div>
+    </div>
+  </div>
+</div>`
+
+              processedContent = processedContent.replace(match[0], hiddenReportBlock)
+              console.log('🎯 输出报告块替换完成')
+            }
+          }
+
+          return processedContent
+        }
+
+        // 检查是否包含agent-responses-container结构（其他情况）
+        if (message.content.includes('agent-responses-container')) {
+          console.log('🎯 检测到流式处理结构，直接返回')
+          return message.content
+        }
+
+        console.log('🎯 普通消息，继续正常处理')
+      }
+
+      // 🔥 清理残留HTML代码片段
+      if (message.role === 'assistant' && message.type !== 'streaming') {
+        console.log('🔥 检查是否需要清理残留HTML片段')
+
+        let cleanedContent = message.content
+
+        // 清理残留的按钮代码片段 - 匹配您提到的具体模式
+        const buttonFragmentRegex = /报告生成完成！[^<]*'[^']*'\)[^>]*style="[^"]*"[^>]*>\s*预览完整报告/gi
+        if (buttonFragmentRegex.test(cleanedContent)) {
+          console.log('🔥 发现残留按钮代码片段，进行清理')
+          cleanedContent = cleanedContent.replace(buttonFragmentRegex, '')
+        }
+
+        // 清理任何包含style属性的残留片段
+        const styleFragmentRegex = /'\s*,\s*'[0-9]+'\)[^>]*style="[^"]*"[^>]*>/gi
+        if (styleFragmentRegex.test(cleanedContent)) {
+          console.log('🔥 发现残留style片段，进行清理')
+          cleanedContent = cleanedContent.replace(styleFragmentRegex, '')
+        }
+
+        // 清理包含"预览完整报告"的任何残留文本
+        const previewTextRegex = /[^<]*预览完整报告[^<]*/gi
+        if (previewTextRegex.test(cleanedContent) && !cleanedContent.includes('report-generation-complete')) {
+          console.log('🔥 发现残留预览文本，进行清理')
+          cleanedContent = cleanedContent.replace(previewTextRegex, '')
+        }
+
+        if (cleanedContent !== message.content) {
+          console.log('🔥 清理完成，内容长度从', message.content.length, '变为', cleanedContent.length)
+          return cleanedContent
+        }
+      }
+
+      // 简化日志输出
+      if (message.content?.includes('输出报告')) {
+        console.log('📊 包含输出报告的消息，长度:', message.content.length)
+        console.log('📊 包含HTML代码块:', message.content.includes('```html'))
+        console.log('📊 包含Created by Autobots:', message.content.includes('Created by Autobots'))
+      }
+
+
+
+      // 如果是流式输出，直接返回内容
+      if (message.type === 'streaming') {
+        console.log('流式输出，直接返回内容')
+        return message.content
+      }
+
+      // 🔥 激进方案：对所有长内容的assistant消息都隐藏（除了简单的文本回复）
+      if (message.role === 'assistant' && message.type !== 'streaming') {
+        console.log('🔥 检查assistant消息是否需要隐藏')
+        console.log('内容长度:', message.content.length)
+        console.log('包含HTML标签:', message.content.includes('<'))
+        console.log('包含代码块:', message.content.includes('```'))
+        console.log('包含容器:', message.content.includes('agent-responses-container'))
+
+        // 只有很短且不包含HTML的消息才显示，其他都隐藏
+        const isSimpleTextReply = message.content.length < 500 &&
+                                 !message.content.includes('<') &&
+                                 !message.content.includes('```') &&
+                                 !message.content.includes('agent-responses-container')
+
+        console.log('是否为简单文本回复:', isSimpleTextReply)
+
+        if (!isSimpleTextReply) {
+          console.log('🔥 激进隐藏策略生效！即将返回隐藏状态')
+
+          const charCount = message.content.length
+          const hiddenContent = `
+            <div class="agent-responses-container" style="display: flex; flex-direction: column; width: 100%; gap: 0.75rem;">
+              <div class="agent-response-block" style="display: block !important; width: 100% !important;">
+                <div class="agent-response-title">
+                  <i class="bi bi-file-earmark-text"></i> 输出报告
+                </div>
+                <div class="agent-response-content">
+                  <div class="report-generation-complete" style="padding: 16px; border-radius: 8px; background: #f8f9fa; border: 1px solid #e9ecef; margin: 0; line-height: 1.4; white-space: normal;">
+                    <div class="generation-status" style="display: flex; align-items: center; margin-bottom: 8px; font-size: 15px; line-height: 1.2;">
+                      <i class="bi bi-check-circle-fill" style="color: #27ae60; margin-right: 8px;"></i>
+                      <span style="color: #27ae60; font-weight: 600;">报告生成完成</span>
+                    </div>
+                    <div class="generation-info" style="margin-left: 24px; margin-bottom: 0;">
+                      <span style="color: #6c757d; font-size: 14px;">
+                        已生成 ${charCount.toLocaleString()} 个字符的完整报告
+                      </span>
+                    </div>
+                    <div class="report-preview-section" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e9ecef; text-align: center;">
+                      <button class="preview-report-btn" onclick="window.openReportPreviewByType && window.openReportPreviewByType('output_report')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
+                        <i class="bi bi-eye"></i>
+                        预览完整报告
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `
+
+          console.log('🔥 返回隐藏内容，长度:', hiddenContent.length)
+          return hiddenContent
+        } else {
+          console.log('简单文本回复，继续正常处理')
+        }
+      }
+
+      // 检查是否是报告消息
+      if (!isReportMessage(message)) {
+        console.log('非报告消息，使用formatMessage处理')
+        return formatMessage(message.content)
+      }
+
+      console.log('这是报告消息，进行特殊处理')
+
+      // 强制检测：如果内容很长且包含报告相关关键词，直接隐藏
+      if (message.content.length > 5000 &&
+          (message.content.includes('报告') || message.content.includes('分析') ||
+           message.content.includes('商品') || message.content.includes('销售'))) {
+        console.log('检测到长内容报告消息，强制隐藏')
+        const charCount = message.content.length
+        return `
+          <div class="agent-responses-container" style="display: flex; flex-direction: column; width: 100%; gap: 0.75rem;">
+            <div class="agent-response-block" style="display: block !important; width: 100% !important;">
+              <div class="agent-response-title">
+                <i class="bi bi-file-earmark-text"></i> 输出报告
+              </div>
+              <div class="agent-response-content">
+                <div class="report-generation-complete" style="padding: 16px; border-radius: 8px; background: #f8f9fa; border: 1px solid #e9ecef; margin: 0; line-height: 1.4; white-space: normal;">
+                  <div class="generation-status" style="display: flex; align-items: center; margin-bottom: 8px; font-size: 15px; line-height: 1.2;">
+                    <i class="bi bi-check-circle-fill" style="color: #27ae60; margin-right: 8px;"></i>
+                    <span style="color: #27ae60; font-weight: 600;">报告生成完成</span>
+                  </div>
+                  <div class="generation-info" style="margin-left: 24px; margin-bottom: 0;">
+                    <span style="color: #6c757d; font-size: 14px;">
+                      已生成 ${charCount.toLocaleString()} 个字符的完整报告
+                    </span>
+                  </div>
+                  <div class="report-preview-section" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e9ecef; text-align: center;">
+                    <button class="preview-report-btn" onclick="window.openReportPreviewFromContent && window.openReportPreviewFromContent('${message.content.replace(/'/g, "\\'")}', '${charCount}')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
+                      <i class="bi bi-eye"></i>
+                      预览完整报告
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      }
+
+      // 对于报告消息，检查是否包含HTML内容或报告相关内容（表示报告已完成）
+      const hasHtmlCodeBlock = /```\s*html?\s*([\s\S]*?)```/gi.test(message.content)
+      const hasHtmlRendered = message.content.includes('html-rendered-content')
+      const hasLanguageHtml = message.content.includes('language-html')
+      const hasDoctype = message.content.includes('<!DOCTYPE html')
+      const hasHtmlTags = /<div[^>]*class="[^"]*"[^>]*>/.test(message.content) && message.content.includes('</div>')
+      const hasReportTitle = message.content.includes('商品销售') || message.content.includes('深度分析') || message.content.includes('报告')
+      const hasAutobots = message.content.includes('Created by Autobots') || message.content.includes('页面内容均由 AI 生成')
+      const hasButtonCode = message.content.includes('预览完整报告') && message.content.includes('style=')
+      const hasComplexHtml = message.content.includes('<div') && message.content.includes('</div>') && message.content.length > 1000
+
+      const hasHtmlContent = hasHtmlCodeBlock || hasHtmlRendered || hasLanguageHtml || hasDoctype ||
+                            (hasHtmlTags && hasReportTitle) || hasAutobots || hasButtonCode || hasComplexHtml
+
+      console.log('HTML检测详情:')
+      console.log('- HTML代码块:', hasHtmlCodeBlock)
+      console.log('- html-rendered-content:', hasHtmlRendered)
+      console.log('- language-html:', hasLanguageHtml)
+      console.log('- DOCTYPE:', hasDoctype)
+      console.log('- HTML标签:', hasHtmlTags)
+      console.log('- 报告标题:', hasReportTitle)
+      console.log('- Autobots标识:', hasAutobots)
+      console.log('- 按钮代码:', hasButtonCode)
+      console.log('- 复杂HTML:', hasComplexHtml)
+      console.log('- 最终判断有HTML内容:', hasHtmlContent)
+
+      if (hasHtmlContent) {
+        console.log('检测到HTML内容，强制显示完成状态')
+        // 强制显示完成状态，隐藏HTML内容
+        const charCount = message.content.length
+        return `
+          <div class="agent-responses-container" style="display: flex; flex-direction: column; width: 100%; gap: 0.75rem;">
+            <div class="agent-response-block" style="display: block !important; width: 100% !important;">
+              <div class="agent-response-title">
+                <i class="bi bi-file-earmark-text"></i> 输出报告
+              </div>
+              <div class="agent-response-content">
+                <div class="report-generation-complete" style="padding: 16px; border-radius: 8px; background: #f8f9fa; border: 1px solid #e9ecef; margin: 0; line-height: 1.4; white-space: normal;">
+                  <div class="generation-status" style="display: flex; align-items: center; margin-bottom: 8px; font-size: 15px; line-height: 1.2;">
+                    <i class="bi bi-check-circle-fill" style="color: #27ae60; margin-right: 8px;"></i>
+                    <span style="color: #27ae60; font-weight: 600;">报告生成完成</span>
+                  </div>
+                  <div class="generation-info" style="margin-left: 24px; margin-bottom: 0;">
+                    <span style="color: #6c757d; font-size: 14px;">
+                      已生成 ${charCount.toLocaleString()} 个字符的完整报告
+                    </span>
+                  </div>
+                  <div class="report-preview-section" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e9ecef; text-align: center;">
+                    <button class="preview-report-btn" onclick="window.openReportPreviewFromContent && window.openReportPreviewFromContent('${message.content.replace(/'/g, "\\'")}', '${charCount}')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
+                      <i class="bi bi-eye"></i>
+                      预览完整报告
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      }
+
+      // 如果没有HTML内容，检查是否已经包含我们的特殊处理内容
+      if (message.content.includes('agent-responses-container') ||
+          message.content.includes('report-generation-complete') ||
+          message.content.includes('report-generation-progress')) {
+        console.log('已包含特殊处理内容，直接返回')
+        return message.content
+      }
+
+      // 否则使用formatMessageWithFormat处理
+      console.log('使用formatMessageWithFormat处理')
+      return formatMessageWithFormat(message)
+    }
+
+    // 新增：检查是否应该直接使用消息内容（不经过formatMessageWithFormat处理）
+    const shouldUseDirectContent = (message) => {
+      if (!message.content) return false
+
+      console.log('=== shouldUseDirectContent 检查 ===')
+      console.log('消息ID:', message.id)
+      console.log('消息类型:', message.type)
+      console.log('内容长度:', message.content.length)
+      console.log('内容预览:', message.content.substring(0, 300) + '...')
+
+      // 检查是否包含我们的特殊处理内容标志
+      const hasAgentContainer = message.content.includes('agent-responses-container')
+      const hasReportComplete = message.content.includes('report-generation-complete')
+      const hasReportProgress = message.content.includes('report-generation-progress')
+
+      console.log('包含agent-responses-container:', hasAgentContainer)
+      console.log('包含report-generation-complete:', hasReportComplete)
+      console.log('包含report-generation-progress:', hasReportProgress)
+
+      const shouldUse = hasAgentContainer || hasReportComplete || hasReportProgress
+      console.log('最终决定 shouldUseDirectContent:', shouldUse)
+      console.log('=== 检查结束 ===')
+
+      return shouldUse
+    }
+
     // 新增：根据格式显示消息内容
     const formatMessageWithFormat = (message) => {
       const format = getMessageFormat(message.id)
-      const originalContent = formatMessage(message.content)
-      
+
       if (!isReportMessage(message)) {
-        return originalContent
+        return formatMessage(message.content)
       }
-      
+
+      console.log('处理报告消息:', message.id, '内容长度:', message.content?.length)
+      console.log('消息内容预览:', message.content?.substring(0, 500) + '...')
+      console.log('消息类型:', message.type)
+      console.log('是否包含输出报告关键词:', message.content?.includes('输出报告'))
+      console.log('是否包含output_report关键词:', message.content?.includes('output_report'))
+
+      // 对于报告消息，检查是否包含我们的特殊处理内容
+      if (message.content.includes('report-generation-complete') ||
+          message.content.includes('report-generation-progress') ||
+          message.content.includes('agent-responses-container')) {
+        console.log('检测到特殊处理内容，直接返回')
+        // 如果包含我们的特殊处理内容，直接返回，不再重新处理
+        return message.content
+      }
+
+      // 检查是否是输出报告类型的消息，如果是，强制使用我们的处理逻辑
+      if (message.content.includes('输出报告') || message.content.includes('output_report')) {
+        console.log('检测到输出报告消息，使用特殊处理')
+        // 检查是否包含HTML内容
+        const hasHtml = /```\s*html?\s*([\s\S]*?)```/gi.test(message.content) ||
+                       message.content.includes('html-rendered-content') ||
+                       message.content.includes('language-html') ||
+                       message.content.includes('<!DOCTYPE html')
+
+        if (hasHtml) {
+          // 生成我们的特殊完成状态
+          const charCount = message.content.length
+          return `
+            <div class="report-generation-complete" style="padding: 16px; border-radius: 8px; background: #f8f9fa; border: 1px solid #e9ecef; margin: 0; line-height: 1.4; white-space: normal;">
+              <div class="generation-status" style="display: flex; align-items: center; margin-bottom: 8px; font-size: 15px; line-height: 1.2;">
+                <i class="bi bi-check-circle-fill" style="color: #27ae60; margin-right: 8px;"></i>
+                <span style="color: #27ae60; font-weight: 600;">报告生成完成</span>
+              </div>
+              <div class="generation-info" style="margin-left: 24px; margin-bottom: 0;">
+                <span style="color: #6c757d; font-size: 14px;">
+                  已生成 ${charCount.toLocaleString()} 个字符的完整报告
+                </span>
+              </div>
+              <div class="report-preview-section" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e9ecef; text-align: center;">
+                <button class="preview-report-btn" onclick="window.openReportPreviewFromContent && window.openReportPreviewFromContent('${message.content.replace(/'/g, "\\'")}', '${charCount}')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
+                  <i class="bi bi-eye"></i>
+                  预览完整报告
+                </button>
+              </div>
+            </div>
+          `
+        }
+      }
+
+      // 否则按照原来的逻辑处理
+      const originalContent = formatMessage(message.content)
+
       if (format === 'markdown') {
         // 将HTML内容转换为Markdown显示
         const markdownContent = convertHtmlToMarkdown(originalContent)
@@ -1467,6 +2058,96 @@ export default {
         // 可以在这里添加额外的iframe处理逻辑
       })
     }
+
+    // 从内容中打开报告预览的全局函数
+    const openReportPreviewFromContent = (content, charCount) => {
+      // 创建一个模拟的消息对象
+      const mockMessage = {
+        id: 'report-preview-' + Date.now(),
+        content: content,
+        type: 'completed'
+      }
+
+      currentPreviewMessage.value = mockMessage
+      previewReportContent.value = generatePreviewReportContent(mockMessage)
+      showReportPreview.value = true
+
+      nextTick(() => {
+        // 可以在这里添加额外的iframe处理逻辑
+      })
+    }
+
+    // 🎯 新的预览函数：根据类型打开报告预览
+    const openReportPreviewByType = (type) => {
+      console.log('🎯 根据类型打开报告预览:', type)
+
+      // 找到最新的包含指定类型的消息
+      const latestMessage = currentMessages.value
+        .filter(msg => msg.role === 'assistant' && msg.content && msg.content.includes('输出报告'))
+        .pop()
+
+      if (latestMessage) {
+        console.log('🎯 找到包含报告的消息，ID:', latestMessage.id)
+        console.log('🎯 消息有原始内容:', !!latestMessage.originalContent)
+        console.log('🎯 当前内容包含HTML:', latestMessage.content.includes('```html'))
+
+        // 优先使用原始内容，如果没有则使用当前内容
+        let contentToPreview = latestMessage.originalContent || latestMessage.content
+
+        // 如果当前内容和原始内容都没有HTML，尝试从全局保存的内容中获取
+        if (!contentToPreview.includes('```html')) {
+          console.log('⚠️ 当前消息没有HTML内容，尝试其他方式获取')
+
+          // 尝试从全局保存的内容中获取
+          if (window.lastReportContent && window.lastReportContent.includes('```html')) {
+            contentToPreview = window.lastReportContent
+            console.log('🎯 从全局保存的内容获取HTML，长度:', contentToPreview.length)
+          } else {
+            // 尝试从所有消息中查找
+            const allMessagesWithHtml = currentMessages.value.filter(msg =>
+              msg.role === 'assistant' &&
+              msg.content &&
+              (msg.content.includes('```html') || (msg.originalContent && msg.originalContent.includes('```html')))
+            )
+
+            if (allMessagesWithHtml.length > 0) {
+              const htmlMessage = allMessagesWithHtml[allMessagesWithHtml.length - 1]
+              contentToPreview = htmlMessage.originalContent || htmlMessage.content
+              console.log('🎯 从其他消息找到HTML内容，长度:', contentToPreview.length)
+            }
+          }
+        }
+
+        console.log('🎯 最终预览内容长度:', contentToPreview.length)
+        console.log('🎯 预览内容包含HTML:', contentToPreview.includes('```html'))
+
+        // 创建预览消息对象
+        const previewMessage = {
+          id: 'report-preview-' + Date.now(),
+          role: 'assistant',
+          content: contentToPreview,
+          type: 'completed'
+        }
+
+        currentPreviewMessage.value = previewMessage
+        previewReportContent.value = generatePreviewReportContent(previewMessage)
+        showReportPreview.value = true
+      } else {
+        console.error('🎯 未找到包含报告的消息')
+        alert('未找到报告内容')
+      }
+    }
+
+    // 将函数暴露到全局
+    onMounted(() => {
+      window.openReportPreviewFromContent = openReportPreviewFromContent
+      window.openReportPreviewByType = openReportPreviewByType
+    })
+
+    onUnmounted(() => {
+      delete window.openReportPreviewFromContent
+      delete window.openReportPreviewByType
+    })
 
     const closeReportPreview = () => {
       showReportPreview.value = false
@@ -1854,6 +2535,9 @@ export default {
       escapeHtml,
       // 报告格式管理方法
       isReportMessage,
+      getDisplayContent,
+      shouldHideReportContent,
+      shouldUseDirectContent,
       getMessageFormat,
       setMessageFormat,
       formatMessageWithFormat,
@@ -1861,6 +2545,7 @@ export default {
       // 报告预览方法
       hasHtmlContent,
       openReportPreview,
+      openReportPreviewFromContent,
       closeReportPreview,
       refreshReportPreview,
       exportCurrentPreviewReport
@@ -3031,12 +3716,15 @@ export default {
   border-bottom: 1px solid #dee2e6;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 6px;
 }
 
 .agent-response-title i {
   font-size: 14px;
   color: #6c757d;
+  flex-shrink: 0;
+  margin-right: 2px;
 }
 
 .agent-response-content {
@@ -3200,6 +3888,12 @@ export default {
   font-size: 16px;
 }
 
+/* 内联预览按钮悬停效果 */
+.report-generation-complete .preview-report-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
+}
+
 /* 当显示预览时，主页面缩小 */
 .agent-run-page.with-preview {
   width: 50%;
@@ -3298,6 +3992,78 @@ export default {
   height: 100%;
   border: none;
   background: white;
+}
+
+/* 报告生成进度样式 */
+.report-generation-progress,
+.report-generation-complete {
+  padding: 16px;
+  border-radius: 8px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.generation-status {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.generation-info {
+  margin-left: 24px;
+  margin-bottom: 0;
+}
+
+.generation-hint {
+  margin-top: 12px;
+  padding: 12px;
+  background: #e3f2fd;
+  border-radius: 6px;
+  border-left: 4px solid #2196f3;
+  display: flex;
+  align-items: center;
+}
+
+
+
+/* Bootstrap spinner样式 */
+.spinner-border {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  vertical-align: -0.125em;
+  border: 0.125em solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinner-border 0.75s linear infinite;
+}
+
+.spinner-border-sm {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-width: 0.125em;
+}
+
+@keyframes spinner-border {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 /* 移动端遮罩层 */
