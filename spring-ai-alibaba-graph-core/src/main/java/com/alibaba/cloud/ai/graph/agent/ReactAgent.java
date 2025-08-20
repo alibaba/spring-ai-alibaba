@@ -207,7 +207,9 @@ public class ReactAgent {
 		if (keyStrategyFactory == null) {
 			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				keyStrategyHashMap.put(llmInputMessagesKey, new ReplaceStrategy());
+                if (llmInputMessagesKey != null){
+					keyStrategyHashMap.put(llmInputMessagesKey, new ReplaceStrategy());
+				}
 				keyStrategyHashMap.put("messages", new AppendStrategy());
 				return keyStrategyHashMap;
 			};
