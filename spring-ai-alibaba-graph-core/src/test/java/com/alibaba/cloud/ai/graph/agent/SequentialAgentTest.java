@@ -22,6 +22,7 @@ import java.util.Optional;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -54,6 +55,7 @@ class SequentialAgentTest {
 
 	@Test
 	public void testSequentialAgent() throws Exception {
+		DashScopeChatOptions.builder().withHttpHeaders(new HashMap<>()).build();
 		KeyStrategyFactory stateFactory = () -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			keyStrategyHashMap.put("input", new ReplaceStrategy());

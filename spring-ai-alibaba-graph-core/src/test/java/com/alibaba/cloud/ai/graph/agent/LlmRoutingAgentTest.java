@@ -62,30 +62,30 @@ class LlmRoutingAgentTest {
 			return keyStrategyHashMap;
 		};
 
-		ReactAgent writerAgent = ReactAgent.builder()
-				.name("writer_agent")
+		ReactAgent proseWriterAgent = ReactAgent.builder()
+				.name("prose_writer_agent")
 				.model(chatModel)
-				.description("可以写文章。")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
-				.outputKey("article")
+				.description("可以写散文文章。")
+				.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
+				.outputKey("prose_article")
 				.build();
 
-		ReactAgent reviewerAgent = ReactAgent.builder()
-				.name("reviewer_agent")
+		ReactAgent poemWriterAgent = ReactAgent.builder()
+				.name("poem_writer_agent")
 				.model(chatModel)
-				.description("可以对文章进行评论和修改。")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
-				.outputKey("reviewed_article")
+				.description("可以写现代诗。")
+				.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问进行回答。")
+				.outputKey("poem_article")
 				.build();
 
 		LlmRoutingAgent blogAgent = LlmRoutingAgent.builder()
 				.name("blog_agent")
 				.model(chatModel)
 				.state(stateFactory)
-				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改。")
+				.description("可以根据用户给定的主题写文章或作诗。")
 				.inputKey("input")
 				.outputKey("topic")
-				.subAgents(List.of(writerAgent, reviewerAgent))
+				.subAgents(List.of(proseWriterAgent, poemWriterAgent))
 				.build();
 
 		try {
