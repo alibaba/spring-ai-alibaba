@@ -45,12 +45,15 @@ services:
     ports:
       - "8065:8065"
     depends_on:
-      - mysql
-      - postgres-data
-      - mysql-data
+      mysql:
+        condition: service_healthy
+      mysql-data:
+        condition: service_healthy
+      postgres-data:
+        condition: service_started
     networks:
       - app-network
-    restart: unless-stopped
+    restart: no
 
   # Vue前端服务
   frontend:
