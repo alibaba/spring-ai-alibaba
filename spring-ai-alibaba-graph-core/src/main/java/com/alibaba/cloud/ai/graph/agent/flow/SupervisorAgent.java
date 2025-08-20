@@ -58,26 +58,7 @@ public class SupervisorAgent extends FlowAgent {
 	 */
 	@Override
 	protected void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<? extends BaseAgent> subAgents) throws GraphStateException {
-		Map<String, String> edgeRoutingMap = new HashMap<>();
-		for (BaseAgent subAgent : subAgents) {
-			// Add the current sub-agent as a node
-			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(parentAgent.outputKey(), subAgent.outputKey()));
-//				graph.addEdge(parentAgent.name(), subAgent.name());
-			edgeRoutingMap.put(subAgent.name(), subAgent.name());
-
-			// Recursively process this sub-agent's sub-agents if they exist
-			if (subAgent instanceof FlowAgent subFlowAgent) {
-				if (subFlowAgent.subAgents() == null || subFlowAgent.subAgents().isEmpty()) {
-					graph.addEdge(subAgent.name(), parentAgent.name());
-				}
-			} else {
-				graph.addEdge(subAgent.name(), END);
-			}
-		}
-
-		edgeRoutingMap.put("end", END);
-		// Connect parent to this sub-agent
-		graph.addConditionalEdges(parentAgent.name(), new RoutingEdgeAction(chatModel, this, subAgents), edgeRoutingMap);
+		// todo
 	}
 
 

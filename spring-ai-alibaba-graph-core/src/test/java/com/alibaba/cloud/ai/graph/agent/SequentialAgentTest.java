@@ -81,7 +81,6 @@ class SequentialAgentTest {
 
 		SequentialAgent blogAgent = SequentialAgent.builder()
 				.name("blog_agent")
-				.model(chatModel)
 				.state(stateFactory)
 				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改。")
 				.inputKey("input")
