@@ -423,6 +423,8 @@ export default {
       })
     }
 
+
+
     const initUI = () => {
       showEmptyState.value = false
       resultSections.value = []

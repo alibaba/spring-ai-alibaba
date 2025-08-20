@@ -80,30 +80,6 @@ public class CompileConfig {
 	}
 
 	/**
-	 * Returns the array of interrupts that will occur before the specified node
-	 * (deprecated).
-	 * @return An array of interruptible nodes.
-	 * @deprecated Use {@link #interruptsBefore()} instead for better immutability and
-	 * type safety.
-	 */
-	@Deprecated
-	public String[] getInterruptBefore() {
-		return interruptsBefore.toArray(new String[0]);
-	}
-
-	/**
-	 * Returns the array of interrupts that will occur after the specified node
-	 * (deprecated).
-	 * @return An array of interruptible nodes.
-	 * @deprecated Use {@link #interruptsAfter()} instead for better immutability and type
-	 * safety.
-	 */
-	@Deprecated
-	public String[] getInterruptAfter() {
-		return interruptsAfter.toArray(new String[0]);
-	}
-
-	/**
 	 * return the current state of option concerning whether to interrupt the graph
 	 * execution before evaluating conditional edges
 	 * @return true if option is enabled, false otherwise

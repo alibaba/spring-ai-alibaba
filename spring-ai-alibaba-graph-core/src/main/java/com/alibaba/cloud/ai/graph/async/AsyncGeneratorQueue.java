@@ -117,20 +117,4 @@ public class AsyncGeneratorQueue {
 		return new Generator<>(queue);
 	}
 
-	/**
-	 * Creates an AsyncGenerator from the provided queue, executor, and consumer.
-	 * @param <E> the type of elements in the queue
-	 * @param <Q> the type of blocking queue
-	 * @param queue the blocking queue to generate elements from
-	 * @param executor the executor for asynchronous processing
-	 * @param consumer the consumer for processing elements from the queue
-	 * @return an AsyncGenerator instance
-	 * @deprecated use of(Q, Consumer, Executor)
-	 */
-	@Deprecated
-	public static <E, Q extends BlockingQueue<AsyncGenerator.Data<E>>> AsyncGenerator<E> of(Q queue, Executor executor,
-			Consumer<Q> consumer) {
-		return of(queue, consumer, executor);
-	}
-
 }

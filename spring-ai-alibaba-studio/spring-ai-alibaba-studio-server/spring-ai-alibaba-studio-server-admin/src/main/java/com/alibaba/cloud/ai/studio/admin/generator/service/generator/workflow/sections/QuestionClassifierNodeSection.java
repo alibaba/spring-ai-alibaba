@@ -109,22 +109,15 @@ public class QuestionClassifierNodeSection implements NodeSection<QuestionClassi
 		String srcVar = varNames.get(sourceId);
 		StringBuilder sb = new StringBuilder();
 
-		List<String> endNodes = new ArrayList<>();
-
 		// 如果输出的都不是预定分类，则使用最后一个分类
 		String lastConditionKey = "unknown";
 
 		for (Edge e : condEdges) {
-			Map<String, Object> data = e.getData();
-			String targetType = data != null ? (String) data.get("targetType") : null;
 			String conditionKey = resolveConditionKey(nodeData, e.getSourceHandle());
 			String tgtVar2 = varNames.get(e.getTarget());
 			lastConditionKey = conditionKey;
 			conditions.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
 			mappings.add(String.format("\"%s\", \"%s\"", conditionKey, tgtVar2));
-			if ("end".equalsIgnoreCase(targetType)) {
-				endNodes.add(tgtVar2);
-			}
 		}
 
 		String lambdaContent = String.join("\n", conditions);
@@ -135,13 +128,6 @@ public class QuestionClassifierNodeSection implements NodeSection<QuestionClassi
 						+ "String value = state.value(\"%s_class_name\", String.class).orElse(\"\");%n" + "%s%n"
 						+ "return \"%s\";%n" + "            }),%n" + "            Map.of(%s)%n" + ");%n",
 				srcVar, srcVar, lambdaContent, lastConditionKey, mapContent));
-
-		// 补充end节点与END的边，如果有
-		if (!endNodes.isEmpty()) {
-			sb.append("stateGraph");
-			endNodes.forEach(end -> sb.append(String.format("%n.addEdge(\"%s\", END)", end)));
-			sb.append(String.format(";%n"));
-		}
 
 		return sb.toString();
 	}

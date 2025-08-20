@@ -174,7 +174,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			String tgtVar = varNames.get(targetId);
 			Map<String, Object> data = edge.getData();
 			String sourceType = data != null ? (String) data.get("sourceType") : null;
-			String targetType = data != null ? (String) data.get("targetType") : null;
 
 			// Skip if already rendered as conditional
 			if (edge.getSourceHandle() != null && !"source".equals(edge.getSourceHandle())) {
@@ -197,10 +196,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			if ("start".equals(sourceType)) {
 				sb.append(String.format("stateGraph.addEdge(START, \"%s\");%n", tgtVar));
 			}
-			else if ("end".equals(targetType)) {
-				sb.append(String.format("stateGraph.addEdge(\"%s\", \"%s\");%n", srcVar, tgtVar));
-				sb.append(String.format("stateGraph.addEdge(\"%s\", END);%n", tgtVar));
-			}
 			else {
 				sb.append(String.format("stateGraph.addEdge(\"%s\", \"%s\");%n", srcVar, tgtVar));
 			}
@@ -219,6 +214,15 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			}
 		}
 
+		// 统一生成end节点到StateGraph.END的边（避免边重复）
+		sb.append("stateGraph");
+		nodes.stream()
+			.filter(node -> NodeType.END.value().equals(node.getType()))
+			.map(Node::getId)
+			.map(varNames::get)
+			.forEach(endName -> sb.append(String.format("%n.addEdge(\"%s\", END)", endName)));
+		sb.append(String.format(";%n"));
+
 		return sb.toString();
 	}
 
@@ -231,6 +235,9 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 						"com.alibaba.cloud.ai.graph.node.code.CodeExecutor",
 						"com.alibaba.cloud.ai.graph.node.code.LocalCommandlineCodeExecutor", "java.io.IOException",
 						"java.nio.file.Files", "java.nio.file.Path", "java.util.stream.Collectors")),
+				Map.entry(NodeType.AGENT.value(),
+						List.of("com.alibaba.cloud.ai.graph.node.AgentNode",
+								"org.springframework.ai.tool.ToolCallback")),
 				Map.entry(NodeType.LLM.value(),
 						List.of("com.alibaba.cloud.ai.graph.node.LlmNode",
 								"org.springframework.ai.chat.messages.AssistantMessage")),

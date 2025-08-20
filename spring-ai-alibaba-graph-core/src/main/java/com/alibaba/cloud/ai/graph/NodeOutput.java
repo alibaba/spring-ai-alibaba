@@ -56,14 +56,6 @@ public class NodeOutput {
 		return state;
 	}
 
-	/**
-	 * @deprecated Use {@link #state()} instead.
-	 */
-	@Deprecated
-	public OverAllState getState() {
-		return state();
-	}
-
 	protected NodeOutput(String node, OverAllState state) {
 		this.node = node;
 		this.state = state;
