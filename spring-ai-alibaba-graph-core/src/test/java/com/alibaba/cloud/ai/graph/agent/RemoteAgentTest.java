@@ -25,8 +25,10 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.SequentialAgent;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import io.a2a.spec.AgentCard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -62,19 +64,17 @@ class RemoteAgentTest {
 			return keyStrategyHashMap;
 		};
 
-		ReactAgent writerAgent = ReactAgent.builder()
+		A2aRemoteAgent remoteWriterAgent = A2aRemoteAgent.builder()
 				.name("writer_agent")
-				.model(chatModel)
+				.agentCard(new AgentCard.Builder().url("https://writer.agent.com").build())
 				.description("可以写文章。")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
 				.outputKey("article")
 				.build();
 
-		ReactAgent reviewerAgent = ReactAgent.builder()
+		A2aRemoteAgent remoteReviewerAgent = A2aRemoteAgent.builder()
 				.name("reviewer_agent")
-				.model(chatModel)
+				.agentCard(new AgentCard.Builder().url("https://reviewer.agent.com").build())
 				.description("可以对文章进行评论和修改。")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
 				.outputKey("reviewed_article")
 				.build();
 
@@ -85,7 +85,7 @@ class RemoteAgentTest {
 				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改。")
 				.inputKey("input")
 				.outputKey("topic")
-				.subAgents(List.of(writerAgent, reviewerAgent))
+				.subAgents(List.of(remoteWriterAgent, remoteReviewerAgent))
 				.build();
 
 		try {
