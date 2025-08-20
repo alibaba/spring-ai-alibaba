@@ -18,12 +18,8 @@ package com.alibaba.cloud.ai.example.manus.tool.uploadedFileLoader;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
-import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.chat.model.ToolContext;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.slf4j.Logger;
@@ -37,9 +33,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Tool for processing uploaded files in a plan. Supports various file types including
- * PDF, text files, CSV, etc. Provides intelligent file analysis and processing
- * recommendations.
+ * Smart file analysis and tool recommendation system. Analyzes uploaded files and
+ * recommends the most appropriate tools for processing. Does NOT process file content
+ * directly - only provides intelligent analysis and tool selection guidance.
  *
  * @author Jmanus Team
  * @version 2.0
@@ -51,8 +47,6 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 	// Constants
 	private static final String TOOL_NAME = "uploaded_file_loader";
-
-	private static final int DEFAULT_MAX_FILES = 10;
 
 	private static final int PREVIEW_LINES = 3;
 
@@ -69,125 +63,38 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			".htm", ".log", ".java", ".py", ".js", ".ts", ".css", ".sql", ".yaml", ".yml", ".properties", ".conf",
 			".ini", ".sh", ".bat");
 
-	private static final Set<String> CODE_FILE_EXTENSIONS = Set.of(".java", ".py", ".js", ".ts", ".css", ".sql", ".sh",
-			".bat");
-
-	private static final Set<String> DATA_FILE_EXTENSIONS = Set.of(".csv", ".xlsx", ".xls", ".json", ".xml");
+	private static final Set<String> IMAGE_FILE_EXTENSIONS = Set.of(".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp",
+			".svg");
 
 	private final UnifiedDirectoryManager directoryManager;
 
-	private final SmartContentSavingService smartContentSavingService;
-
 	private final ObjectMapper objectMapper;
+
+	// Cache for fallback uploads directory to improve performance
+	private volatile Path cachedFallbackDir = null;
+
+	private volatile long cacheTimestamp = 0;
+
+	private static final long CACHE_VALIDITY_MS = 30000; // 30 seconds cache
 
 	/**
 	 * Constructor for manual instantiation
 	 * @param directoryManager the directory manager for file operations
-	 * @param smartContentSavingService the service for handling large content
 	 */
-	public UploadedFileLoaderTool(UnifiedDirectoryManager directoryManager,
-			SmartContentSavingService smartContentSavingService) {
+	public UploadedFileLoaderTool(UnifiedDirectoryManager directoryManager) {
 		this.directoryManager = Objects.requireNonNull(directoryManager, "DirectoryManager cannot be null");
-		this.smartContentSavingService = Objects.requireNonNull(smartContentSavingService,
-				"SmartContentSavingService cannot be null");
 		this.objectMapper = new ObjectMapper();
 	}
 
 	/**
-	 * Input class for uploaded file operations
+	 * Input class for uploaded file operations - analysis and tool recommendation
 	 */
 	public static class UploadedFileInput {
 
-		private String action;
-
-		@com.fasterxml.jackson.annotation.JsonProperty("file_name")
-		private String fileName;
-
-		@com.fasterxml.jackson.annotation.JsonProperty("file_pattern")
-		private String filePattern;
-
-		@com.fasterxml.jackson.annotation.JsonProperty("max_files")
-		private Integer maxFiles;
-
-		// Constructors
+		// Default constructor - no parameters needed
 		public UploadedFileInput() {
 		}
 
-		public UploadedFileInput(String action, String fileName) {
-			this.action = action;
-			this.fileName = fileName;
-		}
-
-		// Getters and setters
-		public String getAction() {
-			return action;
-		}
-
-		public void setAction(String action) {
-			this.action = action;
-		}
-
-		public String getFileName() {
-			return fileName;
-		}
-
-		public void setFileName(String fileName) {
-			this.fileName = fileName;
-		}
-
-		public String getFilePattern() {
-			return filePattern;
-		}
-
-		public void setFilePattern(String filePattern) {
-			this.filePattern = filePattern;
-		}
-
-		public Integer getMaxFiles() {
-			return maxFiles;
-		}
-
-		public void setMaxFiles(Integer maxFiles) {
-			this.maxFiles = maxFiles;
-		}
-
-	}
-
-	// Tool name is now defined as constant at the top of the class
-
-	public OpenAiApi.FunctionTool getToolDefinition() {
-		String description = getDescription();
-		String parameters = getParameters();
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, TOOL_NAME,
-				parameters);
-		return new OpenAiApi.FunctionTool(function);
-	}
-
-	/**
-	 * Get FunctionToolCallback for Spring AI
-	 */
-	public static FunctionToolCallback<UploadedFileInput, ToolExecuteResult> getFunctionToolCallback(
-			UnifiedDirectoryManager directoryManager, SmartContentSavingService smartContentSavingService) {
-		return FunctionToolCallback
-			.<UploadedFileInput, ToolExecuteResult>builder(TOOL_NAME,
-					(UploadedFileInput input,
-							ToolContext context) -> new UploadedFileLoaderTool(directoryManager,
-									smartContentSavingService)
-								.run(input))
-			.description("""
-					Intelligent file loading and analysis tool for processing various types of uploaded files.
-
-					Available actions:
-					- list_files: List all uploaded files
-					- load_file: Load specific file content
-					- load_multiple: Load multiple files matching pattern
-					- process_all: Process all uploaded files and return merged content
-					- smart_analyze: Smart analysis with automatic file type detection and tool recommendations
-
-					Use this tool to access and intelligently analyze user uploaded files.
-					""")
-			.inputType(UploadedFileInput.class)
-			.build();
 	}
 
 	@Override
@@ -198,8 +105,16 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	@Override
 	public String getDescription() {
 		return """
-				Intelligent file loading and analysis tool. Processes various types of uploaded files, provides smart analysis and tool recommendations.
-				Supports automatic recognition and processing of PDF, text, spreadsheet, code and other file formats.
+				Smart file analysis with optimized two-track processing strategy:
+
+				🔧 TRACK 1 - Document Files (Tool Chain Processing):
+				   PDF, Excel, Text, Code, HTML → Specialized tools → AI model analysis
+
+				🖼️ TRACK 2 - Image Files (Direct AI Processing):
+				   PNG, JPG, GIF, SVG → Direct AI model analysis (no intermediate tools)
+
+				Automatically analyzes uploaded files and provides intelligent processing strategy recommendations.
+				For large files or complex processing, recommends using inner_storage_content_tool.
 				""";
 	}
 
@@ -208,26 +123,8 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 		return """
 				{
 				    "type": "object",
-				    "properties": {
-				        "action": {
-				            "type": "string",
-				            "description": "(required) Action to perform. Options: list_files, load_file, load_multiple, process_all, smart_analyze (intelligent analysis with automatic tool selection)",
-				            "enum": ["list_files", "load_file", "load_multiple", "process_all", "smart_analyze"]
-				        },
-				        "file_name": {
-				            "type": "string",
-				            "description": "(optional) Name of specific file to load. Required for load_file action."
-				        },
-				        "file_pattern": {
-				            "type": "string",
-				            "description": "(optional) Pattern to match multiple files. Required for load_multiple action."
-				        },
-				        "max_files": {
-				            "type": "integer",
-				            "description": "(optional) Maximum number of files to process. Default is 10."
-				        }
-				    },
-				    "required": ["action"]
+				    "properties": {},
+				    "required": []
 				}
 				""";
 	}
@@ -256,7 +153,12 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 			if (!Files.exists(uploadsDir)) {
 				log.debug("No uploads directory found for plan: {}", currentPlanId);
-				return "Uploaded Files State: No uploads directory found for plan " + currentPlanId;
+				// Try to find the most recent temporary plan with uploaded files
+				uploadsDir = findMostRecentTempPlanUploads();
+				if (uploadsDir == null) {
+					return "Uploaded Files State: No uploads directory found for plan " + currentPlanId;
+				}
+				log.debug("Found recent temp plan uploads directory: {}", uploadsDir);
 			}
 
 			long fileCount;
@@ -267,16 +169,18 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			log.debug("📁 Found {} files in uploads directory for plan {}", fileCount, currentPlanId);
 
 			if (fileCount > 0) {
-				String result = String.format("""
-						Uploaded files available: %d files found in plan %s
+				String result = String.format(
+						"""
+								Uploaded files available: %d files found in plan %s
 
-						🔧 To access these files, you must call the 'uploaded_file_loader' tool:
-						- Use action "list_files" to view available files
-						- Use action "smart_analyze" for automatic file analysis
-						- Use action "process_all" to load all file contents
+								🔧 To analyze these files, you must call the 'uploaded_file_loader' tool:
+								- No parameters needed - automatically provides comprehensive analysis with content preview and processing advice
 
-						Example: Call uploaded_file_loader with {"action": "list_files"}
-						""", fileCount, currentPlanId);
+								Note: This tool provides analysis and recommendations. Use the recommended tools for actual file processing.
+
+								Example: Call uploaded_file_loader with no parameters
+								""",
+						fileCount, currentPlanId);
 				log.debug("🎯 Returning tool state with {} files", fileCount);
 				return result;
 			}
@@ -299,23 +203,17 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	@Override
 	public void cleanup(String planId) {
 		log.info("Cleaned up UploadedFileLoaderTool for plan: {}", planId);
+		// Clear cache to prevent stale references
+		cachedFallbackDir = null;
+		cacheTimestamp = 0;
 	}
 
 	@Override
 	public ToolExecuteResult run(UploadedFileInput input) {
-		String action = input.getAction();
-		log.info("UploadedFileLoaderTool action: {}, planId: {}", action, currentPlanId);
+		log.info("UploadedFileLoaderTool executing smart analysis for planId: {}", currentPlanId);
 
 		try {
-			return switch (action) {
-				case "list_files" -> listUploadedFiles();
-				case "load_file" -> loadSingleFile(input.getFileName());
-				case "load_multiple" -> loadMultipleFiles(input.getFilePattern(), input.getMaxFiles());
-				case "process_all" -> processAllUploadedFiles();
-				case "smart_analyze" -> smartAnalyzeAllFiles();
-				default -> new ToolExecuteResult("Unknown action: " + action
-						+ ". Supported actions: list_files, load_file, load_multiple, process_all, smart_analyze");
-			};
+			return smartAnalyzeAllFiles();
 		}
 		catch (Exception e) {
 			log.error("Error executing uploaded file loader tool", e);
@@ -324,331 +222,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	}
 
 	/**
-	 * List all uploaded files for the current plan with enhanced error handling
-	 */
-	private ToolExecuteResult listUploadedFiles() {
-		try {
-			Path planDirectory = directoryManager.getRootPlanDirectory(currentPlanId);
-			Path uploadsDirectory = planDirectory.resolve("uploads");
-
-			if (!Files.exists(uploadsDirectory)) {
-				log.info("No uploads directory found for plan: {}", currentPlanId);
-				return new ToolExecuteResult("No uploaded files found for current plan");
-			}
-
-			Map<String, Object> result = new HashMap<>();
-			result.put("planId", currentPlanId);
-			result.put("uploadsDirectory", uploadsDirectory.toString());
-
-			List<Map<String, Object>> fileList;
-			try (var stream = Files.list(uploadsDirectory)) {
-				fileList = stream.filter(Files::isRegularFile)
-					.map(this::createFileInfoMap)
-					.filter(Objects::nonNull)
-					.collect(Collectors.toList());
-			}
-
-			result.put("files", fileList);
-			result.put("totalCount", fileList.size());
-
-			return new ToolExecuteResult("📁 Uploaded Files List:\n"
-					+ objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
-
-		}
-		catch (IOException e) {
-			log.error("IO error listing uploaded files for plan {}: {}", currentPlanId, e.getMessage(), e);
-			return new ToolExecuteResult("Error: Unable to read uploads directory - " + e.getMessage());
-		}
-		catch (Exception e) {
-			log.error("Unexpected error listing uploaded files for plan {}: {}", currentPlanId, e.getMessage(), e);
-			return new ToolExecuteResult("Error: Failed to list files - " + e.getMessage());
-		}
-	}
-
-	/**
-	 * Create file info map with proper error handling
-	 */
-	private Map<String, Object> createFileInfoMap(Path file) {
-		Map<String, Object> fileInfo = new HashMap<>();
-		try {
-			fileInfo.put("name", file.getFileName().toString());
-			fileInfo.put("size", Files.size(file));
-			fileInfo.put("sizeFormatted", formatFileSize(Files.size(file)));
-			fileInfo.put("type", getFileType(file));
-			fileInfo.put("extension", getFileExtension(file.getFileName().toString()));
-			fileInfo.put("lastModified", Files.getLastModifiedTime(file).toString());
-			fileInfo.put("recommendedTool", getRecommendedTool(getFileExtension(file.getFileName().toString())));
-			return fileInfo;
-		}
-		catch (IOException e) {
-			log.warn("Error reading file info for {}: {}", file, e.getMessage());
-			return null; // Will be filtered out
-		}
-	}
-
-	/**
-	 * Load a specific uploaded file with enhanced error handling and validation
-	 */
-	private ToolExecuteResult loadSingleFile(String fileName) {
-		if (StringUtils.isEmpty(fileName)) {
-			log.warn("loadSingleFile called with empty fileName");
-			return new ToolExecuteResult("Error: file_name parameter is required");
-		}
-
-		try {
-			Path planDirectory = directoryManager.getRootPlanDirectory(currentPlanId);
-			Path filePath = planDirectory.resolve("uploads").resolve(fileName);
-
-			if (!Files.exists(filePath)) {
-				log.warn("File not found: {} in plan: {}", fileName, currentPlanId);
-				return new ToolExecuteResult("Error: File not found: " + fileName);
-			}
-
-			if (!Files.isRegularFile(filePath)) {
-				log.warn("Path is not a regular file: {}", filePath);
-				return new ToolExecuteResult("Error: Specified path is not a regular file: " + fileName);
-			}
-
-			long fileSize = Files.size(filePath);
-			log.info("Loading file: {} (size: {})", fileName, formatFileSize(fileSize));
-
-			String fileContent = loadFileContent(filePath);
-
-			if (fileContent == null || fileContent.trim().isEmpty()) {
-				log.warn("File content is empty or null: {}", fileName);
-				return new ToolExecuteResult("Warning: File '" + fileName + "' is empty or unreadable");
-			}
-
-			// Use smart content saving service to handle large files
-			var smartResult = smartContentSavingService.processContent(currentPlanId, fileContent,
-					"uploaded_file_loader");
-
-			if (smartResult.getFileName() != null) {
-				return new ToolExecuteResult(String.format(
-						"📄 File '%s' loaded and processed successfully. Content saved to storage: %s\n📊 Summary: %s",
-						fileName, smartResult.getFileName(), smartResult.getSummary()));
-			}
-			else {
-				return new ToolExecuteResult(
-						String.format("✅ File '%s' loaded successfully:\n%s", fileName, smartResult.getSummary()));
-			}
-
-		}
-		catch (IOException e) {
-			log.error("IO error loading file {}: {}", fileName, e.getMessage(), e);
-			return new ToolExecuteResult("Error: Unable to load file '" + fileName + "' - " + e.getMessage());
-		}
-		catch (Exception e) {
-			log.error("Unexpected error loading file {}: {}", fileName, e.getMessage(), e);
-			return new ToolExecuteResult("Error: Failed to load file - " + e.getMessage());
-		}
-	}
-
-	/**
-	 * Load multiple files based on pattern with enhanced validation and error handling
-	 */
-	private ToolExecuteResult loadMultipleFiles(String filePattern, Integer maxFiles) {
-		try {
-			Path planDirectory = directoryManager.getRootPlanDirectory(currentPlanId);
-			Path uploadsDirectory = planDirectory.resolve("uploads");
-
-			if (!Files.exists(uploadsDirectory)) {
-				log.info("No uploads directory found for plan: {}", currentPlanId);
-				return new ToolExecuteResult("No uploaded files found for current plan");
-			}
-
-			int limit = maxFiles != null && maxFiles > 0 ? Math.min(maxFiles, 100) : DEFAULT_MAX_FILES;
-			StringBuilder combinedContent = new StringBuilder();
-			int processedCount = 0;
-			int errorCount = 0;
-
-			List<Path> matchingFiles;
-			try (var stream = Files.list(uploadsDirectory)) {
-				matchingFiles = stream.filter(Files::isRegularFile)
-					.filter(file -> filePattern == null || file.getFileName().toString().contains(filePattern))
-					.limit(limit)
-					.collect(Collectors.toList());
-			}
-
-			log.info("Found {} matching files for pattern: {}", matchingFiles.size(), filePattern);
-
-			for (Path file : matchingFiles) {
-				try {
-					String fileName = file.getFileName().toString();
-					String content = loadFileContent(file);
-
-					if (content != null && !content.trim().isEmpty()) {
-						combinedContent.append("📄 === File: ").append(fileName).append(" ===\n");
-						combinedContent.append(content);
-						combinedContent.append("\n\n");
-						processedCount++;
-					}
-					else {
-						log.warn("File {} is empty or unreadable", fileName);
-						combinedContent.append("⚠️ === File: ")
-							.append(fileName)
-							.append(" (empty or unreadable) ===\n\n");
-						errorCount++;
-					}
-				}
-				catch (Exception e) {
-					log.warn("Error loading file {}: {}", file.getFileName(), e.getMessage());
-					combinedContent.append("❌ === Failed to load file: ").append(file.getFileName()).append(" ===\n");
-					combinedContent.append("Error: ").append(e.getMessage()).append("\n\n");
-					errorCount++;
-				}
-			}
-
-			if (processedCount == 0) {
-				if (errorCount > 0) {
-					return new ToolExecuteResult("Error: All matching files failed to load. Pattern: " + filePattern);
-				}
-				else {
-					return new ToolExecuteResult("No matching files found. Pattern: " + filePattern);
-				}
-			}
-
-			// Use smart content saving for combined content
-			var smartResult = smartContentSavingService.processContent(currentPlanId, combinedContent.toString(),
-					"uploaded_file_loader_multiple");
-
-			String resultMessage;
-			if (smartResult.getFileName() != null) {
-				resultMessage = String.format(
-						"📊 Successfully loaded %d files with %d errors. Combined content saved to storage: %s\n📝 Summary: %s",
-						processedCount, errorCount, smartResult.getFileName(), smartResult.getSummary());
-			}
-			else {
-				resultMessage = String.format("✅ Successfully loaded %d files with %d errors:\n%s", processedCount,
-						errorCount, smartResult.getSummary());
-			}
-
-			return new ToolExecuteResult(resultMessage);
-
-		}
-		catch (IOException e) {
-			log.error("IO error loading multiple files: {}", e.getMessage(), e);
-			return new ToolExecuteResult("Error: IO error - " + e.getMessage());
-		}
-		catch (Exception e) {
-			log.error("Unexpected error loading multiple files: {}", e.getMessage(), e);
-			return new ToolExecuteResult("Error: Failed to load multiple files - " + e.getMessage());
-		}
-	}
-
-	/**
-	 * Process all uploaded files
-	 */
-	private ToolExecuteResult processAllUploadedFiles() {
-		log.info("Processing all uploaded files for plan: {}", currentPlanId);
-		return loadMultipleFiles(null, null); // Load all files without pattern or limit
-	}
-
-	/**
-	 * Load content from a file based on its type with enhanced error handling
-	 */
-	private String loadFileContent(Path filePath) throws IOException {
-		if (filePath == null || !Files.exists(filePath)) {
-			throw new IOException("File path is null or file does not exist: " + filePath);
-		}
-
-		String fileName = filePath.getFileName().toString();
-		String extension = getFileExtension(fileName).toLowerCase();
-		long fileSize = Files.size(filePath);
-
-		log.debug("Loading file content: {} ({}), size: {}", fileName, extension, formatFileSize(fileSize));
-
-		try {
-			return switch (extension) {
-				case ".pdf" -> loadPdfContent(filePath);
-				case ".txt", ".md", ".csv", ".json", ".xml", ".html", ".htm", ".log", ".java", ".py", ".js", ".ts",
-						".sql", ".sh", ".bat", ".yaml", ".yml", ".properties", ".conf", ".ini" -> {
-					if (fileSize > LARGE_FILE_THRESHOLD) {
-						log.warn("Large text file detected: {} ({}), reading may be slow", fileName,
-								formatFileSize(fileSize));
-					}
-					yield Files.readString(filePath, StandardCharsets.UTF_8);
-				}
-				default -> {
-					log.warn("Unsupported file type: {} for file: {}", extension, fileName);
-					yield "Unsupported file type: " + extension + " (file: " + fileName + ")";
-				}
-			};
-		}
-		catch (IOException e) {
-			log.error("Error reading file content for {}: {}", fileName, e.getMessage());
-			throw e;
-		}
-	}
-
-	/**
-	 * Load PDF content using PDFBox with enhanced error handling
-	 */
-	private String loadPdfContent(Path filePath) throws IOException {
-		String fileName = filePath.getFileName().toString();
-		log.debug("Loading PDF content from: {}", fileName);
-
-		try (PDDocument document = PDDocument.load(filePath.toFile())) {
-			if (document.isEncrypted()) {
-				log.warn("PDF file is encrypted: {}", fileName);
-				return "Error: PDF file is encrypted and cannot extract text content.";
-			}
-
-			int pageCount = document.getNumberOfPages();
-			log.debug("PDF has {} pages", pageCount);
-
-			if (pageCount == 0) {
-				return "Warning: PDF file is empty with no page content.";
-			}
-
-			PDFTextStripper pdfStripper = new PDFTextStripper();
-			// For very large PDFs, consider limiting page range
-			if (pageCount > 100) {
-				log.warn("Large PDF detected ({} pages), this may take time to process", pageCount);
-			}
-
-			String extractedText = pdfStripper.getText(document);
-
-			if (extractedText == null || extractedText.trim().isEmpty()) {
-				return "Warning: No text content extracted from PDF, may be image-based or handwritten PDF.";
-			}
-
-			log.debug("Successfully extracted {} characters from PDF: {}", extractedText.length(), fileName);
-			return extractedText;
-
-		}
-		catch (IOException e) {
-			log.error("Error loading PDF content from {}: {}", fileName, e.getMessage());
-			throw new IOException("Unable to load PDF file content: " + e.getMessage(), e);
-		}
-	}
-
-	/**
-	 * Get file type for display
-	 */
-	private String getFileType(Path file) {
-		String extension = getFileExtension(file.getFileName().toString());
-		return switch (extension.toLowerCase()) {
-			case ".pdf" -> "PDF Document";
-			case ".txt" -> "Text File";
-			case ".md" -> "Markdown";
-			case ".csv" -> "CSV Data";
-			case ".json" -> "JSON Data";
-			case ".xml" -> "XML Document";
-			case ".html", ".htm" -> "HTML Document";
-			case ".log" -> "Log File";
-			case ".java" -> "Java Source";
-			case ".py" -> "Python Source";
-			case ".js" -> "JavaScript";
-			case ".ts" -> "TypeScript";
-			case ".sql" -> "SQL Script";
-			default -> "Unknown";
-		};
-	}
-
-	/**
-	 * Smart analyze all uploaded files with automatic tool selection and enhanced
-	 * reporting
+	 * Smart analyze all uploaded files and provide processing recommendations
 	 */
 	private ToolExecuteResult smartAnalyzeAllFiles() {
 		try {
@@ -656,7 +230,12 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 			if (!Files.exists(uploadsDir)) {
 				log.info("No uploads directory found for plan: {}", currentPlanId);
-				return new ToolExecuteResult("Uploads directory not found for plan: " + currentPlanId);
+				// Try to find the most recent temporary plan with uploaded files
+				uploadsDir = findMostRecentTempPlanUploads();
+				if (uploadsDir == null) {
+					return new ToolExecuteResult("Uploads directory not found for plan: " + currentPlanId);
+				}
+				log.info("Found recent temp plan uploads directory: {}", uploadsDir);
 			}
 
 			List<Path> files;
@@ -746,6 +325,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			analysis.append(generateOverallRecommendations(filesByType, files));
 
 			log.info("Smart analysis completed: {} success, {} errors", successCount, errorCount);
+
 			return new ToolExecuteResult(analysis.toString());
 
 		}
@@ -779,9 +359,65 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	}
 
 	/**
+	 * Check if file is text-based using predefined constants with improved logic
+	 */
+	private boolean isTextFile(String extension) {
+		// 扩展文本文件类型列表
+		Set<String> TEXT_FILE_EXTENSIONS = Set.of(".txt", ".md", ".csv", ".json", ".xml", ".html", ".htm", ".log",
+				".java", ".py", ".js", ".ts", ".css", ".sql", ".yaml", ".yml", ".properties", ".conf", ".ini", ".sh",
+				".bat", ".ps1", ".bash", ".r", ".php", ".rb", ".go", ".rs", ".cpp", ".c", ".h", ".hpp", ".cs", ".vb",
+				".swift", ".kt", ".scala", ".clj", ".hs", ".ml", ".tex", ".rst", ".adoc", ".wiki", ".org", ".rtf",
+				".odt");
+
+		return TEXT_FILE_EXTENSIONS.contains(extension.toLowerCase());
+	}
+
+	/**
+	 * Check if file is an image file
+	 */
+	private boolean isImageFile(String extension) {
+		Set<String> IMAGE_FILE_EXTENSIONS = Set.of(".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".tif", ".webp",
+				".svg", ".ico", ".raw", ".heic", ".heif");
+
+		return IMAGE_FILE_EXTENSIONS.contains(extension.toLowerCase());
+	}
+
+	/**
+	 * Check if file is a binary document file
+	 */
+	private boolean isBinaryDocumentFile(String extension) {
+		Set<String> BINARY_DOCUMENT_EXTENSIONS = Set.of(".pdf", ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt",
+				".odt", ".ods", ".odp", ".epub", ".mobi", ".azw3");
+
+		return BINARY_DOCUMENT_EXTENSIONS.contains(extension.toLowerCase());
+	}
+
+	/**
+	 * Check if file is a compressed file
+	 */
+	private boolean isCompressedFile(String extension) {
+		Set<String> COMPRESSED_FILE_EXTENSIONS = Set.of(".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz", ".lzma",
+				".lz4", ".zst", ".br");
+
+		return COMPRESSED_FILE_EXTENSIONS.contains(extension.toLowerCase());
+	}
+
+	/**
+	 * Check if any image files exist in the files by type map
+	 */
+	private boolean hasImageFiles(Map<String, List<Path>> filesByType) {
+		return IMAGE_FILE_EXTENSIONS.stream().anyMatch(filesByType::containsKey);
+	}
+
+	/**
 	 * Get file type description
 	 */
 	private String getFileTypeDescription(String extension) {
+		// Check if it's an image file first
+		if (isImageFile(extension)) {
+			return "Image File";
+		}
+
 		return switch (extension) {
 			case ".pdf" -> "PDF Document";
 			case ".txt" -> "Text File";
@@ -794,23 +430,27 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			case ".html", ".htm" -> "HTML Webpage";
 			case ".log" -> "Log File";
 			case ".java", ".py", ".js", ".ts" -> "Source Code";
-			case ".png", ".jpg", ".jpeg", ".gif" -> "Image File";
 			default -> "Unknown Type";
 		};
 	}
 
 	/**
-	 * Get recommended tool for file type with correct tool names
+	 * Get recommended tool for file type
 	 */
 	private String getRecommendedTool(String extension) {
+		// Check if it's an image file first
+		if (isImageFile(extension)) {
+			return "🚫 NO TOOLS NEEDED - DIRECT AI Analysis";
+		}
+
 		return switch (extension) {
-			case ".pdf" -> "doc_loader (PDF Document Loader)";
-			case ".txt", ".md", ".log" -> "text_file_operator (Text File Processor)";
-			case ".csv", ".xlsx", ".xls" -> "database_use (Database Analysis Tool)";
-			case ".json", ".xml" -> "text_file_operator (Structured Text Parser)";
-			case ".html", ".htm" -> "browser_use (Web Content Parser)";
-			case ".java", ".py", ".js", ".ts" -> "text_file_operator (Code Analyzer)";
-			default -> "text_file_operator (General Text Processor)";
+			case ".pdf" -> "doc_loader → AI Analysis";
+			case ".txt", ".md", ".log" -> "text_file_operator → AI Analysis";
+			case ".csv", ".xlsx", ".xls" -> "table_processor → AI Analysis";
+			case ".json", ".xml" -> "text_file_operator → AI Analysis";
+			case ".html", ".htm" -> "browser_use → AI Analysis";
+			case ".java", ".py", ".js", ".ts" -> "text_file_operator → AI Analysis";
+			default -> "text_file_operator → AI Analysis";
 		};
 	}
 
@@ -919,51 +559,70 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	}
 
 	/**
-	 * Check if file is text-based using predefined constants
-	 */
-	private boolean isTextFile(String extension) {
-		return TEXT_FILE_EXTENSIONS.contains(extension.toLowerCase());
-	}
-
-	/**
-	 * Get processing advice for file with correct tool names and enhanced recommendations
+	 * Get processing advice based on file size and type with improved logic
 	 */
 	private String getProcessingAdvice(String extension, long fileSize) {
 		StringBuilder advice = new StringBuilder();
 
-		// Size recommendations
+		// Size-based recommendations with file type consideration
 		if (fileSize > LARGE_FILE_THRESHOLD) {
-			advice.append("Large file (>50MB), recommend using MapReduce parallel processing; ");
+			// Check if file type is supported by inner_storage_content_tool
+			if (isTextFile(extension)) {
+				advice.append(
+						"🚨 LARGE TEXT FILE (>50MB) - MUST USE inner_storage_content_tool for MapReduce processing; ");
+				advice.append("✅ This file type is supported by MapReduce processing; ");
+			}
+			else {
+				advice.append(
+						"🚨 LARGE BINARY FILE (>50MB) - inner_storage_content_tool CANNOT process this file type; ");
+				advice.append("❌ Use specialized tools instead; ");
+			}
 		}
 		else if (fileSize > MEDIUM_FILE_THRESHOLD) {
-			advice.append("Medium file (>5MB), recommend using SmartContentSaving intelligent caching; ");
+			if (isTextFile(extension)) {
+				advice.append("Medium text file (>5MB), can use inner_storage_content_tool or specialized tools; ");
+			}
+			else {
+				advice.append("Medium binary file (>5MB), use specialized tools; ");
+			}
 		}
 		else {
 			advice.append("Small file (<5MB), can be processed directly; ");
 		}
 
-		// Type recommendations - using correct tool names
-		switch (extension) {
-			case ".pdf" -> advice.append("Use doc_loader to extract PDF text content");
-			case ".csv", ".xlsx", ".xls" ->
-				advice.append("Use database_use to import to database for structured analysis");
-			case ".json" -> advice.append("Use text_file_operator to parse JSON structure and extract key fields");
-			case ".xml" -> advice.append("Use text_file_operator to parse XML structure and extract node information");
-			case ".log" ->
-				advice.append("Use text_file_operator for time-series analysis to extract errors and key events");
-			case ".java", ".py", ".js", ".ts" -> advice.append(
-					"Use text_file_operator for code structure analysis to extract functions and class information");
-			case ".html", ".htm" -> advice.append("Use browser_use for web content parsing and DOM analysis");
-			case ".md" ->
-				advice.append("Use text_file_operator to parse Markdown format and extract document structure");
-			default -> advice.append("Use text_file_operator for text content analysis and extract key information");
+		// Processing strategy recommendations based on file type
+		if (isImageFile(extension)) {
+			advice.append("🚫 DO NOT use any tools - Send directly to AI model for visual analysis");
+		}
+		else if (isTextFile(extension)) {
+			// Text files can use inner_storage_content_tool or specialized tools
+			switch (extension) {
+				case ".pdf" -> advice.append("Use doc_loader → AI analysis");
+				case ".csv", ".xlsx", ".xls" -> advice.append("Use table_processor → AI analysis");
+				case ".json", ".xml" -> advice.append("Use text_file_operator → AI analysis");
+				case ".log" -> advice.append("Use text_file_operator → AI analysis");
+				case ".java", ".py", ".js", ".ts" -> advice.append("Use text_file_operator → AI analysis");
+				case ".html", ".htm" -> advice.append("Use browser_use → AI analysis");
+				case ".md" -> advice.append("Use text_file_operator → AI analysis");
+				default -> advice.append("Use text_file_operator → AI analysis");
+			}
+		}
+		else {
+			// Binary files must use specialized tools
+			switch (extension) {
+				case ".pdf" -> advice.append("Use doc_loader → AI analysis");
+				case ".csv", ".xlsx", ".xls" -> advice.append("Use table_processor → AI analysis");
+				case ".docx", ".doc" -> advice.append("Use doc_loader → AI analysis");
+				case ".pptx", ".ppt" -> advice.append("Use doc_loader → AI analysis");
+				default -> advice.append("Use specialized tools based on file type");
+			}
 		}
 
 		return advice.toString();
 	}
 
 	/**
-	 * Generate overall recommendations with correct tool names
+	 * Generate overall processing recommendations with improved file type analysis
 	 */
 	private String generateOverallRecommendations(Map<String, List<Path>> filesByType, List<Path> allFiles) {
 		StringBuilder recommendations = new StringBuilder();
@@ -980,41 +639,229 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 		recommendations.append(String.format("📊 Total size: %s\n", formatFileSize(totalSize)));
 
-		if (totalSize > 100 * 1024 * 1024) {
-			recommendations.append("🔄 Recommend using MapReduce workflow for parallel processing\n");
-		}
-		else {
-			recommendations.append("⚡ Can use regular tool chain for processing\n");
+		// Analyze file types and sizes for better recommendations
+		List<Path> largeTextFiles = new ArrayList<>();
+		List<Path> largeBinaryFiles = new ArrayList<>();
+		List<Path> mediumFiles = new ArrayList<>();
+		List<Path> smallFiles = new ArrayList<>();
+
+		for (Path file : allFiles) {
+			try {
+				long fileSize = Files.size(file);
+				String extension = getFileExtension(file.getFileName().toString()).toLowerCase();
+
+				if (fileSize > LARGE_FILE_THRESHOLD) {
+					if (isTextFile(extension)) {
+						largeTextFiles.add(file);
+					}
+					else {
+						largeBinaryFiles.add(file);
+					}
+				}
+				else if (fileSize > MEDIUM_FILE_THRESHOLD) {
+					mediumFiles.add(file);
+				}
+				else {
+					smallFiles.add(file);
+				}
+			}
+			catch (Exception e) {
+				log.warn("Failed to analyze file: {}", file, e);
+			}
 		}
 
-		// Provide correct tool recommendations by file type
+		// Provide specific recommendations based on file analysis
+		if (!largeTextFiles.isEmpty()) {
+			recommendations.append("🚨 **LARGE TEXT FILES DETECTED**: ");
+			recommendations.append(String.format("%d files >50MB\n", largeTextFiles.size()));
+			recommendations.append("✅ **RECOMMENDED**: Use inner_storage_content_tool for MapReduce processing\n");
+		}
+
+		if (!largeBinaryFiles.isEmpty()) {
+			recommendations.append("🚨 **LARGE BINARY FILES DETECTED**: ");
+			recommendations.append(String.format("%d files >50MB\n", largeBinaryFiles.size()));
+			recommendations.append("❌ **WARNING**: inner_storage_content_tool cannot process binary files\n");
+			recommendations.append("🔧 **RECOMMENDED**: Use specialized tools for each file type\n");
+		}
+
+		if (!mediumFiles.isEmpty()) {
+			recommendations.append("📁 **MEDIUM FILES**: ");
+			recommendations.append(String.format("%d files 5-50MB\n", mediumFiles.size()));
+			recommendations.append("⚡ Can use regular tools or inner_storage_content_tool for text files\n");
+		}
+
+		if (!smallFiles.isEmpty()) {
+			recommendations.append("📄 **SMALL FILES**: ");
+			recommendations.append(String.format("%d files <5MB\n", smallFiles.size()));
+			recommendations.append("⚡ Can be processed directly with any appropriate tool\n");
+		}
+
+		// Optimized processing strategy by file type
+		recommendations.append("\n🎯 **OPTIMIZED PROCESSING STRATEGY**:\n");
+
+		// Document files - Tool Chain Processing
 		if (filesByType.containsKey(".pdf")) {
-			recommendations.append("📄 PDF files detected, prioritize using doc_loader tool\n");
+			recommendations.append("📄 PDF files → doc_loader → AI model analysis\n");
 		}
 		if (filesByType.containsKey(".csv") || filesByType.containsKey(".xlsx") || filesByType.containsKey(".xls")) {
-			recommendations.append("📊 Spreadsheet files detected, recommend using database_use for data analysis\n");
+			recommendations.append("📊 Spreadsheet files → table_processor → AI model analysis\n");
 		}
 		if (filesByType.containsKey(".log")) {
-			recommendations
-				.append("📋 Log files detected, recommend using text_file_operator for time-series anomaly analysis\n");
+			recommendations.append("📋 Log files → text_file_operator → AI model analysis\n");
 		}
 		if (filesByType.containsKey(".java") || filesByType.containsKey(".py") || filesByType.containsKey(".js")
 				|| filesByType.containsKey(".ts")) {
-			recommendations
-				.append("💻 Code files detected, recommend using text_file_operator for code structure analysis\n");
+			recommendations.append("💻 Code files → text_file_operator → AI model analysis\n");
 		}
 		if (filesByType.containsKey(".html") || filesByType.containsKey(".htm")) {
-			recommendations.append("🌐 HTML files detected, recommend using browser_use for web parsing\n");
+			recommendations.append("🌐 HTML files → browser_use → AI model analysis\n");
+		}
+		if (filesByType.containsKey(".json") || filesByType.containsKey(".xml")) {
+			recommendations.append("📋 Structured files → text_file_operator → AI model analysis\n");
 		}
 
-		recommendations.append("\n💡 Smart Processing Workflow Recommendations:\n");
-		recommendations.append("1. 📋 Use recommended tools to extract content from each file\n");
-		recommendations.append("2. 🔄 Merge analysis results from same file types\n");
-		recommendations.append("3. 🔗 Generate cross-file correlation analysis reports\n");
-		recommendations.append("4. 📊 Output structured comprehensive analysis results\n");
-		recommendations.append("5. 💾 Use SmartContentSaving to handle large file content\n");
+		// Image files - Direct Model Processing
+		if (hasImageFiles(filesByType)) {
+			recommendations.append(
+					"🖼️ **Image files → 🚫 DO NOT USE ANY TOOLS - Send directly to AI model for visual analysis**\n");
+		}
+
+		recommendations.append("\n💡 **PROCESSING OPTIONS**:\n");
+
+		// Provide specific guidance based on file types
+		if (!largeTextFiles.isEmpty() && largeBinaryFiles.isEmpty()) {
+			recommendations.append("🚀 **BEST OPTION**: Use inner_storage_content_tool for all large files\n");
+		}
+		else if (!largeBinaryFiles.isEmpty()) {
+			recommendations.append(
+					"🔧 **MIXED APPROACH**: Use inner_storage_content_tool for text files + specialized tools for binary files\n");
+		}
+		else if (totalSize > 100 * 1024 * 1024) { // 100MB total
+			recommendations.append("🚀 **RECOMMENDED**: Use inner_storage_content_tool for complex processing\n");
+			recommendations.append("📝 **Alternative**: Use individual tools for each file type\n");
+		}
+		else {
+			recommendations.append("🔧 **Individual tools**: Use specialized tools for each file type\n");
+		}
+
+		recommendations.append("\n📂 **FILE PROCESSING PATHS**:\n");
+		recommendations.append("   📋 PDF files → doc_loader (absolute path required)\n");
+		recommendations.append("   📊 Excel/CSV → table_processor (absolute path required)\n");
+		recommendations.append("   📝 Text files → text_file_operator (absolute path required)\n");
+		recommendations.append("   🖼️ Image files → 🚫 NO TOOLS - Direct AI analysis\n");
+		recommendations.append("   📄 Large text files → inner_storage_content_tool (MapReduce processing)\n");
+
+		recommendations.append(
+				"\n⚠️ **Important**: This tool provides analysis and recommendations. Use recommended tools for actual processing.\n");
 
 		return recommendations.toString();
+	}
+
+	/**
+	 * Find the most recent temporary plan directory with uploaded files This is a
+	 * fallback mechanism when the current planId doesn't have uploads Enhanced to
+	 * prioritize temp- prefixed directories and recent file modifications Thread-safe
+	 * implementation with proper error handling
+	 * @return Path to the most recent uploads directory, or null if none found
+	 */
+	private synchronized Path findMostRecentTempPlanUploads() {
+		// Check cache validity
+		long currentTime = System.currentTimeMillis();
+		if (cachedFallbackDir != null && Files.exists(cachedFallbackDir)
+				&& (currentTime - cacheTimestamp) < CACHE_VALIDITY_MS) {
+			log.debug("🚀 Using cached fallback directory: {}", cachedFallbackDir);
+			return cachedFallbackDir;
+		}
+
+		try {
+			Path rootDir = directoryManager.getRootPlanDirectory("").getParent();
+			if (rootDir == null || !Files.exists(rootDir)) {
+				log.debug("Root directory not found or doesn't exist");
+				cachedFallbackDir = null;
+				return null;
+			}
+
+			Path mostRecentUploads = null;
+			long mostRecentTime = 0;
+
+			// Search through all plan directories, prioritizing temp- prefixed ones
+			try (var stream = Files.list(rootDir)) {
+				List<Path> allPlanDirs = stream.filter(Files::isDirectory).toList();
+
+				// Sort to prioritize temp- prefixed directories
+				allPlanDirs.sort((p1, p2) -> {
+					String name1 = p1.getFileName().toString();
+					String name2 = p2.getFileName().toString();
+					boolean isTemp1 = name1.startsWith("temp-");
+					boolean isTemp2 = name2.startsWith("temp-");
+
+					if (isTemp1 && !isTemp2)
+						return -1;
+					if (!isTemp1 && isTemp2)
+						return 1;
+					return name2.compareTo(name1); // Reverse alphabetical for newer IDs
+													// first
+				});
+
+				for (Path planDir : allPlanDirs) {
+					Path uploadsDir = planDir.resolve("uploads");
+
+					if (Files.exists(uploadsDir) && Files.isDirectory(uploadsDir)) {
+						// Check if this uploads directory has files
+						try (var fileStream = Files.list(uploadsDir)) {
+							long fileCount = fileStream.filter(Files::isRegularFile).count();
+
+							if (fileCount > 0) {
+								// Get the most recent file modification time in this
+								// directory
+								// Re-list files to get modification times (stream was
+								// consumed by count)
+								try (var modTimeStream = Files.list(uploadsDir)) {
+									long maxFileModified = modTimeStream.filter(Files::isRegularFile)
+										.mapToLong(file -> {
+											try {
+												return Files.getLastModifiedTime(file).toMillis();
+											}
+											catch (Exception e) {
+												log.warn("Failed to get modification time for file: {}", file, e);
+												return 0;
+											}
+										})
+										.max()
+										.orElse(0);
+
+									if (maxFileModified > mostRecentTime) {
+										mostRecentTime = maxFileModified;
+										mostRecentUploads = uploadsDir;
+										log.debug("🔍 Found candidate uploads dir: {} with files modified at {}",
+												uploadsDir, java.time.Instant.ofEpochMilli(maxFileModified));
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			if (mostRecentUploads != null) {
+				log.info("🔍 Found fallback uploads directory: {} (modified: {})", mostRecentUploads,
+						java.time.Instant.ofEpochMilli(mostRecentTime));
+				// Update cache
+				cachedFallbackDir = mostRecentUploads;
+				cacheTimestamp = currentTime;
+			}
+			else {
+				log.warn("⚠️ No uploads directories with files found in any plan directory");
+				cachedFallbackDir = null;
+			}
+
+			return mostRecentUploads;
+
+		}
+		catch (IOException e) {
+			log.error("💥 Error searching for recent uploads directories: {}", e.getMessage(), e);
+			return null;
+		}
 	}
 
 }

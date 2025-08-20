@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.tool.tableProcessor.TableProcessorTool;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -257,7 +258,8 @@ public class PlanningFactory implements IPlanningFactory {
 			toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper));
 			toolDefinitions.add(new DocLoaderTool());
 			toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
-			toolDefinitions.add(new UploadedFileLoaderTool(unifiedDirectoryManager, innerStorageService));
+			toolDefinitions.add(new UploadedFileLoaderTool(unifiedDirectoryManager));
+			toolDefinitions.add(new TableProcessorTool(tableProcessingService));
 			// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));
 			// toolDefinitions.add(pptGeneratorOperator);
 			// toolDefinitions.add(jsxGeneratorOperator);

@@ -51,7 +51,9 @@ public class FileUploadController {
 	// Supported file extensions for upload
 	private static final Set<String> SUPPORTED_EXTENSIONS = Set.of(".pdf", ".txt", ".md", ".doc", ".docx", ".csv",
 			".xlsx", ".xls", ".json", ".xml", ".html", ".htm", ".log", ".java", ".py", ".js", ".ts", ".sql", ".sh",
-			".bat", ".yaml", ".yml", ".properties", ".conf", ".ini");
+			".bat", ".yaml", ".yml", ".properties", ".conf", ".ini",
+			// Image formats
+			".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".webp", ".svg");
 
 	/**
 	 * Upload multiple files to a specific plan

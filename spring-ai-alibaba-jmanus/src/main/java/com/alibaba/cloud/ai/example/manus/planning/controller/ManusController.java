@@ -99,15 +99,27 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		ExecutionContext context = new ExecutionContext();
 		context.setUserRequest(query);
 
-		// Generate plan ID if not already set from uploaded files
+		// Use sessionPlanId from frontend if available, otherwise generate new one
+		String sessionPlanId = (String) request.get("sessionPlanId");
 		String planId;
-		if (context.getCurrentPlanId() == null) {
+
+		if (sessionPlanId != null && !sessionPlanId.trim().isEmpty()) {
+			// Use existing sessionPlanId from file upload
+			planId = sessionPlanId;
+			context.setCurrentPlanId(planId);
+			context.setRootPlanId(planId);
+			logger.info("🔄 Using existing sessionPlanId: {}", planId);
+		}
+		else if (context.getCurrentPlanId() == null) {
+			// Generate new plan ID
 			planId = planIdDispatcher.generatePlanId();
 			context.setCurrentPlanId(planId);
 			context.setRootPlanId(planId);
+			logger.info("🆕 Generated new planId: {}", planId);
 		}
 		else {
 			planId = context.getCurrentPlanId();
+			logger.info("📋 Using existing context planId: {}", planId);
 		}
 		context.setNeedSummary(true);
 

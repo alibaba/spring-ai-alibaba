@@ -121,6 +121,30 @@ const uploadedFiles = ref<UploadedFile[]>([])
 const isUploading = ref(false)
 const sessionPlanId = ref<string | null>(null)
 
+// Function to reset sessionPlanId when starting a new conversation session
+const resetSession = () => {
+  sessionPlanId.value = null
+  uploadedFiles.value = []
+  clearUploadedFiles()
+}
+
+// Auto-reset session when component is unmounted to prevent memory leaks
+onUnmounted(() => {
+  resetSession()
+})
+
+// Watch for specific conditions to auto-reset session
+watch(() => uploadedFiles.value.length, (newCount, oldCount) => {
+  // If files were removed and now there are no files, keep session alive for follow-up questions
+  // The session will only be reset on component unmount or manual reset
+  if (newCount === 0 && oldCount > 0) {
+    // Keep sessionPlanId alive for follow-up conversations
+    // Only reset on explicit user action or component cleanup
+  }
+})
+
+// resetSession will be exposed in the main defineExpose call below
+
 // Computed property to ensure 'disabled' is a boolean type
 const isDisabled = computed(() => Boolean(props.disabled))
 
@@ -154,7 +178,8 @@ const handleSend = () => {
   const query = {
     input: finalInput,
     memoryId: memoryStore.selectMemoryId,
-    uploadedFiles: uploadedFiles.value
+    uploadedFiles: uploadedFiles.value,
+    sessionPlanId: sessionPlanId.value 
   }
 
   // Use Vue's emit to send a message
@@ -163,7 +188,8 @@ const handleSend = () => {
   // Clear the input and uploaded files
   clearInput()
   uploadedFiles.value = []
-  sessionPlanId.value = null
+  // Don't clear sessionPlanId immediately - keep it for potential follow-up conversations
+  // sessionPlanId.value = null
   clearUploadedFiles()
 }
 
@@ -286,10 +312,12 @@ const removeFile = async (fileToRemove: UploadedFile) => {
     // Update frontend state
     uploadedFiles.value = uploadedFiles.value.filter(file => file.name !== fileToRemove.name)
     
-    // Update placeholder and clear sessionPlanId if no files left
+    // Update placeholder, keep sessionPlanId for follow-up conversations
     if (uploadedFiles.value.length === 0) {
       currentPlaceholder.value = defaultPlaceholder.value
-      sessionPlanId.value = null
+      // Keep sessionPlanId for follow-up conversations about uploaded files
+      // Only clear sessionPlanId when user starts a completely new session
+      // sessionPlanId.value = null
       clearUploadedFiles()
     } else {
       currentPlaceholder.value = t('input.filesAttached', { count: uploadedFiles.value.length })
@@ -368,6 +396,7 @@ defineExpose({
   updateState,
   setInputValue,
   getQuery,
+  resetSession,
   focus: () => inputRef.value?.focus()
 })
 
