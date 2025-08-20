@@ -23,8 +23,6 @@ COPY spring-ai-alibaba-nl2sql-management/target/spring-ai-alibaba-nl2sql-managem
 # 创建配置文件目录
 RUN mkdir -p /app/config
 
-COPY docker-file/config/application.yml config/application.yml
-
 EXPOSE 8065
 
 # 启动命令，优先使用外部配置文件
