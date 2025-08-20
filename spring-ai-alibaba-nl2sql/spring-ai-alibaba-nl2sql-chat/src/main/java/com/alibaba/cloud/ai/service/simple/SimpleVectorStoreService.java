@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.alibaba.cloud.ai.request.SearchRequest;
 import com.alibaba.cloud.ai.service.base.BaseVectorStoreService;
 import com.google.gson.Gson;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -94,6 +95,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	 * @param schemaInitRequest schema initialization request
 	 * @throws Exception if an error occurs
 	 */
+	@Override
 	public Boolean schema(SchemaInitRequest schemaInitRequest) throws Exception {
 		log.info("Starting schema initialization for database: {}, schema: {}, tables: {}",
 				schemaInitRequest.getDbConfig().getUrl(), schemaInitRequest.getDbConfig().getSchema(),
@@ -173,12 +175,14 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			columnInfoBO.setSamples(gson.toJson(sampleColumn));
 		}
 
-		ColumnInfoBO primaryColumnDO = columnInfoBOS.stream()
-			.filter(ColumnInfoBO::isPrimary)
-			.findFirst()
-			.orElse(new ColumnInfoBO());
-
-		tableInfoBO.setPrimaryKey(primaryColumnDO.getName());
+		List<ColumnInfoBO> targetPrimaryList = columnInfoBOS.stream()
+				.filter(ColumnInfoBO::isPrimary).collect(Collectors.toList());
+		if (CollectionUtils.isNotEmpty(targetPrimaryList)) {
+			List<String> columnNames = targetPrimaryList.stream().map(ColumnInfoBO::getName).collect(Collectors.toList());
+			tableInfoBO.setPrimaryKeys(columnNames);
+		} else {
+			tableInfoBO.setPrimaryKeys(new ArrayList<>());
+		}
 		tableInfoBO
 			.setForeignKey(String.join("、", foreignKeyMap.getOrDefault(tableInfoBO.getName(), new ArrayList<>())));
 	}
@@ -216,7 +220,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		metadata.put("name", tableInfoBO.getName());
 		metadata.put("description", Optional.ofNullable(tableInfoBO.getDescription()).orElse(""));
 		metadata.put("foreignKey", Optional.ofNullable(tableInfoBO.getForeignKey()).orElse(""));
-		metadata.put("primaryKey", Optional.ofNullable(tableInfoBO.getPrimaryKey()).orElse(""));
+		metadata.put("primaryKey", Optional.ofNullable(tableInfoBO.getPrimaryKeys()).orElse(new ArrayList<>()));
 		metadata.put("vectorType", "table");
 		Document document = new Document(tableInfoBO.getName(), text, metadata);
 		log.debug("Created table document with ID: {}", tableInfoBO.getName());
@@ -467,7 +471,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		metadata.put("name", tableInfoBO.getName());
 		metadata.put("description", Optional.ofNullable(tableInfoBO.getDescription()).orElse(""));
 		metadata.put("foreignKey", Optional.ofNullable(tableInfoBO.getForeignKey()).orElse(""));
-		metadata.put("primaryKey", Optional.ofNullable(tableInfoBO.getPrimaryKey()).orElse(""));
+		metadata.put("primaryKey", Optional.ofNullable(tableInfoBO.getPrimaryKeys()).orElse(new ArrayList<>()));
 		metadata.put("vectorType", "table");
 
 		Document document = new Document(id, text, metadata);
