@@ -3896,7 +3896,7 @@ export default {
 
 /* 当显示预览时，主页面缩小 */
 .agent-run-page.with-preview {
-  width: 50%;
+  width: 60%;
   transition: width 0.3s ease-in-out;
 }
 
@@ -3909,8 +3909,8 @@ export default {
 .report-preview-panel {
   position: fixed;
   top: 0;
-  right: -50%;
-  width: 50%;
+  right: -40%;
+  width: 40%;
   height: 100vh;
   background: white;
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
@@ -4088,12 +4088,12 @@ export default {
 /* 响应式设计 */
 @media (max-width: 1024px) {
   .agent-run-page.with-preview {
-    width: 40%;
+    width: 50%;
   }
 
   .report-preview-panel {
-    width: 60%;
-    right: -60%;
+    width: 50%;
+    right: -50%;
   }
 }
 
