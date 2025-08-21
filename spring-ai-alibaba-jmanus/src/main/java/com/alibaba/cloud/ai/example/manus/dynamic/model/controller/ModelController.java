@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ValidationRequest;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ValidationResult;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.service.ModelService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -86,8 +87,17 @@ public class ModelController {
 	@PostMapping("/validate")
 	public ResponseEntity<ValidationResult> validateConfig(@RequestBody ValidationRequest request) {
 		try {
-			ValidationResult result = modelService.validateConfig(request.getBaseUrl(), request.getApiKey());
-			return ResponseEntity.ok(result);
+			// If modelId is provided, use the new validation method
+			if (request.getModelId() != null) {
+				ValidationResult result = modelService.validateConfigWithModelId(request.getBaseUrl(),
+						request.getApiKey(), request.getModelId());
+				return ResponseEntity.ok(result);
+			}
+			else {
+				// Fallback to original method for backward compatibility
+				ValidationResult result = modelService.validateConfig(request.getBaseUrl(), request.getApiKey());
+				return ResponseEntity.ok(result);
+			}
 		}
 		catch (Exception e) {
 			ValidationResult errorResult = new ValidationResult();

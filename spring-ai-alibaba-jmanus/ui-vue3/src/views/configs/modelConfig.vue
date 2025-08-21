@@ -570,7 +570,8 @@ const handleValidateConfig = async () => {
   try {
     const result = await ModelApiService.validateConfig({
       baseUrl: selectedModel.value.baseUrl,
-      apiKey: selectedModel.value.apiKey
+      apiKey: selectedModel.value.apiKey,
+      modelId: selectedModel.value.id ? parseInt(selectedModel.value.id) : null
     })
 
     if (result.valid) {
@@ -652,6 +653,7 @@ const handleNewModelValidateConfig = async () => {
     const result = await ModelApiService.validateConfig({
       baseUrl: newModel.baseUrl,
       apiKey: newModel.apiKey
+      // No modelId for new model validation
     })
 
     if (result.valid) {
@@ -763,7 +765,8 @@ const handleSave = async () => {
     try {
       const validationResult = await ModelApiService.validateConfig({
         baseUrl: selectedModel.value.baseUrl,
-        apiKey: selectedModel.value.apiKey
+        apiKey: selectedModel.value.apiKey,
+        modelId: selectedModel.value.id ? parseInt(selectedModel.value.id) : null
       })
 
       if (!validationResult.valid) {

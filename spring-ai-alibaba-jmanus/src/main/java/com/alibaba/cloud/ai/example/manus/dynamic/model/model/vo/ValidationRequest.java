@@ -24,6 +24,11 @@ public class ValidationRequest {
 
 	private String apiKey;
 
+	/**
+	 * 用于标识是哪个模型的验证请求
+	 */
+	private Long modelId;
+
 	public ValidationRequest() {
 	}
 
@@ -46,6 +51,14 @@ public class ValidationRequest {
 
 	public void setApiKey(String apiKey) {
 		this.apiKey = apiKey;
+	}
+
+	public Long getModelId() {
+		return modelId;
+	}
+
+	public void setModelId(Long modelId) {
+		this.modelId = modelId;
 	}
 
 }

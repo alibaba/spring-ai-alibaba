@@ -218,6 +218,95 @@ public class ModelServiceImpl implements ModelService {
 		return result;
 	}
 
+	@Override
+	public ValidationResult validateConfigWithModelId(String baseUrl, String apiKey, Long modelId) {
+		log.info("Starting model configuration validation with model ID - Base URL: {}, Model ID: {}", baseUrl,
+				modelId);
+
+		ValidationResult result = new ValidationResult();
+
+		try {
+			// 1. Validate Base URL format
+			log.debug("Validating Base URL format: {}", baseUrl);
+			if (!isValidBaseUrl(baseUrl)) {
+				log.warn("Base URL format validation failed: {}", baseUrl);
+				result.setValid(false);
+				result.setMessage("Base URL format is incorrect");
+				return result;
+			}
+			log.debug("Base URL format validation passed");
+
+			// 2. Determine which API key to use
+			String actualApiKey = apiKey;
+			if (apiKey != null && apiKey.contains("*")) {
+				DynamicModelEntity entity = repository.findById(modelId)
+					.orElseThrow(() -> new IllegalArgumentException("Model not found: " + modelId));
+				// Get the masked version of the stored API key
+				String storedMaskedKey = entity.maskValue(entity.getApiKey());
+
+				if (apiKey.equals(storedMaskedKey)) {
+					// User didn't change the API key, use the stored real key
+					log.debug("API key matches stored masked key, using stored real key");
+					actualApiKey = entity.getApiKey();
+				}
+				else {
+					// User changed the API key (even though it contains asterisks), use
+					// the provided key
+					log.debug("API key differs from stored masked key, using provided key: {}",
+							entity.maskValue(apiKey));
+					actualApiKey = apiKey;
+				}
+			}
+
+			// 3. Validate API Key format
+			log.debug("Validating API Key format");
+			if (!isValidApiKey(actualApiKey)) {
+				log.warn("API Key format validation failed");
+				result.setValid(false);
+				result.setMessage("API Key format is incorrect");
+				return result;
+			}
+			log.debug("API Key format validation passed");
+
+			// 4. Call third-party API for validation
+			log.info("Starting third-party API validation");
+			List<AvailableModel> models = callThirdPartyApi(baseUrl, actualApiKey);
+
+			result.setValid(true);
+			result.setMessage("Validation successful");
+			result.setAvailableModels(models);
+
+			log.info("Third-party API validation successful, obtained {} available models", models.size());
+
+		}
+		catch (AuthenticationException e) {
+			log.error("API Key authentication failed: {}", e.getMessage());
+			result.setValid(false);
+			result.setMessage("API Key is invalid or expired");
+		}
+		catch (NetworkException e) {
+			log.error("Network connection validation failed: {}", e.getMessage());
+			result.setValid(false);
+			result.setMessage("Network connection failed, please check Base URL");
+		}
+		catch (RateLimitException e) {
+			log.error("Request rate limit: {}", e.getMessage());
+			result.setValid(false);
+			result.setMessage("Request rate too high, please try again later");
+		}
+		catch (Exception e) {
+			log.error("Unknown exception occurred during validation: {}", e.getMessage(), e);
+			result.setValid(false);
+			result.setMessage("Validation failed: " + e.getMessage());
+		}
+
+		log.info("Model configuration validation completed - {}", result.isValid() ? "Success" : "Failed");
+		log.info("Model configuration validation result - Valid: {}, Message: {}", result.isValid(),
+				result.getMessage());
+
+		return result;
+	}
+
 	private boolean isValidBaseUrl(String baseUrl) {
 		try {
 			URL url = new URL(baseUrl);

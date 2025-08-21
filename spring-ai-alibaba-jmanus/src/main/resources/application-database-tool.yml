@@ -8,7 +8,7 @@ database_use:
       url: jdbc:mysql://127.0.0.1:3306/amanus?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8
       driver-class-name: com.mysql.cj.jdbc.Driver
       username: root
-      password:
+      password: mzt101010
     # H2 配置示例
     testdb:
       type: h2

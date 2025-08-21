@@ -43,6 +43,7 @@ export interface ApiResponse<T> {
 export interface ValidationRequest {
     baseUrl: string
     apiKey: string
+    modelId?: number | null  // 可选的模型ID，用于标识是哪个模型的验证请求
 }
 
 export interface ValidationResult {
