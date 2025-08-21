@@ -21,9 +21,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.document.Document;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.List;
 
 /**
  * 测试工具类 提供常用的测试辅助方法

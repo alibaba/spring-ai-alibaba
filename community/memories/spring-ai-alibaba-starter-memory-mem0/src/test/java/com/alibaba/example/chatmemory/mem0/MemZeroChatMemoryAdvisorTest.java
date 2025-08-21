@@ -32,6 +32,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
