@@ -194,7 +194,7 @@ public class ReactAgent extends BaseAgent {
 					Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
 		}
 
-		// 添加工具相关边
+		// Add tool-related edges
 		if (preToolHook != null) {
 			graph.addEdge("preTool", "tool");
 		}

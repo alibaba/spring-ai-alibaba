@@ -50,7 +50,7 @@ public class AgentTool implements BiFunction<String, ToolContext, String> {
 			if (messages.isPresent()) {
 				@SuppressWarnings("unchecked")
 				List<Message> messageList = (List<Message>) messages.get();
-				// 使用 messageList
+				// Use messageList
 				Message toolResponseMessage = messageList.get(messageList.size() - 1);
 				toolResult = toolResponseMessage.getText();
 			}
