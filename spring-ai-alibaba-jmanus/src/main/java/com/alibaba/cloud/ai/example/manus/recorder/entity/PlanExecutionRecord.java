@@ -32,30 +32,24 @@ import java.util.List;
  *
  * Data structure is divided into four main parts:
  *
- * 1. Basic Info - id: Unique identifier of the record - planId: Unique identifier of the
- * plan - title: Plan title - startTime: Execution start time - endTime: Execution end
- * time - userRequest: User's original request
+ * 1. Basic Info - id: Unique identifier of the record - currentPlanId: Unique identifier
+ * of the plan - title: Plan title - startTime: Execution start time - endTime: Execution
+ * end time - userRequest: User's original request
  *
- * 2. Plan Structure - steps: Plan step list - stepStatuses: Step status list - stepNotes:
- * Step notes list - stepAgents: Smart agents associated with each step
+ * 2. Plan Structure - steps: Plan step list - currentStepIndex: Current step index being
+ * executed
  *
- * 3. Execution Data - currentStepIndex: Current step index being executed -
- * agentExecutionRecords: Records of execution for each smart agent - executorKeys: List
- * of executor keys - resultState: Shared result status
+ * 3. Execution Data - agentExecutionSequence: Records of execution for each smart agent
  *
- * 4. Execution Result - completed: Whether completed - progress: Execution progress
- * (percentage) - summary: Execution summary
+ * 4. Execution Result - completed: Whether completed - summary: Execution summary
  */
 public class PlanExecutionRecord {
 
 	// Unique identifier for the record
 	private Long id;
 
-	// Unique identifier for the plan
+	// Unique identifier for the current plan
 	private String currentPlanId;
-
-	// Think-act record ID that triggered this sub-plan (null for main plans)
-	private Long thinkActRecordId;
 
 	// Plan title
 	private String title;
@@ -99,21 +93,14 @@ public class PlanExecutionRecord {
 	 */
 	public PlanExecutionRecord() {
 		this.steps = new ArrayList<>();
-		// It's generally better to initialize time-sensitive fields like startTime
-		// when the actual event occurs, or in the specific constructor that signifies
-		// creation.
-		// However, if a default non-null startTime is always expected, this is one way.
-		// this.startTime = LocalDateTime.now(); // Consider if this is appropriate for a
-		// default constructor
 		this.completed = false;
 		this.agentExecutionSequence = new ArrayList<>();
-		// Ensure ID is generated during initialization
 		this.id = generateId();
 	}
 
 	/**
 	 * Constructor for creating a new execution record
-	 * @param planId The unique identifier for the plan.
+	 * @param currentPlanId The unique identifier for the current plan.
 	 */
 	public PlanExecutionRecord(String currentPlanId) {
 		this.currentPlanId = currentPlanId;
@@ -121,16 +108,14 @@ public class PlanExecutionRecord {
 		this.startTime = LocalDateTime.now();
 		this.completed = false;
 		this.agentExecutionSequence = new ArrayList<>();
-		// Ensure ID is generated during initialization
 		this.id = generateId();
 	}
 
 	/**
 	 * Add an execution step
 	 * @param step Step description
-	 * @param agentName Executing agent name
 	 */
-	public void addStep(String step, String agentName) {
+	public void addStep(String step) {
 		this.steps.add(step);
 	}
 
@@ -177,29 +162,6 @@ public class PlanExecutionRecord {
 		return this.id;
 	}
 
-	/**
-	 * Save record to persistent storage. Empty implementation, to be overridden by
-	 * specific storage implementations. Also recursively saves all AgentExecutionRecord
-	 * @return Record ID after saving
-	 */
-	public Long save() {
-		// If ID is empty, generate a random ID
-		if (this.id == null) {
-			// Use combination of timestamp and random number to generate ID
-			long timestamp = System.currentTimeMillis();
-			int random = (int) (Math.random() * 1000000);
-			this.id = timestamp * 1000 + random;
-		}
-
-		// Save all AgentExecutionRecords
-		if (agentExecutionSequence != null) {
-			for (AgentExecutionRecord agentRecord : agentExecutionSequence) {
-				agentRecord.save();
-			}
-		}
-		return this.id;
-	}
-
 	// Getters and Setters
 
 	public Long getId() {
@@ -218,16 +180,8 @@ public class PlanExecutionRecord {
 		return currentPlanId;
 	}
 
-	public void setCurrentPlanId(String planId) {
-		this.currentPlanId = planId;
-	}
-
-	public Long getThinkActRecordId() {
-		return thinkActRecordId;
-	}
-
-	public void setThinkActRecordId(Long thinkActRecordId) {
-		this.thinkActRecordId = thinkActRecordId;
+	public void setCurrentPlanId(String currentPlanId) {
+		this.currentPlanId = currentPlanId;
 	}
 
 	public String getTitle() {
@@ -309,6 +263,5 @@ public class PlanExecutionRecord {
 	public void setModelName(String modelName) {
 		this.modelName = modelName;
 	}
-
 
 }

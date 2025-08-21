@@ -137,7 +137,7 @@ public interface PlanExecutionRecorder {
 	 * plans)
 	 * @param summary The summary of the plan execution
 	 */
-	void recordPlanCompletion(String currentPlanId,  Long thinkActRecordId, String summary);
+	void recordPlanCompletion(String currentPlanId, Long thinkActRecordId, String summary);
 
 	public Long getCurrentThinkActRecordId(String currentPlanId);
 

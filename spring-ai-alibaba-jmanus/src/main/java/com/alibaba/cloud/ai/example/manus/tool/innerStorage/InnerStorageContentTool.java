@@ -141,7 +141,6 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 			}
 			""";
 
-
 	@Override
 	public String getName() {
 		return TOOL_NAME;
@@ -329,27 +328,6 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 		}
 	}
 
-	/**
-	 * Get current think-act record ID
-	 * @return Current think-act record ID, return null if none
-	 */
-	private Long getCurrentThinkActRecordId() {
-		try {
-			Long thinkActRecordId = planExecutionRecorder.getCurrentThinkActRecordId(currentPlanId, rootPlanId);
-			if (thinkActRecordId != null) {
-				log.info("Current think-act record ID: {}", thinkActRecordId);
-				return thinkActRecordId;
-			}
-			else {
-				log.warn("No current think-act record ID");
-			}
-		}
-		catch (Exception e) {
-			log.warn("Failed to get current think-act record ID: {}", e.getMessage());
-		}
-
-		return null;
-	}
 
 	@Override
 	public String getCurrentToolStateString() {

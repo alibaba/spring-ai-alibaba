@@ -97,7 +97,6 @@ public class ThinkActRecord {
 	// Tool parameters used for action (serialized, if applicable)
 	private String toolParameters;
 
-
 	// Action tool information(When disabling parallel tool calls, there is always only
 	// one)
 	private List<ActToolInfo> actToolInfoList;

@@ -82,8 +82,7 @@ public class SubplanToolInitializer {
 
 			if (planTemplateService.getPlanTemplate(templateId) == null) {
 				String title = extractTitleFromTemplate(templateContent);
-				planTemplateService.savePlanTemplate(templateId, title, title,
-						templateContent);
+				planTemplateService.savePlanTemplate(templateId, title, title, templateContent);
 				logger.info("Created plan template: {} with title: {}", templateId, title);
 			}
 			else {
