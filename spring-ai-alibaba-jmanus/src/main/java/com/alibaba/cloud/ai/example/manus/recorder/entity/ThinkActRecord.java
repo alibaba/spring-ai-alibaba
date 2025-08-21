@@ -97,8 +97,6 @@ public class ThinkActRecord {
 	// Tool parameters used for action (serialized, if applicable)
 	private String toolParameters;
 
-	// Sub-plan execution record for tool calls that create new execution plans
-	private PlanExecutionRecord subPlanExecutionRecord;
 
 	// Action tool information(When disabling parallel tool calls, there is always only
 	// one)
@@ -167,11 +165,6 @@ public class ThinkActRecord {
 	 * @return Record ID after saving
 	 */
 	public Long save() {
-
-		// Save sub-plan execution record if exists
-		if (subPlanExecutionRecord != null) {
-			subPlanExecutionRecord.save();
-		}
 
 		return this.id;
 	}
@@ -300,30 +293,6 @@ public class ThinkActRecord {
 
 	public void setToolParameters(String toolParameters) {
 		this.toolParameters = toolParameters;
-	}
-
-	public PlanExecutionRecord getSubPlanExecutionRecord() {
-		return subPlanExecutionRecord;
-	}
-
-	public void setSubPlanExecutionRecord(PlanExecutionRecord subPlanExecutionRecord) {
-		this.subPlanExecutionRecord = subPlanExecutionRecord;
-	}
-
-	/**
-	 * Record a sub-plan execution triggered by tool call
-	 * @param subPlanRecord Sub-plan execution record
-	 */
-	public void recordSubPlanExecution(PlanExecutionRecord subPlanRecord) {
-		this.subPlanExecutionRecord = subPlanRecord;
-	}
-
-	/**
-	 * Check if this think-act record has a sub-plan execution
-	 * @return true if sub-plan exists, false otherwise
-	 */
-	public boolean hasSubPlanExecution() {
-		return this.subPlanExecutionRecord != null;
 	}
 
 	public List<ActToolInfo> getActToolInfoList() {

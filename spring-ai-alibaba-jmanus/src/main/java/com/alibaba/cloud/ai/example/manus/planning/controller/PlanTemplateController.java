@@ -39,12 +39,10 @@ import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinat
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Plan template controller, handles API requests for the plan template page

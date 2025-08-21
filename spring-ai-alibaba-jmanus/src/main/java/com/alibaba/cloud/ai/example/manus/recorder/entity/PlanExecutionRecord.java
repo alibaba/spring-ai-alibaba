@@ -54,9 +54,6 @@ public class PlanExecutionRecord {
 	// Unique identifier for the plan
 	private String currentPlanId;
 
-	// Parent plan ID for sub-plans (null for main plans)
-	private String rootPlanId;
-
 	// Think-act record ID that triggered this sub-plan (null for main plans)
 	private Long thinkActRecordId;
 
@@ -118,9 +115,8 @@ public class PlanExecutionRecord {
 	 * Constructor for creating a new execution record
 	 * @param planId The unique identifier for the plan.
 	 */
-	public PlanExecutionRecord(String currentPlanId, String rootPlanId) {
+	public PlanExecutionRecord(String currentPlanId) {
 		this.currentPlanId = currentPlanId;
-		this.rootPlanId = rootPlanId;
 		this.steps = new ArrayList<>();
 		this.startTime = LocalDateTime.now();
 		this.completed = false;
@@ -226,14 +222,6 @@ public class PlanExecutionRecord {
 		this.currentPlanId = planId;
 	}
 
-	public String getRootPlanId() {
-		return rootPlanId;
-	}
-
-	public void setRootPlanId(String rootPlanId) {
-		this.rootPlanId = rootPlanId;
-	}
-
 	public Long getThinkActRecordId() {
 		return thinkActRecordId;
 	}
@@ -322,16 +310,5 @@ public class PlanExecutionRecord {
 		this.modelName = modelName;
 	}
 
-	/**
-	 * Return string representation of this record, containing key field information
-	 * @return String containing key information of the record
-	 */
-	@Override
-	public String toString() {
-		return String.format(
-				"PlanExecutionRecord{id=%d, planId='%s',planId='%s', title='%s', steps=%d, currentStep=%d/%d, completed=%b}",
-				id, currentPlanId, rootPlanId, title, steps.size(), currentStepIndex != null ? currentStepIndex + 1 : 0,
-				steps.size(), completed);
-	}
 
 }
