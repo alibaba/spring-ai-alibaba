@@ -685,29 +685,50 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 							"description": "Name of the worksheet"
 						},
 						"worksheets": {
-							"type": "object",
-							"description": "Worksheets configuration for create_file action"
-						},
+					"type": "object",
+					"description": "Worksheets configuration for create_file action",
+					"additionalProperties": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					}
+				},
 						"data": {
-							"type": "array",
-							"description": "Data to write (array of arrays)"
-						},
+					"type": "array",
+					"description": "Data to write (array of arrays)",
+					"items": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					}
+				},
 						"cell_updates": {
 							"type": "object",
 							"description": "Cell updates (cell reference to value mapping)"
 						},
 						"keywords": {
-							"type": "array",
-							"description": "Keywords for search"
-						},
-						"search_columns": {
-							"type": "array",
-							"description": "Columns to search in"
-						},
-						"row_indices": {
-							"type": "array",
-							"description": "Row indices to delete"
-						},
+					"type": "array",
+					"description": "Keywords for search",
+					"items": {
+						"type": "string"
+					}
+				},
+				"search_columns": {
+					"type": "array",
+					"description": "Columns to search in",
+					"items": {
+						"type": "string"
+					}
+				},
+				"row_indices": {
+					"type": "array",
+					"description": "Row indices to delete",
+					"items": {
+						"type": "integer"
+					}
+				},
 						"cell_range": {
 							"type": "string",
 							"description": "Cell range for formatting (e.g., A1:C10)"

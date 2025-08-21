@@ -87,6 +87,8 @@ import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
 import com.alibaba.cloud.ai.example.manus.tool.pptGenerator.PptGeneratorOperator;
 import com.alibaba.cloud.ai.example.manus.tool.jsxGenerator.JsxGeneratorOperator;
+import com.alibaba.cloud.ai.example.manus.tool.excelProcessor.ExcelProcessorTool;
+import com.alibaba.cloud.ai.example.manus.tool.excelProcessor.IExcelProcessingService;
 import com.alibaba.cloud.ai.example.manus.workflow.SummaryWorkflow;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -113,6 +115,8 @@ public class PlanningFactory implements IPlanningFactory {
 	private final DataSourceService dataSourceService;
 
 	private final TableProcessingService tableProcessingService;
+
+	private final IExcelProcessingService excelProcessingService;
 
 	private final static Logger log = LoggerFactory.getLogger(PlanningFactory.class);
 
@@ -165,7 +169,8 @@ public class PlanningFactory implements IPlanningFactory {
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService,
 			SmartContentSavingService innerStorageService, UnifiedDirectoryManager unifiedDirectoryManager,
-			DataSourceService dataSourceService, TableProcessingService tableProcessingService) {
+			DataSourceService dataSourceService, TableProcessingService tableProcessingService,
+			IExcelProcessingService excelProcessingService) {
 		this.chromeDriverService = chromeDriverService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
@@ -175,6 +180,7 @@ public class PlanningFactory implements IPlanningFactory {
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
 		this.dataSourceService = dataSourceService;
 		this.tableProcessingService = tableProcessingService;
+		this.excelProcessingService = excelProcessingService;
 	}
 
 	public PlanningCoordinator createPlanningCoordinator(ExecutionContext context) {
@@ -272,6 +278,7 @@ public class PlanningFactory implements IPlanningFactory {
 				.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 			toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 			toolDefinitions.add(new CronTool(cronService, objectMapper));
+			toolDefinitions.add(new ExcelProcessorTool(excelProcessingService));
 		}
 		else {
 			toolDefinitions.add(new TerminateTool(planId, expectedReturnInfo));
