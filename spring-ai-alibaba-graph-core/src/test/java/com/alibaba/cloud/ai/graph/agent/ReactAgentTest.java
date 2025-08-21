@@ -362,4 +362,3 @@ class ReactAgentTest {
 	}
 
 }
-
