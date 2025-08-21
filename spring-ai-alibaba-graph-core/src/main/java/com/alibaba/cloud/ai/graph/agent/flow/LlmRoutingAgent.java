@@ -38,10 +38,12 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class LlmRoutingAgent extends FlowAgent {
+
 	private ChatModel chatModel;
 
 	protected LlmRoutingAgent(Builder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory, builder.compileConfig, builder.subAgents);
+		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory,
+				builder.compileConfig, builder.subAgents);
 		this.chatModel = builder.chatModel;
 		this.graph = initGraph();
 	}
@@ -52,20 +54,20 @@ public class LlmRoutingAgent extends FlowAgent {
 		return compiledGraph.invoke(input);
 	}
 
-//	protected StateGraph initGraph() throws GraphStateException {
-//		StateGraph graph = new StateGraph(this.name(), keyStrategyFactory);
-//
-//		// add root agent
-//		graph.addNode(this.name(), node_async(LlmNode.builder().(this.outputKey, this.inputKey)));
-//
-//		// add starting edge
-//		graph.addEdge(START, this.name());
-//		// Use recursive method to add all sub-agents
-//		processSubAgents(graph,  this, this.subAgents());
-//
-//		return graph;
-//	}
-
+	// protected StateGraph initGraph() throws GraphStateException {
+	// StateGraph graph = new StateGraph(this.name(), keyStrategyFactory);
+	//
+	// // add root agent
+	// graph.addNode(this.name(), node_async(LlmNode.builder().(this.outputKey,
+	// this.inputKey)));
+	//
+	// // add starting edge
+	// graph.addEdge(START, this.name());
+	// // Use recursive method to add all sub-agents
+	// processSubAgents(graph, this, this.subAgents());
+	//
+	// return graph;
+	// }
 
 	/**
 	 * Recursively adds sub-agents and their nested sub-agents to the graph
@@ -74,12 +76,13 @@ public class LlmRoutingAgent extends FlowAgent {
 	 * @param subAgents the list of sub-agents to process
 	 */
 	@Override
-	protected void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<? extends BaseAgent> subAgents) throws GraphStateException {
+	protected void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<? extends BaseAgent> subAgents)
+			throws GraphStateException {
 		Map<String, String> edgeRoutingMap = new HashMap<>();
 		for (BaseAgent subAgent : subAgents) {
 			// Add the current sub-agent as a node
 			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(parentAgent.outputKey(), subAgent.outputKey()));
-//				graph.addEdge(parentAgent.name(), subAgent.name());
+			// graph.addEdge(parentAgent.name(), subAgent.name());
 			edgeRoutingMap.put(subAgent.name(), subAgent.name());
 
 			// Recursively process this sub-agent's sub-agents if they exist
@@ -87,31 +90,39 @@ public class LlmRoutingAgent extends FlowAgent {
 				if (subFlowAgent.subAgents() == null || subFlowAgent.subAgents().isEmpty()) {
 					graph.addEdge(subAgent.name(), END);
 				}
-			} else {
+			}
+			else {
 				graph.addEdge(subAgent.name(), END);
 			}
 		}
 
 		// Connect parent to this sub-agent
-		graph.addConditionalEdges(parentAgent.name(), new RoutingEdgeAction(chatModel, this, subAgents), edgeRoutingMap);
+		graph.addConditionalEdges(parentAgent.name(), new RoutingEdgeAction(chatModel, this, subAgents),
+				edgeRoutingMap);
 	}
-
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	public static class Builder {
+
 		// Base agent properties
 		private String name;
+
 		private String description;
+
 		private String outputKey;
+
 		private List<? extends BaseAgent> subAgents;
 
 		// LlmRoutingAgent specific properties
 		private String inputKey;
+
 		private KeyStrategyFactory keyStrategyFactory;
+
 		private ChatModel chatModel;
+
 		private CompileConfig compileConfig;
 
 		public Builder name(String name) {
@@ -149,7 +160,6 @@ public class LlmRoutingAgent extends FlowAgent {
 			return this;
 		}
 
-
 		public Builder compileConfig(CompileConfig compileConfig) {
 			this.compileConfig = compileConfig;
 			return this;
@@ -166,5 +176,7 @@ public class LlmRoutingAgent extends FlowAgent {
 
 			return new LlmRoutingAgent(this);
 		}
+
 	}
+
 }

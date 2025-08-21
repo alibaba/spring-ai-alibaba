@@ -31,22 +31,26 @@ import org.springframework.ai.chat.model.ChatModel;
 public class RoutingEdgeAction implements AsyncEdgeAction {
 
 	private ChatClient chatClient;
+
 	private String taskKey;
 
 	public RoutingEdgeAction(ChatModel chatModel, BaseAgent current, List<? extends BaseAgent> subAgents) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("You are responsible for task routing in a graph-based AI system.\n" );
+		sb.append("You are responsible for task routing in a graph-based AI system.\n");
 
 		if (current instanceof ReactAgent reactAgent) {
 			sb.append("The instruction that you should follow is to finish this task is: ");
-			sb.append(StringUtils.isEmpty(reactAgent.instruction()) ? reactAgent.description() : reactAgent.instruction());
-		} else {
+			sb.append(StringUtils.isEmpty(reactAgent.instruction()) ? reactAgent.description()
+					: reactAgent.instruction());
+		}
+		else {
 			sb.append("Your role seen by the user is: ");
 			sb.append(current.description());
 		}
 
 		sb.append("\n\n");
-		sb.append("There're a few agents that can handle this task, you can delegate the task to one of the following.");
+		sb.append(
+				"There're a few agents that can handle this task, you can delegate the task to one of the following.");
 		sb.append("The agents ability are listed in a 'name:description' format as below:\n");
 		for (BaseAgent agent : subAgents) {
 			sb.append("- ").append(agent.name()).append(": ").append(agent.description()).append("\n");
@@ -54,9 +58,7 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 		sb.append("\n\n");
 		sb.append("Return the agent name to delegate the task to.");
 
-		this.chatClient = ChatClient.builder(chatModel)
-				.defaultSystem(sb.toString())
-				.build();
+		this.chatClient = ChatClient.builder(chatModel).defaultSystem(sb.toString()).build();
 		this.taskKey = current.outputKey();
 	}
 

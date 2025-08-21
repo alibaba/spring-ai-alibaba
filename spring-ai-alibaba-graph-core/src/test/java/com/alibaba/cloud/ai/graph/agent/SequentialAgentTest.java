@@ -43,14 +43,10 @@ class SequentialAgentTest {
 	@BeforeEach
 	void setUp() {
 		// 先创建 DashScopeApi 实例
-		DashScopeApi dashScopeApi = DashScopeApi.builder()
-				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-				.build();
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 
 		// 创建 DashScope ChatModel 实例
-		this.chatModel = DashScopeChatModel.builder()
-				.dashScopeApi(dashScopeApi)
-				.build();
+		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
 	}
 
 	@Test
@@ -66,29 +62,29 @@ class SequentialAgentTest {
 		};
 
 		ReactAgent writerAgent = ReactAgent.builder()
-				.name("writer_agent")
-				.model(chatModel)
-				.description("可以写文章。")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
-				.outputKey("article")
-				.build();
+			.name("writer_agent")
+			.model(chatModel)
+			.description("可以写文章。")
+			.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+			.outputKey("article")
+			.build();
 
 		ReactAgent reviewerAgent = ReactAgent.builder()
-				.name("reviewer_agent")
-				.model(chatModel)
-				.description("可以对文章进行评论和修改。")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
-				.outputKey("reviewed_article")
-				.build();
+			.name("reviewer_agent")
+			.model(chatModel)
+			.description("可以对文章进行评论和修改。")
+			.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
+			.outputKey("reviewed_article")
+			.build();
 
 		SequentialAgent blogAgent = SequentialAgent.builder()
-				.name("blog_agent")
-				.state(stateFactory)
-				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改。")
-				.inputKey("input")
-				.outputKey("topic")
-				.subAgents(List.of(writerAgent, reviewerAgent))
-				.build();
+			.name("blog_agent")
+			.state(stateFactory)
+			.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改。")
+			.inputKey("input")
+			.outputKey("topic")
+			.subAgents(List.of(writerAgent, reviewerAgent))
+			.build();
 
 		try {
 			Optional<OverAllState> result = blogAgent.invoke(Map.of("input", "帮我写一个100字左右的散文"));
@@ -100,4 +96,5 @@ class SequentialAgentTest {
 
 		// Verify all hooks were executed
 	}
+
 }

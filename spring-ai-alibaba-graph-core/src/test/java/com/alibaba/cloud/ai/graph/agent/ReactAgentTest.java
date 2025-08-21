@@ -42,22 +42,15 @@ class ReactAgentTest {
 	@BeforeEach
 	void setUp() {
 		// 先创建 DashScopeApi 实例
-		DashScopeApi dashScopeApi = DashScopeApi.builder()
-				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-				.build();
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 
 		// 创建 DashScope ChatModel 实例
-		this.chatModel = DashScopeChatModel.builder()
-				.dashScopeApi(dashScopeApi)
-				.build();
+		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
 	}
 
 	@Test
 	public void testReactAgent() throws Exception {
-		ReactAgent agent = ReactAgent.builder()
-				.name("single_agent")
-				.model(chatModel)
-				.build();
+		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).build();
 		try {
 			Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("帮我写一首现代诗歌。"))));
 			System.out.println(result.get());
@@ -66,4 +59,5 @@ class ReactAgentTest {
 			e.printStackTrace();
 		}
 	}
+
 }

@@ -41,14 +41,10 @@ class LlmRoutingAgentTest {
 	@BeforeEach
 	void setUp() {
 		// 先创建 DashScopeApi 实例
-		DashScopeApi dashScopeApi = DashScopeApi.builder()
-				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-				.build();
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 
 		// 创建 DashScope ChatModel 实例
-		this.chatModel = DashScopeChatModel.builder()
-				.dashScopeApi(dashScopeApi)
-				.build();
+		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
 	}
 
 	@Test
@@ -63,30 +59,30 @@ class LlmRoutingAgentTest {
 		};
 
 		ReactAgent proseWriterAgent = ReactAgent.builder()
-				.name("prose_writer_agent")
-				.model(chatModel)
-				.description("可以写散文文章。")
-				.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
-				.outputKey("prose_article")
-				.build();
+			.name("prose_writer_agent")
+			.model(chatModel)
+			.description("可以写散文文章。")
+			.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
+			.outputKey("prose_article")
+			.build();
 
 		ReactAgent poemWriterAgent = ReactAgent.builder()
-				.name("poem_writer_agent")
-				.model(chatModel)
-				.description("可以写现代诗。")
-				.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问进行回答。")
-				.outputKey("poem_article")
-				.build();
+			.name("poem_writer_agent")
+			.model(chatModel)
+			.description("可以写现代诗。")
+			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问进行回答。")
+			.outputKey("poem_article")
+			.build();
 
 		LlmRoutingAgent blogAgent = LlmRoutingAgent.builder()
-				.name("blog_agent")
-				.model(chatModel)
-				.state(stateFactory)
-				.description("可以根据用户给定的主题写文章或作诗。")
-				.inputKey("input")
-				.outputKey("topic")
-				.subAgents(List.of(proseWriterAgent, poemWriterAgent))
-				.build();
+			.name("blog_agent")
+			.model(chatModel)
+			.state(stateFactory)
+			.description("可以根据用户给定的主题写文章或作诗。")
+			.inputKey("input")
+			.outputKey("topic")
+			.subAgents(List.of(proseWriterAgent, poemWriterAgent))
+			.build();
 
 		try {
 			Optional<OverAllState> result = blogAgent.invoke(Map.of("input", "帮我写一个100字左右的散文"));
@@ -98,4 +94,5 @@ class LlmRoutingAgentTest {
 
 		// Verify all hooks were executed
 	}
+
 }

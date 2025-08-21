@@ -157,9 +157,12 @@ public class LlmNode implements NodeAction {
 
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec() {
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-				.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).internalToolExecutionEnabled(false).build())
-				.messages(messages)
-				.advisors(advisors);
+			.options(ToolCallingChatOptions.builder()
+				.toolCallbacks(toolCallbacks)
+				.internalToolExecutionEnabled(false)
+				.build())
+			.messages(messages)
+			.advisors(advisors);
 
 		if (StringUtils.hasLength(systemPrompt)) {
 			if (!params.isEmpty()) {

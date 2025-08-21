@@ -40,8 +40,9 @@ public class TransparentNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		Map<String, Object> updatedState = new HashMap<>();
-		Object value = state.value(inputKey).orElseThrow(() -> new IllegalArgumentException(
-				"Input key '" + inputKey + "' not found in state: " + state));
+		Object value = state.value(inputKey)
+			.orElseThrow(
+					() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
 		updatedState.put(this.outputKey, value);
 		return updatedState;
 	}

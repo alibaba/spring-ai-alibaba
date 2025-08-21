@@ -142,7 +142,8 @@ public class ReactAgent extends BaseAgent {
 		return new SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph);
 	}
 
-	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException {
+	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
+			throws GraphStateException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
@@ -231,7 +232,6 @@ public class ReactAgent extends BaseAgent {
 
 	/**
 	 * Gets the agent's unique name.
-	 *
 	 * @return the unique name of the agent.
 	 */
 	public String name() {
@@ -240,7 +240,6 @@ public class ReactAgent extends BaseAgent {
 
 	/**
 	 * Gets the one-line description of the agent's capability.
-	 *
 	 * @return the description of the agent.
 	 */
 	public String description() {
@@ -302,7 +301,9 @@ public class ReactAgent extends BaseAgent {
 	public static class Builder {
 
 		private String name;
+
 		private String description;
+
 		private String instruction;
 
 		private String outputKey;
@@ -357,6 +358,7 @@ public class ReactAgent extends BaseAgent {
 			this.tools = tools;
 			return this;
 		}
+
 		public Builder resolver(ToolCallbackResolver resolver) {
 			this.resolver = resolver;
 			return this;

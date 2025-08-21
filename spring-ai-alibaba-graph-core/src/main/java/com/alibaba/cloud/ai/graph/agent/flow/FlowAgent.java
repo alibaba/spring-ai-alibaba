@@ -31,15 +31,22 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public abstract class FlowAgent extends BaseAgent {
+
 	protected CompileConfig compileConfig;
+
 	protected String inputKey;
+
 	protected KeyStrategyFactory keyStrategyFactory;
+
 	protected List<? extends BaseAgent> subAgents;
 
 	protected StateGraph graph;
+
 	protected CompiledGraph compiledGraph;
 
-	protected FlowAgent(String name, String description, String outputKey, String inputKey, KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig, List<? extends BaseAgent> subAgents) throws GraphStateException {
+	protected FlowAgent(String name, String description, String outputKey, String inputKey,
+			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig, List<? extends BaseAgent> subAgents)
+			throws GraphStateException {
 		super(name, description, outputKey);
 		this.compileConfig = compileConfig;
 		this.inputKey = inputKey;
@@ -56,19 +63,22 @@ public abstract class FlowAgent extends BaseAgent {
 		// add starting edge
 		graph.addEdge(START, this.name());
 		// Use recursive method to add all sub-agents
-		processSubAgents(graph,  this, this.subAgents());
+		processSubAgents(graph, this, this.subAgents());
 
 		return graph;
 	}
 
-	protected abstract void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<? extends BaseAgent> subAgents) throws GraphStateException;
+	protected abstract void processSubAgents(StateGraph graph, BaseAgent parentAgent,
+			List<? extends BaseAgent> subAgents) throws GraphStateException;
 
 	@Override
-	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException {
+	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
+			throws GraphStateException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return node_async(new ReactAgent.SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
+		return node_async(
+				new ReactAgent.SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
 	}
 
 	public CompiledGraph getAndCompileGraph() throws GraphStateException {

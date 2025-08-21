@@ -526,7 +526,8 @@ public final class OverAllState implements Serializable {
 
 			// 如果都不匹配，尝试直接转换（保持原有行为）
 			return ofNullable(type.cast(value));
-		} catch (ClassCastException e) {
+		}
+		catch (ClassCastException e) {
 			// 转换失败时返回空 Optional
 			return Optional.empty();
 		}

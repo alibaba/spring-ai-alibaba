@@ -25,8 +25,8 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 /**
- * Abstract base class for all agents in the graph system.
- * Contains common properties and methods shared by different agent implementations.
+ * Abstract base class for all agents in the graph system. Contains common properties and
+ * methods shared by different agent implementations.
  */
 public abstract class BaseAgent {
 
@@ -34,8 +34,8 @@ public abstract class BaseAgent {
 	protected String name;
 
 	/**
-	 * One line description about the agent's capability. The system can use this for decision-making
-	 * when delegating control to different agents.
+	 * One line description about the agent's capability. The system can use this for
+	 * decision-making when delegating control to different agents.
 	 */
 	protected String description;
 
@@ -44,7 +44,6 @@ public abstract class BaseAgent {
 
 	/**
 	 * Protected constructor for initializing all base agent properties.
-	 *
 	 * @param name the unique name of the agent
 	 * @param description the description of the agent's capability
 	 * @param outputKey the output key for the agent's result
@@ -56,7 +55,8 @@ public abstract class BaseAgent {
 	}
 
 	/**
-	 * Default protected constructor for subclasses that need to initialize properties differently.
+	 * Default protected constructor for subclasses that need to initialize properties
+	 * differently.
 	 */
 	protected BaseAgent() {
 		// Allow subclasses to initialize properties through other means
@@ -64,7 +64,6 @@ public abstract class BaseAgent {
 
 	/**
 	 * Gets the agent's unique name.
-	 *
 	 * @return the unique name of the agent.
 	 */
 	public String name() {
@@ -73,7 +72,6 @@ public abstract class BaseAgent {
 
 	/**
 	 * Gets the one-line description of the agent's capability.
-	 *
 	 * @return the description of the agent.
 	 */
 	public String description() {
@@ -82,7 +80,6 @@ public abstract class BaseAgent {
 
 	/**
 	 * Gets the output key for the agent's result.
-	 *
 	 * @return the output key.
 	 */
 	public String outputKey() {
@@ -91,11 +88,12 @@ public abstract class BaseAgent {
 
 	/**
 	 * Gets the list of sub-agents.
-	 *
 	 * @return the list of sub-agents.
 	 */
-	public abstract AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException;
+	public abstract AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
+			throws GraphStateException;
 
-	public abstract Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException;
+	public abstract Optional<OverAllState> invoke(Map<String, Object> input)
+			throws GraphStateException, GraphRunnerException;
 
 }

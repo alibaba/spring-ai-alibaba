@@ -31,6 +31,7 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 public class AgentTool implements BiFunction<String, ToolContext, String> {
+
 	private final ReactAgent agent;
 
 	public AgentTool(ReactAgent agent) {
@@ -38,8 +39,10 @@ public class AgentTool implements BiFunction<String, ToolContext, String> {
 	}
 
 	@Override
-	public String apply(@ToolParam(description = "The original user query that triggered this tool call") String originalUserQuery, ToolContext toolContext) {
-		OverAllState state = (OverAllState)toolContext.getContext().get("state");
+	public String apply(
+			@ToolParam(description = "The original user query that triggered this tool call") String originalUserQuery,
+			ToolContext toolContext) {
+		OverAllState state = (OverAllState) toolContext.getContext().get("state");
 		String toolResult = "";
 		try {
 			Optional<OverAllState> resultState = agent.getAndCompileGraph().invoke(state.data());
@@ -64,8 +67,9 @@ public class AgentTool implements BiFunction<String, ToolContext, String> {
 
 	public static ToolCallback getFunctionToolCallback(ReactAgent agent) {
 		return FunctionToolCallback.builder(agent.name(), AgentTool.create(agent))
-				.description(agent.description())
-				.inputType(String.class)
-				.build();
+			.description(agent.description())
+			.inputType(String.class)
+			.build();
 	}
+
 }

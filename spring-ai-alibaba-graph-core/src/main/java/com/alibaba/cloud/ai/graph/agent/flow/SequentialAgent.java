@@ -36,7 +36,8 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 public class SequentialAgent extends FlowAgent {
 
 	protected SequentialAgent(Builder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory, builder.compileConfig, builder.subAgents);
+		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory,
+				builder.compileConfig, builder.subAgents);
 		this.graph = initGraph();
 	}
 
@@ -46,7 +47,6 @@ public class SequentialAgent extends FlowAgent {
 		return compiledGraph.invoke(input);
 	}
 
-
 	/**
 	 * Recursively adds sub-agents and their nested sub-agents to the graph
 	 * @param graph the StateGraph to add nodes and edges to
@@ -54,7 +54,8 @@ public class SequentialAgent extends FlowAgent {
 	 * @param subAgents the list of sub-agents to process
 	 */
 	@Override
-	protected void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<? extends BaseAgent> subAgents) throws GraphStateException {
+	protected void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<? extends BaseAgent> subAgents)
+			throws GraphStateException {
 		for (BaseAgent subAgent : subAgents) {
 			// Add the current sub-agent as a node
 			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(parentAgent.outputKey(), subAgent.outputKey()));
@@ -70,16 +71,23 @@ public class SequentialAgent extends FlowAgent {
 	}
 
 	public static class Builder {
+
 		// Base agent properties
 		private String name;
+
 		private String description;
+
 		private String outputKey;
+
 		private List<? extends BaseAgent> subAgents;
 
 		// LlmRoutingAgent specific properties
 		private String inputKey;
+
 		private KeyStrategyFactory keyStrategyFactory;
+
 		private ChatModel chatModel;
+
 		private CompileConfig compileConfig;
 
 		public Builder name(String name) {
@@ -117,7 +125,6 @@ public class SequentialAgent extends FlowAgent {
 			return this;
 		}
 
-
 		public Builder compileConfig(CompileConfig compileConfig) {
 			this.compileConfig = compileConfig;
 			return this;
@@ -134,5 +141,7 @@ public class SequentialAgent extends FlowAgent {
 
 			return new SequentialAgent(this);
 		}
+
 	}
+
 }
