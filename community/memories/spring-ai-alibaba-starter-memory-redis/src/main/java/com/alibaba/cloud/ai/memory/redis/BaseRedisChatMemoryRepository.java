@@ -28,7 +28,7 @@ import org.springframework.ai.chat.messages.Message;
  * Base class for Redis-based chat memory repositories
  *
  * @author benym
- * @date 2025/7/31 0:05
+ * @since 2025/7/31 0:05
  */
 public abstract class BaseRedisChatMemoryRepository implements ChatMemoryRepository, AutoCloseable {
 

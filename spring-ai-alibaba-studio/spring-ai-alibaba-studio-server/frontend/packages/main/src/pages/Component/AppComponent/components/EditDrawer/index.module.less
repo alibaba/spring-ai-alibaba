@@ -1,0 +1,45 @@
+.form-title {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+
+  &.required {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+.form {
+  :global {
+    .ag-ant-form-item-label {
+      font-size: 13px;
+      font-weight: 500;
+    }
+  }
+}
+
+.form-item-con {
+  padding: 20px 24px;
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--ag-ant-color-border-secondary);
+  }
+
+  :global {
+    .ag-ant-form-item-label {
+      padding-bottom: 4px !important;
+    }
+
+    .ag-ant-form-item {
+      margin-bottom: 0px !important;
+    }
+  }
+}
+
+.drawer {
+  :global {
+    .ag-ant-drawer-body {
+      padding: 0;
+    }
+  }
+}

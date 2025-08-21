@@ -15,27 +15,37 @@
  */
 package com.alibaba.cloud.ai.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 
 /**
- * 聊天会话实体类
+ * Chat Session Entity Class
  */
+@TableName("chat_session")
 public class ChatSession {
 
+	@TableId(value = "id", type = IdType.ASSIGN_UUID)
 	private String id; // UUID
 
+	@TableField("agent_id")
 	private Integer agentId;
 
+	@TableField("title")
 	private String title;
 
+	@TableField("status")
 	private String status; // active, archived, deleted
 
-	private Boolean isPinned; // 是否置顶
+	@TableField("is_pinned")
+	private Boolean isPinned; // Whether pinned
 
+	@TableField("user_id")
 	private Long userId;
 
+	@TableField(value = "create_time", fill = FieldFill.INSERT)
 	private LocalDateTime createTime;
 
+	@TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
 	private LocalDateTime updateTime;
 
 	public ChatSession() {
@@ -48,8 +58,6 @@ public class ChatSession {
 		this.status = status;
 		this.isPinned = false;
 		this.userId = userId;
-		this.createTime = LocalDateTime.now();
-		this.updateTime = LocalDateTime.now();
 	}
 
 	// Getters and Setters

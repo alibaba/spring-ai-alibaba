@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.planning.finalizer;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.advisor.CustomMessageChatMemoryAdvisor;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
@@ -26,7 +27,6 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -95,10 +95,12 @@ public class PlanFinalizer {
 
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
 			if (context.isUseMemory()) {
-				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
-				requestSpec.advisors(MessageChatMemoryAdvisor
-					.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
-					.build());
+				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
+				requestSpec.advisors(
+						CustomMessageChatMemoryAdvisor
+							.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()),
+									context.getUserRequest(), CustomMessageChatMemoryAdvisor.AdvisorType.AFTER)
+							.build());
 			}
 
 			// Use streaming response handler for summary generation
@@ -113,9 +115,6 @@ public class PlanFinalizer {
 		catch (Exception e) {
 			log.error("Error generating summary with LLM", e);
 			throw new RuntimeException("Failed to generate summary", e);
-		}
-		finally {
-			llmService.clearConversationMemory(plan.getCurrentPlanId());
 		}
 	}
 
@@ -158,10 +157,12 @@ public class PlanFinalizer {
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
 
 			if (context.isUseMemory()) {
-				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getCurrentPlanId()));
-				requestSpec.advisors(MessageChatMemoryAdvisor
-					.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()))
-					.build());
+				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
+				requestSpec.advisors(
+						CustomMessageChatMemoryAdvisor
+							.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()),
+									context.getUserRequest(), CustomMessageChatMemoryAdvisor.AdvisorType.AFTER)
+							.build());
 			}
 
 			// Use streaming response handler for direct response generation
@@ -177,11 +178,6 @@ public class PlanFinalizer {
 		catch (Exception e) {
 			log.error("Error generating direct response for request: {}", userRequest, e);
 			throw new RuntimeException("Failed to generate direct response", e);
-		}
-		finally {
-			if (context.getPlan() != null) {
-				llmService.clearConversationMemory(context.getPlan().getCurrentPlanId());
-			}
 		}
 	}
 

@@ -1,0 +1,30 @@
+@import '../../index.less';
+
+.spark-flow-input-text-area {
+  border-radius: 6px;
+  border: 1px solid e('var(--@{ant-prefix}-color-border-secondary)');
+
+  &-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: e('var(--@{ant-prefix}-color-fill-quaternary)');
+    border-radius: 6px 6px 0 0;
+    height: 24px;
+    padding: 0 12px;
+  }
+
+  .spark-flow-var-input-text-area {
+    border-radius: 0;
+    border: none;
+    min-height: initial;
+    max-height: initial;
+    height: 180px;
+  }
+
+  &.spark-flow-input-text-area-fold {
+    .spark-flow-var-input-text-area {
+      height: 90px;
+    }
+  }
+}

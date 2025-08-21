@@ -52,7 +52,7 @@ public class ResultSetBuilder {
 			count++;
 		}
 
-		// 清洗列名
+		// Clean column names
 		List<String> cleanedHead = cleanColumnNames(Arrays.asList(rowHead));
 		List<Map<String, String>> cleanedData = cleanResultSet(resultSetData);
 

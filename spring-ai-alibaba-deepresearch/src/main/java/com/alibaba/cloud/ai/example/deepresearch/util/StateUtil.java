@@ -18,16 +18,10 @@ package com.alibaba.cloud.ai.example.deepresearch.util;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * @author yingzi
@@ -35,10 +29,6 @@ import java.util.concurrent.Executors;
  */
 
 public class StateUtil {
-
-	private static final Logger logger = LoggerFactory.getLogger(StateUtil.class);
-
-	private static final ExecutorService executor = Executors.newFixedThreadPool(10);
 
 	public static final String EXECUTION_STATUS_ASSIGNED_PREFIX = "assigned_";
 
@@ -64,10 +54,6 @@ public class StateUtil {
 		step.setExecutionStatus(EXECUTION_STATUS_ERROR_PREFIX + nodeName);
 		step.setExecutionRes(errorMessage);
 		logger.error("{} failed: {}", nodeName, error.getMessage(), error);
-	}
-
-	public static List<String> getMessagesByType(OverAllState state, String name) {
-		return state.value(name, List.class).map(obj -> new ArrayList<>((List<String>) obj)).orElseGet(ArrayList::new);
 	}
 
 	public static List<String> getParallelMessages(OverAllState state, List<String> researcherTeam, int count) {
@@ -112,8 +98,16 @@ public class StateUtil {
 		return state.value("max_step_num", 3);
 	}
 
+	public static Integer getOptimizeQueryNum(OverAllState state) {
+		return state.value("optimize_query_num", 3);
+	}
+
 	public static String getThreadId(OverAllState state) {
-		return state.value("thread_id", "__default__");
+		return state.value("thread_id", "");
+	}
+
+	public static String getSessionId(OverAllState state) {
+		return state.value("session_id", "__default__");
 	}
 
 	public static boolean getAutoAcceptedPlan(OverAllState state) {
@@ -124,19 +118,12 @@ public class StateUtil {
 		return state.value("rag_content", "");
 	}
 
-	/**
-	 * 获取MCP设置
-	 */
-	public static Map<String, Object> getMcpSettings(OverAllState state) {
-		return state.value("mcp_settings", Map.class).orElse(Collections.emptyMap());
+	public static boolean isSearchFilter(OverAllState state) {
+		return state.value("search_filter", true);
 	}
 
-	/**
-	 * 检查是否有运行时MCP配置
-	 */
-	public static boolean hasRuntimeMcpConfig(OverAllState state) {
-		Map<String, Object> mcpSettings = getMcpSettings(state);
-		return !mcpSettings.isEmpty();
+	public static boolean isDeepresearch(OverAllState state) {
+		return state.value("enable_deepresearch", true);
 	}
 
 }

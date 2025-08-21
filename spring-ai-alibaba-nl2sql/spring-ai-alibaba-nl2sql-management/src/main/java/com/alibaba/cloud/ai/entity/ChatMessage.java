@@ -15,25 +15,34 @@
  */
 package com.alibaba.cloud.ai.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 
 /**
- * 聊天消息实体类
+ * Chat Message Entity Class
  */
+@TableName("chat_message")
 public class ChatMessage {
 
+	@TableId(value = "id", type = IdType.AUTO)
 	private Long id;
 
+	@TableField("session_id")
 	private String sessionId;
 
+	@TableField("role")
 	private String role; // user, assistant, system
 
+	@TableField("content")
 	private String content;
 
+	@TableField("message_type")
 	private String messageType; // text, sql, result, error
 
+	@TableField("metadata")
 	private String metadata; // JSON格式的元数据
 
+	@TableField(value = "create_time", fill = FieldFill.INSERT)
 	private LocalDateTime createTime;
 
 	public ChatMessage() {
@@ -44,7 +53,6 @@ public class ChatMessage {
 		this.role = role;
 		this.content = content;
 		this.messageType = messageType;
-		this.createTime = LocalDateTime.now();
 	}
 
 	public ChatMessage(String sessionId, String role, String content, String messageType, String metadata) {
@@ -53,7 +61,6 @@ public class ChatMessage {
 		this.content = content;
 		this.messageType = messageType;
 		this.metadata = metadata;
-		this.createTime = LocalDateTime.now();
 	}
 
 	// Getters and Setters

@@ -1,0 +1,8 @@
+**/*.test.*
+test/
+.husky
+.prettierrc
+.npmrc
+jest.config.js
+tsconfig.json
+abc.json

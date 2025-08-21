@@ -172,14 +172,24 @@ public class PlanTemplateController {
 	 * @return Result status
 	 */
 	@PostMapping("/executePlanByTemplateId")
-	public ResponseEntity<Map<String, Object>> executePlanByTemplateId(@RequestBody Map<String, String> request) {
-		String planTemplateId = request.get("planTemplateId");
+	public ResponseEntity<Map<String, Object>> executePlanByTemplateId(@RequestBody Map<String, Object> request) {
+		String planTemplateId = (String) request.get("planTemplateId");
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Plan template ID cannot be empty"));
 		}
 
-		String rawParam = request.get("rawParam");
-		return executePlanAndBuildResponse(planTemplateId, rawParam);
+		String rawParam = (String) request.get("rawParam");
+
+		// Handle uploaded files if present
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> uploadedFiles = (List<Map<String, Object>>) request.get("uploadedFiles");
+
+		logger.info("Received request with uploadedFiles: {}", uploadedFiles != null ? uploadedFiles.size() : "null");
+		if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
+			logger.info("First uploaded file planId: {}", uploadedFiles.get(0).get("planId"));
+		}
+
+		return executePlanAndBuildResponse(planTemplateId, rawParam, uploadedFiles);
 	}
 
 	/**
@@ -189,13 +199,14 @@ public class PlanTemplateController {
 	 * status checking endpoint.
 	 * @param planTemplateId The plan template ID to execute
 	 * @param rawParam Raw parameters for execution (can be null)
-	 * @param parentPlanId The parent plan ID (can be null for root plans)
+	 * @param uploadedFiles List of uploaded files (can be null)
 	 * @return ResponseEntity with submission status
 	 */
-	private ResponseEntity<Map<String, Object>> executePlanAndBuildResponse(String planTemplateId, String rawParam) {
+	private ResponseEntity<Map<String, Object>> executePlanAndBuildResponse(String planTemplateId, String rawParam,
+			List<Map<String, Object>> uploadedFiles) {
 		try {
 			// Submit the plan execution task asynchronously
-			String rootPlanId = executePlanTemplate(planTemplateId, rawParam);
+			String rootPlanId = executePlanTemplate(planTemplateId, rawParam, uploadedFiles);
 
 			// Return success immediately when task is submitted
 			Map<String, Object> response = new HashMap<>();
@@ -220,10 +231,11 @@ public class PlanTemplateController {
 	 * plan template and executes it using the common execution logic.
 	 * @param planTemplateId The ID of the plan template to execute
 	 * @param rawParam Raw parameters for the execution (can be null)
-	 * @param parentPlanId The ID of the parent plan (can be null for root plans)
+	 * @param uploadedFiles List of uploaded files (can be null)
 	 * @return The root plan ID for this execution
 	 */
-	private String executePlanTemplate(String planTemplateId, String rawParam) {
+	private String executePlanTemplate(String planTemplateId, String rawParam,
+			List<Map<String, Object>> uploadedFiles) {
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			logger.error("Plan template ID is null or empty");
 			throw new IllegalArgumentException("Plan template ID cannot be null or empty");
@@ -239,6 +251,53 @@ public class PlanTemplateController {
 
 			if (plan == null) {
 				throw new RuntimeException("Failed to create plan from template: " + planTemplateId);
+			}
+
+			// Handle uploaded files if present
+			if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
+				// Set uploaded files context to the plan
+				Map<String, String> fileContext = new HashMap<>();
+				fileContext.put("hasUploadedFiles", "true");
+				fileContext.put("fileCount", String.valueOf(uploadedFiles.size()));
+
+				// Store file names and paths as comma-separated strings
+				StringBuilder fileNames = new StringBuilder();
+				StringBuilder filePaths = new StringBuilder();
+
+				for (int i = 0; i < uploadedFiles.size(); i++) {
+					Map<String, Object> file = uploadedFiles.get(i);
+					if (i > 0) {
+						fileNames.append(",");
+						filePaths.append(",");
+					}
+					fileNames.append(String.valueOf(file.get("name")));
+					filePaths.append(String.valueOf(file.get("relativePath")));
+				}
+
+				fileContext.put("uploadedFileNames", fileNames.toString());
+				fileContext.put("uploadedFilePaths", filePaths.toString());
+				fileContext.put("uploadPlanId", currentPlanId);
+
+				// Add file context to plan's execution parameters
+				if (plan.getExecutionParams() != null) {
+					// If execution params exist, append file context
+					StringBuilder enhancedParams = new StringBuilder(plan.getExecutionParams());
+					enhancedParams.append("\nUploaded Files Context:\n");
+					for (Map.Entry<String, String> entry : fileContext.entrySet()) {
+						enhancedParams.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+					}
+					plan.setExecutionParams(enhancedParams.toString());
+				}
+				else {
+					// If no execution params, create new ones with file context
+					StringBuilder params = new StringBuilder();
+					for (Map.Entry<String, String> entry : fileContext.entrySet()) {
+						params.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+					}
+					plan.setExecutionParams(params.toString());
+				}
+				logger.info("Added uploaded files context to plan execution parameters: {} files",
+						uploadedFiles.size());
 			}
 
 			// Execute using the PlanningCoordinator's common execution logic
@@ -301,7 +360,7 @@ public class PlanTemplateController {
 		logger.info("Execute plan template, ID: {}, parameters: {}", planTemplateId, allParams);
 		String rawParam = allParams != null ? allParams.get("rawParam") : null;
 		// If there are URL parameters, use the method with parameters
-		return executePlanAndBuildResponse(planTemplateId, rawParam);
+		return executePlanAndBuildResponse(planTemplateId, rawParam, null);
 	}
 
 	/**

@@ -1,0 +1,209 @@
+.result-panel-list {
+  .node-result-panel {
+    &:first-child:not(:last-child) {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    &:last-child:not(:first-child) {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+
+    &:not(:first-child):not(:last-child) {
+      border-radius: 0;
+    }
+  }
+}
+
+.node-result-panel {
+  border-radius: 6px;
+  background: var(--ag-ant-color-fill-tertiary);
+
+  &.node-result-panel-child {
+    padding: 0 12px;
+  }
+
+  .node-result-header {
+    padding: 7px 8px;
+    cursor: pointer;
+    transition: 0.4s ease-in-out;
+    border-radius: 6px 6px 0px 0px;
+
+    .node-result-title {
+      color: var(--ag-ant-color-text-secondary);
+      font-size: 12px;
+      line-height: 18px;
+    }
+
+    &:hover {
+      background: var(--ag-ant-color-fill-tertiary);
+    }
+  }
+
+  .node-result-content {
+    padding: 0px 8px 8px;
+    border-radius: 0px 0px 6px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .tag {
+      background: var(--ag-ant-color-bg-base);
+      border: 1px solid var(--ag-ant-color-border-secondary);
+      align-self: flex-start;
+    }
+  }
+}
+
+.viewer-container {
+  border-radius: 8px;
+  border: 1px solid var(--ag-ant-color-border-secondary);
+  .json-view-header {
+    height: 24px;
+    line-height: 24px;
+    padding: 0 12px;
+    font-size: 12px;
+    background: var(--ag-ant-color-fill);
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .icon {
+      font-size: 12px !important;
+      cursor: pointer;
+      color: var(--ag-ant-color-text-base) !important;
+    }
+  }
+
+  .json-view-content {
+    border-radius: 0 0 8px 8px;
+  }
+
+  :global {
+    .cm-content {
+      margin: 0;
+      padding: 0;
+    }
+
+    .cm-editor {
+      border-radius: 0 0 8px 8px;
+      height: auto;
+
+      &.cm-focused {
+        outline: none !important;
+      }
+    }
+
+    .cm-gutters {
+      border-radius: 0 0 0 8px;
+      font-size: 12px;
+    }
+
+    .cm-activeLine {
+      background-color: transparent !important;
+    }
+
+    .cm-diagnosticText {
+      color: var(--ag-ant-color-error-base);
+      font-size: 12px;
+    }
+
+    .cm-diagnosticAction {
+      color: var(--ag-ant-color-info-base);
+      cursor: pointer;
+      margin-left: 8px;
+    }
+  }
+}
+
+.text-view-content {
+  padding: 8px 12px;
+  word-break: break-all;
+  font-size: 12px;
+  background: var(--ag-ant-color-bg-base);
+  border-radius: 0 0 8px 8px;
+
+  &.no-padding {
+    padding: 0;
+  }
+}
+
+.condition-result-item {
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--ag-ant-color-bg-layout);
+
+  &.active {
+    box-shadow: 0 0 0 2px var(--ag-ant-color-success-bg-hover);
+    border: 1px solid var(--ag-ant-color-success);
+  }
+
+  .condition-result-tag {
+    margin: 0;
+    background: var(--ag-ant-color-success-bg);
+    color: var(--ag-ant-color-success);
+  }
+
+  .condition-title {
+    color: var(--ag-ant-color-text-base);
+    font-weight: 500;
+    line-height: 20px;
+    font-size: 13px;
+  }
+
+  .condition-desc {
+    font-size: 12px;
+    line-height: 20px;
+    flex: 1;
+  }
+
+  .logic-label {
+    font-weight: 500;
+  }
+
+  .condition-sub-branch-item {
+    font-size: 12px;
+    line-height: 22px;
+
+    .condition-item-left {
+      color: var(--ag-ant-color-text-secondary);
+      background: var(--ag-ant-color-fill-tertiary);
+      border: 1px solid var(--ag-ant-color-border-secondary);
+      border-radius: 6px;
+      padding: 4px 8px;
+      width: 40%;
+    }
+
+    .condition-item-right {
+      color: var(--ag-ant-color-text-tertiary);
+      border: 1px solid var(--ag-ant-color-border-secondary);
+      border-radius: 6px;
+      height: 32px;
+      flex: 1;
+
+      .condition-item-right-icon {
+        width: 40px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-right: 1px solid var(--ag-ant-color-border-secondary);
+      }
+
+      .condition-item-right-value {
+        padding: 0 8px;
+        flex: 1;
+      }
+    }
+  }
+}
+
+.condition-item-variable-tooltip {
+  font-weight: 500;
+
+  .condition-item-variable-key {
+    color: var(--ag-ant-color-primary);
+  }
+}

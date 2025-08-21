@@ -39,7 +39,7 @@ public class PythonExecutorDispatcher implements EdgeAction {
 
 	@Override
 	public String apply(OverAllState state) throws Exception {
-		// 判断是否失败
+		// Determine if failed
 		boolean isSuccess = StateUtils.getObjectValue(state, PYTHON_IS_SUCCESS, Boolean.class, false);
 		if (!isSuccess) {
 			String message = StateUtils.getStringValue(state, PYTHON_EXECUTE_NODE_OUTPUT);
@@ -50,11 +50,11 @@ public class PythonExecutorDispatcher implements EdgeAction {
 				return END;
 			}
 			else {
-				// 重新生成代码进行测试
+				// Regenerate code for testing
 				return PYTHON_GENERATE_NODE;
 			}
 		}
-		// 转到代码运行结果分析节点
+		// Go to code execution result analysis node
 		return PYTHON_ANALYZE_NODE;
 	}
 

@@ -16,29 +16,29 @@
 package com.alibaba.cloud.ai.entity;
 
 /**
- * 语义模型配置实体类
+ * Semantic Model Configuration Entity Class
  */
 public class SemanticModelDTO {
 
-	private Long id; // 唯一标识
+	private Long id; // Unique identifier
 
-	private Long agentId; // 智能体ID
+	private Long agentId; // Agent ID
 
-	private String originalFieldName; // 原始字段名
+	private String originalFieldName; // Original field name
 
-	private String agentFieldName; // 智能体字段名称
+	private String agentFieldName; // Agent field name
 
-	private String fieldSynonyms; // 字段名称同义词，逗号分隔
+	private String fieldSynonyms; // Field name synonyms, comma separated
 
-	private String fieldDescription; // 字段描述
+	private String fieldDescription; // Field description
 
-	private String fieldType; // 字段类型
+	private String fieldType; // Field type
 
-	private String originalDescription; // 原始字段描述
+	private String originalDescription; // Original field description
 
-	private Boolean defaultRecall; // 默认召回
+	private Boolean defaultRecall; // Default recall
 
-	private Boolean enabled; // 是否启用
+	private Boolean enabled; // Whether enabled
 
 	public SemanticModelDTO() {
 	}

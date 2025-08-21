@@ -16,3 +16,7 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: false
+  ai:
+    memory:
+      h2:
+        enabled: true

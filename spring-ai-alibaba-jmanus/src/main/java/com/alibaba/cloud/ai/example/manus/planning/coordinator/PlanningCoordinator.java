@@ -78,7 +78,7 @@ public class PlanningCoordinator {
 	 * @return A CompletableFuture that completes with the execution result
 	 */
 	public CompletableFuture<PlanExecutionResult> executeByUserQuery(String userQuery, String rootPlanId,
-			String parentPlanId, String currentPlanId) {
+			String parentPlanId, String currentPlanId, String memoryId) {
 		try {
 			log.info("Starting plan execution for user query: {}", userQuery);
 
@@ -89,6 +89,7 @@ public class PlanningCoordinator {
 			context.setUserRequest(userQuery);
 			context.setNeedSummary(true);
 			context.setUseMemory(false);
+			context.setMemoryId(memoryId);
 
 			// Create plan using PlanningFactory
 			PlanCreator planCreator = planningFactory.createPlanCreator();

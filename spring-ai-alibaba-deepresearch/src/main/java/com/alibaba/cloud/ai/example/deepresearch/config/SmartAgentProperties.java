@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
@@ -27,9 +26,10 @@ import java.util.Map;
  * @author Makoto
  * @since 2025/07/17
  */
-@Component
-@ConfigurationProperties(prefix = "spring.ai.alibaba.deepresearch.smart-agents")
+@ConfigurationProperties(prefix = SmartAgentProperties.PREFIX)
 public class SmartAgentProperties {
+
+	public static final String PREFIX = DeepResearchProperties.PREFIX + ".smart-agents";
 
 	private boolean enabled = true;
 

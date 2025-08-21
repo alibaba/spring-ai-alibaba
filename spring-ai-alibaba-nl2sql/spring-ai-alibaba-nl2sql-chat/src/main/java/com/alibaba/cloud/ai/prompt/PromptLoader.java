@@ -16,55 +16,57 @@
 
 package com.alibaba.cloud.ai.prompt;
 
-import org.springframework.core.io.ClassPathResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 提示词加载器，用于从文件系统加载提示词模板
+ * Prompt loader, used to load prompt templates from file system
  *
  * @author zhangshenghang
  */
 public class PromptLoader {
+
+	public static final Logger logger = LoggerFactory.getLogger(PromptLoader.class);
 
 	private static final String PROMPT_PATH_PREFIX = "prompts/";
 
 	private static final ConcurrentHashMap<String, String> promptCache = new ConcurrentHashMap<>();
 
 	/**
-	 * 从文件加载提示词模板
-	 * @param promptName 提示词文件名（不含路径和扩展名）
-	 * @return 提示词内容
+	 * Load prompt template from file
+	 * @param promptName prompt file name (without path and extension)
+	 * @return prompt content
 	 */
 	public static String loadPrompt(String promptName) {
 		return promptCache.computeIfAbsent(promptName, name -> {
-			try {
-				String fileName = PROMPT_PATH_PREFIX + name + ".txt";
-				ClassPathResource resource = new ClassPathResource(fileName);
-				if (!resource.exists()) {
-					throw new IllegalArgumentException("提示词文件不存在: " + fileName);
-				}
-				return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+			String fileName = PROMPT_PATH_PREFIX + name + ".txt";
+			// 使用本类的类加载器获取资源（避免jar包中无法获取资源）
+			try (InputStream inputStream = PromptLoader.class.getClassLoader().getResourceAsStream(fileName)) {
+				return StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
 			}
 			catch (IOException e) {
+				logger.error("加载提示词失败！{}", e.getMessage(), e);
 				throw new RuntimeException("加载提示词失败: " + name, e);
 			}
 		});
 	}
 
 	/**
-	 * 清除提示词缓存
+	 * Clear prompt cache
 	 */
 	public static void clearCache() {
 		promptCache.clear();
 	}
 
 	/**
-	 * 获取缓存大小
-	 * @return 缓存中的提示词数量
+	 * Get cache size
+	 * @return number of prompts in cache
 	 */
 	public static int getCacheSize() {
 		return promptCache.size();

@@ -21,7 +21,7 @@
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
         <!-- Spring AI Alibaba is adapting to Spring AI M8, latest code may fail to run -->
-        <spring-ai-alibaba.version>1.0.0.3-SNAPSHOT</spring-ai-alibaba.version>
+        <spring-ai-alibaba.version>1.0.0.4-SNAPSHOT</spring-ai-alibaba.version>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <moditect-maven-plugin.version>1.2.0.Final</moditect-maven-plugin.version>
         <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
@@ -36,9 +36,6 @@
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
-
-        <!-- MCP version -->
-        <mcp.version>0.11.0</mcp.version>
 
     </properties>
 
@@ -105,6 +102,10 @@
             <exclusions>
                 <exclusion>
                     <artifactId>spring-ai-autoconfigure-model-openai</artifactId>
+                    <groupId>org.springframework.ai</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>spring-ai-autoconfigure-model-chat-memory</artifactId>
                     <groupId>org.springframework.ai</groupId>
                 </exclusion>
             </exclusions>
@@ -274,10 +275,11 @@
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
         </dependency>
+
         <!-- MySQL Database -->
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
             <version>8.0.33</version>
             <scope>runtime</scope>
         </dependency>

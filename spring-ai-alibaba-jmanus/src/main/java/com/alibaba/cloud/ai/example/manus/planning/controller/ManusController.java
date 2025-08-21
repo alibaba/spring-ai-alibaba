@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.controller;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.entity.MemoryEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.service.MemoryService;
 import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
 import com.alibaba.cloud.ai.example.manus.event.PlanExceptionEvent;
 import com.alibaba.cloud.ai.example.manus.exception.PlanException;
@@ -30,12 +32,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -69,8 +73,9 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	@Autowired
 	private UserInputService userInputService;
 
+
 	@Autowired
-	private PlanningFactory planningFactory;
+	private MemoryService memoryService;
 
 	@Autowired
 	public ManusController(ObjectMapper objectMapper) {
@@ -85,22 +90,40 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	/**
 	 * Asynchronous execution of Manus request using PlanningCoordinator
+	 * 
 	 * @param request Request containing user query
 	 * @return Task ID and status
 	 */
 	@PostMapping("/execute")
-	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, String> request) {
-		String query = request.get("query");
+	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, Object> request) {
+		String query = (String) request.get("input");
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Query content cannot be empty"));
 		}
-
-		// Use PlanIdDispatcher to generate a unique plan ID
-		String planId = planIdDispatcher.generatePlanId();
-
+		String planId = null;
 		try {
+			// Use sessionPlanId from frontend if available, otherwise generate new one
+			String sessionPlanId = (String) request.get("sessionPlanId");
+
+			if (sessionPlanId != null && !sessionPlanId.trim().isEmpty()) {
+				// Use existing sessionPlanId from file upload
+				planId = sessionPlanId;
+				logger.info("🔄 Using existing sessionPlanId: {}", planId);
+			} else {
+				// Generate new plan ID
+				planId = planIdDispatcher.generatePlanId();
+				logger.info("🆕 Generated new planId: {}", planId);
+			}
+
+			String memoryId = (String) request.get("memoryId");
+
+			if (!StringUtils.hasText(memoryId)) {
+				memoryId = RandomStringUtils.randomAlphabetic(8);
+			}
+			memoryService.saveMemory(new MemoryEntity(memoryId, query));
+
 			// Execute the plan using PlanningCoordinator (fire and forget)
-			planningCoordinator.executeByUserQuery(query, planId, planId, planId);
+			planningCoordinator.executeByUserQuery(query, planId, planId, planId, memoryId);
 
 			// Return task ID and initial status
 			Map<String, Object> response = new HashMap<>();
@@ -108,10 +131,10 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			response.put("status", "processing");
 			response.put("message", "Task submitted, processing");
 
+			response.put("memoryId", memoryId);
 			return ResponseEntity.ok(response);
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Failed to start plan execution for planId: {}", planId, e);
 			Map<String, Object> errorResponse = new HashMap<>();
 			errorResponse.put("error", "Failed to start plan execution: " + e.getMessage());
@@ -122,6 +145,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	/**
 	 * Get detailed execution record
+	 * 
 	 * @param planId Plan ID
 	 * @return JSON representation of execution record
 	 */
@@ -145,8 +169,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			// class
 			planRecord.setUserInputWaitState(waitState);
 			logger.info("Plan {} is waiting for user input. Merged waitState into details response.", planId);
-		}
-		else {
+		} else {
 			planRecord.setUserInputWaitState(null); // Clear if not waiting
 		}
 
@@ -154,16 +177,16 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			// Use Jackson ObjectMapper to convert object to JSON string
 			String jsonResponse = objectMapper.writeValueAsString(planRecord);
 			return ResponseEntity.ok(jsonResponse);
-		}
-		catch (JsonProcessingException e) {
+		} catch (JsonProcessingException e) {
 			logger.error("Error serializing PlanExecutionRecord to JSON for planId: {}", planId, e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body("Error processing request: " + e.getMessage());
+					.body("Error processing request: " + e.getMessage());
 		}
 	}
 
 	/**
 	 * Delete execution record for specified plan ID
+	 * 
 	 * @param planId Plan ID
 	 * @return Result of delete operation
 	 */
@@ -177,17 +200,18 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		try {
 			planExecutionRecorder.removeExecutionRecord(planId);
 			return ResponseEntity.ok(Map.of("message", "Execution record successfully deleted", "planId", planId));
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			return ResponseEntity.internalServerError()
-				.body(Map.of("error", "Failed to delete record: " + e.getMessage()));
+					.body(Map.of("error", "Failed to delete record: " + e.getMessage()));
 		}
 	}
 
 	/**
 	 * Submits user input for a plan that is waiting.
-	 * @param planId The ID of the plan.
-	 * @param formData The user-submitted form data, expected as Map<String, String>.
+	 * 
+	 * @param planId   The ID of the plan.
+	 * @param formData The user-submitted form data, expected as Map<String,
+	 *                 String>.
 	 * @return ResponseEntity indicating success or failure.
 	 */
 	@PostMapping("/submit-input/{planId}")
@@ -199,8 +223,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			boolean success = userInputService.submitUserInputs(planId, formData);
 			if (success) {
 				return ResponseEntity.ok(Map.of("message", "Input submitted successfully", "planId", planId));
-			}
-			else {
+			} else {
 				// This case might mean the plan was no longer waiting, or input was
 				// invalid.
 				// UserInputService should ideally throw specific exceptions for clearer
@@ -208,19 +231,17 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 				logger.warn("Failed to submit user input for plan {}, it might not be waiting or input was invalid.",
 						planId);
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(Map.of("error", "Failed to submit input. Plan not waiting or input invalid.", "planId",
-							planId));
+						.body(Map.of("error", "Failed to submit input. Plan not waiting or input invalid.", "planId",
+								planId));
 			}
-		}
-		catch (IllegalArgumentException e) {
+		} catch (IllegalArgumentException e) {
 			logger.error("Error submitting user input for plan {}: {}", planId, e.getMessage());
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(Map.of("error", e.getMessage(), "planId", planId));
-		}
-		catch (Exception e) {
+					.body(Map.of("error", e.getMessage(), "planId", planId));
+		} catch (Exception e) {
 			logger.error("Unexpected error submitting user input for plan {}: {}", planId, e.getMessage(), e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(Map.of("error", "An unexpected error occurred.", "planId", planId));
+					.body(Map.of("error", "An unexpected error occurred.", "planId", planId));
 		}
 	}
 
@@ -231,6 +252,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	/**
 	 * Get execution tree with steps (without think-act rounds)
+	 * 
 	 * @param rootPlanId Root plan ID
 	 * @return JSON representation of execution tree
 	 */
@@ -253,16 +275,17 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		} catch (JsonProcessingException e) {
 			logger.error("Error serializing tree response to JSON for rootPlanId: {}", rootPlanId, e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body("Error processing request: " + e.getMessage());
+					.body("Error processing request: " + e.getMessage());
 		} catch (Exception e) {
 			logger.error("Error building tree response for rootPlanId: {}", rootPlanId, e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body("Error building tree response: " + e.getMessage());
+					.body("Error building tree response: " + e.getMessage());
 		}
 	}
 
 	/**
 	 * Build tree response structure from PlanExecutionRecord
+	 * 
 	 * @param rootRecord Root plan execution record
 	 * @return Tree response map
 	 */
@@ -275,12 +298,13 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	/**
 	 * Build tree node from PlanExecutionRecord
+	 * 
 	 * @param record Plan execution record
 	 * @return Tree node map
 	 */
 	private Map<String, Object> buildTreeNode(PlanExecutionRecord record) {
 		Map<String, Object> node = new HashMap<>();
-		
+
 		// Basic plan info
 		node.put("currentPlanId", record.getCurrentPlanId());
 		node.put("title", record.getTitle());
@@ -289,18 +313,19 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		node.put("startTime", record.getStartTime());
 		node.put("endTime", record.getEndTime());
 		node.put("userRequest", record.getUserRequest());
-		
+
 		// Transform steps
 		node.put("steps", buildSteps(record.getAgentExecutionSequence()));
-		
+
 		// Children (sub-plans) - for now empty, can be extended later
 		node.put("children", new ArrayList<>());
-		
+
 		return node;
 	}
 
 	/**
 	 * Build steps array from agent execution sequence
+	 * 
 	 * @param agentExecutions Agent execution records
 	 * @return List of step info maps
 	 */
@@ -320,17 +345,18 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	/**
 	 * Build step info from agent execution record
-	 * @param stepIndex Step index
+	 * 
+	 * @param stepIndex      Step index
 	 * @param agentExecution Agent execution record
 	 * @return Step info map
 	 */
 	private Map<String, Object> buildStepInfo(int stepIndex, AgentExecutionRecord agentExecution) {
 		Map<String, Object> stepInfo = new HashMap<>();
-		
+
 		// Step metadata
 		stepInfo.put("stepIndex", stepIndex);
 		stepInfo.put("stepDescription", generateStepDescription(agentExecution, stepIndex));
-		
+
 		// Agent execution info (without thinkActRounds)
 		Map<String, Object> agentInfo = new HashMap<>();
 		agentInfo.put("id", agentExecution.getId());
@@ -341,13 +367,14 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		agentInfo.put("endTime", agentExecution.getEndTime());
 		agentInfo.put("currentStep", agentExecution.getCurrentStep());
 		agentInfo.put("maxSteps", agentExecution.getMaxSteps());
-		
+
 		stepInfo.put("agentExecution", agentInfo);
 		return stepInfo;
 	}
 
 	/**
 	 * Derive status from plan execution record
+	 * 
 	 * @param record Plan execution record
 	 * @return Status string
 	 */
@@ -363,6 +390,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	/**
 	 * Calculate progress percentage
+	 * 
 	 * @param record Plan execution record
 	 * @return Progress percentage (0-100)
 	 */
@@ -370,28 +398,29 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		if (record.isCompleted()) {
 			return 100;
 		}
-		
+
 		List<AgentExecutionRecord> agentExecutions = record.getAgentExecutionSequence();
 		if (agentExecutions == null || agentExecutions.isEmpty()) {
 			return 0;
 		}
-		
+
 		int totalSteps = agentExecutions.size();
 		int completedSteps = 0;
-		
+
 		for (AgentExecutionRecord agentExecution : agentExecutions) {
 			if (agentExecution.getStatus() == ExecutionStatus.FINISHED) {
 				completedSteps++;
 			}
 		}
-		
+
 		return totalSteps > 0 ? (completedSteps * 100) / totalSteps : 0;
 	}
 
 	/**
 	 * Generate step description
+	 * 
 	 * @param agentExecution Agent execution record
-	 * @param stepIndex Step index
+	 * @param stepIndex      Step index
 	 * @return Step description
 	 */
 	private String generateStepDescription(AgentExecutionRecord agentExecution, int stepIndex) {

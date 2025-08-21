@@ -514,7 +514,7 @@ defineExpose({
 <style scoped>
 .sidebar-wrapper {
   position: relative;
-  width: 600px;
+  width: 26%;
   height: 100vh;
   background: rgba(255, 255, 255, 0.05);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
