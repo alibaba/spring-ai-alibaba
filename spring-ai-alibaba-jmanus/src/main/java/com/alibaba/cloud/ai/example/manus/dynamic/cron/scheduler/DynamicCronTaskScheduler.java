@@ -215,7 +215,7 @@ public class DynamicCronTaskScheduler {
 
 			// Use PlanningCoordinator to execute the plan by user query
 			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByUserQuery(planDesc, planId,
-					null, planId);
+					null, planId, null);
 
 			// Handle the execution result asynchronously
 			future.thenAccept(result -> {

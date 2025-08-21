@@ -173,7 +173,6 @@ public class PlanningFactory implements IPlanningFactory {
 
 	/**
 	 * Create a PlanCreator instance with the given agents
-	 * 
 	 * @return configured PlanCreator instance
 	 */
 	public PlanCreator createPlanCreator() {
@@ -187,7 +186,6 @@ public class PlanningFactory implements IPlanningFactory {
 
 	/**
 	 * Create a PlanFinalizer instance
-	 * 
 	 * @return configured PlanFinalizer instance
 	 */
 	public PlanFinalizer createPlanFinalizer() {
@@ -250,10 +248,11 @@ public class PlanningFactory implements IPlanningFactory {
 			toolDefinitions.add(new MapOutputTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager,
 					objectMapper));
 			toolDefinitions
-					.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
+				.add(new ReduceOperationTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 			toolDefinitions.add(new FinalizeTool(planId, manusProperties, sharedStateManager, unifiedDirectoryManager));
 			toolDefinitions.add(new CronTool(cronService, objectMapper));
-		} else {
+		}
+		else {
 			toolDefinitions.add(new TerminateTool(planId, expectedReturnInfo));
 		}
 
@@ -271,19 +270,20 @@ public class PlanningFactory implements IPlanningFactory {
 		for (ToolCallBiFunctionDef<?> toolDefinition : toolDefinitions) {
 			try {
 				FunctionToolCallback<?, ToolExecuteResult> functionToolcallback = FunctionToolCallback
-						.builder(toolDefinition.getName(), toolDefinition)
-						.description(toolDefinition.getDescription())
-						.inputSchema(toolDefinition.getParameters())
-						.inputType(toolDefinition.getInputType())
-						.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
-						.build();
+					.builder(toolDefinition.getName(), toolDefinition)
+					.description(toolDefinition.getDescription())
+					.inputSchema(toolDefinition.getParameters())
+					.inputType(toolDefinition.getInputType())
+					.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
+					.build();
 				toolDefinition.setCurrentPlanId(planId);
 				toolDefinition.setRootPlanId(rootPlanId);
 				log.info("Registering tool: {}", toolDefinition.getName());
 				ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
 						toolDefinition);
 				toolCallbackMap.put(toolDefinition.getName(), functionToolcallbackContext);
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.error("Failed to register tool: {} - {}", toolDefinition.getName(), e.getMessage(), e);
 			}
 		}
@@ -292,10 +292,11 @@ public class PlanningFactory implements IPlanningFactory {
 		if (subplanToolService != null) {
 			try {
 				Map<String, PlanningFactory.ToolCallBackContext> subplanToolCallbacks = subplanToolService
-						.createSubplanToolCallbacks(planId, rootPlanId, expectedReturnInfo);
+					.createSubplanToolCallbacks(planId, rootPlanId, expectedReturnInfo);
 				toolCallbackMap.putAll(subplanToolCallbacks);
 				log.info("Registered {} subplan tools", subplanToolCallbacks.size());
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.warn("Failed to register subplan tools: {}", e.getMessage());
 			}
 		}
@@ -307,11 +308,11 @@ public class PlanningFactory implements IPlanningFactory {
 	public RestClient.Builder createRestClient() {
 		// Create RequestConfig and set the timeout (10 minutes for all timeouts)
 		RequestConfig requestConfig = RequestConfig.custom()
-				.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection
-																		// timeout
-				.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.build();
+			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // Set the connection
+																	// timeout
+			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.build();
 
 		// Create CloseableHttpClient and apply the configuration
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();

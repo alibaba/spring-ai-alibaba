@@ -1117,7 +1117,6 @@ const words: I18nType = {
     createManually: 'Create Manually',
     createManuallyDesc: 'Fill in task information yourself',
   },
-<<<<<<< HEAD
 
   // MCP Service
   mcpService: {
@@ -1174,7 +1173,6 @@ const words: I18nType = {
     toolDescriptionRequiredError: 'Tool description is required',
   },
 
-=======
   memory: {
     title: 'Memory Management',
     searchPlaceholder: 'Search Memory',
@@ -1191,7 +1189,6 @@ const words: I18nType = {
     clearMemory: 'Clear Memory',
     newChat: 'new chat',
   },
->>>>>>> upstream/main
   // Common placeholders
   selectCommon: {
     pleaseSelect: 'Please select...',

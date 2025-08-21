@@ -328,7 +328,6 @@ public class InnerStorageContentTool extends AbstractBaseTool<InnerStorageConten
 		}
 	}
 
-
 	@Override
 	public String getCurrentToolStateString() {
 		try {
