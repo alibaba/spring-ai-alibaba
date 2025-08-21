@@ -385,10 +385,10 @@ public class DashScopeChatModel implements ChatModel {
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
 
-        // check chunk
-        if (Objects.isNull(chunk) || Objects.isNull(chunk.output())) {
-            throw new RuntimeException("LLM response chunk is null.");
-        }
+		// check chunk
+		if (Objects.isNull(chunk) || Objects.isNull(chunk.output())) {
+			throw new RuntimeException("LLM response chunk is null.");
+		}
 
 		return new ChatCompletion(chunk.requestId(),
 				new ChatCompletionOutput(chunk.output().text(), chunk.output().choices(), chunk.output().searchInfo()),
