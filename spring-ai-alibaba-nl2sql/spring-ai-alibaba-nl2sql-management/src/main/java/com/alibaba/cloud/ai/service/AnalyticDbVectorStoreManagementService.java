@@ -36,6 +36,7 @@ import com.aliyun.gpdb20160503.models.QueryCollectionDataResponseBody;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -271,12 +272,16 @@ public class AnalyticDbVectorStoreManagementService implements VectorStoreManage
 			columnInfoBO.setSamples(gson.toJson(sampleColumn));
 		}
 
-		ColumnInfoBO primaryColumnDO = columnInfoBOS.stream()
-			.filter(ColumnInfoBO::isPrimary)
-			.findFirst()
-			.orElse(new ColumnInfoBO());
 
-		tableInfoBO.setPrimaryKey(primaryColumnDO.getName());
+		List<ColumnInfoBO> targetPrimaryList = columnInfoBOS.stream()
+				.filter(ColumnInfoBO::isPrimary).collect(Collectors.toList());
+		if (CollectionUtils.isNotEmpty(targetPrimaryList)) {
+			List<String> columnNames = targetPrimaryList.stream().map(ColumnInfoBO::getName).collect(Collectors.toList());
+			tableInfoBO.setPrimaryKeys(columnNames);
+		} else {
+			tableInfoBO.setPrimaryKeys(new ArrayList<>());
+		}
+
 		tableInfoBO.setForeignKey(String.join("、", buildForeignKeyList(tableInfoBO.getName())));
 	}
 
@@ -313,7 +318,7 @@ public class AnalyticDbVectorStoreManagementService implements VectorStoreManage
 		Map<String, Object> metadata = Map.of("schema", Optional.ofNullable(tableInfoBO.getSchema()).orElse(""), "name",
 				tableInfoBO.getName(), "description", Optional.ofNullable(tableInfoBO.getDescription()).orElse(""),
 				"foreignKey", Optional.ofNullable(tableInfoBO.getForeignKey()).orElse(""), "primaryKey",
-				Optional.ofNullable(tableInfoBO.getPrimaryKey()).orElse(""), "vectorType", "table");
+				Optional.ofNullable(tableInfoBO.getPrimaryKeys()).orElse(new ArrayList<>()), "vectorType", "table");
 		return new Document(tableInfoBO.getName(), text, metadata);
 	}
 
