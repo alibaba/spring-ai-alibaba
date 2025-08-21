@@ -512,23 +512,23 @@ public final class OverAllState implements Serializable {
 		}
 
 		try {
-			// 直接类型转换
+			// Direct type conversion
 			if (type.isInstance(value)) {
 				return ofNullable(type.cast(value));
 			}
 
-			// 特殊处理 List 类型
+			// Special handling for List type
 			if (List.class.isAssignableFrom(type) && value instanceof List) {
 				@SuppressWarnings("unchecked")
 				T castedList = (T) value;
 				return ofNullable(castedList);
 			}
 
-			// 如果都不匹配，尝试直接转换（保持原有行为）
+			// If no match, try direct conversion (maintain original behavior)
 			return ofNullable(type.cast(value));
 		}
 		catch (ClassCastException e) {
-			// 转换失败时返回空 Optional
+			// Return empty Optional when conversion fails
 			return Optional.empty();
 		}
 	}
