@@ -49,7 +49,6 @@ import java.util.ArrayList;
 
 import org.springframework.ai.chat.messages.Message;
 
-
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertTrue;
