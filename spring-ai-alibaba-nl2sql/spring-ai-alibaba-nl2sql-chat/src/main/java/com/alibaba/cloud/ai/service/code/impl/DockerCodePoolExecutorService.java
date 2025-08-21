@@ -142,7 +142,8 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 
 		if (osName.contains("win")) {
 			// Windows system：尝试多种连接方式
-			String[] windowsHosts = { "tcp://localhost:2375", // TCP method (need to enable in Docker
+			String[] windowsHosts = { "tcp://localhost:2375", // TCP method (need to
+																// enable in Docker
 					// Desktop)
 					"npipe://./pipe/docker_engine" // Named pipe method
 			};

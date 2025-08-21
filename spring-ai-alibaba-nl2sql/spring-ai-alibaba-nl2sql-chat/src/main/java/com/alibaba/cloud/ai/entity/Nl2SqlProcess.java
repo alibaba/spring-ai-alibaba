@@ -40,7 +40,8 @@ public class Nl2SqlProcess {
 	Boolean succeed;
 
 	/**
-	 * This field is valid when isFinished is true. If isSucceed is true, it's the generated SQL result; if false, it's the error reason
+	 * This field is valid when isFinished is true. If isSucceed is true, it's the
+	 * generated SQL result; if false, it's the error reason
 	 */
 	@JsonProperty("result")
 	String result;

@@ -382,7 +382,9 @@ public class BaseNl2SqlService {
 				// java.lang.IllegalStateException:
 				// Please provide database schema information so I can filter relevant
 				// tables based on your question.
-				// TODO Currently, the exception interface directly returns 500, without returning exception information. Subsequent optimization will return exceptions to users
+				// TODO Currently, the exception interface directly returns 500, without
+				// returning exception information. Subsequent optimization will return
+				// exceptions to users
 				logger.error("Failed to parse fine selection response: {}", jsonContent, e);
 				throw new IllegalStateException(jsonContent);
 			}

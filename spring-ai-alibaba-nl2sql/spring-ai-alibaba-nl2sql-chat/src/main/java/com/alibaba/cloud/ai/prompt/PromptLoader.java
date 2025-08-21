@@ -46,7 +46,8 @@ public class PromptLoader {
 	public static String loadPrompt(String promptName) {
 		return promptCache.computeIfAbsent(promptName, name -> {
 			String fileName = PROMPT_PATH_PREFIX + name + ".txt";
-			// Use this class's class loader to get resources (to avoid inability to get resources in jar package)
+			// Use this class's class loader to get resources (to avoid inability to get
+			// resources in jar package)
 			try (InputStream inputStream = PromptLoader.class.getClassLoader().getResourceAsStream(fileName)) {
 				return StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
 			}

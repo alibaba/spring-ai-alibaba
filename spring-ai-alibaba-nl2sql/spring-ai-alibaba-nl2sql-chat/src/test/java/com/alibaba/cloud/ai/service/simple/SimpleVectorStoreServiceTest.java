@@ -359,7 +359,8 @@ class SimpleVectorStoreServiceTest {
 		searchRequest.setVectorType("table");
 		searchRequest.setTopK(5);
 
-		// Mock EmbeddingModel behavior - this method doesn't need embed, as there's no query
+		// Mock EmbeddingModel behavior - this method doesn't need embed, as there's no
+		// query
 		// when(embeddingModel.embed(any(String.class)))
 		// .thenReturn(new float[]{0.1f, 0.2f, 0.3f});
 

@@ -48,7 +48,8 @@ public class UserPromptConfigService {
 	private final Map<String, UserPromptConfig> configStorage = new ConcurrentHashMap<>();
 
 	/**
-	 * Store list of enabled configuration IDs by prompt type (support multiple configurations enabled simultaneously)
+	 * Store list of enabled configuration IDs by prompt type (support multiple
+	 * configurations enabled simultaneously)
 	 */
 	private final Map<String, List<String>> promptTypeToConfigIds = new ConcurrentHashMap<>();
 

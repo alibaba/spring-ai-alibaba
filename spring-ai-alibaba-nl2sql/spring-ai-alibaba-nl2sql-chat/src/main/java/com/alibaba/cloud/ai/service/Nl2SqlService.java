@@ -132,7 +132,8 @@ public class Nl2SqlService {
 	}
 
 	/**
-	 * Convert NodeOutput to NlSqlProcess entity class (used in nl2sqlWithProcess consumer to record transformation process)
+	 * Convert NodeOutput to NlSqlProcess entity class (used in nl2sqlWithProcess consumer
+	 * to record transformation process)
 	 * @param output NodeOutput
 	 * @return NlSqlProcess
 	 */
