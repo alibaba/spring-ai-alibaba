@@ -299,7 +299,7 @@ public class MarkdownParserTest {
 				assertFalse(windowsResult.contains("\n"), "不应包含\\n");
 			}, () -> {
 				String macResult = MarkdownParser.extractText(macLineEndings);
-				// Mac换行符(\r)在当前实现中不会被NewLineParser处理，所以可能返回空字符串
+				// Mac line breaks (\r) won't be processed by NewLineParser in the current implementation, so it might return an empty string
 				assertNotNull(macResult, "Mac换行符结果不应为null");
 			}, () -> {
 				String mixedResult = MarkdownParser.extractText(mixedLineEndings);

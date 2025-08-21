@@ -176,27 +176,27 @@ public class Nl2sqlConfiguration {
 			keyStrategyHashMap.put(BUSINESS_KNOWLEDGE, new ReplaceStrategy());
 			// Semantic model
 			keyStrategyHashMap.put(SEMANTIC_MODEL, new ReplaceStrategy());
-			// queryWrite节点输出
+			// queryWrite node output
 			keyStrategyHashMap.put(QUERY_REWRITE_NODE_OUTPUT, new ReplaceStrategy());
-			// keyword extract节点输出
+			// keyword extract node output
 			keyStrategyHashMap.put(KEYWORD_EXTRACT_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(EVIDENCES, new ReplaceStrategy());
-			// schema recall节点输出
+			// schema recall node output
 			keyStrategyHashMap.put(TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT, new ReplaceStrategy());
-			// sql validate节点输出
+			// sql validate node output
 			keyStrategyHashMap.put(SQL_VALIDATE_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(SQL_VALIDATE_EXCEPTION_OUTPUT, new ReplaceStrategy());
-			// table relation节点输出
+			// table relation node output
 			keyStrategyHashMap.put(TABLE_RELATION_OUTPUT, new ReplaceStrategy());
-			// sql generate节点输出
+			// sql generate node output
 			keyStrategyHashMap.put(SQL_GENERATE_SCHEMA_MISSING_ADVICE, new ReplaceStrategy());
 			keyStrategyHashMap.put(SQL_GENERATE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(SQL_GENERATE_COUNT, new ReplaceStrategy());
-			// Semantic consistence节点输出
+			// Semantic consistence node output
 			keyStrategyHashMap.put(SEMANTIC_CONSISTENCY_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(SEMANTIC_CONSISTENCY_NODE_RECOMMEND_OUTPUT, new ReplaceStrategy());
-			// Planner 节点输出
+			// Planner node output
 			keyStrategyHashMap.put(PLANNER_NODE_OUTPUT, new ReplaceStrategy());
 			// PlanExecutorNode
 			keyStrategyHashMap.put(PLAN_CURRENT_STEP, new ReplaceStrategy());
@@ -204,17 +204,17 @@ public class Nl2sqlConfiguration {
 			keyStrategyHashMap.put(PLAN_VALIDATION_STATUS, new ReplaceStrategy());
 			keyStrategyHashMap.put(PLAN_VALIDATION_ERROR, new ReplaceStrategy());
 			keyStrategyHashMap.put(PLAN_REPAIR_COUNT, new ReplaceStrategy());
-			// SQL Execute 节点输出
+			// SQL Execute node output
 			keyStrategyHashMap.put(SQL_EXECUTE_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(SQL_EXECUTE_NODE_EXCEPTION_OUTPUT, new ReplaceStrategy());
-			// Python代码运行相关
+			// Python code execution related
 			keyStrategyHashMap.put(SQL_RESULT_LIST_MEMORY, new ReplaceStrategy());
 			keyStrategyHashMap.put(PYTHON_IS_SUCCESS, new ReplaceStrategy());
 			keyStrategyHashMap.put(PYTHON_TRIES_COUNT, new ReplaceStrategy());
 			keyStrategyHashMap.put(PYTHON_EXECUTE_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(PYTHON_GENERATE_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(PYTHON_ANALYSIS_NODE_OUTPUT, new ReplaceStrategy());
-			// NL2SQL相关
+			// NL2SQL related
 			keyStrategyHashMap.put(IS_ONLY_NL2SQL, new ReplaceStrategy());
 			keyStrategyHashMap.put(ONLY_NL2SQL_OUTPUT, new ReplaceStrategy());
 			// Final result

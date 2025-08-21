@@ -112,7 +112,7 @@ class DateTimeUtilTest {
 
 	@Test
 	void testGetWeekDayEx() {
-		// 2024年5月15日是周三，所以本周第一天应该是5月13日（周一）
+		// May 15, 2024 is Wednesday, so the first day of the week should be May 13 (Monday)
 		String monday = DateTimeUtil.getWeekDayEx(testDate, 1);
 		assertEquals("2024年05月13日", monday);
 

@@ -61,7 +61,7 @@ public class PlannerNode implements NodeAction {
 		String businessKnowledgePrompt = (String) state.value(BUSINESS_KNOWLEDGE).orElse("");
 		String semanticModelPrompt = (String) state.value(SEMANTIC_MODEL).orElse("");
 
-		// 是否为NL2SQL模式
+		// Whether it's NL2SQL mode
 		Boolean onlyNl2sql = state.value(IS_ONLY_NL2SQL, false);
 
 		SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
@@ -83,7 +83,7 @@ public class PlannerNode implements NodeAction {
 
 		Map<String, Object> params = Map.of("user_question", userPrompt, "schema", schemaStr, "business_knowledge",
 				businessKnowledgePrompt, "semantic_model", semanticModelPrompt);
-		// 根据模式选择planer的Prompt
+		// Select planner's Prompt based on mode
 		String plannerPrompt = (onlyNl2sql ? PromptConstant.getPlannerNl2sqlOnlyTemplate()
 				: PromptConstant.getPlannerPromptTemplate())
 			.render(params);

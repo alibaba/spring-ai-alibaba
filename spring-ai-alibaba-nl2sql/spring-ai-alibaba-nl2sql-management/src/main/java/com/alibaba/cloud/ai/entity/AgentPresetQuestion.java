@@ -48,7 +48,7 @@ public class AgentPresetQuestion {
 		this.isActive = true;
 	}
 
-	// Getter和Setter方法
+	// Getter and Setter methods
 	public Long getId() {
 		return id;
 	}

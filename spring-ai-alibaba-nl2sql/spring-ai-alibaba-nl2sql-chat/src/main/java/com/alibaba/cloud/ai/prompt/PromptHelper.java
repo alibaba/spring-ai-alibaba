@@ -288,10 +288,10 @@ public class PromptHelper {
 	}
 
 	/**
-	 * 构建优化提示词部分内容
-	 * @param optimizationConfigs 优化配置列表
-	 * @param params 模板参数
-	 * @return 优化部分的内容
+	 * Build part of the optimization prompt content
+	 * @param optimizationConfigs optimization configuration list
+	 * @param params template parameters
+	 * @return content of the optimization part
 	 */
 	private static String buildOptimizationSection(List<UserPromptConfig> optimizationConfigs,
 			Map<String, Object> params) {
@@ -314,10 +314,10 @@ public class PromptHelper {
 	}
 
 	/**
-	 * 渲染优化提示词模板
-	 * @param optimizationPrompt 优化提示词模板
-	 * @param params 参数
-	 * @return 渲染后的内容
+	 * Render optimization prompt template
+	 * @param optimizationPrompt optimization prompt template
+	 * @param params parameters
+	 * @return rendered content
 	 */
 	private static String renderOptimizationPrompt(String optimizationPrompt, Map<String, Object> params) {
 		if (optimizationPrompt == null || optimizationPrompt.trim().isEmpty()) {
@@ -327,7 +327,7 @@ public class PromptHelper {
 			return new PromptTemplate(optimizationPrompt).render(params);
 		}
 		catch (Exception e) {
-			// 如果模板渲染失败，直接返回原始内容
+			// If template rendering fails, directly return original content
 			return optimizationPrompt;
 		}
 	}

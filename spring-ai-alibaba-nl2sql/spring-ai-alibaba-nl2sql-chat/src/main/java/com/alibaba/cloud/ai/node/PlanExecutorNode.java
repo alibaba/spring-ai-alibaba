@@ -89,7 +89,7 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 				}
 			}
 
-			// NL2SQL模式只能有一个计划且为SQL_EXECUTE_NODE（用于判断生成的SQL是否正确）
+			// NL2SQL mode can only have one plan and it must be SQL_EXECUTE_NODE (used to determine if the generated SQL is correct)
 			Boolean onlyNl2sql = state.value(IS_ONLY_NL2SQL, false);
 			if (onlyNl2sql && (plan.getExecutionPlan().size() != 1
 					|| !SQL_EXECUTE_NODE.equals(plan.getExecutionPlan().get(0).getToolToUse()))) {
@@ -114,7 +114,7 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 		// Check if the plan is completed
 		if (currentStep > executionPlan.size()) {
 			logger.info("Plan completed, current step: {}, total steps: {}", currentStep, executionPlan.size());
-			// 如果为nl2sql模式，则将结果保存，直接走向END
+			// If it's nl2sql mode, save the result and directly go to END
 			Boolean onlyNl2sql = state.value(IS_ONLY_NL2SQL, false);
 			if (onlyNl2sql) {
 				String resultSql = executionPlan.get(0).getToolParameters().getSqlQuery();

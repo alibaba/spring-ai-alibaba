@@ -145,7 +145,7 @@ public class DatasourceService {
 			return false;
 		}
 		try {
-			// ping测试
+			// ping test
 			boolean connectionSuccess = realConnectionTest(datasource);
 			log.info(datasource.getName() + " test connection result: " + connectionSuccess);
 			// Update test status

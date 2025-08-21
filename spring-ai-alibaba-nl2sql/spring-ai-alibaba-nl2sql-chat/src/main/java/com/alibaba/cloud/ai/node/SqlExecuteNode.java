@@ -106,7 +106,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 			// Get the enabled data source for the agent
 			List<AgentDatasource> agentDatasources = datasourceService.getAgentDatasources(agentId);
 			if (agentDatasources.size() == 0) {
-				// TODO 调试AgentID不一致，暂时手动处理
+				// TODO Debug AgentID inconsistency, temporarily handle manually
 				agentDatasources = datasourceService.getAgentDatasources(agentId - 999999);
 			}
 			AgentDatasource activeDatasource = agentDatasources.stream()

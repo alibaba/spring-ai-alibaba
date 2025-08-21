@@ -106,7 +106,7 @@ public class AgentVectorService {
 			String agentIdStr = String.valueOf(agentId);
 			log.info("Adding {} knowledge items to vector store for agent: {}", knowledgeList.size(), agentIdStr);
 
-			// Create document列表
+			// Create document list
 			List<Document> documents = knowledgeList.stream()
 				.map(knowledge -> createDocumentFromKnowledge(agentIdStr, knowledge))
 				.toList();
@@ -506,13 +506,13 @@ public class AgentVectorService {
 			// In actual applications, the complete NL2SQL processing flow should be
 			// integrated
 
-			// 1. 检查是否是简单的问候语
+			// 1. Check if it is a simple greeting
 			if (isGreeting(query)) {
 				return "您好！我是您的数据分析助手。您可以用自然语言询问数据相关的问题，我会帮您查询和分析数据。\n\n" + "例如：\n" + "• 查询用户总数\n" + "• 显示最近一周的订单统计\n"
 						+ "• 分析销售趋势\n\n" + "请告诉我您想了解什么数据信息？";
 			}
 
-			// 2. 获取相关的表和列信息
+			// 2. Get related table and column information
 			List<org.springframework.ai.document.Document> relevantDocs = vectorStoreService
 				.getAgentVectorStoreManager()
 				.similaritySearch(agentId, query, 10);
@@ -521,7 +521,7 @@ public class AgentVectorService {
 				return "抱歉，我没有找到与您的问题相关的数据表信息。请确保已正确初始化数据源，或者尝试用不同的方式描述您的问题。";
 			}
 
-			// 3. 构建响应
+			// 3. Build response
 			StringBuilder response = new StringBuilder();
 			response.append("根据您的问题「").append(query).append("」，我找到了以下相关信息：\n\n");
 

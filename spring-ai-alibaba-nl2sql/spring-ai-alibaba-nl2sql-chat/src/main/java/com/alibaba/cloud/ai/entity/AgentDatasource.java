@@ -66,7 +66,7 @@ public class AgentDatasource {
 		this.isActive = 1;
 	}
 
-	// Getter 和 Setter 方法
+	// Getter and Setter methods
 	public Integer getId() {
 		return id;
 	}

@@ -359,7 +359,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		return results;
 	}
 
-	// ==================== 智能体相关的新方法 ====================
+	// ==================== New methods related to Agent ====================
 
 	/**
 	 * Initialize database schema to vector store for specified agent

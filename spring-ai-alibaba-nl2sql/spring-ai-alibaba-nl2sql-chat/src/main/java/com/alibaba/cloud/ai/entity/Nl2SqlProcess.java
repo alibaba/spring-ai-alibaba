@@ -28,31 +28,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class Nl2SqlProcess {
 
 	/**
-	 * 标识过程是否结束
+	 * Indicate whether the process has ended
 	 */
 	@JsonProperty("finished")
 	Boolean finished;
 
 	/**
-	 * 标识是否成功
+	 * Indicate whether it succeeded
 	 */
 	@JsonProperty("succeed")
 	Boolean succeed;
 
 	/**
-	 * 当isFinished为true时本字段有效。isSucceed为true则为生成SQL结果，为false则为错误原因
+	 * This field is valid when isFinished is true. If isSucceed is true, it's the generated SQL result; if false, it's the error reason
 	 */
 	@JsonProperty("result")
 	String result;
 
 	/**
-	 * 当前运行节点名称
+	 * Current running node name
 	 */
 	@JsonProperty("current_node_name")
 	String currentNodeName;
 
 	/**
-	 * 当前运行节点输出
+	 * Current running node output
 	 */
 	@JsonProperty("current_node_output")
 	String currentNodeOutput;

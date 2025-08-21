@@ -111,7 +111,7 @@ class BaseNl2SqlServiceTest {
 		String query = "查询用户信息";
 		String expectedRewrittenQuery = "查询所有用户的详细信息";
 
-		// Mock 依赖方法的返回值
+		// Mock return value of dependency methods
 		List<String> mockEvidences = Arrays.asList("evidence1", "evidence2");
 		when(vectorStoreService.getDocuments(eq(query), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
 
@@ -140,7 +140,7 @@ class BaseNl2SqlServiceTest {
 
 		String query = "你好";
 
-		// Mock 依赖方法的返回值
+		// Mock return value of dependency methods
 		List<String> mockEvidences = Arrays.asList("evidence1");
 		when(vectorStoreService.getDocuments(eq(query), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
 
@@ -165,7 +165,7 @@ class BaseNl2SqlServiceTest {
 
 		String query = "模糊的查询";
 
-		// Mock 依赖方法的返回值
+		// Mock return value of dependency methods
 		List<String> mockEvidences = Arrays.asList("evidence1");
 		when(vectorStoreService.getDocuments(eq(query), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
 
@@ -190,7 +190,7 @@ class BaseNl2SqlServiceTest {
 
 		String query = "查询用户信息";
 
-		// Mock 依赖方法的返回值
+		// Mock return value of dependency methods
 		List<String> mockEvidences = Arrays.asList("evidence1", "evidence2");
 		when(vectorStoreService.getDocuments(eq(query), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
 
@@ -226,14 +226,14 @@ class BaseNl2SqlServiceTest {
 		// Configure DbConfig Mock
 		when(dbConfig.getDialectType()).thenReturn("mysql");
 
-		// Mock 依赖方法的返回值
+		// Mock return value of dependency methods
 		List<String> mockEvidences = Arrays.asList("用户表包含用户信息", "年龄字段为age");
 		when(vectorStoreService.getDocuments(eq(query), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
 
 		SchemaDTO mockSchemaDTO = createMockSchemaDTO();
 		when(schemaService.mixRag(anyString(), anyList())).thenReturn(mockSchemaDTO);
 
-		// Mock LLM 调用
+		// Mock LLM call
 		when(aiService.call(anyString())).thenReturn("[\"用户\", \"年龄\"]") // extractKeywords
 			.thenReturn("[\"2024-01-01\"]") // buildDateTimeExtractPrompt
 			.thenReturn("[]"); // buildMixSelectorPrompt
@@ -260,7 +260,7 @@ class BaseNl2SqlServiceTest {
 
 		String sql = "SELECT * FROM users";
 
-		// Mock 数据库执行结果
+		// Mock database execution result
 		ResultSetBO mockResultSet = new ResultSetBO();
 		mockResultSet.setColumn(Arrays.asList("id", "name", "age"));
 
@@ -318,7 +318,7 @@ class BaseNl2SqlServiceTest {
 		String query = "查询用户信息";
 		List<String> expectedExpansions = Arrays.asList("查询用户信息", "获取用户数据", "显示用户详情");
 
-		// Mock LLM 返回的 JSON 响应
+		// Mock JSON response returned by LLM
 		when(aiService.call(anyString())).thenReturn(gson.toJson(expectedExpansions));
 
 		// Execute test
@@ -341,13 +341,13 @@ class BaseNl2SqlServiceTest {
 
 		String query = "查询用户信息";
 
-		// Mock LLM 抛出异常
+		// Mock LLM throwing exception
 		when(aiService.call(anyString())).thenThrow(new RuntimeException("LLM error"));
 
 		// Execute test
 		List<String> result = baseNl2SqlService.expandQuestion(query);
 
-		// Verify result - 应该返回原始问题
+		// Verify result - should return original question
 		assertNotNull(result);
 		assertEquals(1, result.size());
 		assertEquals(query, result.get(0));

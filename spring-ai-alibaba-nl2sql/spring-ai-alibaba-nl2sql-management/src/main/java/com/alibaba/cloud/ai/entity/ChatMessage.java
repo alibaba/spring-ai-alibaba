@@ -40,7 +40,7 @@ public class ChatMessage {
 	private String messageType; // text, sql, result, error
 
 	@TableField("metadata")
-	private String metadata; // JSON格式的元数据
+	private String metadata; // JSON format metadata
 
 	@TableField(value = "create_time", fill = FieldFill.INSERT)
 	private LocalDateTime createTime;

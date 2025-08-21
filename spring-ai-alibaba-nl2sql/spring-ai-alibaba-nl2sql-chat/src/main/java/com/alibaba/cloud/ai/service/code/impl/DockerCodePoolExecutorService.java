@@ -109,18 +109,18 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 		log.info("Detected operating system: {}", osName);
 
 		if (osName.contains("win")) {
-			// Windows系统
+			// Windows system
 			log.info("Using Windows Docker configuration");
 			// On Windows, try TCP connection first, more stable
 			return "tcp://localhost:2375";
 		}
 		else if (osName.contains("nix") || osName.contains("nux") || osName.contains("aix")) {
-			// Linux/Unix系统
+			// Linux/Unix system
 			log.info("Using Linux/Unix Docker configuration");
 			return "unix:///var/run/docker.sock";
 		}
 		else if (osName.contains("mac")) {
-			// macOS系统
+			// macOS system
 			log.info("Using macOS Docker configuration");
 			return "unix:///var/run/docker.sock";
 		}
@@ -141,9 +141,9 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 		String osName = System.getProperty("os.name").toLowerCase();
 
 		if (osName.contains("win")) {
-			// Windows系统：尝试多种连接方式
-			String[] windowsHosts = { "tcp://localhost:2375", // TCP方式（需要在Docker
-					// Desktop中启用）
+			// Windows system：尝试多种连接方式
+			String[] windowsHosts = { "tcp://localhost:2375", // TCP method (need to enable in Docker
+					// Desktop)
 					"npipe://./pipe/docker_engine" // Named pipe method
 			};
 
@@ -182,7 +182,7 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 
 		}
 		else {
-			// Linux/Unix/macOS系统：使用标准Unix socket
+			// Linux/Unix/macOS system: use standard Unix socket
 			try {
 				ZerodepDockerHttpClient httpClient = new ZerodepDockerHttpClient.Builder()
 					.dockerHost(config.getDockerHost())

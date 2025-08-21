@@ -58,11 +58,11 @@ public class Nl2SqlService {
 	}
 
 	/**
-	 * 自然语言转SQL，仅返回SQL代码结果
-	 * @param naturalQuery 自然语言
+	 * Natural language to SQL, return only SQL code result
+	 * @param naturalQuery natural language
 	 * @param agentId Agent Id
-	 * @return SQL结果
-	 * @throws GraphRunnerException 图运行异常
+	 * @return SQL result
+	 * @throws GraphRunnerException graph running exception
 	 */
 	public String nl2sql(String naturalQuery, String agentId) throws GraphRunnerException {
 		if (agentId == null) {
@@ -78,23 +78,23 @@ public class Nl2SqlService {
 	}
 
 	/**
-	 * 自然语言转SQL，仅返回SQL代码结果
-	 * @param naturalQuery 自然语言
-	 * @return SQL结果
-	 * @throws GraphRunnerException 图运行异常
+	 * Natural language to SQL, return only SQL code result
+	 * @param naturalQuery natural language
+	 * @return SQL result
+	 * @throws GraphRunnerException graph running exception
 	 */
 	public String nl2sql(String naturalQuery) throws GraphRunnerException {
 		return this.nl2sql(naturalQuery, "");
 	}
 
 	/**
-	 * 自然语言转SQL，允许记录中间执行过程
-	 * @param nl2SqlProcessConsumer 处理节点运行结果的Consumer
-	 * @param naturalQuery 自然语言
+	 * Natural language to SQL, allow recording intermediate execution process
+	 * @param nl2SqlProcessConsumer Consumer for processing node execution results
+	 * @param naturalQuery natural language
 	 * @param agentId Agent Id
 	 * @param runnableConfig Runnable Config
 	 * @return CompletableFuture
-	 * @throws GraphRunnerException 图运行异常
+	 * @throws GraphRunnerException graph running exception
 	 */
 	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer,
 			String naturalQuery, String agentId, RunnableConfig runnableConfig) throws GraphRunnerException {
@@ -107,12 +107,12 @@ public class Nl2SqlService {
 	}
 
 	/**
-	 * 自然语言转SQL，允许记录中间执行过程
-	 * @param nl2SqlProcessConsumer 处理节点运行结果的Consumer
-	 * @param naturalQuery 自然语言
+	 * Natural language to SQL, allow recording intermediate execution process
+	 * @param nl2SqlProcessConsumer Consumer for processing node execution results
+	 * @param naturalQuery natural language
 	 * @param agentId Agent Id
 	 * @return CompletableFuture
-	 * @throws GraphRunnerException 图运行异常
+	 * @throws GraphRunnerException graph running exception
 	 */
 	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer,
 			String naturalQuery, String agentId) throws GraphRunnerException {
@@ -120,11 +120,11 @@ public class Nl2SqlService {
 	}
 
 	/**
-	 * 自然语言转SQL，允许记录中间执行过程
-	 * @param nl2SqlProcessConsumer 处理节点运行结果的Consumer
-	 * @param naturalQuery 自然语言
+	 * Natural language to SQL, allow recording intermediate execution process
+	 * @param nl2SqlProcessConsumer Consumer for processing node execution results
+	 * @param naturalQuery natural language
 	 * @return CompletableFuture
-	 * @throws GraphRunnerException 图运行异常
+	 * @throws GraphRunnerException graph running exception
 	 */
 	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer,
 			String naturalQuery) throws GraphRunnerException {
@@ -132,12 +132,12 @@ public class Nl2SqlService {
 	}
 
 	/**
-	 * 将NodeOutput转为NlSqlProcess实体类（用于nl2sqlWithProcess的consumer中记录转化过程）
+	 * Convert NodeOutput to NlSqlProcess entity class (used in nl2sqlWithProcess consumer to record transformation process)
 	 * @param output NodeOutput
 	 * @return NlSqlProcess
 	 */
 	private Nl2SqlProcess nodeOutputToNl2sqlProcess(NodeOutput output) {
-		// 将节点运行结果进行包装
+		// Wrap the node execution result
 		String nodeRes = "";
 		if (output instanceof StreamingOutput streamingOutput) {
 			nodeRes = streamingOutput.chunk();
@@ -146,7 +146,7 @@ public class Nl2SqlService {
 			nodeRes = output.toString();
 		}
 
-		// 如果是结束节点，取出最终生成结果
+		// If it's the end node, extract the final generated result
 		if (StateGraph.END.equals(output.node())) {
 			String result = output.state().value(ONLY_NL2SQL_OUTPUT, "");
 			return Nl2SqlProcess.success(result, output.node(), nodeRes);

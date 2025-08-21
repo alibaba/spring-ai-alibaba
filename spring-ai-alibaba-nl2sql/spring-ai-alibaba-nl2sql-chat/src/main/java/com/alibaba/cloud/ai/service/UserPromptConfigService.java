@@ -43,12 +43,12 @@ public class UserPromptConfigService {
 	private UserPromptConfigMapper userPromptConfigMapper;
 
 	/**
-	 * 内存存储，用于缓存配置（可选的性能优化）
+	 * Memory storage for caching configurations (optional performance optimization)
 	 */
 	private final Map<String, UserPromptConfig> configStorage = new ConcurrentHashMap<>();
 
 	/**
-	 * 根据提示词类型存储启用的配置ID列表（支持多个配置同时启用）
+	 * Store list of enabled configuration IDs by prompt type (support multiple configurations enabled simultaneously)
 	 */
 	private final Map<String, List<String>> promptTypeToConfigIds = new ConcurrentHashMap<>();
 
@@ -72,7 +72,7 @@ public class UserPromptConfigService {
 				userPromptConfigMapper.updateById(config);
 			}
 			else {
-				// ID不存在，创建新配置
+				// ID doesn't exist, create new configuration
 				config = new UserPromptConfig();
 				config.setId(configDTO.id());
 				config.setName(configDTO.name());
@@ -96,10 +96,10 @@ public class UserPromptConfigService {
 			userPromptConfigMapper.insert(config);
 		}
 
-		// 更新缓存
+		// Update cache
 		configStorage.put(config.getId(), config);
 
-		// 更新类型映射（支持多个配置）
+		// Update type mapping (support multiple configurations)
 		updatePromptTypeMapping(config);
 
 		// If the configuration is enabled, disable other configurations of the same type
@@ -122,9 +122,9 @@ public class UserPromptConfigService {
 	}
 
 	/**
-	 * 根据提示词类型获取所有启用的配置
-	 * @param promptType 提示词类型
-	 * @return 配置列表
+	 * Get all enabled configurations by prompt type
+	 * @param promptType prompt type
+	 * @return configuration list
 	 */
 	public List<UserPromptConfig> getActiveConfigsByType(String promptType) {
 		List<String> configIds = promptTypeToConfigIds.get(promptType);
@@ -146,13 +146,13 @@ public class UserPromptConfigService {
 	 * @return configuration object, returns null if not exists
 	 */
 	public UserPromptConfig getActiveConfigByType(String promptType) {
-		// 优先从数据库获取
+		// Priority to get from database
 		UserPromptConfig dbConfig = userPromptConfigMapper.selectActiveByPromptType(promptType);
 		if (dbConfig != null) {
 			return dbConfig;
 		}
 
-		// 备用：从内存缓存获取
+		// Fallback: get from memory cache
 		List<UserPromptConfig> configs = getActiveConfigsByType(promptType);
 		return configs.isEmpty() ? null : configs.get(0);
 	}
@@ -183,10 +183,10 @@ public class UserPromptConfigService {
 	public boolean deleteConfig(String id) {
 		UserPromptConfig config = userPromptConfigMapper.selectById(id);
 		if (config != null) {
-			// 从数据库删除
+			// Delete from database
 			int deleted = userPromptConfigMapper.deleteById(id);
 			if (deleted > 0) {
-				// 从内存缓存和类型映射中移除该配置
+				// Remove this configuration from memory cache and type mapping
 				configStorage.remove(id);
 				removeFromPromptTypeMapping(config);
 				logger.info("已删除配置：{}", id);
@@ -210,7 +210,7 @@ public class UserPromptConfigService {
 			// Enable the current configuration
 			int updated = userPromptConfigMapper.enableById(id);
 			if (updated > 0) {
-				// 更新内存缓存
+				// Update memory cache
 				config.setEnabled(true);
 				configStorage.put(id, config);
 				updatePromptTypeMapping(config);
@@ -229,7 +229,7 @@ public class UserPromptConfigService {
 	public boolean disableConfig(String id) {
 		int updated = userPromptConfigMapper.disableById(id);
 		if (updated > 0) {
-			// 更新内存缓存
+			// Update memory cache
 			UserPromptConfig config = configStorage.get(id);
 			if (config != null) {
 				config.setEnabled(false);

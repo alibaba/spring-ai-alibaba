@@ -281,7 +281,7 @@ public class BaseNl2SqlService {
 			String exceptionMessage) throws Exception {
 		logger.info("Generating SQL for query: {}, hasExistingSql: {}", query, sql != null && !sql.isEmpty());
 
-		// TODO 时间处理暂时未应用
+		// TODO Time processing is not applied temporarily
 		String dateTimeExtractPrompt = PromptHelper.buildDateTimeExtractPrompt(query);
 		logger.debug("Extracting datetime expressions");
 		String content = aiService.call(dateTimeExtractPrompt);
@@ -382,7 +382,7 @@ public class BaseNl2SqlService {
 				// java.lang.IllegalStateException:
 				// Please provide database schema information so I can filter relevant
 				// tables based on your question.
-				// TODO 目前异常接口直接返回500，未返回向异常常信息，后续优化将异常返回给用户
+				// TODO Currently, the exception interface directly returns 500, without returning exception information. Subsequent optimization will return exceptions to users
 				logger.error("Failed to parse fine selection response: {}", jsonContent, e);
 				throw new IllegalStateException(jsonContent);
 			}

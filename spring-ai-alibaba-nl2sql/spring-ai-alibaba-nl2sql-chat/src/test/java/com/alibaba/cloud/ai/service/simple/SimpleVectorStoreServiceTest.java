@@ -154,7 +154,7 @@ class SimpleVectorStoreServiceTest {
 
 	@Test
 	void testDeleteDocumentsById() throws Exception {
-		// Prepare test data - 先通过 schema 方法添加一些文档
+		// Prepare test data - first add some documents via schema method
 		SchemaInitRequest schemaInitRequest = createMockSchemaInitRequest();
 
 		// Mock data returned by database operations
@@ -231,7 +231,7 @@ class SimpleVectorStoreServiceTest {
 
 	@Test
 	void testDeleteDocumentsByVectorType() throws Exception {
-		// Prepare test data - 先通过 schema 方法添加一些文档
+		// Prepare test data - first add some documents via schema method
 		SchemaInitRequest schemaInitRequest = createMockSchemaInitRequest();
 
 		// Mock data returned by database operations
@@ -359,7 +359,7 @@ class SimpleVectorStoreServiceTest {
 		searchRequest.setVectorType("table");
 		searchRequest.setTopK(5);
 
-		// Mock EmbeddingModel behavior - 这个方法不需要 embed，因为没有 query
+		// Mock EmbeddingModel behavior - this method doesn't need embed, as there's no query
 		// when(embeddingModel.embed(any(String.class)))
 		// .thenReturn(new float[]{0.1f, 0.2f, 0.3f});
 
@@ -429,7 +429,7 @@ class SimpleVectorStoreServiceTest {
 		return columns;
 	}
 
-	// Create mock table information对象
+	// Create mock table information object
 	private TableInfoBO createMockTableInfo() {
 		return TableInfoBO.builder()
 			.name("test_table")
@@ -440,7 +440,7 @@ class SimpleVectorStoreServiceTest {
 			.build();
 	}
 
-	// Create mock column information对象
+	// Create mock column information object
 	private ColumnInfoBO createMockColumnInfo() {
 		return ColumnInfoBO.builder()
 			.name("test_column")

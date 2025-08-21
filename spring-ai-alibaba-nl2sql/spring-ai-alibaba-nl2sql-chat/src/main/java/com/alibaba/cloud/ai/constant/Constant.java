@@ -69,10 +69,10 @@ public class Constant {
 
 	public static final String SQL_EXECUTE_NODE_EXCEPTION_OUTPUT = "SQL_EXECUTE_NODE_EXCEPTION_OUTPUT";
 
-	// Plan当前需要执行的步骤编号
+	// Current step number to be executed in Plan
 	public static final String PLAN_CURRENT_STEP = "PLAN_CURRENT_STEP";
 
-	// Plan下一个需要进入的节点
+	// Next node to enter in Plan
 	public static final String PLAN_NEXT_NODE = "PLAN_NEXT_NODE";
 
 	// Plan validation
@@ -130,7 +130,7 @@ public class Constant {
 
 	public static final String PYTHON_ANALYSIS_NODE_OUTPUT = "PYTHON_ANALYSIS_NODE_OUTPUT";
 
-	// nl2sql接口预留相关
+	// nl2sql interface reserved related
 	public static final String IS_ONLY_NL2SQL = "IS_ONLY_NL2SQL";
 
 	public static final String ONLY_NL2SQL_OUTPUT = "ONLY_NL2SQL_OUTPUT";

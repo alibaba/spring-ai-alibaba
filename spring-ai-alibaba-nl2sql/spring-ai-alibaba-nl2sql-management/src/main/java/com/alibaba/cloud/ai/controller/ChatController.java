@@ -160,7 +160,7 @@ public class ChatController {
 				}
 			}
 			else {
-				// NL2SQL服务不可用
+				// NL2SQL service unavailable
 				response.setMessage("抱歉，NL2SQL服务当前不可用，请稍后重试。");
 				response.setMessageType("error");
 				response.setError("服务不可用");

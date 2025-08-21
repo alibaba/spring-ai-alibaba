@@ -193,9 +193,9 @@ public class PromptConfigController {
 	}
 
 	/**
-	 * 获取某个类型的所有启用的优化配置
-	 * @param promptType 提示词类型
-	 * @return 启用的优化配置列表
+	 * Get all enabled optimization configurations of a certain type
+	 * @param promptType prompt type
+	 * @return list of enabled optimization configurations
 	 */
 	@GetMapping("/active-all/{promptType}")
 	public ResponseEntity<Map<String, Object>> getActiveConfigs(@PathVariable String promptType) {

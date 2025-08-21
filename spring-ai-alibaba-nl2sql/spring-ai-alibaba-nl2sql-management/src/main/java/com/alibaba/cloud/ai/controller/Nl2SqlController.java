@@ -56,10 +56,10 @@ public class Nl2SqlController {
 	}
 
 	/**
-	 * 直接返回NL2SQL的结果
-	 * @param query 自然语言
+	 * Directly return the NL2SQL result
+	 * @param query natural language
 	 * @param agentId Agent Id
-	 * @return sql结果
+	 * @return sql result
 	 */
 	@GetMapping("/nl2sql")
 	public String nl2sql(@RequestParam String query,
@@ -74,11 +74,11 @@ public class Nl2SqlController {
 	}
 
 	/**
-	 * 执行NL2SQL的过程（带中间过程输出）
-	 * @param query 自然语言
+	 * Execute the NL2SQL process (with intermediate process output)
+	 * @param query natural language
 	 * @param agentId Agent Id
 	 * @param response Servlet Response
-	 * @return NL2SQL执行过程
+	 * @return NL2SQL execution process
 	 */
 	@GetMapping(value = "/stream/nl2sql", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<Nl2SqlProcess>> nl2sqlWithProcess(@RequestParam String query,
