@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.memory.redis;
 
-import org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails;
-
 import java.util.List;
 
 /**
@@ -25,7 +23,7 @@ import java.util.List;
  * @author benym
  * @date 2025/7/30 20:39
  */
-public class RedisChatMemoryConnectionDetails implements RedisConnectionDetails {
+public class RedisChatMemoryConnectionDetails implements RedisMemoryConnectionDetails {
 
 	private final RedisChatMemoryProperties properties;
 
