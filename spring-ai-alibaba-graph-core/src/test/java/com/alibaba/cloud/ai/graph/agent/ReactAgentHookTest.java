@@ -76,9 +76,12 @@ class ReactAgentHookTest {
 
 		// Configure mock ChatClient with complete call chain
 		when(chatClient.prompt()).thenReturn(requestSpec);
+		when(requestSpec.options(any())).thenReturn(requestSpec);
 		when(requestSpec.messages(anyList())).thenReturn(requestSpec);
 		when(requestSpec.advisors(anyList())).thenReturn(requestSpec);
 		when(requestSpec.toolCallbacks(anyList())).thenReturn(requestSpec);
+		when(requestSpec.system(anyString())).thenReturn(requestSpec);
+		when(requestSpec.user(anyString())).thenReturn(requestSpec);
 		when(requestSpec.call()).thenReturn(responseSpec);
 
 		// Configure mock ToolCallbackResolver
