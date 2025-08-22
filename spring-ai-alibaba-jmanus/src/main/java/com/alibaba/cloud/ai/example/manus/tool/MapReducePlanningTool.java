@@ -152,12 +152,31 @@ public class MapReducePlanningTool
 	}
 
 	public FunctionToolCallback<MapReducePlanningInput, ToolExecuteResult> getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, this)
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(MapReducePlanningInput.class)
-			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
-			.build();
+		return buildFunctionToolCallback(this);
+	}
+
+	/**
+	 * Build FunctionToolCallback with common configuration
+	 * @param toolInstance The tool instance to use
+	 * @return Configured FunctionToolCallback
+	 */
+	private FunctionToolCallback<MapReducePlanningInput, ToolExecuteResult> buildFunctionToolCallback(PlanningToolInterface toolInstance) {
+		return FunctionToolCallback.<MapReducePlanningInput, ToolExecuteResult>builder(name, (MapReducePlanningInput input) -> {
+			if (toolInstance instanceof MapReducePlanningTool) {
+				return ((MapReducePlanningTool) toolInstance).run(input);
+			}
+			throw new UnsupportedOperationException("Tool instance type not supported");
+		})
+		.description(description)
+		.inputSchema(PARAMETERS)
+		.inputType(MapReducePlanningInput.class)
+		.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
+		.build();
+	}
+
+	@Override
+	public FunctionToolCallback<?, ToolExecuteResult> getFunctionToolCallback(PlanningToolInterface planningToolInterface) {
+		return buildFunctionToolCallback(planningToolInterface);
 	}
 
 	public MapReducePlanningTool() {

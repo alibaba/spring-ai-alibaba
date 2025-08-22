@@ -25,7 +25,9 @@ import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningToolInterface;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
@@ -126,7 +128,7 @@ public class PlanCreator {
 
 					ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
 						.prompt(prompt)
-						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
+						.toolCallbacks(List.of(planningTool.getFunctionToolCallback(planningTool)));
 
 					if (useMemory && attempt == 1) {
 						requestSpec
@@ -142,12 +144,15 @@ public class PlanCreator {
 					String planCreationText = streamingResponseHandler.processStreamingTextResponse(responseFlux,
 							"Plan creation " + memoryType, context.getCurrentPlanId());
 					outputText = planCreationText;
-
+					
 					executionPlan = planningTool.getCurrentPlan();
+
 
 					if (executionPlan != null) {
 						// Set the user input part of the plan, for later storage and use.
 						executionPlan.setUserRequest(context.getUserRequest());
+						executionPlan.setCurrentPlanId(planId);
+						executionPlan.setRootPlanId(planId);
 						log.info("Plan created successfully {} on attempt {}: {}", memoryType, attempt, executionPlan);
 						break;
 					}

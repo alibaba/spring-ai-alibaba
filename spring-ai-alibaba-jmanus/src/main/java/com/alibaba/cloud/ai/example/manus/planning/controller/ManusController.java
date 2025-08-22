@@ -172,6 +172,12 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			planRecord.setUserInputWaitState(null); // Clear if not waiting
 		}
 
+		// Set rootPlanId if it's null, using currentPlanId as default
+		if (planRecord.getRootPlanId() == null) {
+			planRecord.setRootPlanId(planRecord.getCurrentPlanId());
+			logger.info("Set rootPlanId to currentPlanId for plan: {}", planId);
+		}
+
 		try {
 			// Use Jackson ObjectMapper to convert object to JSON string
 			String jsonResponse = objectMapper.writeValueAsString(planRecord);

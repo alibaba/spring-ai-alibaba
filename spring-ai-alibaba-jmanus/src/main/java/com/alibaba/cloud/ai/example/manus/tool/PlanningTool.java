@@ -42,8 +42,6 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 
 		private String command;
 
-		private String planId;
-
 		private String title;
 
 		private List<String> steps;
@@ -55,9 +53,8 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 		public PlanningInput() {
 		}
 
-		public PlanningInput(String command, String planId, String title, List<String> steps, boolean directResponse) {
+		public PlanningInput(String command, String title, List<String> steps, boolean directResponse) {
 			this.command = command;
-			this.planId = planId;
 			this.title = title;
 			this.steps = steps;
 			this.terminateColumns = null;
@@ -70,14 +67,6 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 
 		public void setCommand(String command) {
 			this.command = command;
-		}
-
-		public String getPlanId() {
-			return planId;
-		}
-
-		public void setPlanId(String planId) {
-			this.planId = planId;
 		}
 
 		public String getTitle() {
@@ -116,6 +105,12 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 
 	public String getCurrentPlanId() {
 		return currentPlan != null ? currentPlan.getCurrentPlanId() : null;
+	}
+
+	public void setCurrentPlanId(String planId) {
+		if (currentPlan != null) {
+			currentPlan.setCurrentPlanId(planId);
+		}
 	}
 
 	public ExecutionPlan getCurrentPlan() {
@@ -180,26 +175,44 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 			.build();
 	}
 
+	/**
+	 * Build FunctionToolCallback with common configuration
+	 * @param toolInstance The tool instance to use
+	 * @return Configured FunctionToolCallback
+	 */
+	private FunctionToolCallback<PlanningInput, ToolExecuteResult> buildFunctionToolCallback(PlanningToolInterface toolInstance) {
+		return FunctionToolCallback.<PlanningInput, ToolExecuteResult>builder(name, (PlanningInput input) -> {
+			if (toolInstance instanceof PlanningTool) {
+				return ((PlanningTool) toolInstance).run(input);
+			}
+			throw new UnsupportedOperationException("Tool instance type not supported");
+		})
+		.description(description)
+		.inputSchema(PARAMETERS)
+		.inputType(PlanningInput.class)
+		.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
+		.build();
+	}
+
 	@Override
 	public ToolExecuteResult run(PlanningInput input) {
 		String command = input.getCommand();
-		String planId = input.getPlanId();
 		String title = input.getTitle();
 		List<String> steps = input.getSteps();
 		boolean directResponse = input.isDirectResponse();
 
 		// Support directResponse mode
 		if (directResponse) {
-			log.info("Direct response mode enabled for planId: {}", planId);
-			ExecutionPlan plan = new ExecutionPlan(planId, planId, title);
+			log.info("Direct response mode enabled");
+			ExecutionPlan plan = new ExecutionPlan(null, null, title);
 			plan.setDirectResponse(true);
 			plan.setUserRequest(title); // Here title is the user request content
 			this.currentPlan = plan;
-			return new ToolExecuteResult("Direct response mode: plan created for " + planId);
+			return new ToolExecuteResult("Direct response mode: plan created successfully");
 		}
 
 		return switch (command) {
-			case "create" -> createPlan(planId, title, steps, input.getTerminateColumns());
+			case "create" -> createPlan(title, steps, input.getTerminateColumns());
 			// case "update" -> updatePlan(planId, title, steps);
 			// case "get" -> getPlan(planId);
 			// case "mark_step" -> markStep(planId, stepIndex, stepStatus, stepNotes);
@@ -223,14 +236,13 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 		return executionStep;
 	}
 
-	public ToolExecuteResult createPlan(String planId, String title, List<String> steps, String terminateColumns) {
+	public ToolExecuteResult createPlan(String title, List<String> steps, String terminateColumns) {
 		if (title == null || steps == null || steps.isEmpty()) {
-			log.info("Missing required parameters when creating plan: planId={}, title={}, steps={}", planId, title,
-					steps);
+			log.info("Missing required parameters when creating plan: title={}, steps={}", title, steps);
 			return new ToolExecuteResult("Required parameters missing");
 		}
 
-		ExecutionPlan plan = new ExecutionPlan(planId, planId, title);
+		ExecutionPlan plan = new ExecutionPlan(null, null, title);
 
 		int index = 0;
 		for (String step : steps) {
@@ -243,7 +255,7 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 		}
 
 		this.currentPlan = plan;
-		return new ToolExecuteResult("Plan created: " + planId + "\n" + plan.getPlanExecutionStateStringFormat(false));
+		return new ToolExecuteResult("Plan created successfully\n" + plan.getPlanExecutionStateStringFormat(false));
 	}
 
 	// ToolCallBiFunctionDef interface methods
@@ -293,12 +305,12 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 	// PlanningToolInterface methods
 	@Override
 	public FunctionToolCallback<PlanningInput, ToolExecuteResult> getFunctionToolCallback() {
-		return FunctionToolCallback.<PlanningInput, ToolExecuteResult>builder(name, this::run)
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(PlanningInput.class)
-			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
-			.build();
+		return buildFunctionToolCallback(this);
+	}
+
+	@Override
+	public FunctionToolCallback<PlanningInput, ToolExecuteResult> getFunctionToolCallback(PlanningToolInterface planningToolInterface) {
+		return buildFunctionToolCallback(planningToolInterface);
 	}
 
 }

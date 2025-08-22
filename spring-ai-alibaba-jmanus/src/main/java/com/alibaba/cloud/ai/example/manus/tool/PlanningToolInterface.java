@@ -42,4 +42,11 @@ public interface PlanningToolInterface {
 	 */
 	FunctionToolCallback<?, ToolExecuteResult> getFunctionToolCallback();
 
+	/**
+	 * Get function tool callback for LLM integration with specific planning tool instance
+	 * @param planningToolInterface The planning tool instance to use
+	 * @return FunctionToolCallback instance
+	 */
+	FunctionToolCallback<?, ToolExecuteResult> getFunctionToolCallback(PlanningToolInterface planningToolInterface);
+
 }

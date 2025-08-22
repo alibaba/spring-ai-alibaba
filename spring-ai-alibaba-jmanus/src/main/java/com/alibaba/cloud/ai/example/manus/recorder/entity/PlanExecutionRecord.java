@@ -51,6 +51,9 @@ public class PlanExecutionRecord {
 	// Unique identifier for the current plan
 	private String currentPlanId;
 
+	// Root plan ID for sub-plans (null for main plans)
+	private String rootPlanId;
+
 	// Plan title
 	private String title;
 
@@ -182,6 +185,14 @@ public class PlanExecutionRecord {
 
 	public void setCurrentPlanId(String currentPlanId) {
 		this.currentPlanId = currentPlanId;
+	}
+
+	public String getRootPlanId() {
+		return rootPlanId;
+	}
+
+	public void setRootPlanId(String rootPlanId) {
+		this.rootPlanId = rootPlanId;
 	}
 
 	public String getTitle() {
