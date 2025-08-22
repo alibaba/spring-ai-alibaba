@@ -15,19 +15,24 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class ReactAgentTest {
@@ -53,6 +58,52 @@ class ReactAgentTest {
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Test
+	public void testReactAgentWithPreLlmHook() throws Exception {
+		// 创建工具回调解析器，使用真实的WeatherTool
+		ToolCallback toolCallback = ToolCallbacks.from(new WeatherTool())[0];
+		ReactAgent agent = ReactAgent.builder()
+				.name("weather_agent")
+				.model(chatModel)
+				.tools(List.of(toolCallback))
+				.llmInputMessagesKey("llm_input_messages")
+				.preLlmHook(state -> {
+					// 消息裁剪功能
+					if (!state.value("messages").isPresent()) {
+						return Map.of();
+					}
+					List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
+					//如果message超过20条
+					if (messages.size() > 20) {
+						messages = messages.subList(messages.size() - 20, messages.size());
+					}
+					state.updateState(Map.of("llm_input_messages", messages));
+					return Map.of();
+				})
+				.build();
+
+		CompiledGraph graph = agent.getAndCompileGraph();
+
+		// 创建包含时间查询的提示词
+		List<Message> messages = List.of(new UserMessage("查询北京天气"));
+		Optional<OverAllState> result = graph.invoke(Map.of("messages", messages));
+		System.out.println(result.get());
+	}
+
+	/**
+	 * 真实的天气工具类，用于演示工具的实际调用
+	 */
+	public static class WeatherTool {
+
+		@Tool(name = "weather_tool", description = "获取指定城市的天气信息")
+		public String getWeather(@ToolParam(description = "城市名称") String city,
+								 @ToolParam(description = "当前时间戳") String currentTimestamp) {
+
+			return String.format("城市：%s，温度：20度，时间：%s", city, currentTimestamp);
+		}
+
 	}
 
 }
