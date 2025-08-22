@@ -345,7 +345,8 @@ public class DynamicAgent extends ReActAgent {
 			errorMessage.append(e.getMessage());
 
 			String firstToolcall = actToolInfoList != null && !actToolInfoList.isEmpty()
-					? actToolInfoList.get(0).getParameters().toString() : "unknown";
+					&& actToolInfoList.get(0).getParameters() != null
+							? actToolInfoList.get(0).getParameters().toString() : "unknown";
 			errorMessage.append("  . llm return param :  ").append(firstToolcall);
 
 			recordActionResult(actToolInfoList, errorMessage.toString(), ExecutionStatus.RUNNING,
@@ -594,11 +595,15 @@ public class DynamicAgent extends ReActAgent {
 	}
 
 	protected String collectEnvData(String toolCallName) {
+		log.info("🔍 collectEnvData called for tool: {}", toolCallName);
 		ToolCallBackContext context = toolCallbackProvider.getToolCallBackContext().get(toolCallName);
 		if (context != null) {
-			return context.getFunctionInstance().getCurrentToolStateString();
+			String envData = context.getFunctionInstance().getCurrentToolStateString();
+			log.info("📊 Tool '{}' env data: {}", toolCallName, envData);
+			return envData;
 		}
 		// If corresponding tool callback context is not found, return empty string
+		log.warn("⚠️ No context found for tool: {}", toolCallName);
 		return "";
 	}
 

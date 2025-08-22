@@ -43,14 +43,6 @@
     </properties>
 
     <dependencies>
-        <!--
-            <dependency>
-              <groupId>net.jodah</groupId>
-              <artifactId>typetools</artifactId>
-              <version>0.6.3</version>
-            </dependency>
-        -->
-
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-commons</artifactId>

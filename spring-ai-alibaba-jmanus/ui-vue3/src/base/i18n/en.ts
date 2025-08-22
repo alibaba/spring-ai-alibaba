@@ -755,6 +755,17 @@ const words: I18nType = {
     maxLength: 'Max Length',
     charactersRemaining: 'Characters Remaining',
     attachFile: 'Attach File',
+    attachedFiles: 'Attached Files',
+    filesAttached: '{count} files attached',
+    removeFile: 'Remove file',
+    uploading: 'Uploading...',
+    uploadSuccess: 'Files uploaded successfully',
+    fileDeleteError: 'Failed to delete file',
+    uploadError: 'File upload failed',
+    unsupportedFileType: 'Unsupported file type',
+    fileSizeExceeded: 'File size exceeded limit',
+    maxFileSize: 'Max file size: 50MB',
+    supportedFormats: 'Supported formats: PDF, text, CSV, JSON, XML, HTML, logs, code files, etc.',
   },
 
   // Sidebar

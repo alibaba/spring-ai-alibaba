@@ -50,7 +50,7 @@ public class PromptHelper {
 		params.put("db_content", dbContent.toString());
 		params.put("evidence", evidence);
 		params.put("multi_turn", multiTurn.toString());
-		return PromptConstant.INIT_REWRITE_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.getInitRewritePromptTemplate().render(params);
 	}
 
 	public static String buildMacSqlTablePrompt(TableDTO tableDTO) {
@@ -83,7 +83,7 @@ public class PromptHelper {
 	public static String buildQueryToKeywordsPrompt(String question) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("question", question);
-		return PromptConstant.QUESTION_TO_KEYWORDS_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.getQuestionToKeywordsPromptTemplate().render(params);
 	}
 
 	public static String buildMixSelectorPrompt(List<String> evidences, String question, SchemaDTO schemaDTO) {
@@ -93,13 +93,13 @@ public class PromptHelper {
 		params.put("question", question);
 		String evidence = CollectionUtils.isEmpty(evidences) ? "" : StringUtils.join(evidences, ";\n");
 		params.put("evidence", evidence);
-		return PromptConstant.MIX_SELECTOR_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.getMixSelectorPromptTemplate().render(params);
 	}
 
 	public static String buildDateTimeExtractPrompt(String question) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("question", question);
-		return PromptConstant.EXTRACT_DATETIME_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.getExtractDatetimePromptTemplate().render(params);
 	}
 
 	public static String buildMixMacSqlDbPrompt(SchemaDTO schemaDTO, Boolean withColumnType) {
@@ -205,8 +205,8 @@ public class PromptHelper {
 		params.put("schema_info", schemaInfo);
 		params.put("evidence", evidence);
 		List<String> prompts = new ArrayList<>();
-		prompts.add(PromptConstant.MIX_SQL_GENERATOR_SYSTEM_PROMPT_TEMPLATE.render(params));
-		prompts.add(PromptConstant.MIX_SQL_GENERATOR_PROMPT_TEMPLATE.render(params));
+		prompts.add(PromptConstant.getMixSqlGeneratorSystemPromptTemplate().render(params));
+		prompts.add(PromptConstant.getMixSqlGeneratorPromptTemplate().render(params));
 		return prompts;
 	}
 
@@ -220,14 +220,14 @@ public class PromptHelper {
 		params.put("question", question);
 		params.put("schema_info", schemaInfo);
 		params.put("evidence", evidence);
-		return PromptConstant.MIX_SQL_GENERATOR_SYSTEM_PROMPT_CHECK_TEMPLATE.render(params);
+		return PromptConstant.getMixSqlGeneratorSystemCheckPromptTemplate().render(params);
 	}
 
 	public static String buildSemanticConsistenPrompt(String nlReq, String sql) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("nl_req", nlReq);
 		params.put("sql", sql);
-		return PromptConstant.SEMANTIC_CONSISTENCY_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.getSemanticConsistencyPromptTemplate().render(params);
 	}
 
 	/**
