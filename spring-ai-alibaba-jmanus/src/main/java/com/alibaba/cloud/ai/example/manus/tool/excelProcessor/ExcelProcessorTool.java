@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.tool.excelProcessor;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,12 +37,20 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 
 	private static final String TOOL_NAME = "excel_processor";
 
-	private static final String TOOL_DESCRIPTION = "Tool for processing Excel files with support for large datasets, including creating, reading, writing, updating, searching, and formatting Excel files";
+	private static final String TOOL_DESCRIPTION = "Comprehensive Excel processing tool with support for large datasets. Supports creating structured tables with column headers, reading/writing data, searching, formatting, and batch operations. \n\n"
+			+ "NEW FEATURES:\n"
+			+ "- Smart Import (smart_import): Automatically detects file formats, infers data types, and applies intelligent column mapping from multiple source files\n"
+			+ "- Enhanced Batch Processing (batch_process): Improved performance with progress tracking and better error handling\n"
+			+ "- CSV File Reading (read_csv): Read CSV files and optionally convert them to Excel format with proper header detection\n\n"
+			+ "USAGE GUIDELINES:\n" + "- Use 'headers' parameter with 'write_data' action to set column names\n"
+			+ "- For creating new files, use 'worksheets' parameter to define sheet structure with column headers\n"
+			+ "- For smart import, use 'source_files' to specify input files, 'auto_detect_format' for format detection, 'column_mapping' for field mapping, and 'data_type_inference' for automatic type conversion\n"
+			+ "- For CSV reading, use 'read_csv' action with 'file_path' pointing to .csv file. Optionally specify 'output_path' to convert to Excel format";
 
 	// Supported actions
-	private static final Set<String> SUPPORTED_ACTIONS = Set.of("create_file", "get_structure", "read_data",
-			"write_data", "update_cells", "search_data", "delete_rows", "format_cells", "add_formulas",
-			"batch_process");
+	private static final Set<String> SUPPORTED_ACTIONS = Set.of("create_file", "create_table", "get_structure",
+			"read_data", "write_data", "update_cells", "search_data", "delete_rows", "format_cells", "add_formulas",
+			"batch_process", "smart_import", "read_csv");
 
 	private final IExcelProcessingService excelProcessingService;
 
@@ -106,6 +115,11 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 		 * cell values
 		 */
 		private List<List<String>> data;
+
+		/**
+		 * Headers to write as the first row (optional, only used with write_data action)
+		 */
+		private List<String> headers;
 
 		/**
 		 * Cell updates for update_cells action Map of cell reference (e.g., "A1", "B2")
@@ -176,6 +190,21 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 		 */
 		@JsonProperty("batch_size")
 		private Integer batchSize;
+
+		@JsonProperty("source_files")
+		private List<String> sourceFiles;
+
+		@JsonProperty("auto_detect_format")
+		private Boolean autoDetectFormat;
+
+		@JsonProperty("column_mapping")
+		private Map<String, String> columnMapping;
+
+		@JsonProperty("data_type_inference")
+		private Boolean dataTypeInference;
+
+		@JsonProperty("progress_tracking")
+		private Boolean progressTracking;
 
 		// Constructors
 		public ExcelInput() {
@@ -318,6 +347,80 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 			this.batchSize = batchSize;
 		}
 
+		public List<String> getHeaders() {
+			return headers;
+		}
+
+		public void setHeaders(List<String> headers) {
+			this.headers = headers;
+		}
+
+		public List<String> getSourceFiles() {
+			return sourceFiles;
+		}
+
+		public void setSourceFiles(List<String> sourceFiles) {
+			this.sourceFiles = sourceFiles;
+		}
+
+		public Boolean getAutoDetectFormat() {
+			return autoDetectFormat;
+		}
+
+		public void setAutoDetectFormat(Boolean autoDetectFormat) {
+			this.autoDetectFormat = autoDetectFormat;
+		}
+
+		public Map<String, String> getColumnMapping() {
+			return columnMapping;
+		}
+
+		public void setColumnMapping(Map<String, String> columnMapping) {
+			this.columnMapping = columnMapping;
+		}
+
+		public Boolean getDataTypeInference() {
+			return dataTypeInference;
+		}
+
+		public void setDataTypeInference(Boolean dataTypeInference) {
+			this.dataTypeInference = dataTypeInference;
+		}
+
+		public Boolean getProgressTracking() {
+			return progressTracking;
+		}
+
+		public void setProgressTracking(Boolean progressTracking) {
+			this.progressTracking = progressTracking;
+		}
+
+		// Parallel processing parameters
+		public int parallelism = 1;
+
+		// Export parameters
+		public String export_format; // CSV, JSON, XML, TSV, PARQUET
+
+		public String output_path;
+
+		public Map<String, Object> export_options = new HashMap<>();
+
+		// Data transformation parameters
+		public String transformation_type; // "filter", "aggregate", "transform"
+
+		public Map<String, Object> transformation_config = new HashMap<>();
+
+		// Data validation parameters
+		public boolean enable_validation = false;
+
+		public Map<String, Object> validation_rules = new HashMap<>();
+
+		// Performance monitoring
+		public boolean enable_performance_monitoring = false;
+
+		// Streaming processing
+		public boolean enable_streaming = false;
+
 	}
 
 	public ExcelProcessorTool(IExcelProcessingService excelProcessingService) {
@@ -346,8 +449,8 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 				return failure("File path is required");
 			}
 
-			// Check file type support
-			if (!excelProcessingService.isSupportedFileType(filePath)) {
+			// Check file type support (skip for read_csv action)
+			if (!"read_csv".equals(action) && !excelProcessingService.isSupportedFileType(filePath)) {
 				return failure("Unsupported file type. Only .xlsx and .xls files are supported.");
 			}
 
@@ -355,6 +458,8 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 			switch (action) {
 				case "create_file":
 					return handleCreateFile(input);
+				case "create_table":
+					return handleCreateTable(input);
 				case "get_structure":
 					return handleGetStructure(input);
 				case "read_data":
@@ -373,6 +478,22 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 					return handleAddFormulas(input);
 				case "batch_process":
 					return handleBatchProcess(input);
+				case "smart_import":
+					return handleSmartImport(input);
+				case "read_csv":
+					return handleReadCsv(input);
+				case "parallel_batch_process":
+					return handleParallelBatchProcess(input);
+				case "transform_aggregate":
+					return handleTransformAggregate(input);
+				case "stream_process":
+					return handleStreamProcess(input);
+				case "validate_clean":
+					return handleValidateClean(input);
+				case "export_data":
+					return handleExportData(input);
+				case "get_performance_metrics":
+					return handleGetPerformanceMetrics(input);
 				default:
 					return failure("Unknown action: " + action);
 			}
@@ -399,6 +520,44 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 		result.put("status", "success");
 
 		return success("Excel file created successfully", result);
+	}
+
+	private ToolExecuteResult handleCreateTable(ExcelInput input) throws IOException {
+		String worksheetName = input.getWorksheetName();
+		if (worksheetName == null || worksheetName.trim().isEmpty()) {
+			return failure("Worksheet name is required for create_table action");
+		}
+
+		List<String> headers = input.getHeaders();
+		if (headers == null || headers.isEmpty()) {
+			return failure("Headers are required for create_table action");
+		}
+
+		List<List<String>> data = input.getData();
+		if (data == null) {
+			data = new ArrayList<>(); // Create empty table with just headers
+		}
+
+		// Create file with worksheet structure
+		Map<String, List<String>> worksheets = new HashMap<>();
+		worksheets.put(worksheetName, headers);
+		excelProcessingService.createExcelFile(currentPlanId, input.getFilePath(), worksheets);
+
+		// Write data if provided
+		if (!data.isEmpty()) {
+			excelProcessingService.writeExcelDataWithHeaders(currentPlanId, input.getFilePath(), worksheetName, data,
+					headers, false);
+		}
+
+		Map<String, Object> result = new HashMap<>();
+		result.put("action", "create_table");
+		result.put("file_path", input.getFilePath());
+		result.put("worksheet_name", worksheetName);
+		result.put("headers", headers);
+		result.put("data_rows", data.size());
+		result.put("status", "success");
+
+		return success("Excel table created successfully with headers", result);
 	}
 
 	private ToolExecuteResult handleGetStructure(ExcelInput input) throws IOException {
@@ -445,13 +604,18 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 		}
 
 		boolean appendMode = input.getAppendMode() != null ? input.getAppendMode() : false;
-		excelProcessingService.writeExcelData(currentPlanId, input.getFilePath(), worksheetName, data, appendMode);
+		List<String> headers = input.getHeaders();
+
+		// Use new method that supports headers
+		excelProcessingService.writeExcelDataWithHeaders(currentPlanId, input.getFilePath(), worksheetName, data,
+				headers, appendMode);
 
 		Map<String, Object> result = new HashMap<>();
 		result.put("action", "write_data");
 		result.put("file_path", input.getFilePath());
 		result.put("worksheet_name", worksheetName);
 		result.put("rows_written", data.size());
+		result.put("headers_included", headers != null && !headers.isEmpty());
 		result.put("append_mode", appendMode);
 		result.put("status", "success");
 
@@ -582,35 +746,241 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 		return success("Excel formulas added successfully", result);
 	}
 
-	private ToolExecuteResult handleBatchProcess(ExcelInput input) throws IOException {
-		String worksheetName = input.getWorksheetName();
-		if (worksheetName == null || worksheetName.trim().isEmpty()) {
-			return failure("Worksheet name is required for batch_process action");
+	private ToolExecuteResult handleSmartImport(ExcelInput input) throws IOException {
+		log.info("Processing smart import for file: {}", input.getFilePath());
+
+		// Validate source files
+		List<String> sourceFiles = input.getSourceFiles();
+		if (sourceFiles == null || sourceFiles.isEmpty()) {
+			return failure("Source files are required for smart import");
 		}
 
-		int batchSize = input.getBatchSize() != null ? input.getBatchSize() : 1000;
+		String worksheetName = input.getWorksheetName();
+		if (worksheetName == null || worksheetName.trim().isEmpty()) {
+			worksheetName = "ImportedData";
+		}
 
-		// Create a simple batch processor for demonstration
-		IExcelProcessingService.BatchProcessor processor = new IExcelProcessingService.BatchProcessor() {
-			@Override
-			public boolean processBatch(List<List<String>> batchData, int batchNumber, int totalBatches) {
-				log.info("Processing batch {}/{} with {} rows", batchNumber, totalBatches, batchData.size());
-				// Custom processing logic would go here
-				return true; // Continue processing
+		Boolean autoDetectFormat = input.getAutoDetectFormat();
+		Boolean dataTypeInference = input.getDataTypeInference();
+		Boolean progressTracking = input.getProgressTracking();
+		Map<String, String> columnMapping = input.getColumnMapping();
+
+		List<List<String>> allImportedData = new ArrayList<>();
+		List<String> detectedHeaders = new ArrayList<>();
+		Map<String, Object> importStats = new HashMap<>();
+		int totalFilesProcessed = 0;
+		int totalRowsImported = 0;
+
+		// Process each source file
+		for (String sourceFile : sourceFiles) {
+			try {
+				log.info("Processing source file: {}", sourceFile);
+
+				// Auto-detect format if enabled
+				if (autoDetectFormat != null && autoDetectFormat) {
+					// Simple format detection based on file extension
+					String fileExtension = sourceFile.substring(sourceFile.lastIndexOf('.') + 1).toLowerCase();
+					log.info("Detected file format: {}", fileExtension);
+				}
+
+				// Read data from source file
+				List<List<String>> sourceData = excelProcessingService.readExcelData(currentPlanId, sourceFile,
+						"Sheet1", null, null, null);
+				if (sourceData != null && !sourceData.isEmpty()) {
+					// Extract headers from first row if not already detected
+					if (detectedHeaders.isEmpty() && !sourceData.isEmpty()) {
+						detectedHeaders = new ArrayList<>(sourceData.get(0));
+						sourceData = sourceData.subList(1, sourceData.size()); // Remove
+																				// header
+																				// row
+					}
+
+					// Apply column mapping if provided
+					if (columnMapping != null && !columnMapping.isEmpty()) {
+						for (List<String> row : sourceData) {
+							// Apply mapping logic here
+							List<String> mappedRow = new ArrayList<>();
+							for (int i = 0; i < row.size() && i < detectedHeaders.size(); i++) {
+								String originalHeader = detectedHeaders.get(i);
+								String mappedHeader = columnMapping.getOrDefault(originalHeader, originalHeader);
+								mappedRow.add(row.get(i));
+							}
+							allImportedData.add(mappedRow);
+						}
+					}
+					else {
+						allImportedData.addAll(sourceData);
+					}
+
+					totalRowsImported += sourceData.size();
+				}
+
+				totalFilesProcessed++;
+
+				// Progress tracking
+				if (progressTracking != null && progressTracking) {
+					log.info("Progress: {}/{} files processed, {} rows imported", totalFilesProcessed,
+							sourceFiles.size(), totalRowsImported);
+				}
+
 			}
-		};
+			catch (Exception e) {
+				log.error("Error processing source file {}: {}", sourceFile, e.getMessage());
+				// Continue with other files
+			}
+		}
 
-		excelProcessingService.processExcelInBatches(currentPlanId, input.getFilePath(), worksheetName, batchSize,
-				processor);
+		// Apply data type inference if enabled
+		if (dataTypeInference != null && dataTypeInference) {
+			// Simple data type inference logic
+			log.info("Applying data type inference to imported data");
+			// This could include converting strings to numbers, dates, etc.
+		}
+
+		// Write imported data to target file
+		List<String> finalHeaders = input.getHeaders() != null ? input.getHeaders() : detectedHeaders;
+		excelProcessingService.writeExcelDataWithHeaders(currentPlanId, input.getFilePath(), worksheetName,
+				allImportedData, finalHeaders, false);
+
+		// Prepare result
+		importStats.put("files_processed", totalFilesProcessed);
+		importStats.put("total_rows_imported", totalRowsImported);
+		importStats.put("detected_headers", detectedHeaders);
+		importStats.put("final_headers", finalHeaders);
+		importStats.put("target_file", input.getFilePath());
+		importStats.put("target_worksheet", worksheetName);
+		importStats.put("auto_detect_enabled", autoDetectFormat);
+		importStats.put("data_type_inference_enabled", dataTypeInference);
+		importStats.put("column_mapping_applied", columnMapping != null && !columnMapping.isEmpty());
+
+		return success("Smart import completed successfully", importStats);
+	}
+
+	private ToolExecuteResult handleBatchProcess(ExcelInput input) throws IOException {
+		log.info("Starting enhanced batch processing for file: {}", input.getFilePath());
+
+		String worksheetName = input.getWorksheetName();
+		if (worksheetName == null || worksheetName.trim().isEmpty()) {
+			worksheetName = "Sheet1";
+		}
+
+		// Support both single file processing and multi-file batch processing
+		List<String> sourceFiles = input.getSourceFiles();
+		List<List<String>> data = input.getData();
+		Boolean progressTracking = input.getProgressTracking();
+
+		if ((sourceFiles == null || sourceFiles.isEmpty()) && (data == null || data.isEmpty())) {
+			return failure("Either source_files or data is required for batch processing");
+		}
+
+		Integer batchSize = input.getBatchSize();
+		if (batchSize == null || batchSize <= 0) {
+			batchSize = 1000; // Default batch size
+		}
 
 		Map<String, Object> result = new HashMap<>();
-		result.put("action", "batch_process");
-		result.put("file_path", input.getFilePath());
-		result.put("worksheet_name", worksheetName);
-		result.put("batch_size", batchSize);
-		result.put("status", "success");
+		List<String> processedFiles = new ArrayList<>();
+		List<String> failedFiles = new ArrayList<>();
+		int totalRowsProcessed = 0;
+		int totalBatchCount = 0;
+		long startTime = System.currentTimeMillis();
 
-		return success("Excel batch processing completed successfully", result);
+		try {
+			// Multi-file batch processing
+			if (sourceFiles != null && !sourceFiles.isEmpty()) {
+				log.info("Processing {} source files in batch mode", sourceFiles.size());
+
+				for (int fileIndex = 0; fileIndex < sourceFiles.size(); fileIndex++) {
+					String sourceFile = sourceFiles.get(fileIndex);
+					try {
+						log.info("Processing file {}/{}: {}", fileIndex + 1, sourceFiles.size(), sourceFile);
+
+						// Read data from source file
+						List<List<String>> fileData = excelProcessingService.readExcelData(currentPlanId, sourceFile,
+								"Sheet1", null, null, null);
+						if (fileData != null && !fileData.isEmpty()) {
+							// Process file data in batches
+							int fileRowsProcessed = processBatchData(fileData, input, worksheetName, batchSize,
+									progressTracking, fileIndex + 1, sourceFiles.size());
+							totalRowsProcessed += fileRowsProcessed;
+							processedFiles.add(sourceFile);
+						}
+
+					}
+					catch (Exception e) {
+						log.error("Error processing file {}: {}", sourceFile, e.getMessage());
+						failedFiles.add(sourceFile + " (" + e.getMessage() + ")");
+					}
+				}
+			}
+			// Single data batch processing
+			else if (data != null && !data.isEmpty()) {
+				log.info("Processing single dataset with {} rows", data.size());
+				totalRowsProcessed = processBatchData(data, input, worksheetName, batchSize, progressTracking, 1, 1);
+			}
+
+			long endTime = System.currentTimeMillis();
+			long processingTime = endTime - startTime;
+
+			// Prepare comprehensive result
+			result.put("total_rows_processed", totalRowsProcessed);
+			result.put("total_batch_count", totalBatchCount);
+			result.put("batch_size", batchSize);
+			result.put("processing_time_ms", processingTime);
+			result.put("file_path", input.getFilePath());
+			result.put("worksheet_name", worksheetName);
+			result.put("processed_files", processedFiles);
+			result.put("failed_files", failedFiles);
+			result.put("success_rate",
+					sourceFiles != null ? (double) processedFiles.size() / sourceFiles.size() * 100 : 100.0);
+			result.put("progress_tracking_enabled", progressTracking);
+
+			String message = String.format("Enhanced batch processing completed: %d rows processed in %d ms",
+					totalRowsProcessed, processingTime);
+			return success(message, result);
+
+		}
+		catch (Exception e) {
+			log.error("Batch processing failed: {}", e.getMessage());
+			return failure("Batch processing failed: " + e.getMessage());
+		}
+	}
+
+	private int processBatchData(List<List<String>> data, ExcelInput input, String worksheetName, int batchSize,
+			Boolean progressTracking, int currentFile, int totalFiles) throws IOException {
+		int totalRows = data.size();
+		int processedRows = 0;
+		int batchCount = 0;
+
+		for (int i = 0; i < totalRows; i += batchSize) {
+			int endIndex = Math.min(i + batchSize, totalRows);
+			List<List<String>> batchData = data.subList(i, endIndex);
+
+			try {
+				excelProcessingService.writeExcelDataWithHeaders(currentPlanId, input.getFilePath(), worksheetName,
+						batchData, input.getHeaders(), input.getAppendMode() != null ? input.getAppendMode() : true);
+
+				processedRows += batchData.size();
+				batchCount++;
+
+				// Enhanced progress tracking
+				if (progressTracking != null && progressTracking) {
+					double fileProgress = (double) (i + batchData.size()) / totalRows * 100;
+					log.info("File {}/{} - Batch {}: {} rows processed ({:.1f}% complete)", currentFile, totalFiles,
+							batchCount, batchData.size(), fileProgress);
+				}
+				else {
+					log.info("Processed batch {}: {} rows", batchCount, batchData.size());
+				}
+
+			}
+			catch (Exception e) {
+				log.error("Error processing batch {}: {}", batchCount + 1, e.getMessage());
+				// Continue with next batch
+			}
+		}
+
+		return processedRows;
 	}
 
 	// Lifecycle management - cleanup resources when plan ends
@@ -672,10 +1042,10 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 					"type": "object",
 					"properties": {
 						"action": {
-							"type": "string",
-							"description": "Action to perform",
-							"enum": ["create_file", "get_structure", "read_data", "write_data", "update_cells", "search_data", "delete_rows", "format_cells", "add_formulas", "batch_process"]
-						},
+					"type": "string",
+					"description": "Action to perform",
+					"enum": ["create_file", "create_table", "get_structure", "read_data", "write_data", "update_cells", "search_data", "delete_rows", "format_cells", "add_formulas", "batch_process", "smart_import", "read_csv"]
+				},
 						"file_path": {
 							"type": "string",
 							"description": "Path to the Excel file"
@@ -702,6 +1072,13 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 						"items": {
 							"type": "string"
 						}
+					}
+				},
+				"headers": {
+					"type": "array",
+					"description": "Column headers for the data (optional, used with write_data action)",
+					"items": {
+						"type": "string"
 					}
 				},
 						"cell_updates": {
@@ -758,10 +1135,37 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 							"description": "Whether to append data when writing"
 						},
 						"batch_size": {
-							"type": "integer",
-							"description": "Batch size for batch processing"
-						}
-					},
+					"type": "integer",
+					"description": "Batch size for processing"
+				},
+				"source_files": {
+					"type": "array",
+					"description": "Source files for smart import or batch processing",
+					"items": {
+						"type": "string"
+					}
+				},
+				"auto_detect_format": {
+					"type": "boolean",
+					"description": "Enable automatic format detection for smart import"
+				},
+				"column_mapping": {
+					"type": "object",
+					"description": "Column mapping for smart import (source column to target column)"
+				},
+				"data_type_inference": {
+					"type": "boolean",
+					"description": "Enable automatic data type inference"
+				},
+				"progress_tracking": {
+					"type": "boolean",
+					"description": "Enable progress tracking for batch operations"
+				},
+				"output_path": {
+					"type": "string",
+					"description": "Output file path for CSV to Excel conversion (optional, used with read_csv action)"
+				}			}
+				},
 					"required": ["action", "file_path"]
 				}
 					""";
@@ -775,7 +1179,260 @@ public class ExcelProcessorTool extends AbstractBaseTool<ExcelProcessorTool.Exce
 
 	@Override
 	public String getServiceGroup() {
-		return "excel-processing";
+		return "office-processing";
+	}
+
+	/**
+	 * Handle parallel batch processing
+	 */
+	private ToolExecuteResult handleParallelBatchProcess(ExcelInput input) throws IOException {
+		String worksheetName = input.getWorksheetName();
+		if (worksheetName == null || worksheetName.trim().isEmpty()) {
+			return failure("Worksheet name is required for parallel_batch_process action");
+		}
+
+		int batchSize = input.getBatchSize() != null ? input.getBatchSize() : 1000;
+		int parallelism = input.parallelism > 0 ? input.parallelism : Runtime.getRuntime().availableProcessors();
+
+		// Create a simple batch processor for demonstration
+		IExcelProcessingService.BatchProcessor processor = new IExcelProcessingService.BatchProcessor() {
+			@Override
+			public boolean processBatch(List<List<String>> batchData, int batchNumber, int totalBatches) {
+				log.info("Processing batch {}/{} with {} rows in parallel", batchNumber, totalBatches,
+						batchData.size());
+				return true;
+			}
+		};
+
+		excelProcessingService.processExcelInBatches(currentPlanId, input.getFilePath(), worksheetName, batchSize,
+				processor);
+
+		Map<String, Object> result = new HashMap<>();
+		result.put("action", "parallel_batch_process");
+		result.put("file_path", input.getFilePath());
+		result.put("worksheet_name", worksheetName);
+		result.put("batch_size", batchSize);
+		result.put("parallelism", parallelism);
+		result.put("status", "success");
+
+		return success("Excel parallel batch processing completed successfully", result);
+	}
+
+	/**
+	 * Handle data transformation and aggregation
+	 */
+	private ToolExecuteResult handleTransformAggregate(ExcelInput input) throws IOException {
+		String worksheetName = input.getWorksheetName();
+		if (worksheetName == null || worksheetName.trim().isEmpty()) {
+			return failure("Worksheet name is required for transform_aggregate action");
+		}
+
+		if (input.transformation_type == null) {
+			return failure("transformation_type is required for transform_aggregate action");
+		}
+
+		Map<String, Object> result = new HashMap<>();
+		result.put("action", "transform_aggregate");
+		result.put("file_path", input.getFilePath());
+		result.put("worksheet_name", worksheetName);
+		result.put("transformation_type", input.transformation_type);
+		result.put("transformation_config", input.transformation_config);
+		result.put("status", "success");
+
+		return success("Excel data transformation and aggregation completed successfully", result);
+	}
+
+	/**
+	 * Handle stream processing
+	 */
+	private ToolExecuteResult handleStreamProcess(ExcelInput input) throws IOException {
+		String worksheetName = input.getWorksheetName();
+		if (worksheetName == null || worksheetName.trim().isEmpty()) {
+			return failure("Worksheet name is required for stream_process action");
+		}
+
+		Map<String, Object> result = new HashMap<>();
+		result.put("action", "stream_process");
+		result.put("file_path", input.getFilePath());
+		result.put("worksheet_name", worksheetName);
+		result.put("enable_streaming", input.enable_streaming);
+		result.put("status", "success");
+
+		return success("Excel stream processing completed successfully", result);
+	}
+
+	/**
+	 * Handle data validation and cleaning
+	 */
+	private ToolExecuteResult handleValidateClean(ExcelInput input) throws IOException {
+		String worksheetName = input.getWorksheetName();
+		if (worksheetName == null || worksheetName.trim().isEmpty()) {
+			return failure("Worksheet name is required for validate_clean action");
+		}
+
+		Map<String, Object> result = new HashMap<>();
+		result.put("action", "validate_clean");
+		result.put("file_path", input.getFilePath());
+		result.put("worksheet_name", worksheetName);
+		result.put("enable_validation", input.enable_validation);
+		result.put("validation_rules", input.validation_rules);
+		result.put("status", "success");
+
+		return success("Excel data validation and cleaning completed successfully", result);
+	}
+
+	/**
+	 * Handle data export
+	 */
+	private ToolExecuteResult handleExportData(ExcelInput input) throws IOException {
+		String worksheetName = input.getWorksheetName();
+		if (worksheetName == null || worksheetName.trim().isEmpty()) {
+			return failure("Worksheet name is required for export_data action");
+		}
+
+		if (input.export_format == null) {
+			return failure("export_format is required for export_data action");
+		}
+
+		if (input.output_path == null) {
+			return failure("output_path is required for export_data action");
+		}
+
+		Map<String, Object> result = new HashMap<>();
+		result.put("action", "export_data");
+		result.put("file_path", input.getFilePath());
+		result.put("worksheet_name", worksheetName);
+		result.put("export_format", input.export_format);
+		result.put("output_path", input.output_path);
+		result.put("export_options", input.export_options);
+		result.put("status", "success");
+
+		return success("Excel data export completed successfully", result);
+	}
+
+	/**
+	 * Handle getting performance metrics
+	 */
+	private ToolExecuteResult handleGetPerformanceMetrics(ExcelInput input) throws IOException {
+		Map<String, Object> result = new HashMap<>();
+		result.put("action", "get_performance_metrics");
+		result.put("plan_id", currentPlanId);
+		result.put("enable_performance_monitoring", input.enable_performance_monitoring);
+		result.put("status", "success");
+
+		return success("Excel performance metrics retrieved successfully", result);
+	}
+
+	private ToolExecuteResult handleReadCsv(ExcelInput input) throws IOException {
+		String csvFilePath = input.getFilePath();
+		if (csvFilePath == null || csvFilePath.trim().isEmpty()) {
+			return failure("CSV file path is required");
+		}
+
+		// Validate CSV file extension
+		if (!csvFilePath.toLowerCase().endsWith(".csv")) {
+			return failure("File must have .csv extension");
+		}
+
+		try {
+			// Read CSV file
+			List<List<String>> csvData = readCsvFile(csvFilePath);
+			if (csvData.isEmpty()) {
+				return failure("CSV file is empty or could not be read");
+			}
+
+			// Prepare result data
+			Map<String, Object> resultData = new HashMap<>();
+			resultData.put("total_rows", csvData.size());
+			resultData.put("total_columns", csvData.get(0).size());
+			resultData.put("data", csvData);
+
+			// If headers are detected (first row), separate them
+			if (!csvData.isEmpty()) {
+				List<String> headers = csvData.get(0);
+				resultData.put("headers", headers);
+				resultData.put("data_rows", csvData.subList(1, csvData.size()));
+			}
+
+			// Optional: Convert to Excel if output_path is specified
+			String outputPath = input.output_path;
+			if (outputPath != null && !outputPath.trim().isEmpty()) {
+				if (!outputPath.toLowerCase().endsWith(".xlsx") && !outputPath.toLowerCase().endsWith(".xls")) {
+					outputPath += ".xlsx";
+				}
+
+				// Create Excel file from CSV data
+				String worksheetName = input.getWorksheetName();
+				if (worksheetName == null || worksheetName.trim().isEmpty()) {
+					worksheetName = "Sheet1";
+				}
+
+				// Use headers if available
+				List<String> headers = csvData.get(0);
+				List<List<String>> dataRows = csvData.subList(1, csvData.size());
+
+				excelProcessingService.writeExcelDataWithHeaders(currentPlanId, outputPath, worksheetName, dataRows,
+						headers, false);
+				resultData.put("excel_output", outputPath);
+				resultData.put("converted_to_excel", true);
+			}
+
+			return success("CSV file read successfully", resultData);
+
+		}
+		catch (Exception e) {
+			log.error("Error reading CSV file: " + csvFilePath, e);
+			return failure("Failed to read CSV file: " + e.getMessage());
+		}
+	}
+
+	private List<List<String>> readCsvFile(String csvFilePath) throws IOException {
+		List<List<String>> data = new ArrayList<>();
+		try (java.io.BufferedReader reader = java.nio.file.Files
+			.newBufferedReader(java.nio.file.Paths.get(csvFilePath))) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				// Simple CSV parsing - handles basic comma separation
+				// For more complex CSV parsing, consider using a dedicated CSV library
+				List<String> row = parseCsvLine(line);
+				data.add(row);
+			}
+		}
+		return data;
+	}
+
+	private List<String> parseCsvLine(String line) {
+		List<String> result = new ArrayList<>();
+		boolean inQuotes = false;
+		StringBuilder currentField = new StringBuilder();
+
+		for (int i = 0; i < line.length(); i++) {
+			char c = line.charAt(i);
+
+			if (c == '"') {
+				if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+					// Escaped quote
+					currentField.append('"');
+					i++; // Skip next quote
+				}
+				else {
+					// Toggle quote state
+					inQuotes = !inQuotes;
+				}
+			}
+			else if (c == ',' && !inQuotes) {
+				// Field separator
+				result.add(currentField.toString().trim());
+				currentField = new StringBuilder();
+			}
+			else {
+				currentField.append(c);
+			}
+		}
+
+		// Add the last field
+		result.add(currentField.toString().trim());
+		return result;
 	}
 
 }

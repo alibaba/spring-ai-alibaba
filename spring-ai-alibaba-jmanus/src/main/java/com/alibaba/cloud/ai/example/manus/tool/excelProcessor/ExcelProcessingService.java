@@ -16,17 +16,29 @@
 package com.alibaba.cloud.ai.example.manus.tool.excelProcessor;
 
 import java.awt.GraphicsEnvironment;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.poi.ss.usermodel.*;
 
@@ -59,11 +71,20 @@ public class ExcelProcessingService implements IExcelProcessingService {
 
 	private final UnifiedDirectoryManager unifiedDirectoryManager;
 
-	// Store processing status for each plan
+	// Plan processing status tracking
 	private final Map<String, Map<String, Object>> planProcessingStatus = new ConcurrentHashMap<>();
 
-	// Store file states for each plan
+	// Plan file states tracking
 	private final Map<String, Map<String, Object>> planFileStates = new ConcurrentHashMap<>();
+
+	// Performance metrics tracking
+	private final Map<String, Map<String, Object>> performanceMetrics = new ConcurrentHashMap<>();
+
+	// Thread pool for parallel processing
+	private final ExecutorService executorService = Executors.newCachedThreadPool();
+
+	// JSON mapper for export
+	private final ObjectMapper jsonMapper = new ObjectMapper();
 
 	public ExcelProcessingService(UnifiedDirectoryManager unifiedDirectoryManager) {
 		this.unifiedDirectoryManager = unifiedDirectoryManager;
@@ -291,6 +312,13 @@ public class ExcelProcessingService implements IExcelProcessingService {
 	@Override
 	public void writeExcelData(String planId, String filePath, String worksheetName, List<List<String>> data,
 			boolean appendMode) throws IOException {
+		// Delegate to the new method with null headers
+		writeExcelDataWithHeaders(planId, filePath, worksheetName, data, null, appendMode);
+	}
+
+	@Override
+	public void writeExcelDataWithHeaders(String planId, String filePath, String worksheetName, List<List<String>> data,
+			List<String> headers, boolean appendMode) throws IOException {
 		Path absolutePath = validateFilePath(planId, filePath);
 
 		if (data == null || data.isEmpty()) {
@@ -300,14 +328,15 @@ public class ExcelProcessingService implements IExcelProcessingService {
 
 		// Use streaming write for large datasets
 		if (data.size() > DEFAULT_BATCH_SIZE) {
-			writeLargeExcelData(planId, absolutePath, worksheetName, data, appendMode);
+			writeLargeExcelDataWithHeaders(planId, absolutePath, worksheetName, data, headers, appendMode);
 			return;
 		}
 
 		Workbook workbook;
 		boolean fileExists = Files.exists(absolutePath);
 
-		if (fileExists && appendMode) {
+		// Always try to load existing workbook if file exists to preserve other sheets
+		if (fileExists) {
 			try (FileInputStream fis = new FileInputStream(absolutePath.toFile())) {
 				workbook = WorkbookFactory.create(fis);
 			}
@@ -322,9 +351,17 @@ public class ExcelProcessingService implements IExcelProcessingService {
 				sheet = workbook.createSheet(worksheetName);
 			}
 
-			int startRowNum = appendMode ? sheet.getLastRowNum() + 1 : 0;
-			if (!appendMode) {
-				// Clear existing data
+			int startRowNum = 0;
+			if (appendMode) {
+				// In append mode, start after the last row
+				startRowNum = sheet.getLastRowNum() + 1;
+				// If sheet is empty, getLastRowNum() returns -1, so we start at 0
+				if (startRowNum == 0 && sheet.getPhysicalNumberOfRows() == 0) {
+					startRowNum = 0;
+				}
+			}
+			else {
+				// In overwrite mode, clear existing data in this sheet only
 				for (int i = sheet.getLastRowNum(); i >= 0; i--) {
 					Row row = sheet.getRow(i);
 					if (row != null) {
@@ -334,6 +371,17 @@ public class ExcelProcessingService implements IExcelProcessingService {
 				startRowNum = 0;
 			}
 
+			// Write headers if provided and not in append mode or if sheet is empty
+			if (headers != null && !headers.isEmpty() && (!appendMode || sheet.getPhysicalNumberOfRows() == 0)) {
+				Row headerRow = sheet.createRow(startRowNum);
+				for (int j = 0; j < headers.size(); j++) {
+					Cell cell = headerRow.createCell(j);
+					setCellValue(cell, headers.get(j));
+				}
+				startRowNum++;
+			}
+
+			// Write data rows
 			for (int i = 0; i < data.size(); i++) {
 				List<String> rowData = data.get(i);
 				Row row = sheet.createRow(startRowNum + i);
@@ -358,26 +406,64 @@ public class ExcelProcessingService implements IExcelProcessingService {
 
 	private void writeLargeExcelData(String planId, Path absolutePath, String worksheetName, List<List<String>> data,
 			boolean appendMode) throws IOException {
+		// Delegate to the new method with null headers
+		writeLargeExcelDataWithHeaders(planId, absolutePath, worksheetName, data, null, appendMode);
+	}
+
+	private void writeLargeExcelDataWithHeaders(String planId, Path absolutePath, String worksheetName,
+			List<List<String>> data, List<String> headers, boolean appendMode) throws IOException {
+		// For large data, we need to handle existing workbooks differently
+		// SXSSFWorkbook doesn't support reading existing files, so we need a hybrid
+		// approach
+
+		boolean fileExists = Files.exists(absolutePath);
+		Workbook existingWorkbook = null;
+		Map<String, Sheet> existingSheets = new HashMap<>();
+
+		// If file exists and we need to preserve other sheets, read them first
+		if (fileExists) {
+			try (FileInputStream fis = new FileInputStream(absolutePath.toFile())) {
+				existingWorkbook = WorkbookFactory.create(fis);
+				// Store all sheets except the target one
+				for (int i = 0; i < existingWorkbook.getNumberOfSheets(); i++) {
+					Sheet sheet = existingWorkbook.getSheetAt(i);
+					if (!sheet.getSheetName().equals(worksheetName)) {
+						existingSheets.put(sheet.getSheetName(), sheet);
+					}
+				}
+			}
+		}
+
 		// Use SXSSFWorkbook for memory-efficient writing
 		try (SXSSFWorkbook workbook = new SXSSFWorkbook(SXSSF_WINDOW_SIZE)) {
+			// Copy existing sheets to new workbook (except target sheet)
+			if (existingWorkbook != null) {
+				for (Map.Entry<String, Sheet> entry : existingSheets.entrySet()) {
+					Sheet newSheet = workbook.createSheet(entry.getKey());
+					copySheetData(entry.getValue(), newSheet);
+				}
+			}
+
 			Sheet sheet = workbook.createSheet(worksheetName);
+			int currentRowNum = 0;
+
+			// Write headers if provided
+			if (headers != null && !headers.isEmpty()) {
+				Row headerRow = sheet.createRow(currentRowNum++);
+				for (int j = 0; j < headers.size(); j++) {
+					Cell cell = headerRow.createCell(j);
+					setCellValue(cell, headers.get(j));
+				}
+			}
 
 			// Write data in batches
 			for (int i = 0; i < data.size(); i++) {
 				List<String> rowData = data.get(i);
-				Row row = sheet.createRow(i);
+				Row row = sheet.createRow(currentRowNum + i);
 
 				for (int j = 0; j < rowData.size(); j++) {
 					Cell cell = row.createCell(j);
 					setCellValue(cell, rowData.get(j));
-				}
-
-				// Flush rows to disk periodically
-				if (i % SXSSF_WINDOW_SIZE == 0) {
-					// SXSSFWorkbook automatically manages memory, no need to manually
-					// flush
-					// workbook.flushRows(); // This method may not be available in all
-					// POI versions
 				}
 			}
 
@@ -389,8 +475,890 @@ public class ExcelProcessingService implements IExcelProcessingService {
 			workbook.dispose();
 		}
 
+		if (existingWorkbook != null) {
+			existingWorkbook.close();
+		}
+
 		updateFileState(planId, absolutePath.toString(), "large_data_written");
 		log.info("Wrote {} rows to worksheet: {} in large file: {}", data.size(), worksheetName, absolutePath);
+	}
+
+	/**
+	 * Copy data from source sheet to target sheet (for preserving existing sheets)
+	 */
+	private void copySheetData(Sheet sourceSheet, Sheet targetSheet) {
+		for (int i = 0; i <= sourceSheet.getLastRowNum(); i++) {
+			Row sourceRow = sourceSheet.getRow(i);
+			if (sourceRow != null) {
+				Row targetRow = targetSheet.createRow(i);
+				for (int j = 0; j < sourceRow.getLastCellNum(); j++) {
+					Cell sourceCell = sourceRow.getCell(j);
+					if (sourceCell != null) {
+						Cell targetCell = targetRow.createCell(j);
+						setCellValue(targetCell, getCellValueAsString(sourceCell));
+					}
+				}
+			}
+		}
+	}
+
+	@Override
+	public void processExcelInParallelBatches(String planId, String filePath, String worksheetName, int batchSize,
+			int parallelism, BatchProcessor processor) throws IOException {
+		long startTime = System.currentTimeMillis();
+		initializePerformanceMetrics(planId);
+
+		try {
+			// Use optimized streaming approach with producer-consumer pattern
+			ExecutorService readerExecutor = Executors.newSingleThreadExecutor();
+			ExecutorService processorExecutor = Executors.newFixedThreadPool(parallelism);
+
+			// Thread-safe queue for batches
+			java.util.concurrent.BlockingQueue<List<List<String>>> batchQueue = new java.util.concurrent.LinkedBlockingQueue<>(
+					parallelism * 2);
+
+			AtomicLong totalRows = new AtomicLong(0);
+			AtomicInteger batchCount = new AtomicInteger(0);
+			List<CompletableFuture<Void>> processingFutures = new ArrayList<>();
+
+			// Producer: Read data and create batches
+			CompletableFuture<Void> readerFuture = CompletableFuture.runAsync(() -> {
+				try {
+					List<List<String>> currentBatch = new ArrayList<>();
+
+					EasyExcel.read(filePath, new ReadListener<Map<Integer, String>>() {
+						@Override
+						public void invoke(Map<Integer, String> data, AnalysisContext context) {
+							List<String> row = data.values().stream().collect(Collectors.toList());
+							currentBatch.add(row);
+							totalRows.incrementAndGet();
+
+							if (currentBatch.size() >= batchSize) {
+								try {
+									batchQueue.put(new ArrayList<>(currentBatch));
+									currentBatch.clear();
+								}
+								catch (InterruptedException e) {
+									Thread.currentThread().interrupt();
+									throw new RuntimeException("Interrupted while queuing batch", e);
+								}
+							}
+						}
+
+						@Override
+						public void doAfterAllAnalysed(AnalysisContext context) {
+							// Add remaining data as final batch
+							if (!currentBatch.isEmpty()) {
+								try {
+									batchQueue.put(new ArrayList<>(currentBatch));
+								}
+								catch (InterruptedException e) {
+									Thread.currentThread().interrupt();
+									throw new RuntimeException("Interrupted while queuing final batch", e);
+								}
+							}
+							// Signal end of data
+							try {
+								batchQueue.put(Collections.emptyList());
+							}
+							catch (InterruptedException e) {
+								Thread.currentThread().interrupt();
+								throw new RuntimeException("Interrupted while signaling end", e);
+							}
+						}
+					}).sheet(worksheetName).doRead();
+				}
+				catch (Exception e) {
+					throw new RuntimeException("Error reading Excel file", e);
+				}
+			}, readerExecutor);
+
+			// Consumers: Process batches in parallel
+			for (int i = 0; i < parallelism; i++) {
+				CompletableFuture<Void> processingFuture = CompletableFuture.runAsync(() -> {
+					try {
+						while (true) {
+							List<List<String>> batch = batchQueue.take();
+							if (batch.isEmpty()) {
+								// End of data signal
+								batchQueue.put(batch); // Re-queue for other consumers
+								break;
+							}
+
+							int currentBatchNum = batchCount.incrementAndGet();
+							int estimatedTotalBatches = (int) Math.ceil((double) totalRows.get() / batchSize);
+
+							processor.processBatch(batch, currentBatchNum,
+									Math.max(estimatedTotalBatches, currentBatchNum));
+						}
+					}
+					catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						throw new RuntimeException("Interrupted while processing batches", e);
+					}
+					catch (Exception e) {
+						throw new RuntimeException("Error processing batch", e);
+					}
+				}, processorExecutor);
+
+				processingFutures.add(processingFuture);
+			}
+
+			// Wait for reader to complete
+			readerFuture.join();
+
+			// Wait for all processors to complete
+			CompletableFuture.allOf(processingFutures.toArray(new CompletableFuture[0])).join();
+
+			// Cleanup
+			readerExecutor.shutdown();
+			processorExecutor.shutdown();
+			readerExecutor.awaitTermination(10, TimeUnit.SECONDS);
+			processorExecutor.awaitTermination(30, TimeUnit.SECONDS);
+
+			updatePerformanceMetrics(planId, "optimized_parallel_batch_processing",
+					System.currentTimeMillis() - startTime, totalRows.get(), parallelism);
+
+			log.info("Processed {} rows in {} batches using {} parallel threads", totalRows.get(), batchCount.get(),
+					parallelism);
+
+		}
+		catch (Exception e) {
+			throw new IOException("Failed to process Excel in parallel batches: " + e.getMessage(), e);
+		}
+	}
+
+	@Override
+	public <T, R> R transformAndAggregateExcelData(String planId, String filePath, String worksheetName,
+			DataTransformer<T> transformer, DataAggregator<T, R> aggregator) throws IOException {
+		long startTime = System.currentTimeMillis();
+		initializePerformanceMetrics(planId);
+
+		try {
+			List<T> transformedData = new ArrayList<>();
+			AtomicInteger rowIndex = new AtomicInteger(0);
+
+			EasyExcel.read(filePath, new ReadListener<Map<Integer, String>>() {
+				@Override
+				public void invoke(Map<Integer, String> data, AnalysisContext context) {
+					List<String> rowData = data.values().stream().collect(Collectors.toList());
+					T transformed = transformer.transform(rowData, rowIndex.getAndIncrement());
+					if (transformed != null) {
+						transformedData.add(transformed);
+					}
+				}
+
+				@Override
+				public void doAfterAllAnalysed(AnalysisContext context) {
+					// Analysis complete
+				}
+			}).sheet(worksheetName).doRead();
+
+			R result = aggregator.aggregate(transformedData);
+			updatePerformanceMetrics(planId, "transform_aggregate", System.currentTimeMillis() - startTime,
+					transformedData.size(), 1);
+			return result;
+		}
+		catch (Exception e) {
+			throw new IOException("Failed to transform and aggregate Excel data: " + e.getMessage(), e);
+		}
+	}
+
+	@Override
+	public void streamProcessExcelData(String planId, String filePath, String worksheetName,
+			IExcelProcessingService.StreamProcessor streamProcessor) throws IOException {
+		long startTime = System.currentTimeMillis();
+		initializePerformanceMetrics(planId);
+
+		try {
+			AtomicInteger rowIndex = new AtomicInteger(0);
+			AtomicLong processedRows = new AtomicLong(0);
+
+			EasyExcel.read(filePath, new ReadListener<Map<Integer, String>>() {
+				@Override
+				public void invoke(Map<Integer, String> data, AnalysisContext context) {
+					List<String> rowData = data.values().stream().collect(Collectors.toList());
+					boolean continueProcessing = streamProcessor.processRow(rowData, rowIndex.getAndIncrement());
+					processedRows.incrementAndGet();
+
+					if (!continueProcessing) {
+						context.interrupt();
+					}
+				}
+
+				@Override
+				public void doAfterAllAnalysed(AnalysisContext context) {
+					// Analysis complete
+				}
+			}).sheet(worksheetName).doRead();
+
+			updatePerformanceMetrics(planId, "stream_processing", System.currentTimeMillis() - startTime,
+					processedRows.get(), 1);
+		}
+		catch (Exception e) {
+			throw new IOException("Failed to stream process Excel data: " + e.getMessage(), e);
+		}
+	}
+
+	@Override
+	public Map<String, Object> validateAndCleanExcelData(String planId, String filePath, String worksheetName,
+			DataValidator validator, DataCleaner cleaner) throws IOException {
+		long startTime = System.currentTimeMillis();
+		initializePerformanceMetrics(planId);
+
+		try {
+			List<ValidationResult> validationResults = new ArrayList<>();
+			List<List<String>> cleanedData = new ArrayList<>();
+			AtomicInteger rowIndex = new AtomicInteger(0);
+			AtomicInteger validRows = new AtomicInteger(0);
+			AtomicInteger invalidRows = new AtomicInteger(0);
+
+			EasyExcel.read(filePath, new ReadListener<Map<Integer, String>>() {
+				@Override
+				public void invoke(Map<Integer, String> data, AnalysisContext context) {
+					List<String> rowData = data.values().stream().collect(Collectors.toList());
+					int currentRowIndex = rowIndex.getAndIncrement();
+
+					// Validate data
+					ValidationResult validationResult = validator.validate(rowData, currentRowIndex);
+					validationResults.add(validationResult);
+
+					if (validationResult.isValid()) {
+						validRows.incrementAndGet();
+						// Clean data
+						List<String> cleanedRow = cleaner.clean(rowData, currentRowIndex);
+						cleanedData.add(cleanedRow);
+					}
+					else {
+						invalidRows.incrementAndGet();
+					}
+				}
+
+				@Override
+				public void doAfterAllAnalysed(AnalysisContext context) {
+					// Analysis complete
+				}
+			}).sheet(worksheetName).doRead();
+
+			// Generate report
+			Map<String, Object> report = new HashMap<>();
+			report.put("total_rows", rowIndex.get());
+			report.put("valid_rows", validRows.get());
+			report.put("invalid_rows", invalidRows.get());
+			report.put("validation_rate", (double) validRows.get() / rowIndex.get());
+			report.put("validation_results", validationResults);
+			report.put("cleaned_data", cleanedData);
+			report.put("processing_time_ms", System.currentTimeMillis() - startTime);
+
+			updatePerformanceMetrics(planId, "validate_clean", System.currentTimeMillis() - startTime, rowIndex.get(),
+					1);
+			return report;
+		}
+		catch (Exception e) {
+			throw new IOException("Failed to validate and clean Excel data: " + e.getMessage(), e);
+		}
+	}
+
+	@Override
+	public void exportExcelData(String planId, String filePath, String worksheetName, String outputPath,
+			ExportFormat format, Map<String, Object> options) throws IOException {
+		long startTime = System.currentTimeMillis();
+		initializePerformanceMetrics(planId);
+
+		try {
+			List<List<String>> allData = new ArrayList<>();
+			AtomicInteger rowCount = new AtomicInteger(0);
+
+			// Read all data first
+			EasyExcel.read(filePath, new ReadListener<Map<Integer, String>>() {
+				@Override
+				public void invoke(Map<Integer, String> data, AnalysisContext context) {
+					List<String> rowData = data.values().stream().collect(Collectors.toList());
+					allData.add(rowData);
+					rowCount.incrementAndGet();
+				}
+
+				@Override
+				public void doAfterAllAnalysed(AnalysisContext context) {
+					// Analysis complete
+				}
+			}).sheet(worksheetName).doRead();
+
+			// Export based on format
+			switch (format) {
+				case CSV:
+					exportToCSV(allData, outputPath, options);
+					break;
+				case TSV:
+					exportToTSV(allData, outputPath, options);
+					break;
+				case JSON:
+					exportToJSON(allData, outputPath, options);
+					break;
+				case XML:
+					exportToXML(allData, outputPath, options);
+					break;
+				default:
+					throw new IllegalArgumentException("Unsupported export format: " + format);
+			}
+
+			updatePerformanceMetrics(planId, "export_" + format.name().toLowerCase(),
+					System.currentTimeMillis() - startTime, rowCount.get(), 1);
+		}
+		catch (Exception e) {
+			throw new IOException("Failed to export Excel data: " + e.getMessage(), e);
+		}
+	}
+
+	@Override
+	public Map<String, Object> getPerformanceMetrics(String planId) {
+		return performanceMetrics.getOrDefault(planId, new HashMap<>());
+	}
+
+	/**
+	 * Initialize performance metrics for a plan
+	 */
+	private void initializePerformanceMetrics(String planId) {
+		Map<String, Object> metrics = new HashMap<>();
+		metrics.put("start_time", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+		metrics.put("operations", new ArrayList<Map<String, Object>>());
+		metrics.put("memory_usage_mb", getMemoryUsage());
+		performanceMetrics.put(planId, metrics);
+	}
+
+	/**
+	 * Update performance metrics for an operation
+	 */
+	@SuppressWarnings("unchecked")
+	private void updatePerformanceMetrics(String planId, String operation, long durationMs, long rowsProcessed,
+			int parallelism) {
+		Map<String, Object> metrics = performanceMetrics.get(planId);
+		if (metrics != null) {
+			List<Map<String, Object>> operations = (List<Map<String, Object>>) metrics.get("operations");
+			Map<String, Object> operationMetrics = new HashMap<>();
+			operationMetrics.put("operation", operation);
+			operationMetrics.put("duration_ms", durationMs);
+			operationMetrics.put("rows_processed", rowsProcessed);
+			operationMetrics.put("parallelism", parallelism);
+			operationMetrics.put("rows_per_second", rowsProcessed * 1000.0 / durationMs);
+			operationMetrics.put("memory_usage_mb", getMemoryUsage());
+			operationMetrics.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+			operations.add(operationMetrics);
+		}
+	}
+
+	/**
+	 * Get current memory usage in MB
+	 */
+	private long getMemoryUsage() {
+		Runtime runtime = Runtime.getRuntime();
+		return (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
+	}
+
+	/**
+	 * Enhanced batch processing with memory monitoring and adaptive batch sizing
+	 */
+	private void processExcelWithAdaptiveBatching(String planId, String filePath, String worksheetName,
+			int initialBatchSize, int maxParallelism, BatchProcessor processor) throws IOException {
+		long startTime = System.currentTimeMillis();
+		initializePerformanceMetrics(planId);
+
+		try {
+			Runtime runtime = Runtime.getRuntime();
+			long maxMemory = runtime.maxMemory() / (1024 * 1024); // Convert to MB
+			long memoryThreshold = (long) (maxMemory * 0.8); // Use 80% of max memory
+
+			AtomicInteger currentBatchSize = new AtomicInteger(initialBatchSize);
+			AtomicInteger currentParallelism = new AtomicInteger(
+					Math.min(maxParallelism, Runtime.getRuntime().availableProcessors()));
+			AtomicLong totalRows = new AtomicLong(0);
+			AtomicInteger batchCount = new AtomicInteger(0);
+			AtomicBoolean memoryPressure = new AtomicBoolean(false);
+
+			// Memory monitoring thread
+			ExecutorService memoryMonitor = Executors.newSingleThreadExecutor();
+			CompletableFuture<Void> memoryMonitorFuture = CompletableFuture.runAsync(() -> {
+				while (!Thread.currentThread().isInterrupted()) {
+					try {
+						long currentMemory = getMemoryUsage();
+						if (currentMemory > memoryThreshold) {
+							// Reduce batch size and parallelism
+							currentBatchSize.set(Math.max(100, currentBatchSize.get() / 2));
+							currentParallelism.set(Math.max(1, currentParallelism.get() - 1));
+							memoryPressure.set(true);
+							log.warn(
+									"High memory usage detected: {} MB. Reducing batch size to {} and parallelism to {}",
+									currentMemory, currentBatchSize.get(), currentParallelism.get());
+
+							// Force garbage collection
+							System.gc();
+						}
+						else if (currentMemory < memoryThreshold * 0.5 && !memoryPressure.get()) {
+							// Increase batch size if memory usage is low and no pressure
+							currentBatchSize.set(Math.min(initialBatchSize * 2, currentBatchSize.get() + 200));
+							currentParallelism.set(Math.min(maxParallelism, currentParallelism.get() + 1));
+						}
+						Thread.sleep(1000); // Check every second
+					}
+					catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						break;
+					}
+				}
+			}, memoryMonitor);
+
+			// Enhanced batch processor with memory monitoring
+			BatchProcessor enhancedProcessor = new BatchProcessor() {
+				@Override
+				public boolean processBatch(List<List<String>> batchData, int batchNumber, int totalBatches) {
+					// Monitor memory before processing
+					long memoryBefore = getMemoryUsage();
+
+					boolean result = processor.processBatch(batchData, batchNumber, totalBatches);
+
+					// Log memory usage after processing
+					long memoryAfter = getMemoryUsage();
+					long memoryDelta = memoryAfter - memoryBefore;
+
+					if (batchNumber % 10 == 0) { // Log every 10 batches
+						log.info("Batch {}/{}: Memory usage {} MB (delta: {} MB), Batch size: {}, Parallelism: {}",
+								batchNumber, totalBatches, memoryAfter, memoryDelta, batchData.size(),
+								currentParallelism.get());
+					}
+
+					return result;
+				}
+			};
+
+			// Use the optimized parallel processing with adaptive parameters
+			processExcelInParallelBatches(planId, filePath, worksheetName, currentBatchSize.get(),
+					currentParallelism.get(), enhancedProcessor);
+
+			// Stop memory monitoring
+			memoryMonitorFuture.cancel(true);
+			memoryMonitor.shutdown();
+			memoryMonitor.awaitTermination(5, TimeUnit.SECONDS);
+
+			updatePerformanceMetrics(planId, "adaptive_batch_processing", System.currentTimeMillis() - startTime,
+					totalRows.get(), currentParallelism.get());
+
+			log.info("Adaptive batch processing completed. Final batch size: {}, Final parallelism: {}",
+					currentBatchSize.get(), currentParallelism.get());
+
+		}
+		catch (Exception e) {
+			throw new IOException("Failed to process Excel with adaptive batching: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Stream processing for very large Excel files with real-time processing
+	 */
+	private void streamProcessExcel(String planId, String filePath, String worksheetName,
+			IExcelProcessingService.StreamProcessor streamProcessor) throws IOException {
+		long startTime = System.currentTimeMillis();
+		initializePerformanceMetrics(planId);
+
+		try {
+			AtomicLong processedRows = new AtomicLong(0);
+			AtomicLong totalMemoryUsed = new AtomicLong(0);
+			AtomicInteger currentBatchSize = new AtomicInteger(500); // Start with smaller
+																		// batches for
+																		// streaming
+
+			// Create a streaming listener that processes data in real-time
+			ReadListener<List<String>> streamingListener = new ReadListener<List<String>>() {
+				private List<List<String>> currentBatch = new ArrayList<>();
+
+				private long lastMemoryCheck = System.currentTimeMillis();
+
+				@Override
+				public void invoke(List<String> data, AnalysisContext context) {
+					currentBatch.add(new ArrayList<>(data));
+					processedRows.incrementAndGet();
+
+					// Process batch when it reaches the current batch size
+					if (currentBatch.size() >= currentBatchSize.get()) {
+						processBatchInStream();
+					}
+
+					// Check memory usage every 1000 rows
+					if (processedRows.get() % 1000 == 0) {
+						checkAndAdjustMemory();
+					}
+				}
+
+				@Override
+				public void doAfterAllAnalysed(AnalysisContext context) {
+					// Process remaining data
+					if (!currentBatch.isEmpty()) {
+						processBatchInStream();
+					}
+
+					log.info("Stream processing completed. Total rows processed: {}", processedRows.get());
+				}
+
+				private void processBatchInStream() {
+					try {
+						long memoryBefore = getMemoryUsage();
+
+						// Process each row in the batch using the provided stream
+						// processor
+						for (List<String> row : currentBatch) {
+							streamProcessor.processRow(row, (int) processedRows.incrementAndGet());
+						}
+
+						long memoryAfter = getMemoryUsage();
+						totalMemoryUsed.addAndGet(memoryAfter - memoryBefore);
+
+						// Clear the batch to free memory
+						currentBatch.clear();
+
+						// Log progress every 50 batches
+						if ((processedRows.get() / currentBatchSize.get()) % 50 == 0) {
+							log.info("Streaming progress: {} rows processed, current memory: {} MB",
+									processedRows.get(), memoryAfter);
+						}
+
+					}
+					catch (Exception e) {
+						log.error("Error processing stream batch: {}", e.getMessage(), e);
+						throw new RuntimeException("Stream processing failed", e);
+					}
+				}
+
+				private void checkAndAdjustMemory() {
+					long currentTime = System.currentTimeMillis();
+					if (currentTime - lastMemoryCheck > 5000) { // Check every 5 seconds
+						long currentMemory = getMemoryUsage();
+						Runtime runtime = Runtime.getRuntime();
+						long maxMemory = runtime.maxMemory() / (1024 * 1024);
+
+						if (currentMemory > maxMemory * 0.8) {
+							// Reduce batch size if memory usage is high
+							currentBatchSize.set(Math.max(100, currentBatchSize.get() / 2));
+							log.warn("High memory usage detected: {} MB. Reducing batch size to {}", currentMemory,
+									currentBatchSize.get());
+							System.gc(); // Suggest garbage collection
+						}
+						else if (currentMemory < maxMemory * 0.4) {
+							// Increase batch size if memory usage is low
+							currentBatchSize.set(Math.min(2000, currentBatchSize.get() + 100));
+						}
+
+						lastMemoryCheck = currentTime;
+					}
+				}
+			};
+
+			// Start streaming processing
+			EasyExcel.read(filePath, streamingListener).sheet(worksheetName).doRead();
+
+			updatePerformanceMetrics(planId, "stream_processing", System.currentTimeMillis() - startTime,
+					processedRows.get(), 1);
+
+		}
+		catch (Exception e) {
+			throw new IOException("Failed to stream process Excel file: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Interface for stream processing callbacks
+	 */
+
+	/**
+	 * Enhanced memory management for processing very large datasets
+	 */
+	private void processExcelWithMemoryOptimization(String planId, String filePath, String worksheetName,
+			MemoryOptimizedProcessor processor) throws IOException {
+		long startTime = System.currentTimeMillis();
+		initializePerformanceMetrics(planId);
+
+		try {
+			Runtime runtime = Runtime.getRuntime();
+			long maxMemory = runtime.maxMemory() / (1024 * 1024); // Convert to MB
+			long memoryThreshold = (long) (maxMemory * 0.7); // Use 70% of max memory as
+																// threshold
+
+			AtomicLong processedRows = new AtomicLong(0);
+			AtomicInteger dynamicBatchSize = new AtomicInteger(200); // Start with small
+																		// batch
+			AtomicBoolean memoryPressureMode = new AtomicBoolean(false);
+
+			// Memory monitoring and cleanup service
+			ExecutorService memoryService = Executors.newSingleThreadExecutor();
+			CompletableFuture<Void> memoryMonitorTask = CompletableFuture.runAsync(() -> {
+				while (!Thread.currentThread().isInterrupted()) {
+					try {
+						long currentMemory = getMemoryUsage();
+
+						if (currentMemory > memoryThreshold) {
+							memoryPressureMode.set(true);
+							dynamicBatchSize.set(Math.max(50, dynamicBatchSize.get() / 2));
+
+							// Aggressive garbage collection
+							System.gc();
+							Thread.sleep(100); // Give GC time to work
+							System.runFinalization();
+
+							log.warn("Memory pressure detected: {} MB / {} MB. Reduced batch size to {}", currentMemory,
+									maxMemory, dynamicBatchSize.get());
+						}
+						else if (currentMemory < memoryThreshold * 0.5 && !memoryPressureMode.get()) {
+							// Gradually increase batch size when memory is available
+							dynamicBatchSize.set(Math.min(1000, dynamicBatchSize.get() + 50));
+						}
+						else if (currentMemory < memoryThreshold * 0.6) {
+							memoryPressureMode.set(false);
+						}
+
+						Thread.sleep(2000); // Check every 2 seconds
+					}
+					catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						break;
+					}
+				}
+			}, memoryService);
+
+			// Memory-optimized data processing
+			ReadListener<List<String>> memoryOptimizedListener = new ReadListener<List<String>>() {
+				private List<List<String>> currentBatch = new ArrayList<>();
+
+				private long lastGcTime = System.currentTimeMillis();
+
+				private int consecutiveMemoryWarnings = 0;
+
+				@Override
+				public void invoke(List<String> data, AnalysisContext context) {
+					// Create a defensive copy to avoid memory leaks
+					List<String> rowCopy = new ArrayList<>(data.size());
+					for (String cell : data) {
+						rowCopy.add(cell != null ? cell.intern() : null); // Use string
+																			// interning
+																			// for memory
+																			// efficiency
+					}
+					currentBatch.add(rowCopy);
+					processedRows.incrementAndGet();
+
+					// Process batch when it reaches dynamic size or memory pressure
+					if (currentBatch.size() >= dynamicBatchSize.get()
+							|| (memoryPressureMode.get() && currentBatch.size() >= 25)) {
+						processMemoryOptimizedBatch();
+					}
+
+					// Periodic memory check and cleanup
+					if (processedRows.get() % 500 == 0) {
+						performMemoryMaintenance();
+					}
+				}
+
+				@Override
+				public void doAfterAllAnalysed(AnalysisContext context) {
+					// Process any remaining data
+					if (!currentBatch.isEmpty()) {
+						processMemoryOptimizedBatch();
+					}
+
+					// Final cleanup
+					currentBatch = null;
+					System.gc();
+
+					log.info("Memory-optimized processing completed. Total rows: {}, Final batch size: {}",
+							processedRows.get(), dynamicBatchSize.get());
+				}
+
+				private void processMemoryOptimizedBatch() {
+					try {
+						long memoryBefore = getMemoryUsage();
+
+						// Process with memory monitoring
+						processor.processWithMemoryOptimization(new ArrayList<>(currentBatch), processedRows.get(),
+								memoryBefore, memoryPressureMode.get());
+
+						long memoryAfter = getMemoryUsage();
+
+						// Clear batch immediately to free memory
+						currentBatch.clear();
+
+						// Log memory usage periodically
+						if (processedRows.get() % 5000 == 0) {
+							log.info("Memory usage: {} MB -> {} MB, Batch size: {}, Pressure mode: {}", memoryBefore,
+									memoryAfter, dynamicBatchSize.get(), memoryPressureMode.get());
+						}
+
+						// Check for memory leaks
+						if (memoryAfter > memoryBefore + 50) { // Memory increased by more
+																// than 50MB
+							consecutiveMemoryWarnings++;
+							if (consecutiveMemoryWarnings > 3) {
+								log.warn("Potential memory leak detected. Forcing aggressive cleanup.");
+								System.gc();
+								System.runFinalization();
+								consecutiveMemoryWarnings = 0;
+							}
+						}
+						else {
+							consecutiveMemoryWarnings = 0;
+						}
+
+					}
+					catch (Exception e) {
+						log.error("Error in memory-optimized batch processing: {}", e.getMessage(), e);
+						throw new RuntimeException("Memory-optimized processing failed", e);
+					}
+				}
+
+				private void performMemoryMaintenance() {
+					long currentTime = System.currentTimeMillis();
+					if (currentTime - lastGcTime > 10000) { // Every 10 seconds
+						long memoryBefore = getMemoryUsage();
+						System.gc();
+						long memoryAfter = getMemoryUsage();
+
+						if (memoryBefore - memoryAfter > 10) { // If GC freed more than
+																// 10MB
+							log.debug("Memory maintenance: freed {} MB", memoryBefore - memoryAfter);
+						}
+
+						lastGcTime = currentTime;
+					}
+				}
+			};
+
+			// Start processing with memory optimization
+			EasyExcel.read(filePath, memoryOptimizedListener).sheet(worksheetName).doRead();
+
+			// Stop memory monitoring
+			memoryMonitorTask.cancel(true);
+			memoryService.shutdown();
+			memoryService.awaitTermination(5, TimeUnit.SECONDS);
+
+			updatePerformanceMetrics(planId, "memory_optimized_processing", System.currentTimeMillis() - startTime,
+					processedRows.get(), 1);
+
+		}
+		catch (Exception e) {
+			throw new IOException("Failed to process Excel with memory optimization: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Interface for memory-optimized processing callbacks
+	 */
+	public interface MemoryOptimizedProcessor {
+
+		void processWithMemoryOptimization(List<List<String>> batchData, long totalProcessedRows,
+				long currentMemoryUsage, boolean memoryPressureMode);
+
+	}
+
+	/**
+	 * Export data to CSV format
+	 */
+	private void exportToCSV(List<List<String>> data, String outputPath, Map<String, Object> options)
+			throws IOException {
+		String delimiter = (String) options.getOrDefault("delimiter", ",");
+		boolean includeHeaders = (Boolean) options.getOrDefault("include_headers", true);
+
+		try (PrintWriter writer = new PrintWriter(new FileWriter(outputPath))) {
+			for (int i = 0; i < data.size(); i++) {
+				if (i == 0 && !includeHeaders) {
+					continue;
+				}
+				List<String> row = data.get(i);
+				writer.println(String.join(delimiter, row));
+			}
+		}
+	}
+
+	/**
+	 * Export data to TSV format
+	 */
+	private void exportToTSV(List<List<String>> data, String outputPath, Map<String, Object> options)
+			throws IOException {
+		Map<String, Object> tsvOptions = new HashMap<>(options);
+		tsvOptions.put("delimiter", "\t");
+		exportToCSV(data, outputPath, tsvOptions);
+	}
+
+	/**
+	 * Export data to JSON format
+	 */
+	private void exportToJSON(List<List<String>> data, String outputPath, Map<String, Object> options)
+			throws IOException {
+		boolean includeHeaders = (Boolean) options.getOrDefault("include_headers", true);
+		String arrayName = (String) options.getOrDefault("array_name", "data");
+
+		List<String> headers = null;
+		List<List<String>> dataRows = data;
+
+		if (includeHeaders && !data.isEmpty()) {
+			headers = data.get(0);
+			dataRows = data.subList(1, data.size());
+		}
+
+		List<Map<String, String>> jsonData = new ArrayList<>();
+		for (List<String> row : dataRows) {
+			Map<String, String> rowMap = new HashMap<>();
+			for (int i = 0; i < row.size(); i++) {
+				String key = (headers != null && i < headers.size()) ? headers.get(i) : "column_" + i;
+				rowMap.put(key, row.get(i));
+			}
+			jsonData.add(rowMap);
+		}
+
+		Map<String, Object> result = new HashMap<>();
+		result.put(arrayName, jsonData);
+
+		jsonMapper.writeValue(new File(outputPath), result);
+	}
+
+	/**
+	 * Export data to XML format
+	 */
+	private void exportToXML(List<List<String>> data, String outputPath, Map<String, Object> options)
+			throws IOException {
+		boolean includeHeaders = (Boolean) options.getOrDefault("include_headers", true);
+		String rootElement = (String) options.getOrDefault("root_element", "data");
+		String rowElement = (String) options.getOrDefault("row_element", "row");
+
+		List<String> headers = null;
+		List<List<String>> dataRows = data;
+
+		if (includeHeaders && !data.isEmpty()) {
+			headers = data.get(0);
+			dataRows = data.subList(1, data.size());
+		}
+
+		List<Map<String, String>> xmlData = new ArrayList<>();
+		for (List<String> row : dataRows) {
+			Map<String, String> rowMap = new HashMap<>();
+			for (int i = 0; i < row.size(); i++) {
+				String key = (headers != null && i < headers.size()) ? headers.get(i) : "column_" + i;
+				rowMap.put(key, row.get(i));
+			}
+			xmlData.add(rowMap);
+		}
+
+		try (FileWriter writer = new FileWriter(outputPath)) {
+			writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+			writer.write("<" + rootElement + ">\n");
+			for (Map<String, String> row : xmlData) {
+				writer.write("  <" + rowElement + ">\n");
+				for (Map.Entry<String, String> entry : row.entrySet()) {
+					String key = entry.getKey().replaceAll("[^a-zA-Z0-9_]", "_");
+					String value = entry.getValue() != null
+							? entry.getValue().replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+							: "";
+					writer.write("    <" + key + ">" + value + "</" + key + ">\n");
+				}
+				writer.write("  </" + rowElement + ">\n");
+			}
+			writer.write("</" + rootElement + ">\n");
+		}
 	}
 
 	private String getCellValueAsString(Cell cell) {

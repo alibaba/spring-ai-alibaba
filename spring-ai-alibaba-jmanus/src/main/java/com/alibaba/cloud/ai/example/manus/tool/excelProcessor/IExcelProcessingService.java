@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.tool.excelProcessor;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -97,6 +98,19 @@ public interface IExcelProcessingService {
 	 */
 	void writeExcelData(String planId, String filePath, String worksheetName, List<List<String>> data,
 			boolean appendMode) throws IOException;
+
+	/**
+	 * Write data to a specific worksheet with optional headers (append or overwrite mode)
+	 * @param planId plan identifier
+	 * @param filePath path to the Excel file
+	 * @param worksheetName name of the worksheet
+	 * @param data list of rows to write
+	 * @param headers optional headers to write as first row (null to skip)
+	 * @param appendMode true to append, false to overwrite
+	 * @throws IOException if file writing fails
+	 */
+	void writeExcelDataWithHeaders(String planId, String filePath, String worksheetName, List<List<String>> data,
+			List<String> headers, boolean appendMode) throws IOException;
 
 	/**
 	 * Update specific cells in a worksheet
@@ -182,6 +196,76 @@ public interface IExcelProcessingService {
 	void cleanupPlanResources(String planId);
 
 	/**
+	 * Process Excel data in parallel batches for better performance
+	 * @param planId plan identifier
+	 * @param filePath path to the Excel file
+	 * @param worksheetName name of the worksheet
+	 * @param batchSize number of rows to process in each batch
+	 * @param parallelism number of parallel threads to use
+	 * @param processor callback function to process each batch
+	 * @throws IOException if file processing fails
+	 */
+	void processExcelInParallelBatches(String planId, String filePath, String worksheetName, int batchSize,
+			int parallelism, BatchProcessor processor) throws IOException;
+
+	/**
+	 * Transform and aggregate Excel data with custom functions
+	 * @param planId plan identifier
+	 * @param filePath path to the Excel file
+	 * @param worksheetName name of the worksheet
+	 * @param transformer data transformation function
+	 * @param aggregator data aggregation function
+	 * @return aggregated result
+	 * @throws IOException if file processing fails
+	 */
+	<T, R> R transformAndAggregateExcelData(String planId, String filePath, String worksheetName,
+			DataTransformer<T> transformer, DataAggregator<T, R> aggregator) throws IOException;
+
+	/**
+	 * Stream process large Excel files with minimal memory usage
+	 * @param planId plan identifier
+	 * @param filePath path to the Excel file
+	 * @param worksheetName name of the worksheet
+	 * @param streamProcessor stream processing function
+	 * @throws IOException if file processing fails
+	 */
+	void streamProcessExcelData(String planId, String filePath, String worksheetName, StreamProcessor streamProcessor)
+			throws IOException;
+
+	/**
+	 * Validate and clean Excel data
+	 * @param planId plan identifier
+	 * @param filePath path to the Excel file
+	 * @param worksheetName name of the worksheet
+	 * @param validator data validation function
+	 * @param cleaner data cleaning function
+	 * @return validation and cleaning report
+	 * @throws IOException if file processing fails
+	 */
+	Map<String, Object> validateAndCleanExcelData(String planId, String filePath, String worksheetName,
+			DataValidator validator, DataCleaner cleaner) throws IOException;
+
+	/**
+	 * Export Excel data to different formats
+	 * @param planId plan identifier
+	 * @param filePath path to the Excel file
+	 * @param worksheetName name of the worksheet
+	 * @param outputPath output file path
+	 * @param format export format (CSV, JSON, XML)
+	 * @param options export options
+	 * @throws IOException if export fails
+	 */
+	void exportExcelData(String planId, String filePath, String worksheetName, String outputPath, ExportFormat format,
+			Map<String, Object> options) throws IOException;
+
+	/**
+	 * Get detailed performance metrics for processing operations
+	 * @param planId plan identifier
+	 * @return performance metrics including memory usage, processing time, etc.
+	 */
+	Map<String, Object> getPerformanceMetrics(String planId);
+
+	/**
 	 * Functional interface for batch processing
 	 */
 	@FunctionalInterface
@@ -195,6 +279,118 @@ public interface IExcelProcessingService {
 		 * @return true to continue processing, false to stop
 		 */
 		boolean processBatch(List<List<String>> batchData, int batchNumber, int totalBatches);
+
+	}
+
+	/**
+	 * Functional interface for data transformation
+	 */
+	@FunctionalInterface
+	interface DataTransformer<T> {
+
+		/**
+		 * Transform a row of data
+		 * @param rowData input row data
+		 * @param rowIndex row index (0-based)
+		 * @return transformed data
+		 */
+		T transform(List<String> rowData, int rowIndex);
+
+	}
+
+	/**
+	 * Functional interface for data aggregation
+	 */
+	@FunctionalInterface
+	interface DataAggregator<T, R> {
+
+		/**
+		 * Aggregate transformed data
+		 * @param transformedData list of transformed data
+		 * @return aggregated result
+		 */
+		R aggregate(List<T> transformedData);
+
+	}
+
+	/**
+	 * Functional interface for stream processing
+	 */
+	@FunctionalInterface
+	interface StreamProcessor {
+
+		/**
+		 * Process a single row in streaming mode
+		 * @param rowData row data
+		 * @param rowIndex row index (0-based)
+		 * @return true to continue processing, false to stop
+		 */
+		boolean processRow(List<String> rowData, int rowIndex);
+
+	}
+
+	/**
+	 * Functional interface for data validation
+	 */
+	@FunctionalInterface
+	interface DataValidator {
+
+		/**
+		 * Validate a row of data
+		 * @param rowData row data to validate
+		 * @param rowIndex row index (0-based)
+		 * @return validation result with errors if any
+		 */
+		ValidationResult validate(List<String> rowData, int rowIndex);
+
+	}
+
+	/**
+	 * Functional interface for data cleaning
+	 */
+	@FunctionalInterface
+	interface DataCleaner {
+
+		/**
+		 * Clean a row of data
+		 * @param rowData row data to clean
+		 * @param rowIndex row index (0-based)
+		 * @return cleaned row data
+		 */
+		List<String> clean(List<String> rowData, int rowIndex);
+
+	}
+
+	/**
+	 * Validation result class
+	 */
+	class ValidationResult {
+
+		private final boolean valid;
+
+		private final List<String> errors;
+
+		public ValidationResult(boolean valid, List<String> errors) {
+			this.valid = valid;
+			this.errors = errors != null ? errors : new ArrayList<>();
+		}
+
+		public boolean isValid() {
+			return valid;
+		}
+
+		public List<String> getErrors() {
+			return errors;
+		}
+
+	}
+
+	/**
+	 * Export format enumeration
+	 */
+	enum ExportFormat {
+
+		CSV, JSON, XML, TSV, PARQUET
 
 	}
 
