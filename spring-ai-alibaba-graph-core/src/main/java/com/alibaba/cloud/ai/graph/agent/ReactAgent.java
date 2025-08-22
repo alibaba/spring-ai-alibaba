@@ -83,7 +83,7 @@ public class ReactAgent extends BaseAgent {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-	private String llmInputMessagesKey;
+	private String inputKey;
 
 	protected ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
 		this.name = builder.name;
@@ -99,7 +99,7 @@ public class ReactAgent extends BaseAgent {
 		this.postLlmHook = builder.postLlmHook;
 		this.preToolHook = builder.preToolHook;
 		this.postToolHook = builder.postToolHook;
-		this.llmInputMessagesKey = builder.llmInputMessagesKey;
+		this.inputKey = builder.inputKey;
 
 		// 初始化graph
 		this.graph = initGraph();
@@ -160,8 +160,8 @@ public class ReactAgent extends BaseAgent {
 		if (keyStrategyFactory == null) {
 			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				if (llmInputMessagesKey != null) {
-					keyStrategyHashMap.put(llmInputMessagesKey, new ReplaceStrategy());
+				if (inputKey != null) {
+					keyStrategyHashMap.put(inputKey, new ReplaceStrategy());
 				}
 				keyStrategyHashMap.put("messages", new AppendStrategy());
 				return keyStrategyHashMap;
@@ -181,7 +181,7 @@ public class ReactAgent extends BaseAgent {
 			effectivePreLlmHook = state -> {
 				if (state.value("messages").isPresent()) {
 					List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
-					state.updateState(Map.of(this.llmInputMessagesKey, messages));
+					state.updateState(Map.of(this.inputKey, messages));
 				}
 				return Map.of();
 			};
@@ -357,7 +357,7 @@ public class ReactAgent extends BaseAgent {
 
 		private NodeAction postToolHook;
 
-		private String llmInputMessagesKey = "messages";
+		private String inputKey = "messages";
 
 		public Builder name(String name) {
 			this.name = name;
@@ -445,7 +445,7 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		public Builder llmInputMessagesKey(String llmInputMessagesKey) {
-			this.llmInputMessagesKey = llmInputMessagesKey;
+			this.inputKey = llmInputMessagesKey;
 			return this;
 		}
 
@@ -464,9 +464,7 @@ public class ReactAgent extends BaseAgent {
 				chatClient = clientBuilder.build();
 			}
 
-			LlmNode.Builder llmNodeBuilder = LlmNode.builder()
-				.chatClient(chatClient)
-				.messagesKey(this.llmInputMessagesKey);
+			LlmNode.Builder llmNodeBuilder = LlmNode.builder().chatClient(chatClient).messagesKey(this.inputKey);
 			if (CollectionUtils.isNotEmpty(tools)) {
 				llmNodeBuilder.toolCallbacks(tools);
 			}
