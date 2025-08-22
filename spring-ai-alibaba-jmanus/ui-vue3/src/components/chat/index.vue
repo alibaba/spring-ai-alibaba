@@ -53,310 +53,23 @@
                   <span>{{ message.thinking }}</span>
                 </div>
 
-                <!-- Progress bar -->
-                <div class="progress" v-if="message.planExecution?.progress !== undefined">
-                  <div class="progress-bar">
-                    <div
-                        class="progress-fill"
-                        :style="{ width: message.planExecution.progress + '%' }"
-                    ></div>
-                  </div>
-                  <span class="progress-text">{{
-                      message.planExecution.progressText ?? $t('chat.processing') + '...'
-                    }}</span>
-                </div>
+                <!-- Execution Details Component -->
+                <ExecutionDetails
+                    v-if="message.planExecution"
+                    :plan-execution="message.planExecution"
+                    :step-actions="message.stepActions || []"
+                    :generic-input="message.genericInput || ''"
+                    @step-selected="(stepIndex: number) => handleStepClick(message, stepIndex)"
+                    @sub-plan-step-selected="(stepIndex: number, subStepIndex: number) => handleSubPlanStepClick(message, stepIndex, subStepIndex)"
+                    @user-input-submitted="(inputData: any) => handleUserInputSubmit(message, inputData)"
+                />
 
-                <!-- Step execution details -->
-                <div class="steps-container" v-if="(message.planExecution?.steps?.length ?? 0) > 0">
-                  <h4 class="steps-title">{{ $t('chat.stepExecutionDetails') }}</h4>
 
-                  <!-- Iterate through all steps -->
-                  <div
-                      v-for="(step, index) in message.planExecution?.steps"
-                      :key="index"
-                      class="ai-section"
-                      :class="{
-                      running: getAgentExecutionStatus(message, index) === 'RUNNING',
-                      completed: getAgentExecutionStatus(message, index) === 'FINISHED',
-                      pending: getAgentExecutionStatus(message, index) === 'IDLE',
-                    }"
-                      @click.stop="handleStepClick(message, index)"
-                  >
-                    <div class="section-header">
-                      <span class="step-icon">
-                        {{
-                          getAgentExecutionStatus(message, index) === 'FINISHED'
-                              ? '✓'
-                              : getAgentExecutionStatus(message, index) === 'RUNNING'
-                                  ? '▶'
-                                  : '○'
-                        }}
-                      </span>
-                      <span class="step-title">
-                        {{ step || `${$t('chat.step')} ${index + 1}` }}
-                      </span>
-                      <span
-                          v-if="getAgentExecutionStatus(message, index) === 'RUNNING'"
-                          class="step-status current"
-                      >
-                        {{ $t('chat.status.executing') }}
-                      </span>
-                      <span
-                          v-else-if="getAgentExecutionStatus(message, index) === 'FINISHED'"
-                          class="step-status completed"
-                      >
-                        {{ $t('chat.status.completed') }}
-                      </span>
-                      <span v-else class="step-status pending">
-                        {{ $t('chat.status.pending') }}
-                      </span>
-                    </div>
-
-                    <!-- Display step execution action information -->
-                    <div
-                        v-if="message.stepActions && message.stepActions[index]"
-                        class="action-info"
-                    >
-                      <div class="action-description">
-                        <span class="action-icon">
-                          {{
-                            message.stepActions[index]?.status === 'current'
-                                ? '🔄'
-                                : message.stepActions[index]?.status === 'completed'
-                                    ? '✓'
-                                    : '⏳'
-                          }}
-                        </span>
-                        <strong>{{ message.stepActions[index]?.actionDescription }}</strong>
-                      </div>
-
-                      <div v-if="message.stepActions[index]?.toolParameters" class="tool-params">
-                        <span class="tool-icon">⚙️</span>
-                        <span class="param-label">{{ $t('common.parameters') }}:</span>
-                        <pre class="param-content">{{
-                            message.stepActions[index]?.toolParameters
-                          }}</pre>
-                      </div>
-
-                      <div v-if="message.stepActions[index]?.thinkOutput" class="think-details">
-                        <div class="think-header">
-                          <span class="think-icon">💭</span>
-                          <span class="think-label">{{ $t('chat.thinkingOutput') }}:</span>
-                        </div>
-                        <div class="think-output">
-                          <pre class="think-content">{{
-                              message.stepActions[index]?.thinkOutput
-                            }}</pre>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Sub-plan steps - New feature -->
-                    <div v-if="getSubPlanSteps(message, index)?.length > 0" class="sub-plan-steps">
-                      <div class="sub-plan-header">
-                        <Icon icon="carbon:tree-view" class="sub-plan-icon" />
-                        <span class="sub-plan-title">{{ $t('rightPanel.subPlan') }}</span>
-                      </div>
-                      <div class="sub-plan-step-list">
-                        <div
-                            v-for="(subStep, subStepIndex) in getSubPlanSteps(message, index)"
-                            :key="`sub-${index}-${subStepIndex}`"
-                            class="sub-plan-step-item"
-                            :class="{
-                            completed:
-                              getSubPlanStepStatus(message, index, subStepIndex) === 'completed',
-                            current:
-                              getSubPlanStepStatus(message, index, subStepIndex) === 'current',
-                            pending:
-                              getSubPlanStepStatus(message, index, subStepIndex) === 'pending',
-                          }"
-                            @click.stop="handleSubPlanStepClick(message, index, subStepIndex)"
-                        >
-                          <div class="sub-step-indicator">
-                            <span class="sub-step-icon">
-                              {{
-                                getSubPlanStepStatus(message, index, subStepIndex) === 'completed'
-                                    ? '✓'
-                                    : getSubPlanStepStatus(message, index, subStepIndex) === 'current'
-                                        ? '▶'
-                                        : '○'
-                              }}
-                            </span>
-                            <span class="sub-step-number">{{ subStepIndex + 1 }}</span>
-                          </div>
-                          <div class="sub-step-content">
-                            <span class="sub-step-title">{{ subStep }}</span>
-                            <span class="sub-step-badge">{{ $t('rightPanel.subStep') }}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- User input form -->
-                    <div
-                        v-if="
-                        message.planExecution?.userInputWaitState &&
-                        getAgentExecutionStatus(message, index) === 'RUNNING'
-                      "
-                        class="user-input-form-container"
-                    >
-                      <p class="user-input-message">
-                        {{
-                          message.planExecution?.userInputWaitState?.message ??
-                          $t('chat.userInput.message')
-                        }}
-                      </p>
-                      <p
-                          v-if="message.planExecution?.userInputWaitState?.formDescription"
-                          class="form-description"
-                      >
-                        {{ message.planExecution?.userInputWaitState?.formDescription }}
-                      </p>
-
-                      <form
-                          @submit.prevent="handleUserInputSubmit(message)"
-                          class="user-input-form"
-                      >
-                        <template
-                            v-if="
-                            message.planExecution?.userInputWaitState?.formInputs &&
-                            message.planExecution.userInputWaitState.formInputs.length > 0
-                          "
-                        >
-                          <div class="form-grid">
-                            <div
-                                v-for="(input, inputIndex) in message.planExecution?.userInputWaitState
-                                ?.formInputs"
-                                :key="inputIndex"
-                                class="form-group"
-
-                            >
-                              <label :for="`form-input-${input.label.replace(/\W+/g, '_')}`">
-                                {{ input.label }}{{ isRequired(input.required) ? ' *' : '' }}:
-                              </label>
-
-                              <!-- Text Input -->
-                              <input
-                                  v-if="!input.type || input.type === 'text'"
-                                  type="text"
-                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                                  :name="input.label"
-                                  :placeholder="input.placeholder || ''"
-                                  :required="isRequired(input.required)"
-                                  v-model="formInputsStore[message.id][inputIndex]"
-                                  class="form-input"
-                              />
-
-                              <!-- Email Input -->
-                              <input
-                                  v-else-if="input.type === 'email'"
-                                  type="email"
-                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                                  :name="input.label"
-                                  :placeholder="input.placeholder || ''"
-                                  :required="isRequired(input.required)"
-                                  v-model="formInputsStore[message.id][inputIndex]"
-                                  class="form-input"
-                              />
-
-                              <!-- Number Input -->
-                              <input
-                                  v-else-if="input.type === 'number'"
-                                  type="number"
-                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                                  :name="input.label"
-                                  :placeholder="input.placeholder || ''"
-                                  :required="isRequired(input.required)"
-                                  v-model="formInputsStore[message.id][inputIndex]"
-                                  class="form-input"
-                              />
-
-                              <!-- Password Input -->
-                              <input
-                                  v-else-if="input.type === 'password'"
-                                  type="password"
-                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                                  :name="input.label"
-                                  :placeholder="input.placeholder || ''"
-                                  :required="isRequired(input.required)"
-                                  v-model="formInputsStore[message.id][inputIndex]"
-                                  class="form-input"
-                              />
-
-                              <!-- Textarea -->
-                              <textarea
-                                  v-else-if="input.type === 'textarea'"
-                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                                  :name="input.label"
-                                  :placeholder="input.placeholder || ''"
-                                  :required="isRequired(input.required)"
-                                  v-model="formInputsStore[message.id][inputIndex]"
-                                  class="form-input form-textarea"
-                                  rows="3"
-                              ></textarea>
-
-                              <!-- Select -->
-                              <select
-                                  v-else-if="input.type === 'select' && input.options"
-                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                                  :name="input.label"
-                                  :required="isRequired(input.required)"
-                                  v-model="formInputsStore[message.id][inputIndex]"
-                                  class="form-input form-select"
-                              >
-                                <option value="">{{ $t('selectCommon.pleaseSelect') }}</option>
-                                <option
-                                    v-for="option in getOptionsArray(input.options)"
-                                    :key="option"
-                                    :value="option"
-                                >
-                                  {{ option }}
-                                </option>
-                              </select>
-
-                              <!-- Fallback to text input -->
-                              <input
-                                  v-else
-                                  type="text"
-                                  :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                                  :name="input.label"
-                                  :placeholder="input.placeholder || ''"
-                                  :required="isRequired(input.required)"
-                                  v-model="formInputsStore[message.id][inputIndex]"
-                                  class="form-input"
-                              />
-                            </div>
-                          </div>
-                        </template>
-
-                        <template v-else>
-                          <div class="form-group">
-                            <label for="form-input-genericInput">{{ $t('common.input') }}:</label>
-                            <input
-                                type="text"
-                                id="form-input-genericInput"
-                                name="genericInput"
-                                v-model="message.genericInput"
-                                class="form-input"
-                            />
-                          </div>
-                        </template>
-
-                        <button type="submit" class="submit-user-input-btn">
-                          {{ $t('chat.userInput.submit') }}
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
 
                 <!-- Display the default processing state only when there is no final content and processing is in progress -->
                 <div
                     v-else-if="
-                    !message.content &&
-                    (message.thinking ||
-                      (message.planExecution?.progress !== undefined &&
-                        (message.planExecution?.progress ?? 0) < 100))
+                    !message.content && message.thinking
                   "
                     class="default-processing"
                 >
@@ -467,6 +180,7 @@
 import { ref, nextTick, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
+import ExecutionDetails from './execution-details.vue'
 
 import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
@@ -754,16 +468,6 @@ const handleSendMessage = (message: InputMessage) => {
   }
 }
 
-// Get agent execution status based on index
-const getAgentExecutionStatus = (message: Message, index: number): string => {
-  const agentExecutionSequence = message.planExecution?.agentExecutionSequence ?? []
-  // Use safe index checking to avoid out-of-bounds access
-  if (index < 0 || index >= agentExecutionSequence.length) {
-    return 'IDLE'
-  }
-  const agentExecution = agentExecutionSequence[index]
-  return agentExecution.status ?? 'IDLE'
-}
 
 // Handle step click events - Only expose events without handling specific logic
 const handleStepClick = (message: Message, stepIndex: number) => {
@@ -782,110 +486,6 @@ const handleStepClick = (message: Message, stepIndex: number) => {
   emit('step-selected', message.planExecution.currentPlanId, stepIndex)
 }
 
-// Get sub-plan steps from agentExecutionSequence
-const getSubPlanSteps = (message: Message, stepIndex: number): string[] => {
-  try {
-    // Find sub-plan from planExecution.agentExecutionSequence
-    const agentExecutionSequence = message.planExecution?.agentExecutionSequence
-    if (!agentExecutionSequence?.length) {
-      console.log('[ChatComponent] No agentExecutionSequence found')
-      return []
-    }
-
-    // Get corresponding step's agentExecution
-    const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
-    if (!agentExecution) {
-      console.log(`[ChatComponent] No agentExecution found for step ${stepIndex}`)
-      return []
-    }
-
-    if (!agentExecution.thinkActSteps) {
-      console.log(`[ChatComponent] No thinkActSteps found for step ${stepIndex}`)
-      return []
-    }
-
-    // Find sub-plan in thinkActSteps
-    for (const thinkActStep of agentExecution.thinkActSteps) {
-      if (thinkActStep.subPlanExecutionRecord) {
-        console.log(
-            `[ChatComponent] Found sub-plan for step ${stepIndex}:`,
-            thinkActStep.subPlanExecutionRecord
-        )
-        const rawSteps = thinkActStep.subPlanExecutionRecord.steps ?? []
-        // Apply the same formatting logic as main steps
-        return rawSteps.map((step: any) => {
-          if (typeof step === 'string') {
-            return step
-          } else if (typeof step === 'object' && step !== null) {
-            return step.title || step.description || t('rightPanel.subStep')
-          }
-          return t('rightPanel.subStep')
-        })
-      }
-    }
-
-    return []
-  } catch (error) {
-    console.warn('[ChatComponent] Error getting sub-plan steps:', error)
-    return []
-  }
-}
-
-// Get sub-plan step status - new feature
-const getSubPlanStepStatus = (
-    message: Message,
-    stepIndex: number,
-    subStepIndex: number
-): string => {
-  try {
-    const agentExecutionSequence = message.planExecution?.agentExecutionSequence
-    if (!agentExecutionSequence?.length) {
-      return 'pending'
-    }
-
-    const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
-    if (!agentExecution) {
-      return 'pending'
-    }
-
-    if (!agentExecution.thinkActSteps) {
-      return 'pending'
-    }
-
-    // Find sub-plan in thinkActSteps
-    let subPlan = null
-    for (const thinkActStep of agentExecution.thinkActSteps) {
-      if (thinkActStep.subPlanExecutionRecord) {
-        subPlan = thinkActStep.subPlanExecutionRecord
-        break
-      }
-    }
-
-    if (!subPlan) {
-      return 'pending'
-    }
-
-    const currentStepIndex = subPlan.currentStepIndex
-    if (subPlan.completed) {
-      return 'completed'
-    }
-
-    if (currentStepIndex == null) {
-      return subStepIndex === 0 ? 'current' : 'pending'
-    }
-
-    if (subStepIndex < currentStepIndex) {
-      return 'completed'
-    } else if (subStepIndex === currentStepIndex) {
-      return 'current'
-    } else {
-      return 'pending'
-    }
-  } catch (error) {
-    console.warn('[ChatComponent] Error getting sub-plan step status:', error)
-    return 'pending'
-  }
-}
 
 // Handle sub-plan step click - simplified to only emit events
 const handleSubPlanStepClick = (message: Message, stepIndex: number, subStepIndex: number) => {
@@ -1425,35 +1025,40 @@ const handleMessageContainerClick = (event: Event) => {
 }
 
 // Handle user input form submission
-const handleUserInputSubmit = async (message: Message) => {
+const handleUserInputSubmit = async (message: Message, inputData?: any) => {
   if (!message.planExecution?.currentPlanId || !message.planExecution.userInputWaitState) {
     console.error('[ChatComponent] Missing planExecution.currentPlanId or userInputWaitState')
     return
   }
 
   try {
-    // Collect form data
-    const inputData: any = {}
+    // Use provided inputData or collect from message
+    let formData: any = inputData
 
-    const formInputs = message.planExecution.userInputWaitState.formInputs
-    if (formInputs && formInputs.length > 0) {
-      // Multiple fields case
-      Object.entries(formInputsStore[message.id]).forEach(([index, value]) => {
-        const numIndex = parseInt(index, 10)
-        const label = formInputs[numIndex]?.label || `input_${index}`
-        inputData[label] = value
-      })
-    } else {
-      // Single generic input case
-      inputData.genericInput = message.genericInput ?? ''
+    if (!formData) {
+      // Fallback to collecting form data from message (legacy support)
+      formData = {}
+
+      const formInputs = message.planExecution.userInputWaitState.formInputs
+      if (formInputs && formInputs.length > 0) {
+        // Multiple fields case
+        Object.entries(formInputsStore[message.id]).forEach(([index, value]) => {
+          const numIndex = parseInt(index, 10)
+          const label = formInputs[numIndex]?.label || `input_${index}`
+          formData[label] = value
+        })
+      } else {
+        // Single generic input case
+        formData.genericInput = message.genericInput ?? ''
+      }
     }
 
-    console.log('[ChatComponent] Submitting user input:', inputData)
+    console.log('[ChatComponent] Submitting user input:', formData)
 
     // Submit user input via API
     const response = await CommonApiService.submitFormInput(
         message.planExecution.currentPlanId,
-        inputData
+        formData
     )
 
     // Clear the user input waiting state
@@ -1555,23 +1160,6 @@ const showMemory = async () => {
 
 const newChat = () => {
   messages.value = []
-}
-
-// Helper function to safely get options array
-const getOptionsArray = (options: string | string[] | undefined): string[] => {
-  if (!options) return []
-  if (Array.isArray(options)) return options
-  if (typeof options === 'string') {
-    return options.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0)
-  }
-  return []
-}
-
-// Helper function to check if field is required
-const isRequired = (required: boolean | string | undefined): boolean => {
-  if (typeof required === 'boolean') return required
-  if (typeof required === 'string') return required === 'true'
-  return false
 }
 
 // Expose methods to parent components for usage
