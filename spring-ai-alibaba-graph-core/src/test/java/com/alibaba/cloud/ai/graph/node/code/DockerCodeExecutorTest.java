@@ -27,12 +27,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
 class DockerCodeExecutorTest {
 
-
-	@EnabledIf(value = "isCI" ,
-			disabledReason = "this test is designed to run only in the GitHub CI environment.")
+	@EnabledIf(value = "isCI", disabledReason = "this test is designed to run only in the GitHub CI environment.")
 	@Test
 	void testPython3Sum() throws Exception {
 		// 1. 构造 DockerCodeExecutor
@@ -59,9 +56,8 @@ class DockerCodeExecutorTest {
 		assertEquals(0, result.exitCode(), "Exit code should be 0");
 	}
 
-	private static boolean isCI(){
-		return "true".equalsIgnoreCase(
-				System.getProperty("CI", System.getenv("CI")));
+	private static boolean isCI() {
+		return "true".equalsIgnoreCase(System.getProperty("CI", System.getenv("CI")));
 	}
 
 }
