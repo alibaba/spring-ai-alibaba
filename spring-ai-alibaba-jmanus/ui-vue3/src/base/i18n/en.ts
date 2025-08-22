@@ -859,7 +859,8 @@ const words: I18nType = {
     planTemplateIdNotFound: 'Plan template ID not found',
     executionFailedNoPlanId: 'Plan execution failed: No valid plan ID returned',
     executionFailed: 'Plan execution failed',
-    configuration: 'config'
+    configuration: 'config',
+    panelResizeHint: 'Drag to resize panels, double-click to reset'
   },
 
   // Modal

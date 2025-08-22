@@ -826,7 +826,8 @@ const words: I18nType = {
     planTemplateIdNotFound: '没有找到计划模板ID',
     executionFailedNoPlanId: '执行计划失败：未返回有效的计划ID',
     executionFailed: '执行计划失败',
-    configuration: '设置'
+    configuration: '设置',
+    panelResizeHint: '拖拽调整面板大小，双击重置'
   },
 
   // 模态框
