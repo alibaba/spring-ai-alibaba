@@ -47,12 +47,16 @@ export class PlanActApiService {
   }
 
   // Execute generated plan
-  public static async executePlan(planTemplateId: string, rawParam?: string): Promise<any> {
+  public static async executePlan(planTemplateId: string, rawParam?: string, uploadedFiles?: any[]): Promise<any> {
     return LlmCheckService.withLlmCheck(async () => {
-      console.log('[PlanActApiService] executePlan called with:', { planTemplateId, rawParam })
+      console.log('[PlanActApiService] executePlan called with:', { planTemplateId, rawParam, uploadedFiles })
       
       const requestBody: Record<string, any> = { planTemplateId }
       if (rawParam) requestBody.rawParam = rawParam
+      if (uploadedFiles && uploadedFiles.length > 0) {
+        requestBody.uploadedFiles = uploadedFiles
+        console.log('[PlanActApiService] Including uploaded files:', uploadedFiles.length)
+      }
       
       console.log('[PlanActApiService] Making request to:', `${this.PLAN_TEMPLATE_URL}/executePlanByTemplateId`)
       console.log('[PlanActApiService] Request body:', requestBody)

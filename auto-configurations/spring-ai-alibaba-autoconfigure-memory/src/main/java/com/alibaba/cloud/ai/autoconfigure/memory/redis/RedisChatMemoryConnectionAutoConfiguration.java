@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.autoconfigure.memory.redis;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
@@ -101,7 +100,7 @@ public abstract class RedisChatMemoryConnectionAutoConfiguration<T extends ChatM
 	 * @return Fully configured standalone Redis chat memory configuration
 	 */
 	protected final RedisChatMemoryStandaloneConfiguration getStandaloneConfiguration() {
-		RedisConnectionDetails.Standalone standalone = connectionDetails.getStandalone();
+		RedisMemoryConnectionDetails.Standalone standalone = connectionDetails.getStandalone();
 		return new RedisChatMemoryStandaloneConfiguration(standalone.getHost(), standalone.getPort(),
 				connectionDetails.getUsername(), connectionDetails.getPassword(), properties.getTimeout());
 	}
@@ -124,9 +123,9 @@ public abstract class RedisChatMemoryConnectionAutoConfiguration<T extends ChatM
 	 * @param cluster The cluster connection details containing node information
 	 * @return List of Redis node connection strings
 	 */
-	private List<String> getNodes(RedisConnectionDetails.Cluster cluster) {
+	private List<String> getNodes(RedisMemoryConnectionDetails.Cluster cluster) {
 		List<String> clusterNodes = new ArrayList<>();
-		for (RedisConnectionDetails.Node node : cluster.getNodes()) {
+		for (RedisMemoryConnectionDetails.Node node : cluster.getNodes()) {
 			clusterNodes.add(node.host() + ":" + node.port());
 		}
 		return clusterNodes;

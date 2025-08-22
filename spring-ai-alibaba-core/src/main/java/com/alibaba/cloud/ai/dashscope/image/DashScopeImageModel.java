@@ -37,6 +37,7 @@ import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.retry.TransientAiException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -168,7 +169,7 @@ public class DashScopeImageModel implements ImageModel {
 					}
 				}
 			}
-			throw new RuntimeException("Image generation still pending");
+			throw new TransientAiException("Image generation still pending");
 		}, context -> {
 			observation.lowCardinalityKeyValue("timeout", "true");
 			return new ImageResponse(List.of(), toMetadataTimeout(taskId));

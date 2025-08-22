@@ -24,9 +24,9 @@ public enum DSLDialectType {
 
 	CUSTOM("custom", ".yml");
 
-	private String value;
+	private final String value;
 
-	private String fileExtension;
+	private final String fileExtension;
 
 	public String value() {
 		return value;

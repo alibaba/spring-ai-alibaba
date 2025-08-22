@@ -120,6 +120,7 @@ import { planExecutionManager } from '@/utils/plan-execution-manager'
 import { useMessage } from '@/composables/useMessage'
 import { memoryStore } from "@/stores/memory";
 import type { InputMessage } from "@/stores/memory";
+import { getUploadedFiles, hasUploadedFiles } from '@/stores/uploadedFiles'
 
 const route = useRoute()
 const router = useRouter()
@@ -573,13 +574,18 @@ const handlePlanExecutionRequested = async (payload: {
 
     // Call real API to execute plan
     console.log('[Direct] About to call PlanActApiService.executePlan')
+    
+    // Get uploaded files from global state
+    const uploadedFiles = hasUploadedFiles() ? getUploadedFiles() : undefined
+    console.log('[Direct] Executing with uploaded files:', uploadedFiles?.length || 0)
+    
     let response
     if (payload.params?.trim()) {
       console.log('[Direct] Calling executePlan with params:', payload.params.trim())
-      response = await PlanActApiService.executePlan(planTemplateId, payload.params.trim())
+      response = await PlanActApiService.executePlan(planTemplateId, payload.params.trim(), uploadedFiles)
     } else {
       console.log('[Direct] Calling executePlan without params')
-      response = await PlanActApiService.executePlan(planTemplateId)
+      response = await PlanActApiService.executePlan(planTemplateId, undefined, uploadedFiles)
     }
 
     console.log('[Direct] Plan execution API response:', response)
