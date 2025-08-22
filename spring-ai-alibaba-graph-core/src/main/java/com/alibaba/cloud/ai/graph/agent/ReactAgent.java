@@ -83,9 +83,9 @@ public class ReactAgent extends BaseAgent {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-    private String llmInputMessagesKey;
+	private String llmInputMessagesKey;
 
-    protected ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
+	protected ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
 		this.name = builder.name;
 		this.description = builder.description;
 		this.instruction = builder.instruction;
@@ -99,7 +99,7 @@ public class ReactAgent extends BaseAgent {
 		this.postLlmHook = builder.postLlmHook;
 		this.preToolHook = builder.preToolHook;
 		this.postToolHook = builder.postToolHook;
-        this.llmInputMessagesKey = builder.llmInputMessagesKey != null ? builder.llmInputMessagesKey : "messages";
+		this.llmInputMessagesKey = builder.llmInputMessagesKey != null ? builder.llmInputMessagesKey : "messages";
 		this.graph = initGraph();
 	}
 
@@ -459,7 +459,9 @@ public class ReactAgent extends BaseAgent {
 				chatClient = clientBuilder.build();
 			}
 
-			LlmNode.Builder llmNodeBuilder = LlmNode.builder().chatClient(chatClient).messagesKey(this.llmInputMessagesKey);
+			LlmNode.Builder llmNodeBuilder = LlmNode.builder()
+				.chatClient(chatClient)
+				.messagesKey(this.llmInputMessagesKey);
 			if (CollectionUtils.isNotEmpty(tools)) {
 				llmNodeBuilder.toolCallbacks(tools);
 			}

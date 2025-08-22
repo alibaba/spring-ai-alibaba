@@ -103,8 +103,8 @@ class ReactAgentHookTest {
 		// Configure mock ChatResponse with ToolCalls
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("finishReason", "stop");
-		List<ToolCall> toolCalls = List
-			.of(new ToolCall("call_1", "function", "weather_tool", "{\"city\": \"北京\", \"currentTimestamp\": \"2024-01-01 12:00:00\"}"));
+		List<ToolCall> toolCalls = List.of(new ToolCall("call_1", "function", "weather_tool",
+				"{\"city\": \"北京\", \"currentTimestamp\": \"2024-01-01 12:00:00\"}"));
 		AssistantMessage assistantMessage = new AssistantMessage("test response", metadata, toolCalls,
 				Collections.emptyList());
 		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder().finishReason("stop").build();
@@ -127,35 +127,33 @@ class ReactAgentHookTest {
 	public void testReactAgentWithPreLlmHook() throws Exception {
 		ToolCallback toolCallback = ToolCallbacks.from(new WeatherTool())[0];
 		ReactAgent agent = ReactAgent.builder()
-				.name("weather_agent")
-				.model(chatModel)
-				.tools(List.of(toolCallback))
-				.llmInputMessagesKey("llm_input_messages")
-				.preLlmHook(state -> {
-					if (!state.value("messages").isPresent()) {
-						return Map.of();
-					}
-					List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
-					
-					// 消息裁剪功能
-					if (messages.size() > 20) {
-						List<Message> userMessages = messages.stream()
-							.filter(msg -> msg instanceof UserMessage)
-							.toList();
-						List<Message> last20Messages = messages.subList(messages.size() - 20, messages.size());
-						List<Message> resultMessages = new ArrayList<>(last20Messages);
-						for (Message userMsg : userMessages) {
-							if (!resultMessages.contains(userMsg)) {
-								resultMessages.add(userMsg);
-							}
-						}
-						messages = resultMessages;
-					}
-					
-					state.updateState(Map.of("llm_input_messages", messages));
+			.name("weather_agent")
+			.model(chatModel)
+			.tools(List.of(toolCallback))
+			.llmInputMessagesKey("llm_input_messages")
+			.preLlmHook(state -> {
+				if (!state.value("messages").isPresent()) {
 					return Map.of();
-				})
-				.build();
+				}
+				List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
+
+				// 消息裁剪功能
+				if (messages.size() > 20) {
+					List<Message> userMessages = messages.stream().filter(msg -> msg instanceof UserMessage).toList();
+					List<Message> last20Messages = messages.subList(messages.size() - 20, messages.size());
+					List<Message> resultMessages = new ArrayList<>(last20Messages);
+					for (Message userMsg : userMessages) {
+						if (!resultMessages.contains(userMsg)) {
+							resultMessages.add(userMsg);
+						}
+					}
+					messages = resultMessages;
+				}
+
+				state.updateState(Map.of("llm_input_messages", messages));
+				return Map.of();
+			})
+			.build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 
@@ -175,43 +173,43 @@ class ReactAgentHookTest {
 		AtomicBoolean isSecondCall = new AtomicBoolean(false);
 
 		ReactAgent agent = ReactAgent.builder()
-				.name("dataAgent")
-				.model(chatModel)
-				.tools(List.of(toolCallback))
-				.postLlmHook(state -> {
-					// 写一个判断是否工具避免被调用两次的逻辑
-					List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-					if (!messages.isEmpty()) {
-						Message lastMessage = messages.get(messages.size() - 1);
-						if (lastMessage instanceof AssistantMessage) {
-							AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
-							// 使用AtomicBoolean来判断是否是第二次调用
-							if (isSecondCall.get()) {
-								// 第二次调用：清掉toolCall
-								System.out.println("postLlmHook: 第二次调用，清掉toolCall");
-								// 创建没有toolCall的AssistantMessage
-								AssistantMessage updatedAssistantMessage = new AssistantMessage(assistantMessage.getText(),
-										assistantMessage.getMetadata(), Collections.emptyList(), // 清掉toolCall
-										Collections.emptyList());
+			.name("dataAgent")
+			.model(chatModel)
+			.tools(List.of(toolCallback))
+			.postLlmHook(state -> {
+				// 写一个判断是否工具避免被调用两次的逻辑
+				List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
+				if (!messages.isEmpty()) {
+					Message lastMessage = messages.get(messages.size() - 1);
+					if (lastMessage instanceof AssistantMessage) {
+						AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
+						// 使用AtomicBoolean来判断是否是第二次调用
+						if (isSecondCall.get()) {
+							// 第二次调用：清掉toolCall
+							System.out.println("postLlmHook: 第二次调用，清掉toolCall");
+							// 创建没有toolCall的AssistantMessage
+							AssistantMessage updatedAssistantMessage = new AssistantMessage(assistantMessage.getText(),
+									assistantMessage.getMetadata(), Collections.emptyList(), // 清掉toolCall
+									Collections.emptyList());
 
-								// 更新消息列表
-								List<Message> updatedMessages = new ArrayList<>(messages);
-								updatedMessages.set(updatedMessages.size() - 1, updatedAssistantMessage);
-								state.updateState(Map.of("messages", updatedMessages));
-							}
-							else {
-								System.out.println("postLlmHook: 第一次调用，保留toolCall");
-							}
+							// 更新消息列表
+							List<Message> updatedMessages = new ArrayList<>(messages);
+							updatedMessages.set(updatedMessages.size() - 1, updatedAssistantMessage);
+							state.updateState(Map.of("messages", updatedMessages));
+						}
+						else {
+							System.out.println("postLlmHook: 第一次调用，保留toolCall");
 						}
 					}
+				}
 
-					return Map.of();
-				})
-				.postToolHook(state -> {
-					isSecondCall.set(true);
-					return Map.of();
-				})
-				.build();
+				return Map.of();
+			})
+			.postToolHook(state -> {
+				isSecondCall.set(true);
+				return Map.of();
+			})
+			.build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 		// 创建包含时间查询的提示词
@@ -229,64 +227,63 @@ class ReactAgentHookTest {
 		ToolCallback toolCallback = ToolCallbacks.from(new WeatherTool())[0];
 
 		ReactAgent agent = ReactAgent.builder()
-				.name("dataAgent")
-				.model(chatModel)
-				.tools(List.of(toolCallback))
-				.preToolHook(state -> {
-					// 在preToolHook中获取最新的时间戳 传给toolCall保证时效性
-					long currentTimestamp = System.currentTimeMillis();
-					String formattedTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-							.format(new java.util.Date(currentTimestamp));
+			.name("dataAgent")
+			.model(chatModel)
+			.tools(List.of(toolCallback))
+			.preToolHook(state -> {
+				// 在preToolHook中获取最新的时间戳 传给toolCall保证时效性
+				long currentTimestamp = System.currentTimeMillis();
+				String formattedTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+					.format(new java.util.Date(currentTimestamp));
 
-					List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-					if (!messages.isEmpty()) {
-						Message lastMessage = messages.get(messages.size() - 1);
-						if (lastMessage instanceof AssistantMessage) {
-							AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
-							if (assistantMessage.hasToolCalls()) {
-								// 更新ToolCall参数，把时间换成当前系统最新时间
-								for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-									if ("weather_tool".equals(toolCall.name())) {
-										String originalArgs = toolCall.arguments();
-										Map<String, Object> updatedArgs = JSON.parseObject(originalArgs);
-										updatedArgs.put("currentTimestamp", formattedTime);
-										// 创建新的ToolCall，替换参数
-										AssistantMessage.ToolCall updatedToolCall = new AssistantMessage.ToolCall(
-												toolCall.id(), toolCall.type(), toolCall.name(),
-												JSON.toJSONString(updatedArgs));
+				List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
+				if (!messages.isEmpty()) {
+					Message lastMessage = messages.get(messages.size() - 1);
+					if (lastMessage instanceof AssistantMessage) {
+						AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
+						if (assistantMessage.hasToolCalls()) {
+							// 更新ToolCall参数，把时间换成当前系统最新时间
+							for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+								if ("weather_tool".equals(toolCall.name())) {
+									String originalArgs = toolCall.arguments();
+									Map<String, Object> updatedArgs = JSON.parseObject(originalArgs);
+									updatedArgs.put("currentTimestamp", formattedTime);
+									// 创建新的ToolCall，替换参数
+									AssistantMessage.ToolCall updatedToolCall = new AssistantMessage.ToolCall(
+											toolCall.id(), toolCall.type(), toolCall.name(),
+											JSON.toJSONString(updatedArgs));
 
-										// 更新消息中的ToolCall
-										List<AssistantMessage.ToolCall> updatedToolCalls = new ArrayList<>();
-										for (AssistantMessage.ToolCall tc : assistantMessage.getToolCalls()) {
-											if (tc.id().equals(toolCall.id())) {
-												updatedToolCalls.add(updatedToolCall);
-											}
-											else {
-												updatedToolCalls.add(tc);
-											}
+									// 更新消息中的ToolCall
+									List<AssistantMessage.ToolCall> updatedToolCalls = new ArrayList<>();
+									for (AssistantMessage.ToolCall tc : assistantMessage.getToolCalls()) {
+										if (tc.id().equals(toolCall.id())) {
+											updatedToolCalls.add(updatedToolCall);
 										}
-										AssistantMessage updatedAssistantMessage = new AssistantMessage(
-												assistantMessage.getText(), assistantMessage.getMetadata(),
-												updatedToolCalls, Collections.emptyList());
-										List<Message> updatedMessages = new ArrayList<>(messages);
-										updatedMessages.set(updatedMessages.size() - 1, updatedAssistantMessage);
-										state.updateState(Map.of("messages", updatedMessages));
-										break;
+										else {
+											updatedToolCalls.add(tc);
+										}
 									}
+									AssistantMessage updatedAssistantMessage = new AssistantMessage(
+											assistantMessage.getText(), assistantMessage.getMetadata(),
+											updatedToolCalls, Collections.emptyList());
+									List<Message> updatedMessages = new ArrayList<>(messages);
+									updatedMessages.set(updatedMessages.size() - 1, updatedAssistantMessage);
+									state.updateState(Map.of("messages", updatedMessages));
+									break;
 								}
 							}
 						}
 					}
-					return Map.of();
-				})
-				.build();
+				}
+				return Map.of();
+			})
+			.build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 		List<Message> messages = List.of(new UserMessage("请打印当前时间的天气"));
 		Optional<OverAllState> result = graph.invoke(Map.of("messages", messages));
 		System.out.println(result);
 	}
-
 
 	/**
 	 * 天气工具类，用于演示工具的实际调用
@@ -295,7 +292,7 @@ class ReactAgentHookTest {
 
 		@Tool(name = "weather_tool", description = "获取指定城市的天气信息")
 		public String getWeather(@ToolParam(description = "城市名称") String city,
-								 @ToolParam(description = "当前时间戳") String currentTimestamp) {
+				@ToolParam(description = "当前时间戳") String currentTimestamp) {
 
 			return String.format("城市：%s，温度：20度，时间：%s", city, currentTimestamp);
 		}

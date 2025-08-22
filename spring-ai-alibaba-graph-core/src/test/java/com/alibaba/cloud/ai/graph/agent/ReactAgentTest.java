@@ -29,7 +29,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
-
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class ReactAgentTest {
 
@@ -55,6 +54,5 @@ class ReactAgentTest {
 			e.printStackTrace();
 		}
 	}
-
 
 }
