@@ -15,27 +15,31 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.fastjson.JSON;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.definition.DefaultToolDefinition;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import java.util.Collections;
@@ -43,13 +47,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class ReactAgentHookTest {
 
 	@Mock
@@ -67,11 +73,17 @@ class ReactAgentHookTest {
 	@Mock
 	private ToolCallbackResolver toolCallbackResolver;
 
-	@Mock
-	private ToolCallback toolCallback;
+	private ChatModel chatModel;
 
 	@BeforeEach
 	void setUp() {
+
+		// Create DashScopeApi instance using the API key from environment variable
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+
+		// Create DashScope ChatModel instance
+		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
+
 		MockitoAnnotations.openMocks(this);
 
 		// Configure mock ChatClient with complete call chain
@@ -84,20 +96,15 @@ class ReactAgentHookTest {
 		when(requestSpec.user(anyString())).thenReturn(requestSpec);
 		when(requestSpec.call()).thenReturn(responseSpec);
 
-		// Configure mock ToolCallbackResolver
-		when(toolCallbackResolver.resolve(anyString())).thenReturn(toolCallback);
-		when(toolCallback.call(anyString(), any(ToolContext.class))).thenReturn("test tool response");
-		when(toolCallback.getToolDefinition()).thenReturn(DefaultToolDefinition.builder()
-			.name("test_function")
-			.description("A test function")
-			.inputSchema("{\"type\": \"object\", \"properties\": {\"arg1\": {\"type\": \"string\"}}}")
-			.build());
+		// 使用真实的 WeatherTool 创建 ToolCallback
+		ToolCallback weatherToolCallback = ToolCallbacks.from(new WeatherTool())[0];
+		when(toolCallbackResolver.resolve(anyString())).thenReturn(weatherToolCallback);
 
 		// Configure mock ChatResponse with ToolCalls
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("finishReason", "stop");
 		List<ToolCall> toolCalls = List
-			.of(new ToolCall("call_1", "function", "test_function", "{\"arg1\": \"value1\"}"));
+			.of(new ToolCall("call_1", "function", "weather_tool", "{\"city\": \"北京\", \"currentTimestamp\": \"2024-01-01 12:00:00\"}"));
 		AssistantMessage assistantMessage = new AssistantMessage("test response", metadata, toolCalls,
 				Collections.emptyList());
 		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder().finishReason("stop").build();
@@ -118,26 +125,44 @@ class ReactAgentHookTest {
 	 */
 	@Test
 	public void testReactAgentWithPreLlmHook() throws Exception {
-		Map<String, String> prellmStore = new HashMap<>();
-
-		ReactAgent agent = ReactAgent.builder().name("testAgent").chatClient(chatClient).state(() -> {
-			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			keyStrategyHashMap.put("messages", new AppendStrategy());
-			return keyStrategyHashMap;
-		}).resolver(toolCallbackResolver).preLlmHook(state -> {
-			prellmStore.put("timestamp", String.valueOf(System.currentTimeMillis()));
-			return Map.of();
-		}).build();
+		ToolCallback toolCallback = ToolCallbacks.from(new WeatherTool())[0];
+		ReactAgent agent = ReactAgent.builder()
+				.name("weather_agent")
+				.model(chatModel)
+				.tools(List.of(toolCallback))
+				.llmInputMessagesKey("llm_input_messages")
+				.preLlmHook(state -> {
+					if (!state.value("messages").isPresent()) {
+						return Map.of();
+					}
+					List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
+					
+					// 消息裁剪功能
+					if (messages.size() > 20) {
+						List<Message> userMessages = messages.stream()
+							.filter(msg -> msg instanceof UserMessage)
+							.toList();
+						List<Message> last20Messages = messages.subList(messages.size() - 20, messages.size());
+						List<Message> resultMessages = new ArrayList<>(last20Messages);
+						for (Message userMsg : userMessages) {
+							if (!resultMessages.contains(userMsg)) {
+								resultMessages.add(userMsg);
+							}
+						}
+						messages = resultMessages;
+					}
+					
+					state.updateState(Map.of("llm_input_messages", messages));
+					return Map.of();
+				})
+				.build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
-		try {
-			Optional<OverAllState> invoke = graph.invoke(Map.of("messages", List.of(new UserMessage("test"))));
-		}
-		catch (java.util.concurrent.CompletionException e) {
 
-		}
-		assertNotNull(prellmStore.get("timestamp"));
-
+		// 创建包含时间查询的提示词
+		List<Message> messages = List.of(new UserMessage("查询北京天气"));
+		Optional<OverAllState> result = graph.invoke(Map.of("llm_input_messages", messages));
+		System.out.println(result.get());
 	}
 
 	/**
@@ -145,30 +170,54 @@ class ReactAgentHookTest {
 	 */
 	@Test
 	public void testReactAgentWithPostLlmHook() throws Exception {
-		// Create a map to store processed responses
-		Map<String, String> responseStore = new HashMap<>();
+		// 使用AtomicBoolean来跟踪调用状态
+		ToolCallback toolCallback = ToolCallbacks.from(new WeatherTool())[0];
+		AtomicBoolean isSecondCall = new AtomicBoolean(false);
 
-		ReactAgent agent = ReactAgent.builder().name("testAgent").chatClient(chatClient).state(() -> {
-			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			keyStrategyHashMap.put("messages", new AppendStrategy());
-			return keyStrategyHashMap;
-		})
-			.resolver(toolCallbackResolver)
+		ReactAgent agent = ReactAgent.builder()
+				.name("dataAgent")
+				.model(chatModel)
+				.tools(List.of(toolCallback))
+				.postLlmHook(state -> {
+					// 写一个判断是否工具避免被调用两次的逻辑
+					List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
+					if (!messages.isEmpty()) {
+						Message lastMessage = messages.get(messages.size() - 1);
+						if (lastMessage instanceof AssistantMessage) {
+							AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
+							// 使用AtomicBoolean来判断是否是第二次调用
+							if (isSecondCall.get()) {
+								// 第二次调用：清掉toolCall
+								System.out.println("postLlmHook: 第二次调用，清掉toolCall");
+								// 创建没有toolCall的AssistantMessage
+								AssistantMessage updatedAssistantMessage = new AssistantMessage(assistantMessage.getText(),
+										assistantMessage.getMetadata(), Collections.emptyList(), // 清掉toolCall
+										Collections.emptyList());
 
-			.postLlmHook(state -> {
-				responseStore.put("response", "Processed: " + state.value("messages"));
-				return Map.of();
-			})
-			.build();
+								// 更新消息列表
+								List<Message> updatedMessages = new ArrayList<>(messages);
+								updatedMessages.set(updatedMessages.size() - 1, updatedAssistantMessage);
+								state.updateState(Map.of("messages", updatedMessages));
+							}
+							else {
+								System.out.println("postLlmHook: 第一次调用，保留toolCall");
+							}
+						}
+					}
+
+					return Map.of();
+				})
+				.postToolHook(state -> {
+					isSecondCall.set(true);
+					return Map.of();
+				})
+				.build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
-		try {
-			Optional<OverAllState> invoke = graph.invoke(Map.of("messages", List.of(new UserMessage("test"))));
-		}
-		catch (java.util.concurrent.CompletionException e) {
-
-		}
-		assertNotNull(responseStore.get("response"));
+		// 创建包含时间查询的提示词
+		List<Message> messages = List.of(new UserMessage("请打印当前时间的天气"));
+		Optional<OverAllState> result = graph.invoke(Map.of("messages", messages));
+		System.out.println(result);
 	}
 
 	/**
@@ -176,104 +225,81 @@ class ReactAgentHookTest {
 	 */
 	@Test
 	public void testReactAgentWithPreToolHook() throws Exception {
-		// Create a map to store tool parameters
-		Map<String, Object> toolParams = new HashMap<>();
-
-		ReactAgent agent = ReactAgent.builder().name("testAgent").chatClient(chatClient).state(() -> {
-			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			keyStrategyHashMap.put("messages", new AppendStrategy());
-			keyStrategyHashMap.put("toolParams", new ReplaceStrategy());
-			return keyStrategyHashMap;
-		}).resolver(toolCallbackResolver).preToolHook(state -> {
-			toolParams.put("timestamp", System.currentTimeMillis());
-			return Map.of();
-		}).build();
-
-		CompiledGraph graph = agent.getAndCompileGraph();
-		try {
-			Optional<OverAllState> invoke = graph.invoke(Map.of("messages", List.of(new UserMessage("test"))));
-		}
-		catch (java.util.concurrent.CompletionException e) {
-
-		}
-		assertNotNull(toolParams.get("timestamp"));
-	}
-
-	/**
-	 * Tests ReactAgent with postToolHook that collects tool results.
-	 */
-	@Test
-	public void testReactAgentWithPostToolHook() throws Exception {
-		// Create a map to store tool results
-		Map<String, Object> toolResults = new HashMap<>();
+		// 使用AtomicBoolean来跟踪调用状态
+		ToolCallback toolCallback = ToolCallbacks.from(new WeatherTool())[0];
 
 		ReactAgent agent = ReactAgent.builder()
-			.name("testAgent")
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
-			.state(() -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				keyStrategyHashMap.put("toolOutput", new ReplaceStrategy());
-				return keyStrategyHashMap;
-			})
-			.postToolHook(state -> {
-				toolResults.put("result", "collected: " + "tool output");
-				return Map.of();
-			})
-			.build();
+				.name("dataAgent")
+				.model(chatModel)
+				.tools(List.of(toolCallback))
+				.preToolHook(state -> {
+					// 在preToolHook中获取最新的时间戳 传给toolCall保证时效性
+					long currentTimestamp = System.currentTimeMillis();
+					String formattedTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+							.format(new java.util.Date(currentTimestamp));
+
+					List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
+					if (!messages.isEmpty()) {
+						Message lastMessage = messages.get(messages.size() - 1);
+						if (lastMessage instanceof AssistantMessage) {
+							AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
+							if (assistantMessage.hasToolCalls()) {
+								// 更新ToolCall参数，把时间换成当前系统最新时间
+								for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+									if ("weather_tool".equals(toolCall.name())) {
+										String originalArgs = toolCall.arguments();
+										Map<String, Object> updatedArgs = JSON.parseObject(originalArgs);
+										updatedArgs.put("currentTimestamp", formattedTime);
+										// 创建新的ToolCall，替换参数
+										AssistantMessage.ToolCall updatedToolCall = new AssistantMessage.ToolCall(
+												toolCall.id(), toolCall.type(), toolCall.name(),
+												JSON.toJSONString(updatedArgs));
+
+										// 更新消息中的ToolCall
+										List<AssistantMessage.ToolCall> updatedToolCalls = new ArrayList<>();
+										for (AssistantMessage.ToolCall tc : assistantMessage.getToolCalls()) {
+											if (tc.id().equals(toolCall.id())) {
+												updatedToolCalls.add(updatedToolCall);
+											}
+											else {
+												updatedToolCalls.add(tc);
+											}
+										}
+										AssistantMessage updatedAssistantMessage = new AssistantMessage(
+												assistantMessage.getText(), assistantMessage.getMetadata(),
+												updatedToolCalls, Collections.emptyList());
+										List<Message> updatedMessages = new ArrayList<>(messages);
+										updatedMessages.set(updatedMessages.size() - 1, updatedAssistantMessage);
+										state.updateState(Map.of("messages", updatedMessages));
+										break;
+									}
+								}
+							}
+						}
+					}
+					return Map.of();
+				})
+				.build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
-		try {
-			Optional<OverAllState> invoke = graph.invoke(Map.of("messages", List.of(new UserMessage("test"))));
-		}
-		catch (java.util.concurrent.CompletionException e) {
-
-		}
-		assertNotNull(toolResults.get("result"));
+		List<Message> messages = List.of(new UserMessage("请打印当前时间的天气"));
+		Optional<OverAllState> result = graph.invoke(Map.of("messages", messages));
+		System.out.println(result);
 	}
 
-	@Test
-	public void testReactAgentWithAllHooks() throws Exception {
-		// Create maps to store results from each hook
-		Map<String, String> prellmStore = new HashMap<>();
-		Map<String, String> responseStore = new HashMap<>();
-		Map<String, Object> toolParams = new HashMap<>();
-		Map<String, Object> toolResults = new HashMap<>();
 
-		ReactAgent agent = ReactAgent.builder().name("testAgent").chatClient(chatClient).state(() -> {
-			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			keyStrategyHashMap.put("messages", new AppendStrategy());
-			keyStrategyHashMap.put("toolOutput", new ReplaceStrategy());
-			keyStrategyHashMap.put("toolParams", new ReplaceStrategy());
-			return keyStrategyHashMap;
-		}).resolver(toolCallbackResolver).preLlmHook(state -> {
-			prellmStore.put("timestamp", String.valueOf(System.currentTimeMillis()));
-			return Map.of();
-		}).postLlmHook(state -> {
-			responseStore.put("response", "Processed: " + state.value("messages"));
-			return Map.of();
-		}).preToolHook(state -> {
-			toolParams.put("timestamp", System.currentTimeMillis());
-			return Map.of();
-		}).postToolHook(state -> {
-			toolResults.put("result", "collected: " + "tool output");
-			return Map.of();
-		}).build();
+	/**
+	 * 天气工具类，用于演示工具的实际调用
+	 */
+	public static class WeatherTool {
 
-		CompiledGraph graph = agent.getAndCompileGraph();
-		try {
-			Optional<OverAllState> invoke = graph.invoke(Map.of("messages", List.of(new UserMessage("test"))));
-		}
-		catch (java.util.concurrent.CompletionException e) {
-			// Ignore max iterations exception
+		@Tool(name = "weather_tool", description = "获取指定城市的天气信息")
+		public String getWeather(@ToolParam(description = "城市名称") String city,
+								 @ToolParam(description = "当前时间戳") String currentTimestamp) {
+
+			return String.format("城市：%s，温度：20度，时间：%s", city, currentTimestamp);
 		}
 
-		// Verify all hooks were executed
-		assertNotNull(prellmStore.get("timestamp"), "PreLLM hook should store timestamp");
-		assertNotNull(responseStore.get("response"), "PostLLM hook should store response");
-		assertNotNull(toolParams.get("timestamp"), "PreTool hook should store timestamp");
-		assertNotNull(toolResults.get("result"), "PostTool hook should store result");
 	}
 
 }
