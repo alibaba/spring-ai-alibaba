@@ -35,7 +35,6 @@
                 class="thinking-section"
                 v-if="
                 message.thinking ||
-                message.planExecution?.progress !== undefined ||
                 (message.planExecution?.steps?.length ?? 0) > 0
               "
             >
@@ -66,7 +65,7 @@
 
 
 
-                <!-- Display the default processing state only when there is no final content and processing is in progress -->
+                <!-- Display the default processing state only when there is no final content -->
                 <div
                     v-else-if="
                     !message.content && message.thinking
@@ -1039,16 +1038,16 @@ const handleUserInputSubmit = async (message: Message, inputData?: any) => {
       // Fallback to collecting form data from message (legacy support)
       formData = {}
 
-      const formInputs = message.planExecution.userInputWaitState.formInputs
-      if (formInputs && formInputs.length > 0) {
-        // Multiple fields case
-        Object.entries(formInputsStore[message.id]).forEach(([index, value]) => {
-          const numIndex = parseInt(index, 10)
-          const label = formInputs[numIndex]?.label || `input_${index}`
+    const formInputs = message.planExecution.userInputWaitState.formInputs
+    if (formInputs && formInputs.length > 0) {
+      // Multiple fields case
+      Object.entries(formInputsStore[message.id]).forEach(([index, value]) => {
+        const numIndex = parseInt(index, 10)
+        const label = formInputs[numIndex]?.label || `input_${index}`
           formData[label] = value
-        })
-      } else {
-        // Single generic input case
+      })
+    } else {
+      // Single generic input case
         formData.genericInput = message.genericInput ?? ''
       }
     }
@@ -1603,29 +1602,7 @@ defineExpose({
     white-space: pre-line;
   }
 
-  .progress {
-    margin-top: 12px;
 
-    .progress-bar {
-      width: 100%;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-bottom: 8px;
-
-      .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        transition: width 0.3s ease;
-      }
-    }
-
-    .progress-text {
-      font-size: 12px;
-      color: #888888;
-    }
-  }
 
   .steps-container {
     margin-top: 16px;

@@ -15,19 +15,6 @@
 -->
 <template>
     <div class="execution-details">
-      <!-- Progress bar -->
-      <div class="progress" v-if="planExecution?.progress !== undefined">
-        <div class="progress-bar">
-          <div
-              class="progress-fill"
-              :style="{ width: planExecution.progress + '%' }"
-          ></div>
-        </div>
-        <span class="progress-text">{{
-            planExecution.progressText ?? $t('chat.processing') + '...'
-          }}</span>
-      </div>
-  
       <!-- Step execution details -->
       <div class="steps-container" v-if="(planExecution?.steps?.length ?? 0) > 0">
         <h4 class="steps-title">{{ $t('chat.stepExecutionDetails') }}</h4>
@@ -490,30 +477,6 @@ interface Props {
   
   <style lang="less" scoped>
   .execution-details {
-    .progress {
-      margin-top: 12px;
-  
-      .progress-bar {
-        width: 100%;
-        height: 4px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        overflow: hidden;
-        margin-bottom: 8px;
-  
-        .progress-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-          transition: width 0.3s ease;
-        }
-      }
-  
-      .progress-text {
-        font-size: 12px;
-        color: #888888;
-      }
-    }
-  
     .steps-container {
       margin-top: 16px;
       border: 1px solid rgba(255, 255, 255, 0.1);
