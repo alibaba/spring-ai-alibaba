@@ -19,22 +19,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
-import org.springframework.ai.chat.model.ChatModel;
-
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
 public class SequentialAgent extends FlowAgent {
 
-	protected SequentialAgent(Builder builder) throws GraphStateException {
+	protected SequentialAgent(SequentialAgentBuilder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory,
 				builder.compileConfig, builder.subAgents);
 		this.graph = initGraph();
@@ -53,7 +49,7 @@ public class SequentialAgent extends FlowAgent {
 	 * @param subAgents the list of sub-agents to process
 	 */
 	@Override
-	protected void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<? extends BaseAgent> subAgents)
+	protected void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<BaseAgent> subAgents)
 			throws GraphStateException {
 		for (BaseAgent subAgent : subAgents) {
 			// Add the current sub-agent as a node
@@ -65,79 +61,30 @@ public class SequentialAgent extends FlowAgent {
 		graph.addEdge(parentAgent.name(), END);
 	}
 
-	public static Builder builder() {
-		return new Builder();
+	public static SequentialAgentBuilder builder() {
+		return new SequentialAgentBuilder();
 	}
 
-	public static class Builder {
+	/**
+	 * Builder for creating SequentialAgent instances. Extends the common FlowAgentBuilder
+	 * to provide type-safe building.
+	 */
+	public static class SequentialAgentBuilder extends FlowAgentBuilder<SequentialAgent, SequentialAgentBuilder> {
 
-		// Base agent properties
-		private String name;
-
-		private String description;
-
-		private String outputKey;
-
-		private List<? extends BaseAgent> subAgents;
-
-		// LlmRoutingAgent specific properties
-		private String inputKey;
-
-		private KeyStrategyFactory keyStrategyFactory;
-
-		private ChatModel chatModel;
-
-		private CompileConfig compileConfig;
-
-		public Builder name(String name) {
-			this.name = name;
+		@Override
+		protected SequentialAgentBuilder self() {
 			return this;
 		}
 
-		public Builder description(String description) {
-			this.description = description;
-			return this;
+		@Override
+		protected void validate() {
+			super.validate();
+			// Add any SequentialAgent-specific validation here if needed
 		}
 
-		public Builder outputKey(String outputKey) {
-			this.outputKey = outputKey;
-			return this;
-		}
-
-		public Builder subAgents(List<? extends BaseAgent> subAgents) {
-			this.subAgents = subAgents;
-			return this;
-		}
-
-		public Builder inputKey(String inputKey) {
-			this.inputKey = inputKey;
-			return this;
-		}
-
-		public Builder state(KeyStrategyFactory keyStrategyFactory) {
-			this.keyStrategyFactory = keyStrategyFactory;
-			return this;
-		}
-
-		public Builder model(ChatModel chatModel) {
-			this.chatModel = chatModel;
-			return this;
-		}
-
-		public Builder compileConfig(CompileConfig compileConfig) {
-			this.compileConfig = compileConfig;
-			return this;
-		}
-
+		@Override
 		public SequentialAgent build() throws GraphStateException {
-			// Validation
-			if (name == null || name.trim().isEmpty()) {
-				throw new IllegalArgumentException("Name must be provided");
-			}
-			if (subAgents == null || subAgents.isEmpty()) {
-				throw new IllegalArgumentException("At least one agent must be provided for sequential flow");
-			}
-
+			validate();
 			return new SequentialAgent(this);
 		}
 

@@ -33,7 +33,7 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 
 	private String taskKey;
 
-	public RoutingEdgeAction(ChatModel chatModel, BaseAgent current, List<? extends BaseAgent> subAgents) {
+	public RoutingEdgeAction(ChatModel chatModel, BaseAgent current, List<BaseAgent> subAgents) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("You are responsible for task routing in a graph-based AI system.\n");
 

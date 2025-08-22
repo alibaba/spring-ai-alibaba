@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * MCP配置合并工具类
@@ -51,7 +52,8 @@ public class McpConfigMergeUtil {
 		// 这边复制所有静态配置
 		for (Map.Entry<String, McpAssignNodeProperties.McpServerConfig> entry : staticConfig.entrySet()) {
 			String agentName = entry.getKey();
-			List<McpAssignNodeProperties.McpServerInfo> staticServers = new ArrayList<>(entry.getValue().mcpServers());
+			List<McpAssignNodeProperties.McpServerInfo> staticServers = new ArrayList<>(
+					Optional.ofNullable(entry.getValue().mcpServers()).orElse(List.of()));
 			result.put(agentName, new McpAssignNodeProperties.McpServerConfig(staticServers));
 		}
 
