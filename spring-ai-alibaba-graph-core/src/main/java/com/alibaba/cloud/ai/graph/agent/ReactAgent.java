@@ -453,9 +453,6 @@ public class ReactAgent extends BaseAgent {
 				if (instruction != null) {
 					clientBuilder.defaultSystem(instruction);
 				}
-				if (tools != null) {
-					clientBuilder.defaultToolCallbacks(tools);
-				}
 				chatClient = clientBuilder.build();
 			}
 
