@@ -15,6 +15,26 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
@@ -29,24 +49,23 @@ import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.CommandNode;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
+import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
 import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.alibaba.cloud.ai.graph.StateGraph.*;
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
+import static com.alibaba.cloud.ai.graph.StateGraph.Edges;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
+import static com.alibaba.cloud.ai.graph.StateGraph.Nodes;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
@@ -461,6 +480,15 @@ public class CompiledGraph {
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs) throws GraphRunnerException {
 		return this.invoke(stateCreate(inputs), RunnableConfig.builder().build());
+	}
+
+	/**
+	 * Schedule the graph execution with enhanced configuration options.
+	 * @param scheduleConfig the schedule configuration
+	 * @return a ScheduledGraphExecution instance for managing the scheduled task
+	 */
+	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) {
+		return new ScheduledAgentTask(this, scheduleConfig).start();
 	}
 
 	private OverAllState stateCreate(Map<String, Object> inputs) {
