@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.node.code.entity.CodeBlock;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionResult;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,8 +27,12 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+
 class DockerCodeExecutorTest {
 
+
+	@EnabledIf(value = "isCI" ,
+			disabledReason = "this test is designed to run only in the GitHub CI environment.")
 	@Test
 	void testPython3Sum() throws Exception {
 		// 1. 构造 DockerCodeExecutor
@@ -52,6 +57,11 @@ class DockerCodeExecutorTest {
 
 		// 5. 断言
 		assertEquals(0, result.exitCode(), "Exit code should be 0");
+	}
+
+	private static boolean isCI(){
+		return "true".equalsIgnoreCase(
+				System.getProperty("CI", System.getenv("CI")));
 	}
 
 }
