@@ -17,11 +17,9 @@
   <Modal 
     v-model="showModal" 
     :title="modalTitle" 
-    :endpoint-url="endpointUrl"
     @confirm="handlePublish" 
-    class="wide-modal"
   >
-    <div class="modal-form">
+    <div class="modal-form wide-modal">
       <!-- Endpoint和MCP Streamable URL配置 -->
       <div class="form-section">
         <div class="endpoint-url-row" :class="{ 'single-item': !isPublished }">
