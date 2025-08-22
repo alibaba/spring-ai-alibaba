@@ -20,9 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
@@ -35,9 +33,9 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
 public class LlmRoutingAgent extends FlowAgent {
 
-	private ChatModel chatModel;
+	private final ChatModel chatModel;
 
-	protected LlmRoutingAgent(Builder builder) throws GraphStateException {
+	protected LlmRoutingAgent(LlmRoutingAgentBuilder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory,
 				builder.compileConfig, builder.subAgents);
 		this.chatModel = builder.chatModel;
@@ -72,7 +70,7 @@ public class LlmRoutingAgent extends FlowAgent {
 	 * @param subAgents the list of sub-agents to process
 	 */
 	@Override
-	protected void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<? extends BaseAgent> subAgents)
+	protected void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<BaseAgent> subAgents)
 			throws GraphStateException {
 		Map<String, String> edgeRoutingMap = new HashMap<>();
 		for (BaseAgent subAgent : subAgents) {
@@ -97,79 +95,44 @@ public class LlmRoutingAgent extends FlowAgent {
 				edgeRoutingMap);
 	}
 
-	public static Builder builder() {
-		return new Builder();
+	public static LlmRoutingAgentBuilder builder() {
+		return new LlmRoutingAgentBuilder();
 	}
 
-	public static class Builder {
-
-		// Base agent properties
-		private String name;
-
-		private String description;
-
-		private String outputKey;
-
-		private List<? extends BaseAgent> subAgents;
-
-		// LlmRoutingAgent specific properties
-		private String inputKey;
-
-		private KeyStrategyFactory keyStrategyFactory;
+	/**
+	 * Builder for creating LlmRoutingAgent instances. Extends the common FlowAgentBuilder
+	 * and adds LLM-specific configuration.
+	 */
+	public static class LlmRoutingAgentBuilder extends FlowAgentBuilder<LlmRoutingAgent, LlmRoutingAgentBuilder> {
 
 		private ChatModel chatModel;
 
-		private CompileConfig compileConfig;
-
-		public Builder name(String name) {
-			this.name = name;
-			return this;
-		}
-
-		public Builder description(String description) {
-			this.description = description;
-			return this;
-		}
-
-		public Builder outputKey(String outputKey) {
-			this.outputKey = outputKey;
-			return this;
-		}
-
-		public Builder subAgents(List<? extends BaseAgent> subAgents) {
-			this.subAgents = subAgents;
-			return this;
-		}
-
-		public Builder inputKey(String inputKey) {
-			this.inputKey = inputKey;
-			return this;
-		}
-
-		public Builder state(KeyStrategyFactory keyStrategyFactory) {
-			this.keyStrategyFactory = keyStrategyFactory;
-			return this;
-		}
-
-		public Builder model(ChatModel chatModel) {
+		/**
+		 * Sets the ChatModel for LLM-based routing decisions.
+		 * @param chatModel the chat model to use for routing
+		 * @return this builder instance for method chaining
+		 */
+		public LlmRoutingAgentBuilder model(ChatModel chatModel) {
 			this.chatModel = chatModel;
 			return this;
 		}
 
-		public Builder compileConfig(CompileConfig compileConfig) {
-			this.compileConfig = compileConfig;
+		@Override
+		protected LlmRoutingAgentBuilder self() {
 			return this;
 		}
 
-		public LlmRoutingAgent build() throws GraphStateException {
-			// Validation
-			if (name == null || name.trim().isEmpty()) {
-				throw new IllegalArgumentException("Name must be provided");
+		@Override
+		protected void validate() {
+			super.validate();
+			if (chatModel == null) {
+				throw new IllegalArgumentException("ChatModel must be provided for LLM routing agent");
 			}
-			if (subAgents == null || subAgents.isEmpty()) {
-				throw new IllegalArgumentException("At least one agent must be provided for sequential flow");
-			}
+		}
 
+		@Override
+		public LlmRoutingAgent build() throws GraphStateException {
+			validate();
 			return new LlmRoutingAgent(this);
 		}
 
