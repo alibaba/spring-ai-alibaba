@@ -104,7 +104,7 @@ class ReactAgentHookTest {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("finishReason", "stop");
 		List<ToolCall> toolCalls = List.of(new ToolCall("call_1", "function", "weather_tool",
-				"{\"city\": \"北京\", \"currentTimestamp\": \"2024-01-01 12:00:00\"}"));
+				"{\"city\": \"北京\", \"currentTimestamp\": \"1693665600\"}"));
 		AssistantMessage assistantMessage = new AssistantMessage("test response", metadata, toolCalls,
 				Collections.emptyList());
 		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder().finishReason("stop").build();
@@ -161,6 +161,9 @@ class ReactAgentHookTest {
 		List<Message> messages = List.of(new UserMessage("查询北京天气"));
 		Optional<OverAllState> result = graph.invoke(Map.of("llm_input_messages", messages));
 		System.out.println(result.get());
+
+		System.out.println("==testReactAgentWithPreLlmHook==");
+
 	}
 
 	/**
@@ -175,47 +178,26 @@ class ReactAgentHookTest {
 		ReactAgent agent = ReactAgent.builder()
 			.name("dataAgent")
 			.model(chatModel)
+			.llmInputMessagesKey("llm_input_messages")
 			.tools(List.of(toolCallback))
 			.postLlmHook(state -> {
-				// 写一个判断是否工具避免被调用两次的逻辑
-				List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-				if (!messages.isEmpty()) {
-					Message lastMessage = messages.get(messages.size() - 1);
-					if (lastMessage instanceof AssistantMessage) {
-						AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
-						// 使用AtomicBoolean来判断是否是第二次调用
-						if (isSecondCall.get()) {
-							// 第二次调用：清掉toolCall
-							System.out.println("postLlmHook: 第二次调用，清掉toolCall");
-							// 创建没有toolCall的AssistantMessage
-							AssistantMessage updatedAssistantMessage = new AssistantMessage(assistantMessage.getText(),
-									assistantMessage.getMetadata(), Collections.emptyList(), // 清掉toolCall
-									Collections.emptyList());
-
-							// 更新消息列表
-							List<Message> updatedMessages = new ArrayList<>(messages);
-							updatedMessages.set(updatedMessages.size() - 1, updatedAssistantMessage);
-							state.updateState(Map.of("messages", updatedMessages));
-						}
-						else {
-							System.out.println("postLlmHook: 第一次调用，保留toolCall");
-						}
-					}
-				}
 
 				return Map.of();
 			})
 			.postToolHook(state -> {
-				isSecondCall.set(true);
+				List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
+				state.updateState(Map.of("llm_input_messages", messages));
 				return Map.of();
 			})
 			.build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 		// 创建包含时间查询的提示词
-		List<Message> messages = List.of(new UserMessage("请打印当前时间的天气"));
+		List<Message> messages = List.of(new UserMessage("查询北京天气"));
 		Optional<OverAllState> result = graph.invoke(Map.of("messages", messages));
 		System.out.println(result);
+
+		System.out.println("==testReactAgentWithPostLlmHook==");
 	}
 
 	/**
@@ -230,6 +212,7 @@ class ReactAgentHookTest {
 			.name("dataAgent")
 			.model(chatModel)
 			.tools(List.of(toolCallback))
+			.llmInputMessagesKey("llm_input_messages")
 			.preToolHook(state -> {
 				// 在preToolHook中获取最新的时间戳 传给toolCall保证时效性
 				long currentTimestamp = System.currentTimeMillis();
@@ -268,7 +251,7 @@ class ReactAgentHookTest {
 											updatedToolCalls, Collections.emptyList());
 									List<Message> updatedMessages = new ArrayList<>(messages);
 									updatedMessages.set(updatedMessages.size() - 1, updatedAssistantMessage);
-									state.updateState(Map.of("messages", updatedMessages));
+									state.updateState(Map.of("llm_input_messages", updatedMessages));
 									break;
 								}
 							}
@@ -280,9 +263,12 @@ class ReactAgentHookTest {
 			.build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
-		List<Message> messages = List.of(new UserMessage("请打印当前时间的天气"));
-		Optional<OverAllState> result = graph.invoke(Map.of("messages", messages));
+		List<Message> messages = List.of(new UserMessage("查询北京天气"));
+		Optional<OverAllState> result = graph.invoke(Map.of("llm_input_messages", messages));
 		System.out.println(result);
+
+		System.out.println("==testReactAgentWithPreToolHook==");
+
 	}
 
 	/**
@@ -293,8 +279,8 @@ class ReactAgentHookTest {
 		@Tool(name = "weather_tool", description = "获取指定城市的天气信息")
 		public String getWeather(@ToolParam(description = "城市名称") String city,
 				@ToolParam(description = "当前时间戳") String currentTimestamp) {
-
-			return String.format("城市：%s，温度：20度，时间：%s", city, currentTimestamp);
+			System.out.println("==TOOL被调用==");
+			return String.format("{\"city\": \"%s\", \"temperature\": -50, \"time\": \"%s\"}", city, currentTimestamp);
 		}
 
 	}
