@@ -37,14 +37,14 @@ public abstract class FlowAgent extends BaseAgent {
 
 	protected KeyStrategyFactory keyStrategyFactory;
 
-	protected List<? extends BaseAgent> subAgents;
+	protected List<BaseAgent> subAgents;
 
 	protected StateGraph graph;
 
 	protected CompiledGraph compiledGraph;
 
 	protected FlowAgent(String name, String description, String outputKey, String inputKey,
-			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig, List<? extends BaseAgent> subAgents)
+			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig, List<BaseAgent> subAgents)
 			throws GraphStateException {
 		super(name, description, outputKey);
 		this.compileConfig = compileConfig;
@@ -67,8 +67,8 @@ public abstract class FlowAgent extends BaseAgent {
 		return graph;
 	}
 
-	protected abstract void processSubAgents(StateGraph graph, BaseAgent parentAgent,
-			List<? extends BaseAgent> subAgents) throws GraphStateException;
+	protected abstract void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<BaseAgent> subAgents)
+			throws GraphStateException;
 
 	@Override
 	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
@@ -102,7 +102,7 @@ public abstract class FlowAgent extends BaseAgent {
 		return keyStrategyFactory;
 	}
 
-	public List<? extends BaseAgent> subAgents() {
+	public List<BaseAgent> subAgents() {
 		return this.subAgents;
 	}
 
