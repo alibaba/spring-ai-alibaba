@@ -46,7 +46,6 @@ request.use(
         'Content-Type': 'application/json',
       }
     }
-    console.log('请求配置:', config)
     return config
   },
   error => {
@@ -56,7 +55,6 @@ request.use(
 
 response.use(
   response => {
-    console.log('响应数据:', response)
     if (
       response.status === 200 &&
       (response.data.code === 200 || response.data.status === 'success')
