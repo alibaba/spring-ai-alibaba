@@ -18,12 +18,13 @@ package com.alibaba.cloud.ai.example.manus.recorder;
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecordEntity;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ExecutionStatus;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecordEntity;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.repository.PlanExecutionRecordRepository;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
+
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

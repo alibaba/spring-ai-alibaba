@@ -13,18 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.recorder.repository;
+package com.alibaba.cloud.ai.example.manus.recorder.entity.vo;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+/**
+ * Enum representing the execution status of an agent.
+ */
+public enum ExecutionStatus {
 
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecordEntity;
-
-@Repository
-public interface PlanExecutionRecordRepository extends JpaRepository<PlanExecutionRecordEntity, String> {
-
-	PlanExecutionRecordEntity findByPlanId(String planId);
-
-	PlanExecutionRecordEntity deleteByPlanId(String planId);
+	IDLE, RUNNING, FINISHED
 
 }

@@ -19,9 +19,9 @@ import java.util.List;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ExecutionStatus;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord;
 
 /**
  * Plan execution recorder interface that defines methods for recording and retrieving
@@ -403,12 +403,12 @@ public interface PlanExecutionRecorder {
 			this.summary = summary;
 		}
 
-		public List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord.ActToolInfo> getActToolInfoList() {
+		public List<com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord.ActToolInfo> getActToolInfoList() {
 			return actToolInfoList;
 		}
 
 		public void setActToolInfoList(
-				List<com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord.ActToolInfo> actToolInfoList) {
+				List<com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord.ActToolInfo> actToolInfoList) {
 			this.actToolInfoList = actToolInfoList;
 		}
 

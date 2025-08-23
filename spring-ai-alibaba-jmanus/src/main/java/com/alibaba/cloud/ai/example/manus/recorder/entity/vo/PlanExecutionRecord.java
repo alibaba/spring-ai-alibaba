@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.manus.recorder.entity;
+package com.alibaba.cloud.ai.example.manus.recorder.entity.vo;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;

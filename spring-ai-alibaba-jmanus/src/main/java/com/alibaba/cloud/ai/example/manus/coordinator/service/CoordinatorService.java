@@ -24,9 +24,9 @@ import org.springframework.stereotype.Service;
 
 import com.alibaba.cloud.ai.example.manus.coordinator.tool.CoordinatorTool;
 import com.alibaba.cloud.ai.example.manus.coordinator.vo.CoordinatorConfigVO;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.coordinator.entity.CoordinatorToolEntity;
 import com.alibaba.cloud.ai.example.manus.coordinator.tool.CoordinatorConfigParser;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;

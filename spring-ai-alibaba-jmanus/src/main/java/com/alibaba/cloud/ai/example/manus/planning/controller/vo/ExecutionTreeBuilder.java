@@ -15,10 +15,11 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.controller.vo;
 
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ExecutionStatus;
 import org.springframework.util.StringUtils;
+
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ExecutionStatus;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
 
 import java.util.ArrayList;
 import java.util.List;
