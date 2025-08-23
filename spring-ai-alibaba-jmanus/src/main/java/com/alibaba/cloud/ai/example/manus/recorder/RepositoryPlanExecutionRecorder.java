@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord
 import com.alibaba.cloud.ai.example.manus.recorder.entity.po.PlanExecutionRecordEntity;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.repository.PlanExecutionRecordRepository;
+import com.alibaba.cloud.ai.example.manus.recorder.service.EntityToVoConverter;
 
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
@@ -33,7 +34,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,6 +51,9 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	@Resource
 	private PlanExecutionRecordRepository planExecutionRecordRepository;
+
+	@Resource
+	private EntityToVoConverter entityToVoConverter;
 
 	/**
 	 * Record think-act execution with PlanExecutionRecord parameter
@@ -427,23 +430,37 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		if (entityOpt.isPresent()) {
 			PlanExecutionRecordEntity entity = entityOpt.get();
 			// Convert PO entity to VO object using EntityToVoConverter
-			// For now, return null as we need to implement proper conversion
-			return null;
+			return entityToVoConverter.convertToPlanExecutionRecord(entity);
 		}
 		return null;
 	}
 
 	private void saveExecutionRecord(PlanExecutionRecord planExecutionRecord) {
-		PlanExecutionRecordEntity entity = planExecutionRecordRepository
+		Optional<PlanExecutionRecordEntity> entityOpt = planExecutionRecordRepository
 			.findByPlanId(planExecutionRecord.getCurrentPlanId());
-		if (entity == null) {
-			entity = new PlanExecutionRecordEntity();
-			entity.setPlanId(planExecutionRecord.getCurrentPlanId());
-			entity.setGmtCreate(new Date());
+		
+		PlanExecutionRecordEntity entity;
+		if (entityOpt.isPresent()) {
+			entity = entityOpt.get();
+		} else {
+			entity = new PlanExecutionRecordEntity(planExecutionRecord.getCurrentPlanId());
 		}
 
-		entity.setPlanExecutionRecord(planExecutionRecord);
-		entity.setGmtModified(new Date());
+		// Update entity fields from VO object
+		entity.setTitle(planExecutionRecord.getTitle());
+		entity.setUserRequest(planExecutionRecord.getUserRequest());
+		entity.setStartTime(planExecutionRecord.getStartTime());
+		entity.setEndTime(planExecutionRecord.getEndTime());
+		entity.setSteps(planExecutionRecord.getSteps());
+		entity.setCurrentStepIndex(planExecutionRecord.getCurrentStepIndex());
+		entity.setCompleted(planExecutionRecord.isCompleted());
+		entity.setSummary(planExecutionRecord.getSummary());
+		entity.setModelName(planExecutionRecord.getModelName());
+		entity.setUserInputWaitState(planExecutionRecord.getUserInputWaitState());
+
+		// Note: Agent execution sequence conversion is complex and requires reverse conversion methods
+		// For now, we'll save the basic plan information without the agent execution details
+		// This can be enhanced later with proper reverse conversion methods
 
 		planExecutionRecordRepository.save(entity);
 	}

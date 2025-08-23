@@ -32,6 +32,7 @@ import com.alibaba.cloud.ai.example.manus.coordinator.tool.CoordinatorTool;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.planning.service.IPlanParameterMappingService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ActToolInfo;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord;
@@ -264,14 +265,14 @@ public class CoordinatorToolExecutor {
 
 		// Get the last ThinkAct record
 		ThinkActRecord lastThinkActRecord = thinkActSteps.get(thinkActSteps.size() - 1);
-		List<ThinkActRecord.ActToolInfo> actToolInfoList = lastThinkActRecord.getActToolInfoList();
+		List<ActToolInfo> actToolInfoList = lastThinkActRecord.getActToolInfoList();
 
 		if (actToolInfoList == null || actToolInfoList.isEmpty()) {
 			throw new RuntimeException("ActTool info list is empty, unable to obtain result output");
 		}
 
 		// Get the result of the last tool call
-		ThinkActRecord.ActToolInfo lastToolInfo = actToolInfoList.get(actToolInfoList.size() - 1);
+		ActToolInfo lastToolInfo = actToolInfoList.get(actToolInfoList.size() - 1);
 		String result = lastToolInfo.getResult();
 
 		if (result == null) {
