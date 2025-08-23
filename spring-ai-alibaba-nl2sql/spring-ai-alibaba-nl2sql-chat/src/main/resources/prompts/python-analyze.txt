@@ -46,13 +46,13 @@
 
 **Python分析结果**：
 ```json
-{
+\{
   "channel_stats": [
-    {"channel": "线上广告", "lead_count": 500, "conversion_rate": 0.15},
-    {"channel": "线下活动", "lead_count": 300, "conversion_rate": 0.25},
-    {"channel": "合作伙伴", "lead_count": 200, "conversion_rate": 0.1}
+    \{"channel": "线上广告", "lead_count": 500, "conversion_rate": 0.15\},
+    \{"channel": "线下活动", "lead_count": 300, "conversion_rate": 0.25\},
+    \{"channel": "合作伙伴", "lead_count": 200, "conversion_rate": 0.1\}
   ]
-}
+\}
 ```
 
 **总结**：
@@ -66,7 +66,7 @@
 
 **Python分析结果**：
 ```json
-{}
+\{\}
 ```
 
 **总结**：

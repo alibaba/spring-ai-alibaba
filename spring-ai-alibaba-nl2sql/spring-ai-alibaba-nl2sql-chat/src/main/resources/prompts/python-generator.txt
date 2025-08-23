@@ -47,19 +47,19 @@ try:
 
     # 动态分析逻辑
     # 示例：计算某些统计指标
-    result = {
-        "summary": {},
+    result = \{
+        "summary": \{\},
         "details": []
-    }
+    \}
 
     # 示例逻辑：计算每列的平均值（可根据需求调整）
     for column in df.columns:
         if pd.api.types.is_numeric_dtype(df[column]):
-            result["summary"][column] = {
+            result["summary"][column] = \{
                 "mean": df[column].mean(),
                 "min": df[column].min(),
                 "max": df[column].max()
-            }
+            \}
 
     # 示例逻辑：将原始数据分组并统计（可根据需求调整）
     grouped = df.groupby(list(df.columns[:2])).size().reset_index(name="count")
@@ -102,9 +102,9 @@ try:
     df = pd.DataFrame(input_data)
 
     # 动态分析逻辑
-    result = {
+    result = \{
         "channel_stats": []
-    }
+    \}
 
     # 计算每个渠道的线索数量和转化率
     if "channel" in df.columns and "conversion" in df.columns:
@@ -149,8 +149,3 @@ except Exception:
 === 用户输入 ===
 
 接下来是用户的需求：
-```
-{user_question}
-```
-
-请你生成符合要求的Python代码：

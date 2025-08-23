@@ -110,7 +110,7 @@ public class PythonExecuteNode extends AbstractPlanBasedNode implements NodeActi
 		}
 		catch (Exception e) {
 			String errorMessage = e.getMessage();
-			log.error("Python Execute Exception: {}", errorMessage, e);
+			log.error("Python Execute Exception: {}", errorMessage);
 
 			// Prepare error result
 			Map<String, Object> errorResult = Map.of(PYTHON_EXECUTE_NODE_OUTPUT, errorMessage, PYTHON_IS_SUCCESS,

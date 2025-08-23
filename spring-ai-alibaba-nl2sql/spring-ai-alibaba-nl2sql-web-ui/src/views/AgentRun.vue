@@ -320,6 +320,15 @@ import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from
 import { useRoute, useRouter } from 'vue-router'
 import { presetQuestionApi } from '../utils/api.js'
 
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github.css';
+import python from 'highlight.js/lib/languages/python';
+import sql from 'highlight.js/lib/languages/sql'
+
+// 注册语言
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('sql', sql);
+
 export default {
   name: 'AgentRun',
   setup() {
@@ -1113,6 +1122,25 @@ export default {
             let cleanedData = data.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
             cleanedData = cleanedData.replace(/\\n/g, '\n');
             return `<pre style="max-width: 100%; overflow-x: auto; word-wrap: break-word; white-space: pre-wrap;"><code class="language-sql">${cleanedData}</code></pre>`;
+        }
+
+        if (type === 'python_generate') {
+            // 处理可能存在的Markdown标记（正常情况下不会有）
+            let cleanedData = data.replace(/^```\s*python?\s*/i, '').replace(/```\s*$/, '').trim();
+
+            // 创建code元素
+            const codeElement = document.createElement('code');
+            codeElement.className = 'language-python';
+            codeElement.textContent = cleanedData;
+
+            // 高亮代码
+            hljs.highlightElement(codeElement);
+
+            // 创建pre元素并包装code元素
+            const preElement = document.createElement('pre');
+            preElement.appendChild(codeElement);
+
+            return preElement.outerHTML;
         }
 
         if (type === 'result') {
