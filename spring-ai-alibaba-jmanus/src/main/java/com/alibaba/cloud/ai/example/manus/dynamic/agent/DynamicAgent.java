@@ -30,7 +30,6 @@ import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ExecutionStatus;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ActToolInfo;
-import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecordService;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
