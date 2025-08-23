@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ExecutionStatus;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ActToolInfo;
 
 /**
  * Plan execution recorder interface that defines methods for recording and retrieving
@@ -199,7 +200,7 @@ public interface PlanExecutionRecorder {
 		boolean subPlanCreated;
 
 		/** Action tool information list */
-		List<ThinkActRecord.ActToolInfo> actToolInfoList;
+		List<ActToolInfo> actToolInfoList;
 
 		/** Execution summary */
 		String summary;
@@ -403,14 +404,13 @@ public interface PlanExecutionRecorder {
 			this.summary = summary;
 		}
 
-		public List<com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord.ActToolInfo> getActToolInfoList() {
-			return actToolInfoList;
-		}
+			public List<ActToolInfo> getActToolInfoList() {
+		return actToolInfoList;
+	}
 
-		public void setActToolInfoList(
-				List<com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord.ActToolInfo> actToolInfoList) {
-			this.actToolInfoList = actToolInfoList;
-		}
+	public void setActToolInfoList(List<ActToolInfo> actToolInfoList) {
+		this.actToolInfoList = actToolInfoList;
+	}
 
 	}
 

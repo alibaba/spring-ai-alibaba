@@ -308,42 +308,6 @@ public class ThinkActRecord {
 				+ ", actionNeeded=" + actionNeeded + ", status='" + status + '\'' + '}';
 	}
 
-	public static class ActToolInfo {
 
-		private String name;
-
-		private String parameters;
-
-		private String result;
-
-		private String id;
-
-		public ActToolInfo(String name, String arguments, String id) {
-			this.name = name;
-			this.parameters = arguments;
-			this.id = id;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public String getParameters() {
-			return parameters;
-		}
-
-		public String getResult() {
-			return result;
-		}
-
-		public void setResult(String result) {
-			this.result = result;
-		}
-
-		public String getId() {
-			return id;
-		}
-
-	}
 
 }

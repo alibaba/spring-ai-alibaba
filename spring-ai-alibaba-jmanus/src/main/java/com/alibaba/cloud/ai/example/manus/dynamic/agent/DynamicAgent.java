@@ -29,7 +29,7 @@ import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ExecutionStatus;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ActToolInfo;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 import com.alibaba.cloud.ai.example.manus.tool.TerminableTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
@@ -257,10 +257,10 @@ public class DynamicAgent extends ReActAgent {
 		return false;
 	}
 
-	private List<ThinkActRecord.ActToolInfo> createActToolInfoList(List<ToolCall> toolCalls) {
-		List<ThinkActRecord.ActToolInfo> actToolInfoList = new ArrayList<>();
+	private List<ActToolInfo> createActToolInfoList(List<ToolCall> toolCalls) {
+		List<ActToolInfo> actToolInfoList = new ArrayList<>();
 		for (ToolCall toolCall : toolCalls) {
-			ThinkActRecord.ActToolInfo actToolInfo = new ThinkActRecord.ActToolInfo(toolCall.name(),
+			ActToolInfo actToolInfo = new ActToolInfo(toolCall.name(),
 					toolCall.arguments(), toolCall.id());
 			actToolInfoList.add(actToolInfo);
 			if (!manusProperties.getParallelToolCalls()) {
@@ -274,7 +274,7 @@ public class DynamicAgent extends ReActAgent {
 	protected AgentExecResult act() {
 		ToolExecutionResult toolExecutionResult = null;
 		String lastToolCallResult = null;
-		List<ThinkActRecord.ActToolInfo> actToolInfoList = null;
+		List<ActToolInfo> actToolInfoList = null;
 
 		try {
 			List<ToolCall> toolCalls = streamResult.getEffectiveToolCalls();
@@ -364,14 +364,14 @@ public class DynamicAgent extends ReActAgent {
 	/**
 	 * Set act tool info results for all executed tools
 	 */
-	private void setActToolInfoResults(List<ThinkActRecord.ActToolInfo> actToolInfoList,
+	private void setActToolInfoResults(List<ActToolInfo> actToolInfoList,
 			List<ToolResponseMessage.ToolResponse> responses) {
 		for (ToolResponseMessage.ToolResponse toolResponse : responses) {
 			String curToolResp = toolResponse.responseData();
 			log.info("🔧 Tool {}'s executing result: {}", getName(), curToolResp);
 
 			// Find corresponding ActToolInfo and set result
-			for (ThinkActRecord.ActToolInfo actToolInfo : actToolInfoList) {
+			for (ActToolInfo actToolInfo : actToolInfoList) {
 				if (actToolInfo.getId().equals(toolResponse.id())) {
 					actToolInfo.setResult(curToolResp);
 					break;
@@ -388,7 +388,7 @@ public class DynamicAgent extends ReActAgent {
 	 * Handle FormInputTool specific logic
 	 */
 	private AgentExecResult handleFormInputTool(FormInputTool formInputTool,
-			List<ThinkActRecord.ActToolInfo> actToolInfoList) {
+			List<ActToolInfo> actToolInfoList) {
 		// Check if the tool is waiting for user input
 		if (formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) {
 			log.info("FormInputTool is awaiting user input for planId: {}", getCurrentPlanId());
@@ -430,7 +430,7 @@ public class DynamicAgent extends ReActAgent {
 	/**
 	 * Record action result with simplified parameters
 	 */
-	private void recordActionResult(List<ThinkActRecord.ActToolInfo> actToolInfoList, String actionResult,
+	private void recordActionResult(List<ActToolInfo> actToolInfoList, String actionResult,
 			ExecutionStatus status, String errorMessage, boolean subPlanCreated) {
 
 		String toolName = null;
@@ -438,7 +438,7 @@ public class DynamicAgent extends ReActAgent {
 		String actionDescription = "Tool execution";
 
 		if (actToolInfoList != null && !actToolInfoList.isEmpty()) {
-			ThinkActRecord.ActToolInfo firstTool = actToolInfoList.get(0);
+			ActToolInfo firstTool = actToolInfoList.get(0);
 			toolName = firstTool.getName();
 			toolParameters = firstTool.getParameters();
 			actionDescription = "Executing tool: " + toolName;

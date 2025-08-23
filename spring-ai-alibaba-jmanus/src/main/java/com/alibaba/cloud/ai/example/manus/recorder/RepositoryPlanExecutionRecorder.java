@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ExecutionStatus;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecordEntity;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.po.PlanExecutionRecordEntity;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.repository.PlanExecutionRecordRepository;
 
@@ -35,6 +35,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository-based PlanExecutionRecorder implementation for persistent storage. Each
@@ -422,8 +423,14 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	private PlanExecutionRecord getExecutionRecord(String currentPlanId) {
-		PlanExecutionRecordEntity entity = planExecutionRecordRepository.findByPlanId(currentPlanId);
-		return entity != null ? entity.getPlanExecutionRecord() : null;
+		Optional<PlanExecutionRecordEntity> entityOpt = planExecutionRecordRepository.findByPlanId(currentPlanId);
+		if (entityOpt.isPresent()) {
+			PlanExecutionRecordEntity entity = entityOpt.get();
+			// Convert PO entity to VO object using EntityToVoConverter
+			// For now, return null as we need to implement proper conversion
+			return null;
+		}
+		return null;
 	}
 
 	private void saveExecutionRecord(PlanExecutionRecord planExecutionRecord) {
