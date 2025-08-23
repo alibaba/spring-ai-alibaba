@@ -690,7 +690,7 @@ export default {
                 }
                 
                 if (actualType === 'sql' && typeof processedData === 'string') {
-                    //processedData = processedData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim()
+                    processedData = processedData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim()
                 }
 
                 // 增加状态判断，如果当前节点的type与上一个type不同，则说明应该另外起一个Content
