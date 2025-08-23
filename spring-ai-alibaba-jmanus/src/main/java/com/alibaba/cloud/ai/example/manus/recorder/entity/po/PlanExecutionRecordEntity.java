@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.manus.recorder.entity.po_new;
+package com.alibaba.cloud.ai.example.manus.recorder.entity.po;
 
 import jakarta.persistence.*;
 
@@ -58,6 +58,10 @@ public class PlanExecutionRecordEntity {
 	@Column(name = "root_plan_id")
 	private String rootPlanId;
 
+	// Parent plan ID for sub-plans (null for root plans)
+	@Column(name = "parent_plan_id")
+	private String parentPlanId;
+
 	// Plan title
 	@Column(name = "title")
 	private String title;
@@ -100,6 +104,10 @@ public class PlanExecutionRecordEntity {
 	// Field to store user input wait state
 	@Embedded
 	private UserInputWaitState userInputWaitState;
+
+	// ID of the ActToolInfoEntity that triggered this plan (for sub-plans)
+	@Column(name = "act_tool_info_id")
+	private Long actToolInfoEntityId;
 
 	// Actual calling model
 	@Column(name = "model_name")
@@ -191,6 +199,14 @@ public class PlanExecutionRecordEntity {
 		this.rootPlanId = rootPlanId;
 	}
 
+	public String getParentPlanId() {
+		return parentPlanId;
+	}
+
+	public void setParentPlanId(String parentPlanId) {
+		this.parentPlanId = parentPlanId;
+	}
+
 	public String getTitle() {
 		return title;
 	}
@@ -269,6 +285,14 @@ public class PlanExecutionRecordEntity {
 
 	public void setModelName(String modelName) {
 		this.modelName = modelName;
+	}
+
+	public Long getActToolInfoEntityId() {
+		return actToolInfoEntityId;
+	}
+
+	public void setActToolInfoEntityId(Long actToolInfoEntityId) {
+		this.actToolInfoEntityId = actToolInfoEntityId;
 	}
 
 }

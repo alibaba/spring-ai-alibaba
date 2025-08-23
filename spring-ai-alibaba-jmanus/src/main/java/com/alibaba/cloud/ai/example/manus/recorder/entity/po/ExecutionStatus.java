@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.recorder.entity.po_new;
+package com.alibaba.cloud.ai.example.manus.recorder.entity.po;
 
 import jakarta.persistence.*;
 
