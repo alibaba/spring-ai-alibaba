@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.example.manus.recorder.entity.po_new;
 
+import jakarta.persistence.*;
+
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
 
 import java.time.LocalDateTime;
@@ -39,48 +41,68 @@ import java.util.List;
  *
  * 4. Execution Result - completed: Whether completed - summary: Execution summary
  */
+@Entity
+@Table(name = "plan_execution_record")
 public class PlanExecutionRecordEntity {
 
 	// Unique identifier for the record
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
 	// Unique identifier for the current plan
+	@Column(name = "current_plan_id", nullable = false, unique = true)
 	private String currentPlanId;
 
 	// Root plan ID for sub-plans (null for main plans)
+	@Column(name = "root_plan_id")
 	private String rootPlanId;
 
 	// Plan title
+	@Column(name = "title")
 	private String title;
 
 	// User's original request
+	@Column(name = "user_request", columnDefinition = "LONGTEXT")
 	private String userRequest;
 
 	// Timestamp when execution started
+	@Column(name = "start_time")
 	private LocalDateTime startTime;
 
 	// Timestamp when execution ended
+	@Column(name = "end_time")
 	private LocalDateTime endTime;
 
 	// List of plan steps
+	@ElementCollection
+	@CollectionTable(name = "plan_execution_steps", joinColumns = @JoinColumn(name = "plan_execution_id"))
+	@Column(name = "step", columnDefinition = "LONGTEXT")
 	private List<String> steps;
 
 	// Current step index being executed
+	@Column(name = "current_step_index")
 	private Integer currentStepIndex;
 
 	// Whether completed
+	@Column(name = "completed")
 	private boolean completed;
 
 	// Execution summary
+	@Column(name = "summary", columnDefinition = "LONGTEXT")
 	private String summary;
 
 	// List to maintain the sequence of agent executions
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JoinColumn(name = "plan_execution_id")
 	private List<AgentExecutionRecordEntity> agentExecutionSequence;
 
 	// Field to store user input wait state
+	@Embedded
 	private UserInputWaitState userInputWaitState;
 
 	// Actual calling model
+	@Column(name = "model_name")
 	private String modelName;
 
 	/**
@@ -90,7 +112,6 @@ public class PlanExecutionRecordEntity {
 		this.steps = new ArrayList<>();
 		this.completed = false;
 		this.agentExecutionSequence = new ArrayList<>();
-		this.id = generateId();
 	}
 
 	/**
@@ -103,7 +124,6 @@ public class PlanExecutionRecordEntity {
 		this.startTime = LocalDateTime.now();
 		this.completed = false;
 		this.agentExecutionSequence = new ArrayList<>();
-		this.id = generateId();
 	}
 
 	/**
@@ -143,27 +163,11 @@ public class PlanExecutionRecordEntity {
 		this.summary = summary;
 	}
 
-	/**
-	 * Generate unique ID if not already set
-	 * @return Generated or existing ID
-	 */
-	private Long generateId() {
-		if (this.id == null) {
-			// Use combination of timestamp and random number to generate ID
-			long timestamp = System.currentTimeMillis();
-			int random = (int) (Math.random() * 1000000);
-			this.id = timestamp * 1000 + random;
-		}
-		return this.id;
-	}
+
 
 	// Getters and Setters
 
 	public Long getId() {
-		// Ensure ID is generated when accessing
-		if (this.id == null) {
-			this.id = generateId();
-		}
 		return id;
 	}
 

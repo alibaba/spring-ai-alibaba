@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.entity.po_new;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -40,77 +41,87 @@ import java.util.List;
  * @see AgentExecutionRecordEntity
 
  */
+@Entity
+@Table(name = "think_act_record")
 public class ThinkActRecordEntity {
 
 	// Unique identifier of the record
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	// Method to generate unique ID
-	private Long generateId() {
-		if (this.id == null) {
-			long timestamp = System.currentTimeMillis();
-			int random = (int) (Math.random() * 1000000);
-			this.id = timestamp * 1000 + random;
-		}
-		return this.id;
-	}
 
 	// ID of parent execution record, linked to AgentExecutionRecordEntity
+	@Column(name = "parent_execution_id")
 	private Long parentExecutionId;
 
 	// Timestamp when thinking started
+	@Column(name = "think_start_time")
 	private LocalDateTime thinkStartTime;
 
 	// Timestamp when thinking completed
+	@Column(name = "think_end_time")
 	private LocalDateTime thinkEndTime;
 
 	// Timestamp when action started
+	@Column(name = "act_start_time")
 	private LocalDateTime actStartTime;
 
 	// Timestamp when action completed
+	@Column(name = "act_end_time")
 	private LocalDateTime actEndTime;
 
 	// Input context for the thinking process
+	@Column(name = "think_input", columnDefinition = "LONGTEXT")
 	private String thinkInput;
 
 	// Output result of the thinking process
+	@Column(name = "think_output", columnDefinition = "LONGTEXT")
 	private String thinkOutput;
 
 	// Whether thinking determined that action is needed
+	@Column(name = "action_needed")
 	private boolean actionNeeded;
 
 	// Description of the action to be taken
+	@Column(name = "action_description", columnDefinition = "LONGTEXT")
 	private String actionDescription;
 
 	// Result of action execution
+	@Column(name = "action_result", columnDefinition = "LONGTEXT")
 	private String actionResult;
 
 	// Status of this think-act cycle (success, failure, etc.)
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status")
 	private ExecutionStatus status;
 
 	// Error message if the cycle encountered problems
+	@Column(name = "error_message", columnDefinition = "LONGTEXT")
 	private String errorMessage;
 
 	// Tool name used for action (if applicable)
+	@Column(name = "tool_name")
 	private String toolName;
 
 	// Tool parameters used for action (serialized, if applicable)
+	@Column(name = "tool_parameters", columnDefinition = "LONGTEXT")
 	private String toolParameters;
 
 	// Action tool information(When disabling parallel tool calls, there is always only
 	// one)
-	private List<ActToolInfo> actToolInfoList;
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JoinColumn(name = "think_act_record_id")
+	private List<ActToolInfoEntity> actToolInfoList;
 
 	// Default constructor
 	public ThinkActRecordEntity() {
-		this.id = generateId();
 	}
 
 	// Constructor with parent execution ID
 	public ThinkActRecordEntity(Long parentExecutionId) {
 		this.parentExecutionId = parentExecutionId;
 		this.thinkStartTime = LocalDateTime.now();
-		this.id = generateId();
 	}
 
 	/**
@@ -171,10 +182,6 @@ public class ThinkActRecordEntity {
 	// Getters and setters
 
 	public Long getId() {
-		// Ensure ID is generated when accessing
-		if (this.id == null) {
-			this.id = generateId();
-		}
 		return this.id;
 	}
 
@@ -294,11 +301,11 @@ public class ThinkActRecordEntity {
 		this.toolParameters = toolParameters;
 	}
 
-	public List<ActToolInfo> getActToolInfoList() {
+	public List<ActToolInfoEntity> getActToolInfoList() {
 		return actToolInfoList;
 	}
 
-	public void setActToolInfoList(List<ActToolInfo> actToolInfoList) {
+	public void setActToolInfoList(List<ActToolInfoEntity> actToolInfoList) {
 		this.actToolInfoList = actToolInfoList;
 	}
 
@@ -308,42 +315,6 @@ public class ThinkActRecordEntity {
 				+ ", actionNeeded=" + actionNeeded + ", status='" + status + '\'' + '}';
 	}
 
-	public static class ActToolInfo {
 
-		private String name;
-
-		private String parameters;
-
-		private String result;
-
-		private String id;
-
-		public ActToolInfo(String name, String arguments, String id) {
-			this.name = name;
-			this.parameters = arguments;
-			this.id = id;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public String getParameters() {
-			return parameters;
-		}
-
-		public String getResult() {
-			return result;
-		}
-
-		public void setResult(String result) {
-			this.result = result;
-		}
-
-		public String getId() {
-			return id;
-		}
-
-	}
 
 }

@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.entity.po_new;
 
+import jakarta.persistence.*;
+
 /**
  * Enum representing the execution status of an agent.
  */

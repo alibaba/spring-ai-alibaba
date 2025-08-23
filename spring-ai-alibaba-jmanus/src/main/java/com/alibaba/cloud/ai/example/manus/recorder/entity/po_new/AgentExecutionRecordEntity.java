@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.entity.po_new;
 
+import jakarta.persistence.*;
+
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 
 import java.time.LocalDateTime;
@@ -44,55 +46,72 @@ import java.util.List;
 
  */
 
+@Entity
+@Table(name = "agent_execution_record")
 public class AgentExecutionRecordEntity {
 
 	// Unique identifier of the record
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
 	// Conversation ID this record belongs to
+	@Column(name = "conversation_id")
 	private String conversationId;
 
 	// Name of the agent that created this record
+	@Column(name = "agent_name")
 	private String agentName;
 
 	// Description information of the agent
+	@Column(name = "agent_description", columnDefinition = "LONGTEXT")
 	private String agentDescription;
 
 	// Timestamp when execution started
+	@Column(name = "start_time")
 	private LocalDateTime startTime;
 
 	// Timestamp when execution ended
+	@Column(name = "end_time")
 	private LocalDateTime endTime;
 
 	// Maximum allowed number of steps
+	@Column(name = "max_steps")
 	private int maxSteps;
 
 	// Current execution step number
+	@Column(name = "current_step")
 	private int currentStep;
 
 	// Execution status (IDLE, RUNNING, FINISHED)
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status")
 	private ExecutionStatus status;
 
 	// Record list of think-act steps, existing as sub-steps
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JoinColumn(name = "agent_execution_id")
 	private List<ThinkActRecordEntity> thinkActSteps;
 
 	// Request content for agent execution
+	@Column(name = "agent_request", columnDefinition = "LONGTEXT")
 	private String agentRequest;
 
 	// Execution result
+	@Column(name = "result", columnDefinition = "LONGTEXT")
 	private String result;
 
 	// Error message if execution encounters problems
+	@Column(name = "error_message", columnDefinition = "LONGTEXT")
 	private String errorMessage;
 
 	// Actual calling model
+	@Column(name = "model_name")
 	private String modelName;
 
 	// Default constructor
 	public AgentExecutionRecordEntity() {
 		this.thinkActSteps = new ArrayList<>();
-		// Ensure ID is generated during initialization
-		this.id = generateId();
 	}
 
 	// Constructor with parameters
@@ -104,8 +123,6 @@ public class AgentExecutionRecordEntity {
 		this.status = ExecutionStatus.IDLE; // Use enum value
 		this.currentStep = 0;
 		this.thinkActSteps = new ArrayList<>();
-		// Ensure ID is generated during initialization
-		this.id = generateId();
 	}
 
 	/**
@@ -120,27 +137,11 @@ public class AgentExecutionRecordEntity {
 		this.currentStep = this.thinkActSteps.size();
 	}
 
-	/**
-	 * Generate unique ID if not already set
-	 * @return Generated or existing ID
-	 */
-	private Long generateId() {
-		if (this.id == null) {
-			// Use combination of timestamp and random number to generate ID
-			long timestamp = System.currentTimeMillis();
-			int random = (int) (Math.random() * 1000000);
-			this.id = timestamp * 1000 + random;
-		}
-		return this.id;
-	}
+
 
 	// Getters and setters
 
 	public Long getId() {
-		// Ensure ID is generated when accessing
-		if (this.id == null) {
-			this.id = generateId();
-		}
 		return id;
 	}
 
@@ -258,12 +259,9 @@ public class AgentExecutionRecordEntity {
 	 * @return Record ID after saving
 	 */
 	public Long save() {
-		// If ID is null, generate a random ID
+		// If ID is null, return null (let JPA handle ID generation)
 		if (this.id == null) {
-			// Use combination of timestamp and random number to generate ID
-			long timestamp = System.currentTimeMillis();
-			int random = (int) (Math.random() * 1000000);
-			this.id = timestamp * 1000 + random;
+			return null;
 		}
 
 		// Save all ThinkActRecordEntitys
