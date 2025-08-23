@@ -17,7 +17,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 /**
- * 基于AI服务的时间处理器测试类
+ * 基于AI服务的时间处理器测试类.
+ * 
+ * @author huangzhen
  */
 @ExtendWith(MockitoExtension.class)
 public class AiTimeProcessorTest {
