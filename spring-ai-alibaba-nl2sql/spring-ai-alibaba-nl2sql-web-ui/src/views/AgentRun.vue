@@ -268,7 +268,7 @@
               <button 
                 class="btn btn-primary send-btn"
                 :disabled="!inputMessage.trim() || isLoading"
-                @click="sendMessage"
+                @click="handleSendBtnPressed"
               >
                 <i class="bi bi-send"></i>
               </button>
@@ -567,6 +567,8 @@ export default {
         content: message,
         timestamp: new Date()
       }
+
+      console.log("userMessage: " + userMessage);
       
       currentMessages.value.push(userMessage)
       
@@ -597,8 +599,9 @@ export default {
         })
 
         const streamState = {
-            contentByType: {},
-            typeOrder: [],
+            contentByIndex: [],
+            typeByIndex: [],
+            lastType: ""
         }
 
         const typeMapping = {
@@ -622,9 +625,10 @@ export default {
 
         const updateDisplay = () => {
             let fullContent = '<div class="agent-responses-container" style="display: flex; flex-direction: column; width: 100%; gap: 0.75rem;">'
-            for (const type of streamState.typeOrder) {
+            for(let i = 0; i < streamState.contentByIndex.length; i++) {
+                const type = streamState.typeByIndex[i];
                 const typeInfo = typeMapping[type] || { title: type, icon: 'bi bi-file-text' }
-                const content = streamState.contentByType[type] || ''
+                const content = streamState.contentByIndex[i] || ''
                 const formattedSubContent = formatContentByType(type, content)
                 fullContent += `
 <div class="agent-response-block" style="display: block !important; width: 100% !important;">
@@ -686,16 +690,19 @@ export default {
                 }
                 
                 if (actualType === 'sql' && typeof processedData === 'string') {
-                    processedData = processedData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim()
+                    //processedData = processedData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim()
                 }
-                
-                if (!streamState.contentByType.hasOwnProperty(actualType)) {
-                    streamState.typeOrder.push(actualType)
-                    streamState.contentByType[actualType] = ''
+
+                // 增加状态判断，如果当前节点的type与上一个type不同，则说明应该另外起一个Content
+                console.log("lastType: " + streamState.lastType + ", actualType: " + actualType);
+                if (streamState.lastType !== actualType) {
+                    streamState.typeByIndex.push(actualType);
+                    streamState.contentByIndex.push("");
+                    streamState.lastType = actualType;
                 }
                 
                 if (processedData) {
-                    streamState.contentByType[actualType] += processedData
+                    streamState.contentByIndex[streamState.contentByIndex.length - 1] += processedData;
                 }
                 
                 updateDisplay()
@@ -811,6 +818,11 @@ export default {
         event.preventDefault()
         sendMessage()
       }
+    }
+
+    // 发送按钮不能直接接入sendMessage函数，因为会把event当作参数传递进去，导致message不为字符串
+    const handleSendBtnPressed = (event) => {
+        sendMessage();
     }
     
     const adjustTextareaHeight = () => {
@@ -2586,6 +2598,7 @@ export default {
       sendMessage,
       sendQuickMessage,
       handleKeyDown,
+      handleSendBtnPressed,
       adjustTextareaHeight,
       formatMessage,
       formatTime,
