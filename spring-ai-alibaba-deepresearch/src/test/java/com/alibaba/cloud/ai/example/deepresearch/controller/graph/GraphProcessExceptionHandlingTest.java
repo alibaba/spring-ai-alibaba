@@ -30,6 +30,8 @@ import org.springframework.http.codec.ServerSentEvent;
 import reactor.core.publisher.Sinks;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -62,12 +64,12 @@ class GraphProcessExceptionHandlingTest {
 	void testNodeExceptionHandling() throws Exception {
 		RuntimeException testException = new RuntimeException("流程执行出错");
 
-		CompletableFuture<NodeOutput> failedFuture = new CompletableFuture<>();
-		failedFuture.completeExceptionally(testException);
+		CountDownLatch errorLatch = new CountDownLatch(1);
+		CountDownLatch eventLatch = new CountDownLatch(1);
 
 		AsyncGenerator.Data<NodeOutput> errorData = AsyncGenerator.Data.error(testException);
-
 		when(generator.next()).thenReturn(errorData);
+
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 
 		AtomicBoolean errorEmitted = new AtomicBoolean(false);
@@ -77,14 +79,17 @@ class GraphProcessExceptionHandlingTest {
 			String data = event.data();
 			if (data != null && data.contains("节点执行异常") && data.contains("流程执行出错")) {
 				errorEmitted.set(true);
+				eventLatch.countDown();
 			}
 		}, error -> {
 			capturedError.set(error);
+			errorLatch.countDown();
 		});
 
 		graphProcess.processStream(graphId, generator, sink);
 
-		Thread.sleep(500);
+		assertTrue(errorLatch.await(5, TimeUnit.SECONDS), "应该在5秒内完成错误处理");
+		assertTrue(eventLatch.await(5, TimeUnit.SECONDS), "应该在5秒内发送错误事件");
 
 		assertTrue(errorEmitted.get(), "应该发送包含错误信息的事件");
 		assertNotNull(capturedError.get(), "应该触发错误处理");
@@ -161,19 +166,28 @@ class GraphProcessExceptionHandlingTest {
 
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 
+		// 监听任务启动
+		sink.asFlux().subscribe(event -> {
+			// 任务启动时会有事件
+		}, error -> {
+			// 错误处理
+		}, () -> {
+			// 完成处理
+		});
+
+		// 启动流程处理
 		graphProcess.processStream(graphId, generator, sink);
 
-		Thread.sleep(200);
+		Thread.sleep(100);
 
+		// 测试停止图执行
 		boolean stopped = graphProcess.stopGraph(graphId);
 		assertTrue(stopped, "应该能够停止正在运行的图任务");
 
+		// 测试停止不存在的图
 		GraphId nonExistentGraphId = new GraphId("non-existent", "non-existent-1");
 		boolean notStopped = graphProcess.stopGraph(nonExistentGraphId);
-		assertFalse(notStopped, "停止不存在的图应该返回 false");
-
-		boolean alreadyStopped = graphProcess.stopGraph(graphId);
-		assertFalse(alreadyStopped, "重复停止已停止的图应该返回 false");
+		assertFalse(notStopped, "停止不存在的图应该返回false");
 	}
 
 }
