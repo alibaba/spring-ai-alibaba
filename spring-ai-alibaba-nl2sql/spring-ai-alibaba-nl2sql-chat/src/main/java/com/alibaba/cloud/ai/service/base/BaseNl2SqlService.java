@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.service.LlmService;
-import com.alibaba.cloud.ai.util.DateTimeUtil;
 import com.alibaba.cloud.ai.util.MarkdownParser;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -33,8 +32,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import reactor.core.publisher.Flux;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -84,10 +81,15 @@ public class BaseNl2SqlService {
 
 	public Flux<ChatResponse> rewriteStream(String query, String agentId) throws Exception {
 		logger.info("Starting rewriteStream for query: {} with agentId: {}", query, agentId);
-		List<String> evidences = extractEvidences(query, agentId);
+
+		// 处理时间表达式 - 将相对时间转换为具体时间
+		String timeRewrittenQuery = processTimeExpressions(query);
+		logger.debug("Time rewritten query: {} -> {}", query, timeRewrittenQuery);
+
+		List<String> evidences = extractEvidences(timeRewrittenQuery, agentId);
 		logger.debug("Extracted {} evidences for rewriteStream", evidences.size());
-		SchemaDTO schemaDTO = select(query, evidences, agentId);
-		String prompt = PromptHelper.buildRewritePrompt(query, schemaDTO, evidences);
+		SchemaDTO schemaDTO = select(timeRewrittenQuery, evidences, agentId);
+		String prompt = PromptHelper.buildRewritePrompt(timeRewrittenQuery, schemaDTO, evidences);
 		logger.debug("Built rewrite prompt for streaming");
 		Flux<ChatResponse> result = aiService.streamCall(prompt);
 		logger.info("RewriteStream completed for query: {}", query);
@@ -96,10 +98,15 @@ public class BaseNl2SqlService {
 
 	public String rewrite(String query) throws Exception {
 		logger.info("Starting rewrite for query: {}", query);
-		List<String> evidences = extractEvidences(query);
+
+		// 处理时间表达式 - 将相对时间转换为具体时间
+		String timeRewrittenQuery = processTimeExpressions(query);
+		logger.debug("Time rewritten query: {} -> {}", query, timeRewrittenQuery);
+
+		List<String> evidences = extractEvidences(timeRewrittenQuery);
 		logger.debug("Extracted {} evidences for rewrite", evidences.size());
-		SchemaDTO schemaDTO = select(query, evidences);
-		String prompt = PromptHelper.buildRewritePrompt(query, schemaDTO, evidences);
+		SchemaDTO schemaDTO = select(timeRewrittenQuery, evidences);
+		String prompt = PromptHelper.buildRewritePrompt(timeRewrittenQuery, schemaDTO, evidences);
 		logger.debug("Built rewrite prompt, calling LLM");
 		String responseContent = aiService.call(prompt);
 		String[] splits = responseContent.split("\n");
@@ -124,6 +131,37 @@ public class BaseNl2SqlService {
 		}
 		logger.info("Rewrite completed successfully for query: {}", query);
 		return query;
+	}
+
+	/**
+	 * 处理查询中的时间表达式，将相对时间转换为具体时间
+	 * @param query 原始查询
+	 * @return 处理后的查询
+	 */
+	public String processTimeExpressions(String query) {
+		try {
+			logger.debug("Processing time expressions in query: {}", query);
+
+			// 使用统一管理的提示词构建时间转换提示
+			String timeConversionPrompt = PromptHelper.buildTimeConversionPrompt(query);
+
+			// 调用模型进行时间转换
+			String convertedQuery = aiService.call(timeConversionPrompt);
+
+			if (!convertedQuery.equals(query)) {
+				logger.info("Time expression conversion: {} -> {}", query, convertedQuery);
+			}
+			else {
+				logger.debug("No time expressions found or converted in query: {}", query);
+			}
+
+			return convertedQuery;
+
+		}
+		catch (Exception e) {
+			logger.warn("Failed to process time expressions using AI, using original query: {}", e.getMessage());
+			return query;
+		}
 	}
 
 	public String nl2sql(String query) throws Exception {
@@ -281,23 +319,8 @@ public class BaseNl2SqlService {
 			String exceptionMessage) throws Exception {
 		logger.info("Generating SQL for query: {}, hasExistingSql: {}", query, sql != null && !sql.isEmpty());
 
-		// TODO 时间处理暂时未应用
-		String dateTimeExtractPrompt = PromptHelper.buildDateTimeExtractPrompt(query);
-		logger.debug("Extracting datetime expressions");
-		String content = aiService.call(dateTimeExtractPrompt);
-		List<String> dateTimeList = new ArrayList<>();
-		LocalDate now = LocalDate.now();
-		List<String> expressionList = new Gson().fromJson(content, new TypeToken<List<String>>() {
-		}.getType());
-		List<String> dateTimeExpressions = DateTimeUtil.buildDateExpressions(expressionList, now);
-		for (String dateTimeExpression : dateTimeExpressions) {
-			if (dateTimeExpression.endsWith("=")) {
-				continue;
-			}
-			dateTimeList.add(dateTimeExpression.replace("=", "指的是"));
-		}
-		expressionList.addAll(dateTimeList);
-		logger.debug("Processed {} datetime expressions", dateTimeList.size());
+		// 时间处理已经在查询重写阶段完成，这里不再需要处理
+		logger.debug("Time expressions already processed in rewrite phase");
 
 		String newSql = "";
 		if (sql != null && !sql.isEmpty()) {
@@ -359,6 +382,7 @@ public class BaseNl2SqlService {
 
 	public SchemaDTO fineSelect(SchemaDTO schemaDTO, String query, List<String> evidenceList,
 			String sqlGenerateSchemaMissingAdvice) {
+		//TODO 增加具体的样例数据，让模型根据样例数据进行选择
 		logger.debug("Fine selecting schema for query: {} with {} evidences", query, evidenceList.size());
 		String prompt = buildMixSelectorPrompt(evidenceList, query, schemaDTO);
 		logger.debug("Calling LLM for schema fine selection");

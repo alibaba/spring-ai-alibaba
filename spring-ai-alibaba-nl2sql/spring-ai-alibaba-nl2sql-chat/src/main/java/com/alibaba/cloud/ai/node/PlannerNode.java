@@ -37,6 +37,7 @@ import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.IS_ONLY_NL2SQL;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_ERROR;
+import static com.alibaba.cloud.ai.constant.Constant.QUERY_REWRITE_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_MODEL;
 import static com.alibaba.cloud.ai.constant.Constant.TABLE_RELATION_OUTPUT;
 
@@ -56,7 +57,11 @@ public class PlannerNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("Entering {} node", this.getClass().getSimpleName());
-		String input = (String) state.value(INPUT_KEY).orElseThrow();
+		String originalInput = (String) state.value(INPUT_KEY).orElseThrow();
+		// 使用经过时间表达式处理的重写查询，如果没有则回退到原始输入
+		String processedQuery = StateUtils.getStringValue(state, QUERY_REWRITE_NODE_OUTPUT, originalInput);
+		logger.info("Using processed query for planning: {}", processedQuery);
+
 		// load prompt template
 		String businessKnowledgePrompt = (String) state.value(BUSINESS_KNOWLEDGE).orElse("");
 		String semanticModelPrompt = (String) state.value(SEMANTIC_MODEL).orElse("");
@@ -75,10 +80,10 @@ public class PlannerNode implements NodeAction {
 			String previousPlan = StateUtils.getStringValue(state, PLANNER_NODE_OUTPUT, "");
 			userPrompt = String.format(
 					"The previous plan you generated failed validation with the following error: %s\n\nHere is the faulty plan:\n%s\n\nPlease correct the plan and provide a new, valid one to answer the original question: %s",
-					validationError, previousPlan, input);
+					validationError, previousPlan, processedQuery);
 		}
 		else {
-			userPrompt = input;
+			userPrompt = processedQuery;
 		}
 
 		Map<String, Object> params = Map.of("user_question", userPrompt, "schema", schemaStr, "business_knowledge",

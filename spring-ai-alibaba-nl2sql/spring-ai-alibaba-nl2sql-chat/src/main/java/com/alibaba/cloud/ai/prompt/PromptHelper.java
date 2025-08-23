@@ -29,6 +29,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.apache.commons.collections.CollectionUtils;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -100,6 +102,21 @@ public class PromptHelper {
 		Map<String, Object> params = new HashMap<>();
 		params.put("question", question);
 		return PromptConstant.EXTRACT_DATETIME_PROMPT_TEMPLATE.render(params);
+	}
+
+	/**
+	 * 构建时间转换提示词
+	 * @param query 用户查询
+	 * @return 时间转换提示词
+	 */
+	public static String buildTimeConversionPrompt(String query) {
+		Map<String, Object> promptMap = new HashMap<>();
+		promptMap.put("current_time_info",
+				LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+		promptMap.put("query", query);
+
+		PromptTemplate promptTemplate = PromptConstant.getTimeConversionPromptTemplate();
+		return promptTemplate.render(promptMap);
 	}
 
 	public static String buildMixMacSqlDbPrompt(SchemaDTO schemaDTO, Boolean withColumnType) {

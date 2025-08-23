@@ -94,6 +94,10 @@ public class PromptConstant {
 		return new PromptTemplate(PromptLoader.loadPrompt("semantic-model"));
 	}
 
+	public static PromptTemplate getTimeConversionPromptTemplate() {
+		return new PromptTemplate(PromptLoader.loadPrompt("time-conversion"));
+	}
+
 	// Compatibility method, maintain backward compatibility
 	@Deprecated
 	public static final PromptTemplate INIT_REWRITE_PROMPT_TEMPLATE = getInitRewritePromptTemplate();
