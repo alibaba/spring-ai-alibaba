@@ -31,11 +31,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.alibaba.cloud.ai.example.manus.coordinator.tool.CoordinatorTool;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.planning.service.IPlanParameterMappingService;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ActToolInfo;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.config.CoordinatorProperties;
 
 import io.modelcontextprotocol.server.McpServerFeatures;

@@ -26,7 +26,7 @@ import com.alibaba.cloud.ai.example.manus.planning.executor.MapReducePlanExecuto
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutorInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.slf4j.Logger;
