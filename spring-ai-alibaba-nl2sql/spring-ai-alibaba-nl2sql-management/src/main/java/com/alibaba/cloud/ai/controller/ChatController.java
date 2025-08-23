@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 聊天控制器
+ * Chat Controller
  */
 @RestController
 @RequestMapping("/api")
@@ -53,7 +53,7 @@ public class ChatController {
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
-	 * 获取智能体的会话列表
+	 * Get session list for an agent
 	 */
 	@GetMapping("/agent/{id}/sessions")
 	public ResponseEntity<List<ChatSession>> getAgentSessions(@PathVariable Integer id) {
@@ -62,7 +62,7 @@ public class ChatController {
 	}
 
 	/**
-	 * 创建新的会话
+	 * Create a new session
 	 */
 	@PostMapping("/agent/{id}/sessions")
 	public ResponseEntity<ChatSession> createSession(@PathVariable Integer id,
@@ -75,7 +75,7 @@ public class ChatController {
 	}
 
 	/**
-	 * 清空智能体的所有会话
+	 * Clear all sessions for an agent
 	 */
 	@DeleteMapping("/agent/{id}/sessions")
 	public ResponseEntity<ApiResponse> clearAgentSessions(@PathVariable Integer id) {
@@ -84,7 +84,7 @@ public class ChatController {
 	}
 
 	/**
-	 * 获取会话的消息列表
+	 * Get message list for a session
 	 */
 	@GetMapping("/sessions/{sessionId}/messages")
 	public ResponseEntity<List<ChatMessage>> getSessionMessages(@PathVariable String sessionId) {
@@ -93,12 +93,12 @@ public class ChatController {
 	}
 
 	/**
-	 * 智能体聊天接口
+	 * Agent chat interface
 	 */
 	@PostMapping("/agent/{id}/chat")
 	public ResponseEntity<ChatResponse> chat(@PathVariable Integer id, @RequestBody ChatRequest request) {
 		try {
-			// 验证智能体是否存在
+			// Verify that the agent exists
 			Agent agent = agentService.findById(id.longValue());
 			if (agent == null) {
 				return ResponseEntity.notFound().build();
@@ -107,33 +107,33 @@ public class ChatController {
 			String sessionId = request.getSessionId();
 			String userMessage = request.getMessage();
 
-			// 如果没有提供sessionId，创建新会话
+			// Create a new session if no sessionId is provided
 			if (sessionId == null || sessionId.trim().isEmpty()) {
 				ChatSession newSession = chatSessionService.createSession(id, "新对话", null);
 				sessionId = newSession.getId();
 			}
 			else {
-				// 更新会话活动时间
+				// Update session activity time
 				chatSessionService.updateSessionTime(sessionId);
 			}
 
-			// 保存用户消息
+			// Save user message
 			chatMessageService.saveUserMessage(sessionId, userMessage);
 
-			// 调用NL2SQL服务处理用户消息
+			// Call the NL2SQL service to process the user message
 			ChatResponse response = new ChatResponse(sessionId, "", "text");
 
 			if (nl2SqlService != null) {
 				try {
-					// 使用NL2SQL服务生成SQL
-					String sql = nl2SqlService.apply(userMessage);
+					// Use the NL2SQL service to generate SQL
+					String sql = nl2SqlService.nl2sql(userMessage);
 
-					// 创建响应
+					// Create a response
 					response.setMessage("我为您生成了以下SQL查询：");
 					response.setMessageType("sql");
 					response.setSql(sql);
 
-					// 保存助手消息，包含SQL信息
+					// Save assistant message containing SQL information
 					Map<String, Object> metadata = new HashMap<>();
 					metadata.put("sql", sql);
 					metadata.put("originalQuery", userMessage);
@@ -143,7 +143,7 @@ public class ChatController {
 
 				}
 				catch (IllegalArgumentException e) {
-					// 处理意图不明确或闲聊拒绝的情况
+					// Handle cases where the intent is unclear or chitchat is refused
 					response.setMessage("抱歉，" + e.getMessage());
 					response.setMessageType("error");
 					response.setError(e.getMessage());
@@ -179,18 +179,18 @@ public class ChatController {
 	}
 
 	/**
-	 * 保存消息到会话
+	 * Save message to session
 	 */
 	@PostMapping("/sessions/{sessionId}/messages")
 	public ResponseEntity<ChatMessage> saveMessage(@PathVariable String sessionId, @RequestBody ChatMessage message) {
 		try {
-			// 设置会话ID
+			// Set session ID
 			message.setSessionId(sessionId);
 
-			// 保存消息
+			// Save message
 			ChatMessage savedMessage = chatMessageService.saveMessage(message);
 
-			// 更新会话活动时间
+			// Update session activity time
 			chatSessionService.updateSessionTime(sessionId);
 
 			return ResponseEntity.ok(savedMessage);
@@ -224,7 +224,7 @@ public class ChatController {
 	}
 
 	/**
-	 * 重命名会话
+	 * Rename session
 	 */
 	@PutMapping("/sessions/{sessionId}/rename")
 	public ResponseEntity<ApiResponse> renameSession(@PathVariable String sessionId,
@@ -245,7 +245,7 @@ public class ChatController {
 	}
 
 	/**
-	 * 删除单个会话
+	 * Delete a single session
 	 */
 	@DeleteMapping("/sessions/{sessionId}")
 	public ResponseEntity<ApiResponse> deleteSession(@PathVariable String sessionId) {

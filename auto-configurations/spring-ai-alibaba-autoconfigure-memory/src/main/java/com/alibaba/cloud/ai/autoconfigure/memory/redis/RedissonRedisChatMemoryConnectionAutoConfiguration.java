@@ -31,7 +31,7 @@ import org.springframework.context.annotation.Bean;
  * Auto-configuration for Redis Chat Memory using Redisson.
  *
  * @author benym
- * @date 2025/7/30 19:01
+ * @since 2025/7/30 19:01
  */
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ RedissonRedisChatMemoryRepository.class, RedissonClient.class })

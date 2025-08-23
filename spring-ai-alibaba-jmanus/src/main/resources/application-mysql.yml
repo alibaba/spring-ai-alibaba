@@ -6,3 +6,7 @@ spring:
     password: your_mysql_password
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
+  ai:
+    memory:
+      mysql:
+        enabled: true

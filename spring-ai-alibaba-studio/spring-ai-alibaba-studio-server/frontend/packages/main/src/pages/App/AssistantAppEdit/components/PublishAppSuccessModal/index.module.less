@@ -1,0 +1,74 @@
+.successIcon {
+  font-size: 24px;
+  color: var(--ag-ant-color-success);
+}
+.title {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+}
+.successCon {
+  .desc {
+    color: var(--ag-ant-color-text-tertiary);
+  }
+}
+
+.shortTip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: center;
+
+  span {
+    flex-shrink: 0;
+    color: var(--ag-ant-color-text-tertiary);
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+}
+
+.actions {
+  .actionCard {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    border-radius: 6px;
+    gap: 16px;
+    padding: 14px;
+    border: 1px solid var(--ag-ant-color-border-secondary);
+
+    .icon {
+      font-size: 24px;
+    }
+
+    &:hover {
+      border: 1px solid var(--ag-ant-color-primary-border-hover);
+      box-shadow: 0px 4px 6px 0px var(--ag-ant-color-bg-text-hover);
+    }
+
+    .imgCon {
+      width: 46px;
+      height: 46px;
+      background: var(--ag-ant-color-purple-bg);
+      font-size: 24px;
+      border-radius: 8px;
+      color: var(--ag-ant-color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .title {
+      font-weight: 600;
+    }
+
+    .desc {
+      color: var(--ag-ant-color-text-tertiary);
+      font-size: 12px;
+      line-height: 22px;
+      margin-top: 4px;
+    }
+  }
+}

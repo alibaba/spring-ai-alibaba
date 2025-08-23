@@ -723,6 +723,17 @@ const words: I18nType = {
     maxLength: '最大长度',
     charactersRemaining: '剩余字符',
     attachFile: '附加文件',
+    attachedFiles: '已附加文件',
+    filesAttached: '已附加 {count} 个文件',
+    removeFile: '移除文件',
+    uploading: '上传中...',
+    uploadSuccess: '文件上传成功',
+    fileDeleteError: '删除文件失败',
+    uploadError: '文件上传失败',
+    unsupportedFileType: '不支持的文件类型',
+    fileSizeExceeded: '文件大小超出限制',
+    maxFileSize: '最大文件大小：50MB',
+    supportedFormats: '支持的格式：PDF、文本、CSV、JSON、XML、HTML、日志、代码文件等',
   },
 
   // 侧边栏

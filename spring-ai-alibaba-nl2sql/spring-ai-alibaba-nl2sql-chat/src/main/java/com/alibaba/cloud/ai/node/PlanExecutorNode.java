@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.model.execution.ExecutionStep;
 import com.alibaba.cloud.ai.model.execution.Plan;
 import com.alibaba.cloud.ai.util.StateUtils;
@@ -29,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.alibaba.cloud.ai.constant.Constant.IS_ONLY_NL2SQL;
+import static com.alibaba.cloud.ai.constant.Constant.ONLY_NL2SQL_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_NEXT_NODE;
@@ -40,7 +43,8 @@ import static com.alibaba.cloud.ai.constant.Constant.REPORT_GENERATOR_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE;
 
 /**
- * 计划执行与验证节点，根据计划决定下一个执行的节点，并在执行前进行验证。
+ * Plan execution and validation node, decides next execution node based on plan, and
+ * validates before execution.
  *
  * @author zhangshenghang
  */
@@ -85,6 +89,14 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 				}
 			}
 
+			// NL2SQL模式只能有一个计划且为SQL_EXECUTE_NODE（用于判断生成的SQL是否正确）
+			Boolean onlyNl2sql = state.value(IS_ONLY_NL2SQL, false);
+			if (onlyNl2sql && (plan.getExecutionPlan().size() != 1
+					|| !SQL_EXECUTE_NODE.equals(plan.getExecutionPlan().get(0).getToolToUse()))) {
+				return buildValidationResult(state, false,
+						"Validation failed: The generated plan is not fit with prompt.");
+			}
+
 			logger.info("Plan validation successful.");
 
 		}
@@ -102,6 +114,14 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 		// Check if the plan is completed
 		if (currentStep > executionPlan.size()) {
 			logger.info("Plan completed, current step: {}, total steps: {}", currentStep, executionPlan.size());
+			// 如果为nl2sql模式，则将结果保存，直接走向END
+			Boolean onlyNl2sql = state.value(IS_ONLY_NL2SQL, false);
+			if (onlyNl2sql) {
+				String resultSql = executionPlan.get(0).getToolParameters().getSqlQuery();
+				logger.info("Nl2sql Result: {}", resultSql);
+				return Map.of(PLAN_CURRENT_STEP, 1, PLAN_NEXT_NODE, StateGraph.END, PLAN_VALIDATION_STATUS, true,
+						ONLY_NL2SQL_OUTPUT, resultSql);
+			}
 			return Map.of(PLAN_CURRENT_STEP, 1, PLAN_NEXT_NODE, REPORT_GENERATOR_NODE, PLAN_VALIDATION_STATUS, true);
 		}
 

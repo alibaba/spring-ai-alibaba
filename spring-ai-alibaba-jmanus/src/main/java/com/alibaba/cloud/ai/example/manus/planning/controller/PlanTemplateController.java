@@ -168,14 +168,24 @@ public class PlanTemplateController {
 	 * @return Result status
 	 */
 	@PostMapping("/executePlanByTemplateId")
-	public ResponseEntity<Map<String, Object>> executePlanByTemplateId(@RequestBody Map<String, String> request) {
-		String planTemplateId = request.get("planTemplateId");
+	public ResponseEntity<Map<String, Object>> executePlanByTemplateId(@RequestBody Map<String, Object> request) {
+		String planTemplateId = (String) request.get("planTemplateId");
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Plan template ID cannot be empty"));
 		}
 
-		String rawParam = request.get("rawParam");
-		return planTemplateService.executePlanByTemplateIdInternal(planTemplateId, rawParam);
+		String rawParam = (String) request.get("rawParam");
+
+		// Handle uploaded files if present
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> uploadedFiles = (List<Map<String, Object>>) request.get("uploadedFiles");
+
+		logger.info("Received request with uploadedFiles: {}", uploadedFiles != null ? uploadedFiles.size() : "null");
+		if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
+			logger.info("First uploaded file planId: {}", uploadedFiles.get(0).get("planId"));
+		}
+
+		return planTemplateService.executePlanByTemplateIdInternal(planTemplateId, rawParam, uploadedFiles);
 	}
 
 	/**

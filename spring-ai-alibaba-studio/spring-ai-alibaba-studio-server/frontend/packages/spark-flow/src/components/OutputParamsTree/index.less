@@ -1,0 +1,27 @@
+@import '../../index.less';
+.spark-flow-output-params-tree-node {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .spark-flow-output-params-tree-node-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+    font-size: 14px;
+    color: e('var(--@{ant-prefix}-color-text)');
+  }
+
+  .spark-flow-output-params-tree-node-desc {
+    font-size: 12px;
+    line-height: 20px;
+    color: e('var(--@{ant-prefix}-color-text-tertiary)');
+  }
+}
+
+.spark-flow-output-params-tree-node-properties {
+  margin-left: 6px;
+  padding-left: 8px;
+  border-left: 1px solid e('var(--@{ant-prefix}-color-border-secondary)');
+}

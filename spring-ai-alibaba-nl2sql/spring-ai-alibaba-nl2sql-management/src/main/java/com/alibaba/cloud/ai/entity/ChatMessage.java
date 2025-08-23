@@ -19,7 +19,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 
 /**
- * 聊天消息实体类
+ * Chat Message Entity Class
  */
 @TableName("chat_message")
 public class ChatMessage {

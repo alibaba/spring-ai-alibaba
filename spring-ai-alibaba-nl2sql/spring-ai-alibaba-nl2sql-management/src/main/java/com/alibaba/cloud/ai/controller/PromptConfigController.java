@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 用户提示词配置管理
+ * User Prompt Configuration Management
  *
  * @author Makoto
  */
@@ -47,39 +47,39 @@ public class PromptConfigController {
 	}
 
 	/**
-	 * 创建或更新提示词配置
-	 * @param configDTO 配置数据
-	 * @return 操作结果
+	 * Create or update prompt configuration
+	 * @param configDTO configuration data
+	 * @return operation result
 	 */
 	@PostMapping("/save")
 	public ResponseEntity<Map<String, Object>> saveConfig(@RequestBody PromptConfigDTO configDTO) {
 		try {
-			logger.info("保存提示词配置请求：{}", configDTO);
+			logger.info("保存提示词优化配置请求：{}", configDTO);
 
 			UserPromptConfig savedConfig = promptConfigService.saveOrUpdateConfig(configDTO);
 
 			Map<String, Object> response = new HashMap<>();
 			response.put("success", true);
-			response.put("message", "配置保存成功");
+			response.put("message", "优化配置保存成功");
 			response.put("data", savedConfig);
 
 			return ResponseEntity.ok(response);
 		}
 		catch (Exception e) {
-			logger.error("保存提示词配置失败", e);
+			logger.error("保存提示词优化配置失败", e);
 
 			Map<String, Object> response = new HashMap<>();
 			response.put("success", false);
-			response.put("message", "配置保存失败：" + e.getMessage());
+			response.put("message", "优化配置保存失败：" + e.getMessage());
 
 			return ResponseEntity.badRequest().body(response);
 		}
 	}
 
 	/**
-	 * 根据ID获取配置
-	 * @param id 配置ID
-	 * @return 配置信息
+	 * Get configuration by ID
+	 * @param id configuration ID
+	 * @return configuration information
 	 */
 	@GetMapping("/{id}")
 	public ResponseEntity<Map<String, Object>> getConfig(@PathVariable String id) {
@@ -110,8 +110,8 @@ public class PromptConfigController {
 	}
 
 	/**
-	 * 获取所有配置列表
-	 * @return 配置列表
+	 * Get all configuration list
+	 * @return configuration list
 	 */
 	@GetMapping("/list")
 	public ResponseEntity<Map<String, Object>> getAllConfigs() {
@@ -137,9 +137,9 @@ public class PromptConfigController {
 	}
 
 	/**
-	 * 根据提示词类型获取配置列表
-	 * @param promptType 提示词类型
-	 * @return 配置列表
+	 * Get configuration list by prompt type
+	 * @param promptType prompt type
+	 * @return configuration list
 	 */
 	@GetMapping("/list-by-type/{promptType}")
 	public ResponseEntity<Map<String, Object>> getConfigsByType(@PathVariable String promptType) {
@@ -165,9 +165,9 @@ public class PromptConfigController {
 	}
 
 	/**
-	 * 获取当前启用的配置
-	 * @param promptType 提示词类型
-	 * @return 当前启用的配置
+	 * Get currently enabled configuration
+	 * @param promptType prompt type
+	 * @return currently enabled configuration
 	 */
 	@GetMapping("/active/{promptType}")
 	public ResponseEntity<Map<String, Object>> getActiveConfig(@PathVariable String promptType) {
@@ -193,9 +193,38 @@ public class PromptConfigController {
 	}
 
 	/**
-	 * 删除配置
-	 * @param id 配置ID
-	 * @return 操作结果
+	 * 获取某个类型的所有启用的优化配置
+	 * @param promptType 提示词类型
+	 * @return 启用的优化配置列表
+	 */
+	@GetMapping("/active-all/{promptType}")
+	public ResponseEntity<Map<String, Object>> getActiveConfigs(@PathVariable String promptType) {
+		try {
+			List<UserPromptConfig> configs = promptConfigService.getActiveConfigsByType(promptType);
+
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", true);
+			response.put("data", configs);
+			response.put("total", configs.size());
+			response.put("hasOptimizationConfigs", !configs.isEmpty());
+
+			return ResponseEntity.ok(response);
+		}
+		catch (Exception e) {
+			logger.error("获取启用配置列表失败", e);
+
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "获取启用配置列表失败：" + e.getMessage());
+
+			return ResponseEntity.badRequest().body(response);
+		}
+	}
+
+	/**
+	 * Delete configuration
+	 * @param id configuration ID
+	 * @return operation result
 	 */
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Map<String, Object>> deleteConfig(@PathVariable String id) {
@@ -226,9 +255,9 @@ public class PromptConfigController {
 	}
 
 	/**
-	 * 启用指定配置
-	 * @param id 配置ID
-	 * @return 操作结果
+	 * Enable specified configuration
+	 * @param id configuration ID
+	 * @return operation result
 	 */
 	@PostMapping("/{id}/enable")
 	public ResponseEntity<Map<String, Object>> enableConfig(@PathVariable String id) {
@@ -259,9 +288,9 @@ public class PromptConfigController {
 	}
 
 	/**
-	 * 禁用指定配置
-	 * @param id 配置ID
-	 * @return 操作结果
+	 * Disable specified configuration
+	 * @param id configuration ID
+	 * @return operation result
 	 */
 	@PostMapping("/{id}/disable")
 	public ResponseEntity<Map<String, Object>> disableConfig(@PathVariable String id) {
@@ -292,13 +321,13 @@ public class PromptConfigController {
 	}
 
 	/**
-	 * 获取支持的提示词类型列表
-	 * @return 提示词类型列表
+	 * Get supported prompt type list
+	 * @return prompt type list
 	 */
 	@GetMapping("/types")
 	public ResponseEntity<Map<String, Object>> getSupportedPromptTypes() {
 		try {
-			// 支持的提示词类型
+			// Supported prompt types
 			String[] types = { "report-generator", "planner", "sql-generator", "python-generator", "rewrite" };
 
 			Map<String, Object> response = new HashMap<>();

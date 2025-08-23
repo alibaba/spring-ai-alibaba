@@ -20,9 +20,12 @@ import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.SearchPlatform;
 import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.SmartAgentUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.AgentPromptTemplateUtil;
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -39,7 +42,7 @@ import java.util.List;
  * @since 2025/07/17
  */
 @Service
-@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+@ConditionalOnProperty(prefix = SmartAgentProperties.PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = false)
 public class SearchPlatformSelectionService {
 
@@ -51,6 +54,28 @@ public class SearchPlatformSelectionService {
 	@Value("${spring.ai.alibaba.deepresearch.search-list:tavily,aliyun,baidu,serpapi}")
 	private List<String> enabledSearchEngines;
 
+	private final ChatClient searchPlatformSelectorClient;
+
+	public SearchPlatformSelectionService(DashScopeChatModel chatModel) {
+		this.searchPlatformSelectorClient = ChatClient.builder(chatModel)
+			.defaultSystem(AgentPromptTemplateUtil.getSearchPlatformSelectionPrompt())
+			.build();
+	}
+
+	/**
+	 * 根据Agent类型选择主要搜索平台（统一的平台选择逻辑）
+	 */
+	private SearchPlatform selectPlatformInternal(AgentType agentType, String question) {
+		SearchPlatform primaryPlatform = getPrimaryPlatformFromConfig(agentType);
+
+		// 如果配置中没有，则使用AI智能选择
+		if (primaryPlatform == null) {
+			primaryPlatform = selectPrimaryPlatformByAI(agentType, question);
+		}
+
+		return primaryPlatform;
+	}
+
 	/**
 	 * 根据Agent类型选择主要搜索平台
 	 */
@@ -58,18 +83,19 @@ public class SearchPlatformSelectionService {
 		List<SearchEnum> searchPlatforms = new ArrayList<>();
 
 		try {
-			// 首先尝试从配置中获取主要搜索平台
-			SearchPlatform primaryPlatform = getPrimaryPlatformFromConfig(agentType);
+			SearchPlatform primaryPlatform = selectPlatformInternal(agentType, question);
 
-			// 如果配置中没有，则根据问题内容和agent进行选择
-			if (primaryPlatform == null) {
-				primaryPlatform = selectPrimaryPlatform(agentType, question);
+			if (SmartAgentUtil.isToolCallingPlatform(primaryPlatform)) {
+				// 对于工具调用平台，返回一个特殊标识，让调用方知道需要使用工具调用。使用 TAVILY 作为占位符，实际会被工具调用覆盖
+				searchPlatforms.add(SearchEnum.TAVILY);
+				logger.info("Selected tool calling platform for agent type {}: {}", agentType,
+						primaryPlatform.getName());
 			}
-
-			SearchEnum primarySearchEnum = SmartAgentUtil.convertToSearchEnum(primaryPlatform);
-			if (primarySearchEnum != null
-					&& SmartAgentUtil.isSearchEngineEnabled(primarySearchEnum, enabledSearchEngines)) {
-				searchPlatforms.add(primarySearchEnum);
+			else {
+				if (SmartAgentUtil.isValidAndEnabledPlatform(primaryPlatform, enabledSearchEngines)) {
+					SearchEnum primarySearchEnum = SmartAgentUtil.convertToSearchEnum(primaryPlatform);
+					searchPlatforms.add(primarySearchEnum);
+				}
 			}
 
 			// 如果主要搜索平台不可用，使用默认的通用搜索
@@ -87,6 +113,16 @@ public class SearchPlatformSelectionService {
 			addDefaultSearchEngines(defaultPlatforms);
 			return defaultPlatforms;
 		}
+	}
+
+	/**
+	 * 获取选择的搜索平台（用于工具调用）
+	 */
+	public SearchPlatform getSelectedSearchPlatform(AgentType agentType, String question) {
+		if (agentType == null) {
+			return null;
+		}
+		return selectPlatformInternal(agentType, question);
 	}
 
 	/**
@@ -114,43 +150,46 @@ public class SearchPlatformSelectionService {
 	}
 
 	/**
-	 * 根据Agent类型和问题内容选择主要搜索平台
+	 * 使用AI智能选择搜索平台
+	 * @param agentType Agent类型
+	 * @param question 问题内容
+	 * @return 选择的搜索平台，如果AI选择失败则返回默认平台
 	 */
-	private SearchPlatform selectPrimaryPlatform(AgentType agentType, String question) {
-		String lowerQuestion = question.toLowerCase();
+	private SearchPlatform selectPrimaryPlatformByAI(AgentType agentType, String question) {
+		try {
+			String aiSelection = searchPlatformSelectorClient.prompt()
+				.user(String.format("Agent类型: %s\n问题内容: %s\n\n请根据以上信息选择最合适的搜索平台：", agentType.name(), question))
+				.call()
+				.content();
 
-		switch (agentType) {
-			case ACADEMIC_RESEARCH:
-				if (lowerQuestion.contains("google scholar") || lowerQuestion.contains("谷歌学术")
-						|| lowerQuestion.contains("论文搜索")) {
-					return SearchPlatform.GOOGLE_SCHOLAR;
-				}
-				return SearchPlatform.GOOGLE_SCHOLAR;
+			SearchPlatform selectedPlatform = SmartAgentUtil.parseAiSearchPlatformSelection(aiSelection);
 
-			case LIFESTYLE_TRAVEL:
-				if (lowerQuestion.contains("小红书") || lowerQuestion.contains("xiaohongshu")
-						|| lowerQuestion.contains("红书")) {
-					return SearchPlatform.XIAOHONGSHU;
-				}
-				return SearchPlatform.XIAOHONGSHU;
-
-			case ENCYCLOPEDIA:
-				if (lowerQuestion.contains("维基百科") || lowerQuestion.contains("wikipedia")
-						|| lowerQuestion.contains("百科")) {
-					return SearchPlatform.WIKIPEDIA;
-				}
-				return SearchPlatform.WIKIPEDIA;
-
-			case DATA_ANALYSIS:
-				if (lowerQuestion.contains("统计数据") || lowerQuestion.contains("数据分析")
-						|| lowerQuestion.contains("national statistics")) {
-					return SearchPlatform.NATIONAL_STATISTICS;
-				}
-				return SearchPlatform.NATIONAL_STATISTICS;
-
-			default:
-				return SearchPlatform.TAVILY;
+			if (selectedPlatform != null) {
+				logger.info("AI选平台: {}", selectedPlatform.getName());
+				return selectedPlatform;
+			}
+			logger.warn("AI解析失败，默认平台");
+			return getDefaultPlatformForAgentType(agentType);
 		}
+		catch (Exception e) {
+			logger.warn("AI异常，默认平台");
+			return getDefaultPlatformForAgentType(agentType);
+		}
+	}
+
+	/**
+	 * 根据Agent类型获取默认搜索平台
+	 * @param agentType Agent类型
+	 * @return 默认搜索平台
+	 */
+	private SearchPlatform getDefaultPlatformForAgentType(AgentType agentType) {
+		return switch (agentType) {
+			case ACADEMIC_RESEARCH -> SearchPlatform.GOOGLE_SCHOLAR;
+			case LIFESTYLE_TRAVEL -> SearchPlatform.OPENTRIPMAP;
+			case ENCYCLOPEDIA -> SearchPlatform.WIKIPEDIA;
+			case DATA_ANALYSIS -> SearchPlatform.WORLDBANK_DATA;
+			default -> SearchPlatform.TAVILY;
+		};
 	}
 
 	/**

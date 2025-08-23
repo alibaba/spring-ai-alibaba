@@ -19,7 +19,7 @@
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
     <properties>
-        <mcp.version>0.11.0</mcp.version>
+        <mcp.version>0.10.0</mcp.version>
     </properties>
 
     <dependencies>

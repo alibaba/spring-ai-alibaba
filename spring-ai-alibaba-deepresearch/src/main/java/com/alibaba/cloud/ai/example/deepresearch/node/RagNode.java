@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 import com.alibaba.cloud.ai.example.deepresearch.rag.core.HybridRagProcessor;
 import com.alibaba.cloud.ai.example.deepresearch.rag.strategy.FusionStrategy;
 import com.alibaba.cloud.ai.example.deepresearch.rag.strategy.RetrievalStrategy;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
@@ -79,8 +80,7 @@ public class RagNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("rag_node is running.");
-		String queryText = state.value("query", String.class)
-			.orElseThrow(() -> new IllegalArgumentException("Query is missing from state"));
+		String queryText = StateUtil.getQuery(state);
 
 		Map<String, Object> options = new HashMap<>();
 		state.value("session_id", String.class).ifPresent(v -> options.put("session_id", v));

@@ -71,10 +71,8 @@ public class ReporterNode implements NodeAction {
 		logger.info("reporter node is running.");
 
 		// 从 OverAllState 中获取线程ID
-		String threadId = state.value("thread_id", String.class)
-			.orElseThrow(() -> new IllegalArgumentException("thread_id is missing from state"));
-		String sessionId = state.value("session_id", String.class)
-			.orElseThrow(() -> new IllegalArgumentException("session_id is missing from state"));
+		String threadId = StateUtil.getThreadId(state);
+		String sessionId = StateUtil.getSessionId(state);
 		logger.info("Thread ID from state: {}", threadId);
 		logger.info("Session ID from state: {}", sessionId);
 
@@ -93,8 +91,7 @@ public class ReporterNode implements NodeAction {
 
 		// 添加深度研究信息
 		if (state.value("enable_deepresearch", true)) {
-			Plan currentPlan = state.value("current_plan", Plan.class)
-				.orElseThrow(() -> new IllegalArgumentException("current_plan is missing"));
+			Plan currentPlan = StateUtil.getPlan(state);
 
 			// 1.1 研究报告格式消息
 			messages.add(new UserMessage(

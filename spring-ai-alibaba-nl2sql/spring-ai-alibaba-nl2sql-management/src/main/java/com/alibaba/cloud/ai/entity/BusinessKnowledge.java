@@ -19,7 +19,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 
 /**
- * 业务知识管理实体类
+ * Business Knowledge Management Entity Class
  */
 @TableName("business_knowledge")
 public class BusinessKnowledge {
@@ -28,22 +28,22 @@ public class BusinessKnowledge {
 	private Long id;
 
 	@TableField("business_term")
-	private String businessTerm; // 业务名词
+	private String businessTerm; // Business term
 
 	@TableField("description")
-	private String description; // 说明
+	private String description; // Description
 
 	@TableField("synonyms")
-	private String synonyms; // 同义词，逗号分隔
+	private String synonyms; // Synonyms, comma-separated
 
 	@TableField("default_recall")
-	private Boolean defaultRecall; // 默认召回
+	private Boolean defaultRecall; // Default recall
 
 	@TableField("dataset_id")
-	private String datasetId; // 关联的数据集ID
+	private String datasetId; // Associated dataset ID
 
 	@TableField("agent_id")
-	private String agentId; // 关联的智能体ID
+	private String agentId; // Associated agent ID
 
 	@TableField(value = "created_time", fill = FieldFill.INSERT)
 	private LocalDateTime createTime;
@@ -61,7 +61,7 @@ public class BusinessKnowledge {
 		this.synonyms = synonyms;
 		this.defaultRecall = defaultRecall;
 		this.datasetId = datasetId;
-		this.agentId = null; // 默认为null，保持向后兼容
+		this.agentId = null; // Defaults to null for backward compatibility
 	}
 
 	public BusinessKnowledge(String businessTerm, String description, String synonyms, Boolean defaultRecall,

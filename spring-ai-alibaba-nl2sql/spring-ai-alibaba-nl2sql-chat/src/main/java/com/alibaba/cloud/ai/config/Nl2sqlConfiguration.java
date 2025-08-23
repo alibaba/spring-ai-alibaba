@@ -44,6 +44,7 @@ import com.alibaba.cloud.ai.node.SemanticConsistencyNode;
 import com.alibaba.cloud.ai.node.SqlExecuteNode;
 import com.alibaba.cloud.ai.node.SqlGenerateNode;
 import com.alibaba.cloud.ai.node.TableRelationNode;
+import com.alibaba.cloud.ai.service.DatasourceService;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.service.business.BusinessKnowledgeRecallService;
@@ -65,9 +66,11 @@ import static com.alibaba.cloud.ai.constant.Constant.BUSINESS_KNOWLEDGE;
 import static com.alibaba.cloud.ai.constant.Constant.COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.EVIDENCES;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
+import static com.alibaba.cloud.ai.constant.Constant.IS_ONLY_NL2SQL;
 import static com.alibaba.cloud.ai.constant.Constant.KEYWORD_EXTRACT_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.KEYWORD_EXTRACT_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.NL2SQL_GRAPH_NAME;
+import static com.alibaba.cloud.ai.constant.Constant.ONLY_NL2SQL_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
@@ -119,25 +122,25 @@ public class Nl2sqlConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(Nl2sqlConfiguration.class);
 
-	private BaseNl2SqlService nl2SqlService;
+	private final BaseNl2SqlService nl2SqlService;
 
-	private BaseSchemaService schemaService;
+	private final BaseSchemaService schemaService;
 
-	private Accessor dbAccessor;
+	private final Accessor dbAccessor;
 
-	private DbConfig dbConfig;
+	private final DbConfig dbConfig;
 
-	private CodeExecutorProperties codeExecutorProperties;
+	private final CodeExecutorProperties codeExecutorProperties;
 
-	private CodePoolExecutorService codePoolExecutor;
+	private final CodePoolExecutorService codePoolExecutor;
 
-	private SemanticModelRecallService semanticModelRecallService;
+	private final SemanticModelRecallService semanticModelRecallService;
 
-	private BusinessKnowledgeRecallService businessKnowledgeRecallService;
+	private final BusinessKnowledgeRecallService businessKnowledgeRecallService;
 
-	private UserPromptConfigService promptConfigService;
+	private final UserPromptConfigService promptConfigService;
 
-	private com.alibaba.cloud.ai.service.DatasourceService datasourceService;
+	private final DatasourceService datasourceService;
 
 	public Nl2sqlConfiguration(@Qualifier("nl2SqlServiceImpl") BaseNl2SqlService nl2SqlService,
 			@Qualifier("schemaServiceImpl") BaseSchemaService schemaService,
@@ -145,7 +148,7 @@ public class Nl2sqlConfiguration {
 			CodeExecutorProperties codeExecutorProperties, CodePoolExecutorService codePoolExecutor,
 			SemanticModelRecallService semanticModelRecallService,
 			BusinessKnowledgeRecallService businessKnowledgeRecallService, UserPromptConfigService promptConfigService,
-			com.alibaba.cloud.ai.service.DatasourceService datasourceService) {
+			DatasourceService datasourceService) {
 		this.nl2SqlService = nl2SqlService;
 		this.schemaService = schemaService;
 		this.dbAccessor = dbAccessor;
@@ -163,15 +166,15 @@ public class Nl2sqlConfiguration {
 
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			// 用户输入
+			// User input
 			keyStrategyHashMap.put(INPUT_KEY, new ReplaceStrategy());
-			// 数据集ID
+			// Dataset ID
 			keyStrategyHashMap.put(Constant.AGENT_ID, new ReplaceStrategy());
-			// 智能体ID
+			// Agent ID
 			keyStrategyHashMap.put(AGENT_ID, new ReplaceStrategy());
-			// 业务知识
+			// Business knowledge
 			keyStrategyHashMap.put(BUSINESS_KNOWLEDGE, new ReplaceStrategy());
-			// 语义模型
+			// Semantic model
 			keyStrategyHashMap.put(SEMANTIC_MODEL, new ReplaceStrategy());
 			// queryWrite节点输出
 			keyStrategyHashMap.put(QUERY_REWRITE_NODE_OUTPUT, new ReplaceStrategy());
@@ -211,7 +214,10 @@ public class Nl2sqlConfiguration {
 			keyStrategyHashMap.put(PYTHON_EXECUTE_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(PYTHON_GENERATE_NODE_OUTPUT, new ReplaceStrategy());
 			keyStrategyHashMap.put(PYTHON_ANALYSIS_NODE_OUTPUT, new ReplaceStrategy());
-			// 最终结果
+			// NL2SQL相关
+			keyStrategyHashMap.put(IS_ONLY_NL2SQL, new ReplaceStrategy());
+			keyStrategyHashMap.put(ONLY_NL2SQL_OUTPUT, new ReplaceStrategy());
+			// Final result
 			keyStrategyHashMap.put(RESULT, new ReplaceStrategy());
 			return keyStrategyHashMap;
 		};

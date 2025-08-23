@@ -30,7 +30,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 智能体知识服务类
+ * Agent Knowledge Service Class
  */
 @Service
 public class AgentKnowledgeService {
@@ -39,7 +39,7 @@ public class AgentKnowledgeService {
 	private JdbcTemplate jdbcTemplate;
 
 	/**
-	 * 根据智能体ID查询知识列表
+	 * Query knowledge list by agent ID
 	 */
 	public List<AgentKnowledge> getKnowledgeByAgentId(Integer agentId) {
 		String sql = "SELECT * FROM agent_knowledge WHERE agent_id = ? ORDER BY create_time DESC";
@@ -47,7 +47,7 @@ public class AgentKnowledgeService {
 	}
 
 	/**
-	 * 根据ID查询知识详情
+	 * Query knowledge details by ID
 	 */
 	public AgentKnowledge getKnowledgeById(Integer id) {
 		String sql = "SELECT * FROM agent_knowledge WHERE id = ?";
@@ -56,7 +56,7 @@ public class AgentKnowledgeService {
 	}
 
 	/**
-	 * 创建知识
+	 * Create knowledge
 	 */
 	public AgentKnowledge createKnowledge(AgentKnowledge knowledge) {
 		String sql = "INSERT INTO agent_knowledge (agent_id, title, content, type, category, tags, status, "
@@ -95,7 +95,7 @@ public class AgentKnowledgeService {
 	}
 
 	/**
-	 * 更新知识
+	 * Update knowledge
 	 */
 	public AgentKnowledge updateKnowledge(Integer id, AgentKnowledge knowledge) {
 		String sql = "UPDATE agent_knowledge SET title = ?, content = ?, type = ?, category = ?, tags = ?, "
@@ -118,7 +118,7 @@ public class AgentKnowledgeService {
 	}
 
 	/**
-	 * 删除知识
+	 * Delete knowledge
 	 */
 	public boolean deleteKnowledge(Integer id) {
 		String sql = "DELETE FROM agent_knowledge WHERE id = ?";
@@ -127,7 +127,7 @@ public class AgentKnowledgeService {
 	}
 
 	/**
-	 * 根据类型查询知识列表
+	 * Query knowledge list by type
 	 */
 	public List<AgentKnowledge> getKnowledgeByType(Integer agentId, String type) {
 		String sql = "SELECT * FROM agent_knowledge WHERE agent_id = ? AND type = ? ORDER BY create_time DESC";
@@ -135,7 +135,7 @@ public class AgentKnowledgeService {
 	}
 
 	/**
-	 * 根据状态查询知识列表
+	 * Query knowledge list by status
 	 */
 	public List<AgentKnowledge> getKnowledgeByStatus(Integer agentId, String status) {
 		String sql = "SELECT * FROM agent_knowledge WHERE agent_id = ? AND status = ? ORDER BY create_time DESC";
@@ -143,7 +143,7 @@ public class AgentKnowledgeService {
 	}
 
 	/**
-	 * 搜索知识
+	 * Search knowledge
 	 */
 	public List<AgentKnowledge> searchKnowledge(Integer agentId, String keyword) {
 		String sql = "SELECT * FROM agent_knowledge WHERE agent_id = ? AND "
@@ -154,7 +154,7 @@ public class AgentKnowledgeService {
 	}
 
 	/**
-	 * 批量更新知识状态
+	 * Batch update knowledge status
 	 */
 	public int batchUpdateStatus(List<Integer> ids, String status) {
 		String sql = "UPDATE agent_knowledge SET status = ?, update_time = ? WHERE id = ?";
@@ -168,7 +168,7 @@ public class AgentKnowledgeService {
 	}
 
 	/**
-	 * 统计智能体知识数量
+	 * Count agent knowledge
 	 */
 	public int countKnowledgeByAgent(Integer agentId) {
 		String sql = "SELECT COUNT(*) FROM agent_knowledge WHERE agent_id = ?";
@@ -176,7 +176,7 @@ public class AgentKnowledgeService {
 	}
 
 	/**
-	 * 统计各类型知识数量
+	 * Count knowledge by types
 	 */
 	public List<Object[]> countKnowledgeByType(Integer agentId) {
 		String sql = "SELECT type, COUNT(*) as count FROM agent_knowledge WHERE agent_id = ? GROUP BY type";

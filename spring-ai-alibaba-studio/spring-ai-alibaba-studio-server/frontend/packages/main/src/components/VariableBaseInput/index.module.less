@@ -1,0 +1,94 @@
+.remote-url-input-form {
+  width: 232px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &-title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+
+  &-actions {
+    margin-top: 16px;
+  }
+}
+
+.file-input {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.upload-btn-wrap {
+  flex: 1;
+  :global {
+    .ag-ant-upload {
+      width: 100%;
+    }
+  }
+}
+
+.file-item {
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--ag-ant-color-bg-base);
+  border: 1px solid var(--ag-ant-color-border-secondary);
+
+  .file-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+  }
+
+  .file-logo {
+    width: 40px;
+    height: 40px;
+    background: var(--ag-ant-color-fill);
+    border-radius: 4px;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    display: flex;
+
+    .file-logo-icon {
+      font-size: 24px;
+    }
+  }
+
+  .file-progress {
+    font-size: 12px;
+    color: var(--ag-ant-color-primary);
+    line-height: 20px;
+  }
+
+  .file-name {
+    font-weight: 500;
+    line-height: 24px;
+  }
+
+  .file-size {
+    color: var(--ag-ant-color-text-quaternary);
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+  .file-loading-icon {
+    animation: spin 2s linear infinite;
+    display: inline-block;
+    font-size: 24px !important;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -12,6 +12,12 @@ spring:
     lazy-initialization: false
   aop:
     proxy-target-class: true
+  servlet:
+    multipart:
+      max-file-size: 5368709120
+      max-request-size: 6442450944
+      enabled: true
+      file-size-threshold: 2048
   # Hikari Configuration
   datasource:
     hikari:
@@ -32,10 +38,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-  ai:
-    memory:
-      h2:
-        enabled: true
 
 logging:
   file:
