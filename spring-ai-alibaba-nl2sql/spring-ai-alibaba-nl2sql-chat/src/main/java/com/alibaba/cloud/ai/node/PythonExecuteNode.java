@@ -76,13 +76,25 @@ public class PythonExecuteNode extends AbstractPlanBasedNode implements NodeActi
 				log.error(errorMsg);
 				throw new RuntimeException(errorMsg);
 			}
-			log.info("Python Execute Success! StdOut: {}", taskResponse.stdOut());
+
+			// Python输出的JSON字符串可能有Unicode转义形式，需要解析回汉字
+			String stdout = taskResponse.stdOut();
+			try {
+				Object value = objectMapper.readValue(stdout, Object.class);
+				stdout = objectMapper.writeValueAsString(value);
+			}
+			catch (Exception e) {
+				stdout = taskResponse.stdOut();
+			}
+			String finalStdout = stdout;
+
+			log.info("Python Execute Success! StdOut: {}", finalStdout);
 
 			// Create display flux for user experience only
 			Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
 				emitter.next(ChatResponseUtil.createStatusResponse("开始执行Python代码..."));
 				emitter.next(ChatResponseUtil.createStatusResponse("标准输出：\n```"));
-				emitter.next(ChatResponseUtil.createStatusResponse(taskResponse.stdOut()));
+				emitter.next(ChatResponseUtil.createStatusResponse(finalStdout));
 				emitter.next(ChatResponseUtil.createStatusResponse("\n```"));
 				emitter.next(ChatResponseUtil.createStatusResponse("Python代码执行成功！"));
 				emitter.complete();
@@ -91,8 +103,8 @@ public class PythonExecuteNode extends AbstractPlanBasedNode implements NodeActi
 			// Create generator using utility class, returning pre-computed business logic
 			// result
 			var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
-					v -> Map.of(PYTHON_EXECUTE_NODE_OUTPUT, taskResponse.stdOut(), PYTHON_IS_SUCCESS, true),
-					displayFlux, StreamResponseType.PYTHON_EXECUTE);
+					v -> Map.of(PYTHON_EXECUTE_NODE_OUTPUT, finalStdout, PYTHON_IS_SUCCESS, true), displayFlux,
+					StreamResponseType.PYTHON_EXECUTE);
 
 			return Map.of(PYTHON_EXECUTE_NODE_OUTPUT, generator);
 		}
