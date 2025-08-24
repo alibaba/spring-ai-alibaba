@@ -114,7 +114,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			String memoryId = (String) request.get("memoryId");
 
 			if (!StringUtils.hasText(memoryId)) {
-				memoryId = RandomStringUtils.randomAlphabetic(8);
+				memoryId = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 			}
 			memoryService.saveMemory(new MemoryEntity(memoryId, query));
 

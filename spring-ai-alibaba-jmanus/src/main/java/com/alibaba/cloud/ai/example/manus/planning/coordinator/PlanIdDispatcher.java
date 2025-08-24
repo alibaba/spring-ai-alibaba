@@ -192,4 +192,28 @@ public class PlanIdDispatcher implements IPlanIdDispatcher {
 		return subPlanId;
 	}
 
+	/**
+	 * Generate a unique tool call ID for tracking tool executions
+	 * @return unique tool call ID
+	 */
+	public String generateToolCallId() {
+		// Use a specific prefix for tool call IDs
+		String toolCallPrefix = "toolcall-";
+		
+		// Generate unique tool call ID with multiple uniqueness factors:
+		// 1. Specific prefix for tool calls
+		// 2. Current timestamp in milliseconds
+		// 3. Random component for additional uniqueness
+		// 4. Thread ID to handle concurrent tool calls
+		long timestamp = System.currentTimeMillis();
+		int randomComponent = (int) (Math.random() * 10000);
+		long threadId = Thread.currentThread().getId();
+		
+		String toolCallId = String.format("%s%d_%d_%d", toolCallPrefix, timestamp, randomComponent, threadId);
+		
+		logger.debug("Generated unique tool call ID: {}", toolCallId);
+		
+		return toolCallId;
+	}
+
 }
