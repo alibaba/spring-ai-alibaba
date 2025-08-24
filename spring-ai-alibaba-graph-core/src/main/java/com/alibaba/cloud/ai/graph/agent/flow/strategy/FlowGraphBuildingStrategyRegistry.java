@@ -13,17 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.flow.registry;
+package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.Set;
-
-import com.alibaba.cloud.ai.graph.agent.flow.strategy.ConditionalGraphBuildingStrategy;
-import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategy;
-import com.alibaba.cloud.ai.graph.agent.flow.strategy.ParallelGraphBuildingStrategy;
-import com.alibaba.cloud.ai.graph.agent.flow.strategy.RoutingGraphBuildingStrategy;
-import com.alibaba.cloud.ai.graph.agent.flow.strategy.SequentialGraphBuildingStrategy;
 
 /**
  * Registry for FlowGraphStrategy implementations. This allows for dynamic registration

@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
-import com.alibaba.cloud.ai.graph.agent.flow.enums.AgentEnum;
+import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingEdgeAction;
 import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -81,7 +81,7 @@ public class RoutingGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 
 	@Override
 	public String getStrategyType() {
-		return AgentEnum.ROUTING.getType();
+		return FlowAgentEnum.ROUTING.getType();
 	}
 
 	@Override

@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
-import com.alibaba.cloud.ai.graph.agent.flow.enums.AgentEnum;
+import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
@@ -66,7 +66,7 @@ public class SequentialGraphBuildingStrategy implements FlowGraphBuildingStrateg
 
 	@Override
 	public String getStrategyType() {
-		return AgentEnum.SEQUENTIAL.getType();
+		return FlowAgentEnum.SEQUENTIAL.getType();
 	}
 
 	@Override

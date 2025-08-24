@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
-import com.alibaba.cloud.ai.graph.agent.flow.enums.AgentEnum;
+import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.springframework.ai.chat.model.ChatModel;
@@ -48,7 +48,7 @@ public class LlmRoutingAgent extends FlowAgent {
 	@Override
 	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		config.setChatModel(this.chatModel);
-		return FlowGraphBuilder.buildGraph(AgentEnum.ROUTING.getType(), config);
+		return FlowGraphBuilder.buildGraph(FlowAgentEnum.ROUTING.getType(), config);
 	}
 
 	public static LlmRoutingAgentBuilder builder() {

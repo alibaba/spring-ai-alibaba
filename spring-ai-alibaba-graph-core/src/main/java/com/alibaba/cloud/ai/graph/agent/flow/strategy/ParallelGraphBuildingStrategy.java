@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
-import com.alibaba.cloud.ai.graph.agent.flow.enums.AgentEnum;
+import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.EnhancedParallelResultAggregator;
 import com.alibaba.cloud.ai.graph.agent.flow.node.ParallelResultAggregator;
 import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
@@ -86,7 +86,7 @@ public class ParallelGraphBuildingStrategy implements FlowGraphBuildingStrategy 
 
 	@Override
 	public String getStrategyType() {
-		return AgentEnum.PARALLEL.getType();
+		return FlowAgentEnum.PARALLEL.getType();
 	}
 
 	@Override

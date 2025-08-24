@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
-import com.alibaba.cloud.ai.graph.agent.flow.enums.AgentEnum;
+import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.ConditionEvaluator;
 import com.alibaba.cloud.ai.graph.agent.flow.node.ConditionEvaluatorAction;
 import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
@@ -84,7 +84,7 @@ public class ConditionalGraphBuildingStrategy implements FlowGraphBuildingStrate
 
 	@Override
 	public String getStrategyType() {
-		return AgentEnum.CONDITIONAL.getType();
+		return FlowAgentEnum.CONDITIONAL.getType();
 	}
 
 	@Override

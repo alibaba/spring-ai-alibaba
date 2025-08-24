@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
-import com.alibaba.cloud.ai.graph.agent.flow.enums.AgentEnum;
+import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.slf4j.Logger;
@@ -79,7 +79,7 @@ public class ParallelAgent extends FlowAgent {
 		config.customProperty("mergeStrategy", this.mergeStrategy);
 		config.customProperty("maxConcurrency", this.maxConcurrency);
 
-		return FlowGraphBuilder.buildGraph(AgentEnum.PARALLEL.getType(), config);
+		return FlowGraphBuilder.buildGraph(FlowAgentEnum.PARALLEL.getType(), config);
 	}
 
 	/**
@@ -163,9 +163,13 @@ public class ParallelAgent extends FlowAgent {
 		 */
 		@Override
 		protected void validate() {
-			super.validate();
+			// Validate name first (from parent)
+			if (name == null || name.trim().isEmpty()) {
+				throw new IllegalArgumentException("Name must be provided");
+			}
 
-			// Validate minimum sub-agent count
+			// Validate minimum sub-agent count for ParallelAgent (skip parent subAgents
+			// check)
 			if (subAgents == null || subAgents.size() < 2) {
 				throw new IllegalArgumentException(
 						"ParallelAgent requires at least 2 sub-agents for parallel execution, but got: "

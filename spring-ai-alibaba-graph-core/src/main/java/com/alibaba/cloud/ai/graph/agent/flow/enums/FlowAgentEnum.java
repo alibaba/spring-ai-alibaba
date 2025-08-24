@@ -15,13 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.enums;
 
-public enum AgentEnum {
+public enum FlowAgentEnum {
 
 	CONDITIONAL("CONDITIONAL"), SEQUENTIAL("SEQUENTIAL"), ROUTING("ROUTING"), PARALLEL("PARALLEL");
 
 	private final String type;
 
-	AgentEnum(final String type) {
+	FlowAgentEnum(final String type) {
 		this.type = type;
 	}
 

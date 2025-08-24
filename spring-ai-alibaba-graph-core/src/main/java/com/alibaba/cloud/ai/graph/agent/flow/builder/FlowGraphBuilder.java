@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.flow.builder;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
-import com.alibaba.cloud.ai.graph.agent.flow.registry.FlowGraphBuildingStrategyRegistry;
+import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategyRegistry;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategy;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.springframework.ai.chat.model.ChatModel;

@@ -22,8 +22,8 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
-import com.alibaba.cloud.ai.graph.agent.flow.enums.AgentEnum;
-import com.alibaba.cloud.ai.graph.agent.flow.registry.FlowGraphBuildingStrategyRegistry;
+import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
+import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategyRegistry;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategy;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.SequentialGraphBuildingStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
@@ -180,13 +180,13 @@ class FlowAgentArchitectureTest {
 		FlowGraphBuildingStrategyRegistry registry = FlowGraphBuildingStrategyRegistry.getInstance();
 
 		// Verify default strategies are registered
-		assertTrue(registry.hasStrategy(AgentEnum.SEQUENTIAL.getType()));
-		assertTrue(registry.hasStrategy(AgentEnum.ROUTING.getType()));
-		assertTrue(registry.hasStrategy(AgentEnum.PARALLEL.getType()));
-		assertTrue(registry.hasStrategy(AgentEnum.CONDITIONAL.getType()));
+		assertTrue(registry.hasStrategy(FlowAgentEnum.SEQUENTIAL.getType()));
+		assertTrue(registry.hasStrategy(FlowAgentEnum.ROUTING.getType()));
+		assertTrue(registry.hasStrategy(FlowAgentEnum.PARALLEL.getType()));
+		assertTrue(registry.hasStrategy(FlowAgentEnum.CONDITIONAL.getType()));
 
 		// Test getting strategies
-		FlowGraphBuildingStrategy sequentialStrategy = registry.getStrategy(AgentEnum.SEQUENTIAL.getType());
+		FlowGraphBuildingStrategy sequentialStrategy = registry.getStrategy(FlowAgentEnum.SEQUENTIAL.getType());
 		assertNotNull(sequentialStrategy);
 		assertTrue(sequentialStrategy instanceof SequentialGraphBuildingStrategy);
 
