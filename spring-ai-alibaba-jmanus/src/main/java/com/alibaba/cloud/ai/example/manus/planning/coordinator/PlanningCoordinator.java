@@ -21,10 +21,12 @@ import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutor
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
-import com.alibaba.cloud.ai.example.manus.planning.service.IPlanRelationshipService;
+import com.alibaba.cloud.ai.example.manus.recorder.service.PlanHierarchyService;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import java.util.concurrent.CompletableFuture;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,28 +48,22 @@ public class PlanningCoordinator {
 
 	private final PlanFinalizer planFinalizer;
 
-	private final IPlanRelationshipService planRelationshipService;
+	private final PlanHierarchyService planHierarchyService;
 
 	private final PlanIdDispatcher planIdDispatcher;
 
 	@Autowired
 	public PlanningCoordinator(PlanningFactory planningFactory, PlanExecutorFactory planExecutorFactory,
-			PlanFinalizer planFinalizer, IPlanRelationshipService planRelationshipService,
+			PlanFinalizer planFinalizer, PlanHierarchyService planHierarchyService,
 			PlanIdDispatcher planIdDispatcher) {
 		this.planningFactory = planningFactory;
 		this.planExecutorFactory = planExecutorFactory;
 		this.planFinalizer = planFinalizer;
-		this.planRelationshipService = planRelationshipService;
+		this.planHierarchyService = planHierarchyService;
 		this.planIdDispatcher = planIdDispatcher;
 	}
 
-	/**
-	 * Constructor for backward compatibility when relationship service is not available
-	 */
-	public PlanningCoordinator(PlanningFactory planningFactory, PlanExecutorFactory planExecutorFactory,
-			PlanFinalizer planFinalizer, PlanIdDispatcher planIdDispatcher) {
-		this(planningFactory, planExecutorFactory, planFinalizer, null, planIdDispatcher);
-	}
+
 
 	/**
 	 * Execute plan by user query using plan creator and then execute the created plan
@@ -75,12 +71,19 @@ public class PlanningCoordinator {
 	 * @param rootPlanId The root plan ID for the execution context
 	 * @param parentPlanId The ID of the parent plan (can be null for root plans)
 	 * @param currentPlanId The current plan ID for execution
+	 * @param memoryId The memory ID for the execution context
+	 * @param toolcallId The ID of the tool call that triggered this plan execution
 	 * @return A CompletableFuture that completes with the execution result
 	 */
 	public CompletableFuture<PlanExecutionResult> executeByUserQuery(String userQuery, String rootPlanId,
-			String parentPlanId, String currentPlanId, String memoryId) {
+			String parentPlanId, String currentPlanId, String memoryId, String toolcallId) {
 		try {
 			log.info("Starting plan execution for user query: {}", userQuery);
+			
+			// Log toolcallId if provided
+			if (toolcallId != null) {
+				log.debug("Plan execution triggered by tool call: {}", toolcallId);
+			}
 
 			// Create execution context
 			ExecutionContext context = new ExecutionContext();
@@ -134,10 +137,11 @@ public class PlanningCoordinator {
 	 * @param rootPlanId The root plan ID for the execution context
 	 * @param parentPlanId The ID of the parent plan (can be null for root plans)
 	 * @param currentPlanId The current plan ID for execution
+	 * @param toolcallId The ID of the tool call that triggered this plan execution
 	 * @return A CompletableFuture that completes with the execution result
-	 */
+	 */	
 	public CompletableFuture<PlanExecutionResult> executeByPlan(PlanInterface plan, String rootPlanId,
-			String parentPlanId, String currentPlanId) {
+			String parentPlanId, String currentPlanId, String toolcallId) {
 		try {
 			log.info("Starting direct plan execution for plan: {}", plan.getCurrentPlanId());
 
@@ -153,6 +157,11 @@ public class PlanningCoordinator {
 			context.setPlan(plan);
 			context.setNeedSummary(true);
 			context.setUseMemory(true);
+			
+			// Log toolcallId if provided
+			if (toolcallId != null) {
+				log.debug("Plan execution triggered by tool call: {}", toolcallId);
+			}
 
 			// Execute the plan using PlanExecutorFactory
 			PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
