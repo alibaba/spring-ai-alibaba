@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.flow;
+package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
 import java.util.List;
 
@@ -24,9 +24,9 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public abstract class FlowAgent extends BaseAgent {
@@ -54,20 +54,26 @@ public abstract class FlowAgent extends BaseAgent {
 	}
 
 	protected StateGraph initGraph() throws GraphStateException {
-		StateGraph graph = new StateGraph(this.name(), keyStrategyFactory);
+		// Use FlowGraphBuilder to construct the graph
+		FlowGraphBuilder.FlowGraphConfig config = FlowGraphBuilder.FlowGraphConfig.builder()
+			.name(this.name())
+			.keyStrategyFactory(keyStrategyFactory)
+			.rootAgent(this)
+			.subAgents(this.subAgents());
 
-		// add root agent
-		graph.addNode(this.name(), node_async(new TransparentNode(this.outputKey, this.inputKey)));
-
-		// add starting edge
-		graph.addEdge(START, this.name());
-		// Use recursive method to add all sub-agents
-		processSubAgents(graph, this, this.subAgents());
-
-		return graph;
+		// Delegate to specific graph builder based on agent type
+		return buildSpecificGraph(config);
 	}
 
-	protected abstract void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<BaseAgent> subAgents)
+	/**
+	 * Abstract method for subclasses to specify their graph building strategy. This
+	 * method should be implemented by concrete FlowAgent subclasses to define how their
+	 * specific graph structure should be built.
+	 * @param config the graph configuration
+	 * @return the constructed StateGraph
+	 * @throws GraphStateException if graph construction fails
+	 */
+	protected abstract StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config)
 			throws GraphStateException;
 
 	@Override

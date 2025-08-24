@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.flow;
+package com.alibaba.cloud.ai.graph.agent.flow.node;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
