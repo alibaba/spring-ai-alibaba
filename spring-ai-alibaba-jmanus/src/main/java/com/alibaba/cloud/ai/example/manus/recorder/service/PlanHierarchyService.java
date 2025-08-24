@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.Optional;
 
 /**
  * Service for managing plan hierarchies using existing parentPlanId and actToolInfoEntityId fields.
@@ -140,35 +141,99 @@ public class PlanHierarchyService {
         }
     }
 
-    /**
-     * Get the depth of a plan in the execution hierarchy
-     */
-    @Transactional(readOnly = true)
-    public Integer getPlanDepth(String planId) {
-        if (planId == null) {
-            return null;
+    	/**
+	 * Get the depth of a plan in the execution hierarchy
+	 */
+	@Transactional(readOnly = true)
+	public Integer getPlanDepth(String planId) {
+		if (planId == null) {
+			return null;
+		}
+		try {
+			int depth = 0;
+			String currentPlanId = planId;
+			while (currentPlanId != null) {
+				PlanExecutionRecordEntity currentPlan = planExecutionRecordRepository.findByCurrentPlanId(currentPlanId)
+						.orElse(null);
+				if (currentPlan == null) {
+					break;
+				}
+				String parentId = currentPlan.getParentPlanId();
+				if (parentId == null) {
+					return depth;
+				}
+				depth++;
+				currentPlanId = parentId;
+			}
+			return depth;
+		} catch (Exception e) {
+			logger.error("Failed to calculate plan depth for plan: {}", planId, e);
+			return null;
+		}
+	}
+
+	/**
+	 * Create relationship between parent and current execution plan
+	 * @param currentPlanId The current plan ID
+	 * @param parentPlanId The parent plan ID (must not be null)
+	 * @param rootPlanId The root plan ID
+	 * @param toolcallId The tool call ID that triggered this execution (can be null)
+	 * @return true if relationship was created successfully, false otherwise
+	 */
+	@Transactional
+	public boolean createPlanRelationship(String currentPlanId, String parentPlanId, String rootPlanId, String toolcallId) {
+		if (currentPlanId == null) {
+			logger.error("Cannot create plan relationship: currentPlanId is null");
+			return false;
+		}
+		
+		if (parentPlanId == null) {
+			logger.error("Cannot create plan relationship: parentPlanId is null");
+			return false;
+		}
+        if (rootPlanId == null) {
+           throw new IllegalArgumentException("rootPlanId is null");
         }
-        try {
-            int depth = 0;
-            String currentPlanId = planId;
-            while (currentPlanId != null) {
-                PlanExecutionRecordEntity currentPlan = planExecutionRecordRepository.findByCurrentPlanId(currentPlanId)
-                        .orElse(null);
-                if (currentPlan == null) {
-                    break;
-                }
-                String parentId = currentPlan.getParentPlanId();
-                if (parentId == null) {
-                    return depth;
-                }
-                depth++;
-                currentPlanId = parentId;
-            }
-            return depth;
-        } catch (Exception e) {
-            logger.error("Failed to calculate plan depth for plan: {}", planId, e);
-            return null;
-        }
-    }
+		
+		try {
+			// Check if the current plan already exists
+			Optional<PlanExecutionRecordEntity> existingPlan = planExecutionRecordRepository.findByCurrentPlanId(currentPlanId);
+			
+			if (existingPlan.isPresent()) {
+				// Update existing plan with relationship information
+				PlanExecutionRecordEntity planEntity = existingPlan.get();
+				planEntity.setParentPlanId(parentPlanId);
+				planEntity.setRootPlanId(rootPlanId);
+				
+				// If toolcallId is provided, we might need to set it in the context
+				// For now, we'll log it for tracking purposes
+				if (toolcallId != null) {
+					logger.debug("Plan {} was triggered by tool call: {}", currentPlanId, toolcallId);
+				}
+				
+				planExecutionRecordRepository.save(planEntity);
+				logger.info("Updated plan relationship for plan: {} -> parent: {}, root: {}", 
+					currentPlanId, parentPlanId, rootPlanId);
+				return true;
+			} else {
+				// Create new plan entity with relationship information
+				PlanExecutionRecordEntity newPlanEntity = new PlanExecutionRecordEntity(currentPlanId);
+				newPlanEntity.setParentPlanId(parentPlanId);
+				newPlanEntity.setRootPlanId(rootPlanId);
+				
+				// Set basic information
+				newPlanEntity.setTitle("Plan " + currentPlanId);
+				newPlanEntity.setStartTime(java.time.LocalDateTime.now());
+				
+				planExecutionRecordRepository.save(newPlanEntity);
+				logger.info("Created new plan relationship for plan: {} -> parent: {}, root: {}", 
+					currentPlanId, parentPlanId, rootPlanId);
+				return true;
+			}
+		} catch (Exception e) {
+			logger.error("Failed to create plan relationship for plan: {}", currentPlanId, e);
+			return false;
+		}
+	}
 
 }
