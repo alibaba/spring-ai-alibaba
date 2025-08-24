@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.alibaba.cloud.ai.graph.agent.flow.ParallelAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
