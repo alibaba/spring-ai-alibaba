@@ -282,6 +282,9 @@ public class DynamicAgent extends ReActAgent {
 			// Create ActToolInfo list
 			actToolInfoList = createActToolInfoList(toolCalls);
 
+			// Record tool call intention before execution
+			recordToolCallIntention(actToolInfoList);
+
 			// Execute tool calls
 			toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 			processMemory(toolExecutionResult);
@@ -459,6 +462,39 @@ public class DynamicAgent extends ReActAgent {
 		params.setActToolInfoList(actToolInfoList);
 
 		planExecutionRecorder.recordActionResult(params);
+	}
+
+	/**
+	 * Record tool call intention before execution. This method reuses the logic
+	 * from recordActionResult but calls the new recordToolCallIntention interface.
+	 */
+	private void recordToolCallIntention(List<ActToolInfo> actToolInfoList) {
+		String toolName = null;
+		String toolParameters = null;
+		String actionDescription = "Preparing to execute tool";
+
+		if (actToolInfoList != null && !actToolInfoList.isEmpty()) {
+			ActToolInfo firstTool = actToolInfoList.get(0);
+			toolName = firstTool.getName();
+			toolParameters = firstTool.getParameters();
+			actionDescription = "Preparing to execute tool: " + toolName;
+		}
+
+		PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
+		params.setCurrentPlanId(getCurrentPlanId());
+		params.setRootPlanId(getRootPlanId());
+		params.setThinkActRecordId(getThinkActRecordId());
+		params.setCreatedThinkActRecordId(currentThinkActRecordId);
+		params.setActionDescription(actionDescription);
+		params.setActionResult("Tool call initiated"); // 表示工具调用已启动
+		params.setStatus(ExecutionStatus.RUNNING);
+		params.setErrorMessage(null);
+		params.setToolName(toolName);
+		params.setToolParameters(toolParameters);
+		params.setSubPlanCreated(false);
+		params.setActToolInfoList(actToolInfoList);
+
+		planExecutionRecorder.recordToolCallIntention(params);
 	}
 
 	private void processUserInputToMemory(UserMessage userMessage) {

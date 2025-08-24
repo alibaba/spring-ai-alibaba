@@ -301,7 +301,7 @@ public class PlanTemplateController {
 			}
 
 			// Execute using the PlanningCoordinator's common execution logic
-			planningCoordinator.executeByPlan(plan, rootPlanId, null, currentPlanId);
+			planningCoordinator.executeByPlan(plan, rootPlanId, null, currentPlanId, null);
 
 			// Return the root plan ID
 			return rootPlanId;

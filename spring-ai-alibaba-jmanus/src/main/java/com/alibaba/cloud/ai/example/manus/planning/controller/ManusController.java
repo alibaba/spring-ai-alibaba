@@ -119,7 +119,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			memoryService.saveMemory(new MemoryEntity(memoryId, query));
 
 			// Execute the plan using PlanningCoordinator (fire and forget)
-			planningCoordinator.executeByUserQuery(query, planId, planId, planId, memoryId);
+			planningCoordinator.executeByUserQuery(query, planId, planId, planId, memoryId,null);
 
 			// Return task ID and initial status
 			Map<String, Object> response = new HashMap<>();

@@ -174,26 +174,48 @@ public class PlanHierarchyService {
 
 	/**
 	 * Create relationship between parent and current execution plan
-	 * @param currentPlanId The current plan ID
+	 * @param currentPlanId The current plan ID (must not be null)
 	 * @param parentPlanId The parent plan ID (must not be null)
-	 * @param rootPlanId The root plan ID
+	 * @param rootPlanId The root plan ID (must not be null)
 	 * @param toolcallId The tool call ID that triggered this execution (can be null)
 	 * @return true if relationship was created successfully, false otherwise
+	 * @throws IllegalArgumentException if any required parameter is null
 	 */
 	@Transactional
 	public boolean createPlanRelationship(String currentPlanId, String parentPlanId, String rootPlanId, String toolcallId) {
+		// Validate all required parameters - throw exception for any null values
 		if (currentPlanId == null) {
-			logger.error("Cannot create plan relationship: currentPlanId is null");
-			return false;
+			throw new IllegalArgumentException("currentPlanId cannot be null");
+		}
+		if (parentPlanId == null) {
+			throw new IllegalArgumentException("parentPlanId cannot be null");
+		}
+		if (rootPlanId == null) {
+			throw new IllegalArgumentException("rootPlanId cannot be null");
 		}
 		
-		if (parentPlanId == null) {
-			logger.error("Cannot create plan relationship: parentPlanId is null");
-			return false;
+		// Analyze cases where relationship recording is not needed:
+		// 1. Root plan: currentPlanId equals rootPlanId (self-referencing)
+		// 2. Self-referencing: currentPlanId equals parentPlanId (invalid hierarchy)
+		// 3. Invalid hierarchy: parentPlanId equals rootPlanId but currentPlanId is different (should be direct child of root)
+		
+		// Case 1: Skip recording relationship for root plan (self-referencing)
+		if (currentPlanId.equals(rootPlanId)) {
+			logger.debug("Skipping relationship creation for root plan: {} (currentPlanId equals rootPlanId)", currentPlanId);
+			return true;
 		}
-        if (rootPlanId == null) {
-           throw new IllegalArgumentException("rootPlanId is null");
-        }
+		
+		// Case 2: Skip recording relationship for self-referencing (invalid hierarchy)
+		if (currentPlanId.equals(parentPlanId)) {
+			logger.warn("Skipping relationship creation for self-referencing plan: {} (currentPlanId equals parentPlanId)", currentPlanId);
+			return true;
+		}
+		
+		// Case 3: Validate that parent is not the root when current is a direct child
+		// This is a business logic validation - if current is not root, parent should not be root
+		if (parentPlanId.equals(rootPlanId)) {
+			logger.debug("Creating direct child relationship: {} -> parent: {} (root)", currentPlanId, parentPlanId);
+		}
 		
 		try {
 			// Check if the current plan already exists
@@ -202,11 +224,18 @@ public class PlanHierarchyService {
 			if (existingPlan.isPresent()) {
 				// Update existing plan with relationship information
 				PlanExecutionRecordEntity planEntity = existingPlan.get();
+				
+				// Check if relationship is already correct to avoid unnecessary updates
+				if (parentPlanId.equals(planEntity.getParentPlanId()) && rootPlanId.equals(planEntity.getRootPlanId())) {
+					logger.debug("Plan {} already has correct relationship: parent={}, root={}", 
+						currentPlanId, parentPlanId, rootPlanId);
+					return true;
+				}
+				
 				planEntity.setParentPlanId(parentPlanId);
 				planEntity.setRootPlanId(rootPlanId);
 				
-				// If toolcallId is provided, we might need to set it in the context
-				// For now, we'll log it for tracking purposes
+				// Log toolcallId for tracking purposes
 				if (toolcallId != null) {
 					logger.debug("Plan {} was triggered by tool call: {}", currentPlanId, toolcallId);
 				}
@@ -231,8 +260,9 @@ public class PlanHierarchyService {
 				return true;
 			}
 		} catch (Exception e) {
-			logger.error("Failed to create plan relationship for plan: {}", currentPlanId, e);
-			return false;
+			logger.error("Failed to create plan relationship for plan: {} -> parent: {}, root: {}", 
+				currentPlanId, parentPlanId, rootPlanId, e);
+			throw new RuntimeException("Failed to create plan relationship", e);
 		}
 	}
 

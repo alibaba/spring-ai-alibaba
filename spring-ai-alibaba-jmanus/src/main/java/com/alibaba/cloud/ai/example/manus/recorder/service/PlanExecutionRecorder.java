@@ -130,6 +130,14 @@ public interface PlanExecutionRecorder {
 	void recordActionResult(PlanExecutionParams params);
 
 	/**
+	 * Interface 2.5: Record tool call intention before execution. This method records
+	 * the intention to call a tool before the actual execution, providing a complete
+	 * lifecycle tracking of tool calls.
+	 * @param params Encapsulated parameters for tool call intention recording
+	 */
+	void recordToolCallIntention(PlanExecutionParams params);
+
+	/**
 	 * Interface 3: Record plan completion. This method handles plan completion recording
 	 * logic without exposing internal record objects.
 	 * @param currentPlanId Current plan ID

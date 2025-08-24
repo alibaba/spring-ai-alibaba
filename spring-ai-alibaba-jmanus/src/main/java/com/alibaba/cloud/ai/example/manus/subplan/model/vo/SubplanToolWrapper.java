@@ -113,8 +113,12 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 			// Execute the plan using PlanningCoordinator
 			// Generate a new plan ID for this subplan execution using PlanIdDispatcher
 			String newPlanId = planIdDispatcher.generateSubPlanId(rootPlanId);
+			// Generate a toolcall ID for this subplan execution
+			String toolCallId = planIdDispatcher.generateToolCallId();
+			logger.info("Generated toolcall ID: {} for subplan execution: {}", toolCallId, newPlanId);
+			
 			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByPlan(plan, rootPlanId,
-					currentPlanId, newPlanId);
+					currentPlanId, newPlanId, toolCallId);
 
 			PlanExecutionResult result = future.get();
 

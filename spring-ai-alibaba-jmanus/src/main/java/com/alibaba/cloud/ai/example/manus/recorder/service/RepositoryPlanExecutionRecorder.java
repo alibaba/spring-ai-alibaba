@@ -332,6 +332,58 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
+	 * Record tool call intention before execution. This method records the intention
+	 * to call a tool before the actual execution, providing a complete lifecycle
+	 * tracking of tool calls.
+	 */
+	@Override
+	public void recordToolCallIntention(PlanExecutionParams params) {
+		if (params.getCurrentPlanId() == null || params.getCreatedThinkActRecordId() == null) {
+			return;
+		}
+
+		PlanExecutionRecord planExecutionRecord = getOrCreatePlanExecutionRecord(params.getCurrentPlanId(), true);
+		AgentExecutionRecord agentExecutionRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
+
+		// Additional safety check
+		if (agentExecutionRecord == null) {
+			logger.error("Failed to retrieve AgentExecutionRecord for plan: {} in recordToolCallIntention",
+					params.getCurrentPlanId());
+			return;
+		}
+
+		// Find the ThinkActRecord by ID and update it with tool call intention
+		ThinkActRecord thinkActRecord = findThinkActRecordInPlan(planExecutionRecord,
+				params.getCreatedThinkActRecordId());
+
+		if (thinkActRecord != null) {
+			// Record tool call intention - this is before actual execution
+			if (params.getActionDescription() != null && params.getToolName() != null) {
+				thinkActRecord.startAction(params.getActionDescription(), params.getToolName(),
+						params.getToolParameters());
+			}
+
+			// Set actToolInfoList if available for tool call intention
+			if (params.getActToolInfoList() != null) {
+				thinkActRecord.setActToolInfoList(params.getActToolInfoList());
+			}
+
+			// Set think-act execution to update the record
+			setThinkActExecution(planExecutionRecord, agentExecutionRecord.getId(), thinkActRecord);
+
+			// Save the execution records
+			savePlanExecutionRecords(planExecutionRecord);
+
+			logger.debug("Recorded tool call intention for plan: {}, tool: {}", 
+					params.getCurrentPlanId(), params.getToolName());
+		}
+		else {
+			logger.warn("ThinkActRecord not found with ID: {} for plan: {} in recordToolCallIntention", 
+					params.getCreatedThinkActRecordId(), params.getCurrentPlanId());
+		}
+	}
+
+	/**
 	 * Record plan completion.
 	 */
 	@Override
