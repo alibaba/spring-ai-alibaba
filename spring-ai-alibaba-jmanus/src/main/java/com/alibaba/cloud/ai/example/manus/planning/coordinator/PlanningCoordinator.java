@@ -22,11 +22,9 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanHierarchyService;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import java.util.concurrent.CompletableFuture;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

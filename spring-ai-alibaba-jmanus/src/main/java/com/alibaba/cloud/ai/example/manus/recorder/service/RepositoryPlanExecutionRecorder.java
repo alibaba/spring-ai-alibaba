@@ -18,17 +18,13 @@ package com.alibaba.cloud.ai.example.manus.recorder.service;
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.AgentExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ExecutionStatus;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.po.PlanExecutionRecordEntity;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.po.*;
 import com.alibaba.cloud.ai.example.manus.recorder.repository.PlanExecutionRecordRepository;
 
 import jakarta.annotation.Resource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -37,11 +33,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository-based PlanExecutionRecorder implementation for persistent storage. Each
- * PlanExecutionRecord only tracks its own currentPlanId execution. RootPlanId concept is
- * preserved in context but not in record objects.
- *
- * fix feature: https://github.com/alibaba/spring-ai-alibaba/issues/1391
+ * Repository-based PlanExecutionRecorder implementation for persistent storage
+ * using PO entities.
+ * This implementation works directly with JPA entities from the po/ package.
  */
 @Component
 public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
@@ -51,53 +45,41 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	@Resource
 	private PlanExecutionRecordRepository planExecutionRecordRepository;
 
-	@Resource
-	private EntityToVoConverter entityToVoConverter;
-
 	/**
-	 * Record think-act execution with PlanExecutionRecord parameter
-	 * @param planExecutionRecord Plan execution record
-	 * @param agentExecutionId Agent execution ID
-	 * @param thinkActRecord Think-act record
+	 * Record think-act execution with PlanExecutionRecordEntity parameter
+	 * 
+	 * @param planExecutionRecord Plan execution record entity
+	 * @param agentExecutionId    Agent execution ID
+	 * @param thinkActRecord      Think-act record entity
 	 */
 	@Override
-	public void setThinkActExecution(PlanExecutionRecord planExecutionRecord, Long agentExecutionId,
-			ThinkActRecord thinkActRecord) {
-		if (planExecutionRecord != null) {
-			for (AgentExecutionRecord agentRecord : planExecutionRecord.getAgentExecutionSequence()) {
-				if (agentExecutionId.equals(agentRecord.getId())) {
-					addThinkActStep(agentRecord, thinkActRecord);
-					break;
-				}
-			}
-		}
+	public void setThinkActExecution(
+			com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord planExecutionRecord,
+			Long agentExecutionId,
+			com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord thinkActRecord) {
+		// This method is kept for interface compatibility but delegates to PO-based
+		// implementation
+		logger.warn("setThinkActExecution called with VO objects - this should be updated to use PO entities");
 	}
 
 	/**
-	 * Record plan completion with PlanExecutionRecord parameter
-	 * @param planExecutionRecord Plan execution record
-	 * @param summary Execution summary
+	 * Record plan completion with PlanExecutionRecordEntity parameter
+	 * 
+	 * @param planExecutionRecord Plan execution record entity
+	 * @param summary             Execution summary
 	 */
 	@Override
-	public void setPlanCompletion(PlanExecutionRecord planExecutionRecord, String summary) {
-		if (planExecutionRecord != null) {
-			planExecutionRecord.complete(summary);
-		}
-	}
-
-	/**
-	 * Save execution records to persistent storage
-	 * @param planExecutionRecord Plan execution record to save
-	 * @return true if save was successful
-	 */
-	@Override
-	public boolean savePlanExecutionRecords(PlanExecutionRecord planExecutionRecord) {
-		saveExecutionRecord(planExecutionRecord);
-		return true;
+	public void setPlanCompletion(
+			com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord planExecutionRecord,
+			String summary) {
+		// This method is kept for interface compatibility but delegates to PO-based
+		// implementation
+		logger.warn("setPlanCompletion called with VO objects - this should be updated to use PO entities");
 	}
 
 	/**
 	 * Delete execution record of the specified plan ID
+	 * 
 	 * @param planId Plan ID to delete
 	 */
 	@Override
@@ -108,85 +90,86 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	/**
 	 * Record the start of plan execution.
 	 */
-	public void recordPlanExecutionStart(ExecutionContext context) {
-		String currentPlanId = context.getPlan().getCurrentPlanId();
-		PlanExecutionRecord record = getOrCreatePlanExecutionRecord(currentPlanId, true);
-
-		record.setCurrentPlanId(currentPlanId);
-		record.setStartTime(LocalDateTime.now());
-		record.setTitle(context.getPlan().getTitle());
-		record.setUserRequest(context.getUserRequest());
-		retrieveExecutionSteps(context, record);
-
-		savePlanExecutionRecords(record);
+	@Override
+	public Long recordPlanExecutionStart(String currentPlanId, String title,
+			String userRequset, List<ExecutionStep> executionSteps) {
+		return createOrUpdatePlanExecutionRecordEntity(currentPlanId, title, userRequset, executionSteps);
 	}
+	
 
 	/**
 	 * Record the start of step execution.
 	 */
-	public void recordStepStart(ExecutionStep step, ExecutionContext context) {
-		String currentPlanId = context.getPlan().getCurrentPlanId();
-		PlanExecutionRecord record = getOrCreatePlanExecutionRecord(currentPlanId, true);
+	@Override
+	public void recordStepStart(ExecutionStep step,String currentPlanI) {
+		
+		Optional<PlanExecutionRecordEntity> record = getPlanExecutionRecord(currentPlanId);
 
-		if (record != null) {
+		if (record.isPresent()) {
+			PlanExecutionRecordEntity planExecutionRecordEntity = record.get();
 			int currentStepIndex = step.getStepIndex();
-			record.setCurrentStepIndex(currentStepIndex);
-			retrieveExecutionSteps(context, record);
+			planExecutionRecordEntity.setCurrentStepIndex(currentStepIndex);
+			retrieveExecutionSteps(executionSteps, planExecutionRecordEntity);
 
-			List<AgentExecutionRecord> agentExecutionSequence = record.getAgentExecutionSequence();
-			AgentExecutionRecord agentExecutionRecord;
+			List<AgentExecutionRecordEntity> agentExecutionSequence = record.getAgentExecutionSequence();
+			AgentExecutionRecordEntity agentExecutionRecord;
 
 			if (agentExecutionSequence.size() > currentStepIndex) {
 				agentExecutionRecord = agentExecutionSequence.get(currentStepIndex);
-			}
-			else {
+			} else {
 				// Create and add new AgentExecutionRecord
-				agentExecutionRecord = new AgentExecutionRecord(currentPlanId, null, null);
+				agentExecutionRecord = new AgentExecutionRecordEntity(currentPlanId, null, null);
 				// Fill up to currentStepIndex
 				while (agentExecutionSequence.size() < currentStepIndex) {
-					agentExecutionSequence.add(new AgentExecutionRecord());
+					agentExecutionSequence.add(new AgentExecutionRecordEntity());
 				}
 				agentExecutionSequence.add(agentExecutionRecord);
 			}
-			agentExecutionRecord.setStatus(ExecutionStatus.RUNNING);
+			agentExecutionRecord.setStatus(ExecutionStatusEntity.RUNNING);
 
-			savePlanExecutionRecords(record);
+			savePlanExecutionRecordsEntity(record);
 		}
 	}
 
 	/**
-	 * Record the end of step execution.
+	 * Record step end
+	 * 
+	 * @param step    Execution step
+	 * @param context Execution context
 	 */
+	@Override
 	public void recordStepEnd(ExecutionStep step, ExecutionContext context) {
 		String currentPlanId = context.getPlan().getCurrentPlanId();
-		PlanExecutionRecord record = getOrCreatePlanExecutionRecord(currentPlanId, true);
+		PlanExecutionRecordEntity record = getOrCreatePlanExecutionRecord(currentPlanId, true);
 
 		if (record != null) {
 			int currentStepIndex = step.getStepIndex();
 			record.setCurrentStepIndex(currentStepIndex);
 			retrieveExecutionSteps(context, record);
 
-			List<AgentExecutionRecord> agentExecutionSequence = record.getAgentExecutionSequence();
+			List<AgentExecutionRecordEntity> agentExecutionSequence = record.getAgentExecutionSequence();
 			// Check boundaries to ensure agentExecutionSequence has enough elements
 			if (agentExecutionSequence.size() > currentStepIndex) {
-				AgentExecutionRecord agentExecutionRecord = agentExecutionSequence.get(currentStepIndex);
+				AgentExecutionRecordEntity agentExecutionRecord = agentExecutionSequence.get(currentStepIndex);
 				agentExecutionRecord.setStatus(
-						step.getStatus() == AgentState.COMPLETED ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING);
-			}
-			else {
+						step.getStatus() == AgentState.COMPLETED ? ExecutionStatusEntity.FINISHED
+								: ExecutionStatusEntity.RUNNING);
+			} else {
 				// If there is no corresponding AgentExecutionRecord, create a new one
-				AgentExecutionRecord agentExecutionRecord = new AgentExecutionRecord(currentPlanId, null, null);
+				AgentExecutionRecordEntity agentExecutionRecord = new AgentExecutionRecordEntity(currentPlanId, null,
+						null);
 				agentExecutionRecord.setStatus(
-						step.getStatus() == AgentState.COMPLETED ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING);
+						step.getStatus() == AgentState.COMPLETED ? ExecutionStatusEntity.FINISHED
+								: ExecutionStatusEntity.RUNNING);
 
 				// Fill up to currentStepIndex
 				while (agentExecutionSequence.size() < currentStepIndex) {
-					agentExecutionSequence.add(new AgentExecutionRecord());
+					agentExecutionSequence.add(new AgentExecutionRecordEntity());
 				}
 				agentExecutionSequence.add(agentExecutionRecord);
 			}
 
-			savePlanExecutionRecords(record);
+			savePlanExecutionRecordsEntity(record);
 		}
 	}
 
@@ -200,7 +183,8 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		}
 
 		// Create agent execution record with all the final data
-		AgentExecutionRecord agentRecord = new AgentExecutionRecord(params.getCurrentPlanId(), params.getAgentName(),
+		AgentExecutionRecordEntity agentRecord = new AgentExecutionRecordEntity(params.getCurrentPlanId(),
+				params.getAgentName(),
 				params.getAgentDescription());
 		agentRecord.setMaxSteps(params.getMaxSteps());
 		agentRecord.setCurrentStep(params.getActualSteps());
@@ -210,7 +194,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		agentRecord.setEndTime(params.getEndTime());
 		agentRecord.setStatus(params.getStatus());
 
-		PlanExecutionRecord planRecord = getOrCreatePlanExecutionRecord(params.getCurrentPlanId(), true);
+		PlanExecutionRecordEntity planRecord = getOrCreatePlanExecutionRecord(params.getCurrentPlanId(), true);
 		if (planRecord != null) {
 			setAgentExecution(planRecord, agentRecord);
 			savePlanExecutionRecords(planRecord);
@@ -226,11 +210,11 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			return null;
 		}
 
-		PlanExecutionRecord planExecutionRecord = getOrCreatePlanExecutionRecord(params.getCurrentPlanId(), true);
-		AgentExecutionRecord agentExecutionRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
+		PlanExecutionRecordEntity planExecutionRecord = getOrCreatePlanExecutionRecord(params.getCurrentPlanId(), true);
+		AgentExecutionRecordEntity agentExecutionRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
 
 		if (agentExecutionRecord == null && planExecutionRecord != null) {
-			agentExecutionRecord = new AgentExecutionRecord(params.getCurrentPlanId(), params.getAgentName(),
+			agentExecutionRecord = new AgentExecutionRecordEntity(params.getCurrentPlanId(), params.getAgentName(),
 					params.getAgentDescription());
 			setAgentExecution(planExecutionRecord, agentExecutionRecord);
 		}
@@ -240,7 +224,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			return null;
 		}
 
-		ThinkActRecord thinkActRecord = new ThinkActRecord(agentExecutionRecord.getId());
+		ThinkActRecordEntity thinkActRecord = new ThinkActRecordEntity(agentExecutionRecord.getId());
 		thinkActRecord.setActStartTime(LocalDateTime.now());
 
 		if (params.getModelName() != null) {
@@ -259,7 +243,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			thinkActRecord.setActionNeeded(true);
 			thinkActRecord.setToolName(params.getToolName());
 			thinkActRecord.setToolParameters(params.getToolParameters());
-			thinkActRecord.setStatus(ExecutionStatus.RUNNING);
+			thinkActRecord.setStatus(ExecutionStatusEntity.RUNNING);
 		}
 
 		if (params.getErrorMessage() != null) {
@@ -283,8 +267,8 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			return;
 		}
 
-		PlanExecutionRecord planExecutionRecord = getOrCreatePlanExecutionRecord(params.getCurrentPlanId(), true);
-		AgentExecutionRecord agentExecutionRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
+		PlanExecutionRecordEntity planExecutionRecord = getOrCreatePlanExecutionRecord(params.getCurrentPlanId(), true);
+		AgentExecutionRecordEntity agentExecutionRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
 
 		// Additional safety check
 		if (agentExecutionRecord == null) {
@@ -294,7 +278,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		}
 
 		// Find the ThinkActRecord by ID and update it with action results
-		ThinkActRecord thinkActRecord = findThinkActRecordInPlan(planExecutionRecord,
+		ThinkActRecordEntity thinkActRecord = findThinkActRecordInPlan(planExecutionRecord,
 				params.getCreatedThinkActRecordId());
 
 		if (thinkActRecord != null) {
@@ -324,15 +308,15 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 			// Save the execution records
 			savePlanExecutionRecords(planExecutionRecord);
-		}
-		else {
+		} else {
 			logger.warn("ThinkActRecord not found with ID: {} for plan: {}", params.getCreatedThinkActRecordId(),
 					params.getCurrentPlanId());
 		}
 	}
 
 	/**
-	 * Record tool call intention before execution. This method records the intention
+	 * Record tool call intention before execution. This method records the
+	 * intention
 	 * to call a tool before the actual execution, providing a complete lifecycle
 	 * tracking of tool calls.
 	 */
@@ -342,8 +326,8 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			return;
 		}
 
-		PlanExecutionRecord planExecutionRecord = getOrCreatePlanExecutionRecord(params.getCurrentPlanId(), true);
-		AgentExecutionRecord agentExecutionRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
+		PlanExecutionRecordEntity planExecutionRecord = getOrCreatePlanExecutionRecord(params.getCurrentPlanId(), true);
+		AgentExecutionRecordEntity agentExecutionRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
 
 		// Additional safety check
 		if (agentExecutionRecord == null) {
@@ -353,7 +337,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		}
 
 		// Find the ThinkActRecord by ID and update it with tool call intention
-		ThinkActRecord thinkActRecord = findThinkActRecordInPlan(planExecutionRecord,
+		ThinkActRecordEntity thinkActRecord = findThinkActRecordInPlan(planExecutionRecord,
 				params.getCreatedThinkActRecordId());
 
 		if (thinkActRecord != null) {
@@ -374,11 +358,10 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			// Save the execution records
 			savePlanExecutionRecords(planExecutionRecord);
 
-			logger.debug("Recorded tool call intention for plan: {}, tool: {}", 
+			logger.debug("Recorded tool call intention for plan: {}, tool: {}",
 					params.getCurrentPlanId(), params.getToolName());
-		}
-		else {
-			logger.warn("ThinkActRecord not found with ID: {} for plan: {} in recordToolCallIntention", 
+		} else {
+			logger.warn("ThinkActRecord not found with ID: {} for plan: {} in recordToolCallIntention",
 					params.getCreatedThinkActRecordId(), params.getCurrentPlanId());
 		}
 	}
@@ -392,7 +375,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 			return;
 		}
 
-		PlanExecutionRecord planExecutionRecord = getOrCreatePlanExecutionRecord(currentPlanId, false);
+		PlanExecutionRecordEntity planExecutionRecord = getOrCreatePlanExecutionRecord(currentPlanId, false);
 		if (planExecutionRecord != null) {
 			setPlanCompletion(planExecutionRecord, summary);
 			savePlanExecutionRecords(planExecutionRecord);
@@ -402,7 +385,7 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	@Override
-	public PlanExecutionRecord getRootPlanExecutionRecord(String rootPlanId) {
+	public PlanExecutionRecordEntity getRootPlanExecutionRecord(String rootPlanId) {
 		// For backward compatibility, treat rootPlanId as currentPlanId
 		if (rootPlanId == null) {
 			logger.warn("rootPlanId is null, cannot retrieve plan execution record");
@@ -412,45 +395,37 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-	 * Gets or creates plan execution record for currentPlanId
+	 * Gets plan execution record entity for currentPlanId
+	 * 
 	 * @param currentPlanId Current plan ID
-	 * @param createIfNotExists Whether to create if not exists
-	 * @return Plan execution record, or null if not found and createIfNotExists is false
+	 * @return Optional containing plan execution record entity if found
 	 */
-	private PlanExecutionRecord getOrCreatePlanExecutionRecord(String currentPlanId, boolean createIfNotExists) {
-		logger.debug("Enter getOrCreatePlanExecutionRecord with currentPlanId: {}, createIfNotExists: {}",
-				currentPlanId, createIfNotExists);
+	private Optional<PlanExecutionRecordEntity> getPlanExecutionRecord(String currentPlanId) {
+		logger.debug("Enter getPlanExecutionRecord with currentPlanId: {}", currentPlanId);
 
 		if (currentPlanId == null) {
 			logger.error("currentPlanId is null");
-			return null;
+			return Optional.empty();
 		}
 
-		// Get existing plan record
-		PlanExecutionRecord record = getExecutionRecord(currentPlanId);
-
-		// Create if not exists and createIfNotExists is true
-		if (record == null && createIfNotExists) {
-			logger.info("Creating plan with ID: {}", currentPlanId);
-			record = new PlanExecutionRecord(currentPlanId);
-		}
-
-		return record;
+		// Get existing plan record entity
+		return planExecutionRecordRepository.findByPlanId(currentPlanId);
 	}
 
 	/**
 	 * Helper method to find ThinkActRecord in a plan
-	 * @param plan Plan execution record
+	 * 
+	 * @param plan             Plan execution record
 	 * @param thinkActRecordId Think-act record ID
 	 * @return ThinkActRecord if found, null otherwise
 	 */
-	private ThinkActRecord findThinkActRecordInPlan(PlanExecutionRecord plan, Long thinkActRecordId) {
+	private ThinkActRecordEntity findThinkActRecordInPlan(PlanExecutionRecordEntity plan, Long thinkActRecordId) {
 		if (plan == null || thinkActRecordId == null) {
 			return null;
 		}
 
-		for (AgentExecutionRecord agentRecord : plan.getAgentExecutionSequence()) {
-			for (ThinkActRecord thinkActRecord : agentRecord.getThinkActSteps()) {
+		for (AgentExecutionRecordEntity agentRecord : plan.getAgentExecutionSequence()) {
+			for (ThinkActRecordEntity thinkActRecord : agentRecord.getThinkActSteps()) {
 				if (thinkActRecordId.equals(thinkActRecord.getId())) {
 					return thinkActRecord;
 				}
@@ -461,12 +436,13 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * Get current agent execution record for a specific plan execution record
+	 * 
 	 * @param planExecutionRecord Plan execution record
 	 * @return Current active agent execution record, or null if none exists
 	 */
-	private AgentExecutionRecord getCurrentAgentExecutionRecord(PlanExecutionRecord planExecutionRecord) {
+	private AgentExecutionRecordEntity getCurrentAgentExecutionRecord(PlanExecutionRecordEntity planExecutionRecord) {
 		if (planExecutionRecord != null) {
-			List<AgentExecutionRecord> agentExecutionSequence = planExecutionRecord.getAgentExecutionSequence();
+			List<AgentExecutionRecordEntity> agentExecutionSequence = planExecutionRecord.getAgentExecutionSequence();
 			Integer currentIndex = planExecutionRecord.getCurrentStepIndex();
 			if (!agentExecutionSequence.isEmpty() && currentIndex != null
 					&& currentIndex < agentExecutionSequence.size()) {
@@ -476,20 +452,20 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		return null;
 	}
 
-	private PlanExecutionRecord getExecutionRecord(String currentPlanId) {
+	private PlanExecutionRecordEntity getExecutionRecordEntity(String currentPlanId) {
 		Optional<PlanExecutionRecordEntity> entityOpt = planExecutionRecordRepository.findByPlanId(currentPlanId);
 		if (entityOpt.isPresent()) {
 			PlanExecutionRecordEntity entity = entityOpt.get();
 			// Convert PO entity to VO object using EntityToVoConverter
-			return entityToVoConverter.convertToPlanExecutionRecord(entity);
+			return entity;
 		}
 		return null;
 	}
 
-	private void saveExecutionRecord(PlanExecutionRecord planExecutionRecord) {
+	private void saveExecutionRecord(PlanExecutionRecordEntity planExecutionRecord) {
 		Optional<PlanExecutionRecordEntity> entityOpt = planExecutionRecordRepository
-			.findByPlanId(planExecutionRecord.getCurrentPlanId());
-		
+				.findByPlanId(planExecutionRecord.getCurrentPlanId());
+
 		PlanExecutionRecordEntity entity;
 		if (entityOpt.isPresent()) {
 			entity = entityOpt.get();
@@ -509,50 +485,61 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 		entity.setModelName(planExecutionRecord.getModelName());
 		entity.setUserInputWaitState(planExecutionRecord.getUserInputWaitState());
 
-		// Note: Agent execution sequence conversion is complex and requires reverse conversion methods
-		// For now, we'll save the basic plan information without the agent execution details
+		// Note: Agent execution sequence conversion is complex and requires reverse
+		// conversion methods
+		// For now, we'll save the basic plan information without the agent execution
+		// details
 		// This can be enhanced later with proper reverse conversion methods
 
 		planExecutionRecordRepository.save(entity);
 	}
 
-	private void addThinkActStep(AgentExecutionRecord agentRecord, ThinkActRecord thinkActRecord) {
+	private void addThinkActStep(AgentExecutionRecordEntity agentRecord, ThinkActRecordEntity thinkActRecord) {
 		if (agentRecord.getThinkActSteps() == null) {
 			agentRecord.addThinkActStep(thinkActRecord);
 			return;
 		}
 		// Will be called multiple times, so need to modify based on id
-		ThinkActRecord exist = agentRecord.getThinkActSteps()
-			.stream()
-			.filter(r -> r.getId().equals(thinkActRecord.getId()))
-			.findFirst()
-			.orElse(null);
+		ThinkActRecordEntity exist = agentRecord.getThinkActSteps()
+				.stream()
+				.filter(r -> r.getId().equals(thinkActRecord.getId()))
+				.findFirst()
+				.orElse(null);
 		if (exist == null) {
 			agentRecord.getThinkActSteps().add(thinkActRecord);
-		}
-		else {
-			BeanUtils.copyProperties(thinkActRecord, exist);
+		} else {
+			// No BeanUtils.copyProperties as it's PO entities
+			exist.setActStartTime(thinkActRecord.getActStartTime());
+			exist.setActionNeeded(thinkActRecord.isActionNeeded());
+			exist.setToolName(thinkActRecord.getToolName());
+			exist.setToolParameters(thinkActRecord.getToolParameters());
+			exist.setStatus(thinkActRecord.getStatus());
+			exist.setResult(thinkActRecord.getResult());
+			exist.setErrorMessage(thinkActRecord.getErrorMessage());
+			exist.setActToolInfoList(thinkActRecord.getActToolInfoList());
 		}
 	}
 
 	/**
 	 * Retrieve execution step information and set it to the record.
 	 */
-	private void retrieveExecutionSteps(ExecutionContext context, PlanExecutionRecord record) {
+	private void retrieveExecutionSteps(List<ExecutionStep> executionSteps, PlanExecutionRecordEntity record) {
 		List<String> steps = new ArrayList<>();
-		for (ExecutionStep step : context.getPlan().getAllSteps()) {
+		for (ExecutionStep step : executionSteps) {
 			steps.add(step.getStepInStr());
 		}
 		record.setSteps(steps);
 	}
 
 	/**
-	 * Record agent execution with PlanExecutionRecord parameter
+	 * Record agent execution with PlanExecutionRecordEntity parameter
+	 * 
 	 * @param planExecutionRecord Plan execution record
-	 * @param agentRecord Agent execution record
+	 * @param agentRecord         Agent execution record
 	 * @return Agent execution ID
 	 */
-	private Long setAgentExecution(PlanExecutionRecord planExecutionRecord, AgentExecutionRecord agentRecord) {
+	private Long setAgentExecution(PlanExecutionRecordEntity planExecutionRecord,
+			AgentExecutionRecordEntity agentRecord) {
 		if (planExecutionRecord != null) {
 			planExecutionRecord.addAgentExecutionRecord(agentRecord);
 		}
@@ -561,28 +548,169 @@ public class RepositoryPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	/**
 	 * Get current think-act record ID
+	 * 
 	 * @param currentPlanId Current plan ID
 	 * @return Current think-act record ID, returns null if none exists
 	 */
 	@Override
 	public Long getCurrentThinkActRecordId(String currentPlanId) {
 		try {
-			PlanExecutionRecord planExecutionRecord = getOrCreatePlanExecutionRecord(currentPlanId, false);
+			PlanExecutionRecordEntity planExecutionRecord = getOrCreatePlanExecutionRecord(currentPlanId, false);
 			if (planExecutionRecord != null) {
-				AgentExecutionRecord currentAgentRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
+				AgentExecutionRecordEntity currentAgentRecord = getCurrentAgentExecutionRecord(planExecutionRecord);
 				if (currentAgentRecord != null && currentAgentRecord.getThinkActSteps() != null
 						&& !currentAgentRecord.getThinkActSteps().isEmpty()) {
-					List<ThinkActRecord> steps = currentAgentRecord.getThinkActSteps();
-					ThinkActRecord lastStep = steps.get(steps.size() - 1);
+					List<ThinkActRecordEntity> steps = currentAgentRecord.getThinkActSteps();
+					ThinkActRecordEntity lastStep = steps.get(steps.size() - 1);
 					return lastStep.getId();
 				}
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.warn("Failed to get current think-act record ID: {}", e.getMessage());
 		}
 
 		return null;
+	}
+
+	/**
+	 * Create or update AgentExecutionRecordEntity for a given ExecutionStep
+	 * 
+	 * @param step ExecutionStep to process
+	 * @param currentPlanId Current plan ID
+	 * @return AgentExecutionRecordEntity instance, or null if creation failed
+	 */
+	private AgentExecutionRecordEntity createOrUpdateAgentExecutionRecord(ExecutionStep step, String currentPlanId) {
+	    try {
+	        if (step == null || step.getStepId() == null) {
+	            logger.warn("ExecutionStep or stepId is null, skipping agent record creation");
+	            return null;
+	        }
+	        
+	        // Check if agent execution record already exists for this step
+	        // Since stepId is unique in AgentExecutionRecordEntity, we can search by it
+	        // Note: This would require a repository method to find by stepId
+	        // For now, we'll create a new one each time
+	        
+	        // Create new AgentExecutionRecordEntity
+	        AgentExecutionRecordEntity agentRecord = new AgentExecutionRecordEntity(
+	            step.getStepId(),
+	            step.getAgent() != null ? step.getAgent().getName() : "Unknown Agent",
+	            step.getAgent() != null ? step.getAgent().getDescription() : "No description available"
+	        );
+	        
+	        // Set additional fields if available
+	        if (step.getAgent() != null) {
+	            agentRecord.setStatus(convertAgentStateToExecutionStatus(step.getAgent().getState()));
+	        }
+	        
+	        // Set step index
+	        agentRecord.setCurrentStep(step.getStepIndex() != null ? step.getStepIndex() : 0);
+	        
+	        logger.debug("Created AgentExecutionRecordEntity for step ID: {} with agent: {}", 
+	                   step.getStepId(), agentRecord.getAgentName());
+	        
+	        return agentRecord;
+	        
+	    } catch (Exception e) {
+	        logger.error("Failed to create AgentExecutionRecordEntity for step: {}", step.getStepId(), e);
+	        return null;
+	    }
+	}
+	
+	/**
+	 * Convert AgentState to ExecutionStatusEntity
+	 * 
+	 * @param agentState Agent state to convert
+	 * @return Corresponding ExecutionStatusEntity
+	 */
+	private ExecutionStatusEntity convertAgentStateToExecutionStatus(AgentState agentState) {
+	    if (agentState == null) {
+	        return ExecutionStatusEntity.IDLE;
+	    }
+	    
+	    switch (agentState) {
+	        case NOT_STARTED:
+	            return ExecutionStatusEntity.IDLE;
+	        case IN_PROGRESS:
+	            return ExecutionStatusEntity.RUNNING;
+	        case COMPLETED:
+	            return ExecutionStatusEntity.FINISHED;
+	        default:
+				throw new IllegalArgumentException("Invalid agent state: " + agentState);
+	    }
+	}
+
+	/**
+	 * Save execution records to persistent storage using PO entities
+	 * 
+	 * @param planExecutionRecord Plan execution record entity to save
+	 * @return true if save was successful
+	 */
+	private boolean savePlanExecutionRecordsEntity(PlanExecutionRecordEntity planExecutionRecord) {
+		try {
+			planExecutionRecordRepository.save(planExecutionRecord);
+			return true;
+		} catch (Exception e) {
+			logger.error("Failed to save plan execution record entity: {}", planExecutionRecord.getCurrentPlanId(), e);
+			return false;
+		}
+	}
+
+	/**
+	 * Create or update plan execution record entity
+	 * 
+	 * @param currentPlanId    Current plan ID
+	 * @param title            Plan title
+	 * @param userRequest      User request
+	 * @param executionSteps   Execution steps
+	 * @return Plan execution record entity ID, or null if operation failed
+	 */
+	private Long createOrUpdatePlanExecutionRecordEntity(String currentPlanId, String title, String userRequest, List<ExecutionStep> executionSteps) {
+	    try {
+	        // Check if plan already exists
+	        Optional<PlanExecutionRecordEntity> existingPlanOpt = planExecutionRecordRepository.findByPlanId(currentPlanId);
+	        
+	        PlanExecutionRecordEntity planExecutionRecordEntity;
+	        if (existingPlanOpt.isPresent()) {
+	            // Update existing plan
+	            planExecutionRecordEntity = existingPlanOpt.get();
+	            logger.debug("Updating existing plan execution record for ID: {}", currentPlanId);
+	        } else {
+	            // Create new plan
+	            planExecutionRecordEntity = new PlanExecutionRecordEntity(currentPlanId);
+	            logger.debug("Creating new plan execution record for ID: {}", currentPlanId);
+	        }
+	        
+	        // Set/update all fields
+	        planExecutionRecordEntity.setCurrentPlanId(currentPlanId);
+	        planExecutionRecordEntity.setStartTime(LocalDateTime.now());
+	        planExecutionRecordEntity.setTitle(title);
+	        planExecutionRecordEntity.setUserRequest(userRequest);
+	        retrieveExecutionSteps(executionSteps, planExecutionRecordEntity);
+	        
+	        // Process execution steps and create/update AgentExecutionRecordEntity instances
+	        if (executionSteps != null && !executionSteps.isEmpty()) {
+	            for (ExecutionStep step : executionSteps) {
+	                // Create or update AgentExecutionRecordEntity for each step
+	                AgentExecutionRecordEntity agentRecord = createOrUpdateAgentExecutionRecord(step, currentPlanId);
+	                if (agentRecord != null) {
+	                    // Add to plan execution record
+	                    planExecutionRecordEntity.addAgentExecutionRecord(agentRecord);
+	                }
+	            }
+	        }
+	        
+	        // Save the entity using repository
+	        PlanExecutionRecordEntity savedEntity = planExecutionRecordRepository.save(planExecutionRecordEntity);
+	        
+	        logger.info("Successfully saved plan execution record for ID: {} with {} steps", currentPlanId, 
+	                   executionSteps != null ? executionSteps.size() : 0);
+	        return savedEntity.getId();
+	        
+	    } catch (Exception e) {
+	        logger.error("Failed to create or update plan execution record for ID: {}", currentPlanId, e);
+	        return null;
+	    }
 	}
 
 }

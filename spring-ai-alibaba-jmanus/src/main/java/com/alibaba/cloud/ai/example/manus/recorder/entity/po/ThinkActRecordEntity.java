@@ -50,6 +50,9 @@ public class ThinkActRecordEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	// Think-Act ID as String identifier
+	@Column(name = "think_act_id")
+	private String thinkActId;
 
 	// ID of parent execution record, linked to AgentExecutionRecordEntity
 	@Column(name = "parent_execution_id")
@@ -83,30 +86,11 @@ public class ThinkActRecordEntity {
 	@Column(name = "action_needed")
 	private boolean actionNeeded;
 
-	// Description of the action to be taken
-	@Column(name = "action_description", columnDefinition = "LONGTEXT")
-	private String actionDescription;
-
-	// Result of action execution
-	@Column(name = "action_result", columnDefinition = "LONGTEXT")
-	private String actionResult;
-
-	// Status of this think-act cycle (success, failure, etc.)
-	@Enumerated(EnumType.STRING)
-	@Column(name = "status")
-	private ExecutionStatus status;
 
 	// Error message if the cycle encountered problems
 	@Column(name = "error_message", columnDefinition = "LONGTEXT")
 	private String errorMessage;
 
-	// Tool name used for action (if applicable)
-	@Column(name = "tool_name")
-	private String toolName;
-
-	// Tool parameters used for action (serialized, if applicable)
-	@Column(name = "tool_parameters", columnDefinition = "LONGTEXT")
-	private String toolParameters;
 
 	// Action tool information(When disabling parallel tool calls, there is always only
 	// one)
@@ -124,61 +108,6 @@ public class ThinkActRecordEntity {
 		this.thinkStartTime = LocalDateTime.now();
 	}
 
-	/**
-	 * Record the start of thinking phase
-	 */
-	public void startThinking(String thinkInput) {
-
-		this.thinkStartTime = LocalDateTime.now();
-		this.thinkInput = thinkInput;
-	}
-
-	/**
-	 * Record the end of thinking phase
-	 */
-	public void finishThinking(String thinkOutput) {
-		this.thinkEndTime = LocalDateTime.now();
-		this.thinkOutput = thinkOutput;
-	}
-
-	/**
-	 * Record the start of action phase
-	 */
-	public void startAction(String actionDescription, String toolName, String toolParameters) {
-		this.actStartTime = LocalDateTime.now();
-		this.actionNeeded = true;
-		this.actionDescription = actionDescription;
-		this.toolName = toolName;
-		this.toolParameters = toolParameters;
-	}
-
-	/**
-	 * Record the end of action phase
-	 */
-	public void finishAction(String actionResult, ExecutionStatus status) {
-		this.actEndTime = LocalDateTime.now();
-		this.actionResult = actionResult;
-		this.status = status;
-	}
-
-	/**
-	 * Record error information
-	 */
-	public void recordError(String errorMessage) {
-		this.errorMessage = errorMessage;
-		this.status = ExecutionStatus.RUNNING;
-	}
-
-	/**
-	 * Save record to persistent storage. Empty implementation, to be overridden by
-	 * specific storage implementations
-	 * @return Record ID after saving
-	 */
-	public Long save() {
-
-		return this.id;
-	}
-
 	// Getters and setters
 
 	public Long getId() {
@@ -187,6 +116,14 @@ public class ThinkActRecordEntity {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public String getThinkActId() {
+		return thinkActId;
+	}
+
+	public void setThinkActId(String thinkActId) {
+		this.thinkActId = thinkActId;
 	}
 
 	public Long getParentExecutionId() {
@@ -269,11 +206,11 @@ public class ThinkActRecordEntity {
 		this.actionResult = actionResult;
 	}
 
-	public ExecutionStatus getStatus() {
+	public ExecutionStatusEntity getStatus() {
 		return status;
 	}
 
-	public void setStatus(ExecutionStatus status) {
+	public void setStatus(ExecutionStatusEntity status) {
 		this.status = status;
 	}
 
@@ -283,22 +220,6 @@ public class ThinkActRecordEntity {
 
 	public void setErrorMessage(String errorMessage) {
 		this.errorMessage = errorMessage;
-	}
-
-	public String getToolName() {
-		return toolName;
-	}
-
-	public void setToolName(String toolName) {
-		this.toolName = toolName;
-	}
-
-	public String getToolParameters() {
-		return toolParameters;
-	}
-
-	public void setToolParameters(String toolParameters) {
-		this.toolParameters = toolParameters;
 	}
 
 	public List<ActToolInfoEntity> getActToolInfoList() {

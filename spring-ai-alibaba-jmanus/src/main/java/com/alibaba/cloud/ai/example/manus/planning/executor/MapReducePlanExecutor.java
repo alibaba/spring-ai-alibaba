@@ -145,7 +145,11 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			plan.updateStepIndices();
 
 			try {
-				recorder.recordPlanExecutionStart(context);
+				recorder.recordPlanExecutionStart(
+					context.getCurrentPlanId(),
+					context.getPlan().getTitle(),
+					context.getUserRequest(),
+					context.getPlan().getAllSteps());
 				List<ExecutionNode> steps = mapReducePlan.getSteps();
 
 				if (CollectionUtil.isNotEmpty(steps)) {
@@ -289,7 +293,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		// Post Process step
 		for (ExecutionStep step : postProcessSteps) {
 			step.setAgent(executor);
-			recorder.recordStepEnd(step, context);
+			recorder.recordStepEnd(step, context.getCurrentPlanId());
 		}
 		logger.info("Post Process phase execution completed");
 		return executor;
@@ -304,7 +308,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		// Record Map phase start status - record start status for each Map step
 		for (ExecutionStep step : mapSteps) {
-			recorder.recordStepStart(step, context);
+			recorder.recordStepStart(step, context.getCurrentPlanId());
 		}
 
 		// Add null pointer check
@@ -385,7 +389,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		for (ExecutionStep step : mapSteps) {
 			step.setAgent(lastExecutor);
 			step.setResult("Successfully executed all Map tasks");
-			recorder.recordStepEnd(step, context);
+			recorder.recordStepEnd(step, context.getCurrentPlanId());
 		}
 
 		logger.info("Map phase execution completed");
@@ -421,7 +425,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		// Record Reduce phase start status - record start status for each Reduce step
 		for (ExecutionStep step : reduceSteps) {
-			recorder.recordStepStart(step, context);
+			recorder.recordStepStart(step, context.getCurrentPlanId());
 		}
 
 		BaseAgent executor = lastExecutor;
@@ -508,7 +512,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		// Record Reduce phase completion status - record completion status for each
 		// Reduce step
 		for (ExecutionStep step : reduceSteps) {
-			recorder.recordStepEnd(step, context);
+			recorder.recordStepEnd(step, context.getCurrentPlanId());
 		}
 
 		logger.info("Reduce phase parallel execution completed, processed {} batches total", batches.size());

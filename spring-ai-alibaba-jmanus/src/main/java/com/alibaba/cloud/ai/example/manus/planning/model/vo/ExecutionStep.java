@@ -18,11 +18,24 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.UUID;
 
 /**
  * The result of a single step execution
  */
 public class ExecutionStep {
+
+	/**
+	 * Unique identifier for this execution step
+	 */
+	private String stepId;
+
+	/**
+	 * Default constructor that generates a unique step ID
+	 */
+	public ExecutionStep() {
+		this.stepId = "step-" + UUID.randomUUID().toString();
+	}
 
 	@JsonIgnore
 	private Integer stepIndex;
@@ -53,6 +66,14 @@ public class ExecutionStep {
 		this.result = result;
 	}
 
+	public String getStepId() {
+		return stepId;
+	}
+
+	public void setStepId(String stepId) {
+		this.stepId = stepId;
+	}
+
 	public String getTerminateColumns() {
 		return terminateColumns;
 	}
@@ -68,6 +89,10 @@ public class ExecutionStep {
 
 	public void setAgent(BaseAgent agent) {
 		this.agent = agent;
+	}
+	
+	public BaseAgent getAgent() {
+		return this.agent;
 	}
 
 	public String getStepRequirement() {

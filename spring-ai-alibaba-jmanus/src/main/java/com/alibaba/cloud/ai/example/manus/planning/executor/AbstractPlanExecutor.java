@@ -108,7 +108,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			step.setAgent(executor);
 			executor.setState(AgentState.IN_PROGRESS);
 
-			recorder.recordStepStart(step, context);
+			recorder.recordStepStart(step, context.getCurrentPlanId());
 			String stepResultStr = executor.run();
 			step.setResult(stepResultStr);
 
@@ -119,7 +119,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			step.setResult("Execution failed: " + e.getMessage());
 		}
 		finally {
-			recorder.recordStepEnd(step, context);
+			recorder.recordStepEnd(step, context.getCurrentPlanId());
 		}
 		return null;
 	}

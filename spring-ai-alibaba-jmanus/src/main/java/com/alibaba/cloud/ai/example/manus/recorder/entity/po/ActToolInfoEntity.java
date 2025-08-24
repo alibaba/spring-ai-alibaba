@@ -47,21 +47,20 @@ public class ActToolInfoEntity {
 	@Column(name = "result", columnDefinition = "LONGTEXT")
 	private String result;
 
+	// Tool call id
+	@Column(name = "tool_call_id")
+	private String toolCallId;
 
-	/**
-	 * Default constructor
-	 */
-	public ActToolInfoEntity() {
-	}
 
 	/**
 	 * Constructor with required fields
 	 * @param name Tool name
 	 * @param parameters Tool parameters
 	 */
-	public ActToolInfoEntity(String name, String parameters) {
+	public ActToolInfoEntity(String name, String parameters, String toolCallId) {
 		this.name = name;
 		this.parameters = parameters;
+		this.toolCallId = toolCallId;
 	}
 
 	// Getters and Setters
@@ -97,6 +96,15 @@ public class ActToolInfoEntity {
 	public void setId(Long id) {
 		this.id = id;
 	}
+
+	public String getToolCallId() {
+		return toolCallId;
+	}
+
+	public void setToolCallId(String toolCallId) {
+		this.toolCallId = toolCallId;
+	}
+
 
 	@Override
 	public String toString() {

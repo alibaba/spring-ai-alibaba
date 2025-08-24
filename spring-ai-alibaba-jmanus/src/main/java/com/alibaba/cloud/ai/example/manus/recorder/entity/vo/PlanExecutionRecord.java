@@ -83,7 +83,7 @@ public class PlanExecutionRecord {
 	private String summary;
 
 	// List to maintain the sequence of agent executions
-	private List<AgentExecutionRecord> agentExecutionSequence;
+	private List<AgentExecutionRecordSimple> agentExecutionSequence;
 
 	// Field to store user input wait state
 	private UserInputWaitState userInputWaitState;
@@ -126,7 +126,7 @@ public class PlanExecutionRecord {
 	 * Add agent execution record
 	 * @param record Execution record
 	 */
-	public void addAgentExecutionRecord(AgentExecutionRecord record) {
+	public void addAgentExecutionRecord(AgentExecutionRecordSimple record) {
 		this.agentExecutionSequence.add(record);
 	}
 
@@ -134,11 +134,11 @@ public class PlanExecutionRecord {
 	 * Get agent execution records sorted by execution order
 	 * @return List of execution records
 	 */
-	public List<AgentExecutionRecord> getAgentExecutionSequence() {
+	public List<AgentExecutionRecordSimple> getAgentExecutionSequence() {
 		return agentExecutionSequence;
 	}
 
-	public void setAgentExecutionSequence(List<AgentExecutionRecord> agentExecutionSequence) {
+	public void setAgentExecutionSequence(List<AgentExecutionRecordSimple> agentExecutionSequence) {
 		this.agentExecutionSequence = agentExecutionSequence;
 	}
 

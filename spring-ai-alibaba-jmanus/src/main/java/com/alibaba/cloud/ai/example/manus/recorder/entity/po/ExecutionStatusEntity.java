@@ -15,12 +15,10 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.entity.po;
 
-import jakarta.persistence.*;
-
 /**
  * Enum representing the execution status of an agent.
  */
-public enum ExecutionStatus {
+public enum ExecutionStatusEntity {
 
 	IDLE, RUNNING, FINISHED
 

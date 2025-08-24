@@ -83,7 +83,8 @@ public class PlanExecutor extends AbstractPlanExecutor {
 	 * </pre>
 	 * @param context Execution context containing user request and execution process
 	 * information
-	 * @return CompletableFuture containing PlanExecutionResult with all step results
+	 * @return CompletableFuture containing PlanExecutionResult with all step
+	 *         results
 	 */
 	public CompletableFuture<PlanExecutionResult> executeAllStepsAsync(ExecutionContext context) {
 		// Get the plan depth from context to determine which executor pool to use
@@ -101,9 +102,15 @@ public class PlanExecutor extends AbstractPlanExecutor {
 			plan.updateStepIndices();
 
 			try {
-				recorder.recordPlanExecutionStart(context);
 				List<ExecutionStep> steps = plan.getAllSteps();
 
+				recorder.recordPlanExecutionStart(
+					context.getCurrentPlanId(),
+					context.getPlan().getTitle(),
+					context.getUserRequest(),
+					steps
+				);
+				
 				if (steps != null && !steps.isEmpty()) {
 					for (ExecutionStep step : steps) {
 						BaseAgent stepExecutor = executeStep(step, context);

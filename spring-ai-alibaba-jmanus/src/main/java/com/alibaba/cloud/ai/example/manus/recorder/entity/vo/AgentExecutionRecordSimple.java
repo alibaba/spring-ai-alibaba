@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.recorder.entity.po;
-
-import jakarta.persistence.*;
+package com.alibaba.cloud.ai.example.manus.recorder.entity.vo;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.fasterxml.jackson.databind.JsonSerializable;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -35,114 +38,84 @@ import java.util.List;
  *
  * 2. Execution Data - maxSteps: maximum execution steps - currentStep: current execution
  * step - status: execution status (IDLE, RUNNING, FINISHED) - thinkActSteps: think-act
- * step record list, each element is a ThinkActRecordEntity object - agentRequest: input prompt
+ * step record list, each element is a ThinkActRecord object - agentRequest: input prompt
  * template
  *
  * 3. Execution Result - isCompleted: whether completed - isStuck: whether stuck - result:
  * execution result - errorMessage: error message (if any)
  *
  * @see BaseAgent
- * @see ThinkActRecordEntity
-
+ * @see ThinkActRecord
+ * @see JsonSerializable
  */
 
-@Entity
-@Table(name = "agent_execution_record",
-		indexes = { @Index(columnList = "step_id") })
-public class AgentExecutionRecordEntity {
+public class AgentExecutionRecordSimple {
 
 	// Unique identifier of the record
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	// Step ID this record belongs to
-	@Column(name = "step_id", unique = true)
-	private String stepId;
+	// Conversation ID this record belongs to
+	private String conversationId;
 
 	// Name of the agent that created this record
-	@Column(name = "agent_name")
 	private String agentName;
 
 	// Description information of the agent
-	@Column(name = "agent_description", columnDefinition = "LONGTEXT")
 	private String agentDescription;
 
 	// Timestamp when execution started
-	@Column(name = "start_time")
+	@JsonSerialize(using = LocalDateTimeSerializer.class)
+	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime startTime;
 
 	// Timestamp when execution ended
-	@Column(name = "end_time")
+	@JsonSerialize(using = LocalDateTimeSerializer.class)
+	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime endTime;
 
 	// Maximum allowed number of steps
-	@Column(name = "max_steps")
 	private int maxSteps;
 
 	// Current execution step number
-	@Column(name = "current_step")
 	private int currentStep;
 
 	// Execution status (IDLE, RUNNING, FINISHED)
-	@Enumerated(EnumType.STRING)
-	@Column(name = "status")
-	private ExecutionStatusEntity status;
-
-	// Record list of think-act steps, existing as sub-steps
-	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	@JoinColumn(name = "agent_execution_id")
-	private List<ThinkActRecordEntity> thinkActSteps;
-
+	private ExecutionStatus status;
 	// Request content for agent execution
-	@Column(name = "agent_request", columnDefinition = "LONGTEXT")
 	private String agentRequest;
 
 	// Execution result
-	@Column(name = "result", columnDefinition = "LONGTEXT")
 	private String result;
 
 	// Error message if execution encounters problems
-	@Column(name = "error_message", columnDefinition = "LONGTEXT")
 	private String errorMessage;
 
 	// Actual calling model
-	@Column(name = "model_name")
 	private String modelName;
 
+	// Sub-plan execution records list
+	private List<PlanExecutionRecord> subPlanExecutionRecords;
+
 	// Default constructor
-	public AgentExecutionRecordEntity() {
-		this.thinkActSteps = new ArrayList<>();
+	public AgentExecutionRecordSimple() {
+		this.subPlanExecutionRecords = new ArrayList<>();
 	}
 
 	// Constructor with parameters
-	public AgentExecutionRecordEntity(String stepId, String agentName, String agentDescription) {
-		this.stepId = stepId;
+	public AgentExecutionRecordSimple(String conversationId, String agentName, String agentDescription) {
+		this.conversationId = conversationId;
 		this.agentName = agentName;
 		this.agentDescription = agentDescription;
 		this.startTime = LocalDateTime.now();
-		this.status = ExecutionStatusEntity.IDLE; // Use enum value
+		this.status = ExecutionStatus.IDLE;
 		this.currentStep = 0;
-		this.thinkActSteps = new ArrayList<>();
+		this.subPlanExecutionRecords = new ArrayList<>();
 	}
-
-	/**
-	 * Add a ThinkActRecordEntity as execution step
-	 * @param record ThinkActRecordEntity instance
-	 */
-	public void addThinkActStep(ThinkActRecordEntity record) {
-		if (this.thinkActSteps == null) {
-			this.thinkActSteps = new ArrayList<>();
-		}
-		this.thinkActSteps.add(record);
-		this.currentStep = this.thinkActSteps.size();
-	}
-
-
 
 	// Getters and setters
 
 	public Long getId() {
+	
 		return id;
 	}
 
@@ -198,21 +171,12 @@ public class AgentExecutionRecordEntity {
 		this.currentStep = currentStep;
 	}
 
-	public ExecutionStatusEntity getStatus() {
+	public ExecutionStatus getStatus() {
 		return status;
 	}
 
-	public void setStatus(ExecutionStatusEntity status) {
+	public void setStatus(ExecutionStatus status) {
 		this.status = status;
-	}
-
-	public List<ThinkActRecordEntity> getThinkActSteps() {
-		return thinkActSteps;
-	}
-
-	public void setThinkActSteps(List<ThinkActRecordEntity> thinkActSteps) {
-		this.thinkActSteps = thinkActSteps;
-		this.currentStep = thinkActSteps != null ? thinkActSteps.size() : 0;
 	}
 
 	public String getAgentRequest() {
@@ -247,20 +211,28 @@ public class AgentExecutionRecordEntity {
 		this.modelName = modelName;
 	}
 
+	public String getConversationId() {
+		return conversationId;
+	}
+
+	public void setConversationId(String conversationId) {
+		this.conversationId = conversationId;
+	}
+
+	public List<PlanExecutionRecord> getSubPlanExecutionRecords() {
+		return subPlanExecutionRecords;
+	}
+
+	public void setSubPlanExecutionRecords(List<PlanExecutionRecord> subPlanExecutionRecords) {
+		this.subPlanExecutionRecords = subPlanExecutionRecords;
+	}
+
 	@Override
 	public String toString() {
-		return "AgentExecutionRecordEntity{" + "id='" + id + '\'' + ", stepId='" + stepId + '\''
+		return "AgentExecutionRecordSimple{" + "id='" + id + '\'' + ", conversationId='" + conversationId + '\''
 				+ ", agentName='" + agentName + '\'' + ", status='" + status + '\'' + ", currentStep=" + currentStep
-				+ ", maxSteps=" + maxSteps + ", stepsCount=" + (thinkActSteps != null ? thinkActSteps.size() : 0) + '}';
-	}
-
-
-	public String getStepId() {
-		return stepId;
-	}
-
-	public void setStepId(String stepId) {
-		this.stepId = stepId;
+				+ ", maxSteps=" + maxSteps + ", stepsCount=" + (subPlanExecutionRecords != null ? subPlanExecutionRecords.size() : 0) 
+				+ ", subPlanCount=" + (subPlanExecutionRecords != null ? subPlanExecutionRecords.size() : 0) + '}';
 	}
 
 }

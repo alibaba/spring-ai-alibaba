@@ -15,411 +15,235 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ExecutionStatus;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ActToolInfo;
 
 /**
- * Plan execution recorder interface that defines methods for recording and retrieving
+ * Plan execution recorder interface that defines methods for recording and
+ * retrieving
  * plan execution details.
  */
 public interface PlanExecutionRecorder {
 
 	/**
-	 * Removes the execution records for the specified plan ID
-	 * @param planId The plan ID to remove
+	 * Record the start of plan execution.
+	 * 
+	 * @param context Execution context containing user request and execution
+	 *                process
+	 *                information
+	 * @return Plan execution record ID
 	 */
-	void removeExecutionRecord(String planId);
+	public Long recordPlanExecutionStart(String currentPlanId, String title,
+			String userRequset, List<ExecutionStep> executionSteps);
 
-	PlanExecutionRecord getRootPlanExecutionRecord(String rootPlanId);
+
+	/**
+	 * Interface 3: Record plan completion. This method handles plan completion
+	 * recording
+	 * logic without exposing internal record objects.
+	 * 
+	 * @param currentPlanId    Current plan ID
+	 * @param rootPlanId       Root plan ID
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for
+	 *                         root
+	 *                         plans)
+	 * @param summary          The summary of the plan execution
+	 */
+	void recordPlanCompletion(String currentPlanId,String summary);
 
 	/**
 	 * Record the start of step execution.
-	 * @param step Execution step
+	 * 
+	 * @param step    Execution step
 	 * @param context Execution context
 	 */
-	void recordStepStart(ExecutionStep step, ExecutionContext context);
+	void recordStepStart(ExecutionStep step,String currentPlanId);
+
+
+
 
 	/**
 	 * Record the end of step execution.
-	 * @param step Execution step
+	 * 
+	 * @param step    Execution step
 	 * @param context Execution context
 	 */
-	void recordStepEnd(ExecutionStep step, ExecutionContext context);
+	void recordStepEnd(ExecutionStep step, String currentPlanId);
 
 	/**
-	 * Record the start of plan execution.
-	 * @param context Execution context containing user request and execution process
-	 * information
-	 */
-	void recordPlanExecutionStart(ExecutionContext context);
-
-	/**
-	 * Record think-act execution
-	 * @param planExecutionRecord Plan execution record
-	 * @param agentExecutionId Agent execution ID
-	 * @param thinkActRecord Think-act record
-	 */
-	void setThinkActExecution(PlanExecutionRecord planExecutionRecord, Long agentExecutionId,
-			ThinkActRecord thinkActRecord);
-
-	/**
-	 * Record plan completion
-	 * @param planExecutionRecord Plan execution record
-	 * @param summary Execution summary
-	 */
-	void setPlanCompletion(PlanExecutionRecord planExecutionRecord, String summary);
-
-	/**
-	 * Save execution records to persistent storage
-	 * @param planExecutionRecord Plan execution record to save
-	 * @return true if save was successful
-	 */
-	boolean savePlanExecutionRecords(PlanExecutionRecord planExecutionRecord);
-
-	/**
-	 * Record complete agent execution at the end. This method handles all agent execution
+	 * Record complete agent execution at the end. This method handles all agent
+	 * execution
 	 * record management logic without exposing internal record objects.
-	 * @param currentPlanId Current plan ID
-	 * @param rootPlanId Root plan ID
-	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root
-	 * plans)
-	 * @param agentName Agent name
+	 * 
+	 * @param currentPlanId    Current plan ID
+	 * @param rootPlanId       Root plan ID
+	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for
+	 *                         root
+	 *                         plans)
+	 * @param agentName        Agent name
 	 * @param agentDescription Agent description
-	 * @param maxSteps Maximum execution steps
-	 * @param actualSteps Actual steps executed
-	 * @param completed Whether execution completed successfully
-	 * @param stuck Whether agent got stuck
-	 * @param errorMessage Error message if any
-	 * @param result Final execution result
-	 * @param startTime Execution start time
-	 * @param endTime Execution end time
+	 * @param maxSteps         Maximum execution steps
+	 * @param actualSteps      Actual steps executed
+	 * @param completed        Whether execution completed successfully
+	 * @param stuck            Whether agent got stuck
+	 * @param errorMessage     Error message if any
+	 * @param result           Final execution result
+	 * @param startTime        Execution start time
+	 * @param endTime          Execution end time
 	 */
-	void recordCompleteAgentExecution(PlanExecutionParams params);
-
+	void recordCompleteAgentExecution(ExecutionStep step);
 	/**
-	 * Interface 1: Record thinking and action execution process. This method handles
+	 * Interface 1: Record thinking and action execution process. This method
+	 * handles
 	 * ThinkActRecord creation and thinking process without exposing internal record
 	 * objects.
+	 * 
 	 * @param params Encapsulated parameters for plan execution
 	 * @return ThinkActRecord ID for subsequent action recording
 	 */
-	Long recordThinkingAndAction(PlanExecutionParams params);
+	Long recordThinkingAndAction(ExecutionStep step,ThinkActRecordParams params );
 
 	/**
-	 * Interface 2: Record action execution result. This method updates the ThinkActRecord
+	 * Interface 2: Record action execution result. This method updates the
+	 * ThinkActRecord
 	 * with action results without exposing internal record objects.
-	 * @param currentPlanId Current plan ID
-	 * @param rootPlanId Root plan ID
-	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root
-	 * plans)
+	 * 
+	 * @param currentPlanId           Current plan ID
+	 * @param rootPlanId              Root plan ID
+	 * @param thinkActRecordId        Think-act record ID for sub-plan executions
+	 *                                (null for root
+	 *                                plans)
 	 * @param createdThinkActRecordId The ThinkActRecord ID returned from
-	 * recordThinkingAndAction
-	 * @param actionDescription Description of the action to be taken
-	 * @param actionResult Result of action execution
-	 * @param status Execution status (SUCCESS, FAILED, etc.)
-	 * @param errorMessage Error message if action execution failed
-	 * @param toolName Tool name used for action
-	 * @param subPlanCreated Whether this action created a sub-plan execution
+	 *                                recordThinkingAndAction
+	 * @param actionDescription       Description of the action to be taken
+	 * @param actionResult            Result of action execution
+	 * @param status                  Execution status (SUCCESS, FAILED, etc.)
+	 * @param errorMessage            Error message if action execution failed
+	 * @param toolName                Tool name used for action
+	 * @param subPlanCreated          Whether this action created a sub-plan
+	 *                                execution
 	 */
-	void recordActionResult(PlanExecutionParams params);
-
-	/**
-	 * Interface 2.5: Record tool call intention before execution. This method records
-	 * the intention to call a tool before the actual execution, providing a complete
-	 * lifecycle tracking of tool calls.
-	 * @param params Encapsulated parameters for tool call intention recording
-	 */
-	void recordToolCallIntention(PlanExecutionParams params);
-
-	/**
-	 * Interface 3: Record plan completion. This method handles plan completion recording
-	 * logic without exposing internal record objects.
-	 * @param currentPlanId Current plan ID
-	 * @param rootPlanId Root plan ID
-	 * @param thinkActRecordId Think-act record ID for sub-plan executions (null for root
-	 * plans)
-	 * @param summary The summary of the plan execution
-	 */
-	void recordPlanCompletion(String currentPlanId, Long thinkActRecordId, String summary);
-
-	public Long getCurrentThinkActRecordId(String currentPlanId);
-
-	/**
-	 * Parameter encapsulation class for recording all relevant information about plan
-	 * execution
-	 */
-	public class PlanExecutionParams {
-
-		/** Current plan ID */
-		String currentPlanId;
-
-		/** Root plan ID */
-		String rootPlanId;
-
-		/** Think-act record ID */
-		Long thinkActRecordId;
-
-		/** Agent name */
-		String agentName;
-
-		/** Agent description */
-		String agentDescription;
-
-		/** Thinking input */
-		String thinkInput;
-
-		/** Thinking output */
-		String thinkOutput;
-
-		/** Whether action is needed */
-		boolean actionNeeded;
-
-		/** Tool name */
-		String toolName;
-
-		/** Tool parameters */
-		String toolParameters;
-
-		/** Model name */
-		String modelName;
-
-		/** Error message */
-		String errorMessage;
-
-		/** Created Think-act record ID */
-		Long createdThinkActRecordId;
-
-		/** Action description */
-		String actionDescription;
-
-		/** Action result */
-		String actionResult;
-
-		/** Execution status */
-		ExecutionStatus status;
-
-		/** Whether a sub-plan was created */
-		boolean subPlanCreated;
-
-		/** Action tool information list */
-		List<ActToolInfo> actToolInfoList;
-
-		/** Execution summary */
-		String summary;
-
-		/** Maximum execution steps */
-		int maxSteps;
-
-		/** Actual steps executed */
-		int actualSteps;
-
-		/** Final execution result */
-		String result;
-
-		/** Execution start time */
-		java.time.LocalDateTime startTime;
-
-		/** Execution end time */
-		java.time.LocalDateTime endTime;
-
-		public int getMaxSteps() {
-			return maxSteps;
-		}
-
-		public void setMaxSteps(int maxSteps) {
-			this.maxSteps = maxSteps;
-		}
-
-		public int getActualSteps() {
-			return actualSteps;
-		}
-
-		public void setActualSteps(int actualSteps) {
-			this.actualSteps = actualSteps;
-		}
-
-		public String getResult() {
-			return result;
-		}
-
-		public void setResult(String result) {
-			this.result = result;
-		}
-
-		public java.time.LocalDateTime getStartTime() {
-			return startTime;
-		}
-
-		public void setStartTime(java.time.LocalDateTime startTime) {
-			this.startTime = startTime;
-		}
-
-		public java.time.LocalDateTime getEndTime() {
-			return endTime;
-		}
-
-		public void setEndTime(java.time.LocalDateTime endTime) {
-			this.endTime = endTime;
-		}
-
-		public String getCurrentPlanId() {
-			return currentPlanId;
-		}
-
-		public void setCurrentPlanId(String currentPlanId) {
-			this.currentPlanId = currentPlanId;
-		}
-
-		public String getRootPlanId() {
-			return rootPlanId;
-		}
-
-		public void setRootPlanId(String rootPlanId) {
-			this.rootPlanId = rootPlanId;
-		}
-
-		public Long getThinkActRecordId() {
-			return thinkActRecordId;
-		}
-
-		public void setThinkActRecordId(Long thinkActRecordId) {
-			this.thinkActRecordId = thinkActRecordId;
-		}
-
-		public String getAgentName() {
-			return agentName;
-		}
-
-		public void setAgentName(String agentName) {
-			this.agentName = agentName;
-		}
-
-		public String getAgentDescription() {
-			return agentDescription;
-		}
-
-		public void setAgentDescription(String agentDescription) {
-			this.agentDescription = agentDescription;
-		}
-
-		public String getThinkInput() {
-			return thinkInput;
-		}
-
-		public void setThinkInput(String thinkInput) {
-			this.thinkInput = thinkInput;
-		}
-
-		public String getThinkOutput() {
-			return thinkOutput;
-		}
-
-		public void setThinkOutput(String thinkOutput) {
-			this.thinkOutput = thinkOutput;
-		}
-
-		public boolean isActionNeeded() {
-			return actionNeeded;
-		}
-
-		public void setActionNeeded(boolean actionNeeded) {
-			this.actionNeeded = actionNeeded;
-		}
-
-		public String getToolName() {
-			return toolName;
-		}
-
-		public void setToolName(String toolName) {
-			this.toolName = toolName;
-		}
-
-		public String getToolParameters() {
-			return toolParameters;
-		}
-
-		public void setToolParameters(String toolParameters) {
-			this.toolParameters = toolParameters;
-		}
-
-		public String getModelName() {
-			return modelName;
-		}
-
-		public void setModelName(String modelName) {
-			this.modelName = modelName;
-		}
-
-		public String getErrorMessage() {
-			return errorMessage;
-		}
-
-		public void setErrorMessage(String errorMessage) {
-			this.errorMessage = errorMessage;
-		}
-
-		public Long getCreatedThinkActRecordId() {
-			return createdThinkActRecordId;
-		}
-
-		public void setCreatedThinkActRecordId(Long createdThinkActRecordId) {
-			this.createdThinkActRecordId = createdThinkActRecordId;
-		}
-
-		public String getActionDescription() {
-			return actionDescription;
-		}
-
-		public void setActionDescription(String actionDescription) {
-			this.actionDescription = actionDescription;
-		}
-
-		public String getActionResult() {
-			return actionResult;
-		}
-
-		public void setActionResult(String actionResult) {
-			this.actionResult = actionResult;
-		}
-
-		public ExecutionStatus getStatus() {
-			return status;
-		}
-
-		public void setStatus(ExecutionStatus status) {
-			this.status = status;
-		}
-
-		public boolean isSubPlanCreated() {
-			return subPlanCreated;
-		}
-
-		public void setSubPlanCreated(boolean subPlanCreated) {
-			this.subPlanCreated = subPlanCreated;
-		}
-
-		public String getSummary() {
-			return summary;
-		}
-
-		public void setSummary(String summary) {
-			this.summary = summary;
-		}
-
-			public List<ActToolInfo> getActToolInfoList() {
-		return actToolInfoList;
-	}
-
-	public void setActToolInfoList(List<ActToolInfo> actToolInfoList) {
-		this.actToolInfoList = actToolInfoList;
-	}
-
-	}
-
+	void recordActionResult(List<ActToolParam> actToolParamList);
+
+
+
+
+    /**
+     * Parameter class for recordThinkingAndAction method
+     * Based on ThinkActRecordEntity structure
+     */
+    public static class ThinkActRecordParams {
+        private final String thinkActId;
+        private final Long parentExecutionId;
+        private final LocalDateTime thinkStartTime;
+        private final LocalDateTime thinkEndTime;
+        private final  LocalDateTime actStartTime;
+        private final LocalDateTime actEndTime;
+        private final String thinkInput;
+        private final String thinkOutput;
+        private final String errorMessage;
+        private final List<ActToolParam> actToolInfoList;
+        public ThinkActRecordParams( String thinkActId, Long parentExecutionId,
+                                  LocalDateTime thinkStartTime, LocalDateTime thinkEndTime,
+                                  LocalDateTime actStartTime, LocalDateTime actEndTime,
+                                  String thinkInput, String thinkOutput, String errorMessage,
+                                  List<ActToolParam> actToolInfoList) { 
+           
+            this.thinkActId = thinkActId;
+            this.parentExecutionId = parentExecutionId;
+            this.thinkStartTime = thinkStartTime;
+            this.thinkEndTime = thinkEndTime;
+            this.actStartTime = actStartTime;
+            this.actEndTime = actEndTime;
+            this.thinkInput = thinkInput;
+            this.thinkOutput = thinkOutput;
+            this.errorMessage = errorMessage;
+            this.actToolInfoList = actToolInfoList;
+        }
+        public String getThinkActId() {
+            return thinkActId;
+        }
+        public Long getParentExecutionId() {
+            return parentExecutionId;
+        }
+        public LocalDateTime getThinkStartTime() {
+            return thinkStartTime;
+        }
+        public LocalDateTime getThinkEndTime() {
+            return thinkEndTime;
+        }
+        public LocalDateTime getActStartTime() {
+            return actStartTime;
+        }
+        public LocalDateTime getActEndTime() {
+            return actEndTime;
+        }
+        public String getThinkInput() {
+            return thinkInput;
+        }
+        public String getThinkOutput() {
+            return thinkOutput;
+        }
+        public String getErrorMessage() {
+            return errorMessage;
+        }
+        public List<ActToolParam> getActToolInfoList() {
+            return actToolInfoList;
+        }
+    
+    }
+
+    /**
+     * Parameter class for action tool information
+     * Based on ActToolInfoEntity structure but without JPA annotations
+     */
+    public static class ActToolParam {
+        private final String name;
+        private final String parameters;
+        private final String result;
+        private final String toolCallId;
+
+        public ActToolParam(String name, String parameters, String toolCallId) {
+            this.name = name;
+            this.parameters = parameters;
+            this.toolCallId = toolCallId;
+            this.result = null; // Result is set after tool execution
+        }
+
+        public ActToolParam(String name, String parameters, String result, String toolCallId) {
+            this.name = name;
+            this.parameters = parameters;
+            this.result = result;
+            this.toolCallId = toolCallId;
+        }
+
+        // Getters
+        public String getName() {
+            return name;
+        }
+
+        public String getParameters() {
+            return parameters;
+        }
+
+        public String getResult() {
+            return result;
+        }
+
+        public String getToolCallId() {
+            return toolCallId;
+        }
+
+        @Override
+        public String toString() {
+            return "ActToolParam{" +
+                    "name='" + name + '\'' +
+                    ", parameters='" + parameters + '\'' +
+                    ", result='" + result + '\'' +
+                    ", toolCallId='" + toolCallId + '\'' +
+                    '}';
+        }
+    }
 }

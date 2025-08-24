@@ -68,7 +68,11 @@ public class DirectResponseExecutor extends AbstractPlanExecutor {
 
 			try {
 				// Record plan execution start
-				recorder.recordPlanExecutionStart(context);
+				recorder.recordPlanExecutionStart(
+					context.getCurrentPlanId(),
+					context.getPlan().getTitle(),
+					context.getUserRequest(),
+					context.getPlan().getAllSteps());
 
 				log.info("Direct response executor completed successfully for planId: {}", context.getCurrentPlanId());
 				context.setSuccess(true);
