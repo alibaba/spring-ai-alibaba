@@ -27,13 +27,18 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.nacos.ModelVO;
+import com.alibaba.cloud.ai.graph.nacos.NacosModelInjector;
+import com.alibaba.cloud.ai.graph.nacos.NacosPromptInjector;
+import com.alibaba.cloud.ai.graph.nacos.PromptVO;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.nacos.client.config.NacosConfigService;
 import org.apache.commons.collections4.CollectionUtils;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -42,6 +47,9 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
@@ -333,8 +341,18 @@ public class ReactAgent extends BaseAgent {
 
 		private NodeAction postToolHook;
 
+		private boolean nacosProxy;
+
+		private NacosConfigService nacosConfigService;
+
 		public Builder name(String name) {
 			this.name = name;
+			return this;
+		}
+
+		public Builder nacosProxy(NacosConfigService nacosConfigService) {
+			this.nacosProxy = true;
+			this.nacosConfigService = nacosConfigService;
 			return this;
 		}
 
@@ -418,6 +436,32 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		public ReactAgent build() throws GraphStateException {
+
+			PromptVO promptVO = null;
+			if (nacosProxy) {
+				ModelVO model = NacosModelInjector.getModel(nacosConfigService, this.name);
+				OpenAiApi openAiApi = OpenAiApi.builder()
+						.apiKey(model.getApiKey()).baseUrl(model.getBaseUrl())
+						.build();
+				promptVO = NacosPromptInjector.getPrompt(nacosConfigService, this.name);
+				this.instruction = promptVO.getTemplate();
+				Map<String, String> metadata = new HashMap<>();
+				metadata.put("promptKey", promptVO.getPromptKey());
+				metadata.put("promptVersion", promptVO.getVersion());
+				OpenAiChatOptions.Builder chatOptionsBuilder = OpenAiChatOptions.builder();
+				if (model.getTemperature() != null) {
+					chatOptionsBuilder.temperature(Double.parseDouble(model.getTemperature()));
+				}
+				if (model.getMaxTokens() != null) {
+					chatOptionsBuilder.maxTokens(Integer.parseInt(model.getMaxTokens()));
+				}
+				OpenAiChatOptions openaiChatOptions = chatOptionsBuilder.metadata(metadata)
+						.model(model.getModel()).build();
+				this.model = OpenAiChatModel.builder().defaultOptions(openaiChatOptions).openAiApi(openAiApi)
+						.build();
+
+			}
+
 			if (chatClient == null) {
 				if (model == null) {
 					throw new IllegalArgumentException("Either chatClient or model must be provided");
@@ -430,6 +474,10 @@ public class ReactAgent extends BaseAgent {
 					clientBuilder.defaultSystem(instruction);
 				}
 				chatClient = clientBuilder.build();
+			}
+			if (nacosProxy) {
+				NacosPromptInjector.injectPrompt(chatClient, nacosConfigService, this.name, promptVO);
+				NacosModelInjector.injectModel(model, nacosConfigService, this.name);
 			}
 
 			LlmNode.Builder llmNodeBuilder = LlmNode.builder().chatClient(chatClient).messagesKey("messages");
