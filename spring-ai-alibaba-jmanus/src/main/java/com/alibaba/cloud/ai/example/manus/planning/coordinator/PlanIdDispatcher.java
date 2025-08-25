@@ -216,4 +216,52 @@ public class PlanIdDispatcher implements IPlanIdDispatcher {
 		return toolCallId;
 	}
 
+	/**
+	 * Generate a unique step ID for tracking execution steps
+	 * @return unique step ID
+	 */
+	public String generateStepId() {
+		// Use a specific prefix for step IDs
+		String stepPrefix = "step-";
+		
+		// Generate unique step ID with multiple uniqueness factors:
+		// 1. Specific prefix for steps
+		// 2. Current timestamp in milliseconds
+		// 3. Random component for additional uniqueness
+		// 4. Thread ID to handle concurrent step executions
+		long timestamp = System.currentTimeMillis();
+		int randomComponent = (int) (Math.random() * 10000);
+		long threadId = Thread.currentThread().getId();
+		
+		String stepId = String.format("%s%d_%d_%d", stepPrefix, timestamp, randomComponent, threadId);
+		
+		logger.debug("Generated unique step ID: {}", stepId);
+		
+		return stepId;
+	}
+
+	/**
+	 * Generate a unique thinkAct ID for tracking think-act execution cycles
+	 * @return unique thinkAct ID
+	 */
+	public String generateThinkActId() {
+		// Use a specific prefix for thinkAct IDs
+		String thinkActPrefix = "thinkact-";
+		
+		// Generate unique thinkAct ID with multiple uniqueness factors:
+		// 1. Specific prefix for thinkAct operations
+		// 2. Current timestamp in milliseconds
+		// 3. Random component for additional uniqueness
+		// 4. Thread ID to handle concurrent thinkAct executions
+		long timestamp = System.currentTimeMillis();
+		int randomComponent = (int) (Math.random() * 10000);
+		long threadId = Thread.currentThread().getId();
+		
+		String thinkActId = String.format("%s%d_%d_%d", thinkActPrefix, timestamp, randomComponent, threadId);
+		
+		logger.debug("Generated unique thinkAct ID: {}", thinkActId);
+		
+		return thinkActId;
+	}
+
 }

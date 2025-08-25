@@ -20,6 +20,8 @@ import java.util.Map;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
 
 /**
@@ -37,8 +39,9 @@ public abstract class ReActAgent extends BaseAgent {
 	 */
 
 	public ReActAgent(ILlmService llmService,PlanExecutionRecorder planExecutionRecorder,
-			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService) {
-		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptService);
+			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService
+			,ExecutionStep step,PlanIdDispatcher planIdDispatcher) {
+		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptService,step,planIdDispatcher);
 	}
 
 	/**

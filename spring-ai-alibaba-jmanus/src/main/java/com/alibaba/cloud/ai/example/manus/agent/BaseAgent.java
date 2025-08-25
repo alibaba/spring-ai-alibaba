@@ -21,7 +21,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ExecutionStatus;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
 
 import org.slf4j.Logger;
@@ -70,8 +71,6 @@ public abstract class BaseAgent {
 
 	private String rootPlanId = null;
 
-	// Think-act record ID for sub-plan executions triggered by tool calls
-	private Long thinkActRecordId = null;
 
 	private AgentState state = AgentState.NOT_STARTED;
 
@@ -80,7 +79,9 @@ public abstract class BaseAgent {
 	protected final ManusProperties manusProperties;
 
 	protected final PromptService promptService;
+	protected final ExecutionStep step;
 
+	protected final PlanIdDispatcher planIdDispatcher;
 	private int maxSteps;
 
 	private int currentStep = 0;
@@ -185,12 +186,15 @@ public abstract class BaseAgent {
 	public abstract ToolCallBackContext getToolCallBackContext(String toolKey);
 
 	public BaseAgent(ILlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService) {
+			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService,
+			ExecutionStep step,PlanIdDispatcher planIdDispatcher) {
 		this.llmService = llmService;
 		this.planExecutionRecorder = planExecutionRecorder;
 		this.manusProperties = manusProperties;
 		this.promptService = promptService;
 		this.maxSteps = manusProperties.getMaxSteps();
+		this.step = step;
+		this.planIdDispatcher = planIdDispatcher;
 		this.initSettingData = Collections.unmodifiableMap(new HashMap<>(initialAgentSetting));
 	}
 
@@ -253,21 +257,7 @@ public abstract class BaseAgent {
 
 			// Record execution at the end - even for failures
 			if (currentPlanId != null && planExecutionRecorder != null) {
-				PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
-				params.setCurrentPlanId(currentPlanId);
-				params.setRootPlanId(rootPlanId);
-				params.setThinkActRecordId(thinkActRecordId);
-				params.setAgentName(getName());
-				params.setAgentDescription(getDescription());
-				params.setMaxSteps(maxSteps);
-				params.setActualSteps(currentStep);
-				params.setStatus(stuck ? ExecutionStatus.IDLE
-						: (completed ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING));
-				params.setErrorMessage(errorMessage);
-				params.setResult(finalResult);
-				params.setStartTime(startTime);
-				params.setEndTime(endTime);
-				planExecutionRecorder.recordCompleteAgentExecution(params);
+				planExecutionRecorder.recordCompleteAgentExecution(step);
 			}
 
 			throw e; // Re-throw the exception to let the caller know that an error
@@ -280,22 +270,8 @@ public abstract class BaseAgent {
 
 		// Record execution at the end - only once
 		if (currentPlanId != null && planExecutionRecorder != null) {
-			LocalDateTime endTime = LocalDateTime.now();
-			PlanExecutionRecorder.PlanExecutionParams params = new PlanExecutionRecorder.PlanExecutionParams();
-			params.setCurrentPlanId(currentPlanId);
-			params.setRootPlanId(rootPlanId);
-			params.setThinkActRecordId(thinkActRecordId);
-			params.setAgentName(getName());
-			params.setAgentDescription(getDescription());
-			params.setMaxSteps(maxSteps);
-			params.setActualSteps(currentStep);
-			params.setStatus(
-					stuck ? ExecutionStatus.IDLE : (completed ? ExecutionStatus.FINISHED : ExecutionStatus.RUNNING));
-			params.setErrorMessage(errorMessage);
-			params.setResult(finalResult);
-			params.setStartTime(startTime);
-			params.setEndTime(endTime);
-			planExecutionRecorder.recordCompleteAgentExecution(params);
+	
+			planExecutionRecorder.recordCompleteAgentExecution(step);
 		}
 
 		return results.isEmpty() ? "" : results.get(results.size() - 1);
@@ -357,22 +333,6 @@ public abstract class BaseAgent {
 
 	public String getRootPlanId() {
 		return rootPlanId;
-	}
-
-	public Long getThinkActRecordId() {
-		return thinkActRecordId;
-	}
-
-	public void setThinkActRecordId(Long thinkActRecordId) {
-		this.thinkActRecordId = thinkActRecordId;
-	}
-
-	/**
-	 * Check if this agent is executing a sub-plan triggered by a tool call
-	 * @return true if this is a sub-plan execution, false otherwise
-	 */
-	public boolean isSubPlanExecution() {
-		return thinkActRecordId != null;
 	}
 
 	public AgentState getState() {

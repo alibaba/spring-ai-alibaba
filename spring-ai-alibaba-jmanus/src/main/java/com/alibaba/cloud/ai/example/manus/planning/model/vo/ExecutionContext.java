@@ -105,14 +105,6 @@ public class ExecutionContext {
 	}
 
 	/**
-	 * Get think-act record ID
-	 * @return Think-act record ID for sub-plan executions
-	 */
-	public Long getThinkActRecordId() {
-		return thinkActRecordId;
-	}
-
-	/**
 	 * Set think-act record ID
 	 * @param thinkActRecordId Think-act record ID for sub-plan executions
 	 */

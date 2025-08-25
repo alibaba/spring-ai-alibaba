@@ -33,7 +33,9 @@ import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 
 @Service
 public class DynamicAgentLoader implements IDynamicAgentLoader {
@@ -53,6 +55,8 @@ public class DynamicAgentLoader implements IDynamicAgentLoader {
 	private final PromptService promptService;
 
 	private final StreamingResponseHandler streamingResponseHandler;
+	
+	private final PlanIdDispatcher planIdDispatcher;
 
 	@Value("${namespace.value}")
 	private String namespace;
@@ -60,7 +64,7 @@ public class DynamicAgentLoader implements IDynamicAgentLoader {
 	public DynamicAgentLoader(DynamicAgentRepository repository, @Lazy ILlmService llmService,
 			PlanExecutionRecorder recorder, ManusProperties properties, @Lazy ToolCallingManager toolCallingManager,
 			UserInputService userInputService, PromptService promptService,
-			StreamingResponseHandler streamingResponseHandler) {
+			StreamingResponseHandler streamingResponseHandler, PlanIdDispatcher planIdDispatcher) {
 		this.repository = repository;
 		this.llmService = llmService;
 		this.recorder = recorder;
@@ -69,9 +73,10 @@ public class DynamicAgentLoader implements IDynamicAgentLoader {
 		this.userInputService = userInputService;
 		this.promptService = promptService;
 		this.streamingResponseHandler = streamingResponseHandler;
+		this.planIdDispatcher =	 planIdDispatcher;
 	}
 
-	public DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting) {
+	public DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting,ExecutionStep step) {
 		DynamicAgentEntity entity = repository.findByNamespaceAndAgentName(namespace, agentName);
 		if (entity == null) {
 			throw new IllegalArgumentException("Agent not found: " + agentName);
@@ -79,7 +84,7 @@ public class DynamicAgentLoader implements IDynamicAgentLoader {
 
 		return new DynamicAgent(llmService, recorder, properties, entity.getAgentName(), entity.getAgentDescription(),
 				entity.getNextStepPrompt(), entity.getAvailableToolKeys(), toolCallingManager, initialAgentSetting,
-				userInputService, promptService, entity.getModel(), streamingResponseHandler);
+				userInputService, promptService, entity.getModel(), streamingResponseHandler,step,planIdDispatcher);
 	}
 
 	public List<DynamicAgentEntity> getAllAgents() {

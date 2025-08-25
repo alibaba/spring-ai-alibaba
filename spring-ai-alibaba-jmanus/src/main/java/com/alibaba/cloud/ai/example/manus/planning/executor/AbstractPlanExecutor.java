@@ -85,23 +85,10 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	 */
 	protected BaseAgent executeStep(ExecutionStep step, ExecutionContext context) {
 		try {
-			String stepType = getStepFromStepReq(step.getStepRequirement());
-			int stepIndex = step.getStepIndex();
-			String expectedReturnInfo = step.getTerminateColumns();
-
-			String planStatus = context.getPlan().getPlanExecutionStateStringFormat(true);
-			String stepText = step.getStepRequirement();
-
-			Map<String, Object> initSettings = new HashMap<>();
-			initSettings.put(PLAN_STATUS_KEY, planStatus);
-			initSettings.put(CURRENT_STEP_INDEX_KEY, String.valueOf(stepIndex));
-			initSettings.put(STEP_TEXT_KEY, stepText);
-			initSettings.put(EXTRA_PARAMS_KEY, context.getPlan().getExecutionParams());
-
-			BaseAgent executor = getExecutorForStep(stepType, context, initSettings, expectedReturnInfo);
+			BaseAgent executor = getExecutorForStep(context, step);
 			if (executor == null) {
-				logger.error("No executor found for step type: {}", stepType);
-				step.setResult("No executor found for step type: " + stepType);
+				logger.error("No executor found for step type: {}", step.getStepInStr());
+				step.setResult("No executor found for step type: " + step.getStepInStr());
 				return null;
 			}
 
@@ -111,6 +98,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			recorder.recordStepStart(step, context.getCurrentPlanId());
 			String stepResultStr = executor.run();
 			step.setResult(stepResultStr);
+			recorder.recordStepEnd(step, context.getCurrentPlanId());
 
 			return executor;
 		}
@@ -138,17 +126,26 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	/**
 	 * Get the executor for the step.
 	 */
-	protected BaseAgent getExecutorForStep(String stepType, ExecutionContext context, Map<String, Object> initSettings,
-			String expectedReturnInfo) {
+	protected BaseAgent getExecutorForStep(ExecutionContext context, ExecutionStep step) {
+
+			String stepType = getStepFromStepReq(step.getStepRequirement());
+			int stepIndex = step.getStepIndex();
+			String expectedReturnInfo = step.getTerminateColumns();
+
+			String planStatus = context.getPlan().getPlanExecutionStateStringFormat(true);
+			String stepText = step.getStepRequirement();
+
+			Map<String, Object> initSettings = new HashMap<>();
+			initSettings.put(PLAN_STATUS_KEY, planStatus);
+			initSettings.put(CURRENT_STEP_INDEX_KEY, String.valueOf(stepIndex));
+			initSettings.put(STEP_TEXT_KEY, stepText);
+			initSettings.put(EXTRA_PARAMS_KEY, context.getPlan().getExecutionParams());
+
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
 				BaseAgent executor = agentService.createDynamicBaseAgent(agent.getAgentName(),
 						context.getPlan().getCurrentPlanId(), context.getPlan().getRootPlanId(), initSettings,
-						expectedReturnInfo);
-				// Set thinkActRecordId from context for sub-plan executions
-				if (context.getThinkActRecordId() != null) {
-					executor.setThinkActRecordId(context.getThinkActRecordId());
-				}
+						expectedReturnInfo, step);
 				return executor;
 			}
 		}

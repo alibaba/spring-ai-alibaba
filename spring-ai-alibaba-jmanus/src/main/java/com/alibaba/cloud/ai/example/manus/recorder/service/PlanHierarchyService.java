@@ -33,7 +33,7 @@ import java.util.Optional;
  */
 @Service
 public class PlanHierarchyService {
-
+要开始支持这个hierarchy了。
     private static final Logger logger = LoggerFactory.getLogger(PlanHierarchyService.class);
 
     @Autowired

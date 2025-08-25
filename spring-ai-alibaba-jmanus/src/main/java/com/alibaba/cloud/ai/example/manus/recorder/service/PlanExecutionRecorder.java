@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
@@ -136,27 +135,17 @@ public interface PlanExecutionRecorder {
      */
     public static class ThinkActRecordParams {
         private final String thinkActId;
-        private final Long parentExecutionId;
-        private final LocalDateTime thinkStartTime;
-        private final LocalDateTime thinkEndTime;
-        private final  LocalDateTime actStartTime;
-        private final LocalDateTime actEndTime;
+        private final String stepId;
         private final String thinkInput;
         private final String thinkOutput;
         private final String errorMessage;
         private final List<ActToolParam> actToolInfoList;
-        public ThinkActRecordParams( String thinkActId, Long parentExecutionId,
-                                  LocalDateTime thinkStartTime, LocalDateTime thinkEndTime,
-                                  LocalDateTime actStartTime, LocalDateTime actEndTime,
+        public ThinkActRecordParams( String thinkActId, String stepId,
                                   String thinkInput, String thinkOutput, String errorMessage,
                                   List<ActToolParam> actToolInfoList) { 
            
             this.thinkActId = thinkActId;
-            this.parentExecutionId = parentExecutionId;
-            this.thinkStartTime = thinkStartTime;
-            this.thinkEndTime = thinkEndTime;
-            this.actStartTime = actStartTime;
-            this.actEndTime = actEndTime;
+            this.stepId = stepId;
             this.thinkInput = thinkInput;
             this.thinkOutput = thinkOutput;
             this.errorMessage = errorMessage;
@@ -165,20 +154,8 @@ public interface PlanExecutionRecorder {
         public String getThinkActId() {
             return thinkActId;
         }
-        public Long getParentExecutionId() {
-            return parentExecutionId;
-        }
-        public LocalDateTime getThinkStartTime() {
-            return thinkStartTime;
-        }
-        public LocalDateTime getThinkEndTime() {
-            return thinkEndTime;
-        }
-        public LocalDateTime getActStartTime() {
-            return actStartTime;
-        }
-        public LocalDateTime getActEndTime() {
-            return actEndTime;
+        public String getStepId(){
+            return stepId;
         }
         public String getThinkInput() {
             return thinkInput;
@@ -202,7 +179,7 @@ public interface PlanExecutionRecorder {
     public static class ActToolParam {
         private final String name;
         private final String parameters;
-        private final String result;
+        private String result;
         private final String toolCallId;
 
         public ActToolParam(String name, String parameters, String toolCallId) {
@@ -218,6 +195,10 @@ public interface PlanExecutionRecorder {
             this.result = result;
             this.toolCallId = toolCallId;
         }
+
+		public void setResult(String result){
+			this.result = result;
+		}
 
         // Getters
         public String getName() {

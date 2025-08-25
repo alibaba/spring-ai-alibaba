@@ -21,6 +21,7 @@ import java.util.Map;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 
 /**
  * Dynamic Agent loader interface, providing Agent loading function
@@ -33,7 +34,7 @@ public interface IDynamicAgentLoader {
 	 * @param initialAgentSetting Initial Agent settings
 	 * @return Dynamic Agent
 	 */
-	DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting);
+	DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting,ExecutionStep step);
 
 	/**
 	 * Get all Agents

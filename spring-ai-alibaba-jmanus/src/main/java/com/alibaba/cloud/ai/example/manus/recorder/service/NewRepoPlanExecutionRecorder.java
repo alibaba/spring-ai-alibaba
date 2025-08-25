@@ -35,7 +35,7 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
     @Resource
     private ActToolInfoRepository actToolInfoRepository;
 
-    private static final Logger logger = LoggerFactory.getLogger(RepositoryPlanExecutionRecorder.class);
+    private static final Logger logger = LoggerFactory.getLogger(NewRepoPlanExecutionRecorder.class);
 
     @Override
     public Long recordPlanExecutionStart(String currentPlanId, String title, String userRequset,
@@ -318,10 +318,6 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
             ThinkActRecordEntity thinkActRecord = new ThinkActRecordEntity();
             thinkActRecord.setParentExecutionId(agentRecord.getId());
             thinkActRecord.setThinkActId(params.getThinkActId());
-            thinkActRecord.setThinkStartTime(params.getThinkStartTime() != null ? params.getThinkStartTime() : LocalDateTime.now());
-            thinkActRecord.setThinkEndTime(params.getThinkEndTime());
-            thinkActRecord.setActStartTime(params.getActStartTime());
-            thinkActRecord.setActEndTime(params.getActEndTime());
             thinkActRecord.setThinkInput(params.getThinkInput());
             thinkActRecord.setThinkOutput(params.getThinkOutput());
             thinkActRecord.setErrorMessage(params.getErrorMessage());

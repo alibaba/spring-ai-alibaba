@@ -860,7 +860,6 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		copiedContext.setNeedSummary(originalContext.isNeedSummary());
 		copiedContext.setSuccess(originalContext.isSuccess());
 		copiedContext.setUseMemory(originalContext.isUseMemory());
-		copiedContext.setThinkActRecordId(originalContext.getThinkActRecordId());
 
 		// Copy tool context
 		if (originalContext.getToolsContext() != null) {

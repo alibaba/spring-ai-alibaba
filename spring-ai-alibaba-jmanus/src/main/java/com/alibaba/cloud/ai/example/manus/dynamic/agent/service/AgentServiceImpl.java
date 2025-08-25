@@ -41,6 +41,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.model.Tool;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
 import com.alibaba.cloud.ai.example.manus.planning.IPlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 
 @Service
@@ -296,13 +297,13 @@ public class AgentServiceImpl implements AgentService {
 
 	@Override
 	public BaseAgent createDynamicBaseAgent(String name, String planId, String rootPlanId,
-			Map<String, Object> initialAgentSetting, String expectedReturnInfo) {
+			Map<String, Object> initialAgentSetting, String expectedReturnInfo,ExecutionStep step) {
 
 		log.info("Create new BaseAgent: {}, planId: {}", name, planId);
 
 		try {
 			// Load existing Agent through dynamicAgentLoader
-			DynamicAgent agent = dynamicAgentLoader.loadAgent(name, initialAgentSetting);
+			DynamicAgent agent = dynamicAgentLoader.loadAgent(name, initialAgentSetting,step);
 
 			// Set planId
 			agent.setCurrentPlanId(planId);

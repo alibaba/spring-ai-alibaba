@@ -31,7 +31,8 @@ import org.hibernate.mapping.Property;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 import org.springframework.stereotype.Component;
 
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecordEntity;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.po.PlanExecutionRecordEntity;
+
 
 /**
  * auth: dahua time: 20250809

@@ -20,6 +20,7 @@ import java.util.Map;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.model.Tool;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 
 public interface AgentService {
 
@@ -43,6 +44,6 @@ public interface AgentService {
 	 * @return Created BaseAgent object
 	 */
 	BaseAgent createDynamicBaseAgent(String name, String currentPlanId, String rootPlanId,
-			Map<String, Object> initialAgentSetting, String expectedReturnInfo);
+			Map<String, Object> initialAgentSetting, String expectedReturnInfo,ExecutionStep step);
 
 }

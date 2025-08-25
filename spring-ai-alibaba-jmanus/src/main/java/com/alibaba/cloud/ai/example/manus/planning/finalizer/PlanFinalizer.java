@@ -131,10 +131,7 @@ public class PlanFinalizer {
 		}
 
 		String currentPlanId = context.getPlan().getCurrentPlanId();
-		String rootPlanId = context.getPlan().getRootPlanId();
-		Long thinkActRecordId = context.getThinkActRecordId();
-
-		recorder.recordPlanCompletion(currentPlanId, thinkActRecordId, summary);
+		recorder.recordPlanCompletion(currentPlanId, summary);
 	}
 
 	/**

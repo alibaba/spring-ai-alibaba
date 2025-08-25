@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.example.manus.recorder.entity.po;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -58,21 +57,6 @@ public class ThinkActRecordEntity {
 	@Column(name = "parent_execution_id")
 	private Long parentExecutionId;
 
-	// Timestamp when thinking started
-	@Column(name = "think_start_time")
-	private LocalDateTime thinkStartTime;
-
-	// Timestamp when thinking completed
-	@Column(name = "think_end_time")
-	private LocalDateTime thinkEndTime;
-
-	// Timestamp when action started
-	@Column(name = "act_start_time")
-	private LocalDateTime actStartTime;
-
-	// Timestamp when action completed
-	@Column(name = "act_end_time")
-	private LocalDateTime actEndTime;
 
 	// Input context for the thinking process
 	@Column(name = "think_input", columnDefinition = "LONGTEXT")
@@ -81,10 +65,6 @@ public class ThinkActRecordEntity {
 	// Output result of the thinking process
 	@Column(name = "think_output", columnDefinition = "LONGTEXT")
 	private String thinkOutput;
-
-	// Whether thinking determined that action is needed
-	@Column(name = "action_needed")
-	private boolean actionNeeded;
 
 
 	// Error message if the cycle encountered problems
@@ -105,7 +85,6 @@ public class ThinkActRecordEntity {
 	// Constructor with parent execution ID
 	public ThinkActRecordEntity(Long parentExecutionId) {
 		this.parentExecutionId = parentExecutionId;
-		this.thinkStartTime = LocalDateTime.now();
 	}
 
 	// Getters and setters
@@ -134,38 +113,6 @@ public class ThinkActRecordEntity {
 		this.parentExecutionId = parentExecutionId;
 	}
 
-	public LocalDateTime getThinkStartTime() {
-		return thinkStartTime;
-	}
-
-	public void setThinkStartTime(LocalDateTime thinkStartTime) {
-		this.thinkStartTime = thinkStartTime;
-	}
-
-	public LocalDateTime getThinkEndTime() {
-		return thinkEndTime;
-	}
-
-	public void setThinkEndTime(LocalDateTime thinkEndTime) {
-		this.thinkEndTime = thinkEndTime;
-	}
-
-	public LocalDateTime getActStartTime() {
-		return actStartTime;
-	}
-
-	public void setActStartTime(LocalDateTime actStartTime) {
-		this.actStartTime = actStartTime;
-	}
-
-	public LocalDateTime getActEndTime() {
-		return actEndTime;
-	}
-
-	public void setActEndTime(LocalDateTime actEndTime) {
-		this.actEndTime = actEndTime;
-	}
-
 	public String getThinkInput() {
 		return thinkInput;
 	}
@@ -180,38 +127,6 @@ public class ThinkActRecordEntity {
 
 	public void setThinkOutput(String thinkOutput) {
 		this.thinkOutput = thinkOutput;
-	}
-
-	public boolean isActionNeeded() {
-		return actionNeeded;
-	}
-
-	public void setActionNeeded(boolean actionNeeded) {
-		this.actionNeeded = actionNeeded;
-	}
-
-	public String getActionDescription() {
-		return actionDescription;
-	}
-
-	public void setActionDescription(String actionDescription) {
-		this.actionDescription = actionDescription;
-	}
-
-	public String getActionResult() {
-		return actionResult;
-	}
-
-	public void setActionResult(String actionResult) {
-		this.actionResult = actionResult;
-	}
-
-	public ExecutionStatusEntity getStatus() {
-		return status;
-	}
-
-	public void setStatus(ExecutionStatusEntity status) {
-		this.status = status;
 	}
 
 	public String getErrorMessage() {
@@ -233,7 +148,7 @@ public class ThinkActRecordEntity {
 	@Override
 	public String toString() {
 		return "ThinkActRecordEntity{" + "id='" + id + '\'' + ", parentExecutionId='" + parentExecutionId + '\''
-				+ ", actionNeeded=" + actionNeeded + ", status='" + status + '\'' + '}';
+				+ '}';
 	}
 
 

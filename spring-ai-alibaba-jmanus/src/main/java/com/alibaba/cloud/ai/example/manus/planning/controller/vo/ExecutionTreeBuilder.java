@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.planning.controller.vo;
 import org.springframework.util.StringUtils;
 
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.AgentExecutionRecordSimple;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ExecutionStatus;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
 
@@ -80,14 +81,14 @@ public class ExecutionTreeBuilder {
      * @param agentExecutions Agent execution records
      * @return List of step info objects
      */
-    private static List<ExecutionStepInfo> buildSteps(List<AgentExecutionRecord> agentExecutions) {
+    private static List<ExecutionStepInfo> buildSteps(List<AgentExecutionRecordSimple> agentExecutions) {
         if (agentExecutions == null || agentExecutions.isEmpty()) {
             return new ArrayList<>();
         }
 
         List<ExecutionStepInfo> steps = new ArrayList<>();
         for (int i = 0; i < agentExecutions.size(); i++) {
-            AgentExecutionRecord agentExecution = agentExecutions.get(i);
+            AgentExecutionRecordSimple agentExecution = agentExecutions.get(i);
             ExecutionStepInfo stepInfo = buildStepInfo(i, agentExecution);
             steps.add(stepInfo);
         }
@@ -101,7 +102,7 @@ public class ExecutionTreeBuilder {
      * @param agentExecution Agent execution record
      * @return Step info object
      */
-    private static ExecutionStepInfo buildStepInfo(int stepIndex, AgentExecutionRecord agentExecution) {
+    private static ExecutionStepInfo buildStepInfo(int stepIndex, AgentExecutionRecordSimple agentExecution) {
         String stepDescription = generateStepDescription(agentExecution, stepIndex);
         
         return new ExecutionStepInfo(
@@ -145,7 +146,7 @@ public class ExecutionTreeBuilder {
             return 100;
         }
 
-        List<AgentExecutionRecord> agentExecutions = record.getAgentExecutionSequence();
+        List<AgentExecutionRecordSimple> agentExecutions = record.getAgentExecutionSequence();
         if (agentExecutions == null || agentExecutions.isEmpty()) {
             return 0;
         }
@@ -153,7 +154,7 @@ public class ExecutionTreeBuilder {
         int totalSteps = agentExecutions.size();
         int completedSteps = 0;
 
-        for (AgentExecutionRecord agentExecution : agentExecutions) {
+        for (AgentExecutionRecordSimple agentExecution : agentExecutions) {
             if (agentExecution.getStatus() == ExecutionStatus.FINISHED) {
                 completedSteps++;
             }
@@ -169,7 +170,7 @@ public class ExecutionTreeBuilder {
      * @param stepIndex Step index
      * @return Step description
      */
-    private static String generateStepDescription(AgentExecutionRecord agentExecution, int stepIndex) {
+    private static String generateStepDescription(AgentExecutionRecordSimple agentExecution, int stepIndex) {
         String agentName = agentExecution.getAgentName();
         if (StringUtils.hasText(agentName)) {
             return String.format("Step %d: Execute %s", stepIndex + 1, agentName);
