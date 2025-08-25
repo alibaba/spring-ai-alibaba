@@ -228,7 +228,7 @@ public class Nl2sqlConfiguration {
 			.addNode(SCHEMA_RECALL_NODE, node_async(new SchemaRecallNode(schemaService)))
 			.addNode(TABLE_RELATION_NODE,
 					node_async(new TableRelationNode(schemaService, nl2SqlService, businessKnowledgeRecallService,
-							semanticModelRecallService)))
+							semanticModelRecallService, datasourceService)))
 			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(chatClientBuilder, nl2SqlService)))
 			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
