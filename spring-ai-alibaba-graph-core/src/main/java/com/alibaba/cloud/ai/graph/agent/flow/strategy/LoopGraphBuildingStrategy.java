@@ -27,8 +27,11 @@ import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -37,17 +40,17 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 
-    private String generateTempInput(BaseAgent agent) {
-        return agent.name() + "__input";
-    }
+	private String generateTempInput(BaseAgent agent) {
+		return agent.name() + "__input";
+	}
 
-    private String generateTempOutput(BaseAgent agent) {
-        return agent.name() + "__output";
-    }
+	private String generateTempOutput(BaseAgent agent) {
+		return agent.name() + "__output";
+	}
 
-    private String generateBodyName(String agentName, int idx) {
-        return agentName + "__loop_body" + idx;
-    }
+	private String generateBodyName(String agentName, int idx) {
+		return agentName + "__loop_body" + idx;
+	}
 
 	@Override
 	public StateGraph buildGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
@@ -65,29 +68,36 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 		KeyStrategyFactory strategyFactory = new KeyStrategyFactoryBuilder()
 			.addStrategies(config.getKeyStrategyFactory().apply())
 			.addStrategies(loopConfig.loopMode().getLoopTempKeyStrategyFactory(agentName).apply())
+			.addStrategies(config.getSubAgents()
+				.stream()
+				.flatMap(agent -> Stream.of(generateTempInput(agent), generateTempOutput(agent)))
+				.collect(Collectors.toMap(k -> k, v -> new ReplaceStrategy(), (v1, v2) -> v2)))
 			.build();
 		StateGraph stateGraph = new StateGraph(agentName, strategyFactory);
 
 		// 定义Node名称
 		String bodyStartNodeName = agentName + "__loop_body_start__";
-        String bodyEndNodeName = agentName + "__loop_body_end__";
+		String bodyEndNodeName = agentName + "__loop_body_end__";
 		String startNodeName = agentName + "__loop_start__";
 		String endNodeName = agentName + "__loop_end__";
 
 		// 添加节点
 		stateGraph.addNode(startNodeName, node_async(loopConfig.loopMode().getStartAction(agentName, loopConfig)));
 
-        // 展开子Agent的节点
-        String lastOutput = generateTempInput(config.getSubAgents().get(0));
-        stateGraph.addNode(bodyStartNodeName, node_async(new TransparentNode(lastOutput, LoopAgent.LoopMode.iteratorItemKey(agentName))));
-        for(int i=0; i<config.getSubAgents().size(); i++) {
-            String thisOutput = generateTempOutput(config.getSubAgents().get(i));
-            stateGraph.addNode(generateBodyName(agentName, i), config.getSubAgents().get(i).asAsyncNodeAction(lastOutput, thisOutput));
-            lastOutput = thisOutput;
-        }
-        stateGraph.addNode(bodyEndNodeName, node_async(new TransparentNode(LoopAgent.LoopMode.iteratorResultKey(agentName), lastOutput)));
+		// 展开子Agent的节点
+		String lastOutput = generateTempInput(config.getSubAgents().get(0));
+		stateGraph.addNode(bodyStartNodeName,
+				node_async(new TransparentNode(lastOutput, LoopAgent.LoopMode.iteratorItemKey(agentName))));
+		for (int i = 0; i < config.getSubAgents().size(); i++) {
+			String thisOutput = generateTempOutput(config.getSubAgents().get(i));
+			stateGraph.addNode(generateBodyName(agentName, i),
+					config.getSubAgents().get(i).asAsyncNodeAction(lastOutput, thisOutput));
+			lastOutput = thisOutput;
+		}
+		stateGraph.addNode(bodyEndNodeName,
+				node_async(new TransparentNode(LoopAgent.LoopMode.iteratorResultKey(agentName), lastOutput)));
 
-        stateGraph.addNode(endNodeName, node_async(loopConfig.loopMode().getEndAction(agentName, loopConfig)));
+		stateGraph.addNode(endNodeName, node_async(loopConfig.loopMode().getEndAction(agentName, loopConfig)));
 
 		// 添加条件边，控制循环流程
 		stateGraph.addEdge(START, startNodeName).addConditionalEdges(startNodeName, edge_async((state -> {
@@ -95,15 +105,14 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 			return flag ? "true" : "false";
 		})), Map.of("true", bodyStartNodeName, "false", END));
 
-        // 展开子Agent的边
-        stateGraph.addEdge(bodyStartNodeName, generateBodyName(agentName, 0));
-        for(int i=1; i<config.getSubAgents().size()-1; i++) {
-            stateGraph.addEdge(generateBodyName(agentName, i-1), generateBodyName(agentName, i));
-        }
-        stateGraph.addEdge(generateBodyName(agentName, config.getSubAgents().size()-1), bodyEndNodeName);
+		// 展开子Agent的边
+		stateGraph.addEdge(bodyStartNodeName, generateBodyName(agentName, 0));
+		for (int i = 1; i < config.getSubAgents().size(); i++) {
+			stateGraph.addEdge(generateBodyName(agentName, i - 1), generateBodyName(agentName, i));
+		}
+		stateGraph.addEdge(generateBodyName(agentName, config.getSubAgents().size() - 1), bodyEndNodeName);
 
-        stateGraph.addEdge(bodyEndNodeName, endNodeName)
-			.addEdge(endNodeName, startNodeName);
+		stateGraph.addEdge(bodyEndNodeName, endNodeName).addEdge(endNodeName, startNodeName);
 
 		return stateGraph;
 	}

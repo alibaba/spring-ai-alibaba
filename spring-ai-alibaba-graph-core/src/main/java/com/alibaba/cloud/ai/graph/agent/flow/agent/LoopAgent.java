@@ -30,11 +30,15 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 循环Agent，支持三种模式：限定次数、限定条件、迭代可叠代对象。输出元素为一个List，是每次循环之后最后一个子Agent的输出，对应的Key应为AppendStrategy
@@ -64,12 +68,16 @@ public class LoopAgent extends FlowAgent {
 	@Override
 	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
 		CompiledGraph compiledGraph = this.getAndCompileGraph();
-		return compiledGraph.invoke(input);
+		// 添加outputKey为空列表，用于接受答案
+		return compiledGraph.invoke(Stream.of(input, Map.of(this.outputKey(), new ArrayList<>()))
+			.map(Map::entrySet)
+			.flatMap(Collection::stream)
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> newValue)));
 	}
 
-    public static Builder builder() {
-        return new Builder();
-    }
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	public enum LoopMode {
 
@@ -87,14 +95,13 @@ public class LoopAgent extends FlowAgent {
 			}
 
 			// 将当前迭代次数进行更新，同时将当前迭代次数作为本次的iterator_item
-			return Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true, LoopMode.iteratorItemKey(agentName), String.valueOf(loopCount + 1));
+			return Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true,
+					LoopMode.iteratorItemKey(agentName), String.valueOf(loopCount + 1));
 		}), (agentName, loopConfig) -> (state -> {
-            // 将结果放入outputKey中
-            Optional<Object> value = state.value(iteratorResultKey(agentName));
-            return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
-        }),
-				(agentName) -> combineKeyStrategy(agentName,
-						Map.of(agentName + "__loop_count", new ReplaceStrategy()))),
+			// 将结果放入outputKey中
+			Optional<Object> value = state.value(iteratorResultKey(agentName));
+			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
+		}), (agentName) -> combineKeyStrategy(agentName, Map.of(agentName + "__loop_count", new ReplaceStrategy()))),
 
 		/**
 		 * 限定条件
@@ -191,13 +198,14 @@ public class LoopAgent extends FlowAgent {
 	/**
 	 * 循环配置类，用于封装循环相关的配置信息
 	 *
-     * @param inputKey 循环的输入Key，应符合loopMode的要求，部分Mode可以无输入
-     * @param outputKey 循环的输出结果，为List对象
+	 * @param inputKey 循环的输入Key，应符合loopMode的要求，部分Mode可以无输入
+	 * @param outputKey 循环的输出结果，为List对象
 	 * @param loopMode 循环模式，决定循环的执行方式
 	 * @param loopCount 循环次数，仅在COUNT模式下有效
 	 * @param loopCondition 循环条件，仅在CONDITION模式下有效，每次循环都会根据该条件判断是否继续
 	 */
-	public record LoopConfig(String inputKey, String outputKey, LoopMode loopMode, Integer loopCount, Predicate<Object> loopCondition) {
+	public record LoopConfig(String inputKey, String outputKey, LoopMode loopMode, Integer loopCount,
+			Predicate<Object> loopCondition) {
 		/**
 		 * 验证循环配置的有效性
 		 * @throws IllegalArgumentException 当配置不合法时抛出异常

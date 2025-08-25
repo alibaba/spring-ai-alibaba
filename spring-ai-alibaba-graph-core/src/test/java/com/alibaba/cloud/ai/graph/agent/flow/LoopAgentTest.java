@@ -35,71 +35,64 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 public class LoopAgentTest {
 
-    private ChatModel chatModel;
+	private ChatModel chatModel;
 
-    @BeforeEach
-    void setUp() {
-        // Create DashScopeApi instance using the API key from environment variable
-        DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+	@BeforeEach
+	void setUp() {
+		// Create DashScopeApi instance using the API key from environment variable
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 
-        // Create DashScope ChatModel instance
-        this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
-    }
+		// Create DashScope ChatModel instance
+		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
+	}
 
-    @Test
-    public void testCountLoopAgent() throws Exception {
-        DashScopeChatOptions.builder().withHttpHeaders(new HashMap<>()).build();
-        KeyStrategyFactory stateFactory = () -> {
-            HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-            keyStrategyHashMap.put("input", new ReplaceStrategy());
-            keyStrategyHashMap.put("topic", new ReplaceStrategy());
-            keyStrategyHashMap.put("article", new ReplaceStrategy());
-            keyStrategyHashMap.put("reviewed_article", new ReplaceStrategy());
-            return keyStrategyHashMap;
-        };
+	@Test
+	public void testCountLoopAgent() throws Exception {
+		DashScopeChatOptions.builder().withHttpHeaders(new HashMap<>()).build();
+		KeyStrategyFactory stateFactory = () -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("input", new ReplaceStrategy());
+			keyStrategyHashMap.put("topic", new ReplaceStrategy());
+			keyStrategyHashMap.put("article", new ReplaceStrategy());
+			keyStrategyHashMap.put("reviewed_article", new ReplaceStrategy());
+			return keyStrategyHashMap;
+		};
 
-        ReactAgent writerAgent = ReactAgent.builder()
-                .name("writer_agent")
-                .model(chatModel)
-                .description("可以写文章。")
-                .instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
-                .outputKey("article")
-                .build();
+		ReactAgent writerAgent = ReactAgent.builder()
+			.name("writer_agent")
+			.model(chatModel)
+			.description("可以写文章。")
+			.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+			.outputKey("article")
+			.build();
 
-        ReactAgent reviewerAgent = ReactAgent.builder()
-                .name("reviewer_agent")
-                .model(chatModel)
-                .description("可以对文章进行评论和修改。")
-                .instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
-                .outputKey("reviewed_article")
-                .build();
+		ReactAgent reviewerAgent = ReactAgent.builder()
+			.name("reviewer_agent")
+			.model(chatModel)
+			.description("可以对文章进行评论和修改。")
+			.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
+			.outputKey("reviewed_article")
+			.build();
 
-        SequentialAgent blogAgent = SequentialAgent.builder()
-                .name("blog_agent")
-                .state(stateFactory)
-                .description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改。")
-                .inputKey("input")
-                .outputKey("topic")
-                .subAgents(List.of(writerAgent, reviewerAgent))
-                .build();
+		LoopAgent loopAgent = LoopAgent.builder()
+			.name("loop_agent")
+			.description("循环执行3次")
+			.outputKey("loop_output")
+			.state(() -> Map.of("loop_output", new AppendStrategy()))
+			.loopMode(LoopAgent.LoopMode.COUNT)
+			.loopCount(3)
+			.subAgents(List.of(writerAgent, reviewerAgent))
+			.build();
 
-        LoopAgent loopAgent = LoopAgent.builder()
-                .name("loop_agent")
-                .description("循环执行3次")
-                .outputKey("loop_output")
-                .state(() -> Map.of("loop_output", new AppendStrategy()))
-                .loopMode(LoopAgent.LoopMode.COUNT)
-                .loopCount(3)
-                .subAgents(List.of(blogAgent))
-                .build();
+		Map<String, Object> data = loopAgent.invoke(Map.of()).get().data();
 
-        Map<String, Object> data = loopAgent.invoke(Map.of()).get().data();
+		assertEquals(3, ((List<?>) data.get("loop_output")).size());
 
-        System.out.println(data);
-
-    }
+	}
 
 }
