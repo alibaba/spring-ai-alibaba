@@ -32,6 +32,7 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -118,11 +119,41 @@ public class LoopAgent extends FlowAgent {
 		 * 迭代可叠代对象
 		 */
 		ITERABLE((agentName, loopConfig) -> (state -> {
-			return Map.of();
+			// 获取迭代器，如果迭代器不存在，则说明第一次执行循环，先获取输入
+			String iteratorKey = agentName + "__iterator";
+			Optional<Object> iteratorObj = state.value(iteratorKey);
+			Iterator<?> iterator;
+
+			if (iteratorObj.isEmpty()) {
+				// 获取输出
+				Optional<?> inputIterable = state.value(loopConfig.inputKey());
+				if (inputIterable.isEmpty()) {
+					return Map.of(loopStartFlagKey(agentName), false);
+				}
+				Object iterableObj = inputIterable.get();
+				if (!(iterableObj instanceof Iterable<?> iterable)) {
+					throw new IllegalStateException("Input iterable is not iterable");
+				}
+				iterator = iterable.iterator();
+			}
+			else {
+				iterator = (Iterator<?>) iteratorObj.get();
+			}
+
+			// 判断是否还有下一个元素，若有则获取下一个元素，并将迭代器放进state里
+			if (iterator.hasNext()) {
+				return Map.of(iteratorItemKey(agentName), iterator.next(), loopStartFlagKey(agentName), true,
+						iteratorKey, iterator);
+			}
+			else {
+				return Map.of(loopStartFlagKey(agentName), false);
+			}
 		}), (agentName, loopConfig) -> (state -> {
-			return Map.of();
+			// 将结果放入outputKey中
+			Optional<Object> value = state.value(iteratorResultKey(agentName));
+			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> {
-			return combineKeyStrategy(agentName, Map.of());
+			return combineKeyStrategy(agentName, Map.of(agentName + "__iterator", new ReplaceStrategy()));
 		}),
 
 		/**
