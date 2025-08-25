@@ -20,10 +20,12 @@ import com.alibaba.cloud.ai.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.connector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
+import com.alibaba.cloud.ai.dto.schema.ColumnDTO;
 import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
+import com.alibaba.cloud.ai.dto.schema.TableDTO;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.service.LlmService;
-import com.alibaba.cloud.ai.util.DateTimeUtil;
+
 import com.alibaba.cloud.ai.util.MarkdownParser;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -33,7 +35,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import reactor.core.publisher.Flux;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -84,10 +85,15 @@ public class BaseNl2SqlService {
 
 	public Flux<ChatResponse> rewriteStream(String query, String agentId) throws Exception {
 		logger.info("Starting rewriteStream for query: {} with agentId: {}", query, agentId);
-		List<String> evidences = extractEvidences(query, agentId);
+
+		// 处理时间表达式 - 将相对时间转换为具体时间
+		String timeRewrittenQuery = processTimeExpressions(query);
+		logger.debug("Time rewritten query: {} -> {}", query, timeRewrittenQuery);
+
+		List<String> evidences = extractEvidences(timeRewrittenQuery, agentId);
 		logger.debug("Extracted {} evidences for rewriteStream", evidences.size());
-		SchemaDTO schemaDTO = select(query, evidences, agentId);
-		String prompt = PromptHelper.buildRewritePrompt(query, schemaDTO, evidences);
+		SchemaDTO schemaDTO = select(timeRewrittenQuery, evidences, agentId);
+		String prompt = PromptHelper.buildRewritePrompt(timeRewrittenQuery, schemaDTO, evidences);
 		logger.debug("Built rewrite prompt for streaming");
 		Flux<ChatResponse> result = aiService.streamCall(prompt);
 		logger.info("RewriteStream completed for query: {}", query);
@@ -96,10 +102,15 @@ public class BaseNl2SqlService {
 
 	public String rewrite(String query) throws Exception {
 		logger.info("Starting rewrite for query: {}", query);
-		List<String> evidences = extractEvidences(query);
+
+		// 处理时间表达式 - 将相对时间转换为具体时间
+		String timeRewrittenQuery = processTimeExpressions(query);
+		logger.debug("Time rewritten query: {} -> {}", query, timeRewrittenQuery);
+
+		List<String> evidences = extractEvidences(timeRewrittenQuery);
 		logger.debug("Extracted {} evidences for rewrite", evidences.size());
-		SchemaDTO schemaDTO = select(query, evidences);
-		String prompt = PromptHelper.buildRewritePrompt(query, schemaDTO, evidences);
+		SchemaDTO schemaDTO = select(timeRewrittenQuery, evidences);
+		String prompt = PromptHelper.buildRewritePrompt(timeRewrittenQuery, schemaDTO, evidences);
 		logger.debug("Built rewrite prompt, calling LLM");
 		String responseContent = aiService.call(prompt);
 		String[] splits = responseContent.split("\n");
@@ -124,6 +135,37 @@ public class BaseNl2SqlService {
 		}
 		logger.info("Rewrite completed successfully for query: {}", query);
 		return query;
+	}
+
+	/**
+	 * 处理查询中的时间表达式，将相对时间转换为具体时间
+	 * @param query 原始查询
+	 * @return 处理后的查询
+	 */
+	public String processTimeExpressions(String query) {
+		try {
+			logger.debug("Processing time expressions in query: {}", query);
+
+			// 使用统一管理的提示词构建时间转换提示
+			String timeConversionPrompt = PromptHelper.buildTimeConversionPrompt(query);
+
+			// 调用模型进行时间转换
+			String convertedQuery = aiService.call(timeConversionPrompt);
+
+			if (!convertedQuery.equals(query)) {
+				logger.info("Time expression conversion: {} -> {}", query, convertedQuery);
+			}
+			else {
+				logger.debug("No time expressions found or converted in query: {}", query);
+			}
+
+			return convertedQuery;
+
+		}
+		catch (Exception e) {
+			logger.warn("Failed to process time expressions using AI, using original query: {}", e.getMessage());
+			return query;
+		}
 	}
 
 	public String nl2sql(String query) throws Exception {
@@ -281,23 +323,8 @@ public class BaseNl2SqlService {
 			String exceptionMessage) throws Exception {
 		logger.info("Generating SQL for query: {}, hasExistingSql: {}", query, sql != null && !sql.isEmpty());
 
-		// TODO 时间处理暂时未应用
-		String dateTimeExtractPrompt = PromptHelper.buildDateTimeExtractPrompt(query);
-		logger.debug("Extracting datetime expressions");
-		String content = aiService.call(dateTimeExtractPrompt);
-		List<String> dateTimeList = new ArrayList<>();
-		LocalDate now = LocalDate.now();
-		List<String> expressionList = new Gson().fromJson(content, new TypeToken<List<String>>() {
-		}.getType());
-		List<String> dateTimeExpressions = DateTimeUtil.buildDateExpressions(expressionList, now);
-		for (String dateTimeExpression : dateTimeExpressions) {
-			if (dateTimeExpression.endsWith("=")) {
-				continue;
-			}
-			dateTimeList.add(dateTimeExpression.replace("=", "指的是"));
-		}
-		expressionList.addAll(dateTimeList);
-		logger.debug("Processed {} datetime expressions", dateTimeList.size());
+		// 时间处理已经在查询重写阶段完成，这里不再需要处理
+		logger.debug("Time expressions already processed in rewrite phase");
 
 		String newSql = "";
 		if (sql != null && !sql.isEmpty()) {
@@ -359,8 +386,20 @@ public class BaseNl2SqlService {
 
 	public SchemaDTO fineSelect(SchemaDTO schemaDTO, String query, List<String> evidenceList,
 			String sqlGenerateSchemaMissingAdvice) {
-		logger.debug("Fine selecting schema for query: {} with {} evidences", query, evidenceList.size());
-		String prompt = buildMixSelectorPrompt(evidenceList, query, schemaDTO);
+		return fineSelect(schemaDTO, query, evidenceList, sqlGenerateSchemaMissingAdvice, null);
+	}
+
+	public SchemaDTO fineSelect(SchemaDTO schemaDTO, String query, List<String> evidenceList,
+			String sqlGenerateSchemaMissingAdvice, DbConfig specificDbConfig) {
+		logger.debug("Fine selecting schema for query: {} with {} evidences and specificDbConfig: {}", query,
+				evidenceList.size(), specificDbConfig != null ? specificDbConfig.getUrl() : "default");
+
+		// 增加具体的样例数据，让模型根据样例数据进行选择
+		SchemaDTO enrichedSchema = enrichSchemaWithSampleData(schemaDTO, specificDbConfig);
+		logger.debug("Schema enriched with sample data for {} tables",
+				enrichedSchema.getTable() != null ? enrichedSchema.getTable().size() : 0);
+
+		String prompt = buildMixSelectorPrompt(evidenceList, query, enrichedSchema);
 		logger.debug("Calling LLM for schema fine selection");
 		String content = aiService.call(prompt);
 		Set<String> selectedTables = new HashSet<>();
@@ -396,6 +435,236 @@ public class BaseNl2SqlService {
 			}
 		}
 		return schemaDTO;
+	}
+
+	/**
+	 * 为Schema中的表和列添加样例数据，以帮助模型更好地理解数据内容和结构
+	 * @param schemaDTO 原始的数据库模式信息
+	 * @param specificDbConfig 特定的数据库配置，如果为null则使用默认配置
+	 * @return 包含样例数据的Schema副本
+	 */
+	private SchemaDTO enrichSchemaWithSampleData(SchemaDTO schemaDTO, DbConfig specificDbConfig) {
+		if (schemaDTO == null || schemaDTO.getTable() == null || schemaDTO.getTable().isEmpty()) {
+			logger.debug("Schema is null or empty, skipping sample data enrichment");
+			return schemaDTO;
+		}
+
+		// 使用传入的特定数据库配置，如果为null则使用默认配置
+		DbConfig targetDbConfig = specificDbConfig != null ? specificDbConfig : dbConfig;
+		logger.debug("Using database config: {}", targetDbConfig != null ? targetDbConfig.getUrl() : "null");
+
+		// 检查数据库配置是否有效
+		if (!isDatabaseConfigValid(targetDbConfig)) {
+			logger.info("Database configuration is invalid, skipping sample data enrichment for all tables");
+			return schemaDTO;
+		}
+
+		try {
+			// 创建SchemaDTO的深拷贝以避免修改原始对象
+			SchemaDTO enrichedSchema = copySchemaDTO(schemaDTO);
+
+			// 为每个表获取样例数据
+			for (TableDTO tableDTO : enrichedSchema.getTable()) {
+				enrichTableWithSampleData(tableDTO, targetDbConfig);
+			}
+
+			logger.info("Successfully enriched schema with sample data for {} tables",
+					enrichedSchema.getTable().size());
+			return enrichedSchema;
+
+		}
+		catch (Exception e) {
+			logger.warn("Failed to enrich schema with sample data, using original schema: {}", e.getMessage());
+			return schemaDTO;
+		}
+	}
+
+	/**
+	 * 为单个表添加样例数据
+	 * @param tableDTO 表信息对象
+	 * @param dbConfig 数据库配置
+	 */
+	private void enrichTableWithSampleData(TableDTO tableDTO, DbConfig dbConfig) {
+		if (tableDTO == null || tableDTO.getColumn() == null || tableDTO.getColumn().isEmpty()) {
+			return;
+		}
+
+		logger.debug("Enriching table '{}' with sample table data for {} columns", tableDTO.getName(),
+				tableDTO.getColumn().size());
+
+		try {
+			// 获取表的样例数据
+			ResultSetBO tableData = getSampleDataForTable(tableDTO.getName(), dbConfig);
+			if (tableData != null && tableData.getData() != null && !tableData.getData().isEmpty()) {
+				// 将整行数据分配给对应的列
+				distributeTableDataToColumns(tableDTO, tableData);
+				logger.info("Successfully enriched table '{}' with {} sample rows", tableDTO.getName(),
+						tableData.getData().size());
+			}
+			else {
+				logger.debug("No sample data found for table '{}'", tableDTO.getName());
+			}
+
+		}
+		catch (Exception e) {
+			logger.warn("Failed to get sample data for table '{}': {}", tableDTO.getName(), e.getMessage());
+		}
+	}
+
+	/**
+	 * 获取表的样例数据
+	 * @param tableName 表名
+	 * @param dbConfig 数据库配置
+	 * @return 表样例数据
+	 */
+	private ResultSetBO getSampleDataForTable(String tableName, DbConfig dbConfig) throws Exception {
+		DbQueryParameter param = DbQueryParameter.from(dbConfig).setTable(tableName);
+		return dbAccessor.scanTable(dbConfig, param);
+	}
+
+	/**
+	 * 将表数据分配给对应的列
+	 * @param tableDTO 表信息
+	 * @param tableData 表样例数据
+	 */
+	private void distributeTableDataToColumns(TableDTO tableDTO, ResultSetBO tableData) {
+		List<String> columnHeaders = tableData.getColumn();
+		List<Map<String, String>> rows = tableData.getData();
+
+		// 为每个列创建样例数据映射
+		Map<String, List<String>> columnSamples = new HashMap<>();
+
+		// 遍历每一行数据
+		for (Map<String, String> row : rows) {
+			for (String columnName : columnHeaders) {
+				String value = row.get(columnName);
+
+				if (value != null && !value.trim().isEmpty()) {
+					columnSamples.computeIfAbsent(columnName, k -> new ArrayList<>()).add(value);
+				}
+			}
+		}
+
+		// 将样例数据分配给对应的列
+		for (ColumnDTO columnDTO : tableDTO.getColumn()) {
+			String columnName = columnDTO.getName();
+			List<String> samples = columnSamples.get(columnName);
+
+			if (samples != null && !samples.isEmpty()) {
+				// 去重并限制样例数量
+				List<String> filteredSamples = samples.stream()
+					.filter(sample -> sample != null && !sample.trim().isEmpty())
+					.distinct()
+					.limit(5) // 最多保留5个样例值
+					.collect(Collectors.toList());
+
+				if (!filteredSamples.isEmpty()) {
+					columnDTO.setSamples(filteredSamples);
+					logger.debug("Added {} sample values for column '{}.{}': {}", filteredSamples.size(),
+							tableDTO.getName(), columnName, filteredSamples);
+				}
+			}
+		}
+	}
+
+	/**
+	 * 检查数据库配置是否有效
+	 * @param dbConfig 数据库配置
+	 * @return true如果配置有效，false otherwise
+	 */
+	private boolean isDatabaseConfigValid(DbConfig dbConfig) {
+		if (dbConfig == null) {
+			logger.debug("dbConfig is null");
+			return false;
+		}
+
+		if (dbAccessor == null) {
+			logger.debug("dbAccessor is null");
+			return false;
+		}
+
+		// 检查基本的连接信息
+		boolean hasBasicInfo = dbConfig.getUrl() != null && !dbConfig.getUrl().trim().isEmpty()
+				&& dbConfig.getUsername() != null && !dbConfig.getUsername().trim().isEmpty();
+
+		if (!hasBasicInfo) {
+			logger.debug("dbConfig missing basic connection info - url: {}, username: {}",
+					dbConfig.getUrl() != null ? "present" : "null",
+					dbConfig.getUsername() != null ? "present" : "null");
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * 创建SchemaDTO的深拷贝
+	 * @param originalSchema 原始Schema
+	 * @return Schema的深拷贝
+	 */
+	private SchemaDTO copySchemaDTO(SchemaDTO originalSchema) {
+		SchemaDTO copy = new SchemaDTO();
+		copy.setName(originalSchema.getName());
+		copy.setDescription(originalSchema.getDescription());
+		copy.setTableCount(originalSchema.getTableCount());
+		copy.setForeignKeys(originalSchema.getForeignKeys());
+
+		if (originalSchema.getTable() != null) {
+			List<TableDTO> copiedTables = originalSchema.getTable()
+				.stream()
+				.map(this::copyTableDTO)
+				.collect(Collectors.toList());
+			copy.setTable(copiedTables);
+		}
+
+		return copy;
+	}
+
+	/**
+	 * 创建TableDTO的深拷贝
+	 * @param originalTable 原始表
+	 * @return 表的深拷贝
+	 */
+	private TableDTO copyTableDTO(TableDTO originalTable) {
+		TableDTO copy = new TableDTO();
+		copy.setName(originalTable.getName());
+		copy.setDescription(originalTable.getDescription());
+		copy.setPrimaryKeys(originalTable.getPrimaryKeys());
+
+		if (originalTable.getColumn() != null) {
+			List<ColumnDTO> copiedColumns = originalTable.getColumn()
+				.stream()
+				.map(this::copyColumnDTO)
+				.collect(Collectors.toList());
+			copy.setColumn(copiedColumns);
+		}
+
+		return copy;
+	}
+
+	/**
+	 * 创建ColumnDTO的深拷贝
+	 * @param originalColumn 原始列
+	 * @return 列的深拷贝
+	 */
+	private ColumnDTO copyColumnDTO(ColumnDTO originalColumn) {
+		ColumnDTO copy = new ColumnDTO();
+		copy.setName(originalColumn.getName());
+		copy.setDescription(originalColumn.getDescription());
+		copy.setEnumeration(originalColumn.getEnumeration());
+		copy.setRange(originalColumn.getRange());
+		copy.setType(originalColumn.getType());
+		copy.setMapping(originalColumn.getMapping());
+
+		// 复制现有的样例数据
+		if (originalColumn.getSamples() != null) {
+			copy.setSamples(new ArrayList<>(originalColumn.getSamples()));
+		}
+		if (originalColumn.getData() != null) {
+			copy.setData(new ArrayList<>(originalColumn.getData()));
+		}
+
+		return copy;
 	}
 
 }
