@@ -32,10 +32,11 @@
           <div class="welcome">
             <span class="gradient-text">{{ $t('welcome') }}, {{ username }}</span>
           </div>
-        </Flex>
+        </Flex>  
         <div class="sender-wrapper">
           <sender
             class-name="sender"
+            :header="headerNode"
             :autoSize="{ minRows: 2, maxRows: 3 }"
             :loading="senderLoading"
             v-model:value="content"
@@ -43,33 +44,18 @@
             :actions="false"
             placeholder="type an issue"
           >
-            <template #header>
-              <a-carousel :slidesToShow="2" arrows style="width: 100%; padding: 12px">
-                <a-tag style="left: 5px" :id="f.uid" :closable="true" v-for="f in uploadFileList">
-                  <LinkOutlined />
-                  {{ f.name }}
-                </a-tag>
-              </a-carousel>
-            </template>
             <template
               #footer="{
                 info: {
-                  components: { SendButton, LoadingButton, ClearButton, SpeechButton },
+                  components: { SendButton, LoadingButton, ClearButton },
                 },
               }"
             >
               <Flex justify="space-between" align="center">
                 <Flex align="center">
-                  <!-- <a-upload
-                    :multiple="true"
-                    name="uploadFileList"
-                    v-model:file-list="uploadFileList"
-                    :showUploadList="false"
-                  >
-                    <a-button size="small" style="border-radius: 15px" type="text">
+                  <a-button size="small" style="border-radius: 15px" type="text" @click="headerOpen = !headerOpen">
                       <LinkOutlined />
-                    </a-button>
-                  </a-upload> -->
+                  </a-button>
 
                   <a-switch
                     un-checked-children="极速模式"
@@ -112,7 +98,7 @@
 </template>
 
 <script setup lang="tsx">
-import { Button, Card, Flex, Spin, theme, Typography } from 'ant-design-vue'
+import { Button, Card, Flex, Spin, theme, Typography, message } from 'ant-design-vue'
 import {
   CheckCircleOutlined,
   GlobalOutlined,
@@ -123,8 +109,10 @@ import {
   DotChartOutlined,
   LoadingOutlined,
   UserOutlined,
+  CloudUploadOutlined,
 } from '@ant-design/icons-vue'
 import {
+  Attachments,
   Bubble,
   type BubbleListProps,
   type MessageStatus,
@@ -151,6 +139,7 @@ import { parseJsonTextStrict } from '@/utils/jsonParser';
 import type { NormalNode, SiteInformation } from '@/types/node';
 import type { UploadFile } from '@/types/upload';
 import type { MessageState } from '@/types/message';
+import service from '@/utils/request'
 
 const router = useRouter()
 const route = useRoute()
@@ -223,7 +212,9 @@ const sendResumeStream  =  async(message: string | undefined, onUpdate: (content
 
         try {
           await xStreamBody.readStream((chunk: any) => {
-            messageStore.addReport(chunk)
+            if (chunk) {
+              messageStore.addReport(chunk)
+            }
             onUpdate(chunk)            
           })
         } catch (e: any) {
@@ -252,7 +243,9 @@ const sendChatStream = async (message: string | undefined, onUpdate: (content: a
 
         try {
           await xStreamBody.readStream((chunk: any) => {
-            messageStore.addReport(chunk)
+            if (chunk) {
+              messageStore.addReport(chunk)
+            }
             onUpdate(chunk)
             
           })
@@ -353,7 +346,11 @@ const onExpand = (keys: string[]) => {
 function buildStartDSThoughtChain(jsonArray: any[]) : any {
     const { Paragraph } = Typography
     // 获取背景调查节点
-    const backgroundInvestigatorNode = jsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
+    const backgroundInvestigatorNodeArray = jsonArray.filter((item) => item.nodeName === 'background_investigator')
+    if(backgroundInvestigatorNodeArray.length === 0){
+      return buildPendingNodeThoughtChain(jsonArray)
+    }
+    const backgroundInvestigatorNode = backgroundInvestigatorNodeArray[0]
     const results = backgroundInvestigatorNode.siteInformation
     const markdownContent = results.map((result: any, index: number) => {
         return `${index + 1}. [${result.title}](${result.url})\n\n`
@@ -408,7 +405,11 @@ function buildStartDSThoughtChain(jsonArray: any[]) : any {
 function buildOnDSThoughtChain(jsonArray: any[]) : any {
     const { Paragraph } = Typography
     // 获取背景调查节点
-    const backgroundInvestigatorNode = jsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
+    const backgroundInvestigatorNodeArray = jsonArray.filter((item) => item.nodeName === 'background_investigator')
+    if(backgroundInvestigatorNodeArray.length === 0){
+      return buildPendingNodeThoughtChain(jsonArray)
+    }
+    const backgroundInvestigatorNode = backgroundInvestigatorNodeArray[0]
     const results: SiteInformation[] = backgroundInvestigatorNode.siteInformation
     const markdownContent = results.map((result: SiteInformation, index: number) => {
         return `${index + 1}. [${result.title}](${result.url})\n\n`
@@ -591,7 +592,7 @@ function parseFooter(status: MessageStatus): any {
 if (convId) {
   const his_messages = messageStore.history[convId]
   if (his_messages) {
-    messages.value = his_messages
+    messages.value = his_messages as any
   }
 }
 // 消息列表
@@ -618,6 +619,98 @@ const bubbleList = computed(() => {
   })
 })
 
+
+const headerOpen = ref(false)
+function handleFileChange({file, fileList}){
+  console.log('handleFileChange', file)
+  if(file.status === 'removed'){
+    messageStore.removeUploadedFile(convId, file.uid)
+    message.success('文件已删除')
+    return
+  }
+  if(file.status === 'done'){
+    const uploadedFile = {
+      uid: file.uid,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      uploadTime: new Date().toISOString(),
+      status: 'success' as const
+    }
+    messageStore.addUploadedFile(convId, uploadedFile)
+    message.success(`${file.name} 上传成功`)
+  }
+}
+// 文件上传前的验证
+function beforeUpload(file: File) {
+  // 检查文件类型
+  const allowedTypes = ['application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/markdown']
+  if (!allowedTypes.includes(file.type)) {
+    message.error('只支持 PDF、TXT、DOC、DOCX、MD 格式的文件')
+    return false
+  }
+  
+  // 检查文件大小（限制为 10MB）
+  const maxSize = 10 * 1024 * 1024
+  if (file.size > maxSize) {
+    message.error('文件大小不能超过 10MB')
+    return false
+  }
+  
+  return true
+}
+
+// 处理文件上传
+async function handleFileUpload(options: any) {
+  const file = options.file as File
+  
+  try {
+    // 构建表单数据
+    const formData = new FormData()
+    formData.append('files', file, file.name)
+    formData.append('session_id', convId)
+
+    // 发送上传请求
+    const res = await service.post('/api/rag/user/batch-upload', formData, {
+      timeout: 30000 // 30秒超时
+    })
+    options.onSuccess?.(res)
+  } catch (error: any) {
+    console.error('文件上传失败:', error)
+    // 根据错误类型显示不同的错误信息
+    let errorMessage = `${file.name} 上传失败`
+    if (error.code === 'ECONNABORTED') {
+      errorMessage += '：请求超时'
+    } else if (error.response?.status === 413) {
+      errorMessage += '：文件过大'
+    } else if (error.response?.status === 415) {
+      errorMessage += '：不支持的文件格式'
+    } else if (error.response?.data?.message) {
+      errorMessage += `：${error.response.data.message}`
+    }
+    message.error(errorMessage)
+    options.onError?.(errorMessage)
+  }
+}
+
+const headerNode = computed(() => {
+  const filesList = messageStore.uploadedFiles?.[convId] || []
+  return (
+  
+    <Sender.Header title="上传文件" open={headerOpen.value} onOpenChange={v => headerOpen.value = v}>
+      <Attachments items={filesList} overflow="scrollX" onChange={handleFileChange} beforeUpload={beforeUpload} customRequest={handleFileUpload} placeholder={(type) => type === 'drop'
+              ? {
+                title: '点击或拖拽文件到这里上传',
+              }
+              : {
+                icon: <CloudUploadOutlined />,
+                title: '点击上传文件',
+                description: '支持上传PDF、TXT、DOC、DOCX、MD等文件',
+              }}/>
+    </Sender.Header>
+  
+)});
+
 const scrollContainer = ref<Element | any>(null)
 const sc = new ScrollController()
 
@@ -643,16 +736,19 @@ watch(
   height: 100%;
   box-sizing: border-box;
 
+
   .body {
-    padding: 20px;
+    // padding: 20px;
     height: 100%;
     box-sizing: border-box;
   }
 
   .chat {
     padding-top: 20px;
+    padding-bottom: 120px;
     height: 100%;
     box-sizing: border-box;
+    position: relative;
     transition: width 0.3s ease, margin 0.3s ease, padding 0.3s ease;
 
     .bubble-list {
@@ -707,9 +803,14 @@ watch(
     }
 
     .sender-wrapper {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
       box-sizing: border-box;
       max-width: 750px;
       width: 100%;
+      z-index: 10;
 
       .tag-deep-research {
         cursor: pointer;

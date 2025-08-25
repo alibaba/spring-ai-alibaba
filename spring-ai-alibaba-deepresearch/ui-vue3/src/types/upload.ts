@@ -24,3 +24,12 @@ export interface UploadFile {
   percent?: number
   originFileObj?: File
 }
+
+export interface UploadedFile {
+  uid: string
+  name: string
+  size: number
+  type: string
+  uploadTime: string
+  status: 'success' | 'error' | 'uploading'
+}
