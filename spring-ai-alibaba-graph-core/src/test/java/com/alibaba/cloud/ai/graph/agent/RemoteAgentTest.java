@@ -48,7 +48,7 @@ class RemoteAgentTest {
 	}
 
 	@Test
-	public void testSequentialAgent() throws Exception {
+	public void testRemoteAgent() throws Exception {
 		KeyStrategyFactory stateFactory = () -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			keyStrategyHashMap.put("input", new ReplaceStrategy());
