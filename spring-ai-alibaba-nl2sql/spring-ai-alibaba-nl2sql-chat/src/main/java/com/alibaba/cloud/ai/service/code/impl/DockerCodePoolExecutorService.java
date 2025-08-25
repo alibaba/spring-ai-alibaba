@@ -273,21 +273,27 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 	}
 
 	@Override
-	protected TaskResponse execTaskInContainer(TaskRequest request, String containerId) throws Exception {
+	protected TaskResponse execTaskInContainer(TaskRequest request, String containerId) {
 		// Get temporary directory object, write data to temporary directory
 		Path tempDir = this.containerTempPath.get(containerId);
 		if (tempDir == null) {
 			log.error("Container '{}' does not exist work dir", containerId);
-			return TaskResponse.error("Container '" + containerId + "' does not exist work dir");
+			return TaskResponse.exception("Container '" + containerId + "' does not exist work dir");
 		}
-		Files.write(tempDir.resolve("script.py"),
-				StringUtils.hasText(request.code()) ? request.code().getBytes() : "".getBytes());
-		Files.write(tempDir.resolve("requirements.txt"),
-				StringUtils.hasText(request.requirement()) ? request.requirement().getBytes() : "".getBytes());
-		Files.write(tempDir.resolve("input_data.txt"),
-				StringUtils.hasText(request.input()) ? request.input().getBytes() : "".getBytes());
-		Files.write(tempDir.resolve("stdout.txt"), "".getBytes());
-		Files.write(tempDir.resolve("stderr.txt"), "".getBytes());
+
+		try {
+			Files.write(tempDir.resolve("script.py"),
+					StringUtils.hasText(request.code()) ? request.code().getBytes() : "".getBytes());
+			Files.write(tempDir.resolve("requirements.txt"),
+					StringUtils.hasText(request.requirement()) ? request.requirement().getBytes() : "".getBytes());
+			Files.write(tempDir.resolve("input_data.txt"),
+					StringUtils.hasText(request.input()) ? request.input().getBytes() : "".getBytes());
+			Files.write(tempDir.resolve("stdout.txt"), "".getBytes());
+			Files.write(tempDir.resolve("stderr.txt"), "".getBytes());
+		}
+		catch (Exception e) {
+			return TaskResponse.exception(e.getMessage());
+		}
 
 		try {
 			// start docker
@@ -306,13 +312,13 @@ public class DockerCodePoolExecutorService extends AbstractCodePoolExecutorServi
 			if (exitCode != 0) {
 				String errorMessage = "Docker exit code " + exitCode + ". Stderr: " + stderr + ". Stdout: " + stdout;
 				log.error("Error executing Docker container {}: {}", containerId, errorMessage);
-				return TaskResponse.error(errorMessage);
+				return TaskResponse.failure(stdout, stderr);
 			}
-			return new TaskResponse(true, stdout, stderr, null);
+			return TaskResponse.success(stdout);
 		}
 		catch (Exception e) {
 			log.error("Error when creating container in docker: {}", e.getMessage());
-			return TaskResponse.error(e.getMessage());
+			return TaskResponse.exception(e.getMessage());
 		}
 	}
 

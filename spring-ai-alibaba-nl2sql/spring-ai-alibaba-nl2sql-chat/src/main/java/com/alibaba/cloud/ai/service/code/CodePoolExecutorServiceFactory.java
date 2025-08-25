@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.service.code;
 import com.alibaba.cloud.ai.config.CodeExecutorProperties;
 import com.alibaba.cloud.ai.service.code.impl.AiSimulationCodeExecutorService;
 import com.alibaba.cloud.ai.service.code.impl.DockerCodePoolExecutorService;
+import com.alibaba.cloud.ai.service.code.impl.LocalCodePoolExecutorService;
 import org.springframework.ai.chat.client.ChatClient;
 
 /**
@@ -35,15 +36,13 @@ public final class CodePoolExecutorServiceFactory {
 
 	public static CodePoolExecutorService newInstance(CodeExecutorProperties properties,
 			ChatClient.Builder chatClientBuilder) {
-		if (properties.getCodePoolExecutor().equals(CodePoolExecutorEnum.DOCKER)) {
-			return new DockerCodePoolExecutorService(properties);
-		}
-		else if (properties.getCodePoolExecutor().equals(CodePoolExecutorEnum.AI_SIMULATION)) {
-			return new AiSimulationCodeExecutorService(chatClientBuilder);
-		}
-		else {
-			throw new IllegalArgumentException("Unknown container impl: " + properties.getCodePoolExecutor());
-		}
+		return switch (properties.getCodePoolExecutor()) {
+			case DOCKER -> new DockerCodePoolExecutorService(properties);
+			case LOCAL -> new LocalCodePoolExecutorService(properties);
+			case AI_SIMULATION -> new AiSimulationCodeExecutorService(chatClientBuilder);
+			default -> throw new UnsupportedOperationException(
+					"This option does not have a corresponding implementation class yet.");
+		};
 	}
 
 }

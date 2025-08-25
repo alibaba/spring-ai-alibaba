@@ -104,42 +104,86 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 		}));
 	}
 
+	/**
+	 * 创建新的容器
+	 * @return 容器ID
+	 */
 	protected abstract String createNewContainer() throws Exception;
 
-	protected abstract TaskResponse execTaskInContainer(TaskRequest request, String containerId) throws Exception;
+	/**
+	 * 在指定容器ID的容器运行任务
+	 * @param request 任务请求对象
+	 * @param containerId 容器ID
+	 * @return 运行结果对象
+	 */
+	protected abstract TaskResponse execTaskInContainer(TaskRequest request, String containerId);
 
+	/**
+	 * 停止指定容器
+	 * @param containerId 容器ID
+	 */
 	protected abstract void stopContainer(String containerId) throws Exception;
 
+	/**
+	 * 删除指定容器
+	 * @param containerId 容器ID
+	 */
 	protected abstract void removeContainer(String containerId) throws Exception;
 
 	protected void shutdownPool() throws Exception {
 		// Shutdown thread pool
 		this.consumerThreadPool.shutdownNow();
 		// Stop and delete all containers
-		for (String containerId : this.tempContainerState.keySet()) {
-			try {
-				this.stopContainer(containerId);
-				this.removeContainer(containerId);
-			}
-			catch (Exception ignored) {
-
-			}
-		}
-		for (String containerId : this.coreContainerState.keySet()) {
-			try {
-				this.stopContainer(containerId);
-				this.removeContainer(containerId);
-			}
-			catch (Exception ignored) {
-
-			}
-		}
+		this.tempContainerState.keySet().forEach(id -> this.removeContainerAndState(id, false, true));
+		this.coreContainerState.keySet().forEach(id -> this.removeContainerAndState(id, true, true));
 		this.tempContainerState.clear();
 		this.coreContainerState.clear();
 		this.tempContainerRemoveFuture.clear();
 		this.readyCoreContainer.clear();
 		this.readyTempContainer.clear();
 		this.taskQueue.clear();
+	}
+
+	private void removeContainerAndState(String containerId, boolean isCore, boolean isForce) {
+		try {
+			if (isCore) {
+				// Remove core container
+				State state = this.coreContainerState.replace(containerId, State.REMOVING);
+				if (state == State.RUNNING) {
+					if (isForce) {
+						this.stopContainer(containerId);
+					}
+					else {
+						throw new RuntimeException("Container is still Running!");
+					}
+				}
+				this.removeContainer(containerId);
+				this.coreContainerState.remove(containerId);
+				this.currentCoreContainerSize.decrementAndGet();
+				log.info("Core Container {} has been removed successfully", containerId);
+			}
+			else {
+				// Remove temporary container
+				State state = this.tempContainerState.replace(containerId, State.REMOVING);
+				if (state == State.RUNNING) {
+					if (isForce) {
+						this.stopContainer(containerId);
+					}
+					else {
+						throw new RuntimeException("Container is still Running!");
+					}
+				}
+				this.removeContainer(containerId);
+				this.tempContainerState.remove(containerId);
+				this.tempContainerRemoveFuture.remove(containerId);
+				this.currentTempContainerSize.decrementAndGet();
+				log.info("Temp Container {} has been removed successfully", containerId);
+			}
+		}
+		catch (Exception e) {
+			log.error("Error when trying to remove a container, containerId: {}, info: {}", containerId, e.getMessage(),
+					e);
+		}
 	}
 
 	// Create thread to delete temporary containers
@@ -156,17 +200,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 				log.debug("Interrupted while waiting for temp container to be removed, info: {}", e.getMessage());
 				return;
 			}
-			try {
-				// Remove temporary container
-				this.tempContainerState.remove(containerId);
-				this.tempContainerRemoveFuture.remove(containerId);
-				this.removeContainer(containerId);
-				log.debug("Container {} has been removed successfully", containerId);
-			}
-			catch (Exception e) {
-				log.error("Error when trying to register temp container to be removed, containerId: {}, info: {}",
-						containerId, e.getMessage(), e);
-			}
+			this.removeContainerAndState(containerId, false, false);
 		});
 	}
 
@@ -176,6 +210,13 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 			// Execute task
 			this.coreContainerState.replace(containerId, State.RUNNING);
 			TaskResponse resp = this.execTaskInContainer(request, containerId);
+			// 如果运行代码任务时出现了异常，认为容器损坏，执行容器清除，并将当前任务放进队列里重新执行
+			if (!resp.isSuccess() && !resp.executionSuccessButResultFailed()) {
+				log.error("use core container failed, {}", resp.exceptionMsg());
+				this.coreContainerState.replace(containerId, State.REMOVING);
+				this.removeContainerAndState(containerId, true, true);
+				return this.pushTaskQueue(request);
+			}
 			this.coreContainerState.replace(containerId, State.READY);
 			// Put back into blocking queue
 			this.readyCoreContainer.add(containerId);
@@ -185,7 +226,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 		}
 		catch (Exception e) {
 			log.error("use core container failed, {}", e.getMessage(), e);
-			return TaskResponse.error(e.getMessage());
+			return TaskResponse.exception(e.getMessage());
 		}
 	}
 
@@ -205,6 +246,13 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 			// Execute task
 			this.tempContainerState.replace(containerId, State.RUNNING);
 			TaskResponse resp = this.execTaskInContainer(request, containerId);
+			// 如果运行代码任务时出现了异常，认为容器损坏，执行容器清除，并将当前任务放进队列里重新执行
+			if (!resp.isSuccess() && !resp.executionSuccessButResultFailed()) {
+				log.error("use temp container failed, {}", resp.exceptionMsg());
+				this.tempContainerState.replace(containerId, State.REMOVING);
+				this.removeContainerAndState(containerId, false, true);
+				return this.pushTaskQueue(request);
+			}
 			this.tempContainerState.replace(containerId, State.READY);
 			// Put back into blocking queue
 			this.readyTempContainer.add(containerId);
@@ -216,7 +264,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 		}
 		catch (Exception e) {
 			log.error("use temp container failed, {}", e.getMessage(), e);
-			return TaskResponse.error(e.getMessage());
+			return TaskResponse.exception(e.getMessage());
 		}
 	}
 
@@ -228,7 +276,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 		}
 		catch (Exception e) {
 			log.error("create new container failed, {}", e.getMessage(), e);
-			return TaskResponse.error(e.getMessage());
+			return TaskResponse.exception(e.getMessage());
 		}
 		// Record newly added container
 		this.coreContainerState.put(containerId, State.READY);
@@ -244,7 +292,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 		}
 		catch (Exception e) {
 			log.error("create new container failed, {}", e.getMessage(), e);
-			return TaskResponse.error(e.getMessage());
+			return TaskResponse.exception(e.getMessage());
 		}
 		// Record newly added container
 		this.tempContainerState.put(containerId, State.READY);
@@ -326,7 +374,7 @@ public abstract class AbstractCodePoolExecutorService implements CodePoolExecuto
 		}
 		catch (Exception e) {
 			log.error("An exception occurred while executing the task: {}", e.getMessage(), e);
-			return TaskResponse.error(e.getMessage());
+			return TaskResponse.exception(e.getMessage());
 		}
 	}
 
