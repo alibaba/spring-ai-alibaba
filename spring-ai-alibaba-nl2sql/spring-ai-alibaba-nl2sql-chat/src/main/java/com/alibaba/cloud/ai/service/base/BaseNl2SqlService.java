@@ -391,14 +391,14 @@ public class BaseNl2SqlService {
 
 	public SchemaDTO fineSelect(SchemaDTO schemaDTO, String query, List<String> evidenceList,
 			String sqlGenerateSchemaMissingAdvice, DbConfig specificDbConfig) {
-		logger.debug("Fine selecting schema for query: {} with {} evidences and specificDbConfig: {}", 
-				query, evidenceList.size(), specificDbConfig != null ? specificDbConfig.getUrl() : "default");
-		
+		logger.debug("Fine selecting schema for query: {} with {} evidences and specificDbConfig: {}", query,
+				evidenceList.size(), specificDbConfig != null ? specificDbConfig.getUrl() : "default");
+
 		// 增加具体的样例数据，让模型根据样例数据进行选择
 		SchemaDTO enrichedSchema = enrichSchemaWithSampleData(schemaDTO, specificDbConfig);
-		logger.debug("Schema enriched with sample data for {} tables", 
+		logger.debug("Schema enriched with sample data for {} tables",
 				enrichedSchema.getTable() != null ? enrichedSchema.getTable().size() : 0);
-		
+
 		String prompt = buildMixSelectorPrompt(evidenceList, query, enrichedSchema);
 		logger.debug("Calling LLM for schema fine selection");
 		String content = aiService.call(prompt);
@@ -451,8 +451,7 @@ public class BaseNl2SqlService {
 
 		// 使用传入的特定数据库配置，如果为null则使用默认配置
 		DbConfig targetDbConfig = specificDbConfig != null ? specificDbConfig : dbConfig;
-		logger.debug("Using database config: {}", 
-				targetDbConfig != null ? targetDbConfig.getUrl() : "null");
+		logger.debug("Using database config: {}", targetDbConfig != null ? targetDbConfig.getUrl() : "null");
 
 		// 检查数据库配置是否有效
 		if (!isDatabaseConfigValid(targetDbConfig)) {
@@ -463,17 +462,18 @@ public class BaseNl2SqlService {
 		try {
 			// 创建SchemaDTO的深拷贝以避免修改原始对象
 			SchemaDTO enrichedSchema = copySchemaDTO(schemaDTO);
-			
+
 			// 为每个表获取样例数据
 			for (TableDTO tableDTO : enrichedSchema.getTable()) {
 				enrichTableWithSampleData(tableDTO, targetDbConfig);
 			}
-			
-			logger.info("Successfully enriched schema with sample data for {} tables", 
+
+			logger.info("Successfully enriched schema with sample data for {} tables",
 					enrichedSchema.getTable().size());
 			return enrichedSchema;
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			logger.warn("Failed to enrich schema with sample data, using original schema: {}", e.getMessage());
 			return schemaDTO;
 		}
@@ -489,8 +489,8 @@ public class BaseNl2SqlService {
 			return;
 		}
 
-		logger.debug("Enriching table '{}' with sample table data for {} columns", 
-				tableDTO.getName(), tableDTO.getColumn().size());
+		logger.debug("Enriching table '{}' with sample table data for {} columns", tableDTO.getName(),
+				tableDTO.getColumn().size());
 
 		try {
 			// 获取表的样例数据
@@ -498,15 +498,16 @@ public class BaseNl2SqlService {
 			if (tableData != null && tableData.getData() != null && !tableData.getData().isEmpty()) {
 				// 将整行数据分配给对应的列
 				distributeTableDataToColumns(tableDTO, tableData);
-				logger.info("Successfully enriched table '{}' with {} sample rows", 
-						tableDTO.getName(), tableData.getData().size());
-			} else {
+				logger.info("Successfully enriched table '{}' with {} sample rows", tableDTO.getName(),
+						tableData.getData().size());
+			}
+			else {
 				logger.debug("No sample data found for table '{}'", tableDTO.getName());
 			}
-			
-		} catch (Exception e) {
-			logger.warn("Failed to get sample data for table '{}': {}", 
-					tableDTO.getName(), e.getMessage());
+
+		}
+		catch (Exception e) {
+			logger.warn("Failed to get sample data for table '{}': {}", tableDTO.getName(), e.getMessage());
 		}
 	}
 
@@ -529,27 +530,26 @@ public class BaseNl2SqlService {
 	private void distributeTableDataToColumns(TableDTO tableDTO, ResultSetBO tableData) {
 		List<String> columnHeaders = tableData.getColumn();
 		List<Map<String, String>> rows = tableData.getData();
-		
+
 		// 为每个列创建样例数据映射
 		Map<String, List<String>> columnSamples = new HashMap<>();
-		
+
 		// 遍历每一行数据
 		for (Map<String, String> row : rows) {
 			for (String columnName : columnHeaders) {
 				String value = row.get(columnName);
-				
+
 				if (value != null && !value.trim().isEmpty()) {
-					columnSamples.computeIfAbsent(columnName, k -> new ArrayList<>())
-						.add(value);
+					columnSamples.computeIfAbsent(columnName, k -> new ArrayList<>()).add(value);
 				}
 			}
 		}
-		
+
 		// 将样例数据分配给对应的列
 		for (ColumnDTO columnDTO : tableDTO.getColumn()) {
 			String columnName = columnDTO.getName();
 			List<String> samples = columnSamples.get(columnName);
-			
+
 			if (samples != null && !samples.isEmpty()) {
 				// 去重并限制样例数量
 				List<String> filteredSamples = samples.stream()
@@ -557,11 +557,11 @@ public class BaseNl2SqlService {
 					.distinct()
 					.limit(5) // 最多保留5个样例值
 					.collect(Collectors.toList());
-				
+
 				if (!filteredSamples.isEmpty()) {
 					columnDTO.setSamples(filteredSamples);
-					logger.debug("Added {} sample values for column '{}.{}': {}", 
-							filteredSamples.size(), tableDTO.getName(), columnName, filteredSamples);
+					logger.debug("Added {} sample values for column '{}.{}': {}", filteredSamples.size(),
+							tableDTO.getName(), columnName, filteredSamples);
 				}
 			}
 		}
@@ -577,23 +577,23 @@ public class BaseNl2SqlService {
 			logger.debug("dbConfig is null");
 			return false;
 		}
-		
+
 		if (dbAccessor == null) {
 			logger.debug("dbAccessor is null");
 			return false;
 		}
-		
+
 		// 检查基本的连接信息
 		boolean hasBasicInfo = dbConfig.getUrl() != null && !dbConfig.getUrl().trim().isEmpty()
 				&& dbConfig.getUsername() != null && !dbConfig.getUsername().trim().isEmpty();
-		
+
 		if (!hasBasicInfo) {
-			logger.debug("dbConfig missing basic connection info - url: {}, username: {}", 
+			logger.debug("dbConfig missing basic connection info - url: {}, username: {}",
 					dbConfig.getUrl() != null ? "present" : "null",
 					dbConfig.getUsername() != null ? "present" : "null");
 			return false;
 		}
-		
+
 		return true;
 	}
 
@@ -608,14 +608,15 @@ public class BaseNl2SqlService {
 		copy.setDescription(originalSchema.getDescription());
 		copy.setTableCount(originalSchema.getTableCount());
 		copy.setForeignKeys(originalSchema.getForeignKeys());
-		
+
 		if (originalSchema.getTable() != null) {
-			List<TableDTO> copiedTables = originalSchema.getTable().stream()
-					.map(this::copyTableDTO)
-					.collect(Collectors.toList());
+			List<TableDTO> copiedTables = originalSchema.getTable()
+				.stream()
+				.map(this::copyTableDTO)
+				.collect(Collectors.toList());
 			copy.setTable(copiedTables);
 		}
-		
+
 		return copy;
 	}
 
@@ -629,14 +630,15 @@ public class BaseNl2SqlService {
 		copy.setName(originalTable.getName());
 		copy.setDescription(originalTable.getDescription());
 		copy.setPrimaryKeys(originalTable.getPrimaryKeys());
-		
+
 		if (originalTable.getColumn() != null) {
-			List<ColumnDTO> copiedColumns = originalTable.getColumn().stream()
-					.map(this::copyColumnDTO)
-					.collect(Collectors.toList());
+			List<ColumnDTO> copiedColumns = originalTable.getColumn()
+				.stream()
+				.map(this::copyColumnDTO)
+				.collect(Collectors.toList());
 			copy.setColumn(copiedColumns);
 		}
-		
+
 		return copy;
 	}
 
@@ -653,7 +655,7 @@ public class BaseNl2SqlService {
 		copy.setRange(originalColumn.getRange());
 		copy.setType(originalColumn.getType());
 		copy.setMapping(originalColumn.getMapping());
-		
+
 		// 复制现有的样例数据
 		if (originalColumn.getSamples() != null) {
 			copy.setSamples(new ArrayList<>(originalColumn.getSamples()));
@@ -661,7 +663,7 @@ public class BaseNl2SqlService {
 		if (originalColumn.getData() != null) {
 			copy.setData(new ArrayList<>(originalColumn.getData()));
 		}
-		
+
 		return copy;
 	}
 

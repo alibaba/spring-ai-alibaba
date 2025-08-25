@@ -77,7 +77,7 @@ public class TableRelationNode implements NodeAction {
 	private final BusinessKnowledgeRecallService businessKnowledgeRecallService;
 
 	private final SemanticModelRecallService semanticModelRecallService;
-	
+
 	private final DatasourceService datasourceService;
 
 	public TableRelationNode(BaseSchemaService baseSchemaService, BaseNl2SqlService baseNl2SqlService,
@@ -237,7 +237,7 @@ public class TableRelationNode implements NodeAction {
 	private SchemaDTO processSchemaSelection(SchemaDTO schemaDTO, String input, List<String> evidenceList,
 			OverAllState state) {
 		String schemaAdvice = StateUtils.getStringValue(state, SQL_GENERATE_SCHEMA_MISSING_ADVICE, null);
-		
+
 		// 动态获取Agent对应的数据库配置
 		DbConfig agentDbConfig = getAgentDbConfig(state);
 		logger.debug("Using agent-specific dbConfig: {}", agentDbConfig != null ? agentDbConfig.getUrl() : "default");
