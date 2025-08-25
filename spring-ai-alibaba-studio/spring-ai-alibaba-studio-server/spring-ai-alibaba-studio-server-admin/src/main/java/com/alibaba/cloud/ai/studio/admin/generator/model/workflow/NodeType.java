@@ -26,6 +26,8 @@ public enum NodeType {
 
 	ANSWER("answer", "answer"),
 
+	AGENT("agent", "agent"),
+
 	LLM("llm", "llm"),
 
 	CODE("code", "code"),

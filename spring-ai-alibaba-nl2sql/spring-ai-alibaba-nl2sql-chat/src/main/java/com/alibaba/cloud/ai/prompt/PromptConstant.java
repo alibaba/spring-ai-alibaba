@@ -98,29 +98,4 @@ public class PromptConstant {
 		return new PromptTemplate(PromptLoader.loadPrompt("time-conversion"));
 	}
 
-	// Compatibility method, maintain backward compatibility
-	@Deprecated
-	public static final PromptTemplate INIT_REWRITE_PROMPT_TEMPLATE = getInitRewritePromptTemplate();
-
-	@Deprecated
-	public static final PromptTemplate QUESTION_TO_KEYWORDS_PROMPT_TEMPLATE = getQuestionToKeywordsPromptTemplate();
-
-	@Deprecated
-	public static final PromptTemplate MIX_SELECTOR_PROMPT_TEMPLATE = getMixSelectorPromptTemplate();
-
-	@Deprecated
-	public static final PromptTemplate MIX_SQL_GENERATOR_SYSTEM_PROMPT_TEMPLATE = getMixSqlGeneratorSystemPromptTemplate();
-
-	@Deprecated
-	public static final PromptTemplate MIX_SQL_GENERATOR_PROMPT_TEMPLATE = getMixSqlGeneratorPromptTemplate();
-
-	@Deprecated
-	public static final PromptTemplate EXTRACT_DATETIME_PROMPT_TEMPLATE = getExtractDatetimePromptTemplate();
-
-	@Deprecated
-	public static final PromptTemplate SEMANTIC_CONSISTENCY_PROMPT_TEMPLATE = getSemanticConsistencyPromptTemplate();
-
-	@Deprecated
-	public static final PromptTemplate MIX_SQL_GENERATOR_SYSTEM_PROMPT_CHECK_TEMPLATE = getMixSqlGeneratorSystemCheckPromptTemplate();
-
 }
