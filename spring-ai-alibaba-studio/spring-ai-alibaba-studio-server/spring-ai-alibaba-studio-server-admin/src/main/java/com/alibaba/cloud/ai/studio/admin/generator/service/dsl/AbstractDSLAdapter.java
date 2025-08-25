@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.App;
 import com.alibaba.cloud.ai.studio.admin.generator.model.AppMetadata;
+import com.alibaba.cloud.ai.studio.admin.generator.model.agent.Agent;
 import com.alibaba.cloud.ai.studio.admin.generator.model.chatbot.ChatBot;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Workflow;
 
@@ -41,6 +42,7 @@ public abstract class AbstractDSLAdapter implements DSLAdapter {
 		Object spec = switch (metadata.getMode()) {
 			case AppMetadata.WORKFLOW_MODE -> mapToWorkflow(immutableData);
 			case AppMetadata.CHATBOT_MODE -> mapToChatBot(immutableData);
+            case AppMetadata.AGENT_MODE -> mapToAgent(immutableData);
 			default -> throw new IllegalArgumentException("unsupported mode: " + metadata.getMode());
 		};
 		App app = new App(metadata, spec);
@@ -57,6 +59,7 @@ public abstract class AbstractDSLAdapter implements DSLAdapter {
 		switch (metadata.getMode()) {
 			case AppMetadata.WORKFLOW_MODE -> specMap = workflowToMap((Workflow) app.getSpec());
 			case AppMetadata.CHATBOT_MODE -> specMap = chatbotToMap((ChatBot) app.getSpec());
+            case AppMetadata.AGENT_MODE -> specMap = agentToMap((Agent) app.getSpec());
 			default -> throw new IllegalArgumentException("unsupported mode: " + metadata.getMode());
 		}
 		Map<String, Object> data = Stream.concat(metaMap.entrySet().stream(), specMap.entrySet().stream())
@@ -77,6 +80,10 @@ public abstract class AbstractDSLAdapter implements DSLAdapter {
 	public abstract ChatBot mapToChatBot(Map<String, Object> data);
 
 	public abstract Map<String, Object> chatbotToMap(ChatBot chatBot);
+
+    public abstract Agent mapToAgent(Map<String, Object> data);
+
+    public abstract Map<String, Object> agentToMap(Agent agent);
 
 	public abstract void validateDSLData(Map<String, Object> data);
 

@@ -22,9 +22,11 @@ public enum DSLDialectType {
 
 	DIFY("dify", ".yml"),
 
-	CUSTOM("custom", ".yml");
+	CUSTOM("custom", ".yml"),
 
-	private final String value;
+    AGENT("agent", ".yaml");
+
+    private final String value;
 
 	private final String fileExtension;
 

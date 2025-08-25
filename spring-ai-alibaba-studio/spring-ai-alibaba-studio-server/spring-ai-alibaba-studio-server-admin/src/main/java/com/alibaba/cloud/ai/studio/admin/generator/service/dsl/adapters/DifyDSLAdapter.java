@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import com.alibaba.cloud.ai.studio.admin.generator.model.App;
 import com.alibaba.cloud.ai.studio.admin.generator.model.AppMetadata;
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
+import com.alibaba.cloud.ai.studio.admin.generator.model.agent.Agent;
 import com.alibaba.cloud.ai.studio.admin.generator.model.chatbot.ChatBot;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Graph;
@@ -323,7 +324,17 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		return null;
 	}
 
-	@Override
+    @Override
+    public Agent mapToAgent(Map<String, Object> data) {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> agentToMap(Agent agent) {
+        return null;
+    }
+
+    @Override
 	public Boolean supportDialect(DSLDialectType dialectType) {
 		return DSLDialectType.DIFY.equals(dialectType);
 	}
