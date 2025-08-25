@@ -1,0 +1,42 @@
+server:
+  port: 8080
+
+spring:
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY}
+mem0:
+  client:
+    base-url: http://127.0.0.1:8888
+    timeout-seconds: 60
+  server:
+    version: v1.1
+    vector-store:
+      provider: pgvector
+      config:
+        host: ${POSTGRES_HOST:postgres}
+        port: ${POSTGRES_PORT:5432}
+        dbname: ${POSTGRES_DB:postgres}
+        user: ${POSTGRES_USER:postgres}
+        password: ${POSTGRES_PASSWORD:postgres}
+        collection-name: ${POSTGRES_COLLECTION_NAME:memories}
+    graph-store:
+      provider: neo4j
+      config:
+        url: ${NEO4J_URI:bolt://neo4j:7687}
+        username: ${NEO4J_USERNAME:neo4j}
+        password: ${NEO4J_PASSWORD:mem0graph}
+    llm:
+      provider: deepseek
+      config:
+        api-key: ${AI_DEEPSEEK_API_KEY}
+        temperature: 0.2
+        model: deepseek-chat # qwen现在因为json结构问题不可用了，改为使用官方支持的DeepSeek
+#        openai-base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    embedder:
+      provider: openai
+      config:
+        api-key: ${AI_DASHSCOPE_API_KEY}
+        model: text-embedding-v4
+        openai-base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    custom-fact-extraction-prompt: classpath:/prompts/custom_fact_extraction_prompt.st
