@@ -46,7 +46,6 @@
 
 
     <dependencies>
-        <!-- A2A SDK 依赖 -->
         <dependency>
             <groupId>io.github.a2asdk</groupId>
             <artifactId>a2a-java-reference-server</artifactId>
