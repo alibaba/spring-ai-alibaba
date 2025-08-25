@@ -1,0 +1,52 @@
+package com.alibaba.cloud.ai.graph.agent.a2a;
+
+import io.a2a.A2A;
+import io.a2a.spec.AgentCard;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class RemoteAgentCard {
+
+	private static final Logger logger = LoggerFactory.getLogger(AgentCard.class);
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		public String url;
+
+		public Builder url(String url) {
+			this.url = url;
+			return this;
+		}
+
+		public AgentCard build() {
+			try {
+				AgentCard finalAgentCard;
+				AgentCard publicAgentCard = A2A.getAgentCard(this.url);
+				finalAgentCard = publicAgentCard;
+				if (publicAgentCard.supportsAuthenticatedExtendedCard()) {
+					Map<String, String> authHeaders = new HashMap<>();
+					authHeaders.put("Authorization", "Bearer dummy-token-for-extended-card");
+					finalAgentCard = A2A.getAgentCard(this.url, "/agent/authenticatedExtendedCard",
+                            authHeaders);
+				}
+				else {
+					logger.info("Public card does not indicate support for an extended card. Using public card.");
+				}
+				return finalAgentCard;
+			}
+			catch (Exception e) {
+				logger.error("Error building agent card", e);
+				throw new RuntimeException(e);
+			}
+		}
+
+	}
+
+}
