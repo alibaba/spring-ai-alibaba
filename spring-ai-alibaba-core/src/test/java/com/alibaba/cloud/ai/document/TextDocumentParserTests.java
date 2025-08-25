@@ -62,24 +62,20 @@ class TextDocumentParserTests {
 
 	@Test
 	void testParseEmptyText() {
-		// Test parsing empty text should throw exception
+		// 空字符串应当触发 IllegalArgumentException
 		String text = "";
 		TextDocumentParser parser = new TextDocumentParser();
 
-		RuntimeException exception = assertThrows(RuntimeException.class, () -> parser.parse(toInputStream(text)));
-
-		assertThat(exception).hasRootCauseInstanceOf(Exception.class);
+		assertThrows(IllegalArgumentException.class, () -> parser.parse(toInputStream(text)));
 	}
 
 	@Test
 	void testParseBlankText() {
-		// Test parsing blank text (only whitespace) should throw exception
+		// 含有空格或插入字符的空白字符串同样应抛出 IllegalArgumentException
 		String text = "   \n\t   ";
 		TextDocumentParser parser = new TextDocumentParser();
 
-		RuntimeException exception = assertThrows(RuntimeException.class, () -> parser.parse(toInputStream(text)));
-
-		assertThat(exception).hasRootCauseInstanceOf(Exception.class);
+		assertThrows(IllegalArgumentException.class, () -> parser.parse(toInputStream(text)));
 	}
 
 	@Test
