@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.document;
 import org.springframework.ai.document.Document;
 import org.springframework.util.Assert;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -42,17 +43,20 @@ public class TextDocumentParser implements DocumentParser {
 	}
 
 	@Override
-	public List<Document> parse(InputStream inputStream) {
-		try {
-			String text = new String(inputStream.readAllBytes(), charset);
-			if (text.isBlank()) {
-				throw new Exception();
-			}
-			return Collections.singletonList(new Document(text));
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
+        public List<Document> parse(InputStream inputStream) {
+                try {
+                        // 读取入口流所有文本，且使用指定的字符集解码
+                        String text = new String(inputStream.readAllBytes(), this.charset);
+                        // 如果文本全部为空白，则报告非法参数异常
+                        if (text.isBlank()) {
+                                throw new IllegalArgumentException("text must not be blank");
+                        }
+                        return Collections.singletonList(new Document(text));
+                }
+                catch (IOException e) {
+                        // 将任何 IO 异常转换为 RuntimeException 以便传播
+                        throw new RuntimeException(e);
+                }
+        }
 
 }
