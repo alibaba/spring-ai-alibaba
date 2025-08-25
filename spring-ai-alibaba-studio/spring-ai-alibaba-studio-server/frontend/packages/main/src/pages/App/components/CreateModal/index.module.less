@@ -1,0 +1,55 @@
+.divider {
+  margin: 12px 0;
+}
+
+.app-create-modal {
+  :global {
+    .ag-ant-modal-body {
+      border-bottom: 0 !important;
+    }
+  }
+}
+
+.item {
+  width: 0;
+  flex: 1;
+  background-color: var(--ag-ant-color-bg-container);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--ag-ant-color-border-secondary);
+  transition: all 0.3s;
+
+  img {
+    display: block;
+    width: 100%;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 18px;
+    line-height: 1;
+    color: var(--ag-ant-color-text-base);
+  }
+
+  .desc {
+    padding: 0 20px 20px 20px;
+  }
+
+  button {
+    opacity: 0;
+  }
+
+  &:hover {
+    box-shadow: var(--ag-ant-box-shadow-secondary);
+
+    button {
+      opacity: 1;
+    }
+  }
+}

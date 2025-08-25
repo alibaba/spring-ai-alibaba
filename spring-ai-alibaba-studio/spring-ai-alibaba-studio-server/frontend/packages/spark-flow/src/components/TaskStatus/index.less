@@ -1,0 +1,65 @@
+@import '../../index.less';
+
+.spark-flow-task-status {
+  border-bottom: 1px solid e('var(--@{ant-prefix}-color-border-secondary)');
+  height: 40px;
+  padding: 0 24px;
+  font-weight: 500;
+  background: e('var(--@{ant-prefix}-color-info-bg)');
+
+  &-fail {
+    background: e('var(--@{ant-prefix}-color-error-bg)');
+    color: e('var(--@{ant-prefix}-color-error)');
+  }
+
+  &-success {
+    background: e('var(--@{ant-prefix}-color-success-bg)');
+    color: e('var(--@{ant-prefix}-color-success)');
+  }
+
+  &-tag {
+    color: e('var(--@{ant-prefix}-color-text-secondary)') !important;
+    background: e('var(--@{ant-prefix}-color-bg-base)') !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 2px;
+    > span {
+      margin-inline-start: 0 !important;
+    }
+  }
+
+  &.spark-flow-task-status-hidden-results {
+    display: none;
+  }
+}
+
+.spark-flow-task-status-button {
+  padding: 0 !important;
+  color: e('var(--@{ant-prefix}-color-text-secondary)');
+  font-weight: normal;
+}
+
+.spark-flow-task-token-popover {
+  .@{ant-prefix}-popover-content .@{ant-prefix}-popover-inner {
+    padding: 0;
+    max-width: initial;
+  }
+
+  .@{ant-prefix}-table {
+    border-radius: e("var(--@{ant-prefix}-table-header-border-radius)");
+  }
+
+  .@{ant-prefix}-table-wrapper .@{ant-prefix}-table-container table > thead > tr:first-child {
+    > *:first-child {
+      border-start-start-radius: e("var(--@{ant-prefix}-table-header-border-radius)");
+    }
+
+    > *:last-child {
+      border-start-end-radius: e("var(--@{ant-prefix}-table-header-border-radius)");
+    }
+  }
+
+  .@{ant-prefix}-table-wrapper .@{ant-prefix}-table-tbody >tr >td {
+    border: none;
+  }
+}

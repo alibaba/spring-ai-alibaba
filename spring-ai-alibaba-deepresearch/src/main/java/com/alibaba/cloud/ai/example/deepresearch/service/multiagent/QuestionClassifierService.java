@@ -16,9 +16,10 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.service.multiagent;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
-import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.SmartAgentUtil;
-import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentPromptTemplateUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.SmartAgentUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.AgentPromptTemplateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -33,7 +34,7 @@ import org.springframework.stereotype.Service;
  * @since 2025/07/17
  */
 @Service
-@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+@ConditionalOnProperty(prefix = SmartAgentProperties.PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = false)
 public class QuestionClassifierService {
 

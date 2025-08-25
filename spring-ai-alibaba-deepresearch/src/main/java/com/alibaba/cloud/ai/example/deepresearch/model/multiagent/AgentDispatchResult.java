@@ -17,9 +17,11 @@
 package com.alibaba.cloud.ai.example.deepresearch.model.multiagent;
 
 import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.SmartAgentUtil;
 import org.springframework.ai.chat.client.ChatClient;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Agent分派结果
@@ -73,6 +75,17 @@ public class AgentDispatchResult {
 
 	public String getErrorMessage() {
 		return errorMessage;
+	}
+
+	/**
+	 * 获取智能Agent配置的状态更新Map
+	 * @return 包含智能Agent配置的状态更新Map
+	 */
+	public Map<String, Object> getStateUpdate() {
+		if (success && agentType != null && searchPlatforms != null) {
+			return SmartAgentUtil.createSmartAgentStateUpdate(searchPlatforms, agentType);
+		}
+		return Map.of(); // 返回空Map而不是null
 	}
 
 	@Override

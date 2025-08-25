@@ -27,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SimpleApiKey;
@@ -42,7 +44,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -93,6 +94,9 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 
 	@Autowired
 	private DynamicModelRepository dynamicModelRepository;
+
+	@Autowired
+	private ChatMemoryRepository chatMemoryRepository;
 
 	@Autowired
 	private LlmTraceRecorder llmTraceRecorder;
@@ -246,15 +250,19 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	@Override
 	public ChatMemory getAgentMemory(Integer maxMessages) {
 		if (agentMemory == null) {
-			agentMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
+			agentMemory = MessageWindowChatMemory.builder()
+				// in memory use by agent
+				.chatMemoryRepository(new InMemoryChatMemoryRepository())
+				.maxMessages(maxMessages)
+				.build();
 		}
 		return agentMemory;
 	}
 
 	@Override
-	public void clearAgentMemory(String planId) {
+	public void clearAgentMemory(String memoryId) {
 		if (this.agentMemory != null) {
-			this.agentMemory.clear(planId);
+			this.agentMemory.clear(memoryId);
 		}
 	}
 
@@ -273,12 +281,15 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	}
 
 	@Override
-	public void clearConversationMemory(String planId) {
+	public void clearConversationMemory(String memoryId) {
 		if (this.conversationMemory == null) {
 			// Default to 100 messages if not specified elsewhere
-			this.conversationMemory = MessageWindowChatMemory.builder().maxMessages(100).build();
+			this.conversationMemory = MessageWindowChatMemory.builder()
+				.chatMemoryRepository(chatMemoryRepository)
+				.maxMessages(100)
+				.build();
 		}
-		this.conversationMemory.clear(planId);
+		this.conversationMemory.clear(memoryId);
 	}
 
 	@Override
@@ -298,7 +309,10 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 	@Override
 	public ChatMemory getConversationMemory(Integer maxMessages) {
 		if (conversationMemory == null) {
-			conversationMemory = MessageWindowChatMemory.builder().maxMessages(maxMessages).build();
+			conversationMemory = MessageWindowChatMemory.builder()
+				.chatMemoryRepository(chatMemoryRepository)
+				.maxMessages(maxMessages)
+				.build();
 		}
 		return conversationMemory;
 	}
@@ -423,9 +437,6 @@ public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent>
 			.filter((request, next) -> next.exchange(request).timeout(Duration.ofMinutes(10)));
 
 		String completionsPath = dynamicModelEntity.getCompletionsPath();
-		if (!StringUtils.hasText(completionsPath)) {
-			completionsPath = "/v1/chat/completions";
-		}
 
 		return new OpenAiApi(dynamicModelEntity.getBaseUrl(), new SimpleApiKey(dynamicModelEntity.getApiKey()),
 				multiValueMap, completionsPath, "/v1/embeddings", restClientBuilder, enhancedWebClientBuilder,

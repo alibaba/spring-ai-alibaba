@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.controller;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.entity.MemoryEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.service.MemoryService;
 import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
 import com.alibaba.cloud.ai.example.manus.event.PlanExceptionEvent;
 import com.alibaba.cloud.ai.example.manus.exception.PlanException;
@@ -31,12 +33,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -68,6 +72,9 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	private UserInputService userInputService;
 
 	@Autowired
+	private MemoryService memoryService;
+
+	@Autowired
 	public ManusController(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
 		// Register JavaTimeModule to handle LocalDateTime serialization/deserialization
@@ -84,18 +91,45 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	 * @return Task ID and status
 	 */
 	@PostMapping("/execute")
-	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, String> request) {
-		String query = request.get("query");
+	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, Object> request) {
+		String query = (String) request.get("input");
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Query content cannot be empty"));
 		}
 		ExecutionContext context = new ExecutionContext();
 		context.setUserRequest(query);
-		// Use PlanIdDispatcher to generate a unique plan ID
-		String planId = planIdDispatcher.generatePlanId();
-		context.setCurrentPlanId(planId);
-		context.setRootPlanId(planId);
+
+		// Use sessionPlanId from frontend if available, otherwise generate new one
+		String sessionPlanId = (String) request.get("sessionPlanId");
+		String planId;
+
+		if (sessionPlanId != null && !sessionPlanId.trim().isEmpty()) {
+			// Use existing sessionPlanId from file upload
+			planId = sessionPlanId;
+			context.setCurrentPlanId(planId);
+			context.setRootPlanId(planId);
+			logger.info("🔄 Using existing sessionPlanId: {}", planId);
+		}
+		else if (context.getCurrentPlanId() == null) {
+			// Generate new plan ID
+			planId = planIdDispatcher.generatePlanId();
+			context.setCurrentPlanId(planId);
+			context.setRootPlanId(planId);
+			logger.info("🆕 Generated new planId: {}", planId);
+		}
+		else {
+			planId = context.getCurrentPlanId();
+			logger.info("📋 Using existing context planId: {}", planId);
+		}
 		context.setNeedSummary(true);
+
+		String memoryId = (String) request.get("memoryId");
+
+		if (!StringUtils.hasText(memoryId)) {
+			memoryId = RandomStringUtils.randomAlphabetic(8);
+		}
+
+		context.setMemoryId(memoryId);
 
 		// Get or create planning flow
 		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(context);
@@ -103,6 +137,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		// Asynchronous execution of task
 		CompletableFuture.supplyAsync(() -> {
 			try {
+				memoryService.saveMemory(new MemoryEntity(context.getMemoryId(), query));
 				return planningFlow.executePlan(context);
 			}
 			catch (Exception e) {
@@ -116,6 +151,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		response.put("planId", planId);
 		response.put("status", "processing");
 		response.put("message", "Task submitted, processing");
+		response.put("memoryId", memoryId);
 
 		return ResponseEntity.ok(response);
 	}

@@ -1,0 +1,81 @@
+.radio-item {
+  cursor: pointer;
+  transition: 0.4s ease;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 8px;
+  z-index: 0;
+  border-radius: 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--ag-ant-color-border-secondary);
+
+  .title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 24px;
+    letter-spacing: normal;
+    color: var(--ag-ant-color-text);
+
+  }
+
+  .checkIcon {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--ag-ant-color-bg-base);
+    box-sizing: border-box;
+    border: 1px solid var(--ag-ant-color-border-secondary);
+
+    &.active {
+      border: 4px solid var(--ag-ant-color-primary);
+    }
+  }
+
+  .logoWrap {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: var(--ag-ant-color-bg-base);
+
+    img {
+      width: 27px;
+    }
+  }
+
+  &.disabled {
+    cursor: not-allowed;
+    background: var(--ag-ant-color-fill-quaternary);
+
+    .title {
+      color: var(--ag-ant-color-text-tertiary);
+    }
+
+    .logoWrap {
+      opacity: 0.5;
+    }
+  }
+
+  &.active {
+    border-radius: 6px;
+    background: var(--ag-ant-color-primary-bg);
+    box-sizing: border-box;
+    border: 1px solid var(--ag-ant-color-primary);
+  }
+
+  .desc {
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 24px;
+    letter-spacing: normal;
+    color: var(--ag-ant-color-text-secondary);
+  }
+
+  .top {
+    width: 100%;
+  }
+}

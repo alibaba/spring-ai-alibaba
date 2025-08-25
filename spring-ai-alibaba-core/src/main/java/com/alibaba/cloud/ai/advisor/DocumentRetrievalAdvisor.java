@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.advisor;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
@@ -78,8 +77,56 @@ public class DocumentRetrievalAdvisor implements BaseAdvisor {
 		this.order = order;
 	}
 
-	@Override
+	public DocumentRetrievalAdvisor(List<DocumentRetriever> retrievers) {
+		this(retrievers, DEFAULT_PROMPT_TEMPLATE, DEFAULT_ORDER);
+	}
 
+	public DocumentRetrievalAdvisor(List<DocumentRetriever> retrievers, PromptTemplate promptTemplate) {
+		this(retrievers, promptTemplate, DEFAULT_ORDER);
+	}
+
+	public DocumentRetrievalAdvisor(List<DocumentRetriever> retrievers, PromptTemplate promptTemplate, int order) {
+		Assert.notEmpty(retrievers, "The retrievers list must not be null or empty!");
+		Assert.notNull(promptTemplate, "The promptTemplate must not be null!");
+
+		// Create a composite retriever for multiple vector stores
+		this.retriever = new CompositeDocumentRetriever(retrievers);
+		this.promptTemplate = promptTemplate;
+		this.order = order;
+	}
+
+	/**
+	 * Constructor for multiple vector stores with custom merge strategy
+	 * @param retrievers List of document retrievers for multi-vector store support
+	 * @param mergeStrategy Strategy for merging results from multiple retrievers
+	 * @param maxResultsPerRetriever Maximum results per retriever
+	 */
+	public DocumentRetrievalAdvisor(List<DocumentRetriever> retrievers,
+			CompositeDocumentRetriever.ResultMergeStrategy mergeStrategy, int maxResultsPerRetriever) {
+		this(retrievers, mergeStrategy, maxResultsPerRetriever, DEFAULT_PROMPT_TEMPLATE, DEFAULT_ORDER);
+	}
+
+	/**
+	 * Constructor for multiple vector stores with full customization
+	 * @param retrievers List of document retrievers for multi-vector store support
+	 * @param mergeStrategy Strategy for merging results from multiple retrievers
+	 * @param maxResultsPerRetriever Maximum results per retriever
+	 * @param promptTemplate Custom prompt template
+	 * @param order Advisor execution order
+	 */
+	public DocumentRetrievalAdvisor(List<DocumentRetriever> retrievers,
+			CompositeDocumentRetriever.ResultMergeStrategy mergeStrategy, int maxResultsPerRetriever,
+			PromptTemplate promptTemplate, int order) {
+		Assert.notEmpty(retrievers, "The retrievers list must not be null or empty!");
+		Assert.notNull(promptTemplate, "The promptTemplate must not be null!");
+
+		// Create a composite retriever for multiple vector stores with custom settings
+		this.retriever = new CompositeDocumentRetriever(retrievers, maxResultsPerRetriever, mergeStrategy);
+		this.promptTemplate = promptTemplate;
+		this.order = order;
+	}
+
+	@Override
 	public int getOrder() {
 		return this.order;
 	}

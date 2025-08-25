@@ -65,7 +65,7 @@ public class CoordinatorNode implements NodeAction {
 		messages.add(TemplateUtil.getMessage("coordinator"));
 
 		// 添加前几次同一会话的报告
-		String sessionId = state.value("session_id", String.class).orElse("__default__");
+		String sessionId = StateUtil.getSessionId(state);
 		List<SessionHistory> reports = sessionContextService.getRecentReports(sessionId);
 		Message lastReportMessage;
 		if (reports != null && !reports.isEmpty()) {

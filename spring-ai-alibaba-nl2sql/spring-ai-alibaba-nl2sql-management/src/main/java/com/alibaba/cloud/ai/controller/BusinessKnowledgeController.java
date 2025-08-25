@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 业务知识管理控制器
+ * Business Knowledge Management Controller
  */
 @Controller
 @RequestMapping("/api/business-knowledge")

@@ -17,7 +17,9 @@
 
 package com.alibaba.cloud.ai.mcp.router.core;
 
-import com.alibaba.cloud.ai.mcp.router.service.McpRouterManagementService;
+import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscovery;
+import com.alibaba.cloud.ai.mcp.router.core.vectorstore.McpServerVectorStore;
+import com.alibaba.cloud.ai.mcp.router.model.McpServerInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,21 +29,38 @@ public class McpRouterWatcher extends AbstractRouterWatcher {
 
 	private static final Logger logger = LoggerFactory.getLogger(McpRouterWatcher.class);
 
-	private final McpRouterManagementService managementService;
+	private final McpServiceDiscovery mcpServiceDiscovery;
+
+	private final McpServerVectorStore mcpServerVectorStore;
 
 	private final List<String> serviceNames;
 
-	public McpRouterWatcher(McpRouterManagementService managementService, List<String> serviceNames) {
-		this.managementService = managementService;
+	public McpRouterWatcher(McpServiceDiscovery mcpServiceDiscovery, McpServerVectorStore mcpServerVectorStore,
+			List<String> serviceNames) {
 		this.serviceNames = serviceNames;
+		this.mcpServiceDiscovery = mcpServiceDiscovery;
+		this.mcpServerVectorStore = mcpServerVectorStore;
 	}
 
 	@Override
 	protected void handleChange() {
 		logger.debug("McpRouterWatcher polling...");
+		if (serviceNames == null || serviceNames.isEmpty()) {
+			logger.warn("No MCP services configured for refresh.");
+			return;
+		}
 		for (String serviceName : serviceNames) {
 			try {
-				managementService.refreshService(serviceName);
+				mcpServerVectorStore.removeServer(serviceName);
+				// 从服务发现获取服务信息
+				McpServerInfo serverInfo = mcpServiceDiscovery.getService(serviceName);
+				if (serverInfo == null) {
+					logger.warn("No MCP service found for: {}", serviceName);
+					return;
+				}
+
+				// 添加到向量存储
+				mcpServerVectorStore.addServer(serverInfo);
 				logger.info("Refreshed MCP service: {}", serviceName);
 			}
 			catch (Exception e) {

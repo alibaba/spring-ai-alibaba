@@ -723,6 +723,17 @@ const words: I18nType = {
     maxLength: '最大长度',
     charactersRemaining: '剩余字符',
     attachFile: '附加文件',
+    attachedFiles: '已附加文件',
+    filesAttached: '已附加 {count} 个文件',
+    removeFile: '移除文件',
+    uploading: '上传中...',
+    uploadSuccess: '文件上传成功',
+    fileDeleteError: '删除文件失败',
+    uploadError: '文件上传失败',
+    unsupportedFileType: '不支持的文件类型',
+    fileSizeExceeded: '文件大小超出限制',
+    maxFileSize: '最大文件大小：50MB',
+    supportedFormats: '支持的格式：PDF、文本、CSV、JSON、XML、HTML、日志、代码文件等',
   },
 
   // 侧边栏
@@ -1067,8 +1078,22 @@ const words: I18nType = {
     createManually: '手动创建',
     createManuallyDesc: '自己填写定时任务信息',
   },
-
-  // 通用占位符
+  memory: {
+    title: '记忆管理',
+    searchPlaceholder: '搜索记忆...',
+    size: '条记忆',
+    newNamePlaceholder: '输入新名称...',
+    changeName: '修改名称',
+    save: '保存',
+    cancel: '关闭',
+    delete: '删除',
+    deleteHint: '删除提示',
+    deleteHintPrefix: '你确定要删除ID为',
+    deleteHintSuffix: '的消息吗？此操作不可撤销。',
+    selectMemory: '选择记忆',
+    clearMemory: '清除记忆',
+    newChat: '新建对话',
+  },
   selectCommon: {
     pleaseSelect: '请选择...',
   },

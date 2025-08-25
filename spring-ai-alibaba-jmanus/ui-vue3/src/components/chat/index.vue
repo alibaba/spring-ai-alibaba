@@ -15,7 +15,7 @@
 -->
 <template>
   <div class="chat-container">
-    <div class="messages" ref="messagesRef">
+    <div class="messages" ref="messagesRef" @click="handleMessageContainerClick">
       <div
           v-for="message in messages"
           :key="message.id"
@@ -473,6 +473,13 @@ import { DirectApiService } from '@/api/direct-api-service'
 import { usePlanExecution } from '@/utils/use-plan-execution'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
 import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
+import type { InputMessage } from "@/stores/memory"
+import {memoryStore} from "@/stores/memory";
+import {MemoryApiService} from "@/api/memory-api-service";
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github-dark.css'
 
 /**
  * Chat message interface that includes PlanExecutionRecord for plan-based messages
@@ -538,6 +545,38 @@ const { t } = useI18n()
 // Use the plan execution manager
 const planExecution = usePlanExecution()
 
+// Configure marked once with GFM and line breaks
+marked.setOptions({ gfm: true, breaks: true })
+
+// Custom renderer: highlight code blocks, add copy button (markdown fenced code treated same as code)
+const mdRenderer = new marked.Renderer()
+mdRenderer.code = ({ text, lang }: { text: string; lang?: string; escaped?: boolean }): string => {
+  const langRaw = (lang || '').trim()
+  const langLower = langRaw.toLowerCase()
+
+  let highlighted = ''
+  try {
+    if (langLower && hljs.getLanguage(langLower)) {
+      highlighted = hljs.highlight(text, { language: langLower }).value
+    } else {
+      highlighted = hljs.highlightAuto(text).value
+    }
+  } catch (e) {
+    highlighted = text
+  }
+
+  const rawEncoded = encodeURIComponent(text)
+  const label = langLower || 'text'
+  return `
+<div class="md-code-block" data-lang="${label}">
+  <div class="md-code-header">
+    <span class="md-lang">${label}</span>
+    <button class="md-copy-btn" data-raw="${rawEncoded}" title="copy">copy</button>
+  </div>
+  <pre><code class="hljs language-${label}">${highlighted}</code></pre>
+</div>`
+}
+
 const messagesRef = ref<HTMLElement>()
 const isLoading = ref(false)
 const messages = ref<Message[]>([])
@@ -577,7 +616,7 @@ const updateLastMessage = (updates: Partial<Message>) => {
   }
 }
 
-const handleDirectMode = async (query: string) => {
+const handleDirectMode = async (query: InputMessage) => {
   try {
     isLoading.value = true
 
@@ -592,12 +631,16 @@ const handleDirectMode = async (query: string) => {
     if (response.planId) {
       console.log('[ChatComponent] Received planId from direct execution:', response.planId)
 
+      if (response.memoryId) {
+        memoryStore.setMemory(response.memoryId)
+      }
+
       if (!assistantMessage.planExecution) {
         assistantMessage.planExecution = {} as any
       }
       assistantMessage.planExecution!.currentPlanId = response.planId
 
-      planExecutionManager.handlePlanExecutionRequested(response.planId, query)
+      planExecutionManager.handlePlanExecutionRequested(response.planId, query.input)
 
       delete assistantMessage.thinking
 
@@ -606,7 +649,7 @@ const handleDirectMode = async (query: string) => {
       delete assistantMessage.thinking
 
       // Generate a natural and human-like response
-      const finalResponse = generateDirectModeResponse(response, query)
+      const finalResponse = generateDirectModeResponse(response, query.input)
       assistantMessage.content = finalResponse
     }
   } catch (error: any) {
@@ -695,15 +738,15 @@ const removeScrollListener = () => {
   }
 }
 
-const handleSendMessage = (message: string) => {
+const handleSendMessage = (message: InputMessage) => {
   // First, add the user message to the UI.
-  addMessage('user', message)
+  addMessage('user', message.input)
 
   // Handle messages according to the mode
   if (props.mode === 'plan') {
     // In plan mode, only add UI message, parent component handles the API call
     // This prevents double API calls
-    console.log('[ChatComponent] Plan mode message sent, parent should handle:', message)
+    console.log('[ChatComponent] Plan mode message sent, parent should handle:', message.input)
     // Don't call any API here, just add to UI
   } else {
     // Direct mode is still handled directly
@@ -1326,18 +1369,59 @@ const handlePlanError = (message: string) => {
 const formatResponseText = (text: string): string => {
   if (!text) return ''
 
-  // Convert line breaks to HTML line breaks
-  let formatted = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>')
+  try {
+    const rawHtml = marked.parse(text, { renderer: mdRenderer })
+    // Sanitize to avoid XSS
+    return DOMPurify.sanitize(rawHtml as string)
+  } catch (e) {
+    console.error('Markdown render error:', e)
+    // Fallback: preserve original simple formatting
+    let fallback = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>')
+    fallback = fallback.replace(/(<br><br>)/g, '</p><p>')
+    if (fallback.includes('</p><p>')) fallback = `<p>${fallback}</p>`
+    return fallback
+  }
+}
 
-  // Add appropriate paragraph spacing and formatting
-  formatted = formatted.replace(/(<br><br>)/g, '</p><p>')
+// Copy button handler (event delegation)
+const handleMessageContainerClick = (event: Event) => {
+  const target = event.target as HTMLElement
+  if (!target) return
+  const btn = target.closest('.md-copy-btn') as HTMLElement | null
+  if (!btn) return
 
-  // Wrap with p tags if there are multiple paragraphs
-  if (formatted.includes('</p><p>')) {
-    formatted = `<p>${formatted}</p>`
+  const raw = btn.getAttribute('data-raw') || ''
+  let textToCopy = ''
+  try {
+    textToCopy = decodeURIComponent(raw)
+  } catch {
+    textToCopy = raw
   }
 
-  return formatted
+  const doCopy = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(textToCopy)
+      } else {
+        const ta = document.createElement('textarea')
+        ta.value = textToCopy
+        ta.style.position = 'fixed'
+        ta.style.left = '-9999px'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+      }
+      btn.textContent = 'copy'
+      setTimeout(() => (btn.textContent = 'copy'), 1500)
+    } catch (err) {
+      console.error('Copy failed:', err)
+      btn.textContent = 'copy failed'
+      setTimeout(() => (btn.textContent = 'copy'), 1500)
+    }
+  }
+
+  doCopy()
 }
 
 // Handle user input form submission
@@ -1389,17 +1473,19 @@ const handleUserInputSubmit = async (message: Message) => {
 }
 
 watch(
-    () => props.initialPrompt,
-    (newPrompt, oldPrompt) => {
-      console.log('[ChatComponent] initialPrompt changed from:', oldPrompt, 'to:', newPrompt)
-      if (newPrompt && typeof newPrompt === 'string' && newPrompt.trim() && newPrompt !== oldPrompt) {
-        console.log('[ChatComponent] Processing changed initial prompt:', newPrompt)
-        nextTick(() => {
-          handleSendMessage(newPrompt)
+  () => props.initialPrompt,
+  (newPrompt, oldPrompt) => {
+    console.log('[ChatComponent] initialPrompt changed from:', oldPrompt, 'to:', newPrompt)
+    if (newPrompt && typeof newPrompt === 'string' && newPrompt.trim() && newPrompt !== oldPrompt) {
+      console.log('[ChatComponent] Processing changed initial prompt:', newPrompt)
+      nextTick(() => {
+        handleSendMessage({
+          input: newPrompt
         })
-      }
-    },
-    { immediate: false }
+      })
+    }
+  },
+  { immediate: false }
 )
 
 onMounted(() => {
@@ -1425,7 +1511,9 @@ onMounted(() => {
   if (props.initialPrompt && typeof props.initialPrompt === 'string' && props.initialPrompt.trim()) {
     console.log('[ChatComponent] Processing initial prompt:', props.initialPrompt)
     nextTick(() => {
-      handleSendMessage(props.initialPrompt!)
+      handleSendMessage({
+        input: props.initialPrompt!
+      })
     })
   }
 })
@@ -1447,6 +1535,27 @@ onUnmounted(() => {
   // Clear form inputs
   Object.keys(formInputsStore).forEach(key => delete formInputsStore[key])
 })
+
+
+const showMemory = async () => {
+  if(memoryStore.selectMemoryId) {
+    const memory = await MemoryApiService.getMemory(memoryStore.selectMemoryId);
+    messages.value = []
+    memory.messages.map(message => {
+      if(message.messageType.toLowerCase() === 'user') {
+        addMessage('user',message.text)
+      }
+      if(message.messageType.toLowerCase() === 'assistant') {
+        addMessage('assistant',message.text)
+      }
+    });
+    forceScrollToBottom()
+  }
+}
+
+const newChat = () => {
+  messages.value = []
+}
 
 // Helper function to safely get options array
 const getOptionsArray = (options: string | string[] | undefined): string[] => {
@@ -1472,35 +1581,37 @@ defineExpose({
   handlePlanCompleted,
   handleDialogRoundStart,
   addMessage,
-  handlePlanError
+  handlePlanError,
+  showMemory,
+  newChat
 })
 </script>
 
 <style lang="less" scoped>
 .chat-container {
-  flex: 1; /* Occupy the remaining space of the parent container */
+  flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%; /* Fill the height of the parent container */
-  min-height: 0; /* Allow shrinking */
-  overflow: hidden; /* Prevent container overflow */
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .messages {
   padding: 24px;
-  flex: 1; /* Use flex: 1 instead of height: 100% */
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto; /* Use auto instead of scroll */
-  min-height: 0; /* Ensure it can shrink */
-  /* Add smooth scrolling */
+  overflow-y: auto;
+  min-height: 0;
+
   scroll-behavior: smooth;
-  /* Improve scrollbar style */
+
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
 
-  /* WebKit scrollbar styling */
+
   &::-webkit-scrollbar {
     width: 8px;
   }
@@ -1555,7 +1666,7 @@ defineExpose({
 }
 
 .assistant-message {
-  /* 1. JManus Thinking/Processing Section Style */
+
   .thinking-section {
     margin-bottom: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1631,7 +1742,7 @@ defineExpose({
     }
   }
 
-  /* 2. JManus Final Response Section Style - Simulate Human Conversation Unit */
+
   .response-section {
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 18px;
@@ -1714,7 +1825,7 @@ defineExpose({
               -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
               sans-serif;
 
-          /* Make the text look more like a natural conversation */
+
           p {
             margin: 0 0 12px 0;
 
@@ -1723,7 +1834,7 @@ defineExpose({
             }
           }
 
-          /* Enhance readability */
+
           strong {
             color: #f8fafc;
             font-weight: 600;
@@ -1733,6 +1844,115 @@ defineExpose({
             color: #e2e8f0;
             font-style: italic;
           }
+
+            /* Headings */
+            h1, h2, h3, h4, h5, h6 {
+              margin: 12px 0 8px;
+              font-weight: 700;
+              line-height: 1.4;
+            }
+            h1 { font-size: 22px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; }
+            h2 { font-size: 20px; margin-top: 16px; }
+            h3 { font-size: 18px; }
+
+            /* Lists */
+            ul, ol {
+              margin: 6px 0 12px 22px;
+              padding-left: 18px;
+            }
+            li { margin: 4px 0; }
+
+            /* Blockquote */
+            blockquote {
+              margin: 10px 0;
+              padding: 8px 12px;
+              border-left: 3px solid #667eea;
+              background: rgba(102, 126, 234, 0.08);
+              color: #e5e7eb;
+            }
+
+            /* Inline code */
+            code {
+              background: rgba(0,0,0,0.35);
+              padding: 2px 6px;
+              border-radius: 4px;
+              font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+                'Courier New', monospace;
+              font-size: 13px;
+            }
+
+            /* Code blocks */
+            pre {
+              background: rgba(0,0,0,0.5);
+              border: 1px solid rgba(255, 255, 255, 0.08);
+              border-radius: 8px;
+              padding: 12px 14px;
+              overflow: auto;
+              margin: 10px 0 14px;
+            }
+            pre code {
+              background: transparent;
+              padding: 0;
+              font-size: 13px;
+              line-height: 1.6;
+              color: #e5e7eb;
+              white-space: pre;
+            }
+
+            /* Enhanced code block container with toolbar */
+            :deep(.md-code-block) {
+              position: relative;
+              margin: 12px 0 16px;
+              border: 1px solid #30363d; /* GitHub dark border */
+              border-radius: 8px;
+              background: #0d1117; /* GitHub dark bg */
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+            }
+            :deep(.md-code-block .md-code-header) {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 8px 10px;
+              border-bottom: 1px solid #30363d;
+              background: #161b22; /* GitHub dark header */
+              border-top-left-radius: 8px;
+              border-top-right-radius: 8px;
+            }
+            :deep(.md-code-block .md-code-header .md-lang) {
+              margin-right: auto;
+            }
+            :deep(.md-code-block .md-code-header .md-copy-btn) {
+              margin-left: auto; /* ensure right aligned */
+            }
+            :deep(.md-code-block .md-lang) {
+              font-size: 12px;
+              color: #8b949e;
+              text-transform: lowercase;
+            }
+            :deep(.md-code-block .md-copy-btn) {
+              height: 22px;
+              padding: 0 8px;
+              background: #21262d; /* GitHub dark button bg */
+              color: #c9d1d9; /* GitHub dark text */
+              border: 1px solid #30363d;
+              border-radius: 6px;
+              font-size: 12px;
+              cursor: pointer;
+              transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+            }
+            :deep(.md-code-block .md-copy-btn:hover) {
+              background: #30363d; /* GitHub dark hover bg */
+              color: #f0f6fc;
+              border-color: #8b949e;
+              transform: translateY(-1px);
+            }
+            :deep(.md-code-block pre) {
+              margin: 0;
+              border: none;
+              border-bottom-left-radius: 8px;
+              border-bottom-right-radius: 8px;
+              background: #0d1117; /* match container */
+            }
         }
       }
 
@@ -1992,7 +2212,7 @@ defineExpose({
         }
       }
 
-      /* Sub-plan Step Style - New Feature */
+
       .sub-plan-steps {
         margin-top: 8px;
         padding: 8px 16px;
@@ -2033,7 +2253,7 @@ defineExpose({
           border-radius: 4px;
           cursor: pointer;
           transition: all 0.2s ease;
-          margin-left: 20px; /* Indent to show parent-child relationship */
+          margin-left: 20px;
 
           &:hover {
             background: rgba(255, 255, 255, 0.05);
@@ -2224,21 +2444,53 @@ defineExpose({
       grid-template-columns: repeat(2, 1fr);
       gap: 16px;
       margin-bottom: 16px;
+      align-items: end;
 
-      @media (max-width: 600px) {
+      @media (max-width: 768px) {
         grid-template-columns: 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+
+      @media (max-width: 480px) {
+        gap: 8px;
       }
     }
 
     .form-group {
       margin-bottom: 0;
+      display: grid;
+      grid-template-rows: 1fr 40px;
+      height: 68px;
+      align-content: stretch;
+      gap: 5px;
+      
+      @media (max-width: 768px) {
+        grid-template-rows: 1fr 42px;
+        height: auto;
+        min-height: 70px;
+        align-content: stretch;
+        gap: 4px;
+      }
 
       label {
         display: block;
-        margin-bottom: 6px;
+        margin-bottom: 0;
         font-size: 13px;
         font-weight: 500;
         color: #ffffff;
+        line-height: 1.3;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        grid-row: 1;
+        align-self: end;
+        justify-self: start;
+        
+        @media (max-width: 768px) {
+          font-size: 12px;
+          align-self: start;
+        }
       }
 
       .form-input {
@@ -2249,7 +2501,12 @@ defineExpose({
         border-radius: 6px;
         color: #ffffff;
         font-size: 14px;
+        line-height: 1.4;
+        height: 40px;
+        box-sizing: border-box;
         transition: border-color 0.2s ease;
+        grid-row: 2;
+        align-self: stretch;
 
         &:focus {
           outline: none;
@@ -2260,20 +2517,50 @@ defineExpose({
         &::placeholder {
           color: #888888;
         }
+        
+        @media (max-width: 768px) {
+          font-size: 14px;
+          height: 42px;
+        }
       }
 
       .form-textarea {
         resize: vertical;
-        min-height: 40px;
+        min-height: 60px;
+        height: 60px;
         font-family: inherit;
         line-height: 1.4;
+        box-sizing: border-box;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: #ffffff;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+        grid-row: 2;
+        align-self: stretch;
+        
+        &:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        &::placeholder {
+          color: #888888;
+        }
+        
+        @media (max-width: 768px) {
+          height: 65px;
+        }
       }
 
-      /* Special handling for wide fields in grid layout */
+
       &.form-group-wide {
         grid-column: span 2;
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
           grid-column: span 1;
         }
       }
@@ -2281,17 +2568,61 @@ defineExpose({
       &.form-group-full {
         grid-column: span 2;
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
           grid-column: span 1;
+        }
+      }
+
+      &:has(.form-textarea) {
+        grid-template-rows: 1fr 60px;
+        height: 88px;
+        
+        @media (max-width: 768px) {
+          grid-template-rows: 1fr 65px;
+          height: auto;
+          min-height: 93px;
+        }
+      }
+
+      &.form-group-textarea {
+        grid-template-rows: 1fr 60px;
+        height: 88px;
+        
+        @media (max-width: 768px) {
+          grid-template-rows: 1fr 65px;
+          height: auto;
+          min-height: 93px;
         }
       }
 
       .form-select {
         cursor: pointer;
+        height: 40px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: #ffffff;
+        font-size: 14px;
+        line-height: 1.4;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease;
+        grid-row: 2;
+        align-self: stretch;
+
+        &:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
 
         option {
           background: #2d3748;
           color: #ffffff;
+        }
+        
+        @media (max-width: 768px) {
+          height: 42px;
         }
       }
     }
@@ -2319,10 +2650,10 @@ defineExpose({
   }
 }
 
-/* Scroll to Bottom Button */
+
 .scroll-to-bottom-btn {
   position: absolute;
-  bottom: 120px; /* Above the input field */
+  bottom: 120px;
   right: 24px;
   width: 48px;
   height: 48px;
@@ -2350,7 +2681,7 @@ defineExpose({
     color: #ffffff;
   }
 
-  /* Add pulse animation */
+
   animation: pulse-glow 2s infinite;
 }
 

@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.McpAssignNodeProperties;
-import com.alibaba.cloud.ai.example.deepresearch.util.Mcp.McpConfigMergeUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.mcp.McpConfigMergeUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +32,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,16 +56,10 @@ public class McpAssignNodeConfiguration {
 	private McpAssignNodeProperties mcpAssignNodeProperties;
 
 	@Autowired
-	private McpClientCommonProperties commonProperties;
-
-	@Autowired
 	private ResourceLoader resourceLoader;
 
 	@Autowired
 	private ObjectMapper objectMapper;
-
-	@Autowired
-	private WebClient.Builder webClientBuilderTemplate;
 
 	/**
 	 * 读取JSON配置文件

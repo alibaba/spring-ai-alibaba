@@ -23,9 +23,9 @@ import java.util.Map;
 public class MdTableGenerator {
 
 	/**
-	 * 将二维数组转为 Markdown 表格
-	 * @param resultArr 二维数组
-	 * @return Markdown 表格字符串
+	 * Convert two-dimensional array to Markdown table
+	 * @param resultArr two-dimensional array
+	 * @return Markdown table string
 	 */
 	public static String generateTable(String[][] resultArr) {
 		if (resultArr == null || resultArr.length == 0) {
@@ -34,17 +34,17 @@ public class MdTableGenerator {
 
 		StringBuilder sb = new StringBuilder();
 
-		// 头部
+		// Header
 		sb.append("| ");
 		for (String col : resultArr[0]) {
 			sb.append(col).append(" | ");
 		}
 		sb.append("\n");
 
-		// 分隔线
+		// Separator line
 		sb.append("|---".repeat(resultArr[0].length)).append("|\n");
 
-		// 数据行
+		// Data rows
 		for (int i = 1; i < resultArr.length; i++) {
 			sb.append("| ");
 			for (String cell : resultArr[i]) {
@@ -57,9 +57,9 @@ public class MdTableGenerator {
 	}
 
 	/**
-	 * 将 ResultSetBO 转为 Markdown 表格
-	 * @param resultSetBO 结构化数据
-	 * @return Markdown 表格字符串
+	 * Convert ResultSetBO to Markdown table
+	 * @param resultSetBO structured data
+	 * @return Markdown table string
 	 */
 	public static String generateTable(ResultSetBO resultSetBO) {
 		List<String> column = resultSetBO.getColumn();

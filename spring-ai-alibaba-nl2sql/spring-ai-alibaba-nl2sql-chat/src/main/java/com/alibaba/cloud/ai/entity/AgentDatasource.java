@@ -16,38 +16,47 @@
 
 package com.alibaba.cloud.ai.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
 /**
- * 智能体数据源关联实体类
+ * Agent Data Source Association Entity Class
  *
  * @author Alibaba Cloud AI
  */
+@TableName("agent_datasource")
 public class AgentDatasource {
 
+	@TableId(value = "id", type = IdType.AUTO)
 	private Integer id;
 
+	@TableField("agent_id")
 	private Integer agentId;
 
+	@TableField("datasource_id")
 	private Integer datasourceId;
 
+	@TableField("is_active")
 	private Integer isActive;
 
+	@TableField(value = "create_time", fill = FieldFill.INSERT)
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime createTime;
 
+	@TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime updateTime;
 
-	// 关联的数据源对象（用于联查）
+	// Associated data source object (for joint query)
+	@TableField(exist = false)
 	private Datasource datasource;
 
-	// 构造函数
+	// Constructor
 	public AgentDatasource() {
 	}
 
