@@ -176,11 +176,15 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		}
 
 		List<ColumnInfoBO> targetPrimaryList = columnInfoBOS.stream()
-				.filter(ColumnInfoBO::isPrimary).collect(Collectors.toList());
+			.filter(ColumnInfoBO::isPrimary)
+			.collect(Collectors.toList());
 		if (CollectionUtils.isNotEmpty(targetPrimaryList)) {
-			List<String> columnNames = targetPrimaryList.stream().map(ColumnInfoBO::getName).collect(Collectors.toList());
+			List<String> columnNames = targetPrimaryList.stream()
+				.map(ColumnInfoBO::getName)
+				.collect(Collectors.toList());
 			tableInfoBO.setPrimaryKeys(columnNames);
-		} else {
+		}
+		else {
 			tableInfoBO.setPrimaryKeys(new ArrayList<>());
 		}
 		tableInfoBO

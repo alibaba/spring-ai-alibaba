@@ -36,7 +36,7 @@ public class TableInfoBO extends DdlBaseBO {
 	}
 
 	public TableInfoBO(String schema, String name, String description, String type, String foreignKey,
-					   List<String> primaryKeys) {
+			List<String> primaryKeys) {
 		this.schema = schema;
 		this.name = name;
 		this.description = description;
@@ -95,26 +95,23 @@ public class TableInfoBO extends DdlBaseBO {
 
 	@Override
 	public String toString() {
-		return "TableInfoBO{" +
-				"schema='" + schema + '\'' +
-				", name='" + name + '\'' +
-				", description='" + description + '\'' +
-				", type='" + type + '\'' +
-				", foreignKey='" + foreignKey + '\'' +
-				", primaryKeys=" + primaryKeys +
-				'}';
+		return "TableInfoBO{" + "schema='" + schema + '\'' + ", name='" + name + '\'' + ", description='" + description
+				+ '\'' + ", type='" + type + '\'' + ", foreignKey='" + foreignKey + '\'' + ", primaryKeys="
+				+ primaryKeys + '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
-            return true;
-        }
+			return true;
+		}
 		if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
+			return false;
+		}
 		TableInfoBO that = (TableInfoBO) o;
-		return Objects.equals(schema, that.schema) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(type, that.type) && Objects.equals(foreignKey, that.foreignKey) && Objects.equals(primaryKeys, that.primaryKeys);
+		return Objects.equals(schema, that.schema) && Objects.equals(name, that.name)
+				&& Objects.equals(description, that.description) && Objects.equals(type, that.type)
+				&& Objects.equals(foreignKey, that.foreignKey) && Objects.equals(primaryKeys, that.primaryKeys);
 	}
 
 	@Override
