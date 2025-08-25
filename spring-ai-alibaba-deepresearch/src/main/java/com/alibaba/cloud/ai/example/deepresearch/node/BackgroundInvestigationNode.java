@@ -101,7 +101,7 @@ public class BackgroundInvestigationNode implements NodeAction {
 		resultMap.put("site_information", resultsList);
 
 		List<String> backgroundResults = new ArrayList<>();
-		assert resultsList.size() != queries.size();
+		assert resultsList.size() == queries.size();
 
 		for (int i = 0; i < resultsList.size(); i++) {
 			List<Map<String, String>> searchResults = resultsList.get(i);
