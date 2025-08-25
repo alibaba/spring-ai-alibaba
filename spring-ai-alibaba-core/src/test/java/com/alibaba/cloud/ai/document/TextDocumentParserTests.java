@@ -60,23 +60,23 @@ class TextDocumentParserTests {
 		assertThat(documents.get(0).getText()).isEqualTo(text);
 	}
 
-        @Test
-        void testParseEmptyText() {
-                // 空字符串应当触发 IllegalArgumentException
-                String text = "";
-                TextDocumentParser parser = new TextDocumentParser();
+	@Test
+	void testParseEmptyText() {
+		// 空字符串应当触发 IllegalArgumentException
+		String text = "";
+		TextDocumentParser parser = new TextDocumentParser();
 
-                assertThrows(IllegalArgumentException.class, () -> parser.parse(toInputStream(text)));
-        }
+		assertThrows(IllegalArgumentException.class, () -> parser.parse(toInputStream(text)));
+	}
 
-        @Test
-        void testParseBlankText() {
-                // 含有空格或插入字符的空白字符串同样应抛出 IllegalArgumentException
-                String text = "   \n\t   ";
-                TextDocumentParser parser = new TextDocumentParser();
+	@Test
+	void testParseBlankText() {
+		// 含有空格或插入字符的空白字符串同样应抛出 IllegalArgumentException
+		String text = "   \n\t   ";
+		TextDocumentParser parser = new TextDocumentParser();
 
-                assertThrows(IllegalArgumentException.class, () -> parser.parse(toInputStream(text)));
-        }
+		assertThrows(IllegalArgumentException.class, () -> parser.parse(toInputStream(text)));
+	}
 
 	@Test
 	void testConstructorWithNullCharset() {

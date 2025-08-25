@@ -43,20 +43,20 @@ public class TextDocumentParser implements DocumentParser {
 	}
 
 	@Override
-        public List<Document> parse(InputStream inputStream) {
-                try {
-                        // 读取入口流所有文本，且使用指定的字符集解码
-                        String text = new String(inputStream.readAllBytes(), this.charset);
-                        // 如果文本全部为空白，则报告非法参数异常
-                        if (text.isBlank()) {
-                                throw new IllegalArgumentException("text must not be blank");
-                        }
-                        return Collections.singletonList(new Document(text));
-                }
-                catch (IOException e) {
-                        // 将任何 IO 异常转换为 RuntimeException 以便传播
-                        throw new RuntimeException(e);
-                }
-        }
+	public List<Document> parse(InputStream inputStream) {
+		try {
+			// 读取入口流所有文本，且使用指定的字符集解码
+			String text = new String(inputStream.readAllBytes(), this.charset);
+			// 如果文本全部为空白，则报告非法参数异常
+			if (text.isBlank()) {
+				throw new IllegalArgumentException("text must not be blank");
+			}
+			return Collections.singletonList(new Document(text));
+		}
+		catch (IOException e) {
+			// 将任何 IO 异常转换为 RuntimeException 以便传播
+			throw new RuntimeException(e);
+		}
+	}
 
 }
