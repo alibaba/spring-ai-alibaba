@@ -130,7 +130,7 @@ class ReactAgentHookTest {
 			.name("weather_agent")
 			.model(chatModel)
 			.tools(List.of(toolCallback))
-			.llmInputMessagesKey("llm_input_messages")
+			.inputKey("llm_input_messages")
 			.preLlmHook(state -> {
 				if (!state.value("messages").isPresent()) {
 					return Map.of();
@@ -178,7 +178,7 @@ class ReactAgentHookTest {
 		ReactAgent agent = ReactAgent.builder()
 			.name("dataAgent")
 			.model(chatModel)
-			.llmInputMessagesKey("llm_input_messages")
+			.inputKey("llm_input_messages")
 			.tools(List.of(toolCallback))
 			.postLlmHook(state -> {
 
@@ -212,7 +212,7 @@ class ReactAgentHookTest {
 			.name("dataAgent")
 			.model(chatModel)
 			.tools(List.of(toolCallback))
-			.llmInputMessagesKey("llm_input_messages")
+			.inputKey("llm_input_messages")
 			.preToolHook(state -> {
 				// 在preToolHook中获取最新的时间戳 传给toolCall保证时效性
 				long currentTimestamp = System.currentTimeMillis();
