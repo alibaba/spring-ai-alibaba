@@ -45,7 +45,39 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * 循环Agent，支持三种模式：限定次数、限定条件、迭代可叠代对象。输出元素为一个List，是每次循环之后最后一个子Agent的输出，对应的Key应为AppendStrategy
+ * Loop Agent that supports multiple loop modes:
+ * <ul>
+ * <li><b>COUNT</b>: Execute a fixed number of loops</li>
+ * <li><b>CONDITION</b>: Continue looping based on a condition, similar to a do-while
+ * structure</li>
+ * <li><b>ITERABLE</b>: Iterate over each element in an Iterable object</li>
+ * <li><b>ARRAY</b>: Iterate over each element in an array</li>
+ * <li><b>JSON_ARRAY</b>: Parse a JSON array and iterate over its elements</li>
+ * </ul>
+ *
+ * <p>
+ * The output result is a List containing the output of the last sub-agent after each loop
+ * iteration. Note: The strategy corresponding to outputKey should be set to
+ * AppendStrategy to correctly collect loop results.
+ * </p>
+ *
+ * <p>
+ * Usage example:
+ * </p>
+ * <pre>{@code
+ * LoopAgent loopAgent = LoopAgent.builder()
+ *     .name("example-loop-agent")
+ *     .description("Example loop agent")
+ *     .inputKey("input")
+ *     .outputKey("results")
+ *     .loopMode(LoopAgent.LoopMode.COUNT)
+ *     .loopCount(3)
+ *     .subAgents(subAgents)
+ *     .build();
+ * }</pre>
+ *
+ * @author vlsmb
+ * @since 2025/8/25
  */
 public class LoopAgent extends FlowAgent {
 
@@ -56,7 +88,8 @@ public class LoopAgent extends FlowAgent {
 	public static final int ITERABLE_ELEMENT_COUNT = 10000;
 
 	/**
-	 * LoopAgent的子Agent为循环体，可以为一个SequentialAgent。若有多个Agent，则会组装成一个SequentialAgent进行处理
+	 * The sub-agents of LoopAgent constitute the loop body, which can be one or more
+	 * agents. When building the graph, the agents will be connected head-to-tail.
 	 */
 	private LoopAgent(Builder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory,
@@ -74,7 +107,7 @@ public class LoopAgent extends FlowAgent {
 	@Override
 	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
 		CompiledGraph compiledGraph = this.getAndCompileGraph();
-		// 添加outputKey为空列表，用于接受答案
+		// Initialize outputKey as an empty list to collect loop results
 		return compiledGraph.invoke(Stream.of(input, Map.of(this.outputKey(), new ArrayList<>()))
 			.map(Map::entrySet)
 			.flatMap(Collection::stream)
@@ -85,73 +118,119 @@ public class LoopAgent extends FlowAgent {
 		return new Builder();
 	}
 
+	/**
+	 * Loop mode enumeration that defines different loop execution methods
+	 */
 	public enum LoopMode {
 
 		/**
-		 * 限定次数
+		 * <b>Count mode</b>: Execute a fixed number of loops
+		 * <p>
+		 * Execution steps:
+		 * <ol>
+		 * <li>Get input data from inputKey (optional)</li>
+		 * <li>Track the current loop count</li>
+		 * <li>Increment the count by 1 for each loop until reaching the preset loopCount
+		 * value</li>
+		 * <li>Set loopStartFlag to false when the loop ends</li>
+		 * </ol>
+		 * </p>
+		 * <p>
+		 * Applicable scenario: Scenarios requiring a fixed number of operations
+		 * </p>
 		 */
 		COUNT((agentName, loopConfig) -> (state -> {
-			// 获取输入，用于传给迭代体
+			// Get input for passing to the iterator body
 			Optional<?> input = state.value(loopConfig.inputKey());
 
-			// 获取当前迭代次数
+			// Get current iteration count
 			String countKey = agentName + "__loop_count";
 			int loopCount = state.value(countKey, 0);
 			int maxCount = Optional.ofNullable(loopConfig.loopCount()).orElse(0);
 
-			// 循环次数大于等于预设值，直接退出循环
+			// If loop count is greater than or equal to the preset value, exit the loop
+			// directly
 			if (loopCount >= maxCount) {
 				return Map.of(LoopMode.loopStartFlagKey(agentName), false);
 			}
 
-			// 将当前迭代次数进行更新，并返回
+			// Update the current iteration count and return
 			return input
 				.map(o -> Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true,
 						LoopMode.iteratorItemKey(agentName), o))
 				.orElseGet(() -> Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true));
 		}), (agentName, loopConfig) -> (state -> {
-			// 将结果放入outputKey中
+			// Put the result into outputKey
 			Optional<Object> value = state.value(iteratorResultKey(agentName));
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of(agentName + "__loop_count", new ReplaceStrategy()))),
 
 		/**
-		 * 限定条件，类似于do-while结构，判断循环体的输出是否满足条件。如果满足Predicate，则退出循环
+		 * <b>Condition mode</b>: Continue looping based on a condition, similar to a
+		 * do-while structure
+		 * <p>
+		 * Working principle:
+		 * <ol>
+		 * <li>Execute the first loop directly (unconditionally)</li>
+		 * <li>Subsequent loops check if the previous output meets the loopCondition</li>
+		 * <li>Exit the loop if the condition is met, otherwise continue executing</li>
+		 * </ol>
+		 * </p>
+		 * <p>
+		 * Applicable scenario: Scenarios where the decision to continue looping needs to
+		 * be made dynamically based on execution results
+		 * </p>
 		 */
 		CONDITION((agentName, loopConfig) -> (state -> {
-			// 获取输入，用于传给迭代体
+			// Get input for passing to the iterator body
 			Optional<?> input = state.value(loopConfig.inputKey());
-			// 判断是不是第一次循环，如果是则直接放行
+			// Check if it's the first loop, if so, allow it to proceed directly
 			if (state.value(loopStartFlagKey(agentName)).isEmpty()) {
 				return input.map(o -> Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), o))
 					.orElseGet(() -> Map.of(loopStartFlagKey(agentName), true));
 			}
 
-			// 获取当前迭代结果
+			// Get current iteration result
 			Object result = state.value(iteratorResultKey(agentName)).orElse(null);
 			if (loopConfig.loopCondition.test(result)) {
 				return Map.of(LoopMode.loopStartFlagKey(agentName), false);
 			}
-			// 继续重试
+			// Continue retrying
 			return input.map(o -> Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), o))
 				.orElseGet(() -> Map.of(loopStartFlagKey(agentName), true));
 		}), (agentName, loopConfig) -> (state -> {
-			// 将结果放入outputKey中
+			// Put the result into outputKey
 			Optional<Object> value = state.value(iteratorResultKey(agentName));
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of())),
 
 		/**
-		 * 迭代可叠代对象
+		 * <b>Iterable mode</b>: Iterate over each element in an Iterable object
+		 * <p>
+		 * Working principle:
+		 * <ol>
+		 * <li>Get the Iterable object from inputKey</li>
+		 * <li>Convert to List and limit the maximum number of elements
+		 * (ITERABLE_ELEMENT_COUNT)</li>
+		 * <li>Track the current index</li>
+		 * <li>Extract each element sequentially as input to the loop body</li>
+		 * <li>Exit the loop after iterating through all elements</li>
+		 * </ol>
+		 * </p>
+		 * <p>
+		 * Applicable scenario: Scenarios requiring iteration over each element in a
+		 * collection or list
+		 * </p>
 		 */
 		ITERABLE((agentName, loopConfig) -> (state -> {
-			// 获取要执行迭代的元素，如果不存在，则说明第一次执行循环，先获取输入
+			// Get the elements to be iterated over. If they don't exist, it means it's
+			// the first loop execution, so get the input first
 			String iteratorKey = agentName + "__iterableElement";
 			Optional<Object> iteratorObj = state.value(iteratorKey);
 			List<?> iteratorElement;
 
 			if (iteratorObj.isEmpty()) {
-				// 获取输出
+				// Get output
 				Optional<?> inputIterable = state.value(loopConfig.inputKey());
 				if (inputIterable.isEmpty()) {
 					return Map.of(loopStartFlagKey(agentName), false);
@@ -160,7 +239,7 @@ public class LoopAgent extends FlowAgent {
 				if (!(iterableObj instanceof Iterable<?> iterable)) {
 					throw new IllegalStateException("Input iterable is not iterable");
 				}
-				// 将Iterable转换为List，并限制最大数量
+				// Convert Iterable to List and limit the maximum number of elements
 				iteratorElement = StreamSupport.stream(iterable.spliterator(), false)
 					.limit(ITERABLE_ELEMENT_COUNT)
 					.toList();
@@ -169,11 +248,11 @@ public class LoopAgent extends FlowAgent {
 				iteratorElement = (List<?>) iteratorObj.get();
 			}
 
-			// 获取当前迭代索引
+			// Get current iteration index
 			String indexKey = agentName + "__iterableIndex";
 			int index = state.value(indexKey, 0);
 
-			// 判断是否还有下一个元素，若有则获取下一个元素
+			// Check if there is a next element, and if so, get the next element
 			if (index < iteratorElement.size()) {
 				Object next = iteratorElement.get(index);
 				return Map.of(iteratorItemKey(agentName), next, loopStartFlagKey(agentName), true, iteratorKey,
@@ -183,7 +262,7 @@ public class LoopAgent extends FlowAgent {
 				return Map.of(loopStartFlagKey(agentName), false);
 			}
 		}), (agentName, loopConfig) -> (state -> {
-			// 将结果放入outputKey中
+			// Put the result into outputKey
 			Optional<Object> value = state.value(iteratorResultKey(agentName));
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName,
@@ -191,10 +270,23 @@ public class LoopAgent extends FlowAgent {
 						new ReplaceStrategy()))),
 
 		/**
-		 * 迭代数组对象
+		 * <b>Array mode</b>: Iterate over each element in an array
+		 * <p>
+		 * Working principle:
+		 * <ol>
+		 * <li>Get the array object from inputKey</li>
+		 * <li>Track the current index</li>
+		 * <li>Use reflection to get each element in the array sequentially</li>
+		 * <li>Exit the loop after iterating through all elements</li>
+		 * </ol>
+		 * </p>
+		 * <p>
+		 * Applicable scenario: Scenarios requiring iteration over each element in a Java
+		 * array
+		 * </p>
 		 */
 		ARRAY((agentName, loopConfig) -> (state -> {
-			// 获取输入的数组
+			// Get the input array
 			Object arrayObj = state.value(loopConfig.inputKey()).orElse(null);
 			if (arrayObj == null) {
 				return Map.of(loopStartFlagKey(agentName), false);
@@ -203,7 +295,7 @@ public class LoopAgent extends FlowAgent {
 				throw new IllegalStateException("Input array is not an array");
 			}
 
-			// 获取当前迭代索引
+			// Get current iteration index
 			String indexKey = agentName + "__arrayIndex";
 			int index = state.value(indexKey, 0);
 			int length = Array.getLength(arrayObj);
@@ -213,21 +305,35 @@ public class LoopAgent extends FlowAgent {
 			Object obj = Array.get(arrayObj, index);
 			return Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), obj, indexKey, index + 1);
 		}), (agentName, loopConfig) -> (state -> {
-			// 将结果放入outputKey中
+			// Put the result into outputKey
 			Optional<Object> value = state.value(iteratorResultKey(agentName));
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of(agentName + "__arrayIndex", new ReplaceStrategy()))),
 
 		/**
-		 * 迭代JSON数组
+		 * <b>JSON array mode</b>: Parse a JSON array and iterate over its elements
+		 * <p>
+		 * Working principle:
+		 * <ol>
+		 * <li>Get the JSON string from inputKey</li>
+		 * <li>Parse it into a List object</li>
+		 * <li>Track the current index</li>
+		 * <li>Extract each element sequentially as input to the loop body</li>
+		 * <li>Exit the loop after iterating through all elements</li>
+		 * </ol>
+		 * </p>
+		 * <p>
+		 * Applicable scenario: Scenarios requiring processing of JSON format array data
+		 * </p>
 		 */
 		JSON_ARRAY((agentName, loopConfig) -> (state -> {
 			String listKey = agentName + "__list";
-			// 尝试获取迭代元素的列表，如果是第一次执行则先从JSON字符串中初始化
+			// Try to get the list of iteration elements. If it's the first execution,
+			// initialize from the JSON string
 			List<?> list;
 			Optional<Object> listObj = state.value(listKey);
 			if (listObj.isEmpty()) {
-				// 获取输入的数组
+				// Get the input array
 				String jsonStr = state.value(loopConfig.inputKey()).orElse("[]").toString();
 				try {
 					list = JsonParser.fromJson(jsonStr, List.class);
@@ -240,7 +346,7 @@ public class LoopAgent extends FlowAgent {
 				list = (List<?>) listObj.get();
 			}
 
-			// 获取当前迭代索引
+			// Get current iteration index
 			String indexKey = agentName + "__jsonIndex";
 			int index = state.value(indexKey, 0);
 			if (index >= list.size()) {
@@ -250,16 +356,25 @@ public class LoopAgent extends FlowAgent {
 			return Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), obj, indexKey, index + 1,
 					listKey, list);
 		}), (agentName, loopConfig) -> (state -> {
-			// 将结果放入outputKey中
+			// Put the result into outputKey
 			Optional<Object> value = state.value(iteratorResultKey(agentName));
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName,
 				Map.of(agentName + "__jsonIndex", new ReplaceStrategy(), agentName + "__list", new ReplaceStrategy())));
 
+		/**
+		 * Get the corresponding Start node based on LoopConfig and LoopMode
+		 */
 		private final BiFunction<String, LoopConfig, NodeAction> startActionFunc;
 
+		/**
+		 * Get the corresponding End node based on LoopConfig and LoopMode
+		 */
 		private final BiFunction<String, LoopConfig, NodeAction> endActionFunc;
 
+		/**
+		 * Get the KeyStrategy required for LoopStart and LoopEnd nodes based on LoopMode
+		 */
 		private final Function<String, KeyStrategyFactory> loopTempKeyStrategyFactoryFunc;
 
 		LoopMode(BiFunction<String, LoopConfig, NodeAction> startActionFunc,
@@ -305,19 +420,21 @@ public class LoopAgent extends FlowAgent {
 	}
 
 	/**
-	 * 循环配置类，用于封装循环相关的配置信息
+	 * Loop configuration class for encapsulating loop-related configuration information
 	 *
-	 * @param inputKey 循环的输入Key，应符合loopMode的要求，部分Mode可以无输入
-	 * @param outputKey 循环的输出结果，为List对象
-	 * @param loopMode 循环模式，决定循环的执行方式
-	 * @param loopCount 循环次数，仅在COUNT模式下有效
-	 * @param loopCondition 循环条件，仅在CONDITION模式下有效，每次循环都会根据该条件判断是否继续
+	 * @param inputKey The input key for the loop, should conform to the requirements of
+	 * loopMode. Some modes can have no input.
+	 * @param outputKey The loop output result, which is a List object
+	 * @param loopMode The loop mode that determines how the loop is executed
+	 * @param loopCount The number of loops, only valid in COUNT mode
+	 * @param loopCondition The loop condition, only valid in CONDITION mode. The
+	 * condition is checked for continuation on each loop iteration.
 	 */
 	public record LoopConfig(String inputKey, String outputKey, LoopMode loopMode, Integer loopCount,
 			Predicate<Object> loopCondition) {
 		/**
-		 * 验证循环配置的有效性
-		 * @throws IllegalArgumentException 当配置不合法时抛出异常
+		 * Validate the validity of the loop configuration
+		 * @throws IllegalArgumentException Thrown when the configuration is invalid
 		 */
 		public void validate() {
 			if (loopMode == null) {
@@ -342,16 +459,31 @@ public class LoopAgent extends FlowAgent {
 
 		private LoopConfig loopConfig;
 
+		/**
+		 * Set the loop mode
+		 * @param loopMode The loop mode enumeration value
+		 * @return The builder instance
+		 */
 		public Builder loopMode(LoopMode loopMode) {
 			this.loopMode = loopMode;
 			return self();
 		}
 
+		/**
+		 * Set the loop count (only valid in COUNT mode)
+		 * @param loopCount The number of loops
+		 * @return The builder instance
+		 */
 		public Builder loopCount(Integer loopCount) {
 			this.loopCount = loopCount;
 			return self();
 		}
 
+		/**
+		 * Set the loop condition (only valid in CONDITION mode)
+		 * @param loopCondition The condition checking function
+		 * @return The builder instance
+		 */
 		public Builder loopCondition(Predicate<Object> loopCondition) {
 			this.loopCondition = loopCondition;
 			return self();

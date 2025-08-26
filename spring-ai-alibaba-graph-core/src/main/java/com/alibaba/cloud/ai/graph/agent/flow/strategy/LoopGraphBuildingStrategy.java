@@ -54,15 +54,16 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 	public StateGraph buildGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		String agentName = config.getName();
 
-		// 特殊情况：如果循环体没有子Agent，则直接返回一个空的StateGraph
+		// Special case: if the loop body has no sub-agents, return an empty StateGraph
+		// directly
 		if (config.getSubAgents() == null || config.getSubAgents().isEmpty()) {
 			return new StateGraph(agentName, config.getKeyStrategyFactory()).addEdge(START, END);
 		}
 
-		// 获得LoopConfig
+		// Get LoopConfig
 		LoopAgent.LoopConfig loopConfig = (LoopAgent.LoopConfig) config.getCustomProperty(LoopAgent.LOOP_CONFIG_KEY);
 
-		// 将Start、循环体、End的StrategyFactory组合为一个
+		// Combine the StrategyFactory of Start, loop body, and End into one
 		KeyStrategyFactory strategyFactory = new KeyStrategyFactoryBuilder()
 			.addStrategies(config.getKeyStrategyFactory().apply())
 			.addStrategies(loopConfig.loopMode().getLoopTempKeyStrategyFactory(agentName).apply())
@@ -73,16 +74,16 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 			.build();
 		StateGraph stateGraph = new StateGraph(agentName, strategyFactory);
 
-		// 定义Node名称
+		// Define node names
 		String bodyStartNodeName = agentName + "__loop_body_start__";
 		String bodyEndNodeName = agentName + "__loop_body_end__";
 		String startNodeName = agentName + "__loop_start__";
 		String endNodeName = agentName + "__loop_end__";
 
-		// 添加节点
+		// Add nodes
 		stateGraph.addNode(startNodeName, node_async(loopConfig.loopMode().getStartAction(agentName, loopConfig)));
 
-		// 展开子Agent的节点
+		// Expand sub-agent nodes
 		String lastOutput = generateTempInput(config.getSubAgents().get(0));
 		stateGraph.addNode(bodyStartNodeName,
 				node_async(new TransparentNode(lastOutput, LoopAgent.LoopMode.iteratorItemKey(agentName))));
@@ -97,13 +98,13 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 
 		stateGraph.addNode(endNodeName, node_async(loopConfig.loopMode().getEndAction(agentName, loopConfig)));
 
-		// 添加条件边，控制循环流程
+		// Add conditional edges to control the loop flow
 		stateGraph.addEdge(START, startNodeName).addConditionalEdges(startNodeName, edge_async((state -> {
 			Boolean flag = state.value(LoopAgent.LoopMode.loopStartFlagKey(agentName), false);
 			return flag ? "true" : "false";
 		})), Map.of("true", bodyStartNodeName, "false", END));
 
-		// 展开子Agent的边
+		// Expand sub-agent edges
 		stateGraph.addEdge(bodyStartNodeName, generateBodyName(agentName, 0));
 		for (int i = 1; i < config.getSubAgents().size(); i++) {
 			stateGraph.addEdge(generateBodyName(agentName, i - 1), generateBodyName(agentName, i));
