@@ -221,14 +221,16 @@ public class A2aRemoteAgent extends BaseAgent {
 		public Map<String, Object> apply(OverAllState parentState) throws Exception {
 			// prepare input for child graph
 			Object inputValue = parentState.value(inputKeyFromParent)
-					.orElseThrow(() -> new IllegalArgumentException("Input key '" + inputKeyFromParent + "' not found in state: " + parentState));
-			
+				.orElseThrow(() -> new IllegalArgumentException(
+						"Input key '" + inputKeyFromParent + "' not found in state: " + parentState));
+
 			// invoke child graph with input
 			OverAllState childState = childGraph.invoke(Map.of("input", inputValue)).get();
 
 			// extract output from child graph
 			Object outputValue = childState.value(outputKeyToParent)
-					.orElseThrow(() -> new IllegalArgumentException("Output key '" + outputKeyToParent + "' not found in child state"));
+				.orElseThrow(() -> new IllegalArgumentException(
+						"Output key '" + outputKeyToParent + "' not found in child state"));
 
 			// update parent state
 			return Map.of(outputKeyToParent, outputValue);

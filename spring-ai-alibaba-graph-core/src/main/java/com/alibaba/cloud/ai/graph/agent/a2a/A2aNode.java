@@ -67,7 +67,7 @@ public class A2aNode implements NodeAction {
 
 		Map<String, Object> resultMap = JSON.parseObject(resultText, Map.class);
 		Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
-		
+
 		String responseText = extractResponseText(result);
 		return Map.of(this.outputKeyToParent, responseText);
 	}
@@ -90,7 +90,8 @@ public class A2aNode implements NodeAction {
 				}
 			}
 			return responseBuilder.toString();
-		} else {
+		}
+		else {
 			List<Object> parts = (List<Object>) result.get("parts");
 			Map<String, Object> lastPart = (Map<String, Object>) parts.get(parts.size() - 1);
 			return (String) lastPart.get("text");
@@ -99,14 +100,14 @@ public class A2aNode implements NodeAction {
 
 	/**
 	 * Build the JSON-RPC request payload to send to the A2A server.
-	 *
-	 * @param state    Parent state
+	 * @param state Parent state
 	 * @param inputKey Input key to retrieve user input from the state
 	 * @return JSON string payload (e.g., JSON-RPC params)
 	 */
 	private String buildSendMessageRequest(OverAllState state, String inputKey) {
 		Object textValue = state.value(inputKey)
-				.orElseThrow(() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
+			.orElseThrow(
+					() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
 		String text = String.valueOf(textValue);
 
 		String id = UUID.randomUUID().toString();
@@ -130,21 +131,22 @@ public class A2aNode implements NodeAction {
 
 		try {
 			return objectMapper.writeValueAsString(root);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new IllegalStateException("Failed to build JSON-RPC payload", e);
 		}
 	}
 
 	/**
 	 * Build the JSON-RPC streaming request payload (method: message/stream).
-	 *
-	 * @param state    Parent state
+	 * @param state Parent state
 	 * @param inputKey Input key to retrieve user input from the state
 	 * @return JSON string payload for streaming
 	 */
 	private String buildSendStreamingMessageRequest(OverAllState state, String inputKey) {
 		Object textValue = state.value(inputKey)
-				.orElseThrow(() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
+			.orElseThrow(
+					() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
 		String text = String.valueOf(textValue);
 
 		String id = UUID.randomUUID().toString();
@@ -168,15 +170,15 @@ public class A2aNode implements NodeAction {
 
 		try {
 			return objectMapper.writeValueAsString(root);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new IllegalStateException("Failed to build JSON-RPC streaming payload", e);
 		}
 	}
 
 	/**
 	 * Send the request to the remote A2A server and return the non-streaming response.
-	 *
-	 * @param agentCard      Agent card (source for server URL/metadata)
+	 * @param agentCard Agent card (source for server URL/metadata)
 	 * @param requestPayload JSON string payload built by buildSendMessageRequest
 	 * @return Response body as string
 	 */
@@ -185,7 +187,7 @@ public class A2aNode implements NodeAction {
 		if (baseUrl == null || baseUrl.isBlank()) {
 			throw new IllegalStateException("AgentCard.url is empty");
 		}
-		
+
 		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 			HttpPost post = new HttpPost(baseUrl);
 			post.setHeader("Content-Type", "application/json");

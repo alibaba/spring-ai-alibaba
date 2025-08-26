@@ -19,9 +19,9 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
-import com.alibaba.cloud.ai.graph.agent.a2a.RemoteAgentCard;
+//import com.alibaba.cloud.ai.graph.OverAllState;
+//import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
+//import com.alibaba.cloud.ai.graph.agent.a2a.RemoteAgentCard;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,8 +29,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+//import java.util.Map;
+//import java.util.Optional;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class RemoteAgentTest {
@@ -57,19 +57,21 @@ class RemoteAgentTest {
 			return keyStrategyHashMap;
 		};
 
-//		You need to have a remote agent service running at the specified URL for this test to work.
-//		A2aRemoteAgent remoteWriterAgent = A2aRemoteAgent.builder()
-//			.name("writer_agent")
-//			.agentCard(RemoteAgentCard.builder().url("http://0.0.0.0:10000").build())
-//			.description("可以写文章。")
-//			.outputKey("article")
-//			.build();
+		// You need to have a remote agent service running at the specified URL for this
+		// test to work.
+		// A2aRemoteAgent remoteWriterAgent = A2aRemoteAgent.builder()
+		// .name("writer_agent")
+		// .agentCard(RemoteAgentCard.builder().url("http://0.0.0.0:10000").build())
+		// .description("可以写文章。")
+		// .outputKey("article")
+		// .build();
 
-//        System.out.println(RemoteAgentCard.builder().url("http://0.0.0.0:10000").build());
+		// System.out.println(RemoteAgentCard.builder().url("http://0.0.0.0:10000").build());
 
 		try {
-//			Optional<OverAllState> result = remoteWriterAgent.invoke(Map.of("input", "帮我写一个100字左右的散文"));
-//			System.out.println(result.get());
+			// Optional<OverAllState> result = remoteWriterAgent.invoke(Map.of("input",
+			// "帮我写一个100字左右的散文"));
+			// System.out.println(result.get());
 		}
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();
