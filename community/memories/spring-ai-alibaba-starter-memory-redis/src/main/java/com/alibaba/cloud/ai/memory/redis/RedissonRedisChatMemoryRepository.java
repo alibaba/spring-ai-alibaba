@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.memory.redis;
 
+import com.alibaba.cloud.ai.memory.redis.builder.RedisChatMemoryBuilder;
 import org.redisson.Redisson;
 import org.redisson.api.RKeys;
 import org.redisson.api.RList;
@@ -25,6 +26,8 @@ import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.boot.ssl.SslBundle;
+import org.springframework.boot.ssl.SslManagerBundle;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -55,57 +58,14 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 		return new RedissonBuilder();
 	}
 
-	public static class RedissonBuilder {
-
-		private String host = "127.0.0.1";
-
-		/**
-		 * example 127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381
-		 */
-		private List<String> nodes;
-
-		private int port = 6379;
-
-		private String username;
-
-		private String password;
-
-		private int timeout = 2000;
+	public static class RedissonBuilder extends RedisChatMemoryBuilder<RedissonBuilder> {
 
 		private int poolSize = 32;
 
 		private Config redissonConfig;
 
-		private boolean useCluster = false;
-
-		public RedissonBuilder nodes(List<String> nodes) {
-			this.nodes = nodes;
-			this.useCluster = true;
-			return this;
-		}
-
-		public RedissonBuilder host(String host) {
-			this.host = host;
-			return this;
-		}
-
-		public RedissonBuilder port(int port) {
-			this.port = port;
-			return this;
-		}
-
-		public RedissonBuilder username(String username) {
-			this.username = username;
-			return this;
-		}
-
-		public RedissonBuilder password(String password) {
-			this.password = password;
-			return this;
-		}
-
-		public RedissonBuilder timeout(int timeout) {
-			this.timeout = timeout;
+		@Override
+		protected RedissonBuilder self() {
 			return this;
 		}
 
@@ -132,6 +92,12 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 			config.setCodec(new StringCodec());
 			if (useCluster) {
 				List<String> nodesUrl = nodes.stream().map(node -> "redis://" + node).toList();
+				if (useSsl && StringUtils.hasText(bundle)) {
+					SslBundle sslBundle = sslBundles.getBundle(bundle);
+					SslManagerBundle managers = sslBundle.getManagers();
+					config.useClusterServers().setSslTrustManagerFactory(managers.getTrustManagerFactory());
+					nodesUrl = nodes.stream().map(node -> "rediss://" + node).toList();
+				}
 				config.useClusterServers()
 					.addNodeAddress(nodesUrl.toArray(new String[0]))
 					.setConnectTimeout(timeout)
@@ -145,10 +111,14 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 				}
 			}
 			else {
-				config.useSingleServer()
-					.setAddress("redis://" + host + ":" + port)
-					.setConnectionPoolSize(poolSize)
-					.setConnectTimeout(timeout);
+				String nodeUrl = "redis://" + host + ":" + port;
+				if (useSsl && StringUtils.hasText(bundle)) {
+					SslBundle sslBundle = sslBundles.getBundle(bundle);
+					SslManagerBundle managers = sslBundle.getManagers();
+					config.useSingleServer().setSslTrustManagerFactory(managers.getTrustManagerFactory());
+					nodeUrl = "rediss://" + host + ":" + port;
+				}
+				config.useSingleServer().setAddress(nodeUrl).setConnectionPoolSize(poolSize).setConnectTimeout(timeout);
 				if (StringUtils.hasLength(username)) {
 					config.useSingleServer().setUsername(username);
 				}

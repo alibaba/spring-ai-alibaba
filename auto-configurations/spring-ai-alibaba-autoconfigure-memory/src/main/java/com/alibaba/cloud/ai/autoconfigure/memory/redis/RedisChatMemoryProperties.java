@@ -69,6 +69,11 @@ public class RedisChatMemoryProperties {
 	 */
 	private Mode mode;
 
+	/**
+	 * SSL properties.
+	 */
+	private final Ssl ssl = new Ssl();
+
 	public String getHost() {
 		return host;
 	}
@@ -133,6 +138,10 @@ public class RedisChatMemoryProperties {
 		this.mode = mode;
 	}
 
+	public Ssl getSsl() {
+		return ssl;
+	}
+
 	/**
 	 * Type of Redis client to use.
 	 */
@@ -190,6 +199,37 @@ public class RedisChatMemoryProperties {
 		 * Use the cluster mode
 		 */
 		CLUSTER
+
+	}
+
+	public static class Ssl {
+
+		/**
+		 * Whether to enable SSL support. Enabled automatically if "bundle" is provided
+		 * unless specified otherwise.
+		 */
+		private Boolean enabled;
+
+		/**
+		 * SSL bundle name based on spring.ssl configuration.
+		 */
+		private String bundle;
+
+		public boolean isEnabled() {
+			return (this.enabled != null) ? this.enabled : this.bundle != null;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+		public String getBundle() {
+			return this.bundle;
+		}
+
+		public void setBundle(String bundle) {
+			this.bundle = bundle;
+		}
 
 	}
 

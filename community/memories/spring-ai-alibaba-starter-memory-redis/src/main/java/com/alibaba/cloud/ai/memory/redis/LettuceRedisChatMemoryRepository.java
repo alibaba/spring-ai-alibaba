@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.memory.redis;
 
+import com.alibaba.cloud.ai.memory.redis.builder.RedisChatMemoryBuilder;
 import io.lettuce.core.ClientOptions;
 import io.lettuce.core.SocketOptions;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -32,7 +33,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -71,55 +71,12 @@ public class LettuceRedisChatMemoryRepository extends BaseRedisChatMemoryReposit
 		return new RedisBuilder();
 	}
 
-	public static class RedisBuilder {
-
-		private String host = "127.0.0.1";
-
-		/**
-		 * example 127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381
-		 */
-		private List<String> nodes = new ArrayList<>();
-
-		private int port = 6379;
-
-		private String username;
-
-		private String password;
-
-		private int timeout = 2000;
+	public static class RedisBuilder extends RedisChatMemoryBuilder<RedisBuilder> {
 
 		private GenericObjectPoolConfig<?> poolConfig;
 
-		private boolean useCluster = false;
-
-		public RedisBuilder host(String host) {
-			this.host = host;
-			return this;
-		}
-
-		public RedisBuilder nodes(List<String> nodes) {
-			this.nodes = nodes;
-			this.useCluster = true;
-			return this;
-		}
-
-		public RedisBuilder port(int port) {
-			this.port = port;
-			return this;
-		}
-
-		public RedisBuilder username(String username) {
-			this.username = username;
-			return this;
-		}
-
-		public RedisBuilder password(String password) {
-			this.password = password;
-			return this;
-		}
-
-		public RedisBuilder timeout(int timeout) {
-			this.timeout = timeout;
+		@Override
+		protected RedisBuilder self() {
 			return this;
 		}
 

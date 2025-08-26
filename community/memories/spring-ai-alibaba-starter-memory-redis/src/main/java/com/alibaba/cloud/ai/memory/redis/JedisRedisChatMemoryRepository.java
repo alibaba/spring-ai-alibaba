@@ -15,8 +15,12 @@
  */
 package com.alibaba.cloud.ai.memory.redis;
 
+import com.alibaba.cloud.ai.memory.redis.builder.RedisChatMemoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.properties.PropertyMapper;
+import org.springframework.boot.ssl.SslBundle;
+import org.springframework.boot.ssl.SslOptions;
 import org.springframework.data.redis.connection.*;
 import org.springframework.data.redis.connection.jedis.JedisClientConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
@@ -30,6 +34,7 @@ import redis.clients.jedis.JedisPoolConfig;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.util.Assert;
 
+import javax.net.ssl.SSLParameters;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -69,60 +74,12 @@ public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepositor
 		return new RedisBuilder();
 	}
 
-	public static class RedisBuilder {
-
-		private String host = "127.0.0.1";
-
-		/**
-		 * example 127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381
-		 */
-		private List<String> nodes;
-
-		private int port = 6379;
-
-		private String username;
-
-		private String password;
-
-		private int timeout = 2000;
+	public static class RedisBuilder extends RedisChatMemoryBuilder<RedisBuilder> {
 
 		private JedisPoolConfig poolConfig;
 
-		private boolean useCluster = false;
-
-		public RedisBuilder host(String host) {
-			this.host = host;
-			return this;
-		}
-
-		public RedisBuilder nodes(List<String> nodes) {
-			this.nodes = nodes;
-			this.useCluster = true;
-			return this;
-		}
-
-		public RedisBuilder port(int port) {
-			this.port = port;
-			return this;
-		}
-
-		public RedisBuilder username(String username) {
-			this.username = username;
-			return this;
-		}
-
-		public RedisBuilder password(String password) {
-			this.password = password;
-			return this;
-		}
-
-		public RedisBuilder timeout(int timeout) {
-			this.timeout = timeout;
-			return this;
-		}
-
-		public RedisBuilder poolConfig(JedisPoolConfig poolConfig) {
-			this.poolConfig = poolConfig;
+		@Override
+		protected RedisBuilder self() {
 			return this;
 		}
 
@@ -136,14 +93,7 @@ public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepositor
 				if (StringUtils.hasText(password)) {
 					clusterConfig.setPassword(password);
 				}
-				JedisClientConfiguration.JedisPoolingClientConfigurationBuilder poolBuilder = JedisClientConfiguration
-					.builder()
-					.readTimeout(Duration.ofMillis(timeout))
-					.connectTimeout(Duration.ofMillis(timeout))
-					.usePooling();
-				JedisClientConfiguration jedisClientConfiguration = poolBuilder.poolConfig(getPoolConfigWithDefault())
-					.build();
-				jedisConnectionFactory = new JedisConnectionFactory(clusterConfig, jedisClientConfiguration);
+				jedisConnectionFactory = new JedisConnectionFactory(clusterConfig, applyConfiguration());
 			}
 			else {
 				RedisStandaloneConfiguration standaloneConfig = new RedisStandaloneConfiguration(host, port);
@@ -153,14 +103,7 @@ public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepositor
 				if (StringUtils.hasText(password)) {
 					standaloneConfig.setPassword(password);
 				}
-				JedisClientConfiguration.JedisPoolingClientConfigurationBuilder poolBuilder = JedisClientConfiguration
-					.builder()
-					.readTimeout(Duration.ofMillis(timeout))
-					.connectTimeout(Duration.ofMillis(timeout))
-					.usePooling();
-				JedisClientConfiguration jedisClientConfiguration = poolBuilder.poolConfig(getPoolConfigWithDefault())
-					.build();
-				jedisConnectionFactory = new JedisConnectionFactory(standaloneConfig, jedisClientConfiguration);
+				jedisConnectionFactory = new JedisConnectionFactory(standaloneConfig, applyConfiguration());
 			}
 			jedisConnectionFactory.afterPropertiesSet();
 			return new JedisRedisChatMemoryRepository(jedisConnectionFactory);
@@ -168,6 +111,27 @@ public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepositor
 
 		private JedisPoolConfig getPoolConfigWithDefault() {
 			return poolConfig != null ? poolConfig : new JedisPoolConfig();
+		}
+
+		private JedisClientConfiguration applyConfiguration() {
+			// apply timeout
+			JedisClientConfiguration.JedisClientConfigurationBuilder builder = JedisClientConfiguration.builder();
+			builder.readTimeout(Duration.ofMillis(timeout)).connectTimeout(Duration.ofMillis(timeout));
+			// apply ssl
+			if (useSsl && StringUtils.hasText(bundle)) {
+				JedisClientConfiguration.JedisSslClientConfigurationBuilder sslBuilder = builder.useSsl();
+				SslBundle sslBundle = sslBundles.getBundle(bundle);
+				sslBuilder.sslSocketFactory(sslBundle.createSslContext().getSocketFactory());
+				SslOptions sslOptions = sslBundle.getOptions();
+				SSLParameters sslParameters = new SSLParameters();
+				PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
+				map.from(sslOptions.getCiphers()).to(sslParameters::setCipherSuites);
+				map.from(sslOptions.getEnabledProtocols()).to(sslParameters::setProtocols);
+				sslBuilder.sslParameters(sslParameters);
+			}
+			// apply pool
+			builder.usePooling().poolConfig(getPoolConfigWithDefault());
+			return builder.build();
 		}
 
 	}
