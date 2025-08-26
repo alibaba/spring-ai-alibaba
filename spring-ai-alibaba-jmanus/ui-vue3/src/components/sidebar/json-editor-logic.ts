@@ -59,7 +59,7 @@ export interface JsonEditorEmits {
 }
 
 /**
- * JsonEditor组件的业务逻辑
+ * Business logic for JsonEditor component
  */
 export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   // I18n
@@ -82,7 +82,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   })
 
   /**
-   * 解析JSON内容为可视化数据
+   * Parse JSON content into visual data
    */
   const parseJsonToVisual = (jsonContent: string) => {
     try {
@@ -130,7 +130,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   }
 
   /**
-   * 将可视化数据转换回JSON
+   * Convert visual data back to JSON
    */
   const convertVisualToJson = (): string => {
     try {
@@ -153,28 +153,28 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   }
 
   /**
-   * 计算属性：格式化的JSON输出
+   * Computed property: Formatted JSON output
    */
   const formattedJsonOutput = computed(() => {
     return convertVisualToJson()
   })
 
   /**
-   * 计算属性：可用的agent选项
+   * Computed property: Available agent options
    */
   const agentOptions = computed(() => {
     return availableAgents.value
   })
 
   /**
-   * 计算属性：是否应该显示错误状态
+   * Computed property: Whether error status should be displayed
    */
   const shouldShowError = computed(() => {
     return hasLoadedAgents.value && !isLoadingAgents.value && availableAgents.value.length === 0
   })
 
   /**
-   * 格式化agent显示文本（带描述截断）
+   * Format agent display text (with truncated description)
    */
   const formatAgentDisplayText = (agent: AvailableAgent, maxDescLength = 20): string => {
     const description = agent.description || ''
@@ -186,7 +186,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   }
 
   /**
-   * 生成agent的完整工具提示文本
+   * Generate full tooltip text for agent
    */
   const generateAgentTooltip = (agent: AvailableAgent): string => {
     let tooltip = agent.description || agent.name
@@ -200,7 +200,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   }
 
   /**
-   * 加载可用的agents列表
+   * Load list of available agents
    */
   const loadAvailableAgents = async () => {
     if (isLoadingAgents.value) return
@@ -209,7 +209,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
       isLoadingAgents.value = true
       agentsLoadError.value = ''
       
-      // 尝试从两个API获取agents数据
+      // Try to get agents data from two APIs
       const [configAgents, managementAgents] = await Promise.allSettled([
         AgentApiService.getAllAgents(),
         getAllAgents()
@@ -218,7 +218,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
       const agents: AvailableAgent[] = []
       let hasSuccessfulCall = false
 
-      // 处理AgentApiService的结果
+      // Process AgentApiService results
       if (configAgents.status === 'fulfilled') {
         hasSuccessfulCall = true
         const configAgentList = configAgents.value.map((agent: Agent) => ({
@@ -231,7 +231,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
         agents.push(...configAgentList)
       }
 
-      // 处理agent management API的结果  
+      // Process agent management API results  
       if (managementAgents.status === 'fulfilled') {
         hasSuccessfulCall = true
         const managementAgentList = managementAgents.value.map((agent: AgentEntity) => ({
@@ -244,12 +244,12 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
         agents.push(...managementAgentList)
       }
 
-      // 如果两个API都失败了
+      // If both APIs failed
       if (!hasSuccessfulCall) {
         throw new Error(t('sidebar.agentLoadError'))
       }
 
-      // 去重（基于id）
+      // Deduplicate (based on id)
       const uniqueAgents = agents.filter((agent, index, self) => 
         index === self.findIndex(a => a.id === agent.id)
       )
@@ -268,7 +268,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   }
 
   /**
-   * 发送JSON更新事件
+   * Emit JSON update event
    */
   const emitJsonUpdate = () => {
     const jsonResult = convertVisualToJson()
@@ -277,7 +277,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
 
   // Step management methods
   /**
-   * 添加新步骤
+   * Add new step
    */
   const addStep = () => {
     parsedData.steps.push({
@@ -289,7 +289,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   }
 
   /**
-   * 删除步骤
+   * Remove step
    */
   const removeStep = (index: number) => {
     parsedData.steps.splice(index, 1)
@@ -297,7 +297,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   }
 
   /**
-   * 上移步骤
+   * Move step up
    */
   const moveStepUp = (index: number) => {
     if (index > 0) {
@@ -308,7 +308,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   }
 
   /**
-   * 下移步骤
+   * Move step down
    */
   const moveStepDown = (index: number) => {
     if (index < parsedData.steps.length - 1) {
@@ -320,35 +320,35 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
 
   // Event handlers
   /**
-   * 处理回滚操作
+   * Handle rollback operation
    */
   const handleRollback = () => {
     emit('rollback')
   }
 
   /**
-   * 处理恢复操作
+   * Handle restore operation
    */
   const handleRestore = () => {
     emit('restore')
   }
 
   /**
-   * 处理保存操作
+   * Handle save operation
    */
   const handleSave = () => {
     emit('save')
   }
 
   /**
-   * 切换JSON预览显示
+   * Toggle JSON preview display
    */
   const toggleJsonPreview = () => {
     showJsonPreview.value = !showJsonPreview.value
   }
 
   /**
-   * 关闭JSON预览
+   * Close JSON preview
    */
   const closeJsonPreview = () => {
     showJsonPreview.value = false
@@ -356,20 +356,20 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
 
   // Watchers
   /**
-   * 监听外部JSON内容变化
+   * Watch external JSON content changes
    */
   watch(() => props.jsonContent, (newContent) => {
     parseJsonToVisual(newContent)
   }, { immediate: true })
 
   /**
-   * 监听可视化数据变化
+   * Watch visual data changes
    */
   watch(parsedData, () => {
     emitJsonUpdate()
   }, { deep: true })
 
-  // 组件挂载后尝试加载agents一次
+  // Try to load agents once after component mounts
   loadAvailableAgents()
 
   return {
