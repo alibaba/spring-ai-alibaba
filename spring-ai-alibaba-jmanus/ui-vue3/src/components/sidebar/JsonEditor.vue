@@ -279,7 +279,6 @@ const emit = defineEmits<{
   'update:jsonContent': [value: string]
 }>()
 
-// 使用抽取的业务逻辑
 const {
   showJsonPreview,
   parsedData,
@@ -304,29 +303,23 @@ const {
   closeJsonPreview
 } = useJsonEditor(props, emit)
 
-// 自动调整文本域高度的方法
 const autoResizeTextarea = (event: Event) => {
   const textarea = event.target as HTMLTextAreaElement
   if (!textarea) return
   
-  // 重置高度以获取正确的 scrollHeight
   textarea.style.height = 'auto'
   
-  // 计算行数（假设每行约 20px）
   const lineHeight = 20
   const lines = Math.ceil(textarea.scrollHeight / lineHeight)
   
-  // 限制最少4行，最多12行
   const minRows = 4
   const maxRows = 12
   const targetRows = Math.max(minRows, Math.min(maxRows, lines))
   
-  // 设置新的高度
   const newHeight = targetRows * lineHeight
   textarea.style.height = `${newHeight}px`
   textarea.rows = targetRows
   
-  // 如果内容超过最大行数，显示滚动条
   if (lines > maxRows) {
     textarea.style.overflowY = 'auto'
   } else {
