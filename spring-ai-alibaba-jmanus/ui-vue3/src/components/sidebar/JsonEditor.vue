@@ -381,7 +381,7 @@ const autoResizeTextarea = (event: Event) => {
 }
 
 .form-label {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
 }
@@ -514,7 +514,7 @@ const autoResizeTextarea = (event: Event) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 9px 16px;
   background: rgba(102, 126, 234, 0.1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -522,7 +522,7 @@ const autoResizeTextarea = (event: Event) => {
 .step-number {
   font-weight: 600;
   color: #667eea;
-  font-size: 14px;
+  font-size: 11px;
   min-width: 20px;
 }
 
