@@ -31,18 +31,19 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class FileSystemSaverDeleteFileTest {
 
-        @Test
-        public void deleteFileShouldRemoveExistingCheckpoint() throws Exception {
-                Path root = Files.createTempDirectory("checkpoint");
-                FileSystemSaver saver = new FileSystemSaver(root, new ObjectStreamStateSerializer<>(AgentState::new));
-                RunnableConfig config = RunnableConfig.builder().threadId("t1").build();
+	@Test
+	public void deleteFileShouldRemoveExistingCheckpoint() throws Exception {
+		Path root = Files.createTempDirectory("checkpoint");
+		FileSystemSaver saver = new FileSystemSaver(root, new ObjectStreamStateSerializer<>(AgentState::new));
+		RunnableConfig config = RunnableConfig.builder().threadId("t1").build();
 
-                Path checkpointFile = root.resolve("thread-t1.saver");
-                Files.createFile(checkpointFile);
+		Path checkpointFile = root.resolve("thread-t1.saver");
+		Files.createFile(checkpointFile);
 
-                assertTrue(Files.exists(checkpointFile));
-                assertTrue(saver.deleteFile(config));
-                assertFalse(Files.exists(checkpointFile));
-                assertFalse(saver.deleteFile(config));
-        }
+		assertTrue(Files.exists(checkpointFile));
+		assertTrue(saver.deleteFile(config));
+		assertFalse(Files.exists(checkpointFile));
+		assertFalse(saver.deleteFile(config));
+	}
+
 }
