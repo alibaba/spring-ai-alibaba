@@ -19,9 +19,9 @@
 <template>
   <div class="direct-page">
     <div class="direct-chat">
-      <Sidebar @planExecutionRequested="handlePlanExecutionRequested" />
+      <Sidebar ref="sidebarRef" @planExecutionRequested="handlePlanExecutionRequested" />
       <!-- Left Panel - Chat -->
-      <div class="left-panel" :style="{ width: leftPanelWidth + '%' }">
+      <div class="left-panel" :style="{ width: computedLeftPanelWidth + '%' }">
         <div class="chat-header">
           <button class="back-button" @click="goBack">
             <Icon icon="carbon:arrow-left" />
@@ -102,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
@@ -133,6 +133,7 @@ const inputOnlyContent = ref<string>('')
 const rightPanelRef = ref()
 const chatRef = ref()
 const inputRef = ref()
+const sidebarRef = ref()
 const isExecutingPlan = ref(false)
 const isLoading = ref(false)
 const currentRootPlanId = ref<string | null>(null)
@@ -143,6 +144,30 @@ const leftPanelWidth = ref(50) // Left panel width percentage
 const isResizing = ref(false)
 const startX = ref(0)
 const startLeftWidth = ref(0)
+
+// Computed left panel width that adjusts based on sidebar width
+const computedLeftPanelWidth = computed(() => {
+  if (sidebarStore.isCollapsed) {
+    return leftPanelWidth.value
+  }
+  
+  // When sidebar is expanded, calculate available width for left panel
+  // Get sidebar width from the sidebar component if available
+  let sidebarWidth = 26 // Default sidebar width
+  
+  // Try to get actual sidebar width from the sidebar component
+  if (sidebarRef.value && sidebarRef.value.sidebarWidth !== undefined) {
+    sidebarWidth = sidebarRef.value.sidebarWidth
+  }
+  
+  // Calculate maximum available width for left panel
+  // Total width is 100%, so left panel max = 100% - sidebar width
+  const maxAvailableWidth = 100 - sidebarWidth
+  
+  // Ensure left panel width doesn't exceed available space
+  // Also maintain minimum width of 20%
+  return Math.max(20, Math.min(maxAvailableWidth, leftPanelWidth.value))
+})
 
 onMounted(() => {
   console.log('[Direct] onMounted called')
