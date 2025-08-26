@@ -60,16 +60,6 @@
       <!-- Plan Basic Info -->
       <div class="plan-basic-info">
         <div class="form-row">
-          <label class="form-label">{{ $t('sidebar.planId') }}</label>
-          <input 
-            v-model="parsedData.planId" 
-            type="text" 
-            class="form-input"
-            placeholder="planTemplate-1756109892045"
-          />
-        </div>
-        
-        <div class="form-row">
           <label class="form-label">{{ $t('sidebar.title') }}</label>
           <input 
             v-model="parsedData.title" 
@@ -83,7 +73,7 @@
       <!-- Steps Editor -->
       <div class="steps-section">
         <div class="steps-header">
-          <label class="form-label">{{ $t('sidebar.steps') }}</label>
+          <label class="form-label">{{ $t('sidebar.tasks') }}</label>
           <div class="steps-actions">
             <button 
               @click="loadAvailableAgents" 
@@ -91,7 +81,7 @@
               :disabled="isLoadingAgents"
               :title="$t('sidebar.refreshAgents')"
             >
-              <Icon icon="carbon:refresh" width="12" />
+              <Icon icon="carbon:reset" width="12" />
             </button>
             <!-- Agent count badge -->
             <span class="agent-count-badge" v-if="hasLoadedAgents && availableAgents.length > 0">
@@ -112,7 +102,7 @@
             class="step-item"
           >
             <div class="step-header">
-              <span class="step-number">{{ index + 1 }}</span>
+              <span class="step-number">{{ $t('sidebar.subtask') }} {{ index + 1 }}</span>
               <div class="step-actions">
                 <button 
                   @click="moveStepUp(index)"
@@ -199,9 +189,10 @@
                 <label class="form-label">{{ $t('sidebar.stepRequirement') }}</label>
                 <textarea 
                   v-model="step.stepContent"
-                  class="form-textarea"
+                  class="form-textarea auto-resize"
                   :placeholder="$t('sidebar.stepRequirementPlaceholder')"
                   rows="4"
+                  @input="autoResizeTextarea($event)"
                 ></textarea>
               </div>
               
@@ -227,6 +218,19 @@
               {{ $t('sidebar.addFirstStep') }}
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- Plan ID Section -->
+      <div class="plan-id-section">
+        <div class="form-row">
+          <label class="form-label">{{ $t('sidebar.planId') }}</label>
+          <input 
+            v-model="parsedData.planId" 
+            type="text" 
+            class="form-input"
+            placeholder="planTemplate-1756109892045"
+          />
         </div>
       </div>
 
@@ -299,6 +303,36 @@ const {
   toggleJsonPreview,
   closeJsonPreview
 } = useJsonEditor(props, emit)
+
+// 自动调整文本域高度的方法
+const autoResizeTextarea = (event: Event) => {
+  const textarea = event.target as HTMLTextAreaElement
+  if (!textarea) return
+  
+  // 重置高度以获取正确的 scrollHeight
+  textarea.style.height = 'auto'
+  
+  // 计算行数（假设每行约 20px）
+  const lineHeight = 20
+  const lines = Math.ceil(textarea.scrollHeight / lineHeight)
+  
+  // 限制最少4行，最多12行
+  const minRows = 4
+  const maxRows = 12
+  const targetRows = Math.max(minRows, Math.min(maxRows, lines))
+  
+  // 设置新的高度
+  const newHeight = targetRows * lineHeight
+  textarea.style.height = `${newHeight}px`
+  textarea.rows = targetRows
+  
+  // 如果内容超过最大行数，显示滚动条
+  if (lines > maxRows) {
+    textarea.style.overflowY = 'auto'
+  } else {
+    textarea.style.overflowY = 'hidden'
+  }
+}
 </script>
 
 <style scoped>
@@ -380,6 +414,13 @@ const {
   line-height: 1.4;
 }
 
+.form-textarea.auto-resize {
+  resize: none;
+  transition: height 0.2s ease;
+  overflow-y: auto;
+  max-height: 240px; /* 12行 * 20px = 240px */
+}
+
 .checkbox-wrapper {
   display: flex;
   align-items: center;
@@ -401,6 +442,13 @@ const {
 /* Steps Section */
 .steps-section {
   margin-bottom: 20px;
+}
+
+/* Plan ID Section */
+.plan-id-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .steps-header {

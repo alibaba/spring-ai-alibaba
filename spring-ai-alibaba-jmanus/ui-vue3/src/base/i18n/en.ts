@@ -841,6 +841,8 @@ const words: I18nType = {
     // JsonEditor related
     planId: 'Plan ID',
     steps: 'Steps',
+    tasks: 'Tasks',
+    subtask: 'Subtask',
     agent: 'Agent',
     stepRequirement: 'Step Requirement',
     stepRequirementPlaceholder: 'Please enter the specific requirements and description for this step...',
@@ -865,6 +867,7 @@ const words: I18nType = {
     loadingFailed: 'Loading failed',
     networkError: 'Network error',
     apiError: 'API call failed',
+    resizeHint: 'Drag to resize',
   },
 
   // Tool Selection
@@ -884,7 +887,8 @@ const words: I18nType = {
     planTemplateIdNotFound: 'Plan template ID not found',
     executionFailedNoPlanId: 'Plan execution failed: No valid plan ID returned',
     executionFailed: 'Plan execution failed',
-    configuration: 'config'
+    configuration: 'config',
+    panelResizeHint: 'Drag to resize panel',
   },
 
   // Modal

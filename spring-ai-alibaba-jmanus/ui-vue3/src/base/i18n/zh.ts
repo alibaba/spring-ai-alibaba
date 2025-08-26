@@ -808,6 +808,8 @@ const words: I18nType = {
     // JsonEditor 相关
     planId: '计划ID',
     steps: '步骤',
+    tasks: '任务',
+    subtask: '子任务',
     agent: '智能体',
     stepRequirement: '步骤需求',
     stepRequirementPlaceholder: '请输入步骤的具体需求和描述...',
@@ -832,6 +834,7 @@ const words: I18nType = {
     loadingFailed: '加载失败',
     networkError: '网络错误',
     apiError: 'API调用失败',
+    resizeHint: '拖拽调整大小',
   },
 
   // 工具选择
@@ -851,7 +854,8 @@ const words: I18nType = {
     planTemplateIdNotFound: '没有找到计划模板ID',
     executionFailedNoPlanId: '执行计划失败：未返回有效的计划ID',
     executionFailed: '执行计划失败',
-    configuration: '设置'
+    configuration: '设置',
+    panelResizeHint: '拖拽调整面板大小',
   },
 
   // 模态框
