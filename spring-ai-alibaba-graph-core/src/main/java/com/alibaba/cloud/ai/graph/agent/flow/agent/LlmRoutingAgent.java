@@ -13,23 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.flow;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
+import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
+import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-
 import org.springframework.ai.chat.model.ChatModel;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import java.util.Map;
+import java.util.Optional;
 
 public class LlmRoutingAgent extends FlowAgent {
 
@@ -48,51 +45,10 @@ public class LlmRoutingAgent extends FlowAgent {
 		return compiledGraph.invoke(input);
 	}
 
-	// protected StateGraph initGraph() throws GraphStateException {
-	// StateGraph graph = new StateGraph(this.name(), keyStrategyFactory);
-	//
-	// // add root agent
-	// graph.addNode(this.name(), node_async(LlmNode.builder().(this.outputKey,
-	// this.inputKey)));
-	//
-	// // add starting edge
-	// graph.addEdge(START, this.name());
-	// // Use recursive method to add all sub-agents
-	// processSubAgents(graph, this, this.subAgents());
-	//
-	// return graph;
-	// }
-
-	/**
-	 * Recursively adds sub-agents and their nested sub-agents to the graph
-	 * @param graph the StateGraph to add nodes and edges to
-	 * @param parentAgent the name of the parent node
-	 * @param subAgents the list of sub-agents to process
-	 */
 	@Override
-	protected void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<BaseAgent> subAgents)
-			throws GraphStateException {
-		Map<String, String> edgeRoutingMap = new HashMap<>();
-		for (BaseAgent subAgent : subAgents) {
-			// Add the current sub-agent as a node
-			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(parentAgent.outputKey(), subAgent.outputKey()));
-			// graph.addEdge(parentAgent.name(), subAgent.name());
-			edgeRoutingMap.put(subAgent.name(), subAgent.name());
-
-			// Recursively process this sub-agent's sub-agents if they exist
-			if (subAgent instanceof FlowAgent subFlowAgent) {
-				if (subFlowAgent.subAgents() == null || subFlowAgent.subAgents().isEmpty()) {
-					graph.addEdge(subAgent.name(), END);
-				}
-			}
-			else {
-				graph.addEdge(subAgent.name(), END);
-			}
-		}
-
-		// Connect parent to this sub-agent
-		graph.addConditionalEdges(parentAgent.name(), new RoutingEdgeAction(chatModel, this, subAgents),
-				edgeRoutingMap);
+	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
+		config.setChatModel(this.chatModel);
+		return FlowGraphBuilder.buildGraph(FlowAgentEnum.ROUTING.getType(), config);
 	}
 
 	public static LlmRoutingAgentBuilder builder() {

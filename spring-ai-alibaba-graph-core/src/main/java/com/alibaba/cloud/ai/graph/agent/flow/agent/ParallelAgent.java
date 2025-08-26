@@ -13,28 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.flow;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
+import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
+import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * ParallelAgent executes multiple sub-agents in parallel and merges their results.
@@ -76,62 +73,13 @@ public class ParallelAgent extends FlowAgent {
 		return compiledGraph.invoke(input);
 	}
 
-	/**
-	 * Configures the graph to execute sub-agents in parallel with result merging.
-	 *
-	 * <p>
-	 * The graph structure follows this pattern:
-	 * </p>
-	 * <pre>
-	 * START -> ParentAgent -> [SubAgent1, SubAgent2, SubAgent3] -> MergeNode -> END
-	 * </pre>
-	 *
-	 * <p>
-	 * Key features:
-	 * </p>
-	 * <ul>
-	 * <li><strong>Fan-Out:</strong> Multiple edges from parent to sub-agents trigger
-	 * parallel execution</li>
-	 * <li><strong>Parallel Execution:</strong> All sub-agents run concurrently</li>
-	 * <li><strong>Gather:</strong> Results are collected and merged by the merge
-	 * node</li>
-	 * </ul>
-	 * @param graph the StateGraph to add nodes and edges to
-	 * @param parentAgent the parent agent that will distribute work to sub-agents
-	 * @param subAgents the list of sub-agents to execute in parallel
-	 */
 	@Override
-	protected void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<BaseAgent> subAgents)
-			throws GraphStateException {
+	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
+		// Add parallel-specific properties to config
+		config.customProperty("mergeStrategy", this.mergeStrategy);
+		config.customProperty("maxConcurrency", this.maxConcurrency);
 
-		// Add all sub-agents as nodes
-		for (BaseAgent subAgent : subAgents) {
-			// Convert each sub-agent to an AsyncNodeAction
-			// Each sub-agent receives the same input from the parent agent
-			// but processes it according to their specific instructions and output key
-			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(parentAgent.outputKey(), subAgent.outputKey()));
-		}
-
-		// Add edges from parent to ALL sub-agents (Fan-Out)
-		// This triggers the CompiledGraph to automatically create a ParallelNode
-		// because there are multiple targets from a single source
-		for (BaseAgent subAgent : subAgents) {
-			graph.addEdge(parentAgent.name(), subAgent.name());
-		}
-
-		// Create merge node for result aggregation (Gather)
-		String mergeNodeName = this.name() + "_merge";
-		ParallelResultMergeNode mergeNode = new ParallelResultMergeNode(subAgents, mergeStrategy,
-				this.name() + "_merged_results");
-		graph.addNode(mergeNodeName, node_async(mergeNode));
-
-		// Connect all sub-agents to merge node (Gather phase)
-		for (BaseAgent subAgent : subAgents) {
-			graph.addEdge(subAgent.name(), mergeNodeName);
-		}
-
-		// Connect merge node to END
-		graph.addEdge(mergeNodeName, END);
+		return FlowGraphBuilder.buildGraph(FlowAgentEnum.PARALLEL.getType(), config);
 	}
 
 	/**
@@ -161,16 +109,17 @@ public class ParallelAgent extends FlowAgent {
 	 * <p>
 	 * Usage example:
 	 * </p>
+	 *
 	 * <pre>{@code
 	 * ParallelAgent parallelAgent = ParallelAgent.builder()
-	 *     .name("parallel_workflow")
-	 *     .description("Executes multiple tasks in parallel")
-	 *     .inputKey("input")
-	 *     .outputKey("output")
-	 *     .mergeStrategy(new ParallelAgent.ListMergeStrategy())
-	 *     .maxConcurrency(5)
-	 *     .subAgents(List.of(agent1, agent2, agent3))
-	 *     .build();
+	 * 		.name("parallel_workflow")
+	 * 		.description("Executes multiple tasks in parallel")
+	 * 		.inputKey("input")
+	 * 		.outputKey("output")
+	 * 		.mergeStrategy(new ParallelAgent.ListMergeStrategy())
+	 * 		.maxConcurrency(5)
+	 * 		.subAgents(List.of(agent1, agent2, agent3))
+	 * 		.build();
 	 * }</pre>
 	 */
 	public static class ParallelAgentBuilder extends FlowAgentBuilder<ParallelAgent, ParallelAgentBuilder> {
@@ -214,9 +163,13 @@ public class ParallelAgent extends FlowAgent {
 		 */
 		@Override
 		protected void validate() {
-			super.validate();
+			// Validate name first (from parent)
+			if (name == null || name.trim().isEmpty()) {
+				throw new IllegalArgumentException("Name must be provided");
+			}
 
-			// Validate minimum sub-agent count
+			// Validate minimum sub-agent count for ParallelAgent (skip parent subAgents
+			// check)
 			if (subAgents == null || subAgents.size() < 2) {
 				throw new IllegalArgumentException(
 						"ParallelAgent requires at least 2 sub-agents for parallel execution, but got: "
@@ -378,80 +331,6 @@ public class ParallelAgent extends FlowAgent {
 				.stream()
 				.map(Object::toString)
 				.reduce("", (a, b) -> a.isEmpty() ? b : a + separator + b);
-		}
-
-	}
-
-	/**
-	 * Result merge node for ParallelAgent that collects and merges results from parallel
-	 * sub-agents.
-	 *
-	 * <p>
-	 * This node implements the "Gather" phase of the Parallel Fan-Out/Gather pattern by:
-	 * </p>
-	 * <ul>
-	 * <li>Collecting results from all completed sub-agents</li>
-	 * <li>Merging results based on configured strategies</li>
-	 * <li>Providing a unified output for downstream processing</li>
-	 * </ul>
-	 *
-	 * <p>
-	 * The merge strategy can be customized through the ParallelAgent configuration.
-	 * </p>
-	 */
-	private static class ParallelResultMergeNode implements NodeAction {
-
-		private final List<BaseAgent> subAgents;
-
-		private final MergeStrategy mergeStrategy;
-
-		private final String outputKey;
-
-		/**
-		 * Creates a new ParallelResultMergeNode.
-		 * @param subAgents the list of sub-agents whose results will be merged
-		 * @param mergeStrategy the strategy to use for merging results
-		 * @param outputKey the key under which the merged result will be stored
-		 */
-		public ParallelResultMergeNode(List<BaseAgent> subAgents, MergeStrategy mergeStrategy, String outputKey) {
-			this.subAgents = subAgents;
-			this.mergeStrategy = mergeStrategy;
-			this.outputKey = outputKey;
-		}
-
-		@Override
-		public Map<String, Object> apply(OverAllState state) throws Exception {
-			logger.debug("Starting result merge for {} sub-agents", subAgents.size());
-
-			Map<String, Object> mergedResult = new HashMap<>();
-			Map<String, Object> subAgentResults = new HashMap<>();
-
-			// Collect results from all sub-agents using correct OverAllState methods
-			for (BaseAgent subAgent : subAgents) {
-				String subAgentOutputKey = subAgent.outputKey();
-				if (subAgentOutputKey != null) {
-					Optional<Object> result = state.value(subAgentOutputKey);
-					if (result.isPresent()) {
-						subAgentResults.put(subAgentOutputKey, result.get());
-						logger.debug("Collected result from {}: {} = {}", subAgent.name(), subAgentOutputKey,
-								result.get());
-					}
-					else {
-						logger.warn("No output found for sub-agent: {} (outputKey: {})", subAgent.name(),
-								subAgentOutputKey);
-					}
-				}
-			}
-
-			// Apply merge strategy
-			Object finalResult = mergeStrategy.merge(subAgentResults, state);
-
-			// Store merged result only - don't duplicate individual results
-			mergedResult.put(outputKey, finalResult);
-
-			logger.debug("Result merge completed. Final result stored under key: {}", outputKey);
-
-			return mergedResult;
 		}
 
 	}

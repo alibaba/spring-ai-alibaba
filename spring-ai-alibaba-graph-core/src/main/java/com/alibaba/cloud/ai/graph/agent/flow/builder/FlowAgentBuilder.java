@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.flow;
+package com.alibaba.cloud.ai.graph.agent.flow.builder;
 
 import java.util.List;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 /**
@@ -32,19 +33,19 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentBuilder<T, B>> {
 
 	// Common FlowAgent properties
-	protected String name;
+	public String name;
 
-	protected String description;
+	public String description;
 
-	protected String outputKey;
+	public String outputKey;
 
-	protected String inputKey;
+	public String inputKey;
 
-	protected KeyStrategyFactory keyStrategyFactory;
+	public KeyStrategyFactory keyStrategyFactory;
 
-	protected CompileConfig compileConfig;
+	public CompileConfig compileConfig;
 
-	protected List<BaseAgent> subAgents;
+	public List<BaseAgent> subAgents;
 
 	/**
 	 * Sets the agent name.

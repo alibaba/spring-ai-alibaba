@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.flow;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
+import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
+import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import java.util.Map;
+import java.util.Optional;
 
 public class SequentialAgent extends FlowAgent {
 
@@ -42,23 +41,9 @@ public class SequentialAgent extends FlowAgent {
 		return compiledGraph.invoke(input);
 	}
 
-	/**
-	 * Recursively adds sub-agents and their nested sub-agents to the graph
-	 * @param graph the StateGraph to add nodes and edges to
-	 * @param parentAgent the name of the parent node
-	 * @param subAgents the list of sub-agents to process
-	 */
 	@Override
-	protected void processSubAgents(StateGraph graph, BaseAgent parentAgent, List<BaseAgent> subAgents)
-			throws GraphStateException {
-		for (BaseAgent subAgent : subAgents) {
-			// Add the current sub-agent as a node
-			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(parentAgent.outputKey(), subAgent.outputKey()));
-			graph.addEdge(parentAgent.name(), subAgent.name());
-			parentAgent = subAgent;
-		}
-		// connect the last agent to END
-		graph.addEdge(parentAgent.name(), END);
+	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
+		return FlowGraphBuilder.buildGraph(FlowAgentEnum.SEQUENTIAL.getType(), config);
 	}
 
 	public static SequentialAgentBuilder builder() {
