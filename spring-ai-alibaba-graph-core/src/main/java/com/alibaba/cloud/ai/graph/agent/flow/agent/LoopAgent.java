@@ -49,7 +49,7 @@ import java.util.stream.StreamSupport;
  * <ul>
  * <li><b>COUNT</b>: Execute a fixed number of loops</li>
  * <li><b>CONDITION</b>: Continue looping based on a condition, similar to a do-while
- * structure</li>
+ * structure, but when the condition is true, terminate the loop</li>
  * <li><b>ITERABLE</b>: Iterate over each element in an Iterable object</li>
  * <li><b>ARRAY</b>: Iterate over each element in an array</li>
  * <li><b>JSON_ARRAY</b>: Parse a JSON array and iterate over its elements</li>
@@ -168,7 +168,7 @@ public class LoopAgent extends FlowAgent {
 
 		/**
 		 * <b>Condition mode</b>: Continue looping based on a condition, similar to a
-		 * do-while structure
+		 * do-while structure, but when the condition is true, terminate the loop
 		 * <p>
 		 * Working principle:
 		 * <ol>
