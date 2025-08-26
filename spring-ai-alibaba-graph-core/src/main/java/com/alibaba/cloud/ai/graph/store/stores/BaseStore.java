@@ -237,9 +237,9 @@ public abstract class BaseStore implements Store {
 	private int compareByField(StoreItem item1, StoreItem item2, String field) {
 		switch (field) {
 			case "createdAt":
-				return item1.getCreatedAt().compareTo(item2.getCreatedAt());
+				return Long.compare(item1.getCreatedAt(), item2.getCreatedAt());
 			case "updatedAt":
-				return item1.getUpdatedAt().compareTo(item2.getUpdatedAt());
+				return Long.compare(item1.getUpdatedAt(), item2.getUpdatedAt());
 			case "key":
 				return item1.getKey().compareTo(item2.getKey());
 			case "namespace":

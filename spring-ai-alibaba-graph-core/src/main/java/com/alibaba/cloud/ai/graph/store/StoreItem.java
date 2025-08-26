@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.store;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -66,14 +65,14 @@ public class StoreItem {
 	private Map<String, Object> value;
 
 	/**
-	 * Timestamp when the item was created.
+	 * Timestamp when the item was created (milliseconds since epoch).
 	 */
-	private Instant createdAt;
+	private long createdAt;
 
 	/**
-	 * Timestamp when the item was last updated.
+	 * Timestamp when the item was last updated (milliseconds since epoch).
 	 */
-	private Instant updatedAt;
+	private long updatedAt;
 
 	/**
 	 * Default constructor for serialization frameworks.
@@ -92,7 +91,7 @@ public class StoreItem {
 		this.namespace = namespace;
 		this.key = key;
 		this.value = value;
-		Instant now = Instant.now();
+		long now = System.currentTimeMillis();
 		this.createdAt = now;
 		this.updatedAt = now;
 	}
@@ -102,11 +101,10 @@ public class StoreItem {
 	 * @param namespace the hierarchical namespace path
 	 * @param key the item key
 	 * @param value the item value
-	 * @param createdAt creation timestamp
-	 * @param updatedAt last update timestamp
+	 * @param createdAt creation timestamp (milliseconds since epoch)
+	 * @param updatedAt last update timestamp (milliseconds since epoch)
 	 */
-	public StoreItem(List<String> namespace, String key, Map<String, Object> value, Instant createdAt,
-			Instant updatedAt) {
+	public StoreItem(List<String> namespace, String key, Map<String, Object> value, long createdAt, long updatedAt) {
 		this.namespace = namespace;
 		this.key = key;
 		this.value = value;
@@ -131,7 +129,7 @@ public class StoreItem {
 	 */
 	public void updateValue(Map<String, Object> newValue) {
 		this.value = newValue;
-		this.updatedAt = Instant.now();
+		this.updatedAt = System.currentTimeMillis();
 	}
 
 	// Getters and Setters
@@ -158,22 +156,22 @@ public class StoreItem {
 
 	public void setValue(Map<String, Object> value) {
 		this.value = value;
-		this.updatedAt = Instant.now();
+		this.updatedAt = System.currentTimeMillis();
 	}
 
-	public Instant getCreatedAt() {
+	public long getCreatedAt() {
 		return createdAt;
 	}
 
-	public void setCreatedAt(Instant createdAt) {
+	public void setCreatedAt(long createdAt) {
 		this.createdAt = createdAt;
 	}
 
-	public Instant getUpdatedAt() {
+	public long getUpdatedAt() {
 		return updatedAt;
 	}
 
-	public void setUpdatedAt(Instant updatedAt) {
+	public void setUpdatedAt(long updatedAt) {
 		this.updatedAt = updatedAt;
 	}
 

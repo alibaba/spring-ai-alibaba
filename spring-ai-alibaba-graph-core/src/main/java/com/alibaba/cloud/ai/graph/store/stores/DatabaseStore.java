@@ -87,8 +87,8 @@ public class DatabaseStore extends BaseStore {
 				stmt.setString(2, namespaceJson);
 				stmt.setString(3, item.getKey());
 				stmt.setString(4, valueJson);
-				stmt.setTimestamp(5, Timestamp.from(item.getCreatedAt()));
-				stmt.setTimestamp(6, Timestamp.from(item.getUpdatedAt()));
+				stmt.setTimestamp(5, new Timestamp(item.getCreatedAt()));
+				stmt.setTimestamp(6, new Timestamp(item.getUpdatedAt()));
 
 				stmt.executeUpdate();
 			}
@@ -345,7 +345,7 @@ public class DatabaseStore extends BaseStore {
 		List<String> namespace = objectMapper.readValue(namespaceJson, List.class);
 		Map<String, Object> value = objectMapper.readValue(valueJson, Map.class);
 
-		return new StoreItem(namespace, key, value, createdAt.toInstant(), updatedAt.toInstant());
+		return new StoreItem(namespace, key, value, createdAt.getTime(), updatedAt.getTime());
 	}
 
 }

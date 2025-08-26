@@ -280,8 +280,8 @@ public class MongoStore extends BaseStore {
 		List<String> namespace = (List<String>) doc.get("namespace");
 		String key = (String) doc.get("key");
 		Map<String, Object> value = (Map<String, Object>) doc.get("value");
-		java.time.Instant createdAt = (java.time.Instant) doc.get("createdAt");
-		java.time.Instant updatedAt = (java.time.Instant) doc.get("updatedAt");
+		long createdAt = ((Number) doc.get("createdAt")).longValue();
+		long updatedAt = ((Number) doc.get("updatedAt")).longValue();
 
 		return new StoreItem(namespace, key, value, createdAt, updatedAt);
 	}
