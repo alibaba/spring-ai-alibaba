@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.adapters;
 
+import com.alibaba.cloud.ai.studio.admin.generator.model.App;
 import com.alibaba.cloud.ai.studio.admin.generator.model.AppMetadata;
 import com.alibaba.cloud.ai.studio.admin.generator.model.agent.Agent;
 import com.alibaba.cloud.ai.studio.admin.generator.model.chatbot.ChatBot;
@@ -28,6 +29,30 @@ public class AgentDSLAdapter extends AbstractDSLAdapter {
     public AgentDSLAdapter(@Qualifier("yaml") Serializer serializer) {
         this.serializer = serializer;
         this.objectMapper = new ObjectMapper();
+    }
+
+    @Override
+    public String exportDSL(App app) {
+        if (!(app.getSpec() instanceof Agent agent)) {
+            throw new IllegalArgumentException("App spec is not Agent");
+        }
+        Map<String, Object> body = dumpAgent(agent);
+        body.put("name", app.getMetadata().getName());
+        body.put("description", app.getMetadata().getDescription());
+        body.put("mode", "agent");
+        return serializer.dump(body);
+    }
+
+    @Override
+    public App importDSL(String dsl) {
+        Map<String, Object> data = serializer.load(dsl);
+        validateDSLData(data);
+        Map<String, Object> root = getAgentRoot(data);
+        if (root == null) root = data;
+
+        AppMetadata metadata = mapToMetadata(data);
+        Agent agent = parseAgent(root);
+        return new App(metadata, agent);
     }
 
     @Override
@@ -97,20 +122,6 @@ public class AgentDSLAdapter extends AbstractDSLAdapter {
         data.put("description", metadata.getDescription());
         data.put("mode", "agent");
         return data;
-    }
-
-    @Override
-    public Agent mapToAgent(Map<String, Object> data) {
-        Map<String, Object> root = getAgentRoot(data);
-        if (root == null) root = data;
-        return parseAgent(root);
-    }
-
-    @Override
-    public Map<String, Object> agentToMap(Agent agent) {
-        Map<String, Object> out = new HashMap<>();
-        out.put("agent", dumpAgent(agent));
-        return out;
     }
 
     // 实现其他必要的抽象方法（返回null或空实现，因为Agent模式不需要这些）

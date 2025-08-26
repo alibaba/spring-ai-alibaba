@@ -23,7 +23,6 @@ import java.util.UUID;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.AppMetadata;
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
-import com.alibaba.cloud.ai.studio.admin.generator.model.agent.Agent;
 import com.alibaba.cloud.ai.studio.admin.generator.model.chatbot.ChatBot;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Graph;
@@ -158,16 +157,6 @@ public class CustomDSLAdapter extends AbstractDSLAdapter {
 	public Map<String, Object> chatbotToMap(ChatBot chatBot) {
 		return null;
 	}
-
-    @Override
-    public Agent mapToAgent(Map<String, Object> data) {
-        return null;
-    }
-
-    @Override
-    public Map<String, Object> agentToMap(Agent agent) {
-        return null;
-    }
 
     @Override
 	public void validateDSLData(Map<String, Object> data) {

@@ -152,6 +152,7 @@ public class TemplateTransformNodeDataConverter extends AbstractNodeDataConverte
 				nodeData.setTemplate(this.replacePlaceholders(nodeData.getTemplate(), argToStateName));
 			});
 			case CUSTOM -> super.postProcessConsumer(dialectType);
+			default -> super.postProcessConsumer(dialectType);
 		};
 	}
 

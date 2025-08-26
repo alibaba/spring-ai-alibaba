@@ -148,7 +148,8 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 								+ outputSelector.getName());
 			});
 			case CUSTOM -> super.postProcessConsumer(dialectType);
-		};
+            default -> super.postProcessConsumer(dialectType);
+        };
 	}
 
 	@Override

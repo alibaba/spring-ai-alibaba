@@ -94,16 +94,19 @@ public interface NodeDataConverter<T extends NodeData> {
 				// 将所有的输入变量的nodeId转化为nodeName
 				nodeData.setInputs(
 						Optional.ofNullable(nodeData.getInputs()).orElse(List.of()).stream().peek(variableSelector -> {
-							String nodeId = variableSelector.getNamespace();
-							String nodeName = idToVarName.get(nodeId);
-							if (StringUtils.hasText(nodeName)) {
-								variableSelector.setNamespace(nodeName);
-							}
-							variableSelector
-								.setNameInCode(variableSelector.getNamespace() + "_" + variableSelector.getName());
+						String nodeId = variableSelector.getNamespace();
+						String nodeName = idToVarName.get(nodeId);
+						if (StringUtils.hasText(nodeName)) {
+							variableSelector.setNamespace(nodeName);
+						}
+						variableSelector
+							.setNameInCode(variableSelector.getNamespace() + "_" + variableSelector.getName());
 						}).toList());
 			};
 			case CUSTOM -> (nodeData, idToVarName) -> {
+			};
+			case AGENT -> (nodeData, idToVarName) -> {
+				// agent DSL 不走 workflow node 流程，这里 no-op 以满足枚举覆盖
 			};
 		};
 	}
@@ -135,6 +138,7 @@ public interface NodeDataConverter<T extends NodeData> {
 				return result.toString();
 			};
 			case CUSTOM -> (str, idToVarName) -> str;
+			case AGENT -> (str, idToVarName) -> str;
 		};
 	}
 

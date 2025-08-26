@@ -243,7 +243,8 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 				nodeData.setInputKey(nodeData.getInputs().get(0).getNameInCode());
 			});
 			case CUSTOM -> super.postProcessConsumer(dialectType);
-		};
+            default -> super.postProcessConsumer(dialectType);
+        };
 	}
 
 }

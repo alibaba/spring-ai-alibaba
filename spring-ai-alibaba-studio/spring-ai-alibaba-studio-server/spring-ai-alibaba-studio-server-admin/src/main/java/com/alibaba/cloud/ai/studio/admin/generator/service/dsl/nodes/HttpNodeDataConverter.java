@@ -302,7 +302,8 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 				}
 			});
 			case CUSTOM -> super.postProcessConsumer(dialectType);
-		};
+            default -> super.postProcessConsumer(dialectType);
+        };
 	}
 
 }

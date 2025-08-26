@@ -21,16 +21,18 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Agent 项目生成器：将 Agent DSL 转为最小可运行工程（编译 Agent 为 CompiledGraph）
+ * Agent 项目生成器：将 Agent  Schema 转为最小可运行工程（编译 Agent 为 CompiledGraph）
  */
 @Component
 public class AgentProjectGenerator implements ProjectGenerator {
 
     private static final String AGENT_BUILDER_TEMPLATE_NAME = "AgentBuilder.java";
 
-    private static final String GRAPH_RUN_TEMPLATE_NAME = "GraphRunController.java";
+    private static final String AGENT_APPLICATION_TEMPLATE_NAME = "AgentApplication.java";
 
     private static final String PACKAGE_NAME = "packageName";
+
+    private static final String IMPORT_SECTION = "importSection";
 
     private static final String AGENT_SECTION = "agentSection";
 
@@ -61,16 +63,17 @@ public class AgentProjectGenerator implements ProjectGenerator {
         RenderContext ctx = new RenderContext();
         String agentSection = renderAgentConstruction(root, ctx);
 
-        // 3) 渲染模板并写文件
+        // 3) 模板渲染并写入
         Map<String, Object> agentBuilderModel = new HashMap<>();
         agentBuilderModel.put(PACKAGE_NAME, projectDescription.getPackageName());
+        agentBuilderModel.put(IMPORT_SECTION, renderImportSection(root));
         agentBuilderModel.put(AGENT_SECTION, agentSection);
         agentBuilderModel.put(HAS_RESOLVER, ctx.hasResolver);
 
-        Map<String, Object> graphRunModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
+        Map<String, Object> appModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
 
-        renderAndWriteTemplates(List.of(AGENT_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
-            List.of(agentBuilderModel, graphRunModel), projectRoot, projectDescription);
+        renderAndWriteTemplates(List.of(AGENT_BUILDER_TEMPLATE_NAME, AGENT_APPLICATION_TEMPLATE_NAME),
+            List.of(agentBuilderModel, appModel), projectRoot, projectDescription);
     }
 
     private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, Object>> models, Path projectRoot,
@@ -111,6 +114,11 @@ public class AgentProjectGenerator implements ProjectGenerator {
         catch (Exception e) {
             throw new RuntimeException("Got error when creating files", e);
         }
+    }
+
+    private String renderImportSection(Agent agent) {
+        // 预留扩展：按需聚合导入，当前最小实现返回空字符串
+        return "";
     }
 
     // ----------------- code rendering helpers -----------------

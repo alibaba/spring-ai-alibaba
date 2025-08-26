@@ -343,6 +343,7 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 							Optional.ofNullable(data.getSystemPromptTemplate()).map(convertString).orElse(null));
 			});
 			case CUSTOM -> super.postProcessConsumer(dialectType);
+			default -> super.postProcessConsumer(dialectType);
 		};
 	}
 

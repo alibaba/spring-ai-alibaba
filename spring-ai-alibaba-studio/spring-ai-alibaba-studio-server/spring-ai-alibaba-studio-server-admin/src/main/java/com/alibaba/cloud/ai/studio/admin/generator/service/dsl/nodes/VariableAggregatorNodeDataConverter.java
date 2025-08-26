@@ -208,7 +208,8 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
 				yield consumer.andThen(super.postProcessConsumer(dialectType));
 			}
 			case CUSTOM -> super.postProcessConsumer(dialectType);
-		};
+            default -> super.postProcessConsumer(dialectType);
+        };
 	}
 
 }

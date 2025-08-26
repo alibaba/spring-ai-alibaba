@@ -139,7 +139,8 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 				nodeData.setInputTextKey(nodeData.getInputs().get(0).getNameInCode());
 			});
 			case CUSTOM -> super.postProcessConsumer(dialectType);
-		};
+            default -> super.postProcessConsumer(dialectType);
+        };
 	}
 
 }
