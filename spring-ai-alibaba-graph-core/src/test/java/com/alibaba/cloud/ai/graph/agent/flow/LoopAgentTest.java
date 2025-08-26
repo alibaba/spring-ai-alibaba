@@ -31,6 +31,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -90,19 +91,41 @@ public class LoopAgentTest {
 		LoopAgent loopAgent = LoopAgent.builder()
 			.name("loop_agent")
 			.description("循环执行3次")
+			.inputKey("loop_input")
 			.outputKey("loop_output")
-			.state(() -> Map.of("loop_output", new AppendStrategy()))
+			.state(() -> Map.of("loop_output", new AppendStrategy(), "loop_input", new ReplaceStrategy()))
 			.loopMode(LoopAgent.LoopMode.COUNT)
 			.loopCount(3)
 			.subAgents(List.of(writerAgent, reviewerAgent))
 			.build();
 
-		Map<String, Object> data = loopAgent.invoke(Map.of()).get().data();
+		Map<String, Object> data = loopAgent.invoke(Map.of("loop_input", "帮我写一个散文，题目是：如何进行垃圾分类")).get().data();
 
 		List<?> loopOutput = (List<?>) data.get("loop_output");
 		logger.info("loopOutput: {}", loopOutput);
 
 		assertEquals(3, loopOutput.size());
+	}
+
+	@Test
+	public void testConditionalLoopAgent() throws Exception {
+		LoopAgent loopAgent = LoopAgent.builder()
+			.name("loop_agent")
+			.description("迭代执行")
+			.inputKey("loop_input")
+			.outputKey("loop_output")
+			.loopCondition(result -> result instanceof String && StringUtils.hasText((String) result))
+			.state(() -> Map.of("loop_output", new AppendStrategy(), "loop_input", new ReplaceStrategy()))
+			.loopMode(LoopAgent.LoopMode.CONDITION)
+			.subAgents(List.of(writerAgent))
+			.build();
+
+		Map<String, Object> data = loopAgent.invoke(Map.of("loop_input", "帮我写一个散文，题目是：如何进行垃圾分类")).get().data();
+
+		List<?> loopOutput = (List<?>) data.get("loop_output");
+		logger.info("loopOutput: {}", loopOutput);
+
+		assertEquals(1, loopOutput.size());
 	}
 
 	@Test
@@ -119,6 +142,53 @@ public class LoopAgentTest {
 
 		Map<String, Object> data = loopAgent
 			.invoke(Map.of("loop_input", List.of("帮我写一个散文，题目是：如何进行垃圾分类", "帮我写一个散文，题目是：如何节约资源", "帮我写一个散文，题目是：大自然的风景")))
+			.get()
+			.data();
+
+		List<?> loopOutput = (List<?>) data.get("loop_output");
+		logger.info("loopOutput: {}", loopOutput);
+
+		assertEquals(3, loopOutput.size());
+	}
+
+	@Test
+	public void testArrayLoopAgent() throws Exception {
+		LoopAgent loopAgent = LoopAgent.builder()
+			.name("loop_agent")
+			.description("迭代执行")
+			.inputKey("loop_input")
+			.outputKey("loop_output")
+			.state(() -> Map.of("loop_output", new AppendStrategy(), "loop_input", new ReplaceStrategy()))
+			.loopMode(LoopAgent.LoopMode.ARRAY)
+			.subAgents(List.of(writerAgent))
+			.build();
+
+		Map<String, Object> data = loopAgent
+			.invoke(Map.of("loop_input",
+					new String[] { "帮我写一个散文，题目是：如何进行垃圾分类", "帮我写一个散文，题目是：如何节约资源", "帮我写一个散文，题目是：大自然的风景" }))
+			.get()
+			.data();
+
+		List<?> loopOutput = (List<?>) data.get("loop_output");
+		logger.info("loopOutput: {}", loopOutput);
+
+		assertEquals(3, loopOutput.size());
+	}
+
+	@Test
+	public void testJsonArrayLoopAgent() throws Exception {
+		LoopAgent loopAgent = LoopAgent.builder()
+			.name("loop_agent")
+			.description("迭代执行")
+			.inputKey("loop_input")
+			.outputKey("loop_output")
+			.state(() -> Map.of("loop_output", new AppendStrategy(), "loop_input", new ReplaceStrategy()))
+			.loopMode(LoopAgent.LoopMode.JSON_ARRAY)
+			.subAgents(List.of(writerAgent))
+			.build();
+
+		Map<String, Object> data = loopAgent
+			.invoke(Map.of("loop_input", "[\"帮我写一个散文，题目是：如何进行垃圾分类\", \"帮我写一个散文，题目是：如何节约资源\", \"帮我写一个散文，题目是：大自然的风景\"]"))
 			.get()
 			.data();
 

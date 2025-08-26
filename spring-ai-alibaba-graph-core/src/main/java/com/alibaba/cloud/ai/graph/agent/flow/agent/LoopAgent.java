@@ -29,10 +29,11 @@ import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import org.springframework.ai.util.json.JsonParser;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -90,6 +91,10 @@ public class LoopAgent extends FlowAgent {
 		 * 限定次数
 		 */
 		COUNT((agentName, loopConfig) -> (state -> {
+			// 获取输入，用于传给迭代体
+			Optional<?> input = state.value(loopConfig.inputKey());
+
+			// 获取当前迭代次数
 			String countKey = agentName + "__loop_count";
 			int loopCount = state.value(countKey, 0);
 			int maxCount = Optional.ofNullable(loopConfig.loopCount()).orElse(0);
@@ -99,9 +104,11 @@ public class LoopAgent extends FlowAgent {
 				return Map.of(LoopMode.loopStartFlagKey(agentName), false);
 			}
 
-			// 将当前迭代次数进行更新，同时将当前迭代次数作为本次的iterator_item
-			return Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true,
-					LoopMode.iteratorItemKey(agentName), String.valueOf(loopCount + 1));
+			// 将当前迭代次数进行更新，并返回
+			return input
+				.map(o -> Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true,
+						LoopMode.iteratorItemKey(agentName), o))
+				.orElseGet(() -> Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true));
 		}), (agentName, loopConfig) -> (state -> {
 			// 将结果放入outputKey中
 			Optional<Object> value = state.value(iteratorResultKey(agentName));
@@ -109,15 +116,30 @@ public class LoopAgent extends FlowAgent {
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of(agentName + "__loop_count", new ReplaceStrategy()))),
 
 		/**
-		 * 限定条件
+		 * 限定条件，类似于do-while结构，判断循环体的输出是否满足条件。如果满足Predicate，则退出循环
 		 */
 		CONDITION((agentName, loopConfig) -> (state -> {
-			return Map.of();
+			// 获取输入，用于传给迭代体
+			Optional<?> input = state.value(loopConfig.inputKey());
+			// 判断是不是第一次循环，如果是则直接放行
+			if (state.value(loopStartFlagKey(agentName)).isEmpty()) {
+				return input.map(o -> Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), o))
+					.orElseGet(() -> Map.of(loopStartFlagKey(agentName), true));
+			}
+
+			// 获取当前迭代结果
+			Object result = state.value(iteratorResultKey(agentName)).orElse(null);
+			if (loopConfig.loopCondition.test(result)) {
+				return Map.of(LoopMode.loopStartFlagKey(agentName), false);
+			}
+			// 继续重试
+			return input.map(o -> Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), o))
+				.orElseGet(() -> Map.of(loopStartFlagKey(agentName), true));
 		}), (agentName, loopConfig) -> (state -> {
-			return Map.of();
-		}), (agentName) -> {
-			return combineKeyStrategy(agentName, Map.of());
-		}),
+			// 将结果放入outputKey中
+			Optional<Object> value = state.value(iteratorResultKey(agentName));
+			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
+		}), (agentName) -> combineKeyStrategy(agentName, Map.of())),
 
 		/**
 		 * 迭代可叠代对象
@@ -164,32 +186,75 @@ public class LoopAgent extends FlowAgent {
 			// 将结果放入outputKey中
 			Optional<Object> value = state.value(iteratorResultKey(agentName));
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
-		}), (agentName) -> {
-			return combineKeyStrategy(agentName, Map.of(agentName + "__iterableElement", new ReplaceStrategy(),
-					agentName + "__iterableIndex", new ReplaceStrategy()));
-		}),
+		}), (agentName) -> combineKeyStrategy(agentName,
+				Map.of(agentName + "__iterableElement", new ReplaceStrategy(), agentName + "__iterableIndex",
+						new ReplaceStrategy()))),
 
 		/**
 		 * 迭代数组对象
 		 */
 		ARRAY((agentName, loopConfig) -> (state -> {
-			return Map.of();
+			// 获取输入的数组
+			Object arrayObj = state.value(loopConfig.inputKey()).orElse(null);
+			if (arrayObj == null) {
+				return Map.of(loopStartFlagKey(agentName), false);
+			}
+			if (!arrayObj.getClass().isArray()) {
+				throw new IllegalStateException("Input array is not an array");
+			}
+
+			// 获取当前迭代索引
+			String indexKey = agentName + "__arrayIndex";
+			int index = state.value(indexKey, 0);
+			int length = Array.getLength(arrayObj);
+			if (index >= length) {
+				return Map.of(loopStartFlagKey(agentName), false);
+			}
+			Object obj = Array.get(arrayObj, index);
+			return Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), obj, indexKey, index + 1);
 		}), (agentName, loopConfig) -> (state -> {
-			return Map.of();
-		}), (agentName) -> {
-			return combineKeyStrategy(agentName, Map.of());
-		}),
+			// 将结果放入outputKey中
+			Optional<Object> value = state.value(iteratorResultKey(agentName));
+			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
+		}), (agentName) -> combineKeyStrategy(agentName, Map.of(agentName + "__arrayIndex", new ReplaceStrategy()))),
 
 		/**
 		 * 迭代JSON数组
 		 */
 		JSON_ARRAY((agentName, loopConfig) -> (state -> {
-			return Map.of();
+			String listKey = agentName + "__list";
+			// 尝试获取迭代元素的列表，如果是第一次执行则先从JSON字符串中初始化
+			List<?> list;
+			Optional<Object> listObj = state.value(listKey);
+			if (listObj.isEmpty()) {
+				// 获取输入的数组
+				String jsonStr = state.value(loopConfig.inputKey()).orElse("[]").toString();
+				try {
+					list = JsonParser.fromJson(jsonStr, List.class);
+				}
+				catch (Exception e) {
+					throw new IllegalStateException("Input json array is not a json array");
+				}
+			}
+			else {
+				list = (List<?>) listObj.get();
+			}
+
+			// 获取当前迭代索引
+			String indexKey = agentName + "__jsonIndex";
+			int index = state.value(indexKey, 0);
+			if (index >= list.size()) {
+				return Map.of(loopStartFlagKey(agentName), false);
+			}
+			Object obj = list.get(index);
+			return Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), obj, indexKey, index + 1,
+					listKey, list);
 		}), (agentName, loopConfig) -> (state -> {
-			return Map.of();
-		}), (agentName) -> {
-			return combineKeyStrategy(agentName, Map.of());
-		});
+			// 将结果放入outputKey中
+			Optional<Object> value = state.value(iteratorResultKey(agentName));
+			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
+		}), (agentName) -> combineKeyStrategy(agentName,
+				Map.of(agentName + "__jsonIndex", new ReplaceStrategy(), agentName + "__list", new ReplaceStrategy())));
 
 		private final BiFunction<String, LoopConfig, NodeAction> startActionFunc;
 
