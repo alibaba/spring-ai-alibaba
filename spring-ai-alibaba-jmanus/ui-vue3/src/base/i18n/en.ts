@@ -770,7 +770,7 @@ const words: I18nType = {
 
   // Sidebar
   sidebar: {
-    title: 'PLAN-ACT Templates',
+    title: 'PLAN-ACT Template Name',
     templateList: 'Template List',
     configuration: 'Configuration',
     newPlan: 'New Plan',
@@ -837,6 +837,34 @@ const words: I18nType = {
     newTemplateDescription: 'Please use the plan generator to create a new plan template',
     generatedTemplateDescription: 'Plan template created by generator',
     defaultExecutionPlanTitle: 'Execution Plan',
+    
+    // JsonEditor related
+    planId: 'Plan ID',
+    steps: 'Steps',
+    agent: 'Agent',
+    stepRequirement: 'Step Requirement',
+    stepRequirementPlaceholder: 'Please enter the specific requirements and description for this step...',
+    terminateColumns: 'Terminate Conditions',
+    terminateColumnsPlaceholder: 'Please enter terminate conditions...',
+    titlePlaceholder: 'Please enter plan title...',
+    moveUp: 'Move Up',
+    moveDown: 'Move Down',
+    removeStep: 'Remove Step',
+    addStep: 'Add Step',
+    addFirstStep: 'Add First Step',
+    noSteps: 'No steps yet, click the button below to start adding',
+    jsonPreview: 'JSON Preview',
+    showJson: 'Show JSON',
+    hideJson: 'Hide JSON',
+    refreshAgents: 'Refresh Agents',
+    agentLoadError: 'Failed to load agents',
+    retryLoadAgents: 'Retry loading agents',
+    availableTools: 'Available Tools',
+    
+    // Common error messages
+    loadingFailed: 'Loading failed',
+    networkError: 'Network error',
+    apiError: 'API call failed',
   },
 
   // Tool Selection

@@ -15,6 +15,7 @@
  */
 
 import { reactive, computed, watch, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { AgentApiService, type Agent } from '@/api/agent-api-service'
 import { getAllAgents, type AgentEntity } from '@/api/agent'
 
@@ -30,6 +31,7 @@ export interface AvailableAgent {
   name: string
   description: string
   agentType?: string
+  tools?: string[]
 }
 
 export interface ParsedPlanData {
@@ -60,6 +62,9 @@ export interface JsonEditorEmits {
  * JsonEditor组件的业务逻辑
  */
 export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
+  // I18n
+  const { t } = useI18n()
+  
   // State
   const showJsonPreview = ref(false)
   const availableAgents = ref<AvailableAgent[]>([])
@@ -169,6 +174,32 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   })
 
   /**
+   * 格式化agent显示文本（带描述截断）
+   */
+  const formatAgentDisplayText = (agent: AvailableAgent, maxDescLength = 20): string => {
+    const description = agent.description || ''
+    const truncatedDesc = description.length > maxDescLength 
+      ? description.substring(0, maxDescLength) + '...' 
+      : description
+    
+    return truncatedDesc ? `[${agent.name}] ${truncatedDesc}` : `[${agent.name}]`
+  }
+
+  /**
+   * 生成agent的完整工具提示文本
+   */
+  const generateAgentTooltip = (agent: AvailableAgent): string => {
+    let tooltip = agent.description || agent.name
+    
+    if (agent.tools && agent.tools.length > 0) {
+      tooltip += '\n\n' + t('sidebar.availableTools') + ':\n'
+      tooltip += agent.tools.map(tool => `• ${tool}`).join('\n')
+    }
+    
+    return tooltip
+  }
+
+  /**
    * 加载可用的agents列表
    */
   const loadAvailableAgents = async () => {
@@ -194,7 +225,8 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
           id: agent.name.toUpperCase().replace(/\s+/g, '_'),
           name: agent.name.toUpperCase().replace(/\s+/g, '_'),
           description: agent.description,
-          agentType: agent.name
+          agentType: agent.name,
+          tools: agent.availableTools || []
         }))
         agents.push(...configAgentList)
       }
@@ -206,14 +238,15 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
           id: agent.agentName.toUpperCase().replace(/\s+/g, '_'),
           name: agent.agentName.toUpperCase().replace(/\s+/g, '_'),
           description: agent.agentDescription,
-          agentType: agent.agentName
+          agentType: agent.agentName,
+          tools: agent.availableToolKeys || []
         }))
         agents.push(...managementAgentList)
       }
 
       // 如果两个API都失败了
       if (!hasSuccessfulCall) {
-        throw new Error('Failed to load agents from both APIs')
+        throw new Error(t('sidebar.agentLoadError'))
       }
 
       // 去重（基于id）
@@ -226,7 +259,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
 
     } catch (error) {
       console.error('Failed to load agents:', error)
-      agentsLoadError.value = error instanceof Error ? error.message : 'Failed to load agents'
+      agentsLoadError.value = error instanceof Error ? error.message : t('sidebar.agentLoadError')
       availableAgents.value = []
       hasLoadedAgents.value = true
     } finally {
@@ -358,6 +391,8 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
     convertVisualToJson,
     emitJsonUpdate,
     loadAvailableAgents,
+    formatAgentDisplayText,
+    generateAgentTooltip,
     addStep,
     removeStep,
     moveStepUp,

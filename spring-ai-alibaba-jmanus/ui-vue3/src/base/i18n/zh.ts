@@ -738,7 +738,7 @@ const words: I18nType = {
 
   // 侧边栏
   sidebar: {
-    title: 'PLAN-ACT 计划模板',
+    title: 'PLAN-ACT 计划模板名字',
     templateList: '模板列表',
     configuration: '配置',
     newPlan: '新建计划',
@@ -804,6 +804,34 @@ const words: I18nType = {
     newTemplateDescription: '请使用计划生成器创建新的计划模板',
     generatedTemplateDescription: '通过生成器创建的计划模板',
     defaultExecutionPlanTitle: '执行计划',
+    
+    // JsonEditor 相关
+    planId: '计划ID',
+    steps: '步骤',
+    agent: '智能体',
+    stepRequirement: '步骤需求',
+    stepRequirementPlaceholder: '请输入步骤的具体需求和描述...',
+    terminateColumns: '终止条件',
+    terminateColumnsPlaceholder: '请输入终止条件...',
+    titlePlaceholder: '请输入计划标题...',
+    moveUp: '上移',
+    moveDown: '下移',
+    removeStep: '删除步骤',
+    addStep: '添加步骤',
+    addFirstStep: '添加第一个步骤',
+    noSteps: '暂无步骤，点击下方按钮开始添加',
+    jsonPreview: 'JSON预览',
+    showJson: '显示JSON',
+    hideJson: '隐藏JSON',
+    refreshAgents: '刷新智能体',
+    agentLoadError: '加载智能体失败',
+    retryLoadAgents: '重新加载智能体',
+    availableTools: '可用工具',
+    
+    // 通用错误信息
+    loadingFailed: '加载失败',
+    networkError: '网络错误',
+    apiError: 'API调用失败',
   },
 
   // 工具选择

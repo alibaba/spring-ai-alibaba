@@ -89,7 +89,7 @@
               @click="loadAvailableAgents" 
               class="btn btn-xs"
               :disabled="isLoadingAgents"
-              :title="$t('sidebar.refreshAgents') || 'Refresh Agents'"
+              :title="$t('sidebar.refreshAgents')"
             >
               <Icon icon="carbon:refresh" width="12" />
             </button>
@@ -147,10 +147,10 @@
                 <div class="agent-selector">
                   <select v-model="step.agentType" class="form-select agent-select" :disabled="isLoadingAgents || shouldShowError">
                     <!-- Loading state -->
-                    <option v-if="isLoadingAgents" disabled>{{ $t('sidebar.loading') || 'Loading...' }}</option>
+                    <option v-if="isLoadingAgents" disabled>{{ $t('sidebar.loading') }}</option>
                     
                     <!-- Error state -->
-                    <option v-else-if="shouldShowError" disabled>{{ $t('sidebar.agentLoadError') || 'Failed to load agents' }}</option>
+                    <option v-else-if="shouldShowError" disabled>{{ $t('sidebar.agentLoadError') }}</option>
                     
                     <!-- Normal state -->
                     <template v-else>
@@ -158,9 +158,9 @@
                         v-for="agent in agentOptions" 
                         :key="agent.id"
                         :value="agent.id"
-                        :title="agent.description"
+                        :title="generateAgentTooltip(agent)"
                       >
-                        [{{ agent.name }}]
+                        {{ formatAgentDisplayText(agent) }}
                       </option>
                     </template>
                   </select>
@@ -170,10 +170,10 @@
                     v-if="shouldShowError"
                     @click="loadAvailableAgents" 
                     class="btn btn-sm btn-danger"
-                    :title="$t('sidebar.retryLoadAgents') || 'Retry loading agents'"
+                    :title="$t('sidebar.retryLoadAgents')"
                   >
                     <Icon icon="carbon:warning" width="14" />
-                    {{ $t('sidebar.retry') || 'Retry' }}
+                    {{ $t('sidebar.retry') }}
                   </button>
                   
                   <!-- Normal add step button -->
@@ -287,6 +287,8 @@ const {
   agentOptions,
   shouldShowError,
   loadAvailableAgents,
+  formatAgentDisplayText,
+  generateAgentTooltip,
   addStep,
   removeStep,
   moveStepUp,
