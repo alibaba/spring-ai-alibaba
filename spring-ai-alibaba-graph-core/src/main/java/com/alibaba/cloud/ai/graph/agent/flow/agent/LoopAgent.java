@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.springframework.ai.util.json.JsonParser;
+import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -139,7 +140,8 @@ public class LoopAgent extends FlowAgent {
 		 * Applicable scenario: Scenarios requiring a fixed number of operations
 		 * </p>
 		 */
-		COUNT((agentName, loopConfig) -> (state -> {
+		COUNT(loopConfig -> (state -> {
+			String agentName = loopConfig.agentName();
 			// Get input for passing to the iterator body
 			Optional<?> input = state.value(loopConfig.inputKey());
 
@@ -159,9 +161,9 @@ public class LoopAgent extends FlowAgent {
 				.map(o -> Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true,
 						LoopMode.iteratorItemKey(agentName), o))
 				.orElseGet(() -> Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true));
-		}), (agentName, loopConfig) -> (state -> {
+		}), loopConfig -> (state -> {
 			// Put the result into outputKey
-			Optional<Object> value = state.value(iteratorResultKey(agentName));
+			Optional<Object> value = state.value(iteratorResultKey(loopConfig.agentName()));
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of(agentName + "__loop_count", new ReplaceStrategy()))),
 
@@ -181,7 +183,8 @@ public class LoopAgent extends FlowAgent {
 		 * be made dynamically based on execution results
 		 * </p>
 		 */
-		CONDITION((agentName, loopConfig) -> (state -> {
+		CONDITION(loopConfig -> (state -> {
+			String agentName = loopConfig.agentName();
 			// Get input for passing to the iterator body
 			Optional<?> input = state.value(loopConfig.inputKey());
 			// Check if it's the first loop, if so, allow it to proceed directly
@@ -198,9 +201,9 @@ public class LoopAgent extends FlowAgent {
 			// Continue retrying
 			return input.map(o -> Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), o))
 				.orElseGet(() -> Map.of(loopStartFlagKey(agentName), true));
-		}), (agentName, loopConfig) -> (state -> {
+		}), loopConfig -> (state -> {
 			// Put the result into outputKey
-			Optional<Object> value = state.value(iteratorResultKey(agentName));
+			Optional<Object> value = state.value(iteratorResultKey(loopConfig.agentName()));
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of())),
 
@@ -222,7 +225,8 @@ public class LoopAgent extends FlowAgent {
 		 * collection or list
 		 * </p>
 		 */
-		ITERABLE((agentName, loopConfig) -> (state -> {
+		ITERABLE(loopConfig -> (state -> {
+			String agentName = loopConfig.agentName();
 			// Get the elements to be iterated over. If they don't exist, it means it's
 			// the first loop execution, so get the input first
 			String iteratorKey = agentName + "__iterableElement";
@@ -261,9 +265,9 @@ public class LoopAgent extends FlowAgent {
 			else {
 				return Map.of(loopStartFlagKey(agentName), false);
 			}
-		}), (agentName, loopConfig) -> (state -> {
+		}), loopConfig -> (state -> {
 			// Put the result into outputKey
-			Optional<Object> value = state.value(iteratorResultKey(agentName));
+			Optional<Object> value = state.value(iteratorResultKey(loopConfig.agentName()));
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName,
 				Map.of(agentName + "__iterableElement", new ReplaceStrategy(), agentName + "__iterableIndex",
@@ -285,7 +289,8 @@ public class LoopAgent extends FlowAgent {
 		 * array
 		 * </p>
 		 */
-		ARRAY((agentName, loopConfig) -> (state -> {
+		ARRAY(loopConfig -> (state -> {
+			String agentName = loopConfig.agentName();
 			// Get the input array
 			Object arrayObj = state.value(loopConfig.inputKey()).orElse(null);
 			if (arrayObj == null) {
@@ -304,9 +309,9 @@ public class LoopAgent extends FlowAgent {
 			}
 			Object obj = Array.get(arrayObj, index);
 			return Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), obj, indexKey, index + 1);
-		}), (agentName, loopConfig) -> (state -> {
+		}), loopConfig -> (state -> {
 			// Put the result into outputKey
-			Optional<Object> value = state.value(iteratorResultKey(agentName));
+			Optional<Object> value = state.value(iteratorResultKey(loopConfig.agentName()));
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of(agentName + "__arrayIndex", new ReplaceStrategy()))),
 
@@ -326,7 +331,8 @@ public class LoopAgent extends FlowAgent {
 		 * Applicable scenario: Scenarios requiring processing of JSON format array data
 		 * </p>
 		 */
-		JSON_ARRAY((agentName, loopConfig) -> (state -> {
+		JSON_ARRAY(loopConfig -> (state -> {
+			String agentName = loopConfig.agentName();
 			String listKey = agentName + "__list";
 			// Try to get the list of iteration elements. If it's the first execution,
 			// initialize from the JSON string
@@ -355,9 +361,9 @@ public class LoopAgent extends FlowAgent {
 			Object obj = list.get(index);
 			return Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), obj, indexKey, index + 1,
 					listKey, list);
-		}), (agentName, loopConfig) -> (state -> {
+		}), loopConfig -> (state -> {
 			// Put the result into outputKey
-			Optional<Object> value = state.value(iteratorResultKey(agentName));
+			Optional<Object> value = state.value(iteratorResultKey(loopConfig.agentName()));
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName,
 				Map.of(agentName + "__jsonIndex", new ReplaceStrategy(), agentName + "__list", new ReplaceStrategy())));
@@ -365,32 +371,31 @@ public class LoopAgent extends FlowAgent {
 		/**
 		 * Get the corresponding Start node based on LoopConfig and LoopMode
 		 */
-		private final BiFunction<String, LoopConfig, NodeAction> startActionFunc;
+		private final Function<LoopConfig, NodeAction> startActionFunc;
 
 		/**
 		 * Get the corresponding End node based on LoopConfig and LoopMode
 		 */
-		private final BiFunction<String, LoopConfig, NodeAction> endActionFunc;
+		private final Function<LoopConfig, NodeAction> endActionFunc;
 
 		/**
 		 * Get the KeyStrategy required for LoopStart and LoopEnd nodes based on LoopMode
 		 */
 		private final Function<String, KeyStrategyFactory> loopTempKeyStrategyFactoryFunc;
 
-		LoopMode(BiFunction<String, LoopConfig, NodeAction> startActionFunc,
-				BiFunction<String, LoopConfig, NodeAction> endActionFunc,
+		LoopMode(Function<LoopConfig, NodeAction> startActionFunc, Function<LoopConfig, NodeAction> endActionFunc,
 				Function<String, KeyStrategyFactory> loopTempKeyStrategyFactoryFunc) {
 			this.startActionFunc = startActionFunc;
 			this.endActionFunc = endActionFunc;
 			this.loopTempKeyStrategyFactoryFunc = loopTempKeyStrategyFactoryFunc;
 		}
 
-		public NodeAction getStartAction(String agentName, LoopConfig loopConfig) {
-			return startActionFunc.apply(agentName, loopConfig);
+		public NodeAction getStartAction(LoopConfig loopConfig) {
+			return startActionFunc.apply(loopConfig);
 		}
 
-		public NodeAction getEndAction(String agentName, LoopConfig loopConfig) {
-			return endActionFunc.apply(agentName, loopConfig);
+		public NodeAction getEndAction(LoopConfig loopConfig) {
+			return endActionFunc.apply(loopConfig);
 		}
 
 		public KeyStrategyFactory getLoopTempKeyStrategyFactory(String agentName) {
@@ -422,6 +427,7 @@ public class LoopAgent extends FlowAgent {
 	/**
 	 * Loop configuration class for encapsulating loop-related configuration information
 	 *
+	 * @param agentName The name of the agent
 	 * @param inputKey The input key for the loop, should conform to the requirements of
 	 * loopMode. Some modes can have no input.
 	 * @param outputKey The loop output result, which is a List object
@@ -430,13 +436,16 @@ public class LoopAgent extends FlowAgent {
 	 * @param loopCondition The loop condition, only valid in CONDITION mode. The
 	 * condition is checked for continuation on each loop iteration.
 	 */
-	public record LoopConfig(String inputKey, String outputKey, LoopMode loopMode, Integer loopCount,
+	public record LoopConfig(String agentName, String inputKey, String outputKey, LoopMode loopMode, Integer loopCount,
 			Predicate<Object> loopCondition) {
 		/**
 		 * Validate the validity of the loop configuration
 		 * @throws IllegalArgumentException Thrown when the configuration is invalid
 		 */
 		public void validate() {
+			if (!StringUtils.hasText(agentName)) {
+				throw new IllegalArgumentException("AgentName must be provided");
+			}
 			if (loopMode == null) {
 				throw new IllegalArgumentException("Must choose a LoopMode");
 			}
@@ -502,7 +511,7 @@ public class LoopAgent extends FlowAgent {
 
 		@Override
 		public LoopAgent build() throws GraphStateException {
-			loopConfig = new LoopConfig(inputKey, outputKey, loopMode, loopCount, loopCondition);
+			loopConfig = new LoopConfig(name, inputKey, outputKey, loopMode, loopCount, loopCondition);
 			validate();
 			return new LoopAgent(self());
 		}

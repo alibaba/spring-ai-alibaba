@@ -81,7 +81,7 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 		String endNodeName = agentName + "__loop_end__";
 
 		// Add nodes
-		stateGraph.addNode(startNodeName, node_async(loopConfig.loopMode().getStartAction(agentName, loopConfig)));
+		stateGraph.addNode(startNodeName, node_async(loopConfig.loopMode().getStartAction(loopConfig)));
 
 		// Expand sub-agent nodes
 		String lastOutput = generateTempInput(config.getSubAgents().get(0));
@@ -96,7 +96,7 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 		stateGraph.addNode(bodyEndNodeName,
 				node_async(new TransparentNode(LoopAgent.LoopMode.iteratorResultKey(agentName), lastOutput)));
 
-		stateGraph.addNode(endNodeName, node_async(loopConfig.loopMode().getEndAction(agentName, loopConfig)));
+		stateGraph.addNode(endNodeName, node_async(loopConfig.loopMode().getEndAction(loopConfig)));
 
 		// Add conditional edges to control the loop flow
 		stateGraph.addEdge(START, startNodeName).addConditionalEdges(startNodeName, edge_async((state -> {
