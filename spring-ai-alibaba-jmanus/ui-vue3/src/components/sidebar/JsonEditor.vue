@@ -411,7 +411,7 @@ const autoResizeTextarea = (event: Event) => {
   resize: none;
   transition: height 0.2s ease;
   overflow-y: auto;
-  max-height: 240px; /* 12行 * 20px = 240px */
+  max-height: 240px;
 }
 
 .checkbox-wrapper {
