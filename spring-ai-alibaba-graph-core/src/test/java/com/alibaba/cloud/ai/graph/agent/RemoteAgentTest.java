@@ -57,18 +57,19 @@ class RemoteAgentTest {
 			return keyStrategyHashMap;
 		};
 
-		A2aRemoteAgent remoteWriterAgent = A2aRemoteAgent.builder()
-			.name("writer_agent")
-			.agentCard(RemoteAgentCard.builder().url("http://0.0.0.0:10000").build())
-			.description("可以写文章。")
-			.outputKey("article")
-			.build();
+//		You need to have a remote agent service running at the specified URL for this test to work.
+//		A2aRemoteAgent remoteWriterAgent = A2aRemoteAgent.builder()
+//			.name("writer_agent")
+//			.agentCard(RemoteAgentCard.builder().url("http://0.0.0.0:10000").build())
+//			.description("可以写文章。")
+//			.outputKey("article")
+//			.build();
 
-        System.out.println(RemoteAgentCard.builder().url("http://0.0.0.0:10000").build());
+//        System.out.println(RemoteAgentCard.builder().url("http://0.0.0.0:10000").build());
 
 		try {
-			Optional<OverAllState> result = remoteWriterAgent.invoke(Map.of("input", "帮我写一个100字左右的散文"));
-			System.out.println(result.get());
+//			Optional<OverAllState> result = remoteWriterAgent.invoke(Map.of("input", "帮我写一个100字左右的散文"));
+//			System.out.println(result.get());
 		}
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();
