@@ -33,6 +33,7 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -40,6 +41,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * 循环Agent，支持三种模式：限定次数、限定条件、迭代可叠代对象。输出元素为一个List，是每次循环之后最后一个子Agent的输出，对应的Key应为AppendStrategy
@@ -49,6 +51,8 @@ public class LoopAgent extends FlowAgent {
 	private final LoopConfig loopConfig;
 
 	public static final String LOOP_CONFIG_KEY = "loopConfig";
+
+	public static final int ITERABLE_ELEMENT_COUNT = 10000;
 
 	/**
 	 * LoopAgent的子Agent为循环体，可以为一个SequentialAgent。若有多个Agent，则会组装成一个SequentialAgent进行处理
@@ -119,10 +123,10 @@ public class LoopAgent extends FlowAgent {
 		 * 迭代可叠代对象
 		 */
 		ITERABLE((agentName, loopConfig) -> (state -> {
-			// 获取迭代器，如果迭代器不存在，则说明第一次执行循环，先获取输入
-			String iteratorKey = agentName + "__iterator";
+			// 获取要执行迭代的元素，如果不存在，则说明第一次执行循环，先获取输入
+			String iteratorKey = agentName + "__iterableElement";
 			Optional<Object> iteratorObj = state.value(iteratorKey);
-			Iterator<?> iterator;
+			List<?> iteratorElement;
 
 			if (iteratorObj.isEmpty()) {
 				// 获取输出
@@ -134,16 +138,24 @@ public class LoopAgent extends FlowAgent {
 				if (!(iterableObj instanceof Iterable<?> iterable)) {
 					throw new IllegalStateException("Input iterable is not iterable");
 				}
-				iterator = iterable.iterator();
+				// 将Iterable转换为List，并限制最大数量
+				iteratorElement = StreamSupport.stream(iterable.spliterator(), false)
+					.limit(ITERABLE_ELEMENT_COUNT)
+					.toList();
 			}
 			else {
-				iterator = (Iterator<?>) iteratorObj.get();
+				iteratorElement = (List<?>) iteratorObj.get();
 			}
 
-			// 判断是否还有下一个元素，若有则获取下一个元素，并将迭代器放进state里
-			if (iterator.hasNext()) {
-				return Map.of(iteratorItemKey(agentName), iterator.next(), loopStartFlagKey(agentName), true,
-						iteratorKey, iterator);
+			// 获取当前迭代索引
+			String indexKey = agentName + "__iterableIndex";
+			int index = state.value(indexKey, 0);
+
+			// 判断是否还有下一个元素，若有则获取下一个元素
+			if (index < iteratorElement.size()) {
+				Object next = iteratorElement.get(index);
+				return Map.of(iteratorItemKey(agentName), next, loopStartFlagKey(agentName), true, iteratorKey,
+						iteratorElement, indexKey, index + 1);
 			}
 			else {
 				return Map.of(loopStartFlagKey(agentName), false);
@@ -153,7 +165,8 @@ public class LoopAgent extends FlowAgent {
 			Optional<Object> value = state.value(iteratorResultKey(agentName));
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> {
-			return combineKeyStrategy(agentName, Map.of(agentName + "__iterator", new ReplaceStrategy()));
+			return combineKeyStrategy(agentName, Map.of(agentName + "__iterableElement", new ReplaceStrategy(),
+					agentName + "__iterableIndex", new ReplaceStrategy()));
 		}),
 
 		/**
