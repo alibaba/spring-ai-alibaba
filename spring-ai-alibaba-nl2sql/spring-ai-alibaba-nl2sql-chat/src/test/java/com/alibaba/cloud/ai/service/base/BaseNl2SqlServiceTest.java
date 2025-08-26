@@ -113,12 +113,12 @@ class BaseNl2SqlServiceTest {
 
 		// Mock 依赖方法的返回值
 		List<String> mockEvidences = Arrays.asList("evidence1", "evidence2");
-		when(vectorStoreService.getDocuments(anyString(), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
+		when(vectorStoreService.getDocuments(anyString(), eq("evidence")))
+			.thenReturn(createMockDocuments(mockEvidences));
 
 		SchemaDTO mockSchemaDTO = createMockSchemaDTO();
 		when(schemaService.mixRag(anyString(), anyList())).thenReturn(mockSchemaDTO);
-		when(aiService.call(anyString()))
-			.thenReturn(query) // processTimeExpressions
+		when(aiService.call(anyString())).thenReturn(query) // processTimeExpressions
 			.thenReturn("[\"keyword1\", \"keyword2\"]") // extractKeywords
 			.thenReturn("[]") // fineSelect
 			.thenReturn("需求类型：正常查询\n需求内容：" + expectedRewrittenQuery); // buildRewritePrompt
@@ -129,7 +129,7 @@ class BaseNl2SqlServiceTest {
 		// Verify result
 		assertEquals(expectedRewrittenQuery, result);
 
-		// Verify method call 
+		// Verify method call
 		verify(vectorStoreService, times(1)).getDocuments(anyString(), eq("evidence"));
 		verify(aiService, atLeastOnce()).call(anyString());
 
@@ -144,12 +144,12 @@ class BaseNl2SqlServiceTest {
 
 		// Mock 依赖方法的返回值
 		List<String> mockEvidences = Arrays.asList("evidence1");
-		when(vectorStoreService.getDocuments(anyString(), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
+		when(vectorStoreService.getDocuments(anyString(), eq("evidence")))
+			.thenReturn(createMockDocuments(mockEvidences));
 
 		SchemaDTO mockSchemaDTO = createMockSchemaDTO();
 		when(schemaService.mixRag(anyString(), anyList())).thenReturn(mockSchemaDTO);
-		when(aiService.call(anyString()))
-			.thenReturn(query) // processTimeExpressions
+		when(aiService.call(anyString())).thenReturn(query) // processTimeExpressions
 			.thenReturn("[\"greeting\"]") // extractKeywords
 			.thenReturn("[]") // fineSelect
 			.thenReturn("需求类型：《自由闲聊》\n需求内容：用户问好"); // buildRewritePrompt
@@ -171,12 +171,12 @@ class BaseNl2SqlServiceTest {
 
 		// Mock 依赖方法的返回值
 		List<String> mockEvidences = Arrays.asList("evidence1");
-		when(vectorStoreService.getDocuments(anyString(), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
+		when(vectorStoreService.getDocuments(anyString(), eq("evidence")))
+			.thenReturn(createMockDocuments(mockEvidences));
 
 		SchemaDTO mockSchemaDTO = createMockSchemaDTO();
 		when(schemaService.mixRag(anyString(), anyList())).thenReturn(mockSchemaDTO);
-		when(aiService.call(anyString()))
-			.thenReturn(query) // processTimeExpressions
+		when(aiService.call(anyString())).thenReturn(query) // processTimeExpressions
 			.thenReturn("[\"unclear\"]") // extractKeywords
 			.thenReturn("[]") // fineSelect
 			.thenReturn("需求类型：《需要澄清》\n需求内容：需要更多信息"); // buildRewritePrompt
@@ -198,12 +198,12 @@ class BaseNl2SqlServiceTest {
 
 		// Mock 依赖方法的返回值
 		List<String> mockEvidences = Arrays.asList("evidence1", "evidence2");
-		when(vectorStoreService.getDocuments(anyString(), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
+		when(vectorStoreService.getDocuments(anyString(), eq("evidence")))
+			.thenReturn(createMockDocuments(mockEvidences));
 
 		SchemaDTO mockSchemaDTO = createMockSchemaDTO();
 		when(schemaService.mixRag(anyString(), anyList())).thenReturn(mockSchemaDTO);
-		when(aiService.call(anyString()))
-			.thenReturn(query) // processTimeExpressions
+		when(aiService.call(anyString())).thenReturn(query) // processTimeExpressions
 			.thenReturn("[\"keyword1\", \"keyword2\"]") // extractKeywords
 			.thenReturn("[]"); // fineSelect
 
