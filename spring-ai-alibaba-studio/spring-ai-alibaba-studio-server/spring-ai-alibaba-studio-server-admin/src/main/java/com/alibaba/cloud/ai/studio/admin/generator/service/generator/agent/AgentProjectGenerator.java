@@ -28,7 +28,7 @@ public class AgentProjectGenerator implements ProjectGenerator {
 
     private static final String AGENT_BUILDER_TEMPLATE_NAME = "AgentBuilder.java";
 
-    private static final String AGENT_APPLICATION_TEMPLATE_NAME = "AgentApplication.java";
+    private static final String GRAPH_RUN_TEMPLATE_NAME = "GraphRunController.java";
 
     private static final String PACKAGE_NAME = "packageName";
 
@@ -70,10 +70,10 @@ public class AgentProjectGenerator implements ProjectGenerator {
         agentBuilderModel.put(AGENT_SECTION, agentSection);
         agentBuilderModel.put(HAS_RESOLVER, ctx.hasResolver);
 
-        Map<String, Object> appModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
+        Map<String, Object> graphRunModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
 
-        renderAndWriteTemplates(List.of(AGENT_BUILDER_TEMPLATE_NAME, AGENT_APPLICATION_TEMPLATE_NAME),
-            List.of(agentBuilderModel, appModel), projectRoot, projectDescription);
+        renderAndWriteTemplates(List.of(AGENT_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
+            List.of(agentBuilderModel, graphRunModel), projectRoot, projectDescription);
     }
 
     private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, Object>> models, Path projectRoot,
@@ -107,7 +107,7 @@ public class AgentProjectGenerator implements ProjectGenerator {
     private Path createDirectory(Path projectRoot, ProjectDescription projectDescription) {
         StringBuilder pathBuilder = new StringBuilder("src/main/").append(projectDescription.getLanguage().id());
         String packagePath = projectDescription.getPackageName().replace('.', '/');
-        pathBuilder.append("/").append(packagePath).append("/agent/");
+        pathBuilder.append("/").append(packagePath).append("/graph/");
         try {
             return Files.createDirectories(projectRoot.resolve(pathBuilder.toString()));
         }
@@ -151,9 +151,13 @@ public class AgentProjectGenerator implements ProjectGenerator {
         out.append(String.format("ReactAgent %s = ReactAgent.builder()%n", var))
             .append(codeIndent(1)).append(String.format(".name(\"%s\")%n", esc(agent.getName())))
             .append(codeIndent(1)).append(String.format(".description(\"%s\")%n", esc(orDefault(agent.getDescription(), ""))))
-            .append(codeIndent(1)).append(String.format(".outputKey(\"%s\")%n", esc(orDefault(agent.getOutputKey(), "result"))))
-            .append(codeIndent(1)).append(String.format(".llmInputMessagesKey(\"%s\")%n", esc(inputKey)))
-            .append(codeIndent(1)).append(".model(chatModel)\n");
+            .append(codeIndent(1)).append(String.format(".outputKey(\"%s\")%n", esc(orDefault(agent.getOutputKey(), "result"))));
+        if (!"messages".equals(inputKey)) {
+            out.append(codeIndent(1)).append(String.format(".inputKey(\"%s\")%n", esc(inputKey)));
+        } else {
+            out.append("\n");
+        }
+        out.append(codeIndent(1)).append(".model(chatModel)\n");
         if (notBlank(agent.getInstruction())) {
             out.append(codeIndent(1)).append(String.format(".instruction(\"%s\")%n", esc(agent.getInstruction())));
         }
