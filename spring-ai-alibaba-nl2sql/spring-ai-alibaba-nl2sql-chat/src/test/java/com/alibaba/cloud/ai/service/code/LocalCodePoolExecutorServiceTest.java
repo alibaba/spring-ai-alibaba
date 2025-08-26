@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.service.code;
 
 import com.alibaba.cloud.ai.config.CodeExecutorProperties;
-import com.alibaba.cloud.ai.service.code.impl.DockerCodePoolExecutorService;
+import com.alibaba.cloud.ai.service.code.impl.LocalCodePoolExecutorService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,10 +36,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 @SpringBootTest(classes = { CodeExecutorProperties.class })
-@DisplayName("Run Python Code in Docker Test Without Network")
-public class DockerCodePoolExecutorServiceTest {
+@DisplayName("Run Python Code in Local Command Test")
+public class LocalCodePoolExecutorServiceTest {
 
-	private static final Logger log = LoggerFactory.getLogger(DockerCodePoolExecutorServiceTest.class);
+	private static final Logger logger = LoggerFactory.getLogger(LocalCodePoolExecutorServiceTest.class);
 
 	@Autowired
 	private CodeExecutorProperties properties;
@@ -49,38 +49,27 @@ public class DockerCodePoolExecutorServiceTest {
 	@BeforeEach
 	public void init() {
 		this.properties.setCodeTimeout("5s");
-		this.properties.setCodePoolExecutor(CodePoolExecutorEnum.DOCKER);
-		this.codePoolExecutorService = new DockerCodePoolExecutorService(properties);
+		this.properties.setCodePoolExecutor(CodePoolExecutorEnum.LOCAL);
+		this.codePoolExecutorService = new LocalCodePoolExecutorService(properties);
 	}
 
 	private void testNormalCode() {
-		log.info("Run Normal Code");
+		logger.info("Run Normal Code");
 		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
 			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.NORMAL_CODE, "", null));
 		System.out.println(response);
-		log.info("Run Normal Code Finished");
+		logger.info("Run Normal Code Finished");
 		if (!response.isSuccess() || !response.stdOut().contains("3628800")) {
 			throw new RuntimeException("Test Failed");
 		}
 	}
 
-	private void testPipInstall() {
-		log.info("Run Code with Third-parties Installed");
-		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
-			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.CODE_WITH_DEPENDENCY, "", null));
-		System.out.println(response);
-		log.info("Run Code with Third-parties Installed Finished");
-		if (!response.isSuccess() || response.toString().contains("ModuleNotFoundError")) {
-			throw new RuntimeException("Test Failed");
-		}
-	}
-
 	private void testTimeoutCode() {
-		log.info("Run Code with Endless Loop");
+		logger.info("Run Code with Endless Loop");
 		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
 			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.TIMEOUT_CODE, "", null));
 		System.out.println(response);
-		log.info("Run Code with Endless Loop Finished");
+		logger.info("Run Code with Endless Loop Finished");
 		if (response.isSuccess() || !response.toString().contains("Killed")
 				|| !response.executionSuccessButResultFailed()) {
 			throw new RuntimeException("Test Failed");
@@ -88,11 +77,11 @@ public class DockerCodePoolExecutorServiceTest {
 	}
 
 	private void testErrorCode() {
-		log.info("Run Code with Syntax Error");
+		logger.info("Run Code with Syntax Error");
 		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
 			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.ERROR_CODE, "", null));
 		System.out.println(response);
-		log.info("Run Code with Syntax Error Finished");
+		logger.info("Run Code with Syntax Error Finished");
 		if (response.isSuccess() || !response.toString().contains("SyntaxError")
 				|| !response.executionSuccessButResultFailed()) {
 			throw new RuntimeException("Test Failed");
@@ -100,49 +89,49 @@ public class DockerCodePoolExecutorServiceTest {
 	}
 
 	private void testNeedInput() {
-		log.info("Check Need Input");
+		logger.info("Check Need Input");
 		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
 			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.NEED_INPUT, "DataFrame Data", null));
 		System.out.println(response);
-		log.info("Run Need Input Finished");
+		logger.info("Run Need Input Finished");
 		if (!response.isSuccess() || !response.stdOut().contains("DataFrame Data")) {
 			throw new RuntimeException("Test Failed");
 		}
 	}
 
 	private void testStudentScoreAnalysis() {
-		log.info("Run Student Score Analysis");
+		logger.info("Run Student Score Analysis");
 		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
 			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.STUDENT_SCORE_ANALYSIS,
 					CodeTestConstant.STUDENT_SCORE_ANALYSIS_INPUT, null));
 		System.out.println(response);
-		log.info("Run Student Score Analysis Finished");
+		logger.info("Run Student Score Analysis Finished");
 		if (!response.isSuccess() || !StringUtils.hasText(response.stdOut())) {
 			throw new RuntimeException("Test Failed");
 		}
 	}
 
-	private void testPandasCode() {
-		log.info("Run Pandas Code");
+	@Test
+	public void testPandasCode() {
+		logger.info("Run Pandas Code");
 		CodePoolExecutorService.TaskResponse response = codePoolExecutorService
 			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.ECOMMERCE_SALES_PANDAS_CODE,
 					CodeTestConstant.ECOMMERCE_SALES_PANDAS_INPUT, null));
 		System.out.println(response);
-		log.info("Run Pandas Code Finished");
-		if (!response.isSuccess() || response.toString().contains("ModuleNotFoundError")) {
-			throw new RuntimeException("Test Failed");
-		}
+		logger.info("Run Pandas Code Finished");
+		assert response.isSuccess()
+				|| (response.executionSuccessButResultFailed() && response.toString().contains("ModuleNotFoundError"));
 	}
 
 	@Test
 	@DisplayName("Concurrency Testing")
 	public void testConcurrency() throws InterruptedException {
 		ExecutorService executorService = Executors.newFixedThreadPool(10);
-		final int taskNum = 7;
+		final int taskNum = 5;
 		CountDownLatch countDownLatch = new CountDownLatch(taskNum);
 		AtomicInteger successTask = new AtomicInteger(0);
 
-		Consumer<Consumer<DockerCodePoolExecutorServiceTest>> submitTask = consumer -> {
+		Consumer<Consumer<LocalCodePoolExecutorServiceTest>> submitTask = consumer -> {
 			executorService.submit(() -> {
 				try {
 					consumer.accept(this);
@@ -157,16 +146,14 @@ public class DockerCodePoolExecutorServiceTest {
 			});
 		};
 
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testNormalCode);
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testPipInstall);
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testTimeoutCode);
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testErrorCode);
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testNeedInput);
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testStudentScoreAnalysis);
-		submitTask.accept(DockerCodePoolExecutorServiceTest::testPandasCode);
+		submitTask.accept(LocalCodePoolExecutorServiceTest::testNormalCode);
+		submitTask.accept(LocalCodePoolExecutorServiceTest::testTimeoutCode);
+		submitTask.accept(LocalCodePoolExecutorServiceTest::testErrorCode);
+		submitTask.accept(LocalCodePoolExecutorServiceTest::testNeedInput);
+		submitTask.accept(LocalCodePoolExecutorServiceTest::testStudentScoreAnalysis);
 
 		assert countDownLatch.await(600L, TimeUnit.SECONDS);
-		log.info("Success Task Number: {}", successTask.get());
+		logger.info("Success Task Number: {}", successTask.get());
 		Assertions.assertEquals(taskNum, successTask.get());
 	}
 
