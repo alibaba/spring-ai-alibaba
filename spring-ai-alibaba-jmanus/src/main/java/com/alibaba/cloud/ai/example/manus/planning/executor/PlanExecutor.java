@@ -108,7 +108,10 @@ public class PlanExecutor extends AbstractPlanExecutor {
 					context.getCurrentPlanId(),
 					context.getPlan().getTitle(),
 					context.getUserRequest(),
-					steps
+					steps,
+					context.getParentPlanId(),
+					context.getRootPlanId(),
+					context.getToolCallId()
 				);
 				
 				if (steps != null && !steps.isEmpty()) {

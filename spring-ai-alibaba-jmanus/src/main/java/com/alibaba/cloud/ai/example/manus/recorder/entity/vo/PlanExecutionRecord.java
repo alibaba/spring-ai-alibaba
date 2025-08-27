@@ -54,6 +54,12 @@ public class PlanExecutionRecord {
 	// Root plan ID for sub-plans (null for main plans)
 	private String rootPlanId;
 
+	// Parent plan ID for sub-plans (null for root plans)
+	private String parentPlanId;
+
+	// Tool call ID that triggered this plan (for sub-plans)
+	private String toolCallId;
+
 	// Plan title
 	private String title;
 
@@ -193,6 +199,22 @@ public class PlanExecutionRecord {
 
 	public void setRootPlanId(String rootPlanId) {
 		this.rootPlanId = rootPlanId;
+	}
+
+	public String getParentPlanId() {
+		return parentPlanId;
+	}
+
+	public void setParentPlanId(String parentPlanId) {
+		this.parentPlanId = parentPlanId;
+	}
+
+	public String getToolCallId() {
+		return toolCallId;
+	}
+
+	public void setToolCallId(String toolCallId) {
+		this.toolCallId = toolCallId;
 	}
 
 	public String getTitle() {

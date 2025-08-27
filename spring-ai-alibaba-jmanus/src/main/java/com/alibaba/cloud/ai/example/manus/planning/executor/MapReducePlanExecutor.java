@@ -149,7 +149,11 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 					context.getCurrentPlanId(),
 					context.getPlan().getTitle(),
 					context.getUserRequest(),
-					context.getPlan().getAllSteps());
+					context.getPlan().getAllSteps(),
+					context.getParentPlanId(),
+					context.getRootPlanId(),
+					context.getToolCallId()
+				);
 				List<ExecutionNode> steps = mapReducePlan.getSteps();
 
 				if (CollectionUtil.isNotEmpty(steps)) {

@@ -20,13 +20,12 @@ import com.alibaba.cloud.ai.example.manus.dynamic.memory.service.MemoryService;
 import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
 import com.alibaba.cloud.ai.example.manus.event.PlanExceptionEvent;
 import com.alibaba.cloud.ai.example.manus.exception.PlanException;
-import com.alibaba.cloud.ai.example.manus.planning.controller.vo.ExecutionTreeBuilder;
-import com.alibaba.cloud.ai.example.manus.planning.controller.vo.ExecutionTreeResponse;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.service.PlanHierarchyReaderService;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -62,6 +61,9 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	@Autowired
 	private PlanExecutionRecorder planExecutionRecorder;
+
+	@Autowired
+	private PlanHierarchyReaderService planHierarchyReaderService;
 
 	@Autowired
 	private PlanIdDispatcher planIdDispatcher;
@@ -150,7 +152,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		if (throwable != null) {
 			throw new PlanException(throwable);
 		}
-		PlanExecutionRecord planRecord = planExecutionRecorder.getRootPlanExecutionRecord(planId);
+		PlanExecutionRecord planRecord = planHierarchyReaderService.readPlanTreeByRootId(planId);
 
 		if (planRecord == null) {
 			return ResponseEntity.notFound().build();
@@ -194,19 +196,14 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	 */
 	@DeleteMapping("/details/{planId}")
 	public ResponseEntity<Map<String, String>> removeExecutionDetails(@PathVariable("planId") String planId) {
-		PlanExecutionRecord planRecord = planExecutionRecorder.getRootPlanExecutionRecord(planId);
+		PlanExecutionRecord planRecord = planHierarchyReaderService.readPlanTreeByRootId(planId);
 		if (planRecord == null) {
 			return ResponseEntity.notFound().build();
 		}
 
-		try {
-			planExecutionRecorder.removeExecutionRecord(planId);
-			return ResponseEntity.ok(Map.of("message", "Execution record successfully deleted", "planId", planId));
-		}
-		catch (Exception e) {
-			return ResponseEntity.internalServerError()
-				.body(Map.of("error", "Failed to delete record: " + e.getMessage()));
-		}
+		// Note: We don't need to remove execution records since they are already stored in the database
+		// The database serves as the persistent storage for all execution records
+		return ResponseEntity.ok(Map.of("message", "Execution record found (no deletion needed)", "planId", planId));
 	}
 
 	/**
@@ -252,32 +249,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	@Override
 	public void onEvent(PlanExceptionEvent event) {
 		this.exceptionCache.put(event.getPlanId(), event.getThrowable());
-	}
-
-	/**
-	 * Get execution tree with steps (without think-act rounds)
-	 * @param rootPlanId Root plan ID
-	 * @return JSON representation of execution tree
-	 */
-	@GetMapping("/tree/{rootPlanId}")
-	public synchronized ResponseEntity<ExecutionTreeResponse> getExecutionTree(@PathVariable("rootPlanId") String rootPlanId) {
-		try {
-			PlanExecutionRecord rootRecord = planExecutionRecorder.getRootPlanExecutionRecord(rootPlanId);
-
-			if (rootRecord == null) {
-				return ResponseEntity.notFound().build();
-			}
-
-			// Build tree response using the new VO classes
-			ExecutionTreeResponse treeResponse = ExecutionTreeBuilder.buildTreeResponse(rootRecord);
-
-			return ResponseEntity.ok(treeResponse);
-
-		}
-		catch (Exception e) {
-			logger.error("Error building tree response for rootPlanId: {}", rootPlanId, e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-		}
 	}
 
 

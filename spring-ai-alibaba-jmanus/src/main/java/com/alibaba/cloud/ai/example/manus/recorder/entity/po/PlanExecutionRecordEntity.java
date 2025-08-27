@@ -105,9 +105,9 @@ public class PlanExecutionRecordEntity {
 	@Embedded
 	private UserInputWaitState userInputWaitState;
 
-	// ID of the ActToolInfoEntity that triggered this plan (for sub-plans)
-	@Column(name = "act_tool_info_id")
-	private Long actToolInfoEntityId;
+	// Tool call ID that triggered this plan (for sub-plans)
+	@Column(name = "tool_call_id")
+	private String toolCallId;
 
 	// Actual calling model
 	@Column(name = "model_name")
@@ -287,12 +287,12 @@ public class PlanExecutionRecordEntity {
 		this.modelName = modelName;
 	}
 
-	public Long getActToolInfoEntityId() {
-		return actToolInfoEntityId;
+	public String getToolCallId() {
+		return toolCallId;
 	}
 
-	public void setActToolInfoEntityId(Long actToolInfoEntityId) {
-		this.actToolInfoEntityId = actToolInfoEntityId;
+	public void setToolCallId(String toolCallId) {
+		this.toolCallId = toolCallId;
 	}
 
 }

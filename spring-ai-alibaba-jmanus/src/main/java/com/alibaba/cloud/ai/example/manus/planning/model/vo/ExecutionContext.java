@@ -43,13 +43,16 @@ public class ExecutionContext {
 
 	private String rootPlanId;
 
+	private String parentPlanId;
+
+	private String toolCallId;
+
 	/** Execution plan entity containing detailed plan information and execution steps */
 	private PlanInterface plan;
 
 	/** User's original request content */
 	private String userRequest;
 
-	private Long thinkActRecordId;
 
 	/** Result summary after plan execution completion */
 	private String resultSummary;
@@ -100,16 +103,40 @@ public class ExecutionContext {
 		return rootPlanId;
 	}
 
-	public void setRootPlanId(String parentPlanId) {
-		this.rootPlanId = parentPlanId;
+	public void setRootPlanId(String rootPlanId) {
+		this.rootPlanId = rootPlanId;
 	}
 
 	/**
-	 * Set think-act record ID
-	 * @param thinkActRecordId Think-act record ID for sub-plan executions
+	 * Get parent plan ID
+	 * @return Parent plan ID
 	 */
-	public void setThinkActRecordId(Long thinkActRecordId) {
-		this.thinkActRecordId = thinkActRecordId;
+	public String getParentPlanId() {
+		return parentPlanId;
+	}
+
+	/**
+	 * Set parent plan ID
+	 * @param parentPlanId Parent plan ID
+	 */
+	public void setParentPlanId(String parentPlanId) {
+		this.parentPlanId = parentPlanId;
+	}
+
+	/**
+	 * Get tool call ID
+	 * @return Tool call ID
+	 */
+	public String getToolCallId() {
+		return toolCallId;
+	}
+
+	/**
+	 * Set tool call ID
+	 * @param toolCallId Tool call ID
+	 */
+	public void setToolCallId(String toolCallId) {
+		this.toolCallId = toolCallId;
 	}
 
 	/**

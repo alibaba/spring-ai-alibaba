@@ -32,7 +32,6 @@ import com.alibaba.cloud.ai.example.manus.coordinator.tool.CoordinatorTool;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.planning.service.IPlanParameterMappingService;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ActToolInfo;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.AgentExecutionRecordSimple;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord;

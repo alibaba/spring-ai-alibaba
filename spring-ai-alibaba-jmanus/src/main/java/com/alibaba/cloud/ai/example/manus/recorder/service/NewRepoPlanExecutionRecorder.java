@@ -37,9 +37,21 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(NewRepoPlanExecutionRecorder.class);
 
-    @Override
+
+    /**
+     * Record plan execution start with hierarchy information.
+     * 
+     * @param currentPlanId The unique identifier for the current plan
+     * @param title Plan title
+     * @param userRequset User's original request
+     * @param executionSteps List of execution steps
+     * @param parentPlanId Parent plan ID (can be null for root plans)
+     * @param rootPlanId Root plan ID (can be null for main plans)
+     * @param toolcallId Tool call ID that triggered this plan (can be null)
+     * @return The ID of the created plan execution record, or null if creation failed
+     */
     public Long recordPlanExecutionStart(String currentPlanId, String title, String userRequset,
-            List<ExecutionStep> executionSteps) {
+            List<ExecutionStep> executionSteps, String parentPlanId, String rootPlanId, String toolcallId) {
         try {
             // Check if plan already exists
             Optional<PlanExecutionRecordEntity> existingPlanOpt = planExecutionRecordRepository
@@ -79,6 +91,26 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 
             // Save the entity using repository
             PlanExecutionRecordEntity savedEntity = planExecutionRecordRepository.save(planExecutionRecordEntity);
+
+            // Create hierarchy relationships if provided
+            // Note: With enhanced validation, we now require rootPlanId to be provided
+            if (rootPlanId != null && !rootPlanId.trim().isEmpty()) {
+                try {
+                    createPlanRelationship(currentPlanId, parentPlanId, rootPlanId, toolcallId);
+                    logger.debug("Successfully created hierarchy relationship for plan ID: {}", currentPlanId);
+                } catch (IllegalArgumentException e) {
+                    logger.error("Validation error creating hierarchy relationship for plan ID: {}: {}", currentPlanId, e.getMessage());
+                    throw e; // Re-throw validation errors as they indicate programming issues
+                } catch (IllegalStateException e) {
+                    logger.error("State error creating hierarchy relationship for plan ID: {}: {}", currentPlanId, e.getMessage());
+                    throw e; // Re-throw state errors as they indicate system issues
+                } catch (Exception e) {
+                    logger.error("Unexpected error creating hierarchy relationship for plan ID: {}", currentPlanId, e);
+                    throw new RuntimeException("Failed to create hierarchy relationship", e);
+                }
+            } else {
+                logger.debug("Skipping hierarchy relationship creation - rootPlanId is required but not provided for plan ID: {}", currentPlanId);
+            }
 
             logger.info("Successfully saved plan execution record for ID: {} with {} steps", currentPlanId,
                     executionSteps != null ? executionSteps.size() : 0);
@@ -525,6 +557,88 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 
         } catch (Exception e) {
             logger.error("Failed to record plan completion for currentPlanId: {}", currentPlanId, e);
+        }
+    }
+
+    /**
+     * Creates a plan relationship by setting parent and root plan IDs.
+     * This method establishes the hierarchical structure between plans.
+     * 
+     * Enhanced validation rules:
+     * 1. rootPlanId and currentPlanId are mandatory
+     * 2. If parentPlanId is provided, toolcallId must also be provided
+     * 3. If parentPlanId is provided, rootPlanId cannot be the same as currentPlanId
+     * 
+     * @param currentPlanId The ID of the current plan
+     * @param parentPlanId The ID of the parent plan (can be null for root plans)
+     * @param rootPlanId The ID of the root plan (can be null for main plans)
+     * @param toolcallId The ID of the tool call that triggered this plan (can be null)
+     * @throws IllegalArgumentException if validation fails
+     * @throws IllegalStateException if plan record not found or save fails
+     */
+    private void createPlanRelationship(String currentPlanId, String parentPlanId, String rootPlanId, String toolcallId) {
+        // 1. 必须有rootId和currentId
+        if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
+            String errorMsg = "currentPlanId is null or empty, cannot create plan relationship";
+            logger.error(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
+        }
+        
+        if (rootPlanId == null || rootPlanId.trim().isEmpty()) {
+            String errorMsg = "rootPlanId is null or empty, cannot create plan relationship";
+            logger.error(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
+        }
+        
+        // 2. 如果parentId不为空，则必须有toolcallId
+        if (parentPlanId != null && !parentPlanId.trim().isEmpty()) {
+            if (toolcallId == null || toolcallId.trim().isEmpty()) {
+                String errorMsg = String.format("parentPlanId is provided but toolcallId is null or empty. parentPlanId: %s, currentPlanId: %s", 
+                    parentPlanId, currentPlanId);
+                logger.error(errorMsg);
+                throw new IllegalArgumentException(errorMsg);
+            }
+        }
+        
+        // 3. 如果parentId不为空，那么rootId和currentId不能一样
+        if (parentPlanId != null && !parentPlanId.trim().isEmpty()) {
+            if (rootPlanId.equals(currentPlanId)) {
+                String errorMsg = String.format("parentPlanId is provided but rootPlanId equals currentPlanId: %s, this is not allowed", currentPlanId);
+                logger.error(errorMsg);
+                throw new IllegalArgumentException(errorMsg);
+            }
+        }
+        
+        // Find the existing plan execution record
+        var existingPlanOpt = planExecutionRecordRepository.findByPlanId(currentPlanId);
+        
+        if (!existingPlanOpt.isPresent()) {
+            String errorMsg = String.format("Plan execution record not found for currentPlanId: %s, cannot create relationship", currentPlanId);
+            logger.error(errorMsg);
+            throw new IllegalStateException(errorMsg);
+        }
+        
+        PlanExecutionRecordEntity planRecord = existingPlanOpt.get();
+        
+        // Set the hierarchy relationships
+        planRecord.setParentPlanId(parentPlanId);
+        planRecord.setRootPlanId(rootPlanId);
+        
+        // Set the tool call ID if provided (for sub-plans triggered by tools)
+        if (toolcallId != null && !toolcallId.trim().isEmpty()) {
+            planRecord.setToolCallId(toolcallId);
+        }
+        
+        // Save the updated entity
+        try {
+            planExecutionRecordRepository.save(planRecord);
+            logger.info("Successfully created plan relationship for currentPlanId: {}, parentPlanId: {}, rootPlanId: {}", 
+                       currentPlanId, parentPlanId, rootPlanId);
+        } catch (Exception e) {
+            String errorMsg = String.format("Failed to save plan relationship for currentPlanId: %s, parentPlanId: %s, rootPlanId: %s", 
+                currentPlanId, parentPlanId, rootPlanId);
+            logger.error(errorMsg, e);
+            throw new IllegalStateException(errorMsg, e);
         }
     }
 

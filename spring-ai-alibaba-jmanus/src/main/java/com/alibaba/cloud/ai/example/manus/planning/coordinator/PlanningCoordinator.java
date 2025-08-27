@@ -88,11 +88,8 @@ public class PlanningCoordinator {
 			context.setNeedSummary(true);
 			context.setUseMemory(false);
 			context.setMemoryId(memoryId);
-			
-			// Create plan relationship in hierarchy service only if parentPlanId is not null
-			if (parentPlanId != null) {
-				planHierarchyService.createPlanRelationship(currentPlanId, parentPlanId, rootPlanId, toolcallId);
-			}
+			context.setParentPlanId(parentPlanId);
+			context.setToolCallId(toolcallId);
 
 			// Create plan using PlanningFactory
 			PlanCreator planCreator = planningFactory.createPlanCreator();
@@ -157,16 +154,14 @@ public class PlanningCoordinator {
 			context.setPlan(plan);
 			context.setNeedSummary(true);
 			context.setUseMemory(true);
+			context.setParentPlanId(parentPlanId);
+			context.setToolCallId(toolcallId);
 			
 						// Log toolcallId if provided
 			if (toolcallId != null) {
 				log.debug("Plan execution triggered by tool call: {}", toolcallId);
 			}
 			
-			// Create plan relationship in hierarchy service only if parentPlanId is not null
-			if (parentPlanId != null) {
-				planHierarchyService.createPlanRelationship(currentPlanId, parentPlanId, rootPlanId, toolcallId);
-			}
 			
 			// Execute the plan using PlanExecutorFactory
 			PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
