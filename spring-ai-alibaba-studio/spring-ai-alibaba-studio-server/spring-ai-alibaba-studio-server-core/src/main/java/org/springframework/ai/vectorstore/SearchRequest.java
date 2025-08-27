@@ -103,8 +103,7 @@ public final class SearchRequest {
 		return hybridWeight;
 	}
 
-	@Nullable
-	public Filter.Expression getFilterExpression() {
+	@Nullable public Filter.Expression getFilterExpression() {
 		return this.filterExpression;
 	}
 

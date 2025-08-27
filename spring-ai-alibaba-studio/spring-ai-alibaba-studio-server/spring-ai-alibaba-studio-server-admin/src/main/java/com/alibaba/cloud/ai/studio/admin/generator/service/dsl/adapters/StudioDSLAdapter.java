@@ -55,10 +55,10 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 	@Override
 	public AppMetadata mapToMetadata(Map<String, Object> data) {
-		String id = MapReadUtil.getMapDeepValue(data, String.class, "request_id");
-		String name = MapReadUtil.getMapDeepValue(data, String.class, "data", "name");
-		String description = MapReadUtil.getMapDeepValue(data, String.class, "data", "description");
-		String mode = MapReadUtil.getMapDeepValue(data, String.class, "data", "type");
+		String id = MapReadUtil.getMapDeepValue(data, String.class, "app_id");
+		String name = MapReadUtil.getMapDeepValue(data, String.class, "name");
+		String description = MapReadUtil.getMapDeepValue(data, String.class, "description");
+		String mode = MapReadUtil.getMapDeepValue(data, String.class, "type");
 		return new AppMetadata().setId(id).setName(name).setDescription(description).setMode(mode);
 	}
 
@@ -69,12 +69,9 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 	@Override
 	public Workflow mapToWorkflow(Map<String, Object> data) {
-		Map<String, Object> workflowData = MapReadUtil
-			.safeCastToMapWithStringKey(MapReadUtil.getMapDeepValue(data, Object.class, "data"));
-
 		// 构建Graph
 		Workflow workflow = new Workflow();
-		Graph graph = this.constructGraph(workflowData);
+		Graph graph = this.constructGraph(data);
 		workflow.setGraph(graph);
 
 		// register overAllState output key
@@ -106,6 +103,10 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 	}
 
 	private List<Node> constructNodes(List<Map<String, Object>> nodeMaps) {
+		if (nodeMaps == null) {
+			throw new IllegalStateException("nodeMaps is null");
+		}
+
 		Map<NodeType, Integer> counters = new HashMap<>();
 		List<Node> nodes = new ArrayList<>();
 
@@ -199,9 +200,7 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 	@Override
 	public void validateDSLData(Map<String, Object> data) {
-		if (data == null || !data.containsKey("data")) {
-			throw new IllegalArgumentException("invalid studio dsl");
-		}
+
 	}
 
 	@Override
