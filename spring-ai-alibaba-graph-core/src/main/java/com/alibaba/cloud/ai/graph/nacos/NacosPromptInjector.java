@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.NacosConfigService;
+import com.alibaba.nacos.common.utils.StringUtils;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.DefaultChatClient;
@@ -15,16 +16,20 @@ import org.springframework.util.ReflectionUtils;
 
 public class NacosPromptInjector {
 
-	public static PromptVO getPrompt(NacosConfigService nacosConfigService, String agentId) {
+	public static PromptVO getPromptByAgentId(NacosConfigService nacosConfigService, String agentId) {
 		try {
 			String config = nacosConfigService.getConfig(String.format("prompt-%s.json", agentId), "nacos-ai-agent", 3000L);
 			String promptKey = (String) JSON.parseObject(config).get("promptKey");
-			String promptConfig = nacosConfigService.getConfig(String.format("prompt-%s.json", promptKey), "nacos-ai-meta", 3000L);
-			return JSON.parseObject(promptConfig, PromptVO.class);
+			return getPromptByKey(nacosConfigService, promptKey);
 		}
 		catch (NacosException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private static PromptVO getPromptByKey(NacosConfigService nacosConfigService, String promptKey) throws NacosException {
+		String promptConfig = nacosConfigService.getConfig(String.format("prompt-%s.json", promptKey), "nacos-ai-meta", 3000L);
+		return JSON.parseObject(promptConfig, PromptVO.class);
 	}
 
 	public static void injectPrompt(ChatClient chatClient, NacosConfigService nacosConfigService, String agentId, PromptVO promptVO) {
@@ -38,20 +43,26 @@ public class NacosPromptInjector {
 
 				@Override
 				public void receiveConfigInfo(String configInfo) {
+					if (StringUtils.isBlank(configInfo)) {
+						return;
+					}
 					String newPromptKey = (String) JSON.parseObject(configInfo).get("promptKey");
-					if (newPromptKey.equals(currentPromptKey)) {
+					if (newPromptKey != null && newPromptKey.equals(currentPromptKey)) {
 						return;
 					}
 					try {
+						PromptVO promptByKey = getPromptByKey(nacosConfigService, newPromptKey);
+						replacePrompt(chatClient, promptByKey);
 						registryPromptListener(nacosConfigService, chatClient, newPromptKey);
 					}
-					catch (NacosException e) {
+					catch (Exception e) {
 						throw new RuntimeException(e);
 					}
 				}
 			});
-
-			registryPromptListener(nacosConfigService,chatClient,promptVO.getPromptKey());
+			if (promptVO != null && promptVO.getPromptKey() != null) {
+				registryPromptListener(nacosConfigService, chatClient, promptVO.getPromptKey());
+			}
 
 		}
 		catch (NacosException e) {

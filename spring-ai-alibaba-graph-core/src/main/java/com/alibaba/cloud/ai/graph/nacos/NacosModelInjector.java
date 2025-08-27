@@ -16,7 +16,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 public class NacosModelInjector {
 
 
-	public static ModelVO getModel(NacosConfigService nacosConfigService, String agentId) {
+	public static ModelVO getModelByAgentId(NacosConfigService nacosConfigService, String agentId) {
 		try {
 			String config = nacosConfigService.getConfig(String.format("model-%s.json", agentId), "nacos-ai-agent", 3000L);
 			return JSON.parseObject(config, ModelVO.class);
@@ -67,7 +67,7 @@ public class NacosModelInjector {
 		// 修改apiKey字段
 		SimpleApiKey simpleApiKey = new SimpleApiKey(modelVO.getApiKey());
 		modifyFinalField(openAiApi, "apiKey", simpleApiKey);
-
+		System.out.println(openAiApi);
 	}
 
 	public static void modifyFinalField(Object targetObject, String fieldName, Object newValue) throws Exception {

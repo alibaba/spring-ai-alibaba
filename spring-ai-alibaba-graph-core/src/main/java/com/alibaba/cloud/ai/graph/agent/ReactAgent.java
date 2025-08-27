@@ -193,8 +193,8 @@ public class ReactAgent extends BaseAgent {
 
 		if (postLlmHook != null) {
 			graph.addEdge("llm", "postLlm")
-				.addConditionalEdges("postLlm", edge_async(this::think),
-						Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
+					.addConditionalEdges("postLlm", edge_async(this::think),
+							Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
 		}
 		else {
 			graph.addConditionalEdges("llm", edge_async(this::think),
@@ -375,6 +375,7 @@ public class ReactAgent extends BaseAgent {
 			this.tools = tools;
 			return this;
 		}
+
 		public Builder resolver(ToolCallbackResolver resolver) {
 			this.resolver = resolver;
 			return this;
@@ -439,11 +440,12 @@ public class ReactAgent extends BaseAgent {
 
 			PromptVO promptVO = null;
 			if (nacosProxy) {
-				ModelVO model = NacosModelInjector.getModel(nacosConfigService, this.name);
+				ModelVO model = NacosModelInjector.getModelByAgentId(nacosConfigService, this.name);
+
 				OpenAiApi openAiApi = OpenAiApi.builder()
 						.apiKey(model.getApiKey()).baseUrl(model.getBaseUrl())
 						.build();
-				promptVO = NacosPromptInjector.getPrompt(nacosConfigService, this.name);
+				promptVO = NacosPromptInjector.getPromptByAgentId(nacosConfigService, this.name);
 				this.instruction = promptVO.getTemplate();
 				Map<String, String> metadata = new HashMap<>();
 				metadata.put("promptKey", promptVO.getPromptKey());
@@ -496,6 +498,7 @@ public class ReactAgent extends BaseAgent {
 			else {
 				toolNode = ToolNode.builder().build();
 			}
+
 
 			return new ReactAgent(llmNode, toolNode, this);
 		}

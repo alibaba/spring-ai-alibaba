@@ -25,18 +25,16 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.NacosConfigService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.messages.UserMessage;
 
 class ReactAgentNacosTest {
 
-
 	private NacosConfigService nacosConfigService = nacosConfigService();
 
 	private NacosConfigService nacosConfigService() {
 		Properties properties = new Properties();
-		properties.put("serverAddr", "mse-401c****-p.nacos-ans.mse.aliyuncs.com:8848");
+		properties.put("serverAddr", "mse-401cbb30-p.nacos-ans.mse.aliyuncs.com:8848");
 		try {
 			return new NacosConfigService(properties);
 		}
@@ -55,7 +53,8 @@ class ReactAgentNacosTest {
 
 		Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下鲁迅。"))));
 		System.out.println(result.get());
-		Thread.sleep(100000L);
+
+		Thread.sleep(1000000L);
 		//agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下沈丛文。"))));
 		//System.out.println(result.get());
 	}
