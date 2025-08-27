@@ -157,7 +157,7 @@ public class ScheduleConfig {
 
 		private Map<String, Object> inputs = new HashMap<>();
 
-		private RunnableConfig runnableConfig = RunnableConfig.builder().build();
+		private RunnableConfig runnableConfig;
 
 		private int maxRetries = 0;
 

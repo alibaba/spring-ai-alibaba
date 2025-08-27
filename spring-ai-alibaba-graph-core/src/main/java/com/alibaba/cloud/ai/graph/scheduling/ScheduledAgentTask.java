@@ -23,6 +23,7 @@ import java.util.concurrent.ScheduledFuture;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.OverAllStateBuilder;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,12 +127,18 @@ public class ScheduledAgentTask {
 			try {
 				notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_STARTED);
 				OverAllState initialState = createInitialState();
-				Optional<OverAllState> result = graph.invoke(initialState, config.getRunnableConfig());
+				RunnableConfig runnableConfig = config.getRunnableConfig();
+				if (runnableConfig == null) {
+					String threadId = String.format("%s-%d", taskId, System.currentTimeMillis());
+					runnableConfig = RunnableConfig.builder().threadId(threadId).build();
+				}
+				Optional<OverAllState> result = graph.invoke(initialState, runnableConfig);
 				notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_COMPLETED, result.orElse(null));
 				// 暂时不记忆每一轮执行信息，记忆序列号和反序列化还存在问题
-				graph.compileConfig.checkpointSaver().ifPresent(saver -> {
-					saver.clear(config.getRunnableConfig());
-				});
+				/*
+				 * graph.compileConfig.checkpointSaver().ifPresent(saver -> {
+				 * saver.clear(config.getRunnableConfig()); });
+				 */
 				return;
 			}
 			catch (Exception e) {

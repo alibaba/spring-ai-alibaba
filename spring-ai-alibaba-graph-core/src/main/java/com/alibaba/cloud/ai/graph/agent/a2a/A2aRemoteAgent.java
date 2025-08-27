@@ -16,23 +16,25 @@
 
 package com.alibaba.cloud.ai.graph.agent.a2a;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
 import com.alibaba.cloud.ai.graph.CompileConfig;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
+import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import io.a2a.spec.AgentCard;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
@@ -85,6 +87,11 @@ public class A2aRemoteAgent extends BaseAgent {
 	@Override
 	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) {
 		return node_async(new A2aNode(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
+	}
+
+	@Override
+	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException, GraphRunnerException {
+		throw new UnsupportedOperationException("A2aRemoteAgent has not support schedule.");
 	}
 
 	@Override

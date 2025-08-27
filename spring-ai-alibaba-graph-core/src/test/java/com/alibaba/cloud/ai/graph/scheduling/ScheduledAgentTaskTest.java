@@ -90,7 +90,7 @@ public class ScheduledAgentTaskTest {
 						System.out.println("output:" + textContent);
 					}
 					System.out.println((2 - executionLatch.getCount())
-							+ ": -------------------------------------------------------------------------------------");
+							+ ": -------------------------------------------------------------------------------------\n\n");
 					executionLatch.countDown();
 				}
 				if (event == ScheduleEvent.EXECUTION_FAILED) {
