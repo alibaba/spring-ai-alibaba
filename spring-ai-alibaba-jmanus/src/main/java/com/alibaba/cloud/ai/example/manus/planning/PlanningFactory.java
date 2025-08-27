@@ -177,28 +177,12 @@ public class PlanningFactory implements IPlanningFactory {
 		this.excelProcessingService = excelProcessingService;
 	}
 
-	public PlanningCoordinator createPlanningCoordinator(ExecutionContext context) {
-		// Add all dynamic agents from the database
-		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAgents(context);
-
-		PlanningToolInterface planningTool = new PlanningTool();
-
-		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService,
-				manusProperties, streamingResponseHandler);
-
-		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder, promptService, manusProperties,
-				streamingResponseHandler);
-
-		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutorFactory,
-				planFinalizer);
-
-		return planningCoordinator;
-	}
-
-	// Use the enhanced PlanningCoordinator with dynamic executor selection
-	public PlanningCoordinator createPlanningCoordinator(String planId) {
-
-		// Add all dynamic agents from the database
+	/**
+	 * Create a PlanCreator instance with the given agents
+	 * @return configured PlanCreator instance
+	 */
+	public PlanCreator createPlanCreator() {
+		// Get all dynamic agents from the database
 		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
 
 		PlanningToolInterface planningTool = new PlanningTool();

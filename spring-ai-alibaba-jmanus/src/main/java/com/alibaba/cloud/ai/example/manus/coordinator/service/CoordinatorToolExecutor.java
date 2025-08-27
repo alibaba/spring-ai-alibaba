@@ -33,6 +33,7 @@ import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.planning.service.IPlanParameterMappingService;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ActToolInfo;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.AgentExecutionRecordSimple;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
@@ -250,13 +251,13 @@ public class CoordinatorToolExecutor {
 			throw new IllegalArgumentException("Plan execution record cannot be empty");
 		}
 
-		List<AgentExecutionRecord> sequence = record.getAgentExecutionSequence();
+		List<AgentExecutionRecordSimple> sequence = record.getAgentExecutionSequence();
 		if (sequence == null || sequence.isEmpty()) {
 			throw new RuntimeException("Agent execution sequence is empty, unable to obtain result output");
 		}
 
 		// Get the last Agent execution record
-		AgentExecutionRecord lastAgentRecord = sequence.get(sequence.size() - 1);
+		AgentExecutionRecordSimple lastAgentRecord = sequence.get(sequence.size() - 1);
 		List<ThinkActRecord> thinkActSteps = lastAgentRecord.getThinkActSteps();
 
 		if (thinkActSteps == null || thinkActSteps.isEmpty()) {

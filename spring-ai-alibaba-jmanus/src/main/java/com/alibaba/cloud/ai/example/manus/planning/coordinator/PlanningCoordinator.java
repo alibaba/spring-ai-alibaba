@@ -21,7 +21,6 @@ import com.alibaba.cloud.ai.example.manus.planning.executor.factory.PlanExecutor
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
-import com.alibaba.cloud.ai.example.manus.recorder.service.PlanHierarchyService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import java.util.concurrent.CompletableFuture;
@@ -46,18 +45,16 @@ public class PlanningCoordinator {
 
 	private final PlanFinalizer planFinalizer;
 
-	private final PlanHierarchyService planHierarchyService;
 
 	private final PlanIdDispatcher planIdDispatcher;
 
 	@Autowired
 	public PlanningCoordinator(PlanningFactory planningFactory, PlanExecutorFactory planExecutorFactory,
-			PlanFinalizer planFinalizer, PlanHierarchyService planHierarchyService,
+			PlanFinalizer planFinalizer, 
 			PlanIdDispatcher planIdDispatcher) {
 		this.planningFactory = planningFactory;
 		this.planExecutorFactory = planExecutorFactory;
 		this.planFinalizer = planFinalizer;
-		this.planHierarchyService = planHierarchyService;
 		this.planIdDispatcher = planIdDispatcher;
 	}
 
