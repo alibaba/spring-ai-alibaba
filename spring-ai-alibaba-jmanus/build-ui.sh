@@ -83,6 +83,32 @@ check_directories() {
     log_success "Directory structure check completed"
 }
 
+# Clean frontend project before build
+clean_frontend_build() {
+    log_info "Cleaning frontend build artifacts..."
+
+    cd "$PROJECT_ROOT/ui-vue3"
+
+    # Clean build artifacts
+    if [ -d "ui" ]; then
+        log_info "Removing existing build directory (ui)..."
+        rm -rf ui
+    fi
+
+    if [ -d "dist" ]; then
+        log_info "Removing existing dist directory..."
+        rm -rf dist
+    fi
+
+    # Clean other potential build artifacts
+    if [ -d ".vite" ]; then
+        log_info "Removing .vite cache directory..."
+        rm -rf .vite
+    fi
+
+    log_success "Frontend build artifacts cleaned"
+}
+
 # Build frontend project
 build_frontend() {
     log_info "Starting frontend project build..."
@@ -94,6 +120,9 @@ build_frontend() {
         log_warning "node_modules does not exist, installing dependencies..."
         pnpm install
     fi
+
+    # Clean before build
+    clean_frontend_build
 
     # Run build command
     log_info "Running pnpm run build..."
@@ -108,22 +137,49 @@ build_frontend() {
     log_success "Frontend project build completed"
 }
 
-# Clear static resources directory
+# Clear static resources directory using git
 clean_static_directory() {
-    log_info "Clearing static resources directory..."
+    log_info "Clearing static resources directory using git..."
 
     STATIC_DIR="$PROJECT_ROOT/src/main/resources/static"
 
     # Create directory (if it doesn't exist)
     mkdir -p "$STATIC_DIR"
 
-    # Clear directory contents
-    if [ "$(ls -A $STATIC_DIR)" ]; then
-        log_warning "Deleting existing files in $STATIC_DIR..."
-        rm -rf "$STATIC_DIR"/*
-        log_success "Static resources directory cleared"
+    # Check if we're in a git repository
+    if [ -d "$PROJECT_ROOT/.git" ]; then
+        log_info "Git repository detected, using git to manage static files..."
+        
+        # Check if there are files in static directory
+        if [ "$(ls -A $STATIC_DIR)" ]; then
+            # Add all files to git staging area first
+            log_info "Adding existing static files to git staging area..."
+            cd "$PROJECT_ROOT"
+            git add "$STATIC_DIR"/* 2>/dev/null || true
+            
+            # Remove all files from static directory
+            log_warning "Removing all files from $STATIC_DIR..."
+            rm -rf "$STATIC_DIR"/*
+            
+            # Remove from git tracking (but keep local changes)
+            log_info "Removing static files from git tracking..."
+            git rm --cached "$STATIC_DIR"/* 2>/dev/null || true
+            
+            log_success "Static resources directory cleared using git"
+        else
+            log_info "Static resources directory is already empty"
+        fi
     else
-        log_info "Static resources directory is already empty"
+        log_warning "Not in a git repository, using regular file removal..."
+        
+        # Clear directory contents without git
+        if [ "$(ls -A $STATIC_DIR)" ]; then
+            log_warning "Deleting existing files in $STATIC_DIR..."
+            rm -rf "$STATIC_DIR"/*
+            log_success "Static resources directory cleared"
+        else
+            log_info "Static resources directory is already empty"
+        fi
     fi
 }
 
