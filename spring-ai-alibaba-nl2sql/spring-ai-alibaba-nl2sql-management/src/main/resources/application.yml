@@ -52,7 +52,8 @@ spring:
     alibaba:
       nl2sql:
         code-executor:
-          code-pool-executor: ai_simulation
+          # 运行Python代码的环境（生产环境建议使用docker，不建议使用local）
+          code-pool-executor: local
 
 # MyBatis Plus 配置
 mybatis-plus:

@@ -738,7 +738,7 @@ const words: I18nType = {
 
   // 侧边栏
   sidebar: {
-    title: 'PLAN-ACT 计划模板',
+    title: 'PLAN-ACT 计划模板名字',
     templateList: '模板列表',
     configuration: '配置',
     newPlan: '新建计划',
@@ -748,7 +748,7 @@ const words: I18nType = {
     unnamedPlan: '未命名计划',
     noDescription: '无描述',
     deleteTemplate: '删除此计划模板',
-    jsonTemplate: 'JSON 模板',
+  jsonTemplate: 'plan-act计划模板编辑器',
     rollback: '回滚',
     restore: '恢复',
     jsonPlaceholder:
@@ -804,6 +804,37 @@ const words: I18nType = {
     newTemplateDescription: '请使用计划生成器创建新的计划模板',
     generatedTemplateDescription: '通过生成器创建的计划模板',
     defaultExecutionPlanTitle: '执行计划',
+    
+    // JsonEditor 相关
+  planId: '计划模板ID',
+    steps: '步骤',
+  tasks: '任务列表',
+    subtask: '子任务',
+    agent: '智能体',
+  stepRequirement: '任务需求',
+  stepRequirementPlaceholder: '请输入任务的具体需求和描述...',
+  terminateColumns: '任务输出要求描述',
+  terminateColumnsPlaceholder: '请输入任务输出要求描述...',
+    titlePlaceholder: '请输入计划标题...',
+    moveUp: '上移',
+    moveDown: '下移',
+    removeStep: '删除步骤',
+    addStep: '添加步骤',
+    addFirstStep: '添加第一个步骤',
+    noSteps: '暂无步骤，点击下方按钮开始添加',
+    jsonPreview: 'JSON预览',
+    showJson: '显示JSON',
+    hideJson: '隐藏JSON',
+    refreshAgents: '刷新智能体',
+    agentLoadError: '加载智能体失败',
+    retryLoadAgents: '重新加载智能体',
+    availableTools: '可用工具',
+    
+    // 通用错误信息
+    loadingFailed: '加载失败',
+    networkError: '网络错误',
+    apiError: 'API调用失败',
+    resizeHint: '拖拽调整大小',
   },
 
   // 工具选择
@@ -823,7 +854,8 @@ const words: I18nType = {
     planTemplateIdNotFound: '没有找到计划模板ID',
     executionFailedNoPlanId: '执行计划失败：未返回有效的计划ID',
     executionFailed: '执行计划失败',
-    configuration: '设置'
+    configuration: '设置',
+    panelResizeHint: '拖拽调整面板大小',
   },
 
   // 模态框

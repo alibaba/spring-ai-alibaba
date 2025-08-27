@@ -90,7 +90,7 @@ public abstract class BaseAgent {
 	}
 
 	/**
-	 * Gets the list of sub-agents.
+	 * Abstract a complex agent into a simple node in the graph.
 	 * @return the list of sub-agents.
 	 */
 	public abstract AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)

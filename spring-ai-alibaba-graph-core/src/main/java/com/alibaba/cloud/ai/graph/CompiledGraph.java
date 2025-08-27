@@ -497,6 +497,7 @@ public class CompiledGraph {
 		return OverAllStateBuilder.builder()
 			.withKeyStrategies(stateGraph.getKeyStrategyFactory().apply())
 			.withData(inputs)
+			.withStore(compileConfig.getStore())
 			.build();
 	}
 
@@ -726,7 +727,7 @@ public class CompiledGraph {
 		 * @return the over all state
 		 */
 		OverAllState cloneState(Map<String, Object> data) {
-			return new OverAllState(data, keyStrategyMap, overAllState.isResume());
+			return new OverAllState(data, keyStrategyMap, overAllState.isResume(), overAllState.getStore());
 		}
 
 		/**
