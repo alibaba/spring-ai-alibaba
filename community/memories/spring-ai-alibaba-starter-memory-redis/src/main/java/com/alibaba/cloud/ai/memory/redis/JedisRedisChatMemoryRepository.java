@@ -120,6 +120,10 @@ public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepositor
 			// apply ssl
 			if (useSsl && StringUtils.hasText(bundle)) {
 				JedisClientConfiguration.JedisSslClientConfigurationBuilder sslBuilder = builder.useSsl();
+				if (sslBundles == null) {
+					throw new IllegalStateException(
+							"spring.ssl configuration is required when use SSL in redis chat memory");
+				}
 				SslBundle sslBundle = sslBundles.getBundle(bundle);
 				sslBuilder.sslSocketFactory(sslBundle.createSslContext().getSocketFactory());
 				SslOptions sslOptions = sslBundle.getOptions();

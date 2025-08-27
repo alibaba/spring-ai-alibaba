@@ -93,6 +93,10 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 			if (useCluster) {
 				List<String> nodesUrl = nodes.stream().map(node -> "redis://" + node).toList();
 				if (useSsl && StringUtils.hasText(bundle)) {
+					if (sslBundles == null) {
+						throw new IllegalStateException(
+								"spring.ssl configuration is required when use SSL in redis chat memory");
+					}
 					SslBundle sslBundle = sslBundles.getBundle(bundle);
 					SslManagerBundle managers = sslBundle.getManagers();
 					config.useClusterServers().setSslTrustManagerFactory(managers.getTrustManagerFactory());
@@ -113,6 +117,10 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 			else {
 				String nodeUrl = "redis://" + host + ":" + port;
 				if (useSsl && StringUtils.hasText(bundle)) {
+					if (sslBundles == null) {
+						throw new IllegalStateException(
+								"spring.ssl configuration is required when use SSL in redis chat memory");
+					}
 					SslBundle sslBundle = sslBundles.getBundle(bundle);
 					SslManagerBundle managers = sslBundle.getManagers();
 					config.useSingleServer().setSslTrustManagerFactory(managers.getTrustManagerFactory());
