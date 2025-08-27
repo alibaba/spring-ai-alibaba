@@ -66,16 +66,7 @@ public class GraphProcess {
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	// 任务被中断时发送给前端的信息
-	public static final String TASK_STOPPED_MESSAGE_TEMPLATE = """
-			{
-			    "nodeName": "__END__",
-			    "graphId": %s,
-			    "displayTitle": "结束",
-			    "content": {
-			        "reason": "%s"
-			    }
-			}
-			""";
+	public static final String TASK_STOPPED_MESSAGE_TEMPLATE = "{\"nodeName\": \"__END__\",\"graphId\": %s, \"displayTitle\": \"结束\", \"content\": { \"reason\": \"%s\"}} ";
 
 	// 线程数需要大于2
 	private final ExecutorService executor = Executors.newFixedThreadPool(10);
