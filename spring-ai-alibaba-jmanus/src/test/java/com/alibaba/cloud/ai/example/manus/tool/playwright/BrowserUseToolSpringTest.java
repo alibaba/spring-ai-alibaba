@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool.playwright;
+package com.alibaba.cloud.ai.manus.tool.playwright;
 
-import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
-import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
-import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
+import com.alibaba.cloud.ai.manus.OpenManusSpringBootApplication;
+import com.alibaba.cloud.ai.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.manus.tool.browser.BrowserUseTool;
+import com.alibaba.cloud.ai.manus.tool.browser.ChromeDriverService;
+import com.alibaba.cloud.ai.manus.tool.browser.actions.BrowserRequestVO;
+import com.alibaba.cloud.ai.manus.tool.browser.actions.GetElementPositionByNameAction;
+import com.alibaba.cloud.ai.manus.tool.browser.actions.MoveToAndClickAction;
+import com.alibaba.cloud.ai.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.manus.tool.innerStorage.SmartContentSavingService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
