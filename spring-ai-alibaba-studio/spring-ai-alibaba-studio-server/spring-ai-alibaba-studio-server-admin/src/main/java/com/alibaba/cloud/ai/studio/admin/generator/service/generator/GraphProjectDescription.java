@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.AppModeEnum;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import io.spring.initializr.generator.project.MutableProjectDescription;
 
 /**
@@ -30,6 +31,8 @@ public class GraphProjectDescription extends MutableProjectDescription {
 
 	private AppModeEnum appMode;
 
+    private DSLDialectType dslDialectType;
+
 	public GraphProjectDescription() {
 	}
 
@@ -37,6 +40,7 @@ public class GraphProjectDescription extends MutableProjectDescription {
 		super(source);
 		this.dsl = source.dsl;
 		this.appMode = source.appMode;
+        this.dslDialectType = source.dslDialectType;
 	}
 
 	@Override
@@ -60,4 +64,11 @@ public class GraphProjectDescription extends MutableProjectDescription {
 		this.appMode = appMode;
 	}
 
+    public DSLDialectType getDslDialectType() {
+        return dslDialectType;
+    }
+
+    public void setDslDialectType(DSLDialectType dslDialectType) {
+        this.dslDialectType = dslDialectType;
+    }
 }

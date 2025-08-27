@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.nodes;
+package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.AgentNodeData;
@@ -121,7 +121,7 @@ public class AgentNodeDataConverter extends AbstractNodeDataConverter<AgentNodeD
 				nodeData.setQueryPrompt(convertFunc.apply(nodeData.getQueryPrompt(), idToVarName));
 				nodeData.setInstructionPrompt(convertFunc.apply(nodeData.getInstructionPrompt(), idToVarName));
 			};
-			case CUSTOM -> super.postProcessConsumer(dialectType);
+            default -> super.postProcessConsumer(dialectType);
 		};
 	}
 

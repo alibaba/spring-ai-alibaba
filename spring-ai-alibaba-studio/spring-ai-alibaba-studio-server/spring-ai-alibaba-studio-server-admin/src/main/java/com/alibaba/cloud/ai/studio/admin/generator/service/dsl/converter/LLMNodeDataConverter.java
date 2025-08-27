@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.nodes;
+package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -342,7 +342,7 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 					.setSystemPromptTemplate(
 							Optional.ofNullable(data.getSystemPromptTemplate()).map(convertString).orElse(null));
 			});
-			case CUSTOM -> super.postProcessConsumer(dialectType);
+            default -> super.postProcessConsumer(dialectType);
 		};
 	}
 

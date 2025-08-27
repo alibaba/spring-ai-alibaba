@@ -72,16 +72,16 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private final String HAS_CODE = "hasCode";
 
-	private final DSLAdapter dslAdapter;
+	private final List<DSLAdapter> dslAdapters;
 
 	private final TemplateRenderer templateRenderer;
 
 	private final List<NodeSection<? extends NodeData>> nodeNodeSections;
 
-	public WorkflowProjectGenerator(@Qualifier("difyDSLAdapter") DSLAdapter dslAdapter,
+	public WorkflowProjectGenerator(List<DSLAdapter> dslAdapters,
 			ObjectProvider<MustacheTemplateRenderer> templateRenderer,
 			List<NodeSection<? extends NodeData>> nodeNodeSections) {
-		this.dslAdapter = dslAdapter;
+		this.dslAdapters = dslAdapters;
 		this.templateRenderer = templateRenderer
 			.getIfAvailable(() -> new MustacheTemplateRenderer("classpath:/templates"));
 		this.nodeNodeSections = nodeNodeSections;
@@ -94,7 +94,11 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	@Override
 	public void generate(GraphProjectDescription projectDescription, Path projectRoot) {
-		App app = dslAdapter.importDSL(projectDescription.getDsl());
+        DSLAdapter dslAdapter = dslAdapters.stream()
+			.filter(t -> t.supportDialect(projectDescription.getDslDialectType()))
+			.findFirst()
+			.orElseThrow(() -> new RuntimeException("No DSL adapter found for dialect: " + projectDescription.getDslDialectType()));
+        App app = dslAdapter.importDSL(projectDescription.getDsl());
 		Workflow workflow = (Workflow) app.getSpec();
 
 		List<Node> nodes = workflow.getGraph().getNodes();

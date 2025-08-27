@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.studio.admin.generator.exception.NotImplementedException;
 import com.alibaba.cloud.ai.studio.admin.generator.model.AppModeEnum;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import io.spring.initializr.generator.buildsystem.BuildSystem;
 import io.spring.initializr.generator.language.Language;
 import io.spring.initializr.generator.packaging.Packaging;
@@ -96,6 +97,11 @@ public class GraphProjectReqToDescConverter implements ProjectRequestToDescripti
 		AppModeEnum appModeEnum = Optional.ofNullable(AppModeEnum.of(request.getAppMode()))
 			.orElseThrow(() -> new NotImplementedException("Unsupported appMode: " + request.getAppMode()));
 		description.setAppMode(appModeEnum);
+
+        // 获得DSL类型
+        DSLDialectType dslDialectType = DSLDialectType.fromValue(request.getDslDialectType())
+                .orElseThrow(() -> new NotImplementedException("Unsupported dslDialectType: " + request.getDslDialectType()));
+        description.setDslDialectType(dslDialectType);
 	}
 
 	/**

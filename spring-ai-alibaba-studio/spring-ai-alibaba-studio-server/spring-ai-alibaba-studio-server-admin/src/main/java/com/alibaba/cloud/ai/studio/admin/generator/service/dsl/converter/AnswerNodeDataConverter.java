@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.nodes;
+package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -111,7 +111,7 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 				var func = NodeDataConverter.convertVarReserveFunction(dialectType);
 				nodeData.setAnswer(func.apply(nodeData.getAnswer(), idToVarName));
 			});
-			case CUSTOM -> super.postProcessConsumer(dialectType);
+            default -> super.postProcessConsumer(dialectType);
 		};
 	}
 

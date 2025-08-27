@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.nodes;
+package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
 import java.util.List;
 import java.util.Map;
@@ -147,7 +147,7 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 						Optional.ofNullable(varNames.get(outputSelector.getNamespace())).orElse("unknown") + "_"
 								+ outputSelector.getName());
 			});
-			case CUSTOM -> super.postProcessConsumer(dialectType);
+            default -> super.postProcessConsumer(dialectType);
 		};
 	}
 
