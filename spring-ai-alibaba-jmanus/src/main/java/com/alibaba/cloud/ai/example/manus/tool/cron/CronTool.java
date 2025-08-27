@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.cron;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.cron.service.CronService;
-import com.alibaba.cloud.ai.example.manus.dynamic.cron.vo.CronConfig;
+import com.alibaba.cloud.ai.example.manus.cron.service.CronService;
+import com.alibaba.cloud.ai.example.manus.cron.vo.CronConfig;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.fasterxml.jackson.databind.ObjectMapper;

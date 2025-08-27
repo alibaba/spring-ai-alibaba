@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.event;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
+import com.alibaba.cloud.ai.example.manus.model.entity.DynamicModelEntity;
 
 /**
  * @author dahua

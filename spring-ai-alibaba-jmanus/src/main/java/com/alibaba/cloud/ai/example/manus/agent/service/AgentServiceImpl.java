@@ -20,11 +20,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.IMcpService;
-import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
-import com.alibaba.cloud.ai.example.manus.dynamic.namespace.namespace.vo.NamespaceConfig;
-import com.alibaba.cloud.ai.example.manus.dynamic.namespace.service.NamespaceService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +38,11 @@ import com.alibaba.cloud.ai.example.manus.planning.IPlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.mcp.service.IMcpService;
+import com.alibaba.cloud.ai.example.manus.model.entity.DynamicModelEntity;
+import com.alibaba.cloud.ai.example.manus.model.model.vo.ModelConfig;
+import com.alibaba.cloud.ai.example.manus.namespace.namespace.vo.NamespaceConfig;
+import com.alibaba.cloud.ai.example.manus.namespace.service.NamespaceService;
 
 @Service
 public class AgentServiceImpl implements AgentService {

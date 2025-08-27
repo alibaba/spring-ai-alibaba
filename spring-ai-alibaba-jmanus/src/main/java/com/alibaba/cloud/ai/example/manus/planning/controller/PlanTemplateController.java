@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
+import com.alibaba.cloud.ai.example.manus.planning.service.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.ExecutionContext;
@@ -42,7 +43,6 @@ import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.runtime.service.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.runtime.service.PlanningCoordinator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 
 /**
  * Plan template controller, handles API requests for the plan template page

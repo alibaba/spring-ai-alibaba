@@ -15,8 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.config;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.prompt.PromptDescriptionLoader;
+import com.alibaba.cloud.ai.example.manus.prompt.model.enums.PromptEnum;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 

@@ -29,9 +29,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.model.model.enums.ModelType;
-import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
-import com.alibaba.cloud.ai.example.manus.dynamic.model.service.ModelService;
+import com.alibaba.cloud.ai.example.manus.model.model.enums.ModelType;
+import com.alibaba.cloud.ai.example.manus.model.model.vo.ModelConfig;
+import com.alibaba.cloud.ai.example.manus.model.service.ModelService;
 
 @RestController
 @RequestMapping("/api/init")

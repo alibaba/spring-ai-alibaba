@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -32,6 +31,7 @@ import com.alibaba.cloud.ai.example.manus.agent.repository.DynamicAgentRepositor
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
+import com.alibaba.cloud.ai.example.manus.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.ExecutionStep;

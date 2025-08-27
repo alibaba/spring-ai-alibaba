@@ -30,8 +30,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelRepository;
+import com.alibaba.cloud.ai.example.manus.model.entity.DynamicModelEntity;
+import com.alibaba.cloud.ai.example.manus.model.repository.DynamicModelRepository;
 
 @RestController
 @RequestMapping("/api/config")

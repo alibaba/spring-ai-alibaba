@@ -17,7 +17,8 @@ package com.alibaba.cloud.ai.example.manus.agent.entity;
 
 import java.util.List;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
+import com.alibaba.cloud.ai.example.manus.model.entity.DynamicModelEntity;
+
 import jakarta.persistence.*;
 
 @Entity

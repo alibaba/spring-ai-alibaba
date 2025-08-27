@@ -15,12 +15,12 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent.repository;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.alibaba.cloud.ai.example.manus.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.model.entity.DynamicModelEntity;
 
 import java.util.List;
 

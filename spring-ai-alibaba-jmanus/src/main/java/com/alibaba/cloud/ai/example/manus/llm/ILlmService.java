@@ -15,9 +15,10 @@
  */
 package com.alibaba.cloud.ai.example.manus.llm;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
+
+import com.alibaba.cloud.ai.example.manus.model.entity.DynamicModelEntity;
 
 /**
  * LLM service interface, providing chat client and memory management functionality

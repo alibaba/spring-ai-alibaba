@@ -15,9 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent.service;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
-
 import java.util.List;
+
+import com.alibaba.cloud.ai.example.manus.model.model.vo.ModelConfig;
 
 public class AgentConfig {
 

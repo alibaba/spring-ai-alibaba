@@ -15,9 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.config;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.memory.repository.H2ChatMemoryRepository;
-import com.alibaba.cloud.ai.example.manus.dynamic.memory.repository.MysqlChatMemoryRepository;
-import com.alibaba.cloud.ai.example.manus.dynamic.memory.repository.PostgresChatMemoryRepository;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
@@ -25,6 +22,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
+
+import com.alibaba.cloud.ai.example.manus.memory.repository.H2ChatMemoryRepository;
+import com.alibaba.cloud.ai.example.manus.memory.repository.MysqlChatMemoryRepository;
+import com.alibaba.cloud.ai.example.manus.memory.repository.PostgresChatMemoryRepository;
 
 /**
  * @author dahua

@@ -16,13 +16,13 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
-import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
+import com.alibaba.cloud.ai.example.manus.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
+import com.alibaba.cloud.ai.example.manus.prompt.model.enums.PromptEnum;
+import com.alibaba.cloud.ai.example.manus.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder.ActToolParam;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder.ThinkActRecordParams;

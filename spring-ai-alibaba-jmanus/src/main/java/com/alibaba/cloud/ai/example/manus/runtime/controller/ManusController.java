@@ -15,11 +15,11 @@
  */
 package com.alibaba.cloud.ai.example.manus.runtime.controller;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.memory.entity.MemoryEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.memory.service.MemoryService;
 import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
 import com.alibaba.cloud.ai.example.manus.event.PlanExceptionEvent;
 import com.alibaba.cloud.ai.example.manus.exception.PlanException;
+import com.alibaba.cloud.ai.example.manus.memory.entity.MemoryEntity;
+import com.alibaba.cloud.ai.example.manus.memory.service.MemoryService;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;

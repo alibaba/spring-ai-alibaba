@@ -16,10 +16,11 @@
 package com.alibaba.cloud.ai.example.manus.llm;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelRepository;
 import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
 import com.alibaba.cloud.ai.example.manus.event.ModelChangeEvent;
+import com.alibaba.cloud.ai.example.manus.model.entity.DynamicModelEntity;
+import com.alibaba.cloud.ai.example.manus.model.repository.DynamicModelRepository;
+
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
