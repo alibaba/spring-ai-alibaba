@@ -137,12 +137,14 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 
 	@Override
 	public void postProcessOutput(StartNodeData data, String varName) {
-		List<Variable> vars = new ArrayList<>(data.getStartInputs()
-			.stream()
-			.map(input -> new Variable(input.getVariable(), input.getType()))
-			.peek(variable -> variable.setName(variable.getName()))
-			.toList());
-		data.setOutputs(Stream.of(data.getOutputs(), vars).filter(Objects::nonNull).flatMap(List::stream).toList());
+		if (data.getStartInputs() != null) {
+			List<Variable> vars = new ArrayList<>(data.getStartInputs()
+				.stream()
+				.map(input -> new Variable(input.getVariable(), input.getType()))
+				.peek(variable -> variable.setName(variable.getName()))
+				.toList());
+			data.setOutputs(Stream.of(data.getOutputs(), vars).filter(Objects::nonNull).flatMap(List::stream).toList());
+		}
 		super.postProcessOutput(data, varName);
 	}
 

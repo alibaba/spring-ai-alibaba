@@ -180,7 +180,8 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 				.setSource(source)
 				.setTarget(target)
 				.setSourceHandle(sourceHandle)
-				.setTargetHandle(targetHandle);
+				.setTargetHandle(targetHandle)
+				.setDify(false);
 			return edge;
 		}).toList();
 	}
