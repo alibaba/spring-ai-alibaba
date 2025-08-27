@@ -33,6 +33,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataC
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.NodeDataConverter;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -295,7 +296,26 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 			public Boolean supportDialect(DSLDialectType dialect) {
 				return DSLDialectType.DIFY.equals(dialect);
 			}
-		}), CUSTOM(defaultCustomDialectConverter(LLMNodeData.class));
+		})
+
+		, STUDIO(new DialectConverter<LLMNodeData>() {
+			@Override
+			public Boolean supportDialect(DSLDialectType dialectType) {
+				return DSLDialectType.STUDIO.equals(dialectType);
+			}
+
+			@Override
+			public LLMNodeData parse(Map<String, Object> data) throws JsonProcessingException {
+				return null;
+			}
+
+			@Override
+			public Map<String, Object> dump(LLMNodeData nodeData) {
+				throw new UnsupportedOperationException();
+			}
+		})
+
+		, CUSTOM(defaultCustomDialectConverter(LLMNodeData.class));
 
 		private final DialectConverter<LLMNodeData> converter;
 
@@ -342,7 +362,7 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 					.setSystemPromptTemplate(
 							Optional.ofNullable(data.getSystemPromptTemplate()).map(convertString).orElse(null));
 			});
-            default -> super.postProcessConsumer(dialectType);
+			default -> super.postProcessConsumer(dialectType);
 		};
 	}
 

@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.EndNo
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -72,6 +73,21 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 					.toList();
 				data.put("outputs", outputsMap);
 				return data;
+			}
+		}), STUDIO(new DialectConverter<EndNodeData>() {
+			@Override
+			public Boolean supportDialect(DSLDialectType dialectType) {
+				return DSLDialectType.STUDIO.equals(dialectType);
+			}
+
+			@Override
+			public EndNodeData parse(Map<String, Object> data) throws JsonProcessingException {
+				return null;
+			}
+
+			@Override
+			public Map<String, Object> dump(EndNodeData nodeData) {
+				throw new UnsupportedOperationException();
 			}
 		}), CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(EndNodeData.class));
 

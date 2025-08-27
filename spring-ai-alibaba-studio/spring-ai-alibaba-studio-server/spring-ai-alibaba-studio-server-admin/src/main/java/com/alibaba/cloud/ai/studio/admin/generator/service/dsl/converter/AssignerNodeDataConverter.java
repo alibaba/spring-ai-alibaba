@@ -145,7 +145,7 @@ public class AssignerNodeDataConverter extends AbstractNodeDataConverter<Assigne
 				};
 				yield consumer.andThen(super.postProcessConsumer(dialectType));
 			}
-            default -> super.postProcessConsumer(dialectType);
+			default -> super.postProcessConsumer(dialectType);
 		};
 	}
 

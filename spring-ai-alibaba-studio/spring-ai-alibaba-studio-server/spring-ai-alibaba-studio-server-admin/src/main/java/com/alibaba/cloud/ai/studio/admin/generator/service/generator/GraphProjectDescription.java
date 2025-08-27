@@ -31,7 +31,7 @@ public class GraphProjectDescription extends MutableProjectDescription {
 
 	private AppModeEnum appMode;
 
-    private DSLDialectType dslDialectType;
+	private DSLDialectType dslDialectType;
 
 	public GraphProjectDescription() {
 	}
@@ -40,7 +40,7 @@ public class GraphProjectDescription extends MutableProjectDescription {
 		super(source);
 		this.dsl = source.dsl;
 		this.appMode = source.appMode;
-        this.dslDialectType = source.dslDialectType;
+		this.dslDialectType = source.dslDialectType;
 	}
 
 	@Override
@@ -64,11 +64,12 @@ public class GraphProjectDescription extends MutableProjectDescription {
 		this.appMode = appMode;
 	}
 
-    public DSLDialectType getDslDialectType() {
-        return dslDialectType;
-    }
+	public DSLDialectType getDslDialectType() {
+		return dslDialectType;
+	}
 
-    public void setDslDialectType(DSLDialectType dslDialectType) {
-        this.dslDialectType = dslDialectType;
-    }
+	public void setDslDialectType(DSLDialectType dslDialectType) {
+		this.dslDialectType = dslDialectType;
+	}
+
 }

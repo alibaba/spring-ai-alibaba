@@ -46,7 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -94,11 +93,12 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	@Override
 	public void generate(GraphProjectDescription projectDescription, Path projectRoot) {
-        DSLAdapter dslAdapter = dslAdapters.stream()
+		DSLAdapter dslAdapter = dslAdapters.stream()
 			.filter(t -> t.supportDialect(projectDescription.getDslDialectType()))
 			.findFirst()
-			.orElseThrow(() -> new RuntimeException("No DSL adapter found for dialect: " + projectDescription.getDslDialectType()));
-        App app = dslAdapter.importDSL(projectDescription.getDsl());
+			.orElseThrow(() -> new RuntimeException(
+					"No DSL adapter found for dialect: " + projectDescription.getDslDialectType()));
+		App app = dslAdapter.importDSL(projectDescription.getDsl());
 		Workflow workflow = (Workflow) app.getSpec();
 
 		List<Node> nodes = workflow.getGraph().getNodes();

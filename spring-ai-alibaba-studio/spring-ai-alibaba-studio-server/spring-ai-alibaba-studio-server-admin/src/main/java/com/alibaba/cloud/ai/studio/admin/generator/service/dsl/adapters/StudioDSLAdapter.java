@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractDSLAdapte
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.Serializer;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -37,58 +38,65 @@ import java.util.Map;
 @Component
 public class StudioDSLAdapter extends AbstractDSLAdapter {
 
-    private final List<NodeDataConverter<? extends NodeData>> nodeDataConverters;
+	private final List<NodeDataConverter<? extends NodeData>> nodeDataConverters;
 
-    private final Serializer serializer;
+	private final Serializer serializer;
 
-    public StudioDSLAdapter(List<NodeDataConverter<? extends NodeData>> nodeDataConverters,
-                          @Qualifier("json") Serializer serializer) {
-        this.nodeDataConverters = nodeDataConverters;
-        this.serializer = serializer;
-    }
+	public StudioDSLAdapter(List<NodeDataConverter<? extends NodeData>> nodeDataConverters,
+			@Qualifier("json") Serializer serializer) {
+		this.nodeDataConverters = nodeDataConverters;
+		this.serializer = serializer;
+	}
 
-    @Override
-    public AppMetadata mapToMetadata(Map<String, Object> data) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public AppMetadata mapToMetadata(Map<String, Object> data) {
+		String id = MapReadUtil.getMapDeepValue(data, String.class, "request_id");
+		String name = MapReadUtil.getMapDeepValue(data, String.class, "data", "name");
+		String description = MapReadUtil.getMapDeepValue(data, String.class, "data", "description");
+		String mode = MapReadUtil.getMapDeepValue(data, String.class, "data", "type");
+		return new AppMetadata().setId(id).setName(name).setDescription(description).setMode(mode);
+	}
 
-    @Override
-    public Map<String, Object> metadataToMap(AppMetadata metadata) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public Map<String, Object> metadataToMap(AppMetadata metadata) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public Workflow mapToWorkflow(Map<String, Object> data) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public Workflow mapToWorkflow(Map<String, Object> data) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public Map<String, Object> workflowToMap(Workflow workflow) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public Map<String, Object> workflowToMap(Workflow workflow) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public ChatBot mapToChatBot(Map<String, Object> data) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public ChatBot mapToChatBot(Map<String, Object> data) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public Map<String, Object> chatbotToMap(ChatBot chatBot) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public Map<String, Object> chatbotToMap(ChatBot chatBot) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public void validateDSLData(Map<String, Object> data) {
+	@Override
+	public void validateDSLData(Map<String, Object> data) {
+		if (data == null || !data.containsKey("data")) {
+			throw new IllegalArgumentException("invalid studio dsl");
+		}
+	}
 
-    }
+	@Override
+	public Serializer getSerializer() {
+		return this.serializer;
+	}
 
-    @Override
-    public Serializer getSerializer() {
-        return this.serializer;
-    }
+	@Override
+	public Boolean supportDialect(DSLDialectType dialectType) {
+		return DSLDialectType.STUDIO.equals(dialectType);
+	}
 
-    @Override
-    public Boolean supportDialect(DSLDialectType dialectType) {
-        return DSLDialectType.STUDIO.equals(dialectType);
-    }
 }

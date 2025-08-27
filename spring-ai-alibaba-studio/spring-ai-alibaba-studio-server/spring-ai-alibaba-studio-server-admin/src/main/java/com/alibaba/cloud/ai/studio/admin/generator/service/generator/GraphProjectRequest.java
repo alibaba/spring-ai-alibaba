@@ -23,7 +23,7 @@ public class GraphProjectRequest extends ProjectRequest {
 
 	private String appMode;
 
-    private String dslDialectType;
+	private String dslDialectType;
 
 	public String getDsl() {
 		return dsl;
@@ -41,12 +41,12 @@ public class GraphProjectRequest extends ProjectRequest {
 		this.appMode = appMode;
 	}
 
-    public String getDslDialectType() {
-        return dslDialectType;
-    }
+	public String getDslDialectType() {
+		return dslDialectType;
+	}
 
-    public void setDslDialectType(String dslDialectType) {
-        this.dslDialectType = dslDialectType;
-    }
+	public void setDslDialectType(String dslDialectType) {
+		this.dslDialectType = dslDialectType;
+	}
 
 }

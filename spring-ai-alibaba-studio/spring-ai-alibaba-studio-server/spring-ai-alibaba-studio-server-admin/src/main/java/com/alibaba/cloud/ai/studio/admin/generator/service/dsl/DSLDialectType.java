@@ -22,7 +22,7 @@ public enum DSLDialectType {
 
 	DIFY("dify", ".yml"),
 
-    STUDIO("studio", ".json"),
+	STUDIO("studio", ".json"),
 
 	CUSTOM("custom", ".yml");
 

@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.StartNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -84,6 +85,22 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 				Map<String, Object> data = new HashMap<>();
 				data.put("variables", objectMapper.convertValue(nodeData.getStartInputs(), List.class));
 				return data;
+			}
+		}), STUDIO(new DialectConverter<>() {
+
+			@Override
+			public Boolean supportDialect(DSLDialectType dialectType) {
+				return DSLDialectType.STUDIO.equals(dialectType);
+			}
+
+			@Override
+			public StartNodeData parse(Map<String, Object> data) throws JsonProcessingException {
+				return null;
+			}
+
+			@Override
+			public Map<String, Object> dump(StartNodeData nodeData) {
+				throw new UnsupportedOperationException();
 			}
 		}), CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(StartNodeData.class));
 

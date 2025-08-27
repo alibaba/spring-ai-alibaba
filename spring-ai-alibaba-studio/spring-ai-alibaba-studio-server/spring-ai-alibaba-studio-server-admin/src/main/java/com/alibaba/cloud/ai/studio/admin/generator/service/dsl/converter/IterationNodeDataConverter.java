@@ -147,7 +147,7 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 						Optional.ofNullable(varNames.get(outputSelector.getNamespace())).orElse("unknown") + "_"
 								+ outputSelector.getName());
 			});
-            default -> super.postProcessConsumer(dialectType);
+			default -> super.postProcessConsumer(dialectType);
 		};
 	}
 

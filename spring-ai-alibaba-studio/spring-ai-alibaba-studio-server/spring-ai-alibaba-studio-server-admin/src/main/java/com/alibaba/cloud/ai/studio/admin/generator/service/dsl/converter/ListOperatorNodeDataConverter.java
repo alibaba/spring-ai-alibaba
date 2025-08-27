@@ -163,7 +163,7 @@ public class ListOperatorNodeDataConverter extends AbstractNodeDataConverter<Lis
 			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
 				nodeData.setInputKey(nodeData.getInputs().get(0).getNameInCode());
 			});
-            default -> super.postProcessConsumer(dialectType);
+			default -> super.postProcessConsumer(dialectType);
 		};
 	}
 

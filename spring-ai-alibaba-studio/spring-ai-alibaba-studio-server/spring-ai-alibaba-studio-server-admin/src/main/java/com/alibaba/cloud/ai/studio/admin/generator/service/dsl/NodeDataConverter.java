@@ -103,7 +103,7 @@ public interface NodeDataConverter<T extends NodeData> {
 								.setNameInCode(variableSelector.getNamespace() + "_" + variableSelector.getName());
 						}).toList());
 			};
-            default -> (nodeData, idToVarName) -> {
+			default -> (nodeData, idToVarName) -> {
 			};
 		};
 	}
@@ -134,7 +134,7 @@ public interface NodeDataConverter<T extends NodeData> {
 				matcher.appendTail(result);
 				return result.toString();
 			};
-            default -> (str, idToVarName) -> str;
+			default -> (str, idToVarName) -> str;
 		};
 	}
 
