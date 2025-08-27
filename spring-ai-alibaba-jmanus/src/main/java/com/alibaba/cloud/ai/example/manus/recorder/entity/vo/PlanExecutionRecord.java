@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.example.manus.recorder.entity.vo;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.UserInputWaitState;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;

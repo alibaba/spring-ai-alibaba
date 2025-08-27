@@ -18,11 +18,11 @@ package com.alibaba.cloud.ai.example.manus.subplan.model.vo;
 import com.alibaba.cloud.ai.example.manus.subplan.model.po.SubplanToolDef;
 import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanExecutionResult;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.PlanExecutionResult;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.PlanInterface;
+import com.alibaba.cloud.ai.example.manus.runtime.service.PlanIdDispatcher;
+import com.alibaba.cloud.ai.example.manus.runtime.service.PlanningCoordinator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.slf4j.Logger;

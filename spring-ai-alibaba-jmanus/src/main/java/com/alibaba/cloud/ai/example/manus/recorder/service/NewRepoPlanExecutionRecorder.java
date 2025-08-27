@@ -7,7 +7,6 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.po.AgentExecutionRecordEntity;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.po.PlanExecutionRecordEntity;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.po.ExecutionStatusEntity;
@@ -19,6 +18,7 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.po.ActToolInfoEntity;
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.recorder.repository.ActToolInfoRepository;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder.ActToolParam;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.ExecutionStep;
 
 import jakarta.annotation.Resource;
 

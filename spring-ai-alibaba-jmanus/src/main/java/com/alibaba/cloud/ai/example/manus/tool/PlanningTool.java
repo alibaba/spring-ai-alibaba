@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;

@@ -16,8 +16,8 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.model.service;
 
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
+import com.alibaba.cloud.ai.example.manus.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.agent.repository.DynamicAgentRepository;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.exception.AuthenticationException;
 import com.alibaba.cloud.ai.example.manus.dynamic.model.exception.NetworkException;

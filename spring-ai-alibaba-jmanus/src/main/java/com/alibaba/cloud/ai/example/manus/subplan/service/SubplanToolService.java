@@ -16,9 +16,9 @@
 package com.alibaba.cloud.ai.example.manus.subplan.service;
 
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
+import com.alibaba.cloud.ai.example.manus.runtime.service.PlanIdDispatcher;
+import com.alibaba.cloud.ai.example.manus.runtime.service.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.subplan.model.po.SubplanToolDef;
 import com.alibaba.cloud.ai.example.manus.subplan.model.vo.SubplanToolWrapper;
 import com.alibaba.cloud.ai.example.manus.subplan.repository.SubplanToolDefRepository;

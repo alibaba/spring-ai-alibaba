@@ -34,13 +34,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.PlanInterface;
+import com.alibaba.cloud.ai.example.manus.runtime.service.PlanIdDispatcher;
+import com.alibaba.cloud.ai.example.manus.runtime.service.PlanningCoordinator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 

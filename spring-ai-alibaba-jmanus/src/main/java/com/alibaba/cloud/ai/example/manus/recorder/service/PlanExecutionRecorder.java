@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.example.manus.recorder.service;
 
 import java.util.List;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.ExecutionStep;
 
 /**
  * Plan execution recorder interface that defines methods for recording and

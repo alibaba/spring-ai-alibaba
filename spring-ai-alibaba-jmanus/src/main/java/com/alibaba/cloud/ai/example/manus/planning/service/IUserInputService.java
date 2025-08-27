@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.example.manus.planning.service;
 
 import java.util.Map;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 
 /**

@@ -18,11 +18,11 @@ package com.alibaba.cloud.ai.example.manus.recorder.entity.po;
 
 import jakarta.persistence.*;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.UserInputWaitState;
 
 /**
  * Plan execution record class for tracking and recording detailed information about

@@ -19,7 +19,7 @@ import java.util.Map;
 
 import org.springframework.web.client.RestClient;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
+import com.alibaba.cloud.ai.example.manus.agent.ToolCallbackProvider;
 
 /**
  * Planning factory interface, providing planning-related object creation functionality

@@ -20,9 +20,9 @@ import java.util.Map;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.runtime.service.PlanIdDispatcher;
 
 /**
  * Base class for ReAct (Reasoning + Acting) pattern agents. Implements an agent pattern

@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 
 import com.alibaba.cloud.ai.example.manus.config.IConfigService;
 import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentScanner;
+import com.alibaba.cloud.ai.example.manus.agent.service.DynamicAgentScanner;
 
 @Component
 public class ConfigAppStartupListener implements ApplicationListener<ApplicationStartedEvent> {

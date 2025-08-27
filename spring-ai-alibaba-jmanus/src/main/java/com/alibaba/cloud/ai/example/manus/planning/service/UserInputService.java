@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.service;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 import org.springframework.stereotype.Service;
 

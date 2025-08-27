@@ -21,9 +21,9 @@ import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
 import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.service.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.PlanInterface;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

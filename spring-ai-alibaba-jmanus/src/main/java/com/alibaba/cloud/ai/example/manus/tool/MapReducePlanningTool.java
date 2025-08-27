@@ -15,10 +15,10 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceExecutionPlan;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.SequentialNode;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.mapreduce.MapReduceNode;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.mapreduce.MapReduceExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.mapreduce.MapReduceNode;
+import com.alibaba.cloud.ai.example.manus.runtime.entity.vo.mapreduce.SequentialNode;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
