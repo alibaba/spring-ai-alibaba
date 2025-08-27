@@ -129,7 +129,7 @@ public class LettuceRedisChatMemoryRepository extends BaseRedisChatMemoryReposit
 					throw new IllegalStateException(
 							"spring.ssl configuration is required when use SSL in redis chat memory");
 				}
-                builder.useSsl();
+				builder.useSsl();
 				SslBundle sslBundle = sslBundles.getBundle(bundle);
 				io.lettuce.core.SslOptions.Builder sslOptionsBuilder = io.lettuce.core.SslOptions.builder();
 				sslOptionsBuilder.keyManager(sslBundle.getManagers().getKeyManagerFactory());
