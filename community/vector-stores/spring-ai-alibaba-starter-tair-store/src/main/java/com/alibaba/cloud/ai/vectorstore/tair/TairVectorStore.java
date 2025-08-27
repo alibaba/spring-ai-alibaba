@@ -220,9 +220,17 @@ public class TairVectorStore extends AbstractObservationVectorStore {
 		return this.embeddingModel.embed(query);
 	}
 
+	/**
+	 * Creates a VectorStoreObservationContext.Builder for Tair vector operations.
+	 * @param operationName The operation name (e.g., "add", "search", "delete")
+	 * @return A configured VectorStoreObservationContext.Builder instance
+	 */
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-		return null;
+		return VectorStoreObservationContext.builder("tair", operationName)
+			.collectionName(this.options.getIndexName())
+			.dimensions(this.options.getDimensions())
+			.similarityMetric(this.options.getDistanceMethod().name());
 	}
 
 	/**

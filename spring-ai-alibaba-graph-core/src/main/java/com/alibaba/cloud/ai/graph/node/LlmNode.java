@@ -20,9 +20,11 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -95,12 +97,20 @@ public class LlmNode implements NodeAction {
 			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", generator);
 		}
 		else {
-			ChatResponse response = call();
+
+			AssistantMessage responseOutput;
+			try {
+				ChatResponse response = call();
+				responseOutput = response.getResult().getOutput();
+			}
+			catch (Exception e) {
+				responseOutput = new AssistantMessage("Exception: " + e.getMessage());
+			}
 
 			Map<String, Object> updatedState = new HashMap<>();
-			updatedState.put("messages", response.getResult().getOutput());
+			updatedState.put("messages", responseOutput);
 			if (StringUtils.hasLength(this.outputKey)) {
-				updatedState.put(this.outputKey, response.getResult().getOutput());
+				updatedState.put(this.outputKey, responseOutput);
 			}
 			return updatedState;
 		}
@@ -155,9 +165,12 @@ public class LlmNode implements NodeAction {
 
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec() {
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
+			.options(ToolCallingChatOptions.builder()
+				.toolCallbacks(toolCallbacks)
+				.internalToolExecutionEnabled(false)
+				.build())
 			.messages(messages)
-			.advisors(advisors)
-			.toolCallbacks(toolCallbacks);
+			.advisors(advisors);
 
 		if (StringUtils.hasLength(systemPrompt)) {
 			if (!params.isEmpty()) {

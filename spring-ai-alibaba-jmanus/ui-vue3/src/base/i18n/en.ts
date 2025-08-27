@@ -772,7 +772,7 @@ const words: I18nType = {
 
   // Sidebar
   sidebar: {
-    title: 'PLAN-ACT Templates',
+    title: 'PLAN-ACT Template Name',
     templateList: 'Template List',
     configuration: 'Configuration',
     newPlan: 'New Plan',
@@ -782,7 +782,7 @@ const words: I18nType = {
     unnamedPlan: 'Unnamed Plan',
     noDescription: 'No description',
     deleteTemplate: 'Delete this plan template',
-    jsonTemplate: 'JSON Template',
+  jsonTemplate: 'plan-act计划模板编辑器',
     rollback: 'Rollback',
     restore: 'Restore',
     jsonPlaceholder:
@@ -840,6 +840,37 @@ const words: I18nType = {
     newTemplateDescription: 'Please use the plan generator to create a new plan template',
     generatedTemplateDescription: 'Plan template created by generator',
     defaultExecutionPlanTitle: 'Execution Plan',
+    
+    // JsonEditor related
+  planId: 'Plan Template ID',
+    steps: 'Steps',
+  tasks: '任务列表',
+    subtask: 'Subtask',
+    agent: 'Agent',
+  stepRequirement: 'Task Requirement',
+  stepRequirementPlaceholder: 'Please enter the specific requirements and description for this task...',
+  terminateColumns: 'Task Output Requirements Description',
+  terminateColumnsPlaceholder: 'Please enter task output requirements description...',
+    titlePlaceholder: 'Please enter plan title...',
+    moveUp: 'Move Up',
+    moveDown: 'Move Down',
+    removeStep: 'Remove Step',
+    addStep: 'Add Step',
+    addFirstStep: 'Add First Step',
+    noSteps: 'No steps yet, click the button below to start adding',
+    jsonPreview: 'JSON Preview',
+    showJson: 'Show JSON',
+    hideJson: 'Hide JSON',
+    refreshAgents: 'Refresh Agents',
+    agentLoadError: 'Failed to load agents',
+    retryLoadAgents: 'Retry loading agents',
+    availableTools: 'Available Tools',
+    
+    // Common error messages
+    loadingFailed: 'Loading failed',
+    networkError: 'Network error',
+    apiError: 'API call failed',
+    resizeHint: 'Drag to resize',
   },
 
   // Tool Selection
@@ -860,7 +891,7 @@ const words: I18nType = {
     executionFailedNoPlanId: 'Plan execution failed: No valid plan ID returned',
     executionFailed: 'Plan execution failed',
     configuration: 'config',
-    panelResizeHint: 'Drag to resize panels, double-click to reset'
+    panelResizeHint: 'Drag to resize panel',
   },
 
   // Modal

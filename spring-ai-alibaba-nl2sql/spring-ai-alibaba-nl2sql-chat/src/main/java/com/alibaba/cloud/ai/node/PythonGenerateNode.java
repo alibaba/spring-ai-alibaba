@@ -119,8 +119,8 @@ public class PythonGenerateNode extends AbstractPlanBasedNode implements NodeAct
 			.stream()
 			.chatResponse();
 
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
-				"正在生成Python代码...", "Python代码生成完成。", aiResponse -> {
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state, "", "",
+				aiResponse -> {
 					// Some AI models still output Markdown markup (even though Prompt has
 					// emphasized this)
 					aiResponse = MarkdownParser.extractRawText(aiResponse);
