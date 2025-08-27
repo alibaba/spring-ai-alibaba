@@ -38,13 +38,11 @@ import static java.lang.String.format;
 
 /**
  * A CheckpointSaver that stores Checkpoints in the filesystem.
- *
  * <p>
  * Each RunnableConfig is associated with a file in the provided targetFolder. The file is
  * named "thread-<i>threadId</i>.saver" if the RunnableConfig has a threadId, or
  * "thread-$default.saver" if it doesn't.
  * </p>
- *
  */
 public class FileSystemSaver extends MemorySaver {
 
@@ -63,26 +61,14 @@ public class FileSystemSaver extends MemorySaver {
 		this.targetFolder = Objects.requireNonNull(targetFolder, "targetFolder cannot be null");
 		this.serializer = new CheckPointSerializer(stateSerializer);
 
-		File targetFolderAsFile = targetFolder.toFile();
-
-		if (targetFolderAsFile.exists()) {
-			if (targetFolderAsFile.isFile()) {
-				throw new IllegalArgumentException(format("targetFolder '%s' must be a folder", targetFolder)); // TODO:
-																												// format"targetFolder
-																												// must
-																												// be
-																												// a
-																												// directory");
+		try {
+			if (Files.exists(targetFolder) && !Files.isDirectory(targetFolder)) {
+				throw new IllegalArgumentException(format("targetFolder '%s' must be a directory", targetFolder));
 			}
+			Files.createDirectories(targetFolder);
 		}
-		else {
-			if (!targetFolderAsFile.mkdirs()) {
-				throw new IllegalArgumentException(format("targetFolder '%s' cannot be created", targetFolder)); // TODO:
-																													// format"targetFolder
-																													// cannot
-																													// be
-																													// created");
-			}
+		catch (IOException ex) {
+			throw new IllegalArgumentException(format("targetFolder '%s' cannot be created", targetFolder), ex);
 		}
 
 	}
@@ -200,13 +186,19 @@ public class FileSystemSaver extends MemorySaver {
 	}
 
 	/**
-	 * delete the checkpoint file associated with the given RunnableConfig.
+	 * Delete the checkpoint file associated with the given RunnableConfig.
 	 * @param config the RunnableConfig for which the checkpoint file should be cleared
 	 * @return true if the file existed and was successfully deleted, false otherwise
 	 */
 	public boolean deleteFile(RunnableConfig config) {
-		File targetFile = getFile(config);
-		return targetFile.exists() && targetFile.delete();
+		Path path = getPath(config);
+		try {
+			return Files.deleteIfExists(path);
+		}
+		catch (IOException e) {
+			log.warn("Failed to delete checkpoint file {}", path, e);
+			return false;
+		}
 	}
 
 }
