@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.graph.store.Store;
 import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
@@ -68,6 +69,8 @@ public class OverAllStateBuilder {
 	private Map<String, KeyStrategy> keyStrategies = new HashMap<>();
 
 	private Boolean resume = false;
+
+	private Store store;
 
 	/**
 	 * Initializes a builder with default configuration.
@@ -144,11 +147,21 @@ public class OverAllStateBuilder {
 	}
 
 	/**
+	 * Sets the Store instance for long-term memory storage.
+	 * @param store The Store instance to use
+	 * @return this for chained method calls
+	 */
+	public OverAllStateBuilder withStore(Store store) {
+		this.store = store;
+		return this;
+	}
+
+	/**
 	 * Constructs and returns a fully configured OverAllState instance.
 	 * @return A new OverAllState instance with the configured settings
 	 */
 	public OverAllState build() {
-		OverAllState state = new OverAllState(new HashMap<>(data), new HashMap<>(keyStrategies), resume);
+		OverAllState state = new OverAllState(new HashMap<>(data), new HashMap<>(keyStrategies), resume, store);
 		// If no input key is registered, apply the default key and replace strategy
 		if (!state.containStrategy(OverAllState.DEFAULT_INPUT_KEY)) {
 			state.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
