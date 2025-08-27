@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.flow.enums;
 
 public enum FlowAgentEnum {
 
-	CONDITIONAL("CONDITIONAL"), SEQUENTIAL("SEQUENTIAL"), ROUTING("ROUTING"), PARALLEL("PARALLEL");
+	CONDITIONAL("CONDITIONAL"), SEQUENTIAL("SEQUENTIAL"), ROUTING("ROUTING"), PARALLEL("PARALLEL"), LOOP("LOOP");
 
 	private final String type;
 

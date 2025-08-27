@@ -112,7 +112,7 @@ public class CodeExecutorProperties {
 	/**
 	 * Container network mode
 	 */
-	String networkMode = "bridge";
+	String networkMode = "none";
 
 	public CodePoolExecutorEnum getCodePoolExecutor() {
 		return codePoolExecutor;
