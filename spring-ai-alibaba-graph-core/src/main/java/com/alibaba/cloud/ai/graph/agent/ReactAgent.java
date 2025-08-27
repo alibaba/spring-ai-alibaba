@@ -444,8 +444,8 @@ public class ReactAgent extends BaseAgent {
 			return this;
 		}
 
-		public Builder llmInputMessagesKey(String llmInputMessagesKey) {
-			this.inputKey = llmInputMessagesKey;
+		public Builder inputKey(String inputKey) {
+			this.inputKey = inputKey;
 			return this;
 		}
 
