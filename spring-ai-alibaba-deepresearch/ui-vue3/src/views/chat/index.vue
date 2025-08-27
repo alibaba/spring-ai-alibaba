@@ -71,7 +71,7 @@
                     v-if="senderLoading"
                     type="default"
                     style="display: block"
-                    :disabled="true"
+                    @click="stopHandle"
                   >
                     <template #icon>
                       <Spin size="small" />
@@ -137,9 +137,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useConfigStore } from '@/store/ConfigStore'
 import { parseJsonTextStrict } from '@/utils/jsonParser';
 import type { NormalNode, SiteInformation } from '@/types/node';
-import type { UploadFile } from '@/types/upload';
 import type { MessageState } from '@/types/message';
-import service from '@/utils/request'
+import service, { post } from '@/utils/request'
 
 const router = useRouter()
 const route = useRoute()
@@ -150,7 +149,6 @@ if (!convId) {
   const { key } = conversationStore.newOne()
   router.push(`/chat/${key}`) 
 }
-const uploadFileList = ref<UploadFile[]>([])
 const { useToken } = theme
 const { token } = useToken()
 const username = useAuthStore().token
@@ -306,6 +304,17 @@ const submitHandle = (nextContent: any) => {
   onRequest(nextContent)
   content.value = ''
   conversationStore.updateTitle(convId, nextContent)
+}
+
+const stopHandle = async () => {
+  // 发送上传请求
+    await post<string>('/chat/stop', {
+      session_id: convId,
+      thread_id: current.threadId,
+    })
+    
+    message.success('停止成功')
+    
 }
 
 // 开始研究
@@ -538,24 +547,32 @@ function parseLoadingMessage(msg: string): any{
 
   return buildPendingNodeThoughtChain(jsonArray)
 }
-
+function findNode(jsonArray: NormalNode[], nodeName: string): NormalNode | undefined {
+  return jsonArray.filter((item) => item.nodeName === nodeName)[0]
+}
 // 解析 status = success 的消息
 function parseSuccessMessage(msg: string) {
     // 解析完整数据
     const jsonArray: NormalNode[] = parseJsonTextStrict(msg)
     // 闲聊模式
-    if(jsonArray.filter((item) => item.nodeName === 'coordinator').length > 0) {
-      const coordinatorNode = jsonArray.filter((item) => item.nodeName === 'coordinator')[0];
-      if(coordinatorNode && !coordinatorNode.content) {
-        return (jsonArray.filter((item) => item.nodeName === '__END__')[0].content as any).output
+    const coordinatorNode = findNode(jsonArray, 'coordinator')
+    if(coordinatorNode && !coordinatorNode.content) {
+      const endNode = findNode(jsonArray, '__END__')
+      return endNode?.content.output
       }
+    // 用户终止
+    const endNode = findNode(jsonArray, '__END__')
+    if(endNode && endNode.content.reason === '用户终止') {
+      current.deepResearchDetail = false
+      return endNode.content.reason
     }
-    // 人类中断模式
-    if(jsonArray.filter((item) => item.nodeName === '__END__').length === 0) {
+    // 需要用用户反馈
+    if(!endNode) {
       return buildStartDSThoughtChain(jsonArray)
     }
     // 人类恢复模式 或者 直接 end 模式
-    if(jsonArray.filter((item) => item.nodeName === 'human_feedback').length > 0 || jsonArray.filter((item) => item.nodeName === '__END__').length) {
+    const humanFeedbackNode = findNode(jsonArray, 'human_feedback')
+    if(humanFeedbackNode || endNode) {
       return buildEndDSThoughtChain(jsonArray)
     }
 }
