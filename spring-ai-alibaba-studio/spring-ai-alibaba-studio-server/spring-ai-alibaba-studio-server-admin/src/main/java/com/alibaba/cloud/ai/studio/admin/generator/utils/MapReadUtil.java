@@ -47,6 +47,18 @@ public final class MapReadUtil {
 	}
 
 	/**
+	 * 将obj转换为{@code List<Map<String,Object>>}对象
+	 * @param obj Object
+	 * @return {@code List<Map<String,Object>>}
+	 */
+	public static List<Map<String, Object>> safeCastToListWithMap(Object obj) {
+		if (!(obj instanceof List<?> list)) {
+			return null;
+		}
+		return list.stream().map(MapReadUtil::safeCastToMapWithStringKey).toList();
+	}
+
+	/**
 	 * 将obj转换为{@code Map<String,Object>}对象
 	 * @param obj Object
 	 * @return {@code Map<String,Object>}

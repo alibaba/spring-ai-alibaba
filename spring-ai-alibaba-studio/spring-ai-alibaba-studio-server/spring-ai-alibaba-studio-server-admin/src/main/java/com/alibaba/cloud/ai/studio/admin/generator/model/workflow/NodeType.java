@@ -20,55 +20,58 @@ import java.util.Optional;
 
 public enum NodeType {
 
-	START("start", "start"),
+	START("start", "start", "Start"),
 
-	END("end", "end"),
+	END("end", "end", "End"),
 
-	ANSWER("answer", "answer"),
+	ANSWER("answer", "answer", "UNSUPPORTED"),
 
-	AGENT("agent", "agent"),
+	AGENT("agent", "agent", "UNSUPPORTED"),
 
-	LLM("llm", "llm"),
+	LLM("llm", "llm", "UNSUPPORTED"),
 
-	CODE("code", "code"),
+	CODE("code", "code", "UNSUPPORTED"),
 
-	RETRIEVER("retriever", "knowledge-retrieval"),
+	RETRIEVER("retriever", "knowledge-retrieval", "UNSUPPORTED"),
 
-	AGGREGATOR("aggregator", "variable-aggregator"),
+	AGGREGATOR("aggregator", "variable-aggregator", "UNSUPPORTED"),
 
-	HUMAN("human", "unsupported"),
+	HUMAN("human", "unsupported", "UNSUPPORTED"),
 
-	BRANCH("branch", "if-else"),
+	BRANCH("branch", "if-else", "UNSUPPORTED"),
 
-	DOC_EXTRACTOR("document-extractor", "document-extractor"),
+	DOC_EXTRACTOR("document-extractor", "document-extractor", "UNSUPPORTED"),
 
-	QUESTION_CLASSIFIER("question-classifier", "question-classifier"),
+	QUESTION_CLASSIFIER("question-classifier", "question-classifier", "UNSUPPORTED"),
 
-	HTTP("http", "http-request"),
+	HTTP("http", "http-request", "UNSUPPORTED"),
 
-	LIST_OPERATOR("list-operator", "list-operator"),
+	LIST_OPERATOR("list-operator", "list-operator", "UNSUPPORTED"),
 
-	PARAMETER_PARSING("parameter-parsing", "parameter-extractor"),
+	PARAMETER_PARSING("parameter-parsing", "parameter-extractor", "UNSUPPORTED"),
 
-	TOOL("tool", "tool"),
+	TOOL("tool", "tool", "UNSUPPORTED"),
 
-	MCP("mcp", "unsupported"),
+	MCP("mcp", "unsupported", "UNSUPPORTED"),
 
-	TEMPLATE_TRANSFORM("template-transform", "template-transform"),
+	TEMPLATE_TRANSFORM("template-transform", "template-transform", "UNSUPPORTED"),
 
-	ITERATION("iteration", "iteration"),
+	ITERATION("iteration", "iteration", "UNSUPPORTED"),
 
-	DIFY_ITERATION_START("__empty__", "iteration-start"),
+	DIFY_ITERATION_START("__empty__", "iteration-start", "UNSUPPORTED"),
 
-	ASSIGNER("assigner", "assigner");
+	ASSIGNER("assigner", "assigner", "UNSUPPORTED");
 
 	private final String value;
 
 	private final String difyValue;
 
-	NodeType(String value, String difyValue) {
+	private final String studioValue;
+
+	NodeType(String value, String difyValue, String studioValue) {
 		this.value = value;
 		this.difyValue = difyValue;
+		this.studioValue = studioValue;
 	}
 
 	public String value() {
@@ -79,12 +82,22 @@ public enum NodeType {
 		return this.difyValue;
 	}
 
+	public String studioValue() {
+		return this.studioValue;
+	}
+
 	public static Optional<NodeType> fromValue(String value) {
 		return Arrays.stream(NodeType.values()).filter(nodeType -> nodeType.value.equals(value)).findFirst();
 	}
 
 	public static Optional<NodeType> fromDifyValue(String difyValue) {
 		return Arrays.stream(NodeType.values()).filter(nodeType -> nodeType.difyValue.equals(difyValue)).findFirst();
+	}
+
+	public static Optional<NodeType> fromStudioValue(String studioValue) {
+		return Arrays.stream(NodeType.values())
+			.filter(nodeType -> nodeType.studioValue.equals(studioValue))
+			.findFirst();
 	}
 
 }

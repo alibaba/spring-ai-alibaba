@@ -47,15 +47,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class CustomDSLAdapter extends AbstractDSLAdapter {
 
-	private final Serializer serializer;
-
 	private final ObjectMapper objectMapper;
 
-	private final List<NodeDataConverter<?>> nodeDataConverters;
-
 	public CustomDSLAdapter(@Qualifier("yaml") Serializer serializer, List<NodeDataConverter<?>> nodeDataConverters) {
-		this.serializer = serializer;
-		this.nodeDataConverters = nodeDataConverters;
+		super(nodeDataConverters, serializer);
 		this.objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -129,13 +124,6 @@ public class CustomDSLAdapter extends AbstractDSLAdapter {
 		NodeDataConverter<?> nodeDataConverter = getNodeDataConverter(nodeType);
 		node.setData(nodeDataConverter.parseMapData(nodeDataMap, DSLDialectType.CUSTOM));
 		return node;
-	}
-
-	private NodeDataConverter<?> getNodeDataConverter(NodeType nodeType) {
-		return nodeDataConverters.stream()
-			.filter(converter -> converter.supportNodeType(nodeType))
-			.findFirst()
-			.orElseThrow(() -> new IllegalArgumentException("invalid dify node type " + nodeType));
 	}
 
 	@Override
