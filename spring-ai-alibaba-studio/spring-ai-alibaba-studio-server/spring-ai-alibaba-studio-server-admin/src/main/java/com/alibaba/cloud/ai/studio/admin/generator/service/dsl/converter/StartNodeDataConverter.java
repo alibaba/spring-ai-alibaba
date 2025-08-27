@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
@@ -28,6 +29,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.StartNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -95,7 +97,19 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 
 			@Override
 			public StartNodeData parse(Map<String, Object> data) throws JsonProcessingException {
-				return null;
+				// 获取output属性
+				List<?> outputList = MapReadUtil.getMapDeepValue(data, List.class, "config", "output_params");
+				// 转换为Variable
+				List<Variable> outputs = Stream.ofNullable(outputList)
+					.flatMap(List::stream)
+					.map(MapReadUtil::safeCastToMapWithStringKey)
+					.map(mp -> new Variable(MapReadUtil.getMapDeepValue(mp, String.class, "key"),
+							MapReadUtil.getMapDeepValue(mp, String.class, "type"))
+						.setDescription(MapReadUtil.getMapDeepValue(mp, String.class, "desc")))
+					.toList();
+				StartNodeData nodeData = new StartNodeData();
+				nodeData.setOutputs(outputs);
+				return nodeData;
 			}
 
 			@Override
@@ -128,7 +142,7 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 			.map(input -> new Variable(input.getVariable(), input.getType()))
 			.peek(variable -> variable.setName(variable.getName()))
 			.toList());
-		data.setOutputs(vars);
+		data.setOutputs(Stream.of(data.getOutputs(), vars).filter(Objects::nonNull).flatMap(List::stream).toList());
 		super.postProcessOutput(data, varName);
 	}
 
