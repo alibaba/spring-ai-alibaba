@@ -453,9 +453,9 @@ public class ReactAgent extends BaseAgent {
 			}
 
 			if (nacosOptions != null) {
+				NacosAgentInjector.injectModel(nacosOptions, chatClient, this.name);
 				NacosAgentInjector.injectPrompt(nacosOptions.getNacosConfigService(), chatClient, nacosOptions.getPromptKey());
 			}
-
 
 			LlmNode.Builder llmNodeBuilder = LlmNode.builder().chatClient(chatClient).messagesKey("messages");
 			if (CollectionUtils.isNotEmpty(tools)) {

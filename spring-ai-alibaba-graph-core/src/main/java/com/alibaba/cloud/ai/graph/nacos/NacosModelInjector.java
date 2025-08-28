@@ -8,8 +8,9 @@ import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.common.utils.StringUtils;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 
@@ -27,7 +28,27 @@ public class NacosModelInjector {
 		}
 	}
 
-	public static void injectModel(ChatModel chatModel, NacosOptions nacosOptions, String agentId) {
+
+	public static ChatModel initModel(ModelVO model) {
+
+		OpenAiApi openAiApi = OpenAiApi.builder()
+				.apiKey(model.getApiKey()).baseUrl(model.getBaseUrl())
+				.build();
+
+		OpenAiChatOptions.Builder chatOptionsBuilder = OpenAiChatOptions.builder();
+		if (model.getTemperature() != null) {
+			chatOptionsBuilder.temperature(Double.parseDouble(model.getTemperature()));
+		}
+		if (model.getMaxTokens() != null) {
+			chatOptionsBuilder.maxTokens(Integer.parseInt(model.getMaxTokens()));
+		}
+		OpenAiChatOptions openaiChatOptions = chatOptionsBuilder
+				.model(model.getModel()).build();
+		return OpenAiChatModel.builder().defaultOptions(openaiChatOptions).openAiApi(openAiApi)
+				.build();
+	}
+
+	public static void registerModelListener(ChatClient chatClient, NacosOptions nacosOptions, String agentId) {
 		if (StringUtils.isBlank(agentId)) {
 			return;
 		}
@@ -37,7 +58,8 @@ public class NacosModelInjector {
 				public void receiveConfigInfo(String configInfo) {
 					ModelVO modelVO = JSON.parseObject(configInfo, ModelVO.class);
 					try {
-						replaceModel(chatModel, modelVO);
+						ChatModel chatModelNew = initModel(modelVO);
+						replaceModel(chatClient, chatModelNew);
 					}
 					catch (Exception e) {
 						throw new RuntimeException(e);
@@ -50,28 +72,15 @@ public class NacosModelInjector {
 		}
 	}
 
-	public static void replaceModel(ChatModel chatModel, ModelVO modelVO) throws Exception {
-		Field openAiChatOptionsField = chatModel.getClass().getDeclaredField("defaultOptions");
-		openAiChatOptionsField.setAccessible(true);
-		OpenAiChatOptions openAiChatOptions = (OpenAiChatOptions) openAiChatOptionsField.get(chatModel);
-		openAiChatOptions.setModel(modelVO.getModel());
-		if (modelVO.getTemperature() != null) {
-			openAiChatOptions.setTemperature(Double.parseDouble(modelVO.getTemperature()));
-		}
-		if (modelVO.getMaxTokens() != null) {
-			openAiChatOptions.setMaxTokens(Integer.parseInt(modelVO.getMaxTokens()));
-		}
-		Field openAiApiField = chatModel.getClass().getDeclaredField("openAiApi");
-		openAiApiField.setAccessible(true);
+	public static void replaceModel(ChatClient chatClient, ChatModel chatModel) throws Exception {
+		Object defaultChatClientRequest = getField(chatClient, "defaultChatClientRequest");
+		modifyFinalField(defaultChatClientRequest, "chatModel", chatModel);
+	}
 
-		OpenAiApi openAiApi = (OpenAiApi) openAiApiField.get(chatModel);
-		// 修改baseUrl字段
-
-		modifyFinalField(openAiApi, "baseUrl", modelVO.getBaseUrl());
-		// 修改apiKey字段
-		SimpleApiKey simpleApiKey = new SimpleApiKey(modelVO.getApiKey());
-		modifyFinalField(openAiApi, "apiKey", simpleApiKey);
-		System.out.println(openAiApi);
+	private static Object getField(Object obj, String fieldName) throws Exception {
+		Field field = obj.getClass().getDeclaredField(fieldName);
+		field.setAccessible(true);
+		return field.get(obj);
 	}
 
 	public static void modifyFinalField(Object targetObject, String fieldName, Object newValue) throws Exception {

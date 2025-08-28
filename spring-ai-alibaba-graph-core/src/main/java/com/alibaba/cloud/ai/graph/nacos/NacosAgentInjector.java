@@ -4,9 +4,6 @@ import com.alibaba.nacos.client.config.NacosConfigService;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 
 public class NacosAgentInjector {
 
@@ -26,40 +23,28 @@ public class NacosAgentInjector {
 
 	}
 
-	public static void injectModel(NacosOptions nacosOptions, ChatModel chatModel, String agentId) {
+	public static void injectModel(NacosOptions nacosOptions, ChatClient chatClient, String agentId) {
 		ModelVO modelVO = NacosModelInjector.getModelByAgentId(nacosOptions, agentId);
 		if (modelVO != null) {
 			try {
-				NacosModelInjector.replaceModel(chatModel, modelVO);
+				ChatModel chatModel = NacosModelInjector.initModel(modelVO);
+				NacosModelInjector.replaceModel(chatClient, chatModel);
 			}
 			catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		}
-		NacosModelInjector.injectModel(chatModel, nacosOptions, agentId);
+		NacosModelInjector.registerModelListener(chatClient, nacosOptions, agentId);
 	}
 
 
 	public static ChatModel initModel(NacosOptions nacosOptions, String agentId) {
-		ModelVO model = NacosModelInjector.getModelByAgentId(nacosOptions, agentId);
-		if (model == null) {
+		ModelVO modelVo = NacosModelInjector.getModelByAgentId(nacosOptions, agentId);
+		if (modelVo == null) {
 			return null;
 		}
-		OpenAiApi openAiApi = OpenAiApi.builder()
-				.apiKey(model.getApiKey()).baseUrl(model.getBaseUrl())
-				.build();
 
-		OpenAiChatOptions.Builder chatOptionsBuilder = OpenAiChatOptions.builder();
-		if (model.getTemperature() != null) {
-			chatOptionsBuilder.temperature(Double.parseDouble(model.getTemperature()));
-		}
-		if (model.getMaxTokens() != null) {
-			chatOptionsBuilder.maxTokens(Integer.parseInt(model.getMaxTokens()));
-		}
-		OpenAiChatOptions openaiChatOptions = chatOptionsBuilder
-				.model(model.getModel()).build();
-		return OpenAiChatModel.builder().defaultOptions(openaiChatOptions).openAiApi(openAiApi)
-				.build();
+		return NacosModelInjector.initModel(modelVo);
 	}
 
 }

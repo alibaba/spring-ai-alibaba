@@ -39,6 +39,9 @@ class ReactAgentNacosTest {
 		Properties properties = new Properties();
 		properties.put("serverAddr", "mse-401cbb30-p.nacos-ans.mse.aliyuncs.com:8848");
 		properties.put("namespace", "b9ee889a-991e-4f5d-b0c1-bac4d08a1cd8");
+		properties.put("accessKey", System.getProperty("accessKey",""));
+		properties.put("secretKey", System.getProperty("secretKey",""));
+
 		try {
 			return new NacosConfigService(properties);
 		}
@@ -58,14 +61,21 @@ class ReactAgentNacosTest {
 		nacosOptions.setNacosConfigService(nacosConfigService);
 		//nacosOptions.setAgentId("agent0001");
 		nacosOptions.setPromptKey("bookprompt2");
+		nacosOptions.setAgentId("agent0001");
+		nacosOptions.setModelConfigEncrypted(false);
 		ReactAgent agent = ReactAgent.builder().name("agent0001").nacosProxy(nacosOptions).build();
 
 		//Thread.sleep(15000L);
 		for (int i=0;i<20;i++){
 			var runnableConfig = RunnableConfig.builder().threadId(UUID.randomUUID().toString()).build();
+			try {
+				Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下沈从文。必须给我回答"))), runnableConfig);
+				System.out.println(result.get().data());
+			}catch (Throwable throwable){
 
-			Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下鲁迅。必须给我回答"))),runnableConfig);
-			System.out.println(result.get().data());
+				throwable.printStackTrace();
+				Thread.sleep(5000L);
+			}
 		}
 
 
