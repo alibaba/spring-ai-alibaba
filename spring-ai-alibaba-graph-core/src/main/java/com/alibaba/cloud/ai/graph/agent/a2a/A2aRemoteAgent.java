@@ -13,22 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.graph.agent.a2a;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
@@ -55,6 +57,8 @@ public class A2aRemoteAgent extends BaseAgent {
 	private String inputKey;
 
 	private boolean streaming;
+
+	Logger logger = Logger.getLogger(A2aRemoteAgent.class.getName());
 
 	// Private constructor for Builder pattern
 	private A2aRemoteAgent(A2aNode a2aNode, Builder builder) throws GraphStateException {
@@ -90,16 +94,27 @@ public class A2aRemoteAgent extends BaseAgent {
 	}
 
 	@Override
-	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException, GraphRunnerException {
-		throw new UnsupportedOperationException("A2aRemoteAgent has not support schedule.");
-	}
-
-	@Override
 	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
 		return this.compiledGraph.invoke(input);
+	}
+
+	@Override
+	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException, GraphRunnerException {
+		return null;
+	}
+
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
+			throws GraphStateException, GraphRunnerException {
+		if (!streaming) {
+			logger.warning("Streaming is not enabled for this agent.");
+		}
+		if (this.compiledGraph == null) {
+			this.compiledGraph = getAndCompileGraph();
+		}
+		return this.compiledGraph.stream(input);
 	}
 
 	public StateGraph getStateGraph() {
@@ -208,6 +223,7 @@ public class A2aRemoteAgent extends BaseAgent {
 				throw new IllegalArgumentException("AgentCard must be provided");
 			}
 
+			this.streaming = agentCard.capabilities().streaming();
 			A2aNode a2aNode = new A2aNode(agentCard, inputKey, outputKey, streaming);
 
 			return new A2aRemoteAgent(a2aNode, this);

@@ -15,66 +15,90 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.chat.model.ChatModel;
-
 import java.util.HashMap;
 //import java.util.Map;
 //import java.util.Optional;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+//import com.alibaba.cloud.ai.graph.OverAllState;
+//import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+//import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+//import com.alibaba.cloud.ai.graph.NodeOutput;
+//import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+//import com.alibaba.cloud.ai.graph.agent.a2a.RemoteAgentCard;
+
+import org.springframework.ai.chat.model.ChatModel;
+
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class RemoteAgentTest {
 
-	private ChatModel chatModel;
+    private ChatModel chatModel;
 
-	@BeforeEach
-	void setUp() {
-		// 先创建 DashScopeApi 实例
-		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+    @BeforeEach
+    void setUp() {
+        // 先创建 DashScopeApi 实例
+        DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 
-		// 创建 DashScope ChatModel 实例
-		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
-	}
+        // 创建 DashScope ChatModel 实例
+        this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
+    }
 
-	@Test
-	public void testRemoteAgent() throws Exception {
-		KeyStrategyFactory stateFactory = () -> {
-			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			keyStrategyHashMap.put("input", new ReplaceStrategy());
-			keyStrategyHashMap.put("topic", new ReplaceStrategy());
-			keyStrategyHashMap.put("article", new ReplaceStrategy());
-			keyStrategyHashMap.put("reviewed_article", new ReplaceStrategy());
-			return keyStrategyHashMap;
-		};
+    @Test
+    public void testRemoteAgent() throws Exception {
+        KeyStrategyFactory stateFactory = () -> {
+            HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+            keyStrategyHashMap.put("input", new ReplaceStrategy());
+            keyStrategyHashMap.put("topic", new ReplaceStrategy());
+            keyStrategyHashMap.put("article", new ReplaceStrategy());
+            keyStrategyHashMap.put("reviewed_article", new ReplaceStrategy());
+            return keyStrategyHashMap;
+        };
 
-		// You need to have a remote agent service running at the specified URL for this
-		// test to work.
-		// A2aRemoteAgent remoteWriterAgent = A2aRemoteAgent.builder()
-		// .name("writer_agent")
-		// .agentCard(RemoteAgentCard.builder().url("http://0.0.0.0:10000").build())
-		// .description("可以写文章。")
-		// .outputKey("article")
-		// .build();
-
-		// System.out.println(RemoteAgentCard.builder().url("http://0.0.0.0:10000").build());
-
-		try {
-			// Optional<OverAllState> result = remoteWriterAgent.invoke(Map.of("input",
-			// "帮我写一个100字左右的散文"));
-			// System.out.println(result.get());
-		}
-		catch (java.util.concurrent.CompletionException e) {
-			e.printStackTrace();
-		}
-
-		// Verify all hooks were executed
-	}
+//        A2aRemoteAgent currencyExchangeAgent = A2aRemoteAgent.builder()
+//                .name("writer_agent")
+//                .agentCard(RemoteAgentCard.builder().url("http://192.168.239.195:10000").build())
+//                .description("可以写文章。")
+//                .outputKey("output")
+//                .build();
+//
+//        try {
+//            // Start streaming and consume chunks as they arrive
+//            AsyncGenerator<NodeOutput> generator = currencyExchangeAgent
+//                    .stream(Map.of("input", "你好，给我说一下人民币到日元的汇率"));
+//            System.out.println("Begin streaming response...");
+//            int chunkCount = 0;
+//            while (true) {
+//                AsyncGenerator.Data<NodeOutput> data = generator.next();
+//                if (data.isDone()) {
+//                    System.out.println("Streaming completed. Total chunks: " + chunkCount);
+//                    break;
+//                }
+//                NodeOutput outBase = data.getData().join();
+//                chunkCount++;
+//                if (outBase instanceof StreamingOutput so) {
+//                    System.out.println("chunk[" + chunkCount + "]: " + so.chunk());
+//                } else {
+//                    System.out.println("chunk[" + chunkCount + "]: " + outBase.toString());
+//                }
+//            }
+//        } catch (java.util.concurrent.CompletionException e) {
+//            e.printStackTrace();
+//        }
+//
+//        try {
+//            Optional<OverAllState> result = currencyExchangeAgent.invoke(Map.of("input",
+//                    "你好，给我说一下人民币到日元的汇率"));
+//            System.out.println("Final Result: " + result.get());
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+    }
 
 }
