@@ -807,7 +807,7 @@ const words: I18nType = {
     newTemplateDescription: '请使用计划生成器创建新的计划模板',
     generatedTemplateDescription: '通过生成器创建的计划模板',
     defaultExecutionPlanTitle: '执行计划',
-    
+
     // JsonEditor 相关
   planId: '计划模板ID',
     steps: '步骤',
@@ -832,7 +832,7 @@ const words: I18nType = {
     agentLoadError: '加载智能体失败',
     retryLoadAgents: '重新加载智能体',
     availableTools: '可用工具',
-    
+
     // 通用错误信息
     loadingFailed: '加载失败',
     networkError: '网络错误',
@@ -996,8 +996,12 @@ const words: I18nType = {
         description: '体验AI智能分析用户需求并动态生成相关表单字段的能力',
         prompt: '演示AI如何根据用户问题智能生成针对性的表单字段',
         planTitle: 'AI智能动态表单演示计划',
-        step1: '[INTELLIGENT_FORM_AGENT] 启动智能动态表单演示，主动分析用户需求并动态生成相关表单字段，展示AI智能表单生成能力',
-        step1Output: '演示结果，用户交互数据',
+        step1: '[INTELLIGENT_FORM_AGENT] 要求用户输入咨询类型，咨询类型有三种，一个是业务咨询，一个是技术咨询，还有一个是架构咨询',
+        step1Output: '业务类型',
+        step2: '[DEFAULT_AGENT] 如果是技术咨询，则输出：技术咨询请拨打10086\n'+'如果是架构咨询，则输出：架构咨询可以联系沈询\n'+'其他则输出空，不属于我的范围',
+        step2Output: '',
+        step3: '[DEFAULT_AGENT] 如果是业务咨询，则输出：业务咨询，可以通过官网链接 www.yida.com 来提交',
+        step3Output: '',
       },
     },
   },

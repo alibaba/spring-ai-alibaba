@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.autoconfigure.memory.redis;
-
-import org.springframework.boot.ssl.SslBundles;
-
-import java.util.List;
+package com.alibaba.cloud.ai.graph.scheduling;
 
 /**
- * Configuration for Redis Memory using Redis Cluster
+ * ScheduleLifecycleListener
  *
- * @author benym
- * @since 2025/7/30 21:33
- */
-public record RedisChatMemoryClusterConfiguration(List<String> nodeAddresses, String username, String password,
-		int timeout, RedisChatMemoryProperties.Ssl ssl, SslBundles sslBundles) {
+ * @author yaohui &#064;create 2025/8/20 14:58
+ **/
+public interface ScheduleLifecycleListener {
+
+	enum ScheduleEvent {
+
+		STARTED, STOPPED, EXECUTION_STARTED, EXECUTION_COMPLETED, EXECUTION_FAILED
+
+	}
+
+	/**
+	 * 当调度事件发生时触发的回调方法
+	 * @param event 调度事件类型
+	 * @param data 与事件相关的数据对象
+	 */
+	default void onEvent(ScheduleEvent event, Object data) {
+	}
 
 }

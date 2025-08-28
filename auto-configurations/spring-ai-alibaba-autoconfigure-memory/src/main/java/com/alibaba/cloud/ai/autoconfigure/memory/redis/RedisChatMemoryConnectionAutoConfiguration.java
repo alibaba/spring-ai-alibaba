@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.autoconfigure.memory.redis;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
@@ -33,10 +35,13 @@ public abstract class RedisChatMemoryConnectionAutoConfiguration<T extends ChatM
 
 	private final RedisChatMemoryConnectionDetails connectionDetails;
 
+	private final SslBundles sslBundles;
+
 	public RedisChatMemoryConnectionAutoConfiguration(RedisChatMemoryProperties properties,
-			RedisChatMemoryConnectionDetails connectionDetails) {
+			RedisChatMemoryConnectionDetails connectionDetails, ObjectProvider<SslBundles> sslBundles) {
 		this.properties = properties;
 		this.connectionDetails = connectionDetails;
+		this.sslBundles = sslBundles.getIfAvailable();
 	}
 
 	/**
@@ -102,7 +107,8 @@ public abstract class RedisChatMemoryConnectionAutoConfiguration<T extends ChatM
 	protected final RedisChatMemoryStandaloneConfiguration getStandaloneConfiguration() {
 		RedisMemoryConnectionDetails.Standalone standalone = connectionDetails.getStandalone();
 		return new RedisChatMemoryStandaloneConfiguration(standalone.getHost(), standalone.getPort(),
-				connectionDetails.getUsername(), connectionDetails.getPassword(), properties.getTimeout());
+				connectionDetails.getUsername(), connectionDetails.getPassword(), properties.getTimeout(),
+				properties.getSsl(), sslBundles);
 	}
 
 	/**
@@ -115,7 +121,7 @@ public abstract class RedisChatMemoryConnectionAutoConfiguration<T extends ChatM
 		}
 		List<String> nodes = getNodes(connectionDetails.getCluster());
 		return new RedisChatMemoryClusterConfiguration(nodes, connectionDetails.getUsername(),
-				connectionDetails.getPassword(), properties.getTimeout());
+				connectionDetails.getPassword(), properties.getTimeout(), properties.getSsl(), sslBundles);
 	}
 
 	/**
