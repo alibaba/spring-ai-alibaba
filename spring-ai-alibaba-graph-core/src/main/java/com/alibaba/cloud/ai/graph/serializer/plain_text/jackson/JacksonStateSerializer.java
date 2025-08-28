@@ -59,29 +59,29 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 		// Create a secure polymorphic type validator with blacklist for dangerous classes
 		PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
-			// Allow most types by default, but deny dangerous ones
-			.allowIfBaseType(Object.class)
-			// Blacklist dangerous classes that could be used for attacks
-			.denyForExactBaseType(java.lang.ProcessBuilder.class)
-			.denyForExactBaseType(java.lang.Runtime.class)
-			.denyForExactBaseType(java.lang.Process.class)
-			.denyForExactBaseType(java.io.FileInputStream.class)
-			.denyForExactBaseType(java.io.FileOutputStream.class)
-			.denyForExactBaseType(java.io.FileReader.class)
-			.denyForExactBaseType(java.io.FileWriter.class)
-			.denyForExactBaseType(java.net.Socket.class)
-			.denyForExactBaseType(java.net.ServerSocket.class)
-			.denyForExactBaseType(java.net.URL.class)
-			.denyForExactBaseType(java.net.URLConnection.class)
-			.denyForExactBaseType(java.net.HttpURLConnection.class)
-			.denyForExactBaseType(java.lang.reflect.Method.class)
-			.denyForExactBaseType(java.lang.reflect.Constructor.class)
-			.denyForExactBaseType(java.lang.reflect.Field.class)
-			.denyForExactBaseType(java.lang.Class.class)
-			.denyForExactBaseType(java.lang.ClassLoader.class)
-			.denyForExactBaseType(java.beans.Expression.class)
-			.denyForExactBaseType(java.beans.Statement.class)
-			.build();
+				// Allow most types by default, but deny dangerous ones
+				.allowIfBaseType(Object.class)
+				// Blacklist dangerous classes that could be used for attacks
+				.denyForExactBaseType(java.lang.ProcessBuilder.class)
+				.denyForExactBaseType(java.lang.Runtime.class)
+				.denyForExactBaseType(java.lang.Process.class)
+				.denyForExactBaseType(java.io.FileInputStream.class)
+				.denyForExactBaseType(java.io.FileOutputStream.class)
+				.denyForExactBaseType(java.io.FileReader.class)
+				.denyForExactBaseType(java.io.FileWriter.class)
+				.denyForExactBaseType(java.net.Socket.class)
+				.denyForExactBaseType(java.net.ServerSocket.class)
+				.denyForExactBaseType(java.net.URL.class)
+				.denyForExactBaseType(java.net.URLConnection.class)
+				.denyForExactBaseType(java.net.HttpURLConnection.class)
+				.denyForExactBaseType(java.lang.reflect.Method.class)
+				.denyForExactBaseType(java.lang.reflect.Constructor.class)
+				.denyForExactBaseType(java.lang.reflect.Field.class)
+				.denyForExactBaseType(java.lang.Class.class)
+				.denyForExactBaseType(java.lang.ClassLoader.class)
+				.denyForExactBaseType(java.beans.Expression.class)
+				.denyForExactBaseType(java.beans.Statement.class)
+				.build();
 
 		// Enable polymorphic type handling with security validation
 		mapper.activateDefaultTyping(typeValidator, ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
@@ -100,8 +100,16 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT,
 				true);
 
-		// Register custom module for Spring AI Message types
+		// Configure collection handling to avoid SubList issues
+		mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, false);
+
+		// Set custom deserialization problem handler for automatic fallback to HashMap
+		mapper.addHandler(new FallbackDeserializationProblemHandler());
+
+		// Register custom modules
 		registerSpringAIMessageModule(mapper);
+		registerCollectionModule(mapper);
+		registerFallbackModule(mapper);
 	}
 
 	/**
@@ -120,9 +128,16 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			SpringAIMessageDeserializer messageDeserializer = new SpringAIMessageDeserializer();
 
 			// Register custom deserializers for each message type
-			springAIModule.addDeserializer((Class) userMessageClass, messageDeserializer);
-			springAIModule.addDeserializer((Class) assistantMessageClass, messageDeserializer);
-			springAIModule.addDeserializer((Class) systemMessageClass, messageDeserializer);
+			@SuppressWarnings("unchecked")
+			Class<Object> userClass = (Class<Object>) userMessageClass;
+			@SuppressWarnings("unchecked")
+			Class<Object> assistantClass = (Class<Object>) assistantMessageClass;
+			@SuppressWarnings("unchecked")
+			Class<Object> systemClass = (Class<Object>) systemMessageClass;
+
+			springAIModule.addDeserializer(userClass, messageDeserializer);
+			springAIModule.addDeserializer(assistantClass, messageDeserializer);
+			springAIModule.addDeserializer(systemClass, messageDeserializer);
 
 		}
 		catch (ClassNotFoundException e) {
@@ -130,6 +145,47 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		}
 
 		mapper.registerModule(springAIModule);
+	}
+
+	/**
+	 * Register custom serialization/deserialization support for problematic collection types
+	 */
+	private void registerCollectionModule(ObjectMapper mapper) {
+		SimpleModule collectionModule = new SimpleModule("CollectionModule");
+
+		try {
+			// Handle ArrayList$SubList - convert to ArrayList during deserialization
+			Class<?> subListClass = Class.forName("java.util.ArrayList$SubList");
+			@SuppressWarnings("unchecked")
+			Class<Object> subListObjectClass = (Class<Object>) subListClass;
+			collectionModule.addDeserializer(subListObjectClass, new SubListDeserializer());
+		} catch (ClassNotFoundException e) {
+			// SubList class not available in some JVM implementations
+		}
+
+		try {
+			// Handle Arrays$ArrayList - convert to ArrayList during deserialization
+			Class<?> arraysListClass = Class.forName("java.util.Arrays$ArrayList");
+			@SuppressWarnings("unchecked")
+			Class<Object> arraysListObjectClass = (Class<Object>) arraysListClass;
+			collectionModule.addDeserializer(arraysListObjectClass, new ArraysListDeserializer());
+		} catch (ClassNotFoundException e) {
+			// Arrays$ArrayList class not available
+		}
+
+		mapper.registerModule(collectionModule);
+	}
+
+	/**
+	 * Register fallback module for automatic HashMap conversion when deserialization fails
+	 */
+	private void registerFallbackModule(ObjectMapper mapper) {
+		SimpleModule fallbackModule = new SimpleModule("FallbackModule");
+
+		// Add a default deserializer for Object.class to handle fallback cases
+		fallbackModule.addDeserializer(Object.class, new FallbackObjectDeserializer());
+
+		mapper.registerModule(fallbackModule);
 	}
 
 	@Override
@@ -207,13 +263,13 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 				// Create corresponding message object based on type
 				return java.util.Optional.ofNullable(messageType)
-					.map(String::toUpperCase)
-					.map(MESSAGE_FACTORIES::get)
-					.orElseGet(() -> {
-						// Default to USER message if type is unknown
-						return MESSAGE_FACTORIES.get("USER");
-					})
-					.apply(content);
+						.map(String::toUpperCase)
+						.map(MESSAGE_FACTORIES::get)
+						.orElseGet(() -> {
+							// Default to USER message if type is unknown
+							return MESSAGE_FACTORIES.get("USER");
+						})
+						.apply(content);
 
 			}
 			catch (Exception e) {
@@ -235,18 +291,18 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		private String extractMessageType(com.fasterxml.jackson.databind.JsonNode node) {
 			// Try different field names for message type
 			return java.util.Optional.ofNullable(node.get("messageType"))
-				.map(com.fasterxml.jackson.databind.JsonNode::asText)
-				.orElseGet(() -> java.util.Optional.ofNullable(node.get("type"))
 					.map(com.fasterxml.jackson.databind.JsonNode::asText)
-					.orElseGet(() -> java.util.Optional.ofNullable(node.get("role"))
-						.map(n -> n.asText().toUpperCase())
-						.orElseGet(() -> {
-							// Try to infer from class type information
-							return java.util.Optional.ofNullable(node.get("@class"))
-								.map(com.fasterxml.jackson.databind.JsonNode::asText)
-								.map(this::extractTypeFromClassName)
-								.orElse(null);
-						})));
+					.orElseGet(() -> java.util.Optional.ofNullable(node.get("type"))
+							.map(com.fasterxml.jackson.databind.JsonNode::asText)
+							.orElseGet(() -> java.util.Optional.ofNullable(node.get("role"))
+									.map(n -> n.asText().toUpperCase())
+									.orElseGet(() -> {
+										// Try to infer from class type information
+										return java.util.Optional.ofNullable(node.get("@class"))
+												.map(com.fasterxml.jackson.databind.JsonNode::asText)
+												.map(this::extractTypeFromClassName)
+												.orElse(null);
+									})));
 		}
 
 		/**
@@ -255,18 +311,18 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		private String extractContent(com.fasterxml.jackson.databind.JsonNode node) {
 			// Try different field names for content
 			return java.util.Optional.ofNullable(node.get("content"))
-				.map(com.fasterxml.jackson.databind.JsonNode::asText)
-				.orElseGet(() -> java.util.Optional.ofNullable(node.get("text"))
 					.map(com.fasterxml.jackson.databind.JsonNode::asText)
-					.orElseGet(() -> java.util.Optional.ofNullable(node.get("message"))
-						.map(com.fasterxml.jackson.databind.JsonNode::asText)
-						.orElseGet(() -> {
-							// If node is plain text, use it directly
-							if (node.isTextual()) {
-								return node.asText();
-							}
-							return ""; // fallback to empty string
-						})));
+					.orElseGet(() -> java.util.Optional.ofNullable(node.get("text"))
+							.map(com.fasterxml.jackson.databind.JsonNode::asText)
+							.orElseGet(() -> java.util.Optional.ofNullable(node.get("message"))
+									.map(com.fasterxml.jackson.databind.JsonNode::asText)
+									.orElseGet(() -> {
+										// If node is plain text, use it directly
+										if (node.isTextual()) {
+											return node.asText();
+										}
+										return ""; // fallback to empty string
+									})));
 		}
 
 		/**
@@ -285,4 +341,236 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 	}
 
+	/**
+	 * Custom deserializer for ArrayList$SubList - converts to regular ArrayList
+	 */
+	public static class SubListDeserializer extends com.fasterxml.jackson.databind.JsonDeserializer<Object> {
+		@Override
+		public Object deserialize(com.fasterxml.jackson.core.JsonParser p,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) {
+			try {
+				// Read as JSON array and convert to ArrayList
+				com.fasterxml.jackson.databind.JsonNode node = p.getCodec().readTree(p);
+				if (node.isArray()) {
+					java.util.List<Object> list = new java.util.ArrayList<>();
+					for (com.fasterxml.jackson.databind.JsonNode element : node) {
+						if (element.isTextual()) {
+							list.add(element.asText());
+						} else if (element.isNumber()) {
+							list.add(element.numberValue());
+						} else if (element.isBoolean()) {
+							list.add(element.asBoolean());
+						} else if (element.isNull()) {
+							list.add(null);
+						} else {
+							// For complex objects, deserialize recursively
+							list.add(ctxt.readTreeAsValue(element, Object.class));
+						}
+					}
+					return list;
+				}
+				return new java.util.ArrayList<>();
+			} catch (Exception e) {
+				// Fallback to empty ArrayList
+				return new java.util.ArrayList<>();
+			}
+		}
+	}
+
+	/**
+	 * Custom deserializer for Arrays$ArrayList - converts to regular ArrayList
+	 */
+	public static class ArraysListDeserializer extends com.fasterxml.jackson.databind.JsonDeserializer<Object> {
+		@Override
+		public Object deserialize(com.fasterxml.jackson.core.JsonParser p,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+			try {
+				// Read as JSON array and convert to ArrayList
+				com.fasterxml.jackson.databind.JsonNode node = p.getCodec().readTree(p);
+				if (node.isArray()) {
+					java.util.List<Object> list = new java.util.ArrayList<>();
+					for (com.fasterxml.jackson.databind.JsonNode element : node) {
+						if (element.isTextual()) {
+							list.add(element.asText());
+						} else if (element.isNumber()) {
+							list.add(element.numberValue());
+						} else if (element.isBoolean()) {
+							list.add(element.asBoolean());
+						} else if (element.isNull()) {
+							list.add(null);
+						} else {
+							// For complex objects, deserialize recursively
+							list.add(ctxt.readTreeAsValue(element, Object.class));
+						}
+					}
+					return list;
+				}
+				return new java.util.ArrayList<>();
+			} catch (Exception e) {
+				// Fallback to empty ArrayList
+				return new java.util.ArrayList<>();
+			}
+		}
+	}
+
+	/**
+	 * Custom problem handler that automatically falls back to HashMap for failed deserializations
+	 */
+	public static class FallbackDeserializationProblemHandler extends com.fasterxml.jackson.databind.deser.DeserializationProblemHandler {
+
+		@Override
+		public Object handleInstantiationProblem(com.fasterxml.jackson.databind.DeserializationContext ctxt,
+				Class<?> instClass, Object argument, Throwable t) {
+
+			// If instantiation fails and it's a complex object, fallback to HashMap
+			if (shouldFallbackToHashMap(instClass)) {
+				// Return empty HashMap as fallback - the actual data will be handled by other mechanisms
+				return new java.util.HashMap<>();
+			}
+
+			return com.fasterxml.jackson.databind.deser.DeserializationProblemHandler.NOT_HANDLED;
+		}
+
+		/**
+		 * Determines if a class should fallback to HashMap when deserialization fails
+		 */
+		private boolean shouldFallbackToHashMap(Class<?> clazz) {
+			if (clazz == null) return false;
+
+			// Don't fallback for primitive types and their wrappers
+			if (clazz.isPrimitive() ||
+					clazz == String.class ||
+					Number.class.isAssignableFrom(clazz) ||
+					Boolean.class == clazz ||
+					Character.class == clazz) {
+				return false;
+			}
+
+			// Don't fallback for standard collections (they have their own handling)
+			if (java.util.Collection.class.isAssignableFrom(clazz) ||
+					java.util.Map.class.isAssignableFrom(clazz)) {
+				return false;
+			}
+
+			// Don't fallback for arrays
+			if (clazz.isArray()) {
+				return false;
+			}
+
+			// Fallback for complex objects, inner classes, etc.
+			return true;
+		}
+
+		/**
+		 * Converts current JSON to HashMap
+		 */
+		private Object convertToHashMap(com.fasterxml.jackson.core.JsonParser p,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+			try {
+				com.fasterxml.jackson.databind.JsonNode node = p.readValueAsTree();
+				return convertJsonNodeToHashMap(node, ctxt);
+			} catch (Exception e) {
+				// Final fallback
+				return new java.util.HashMap<>();
+			}
+		}
+
+		/**
+		 * Recursively converts JsonNode to HashMap/ArrayList structure
+		 */
+		private Object convertJsonNodeToHashMap(com.fasterxml.jackson.databind.JsonNode node,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) {
+			if (node == null || node.isNull()) {
+				return null;
+			} else if (node.isObject()) {
+				java.util.Map<String, Object> map = new java.util.HashMap<>();
+				node.fields().forEachRemaining(entry -> {
+					map.put(entry.getKey(), convertJsonNodeToHashMap(entry.getValue(), ctxt));
+				});
+				return map;
+			} else if (node.isArray()) {
+				java.util.List<Object> list = new java.util.ArrayList<>();
+				for (com.fasterxml.jackson.databind.JsonNode element : node) {
+					list.add(convertJsonNodeToHashMap(element, ctxt));
+				}
+				return list;
+			} else if (node.isTextual()) {
+				return node.asText();
+			} else if (node.isNumber()) {
+				return node.numberValue();
+			} else if (node.isBoolean()) {
+				return node.asBoolean();
+			} else {
+				return node.asText(); // fallback to string
+			}
+		}
+	}
+
+	/**
+	 * Fallback deserializer for Object.class that tries standard deserialization first,
+	 * then falls back to HashMap if that fails
+	 */
+	public static class FallbackObjectDeserializer extends com.fasterxml.jackson.databind.JsonDeserializer<Object> {
+
+		@Override
+		public Object deserialize(com.fasterxml.jackson.core.JsonParser p,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+
+			try {
+				// Try to read the value as tree first
+				com.fasterxml.jackson.databind.JsonNode node = p.readValueAsTree();
+
+				// Check if there's type information
+				if (node.isObject() && node.has("@class")) {
+					String className = node.get("@class").asText();
+					try {
+						Class<?> targetClass = Class.forName(className);
+						// Try to deserialize to the target class
+						return ctxt.readTreeAsValue(node, targetClass);
+					} catch (Exception e) {
+						// If specific class deserialization fails, fallback to HashMap
+						return convertToHashMapStructure(node);
+					}
+				} else {
+					// No type information, convert to appropriate basic type
+					return convertToHashMapStructure(node);
+				}
+
+			} catch (Exception e) {
+				// Final fallback
+				return new java.util.HashMap<>();
+			}
+		}
+
+		/**
+		 * Converts JsonNode to HashMap/ArrayList/primitive structure
+		 */
+		private Object convertToHashMapStructure(com.fasterxml.jackson.databind.JsonNode node) {
+			if (node == null || node.isNull()) {
+				return null;
+			} else if (node.isObject()) {
+				java.util.Map<String, Object> map = new java.util.HashMap<>();
+				node.fields().forEachRemaining(entry -> {
+					map.put(entry.getKey(), convertToHashMapStructure(entry.getValue()));
+				});
+				return map;
+			} else if (node.isArray()) {
+				java.util.List<Object> list = new java.util.ArrayList<>();
+				for (com.fasterxml.jackson.databind.JsonNode element : node) {
+					list.add(convertToHashMapStructure(element));
+				}
+				return list;
+			} else if (node.isTextual()) {
+				return node.asText();
+			} else if (node.isNumber()) {
+				return node.numberValue();
+			} else if (node.isBoolean()) {
+				return node.asBoolean();
+			} else {
+				return node.asText();
+			}
+		}
+	}
+
 }
+
