@@ -39,66 +39,66 @@ import org.springframework.ai.chat.model.ChatModel;
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class RemoteAgentTest {
 
-    private ChatModel chatModel;
+	private ChatModel chatModel;
 
-    @BeforeEach
-    void setUp() {
-        // 先创建 DashScopeApi 实例
-        DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+	@BeforeEach
+	void setUp() {
+		// 先创建 DashScopeApi 实例
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 
-        // 创建 DashScope ChatModel 实例
-        this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
-    }
+		// 创建 DashScope ChatModel 实例
+		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
+	}
 
-    @Test
-    public void testRemoteAgent() throws Exception {
-        KeyStrategyFactory stateFactory = () -> {
-            HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-            keyStrategyHashMap.put("input", new ReplaceStrategy());
-            keyStrategyHashMap.put("topic", new ReplaceStrategy());
-            keyStrategyHashMap.put("article", new ReplaceStrategy());
-            keyStrategyHashMap.put("reviewed_article", new ReplaceStrategy());
-            return keyStrategyHashMap;
-        };
+	@Test
+	public void testRemoteAgent() throws Exception {
+		KeyStrategyFactory stateFactory = () -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("input", new ReplaceStrategy());
+			keyStrategyHashMap.put("topic", new ReplaceStrategy());
+			keyStrategyHashMap.put("article", new ReplaceStrategy());
+			keyStrategyHashMap.put("reviewed_article", new ReplaceStrategy());
+			return keyStrategyHashMap;
+		};
 
-//        A2aRemoteAgent currencyExchangeAgent = A2aRemoteAgent.builder()
-//                .name("writer_agent")
-//                .agentCard(RemoteAgentCard.builder().url("http://192.168.239.195:10000").build())
-//                .description("可以写文章。")
-//                .outputKey("output")
-//                .build();
-//
-//        try {
-//            // Start streaming and consume chunks as they arrive
-//            AsyncGenerator<NodeOutput> generator = currencyExchangeAgent
-//                    .stream(Map.of("input", "你好，给我说一下人民币到日元的汇率"));
-//            System.out.println("Begin streaming response...");
-//            int chunkCount = 0;
-//            while (true) {
-//                AsyncGenerator.Data<NodeOutput> data = generator.next();
-//                if (data.isDone()) {
-//                    System.out.println("Streaming completed. Total chunks: " + chunkCount);
-//                    break;
-//                }
-//                NodeOutput outBase = data.getData().join();
-//                chunkCount++;
-//                if (outBase instanceof StreamingOutput so) {
-//                    System.out.println("chunk[" + chunkCount + "]: " + so.chunk());
-//                } else {
-//                    System.out.println("chunk[" + chunkCount + "]: " + outBase.toString());
-//                }
-//            }
-//        } catch (java.util.concurrent.CompletionException e) {
-//            e.printStackTrace();
-//        }
-//
-//        try {
-//            Optional<OverAllState> result = currencyExchangeAgent.invoke(Map.of("input",
-//                    "你好，给我说一下人民币到日元的汇率"));
-//            System.out.println("Final Result: " + result.get());
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-    }
+		// A2aRemoteAgent currencyExchangeAgent = A2aRemoteAgent.builder()
+		// .name("writer_agent")
+		// .agentCard(RemoteAgentCard.builder().url("http://192.168.239.195:10000").build())
+		// .description("可以写文章。")
+		// .outputKey("output")
+		// .build();
+		//
+		// try {
+		// // Start streaming and consume chunks as they arrive
+		// AsyncGenerator<NodeOutput> generator = currencyExchangeAgent
+		// .stream(Map.of("input", "你好，给我说一下人民币到日元的汇率"));
+		// System.out.println("Begin streaming response...");
+		// int chunkCount = 0;
+		// while (true) {
+		// AsyncGenerator.Data<NodeOutput> data = generator.next();
+		// if (data.isDone()) {
+		// System.out.println("Streaming completed. Total chunks: " + chunkCount);
+		// break;
+		// }
+		// NodeOutput outBase = data.getData().join();
+		// chunkCount++;
+		// if (outBase instanceof StreamingOutput so) {
+		// System.out.println("chunk[" + chunkCount + "]: " + so.chunk());
+		// } else {
+		// System.out.println("chunk[" + chunkCount + "]: " + outBase.toString());
+		// }
+		// }
+		// } catch (java.util.concurrent.CompletionException e) {
+		// e.printStackTrace();
+		// }
+		//
+		// try {
+		// Optional<OverAllState> result = currencyExchangeAgent.invoke(Map.of("input",
+		// "你好，给我说一下人民币到日元的汇率"));
+		// System.out.println("Final Result: " + result.get());
+		// } catch (Exception e) {
+		// e.printStackTrace();
+		// }
+	}
 
 }
