@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.http.server.reactive.HttpHandler;
 import org.springframework.http.server.reactive.ReactorHttpHandlerAdapter;
@@ -85,6 +86,7 @@ public class CoordinatorServer implements ApplicationListener<ApplicationReadyEv
 	private ObjectMapper objectMapper;
 
 	@Autowired
+	@Lazy
 	private CoordinatorService coordinatorService;
 
 	@Autowired

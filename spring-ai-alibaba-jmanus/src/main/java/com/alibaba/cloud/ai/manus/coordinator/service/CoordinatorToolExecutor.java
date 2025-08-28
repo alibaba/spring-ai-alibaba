@@ -29,7 +29,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import com.alibaba.cloud.ai.manus.coordinator.tool.CoordinatorTool;
-import com.alibaba.cloud.ai.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.manus.planning.service.IPlanParameterMappingService;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecordSimple;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.PlanExecutionRecord;
@@ -62,9 +61,6 @@ public class CoordinatorToolExecutor {
 	private static final String DEFAULT_RESULT_MESSAGE = "Plan execution completed, but no specific result obtained";
 
 	private static final String PLAN_NOT_FOUND_ERROR = "Plan not found: %s";
-
-	@Autowired
-	private PlanTemplateService planTemplateService;
 
 	@Autowired
 	private PlanExecutionRecorder planExecutionRecorder;
@@ -268,7 +264,7 @@ public class CoordinatorToolExecutor {
 		// Since AgentExecutionRecordSimple doesn't maintain thinkActSteps,
 		// we need to retrieve them from the database using the agent execution ID
 		List<ThinkActRecordEntity> thinkActEntities = thinkActRecordRepository
-			.findByParentExecutionIdOrderByThinkStartTimeAsc(lastAgentRecord.getId());
+			.findByParentExecutionId(lastAgentRecord.getId());
 
 		if (thinkActEntities == null || thinkActEntities.isEmpty()) {
 			throw new RuntimeException("ThinkAct steps are empty, unable to obtain result output");

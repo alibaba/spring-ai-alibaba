@@ -36,9 +36,4 @@ public interface ThinkActRecordRepository extends JpaRepository<ThinkActRecordEn
 	 */
 	Optional<ThinkActRecordEntity> findById(Long id);
 
-	/**
-	 * Find all think-act records for a specific agent execution
-	 */
-	List<ThinkActRecordEntity> findByParentExecutionIdOrderByThinkStartTimeAsc(Long parentExecutionId);
-
 }

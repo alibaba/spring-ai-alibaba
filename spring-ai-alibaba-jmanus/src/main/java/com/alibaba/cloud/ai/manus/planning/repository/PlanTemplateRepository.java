@@ -26,7 +26,7 @@ import com.alibaba.cloud.ai.manus.planning.model.po.PlanTemplate;
  * The data access interface for the plan template
  */
 @Repository
-public interface PlanTemplateRepository extends JpaRepository<PlanTemplate, String> {
+public interface PlanTemplateRepository extends JpaRepository<PlanTemplate, Long> {
 
 	/**
 	 * Find the plan template by the plan template ID

@@ -47,8 +47,8 @@ public interface PlanExecutionRecordRepository extends JpaRepository<PlanExecuti
 	boolean existsByCurrentPlanId(String currentPlanId);
 
 	/**
-	 * Delete plan execution record by plan ID
+	 * Delete plan execution record by current plan ID
 	 */
-	void deleteByPlanId(String planId);
+	void deleteByCurrentPlanId(String currentPlanId);
 
 }

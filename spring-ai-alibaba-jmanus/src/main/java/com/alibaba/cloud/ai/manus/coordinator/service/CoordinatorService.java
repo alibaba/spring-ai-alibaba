@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.cloud.ai.manus.coordinator.tool.CoordinatorTool;
@@ -41,6 +42,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 public class CoordinatorService {
 
 	@Autowired
+	@Lazy
 	private CoordinatorToolRegistry registry;
 
 	@Autowired
