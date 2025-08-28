@@ -56,6 +56,12 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 		}
 		sb.append("\n\n");
 		sb.append("Return the agent name to delegate the task to.");
+		sb.append("\n\n");
+		sb.append(
+				"It should be emphasized that the returned result only requires the agent name and no other content.");
+		sb.append("\n\n");
+		sb.append(
+				"For example, if you want to delegate the task to the agent named 'agent1', you should return 'agent1'.");
 
 		this.chatClient = ChatClient.builder(chatModel).defaultSystem(sb.toString()).build();
 		this.taskKey = current.outputKey();
