@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.client.config.NacosConfigService;
+import com.alibaba.nacos.common.utils.StringUtils;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.SimpleApiKey;
@@ -16,9 +16,10 @@ import org.springframework.ai.openai.api.OpenAiApi;
 public class NacosModelInjector {
 
 
-	public static ModelVO getModelByAgentId(NacosConfigService nacosConfigService, String agentId) {
+	public static ModelVO getModelByAgentId(NacosOptions nacosOptions, String agentId) {
 		try {
-			String config = nacosConfigService.getConfig(String.format("model-%s.json", agentId), "nacos-ai-agent", 3000L);
+			String dataIdT = String.format(nacosOptions.isModelConfigEncrypted() ? "cipher-kms-aes-256-model-%s.json" : "model-%s.json", agentId);
+			String config = nacosOptions.nacosConfigService.getConfig(dataIdT, "nacos-ai-agent", 3000L);
 			return JSON.parseObject(config, ModelVO.class);
 		}
 		catch (NacosException e) {
@@ -26,9 +27,12 @@ public class NacosModelInjector {
 		}
 	}
 
-	public static void injectModel(ChatModel chatModel, NacosConfigService nacosConfigService, String agentId) {
+	public static void injectModel(ChatModel chatModel, NacosOptions nacosOptions, String agentId) {
+		if (StringUtils.isBlank(agentId)) {
+			return;
+		}
 		try {
-			nacosConfigService.addListener(String.format("model-%s.json", agentId), "nacos-ai-agent", new AbstractListener() {
+			nacosOptions.nacosConfigService.addListener(String.format("model-%s.json", agentId), "nacos-ai-agent", new AbstractListener() {
 				@Override
 				public void receiveConfigInfo(String configInfo) {
 					ModelVO modelVO = JSON.parseObject(configInfo, ModelVO.class);

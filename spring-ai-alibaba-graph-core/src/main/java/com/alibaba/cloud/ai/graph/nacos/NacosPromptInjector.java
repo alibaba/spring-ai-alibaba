@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.graph.nacos;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.alibaba.fastjson.JSON;
@@ -16,7 +17,13 @@ import org.springframework.util.ReflectionUtils;
 
 public class NacosPromptInjector {
 
-	public static PromptVO getPromptByAgentId(NacosConfigService nacosConfigService, String agentId) {
+	/**
+	 *  load prompt by agent id.
+	 * @param nacosConfigService
+	 * @param agentId
+	 * @return
+	 */
+	public static PromptVO loadPromptByAgentId(NacosConfigService nacosConfigService, String agentId) {
 		try {
 			String config = nacosConfigService.getConfig(String.format("prompt-%s.json", agentId), "nacos-ai-agent", 3000L);
 			String promptKey = (String) JSON.parseObject(config).get("promptKey");
@@ -27,12 +34,34 @@ public class NacosPromptInjector {
 		}
 	}
 
-	private static PromptVO getPromptByKey(NacosConfigService nacosConfigService, String promptKey) throws NacosException {
+	/**
+	 * load promot by prompt key.
+	 * @param nacosConfigService
+	 * @param promptKey
+	 * @return
+	 * @throws NacosException
+	 */
+	public static PromptVO getPromptByKey(NacosConfigService nacosConfigService, String promptKey) throws NacosException {
 		String promptConfig = nacosConfigService.getConfig(String.format("prompt-%s.json", promptKey), "nacos-ai-meta", 3000L);
 		return JSON.parseObject(promptConfig, PromptVO.class);
 	}
 
-	public static void injectPrompt(ChatClient chatClient, NacosConfigService nacosConfigService, String agentId, PromptVO promptVO) {
+	/**
+	 * replace prompt info by key and registry.
+	 * @param nacosConfigService
+	 * @param chatClient
+	 * @param promptKey
+	 * @throws Exception
+	 */
+	public static void injectPromptByKey(NacosConfigService nacosConfigService, ChatClient chatClient, String promptKey) throws Exception {
+		PromptVO promptVO = NacosPromptInjector.getPromptByKey(nacosConfigService, promptKey);
+		if (promptVO != null) {
+			NacosPromptInjector.replacePrompt(chatClient, promptVO);
+		}
+		NacosPromptInjector.registryPromptListener(nacosConfigService, chatClient, promptKey);
+	}
+
+	public static void injectPromptByAgentId(ChatClient chatClient, NacosConfigService nacosConfigService, String agentId, PromptVO promptVO) {
 
 		try {
 
@@ -47,13 +76,11 @@ public class NacosPromptInjector {
 						return;
 					}
 					String newPromptKey = (String) JSON.parseObject(configInfo).get("promptKey");
-					if (newPromptKey != null && newPromptKey.equals(currentPromptKey)) {
+					if (StringUtils.isBlank(newPromptKey) || newPromptKey.equals(currentPromptKey)) {
 						return;
 					}
 					try {
-						PromptVO promptByKey = getPromptByKey(nacosConfigService, newPromptKey);
-						replacePrompt(chatClient, promptByKey);
-						registryPromptListener(nacosConfigService, chatClient, newPromptKey);
+						injectPromptByKey(nacosConfigService, chatClient, newPromptKey);
 					}
 					catch (Exception e) {
 						throw new RuntimeException(e);
@@ -70,7 +97,14 @@ public class NacosPromptInjector {
 		}
 	}
 
-	private static void registryPromptListener(NacosConfigService nacosConfigService, ChatClient chatClient, String promptKey) throws NacosException {
+	/**
+	 * register prompt listener
+	 * @param nacosConfigService
+	 * @param chatClient
+	 * @param promptKey
+	 * @throws NacosException
+	 */
+	public static void registryPromptListener(NacosConfigService nacosConfigService, ChatClient chatClient, String promptKey) throws NacosException {
 		try {
 			nacosConfigService.addListener(String.format("prompt-%s.json", promptKey), "nacos-ai-meta", new AbstractListener() {
 
@@ -91,6 +125,7 @@ public class NacosPromptInjector {
 		}
 	}
 
+
 	public static void replacePrompt(ChatClient chatClient, PromptVO promptVO) throws Exception {
 		Field defaultChatClientRequest = chatClient.getClass().getDeclaredField("defaultChatClientRequest");
 		ReflectionUtils.makeAccessible(defaultChatClientRequest);
@@ -105,8 +140,13 @@ public class NacosPromptInjector {
 		Field metadataFiled = chatOptions.getClass().getDeclaredField("metadata");
 		metadataFiled.setAccessible(true);
 		Map<String, String> metadata = (Map<String, String>) metadataFiled.get(chatOptions);
+		if (metadata == null) {
+			metadata = new HashMap<>();
+		}
 		metadata.put("promptKey", promptVO.getPromptKey());
 		metadata.put("promptVersion", promptVO.getVersion());
+		metadataFiled.set(chatOptions, metadata);
+
 	}
 
 }

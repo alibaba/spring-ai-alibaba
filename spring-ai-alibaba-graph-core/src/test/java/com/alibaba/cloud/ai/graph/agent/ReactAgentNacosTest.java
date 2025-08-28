@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.nacos.NacosOptions;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.NacosConfigService;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ class ReactAgentNacosTest {
 	private NacosConfigService nacosConfigService() {
 		Properties properties = new Properties();
 		properties.put("serverAddr", "mse-401cbb30-p.nacos-ans.mse.aliyuncs.com:8848");
+		properties.put("namespace", "b9ee889a-991e-4f5d-b0c1-bac4d08a1cd8");
 		try {
 			return new NacosConfigService(properties);
 		}
@@ -42,6 +44,7 @@ class ReactAgentNacosTest {
 			throw new RuntimeException(e);
 		}
 	}
+
 	@BeforeEach
 	void setUp() {
 		// 先创建 DashScopeApi 实例
@@ -49,15 +52,21 @@ class ReactAgentNacosTest {
 
 	@Test
 	public void testReactAgent() throws Exception {
-		ReactAgent agent = ReactAgent.builder().name("agent0001").nacosProxy(nacosConfigService).build();
+		NacosOptions nacosOptions = new NacosOptions();
+		nacosOptions.setNacosConfigService(nacosConfigService);
+		//nacosOptions.setAgentId("agent0001");
+		nacosOptions.setPromptKey("bookprompt2");
+		ReactAgent agent = ReactAgent.builder().name("agent0001").nacosProxy(nacosOptions).build();
 
-		Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下鲁迅。"))));
-		System.out.println(result.get());
+
+		//Thread.sleep(15000L);
+		System.out.println("start....");
+		Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下鲁迅。必须给我回答"))));
+		System.out.println(result.get().data());
 
 		Thread.sleep(1000000L);
 		//agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下沈丛文。"))));
 		//System.out.println(result.get());
 	}
-
 
 }
