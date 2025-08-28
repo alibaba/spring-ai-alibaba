@@ -30,9 +30,22 @@ public interface CodePoolExecutorService {
 
 	}
 
-	record TaskResponse(boolean isSuccess, String stdOut, String stdErr, String exceptionMsg) {
-		public static TaskResponse error(String msg) {
-			return new TaskResponse(false, null, null, "An exception occurred while executing the task: " + msg);
+	record TaskResponse(boolean isSuccess, boolean executionSuccessButResultFailed, String stdOut, String stdErr,
+			String exceptionMsg) {
+
+		// 执行运行代码任务时发生异常
+		public static TaskResponse exception(String msg) {
+			return new TaskResponse(false, false, null, null, "An exception occurred while executing the task: " + msg);
+		}
+
+		// 执行运行代码任务成功，并且代码正常返回
+		public static TaskResponse success(String stdOut) {
+			return new TaskResponse(true, false, stdOut, null, null);
+		}
+
+		// 执行运行代码任务成功，但是代码异常返回
+		public static TaskResponse failure(String stdOut, String stdErr) {
+			return new TaskResponse(false, true, stdOut, stdErr, "StdErr: " + stdErr);
 		}
 
 		@Override
@@ -44,7 +57,7 @@ public interface CodePoolExecutorService {
 
 	enum State {
 
-		READY, RUNNING
+		READY, RUNNING, REMOVING
 
 	}
 

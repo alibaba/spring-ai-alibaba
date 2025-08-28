@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.store.Store;
 import io.micrometer.observation.ObservationRegistry;
 
 import java.util.Collection;
@@ -52,6 +53,8 @@ public class CompileConfig {
 	private boolean interruptBeforeEdge = false;
 
 	private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
+	private Store store;
 
 	/**
 	 * Returns the current state of the thread release flag.
@@ -121,6 +124,22 @@ public class CompileConfig {
 	 */
 	public Optional<BaseCheckpointSaver> checkpointSaver() {
 		return ofNullable(saverConfig.get());
+	}
+
+	/**
+	 * Gets the Store instance for long-term memory storage.
+	 * @return The Store instance, may be null
+	 */
+	public Store getStore() {
+		return store;
+	}
+
+	/**
+	 * Sets the Store instance for long-term memory storage.
+	 * @param store The Store instance to set
+	 */
+	public void setStore(Store store) {
+		this.store = store;
 	}
 
 	/**
@@ -259,6 +278,16 @@ public class CompileConfig {
 		}
 
 		/**
+		 * Sets the Store instance for long-term memory storage.
+		 * @param store The Store instance to use.
+		 * @return This builder instance for method chaining.
+		 */
+		public Builder store(Store store) {
+			this.config.store = store;
+			return this;
+		}
+
+		/**
 		 * Finalizes the configuration and returns the compiled instance.
 		 * @return The configured CompileConfig object.
 		 */
@@ -288,6 +317,7 @@ public class CompileConfig {
 		this.lifecycleListeners = config.lifecycleListeners;
 		this.observationRegistry = config.observationRegistry;
 		this.interruptBeforeEdge = config.interruptBeforeEdge;
+		this.store = config.store;
 	}
 
 }

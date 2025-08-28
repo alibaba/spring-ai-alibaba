@@ -770,7 +770,7 @@ const words: I18nType = {
 
   // Sidebar
   sidebar: {
-    title: 'PLAN-ACT Templates',
+    title: 'PLAN-ACT Template Name',
     templateList: 'Template List',
     configuration: 'Configuration',
     newPlan: 'New Plan',
@@ -780,7 +780,7 @@ const words: I18nType = {
     unnamedPlan: 'Unnamed Plan',
     noDescription: 'No description',
     deleteTemplate: 'Delete this plan template',
-    jsonTemplate: 'JSON Template',
+  jsonTemplate: 'plan-act计划模板编辑器',
     rollback: 'Rollback',
     restore: 'Restore',
     jsonPlaceholder:
@@ -837,6 +837,37 @@ const words: I18nType = {
     newTemplateDescription: 'Please use the plan generator to create a new plan template',
     generatedTemplateDescription: 'Plan template created by generator',
     defaultExecutionPlanTitle: 'Execution Plan',
+
+    // JsonEditor related
+  planId: 'Plan Template ID',
+    steps: 'Steps',
+  tasks: '任务列表',
+    subtask: 'Subtask',
+    agent: 'Agent',
+  stepRequirement: 'Task Requirement',
+  stepRequirementPlaceholder: 'Please enter the specific requirements and description for this task...',
+  terminateColumns: 'Task Output Requirements Description',
+  terminateColumnsPlaceholder: 'Please enter task output requirements description...',
+    titlePlaceholder: 'Please enter plan title...',
+    moveUp: 'Move Up',
+    moveDown: 'Move Down',
+    removeStep: 'Remove Step',
+    addStep: 'Add Step',
+    addFirstStep: 'Add First Step',
+    noSteps: 'No steps yet, click the button below to start adding',
+    jsonPreview: 'JSON Preview',
+    showJson: 'Show JSON',
+    hideJson: 'Hide JSON',
+    refreshAgents: 'Refresh Agents',
+    agentLoadError: 'Failed to load agents',
+    retryLoadAgents: 'Retry loading agents',
+    availableTools: 'Available Tools',
+
+    // Common error messages
+    loadingFailed: 'Loading failed',
+    networkError: 'Network error',
+    apiError: 'API call failed',
+    resizeHint: 'Drag to resize',
   },
 
   // Tool Selection
@@ -856,7 +887,8 @@ const words: I18nType = {
     planTemplateIdNotFound: 'Plan template ID not found',
     executionFailedNoPlanId: 'Plan execution failed: No valid plan ID returned',
     executionFailed: 'Plan execution failed',
-    configuration: 'config'
+    configuration: 'config',
+    panelResizeHint: 'Drag to resize panel',
   },
 
   // Modal
@@ -996,8 +1028,12 @@ const words: I18nType = {
         description: 'Experience AI intelligent analysis of user needs and dynamic generation of relevant form fields',
         prompt: 'Demonstrate how AI intelligently generates targeted form fields based on user questions',
         planTitle: 'AI Intelligent Dynamic Form Demo Plan',
-        step1: '[INTELLIGENT_FORM_AGENT] Launch intelligent dynamic form demo, actively analyze user needs and dynamically generate relevant form fields, showcasing AI intelligent form generation capabilities',
-        step1Output: 'Demo results, user interaction data',
+        step1: '[INTELLIGENT_FORM_AGENT] Ask user to input consultation type, there are three types: business consultation, technical consultation, and architecture consultation',
+        step1Output: 'Business type',
+        step2: '[DEFAULT_AGENT] If technical consultation, output: Technical consultation please call 10086\n' + 'If architecture consultation, output: Architecture consultation please contact Shenxun\n' + 'Otherwise output empty, not within my scope',
+        step2Output: '',
+        step3: '[DEFAULT_AGENT] If business consultation, output: Business consultation, you can submit through official website www.yida.com',
+        step3Output: '',
       },
     },
   },
