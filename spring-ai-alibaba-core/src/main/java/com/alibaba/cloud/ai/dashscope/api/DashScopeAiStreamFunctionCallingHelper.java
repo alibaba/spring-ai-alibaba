@@ -169,14 +169,8 @@ public class DashScopeAiStreamFunctionCallingHelper {
 	 * @return true if the ChatCompletionChunk is a streaming tool function call.
 	 */
 	public boolean isStreamingToolFunctionCall(ChatCompletionChunk chatCompletion) {
-
-		if (chatCompletion == null || chatCompletion.output() == null
-				|| CollectionUtils.isEmpty(chatCompletion.output().choices())) {
-			return false;
-		}
-
-		var choice = chatCompletion.output().choices().get(0);
-		if (choice == null || choice.message() == null) {
+		var choice = checkChatCompletionChunk(chatCompletion);
+		if (choice == null) {
 			return false;
 		}
 		return !CollectionUtils.isEmpty(choice.message().toolCalls());
@@ -188,13 +182,8 @@ public class DashScopeAiStreamFunctionCallingHelper {
 	 * the last one.
 	 */
 	public boolean isStreamingToolFunctionCallFinish(ChatCompletionChunk chatCompletion) {
-
-		if (chatCompletion == null || CollectionUtils.isEmpty(chatCompletion.output().choices())) {
-			return false;
-		}
-
-		var choice = chatCompletion.output().choices().get(0);
-		if (choice == null || choice.message() == null) {
+		var choice = checkChatCompletionChunk(chatCompletion);
+		if (choice == null) {
 			return false;
 		}
 		return choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
@@ -207,6 +196,19 @@ public class DashScopeAiStreamFunctionCallingHelper {
 	 */
 	public ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
 		return new ChatCompletion(chunk.requestId(), chunk.output(), chunk.usage());
+	}
+
+	private Choice checkChatCompletionChunk(ChatCompletionChunk chatCompletion) {
+		if (chatCompletion == null || chatCompletion.output() == null
+				|| CollectionUtils.isEmpty(chatCompletion.output().choices())) {
+			return null;
+		}
+
+		var choice = chatCompletion.output().choices().get(0);
+		if (choice == null || choice.message() == null) {
+			return null;
+		}
+		return choice;
 	}
 
 }
