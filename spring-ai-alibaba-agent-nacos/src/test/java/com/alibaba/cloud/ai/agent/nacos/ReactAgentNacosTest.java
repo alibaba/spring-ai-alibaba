@@ -59,12 +59,11 @@ class ReactAgentNacosTest {
 	public void testReactAgent() throws Exception {
 		NacosOptions nacosOptions = new NacosOptions();
 		nacosOptions.setNacosConfigService(nacosConfigService);
-		//nacosOptions.setAgentId("agent0001");
 		nacosOptions.setPromptKey("bookprompt2");
 		nacosOptions.setAgentId("agent0001");
 		nacosOptions.setModelConfigEncrypted(false);
 		NacosReactAgentBuilder builder = new NacosReactAgentBuilder().nacosOptions(nacosOptions);
-		ReactAgent agent = ReactAgent.builder(builder).name("agent0001").build();
+		ReactAgent agent = builder.name("agent0001").build();
 
 		//Thread.sleep(15000L);
 		for (int i=0;i<20;i++){
