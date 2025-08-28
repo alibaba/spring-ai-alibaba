@@ -86,27 +86,26 @@ public class MilvusVectorStoreConfiguration {
 	}
 
 	private static void checkMilvusPropertiesBeforeInitVectorStore(MilvusVectorStoreProperties properties) {
-		// idFieldName，contentFieldName,metadataFieldName,embeddingFieldName,embeddingDimension
-		// 必填
+		// idFieldName，contentFieldName,metadataFieldName,embeddingFieldName,embeddingDimension are required
 		if (!StringUtils.hasText(properties.getIdFieldName()))
 			throw new IllegalArgumentException(
-					"Milvus idFieldName cannot be empty,please config the value of spring.ai.vectorstore.milvus.idFieldName");
+					"Milvus idFieldName cannot be empty, please config the value of spring.ai.vectorstore.milvus.idFieldName");
 
 		if (!StringUtils.hasText(properties.getContentFieldName()))
 			throw new IllegalArgumentException(
-					"Milvus contentFieldName cannot be empty,please config the value of spring.ai.vectorstore.milvus.contentFieldName");
+					"Milvus contentFieldName cannot be empty, please config the value of spring.ai.vectorstore.milvus.contentFieldName");
 
 		if (!StringUtils.hasText(properties.getMetadataFieldName()))
 			throw new IllegalArgumentException(
-					"Milvus metadataFieldName cannot be empty,please config the value of spring.ai.vectorstore.milvus.metadataFieldName");
+					"Milvus metadataFieldName cannot be empty, please config the value of spring.ai.vectorstore.milvus.metadataFieldName");
 
 		if (!StringUtils.hasText(properties.getEmbeddingFieldName()))
 			throw new IllegalArgumentException(
-					"Milvus embeddingFieldName cannot be empty,please config the value of spring.ai.vectorstore.milvus.embeddingFieldName");
+					"Milvus embeddingFieldName cannot be empty, please config the value of spring.ai.vectorstore.milvus.embeddingFieldName");
 
 		if (!Objects.nonNull(properties.getEmbeddingDimension()))
 			throw new IllegalArgumentException(
-					"Milvus embeddingDimension cannot be empty,please config the value of spring.ai.vectorstore.milvus.embeddingDimension");
+					"Milvus embeddingDimension cannot be empty, please config the value of spring.ai.vectorstore.milvus.embeddingDimension");
 	}
 
 }

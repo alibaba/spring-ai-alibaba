@@ -136,7 +136,7 @@ public class MilvusVectorStoreManagementService implements VectorStoreManagement
 				milvusVectorStore.delete(Collections.singletonList(deleteRequest.getId()));
 			}
 			else {
-				// 此时 vectorType 肯定不为空
+				// At this point vectorType is definitely not null/empty
 				FilterExpressionBuilder b = new FilterExpressionBuilder();
 				Filter.Expression expression = b.eq("vectorType", deleteRequest.getVectorType()).build();
 				milvusVectorStore.delete(expression);

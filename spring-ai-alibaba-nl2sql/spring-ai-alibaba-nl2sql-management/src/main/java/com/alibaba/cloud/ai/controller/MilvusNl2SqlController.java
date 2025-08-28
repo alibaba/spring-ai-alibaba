@@ -34,7 +34,7 @@ public class MilvusNl2SqlController {
 
 	private final MilvusVectorStoreManagementService milvusVectorStoreManagementService;
 
-	;
+
 
 	private final DbConfig dbConfig;
 
