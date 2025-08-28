@@ -103,13 +103,14 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		// Configure collection handling to avoid SubList issues
 		mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, false);
 
-		// Set custom deserialization problem handler for automatic fallback to HashMap
-		mapper.addHandler(new FallbackDeserializationProblemHandler());
-
-		// Register custom modules
+		// Register custom modules first (higher priority)
 		registerSpringAIMessageModule(mapper);
 		registerCollectionModule(mapper);
 		registerFallbackModule(mapper);
+
+		// Set custom deserialization problem handler as final fallback
+		// This will only be called when module deserializers fail and throw exceptions
+		mapper.addHandler(new FallbackDeserializationProblemHandler());
 	}
 
 	/**
