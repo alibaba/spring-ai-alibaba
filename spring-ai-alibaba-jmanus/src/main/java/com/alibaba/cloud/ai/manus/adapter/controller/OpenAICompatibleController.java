@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.adapter.controller;
+package com.alibaba.cloud.ai.manus.adapter.controller;
 
-import com.alibaba.cloud.ai.example.manus.adapter.model.OpenAIRequest;
-import com.alibaba.cloud.ai.example.manus.adapter.model.OpenAIResponse;
-import com.alibaba.cloud.ai.example.manus.adapter.service.OpenAIAdapterService;
+import com.alibaba.cloud.ai.manus.adapter.model.OpenAIRequest;
+import com.alibaba.cloud.ai.manus.adapter.model.OpenAIResponse;
+import com.alibaba.cloud.ai.manus.adapter.service.OpenAIAdapterService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

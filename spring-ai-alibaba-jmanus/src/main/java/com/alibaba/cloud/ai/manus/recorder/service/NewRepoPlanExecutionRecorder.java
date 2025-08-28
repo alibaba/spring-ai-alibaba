@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import com.alibaba.cloud.ai.manus.recorder.entity.po.AgentExecutionRecordEntity;
 import com.alibaba.cloud.ai.manus.recorder.entity.po.PlanExecutionRecordEntity;
@@ -22,6 +23,7 @@ import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionStep;
 
 import jakarta.annotation.Resource;
 
+@Service
 public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 
 	@Resource
@@ -54,7 +56,7 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 		try {
 			// Check if plan already exists
 			Optional<PlanExecutionRecordEntity> existingPlanOpt = planExecutionRecordRepository
-				.findByPlanId(currentPlanId);
+				.findByCurrentPlanId(currentPlanId);
 
 			PlanExecutionRecordEntity planExecutionRecordEntity;
 			if (existingPlanOpt.isPresent()) {
@@ -545,7 +547,7 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 
 			// 1. Find existing plan execution record by currentPlanId
 			Optional<PlanExecutionRecordEntity> existingPlanOpt = planExecutionRecordRepository
-				.findByPlanId(currentPlanId);
+				.findByCurrentPlanId(currentPlanId);
 
 			if (!existingPlanOpt.isPresent()) {
 				logger.error("Plan execution record not found for currentPlanId: {}, cannot record completion",
@@ -628,7 +630,7 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 		}
 
 		// Find the existing plan execution record
-		var existingPlanOpt = planExecutionRecordRepository.findByPlanId(currentPlanId);
+		var existingPlanOpt = planExecutionRecordRepository.findByCurrentPlanId(currentPlanId);
 
 		if (!existingPlanOpt.isPresent()) {
 			String errorMsg = String.format(

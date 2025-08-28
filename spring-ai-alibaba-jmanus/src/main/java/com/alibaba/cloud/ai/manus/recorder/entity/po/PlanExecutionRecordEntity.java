@@ -22,8 +22,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.alibaba.cloud.ai.manus.runtime.entity.vo.UserInputWaitState;
-
 /**
  * Plan execution record class for tracking and recording detailed information about
  * PlanningFlow execution process.
@@ -100,10 +98,6 @@ public class PlanExecutionRecordEntity {
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@JoinColumn(name = "plan_execution_id")
 	private List<AgentExecutionRecordEntity> agentExecutionSequence;
-
-	// Field to store user input wait state
-	@Embedded
-	private UserInputWaitState userInputWaitState;
 
 	// Tool call ID that triggered this plan (for sub-plans)
 	@Column(name = "tool_call_id")
@@ -227,14 +221,6 @@ public class PlanExecutionRecordEntity {
 
 	public void setStartTime(LocalDateTime startTime) {
 		this.startTime = startTime;
-	}
-
-	public UserInputWaitState getUserInputWaitState() {
-		return userInputWaitState;
-	}
-
-	public void setUserInputWaitState(UserInputWaitState userInputWaitState) {
-		this.userInputWaitState = userInputWaitState;
 	}
 
 	public LocalDateTime getEndTime() {

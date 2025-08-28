@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.adapter.service;
+package com.alibaba.cloud.ai.manus.adapter.service;
 
-import com.alibaba.cloud.ai.example.manus.adapter.model.OpenAIRequest;
-import com.alibaba.cloud.ai.example.manus.adapter.model.OpenAIResponse;
-
-import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
-import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
+import com.alibaba.cloud.ai.manus.adapter.model.OpenAIRequest;
+import com.alibaba.cloud.ai.manus.adapter.model.OpenAIResponse;
+import com.alibaba.cloud.ai.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.manus.recorder.entity.vo.PlanExecutionRecord;
+import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.manus.recorder.service.PlanHierarchyReaderService;
+import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionContext;
+import com.alibaba.cloud.ai.manus.runtime.service.PlanIdDispatcher;
+import com.alibaba.cloud.ai.manus.runtime.service.PlanningCoordinator;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
@@ -79,6 +79,12 @@ public class OpenAIAdapterService {
 
 	@Autowired
 	private PlanIdDispatcher planIdDispatcher;
+
+	@Autowired
+	private PlanningCoordinator planningCoordinator;
+
+	@Autowired
+	private PlanHierarchyReaderService planHierarchyReaderService;
 
 	/**
 	 * Process OpenAI chat completion request and return response
@@ -230,25 +236,26 @@ public class OpenAIAdapterService {
 	 */
 	private String executePlan(ExecutionContext context) throws Exception {
 		try {
-			PlanningCoordinator coordinator = planningFactory.createPlanningCoordinator(context);
-
-			// Execute the plan synchronously with timeout
-			CompletableFuture<ExecutionContext> future = CompletableFuture.supplyAsync(() -> {
-				try {
-					return coordinator.executePlan(context);
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			});
+			// Execute the plan using PlanningCoordinator
+			CompletableFuture<com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult> future = planningCoordinator
+				.executeByUserQuery(context.getUserRequest(), context.getCurrentPlanId(), context.getCurrentPlanId(),
+						context.getCurrentPlanId(), context.getMemoryId(), null);
 
 			// Wait for completion with extended timeout for complex tasks
 			logger.info("Waiting for plan execution to complete for planId: {}", context.getCurrentPlanId());
-			ExecutionContext resultContext = future.get(PLAN_EXECUTION_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+			com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult result = future
+				.get(PLAN_EXECUTION_TIMEOUT_MINUTES, TimeUnit.MINUTES);
 			logger.info("Plan execution completed for planId: {}", context.getCurrentPlanId());
 
+			// Check if execution was successful
+			if (!result.isSuccess()) {
+				logger.warn("Plan execution failed for planId: {} - {}", context.getCurrentPlanId(),
+						result.getErrorMessage());
+				return "Task execution failed: " + result.getErrorMessage();
+			}
+
 			// Get execution record for more detailed result
-			PlanExecutionRecord record = planExecutionRecorder.getRootPlanExecutionRecord(context.getCurrentPlanId());
+			PlanExecutionRecord record = planHierarchyReaderService.readPlanTreeByRootId(context.getCurrentPlanId());
 			if (record != null && record.getSummary() != null) {
 				logger.info("Retrieved summary for planId {}: {}", context.getCurrentPlanId(),
 						record.getSummary().substring(0, Math.min(100, record.getSummary().length())) + "...");
@@ -257,7 +264,7 @@ public class OpenAIAdapterService {
 
 			// Return a summary based on execution context
 			logger.warn("No summary found for planId: {}, returning default message", context.getCurrentPlanId());
-			return "Task completed successfully. Plan ID: " + resultContext.getCurrentPlanId();
+			return "Task completed successfully. Plan ID: " + context.getCurrentPlanId();
 
 		}
 		catch (Exception e) {
@@ -289,7 +296,6 @@ public class OpenAIAdapterService {
 	private void executePlanWithStreaming(ExecutionContext context, OpenAIRequest request,
 			StreamResponseHandler handler) {
 		try {
-			PlanningCoordinator coordinator = planningFactory.createPlanningCoordinator(context);
 			String planId = context.getCurrentPlanId();
 
 			// Send initial streaming response
@@ -300,16 +306,28 @@ public class OpenAIAdapterService {
 				try {
 					logger.info("Starting plan execution for planId: {}", planId);
 
-					// Execute the plan (blocks until completion)
-					ExecutionContext resultContext = coordinator.executePlan(context);
+					// Execute the plan using PlanningCoordinator
+					CompletableFuture<com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult> future = planningCoordinator
+						.executeByUserQuery(context.getUserRequest(), planId, planId, planId, context.getMemoryId(),
+								null);
+
+					// Wait for completion
+					com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult result = future.get();
 
 					logger.info("Plan execution completed for planId: {}", planId);
+
+					// Check if execution was successful
+					if (!result.isSuccess()) {
+						logger.warn("Plan execution failed for planId: {} - {}", planId, result.getErrorMessage());
+						handler.onError("Execution failed: " + result.getErrorMessage());
+						return;
+					}
 
 					// Wait to ensure database persistence
 					Thread.sleep(DATABASE_PERSISTENCE_DELAY_MS);
 
 					// Get execution record for final result
-					PlanExecutionRecord record = planExecutionRecorder.getRootPlanExecutionRecord(planId);
+					PlanExecutionRecord record = planHierarchyReaderService.readPlanTreeByRootId(planId);
 					String finalResult;
 
 					if (record != null && record.getSummary() != null && !record.getSummary().trim().isEmpty()) {

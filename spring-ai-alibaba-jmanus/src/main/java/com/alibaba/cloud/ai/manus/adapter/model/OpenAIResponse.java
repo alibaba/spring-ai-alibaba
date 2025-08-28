@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.adapter.model;
+package com.alibaba.cloud.ai.manus.adapter.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;

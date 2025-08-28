@@ -55,7 +55,7 @@ public class PlanHierarchyReaderService {
 
 			// First, find the root plan itself
 			Optional<PlanExecutionRecordEntity> rootPlanEntityOpt = planExecutionRecordRepository
-				.findByPlanId(rootPlanId);
+				.findByCurrentPlanId(rootPlanId);
 
 			if (!rootPlanEntityOpt.isPresent()) {
 				logger.debug("Root plan not found for rootPlanId: {}", rootPlanId);
@@ -120,7 +120,7 @@ public class PlanHierarchyReaderService {
 			}
 
 			Optional<PlanExecutionRecordEntity> planEntityOpt = planExecutionRecordRepository
-				.findByPlanId(currentPlanId);
+				.findByCurrentPlanId(currentPlanId);
 
 			if (!planEntityOpt.isPresent()) {
 				logger.debug("Plan not found for currentPlanId: {}", currentPlanId);
@@ -159,7 +159,7 @@ public class PlanHierarchyReaderService {
 		vo.setSummary(entity.getSummary());
 		vo.setCurrentStepIndex(entity.getCurrentStepIndex());
 		vo.setModelName(entity.getModelName());
-		vo.setUserInputWaitState(entity.getUserInputWaitState());
+		// vo.setUserInputWaitState(entity.getUserInputWaitState());
 
 		// Set hierarchy properties
 		vo.setRootPlanId(entity.getRootPlanId());

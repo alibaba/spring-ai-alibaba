@@ -436,7 +436,7 @@
                     <addResources>false</addResources>
                     <executable>false</executable>
                     <layout>ZIP</layout>
-                    <mainClass>com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication</mainClass>
+                    <mainClass>com.alibaba.cloud.ai.manus.OpenManusSpringBootApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>

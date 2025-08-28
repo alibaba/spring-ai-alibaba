@@ -22,7 +22,6 @@ import com.alibaba.cloud.ai.manus.memory.entity.MemoryEntity;
 import com.alibaba.cloud.ai.manus.memory.service.MemoryService;
 import com.alibaba.cloud.ai.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.PlanExecutionRecord;
-import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanHierarchyReaderService;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.manus.runtime.service.PlanIdDispatcher;
@@ -58,9 +57,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	@Autowired
 	@Lazy
 	private PlanningCoordinator planningCoordinator;
-
-	@Autowired
-	private PlanExecutionRecorder planExecutionRecorder;
 
 	@Autowired
 	private PlanHierarchyReaderService planHierarchyReaderService;

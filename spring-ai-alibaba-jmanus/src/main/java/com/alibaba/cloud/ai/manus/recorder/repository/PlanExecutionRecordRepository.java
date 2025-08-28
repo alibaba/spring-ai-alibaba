@@ -32,11 +32,6 @@ public interface PlanExecutionRecordRepository extends JpaRepository<PlanExecuti
 	Optional<PlanExecutionRecordEntity> findByCurrentPlanId(String currentPlanId);
 
 	/**
-	 * Find plan execution record by plan ID (for backward compatibility)
-	 */
-	Optional<PlanExecutionRecordEntity> findByPlanId(String planId);
-
-	/**
 	 * Find all plan execution records by parent plan ID
 	 */
 	List<PlanExecutionRecordEntity> findByParentPlanId(String parentPlanId);
@@ -45,11 +40,6 @@ public interface PlanExecutionRecordRepository extends JpaRepository<PlanExecuti
 	 * Find all plan execution records by root plan ID
 	 */
 	List<PlanExecutionRecordEntity> findByRootPlanId(String rootPlanId);
-
-	/**
-	 * Find all plan execution records by act tool info ID
-	 */
-	List<PlanExecutionRecordEntity> findByActToolInfoEntityId(Long actToolInfoEntityId);
 
 	/**
 	 * Check if a plan execution record exists by current plan ID
