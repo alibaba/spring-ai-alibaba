@@ -19,8 +19,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.UUID;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.nacos.NacosOptions;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.NacosConfigService;
@@ -58,10 +60,11 @@ class ReactAgentNacosTest {
 		nacosOptions.setPromptKey("bookprompt2");
 		ReactAgent agent = ReactAgent.builder().name("agent0001").nacosProxy(nacosOptions).build();
 
-
 		//Thread.sleep(15000L);
 		for (int i=0;i<20;i++){
-			Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下鲁迅。必须给我回答"))));
+			var runnableConfig = RunnableConfig.builder().threadId(UUID.randomUUID().toString()).build();
+
+			Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下鲁迅。必须给我回答"))),runnableConfig);
 			System.out.println(result.get().data());
 		}
 
