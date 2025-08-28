@@ -150,7 +150,6 @@ public class AgentDSLAdapter extends AbstractDSLAdapter {
         return DSLDialectType.AGENT.equals(dialectType);
     }
 
-    // ----------------- helpers -----------------
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> getAgentRoot(Map<String, Object> data) {
