@@ -60,9 +60,11 @@ class ReactAgentNacosTest {
 
 
 		//Thread.sleep(15000L);
-		System.out.println("start....");
-		Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下鲁迅。必须给我回答"))));
-		System.out.println(result.get().data());
+		for (int i=0;i<20;i++){
+			Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下鲁迅。必须给我回答"))));
+			System.out.println(result.get().data());
+		}
+
 
 		Thread.sleep(1000000L);
 		//agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下沈丛文。"))));
