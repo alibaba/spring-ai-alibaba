@@ -16,7 +16,7 @@ public class NacosAgentInjector {
 			if (promptVO != null) {
 				NacosPromptInjector.replacePrompt(chatClient, promptVO);
 			}
-			NacosPromptInjector.registryPromptListener(nacosConfigService, chatClient, promptKey);
+			NacosPromptInjector.registerPromptListener(nacosConfigService, chatClient, promptKey);
 		}
 
 		catch (Exception e) {

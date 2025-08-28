@@ -59,7 +59,7 @@ public class NacosPromptInjector {
 		if (promptVO != null) {
 			NacosPromptInjector.replacePrompt(chatClient, promptVO);
 		}
-		NacosPromptInjector.registryPromptListener(nacosConfigService, chatClient, promptKey);
+		NacosPromptInjector.registerPromptListener(nacosConfigService, chatClient, promptKey);
 	}
 
 	public static void injectPromptByAgentId(ChatClient chatClient, NacosConfigService nacosConfigService, String agentId, PromptVO promptVO) {
@@ -89,7 +89,7 @@ public class NacosPromptInjector {
 				}
 			});
 			if (promptVO != null && promptVO.getPromptKey() != null) {
-				registryPromptListener(nacosConfigService, chatClient, promptVO.getPromptKey());
+				registerPromptListener(nacosConfigService, chatClient, promptVO.getPromptKey());
 			}
 
 		}
@@ -105,7 +105,7 @@ public class NacosPromptInjector {
 	 * @param promptKey
 	 * @throws NacosException
 	 */
-	public static void registryPromptListener(NacosConfigService nacosConfigService, ChatClient chatClient, String promptKey) throws NacosException {
+	public static void registerPromptListener(NacosConfigService nacosConfigService, ChatClient chatClient, String promptKey) throws NacosException {
 		try {
 			nacosConfigService.addListener(String.format("prompt-%s.json", promptKey), "nacos-ai-meta", new AbstractListener() {
 
