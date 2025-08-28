@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -104,6 +105,13 @@ public class ReactAgent extends BaseAgent {
 			this.compiledGraph = getAndCompileGraph();
 		}
 		return this.compiledGraph.invoke(input);
+	}
+
+	public Optional<OverAllState> invoke(Map<String, Object> input, RunnableConfig runnableConfig) throws GraphStateException, GraphRunnerException {
+		if (this.compiledGraph == null) {
+			this.compiledGraph = getAndCompileGraph();
+		}
+		return this.compiledGraph.invoke(input, runnableConfig);
 	}
 
 	public StateGraph getStateGraph() {
