@@ -120,7 +120,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			memoryService.saveMemory(new MemoryEntity(memoryId, query));
 
 			// Execute the plan using PlanningCoordinator (fire and forget)
-			planningCoordinator.executeByUserQuery(query, planId, planId, planId, memoryId,null);
+			planningCoordinator.executeByUserQuery(query, planId, planId, planId, memoryId, null);
 
 			// Return task ID and initial status
 			Map<String, Object> response = new HashMap<>();
@@ -201,7 +201,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			return ResponseEntity.notFound().build();
 		}
 
-		// Note: We don't need to remove execution records since they are already stored in the database
+		// Note: We don't need to remove execution records since they are already stored
+		// in the database
 		// The database serves as the persistent storage for all execution records
 		return ResponseEntity.ok(Map.of("message", "Execution record found (no deletion needed)", "planId", planId));
 	}
@@ -250,9 +251,5 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	public void onEvent(PlanExceptionEvent event) {
 		this.exceptionCache.put(event.getPlanId(), event.getThrowable());
 	}
-
-
-
-
 
 }

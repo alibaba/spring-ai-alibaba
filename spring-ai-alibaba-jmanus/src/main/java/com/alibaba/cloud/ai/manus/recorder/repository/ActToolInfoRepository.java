@@ -25,18 +25,19 @@ import java.util.Optional;
 @Repository
 public interface ActToolInfoRepository extends JpaRepository<ActToolInfoEntity, Long> {
 
-    /**
-     * Find ActToolInfoEntity by tool call ID
-     */
-    Optional<ActToolInfoEntity> findByToolCallId(String toolCallId);
+	/**
+	 * Find ActToolInfoEntity by tool call ID
+	 */
+	Optional<ActToolInfoEntity> findByToolCallId(String toolCallId);
 
-    /**
-     * Check if ActToolInfoEntity exists by tool call ID
-     */
-    boolean existsByToolCallId(String toolCallId);
+	/**
+	 * Check if ActToolInfoEntity exists by tool call ID
+	 */
+	boolean existsByToolCallId(String toolCallId);
 
-    /**
-     * Delete ActToolInfoEntity by tool call ID
-     */
-    void deleteByToolCallId(String toolCallId);
+	/**
+	 * Delete ActToolInfoEntity by tool call ID
+	 */
+	void deleteByToolCallId(String toolCallId);
+
 }

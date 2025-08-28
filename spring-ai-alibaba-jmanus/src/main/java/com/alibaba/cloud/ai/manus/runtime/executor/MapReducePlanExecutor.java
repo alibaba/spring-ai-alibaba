@@ -145,15 +145,9 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 			plan.updateStepIndices();
 
 			try {
-				recorder.recordPlanExecutionStart(
-					context.getCurrentPlanId(),
-					context.getPlan().getTitle(),
-					context.getUserRequest(),
-					context.getPlan().getAllSteps(),
-					context.getParentPlanId(),
-					context.getRootPlanId(),
-					context.getToolCallId()
-				);
+				recorder.recordPlanExecutionStart(context.getCurrentPlanId(), context.getPlan().getTitle(),
+						context.getUserRequest(), context.getPlan().getAllSteps(), context.getParentPlanId(),
+						context.getRootPlanId(), context.getToolCallId());
 				List<ExecutionNode> steps = mapReducePlan.getSteps();
 
 				if (CollectionUtil.isNotEmpty(steps)) {

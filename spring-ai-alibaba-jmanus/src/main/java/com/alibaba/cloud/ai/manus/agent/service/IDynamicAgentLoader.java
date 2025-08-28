@@ -34,7 +34,7 @@ public interface IDynamicAgentLoader {
 	 * @param initialAgentSetting Initial Agent settings
 	 * @return Dynamic Agent
 	 */
-	DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting,ExecutionStep step);
+	DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting, ExecutionStep step);
 
 	/**
 	 * Get all Agents

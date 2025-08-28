@@ -171,8 +171,6 @@ public class PlanExecutionRecordEntity {
 		this.summary = summary;
 	}
 
-
-
 	// Getters and Setters
 
 	public Long getId() {

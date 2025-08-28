@@ -20,8 +20,8 @@ import java.util.List;
 
 /**
  * Records the thinking and action process of an agent in a single execution step. Exists
- * as a sub-step of AgentExecutionRecordEntity, focusing on recording processing messages during
- * thinking and action phases.
+ * as a sub-step of AgentExecutionRecordEntity, focusing on recording processing messages
+ * during thinking and action phases.
  *
  * Data structure simplified into three main parts:
  *
@@ -38,7 +38,7 @@ import java.util.List;
  * (if any)
  *
  * @see AgentExecutionRecordEntity
-
+ *
  */
 @Entity
 @Table(name = "think_act_record")
@@ -57,7 +57,6 @@ public class ThinkActRecordEntity {
 	@Column(name = "parent_execution_id")
 	private Long parentExecutionId;
 
-
 	// Input context for the thinking process
 	@Column(name = "think_input", columnDefinition = "LONGTEXT")
 	private String thinkInput;
@@ -66,11 +65,9 @@ public class ThinkActRecordEntity {
 	@Column(name = "think_output", columnDefinition = "LONGTEXT")
 	private String thinkOutput;
 
-
 	// Error message if the cycle encountered problems
 	@Column(name = "error_message", columnDefinition = "LONGTEXT")
 	private String errorMessage;
-
 
 	// Action tool information(When disabling parallel tool calls, there is always only
 	// one)
@@ -147,10 +144,7 @@ public class ThinkActRecordEntity {
 
 	@Override
 	public String toString() {
-		return "ThinkActRecordEntity{" + "id='" + id + '\'' + ", parentExecutionId='" + parentExecutionId + '\''
-				+ '}';
+		return "ThinkActRecordEntity{" + "id='" + id + '\'' + ", parentExecutionId='" + parentExecutionId + '\'' + '}';
 	}
-
-
 
 }

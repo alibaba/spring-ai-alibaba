@@ -18,12 +18,12 @@ package com.alibaba.cloud.ai.manus.recorder.controller;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Controller for handling execution details requests.
- * This controller will carry the getExecutionDetails functionality from ManusController.
+ * Controller for handling execution details requests. This controller will carry the
+ * getExecutionDetails functionality from ManusController.
  */
 @RestController
 public class ExecutionDetailsController {
 
-    // TODO: Add getExecutionDetails method and related functionality
-    
+	// TODO: Add getExecutionDetails method and related functionality
+
 }

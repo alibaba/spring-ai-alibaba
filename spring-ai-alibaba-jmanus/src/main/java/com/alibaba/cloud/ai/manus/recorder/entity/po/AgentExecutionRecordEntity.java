@@ -35,20 +35,19 @@ import java.util.List;
  *
  * 2. Execution Data - maxSteps: maximum execution steps - currentStep: current execution
  * step - status: execution status (IDLE, RUNNING, FINISHED) - thinkActSteps: think-act
- * step record list, each element is a ThinkActRecordEntity object - agentRequest: input prompt
- * template
+ * step record list, each element is a ThinkActRecordEntity object - agentRequest: input
+ * prompt template
  *
  * 3. Execution Result - isCompleted: whether completed - isStuck: whether stuck - result:
  * execution result - errorMessage: error message (if any)
  *
  * @see BaseAgent
  * @see ThinkActRecordEntity
-
+ *
  */
 
 @Entity
-@Table(name = "agent_execution_record",
-		indexes = { @Index(columnList = "step_id") })
+@Table(name = "agent_execution_record", indexes = { @Index(columnList = "step_id") })
 public class AgentExecutionRecordEntity {
 
 	// Unique identifier of the record
@@ -137,8 +136,6 @@ public class AgentExecutionRecordEntity {
 		this.thinkActSteps.add(record);
 		this.currentStep = this.thinkActSteps.size();
 	}
-
-
 
 	// Getters and setters
 
@@ -249,11 +246,10 @@ public class AgentExecutionRecordEntity {
 
 	@Override
 	public String toString() {
-		return "AgentExecutionRecordEntity{" + "id='" + id + '\'' + ", stepId='" + stepId + '\''
-				+ ", agentName='" + agentName + '\'' + ", status='" + status + '\'' + ", currentStep=" + currentStep
-				+ ", maxSteps=" + maxSteps + ", stepsCount=" + (thinkActSteps != null ? thinkActSteps.size() : 0) + '}';
+		return "AgentExecutionRecordEntity{" + "id='" + id + '\'' + ", stepId='" + stepId + '\'' + ", agentName='"
+				+ agentName + '\'' + ", status='" + status + '\'' + ", currentStep=" + currentStep + ", maxSteps="
+				+ maxSteps + ", stepsCount=" + (thinkActSteps != null ? thinkActSteps.size() : 0) + '}';
 	}
-
 
 	public String getStepId() {
 		return stepId;

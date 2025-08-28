@@ -81,6 +81,7 @@ public class AgentExecutionRecordSimple {
 
 	// Execution status (IDLE, RUNNING, FINISHED)
 	private ExecutionStatus status;
+
 	// Request content for agent execution
 	private String agentRequest;
 
@@ -115,7 +116,7 @@ public class AgentExecutionRecordSimple {
 	// Getters and setters
 
 	public Long getId() {
-	
+
 		return id;
 	}
 
@@ -231,8 +232,9 @@ public class AgentExecutionRecordSimple {
 	public String toString() {
 		return "AgentExecutionRecordSimple{" + "id='" + id + '\'' + ", conversationId='" + conversationId + '\''
 				+ ", agentName='" + agentName + '\'' + ", status='" + status + '\'' + ", currentStep=" + currentStep
-				+ ", maxSteps=" + maxSteps + ", stepsCount=" + (subPlanExecutionRecords != null ? subPlanExecutionRecords.size() : 0) 
-				+ ", subPlanCount=" + (subPlanExecutionRecords != null ? subPlanExecutionRecords.size() : 0) + '}';
+				+ ", maxSteps=" + maxSteps + ", stepsCount="
+				+ (subPlanExecutionRecords != null ? subPlanExecutionRecords.size() : 0) + ", subPlanCount="
+				+ (subPlanExecutionRecords != null ? subPlanExecutionRecords.size() : 0) + '}';
 	}
 
 }

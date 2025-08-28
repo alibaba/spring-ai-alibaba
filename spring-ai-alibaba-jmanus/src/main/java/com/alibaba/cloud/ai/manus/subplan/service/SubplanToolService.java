@@ -210,8 +210,7 @@ public class SubplanToolService implements ISubplanToolService {
 			Map<String, Object> properties = new HashMap<>();
 			List<String> required = new ArrayList<>();
 
-			for (com.alibaba.cloud.ai.manus.subplan.model.po.SubplanParamDef param : subplanTool
-				.getInputSchema()) {
+			for (com.alibaba.cloud.ai.manus.subplan.model.po.SubplanParamDef param : subplanTool.getInputSchema()) {
 				Map<String, Object> paramSchema = new HashMap<>();
 				paramSchema.put("type", param.getType().toLowerCase());
 				paramSchema.put("description", param.getDescription());

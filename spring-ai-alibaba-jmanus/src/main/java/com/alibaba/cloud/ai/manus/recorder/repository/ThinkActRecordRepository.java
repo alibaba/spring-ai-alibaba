@@ -26,18 +26,19 @@ import java.util.Optional;
 @Repository
 public interface ThinkActRecordRepository extends JpaRepository<ThinkActRecordEntity, Long> {
 
-    /**
-     * Find think-act record by parent execution ID
-     */
-    List<ThinkActRecordEntity> findByParentExecutionId(Long parentExecutionId);
+	/**
+	 * Find think-act record by parent execution ID
+	 */
+	List<ThinkActRecordEntity> findByParentExecutionId(Long parentExecutionId);
 
-    /**
-     * Find think-act record by ID
-     */
-    Optional<ThinkActRecordEntity> findById(Long id);
+	/**
+	 * Find think-act record by ID
+	 */
+	Optional<ThinkActRecordEntity> findById(Long id);
 
-    /**
-     * Find all think-act records for a specific agent execution
-     */
-    List<ThinkActRecordEntity> findByParentExecutionIdOrderByThinkStartTimeAsc(Long parentExecutionId);
+	/**
+	 * Find all think-act records for a specific agent execution
+	 */
+	List<ThinkActRecordEntity> findByParentExecutionIdOrderByThinkStartTimeAsc(Long parentExecutionId);
+
 }

@@ -53,7 +53,6 @@ public class ExecutionContext {
 	/** User's original request content */
 	private String userRequest;
 
-
 	/** Result summary after plan execution completion */
 	private String resultSummary;
 

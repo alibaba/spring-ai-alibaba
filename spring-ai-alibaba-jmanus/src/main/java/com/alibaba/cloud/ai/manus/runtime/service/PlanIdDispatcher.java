@@ -199,7 +199,7 @@ public class PlanIdDispatcher implements IPlanIdDispatcher {
 	public String generateToolCallId() {
 		// Use a specific prefix for tool call IDs
 		String toolCallPrefix = "toolcall-";
-		
+
 		// Generate unique tool call ID with multiple uniqueness factors:
 		// 1. Specific prefix for tool calls
 		// 2. Current timestamp in milliseconds
@@ -208,11 +208,11 @@ public class PlanIdDispatcher implements IPlanIdDispatcher {
 		long timestamp = System.currentTimeMillis();
 		int randomComponent = (int) (Math.random() * 10000);
 		long threadId = Thread.currentThread().getId();
-		
+
 		String toolCallId = String.format("%s%d_%d_%d", toolCallPrefix, timestamp, randomComponent, threadId);
-		
+
 		logger.debug("Generated unique tool call ID: {}", toolCallId);
-		
+
 		return toolCallId;
 	}
 
@@ -223,7 +223,7 @@ public class PlanIdDispatcher implements IPlanIdDispatcher {
 	public String generateStepId() {
 		// Use a specific prefix for step IDs
 		String stepPrefix = "step-";
-		
+
 		// Generate unique step ID with multiple uniqueness factors:
 		// 1. Specific prefix for steps
 		// 2. Current timestamp in milliseconds
@@ -232,11 +232,11 @@ public class PlanIdDispatcher implements IPlanIdDispatcher {
 		long timestamp = System.currentTimeMillis();
 		int randomComponent = (int) (Math.random() * 10000);
 		long threadId = Thread.currentThread().getId();
-		
+
 		String stepId = String.format("%s%d_%d_%d", stepPrefix, timestamp, randomComponent, threadId);
-		
+
 		logger.debug("Generated unique step ID: {}", stepId);
-		
+
 		return stepId;
 	}
 
@@ -247,7 +247,7 @@ public class PlanIdDispatcher implements IPlanIdDispatcher {
 	public String generateThinkActId() {
 		// Use a specific prefix for thinkAct IDs
 		String thinkActPrefix = "thinkact-";
-		
+
 		// Generate unique thinkAct ID with multiple uniqueness factors:
 		// 1. Specific prefix for thinkAct operations
 		// 2. Current timestamp in milliseconds
@@ -256,11 +256,11 @@ public class PlanIdDispatcher implements IPlanIdDispatcher {
 		long timestamp = System.currentTimeMillis();
 		int randomComponent = (int) (Math.random() * 10000);
 		long threadId = Thread.currentThread().getId();
-		
+
 		String thinkActId = String.format("%s%d_%d_%d", thinkActPrefix, timestamp, randomComponent, threadId);
-		
+
 		logger.debug("Generated unique thinkAct ID: {}", thinkActId);
-		
+
 		return thinkActId;
 	}
 

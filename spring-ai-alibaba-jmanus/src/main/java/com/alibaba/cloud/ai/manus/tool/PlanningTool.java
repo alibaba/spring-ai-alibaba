@@ -180,18 +180,19 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 	 * @param toolInstance The tool instance to use
 	 * @return Configured FunctionToolCallback
 	 */
-	private FunctionToolCallback<PlanningInput, ToolExecuteResult> buildFunctionToolCallback(PlanningToolInterface toolInstance) {
+	private FunctionToolCallback<PlanningInput, ToolExecuteResult> buildFunctionToolCallback(
+			PlanningToolInterface toolInstance) {
 		return FunctionToolCallback.<PlanningInput, ToolExecuteResult>builder(name, (PlanningInput input) -> {
 			if (toolInstance instanceof PlanningTool) {
 				return ((PlanningTool) toolInstance).run(input);
 			}
 			throw new UnsupportedOperationException("Tool instance type not supported");
 		})
-		.description(description)
-		.inputSchema(PARAMETERS)
-		.inputType(PlanningInput.class)
-		.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
-		.build();
+			.description(description)
+			.inputSchema(PARAMETERS)
+			.inputType(PlanningInput.class)
+			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
+			.build();
 	}
 
 	@Override
@@ -309,7 +310,8 @@ public class PlanningTool extends AbstractBaseTool<PlanningTool.PlanningInput> i
 	}
 
 	@Override
-	public FunctionToolCallback<PlanningInput, ToolExecuteResult> getFunctionToolCallback(PlanningToolInterface planningToolInterface) {
+	public FunctionToolCallback<PlanningInput, ToolExecuteResult> getFunctionToolCallback(
+			PlanningToolInterface planningToolInterface) {
 		return buildFunctionToolCallback(planningToolInterface);
 	}
 

@@ -71,7 +71,6 @@ public abstract class BaseAgent {
 
 	private String rootPlanId = null;
 
-
 	private AgentState state = AgentState.NOT_STARTED;
 
 	protected ILlmService llmService;
@@ -79,9 +78,11 @@ public abstract class BaseAgent {
 	protected final ManusProperties manusProperties;
 
 	protected final PromptService promptService;
+
 	protected final ExecutionStep step;
 
 	protected final PlanIdDispatcher planIdDispatcher;
+
 	private int maxSteps;
 
 	private int currentStep = 0;
@@ -187,7 +188,7 @@ public abstract class BaseAgent {
 
 	public BaseAgent(ILlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, Map<String, Object> initialAgentSetting, PromptService promptService,
-			ExecutionStep step,PlanIdDispatcher planIdDispatcher) {
+			ExecutionStep step, PlanIdDispatcher planIdDispatcher) {
 		this.llmService = llmService;
 		this.planExecutionRecorder = planExecutionRecorder;
 		this.manusProperties = manusProperties;
@@ -270,7 +271,7 @@ public abstract class BaseAgent {
 
 		// Record execution at the end - only once
 		if (currentPlanId != null && planExecutionRecorder != null) {
-	
+
 			planExecutionRecorder.recordCompleteAgentExecution(step);
 		}
 

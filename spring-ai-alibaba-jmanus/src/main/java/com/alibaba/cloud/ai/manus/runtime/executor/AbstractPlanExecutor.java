@@ -128,18 +128,18 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	 */
 	protected BaseAgent getExecutorForStep(ExecutionContext context, ExecutionStep step) {
 
-			String stepType = getStepFromStepReq(step.getStepRequirement());
-			int stepIndex = step.getStepIndex();
-			String expectedReturnInfo = step.getTerminateColumns();
+		String stepType = getStepFromStepReq(step.getStepRequirement());
+		int stepIndex = step.getStepIndex();
+		String expectedReturnInfo = step.getTerminateColumns();
 
-			String planStatus = context.getPlan().getPlanExecutionStateStringFormat(true);
-			String stepText = step.getStepRequirement();
+		String planStatus = context.getPlan().getPlanExecutionStateStringFormat(true);
+		String stepText = step.getStepRequirement();
 
-			Map<String, Object> initSettings = new HashMap<>();
-			initSettings.put(PLAN_STATUS_KEY, planStatus);
-			initSettings.put(CURRENT_STEP_INDEX_KEY, String.valueOf(stepIndex));
-			initSettings.put(STEP_TEXT_KEY, stepText);
-			initSettings.put(EXTRA_PARAMS_KEY, context.getPlan().getExecutionParams());
+		Map<String, Object> initSettings = new HashMap<>();
+		initSettings.put(PLAN_STATUS_KEY, planStatus);
+		initSettings.put(CURRENT_STEP_INDEX_KEY, String.valueOf(stepIndex));
+		initSettings.put(STEP_TEXT_KEY, stepText);
+		initSettings.put(EXTRA_PARAMS_KEY, context.getPlan().getExecutionParams());
 
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {

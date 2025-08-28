@@ -79,7 +79,8 @@ public class DynamicAgent extends ReActAgent {
 
 	private Prompt userPrompt;
 
- 	private List<ActToolParam> actToolInfoList = new ArrayList<>();
+	private List<ActToolParam> actToolInfoList = new ArrayList<>();
+
 	private final ToolCallingManager toolCallingManager;
 
 	private final UserInputService userInputService;
@@ -108,8 +109,10 @@ public class DynamicAgent extends ReActAgent {
 			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
 			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
 			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptService promptService,
-			DynamicModelEntity model, StreamingResponseHandler streamingResponseHandler,ExecutionStep step,PlanIdDispatcher planIdDispatcher) {
-		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptService,step,planIdDispatcher);
+			DynamicModelEntity model, StreamingResponseHandler streamingResponseHandler, ExecutionStep step,
+			PlanIdDispatcher planIdDispatcher) {
+		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting, promptService, step,
+				planIdDispatcher);
 		this.agentName = name;
 		this.agentDescription = description;
 		this.nextStepPrompt = nextStepPrompt;
@@ -192,19 +195,17 @@ public class DynamicAgent extends ReActAgent {
 
 				String stepId = super.step.getStepId();
 				String thinkActId = planIdDispatcher.generateThinkActId();
-				
-				
+
 				actToolInfoList = new ArrayList<>();
-				for(ToolCall toolCall: toolCalls){
-					String toolcallId = planIdDispatcher.generateToolCallId(); 
-					ActToolParam actToolInfo = new ActToolParam(toolCall.name(), toolCall.arguments(),toolcallId);
+				for (ToolCall toolCall : toolCalls) {
+					String toolcallId = planIdDispatcher.generateToolCallId();
+					ActToolParam actToolInfo = new ActToolParam(toolCall.name(), toolCall.arguments(), toolcallId);
 					actToolInfoList.add(actToolInfo);
 				}
-				
-				ThinkActRecordParams paramsN = new ThinkActRecordParams(thinkActId, stepId,
-						thinkInput, responseByLLm, null,
-						actToolInfoList);
-				 planExecutionRecorder.recordThinkingAndAction(step,paramsN);
+
+				ThinkActRecordParams paramsN = new ThinkActRecordParams(thinkActId, stepId, thinkInput, responseByLLm,
+						null, actToolInfoList);
+				planExecutionRecorder.recordThinkingAndAction(step, paramsN);
 
 				return true;
 			}
@@ -230,12 +231,11 @@ public class DynamicAgent extends ReActAgent {
 			List<String> resultList = new ArrayList<>();
 			if (!toolResponseMessage.getResponses().isEmpty()) {
 				int index = 0;
-				for(ToolResponseMessage.ToolResponse toolCallResponse: toolResponseMessage.getResponses())
-				{
+				for (ToolResponseMessage.ToolResponse toolCallResponse : toolResponseMessage.getResponses()) {
 					ToolCall toolCall = toolCalls.get(index);
 					String toolName = toolCall.name();
 					ActToolParam param = actToolInfoList.get(index);
-					
+
 					ToolCallBiFunctionDef<?> toolInstance = getToolCallBackContext(toolName).getFunctionInstance();
 					if (toolInstance instanceof FormInputTool) {
 						AgentExecResult formResult = handleFormInputTool((FormInputTool) toolInstance, param);
@@ -256,19 +256,19 @@ public class DynamicAgent extends ReActAgent {
 							param.setResult(toolCallResponse.responseData());
 							resultList.add(param.getResult());
 						}
-					}else{
+					}
+					else {
 						param.setResult(toolCallResponse.responseData());
 						resultList.add(toolCallResponse.responseData());
 						log.info("Tool {} executed successfully for planId: {}", toolName, getCurrentPlanId());
 					}
 					index++;
 				}
-				if(index == toolCalls.size()){
+				if (index == toolCalls.size()) {
 					recordActionResult(actToolInfoList);
 					return new AgentExecResult(resultList.toString(), AgentState.COMPLETED);
 				}
-				else
-				{
+				else {
 					List<ActToolParam> executedTools = actToolInfoList.subList(0, index);
 					recordActionResult(executedTools);
 					return new AgentExecResult(resultList.toString(), AgentState.COMPLETED);
@@ -289,18 +289,16 @@ public class DynamicAgent extends ReActAgent {
 							? actToolInfoList.get(0).getParameters().toString() : "unknown";
 			errorMessage.append("  . llm return param :  ").append(firstToolcall);
 
-
 			userInputService.removeFormInputTool(getCurrentPlanId()); // Clean up on error
 			processMemory(toolExecutionResult); // Process memory even on error
 			return new AgentExecResult(e.getMessage(), AgentState.FAILED);
 		}
 	}
 
-
 	/**
 	 * Handle FormInputTool specific logic
 	 */
-	private AgentExecResult handleFormInputTool(FormInputTool formInputTool,ActToolParam param) {
+	private AgentExecResult handleFormInputTool(FormInputTool formInputTool, ActToolParam param) {
 		// Check if the tool is waiting for user input
 		if (formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) {
 			log.info("FormInputTool is awaiting user input for planId: {}", getCurrentPlanId());
@@ -320,7 +318,7 @@ public class DynamicAgent extends ReActAgent {
 				// Update the result in actToolInfoList
 				param.setResult(formInputTool.getCurrentToolStateString());
 				return new AgentExecResult(param.getResult(), AgentState.IN_PROGRESS);
-				
+
 			}
 			else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
 				log.warn("Input timeout occurred for FormInputTool for planId: {}", getCurrentPlanId());
@@ -329,15 +327,14 @@ public class DynamicAgent extends ReActAgent {
 				processUserInputToMemory(userMessage);
 				userInputService.removeFormInputTool(getCurrentPlanId());
 				param.setResult("Input timeout occurred");
-		
+
 				return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS);
 			}
-			else{
+			else {
 				throw new RuntimeException("FormInputTool is not in the correct state");
 			}
 		}
-		else
-		{
+		else {
 			throw new RuntimeException("FormInputTool is not in the correct state");
 		}
 	}
@@ -348,7 +345,6 @@ public class DynamicAgent extends ReActAgent {
 	private void recordActionResult(List<ActToolParam> actToolInfoList) {
 		planExecutionRecorder.recordActionResult(actToolInfoList);
 	}
-
 
 	private void processUserInputToMemory(UserMessage userMessage) {
 		if (userMessage != null && userMessage.getText() != null) {

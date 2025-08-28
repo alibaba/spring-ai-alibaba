@@ -308,6 +308,4 @@ public class ThinkActRecord {
 				+ ", actionNeeded=" + actionNeeded + ", status='" + status + '\'' + '}';
 	}
 
-
-
 }

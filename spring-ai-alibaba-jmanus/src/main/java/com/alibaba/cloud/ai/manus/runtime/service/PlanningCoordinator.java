@@ -46,20 +46,16 @@ public class PlanningCoordinator {
 
 	private final PlanFinalizer planFinalizer;
 
-
 	private final PlanIdDispatcher planIdDispatcher;
 
 	@Autowired
 	public PlanningCoordinator(PlanningFactory planningFactory, PlanExecutorFactory planExecutorFactory,
-			PlanFinalizer planFinalizer, 
-			PlanIdDispatcher planIdDispatcher) {
+			PlanFinalizer planFinalizer, PlanIdDispatcher planIdDispatcher) {
 		this.planningFactory = planningFactory;
 		this.planExecutorFactory = planExecutorFactory;
 		this.planFinalizer = planFinalizer;
 		this.planIdDispatcher = planIdDispatcher;
 	}
-
-
 
 	/**
 	 * Execute plan by user query using plan creator and then execute the created plan
@@ -75,7 +71,7 @@ public class PlanningCoordinator {
 			String parentPlanId, String currentPlanId, String memoryId, String toolcallId) {
 		try {
 			log.info("Starting plan execution for user query: {}", userQuery);
-			
+
 			// Log toolcallId if provided
 			if (toolcallId != null) {
 				log.debug("Plan execution triggered by tool call: {}", toolcallId);
@@ -137,7 +133,7 @@ public class PlanningCoordinator {
 	 * @param currentPlanId The current plan ID for execution
 	 * @param toolcallId The ID of the tool call that triggered this plan execution
 	 * @return A CompletableFuture that completes with the execution result
-	 */	
+	 */
 	public CompletableFuture<PlanExecutionResult> executeByPlan(PlanInterface plan, String rootPlanId,
 			String parentPlanId, String currentPlanId, String toolcallId) {
 		try {
@@ -157,13 +153,12 @@ public class PlanningCoordinator {
 			context.setUseMemory(true);
 			context.setParentPlanId(parentPlanId);
 			context.setToolCallId(toolcallId);
-			
-						// Log toolcallId if provided
+
+			// Log toolcallId if provided
 			if (toolcallId != null) {
 				log.debug("Plan execution triggered by tool call: {}", toolcallId);
 			}
-			
-			
+
 			// Execute the plan using PlanExecutorFactory
 			PlanExecutorInterface executor = planExecutorFactory.createExecutor(plan);
 			CompletableFuture<PlanExecutionResult> executionFuture = executor.executeAllStepsAsync(context);

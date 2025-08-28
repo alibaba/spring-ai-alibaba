@@ -116,7 +116,7 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 			// Generate a toolcall ID for this subplan execution
 			String toolCallId = planIdDispatcher.generateToolCallId();
 			logger.info("Generated toolcall ID: {} for subplan execution: {}", toolCallId, newPlanId);
-			
+
 			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByPlan(plan, rootPlanId,
 					currentPlanId, newPlanId, toolCallId);
 

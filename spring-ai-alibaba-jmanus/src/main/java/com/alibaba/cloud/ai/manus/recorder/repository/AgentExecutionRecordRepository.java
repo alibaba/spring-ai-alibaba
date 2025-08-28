@@ -25,18 +25,19 @@ import java.util.Optional;
 @Repository
 public interface AgentExecutionRecordRepository extends JpaRepository<AgentExecutionRecordEntity, Long> {
 
-    /**
-     * Find agent execution record by step ID
-     */
-    Optional<AgentExecutionRecordEntity> findByStepId(String stepId);
+	/**
+	 * Find agent execution record by step ID
+	 */
+	Optional<AgentExecutionRecordEntity> findByStepId(String stepId);
 
-    /**
-     * Check if agent execution record exists by step ID
-     */
-    boolean existsByStepId(String stepId);
+	/**
+	 * Check if agent execution record exists by step ID
+	 */
+	boolean existsByStepId(String stepId);
 
-    /**
-     * Delete agent execution record by step ID
-     */
-    void deleteByStepId(String stepId);
+	/**
+	 * Delete agent execution record by step ID
+	 */
+	void deleteByStepId(String stepId);
+
 }

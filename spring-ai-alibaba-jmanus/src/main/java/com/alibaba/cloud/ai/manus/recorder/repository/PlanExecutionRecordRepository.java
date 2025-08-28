@@ -23,42 +23,42 @@ import com.alibaba.cloud.ai.manus.recorder.entity.po.PlanExecutionRecordEntity;
 import java.util.List;
 import java.util.Optional;
 
-
 @Repository
 public interface PlanExecutionRecordRepository extends JpaRepository<PlanExecutionRecordEntity, Long> {
 
-    /**
-     * Find plan execution record by current plan ID
-     */
-    Optional<PlanExecutionRecordEntity> findByCurrentPlanId(String currentPlanId);
+	/**
+	 * Find plan execution record by current plan ID
+	 */
+	Optional<PlanExecutionRecordEntity> findByCurrentPlanId(String currentPlanId);
 
-    /**
-     * Find plan execution record by plan ID (for backward compatibility)
-     */
-    Optional<PlanExecutionRecordEntity> findByPlanId(String planId);
+	/**
+	 * Find plan execution record by plan ID (for backward compatibility)
+	 */
+	Optional<PlanExecutionRecordEntity> findByPlanId(String planId);
 
-    /**
-     * Find all plan execution records by parent plan ID
-     */
-    List<PlanExecutionRecordEntity> findByParentPlanId(String parentPlanId);
+	/**
+	 * Find all plan execution records by parent plan ID
+	 */
+	List<PlanExecutionRecordEntity> findByParentPlanId(String parentPlanId);
 
-    /**
-     * Find all plan execution records by root plan ID
-     */
-    List<PlanExecutionRecordEntity> findByRootPlanId(String rootPlanId);
+	/**
+	 * Find all plan execution records by root plan ID
+	 */
+	List<PlanExecutionRecordEntity> findByRootPlanId(String rootPlanId);
 
-    /**
-     * Find all plan execution records by act tool info ID
-     */
-    List<PlanExecutionRecordEntity> findByActToolInfoEntityId(Long actToolInfoEntityId);
+	/**
+	 * Find all plan execution records by act tool info ID
+	 */
+	List<PlanExecutionRecordEntity> findByActToolInfoEntityId(Long actToolInfoEntityId);
 
-    /**
-     * Check if a plan execution record exists by current plan ID
-     */
-    boolean existsByCurrentPlanId(String currentPlanId);
+	/**
+	 * Check if a plan execution record exists by current plan ID
+	 */
+	boolean existsByCurrentPlanId(String currentPlanId);
 
-    /**
-     * Delete plan execution record by plan ID
-     */
-    void deleteByPlanId(String planId);
+	/**
+	 * Delete plan execution record by plan ID
+	 */
+	void deleteByPlanId(String planId);
+
 }

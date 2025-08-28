@@ -143,9 +143,8 @@ public class PlanCreator {
 					String planCreationText = streamingResponseHandler.processStreamingTextResponse(responseFlux,
 							"Plan creation " + memoryType, context.getCurrentPlanId());
 					outputText = planCreationText;
-					
-					executionPlan = planningTool.getCurrentPlan();
 
+					executionPlan = planningTool.getCurrentPlan();
 
 					if (executionPlan != null) {
 						// Set the user input part of the plan, for later storage and use.

@@ -55,7 +55,7 @@ public class DynamicAgentLoader implements IDynamicAgentLoader {
 	private final PromptService promptService;
 
 	private final StreamingResponseHandler streamingResponseHandler;
-	
+
 	private final PlanIdDispatcher planIdDispatcher;
 
 	@Value("${namespace.value}")
@@ -73,10 +73,10 @@ public class DynamicAgentLoader implements IDynamicAgentLoader {
 		this.userInputService = userInputService;
 		this.promptService = promptService;
 		this.streamingResponseHandler = streamingResponseHandler;
-		this.planIdDispatcher =	 planIdDispatcher;
+		this.planIdDispatcher = planIdDispatcher;
 	}
 
-	public DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting,ExecutionStep step) {
+	public DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting, ExecutionStep step) {
 		DynamicAgentEntity entity = repository.findByNamespaceAndAgentName(namespace, agentName);
 		if (entity == null) {
 			throw new IllegalArgumentException("Agent not found: " + agentName);
@@ -84,7 +84,7 @@ public class DynamicAgentLoader implements IDynamicAgentLoader {
 
 		return new DynamicAgent(llmService, recorder, properties, entity.getAgentName(), entity.getAgentDescription(),
 				entity.getNextStepPrompt(), entity.getAvailableToolKeys(), toolCallingManager, initialAgentSetting,
-				userInputService, promptService, entity.getModel(), streamingResponseHandler,step,planIdDispatcher);
+				userInputService, promptService, entity.getModel(), streamingResponseHandler, step, planIdDispatcher);
 	}
 
 	public List<DynamicAgentEntity> getAllAgents() {

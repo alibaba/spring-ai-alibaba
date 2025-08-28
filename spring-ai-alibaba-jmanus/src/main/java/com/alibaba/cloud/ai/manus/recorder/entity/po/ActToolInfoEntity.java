@@ -18,13 +18,11 @@ package com.alibaba.cloud.ai.manus.recorder.entity.po;
 import jakarta.persistence.*;
 
 /**
- * Entity class for storing action tool information.
- * Records details about tools used during action execution phases.
- * 
- * This entity is used to track:
- * - Tool name and parameters
- * - Execution results
- * - Tool identification
+ * Entity class for storing action tool information. Records details about tools used
+ * during action execution phases.
+ *
+ * This entity is used to track: - Tool name and parameters - Execution results - Tool
+ * identification
  */
 @Entity
 @Table(name = "act_tool_info")
@@ -50,7 +48,6 @@ public class ActToolInfoEntity {
 	// Tool call id
 	@Column(name = "tool_call_id")
 	private String toolCallId;
-
 
 	/**
 	 * Constructor with required fields
@@ -105,14 +102,10 @@ public class ActToolInfoEntity {
 		this.toolCallId = toolCallId;
 	}
 
-
 	@Override
 	public String toString() {
-		return "ActToolInfoEntity{" +
-				"name='" + name + '\'' +
-				", parameters='" + parameters + '\'' +
-				", result='" + result + '\'' +
-				", id='" + id + '\'' +
-				'}';
+		return "ActToolInfoEntity{" + "name='" + name + '\'' + ", parameters='" + parameters + '\'' + ", result='"
+				+ result + '\'' + ", id='" + id + '\'' + '}';
 	}
+
 }
