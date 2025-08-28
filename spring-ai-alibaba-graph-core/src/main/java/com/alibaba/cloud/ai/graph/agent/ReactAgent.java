@@ -307,10 +307,6 @@ public class ReactAgent extends BaseAgent {
 		return new DefaultBuilder();
 	}
 
-	public static Builder builder(Builder builder) {
-		return builder;
-	}
-
 	public static class SubGraphNodeAdapter implements NodeAction {
 
 		private String inputKeyFromParent;
