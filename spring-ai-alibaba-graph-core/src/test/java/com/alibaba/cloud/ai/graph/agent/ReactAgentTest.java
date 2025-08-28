@@ -19,14 +19,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.agent.flow.LlmRoutingAgent;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -60,6 +60,9 @@ class ReactAgentTest {
 				.build();
 		try {
 			Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("帮我写一首现代诗歌。"))));
+			var runnableConfig = RunnableConfig.builder().threadId(UUID.randomUUID().toString()).build();
+			agent.invoke(Map.of("messages", List.of(new UserMessage("帮我写一首现代诗歌。"))), runnableConfig);
+
 			System.out.println(result.get());
 		}
 		catch (java.util.concurrent.CompletionException e) {
