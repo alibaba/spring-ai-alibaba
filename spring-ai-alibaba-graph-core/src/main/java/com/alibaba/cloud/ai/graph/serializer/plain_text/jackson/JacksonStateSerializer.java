@@ -19,8 +19,12 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -38,13 +42,94 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 	protected JacksonStateSerializer(AgentStateFactory<OverAllState> stateFactory) {
 		this(stateFactory, new ObjectMapper());
-		this.objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-
 	}
 
 	protected JacksonStateSerializer(AgentStateFactory<OverAllState> stateFactory, ObjectMapper objectMapper) {
 		super(stateFactory);
 		this.objectMapper = objectMapper;
+		configureObjectMapper(this.objectMapper);
+	}
+
+	/**
+	 * Configure ObjectMapper with secure type handling to preserve type information while
+	 * preventing deserialization attacks using blacklist approach
+	 */
+	private void configureObjectMapper(ObjectMapper mapper) {
+		mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+
+		// Create a secure polymorphic type validator with blacklist for dangerous classes
+		PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
+			// Allow most types by default, but deny dangerous ones
+			.allowIfBaseType(Object.class)
+			// Blacklist dangerous classes that could be used for attacks
+			.denyForExactBaseType(java.lang.ProcessBuilder.class)
+			.denyForExactBaseType(java.lang.Runtime.class)
+			.denyForExactBaseType(java.lang.Process.class)
+			.denyForExactBaseType(java.io.FileInputStream.class)
+			.denyForExactBaseType(java.io.FileOutputStream.class)
+			.denyForExactBaseType(java.io.FileReader.class)
+			.denyForExactBaseType(java.io.FileWriter.class)
+			.denyForExactBaseType(java.net.Socket.class)
+			.denyForExactBaseType(java.net.ServerSocket.class)
+			.denyForExactBaseType(java.net.URL.class)
+			.denyForExactBaseType(java.net.URLConnection.class)
+			.denyForExactBaseType(java.net.HttpURLConnection.class)
+			.denyForExactBaseType(java.lang.reflect.Method.class)
+			.denyForExactBaseType(java.lang.reflect.Constructor.class)
+			.denyForExactBaseType(java.lang.reflect.Field.class)
+			.denyForExactBaseType(java.lang.Class.class)
+			.denyForExactBaseType(java.lang.ClassLoader.class)
+			.denyForExactBaseType(java.beans.Expression.class)
+			.denyForExactBaseType(java.beans.Statement.class)
+			.build();
+
+		// Enable polymorphic type handling with security validation
+		mapper.activateDefaultTyping(typeValidator, ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+
+		// Configure to handle missing properties gracefully
+		mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES,
+				false);
+		mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES, false);
+
+		// Enable support for creating objects without default constructors
+		mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_INVALID_SUBTYPE, false);
+
+		// Additional configuration for handling complex objects
+		mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true);
+		mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT,
+				true);
+
+		// Register custom module for Spring AI Message types
+		registerSpringAIMessageModule(mapper);
+	}
+
+	/**
+	 * Register custom serialization/deserialization support for Spring AI Message types
+	 */
+	private void registerSpringAIMessageModule(ObjectMapper mapper) {
+		SimpleModule springAIModule = new SimpleModule("SpringAIMessageModule");
+
+		// Try to register Spring AI message deserializers if classes are available
+		try {
+			Class<?> userMessageClass = Class.forName("org.springframework.ai.chat.messages.UserMessage");
+			Class<?> assistantMessageClass = Class.forName("org.springframework.ai.chat.messages.AssistantMessage");
+			Class<?> systemMessageClass = Class.forName("org.springframework.ai.chat.messages.SystemMessage");
+
+			// Create unified deserializer for all Spring AI Message classes
+			SpringAIMessageDeserializer messageDeserializer = new SpringAIMessageDeserializer();
+
+			// Register custom deserializers for each message type
+			springAIModule.addDeserializer((Class) userMessageClass, messageDeserializer);
+			springAIModule.addDeserializer((Class) assistantMessageClass, messageDeserializer);
+			springAIModule.addDeserializer((Class) systemMessageClass, messageDeserializer);
+
+		}
+		catch (ClassNotFoundException e) {
+			// Spring AI classes not available, skip registration
+		}
+
+		mapper.registerModule(springAIModule);
 	}
 
 	@Override
@@ -67,6 +152,137 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		in.readFully(jsonBytes);
 		String json = new String(jsonBytes, StandardCharsets.UTF_8);
 		return objectMapper.readValue(json, getStateType());
+	}
+
+	/**
+	 * Unified deserializer for all Spring AI Message types
+	 */
+	public static class SpringAIMessageDeserializer extends com.fasterxml.jackson.databind.JsonDeserializer<Object> {
+
+		// Factory map for creating different message types
+		private static final java.util.Map<String, java.util.function.Function<String, Object>> MESSAGE_FACTORIES = new java.util.HashMap<>();
+
+		static {
+			try {
+				// Initialize message factories using reflection
+				Class<?> userMessageClass = Class.forName("org.springframework.ai.chat.messages.UserMessage");
+				Class<?> assistantMessageClass = Class.forName("org.springframework.ai.chat.messages.AssistantMessage");
+				Class<?> systemMessageClass = Class.forName("org.springframework.ai.chat.messages.SystemMessage");
+
+				MESSAGE_FACTORIES.put("USER", content -> createMessage(userMessageClass, content));
+				MESSAGE_FACTORIES.put("ASSISTANT", content -> createMessage(assistantMessageClass, content));
+				MESSAGE_FACTORIES.put("SYSTEM", content -> createMessage(systemMessageClass, content));
+
+				// Additional aliases
+				MESSAGE_FACTORIES.put("USERMESSAGE", content -> createMessage(userMessageClass, content));
+				MESSAGE_FACTORIES.put("ASSISTANTMESSAGE", content -> createMessage(assistantMessageClass, content));
+				MESSAGE_FACTORIES.put("SYSTEMMESSAGE", content -> createMessage(systemMessageClass, content));
+
+			}
+			catch (ClassNotFoundException e) {
+				// Spring AI classes not available
+			}
+		}
+
+		private static Object createMessage(Class<?> messageClass, String content) {
+			try {
+				return messageClass.getConstructor(String.class).newInstance(content != null ? content : "");
+			}
+			catch (Exception e) {
+				throw new RuntimeException("Failed to create message instance for class: " + messageClass.getName(), e);
+			}
+		}
+
+		@Override
+		public Object deserialize(com.fasterxml.jackson.core.JsonParser p,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+			try {
+				com.fasterxml.jackson.databind.JsonNode node = p.getCodec().readTree(p);
+
+				// Extract message type - support multiple field names
+				String messageType = extractMessageType(node);
+
+				// Extract content - support multiple field names
+				String content = extractContent(node);
+
+				// Create corresponding message object based on type
+				return java.util.Optional.ofNullable(messageType)
+					.map(String::toUpperCase)
+					.map(MESSAGE_FACTORIES::get)
+					.orElseGet(() -> {
+						// Default to USER message if type is unknown
+						return MESSAGE_FACTORIES.get("USER");
+					})
+					.apply(content);
+
+			}
+			catch (Exception e) {
+				// Fallback: create a UserMessage with empty content
+				try {
+					Class<?> userMessageClass = Class.forName("org.springframework.ai.chat.messages.UserMessage");
+					return createMessage(userMessageClass, "");
+				}
+				catch (Exception ex) {
+					throw new com.fasterxml.jackson.databind.JsonMappingException(p,
+							"Cannot deserialize Spring AI Message", ex);
+				}
+			}
+		}
+
+		/**
+		 * Extract message type from JsonNode - supports multiple field names
+		 */
+		private String extractMessageType(com.fasterxml.jackson.databind.JsonNode node) {
+			// Try different field names for message type
+			return java.util.Optional.ofNullable(node.get("messageType"))
+				.map(com.fasterxml.jackson.databind.JsonNode::asText)
+				.orElseGet(() -> java.util.Optional.ofNullable(node.get("type"))
+					.map(com.fasterxml.jackson.databind.JsonNode::asText)
+					.orElseGet(() -> java.util.Optional.ofNullable(node.get("role"))
+						.map(n -> n.asText().toUpperCase())
+						.orElseGet(() -> {
+							// Try to infer from class type information
+							return java.util.Optional.ofNullable(node.get("@class"))
+								.map(com.fasterxml.jackson.databind.JsonNode::asText)
+								.map(this::extractTypeFromClassName)
+								.orElse(null);
+						})));
+		}
+
+		/**
+		 * Extract message content from JsonNode - supports multiple field names
+		 */
+		private String extractContent(com.fasterxml.jackson.databind.JsonNode node) {
+			// Try different field names for content
+			return java.util.Optional.ofNullable(node.get("content"))
+				.map(com.fasterxml.jackson.databind.JsonNode::asText)
+				.orElseGet(() -> java.util.Optional.ofNullable(node.get("text"))
+					.map(com.fasterxml.jackson.databind.JsonNode::asText)
+					.orElseGet(() -> java.util.Optional.ofNullable(node.get("message"))
+						.map(com.fasterxml.jackson.databind.JsonNode::asText)
+						.orElseGet(() -> {
+							// If node is plain text, use it directly
+							if (node.isTextual()) {
+								return node.asText();
+							}
+							return ""; // fallback to empty string
+						})));
+		}
+
+		/**
+		 * Extract message type from class name
+		 */
+		private String extractTypeFromClassName(String className) {
+			if (className == null)
+				return null;
+
+			String simpleName = className.substring(className.lastIndexOf('.') + 1);
+			if (simpleName.endsWith("Message")) {
+				return simpleName.substring(0, simpleName.length() - 7).toUpperCase();
+			}
+			return simpleName.toUpperCase();
+		}
+
 	}
 
 }

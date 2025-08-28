@@ -37,6 +37,7 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import org.apache.commons.collections4.CollectionUtils;
 
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
