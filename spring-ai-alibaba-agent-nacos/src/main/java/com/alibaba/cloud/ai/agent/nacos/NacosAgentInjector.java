@@ -1,5 +1,7 @@
-package com.alibaba.cloud.ai.graph.nacos;
+package com.alibaba.cloud.ai.agent.nacos;
 
+import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
+import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.nacos.client.config.NacosConfigService;
 
 import org.springframework.ai.chat.client.ChatClient;

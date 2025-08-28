@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.graph.nacos;
+package com.alibaba.cloud.ai.agent.nacos.vo;
 
 public class ModelVO {
 	private String baseUrl;

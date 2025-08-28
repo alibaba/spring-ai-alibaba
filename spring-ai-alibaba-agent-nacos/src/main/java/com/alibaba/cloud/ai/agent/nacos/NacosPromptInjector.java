@@ -1,9 +1,10 @@
-package com.alibaba.cloud.ai.graph.nacos;
+package com.alibaba.cloud.ai.agent.nacos;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.alibaba.nacos.api.exception.NacosException;

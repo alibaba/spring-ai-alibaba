@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.graph.nacos;
+package com.alibaba.cloud.ai.agent.nacos.vo;
 
 import java.util.List;
 

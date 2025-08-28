@@ -1,8 +1,9 @@
-package com.alibaba.cloud.ai.graph.nacos;
+package com.alibaba.cloud.ai.agent.nacos;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.alibaba.nacos.api.exception.NacosException;
@@ -20,7 +21,7 @@ public class NacosModelInjector {
 	public static ModelVO getModelByAgentId(NacosOptions nacosOptions, String agentId) {
 		try {
 			String dataIdT = String.format(nacosOptions.isModelConfigEncrypted() ? "cipher-kms-aes-256-model-%s.json" : "model-%s.json", agentId);
-			String config = nacosOptions.nacosConfigService.getConfig(dataIdT, "nacos-ai-agent", 3000L);
+			String config = nacosOptions.getNacosConfigService().getConfig(dataIdT, "nacos-ai-agent", 3000L);
 			return JSON.parseObject(config, ModelVO.class);
 		}
 		catch (NacosException e) {
@@ -42,6 +43,7 @@ public class NacosModelInjector {
 		if (model.getMaxTokens() != null) {
 			chatOptionsBuilder.maxTokens(Integer.parseInt(model.getMaxTokens()));
 		}
+
 		OpenAiChatOptions openaiChatOptions = chatOptionsBuilder
 				.model(model.getModel()).build();
 		return OpenAiChatModel.builder().defaultOptions(openaiChatOptions).openAiApi(openAiApi)
@@ -53,7 +55,7 @@ public class NacosModelInjector {
 			return;
 		}
 		try {
-			nacosOptions.nacosConfigService.addListener(String.format("model-%s.json", agentId), "nacos-ai-agent", new AbstractListener() {
+			nacosOptions.getNacosConfigService().addListener(String.format("model-%s.json", agentId), "nacos-ai-agent", new AbstractListener() {
 				@Override
 				public void receiveConfigInfo(String configInfo) {
 					ModelVO modelVO = JSON.parseObject(configInfo, ModelVO.class);

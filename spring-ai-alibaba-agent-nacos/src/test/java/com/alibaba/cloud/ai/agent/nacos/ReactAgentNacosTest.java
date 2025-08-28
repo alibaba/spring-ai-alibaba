@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent;
+package com.alibaba.cloud.ai.agent.nacos;
 
 import java.util.List;
 import java.util.Map;
@@ -23,7 +23,7 @@ import java.util.UUID;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.nacos.NacosOptions;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.NacosConfigService;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +63,8 @@ class ReactAgentNacosTest {
 		nacosOptions.setPromptKey("bookprompt2");
 		nacosOptions.setAgentId("agent0001");
 		nacosOptions.setModelConfigEncrypted(false);
-		ReactAgent agent = ReactAgent.builder().name("agent0001").nacosProxy(nacosOptions).build();
+		NacosReactAgentBuilder builder = new NacosReactAgentBuilder().nacosOptions(nacosOptions);
+		ReactAgent agent = ReactAgent.builder(builder).name("agent0001").build();
 
 		//Thread.sleep(15000L);
 		for (int i=0;i<20;i++){
