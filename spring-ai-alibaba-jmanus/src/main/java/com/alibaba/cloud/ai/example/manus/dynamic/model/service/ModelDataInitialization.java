@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelR
 import com.alibaba.cloud.ai.example.manus.event.JmanusEventPublisher;
 import com.alibaba.cloud.ai.example.manus.event.ModelChangeEvent;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import jakarta.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +34,7 @@ import org.springframework.stereotype.Service;
  * @author lizhenning
  * @since 2025/7/8
  */
+
 @Service
 public class ModelDataInitialization implements IModelDataInitialization {
 
@@ -62,7 +62,7 @@ public class ModelDataInitialization implements IModelDataInitialization {
 		this.repository = repository;
 	}
 
-	@PostConstruct
+	// @PostConstruct // 注释掉PostConstruct注解
 	public void init() {
 		// Check environment variables and automatically create model configuration (for
 		// Docker deployment scenarios)
