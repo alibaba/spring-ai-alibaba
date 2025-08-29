@@ -111,7 +111,6 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 				var func = NodeDataConverter.convertVarReserveFunction(dialectType);
 				nodeData.setAnswer(func.apply(nodeData.getAnswer(), idToVarName));
 			});
-			case CUSTOM -> super.postProcessConsumer(dialectType);
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}

@@ -121,8 +121,8 @@ public class AgentNodeDataConverter extends AbstractNodeDataConverter<AgentNodeD
 				nodeData.setQueryPrompt(convertFunc.apply(nodeData.getQueryPrompt(), idToVarName));
 				nodeData.setInstructionPrompt(convertFunc.apply(nodeData.getInstructionPrompt(), idToVarName));
 			};
-            default -> super.postProcessConsumer(dialectType);
-        };
+			default -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }
