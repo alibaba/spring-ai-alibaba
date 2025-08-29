@@ -46,6 +46,12 @@ public class McpConfigEntity {
 	@Enumerated(EnumType.STRING)
 	private McpConfigStatus status = McpConfigStatus.ENABLE; // Default to enabled status
 
+	/**
+	 * Default constructor required by Hibernate/JPA
+	 */
+	public McpConfigEntity() {
+	}
+
 	// Getters and Setters
 	public Long getId() {
 		return id;

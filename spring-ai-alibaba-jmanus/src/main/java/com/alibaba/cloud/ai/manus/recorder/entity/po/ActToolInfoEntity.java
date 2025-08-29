@@ -60,6 +60,12 @@ public class ActToolInfoEntity {
 		this.toolCallId = toolCallId;
 	}
 
+	/**
+	 * Default constructor required by Hibernate/JPA
+	 */
+	public ActToolInfoEntity() {
+	}
+
 	// Getters and Setters
 
 	public String getName() {

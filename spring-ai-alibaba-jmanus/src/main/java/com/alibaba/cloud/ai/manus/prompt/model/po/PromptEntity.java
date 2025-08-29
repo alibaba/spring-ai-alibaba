@@ -46,6 +46,12 @@ public class PromptEntity {
 	@Column(name = "prompt_content", columnDefinition = "TEXT", nullable = false)
 	private String promptContent;
 
+	/**
+	 * Default constructor required by Hibernate/JPA
+	 */
+	public PromptEntity() {
+	}
+
 	public Long getId() {
 		return id;
 	}

@@ -14,988 +14,1115 @@
  * limitations under the License.
 -->
 <template>
-    <div class="execution-details">
-      <!-- Step execution details -->
-      <div class="steps-container" v-if="(planExecution?.steps?.length ?? 0) > 0">
-        <h4 class="steps-title">{{ $t('chat.stepExecutionDetails') }}</h4>
-  
-        <!-- Iterate through all steps -->
-        <div
-            v-for="(step, index) in planExecution?.steps"
-            :key="index"
-            class="ai-section"
-            :class="{
-            running: getAgentExecutionStatus(index) === 'RUNNING',
-            completed: getAgentExecutionStatus(index) === 'FINISHED',
-            pending: getAgentExecutionStatus(index) === 'IDLE',
-          }"
-            @click.stop="handleStepClick(index)"
-        >
-          <div class="section-header">
-            <span class="step-icon">
-              {{
-                getAgentExecutionStatus(index) === 'FINISHED'
-                    ? '✓'
-                    : getAgentExecutionStatus(index) === 'RUNNING'
-                        ? '▶'
-                        : '○'
-              }}
-            </span>
-            <span class="step-title">
-              {{ step || `${$t('chat.step')} ${index + 1}` }}
-            </span>
-            <span
-                v-if="getAgentExecutionStatus(index) === 'RUNNING'"
-                class="step-status current"
-            >
-              {{ $t('chat.status.executing') }}
-            </span>
-            <span
-                v-else-if="getAgentExecutionStatus(index) === 'FINISHED'"
-                class="step-status completed"
-            >
-              {{ $t('chat.status.completed') }}
-            </span>
-            <span v-else class="step-status pending">
-              {{ $t('chat.status.pending') }}
-            </span>
+  <div class="execution-details">
+    <!-- Plan overview -->
+    <div class="plan-overview" v-if="planExecution">
+      <div class="plan-header">
+        <h3 class="plan-title">{{ planExecution.title || $t('chat.planExecution') }}</h3>
+        <div class="plan-status-badge" :class="getPlanStatusClass()">
+          {{ getPlanStatusText() }}
+        </div>
+      </div>
+      
+      <!-- Parent tool call information for sub-plans -->
+      <div v-if="planExecution.parentActToolCall" class="parent-tool-call">
+        <div class="parent-tool-header">
+          <Icon icon="carbon:flow" class="tool-icon" />
+          <span class="tool-label">{{ $t('chat.triggeredByTool') }}:</span>
+          <span class="tool-name">{{ planExecution.parentActToolCall.name }}</span>
+        </div>
+        <div v-if="planExecution.parentActToolCall.parameters" class="tool-parameters">
+          <span class="param-label">{{ $t('common.parameters') }}:</span>
+          <pre class="param-content">{{ formatToolParameters(planExecution.parentActToolCall.parameters) }}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agent execution sequence -->
+    <div class="agent-execution-container" v-if="(planExecution?.agentExecutionSequence?.length ?? 0) > 0">
+      <h4 class="section-title">{{ $t('chat.agentExecutionSequence') }}</h4>
+      
+      <div
+        v-for="(agentExecution, agentIndex) in planExecution?.agentExecutionSequence"
+        :key="agentExecution.id || agentIndex"
+        class="agent-execution-item"
+        :class="getAgentStatusClass(agentExecution.status)"
+      >
+        <!-- Agent execution header -->
+        <div class="agent-header" @click="toggleAgentExpanded(agentIndex)">
+          <div class="agent-info">
+            <Icon :icon="getAgentStatusIcon(agentExecution.status)" class="agent-status-icon" />
+            <div class="agent-details">
+              <div class="agent-name">{{ agentExecution.agentName || $t('chat.unknownAgent') }}</div>
+              <div class="agent-description" v-if="agentExecution.agentDescription">
+                {{ agentExecution.agentDescription }}
+              </div>
+            </div>
           </div>
-  
-          <!-- Display step execution action information -->
-          <div
-              v-if="stepActions && stepActions[index]"
-              class="action-info"
-          >
-            <div class="action-description">
-              <span class="action-icon">
-                {{
-                  stepActions[index]?.status === 'current'
-                      ? '🔄'
-                      : stepActions[index]?.status === 'completed'
-                          ? '✓'
-                          : '⏳'
-                }}
+          <div class="agent-controls">
+            <div class="agent-status-badge" :class="getAgentStatusClass(agentExecution.status)">
+              {{ getAgentStatusText(agentExecution.status) }}
+            </div>
+            <Icon :icon="isAgentExpanded(agentIndex) ? 'carbon:chevron-up' : 'carbon:chevron-down'" 
+                  class="expand-icon" />
+          </div>
+        </div>
+
+        <!-- Agent execution details (expandable) -->
+        <div v-if="isAgentExpanded(agentIndex)" class="agent-content">
+          <!-- Agent execution info -->
+          <div class="agent-execution-info">
+            <div class="execution-meta">
+              <div v-if="agentExecution.startTime" class="meta-item">
+                <span class="meta-label">{{ $t('chat.startTime') }}:</span>
+                <span class="meta-value">{{ formatDateTime(agentExecution.startTime) }}</span>
+              </div>
+              <div v-if="agentExecution.endTime" class="meta-item">
+                <span class="meta-label">{{ $t('chat.endTime') }}:</span>
+                <span class="meta-value">{{ formatDateTime(agentExecution.endTime) }}</span>
+              </div>
+              <div v-if="agentExecution.modelName" class="meta-item">
+                <span class="meta-label">{{ $t('chat.model') }}:</span>
+                <span class="meta-value">{{ agentExecution.modelName }}</span>
+              </div>
+            </div>
+            
+            <!-- Agent request -->
+            <div v-if="agentExecution.agentRequest" class="agent-request">
+              <div class="request-header">
+                <Icon icon="carbon:chat" class="request-icon" />
+                <span class="request-label">{{ $t('chat.agentRequest') }}:</span>
+              </div>
+              <pre class="request-content">{{ agentExecution.agentRequest }}</pre>
+            </div>
+
+            <!-- Agent result -->
+            <div v-if="agentExecution.result" class="agent-result">
+              <div class="result-header">
+                <Icon icon="carbon:checkmark" class="result-icon" />
+                <span class="result-label">{{ $t('chat.agentResult') }}:</span>
+              </div>
+              <pre class="result-content">{{ agentExecution.result }}</pre>
+            </div>
+
+            <!-- Error message -->
+            <div v-if="agentExecution.errorMessage" class="agent-error">
+              <div class="error-header">
+                <Icon icon="carbon:warning" class="error-icon" />
+                <span class="error-label">{{ $t('chat.errorMessage') }}:</span>
+              </div>
+              <pre class="error-content">{{ agentExecution.errorMessage }}</pre>
+            </div>
+          </div>
+
+          <!-- Sub-plan executions -->
+          <div v-if="agentExecution.subPlanExecutionRecords?.length" class="sub-plans-container">
+            <div class="sub-plans-header">
+              <Icon icon="carbon:tree-view" class="sub-plans-icon" />
+              <span class="sub-plans-title">
+                {{ $t('chat.subPlanExecutions') }} ({{ agentExecution.subPlanExecutionRecords.length }})
               </span>
-              <strong>{{ stepActions[index]?.actionDescription }}</strong>
             </div>
-  
-            <div v-if="stepActions[index]?.toolParameters" class="tool-params">
-              <span class="tool-icon">⚙️</span>
-              <span class="param-label">{{ $t('common.parameters') }}:</span>
-              <pre class="param-content">{{
-                  stepActions[index]?.toolParameters
-                }}</pre>
-            </div>
-  
-            <div v-if="stepActions[index]?.thinkOutput" class="think-details">
-              <div class="think-header">
-                <span class="think-icon">💭</span>
-                <span class="think-label">{{ $t('chat.thinkingOutput') }}:</span>
-              </div>
-              <div class="think-output">
-                <pre class="think-content">{{
-                    stepActions[index]?.thinkOutput
-                  }}</pre>
-              </div>
-            </div>
-          </div>
-  
-          <!-- Sub-plan steps -->
-          <div v-if="getSubPlanSteps(index)?.length > 0" class="sub-plan-steps">
-            <div class="sub-plan-header">
-              <Icon icon="carbon:tree-view" class="sub-plan-icon" />
-              <span class="sub-plan-title">{{ $t('rightPanel.subPlan') }}</span>
-            </div>
-            <div class="sub-plan-step-list">
+            
+            <div class="sub-plans-list">
               <div
-                  v-for="(subStep, subStepIndex) in getSubPlanSteps(index)"
-                  :key="`sub-${index}-${subStepIndex}`"
-                  class="sub-plan-step-item"
-                  :class="{
-                  completed:
-                    getSubPlanStepStatus(index, subStepIndex) === 'completed',
-                  current:
-                    getSubPlanStepStatus(index, subStepIndex) === 'current',
-                  pending:
-                    getSubPlanStepStatus(index, subStepIndex) === 'pending',
-                }"
-                  @click.stop="handleSubPlanStepClick(index, subStepIndex)"
+                v-for="(subPlan, subPlanIndex) in agentExecution.subPlanExecutionRecords"
+                :key="subPlan.currentPlanId || subPlanIndex"
+                class="sub-plan-item"
+                :class="getSubPlanStatusClass(subPlan)"
+                @click="handleSubPlanClick(agentIndex, subPlanIndex, subPlan)"
               >
-                <div class="sub-step-indicator">
-                  <span class="sub-step-icon">
-                    {{
-                      getSubPlanStepStatus(index, subStepIndex) === 'completed'
-                          ? '✓'
-                          : getSubPlanStepStatus(index, subStepIndex) === 'current'
-                              ? '▶'
-                              : '○'
-                    }}
-                  </span>
-                  <span class="sub-step-number">{{ subStepIndex + 1 }}</span>
-                </div>
-                <div class="sub-step-content">
-                  <span class="sub-step-title">{{ subStep }}</span>
-                  <span class="sub-step-badge">{{ $t('rightPanel.subStep') }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-  
-          <!-- User input form -->
-          <div
-              v-if="
-              planExecution?.userInputWaitState &&
-              getAgentExecutionStatus(index) === 'RUNNING'
-            "
-              class="user-input-form-container"
-          >
-            <p class="user-input-message">
-              {{
-                planExecution?.userInputWaitState?.message ??
-                $t('chat.userInput.message')
-              }}
-            </p>
-            <p
-                v-if="planExecution?.userInputWaitState?.formDescription"
-                class="form-description"
-            >
-              {{ planExecution?.userInputWaitState?.formDescription }}
-            </p>
-  
-            <form
-                @submit.prevent="handleUserInputSubmit"
-                class="user-input-form"
-            >
-              <template
-                  v-if="
-                  planExecution?.userInputWaitState?.formInputs &&
-                  planExecution.userInputWaitState.formInputs.length > 0
-                "
-              >
-                <div class="form-grid">
-                  <div
-                      v-for="(input, inputIndex) in planExecution?.userInputWaitState
-                      ?.formInputs"
-                      :key="inputIndex"
-                      class="form-group"
-                  >
-                    <label :for="`form-input-${input.label.replace(/\W+/g, '_')}`">
-                      {{ input.label }}{{ isRequired(input.required) ? ' *' : '' }}:
-                    </label>
-  
-                    <!-- Text Input -->
-                    <input
-                        v-if="!input.type || input.type === 'text'"
-                        type="text"
-                        :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                        :name="input.label"
-                        :placeholder="input.placeholder || ''"
-                        :required="isRequired(input.required)"
-                        v-model="formInputsStore[inputIndex]"
-                        class="form-input"
-                    />
-  
-                    <!-- Email Input -->
-                    <input
-                        v-else-if="input.type === 'email'"
-                        type="email"
-                        :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                        :name="input.label"
-                        :placeholder="input.placeholder || ''"
-                        :required="isRequired(input.required)"
-                        v-model="formInputsStore[inputIndex]"
-                        class="form-input"
-                    />
-  
-                    <!-- Number Input -->
-                    <input
-                        v-else-if="input.type === 'number'"
-                        type="number"
-                        :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                        :name="input.label"
-                        :placeholder="input.placeholder || ''"
-                        :required="isRequired(input.required)"
-                        v-model="formInputsStore[inputIndex]"
-                        class="form-input"
-                    />
-  
-                    <!-- Password Input -->
-                    <input
-                        v-else-if="input.type === 'password'"
-                        type="password"
-                        :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                        :name="input.label"
-                        :placeholder="input.placeholder || ''"
-                        :required="isRequired(input.required)"
-                        v-model="formInputsStore[inputIndex]"
-                        class="form-input"
-                    />
-  
-                    <!-- Textarea -->
-                    <textarea
-                        v-else-if="input.type === 'textarea'"
-                        :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                        :name="input.label"
-                        :placeholder="input.placeholder || ''"
-                        :required="isRequired(input.required)"
-                        v-model="formInputsStore[inputIndex]"
-                        class="form-input form-textarea"
-                        rows="3"
-                    ></textarea>
-  
-                    <!-- Select -->
-                    <select
-                        v-else-if="input.type === 'select' && input.options"
-                        :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                        :name="input.label"
-                        :required="isRequired(input.required)"
-                        v-model="formInputsStore[inputIndex]"
-                        class="form-input form-select"
-                    >
-                      <option value="">{{ $t('selectCommon.pleaseSelect') }}</option>
-                      <option
-                          v-for="option in getOptionsArray(input.options)"
-                          :key="option"
-                          :value="option"
-                      >
-                        {{ option }}
-                      </option>
-                    </select>
-  
-                    <!-- Fallback to text input -->
-                    <input
-                        v-else
-                        type="text"
-                        :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
-                        :name="input.label"
-                        :placeholder="input.placeholder || ''"
-                        :required="isRequired(input.required)"
-                        v-model="formInputsStore[inputIndex]"
-                        class="form-input"
-                    />
+                <!-- Sub-plan header -->
+                <div class="sub-plan-header">
+                  <div class="sub-plan-info">
+                    <Icon :icon="getSubPlanStatusIcon(subPlan)" class="sub-plan-status-icon" />
+                    <div class="sub-plan-details">
+                      <div class="sub-plan-title">
+                        {{ subPlan.title || $t('chat.subPlan') }} #{{ subPlanIndex + 1 }}
+                      </div>
+                      <div class="sub-plan-id">{{ subPlan.currentPlanId }}</div>
+                    </div>
+                  </div>
+                  <div class="sub-plan-meta">
+                    <div class="sub-plan-status-badge" :class="getSubPlanStatusClass(subPlan)">
+                      {{ getSubPlanStatusText(subPlan) }}
+                    </div>
+                    <div v-if="subPlan.parentActToolCall" class="trigger-tool">
+                      <Icon icon="carbon:function" class="trigger-icon" />
+                      <span class="trigger-text">{{ subPlan.parentActToolCall.name }}</span>
+                    </div>
                   </div>
                 </div>
-              </template>
-  
-              <template v-else>
-                <div class="form-group">
-                  <label for="form-input-genericInput">{{ $t('common.input') }}:</label>
-                  <input
-                      type="text"
-                      id="form-input-genericInput"
-                      name="genericInput"
-                      v-model="genericInput"
-                      class="form-input"
-                  />
+
+                <!-- Sub-plan progress -->
+                <div v-if="subPlan.steps?.length" class="sub-plan-progress">
+                  <div class="progress-info">
+                    <span class="progress-text">
+                      {{ $t('chat.progress') }}: {{ (subPlan.currentStepIndex ?? 0) + 1 }} / {{ subPlan.steps.length }}
+                    </span>
+                    <div class="progress-bar">
+                      <div 
+                        class="progress-fill" 
+                        :style="{ width: getSubPlanProgress(subPlan) + '%' }"
+                      ></div>
+                    </div>
+                  </div>
                 </div>
-              </template>
-  
-              <button type="submit" class="submit-user-input-btn">
-                {{ $t('chat.userInput.submit') }}
-              </button>
-            </form>
+
+                <!-- Sub-plan steps preview -->
+                <div v-if="subPlan.steps?.length" class="sub-plan-steps-preview">
+                  <div class="steps-preview-header">
+                    <span class="steps-label">{{ $t('chat.steps') }}:</span>
+                  </div>
+                  <div class="steps-list">
+                    <div
+                      v-for="(step, stepIndex) in subPlan.steps.slice(0, 3)"
+                      :key="stepIndex"
+                      class="step-preview-item"
+                      :class="{
+                        'completed': stepIndex < (subPlan.currentStepIndex ?? 0),
+                        'current': stepIndex === (subPlan.currentStepIndex ?? 0),
+                        'pending': stepIndex > (subPlan.currentStepIndex ?? 0)
+                      }"
+                    >
+                      <Icon :icon="getStepStatusIcon(stepIndex, subPlan)" class="step-icon" />
+                      <span class="step-text">{{ step }}</span>
+                    </div>
+                    <div v-if="subPlan.steps.length > 3" class="more-steps">
+                      <span class="more-text">
+                        {{ $t('chat.andMoreSteps', { count: subPlan.steps.length - 3 }) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </template>
+
+    <!-- User input form for the main plan -->
+    <div
+      v-if="planExecution?.userInputWaitState?.waiting"
+      class="user-input-form-container"
+    >
+      <div class="user-input-header">
+        <Icon icon="carbon:user" class="user-icon" />
+        <h4 class="user-input-title">{{ $t('chat.userInputRequired') }}</h4>
+      </div>
+      
+      <p class="user-input-message">
+        {{ planExecution?.userInputWaitState?.message ?? $t('chat.userInput.message') }}
+      </p>
+      
+      <p v-if="planExecution?.userInputWaitState?.formDescription" class="form-description">
+        {{ planExecution?.userInputWaitState?.formDescription }}
+      </p>
+
+      <form @submit.prevent="handleUserInputSubmit" class="user-input-form">
+        <template
+          v-if="planExecution?.userInputWaitState?.formInputs && planExecution.userInputWaitState.formInputs.length > 0"
+        >
+          <div class="form-grid">
+            <div
+              v-for="(input, inputIndex) in planExecution?.userInputWaitState?.formInputs"
+              :key="inputIndex"
+              class="form-group"
+            >
+              <label :for="`form-input-${input.label.replace(/\W+/g, '_')}`">
+                {{ input.label }}{{ isRequired(input.required) ? ' *' : '' }}:
+              </label>
+
+              <!-- Form input types (keeping the original logic) -->
+              <input
+                v-if="!input.type || input.type === 'text'"
+                type="text"
+                :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                :name="input.label"
+                :placeholder="input.placeholder || ''"
+                :required="isRequired(input.required)"
+                v-model="formInputsStore[inputIndex]"
+                class="form-input"
+              />
+
+              <input
+                v-else-if="input.type === 'email'"
+                type="email"
+                :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                :name="input.label"
+                :placeholder="input.placeholder || ''"
+                :required="isRequired(input.required)"
+                v-model="formInputsStore[inputIndex]"
+                class="form-input"
+              />
+
+              <input
+                v-else-if="input.type === 'number'"
+                type="number"
+                :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                :name="input.label"
+                :placeholder="input.placeholder || ''"
+                :required="isRequired(input.required)"
+                v-model="formInputsStore[inputIndex]"
+                class="form-input"
+              />
+
+              <input
+                v-else-if="input.type === 'password'"
+                type="password"
+                :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                :name="input.label"
+                :placeholder="input.placeholder || ''"
+                :required="isRequired(input.required)"
+                v-model="formInputsStore[inputIndex]"
+                class="form-input"
+              />
+
+              <textarea
+                v-else-if="input.type === 'textarea'"
+                :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                :name="input.label"
+                :placeholder="input.placeholder || ''"
+                :required="isRequired(input.required)"
+                v-model="formInputsStore[inputIndex]"
+                class="form-input form-textarea"
+                rows="3"
+              ></textarea>
+
+              <select
+                v-else-if="input.type === 'select' && input.options"
+                :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                :name="input.label"
+                :required="isRequired(input.required)"
+                v-model="formInputsStore[inputIndex]"
+                class="form-input form-select"
+              >
+                <option value="">{{ $t('selectCommon.pleaseSelect') }}</option>
+                <option
+                  v-for="option in getOptionsArray(input.options)"
+                  :key="option"
+                  :value="option"
+                >
+                  {{ option }}
+                </option>
+              </select>
+
+              <input
+                v-else
+                type="text"
+                :id="`form-input-${input.label.replace(/\W+/g, '_')}`"
+                :name="input.label"
+                :placeholder="input.placeholder || ''"
+                :required="isRequired(input.required)"
+                v-model="formInputsStore[inputIndex]"
+                class="form-input"
+              />
+            </div>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="form-group">
+            <label for="form-input-genericInput">{{ $t('common.input') }}:</label>
+            <input
+              type="text"
+              id="form-input-genericInput"
+              name="genericInput"
+              v-model="genericInput"
+              class="form-input"
+            />
+          </div>
+        </template>
+
+        <button type="submit" class="submit-user-input-btn">
+          {{ $t('chat.userInput.submit') }}
+        </button>
+      </form>
+    </div>
+  </div>
+</template>
   
-  <script setup lang="ts">
-  import { ref, reactive } from 'vue'
-  import { useI18n } from 'vue-i18n'
-  import { Icon } from '@iconify/vue'
-  import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
-  
+<script setup lang="ts">
+import { ref, reactive, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { Icon } from '@iconify/vue'
+import type { PlanExecutionRecord, AgentExecutionRecordSimple, ExecutionStatus } from '@/types/plan-execution-record'
+
 interface Props {
   planExecution: PlanExecutionRecord
-  stepActions?: Array<{
-    actionDescription: string
-    toolParameters: string
-    thinkInput: string
-    thinkOutput: string
-    status: 'completed' | 'current' | 'pending'
-  } | null>
   genericInput?: string
 }
+
+interface Emits {
+  (e: 'agent-selected', agentIndex: number, agent: AgentExecutionRecordSimple): void
+  (e: 'sub-plan-selected', agentIndex: number, subPlanIndex: number, subPlan: PlanExecutionRecord): void
+  (e: 'user-input-submitted', inputData: any): void
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
+
+// Initialize i18n
+const { t } = useI18n()
+
+// Local state
+const expandedAgents = reactive<Set<number>>(new Set())
+const formInputsStore = reactive<Record<number, string>>({})
+const genericInput = ref(props.genericInput || '')
+
+// Computed properties
+const agentExecutionSequence = computed(() => props.planExecution?.agentExecutionSequence ?? [])
+
+// Agent expansion state management
+const toggleAgentExpanded = (agentIndex: number) => {
+  if (expandedAgents.has(agentIndex)) {
+    expandedAgents.delete(agentIndex)
+  } else {
+    expandedAgents.add(agentIndex)
+  }
+}
+
+const isAgentExpanded = (agentIndex: number): boolean => {
+  return expandedAgents.has(agentIndex)
+}
+
+// Plan status methods
+const getPlanStatusClass = (): string => {
+  if (!props.planExecution) return 'unknown'
   
-  interface Emits {
-    (e: 'step-selected', stepIndex: number): void
-    (e: 'sub-plan-step-selected', stepIndex: number, subStepIndex: number): void
-    (e: 'user-input-submitted', inputData: any): void
+  if (props.planExecution.completed) {
+    return 'completed'
   }
   
-  const props = defineProps<Props>()
-  const emit = defineEmits<Emits>()
-  
-  // Initialize i18n
-  const { t } = useI18n()
-  
-  // Local form inputs store
-  const formInputsStore = reactive<Record<number, string>>({})
-  const genericInput = ref(props.genericInput || '')
-  
-  // Get agent execution status based on index
-  const getAgentExecutionStatus = (index: number): string => {
-    const agentExecutionSequence = props.planExecution.agentExecutionSequence ?? []
-    if (index < 0 || index >= agentExecutionSequence.length) {
-      return 'IDLE'
-    }
-    const agentExecution = agentExecutionSequence[index]
-    return agentExecution.status ?? 'IDLE'
+  const hasRunningAgent = agentExecutionSequence.value.some(agent => agent.status === 'RUNNING')
+  if (hasRunningAgent) {
+    return 'running'
   }
   
-  // Handle step click events
-  const handleStepClick = (stepIndex: number) => {
-    emit('step-selected', stepIndex)
+  const hasFinishedAgent = agentExecutionSequence.value.some(agent => agent.status === 'FINISHED')
+  if (hasFinishedAgent) {
+    return 'in-progress'
   }
   
-  // Get sub-plan steps from agentExecutionSequence
-  const getSubPlanSteps = (stepIndex: number): string[] => {
-    try {
-      const agentExecutionSequence = props.planExecution.agentExecutionSequence
-      if (!agentExecutionSequence?.length) {
-        return []
-      }
-  
-      const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
-      if (!agentExecution?.thinkActSteps) {
-        return []
-      }
-  
-      for (const thinkActStep of agentExecution.thinkActSteps) {
-        if (thinkActStep.subPlanExecutionRecord) {
-          const rawSteps = thinkActStep.subPlanExecutionRecord.steps ?? []
-          return rawSteps.map((step: any) => {
-            if (typeof step === 'string') {
-              return step
-            } else if (typeof step === 'object' && step !== null) {
-              return step.title || step.description || t('rightPanel.subStep')
-            }
-            return t('rightPanel.subStep')
-          })
-        }
-      }
-  
-      return []
-    } catch (error) {
-      console.warn('[ExecutionDetails] Error getting sub-plan steps:', error)
-      return []
-    }
+  return 'pending'
+}
+
+const getPlanStatusText = (): string => {
+  const statusClass = getPlanStatusClass()
+  switch (statusClass) {
+    case 'completed':
+      return t('chat.status.completed')
+    case 'running':
+      return t('chat.status.executing')
+    case 'in-progress':
+      return t('chat.status.inProgress')
+    case 'pending':
+      return t('chat.status.pending')
+    default:
+      return t('chat.status.unknown')
   }
-  
-  // Get sub-plan step status
-  const getSubPlanStepStatus = (stepIndex: number, subStepIndex: number): string => {
-    try {
-      const agentExecutionSequence = props.planExecution.agentExecutionSequence
-      if (!agentExecutionSequence?.length) {
-        return 'pending'
-      }
-  
-      const agentExecution = agentExecutionSequence[stepIndex] as AgentExecutionRecord | undefined
-      if (!agentExecution?.thinkActSteps) {
-        return 'pending'
-      }
-  
-      let subPlan = null
-      for (const thinkActStep of agentExecution.thinkActSteps) {
-        if (thinkActStep.subPlanExecutionRecord) {
-          subPlan = thinkActStep.subPlanExecutionRecord
-          break
-        }
-      }
-  
-      if (!subPlan) {
-        return 'pending'
-      }
-  
-      const currentStepIndex = subPlan.currentStepIndex
-      if (subPlan.completed) {
-        return 'completed'
-      }
-  
-      if (currentStepIndex == null) {
-        return subStepIndex === 0 ? 'current' : 'pending'
-      }
-  
-      if (subStepIndex < currentStepIndex) {
-        return 'completed'
-      } else if (subStepIndex === currentStepIndex) {
-        return 'current'
-      } else {
-        return 'pending'
-      }
-    } catch (error) {
-      console.warn('[ExecutionDetails] Error getting sub-plan step status:', error)
+}
+
+// Agent status methods
+const getAgentStatusClass = (status?: ExecutionStatus): string => {
+  switch (status) {
+    case 'RUNNING':
+      return 'running'
+    case 'FINISHED':
+      return 'completed'
+    case 'IDLE':
+    default:
       return 'pending'
-    }
+  }
+}
+
+const getAgentStatusText = (status?: ExecutionStatus): string => {
+  switch (status) {
+    case 'RUNNING':
+      return t('chat.status.executing')
+    case 'FINISHED':
+      return t('chat.status.completed')
+    case 'IDLE':
+    default:
+      return t('chat.status.pending')
+  }
+}
+
+const getAgentStatusIcon = (status?: ExecutionStatus): string => {
+  switch (status) {
+    case 'RUNNING':
+      return 'carbon:play'
+    case 'FINISHED':
+      return 'carbon:checkmark'
+    case 'IDLE':
+    default:
+      return 'carbon:dot-mark'
+  }
+}
+
+// Sub-plan status methods
+const getSubPlanStatusClass = (subPlan: PlanExecutionRecord): string => {
+  if (subPlan.completed) {
+    return 'completed'
   }
   
-  // Handle sub-plan step click
-  const handleSubPlanStepClick = (stepIndex: number, subStepIndex: number) => {
-    emit('sub-plan-step-selected', stepIndex, subStepIndex)
+  const hasRunningAgent = subPlan.agentExecutionSequence?.some(agent => agent.status === 'RUNNING')
+  if (hasRunningAgent) {
+    return 'running'
   }
   
-  // Handle user input form submission
-  const handleUserInputSubmit = async () => {
-    try {
-      const inputData: any = {}
+  const hasFinishedAgent = subPlan.agentExecutionSequence?.some(agent => agent.status === 'FINISHED')
+  if (hasFinishedAgent) {
+    return 'in-progress'
+  }
   
-      const formInputs = props.planExecution.userInputWaitState?.formInputs
-      if (formInputs && formInputs.length > 0) {
-        Object.entries(formInputsStore).forEach(([index, value]) => {
-          const numIndex = parseInt(index, 10)
-          const label = formInputs[numIndex]?.label || `input_${index}`
+  return 'pending'
+}
+
+const getSubPlanStatusText = (subPlan: PlanExecutionRecord): string => {
+  const statusClass = getSubPlanStatusClass(subPlan)
+  switch (statusClass) {
+    case 'completed':
+      return t('chat.status.completed')
+    case 'running':
+      return t('chat.status.executing')
+    case 'in-progress':
+      return t('chat.status.inProgress')
+    case 'pending':
+      return t('chat.status.pending')
+    default:
+      return t('chat.status.unknown')
+  }
+}
+
+const getSubPlanStatusIcon = (subPlan: PlanExecutionRecord): string => {
+  const statusClass = getSubPlanStatusClass(subPlan)
+  switch (statusClass) {
+    case 'completed':
+      return 'carbon:checkmark'
+    case 'running':
+      return 'carbon:play'
+    case 'in-progress':
+      return 'carbon:in-progress'
+    case 'pending':
+    default:
+      return 'carbon:dot-mark'
+  }
+}
+
+const getSubPlanProgress = (subPlan: PlanExecutionRecord): number => {
+  if (!subPlan.steps?.length) return 0
+  if (subPlan.completed) return 100
+  
+  const currentStep = (subPlan.currentStepIndex ?? 0) + 1
+  return Math.min(100, (currentStep / subPlan.steps.length) * 100)
+}
+
+// Step status methods for sub-plan steps preview
+const getStepStatusIcon = (stepIndex: number, subPlan: PlanExecutionRecord): string => {
+  const currentStepIndex = subPlan.currentStepIndex ?? 0
+  
+  if (subPlan.completed) {
+    return 'carbon:checkmark'
+  }
+  
+  if (stepIndex < currentStepIndex) {
+    return 'carbon:checkmark'
+  } else if (stepIndex === currentStepIndex) {
+    return 'carbon:play'
+  } else {
+    return 'carbon:dot-mark'
+  }
+}
+
+// Event handlers
+const handleSubPlanClick = (agentIndex: number, subPlanIndex: number, subPlan: PlanExecutionRecord) => {
+  emit('sub-plan-selected', agentIndex, subPlanIndex, subPlan)
+}
+
+const handleUserInputSubmit = async () => {
+  try {
+    const inputData: any = {}
+
+    const formInputs = props.planExecution.userInputWaitState?.formInputs
+    if (formInputs && formInputs.length > 0) {
+      Object.entries(formInputsStore).forEach(([index, value]) => {
+        const numIndex = parseInt(index, 10)
+        const input = formInputs[numIndex]
+        if (input) {
+          const label = input.label || `input_${index}`
           inputData[label] = value
-        })
-      } else {
-        inputData.genericInput = genericInput.value
+        }
+      })
+    } else {
+      inputData.genericInput = genericInput.value
+    }
+
+    emit('user-input-submitted', inputData)
+  } catch (error: any) {
+    console.error('[ExecutionDetails] User input submission failed:', error)
+  }
+}
+
+// Helper methods
+const formatDateTime = (dateTime?: string): string => {
+  if (!dateTime) return ''
+  
+  try {
+    const date = new Date(dateTime)
+    return date.toLocaleString()
+  } catch (error) {
+    return dateTime
+  }
+}
+
+const formatToolParameters = (parameters?: string): string => {
+  if (!parameters) return ''
+  
+  try {
+    const parsed = JSON.parse(parameters)
+    return JSON.stringify(parsed, null, 2)
+  } catch (error) {
+    return parameters
+  }
+}
+
+const getOptionsArray = (options: string | string[] | undefined): string[] => {
+  if (!options) return []
+  if (Array.isArray(options)) return options
+  if (typeof options === 'string') {
+    return options.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0)
+  }
+  return []
+}
+
+const isRequired = (required: boolean | string | undefined): boolean => {
+  if (typeof required === 'boolean') return required
+  if (typeof required === 'string') return required === 'true'
+  return false
+}
+
+// Auto-expand running agents on mount
+const initializeExpandedState = () => {
+  agentExecutionSequence.value.forEach((agent, index) => {
+    if (agent.status === 'RUNNING' || agent.subPlanExecutionRecords?.length) {
+      expandedAgents.add(index)
+    }
+  })
+}
+
+// Initialize on component mount
+initializeExpandedState()
+</script>
+
+<style lang="less" scoped>.execution-details {
+  // Plan overview
+  .plan-overview {
+    margin-bottom: 20px;
+    
+    .plan-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      
+      .plan-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #ffffff;
       }
-  
-      emit('user-input-submitted', inputData)
-    } catch (error: any) {
-      console.error('[ExecutionDetails] User input submission failed:', error)
+      
+      .plan-status-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        
+        &.completed {
+          background: rgba(34, 197, 94, 0.2);
+          color: #22c55e;
+        }
+        
+        &.running {
+          background: rgba(102, 126, 234, 0.2);
+          color: #667eea;
+        }
+        
+        &.in-progress {
+          background: rgba(251, 191, 36, 0.2);
+          color: #fbbf24;
+        }
+        
+        &.pending {
+          background: rgba(156, 163, 175, 0.2);
+          color: #9ca3af;
+        }
+      }
+    }
+    
+    .parent-tool-call {
+      background: rgba(102, 126, 234, 0.1);
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      
+      .parent-tool-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        
+        .tool-icon {
+          font-size: 16px;
+          color: #667eea;
+        }
+        
+        .tool-label {
+          color: #aaaaaa;
+          font-size: 13px;
+        }
+        
+        .tool-name {
+          color: #ffffff;
+          font-weight: 600;
+          font-size: 14px;
+        }
+      }
+      
+      .tool-parameters {
+        .param-label {
+          color: #aaaaaa;
+          font-size: 12px;
+          margin-bottom: 4px;
+          display: block;
+        }
+        
+        .param-content {
+          margin: 0;
+          padding: 8px;
+          background: rgba(0, 0, 0, 0.2);
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 11px;
+          color: #cccccc;
+          white-space: pre-wrap;
+          max-height: 120px;
+          overflow-y: auto;
+        }
+      }
     }
   }
-  
-  // Helper function to safely get options array
-  const getOptionsArray = (options: string | string[] | undefined): string[] => {
-    if (!options) return []
-    if (Array.isArray(options)) return options
-    if (typeof options === 'string') {
-      return options.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0)
+
+  // Agent execution container
+  .agent-execution-container {
+    .section-title {
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
-    return []
-  }
-  
-  // Helper function to check if field is required
-  const isRequired = (required: boolean | string | undefined): boolean => {
-    if (typeof required === 'boolean') return required
-    if (typeof required === 'string') return required === 'true'
-    return false
-  }
-  </script>
-  
-  <style lang="less" scoped>
-  .execution-details {
-    .steps-container {
-      margin-top: 16px;
+    
+    .agent-execution-item {
+      margin-bottom: 16px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 8px;
       overflow: hidden;
-  
-      .steps-title {
-        margin: 0;
-        padding: 10px 16px;
-        font-size: 14px;
-        font-weight: 600;
-        color: #ffffff;
-        background: rgba(102, 126, 234, 0.15);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.2s ease;
+      
+      &:last-child {
+        margin-bottom: 0;
       }
-  
-      .ai-section {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      
+      &.running {
+        border-color: rgba(102, 126, 234, 0.4);
+        box-shadow: 0 0 8px rgba(102, 126, 234, 0.2);
+      }
+      
+      &.completed {
+        border-color: rgba(34, 197, 94, 0.3);
+      }
+      
+      &.pending {
+        opacity: 0.8;
+      }
+      
+      .agent-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.02);
         cursor: pointer;
-        transition: all 0.2s ease;
-  
-        &:last-child {
-          border-bottom: none;
-        }
-  
+        transition: background 0.2s ease;
+        
         &:hover {
           background: rgba(255, 255, 255, 0.05);
         }
-  
-        &.running {
-          background: rgba(102, 126, 234, 0.1);
-          border-left: 3px solid #667eea;
-        }
-  
-        &.completed {
-          border-left: 3px solid rgba(34, 197, 94, 0.6);
-        }
-  
-        &.pending {
-          opacity: 0.7;
-        }
-  
-        .section-header {
+        
+        .agent-info {
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 12px 16px;
-          background: rgba(255, 255, 255, 0.02);
-  
-          .step-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-            background: rgba(102, 126, 234, 0.2);
-            border-radius: 50%;
-            font-size: 12px;
-            font-weight: bold;
-            color: #667eea;
-          }
-  
-          .step-title {
-            flex: 1;
-            font-weight: 500;
-            color: #ffffff;
-          }
-  
-          .step-status {
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 12px;
-  
+          flex: 1;
+          
+          .agent-status-icon {
+            font-size: 18px;
+            
+            &.running {
+              color: #667eea;
+            }
+            
             &.completed {
-              background: rgba(34, 197, 94, 0.2);
               color: #22c55e;
             }
-  
+            
+            &.pending {
+              color: #9ca3af;
+            }
+          }
+          
+          .agent-details {
+            .agent-name {
+              font-weight: 600;
+              color: #ffffff;
+              font-size: 14px;
+              margin-bottom: 2px;
+            }
+            
+            .agent-description {
+              color: #aaaaaa;
+              font-size: 12px;
+              line-height: 1.3;
+            }
+          }
+        }
+        
+        .agent-controls {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          
+          .agent-status-badge {
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 500;
+            
             &.running {
               background: rgba(102, 126, 234, 0.2);
               color: #667eea;
             }
-  
+            
+            &.completed {
+              background: rgba(34, 197, 94, 0.2);
+              color: #22c55e;
+            }
+            
             &.pending {
               background: rgba(156, 163, 175, 0.2);
               color: #9ca3af;
             }
           }
+          
+          .expand-icon {
+            font-size: 16px;
+            color: #aaaaaa;
+            transition: transform 0.2s ease;
+          }
         }
-  
-        .action-info {
-          padding: 12px 16px;
-          background: rgba(0, 0, 0, 0.2);
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-  
-          .action-description {
-            display: flex;
-            align-items: center;
+      }
+      
+      .agent-content {
+        padding: 16px;
+        background: rgba(0, 0, 0, 0.1);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        
+        .agent-execution-info {
+          margin-bottom: 16px;
+          
+          .execution-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 8px;
-            margin-bottom: 8px;
-  
-            .action-icon {
-              font-size: 16px;
+            margin-bottom: 12px;
+            
+            .meta-item {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              
+              .meta-label {
+                color: #aaaaaa;
+                font-size: 12px;
+                font-weight: 500;
+              }
+              
+              .meta-value {
+                color: #ffffff;
+                font-size: 12px;
+              }
             }
           }
-  
-          .tool-params {
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            margin-bottom: 8px;
-            font-size: 13px;
-  
-            .tool-icon {
-              margin-top: 2px;
+          
+          .agent-request, .agent-result, .agent-error {
+            margin-bottom: 12px;
+            
+            &:last-child {
+              margin-bottom: 0;
             }
-  
-            .param-label {
-              color: #aaaaaa;
-              margin-right: 4px;
+            
+            .request-header, .result-header, .error-header {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              margin-bottom: 6px;
+              
+              .request-icon, .result-icon, .error-icon {
+                font-size: 14px;
+              }
+              
+              .request-icon {
+                color: #667eea;
+              }
+              
+              .result-icon {
+                color: #22c55e;
+              }
+              
+              .error-icon {
+                color: #ef4444;
+              }
+              
+              .request-label, .result-label, .error-label {
+                color: #ffffff;
+                font-size: 13px;
+                font-weight: 500;
+              }
             }
-  
-            .param-content {
+            
+            .request-content, .result-content, .error-content {
               margin: 0;
-              padding: 6px;
+              padding: 8px;
               background: rgba(0, 0, 0, 0.2);
               border-radius: 4px;
               font-family: monospace;
               font-size: 12px;
               white-space: pre-wrap;
-              max-height: 100px;
+              max-height: 150px;
               overflow-y: auto;
+              color: #cccccc;
             }
-          }
-  
-          .think-details {
-            margin-top: 10px;
-            padding-top: 8px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-  
-            .think-header {
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              margin-bottom: 6px;
-  
-              .think-icon {
-                font-size: 14px;
-              }
-  
-              .think-label {
-                color: #aaaaaa;
-                font-size: 13px;
-              }
-            }
-  
-            .think-output {
-              .think-content {
-                margin: 0;
-                padding: 8px;
-                background: rgba(0, 0, 0, 0.15);
-                border-radius: 4px;
-                font-family: monospace;
-                font-size: 12px;
-                white-space: pre-wrap;
-                max-height: 120px;
-                overflow-y: auto;
-                color: #bbbbbb;
-              }
+            
+            .error-content {
+              color: #ff9999;
+              border: 1px solid rgba(239, 68, 68, 0.2);
             }
           }
         }
-  
-        .sub-plan-steps {
-          margin-top: 8px;
-          padding: 8px 16px;
-          background: rgba(102, 126, 234, 0.05);
-          border-top: 1px solid rgba(102, 126, 234, 0.2);
-  
-          .sub-plan-header {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 8px;
-  
-            .sub-plan-icon {
-              font-size: 14px;
-              color: #667eea;
-            }
-  
-            .sub-plan-title {
-              font-size: 13px;
-              font-weight: 600;
-              color: #667eea;
-            }
-          }
-  
-          .sub-plan-step-list {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-          }
-  
-          .sub-plan-step-item {
+        
+        .sub-plans-container {
+          .sub-plans-header {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 6px 8px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-left: 20px;
-  
-            &:hover {
-              background: rgba(255, 255, 255, 0.05);
-              border-color: rgba(102, 126, 234, 0.3);
-            }
-  
-            &.completed {
-              background: rgba(34, 197, 94, 0.05);
-              border-color: rgba(34, 197, 94, 0.2);
-            }
-  
-            &.running {
-              background: rgba(102, 126, 234, 0.05);
-              border-color: rgba(102, 126, 234, 0.3);
-              box-shadow: 0 0 4px rgba(102, 126, 234, 0.2);
-            }
-  
-            &.pending {
-              opacity: 0.6;
-            }
-  
-            .sub-step-indicator {
-              display: flex;
-              align-items: center;
-              gap: 4px;
-              flex-shrink: 0;
-  
-              .sub-step-icon {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 16px;
-                height: 16px;
-                background: rgba(102, 126, 234, 0.1);
-                border-radius: 50%;
-                font-size: 10px;
-                font-weight: bold;
-                color: #667eea;
-              }
-  
-              .sub-step-number {
-                font-size: 10px;
-                color: #888888;
-                font-weight: 500;
-                min-width: 12px;
-                text-align: center;
-              }
-            }
-  
-            .sub-step-content {
-              flex: 1;
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              min-width: 0;
-  
-              .sub-step-title {
-                color: #cccccc;
-                font-size: 12px;
-                line-height: 1.3;
-                word-break: break-word;
-                flex: 1;
-              }
-  
-              .sub-step-badge {
-                background: rgba(102, 126, 234, 0.15);
-                color: #667eea;
-                font-size: 9px;
-                padding: 1px 4px;
-                border-radius: 8px;
-                font-weight: 500;
-                flex-shrink: 0;
-                margin-left: 6px;
-              }
-            }
-          }
-        }
-  
-        .user-input-form-container {
-          margin-top: 12px;
-          padding: 16px;
-          background: rgba(102, 126, 234, 0.1);
-          border: 1px solid rgba(102, 126, 234, 0.2);
-          border-radius: 8px;
-  
-          .user-input-message {
             margin-bottom: 12px;
-            font-weight: 500;
-            color: #ffffff;
-            font-size: 14px;
-          }
-  
-          .form-description {
-            margin-bottom: 16px;
-            color: #aaaaaa;
-            font-size: 13px;
-            line-height: 1.4;
-          }
-  
-          .user-input-form {
-            .form-grid {
-              display: grid;
-              grid-template-columns: repeat(2, 1fr);
-              gap: 16px;
-              margin-bottom: 16px;
-              align-items: end;
-  
-              @media (max-width: 768px) {
-                grid-template-columns: 1fr;
-                gap: 12px;
-                align-items: start;
-              }
-  
-              @media (max-width: 480px) {
-                gap: 8px;
-              }
+            
+            .sub-plans-icon {
+              font-size: 16px;
+              color: #667eea;
             }
-  
-            .form-group {
-              margin-bottom: 0;
-              display: grid;
-              grid-template-rows: 1fr 40px;
-              height: 68px;
-              align-content: stretch;
-              gap: 5px;
-              
-              @media (max-width: 768px) {
-                grid-template-rows: 1fr 42px;
-                height: auto;
-                min-height: 70px;
-                align-content: stretch;
-                gap: 4px;
-              }
-  
-              label {
-                display: block;
-                margin-bottom: 0;
-                font-size: 13px;
-                font-weight: 500;
-                color: #ffffff;
-                line-height: 1.3;
-                word-wrap: break-word;
-                overflow-wrap: break-word;
-                hyphens: auto;
-                grid-row: 1;
-                align-self: end;
-                justify-self: start;
-                
-                @media (max-width: 768px) {
-                  font-size: 12px;
-                  align-self: start;
-                }
-              }
-  
-              .form-input {
-                width: 100%;
-                padding: 8px 12px;
-                background: rgba(0, 0, 0, 0.3);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 6px;
-                color: #ffffff;
-                font-size: 14px;
-                line-height: 1.4;
-                height: 40px;
-                box-sizing: border-box;
-                transition: border-color 0.2s ease;
-                grid-row: 2;
-                align-self: stretch;
-  
-                &:focus {
-                  outline: none;
-                  border-color: #667eea;
-                  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
-                }
-  
-                &::placeholder {
-                  color: #888888;
-                }
-                
-                @media (max-width: 768px) {
-                  font-size: 14px;
-                  height: 42px;
-                }
-              }
-  
-              .form-textarea {
-                resize: vertical;
-                min-height: 60px;
-                height: 60px;
-                font-family: inherit;
-                line-height: 1.4;
-                box-sizing: border-box;
-                padding: 8px 12px;
-                background: rgba(0, 0, 0, 0.3);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 6px;
-                color: #ffffff;
-                font-size: 14px;
-                transition: border-color 0.2s ease;
-                grid-row: 2;
-                align-self: stretch;
-                
-                &:focus {
-                  outline: none;
-                  border-color: #667eea;
-                  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
-                }
-
-                &::placeholder {
-                  color: #888888;
-                }
-                
-                @media (max-width: 768px) {
-                  height: 65px;
-                }
-              }
-
-              &.form-group-wide {
-                grid-column: span 2;
-
-                @media (max-width: 768px) {
-                  grid-column: span 1;
-                }
-              }
-
-              &.form-group-full {
-                grid-column: span 2;
-
-                @media (max-width: 768px) {
-                  grid-column: span 1;
-                }
-              }
-
-              &:has(.form-textarea) {
-                grid-template-rows: 1fr 60px;
-                height: 88px;
-                
-                @media (max-width: 768px) {
-                  grid-template-rows: 1fr 65px;
-                  height: auto;
-                  min-height: 93px;
-                }
-              }
-
-              &.form-group-textarea {
-                grid-template-rows: 1fr 60px;
-                height: 88px;
-                
-                @media (max-width: 768px) {
-                  grid-template-rows: 1fr 65px;
-                  height: auto;
-                  min-height: 93px;
-                }
-              }
-
-              .form-select {
-                cursor: pointer;
-                height: 40px;
-                padding: 8px 12px;
-                background: rgba(0, 0, 0, 0.3);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 6px;
-                color: #ffffff;
-                font-size: 14px;
-                line-height: 1.4;
-                box-sizing: border-box;
-                transition: border-color 0.2s ease;
-                grid-row: 2;
-                align-self: stretch;
-
-                &:focus {
-                  outline: none;
-                  border-color: #667eea;
-                  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
-                }
-
-                option {
-                  background: #2d3748;
-                  color: #ffffff;
-                }
-                
-                @media (max-width: 768px) {
-                  height: 42px;
-                }
-              }
-            }
-
-            .submit-user-input-btn {
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            
+            .sub-plans-title {
               color: #ffffff;
-              border: none;
-              padding: 10px 20px;
-              border-radius: 6px;
+              font-weight: 600;
               font-size: 14px;
-              font-weight: 500;
+            }
+          }
+          
+          .sub-plans-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            
+            .sub-plan-item {
+              background: rgba(102, 126, 234, 0.05);
+              border: 1px solid rgba(102, 126, 234, 0.1);
+              border-radius: 6px;
+              padding: 12px;
               cursor: pointer;
               transition: all 0.2s ease;
-
+              
               &:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                background: rgba(102, 126, 234, 0.1);
+                border-color: rgba(102, 126, 234, 0.2);
               }
-
-              &:active {
-                transform: translateY(0);
+              
+              &.running {
+                border-color: rgba(102, 126, 234, 0.3);
+                background: rgba(102, 126, 234, 0.08);
+                box-shadow: 0 0 8px rgba(102, 126, 234, 0.15);
+              }
+              
+              &.completed {
+                border-color: rgba(34, 197, 94, 0.3);
+                background: rgba(34, 197, 94, 0.05);
+              }
+              
+              &.pending {
+                opacity: 0.7;
+              }
+              
+              .sub-plan-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 8px;
+                
+                .sub-plan-info {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  flex: 1;
+                  
+                  .sub-plan-status-icon {
+                    font-size: 16px;
+                    
+                    &.completed {
+                      color: #22c55e;
+                    }
+                    
+                    &.running {
+                      color: #667eea;
+                    }
+                    
+                    &.in-progress {
+                      color: #fbbf24;
+                    }
+                    
+                    &.pending {
+                      color: #9ca3af;
+                    }
+                  }
+                  
+                  .sub-plan-details {
+                    .sub-plan-title {
+                      font-weight: 600;
+                      color: #ffffff;
+                      font-size: 13px;
+                      margin-bottom: 2px;
+                    }
+                    
+                    .sub-plan-id {
+                      color: #aaaaaa;
+                      font-size: 11px;
+                      font-family: monospace;
+                    }
+                  }
+                }
+                
+                .sub-plan-status-badge {
+                  padding: 2px 6px;
+                  border-radius: 8px;
+                  font-size: 10px;
+                  font-weight: 500;
+                  
+                  &.completed {
+                    background: rgba(34, 197, 94, 0.2);
+                    color: #22c55e;
+                  }
+                  
+                  &.running {
+                    background: rgba(102, 126, 234, 0.2);
+                    color: #667eea;
+                  }
+                  
+                  &.in-progress {
+                    background: rgba(251, 191, 36, 0.2);
+                    color: #fbbf24;
+                  }
+                  
+                  &.pending {
+                    background: rgba(156, 163, 175, 0.2);
+                    color: #9ca3af;
+                  }
+                }
+              }
+              
+              .sub-plan-progress {
+                margin-bottom: 8px;
+                
+                .progress-bar-container {
+                  background: rgba(0, 0, 0, 0.2);
+                  border-radius: 4px;
+                  height: 4px;
+                  overflow: hidden;
+                  
+                  .progress-bar {
+                    height: 100%;
+                    background: linear-gradient(90deg, #667eea, #764ba2);
+                    transition: width 0.3s ease;
+                    border-radius: 4px;
+                  }
+                }
+                
+                .progress-text {
+                  color: #aaaaaa;
+                  font-size: 10px;
+                  margin-top: 4px;
+                }
+              }
+              
+              .sub-plan-steps-preview {
+                .steps-preview-header {
+                  color: #aaaaaa;
+                  font-size: 11px;
+                  margin-bottom: 6px;
+                  font-weight: 500;
+                }
+                
+                .steps-preview-list {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 4px;
+                  
+                  .step-indicator {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 2px 6px;
+                    background: rgba(0, 0, 0, 0.2);
+                    border-radius: 4px;
+                    font-size: 10px;
+                    
+                    .step-icon {
+                      font-size: 10px;
+                      
+                      &.completed {
+                        color: #22c55e;
+                      }
+                      
+                      &.running {
+                        color: #667eea;
+                      }
+                      
+                      &.pending {
+                        color: #9ca3af;
+                      }
+                    }
+                    
+                    .step-text {
+                      color: #cccccc;
+                      max-width: 80px;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                      white-space: nowrap;
+                    }
+                  }
+                }
               }
             }
           }
@@ -1003,4 +1130,132 @@ interface Props {
       }
     }
   }
-  </style>
+
+  // User input form
+  .user-input-form-container {
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(102, 126, 234, 0.1);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 8px;
+    
+    .user-input-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      
+      .user-icon {
+        font-size: 16px;
+        color: #667eea;
+      }
+      
+      .user-input-title {
+        margin: 0;
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 600;
+      }
+    }
+    
+    .user-input-message {
+      margin-bottom: 12px;
+      font-weight: 500;
+      color: #ffffff;
+      font-size: 14px;
+    }
+    
+    .form-description {
+      margin-bottom: 16px;
+      color: #aaaaaa;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    
+    .user-input-form {
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 16px;
+        
+        @media (max-width: 768px) {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+      }
+      
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        
+        label {
+          font-size: 13px;
+          font-weight: 500;
+          color: #ffffff;
+        }
+        
+        .form-input {
+          padding: 8px 12px;
+          background: rgba(0, 0, 0, 0.3);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 6px;
+          color: #ffffff;
+          font-size: 14px;
+          transition: border-color 0.2s ease;
+          
+          &:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+          }
+          
+          &::placeholder {
+            color: #888888;
+          }
+        }
+        
+        .form-textarea {
+          resize: vertical;
+          min-height: 60px;
+          font-family: inherit;
+        }
+        
+        .form-select {
+          cursor: pointer;
+          
+          option {
+            background: #2d3748;
+            color: #ffffff;
+          }
+        }
+      }
+      
+      .submit-user-input-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #ffffff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        &:active {
+          transform: translateY(0);
+        }
+      }
+    }
+  }
+}
+</style>
+
+
+
