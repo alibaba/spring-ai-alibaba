@@ -2741,7 +2741,6 @@ export default {
 /* 左侧边栏样式 */
 .chat-sidebar {
   width: 280px;
-  background: var(--bg-secondary);
   border-right: 1px solid var(--border-secondary);
   display: flex;
   flex-direction: column;

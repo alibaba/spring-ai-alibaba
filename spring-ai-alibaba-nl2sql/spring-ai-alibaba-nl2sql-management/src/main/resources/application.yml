@@ -4,7 +4,7 @@ spring:
   datasource:
     url: ${NL2SQL_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/nl2sql_database?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai}
     username: ${NL2SQL_DATASOURCE_USERNAME:root}
-    password: ${NL2SQL_DATASOURCE_PASSWORD:root}
+    password: ${NL2SQL_DATASOURCE_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.alibaba.druid.pool.DruidDataSource
   jpa:
@@ -27,7 +27,7 @@ spring:
   ai:
     openai:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
-      api-key: ${AI_DASHSCOPE_API_KEY}
+      api-key: ${AI_DASHSCOPE_API_KEY:sk-ccd454669d614ab0a164dac532f2bc54}
       model: qwen-max
       embedding:
         model: text-embedding-v4
@@ -54,8 +54,9 @@ spring:
         code-executor:
           # 运行Python代码的环境（生产环境建议使用docker，不建议使用local）
           code-pool-executor: local
-
-# MyBatis Plus 配置
+    dashscope:
+      api-key: ${spring.ai.openai.api-key}
+      # MyBatis Plus 配置
 mybatis-plus:
   configuration:
     # 开启驼峰命名转换
@@ -101,3 +102,4 @@ logging:
   level:
     com.alibaba.cloud.ai.mapper: debug
     org.springframework.jdbc: debug
+

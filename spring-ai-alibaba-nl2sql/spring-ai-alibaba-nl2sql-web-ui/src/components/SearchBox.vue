@@ -340,7 +340,6 @@ export default {
 
 .clear-button:hover,
 .search-button:hover {
-  background: #f5f5f5;
   color: #262626;
 }
 
@@ -355,7 +354,6 @@ export default {
 }
 
 .search-button:disabled {
-  background: #f5f5f5;
   color: #bfbfbf;
   cursor: not-allowed;
 }
