@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.nodes;
+package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
@@ -27,6 +30,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.EndNo
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -72,6 +77,54 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 					.toList();
 				data.put("outputs", outputsMap);
 				return data;
+			}
+		}), STUDIO(new DialectConverter<EndNodeData>() {
+			@Override
+			public Boolean supportDialect(DSLDialectType dialectType) {
+				return DSLDialectType.STUDIO.equals(dialectType);
+			}
+
+			@Override
+			public EndNodeData parse(Map<String, Object> data) throws JsonProcessingException {
+				EndNodeData nodeData = new EndNodeData();
+				// TODO: 支持文本输出
+				String outputType = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param",
+						"output_type");
+				nodeData.setOutputType(outputType);
+				String textTemplate = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param",
+						"text_template");
+				nodeData.setTextTemplate(textTemplate);
+
+				// 获取输出键
+				List<?> jsonParams = MapReadUtil.getMapDeepValue(data, List.class, "config", "node_param",
+						"json_params");
+				// 转换为VariableSelector
+				List<VariableSelector> variableSelectors = Stream.ofNullable(jsonParams)
+					.flatMap(List::stream)
+					.map(MapReadUtil::safeCastToMapWithStringKey)
+					.map(mp -> {
+						String label = MapReadUtil.getMapDeepValue(mp, String.class, "key");
+						String inputParam = MapReadUtil.getMapDeepValue(mp, String.class, "value");
+						String nameSpace = "";
+						String name = "";
+
+						Pattern pattern = Pattern.compile("\\$\\{(\\w+)\\.(\\w+)\\}");
+						Matcher matcher = pattern.matcher(Optional.ofNullable(inputParam).orElse(""));
+						if (matcher.find()) {
+							nameSpace = matcher.group(1);
+							name = matcher.group(2);
+						}
+
+						return new VariableSelector(nameSpace, name, label);
+					})
+					.toList();
+				nodeData.setInputs(variableSelectors);
+				return nodeData;
+			}
+
+			@Override
+			public Map<String, Object> dump(EndNodeData nodeData) {
+				throw new UnsupportedOperationException();
 			}
 		}), CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(EndNodeData.class));
 
