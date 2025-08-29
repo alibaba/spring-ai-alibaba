@@ -129,7 +129,7 @@ public class PlanCreator {
 						.prompt(prompt)
 						.toolCallbacks(List.of(planningTool.getFunctionToolCallback(planningTool)));
 
-					if (useMemory && attempt == 1) {
+					if (useMemory && attempt == 1 && context.getMemoryId() != null) {
 						requestSpec
 							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
 						requestSpec.advisors(CustomMessageChatMemoryAdvisor

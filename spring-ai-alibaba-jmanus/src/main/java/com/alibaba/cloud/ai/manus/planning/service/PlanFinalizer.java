@@ -95,7 +95,7 @@ public class PlanFinalizer {
 			Prompt prompt = new Prompt(List.of(combinedMessage));
 
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
-			if (context.isUseMemory()) {
+			if (context.isUseMemory() && context.getMemoryId() != null) {
 				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
 				requestSpec.advisors(
 						CustomMessageChatMemoryAdvisor
@@ -154,7 +154,7 @@ public class PlanFinalizer {
 			Prompt prompt = new Prompt(List.of(directMessage));
 			ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
 
-			if (context.isUseMemory()) {
+			if (context.isUseMemory() && context.getMemoryId() != null) {
 				requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
 				requestSpec.advisors(
 						CustomMessageChatMemoryAdvisor

@@ -150,6 +150,11 @@ public class PlanningCoordinator {
 			context.setRootPlanId(rootPlanId);
 			context.setPlan(plan);
 			context.setNeedSummary(true);
+			// Generate a memory ID if none exists, since we're using memory
+			if (context.getMemoryId() == null) {
+				String generatedMemoryId = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+				context.setMemoryId(generatedMemoryId);
+			}
 			context.setUseMemory(true);
 			context.setParentPlanId(parentPlanId);
 			context.setToolCallId(toolcallId);
