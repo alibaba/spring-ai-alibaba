@@ -149,7 +149,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 		log.debug("🔍 getCurrentToolStateString called for planId: {}", currentPlanId);
 
 		try {
-			Path uploadsDir = directoryManager.getRootPlanDirectory(currentPlanId).resolve("uploads");
+			Path uploadsDir = directoryManager.getRootPlanDirectory(rootPlanId).resolve("uploads");
 
 			if (!Files.exists(uploadsDir)) {
 				log.debug("No uploads directory found for plan: {}", currentPlanId);
@@ -226,7 +226,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	 */
 	private ToolExecuteResult smartAnalyzeAllFiles() {
 		try {
-			Path uploadsDir = directoryManager.getRootPlanDirectory(currentPlanId).resolve("uploads");
+			Path uploadsDir = directoryManager.getRootPlanDirectory(rootPlanId).resolve("uploads");
 
 			if (!Files.exists(uploadsDir)) {
 				log.info("No uploads directory found for plan: {}", currentPlanId);
