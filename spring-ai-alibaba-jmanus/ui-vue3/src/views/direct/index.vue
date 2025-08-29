@@ -281,7 +281,7 @@ onMounted(() => {
     // Execute task directly without showing content in input box
     nextTick(() => {
       if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
-        console.log('[Direct] Directly executing task via chatRef.handleSendMessage:', taskContent)
+        console.log('[Direct] Calling chatRef.handleSendMessage with taskContent:', taskContent)
         chatRef.value.handleSendMessage({
           input: taskContent
         })
@@ -348,7 +348,7 @@ watch(
       nextTick(() => {
         if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
           console.log('[Direct] Directly executing new task via chatRef.handleSendMessage:', taskContent)
-          chatRef.value.handleSendMessage(taskContent)
+          chatRef.value.handleSendMessage({ input: taskContent })
         } else {
           console.warn('[Direct] chatRef.handleSendMessage method not available for new task')
         }
