@@ -1,0 +1,31 @@
+package {{packageName}}.graph;
+
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
+{{#hasResolver}}
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+{{/hasResolver}}
+{{importSection}}
+
+import java.util.*;
+
+@Component
+public class AgentBuilder {
+
+    @Bean(name = "buildGraph")
+    public CompiledGraph buildCompiledGraph(ChatModel chatModel{{#hasResolver}}, ObjectProvider<ToolCallbackResolver> toolCallbackResolverProvider{{/hasResolver}}) throws Exception {
+        {{#hasResolver}}
+        ToolCallbackResolver toolCallbackResolver = toolCallbackResolverProvider != null ? toolCallbackResolverProvider.getIfAvailable() : null;
+        {{/hasResolver}}
+{{{agentSection}}}
+    }
+}
+
