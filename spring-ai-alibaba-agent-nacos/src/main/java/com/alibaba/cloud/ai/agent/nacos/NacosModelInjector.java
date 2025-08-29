@@ -29,7 +29,6 @@ public class NacosModelInjector {
 		}
 	}
 
-
 	public static ChatModel initModel(ModelVO model) {
 
 		OpenAiApi openAiApi = OpenAiApi.builder()
@@ -55,7 +54,9 @@ public class NacosModelInjector {
 			return;
 		}
 		try {
-			nacosOptions.getNacosConfigService().addListener(String.format("model-%s.json", agentId), "nacos-ai-agent", new AbstractListener() {
+			String dataIdT = String.format(nacosOptions.isModelConfigEncrypted() ? "cipher-kms-aes-256-model-%s.json" : "model-%s.json", agentId);
+
+			nacosOptions.getNacosConfigService().addListener(dataIdT, "nacos-ai-agent", new AbstractListener() {
 				@Override
 				public void receiveConfigInfo(String configInfo) {
 					ModelVO modelVO = JSON.parseObject(configInfo, ModelVO.class);

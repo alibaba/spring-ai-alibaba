@@ -13,7 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.agent.nacos;
+
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.List;
 import java.util.Map;
@@ -21,67 +29,46 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.client.config.NacosConfigService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import org.springframework.ai.chat.messages.UserMessage;
-
 class ReactAgentNacosTest {
-
-	private NacosConfigService nacosConfigService = nacosConfigService();
-
-	private NacosConfigService nacosConfigService() {
-		Properties properties = new Properties();
-		properties.put("serverAddr", "mse-401cbb30-p.nacos-ans.mse.aliyuncs.com:8848");
-		properties.put("namespace", "b9ee889a-991e-4f5d-b0c1-bac4d08a1cd8");
-		properties.put("accessKey", System.getProperty("accessKey",""));
-		properties.put("secretKey", System.getProperty("secretKey",""));
-
-		try {
-			return new NacosConfigService(properties);
-		}
-		catch (NacosException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@BeforeEach
-	void setUp() {
-		// 先创建 DashScopeApi 实例
-	}
-
-	@Test
-	public void testReactAgent() throws Exception {
-		NacosOptions nacosOptions = new NacosOptions();
-		nacosOptions.setNacosConfigService(nacosConfigService);
-		nacosOptions.setPromptKey("bookprompt2");
-		nacosOptions.setAgentId("agent0001");
-		nacosOptions.setModelConfigEncrypted(false);
-		NacosReactAgentBuilder builder = new NacosReactAgentBuilder().nacosOptions(nacosOptions);
-		ReactAgent agent = builder.name("agent0001").build();
-
-		//Thread.sleep(15000L);
-		for (int i=0;i<20;i++){
-			var runnableConfig = RunnableConfig.builder().threadId(UUID.randomUUID().toString()).build();
-			try {
-				Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下沈从文。必须给我回答"))), runnableConfig);
-				System.out.println(result.get().data());
-			}catch (Throwable throwable){
-
-				throwable.printStackTrace();
-				Thread.sleep(5000L);
-			}
-		}
-
-
-		Thread.sleep(1000000L);
-		//agent.invoke(Map.of("messages", List.of(new UserMessage("介绍下沈丛文。"))));
-		//System.out.println(result.get());
-	}
-
+    
+    
+    private Properties properties = null;
+    
+    @BeforeEach
+    void setUp() {
+        properties = new Properties();
+        properties.put("serverAddr", "127.0.0.1:8848");
+        properties.put("namespace", "71ced124-cb8e-4c2e-9ad1-f124a6f77a93");
+        //properties.put("accessKey", System.getProperty("accessKey", ""));
+        //properties.put("secretKey", System.getProperty("secretKey", ""));
+    }
+    
+    @Test
+    public void testReactAgent() throws Exception {
+        NacosOptions nacosOptions = new NacosOptions(properties);
+        //nacosOptions.setPromptKey("bookprompt2");
+        nacosOptions.setAgentId("agent0001");
+        nacosOptions.setModelConfigEncrypted(false);
+        nacosOptions.setMcpNamespace("71ced124-cb8e-4c2e-9ad1-f124a6f77a93");
+        
+        ReactAgent agent = ((NacosReactAgentBuilder) ReactAgent.builder(new NacosAgentBuilderFactory())).nacosOptions(
+                nacosOptions).name("agent0001").build();
+        
+        //Thread.sleep(15000L);
+        for (int i = 0; i < 20; i++) {
+            var runnableConfig = RunnableConfig.builder().threadId(UUID.randomUUID().toString()).build();
+            try {
+                Optional<OverAllState> result = agent.invoke(
+                        Map.of("messages", List.of(new UserMessage("介绍下沈从文。必须给我回答"))), runnableConfig);
+                System.out.println(result.get().data());
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();
+                Thread.sleep(5000L);
+            }
+        }
+        
+        Thread.sleep(1000000L);
+        
+    }
+    
 }
