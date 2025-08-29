@@ -3,9 +3,7 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.adapters;
 import com.alibaba.cloud.ai.studio.admin.generator.model.App;
 import com.alibaba.cloud.ai.studio.admin.generator.model.AppMetadata;
 import com.alibaba.cloud.ai.studio.admin.generator.model.agent.Agent;
-import com.alibaba.cloud.ai.studio.admin.generator.model.chatbot.ChatBot;
-import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Workflow;
-import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractDSLAdapter;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLAdapter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.Serializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,8 +18,8 @@ import java.util.stream.Collectors;
  * @version 1.0
  * @since 2025/8/25 18:31
  */
-@Component
-public class AgentDSLAdapter extends AbstractDSLAdapter {
+@Component("agentDSLAdapter")
+public class AgentDSLAdapter implements DSLAdapter {
 
     private final Serializer serializer;
     private final ObjectMapper objectMapper;
@@ -90,8 +88,7 @@ public class AgentDSLAdapter extends AbstractDSLAdapter {
         return new App(metadata, agent);
     }
 
-    @Override
-    public void validateDSLData(Map<String, Object> dslData) {
+    private void validateDSLData(Map<String, Object> dslData) {
         if (dslData == null) {
             throw new IllegalArgumentException("invalid agent dsl: data is null");
         }
@@ -133,13 +130,7 @@ public class AgentDSLAdapter extends AbstractDSLAdapter {
         }
     }
 
-    @Override
-    public Serializer getSerializer() {
-        return serializer;
-    }
-
-    @Override
-    public AppMetadata mapToMetadata(Map<String, Object> data) {
+    private AppMetadata mapToMetadata(Map<String, Object> data) {
         Map<String, Object> root = getAgentRoot(data);
         if (root == null) root = data;
         AppMetadata metadata = new AppMetadata();
@@ -150,34 +141,12 @@ public class AgentDSLAdapter extends AbstractDSLAdapter {
         return metadata;
     }
 
-    @Override
-    public Map<String, Object> metadataToMap(AppMetadata metadata) {
+    private Map<String, Object> metadataToMap(AppMetadata metadata) {
         Map<String, Object> data = new HashMap<>();
         data.put("name", metadata.getName());
         data.put("description", metadata.getDescription());
         data.put("mode", "agent");
         return data;
-    }
-
-    // 实现其他必要的抽象方法（返回null或空实现，因为Agent模式不需要这些）
-    @Override
-    public Workflow mapToWorkflow(Map<String, Object> data) {
-        return null;
-    }
-
-    @Override
-    public Map<String, Object> workflowToMap(Workflow workflow) {
-        return new HashMap<>();
-    }
-
-    @Override
-    public ChatBot mapToChatBot(Map<String, Object> data) {
-        return null;
-    }
-
-    @Override
-    public Map<String, Object> chatbotToMap(ChatBot chatbot) {
-        return new HashMap<>();
     }
 
     @Override
