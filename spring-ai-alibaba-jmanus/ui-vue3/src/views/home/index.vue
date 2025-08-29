@@ -87,8 +87,8 @@ import { ref, nextTick, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import BlurCard from '@/components/blurCard/index.vue'
-import LanguageSwitcher from '@/components/language-switcher/index.vue'
+import BlurCard from '@/components/blurCard/BlurCard.vue'
+import LanguageSwitcher from '@/components/language-switcher/LanguageSwitcher.vue'
 import { useTaskStore } from '@/stores/task'
 
 const router = useRouter()
