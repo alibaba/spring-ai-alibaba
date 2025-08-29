@@ -20,11 +20,13 @@ import com.alibaba.cloud.ai.memory.redis.LettuceRedisChatMemoryRepository;
 import io.lettuce.core.RedisClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -44,8 +46,8 @@ public class LettuceRedisChatMemoryConnectionAutoConfiguration
 		.getLogger(LettuceRedisChatMemoryConnectionAutoConfiguration.class);
 
 	public LettuceRedisChatMemoryConnectionAutoConfiguration(RedisChatMemoryProperties properties,
-			RedisChatMemoryConnectionDetails connectionDetails) {
-		super(properties, connectionDetails);
+			RedisChatMemoryConnectionDetails connectionDetails, ObjectProvider<SslBundles> sslBundles) {
+		super(properties, connectionDetails, sslBundles);
 	}
 
 	@Override
@@ -65,6 +67,9 @@ public class LettuceRedisChatMemoryConnectionAutoConfiguration
 			.username(standaloneConfiguration.username())
 			.password(standaloneConfiguration.password())
 			.timeout(standaloneConfiguration.timeout())
+			.sslBundles(standaloneConfiguration.sslBundles())
+			.useSsl(standaloneConfiguration.ssl().isEnabled())
+			.bundle(standaloneConfiguration.ssl().getBundle())
 			.build();
 	}
 
@@ -77,6 +82,9 @@ public class LettuceRedisChatMemoryConnectionAutoConfiguration
 			.username(clusterConfiguration.username())
 			.password(clusterConfiguration.password())
 			.timeout(clusterConfiguration.timeout())
+			.sslBundles(clusterConfiguration.sslBundles())
+			.useSsl(clusterConfiguration.ssl().isEnabled())
+			.bundle(clusterConfiguration.ssl().getBundle())
 			.build();
 	}
 

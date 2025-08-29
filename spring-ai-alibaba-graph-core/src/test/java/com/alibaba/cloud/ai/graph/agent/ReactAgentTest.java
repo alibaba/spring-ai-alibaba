@@ -47,7 +47,9 @@ class ReactAgentTest {
 	public void testReactAgent() throws Exception {
 		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).build();
 		try {
-			Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("帮我写一首现代诗歌。"))));
+			Optional<OverAllState> result = agent.invoke(Map.of("messages", List.of(new UserMessage("帮我写一篇散文。"))));
+			Optional<OverAllState> result2 = agent.invoke(Map.of("messages", List.of(new UserMessage("帮我写一首现代诗歌。"))));
+
 			System.out.println(result.get());
 		}
 		catch (java.util.concurrent.CompletionException e) {

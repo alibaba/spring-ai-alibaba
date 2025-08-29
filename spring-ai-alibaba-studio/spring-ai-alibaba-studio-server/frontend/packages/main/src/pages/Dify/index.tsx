@@ -63,6 +63,7 @@ const DifyConverter: React.FC = () => {
       const params = {
         dependencies: 'spring-ai-alibaba-graph,web,spring-ai-alibaba-starter-dashscope',
         appMode: 'workflow',
+        dslDialectType: 'dify',
         type: 'maven-project',
         language: 'java',
         bootVersion: '3.5.0',

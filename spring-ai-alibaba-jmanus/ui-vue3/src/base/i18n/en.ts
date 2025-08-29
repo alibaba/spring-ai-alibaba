@@ -837,7 +837,7 @@ const words: I18nType = {
     newTemplateDescription: 'Please use the plan generator to create a new plan template',
     generatedTemplateDescription: 'Plan template created by generator',
     defaultExecutionPlanTitle: 'Execution Plan',
-    
+
     // JsonEditor related
   planId: 'Plan Template ID',
     steps: 'Steps',
@@ -862,7 +862,7 @@ const words: I18nType = {
     agentLoadError: 'Failed to load agents',
     retryLoadAgents: 'Retry loading agents',
     availableTools: 'Available Tools',
-    
+
     // Common error messages
     loadingFailed: 'Loading failed',
     networkError: 'Network error',
@@ -1028,8 +1028,12 @@ const words: I18nType = {
         description: 'Experience AI intelligent analysis of user needs and dynamic generation of relevant form fields',
         prompt: 'Demonstrate how AI intelligently generates targeted form fields based on user questions',
         planTitle: 'AI Intelligent Dynamic Form Demo Plan',
-        step1: '[INTELLIGENT_FORM_AGENT] Launch intelligent dynamic form demo, actively analyze user needs and dynamically generate relevant form fields, showcasing AI intelligent form generation capabilities',
-        step1Output: 'Demo results, user interaction data',
+        step1: '[INTELLIGENT_FORM_AGENT] Ask user to input consultation type, there are three types: business consultation, technical consultation, and architecture consultation',
+        step1Output: 'Business type',
+        step2: '[DEFAULT_AGENT] If technical consultation, output: Technical consultation please call 10086\n' + 'If architecture consultation, output: Architecture consultation please contact Shenxun\n' + 'Otherwise output empty, not within my scope',
+        step2Output: '',
+        step3: '[DEFAULT_AGENT] If business consultation, output: Business consultation, you can submit through official website www.yida.com',
+        step3Output: '',
       },
     },
   },
