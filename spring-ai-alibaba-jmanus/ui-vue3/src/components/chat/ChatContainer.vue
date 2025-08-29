@@ -179,7 +179,7 @@
 import { ref, nextTick, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import ExecutionDetails from './execution-details.vue'
+import ExecutionDetails from './ExecutionDetails.vue'
 
 import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'

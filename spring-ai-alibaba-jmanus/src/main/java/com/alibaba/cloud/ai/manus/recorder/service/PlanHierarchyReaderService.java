@@ -15,8 +15,11 @@ import com.alibaba.cloud.ai.manus.recorder.entity.po.ExecutionStatusEntity;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecordSimple;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.ExecutionStatus;
+import com.alibaba.cloud.ai.manus.recorder.entity.vo.ActToolInfo;
+import com.alibaba.cloud.ai.manus.recorder.entity.po.ActToolInfoEntity;
 import com.alibaba.cloud.ai.manus.recorder.repository.PlanExecutionRecordRepository;
 import com.alibaba.cloud.ai.manus.recorder.repository.AgentExecutionRecordRepository;
+import com.alibaba.cloud.ai.manus.recorder.repository.ActToolInfoRepository;
 
 import jakarta.annotation.Resource;
 
@@ -38,6 +41,9 @@ public class PlanHierarchyReaderService {
 
 	@Resource
 	private AgentExecutionRecordRepository agentExecutionRecordRepository;
+
+	@Resource
+	private ActToolInfoRepository actToolInfoRepository;
 
 	/**
 	 * Read plan execution records by rootPlanId and convert to VO objects with hierarchy.
@@ -180,6 +186,23 @@ public class PlanHierarchyReaderService {
 			entity.getSteps().forEach(vo::addStep);
 		}
 
+		// Query parent ActToolInfo by toolCallId for sub-plan detail displaying
+		if (entity.getToolCallId() != null && !entity.getToolCallId().trim().isEmpty()) {
+			try {
+				Optional<ActToolInfoEntity> actToolInfoEntityOpt = actToolInfoRepository.findByToolCallId(entity.getToolCallId());
+				if (actToolInfoEntityOpt.isPresent()) {
+					ActToolInfoEntity actToolInfoEntity = actToolInfoEntityOpt.get();
+					ActToolInfo parentActToolCall = convertToActToolInfo(actToolInfoEntity);
+					vo.setParentActToolCall(parentActToolCall);
+					logger.debug("Found parent ActToolInfo for toolCallId: {}", entity.getToolCallId());
+				} else {
+					logger.debug("No parent ActToolInfo found for toolCallId: {}", entity.getToolCallId());
+				}
+			} catch (Exception e) {
+				logger.error("Failed to query parent ActToolInfo for toolCallId: {}", entity.getToolCallId(), e);
+			}
+		}
+
 		return vo;
 	}
 
@@ -282,6 +305,20 @@ public class PlanHierarchyReaderService {
 			.stream()
 			.filter(plan -> parentPlanId.equals(plan.getParentPlanId()))
 			.collect(Collectors.toList());
+	}
+
+	/**
+	 * Convert ActToolInfoEntity to ActToolInfo VO object.
+	 * @param entity The PO entity to convert
+	 * @return Converted VO object
+	 */
+	private ActToolInfo convertToActToolInfo(ActToolInfoEntity entity) {
+		ActToolInfo vo = new ActToolInfo();
+		vo.setName(entity.getName());
+		vo.setParameters(entity.getParameters());
+		vo.setResult(entity.getResult());
+		vo.setId(entity.getToolCallId()); // Map toolCallId to id field
+		return vo;
 	}
 
 }

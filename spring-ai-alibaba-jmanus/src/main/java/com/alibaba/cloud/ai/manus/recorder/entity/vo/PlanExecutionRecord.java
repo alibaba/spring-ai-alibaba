@@ -97,6 +97,9 @@ public class PlanExecutionRecord {
 	// Actual calling model
 	private String modelName;
 
+	// Parent tool call information that triggered this sub-plan (for sub-plan detail displaying)
+	private ActToolInfo parentActToolCall;
+
 	/**
 	 * Default constructor for Jackson and other frameworks.
 	 */
@@ -295,6 +298,14 @@ public class PlanExecutionRecord {
 
 	public void setModelName(String modelName) {
 		this.modelName = modelName;
+	}
+
+	public ActToolInfo getParentActToolCall() {
+		return parentActToolCall;
+	}
+
+	public void setParentActToolCall(ActToolInfo parentActToolCall) {
+		this.parentActToolCall = parentActToolCall;
 	}
 
 }
