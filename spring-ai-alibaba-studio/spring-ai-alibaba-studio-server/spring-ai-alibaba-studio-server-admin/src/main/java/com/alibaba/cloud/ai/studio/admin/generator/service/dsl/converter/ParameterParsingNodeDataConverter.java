@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.nodes;
+package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -138,7 +138,7 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, varName) -> {
 				nodeData.setInputTextKey(nodeData.getInputs().get(0).getNameInCode());
 			});
-			case CUSTOM -> super.postProcessConsumer(dialectType);
+			default -> super.postProcessConsumer(dialectType);
 		};
 	}
 

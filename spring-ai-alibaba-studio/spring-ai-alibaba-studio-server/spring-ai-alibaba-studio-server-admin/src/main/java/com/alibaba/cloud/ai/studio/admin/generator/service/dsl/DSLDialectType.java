@@ -22,6 +22,8 @@ public enum DSLDialectType {
 
 	DIFY("dify", ".yml"),
 
+	STUDIO("studio", ".json"),
+
 	CUSTOM("custom", ".yml");
 
 	private final String value;
@@ -37,7 +39,7 @@ public enum DSLDialectType {
 	}
 
 	public static Optional<DSLDialectType> fromValue(String value) {
-		return Arrays.stream(DSLDialectType.values()).filter(t -> t.value.equals(value)).findFirst();
+		return Arrays.stream(DSLDialectType.values()).filter(t -> t.value.equalsIgnoreCase(value)).findFirst();
 	}
 
 	DSLDialectType(String value, String fileExtension) {
