@@ -2,17 +2,13 @@ package com.alibaba.cloud.ai.agent.nacos;
 
 import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
-import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.client.config.NacosConfigService;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class NacosAgentInjector {
-	
+
 	public static void injectPrompt(NacosConfigService nacosConfigService, ChatClient chatClient, String promptKey) {
 
 		try {
@@ -28,9 +24,9 @@ public class NacosAgentInjector {
 		}
 
 	}
-	
+
 	public static void injectPromptByAgentId(NacosConfigService nacosConfigService, ChatClient chatClient, String agentId) {
-		
+
 		try {
 			PromptVO promptVO = NacosPromptInjector.loadPromptByAgentId(nacosConfigService, agentId);
 			if (promptVO != null) {
@@ -38,11 +34,11 @@ public class NacosAgentInjector {
 			}
 			NacosPromptInjector.registryPromptByAgentId(chatClient, nacosConfigService, agentId, promptVO);
 		}
-		
+
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		
+
 	}
 
 	public static void injectModel(NacosOptions nacosOptions, ChatClient chatClient, String agentId) {

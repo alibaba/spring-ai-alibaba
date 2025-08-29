@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class AgentPromptVO {
-    
-    String promptKey;
+
+	String promptKey;
 }
