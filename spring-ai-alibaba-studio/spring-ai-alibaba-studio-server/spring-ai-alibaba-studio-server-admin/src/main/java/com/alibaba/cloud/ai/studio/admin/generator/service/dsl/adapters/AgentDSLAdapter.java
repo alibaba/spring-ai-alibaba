@@ -50,8 +50,43 @@ public class AgentDSLAdapter extends AbstractDSLAdapter {
         Map<String, Object> root = getAgentRoot(data);
         if (root == null) root = data;
 
+        // 仅解析壳层字段，handle 原样透传
         AppMetadata metadata = mapToMetadata(data);
-        Agent agent = parseAgent(root);
+
+        Agent agent = new Agent();
+        agent.setAgentClass(asString(firstNonBlank((String) root.get("type"), (String) root.get("agent_class"))));
+        agent.setName(asString(root.get("name")));
+        agent.setDescription(asString(root.get("description")));
+        agent.setInputKey(asString(root.get("input_key")));
+        agent.setOutputKey(asString(root.get("output_key")));
+
+        // 透传 handle（不感知字段）
+        if (root.get("handle") instanceof Map<?,?> h) {
+            agent.setHandle((Map<String,Object>) h);
+        }
+
+        // 递归 sub_agents（同样只解析壳层 + 透传 handle）
+        if (root.get("sub_agents") instanceof List<?> children) {
+            List<Agent> subs = new java.util.ArrayList<>();
+            for (Object o : children) {
+                if (o instanceof Map<?,?> m) {
+                    Map<String,Object> childRoot = getAgentRoot((Map<String,Object>) m);
+                    if (childRoot == null) childRoot = (Map<String,Object>) m;
+                    Agent child = new Agent();
+                    child.setAgentClass(asString(firstNonBlank((String) childRoot.get("type"), (String) childRoot.get("agent_class"))));
+                    child.setName(asString(childRoot.get("name")));
+                    child.setDescription(asString(childRoot.get("description")));
+                    child.setInputKey(asString(childRoot.get("input_key")));
+                    child.setOutputKey(asString(childRoot.get("output_key")));
+                    if (childRoot.get("handle") instanceof Map<?,?> ch) {
+                        child.setHandle((Map<String,Object>) ch);
+                    }
+                    subs.add(child);
+                }
+            }
+            agent.setSubAgents(subs);
+        }
+
         return new App(metadata, agent);
     }
 
@@ -185,114 +220,8 @@ public class AgentDSLAdapter extends AbstractDSLAdapter {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
-    private Agent parseAgent(Map<String, Object> root) {
-        Agent agent = new Agent();
+    private static String asString(Object o) { return o == null ? null : String.valueOf(o); }
 
-        // 基础属性
-        String type = firstNonBlank((String) root.get("type"), (String) root.get("agent_class"));
-        if (type != null) {
-            agent.setAgentClass(type.toLowerCase(Locale.ROOT));
-        }
-        agent.setName((String) root.get("name"));
-        agent.setDescription((String) root.get("description"));
-        agent.setOutputKey((String) root.get("output_key"));
-        agent.setInputKey((String) root.get("input_key"));
-
-        // LLM 与推理
-        // 兼容 llm: { model, options } 与顶层 model/chat_options
-        Object llmObj = root.get("llm");
-        if (llmObj instanceof Map) {
-            Map<String, Object> llm = (Map<String, Object>) llmObj;
-            if (llm.get("model") instanceof String) {
-                agent.setModel((String) llm.get("model"));
-            }
-            if (llm.get("options") instanceof Map) {
-                agent.setChatOptions((Map<String, Object>) llm.get("options"));
-            }
-            // chat_client_bean 先透传进 chatOptions，供生成器判定优先级
-            if (llm.get("chat_client_bean") instanceof String) {
-                Map<String, Object> opts = Optional.ofNullable(agent.getChatOptions()).orElseGet(HashMap::new);
-                opts.put("chat_client_bean", llm.get("chat_client_bean"));
-                agent.setChatOptions(opts);
-            }
-        } else {
-            if (root.get("model") instanceof String) agent.setModel((String) root.get("model"));
-            if (root.get("chat_options") instanceof Map) agent.setChatOptions((Map<String, Object>) root.get("chat_options"));
-        }
-        agent.setInstruction((String) root.get("instruction"));
-        Integer maxIter = toInteger(root.get("max_iterations"));
-        if (maxIter != null) agent.setMaxIterations(maxIter);
-
-        // 工具
-        if (root.get("tools") instanceof List) {
-            agent.setTools(((List<?>) root.get("tools")).stream().map(String::valueOf).collect(Collectors.toList()));
-        }
-        // resolver 也记录在 toolConfig，供后续决定优先级（resolver 优先于 tools）
-        if (root.get("resolver") instanceof String) {
-            Map<String, Object> tc = Optional.ofNullable(agent.getToolConfig()).orElseGet(HashMap::new);
-            tc.put("resolver", root.get("resolver"));
-            agent.setToolConfig(tc);
-        }
-
-        // 并行/流程配置（统一沉淀到 flowConfig）
-        Map<String, Object> flowCfg = Optional.ofNullable(agent.getFlowConfig()).orElseGet(HashMap::new);
-        if ("parallel".equalsIgnoreCase(agent.getAgentClass())) {
-            flowCfg.put("type", "parallel");
-            if (root.get("merge") instanceof Map) {
-                Map<String, Object> merge = (Map<String, Object>) root.get("merge");
-                Object strategy = merge.get("strategy");
-                if (strategy instanceof String) {
-                    flowCfg.put("merge_strategy", ((String) strategy).toLowerCase(Locale.ROOT));
-                }
-                if (merge.get("separator") instanceof String) {
-                    flowCfg.put("separator", merge.get("separator"));
-                }
-            }
-            Integer mc = toInteger(root.get("max_concurrency"));
-            if (mc != null) flowCfg.put("max_concurrency", mc);
-        } else {
-            // 非 parallel 也记个类型，便于生成器分发
-            flowCfg.put("type", agent.getAgentClass());
-        }
-        if (!flowCfg.isEmpty()) {
-            agent.setFlowConfig(flowCfg);
-        }
-
-        // hooks 直接透传
-        if (root.get("hooks") instanceof Map) {
-            agent.setHooks((Map<String, Object>) root.get("hooks"));
-        }
-
-        // state：优先 schema 的 state.strategies，其次兼容 state_config
-        if (root.get("state") instanceof Map) {
-            Map<String, Object> state = (Map<String, Object>) root.get("state");
-            if (state.get("strategies") instanceof Map) {
-                Map<String, String> strategies = new HashMap<>();
-                ((Map<?, ?>) state.get("strategies")).forEach((k, v) -> strategies.put(String.valueOf(k), String.valueOf(v)));
-                agent.setStateConfig(strategies);
-            }
-        } else if (root.get("state_config") instanceof Map) {
-            Map<String, String> sc = new HashMap<>();
-            ((Map<?, ?>) root.get("state_config")).forEach((k, v) -> sc.put(String.valueOf(k), String.valueOf(v)));
-            agent.setStateConfig(sc);
-        }
-
-        // 递归 sub_agents
-        if (root.get("sub_agents") instanceof List) {
-            List<Agent> subs = new ArrayList<>();
-            for (Object o : (List<?>) root.get("sub_agents")) {
-                if (o instanceof Map) {
-                    Map<String, Object> childRoot = getAgentRoot((Map<String, Object>) o);
-                    if (childRoot == null) childRoot = (Map<String, Object>) o;
-                    subs.add(parseAgent(childRoot));
-                }
-            }
-            agent.setSubAgents(subs);
-        }
-
-        return agent;
-    }
 
     private Map<String, Object> dumpAgent(Agent agent) {
         Map<String, Object> m = new HashMap<>();

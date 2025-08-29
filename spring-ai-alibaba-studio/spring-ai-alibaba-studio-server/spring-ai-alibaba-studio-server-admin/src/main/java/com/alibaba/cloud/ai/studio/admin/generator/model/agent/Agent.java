@@ -53,6 +53,9 @@ public class Agent {
     // 钩子配置
     private Map<String, Object> hooks;
 
+    // 动态 handle：原样透传每种 agent type 的专属配置
+    private Map<String, Object> handle;
+
     public Agent() {}
 
     public String getAgentClass() { return agentClass; }
@@ -99,4 +102,7 @@ public class Agent {
 
     public Map<String, Object> getHooks() { return hooks; }
     public void setHooks(Map<String, Object> hooks) { this.hooks = hooks; }
+
+    public Map<String, Object> getHandle() { return handle; }
+    public void setHandle(Map<String, Object> handle) { this.handle = handle; }
 }

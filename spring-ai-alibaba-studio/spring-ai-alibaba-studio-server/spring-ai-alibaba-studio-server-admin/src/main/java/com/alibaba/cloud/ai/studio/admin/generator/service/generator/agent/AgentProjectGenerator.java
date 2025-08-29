@@ -41,11 +41,14 @@ public class AgentProjectGenerator implements ProjectGenerator {
     private final DSLAdapter dslAdapter;
 
     private final TemplateRenderer templateRenderer;
+    private final AgentTypeProviderRegistry providerRegistry;
 
     public AgentProjectGenerator(@Qualifier("agentDSLAdapter") DSLAdapter dslAdapter,
-                                 ObjectProvider<MustacheTemplateRenderer> templateRenderer) {
+                                 ObjectProvider<MustacheTemplateRenderer> templateRenderer,
+                                 AgentTypeProviderRegistry providerRegistry) {
         this.dslAdapter = dslAdapter;
         this.templateRenderer = templateRenderer.getIfAvailable(() -> new MustacheTemplateRenderer("classpath:/templates"));
+        this.providerRegistry = providerRegistry;
     }
 
     @Override
@@ -61,14 +64,15 @@ public class AgentProjectGenerator implements ProjectGenerator {
 
         // 2) 渲染构造 Agent 的 Java 代码片段（支持递归/并行）
         RenderContext ctx = new RenderContext();
-        String agentSection = renderAgentConstruction(root, ctx);
+        CodeSections sections = collectSections(root, ctx);
+        String agentSection = sections.getCode() + String.format("%nreturn %s.getAndCompileGraph();%n", sections.getVarName());
 
         // 3) 模板渲染并写入
         Map<String, Object> agentBuilderModel = new HashMap<>();
         agentBuilderModel.put(PACKAGE_NAME, projectDescription.getPackageName());
-        agentBuilderModel.put(IMPORT_SECTION, renderImportSection(root));
+        agentBuilderModel.put(IMPORT_SECTION, String.join("\n", sections.getImports()));
         agentBuilderModel.put(AGENT_SECTION, agentSection);
-        agentBuilderModel.put(HAS_RESOLVER, ctx.hasResolver);
+        agentBuilderModel.put(HAS_RESOLVER, sections.isHasResolver());
 
         Map<String, Object> graphRunModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
 
@@ -116,160 +120,33 @@ public class AgentProjectGenerator implements ProjectGenerator {
         }
     }
 
-    private String renderImportSection(Agent agent) {
-        // 预留扩展：按需聚合导入，当前最小实现返回空字符串
-        return "";
-    }
-
-    // ----------------- code rendering helpers -----------------
-
-    private static class RenderContext {
-        boolean hasResolver = false;
-        AtomicInteger seq = new AtomicInteger(0);
-        String nextVar(String base) { return base + seq.incrementAndGet(); }
-    }
-
-    private String renderAgentConstruction(Agent agent, RenderContext ctx) {
-        StringBuilder sb = new StringBuilder();
-        String rootVar = renderAgent(agent, ctx, sb);
-        sb.append(String.format("%nreturn %s.getAndCompileGraph();%n", rootVar));
-        return sb.toString();
-    }
-
-    private String renderAgent(Agent agent, RenderContext ctx, StringBuilder out) {
-        String type = optLower(agent.getAgentClass());
-        if ("parallel".equals(type)) {
-            return renderParallel(agent, ctx, out);
-        }
-        // default react
-        return renderReact(agent, ctx, out);
-    }
-
-    private String renderReact(Agent agent, RenderContext ctx, StringBuilder out) {
-        String var = ctx.nextVar("reactAgent_");
-        String inputKey = orDefault(agent.getInputKey(), "messages");
-        out.append(String.format("ReactAgent %s = ReactAgent.builder()%n", var))
-            .append(codeIndent(1)).append(String.format(".name(\"%s\")%n", esc(agent.getName())))
-            .append(codeIndent(1)).append(String.format(".description(\"%s\")%n", esc(orDefault(agent.getDescription(), ""))))
-            .append(codeIndent(1)).append(String.format(".outputKey(\"%s\")%n", esc(orDefault(agent.getOutputKey(), "result"))));
-        if (!"messages".equals(inputKey)) {
-            out.append(codeIndent(1)).append(String.format(".inputKey(\"%s\")%n", esc(inputKey)));
-        } else {
-            out.append("\n");
-        }
-        out.append(codeIndent(1)).append(".model(chatModel)\n");
-        if (notBlank(agent.getInstruction())) {
-            out.append(codeIndent(1)).append(String.format(".instruction(\"%s\")%n", esc(agent.getInstruction())));
-        }
-        if (agent.getMaxIterations() != null && agent.getMaxIterations() > 0) {
-            out.append(codeIndent(1)).append(String.format(".maxIterations(%d)%n", agent.getMaxIterations()));
-        }
-        // resolver 优先于 tools
-        if (agent.getToolConfig() != null && agent.getToolConfig().get("resolver") instanceof String) {
-            ctx.hasResolver = true;
-            out.append(codeIndent(1)).append(".resolver(toolCallbackResolver)\n");
-        }
-        // 状态策略
-        out.append(codeIndent(1)).append(".state(() -> {\n")
-            .append(codeIndent(2)).append("Map<String, KeyStrategy> strategies = new HashMap<>();\n")
-            .append(codeIndent(2)).append("strategies.put(\"messages\", new AppendStrategy());\n");
-        if (agent.getStateConfig() != null) {
-            for (Map.Entry<String, String> e : agent.getStateConfig().entrySet()) {
-                String key = e.getKey();
-                String strat = optLower(e.getValue());
-                if ("messages".equals(key)) continue; // 已默认
-                if ("replace".equals(strat)) {
-                    out.append(codeIndent(2)).append(String.format("strategies.put(\"%s\", new ReplaceStrategy());\n", esc(key)));
-                } else {
-                    out.append(codeIndent(2)).append(String.format("strategies.put(\"%s\", new AppendStrategy());\n", esc(key)));
-                }
-            }
-        }
-        out.append(codeIndent(2)).append("return strategies;\n")
-            .append(codeIndent(1)).append("})\n")
-            .append(codeIndent(1)).append(".build();\n");
-        return var;
-    }
-
-    private String renderParallel(Agent agent, RenderContext ctx, StringBuilder out) {
-        // 先构建所有子 agent
+    private CodeSections collectSections(Agent agent, RenderContext ctx) {
+        // 递归先处理子 agent，收集子 varNames
         List<String> childVars = new ArrayList<>();
+        List<CodeSections> childSections = new ArrayList<>();
         if (agent.getSubAgents() != null) {
             for (Agent sub : agent.getSubAgents()) {
-                childVars.add(renderAgent(sub, ctx, out));
+                CodeSections cs = collectSections(sub, ctx);
+                childSections.add(cs);
+                childVars.add(cs.getVarName());
             }
         }
 
-        String var = ctx.nextVar("parallelAgent_");
-        out.append(String.format("ParallelAgent %s = ParallelAgent.builder()%n", var))
-            .append(codeIndent(1)).append(String.format(".name(\"%s\")%n", esc(agent.getName())))
-            .append(codeIndent(1)).append(String.format(".description(\"%s\")%n", esc(orDefault(agent.getDescription(), ""))))
-            .append(codeIndent(1)).append(String.format(".outputKey(\"%s\")%n", esc(orDefault(agent.getOutputKey(), "result"))));
-        if (notBlank(agent.getInputKey())) {
-            out.append(codeIndent(1)).append(String.format(".inputKey(\"%s\")%n", esc(agent.getInputKey())));
+        // 当前节点由 Provider 渲染
+        AgentTypeProvider provider = providerRegistry.get(agent.getAgentClass());
+        AgentShell shell = AgentShell.of(agent.getAgentClass(), agent.getName(), agent.getDescription(), agent.getInputKey(), agent.getOutputKey());
+        Map<String,Object> handle = agent.getHandle() == null ? java.util.Map.of() : agent.getHandle();
+        CodeSections me = provider.render(shell, handle, ctx, childVars);
+
+        // 合并 imports 与 hasResolver，拼接顺序：子在前、父在后
+        for (CodeSections cs : childSections) {
+            me.getImports().addAll(cs.getImports());
+            if (cs.isHasResolver()) me.resolver(true);
         }
-        if (!childVars.isEmpty()) {
-            out.append(codeIndent(1)).append(".subAgents(List.of(")
-                .append(String.join(", ", childVars))
-                .append("))\n");
-        }
-        // merge strategy
-        Map<String, Object> flow = agent.getFlowConfig();
-        if (flow != null) {
-            String strategy = optLower(String.valueOf(flow.get("merge_strategy")));
-            if ("list".equals(strategy)) {
-                out.append(codeIndent(1)).append(".mergeStrategy(new ParallelAgent.ListMergeStrategy())\n");
-            } else if ("concat".equals(strategy)) {
-                String sep = String.valueOf(flow.getOrDefault("separator", "\\n"));
-                out.append(codeIndent(1)).append(String.format(".mergeStrategy(new ParallelAgent.ConcatenationMergeStrategy(\"%s\"))%n", esc(sep)));
-            } else if ("default".equals(strategy) || strategy != null) {
-                out.append(codeIndent(1)).append(".mergeStrategy(new ParallelAgent.DefaultMergeStrategy())\n");
-            }
-            Object mc = flow.get("max_concurrency");
-            if (mc instanceof Number && ((Number) mc).intValue() > 0) {
-                out.append(codeIndent(1)).append(String.format(".maxConcurrency(%d)%n", ((Number) mc).intValue()));
-            }
-        }
-        // 状态策略
-        out.append(codeIndent(1)).append(".state(() -> {\n")
-            .append(codeIndent(2)).append("Map<String, KeyStrategy> strategies = new HashMap<>();\n")
-            .append(codeIndent(2)).append("strategies.put(\"messages\", new AppendStrategy());\n");
-        if (agent.getStateConfig() != null) {
-            for (Map.Entry<String, String> e : agent.getStateConfig().entrySet()) {
-                String key = e.getKey();
-                String strat = optLower(e.getValue());
-                if ("messages".equals(key)) continue;
-                if ("replace".equals(strat)) {
-                    out.append(codeIndent(2)).append(String.format("strategies.put(\"%s\", new ReplaceStrategy());\n", esc(key)));
-                } else {
-                    out.append(codeIndent(2)).append(String.format("strategies.put(\"%s\", new AppendStrategy());\n", esc(key)));
-                }
-            }
-        }
-        out.append(codeIndent(2)).append("return strategies;\n")
-            .append(codeIndent(1)).append("})\n")
-            .append(codeIndent(1)).append(".build();\n");
-        return var;
-    }
-
-    private String codeIndent(int level) {
-        return "\t".repeat(Math.max(0, level));
-    }
-
-    private boolean notBlank(String s) {
-        return s != null && !s.trim().isEmpty();
-    }
-
-    private String esc(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
-
-    private String orDefault(String v, String d) {
-        return v == null || v.isEmpty() ? d : v;
-    }
-
-    private String optLower(String v) {
-        return v == null ? null : v.toLowerCase(Locale.ROOT);
+        StringBuilder code = new StringBuilder();
+        for (CodeSections cs : childSections) code.append(cs.getCode());
+        code.append(me.getCode());
+        me.code(code.toString());
+        return me;
     }
 }
