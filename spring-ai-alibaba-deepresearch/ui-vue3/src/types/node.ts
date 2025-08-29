@@ -25,7 +25,7 @@ export interface NormalNode {
   /** 节点名称 */
   nodeName: string
   /** 节点内容 */
-  content: string | object ,
+  content: string | any ,
   graphId: GraphId
   displayTitle: string,
   siteInformation: SiteInformation[]
