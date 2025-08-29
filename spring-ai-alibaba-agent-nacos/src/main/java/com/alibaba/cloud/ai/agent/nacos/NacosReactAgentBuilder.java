@@ -1,5 +1,7 @@
 package com.alibaba.cloud.ai.agent.nacos;
 
+import java.util.List;
+
 import com.alibaba.cloud.ai.graph.agent.Builder;
 import com.alibaba.cloud.ai.graph.agent.DefaultBuilder;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
@@ -10,6 +12,7 @@ import org.apache.commons.collections4.CollectionUtils;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.tool.ToolCallback;
 
 public class NacosReactAgentBuilder extends DefaultBuilder {
 
@@ -35,7 +38,9 @@ public class NacosReactAgentBuilder extends DefaultBuilder {
 
 	@Override
 	public ReactAgent build() throws GraphStateException {
-
+		if (this.name == null) {
+			this.name = nacosOptions.getAgentId();
+		}
 		if (model == null) {
 			this.model = NacosAgentInjector.initModel(nacosOptions, this.name);
 		}
@@ -67,7 +72,11 @@ public class NacosReactAgentBuilder extends DefaultBuilder {
 			}
 		}
 
-		//this.tools = NacosMcpToolsInjector.loadMcpTools(nacosOptions, this.name);
+		List<ToolCallback> toolCallbacks = NacosMcpToolsInjector.loadMcpTools(nacosOptions, this.name);
+
+		this.tools = toolCallbacks;
+
+
 		LlmNode.Builder llmNodeBuilder = LlmNode.builder().chatClient(chatClient).messagesKey("messages");
 		if (CollectionUtils.isNotEmpty(tools)) {
 			llmNodeBuilder.toolCallbacks(tools);
@@ -84,7 +93,7 @@ public class NacosReactAgentBuilder extends DefaultBuilder {
 		else {
 			toolNode = ToolNode.builder().build();
 		}
-
+		NacosMcpToolsInjector.registry(llmNode, toolNode, nacosOptions, this.name);
 		return new ReactAgent(llmNode, toolNode, this);
 	}
 }

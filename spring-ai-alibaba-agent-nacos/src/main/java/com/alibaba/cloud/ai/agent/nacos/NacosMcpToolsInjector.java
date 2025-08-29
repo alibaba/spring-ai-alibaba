@@ -2,18 +2,16 @@ package com.alibaba.cloud.ai.agent.nacos;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.agent.nacos.tools.NacosMcpGatewayToolsInitializer;
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.callback.NacosMcpGatewayToolCallback;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.definition.NacosMcpGatewayToolDefinition;
+import com.alibaba.cloud.ai.graph.node.LlmNode;
+import com.alibaba.cloud.ai.graph.node.ToolNode;
+import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
-import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
-import com.alibaba.nacos.api.ai.model.mcp.McpTool;
-import com.alibaba.nacos.api.ai.model.mcp.McpToolMeta;
-import com.alibaba.nacos.api.ai.model.mcp.McpToolSpecification;
+import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.alibaba.nacos.api.exception.NacosException;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
@@ -33,6 +31,29 @@ public class NacosMcpToolsInjector {
 		return null;
 	}
 
+	public static void registry(LlmNode llmNode,ToolNode toolNode,NacosOptions nacosOptions, String agentId)  {
+
+		try {
+			nacosOptions.getNacosConfigService()
+					.addListener(String.format("mcp-servers-%s.json", agentId), "nacos-ai-agent", new AbstractListener() {
+						@Override
+						public void receiveConfigInfo(String configInfo) {
+							McpServersVO mcpServersVO = JSON.parseObject(configInfo, McpServersVO.class);
+							List<ToolCallback> toolCallbacks = convert(nacosOptions, mcpServersVO);
+							if (toolCallbacks!=null){
+								toolNode.setToolCallbacks(toolCallbacks);
+								llmNode.setToolCallbacks(toolCallbacks);
+							}
+
+						}
+					});
+		}
+		catch (NacosException e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
 	public static McpServersVO getMcpServersVO(NacosOptions nacosOptions, String agentId) {
 		try {
 			String config = nacosOptions.getNacosConfigService()
@@ -45,75 +66,14 @@ public class NacosMcpToolsInjector {
 	}
 
 	public static List<ToolCallback> convert(NacosOptions nacosOptions, McpServersVO mcpServersVO) {
-		List<ToolCallback> toolCallbacks = new ArrayList<>();
-		for (McpServersVO.McpServerVO mcpServerVO : mcpServersVO.getMcpServers()) {
-			try {
-				McpServerDetailInfo mcpServerDetail = nacosOptions.getNacosAiMaintainerService()
-						.getMcpServerDetail(nacosOptions.getMcpNamespace(), mcpServerVO.getMcpServerName(), null);
-				List<ToolCallback> convert = convert(mcpServerDetail, mcpServerVO);
-				if (convert != null) {
-					toolCallbacks.addAll(convert);
-				}
-			}
-			catch (Exception e) {
-				throw new RuntimeException(e);
-			}
 
-		}
+		NacosMcpGatewayProperties nacosMcpGatewayProperties=new NacosMcpGatewayProperties();
+		nacosMcpGatewayProperties.setServiceNames(mcpServersVO.getMcpServers().stream().map(McpServersVO.McpServerVO::getMcpServerName).toList());
+		NacosMcpGatewayToolsInitializer nacosMcpGatewayToolsInitializer = new NacosMcpGatewayToolsInitializer(
+				nacosOptions.mcpOperationService, nacosMcpGatewayProperties);
+		List<ToolCallback> toolCallbacks = nacosMcpGatewayToolsInitializer.initializeTools();
+
 		return toolCallbacks;
 	}
 
-	private static List<ToolCallback> convert(McpServerDetailInfo serviceDetail, McpServersVO.McpServerVO mcpServerVO) {
-
-		String protocol = serviceDetail.getProtocol();
-		if ("mcp-sse".equalsIgnoreCase(protocol) || "mcp-streamable".equalsIgnoreCase(protocol)) {
-			List<ToolCallback> tools = parseToolsFromMcpServerDetailInfo(serviceDetail);
-			if (CollectionUtils.isEmpty(tools)) {
-				logger.warn("No tools defined for service: {}", serviceDetail.getName());
-				return null;
-			}
-			return tools.stream().filter(a -> (!mcpServerVO.getBlackTools().contains(a.getToolDefinition().name())))
-					.collect(Collectors.toList());
-
-		}
-		return null;
-	}
-
-	private static List<ToolCallback> parseToolsFromMcpServerDetailInfo(McpServerDetailInfo mcpServerDetailInfo) {
-		try {
-			McpToolSpecification toolSpecification = mcpServerDetailInfo.getToolSpec();
-			String protocol = mcpServerDetailInfo.getProtocol();
-			McpServerRemoteServiceConfig mcpServerRemoteServiceConfig = mcpServerDetailInfo.getRemoteServerConfig();
-			List<ToolCallback> toolCallbacks = new ArrayList<>();
-			if (toolSpecification != null) {
-				List<McpTool> toolsList = toolSpecification.getTools();
-				Map<String, McpToolMeta> toolsMeta = toolSpecification.getToolsMeta();
-				if (toolsList == null || toolsMeta == null) {
-					return new ArrayList<>();
-				}
-				for (McpTool tool : toolsList) {
-					String toolName = tool.getName();
-					String toolDescription = tool.getDescription();
-					Map<String, Object> inputSchema = tool.getInputSchema();
-					McpToolMeta metaInfo = toolsMeta.get(toolName);
-					boolean enabled = metaInfo == null || metaInfo.isEnabled();
-					if (!enabled) {
-						logger.info("Tool {} is disabled by metaInfo, skipping.", toolName);
-						continue;
-					}
-					NacosMcpGatewayToolDefinition toolDefinition = NacosMcpGatewayToolDefinition.builder()
-							.name(mcpServerDetailInfo.getName() + "_tools_" + toolName).description(toolDescription)
-							.inputSchema(inputSchema).protocol(protocol)
-							.remoteServerConfig(mcpServerRemoteServiceConfig).toolsMeta(metaInfo).build();
-					toolCallbacks.add(new NacosMcpGatewayToolCallback(toolDefinition));
-				}
-			}
-			return toolCallbacks;
-		}
-		catch (Exception e) {
-			logger.warn("Failed to get or parse nacos mcp service tools info (mcpName {})",
-					mcpServerDetailInfo.getName() + mcpServerDetailInfo.getVersionDetail().getVersion(), e);
-		}
-		return null;
-	}
 }
