@@ -17,6 +17,7 @@
 
 package com.alibaba.cloud.ai.mcp.router.config;
 
+import com.alibaba.cloud.ai.mcp.router.model.McpServerInfo;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.ArrayList;
@@ -51,6 +52,34 @@ public class McpRouterProperties {
 
 	public void setServiceNames(final List<String> serviceNames) {
 		this.serviceNames = serviceNames;
+	}
+
+	/**
+	 * MCP服务配置列表
+	 */
+	private List<McpServerInfo> services = new ArrayList<>();
+
+	public List<McpServerInfo> getServices() {
+		return services;
+	}
+
+	public void setServices(List<McpServerInfo> services) {
+		this.services = services;
+	}
+
+	/**
+	 * 服务发现类型 (nacos, file)
+	 */
+	private String discoveryType = "nacos"; // 默认为 nacos
+
+	// ... getters and setters
+
+	public String getDiscoveryType() {
+		return discoveryType;
+	}
+
+	public void setDiscoveryType(String discoveryType) {
+		this.discoveryType = discoveryType;
 	}
 
 }
