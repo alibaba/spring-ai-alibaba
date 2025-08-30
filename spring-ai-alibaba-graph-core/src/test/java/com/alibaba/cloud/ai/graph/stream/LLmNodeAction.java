@@ -30,7 +30,9 @@ import java.util.Objects;
 public class LLmNodeAction implements NodeAction {
 
 	private DashScopeChatModel chatModel;
+
 	private String nodeId;
+
 	public LLmNodeAction(DashScopeChatModel chatModel) {
 		this.chatModel = chatModel;
 	}

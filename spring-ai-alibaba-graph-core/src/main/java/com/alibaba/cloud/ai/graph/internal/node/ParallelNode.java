@@ -48,8 +48,8 @@ public class ParallelNode extends Node {
 
 		@Override
 		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-			Function<AsyncNodeActionWithConfig, CompletableFuture<Map<String, Object>>> evalNodeAction = config.metadata(
-					nodeId)
+			Function<AsyncNodeActionWithConfig, CompletableFuture<Map<String, Object>>> evalNodeAction = config
+				.metadata(nodeId)
 				.filter(value -> value instanceof Executor)
 				.map(Executor.class::cast)
 				.map(executor -> (Function<AsyncNodeActionWithConfig, CompletableFuture<Map<String, Object>>>) action -> evalNodeActionAsync(
@@ -57,59 +57,59 @@ public class ParallelNode extends Node {
 				.orElseGet(() -> action -> evalNodeActionSync(action, state, config));
 
 			// Execute all actions in parallel
-			List<CompletableFuture<Map<String, Object>>> futures = actions.stream()
-				.map(evalNodeAction)
-				.toList();
+			List<CompletableFuture<Map<String, Object>>> futures = actions.stream().map(evalNodeAction).toList();
 
 			// Wait for all tasks to complete
-			return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
-				.thenApply(v -> {
-					// Collect all results
-					List<Map<String, Object>> results = futures.stream()
-						.map(CompletableFuture::join)
-						.collect(Collectors.toList());
-					
-					// Check if any result contains streaming output
-					boolean hasGenerator = results.stream()
-						.flatMap(map -> map.values().stream())
-						.anyMatch(value -> value instanceof AsyncGenerator);
-					
-					if (hasGenerator) {
-						// If there is any streaming output, create a new AsyncGenerator to wrap all streaming outputs
-						List<AsyncGenerator<NodeOutput>> generators = new ArrayList<>();
-						Map<String, Object> mergedState = new HashMap<>();
-						mergedState.putAll(state.data());
-						for (Map<String, Object> result : results) {
-							Map<String, Object> nonGeneratorEntries = result.entrySet()
-								.stream()
-								.filter(e -> !(e.getValue() instanceof AsyncGenerator))
-								.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-							
-							mergedState = OverAllState.updateState(mergedState, nonGeneratorEntries, channels);
-							
-							// Collect all streaming outputs
-							result.entrySet()
-								.stream()
-								.filter(e -> e.getValue() instanceof AsyncGenerator)
-								.forEach(e -> generators.add((AsyncGenerator<NodeOutput>) e.getValue()));
-						}
-						
-						// If there are streaming outputs, merge them into one streaming output
-						if (!generators.isEmpty()) {
-							// Create a merged AsyncGenerator
-							AsyncGenerator<NodeOutput> mergedGenerator = AsyncGeneratorUtils.createMergedGenerator(generators,state.keyStrategies());
-							mergedState.put("__merged_stream__", mergedGenerator);
-						}
-						
-						return mergedState;
-					} 
-					else {
-						// No streaming output, directly merge all results
-						return results.stream()
-							.reduce(state.data(),
-									(result, actionResult) -> OverAllState.updateState(result, actionResult, channels));
+			return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
+				// Collect all results
+				List<Map<String, Object>> results = futures.stream()
+					.map(CompletableFuture::join)
+					.collect(Collectors.toList());
+
+				// Check if any result contains streaming output
+				boolean hasGenerator = results.stream()
+					.flatMap(map -> map.values().stream())
+					.anyMatch(value -> value instanceof AsyncGenerator);
+
+				if (hasGenerator) {
+					// If there is any streaming output, create a new AsyncGenerator to
+					// wrap all streaming outputs
+					List<AsyncGenerator<NodeOutput>> generators = new ArrayList<>();
+					Map<String, Object> mergedState = new HashMap<>();
+					mergedState.putAll(state.data());
+					for (Map<String, Object> result : results) {
+						Map<String, Object> nonGeneratorEntries = result.entrySet()
+							.stream()
+							.filter(e -> !(e.getValue() instanceof AsyncGenerator))
+							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+						mergedState = OverAllState.updateState(mergedState, nonGeneratorEntries, channels);
+
+						// Collect all streaming outputs
+						result.entrySet()
+							.stream()
+							.filter(e -> e.getValue() instanceof AsyncGenerator)
+							.forEach(e -> generators.add((AsyncGenerator<NodeOutput>) e.getValue()));
 					}
-				});
+
+					// If there are streaming outputs, merge them into one streaming
+					// output
+					if (!generators.isEmpty()) {
+						// Create a merged AsyncGenerator
+						AsyncGenerator<NodeOutput> mergedGenerator = AsyncGeneratorUtils
+							.createMergedGenerator(generators, state.keyStrategies());
+						mergedState.put("__merged_stream__", mergedGenerator);
+					}
+
+					return mergedState;
+				}
+				else {
+					// No streaming output, directly merge all results
+					return results.stream()
+						.reduce(state.data(),
+								(result, actionResult) -> OverAllState.updateState(result, actionResult, channels));
+				}
+			});
 		}
 	}
 

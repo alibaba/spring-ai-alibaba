@@ -439,15 +439,15 @@ public class StateGraphStreamTest {
 			keyStrategyMap.put("input", new ReplaceStrategy());
 			return keyStrategyMap;
 		}).addNode("llmNode", node_async(new LLmNodeAction(chatModel, "llmNode")))
-                .addNode("llmNode2", node_async(new LLmNodeAction(chatModel, "llmNode2")))
-                .addNode("result", node_async((t) -> Map.of("llm_result", "llm_result")))
-                .addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
-                .addEdge(START, "llmNode")
-                .addEdge(START, "llmNode2")
-                .addEdge(START, "result")
-                .addEdge("llmNode", "toolNode")
-                .addEdge("llmNode2", "toolNode")
-                .addEdge("toolNode", END);
+			.addNode("llmNode2", node_async(new LLmNodeAction(chatModel, "llmNode2")))
+			.addNode("result", node_async((t) -> Map.of("llm_result", "llm_result")))
+			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
+			.addEdge(START, "llmNode")
+			.addEdge(START, "llmNode2")
+			.addEdge(START, "result")
+			.addEdge("llmNode", "toolNode")
+			.addEdge("llmNode2", "toolNode")
+			.addEdge("toolNode", END);
 
 		CompiledGraph compile = stateGraph.compile();
 
