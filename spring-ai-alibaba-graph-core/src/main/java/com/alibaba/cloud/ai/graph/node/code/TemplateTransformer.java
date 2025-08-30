@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.graph.node.code;
 
+import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionResult;
 import com.alibaba.cloud.ai.graph.node.code.entity.RunnerAndPreload;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -45,8 +46,12 @@ public abstract class TemplateTransformer {
 		return new RunnerAndPreload(runnerScript, preloadScript);
 	}
 
-	public Map<String, Object> transformResponse(String response) throws Exception {
-		String resultStr = extractResultStrFromResponse(response);
+	public Object transformResponse(CodeExecutionResult codeExecutionResult) throws Exception {
+		if (codeExecutionResult.result() != null) {
+			// InJvmCodeExecutor returns result directly
+			return codeExecutionResult.result().get(0);
+		}
+		String resultStr = extractResultStrFromResponse(codeExecutionResult.logs());
 		ObjectMapper mapper = new ObjectMapper();
 		return mapper.readValue(resultStr,
 				mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
