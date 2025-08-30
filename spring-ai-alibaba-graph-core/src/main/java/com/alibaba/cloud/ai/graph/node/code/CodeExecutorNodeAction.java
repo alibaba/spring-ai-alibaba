@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.node.code;
 
+import com.alibaba.cloud.ai.graph.node.code.groovy.GroovyTemplateTransformer;
+import com.alibaba.cloud.ai.graph.node.code.javascript.NashornTemplateTransformer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -54,12 +56,14 @@ public class CodeExecutorNodeAction implements NodeAction {
 	private static final Map<CodeLanguage, TemplateTransformer> CODE_TEMPLATE_TRANSFORMERS = Map.of(
 			CodeLanguage.PYTHON3, new Python3TemplateTransformer(), CodeLanguage.PYTHON,
 			new Python3TemplateTransformer(), CodeLanguage.JAVASCRIPT, new NodeJsTemplateTransformer(),
-			CodeLanguage.JAVA, new JavaTemplateTransformer());
+			CodeLanguage.JAVA, new JavaTemplateTransformer(), CodeLanguage.GROOVY, new GroovyTemplateTransformer(),
+			CodeLanguage.NASHORN, new NashornTemplateTransformer());
 
 	private static final Map<CodeLanguage, String> CODE_LANGUAGE_TO_RUNNING_LANGUAGE = Map.of(CodeLanguage.JAVASCRIPT,
 			"nodejs", CodeLanguage.JINJA2, CodeLanguage.PYTHON3.getValue(), CodeLanguage.PYTHON3,
 			CodeLanguage.PYTHON3.getValue(), CodeLanguage.PYTHON, CodeLanguage.PYTHON.getValue(), CodeLanguage.JAVA,
-			CodeLanguage.JAVA.getValue());
+			CodeLanguage.JAVA.getValue(), CodeLanguage.GROOVY, CodeLanguage.GROOVY.getValue(), CodeLanguage.NASHORN,
+			CodeLanguage.NASHORN.getValue());
 
 	public CodeExecutorNodeAction(CodeExecutor codeExecutor, String codeLanguage, String code,
 			CodeExecutionConfig config, Map<String, Object> params, String outputKey) {
@@ -71,7 +75,7 @@ public class CodeExecutorNodeAction implements NodeAction {
 		this.outputKey = outputKey;
 	}
 
-	private Map<String, Object> executeWorkflowCodeTemplate(CodeLanguage language, String code, List<Object> inputs)
+	private Object executeWorkflowCodeTemplate(CodeLanguage language, String code, List<Object> inputs)
 			throws Exception {
 		TemplateTransformer templateTransformer = CODE_TEMPLATE_TRANSFORMERS.get(language);
 		if (templateTransformer == null) {
@@ -79,14 +83,16 @@ public class CodeExecutorNodeAction implements NodeAction {
 		}
 
 		RunnerAndPreload runnerAndPreload = templateTransformer.transformCaller(code, inputs);
-		String response = executeCode(language, runnerAndPreload.preloadScript(), runnerAndPreload.runnerScript());
+		CodeExecutionResult codeExecutionResult = executeCode(language, runnerAndPreload.preloadScript(),
+				runnerAndPreload.runnerScript(), inputs);
 
-		return templateTransformer.transformResponse(response);
+		return templateTransformer.transformResponse(codeExecutionResult);
 	}
 
-	private String executeCode(CodeLanguage language, String preloadScript, String code) throws Exception {
+	private CodeExecutionResult executeCode(CodeLanguage language, String preloadScript, String code,
+			List<Object> inputs) throws Exception {
 		List<CodeBlock> codeBlockList = new ArrayList<>(10);
-		codeBlockList.add(new CodeBlock(CODE_LANGUAGE_TO_RUNNING_LANGUAGE.get(language), code));
+		codeBlockList.add(new CodeBlock(CODE_LANGUAGE_TO_RUNNING_LANGUAGE.get(language), code, inputs));
 
 		CodeExecutionResult codeExecutionResult = codeExecutor.executeCodeBlocks(codeBlockList,
 				this.codeExecutionConfig);
@@ -95,7 +101,7 @@ public class CodeExecutorNodeAction implements NodeAction {
 					+ ", logs: " + codeExecutionResult.logs());
 		}
 
-		return codeExecutionResult.logs();
+		return codeExecutionResult;
 	}
 
 	@Override
@@ -106,8 +112,7 @@ public class CodeExecutorNodeAction implements NodeAction {
 				inputs.add(state.data().get((String) params.get(key)));
 			}
 		}
-		Map<String, Object> resultObjectMap = executeWorkflowCodeTemplate(CodeLanguage.fromValue(codeLanguage), code,
-				inputs);
+		Object resultObjectMap = executeWorkflowCodeTemplate(CodeLanguage.fromValue(codeLanguage), code, inputs);
 		Map<String, Object> updatedState = new HashMap<>();
 		if (StringUtils.hasLength(this.outputKey)) {
 			updatedState.put(this.outputKey, resultObjectMap);
