@@ -45,16 +45,16 @@ public class TextDocumentParser implements DocumentParser {
 	@Override
 	public List<Document> parse(InputStream inputStream) {
 		try {
-			// 读取入口流所有文本，且使用指定的字符集解码
+			// Read all text from the input stream and decode it using the specified character set.
 			String text = new String(inputStream.readAllBytes(), this.charset);
-			// 如果文本全部为空白，则报告非法参数异常
+	// If the text is completely empty, report an illegal argument exception.
 			if (text.isBlank()) {
 				throw new IllegalArgumentException("text must not be blank");
 			}
 			return Collections.singletonList(new Document(text));
 		}
 		catch (IOException e) {
-			// 将任何 IO 异常转换为 RuntimeException 以便传播
+			// Convert any IO exception into a RuntimeException for propagation.
 			throw new RuntimeException(e);
 		}
 	}
