@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.nodes;
+package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -151,7 +151,7 @@ public class TemplateTransformNodeDataConverter extends AbstractNodeDataConverte
 					.collect(Collectors.toMap(VariableSelector::getLabel, VariableSelector::getNameInCode));
 				nodeData.setTemplate(this.replacePlaceholders(nodeData.getTemplate(), argToStateName));
 			});
-			case CUSTOM -> super.postProcessConsumer(dialectType);
+			default -> super.postProcessConsumer(dialectType);
 		};
 	}
 

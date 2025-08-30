@@ -46,7 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -72,16 +71,16 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private final String HAS_CODE = "hasCode";
 
-	private final DSLAdapter dslAdapter;
+	private final List<DSLAdapter> dslAdapters;
 
 	private final TemplateRenderer templateRenderer;
 
 	private final List<NodeSection<? extends NodeData>> nodeNodeSections;
 
-	public WorkflowProjectGenerator(@Qualifier("difyDSLAdapter") DSLAdapter dslAdapter,
+	public WorkflowProjectGenerator(List<DSLAdapter> dslAdapters,
 			ObjectProvider<MustacheTemplateRenderer> templateRenderer,
 			List<NodeSection<? extends NodeData>> nodeNodeSections) {
-		this.dslAdapter = dslAdapter;
+		this.dslAdapters = dslAdapters;
 		this.templateRenderer = templateRenderer
 			.getIfAvailable(() -> new MustacheTemplateRenderer("classpath:/templates"));
 		this.nodeNodeSections = nodeNodeSections;
@@ -94,6 +93,11 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	@Override
 	public void generate(GraphProjectDescription projectDescription, Path projectRoot) {
+		DSLAdapter dslAdapter = dslAdapters.stream()
+			.filter(t -> t.supportDialect(projectDescription.getDslDialectType()))
+			.findFirst()
+			.orElseThrow(() -> new RuntimeException(
+					"No DSL adapter found for dialect: " + projectDescription.getDslDialectType()));
 		App app = dslAdapter.importDSL(projectDescription.getDsl());
 		Workflow workflow = (Workflow) app.getSpec();
 
@@ -127,6 +131,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		String template = """
 				() -> {
 				  Map<String, KeyStrategy> strategies = new HashMap<>();
+				  strategies.put("sys_query", (o1, o2) -> o2);
 				  %s
 				  return strategies;
 				}
@@ -154,6 +159,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return sb.toString();
 	}
 
+	// TODO: 目前这里渲染edge的逻辑与Dify转换高度耦合，需要优化
 	private String renderEdgeSections(List<Edge> edges, List<Node> nodes, Map<String, String> varNames) {
 		StringBuilder sb = new StringBuilder();
 		Map<String, Node> nodeMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
@@ -172,17 +178,18 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			String targetId = edge.getTarget();
 			String srcVar = varNames.get(sourceId);
 			String tgtVar = varNames.get(targetId);
-			Map<String, Object> data = edge.getData();
-			String sourceType = data != null ? (String) data.get("sourceType") : null;
+
+			Node sourceNode = nodeMap.get(sourceId);
+			String sourceType = sourceNode != null ? sourceNode.getType() : null;
 
 			// Skip if already rendered as conditional
-			if (edge.getSourceHandle() != null && !"source".equals(edge.getSourceHandle())) {
+			if (edge.getSourceHandle() != null && !"source".equals(edge.getSourceHandle()) && edge.isDify()) {
 				continue;
 			}
 
 			// 迭代节点作为边的终止点时直接使用节点ID，作为边的起始点时使用ID_out
 			// todo: 修改迭代节点终止ID，防止与变量冲突（Dify不冲突）
-			if (sourceType != null && sourceType.equalsIgnoreCase("iteration")) {
+			if (sourceType != null && sourceType.equalsIgnoreCase("iteration") && edge.isDify()) {
 				srcVar += "_out";
 			}
 
@@ -193,7 +200,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			renderedEdges.add(key);
 
 			// START and END special handling
-			if ("start".equals(sourceType)) {
+			if (NodeType.START.value().equals(sourceType)) {
 				sb.append(String.format("stateGraph.addEdge(START, \"%s\");%n", tgtVar));
 			}
 			else {
