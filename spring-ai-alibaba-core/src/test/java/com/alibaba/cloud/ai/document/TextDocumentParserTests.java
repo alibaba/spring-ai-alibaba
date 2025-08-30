@@ -62,7 +62,7 @@ class TextDocumentParserTests {
 
 	@Test
 	void testParseEmptyText() {
-		// 空字符串应当触发 IllegalArgumentException
+		// An empty string should trigger an IllegalArgumentException.
 		String text = "";
 		TextDocumentParser parser = new TextDocumentParser();
 
@@ -71,7 +71,7 @@ class TextDocumentParserTests {
 
 	@Test
 	void testParseBlankText() {
-		// 含有空格或插入字符的空白字符串同样应抛出 IllegalArgumentException
+		// A blank string containing spaces or inserted characters should also throw an IllegalArgumentException.
 		String text = "   \n\t   ";
 		TextDocumentParser parser = new TextDocumentParser();
 
