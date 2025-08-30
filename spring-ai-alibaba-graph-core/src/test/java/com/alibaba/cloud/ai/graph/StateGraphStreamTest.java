@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator.Data;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
@@ -43,6 +44,7 @@ import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -424,6 +426,42 @@ public class StateGraphStreamTest {
 			.peek(s -> System.out.println(String.format("NODE: {}", s.node())))
 			.map(NodeOutput::state)
 			.collect(java.util.stream.Collectors.toList());
+	}
+
+	@Test
+	@Tag("integration")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	public void testParallelNodeStream() throws Exception {
+		StateGraph stateGraph = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			keyStrategyMap.put("llm_result", new AppendStrategy());
+			keyStrategyMap.put("input", new ReplaceStrategy());
+			return keyStrategyMap;
+		}).addNode("llmNode", node_async(new LLmNodeAction(chatModel, "llmNode")))
+			.addNode("llmNode2", node_async(new LLmNodeAction(chatModel, "llmNode2")))
+			.addNode("result", node_async((t) -> Map.of("llm_result", "llm_result")))
+			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
+			.addEdge(START, "llmNode")
+			.addEdge(START, "llmNode2")
+			.addEdge(START, "result")
+			.addEdge("llmNode", "toolNode")
+			.addEdge("llmNode2", "toolNode")
+			.addEdge("toolNode", END);
+
+		CompiledGraph compile = stateGraph.compile();
+
+		for (var output : compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"),
+				RunnableConfig.builder().addParallelNodeExecutor(START, ForkJoinPool.commonPool()).build())) {
+			if (output instanceof AsyncGenerator<?>) {
+				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
+				System.out.println("Streaming chunk: " + asyncGenerator);
+			}
+			else {
+				System.out.println("Node output: " + output);
+			}
+		}
+
 	}
 
 }
