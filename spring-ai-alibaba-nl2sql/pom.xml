@@ -38,6 +38,8 @@
         <netty-resolver-dns-native-macos.version>4.1.114.Final</netty-resolver-dns-native-macos.version>
         <netty-transport-native-epoll.version>4.1.114.Final</netty-transport-native-epoll.version>
         <jsonschema.version>4.37.0</jsonschema.version>
+        <guava.version>32.0.1-android</guava.version>
+        <protobuf.version>3.24.0</protobuf.version>
     </properties>
 
     <dependencyManagement>
@@ -128,7 +130,20 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>${protobuf.version}</version>
+            </dependency>
         </dependencies>
+
     </dependencyManagement>
 
 </project>

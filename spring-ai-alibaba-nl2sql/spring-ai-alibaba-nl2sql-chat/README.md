@@ -71,7 +71,7 @@
 
 ### 存储与连接
 - 📊 **数据库支持**: MySQL / PostgreSQL
-- 🔍 **向量存储**: AnalyticDB / SimpleVector
+- 🔍 **向量存储**: AnalyticDB / SimpleVector /Milvus
 - 💻 **Python代码执行**: Docker
 
 ### 工具支持
@@ -242,6 +242,37 @@ webclient:
 > 💡 **说明**: SimpleVector 适合本地开发和测试环境使用，不建议在生产环境中使用。
 
 </details>
+
+
+
+
+<details>
+<summary>📌 Milvus 配置</summary>
+
+```yaml
+spring:
+  ai:
+    alibaba:
+        nl2sql:
+          milvus:
+            enabled: true #启用milvus
+            host: 192.168.16.100
+            port: 19530
+            collectionName: nl2sql
+            databaseName: default
+            initializeSchema: false
+            idFieldName: id  #和你的milvus中id字段名一致
+            contentFieldName: content #和你的milvus中存储文本的字段名一致
+            metadataFieldName: metadata  #和你的milvus中元数据字段名一致
+            embeddingFieldName: vector  #和你的milvus中向量字段名一致
+            embeddingDimension: 1536  #和你的milvus中向量维度一致
+```
+
+> ⚠️ **重要提示**
+> 1. 请为 vector 这个向量字段创建一个向量索引，并且这个索引要使用 COSINE（余弦相似度）作为距离度量算法。
+
+</details>
+
 
 <details>
 <summary>📌 EmbeddingModel 配置</summary>
