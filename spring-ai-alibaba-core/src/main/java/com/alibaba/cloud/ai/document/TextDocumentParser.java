@@ -45,9 +45,10 @@ public class TextDocumentParser implements DocumentParser {
 	@Override
 	public List<Document> parse(InputStream inputStream) {
 		try {
-			// Read all text from the input stream and decode it using the specified character set.
+			// Read all text from the input stream and decode it using the specified
+			// character set.
 			String text = new String(inputStream.readAllBytes(), this.charset);
-	// If the text is completely empty, report an illegal argument exception.
+			// If the text is completely empty, report an illegal argument exception.
 			if (text.isBlank()) {
 				throw new IllegalArgumentException("text must not be blank");
 			}

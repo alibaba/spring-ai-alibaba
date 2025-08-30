@@ -71,7 +71,8 @@ class TextDocumentParserTests {
 
 	@Test
 	void testParseBlankText() {
-		// A blank string containing spaces or inserted characters should also throw an IllegalArgumentException.
+		// A blank string containing spaces or inserted characters should also throw an
+		// IllegalArgumentException.
 		String text = "   \n\t   ";
 		TextDocumentParser parser = new TextDocumentParser();
 
