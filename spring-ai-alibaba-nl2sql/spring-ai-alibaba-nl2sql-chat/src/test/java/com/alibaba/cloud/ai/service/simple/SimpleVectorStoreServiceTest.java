@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.request.DeleteRequest;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.alibaba.cloud.ai.request.SearchRequest;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -435,7 +436,7 @@ class SimpleVectorStoreServiceTest {
 			.name("test_table")
 			.description("Test table")
 			.schema("test_schema")
-			.primaryKey("id")
+			.primaryKeys(Lists.newArrayList("id"))
 			.foreignKey("foreign_key_info")
 			.build();
 	}
