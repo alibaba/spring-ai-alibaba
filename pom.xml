@@ -153,6 +153,7 @@
         <module>community/memories/spring-ai-alibaba-starter-memory-mongodb</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-tablestore</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-memcached</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-mem0</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
