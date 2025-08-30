@@ -18,82 +18,39 @@ package com.alibaba.cloud.ai.graph.stream;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
-import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
-import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
-import org.apache.commons.collections4.CollectionUtils;
-import org.reactivestreams.Subscription;
+import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import reactor.core.CoreSubscriber;
+import reactor.core.publisher.Flux;
+
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
+import java.util.Objects;
 
 public class LLmNodeAction implements NodeAction {
 
 	private DashScopeChatModel chatModel;
-
+	private String nodeId;
 	public LLmNodeAction(DashScopeChatModel chatModel) {
 		this.chatModel = chatModel;
 	}
 
+	public LLmNodeAction(DashScopeChatModel chatModel, String nodeId) {
+		this.chatModel = chatModel;
+		this.nodeId = nodeId;
+	}
+
 	@Override
-	public Map<String, Object> apply(OverAllState t) {
-		BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
-		AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
-				new AsyncGeneratorQueue.Generator<>(queue));
-		final CountDownLatch streamStarted = new CountDownLatch(1);
+	public Map<String, Object> apply(OverAllState state) {
 		// Create prompt with user message
-		UserMessage message = new UserMessage((String) t.value(OverAllState.DEFAULT_INPUT_KEY).get());
-		Prompt prompt = new Prompt(message);
-		chatModel.stream(prompt).subscribe(new CoreSubscriber<>() {
-			@Override
-			public void onSubscribe(Subscription subscription) {
-				subscription.request(Long.MAX_VALUE); // Request all items
-				streamStarted.countDown();
-			}
-
-			@Override
-			public void onNext(ChatResponse chatResponse) {
-				try {
-					if (chatResponse == null || CollectionUtils.isEmpty(chatResponse.getResults())) {
-						queue.add(AsyncGenerator.Data.done());
-						return;
-					}
-
-					Generation generation = chatResponse.getResults().get(0);
-					String content = generation.getOutput().getText();
-
-					if (content == null || content.isEmpty()) {
-						queue.add(AsyncGenerator.Data.done());
-						return;
-					}
-
-					t.updateState(Map.of("llm_result", content));
-					queue.add(AsyncGenerator.Data.of(new StreamingOutput(content, "llmNode", t)));
-				}
-				catch (Exception e) {
-					onError(e);
-				}
-			}
-
-			@Override
-			public void onError(Throwable throwable) {
-				System.err.println("Stream error: " + throwable.getMessage());
-				queue.add(AsyncGenerator.Data.error(throwable));
-			}
-
-			@Override
-			public void onComplete() {
-				System.out.println("Stream completed");
-				queue.add(AsyncGenerator.Data.done());
-			}
-		});
-		return Map.of("messages", it);
+		UserMessage message = new UserMessage((String) state.value(OverAllState.DEFAULT_INPUT_KEY).get());
+		Flux<ChatResponse> stream = chatModel.stream(new Prompt(message));
+		var generator = StreamingChatGenerator.builder()
+			.startingNode(nodeId)
+			.startingState(state)
+			.mapResult(response -> Map.of("messages", Objects.requireNonNull(response.getResult().getOutput())))
+			.build(stream);
+		return Map.of("messages", generator);
 	}
 
 }
