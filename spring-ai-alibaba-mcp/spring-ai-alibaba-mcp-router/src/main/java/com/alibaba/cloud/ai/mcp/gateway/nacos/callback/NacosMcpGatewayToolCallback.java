@@ -87,8 +87,6 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	public NacosMcpGatewayToolCallback(final McpGatewayToolDefinition toolDefinition) {
 		this.toolDefinition = (NacosMcpGatewayToolDefinition) toolDefinition;
 		this.nacosMcpOperationService = SpringBeanUtils.getInstance().getBean(NacosMcpOperationService.class);
-
-		// 初始化WebClient并配置OAuth拦截器
 		this.webClientBuilder = initializeWebClientBuilder(toolDefinition.name());
 		// 尝试获取配置属性
 		// try {
