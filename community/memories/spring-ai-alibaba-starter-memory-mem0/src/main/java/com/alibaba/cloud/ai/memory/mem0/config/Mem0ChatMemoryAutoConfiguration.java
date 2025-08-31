@@ -1,6 +1,5 @@
 package com.alibaba.cloud.ai.memory.mem0.config;
 
-import com.alibaba.cloud.ai.autoconfigure.memory.ChatMemoryAutoConfiguration;
 import com.alibaba.cloud.ai.memory.mem0.mem0.Mem0MemoryStore;
 import com.alibaba.cloud.ai.memory.mem0.mem0.Mem0ServiceClient;
 import org.slf4j.Logger;
@@ -13,17 +12,15 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ResourceLoader;
 
-@AutoConfiguration(before = { ChatMemoryAutoConfiguration.class })
-@ConditionalOnProperty(prefix = "mem0.server", name = "version")
+@AutoConfiguration
+@ConditionalOnProperty(prefix = "mem0.server", name = "version", matchIfMissing = false)
 @EnableConfigurationProperties({ Mem0ChatMemoryProperties.class })
 public class Mem0ChatMemoryAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(Mem0ChatMemoryAutoConfiguration.class);
 
 	@Bean
-	@ConditionalOnBean(Mem0ChatMemoryProperties.class)
-	public Mem0ServiceClient elasticsearchRestClient(Mem0ChatMemoryProperties properties,
-			ResourceLoader resourceLoader) {
+	public Mem0ServiceClient mem0ServiceClient(Mem0ChatMemoryProperties properties, ResourceLoader resourceLoader) {
 		Mem0ServiceClient mem0ServiceClient = new Mem0ServiceClient(properties, resourceLoader);
 		logger.info("Initialized Mem0Service Client.success!");
 		// 将client配置项交给Server初始化Mem0实例
