@@ -15,23 +15,17 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.graph.store.Store;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.alibaba.cloud.ai.graph.store.Store;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.entryOf;
 import static java.util.Collections.unmodifiableMap;
@@ -380,13 +374,8 @@ public final class OverAllState implements Serializable {
 	 */
 	public Map<String, Object> updateState(Map<String, Object> partialState) {
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
-		partialState.keySet().forEach(key -> {
-			KeyStrategy strategy = keyStrategies != null ? keyStrategies.get(key) : null;
-			// If no specific strategy is found, use the default REPLACE strategy
-			if (strategy == null) {
-				strategy = KeyStrategy.REPLACE;
-			}
-			this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
+		partialState.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
+			this.data.put(key, keyStrategies.get(key).apply(value(key, null), partialState.get(key)));
 		});
 		return data();
 	}
@@ -478,20 +467,18 @@ public final class OverAllState implements Serializable {
 	 */
 	private static Map<String, Object> updatePartialStateFromSchema(Map<String, Object> state,
 			Map<String, Object> partialState, Map<String, KeyStrategy> keyStrategies) {
-		if (partialState == null || partialState.isEmpty()) {
+		if (keyStrategies == null || keyStrategies.isEmpty()) {
 			return partialState;
 		}
-
 		return partialState.entrySet().stream().map(entry -> {
-			KeyStrategy channel = keyStrategies != null ? keyStrategies.get(entry.getKey()) : null;
 
-			// If no specific strategy is found, use the default REPLACE strategy
-			if (channel == null) {
-				channel = KeyStrategy.REPLACE;
+			KeyStrategy channel = keyStrategies.get(entry.getKey());
+			if (channel != null) {
+				Object newValue = channel.apply(state.get(entry.getKey()), entry.getValue());
+				return entryOf(entry.getKey(), newValue);
 			}
 
-			Object newValue = channel.apply(state.get(entry.getKey()), entry.getValue());
-			return entryOf(entry.getKey(), newValue);
+			return entry;
 		}).collect(toMapAllowingNulls(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
