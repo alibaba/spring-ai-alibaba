@@ -142,8 +142,8 @@ public class Mem0ServerResp {
 		}
 
 		public Mem0Results(String id, String memory, String hash, Map<String, Object> metadata, String userId,
-						   ZonedDateTime createdAt, ZonedDateTime updatedAt, String agentId, String runId, Double score,
-						   String role) {
+				ZonedDateTime createdAt, ZonedDateTime updatedAt, String agentId, String runId, Double score,
+				String role) {
 			this.id = id;
 			this.memory = memory;
 			this.hash = hash;

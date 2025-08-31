@@ -94,7 +94,7 @@ public class Mem0ChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 	private final VectorStore vectorStore;
 
 	public Mem0ChatMemoryAdvisor(PromptTemplate systemPromptTemplate, int order, Scheduler scheduler,
-								 VectorStore vectorStore) {
+			VectorStore vectorStore) {
 		this.systemPromptTemplate = systemPromptTemplate;
 		this.order = order;
 		this.scheduler = scheduler;
@@ -244,8 +244,7 @@ public class Mem0ChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		}
 
 		public Mem0ChatMemoryAdvisor build() {
-			return new Mem0ChatMemoryAdvisor(this.systemPromptTemplate, this.order, this.scheduler,
-					this.vectorStore);
+			return new Mem0ChatMemoryAdvisor(this.systemPromptTemplate, this.order, this.scheduler, this.vectorStore);
 		}
 
 	}

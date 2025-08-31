@@ -66,8 +66,7 @@ class Mem0ServiceClientTest {
 	void testConstructorWithNullProperties() {
 		// 由于构造函数没有null检查，这里会抛出NullPointerException
 		// 但不是在构造函数中，而是在后续使用config时
-		assertThatThrownBy(() -> new Mem0ServiceClient(null, resourceLoader))
-			.isInstanceOf(NullPointerException.class);
+		assertThatThrownBy(() -> new Mem0ServiceClient(null, resourceLoader)).isInstanceOf(NullPointerException.class);
 	}
 
 	@Test

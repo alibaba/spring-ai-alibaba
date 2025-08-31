@@ -15,16 +15,15 @@ import org.springframework.core.io.ResourceLoader;
 
 @AutoConfiguration(before = { ChatMemoryAutoConfiguration.class })
 @ConditionalOnProperty(prefix = "mem0.server", name = "version", havingValue = "v1.1")
-@EnableConfigurationProperties({Mem0ChatMemoryProperties.class})
+@EnableConfigurationProperties({ Mem0ChatMemoryProperties.class })
 public class Mem0ChatMemoryAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(Mem0ChatMemoryAutoConfiguration.class);
 
-
 	@Bean
 	@ConditionalOnBean(Mem0ChatMemoryProperties.class)
 	public Mem0ServiceClient elasticsearchRestClient(Mem0ChatMemoryProperties properties,
-													 ResourceLoader resourceLoader) {
+			ResourceLoader resourceLoader) {
 		Mem0ServiceClient mem0ServiceClient = new Mem0ServiceClient(properties, resourceLoader);
 		logger.info("Initialized Mem0Service Client.success!");
 		// 将client配置项交给Server初始化Mem0实例

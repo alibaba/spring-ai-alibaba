@@ -66,8 +66,8 @@ public class Mem0MemoryStore implements InitializingBean, VectorStore {
 		// TODO 将role相同的message合并
 		List<Mem0ServerRequest.MemoryCreate> messages = documents.stream()
 			.map(doc -> Mem0ServerRequest.MemoryCreate.builder()
-				.messages(List
-					.of(new Mem0ServerRequest.Message(doc.getMetadata().get("role").toString(), doc.getText())))
+				.messages(
+						List.of(new Mem0ServerRequest.Message(doc.getMetadata().get("role").toString(), doc.getText())))
 				.metadata(doc.getMetadata())
 				.agentId(doc.getMetadata().containsKey(AGENT_ID) ? doc.getMetadata().get(AGENT_ID).toString() : null)
 				.runId(doc.getMetadata().containsKey(RUN_ID) ? doc.getMetadata().get(RUN_ID).toString() : null)
