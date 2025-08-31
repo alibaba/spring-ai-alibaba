@@ -166,7 +166,7 @@ public final class OverAllState implements Serializable {
 	 * @param data the data
 	 */
 	public OverAllState(Map<String, Object> data) {
-		this.data = new HashMap<>(data);
+		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
 		this.keyStrategies = new HashMap<>();
 		this.resume = false;
 	}
@@ -177,7 +177,7 @@ public final class OverAllState implements Serializable {
 	 * @param store the store instance
 	 */
 	public OverAllState(Map<String, Object> data, Store store) {
-		this.data = new HashMap<>(data);
+		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
 		this.keyStrategies = new HashMap<>();
 		this.resume = false;
 		this.store = store;
@@ -212,7 +212,7 @@ public final class OverAllState implements Serializable {
 	 * @param resume the resume
 	 */
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume) {
-		this.data = data;
+		this.data = data != null ? data : new HashMap<>();
 		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = resume;
@@ -227,7 +227,7 @@ public final class OverAllState implements Serializable {
 	 */
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume,
 			Store store) {
-		this.data = data;
+		this.data = data != null ? data : new HashMap<>();
 		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = resume;
@@ -548,7 +548,7 @@ public final class OverAllState implements Serializable {
 	 * @return the map
 	 */
 	public final Map<String, Object> data() {
-		return unmodifiableMap(data);
+		return data != null ? unmodifiableMap(data) : unmodifiableMap(new HashMap<>());
 	}
 
 	/**
