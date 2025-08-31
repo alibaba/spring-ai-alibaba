@@ -1,6 +1,6 @@
-package com.alibaba.example.chatmemory.mem0;
+package com.alibaba.cloud.ai.memory.mem0.mem0;
 
-import com.alibaba.example.chatmemory.config.Mem0ChatMemoryProperties;
+import com.alibaba.cloud.ai.memory.mem0.config.Mem0ChatMemoryProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

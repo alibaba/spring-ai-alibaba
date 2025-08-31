@@ -1,4 +1,4 @@
-package com.alibaba.example.chatmemory.mem0;
+package com.alibaba.cloud.ai.memory.mem0.mem0;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

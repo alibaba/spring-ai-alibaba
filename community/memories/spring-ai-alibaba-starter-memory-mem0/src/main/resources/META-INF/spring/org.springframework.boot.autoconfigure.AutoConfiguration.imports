@@ -1,1 +1,2 @@
-com.alibaba.example.chatmemory.config.Mem0ChatMemoryAutoConfiguration
+com.alibaba.cloud.ai.memory.mem0.config.Mem0ChatMemoryAutoConfiguration
+com.alibaba.cloud.ai.memory.mem0.config.Mem0ChatMemoryProperties

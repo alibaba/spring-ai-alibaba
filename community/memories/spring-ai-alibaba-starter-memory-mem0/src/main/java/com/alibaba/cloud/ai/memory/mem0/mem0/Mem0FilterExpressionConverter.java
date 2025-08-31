@@ -1,4 +1,4 @@
-package com.alibaba.example.chatmemory.mem0;
+package com.alibaba.cloud.ai.memory.mem0.mem0;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.vectorstore.filter.Filter;

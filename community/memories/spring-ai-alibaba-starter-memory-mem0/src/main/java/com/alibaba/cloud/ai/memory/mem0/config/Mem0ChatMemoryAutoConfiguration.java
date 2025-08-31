@@ -1,8 +1,8 @@
-package com.alibaba.example.chatmemory.config;
+package com.alibaba.cloud.ai.memory.mem0.config;
 
 import com.alibaba.cloud.ai.autoconfigure.memory.ChatMemoryAutoConfiguration;
-import com.alibaba.example.chatmemory.mem0.Mem0MemoryStore;
-import com.alibaba.example.chatmemory.mem0.Mem0ServiceClient;
+import com.alibaba.cloud.ai.memory.mem0.mem0.Mem0MemoryStore;
+import com.alibaba.cloud.ai.memory.mem0.mem0.Mem0ServiceClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.vectorstore.VectorStore;

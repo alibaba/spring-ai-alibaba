@@ -1,14 +1,14 @@
-package com.alibaba.example.chatmemory.config;
+package com.alibaba.cloud.ai.memory.mem0.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@ConfigurationProperties(prefix = Mem0ChatMemoryProperties.GRAPH_RAG_PREFIX)
+@ConfigurationProperties(prefix = Mem0ChatMemoryProperties.MEM0_PREFIX)
 public class Mem0ChatMemoryProperties {
 
-	public static final String GRAPH_RAG_PREFIX = "mem0";
+	public static final String MEM0_PREFIX = "mem0";
 
 	private Client client;
 

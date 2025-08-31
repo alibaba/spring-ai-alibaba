@@ -1,4 +1,4 @@
-package com.alibaba.example.chatmemory.mem0;
+package com.alibaba.cloud.ai.memory.mem0.mem0;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.alibaba.example.chatmemory.mem0.Mem0ChatMemoryAdvisor.*;
+import static com.alibaba.cloud.ai.memory.mem0.mem0.Mem0ChatMemoryAdvisor.*;
 
 /**
  * @author miaoyumeng
