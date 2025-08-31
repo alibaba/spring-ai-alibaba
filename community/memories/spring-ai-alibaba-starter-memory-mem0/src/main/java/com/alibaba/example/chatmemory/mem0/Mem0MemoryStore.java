@@ -17,41 +17,41 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.alibaba.example.chatmemory.mem0.MemZeroChatMemoryAdvisor.*;
+import static com.alibaba.example.chatmemory.mem0.Mem0ChatMemoryAdvisor.*;
 
 /**
  * @author miaoyumeng
  * @date 2025/06/24 14:28
  * @description TODO
  */
-public class MemZeroMemoryStore implements InitializingBean, VectorStore {
+public class Mem0MemoryStore implements InitializingBean, VectorStore {
 
-	private final MemZeroServiceClient mem0Client;
+	private final Mem0ServiceClient mem0Client;
 
 	private final ObjectMapper objectMapper;
 
-	private final MemZeroFilterExpressionConverter mem0FilterExpressionConverter;
+	private final Mem0FilterExpressionConverter mem0FilterExpressionConverter;
 
-	protected MemZeroMemoryStore(MemZeroServiceClient client) {
+	protected Mem0MemoryStore(Mem0ServiceClient client) {
 		this.mem0Client = client;
-		this.mem0FilterExpressionConverter = new MemZeroFilterExpressionConverter();
+		this.mem0FilterExpressionConverter = new Mem0FilterExpressionConverter();
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
 
-	public static MemZeroMemoryStoreBuilder builder(MemZeroServiceClient client) {
-		return new MemZeroMemoryStoreBuilder(client);
+	public static Mem0MemoryStoreBuilder builder(Mem0ServiceClient client) {
+		return new Mem0MemoryStoreBuilder(client);
 	}
 
-	public static final class MemZeroMemoryStoreBuilder {
+	public static final class Mem0MemoryStoreBuilder {
 
-		private final MemZeroServiceClient client;
+		private final Mem0ServiceClient client;
 
-		public MemZeroMemoryStoreBuilder(MemZeroServiceClient client) {
+		public Mem0MemoryStoreBuilder(Mem0ServiceClient client) {
 			this.client = client;
 		}
 
-		public MemZeroMemoryStore build() {
-			return new MemZeroMemoryStore(client);
+		public Mem0MemoryStore build() {
+			return new Mem0MemoryStore(client);
 		}
 
 	}
@@ -64,10 +64,10 @@ public class MemZeroMemoryStore implements InitializingBean, VectorStore {
 	@Override
 	public void add(List<Document> documents) {
 		// TODO 将role相同的message合并
-		List<MemZeroServerRequest.MemoryCreate> messages = documents.stream()
-			.map(doc -> MemZeroServerRequest.MemoryCreate.builder()
+		List<Mem0ServerRequest.MemoryCreate> messages = documents.stream()
+			.map(doc -> Mem0ServerRequest.MemoryCreate.builder()
 				.messages(List
-					.of(new MemZeroServerRequest.Message(doc.getMetadata().get("role").toString(), doc.getText())))
+					.of(new Mem0ServerRequest.Message(doc.getMetadata().get("role").toString(), doc.getText())))
 				.metadata(doc.getMetadata())
 				.agentId(doc.getMetadata().containsKey(AGENT_ID) ? doc.getMetadata().get(AGENT_ID).toString() : null)
 				.runId(doc.getMetadata().containsKey(RUN_ID) ? doc.getMetadata().get(RUN_ID).toString() : null)
@@ -97,7 +97,7 @@ public class MemZeroMemoryStore implements InitializingBean, VectorStore {
 
 	@Override
 	public List<Document> similaritySearch(SearchRequest request) {
-		MemZeroServerRequest.SearchRequest search = (MemZeroServerRequest.SearchRequest) request;
+		Mem0ServerRequest.SearchRequest search = (Mem0ServerRequest.SearchRequest) request;
 
 		if (request.getFilterExpression() != null) {
 			String jsonStr = this.mem0FilterExpressionConverter.convertExpression(request.getFilterExpression());
@@ -116,9 +116,9 @@ public class MemZeroMemoryStore implements InitializingBean, VectorStore {
 			}
 		}
 
-		MemZeroServerResp memZeroServerResp = mem0Client.searchMemories(search);
-		List<MemZeroServerResp.MemZeroResults> results = memZeroServerResp.getResults();
-		List<MemZeroServerResp.MemZeroRelation> relations = memZeroServerResp.getRelations();
+		Mem0ServerResp mem0ServerResp = mem0Client.searchMemories(search);
+		List<Mem0ServerResp.Mem0Results> results = mem0ServerResp.getResults();
+		List<Mem0ServerResp.Mem0Relation> relations = mem0ServerResp.getRelations();
 
 		List<Document> documents = Stream.concat(results.stream().map(result -> {
 			Map<String, Object> meta = new HashMap<>();

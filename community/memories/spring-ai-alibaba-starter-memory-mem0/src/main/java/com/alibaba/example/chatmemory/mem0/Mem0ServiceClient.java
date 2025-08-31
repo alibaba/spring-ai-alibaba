@@ -1,6 +1,6 @@
 package com.alibaba.example.chatmemory.mem0;
 
-import com.alibaba.example.chatmemory.config.MemZeroChatMemoryProperties;
+import com.alibaba.example.chatmemory.config.Mem0ChatMemoryProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,15 +24,15 @@ import java.util.*;
  *
  * 直接调用 Mem0 REST API 接口 参考文档: http://localhost:8888/docs
  */
-public class MemZeroServiceClient {
+public class Mem0ServiceClient {
 
-	private static final Logger logger = LoggerFactory.getLogger(MemZeroServiceClient.class);
+	private static final Logger logger = LoggerFactory.getLogger(Mem0ServiceClient.class);
 
 	private final WebClient webClient;
 
 	private final ObjectMapper objectMapper;
 
-	private final MemZeroChatMemoryProperties config;
+	private final Mem0ChatMemoryProperties config;
 
 	private final ResourceLoader resourceLoader;
 
@@ -48,7 +48,7 @@ public class MemZeroServiceClient {
 	/**
 	 * 构造函数
 	 */
-	public MemZeroServiceClient(MemZeroChatMemoryProperties config, ResourceLoader resourceLoader) {
+	public Mem0ServiceClient(Mem0ChatMemoryProperties config, ResourceLoader resourceLoader) {
 		this.config = config;
 		this.resourceLoader = resourceLoader;
 		this.objectMapper = new ObjectMapper();
@@ -68,7 +68,7 @@ public class MemZeroServiceClient {
 	/**
 	 * 配置 Mem0
 	 */
-	public void configure(MemZeroChatMemoryProperties.Server config) {
+	public void configure(Mem0ChatMemoryProperties.Server config) {
 		try {
 			if (Objects.nonNull(config.getProject())) {
 				config.getProject().setCustomInstructions(this.loadPrompt(config.getProject().getCustomInstructions()));
@@ -109,7 +109,7 @@ public class MemZeroServiceClient {
 	/**
 	 * 添加记忆
 	 */
-	public void addMemory(MemZeroServerRequest.MemoryCreate memoryCreate) {
+	public void addMemory(Mem0ServerRequest.MemoryCreate memoryCreate) {
 		try {
 			// 添加调试信息
 			String requestJson = objectMapper.writeValueAsString(memoryCreate);
@@ -145,7 +145,7 @@ public class MemZeroServiceClient {
 	/**
 	 * 获取所有记忆
 	 */
-	public MemZeroServerResp getAllMemories(String userId, String runId, String agentId) {
+	public Mem0ServerResp getAllMemories(String userId, String runId, String agentId) {
 		try {
 			String response = webClient.get().uri(uriBuilder -> {
 				uriBuilder.path(MEMORIES_ENDPOINT);
@@ -165,7 +165,7 @@ public class MemZeroServiceClient {
 
 			if (response != null) {
 				// Mem0 服务返回 {"results":[],"relations":[]} 格式
-				return objectMapper.readValue(response, new TypeReference<MemZeroServerResp>() {
+				return objectMapper.readValue(response, new TypeReference<Mem0ServerResp>() {
 				});
 			}
 		}
@@ -174,13 +174,13 @@ public class MemZeroServiceClient {
 			throw new RuntimeException("Failed to get memories", e);
 		}
 
-		return new MemZeroServerResp();
+		return new Mem0ServerResp();
 	}
 
 	/**
 	 * 获取单个记忆
 	 */
-	public MemZeroServerResp getMemory(String memoryId) {
+	public Mem0ServerResp getMemory(String memoryId) {
 		try {
 			String response = webClient.get()
 				.uri(MEMORIES_ENDPOINT + "/{memoryId}", memoryId)
@@ -191,7 +191,7 @@ public class MemZeroServiceClient {
 				.block();
 
 			if (response != null) {
-				MemZeroServerResp memory = objectMapper.readValue(response, MemZeroServerResp.class);
+				Mem0ServerResp memory = objectMapper.readValue(response, Mem0ServerResp.class);
 				logger.info("Retrieved memory: {}", memoryId);
 				return memory;
 			}
@@ -207,7 +207,7 @@ public class MemZeroServiceClient {
 	/**
 	 * 搜索记忆
 	 */
-	public MemZeroServerResp searchMemories(MemZeroServerRequest.SearchRequest searchRequest) {
+	public Mem0ServerResp searchMemories(Mem0ServerRequest.SearchRequest searchRequest) {
 		try {
 			// SEARCH_ENDPOINT 要求query必须有值，所以做了一个回退机制
 			if (!StringUtils.hasText(searchRequest.getQuery())) {
@@ -231,7 +231,7 @@ public class MemZeroServiceClient {
 			if (response != null) {
 				logger.info("Received response from Mem0: " + response);
 				// Mem0 服务返回 {"results":[],"relations":[]} 格式
-				return objectMapper.readValue(response, new TypeReference<MemZeroServerResp>() {
+				return objectMapper.readValue(response, new TypeReference<Mem0ServerResp>() {
 				});
 
 			}
@@ -241,7 +241,7 @@ public class MemZeroServiceClient {
 			throw new RuntimeException("Failed to search memories", e);
 		}
 
-		return new MemZeroServerResp();
+		return new Mem0ServerResp();
 	}
 
 	/**

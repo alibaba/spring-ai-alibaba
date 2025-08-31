@@ -15,7 +15,7 @@ import java.util.Map;
  * 将 Spring AI 的 Filter.Expression 转换为 Mem0 API 支持的 Map 格式 参考:
  * https://docs.mem0.ai/api-reference/memory/v2-search-memories
  */
-public class MemZeroFilterExpressionConverter extends AbstractFilterExpressionConverter {
+public class Mem0FilterExpressionConverter extends AbstractFilterExpressionConverter {
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 

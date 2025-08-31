@@ -20,17 +20,17 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 单元测试 for MemZeroChatMemoryProperties
+ * 单元测试 for Mem0ChatMemoryProperties
  *
  * @author Morain Miao
  * @since 1.0.0
  */
-class MemZeroChatMemoryPropertiesTest {
+class Mem0ChatMemoryPropertiesTest {
 
 	@Test
 	void testDefaultConstructor() {
 		// When
-		MemZeroChatMemoryProperties properties = new MemZeroChatMemoryProperties();
+		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties();
 
 		// Then
 		assertThat(properties).isNotNull();
@@ -42,8 +42,8 @@ class MemZeroChatMemoryPropertiesTest {
 	@Test
 	void testClientProperties() {
 		// Given
-		MemZeroChatMemoryProperties properties = new MemZeroChatMemoryProperties();
-		MemZeroChatMemoryProperties.Client client = new MemZeroChatMemoryProperties.Client();
+		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties();
+		Mem0ChatMemoryProperties.Client client = new Mem0ChatMemoryProperties.Client();
 
 		// When
 		client.setBaseUrl("http://localhost:8888");
@@ -58,8 +58,8 @@ class MemZeroChatMemoryPropertiesTest {
 	@Test
 	void testServerProperties() {
 		// Given
-		MemZeroChatMemoryProperties properties = new MemZeroChatMemoryProperties();
-		MemZeroChatMemoryProperties.Server server = new MemZeroChatMemoryProperties.Server();
+		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties();
+		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server();
 
 		// When
 		server.setVersion("v1.1");
@@ -72,7 +72,7 @@ class MemZeroChatMemoryPropertiesTest {
 	@Test
 	void testServerCustomPrompts() {
 		// Given
-		MemZeroChatMemoryProperties.Server server = new MemZeroChatMemoryProperties.Server();
+		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server();
 
 		// When
 		server.setCustomFactExtractionPrompt("fact extraction prompt");
@@ -86,7 +86,7 @@ class MemZeroChatMemoryPropertiesTest {
 	@Test
 	void testClientDefaultValues() {
 		// Given
-		MemZeroChatMemoryProperties.Client client = new MemZeroChatMemoryProperties.Client();
+		Mem0ChatMemoryProperties.Client client = new Mem0ChatMemoryProperties.Client();
 
 		// Then - 验证默认值
 		assertThat(client.getBaseUrl()).isEqualTo("http://localhost:8888");
@@ -96,7 +96,7 @@ class MemZeroChatMemoryPropertiesTest {
 	@Test
 	void testServerDefaultValues() {
 		// Given
-		MemZeroChatMemoryProperties.Server server = new MemZeroChatMemoryProperties.Server();
+		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server();
 
 		// Then - 验证默认值
 		assertThat(server.getVersion()).isNull();
@@ -110,12 +110,12 @@ class MemZeroChatMemoryPropertiesTest {
 	@Test
 	void testPropertiesEquality() {
 		// Given
-		MemZeroChatMemoryProperties properties1 = new MemZeroChatMemoryProperties();
-		MemZeroChatMemoryProperties properties2 = new MemZeroChatMemoryProperties();
+		Mem0ChatMemoryProperties properties1 = new Mem0ChatMemoryProperties();
+		Mem0ChatMemoryProperties properties2 = new Mem0ChatMemoryProperties();
 
 		// When - 需要先初始化client对象
-		MemZeroChatMemoryProperties.Client client1 = new MemZeroChatMemoryProperties.Client();
-		MemZeroChatMemoryProperties.Client client2 = new MemZeroChatMemoryProperties.Client();
+		Mem0ChatMemoryProperties.Client client1 = new Mem0ChatMemoryProperties.Client();
+		Mem0ChatMemoryProperties.Client client2 = new Mem0ChatMemoryProperties.Client();
 		client1.setBaseUrl("http://localhost:8888");
 		client2.setBaseUrl("http://localhost:8888");
 		properties1.setClient(client1);
@@ -128,14 +128,14 @@ class MemZeroChatMemoryPropertiesTest {
 	@Test
 	void testPropertiesToString() {
 		// Given
-		MemZeroChatMemoryProperties properties = new MemZeroChatMemoryProperties();
+		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties();
 
 		// When
 		String toString = properties.toString();
 
 		// Then
 		assertThat(toString).isNotNull();
-		assertThat(toString).contains("MemZeroChatMemoryProperties");
+		assertThat(toString).contains("Mem0ChatMemoryProperties");
 	}
 
 }

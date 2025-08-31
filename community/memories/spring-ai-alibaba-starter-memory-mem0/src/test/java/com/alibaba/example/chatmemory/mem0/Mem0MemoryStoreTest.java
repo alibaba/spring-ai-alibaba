@@ -33,28 +33,28 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * 单元测试 for MemZeroMemoryStore
+ * 单元测试 for Mem0MemoryStore
  *
  * @author Morain Miao
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
-class MemZeroMemoryStoreTest {
+class Mem0MemoryStoreTest {
 
 	@Mock
-	private MemZeroServiceClient mem0Client;
+	private Mem0ServiceClient mem0Client;
 
-	private MemZeroMemoryStore memoryStore;
+	private Mem0MemoryStore memoryStore;
 
 	@BeforeEach
 	void setUp() {
-		memoryStore = MemZeroMemoryStore.builder(mem0Client).build();
+		memoryStore = Mem0MemoryStore.builder(mem0Client).build();
 	}
 
 	@Test
 	void testBuilder() {
 		// When
-		MemZeroMemoryStore store = MemZeroMemoryStore.builder(mem0Client).build();
+		Mem0MemoryStore store = Mem0MemoryStore.builder(mem0Client).build();
 
 		// Then
 		assertThat(store).isNotNull();
@@ -65,9 +65,9 @@ class MemZeroMemoryStoreTest {
 		// Given
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("role", "user");
-		metadata.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user");
-		metadata.put(MemZeroChatMemoryAdvisor.AGENT_ID, "test-agent");
-		metadata.put(MemZeroChatMemoryAdvisor.RUN_ID, "test-run");
+		metadata.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user");
+		metadata.put(Mem0ChatMemoryAdvisor.AGENT_ID, "test-agent");
+		metadata.put(Mem0ChatMemoryAdvisor.RUN_ID, "test-run");
 
 		Document document = new Document("test content", metadata);
 		List<Document> documents = List.of(document);
@@ -76,7 +76,7 @@ class MemZeroMemoryStoreTest {
 		memoryStore.add(documents);
 
 		// Then
-		verify(mem0Client, times(1)).addMemory(any(MemZeroServerRequest.MemoryCreate.class));
+		verify(mem0Client, times(1)).addMemory(any(Mem0ServerRequest.MemoryCreate.class));
 	}
 
 	@Test
@@ -93,7 +93,7 @@ class MemZeroMemoryStoreTest {
 		memoryStore.add(documents);
 
 		// Then
-		verify(mem0Client, times(1)).addMemory(any(MemZeroServerRequest.MemoryCreate.class));
+		verify(mem0Client, times(1)).addMemory(any(Mem0ServerRequest.MemoryCreate.class));
 	}
 
 	@Test
@@ -132,15 +132,15 @@ class MemZeroMemoryStoreTest {
 	@Test
 	void testSimilaritySearchWithSearchRequest() {
 		// Given
-		MemZeroServerRequest.SearchRequest searchRequest = new MemZeroServerRequest.SearchRequest();
+		Mem0ServerRequest.SearchRequest searchRequest = new Mem0ServerRequest.SearchRequest();
 		searchRequest.setQuery("test query");
 		searchRequest.setUserId("test-user");
 		searchRequest.setAgentId("test-agent");
 		searchRequest.setRunId("test-run");
 
-		MemZeroServerResp mockResponse = new MemZeroServerResp();
+		Mem0ServerResp mockResponse = new Mem0ServerResp();
 		mockResponse.setResults(List.of());
-		when(mem0Client.searchMemories(any(MemZeroServerRequest.SearchRequest.class))).thenReturn(mockResponse);
+		when(mem0Client.searchMemories(any(Mem0ServerRequest.SearchRequest.class))).thenReturn(mockResponse);
 
 		// When
 		List<Document> result = memoryStore.similaritySearch(searchRequest);
@@ -153,15 +153,15 @@ class MemZeroMemoryStoreTest {
 	@Test
 	void testSimilaritySearchWithSearchRequestAndFilter() {
 		// Given
-		MemZeroServerRequest.SearchRequest searchRequest = new MemZeroServerRequest.SearchRequest();
+		Mem0ServerRequest.SearchRequest searchRequest = new Mem0ServerRequest.SearchRequest();
 		searchRequest.setQuery("test query");
 		searchRequest.setUserId("test-user");
 		searchRequest.setAgentId("test-agent");
 		searchRequest.setRunId("test-run");
 
-		MemZeroServerResp mockResponse = new MemZeroServerResp();
+		Mem0ServerResp mockResponse = new Mem0ServerResp();
 		mockResponse.setResults(List.of());
-		when(mem0Client.searchMemories(any(MemZeroServerRequest.SearchRequest.class))).thenReturn(mockResponse);
+		when(mem0Client.searchMemories(any(Mem0ServerRequest.SearchRequest.class))).thenReturn(mockResponse);
 
 		// When
 		List<Document> result = memoryStore.similaritySearch(searchRequest);
@@ -185,15 +185,15 @@ class MemZeroMemoryStoreTest {
 		// Given
 		Map<String, Object> metadata1 = new HashMap<>();
 		metadata1.put("role", "user");
-		metadata1.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user-1");
-		metadata1.put(MemZeroChatMemoryAdvisor.AGENT_ID, "test-agent-1");
-		metadata1.put(MemZeroChatMemoryAdvisor.RUN_ID, "test-run-1");
+		metadata1.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user-1");
+		metadata1.put(Mem0ChatMemoryAdvisor.AGENT_ID, "test-agent-1");
+		metadata1.put(Mem0ChatMemoryAdvisor.RUN_ID, "test-run-1");
 
 		Map<String, Object> metadata2 = new HashMap<>();
 		metadata2.put("role", "assistant");
-		metadata2.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user-2");
-		metadata2.put(MemZeroChatMemoryAdvisor.AGENT_ID, "test-agent-2");
-		metadata2.put(MemZeroChatMemoryAdvisor.RUN_ID, "test-run-2");
+		metadata2.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user-2");
+		metadata2.put(Mem0ChatMemoryAdvisor.AGENT_ID, "test-agent-2");
+		metadata2.put(Mem0ChatMemoryAdvisor.RUN_ID, "test-run-2");
 
 		Document document1 = new Document("test content 1", metadata1);
 		Document document2 = new Document("test content 2", metadata2);
@@ -203,7 +203,7 @@ class MemZeroMemoryStoreTest {
 		memoryStore.add(documents);
 
 		// Then
-		verify(mem0Client, times(2)).addMemory(any(MemZeroServerRequest.MemoryCreate.class));
+		verify(mem0Client, times(2)).addMemory(any(Mem0ServerRequest.MemoryCreate.class));
 	}
 
 	@Test

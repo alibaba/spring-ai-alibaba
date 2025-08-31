@@ -31,9 +31,9 @@ import java.util.stream.Collectors;
  * @author Morain Miao
  * @since 1.0.0
  */
-public class MemZeroChatMemoryAdvisor implements BaseChatMemoryAdvisor {
+public class Mem0ChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
-	private static final Logger logger = LoggerFactory.getLogger(MemZeroChatMemoryAdvisor.class);
+	private static final Logger logger = LoggerFactory.getLogger(Mem0ChatMemoryAdvisor.class);
 
 	public static final String USER_ID = "user_id";
 
@@ -93,8 +93,8 @@ public class MemZeroChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private final VectorStore vectorStore;
 
-	public MemZeroChatMemoryAdvisor(PromptTemplate systemPromptTemplate, int order, Scheduler scheduler,
-			VectorStore vectorStore) {
+	public Mem0ChatMemoryAdvisor(PromptTemplate systemPromptTemplate, int order, Scheduler scheduler,
+								 VectorStore vectorStore) {
 		this.systemPromptTemplate = systemPromptTemplate;
 		this.order = order;
 		this.scheduler = scheduler;
@@ -113,7 +113,7 @@ public class MemZeroChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		String query = userMessage != null ? userMessage.getText() : "";
 
 		Map<String, Object> params = request.context();
-		SearchRequest searchRequest = MemZeroServerRequest.SearchRequest.builder()
+		SearchRequest searchRequest = Mem0ServerRequest.SearchRequest.builder()
 			.query(query)
 			.userId(params.containsKey(USER_ID) ? params.get(USER_ID).toString() : null)
 			.agentId(params.containsKey(AGENT_ID) ? params.get(AGENT_ID).toString() : null)
@@ -183,8 +183,8 @@ public class MemZeroChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		return docs;
 	}
 
-	private MemZeroServerRequest.SearchRequest getConversationId(Map<String, Object> context) {
-		MemZeroServerRequest.SearchRequest build = MemZeroServerRequest.SearchRequest.builder()
+	private Mem0ServerRequest.SearchRequest getConversationId(Map<String, Object> context) {
+		Mem0ServerRequest.SearchRequest build = Mem0ServerRequest.SearchRequest.builder()
 			.userId(context.getOrDefault(USER_ID, "").toString())
 			.build();
 		return build;
@@ -200,8 +200,8 @@ public class MemZeroChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		return this.order;
 	}
 
-	public static MemZeroChatMemoryAdvisor.Builder builder(VectorStore chatMemory) {
-		return new MemZeroChatMemoryAdvisor.Builder(chatMemory);
+	public static Mem0ChatMemoryAdvisor.Builder builder(VectorStore chatMemory) {
+		return new Mem0ChatMemoryAdvisor.Builder(chatMemory);
 	}
 
 	public static class Builder {
@@ -223,28 +223,28 @@ public class MemZeroChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 			this.vectorStore = vectorStore;
 		}
 
-		public MemZeroChatMemoryAdvisor.Builder systemPromptTemplate(PromptTemplate systemPromptTemplate) {
+		public Mem0ChatMemoryAdvisor.Builder systemPromptTemplate(PromptTemplate systemPromptTemplate) {
 			this.systemPromptTemplate = systemPromptTemplate;
 			return this;
 		}
 
-		public MemZeroChatMemoryAdvisor.Builder conversationId(String conversationId) {
+		public Mem0ChatMemoryAdvisor.Builder conversationId(String conversationId) {
 			this.defaultConversationId = conversationId;
 			return this;
 		}
 
-		public MemZeroChatMemoryAdvisor.Builder scheduler(Scheduler scheduler) {
+		public Mem0ChatMemoryAdvisor.Builder scheduler(Scheduler scheduler) {
 			this.scheduler = scheduler;
 			return this;
 		}
 
-		public MemZeroChatMemoryAdvisor.Builder order(int order) {
+		public Mem0ChatMemoryAdvisor.Builder order(int order) {
 			this.order = order;
 			return this;
 		}
 
-		public MemZeroChatMemoryAdvisor build() {
-			return new MemZeroChatMemoryAdvisor(this.systemPromptTemplate, this.order, this.scheduler,
+		public Mem0ChatMemoryAdvisor build() {
+			return new Mem0ChatMemoryAdvisor(this.systemPromptTemplate, this.order, this.scheduler,
 					this.vectorStore);
 		}
 

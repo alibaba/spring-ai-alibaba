@@ -7,44 +7,44 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class MemZeroServerResp {
+public class Mem0ServerResp {
 
 	// 关系数据
-	private List<MemZeroResults> results;
+	private List<Mem0Results> results;
 
 	// 关系数据
-	private List<MemZeroRelation> relations;
+	private List<Mem0Relation> relations;
 
-	public MemZeroServerResp() {
+	public Mem0ServerResp() {
 		this.relations = new ArrayList<>();
 		this.results = new ArrayList<>();
 	}
 
-	public MemZeroServerResp(List<MemZeroResults> results, List<MemZeroRelation> relations) {
+	public Mem0ServerResp(List<Mem0Results> results, List<Mem0Relation> relations) {
 		this.results = results;
 		this.relations = relations;
 	}
 
-	public List<MemZeroResults> getResults() {
+	public List<Mem0Results> getResults() {
 		return results;
 	}
 
-	public void setResults(List<MemZeroResults> results) {
+	public void setResults(List<Mem0Results> results) {
 		this.results = results;
 	}
 
-	public List<MemZeroRelation> getRelations() {
+	public List<Mem0Relation> getRelations() {
 		return relations;
 	}
 
-	public void setRelations(List<MemZeroRelation> relations) {
+	public void setRelations(List<Mem0Relation> relations) {
 		this.relations = relations;
 	}
 
 	/**
 	 * Mem0 关系数据模型 对应 Mem0 服务返回的 relations 数组中的每个关系对象
 	 */
-	public static class MemZeroRelation {
+	public static class Mem0Relation {
 
 		private String source; // 源节点
 
@@ -55,11 +55,11 @@ public class MemZeroServerResp {
 		private String destination; // 目的地
 
 		// 默认构造函数
-		public MemZeroRelation() {
+		public Mem0Relation() {
 		}
 
 		// 完整构造函数
-		public MemZeroRelation(String source, String relationship, String target, String destination) {
+		public Mem0Relation(String source, String relationship, String target, String destination) {
 			this.source = source;
 			this.relationship = relationship;
 			this.target = target;
@@ -101,13 +101,13 @@ public class MemZeroServerResp {
 
 		@Override
 		public String toString() {
-			return "MemZeroRelation{" + "source='" + source + '\'' + ", relationship='" + relationship + '\''
+			return "Mem0Relation{" + "source='" + source + '\'' + ", relationship='" + relationship + '\''
 					+ ", target='" + target + '\'' + ", destination='" + destination + '\'' + '}';
 		}
 
 	}
 
-	public static class MemZeroResults {
+	public static class Mem0Results {
 
 		private String id;
 
@@ -138,12 +138,12 @@ public class MemZeroServerResp {
 		@JsonProperty("role")
 		private String role;
 
-		public MemZeroResults() {
+		public Mem0Results() {
 		}
 
-		public MemZeroResults(String id, String memory, String hash, Map<String, Object> metadata, String userId,
-				ZonedDateTime createdAt, ZonedDateTime updatedAt, String agentId, String runId, Double score,
-				String role) {
+		public Mem0Results(String id, String memory, String hash, Map<String, Object> metadata, String userId,
+						   ZonedDateTime createdAt, ZonedDateTime updatedAt, String agentId, String runId, Double score,
+						   String role) {
 			this.id = id;
 			this.memory = memory;
 			this.hash = hash;
@@ -247,7 +247,7 @@ public class MemZeroServerResp {
 
 		@Override
 		public String toString() {
-			return "MemZeroResults{" + "id='" + id + '\'' + ", memory='" + memory + '\'' + ", hash='" + hash + '\''
+			return "Mem0Results{" + "id='" + id + '\'' + ", memory='" + memory + '\'' + ", hash='" + hash + '\''
 					+ ", metadata=" + metadata + ", userId='" + userId + '\'' + ", createdAt=" + createdAt
 					+ ", updatedAt=" + updatedAt + ", agentId='" + agentId + '\'' + ", runId='" + runId + '\''
 					+ ", score=" + score + ", role='" + role + '\'' + '}';

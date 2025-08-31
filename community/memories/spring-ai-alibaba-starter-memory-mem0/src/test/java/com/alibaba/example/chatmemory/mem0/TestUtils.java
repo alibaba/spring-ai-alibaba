@@ -15,7 +15,7 @@
  */
 package com.alibaba.example.chatmemory.mem0;
 
-import com.alibaba.example.chatmemory.config.MemZeroChatMemoryProperties;
+import com.alibaba.example.chatmemory.config.Mem0ChatMemoryProperties;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.document.Document;
@@ -34,19 +34,19 @@ import java.util.UUID;
 public class TestUtils {
 
 	/**
-	 * 创建测试用的MemZeroChatMemoryProperties
+	 * 创建测试用的Mem0ChatMemoryProperties
 	 */
-	public static MemZeroChatMemoryProperties createTestProperties() {
-		MemZeroChatMemoryProperties properties = new MemZeroChatMemoryProperties();
+	public static Mem0ChatMemoryProperties createTestProperties() {
+		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties();
 
 		// 配置客户端
-		MemZeroChatMemoryProperties.Client client = new MemZeroChatMemoryProperties.Client();
+		Mem0ChatMemoryProperties.Client client = new Mem0ChatMemoryProperties.Client();
 		client.setBaseUrl("http://localhost:8888");
 		client.setTimeoutSeconds(30);
 		properties.setClient(client);
 
 		// 配置服务器
-		MemZeroChatMemoryProperties.Server server = new MemZeroChatMemoryProperties.Server();
+		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server();
 		server.setVersion("v1.1");
 		properties.setServer(server);
 
@@ -58,9 +58,9 @@ public class TestUtils {
 	 */
 	public static UserMessage createTestUserMessage(String content) {
 		Map<String, Object> metadata = new HashMap<>();
-		metadata.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user-" + UUID.randomUUID());
-		metadata.put(MemZeroChatMemoryAdvisor.AGENT_ID, "test-agent-" + UUID.randomUUID());
-		metadata.put(MemZeroChatMemoryAdvisor.RUN_ID, "test-run-" + UUID.randomUUID());
+		metadata.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user-" + UUID.randomUUID());
+		metadata.put(Mem0ChatMemoryAdvisor.AGENT_ID, "test-agent-" + UUID.randomUUID());
+		metadata.put(Mem0ChatMemoryAdvisor.RUN_ID, "test-run-" + UUID.randomUUID());
 
 		return UserMessage.builder().text(content).metadata(metadata).build();
 	}
@@ -71,9 +71,9 @@ public class TestUtils {
 	public static Document createTestDocument(String content) {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("role", "user");
-		metadata.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user-" + UUID.randomUUID());
-		metadata.put(MemZeroChatMemoryAdvisor.AGENT_ID, "test-agent-" + UUID.randomUUID());
-		metadata.put(MemZeroChatMemoryAdvisor.RUN_ID, "test-run-" + UUID.randomUUID());
+		metadata.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user-" + UUID.randomUUID());
+		metadata.put(Mem0ChatMemoryAdvisor.AGENT_ID, "test-agent-" + UUID.randomUUID());
+		metadata.put(Mem0ChatMemoryAdvisor.RUN_ID, "test-run-" + UUID.randomUUID());
 
 		return new Document(content, metadata);
 	}
@@ -90,11 +90,11 @@ public class TestUtils {
 	}
 
 	/**
-	 * 创建测试用的MemZeroServerRequest.MemoryCreate
+	 * 创建测试用的Mem0ServerRequest.MemoryCreate
 	 */
-	public static MemZeroServerRequest.MemoryCreate createTestMemoryCreate() {
-		return MemZeroServerRequest.MemoryCreate.builder()
-			.messages(List.of(new MemZeroServerRequest.Message("user", "test message")))
+	public static Mem0ServerRequest.MemoryCreate createTestMemoryCreate() {
+		return Mem0ServerRequest.MemoryCreate.builder()
+			.messages(List.of(new Mem0ServerRequest.Message("user", "test message")))
 			.userId("test-user-" + UUID.randomUUID())
 			.agentId("test-agent-" + UUID.randomUUID())
 			.runId("test-run-" + UUID.randomUUID())
@@ -102,10 +102,10 @@ public class TestUtils {
 	}
 
 	/**
-	 * 创建测试用的MemZeroServerRequest.SearchRequest
+	 * 创建测试用的Mem0ServerRequest.SearchRequest
 	 */
-	public static MemZeroServerRequest.SearchRequest createTestSearchRequest() {
-		MemZeroServerRequest.SearchRequest searchRequest = new MemZeroServerRequest.SearchRequest();
+	public static Mem0ServerRequest.SearchRequest createTestSearchRequest() {
+		Mem0ServerRequest.SearchRequest searchRequest = new Mem0ServerRequest.SearchRequest();
 		searchRequest.setQuery("test query");
 		searchRequest.setUserId("test-user-" + UUID.randomUUID());
 		searchRequest.setAgentId("test-agent-" + UUID.randomUUID());
@@ -115,10 +115,10 @@ public class TestUtils {
 	}
 
 	/**
-	 * 创建测试用的MemZeroServerResp
+	 * 创建测试用的Mem0ServerResp
 	 */
-	public static MemZeroServerResp createTestSearchResponse() {
-		MemZeroServerResp response = new MemZeroServerResp();
+	public static Mem0ServerResp createTestSearchResponse() {
+		Mem0ServerResp response = new Mem0ServerResp();
 		response.setResults(List.of());
 		return response;
 	}
@@ -167,9 +167,9 @@ public class TestUtils {
 	 */
 	public static Map<String, Object> createTestMetadata() {
 		Map<String, Object> metadata = new HashMap<>();
-		metadata.put(MemZeroChatMemoryAdvisor.USER_ID, randomUserId());
-		metadata.put(MemZeroChatMemoryAdvisor.AGENT_ID, randomAgentId());
-		metadata.put(MemZeroChatMemoryAdvisor.RUN_ID, randomRunId());
+		metadata.put(Mem0ChatMemoryAdvisor.USER_ID, randomUserId());
+		metadata.put(Mem0ChatMemoryAdvisor.AGENT_ID, randomAgentId());
+		metadata.put(Mem0ChatMemoryAdvisor.RUN_ID, randomRunId());
 		metadata.put("role", "user");
 		metadata.put("timestamp", System.currentTimeMillis());
 		return metadata;

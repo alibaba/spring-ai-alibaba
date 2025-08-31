@@ -5,8 +5,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.HashMap;
 import java.util.Map;
 
-@ConfigurationProperties(prefix = MemZeroChatMemoryProperties.GRAPH_RAG_PREFIX)
-public class MemZeroChatMemoryProperties {
+@ConfigurationProperties(prefix = Mem0ChatMemoryProperties.GRAPH_RAG_PREFIX)
+public class Mem0ChatMemoryProperties {
 
 	public static final String GRAPH_RAG_PREFIX = "mem0";
 

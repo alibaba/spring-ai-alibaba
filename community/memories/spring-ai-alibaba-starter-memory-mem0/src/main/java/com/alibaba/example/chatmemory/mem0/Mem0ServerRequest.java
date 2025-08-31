@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-public class MemZeroServerRequest {
+public class Mem0ServerRequest {
 
 	public static class Message {
 

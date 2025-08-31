@@ -15,7 +15,7 @@
  */
 package com.alibaba.example.chatmemory.mem0;
 
-import com.alibaba.example.chatmemory.config.MemZeroChatMemoryProperties;
+import com.alibaba.example.chatmemory.config.Mem0ChatMemoryProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,30 +31,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 单元测试 for MemZeroServiceClient
+ * 单元测试 for Mem0ServiceClient
  *
  * @author Morain Miao
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
-class MemZeroServiceClientTest {
+class Mem0ServiceClientTest {
 
 	@Mock
 	private ResourceLoader resourceLoader;
 
-	private MemZeroChatMemoryProperties properties;
+	private Mem0ChatMemoryProperties properties;
 
-	private MemZeroServiceClient client;
+	private Mem0ServiceClient client;
 
 	@BeforeEach
 	void setUp() {
-		properties = new MemZeroChatMemoryProperties();
-		MemZeroChatMemoryProperties.Client clientConfig = new MemZeroChatMemoryProperties.Client();
+		properties = new Mem0ChatMemoryProperties();
+		Mem0ChatMemoryProperties.Client clientConfig = new Mem0ChatMemoryProperties.Client();
 		clientConfig.setBaseUrl("http://localhost:8888");
 		clientConfig.setTimeoutSeconds(30);
 		properties.setClient(clientConfig);
 
-		client = new MemZeroServiceClient(properties, resourceLoader);
+		client = new Mem0ServiceClient(properties, resourceLoader);
 	}
 
 	@Test
@@ -66,7 +66,7 @@ class MemZeroServiceClientTest {
 	void testConstructorWithNullProperties() {
 		// 由于构造函数没有null检查，这里会抛出NullPointerException
 		// 但不是在构造函数中，而是在后续使用config时
-		assertThatThrownBy(() -> new MemZeroServiceClient(null, resourceLoader))
+		assertThatThrownBy(() -> new Mem0ServiceClient(null, resourceLoader))
 			.isInstanceOf(NullPointerException.class);
 	}
 
@@ -74,15 +74,15 @@ class MemZeroServiceClientTest {
 	void testConstructorWithNullResourceLoader() {
 		// 由于构造函数没有null检查，这里不会抛出异常
 		// 但在后续使用resourceLoader时会抛出异常
-		MemZeroServiceClient client = new MemZeroServiceClient(properties, null);
+		Mem0ServiceClient client = new Mem0ServiceClient(properties, null);
 		assertThat(client).isNotNull();
 	}
 
 	@Test
 	void testAddMemory() {
 		// Given
-		MemZeroServerRequest.MemoryCreate memoryCreate = MemZeroServerRequest.MemoryCreate.builder()
-			.messages(List.of(new MemZeroServerRequest.Message("user", "test message")))
+		Mem0ServerRequest.MemoryCreate memoryCreate = Mem0ServerRequest.MemoryCreate.builder()
+			.messages(List.of(new Mem0ServerRequest.Message("user", "test message")))
 			.userId("test-user")
 			.agentId("test-agent")
 			.runId("test-run")
@@ -108,7 +108,7 @@ class MemZeroServiceClientTest {
 	@Test
 	void testSearchMemories() {
 		// Given
-		MemZeroServerRequest.SearchRequest searchRequest = new MemZeroServerRequest.SearchRequest();
+		Mem0ServerRequest.SearchRequest searchRequest = new Mem0ServerRequest.SearchRequest();
 		searchRequest.setQuery("test query");
 		searchRequest.setUserId("test-user");
 		searchRequest.setAgentId("test-agent");
@@ -124,7 +124,7 @@ class MemZeroServiceClientTest {
 	@Test
 	void testConfigure() {
 		// Given
-		MemZeroChatMemoryProperties.Server serverConfig = new MemZeroChatMemoryProperties.Server();
+		Mem0ChatMemoryProperties.Server serverConfig = new Mem0ChatMemoryProperties.Server();
 		serverConfig.setVersion("v1.1");
 
 		// When & Then - 测试配置对象创建正确
@@ -134,12 +134,12 @@ class MemZeroServiceClientTest {
 	@Test
 	void testMemoryCreateBuilder() {
 		// Given
-		MemZeroServerRequest.Message message = new MemZeroServerRequest.Message("user", "test content");
+		Mem0ServerRequest.Message message = new Mem0ServerRequest.Message("user", "test content");
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key", "value");
 
 		// When
-		MemZeroServerRequest.MemoryCreate memoryCreate = MemZeroServerRequest.MemoryCreate.builder()
+		Mem0ServerRequest.MemoryCreate memoryCreate = Mem0ServerRequest.MemoryCreate.builder()
 			.messages(List.of(message))
 			.metadata(metadata)
 			.userId("test-user")
@@ -164,7 +164,7 @@ class MemZeroServiceClientTest {
 		filters.put("category", "test");
 
 		// When
-		MemZeroServerRequest.SearchRequest searchRequest = new MemZeroServerRequest.SearchRequest();
+		Mem0ServerRequest.SearchRequest searchRequest = new Mem0ServerRequest.SearchRequest();
 		searchRequest.setQuery("test query");
 		searchRequest.setUserId("test-user");
 		searchRequest.setAgentId("test-agent");

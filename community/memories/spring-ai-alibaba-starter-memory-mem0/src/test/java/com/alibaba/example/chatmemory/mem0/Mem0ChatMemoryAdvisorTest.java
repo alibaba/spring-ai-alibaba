@@ -42,13 +42,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * 单元测试 for MemZeroChatMemoryAdvisor
+ * 单元测试 for Mem0ChatMemoryAdvisor
  *
  * @author Morain Miao
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
-class MemZeroChatMemoryAdvisorTest {
+class Mem0ChatMemoryAdvisorTest {
 
 	@Mock
 	private VectorStore vectorStore;
@@ -56,7 +56,7 @@ class MemZeroChatMemoryAdvisorTest {
 	@Mock
 	private AdvisorChain advisorChain;
 
-	private MemZeroChatMemoryAdvisor advisor;
+	private Mem0ChatMemoryAdvisor advisor;
 
 	private Scheduler scheduler;
 
@@ -64,7 +64,7 @@ class MemZeroChatMemoryAdvisorTest {
 	void setUp() {
 		scheduler = Schedulers.immediate();
 		PromptTemplate systemPromptTemplate = new PromptTemplate("Test template: {query}");
-		advisor = new MemZeroChatMemoryAdvisor(systemPromptTemplate, 1, scheduler, vectorStore);
+		advisor = new Mem0ChatMemoryAdvisor(systemPromptTemplate, 1, scheduler, vectorStore);
 	}
 
 	@Test
@@ -76,16 +76,16 @@ class MemZeroChatMemoryAdvisorTest {
 	void testBeforeWithValidRequest() {
 		// Given
 		Map<String, Object> metadata = new HashMap<>();
-		metadata.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user");
-		metadata.put(MemZeroChatMemoryAdvisor.AGENT_ID, "test-agent");
-		metadata.put(MemZeroChatMemoryAdvisor.RUN_ID, "test-run");
+		metadata.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user");
+		metadata.put(Mem0ChatMemoryAdvisor.AGENT_ID, "test-agent");
+		metadata.put(Mem0ChatMemoryAdvisor.RUN_ID, "test-run");
 
 		UserMessage userMessage = UserMessage.builder().text("test query").metadata(metadata).build();
 		Prompt prompt = new Prompt(userMessage);
 		Map<String, Object> context = new HashMap<>();
-		context.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user");
-		context.put(MemZeroChatMemoryAdvisor.AGENT_ID, "test-agent");
-		context.put(MemZeroChatMemoryAdvisor.RUN_ID, "test-run");
+		context.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user");
+		context.put(Mem0ChatMemoryAdvisor.AGENT_ID, "test-agent");
+		context.put(Mem0ChatMemoryAdvisor.RUN_ID, "test-run");
 		ChatClientRequest request = new ChatClientRequest(prompt, context);
 
 		Document mockDocument = new Document("test memory content");
@@ -106,7 +106,7 @@ class MemZeroChatMemoryAdvisorTest {
 	void testBeforeWithNullUserMessage() {
 		// Given
 		Map<String, Object> context = new HashMap<>();
-		context.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user");
+		context.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user");
 		// 使用仅包含 AssistantMessage 的 Prompt，确保 getUserMessage() 返回 null
 		Prompt prompt = new Prompt(List.of(new AssistantMessage("assistant-only")));
 		ChatClientRequest request = new ChatClientRequest(prompt, context);
@@ -128,7 +128,7 @@ class MemZeroChatMemoryAdvisorTest {
 		UserMessage userMessage = UserMessage.builder().text("test query").metadata(new HashMap<>()).build();
 		Prompt prompt = new Prompt(userMessage);
 		Map<String, Object> context = new HashMap<>();
-		context.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user");
+		context.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user");
 		ChatClientRequest request = new ChatClientRequest(prompt, context);
 
 		// When
@@ -148,7 +148,7 @@ class MemZeroChatMemoryAdvisorTest {
 		AssistantMessage assistantMessage = new AssistantMessage("test response");
 		Prompt prompt = new Prompt(List.of(userMessage, assistantMessage));
 		Map<String, Object> context = new HashMap<>();
-		context.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user");
+		context.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user");
 		ChatClientRequest request = new ChatClientRequest(prompt, context);
 		ChatClientResponse response = mock(ChatClientResponse.class);
 
@@ -163,7 +163,7 @@ class MemZeroChatMemoryAdvisorTest {
 	void testGetOrder() {
 		// Given
 		PromptTemplate systemPromptTemplate = new PromptTemplate("Test template: {query}");
-		MemZeroChatMemoryAdvisor customOrderAdvisor = new MemZeroChatMemoryAdvisor(systemPromptTemplate, 5, scheduler,
+		Mem0ChatMemoryAdvisor customOrderAdvisor = new Mem0ChatMemoryAdvisor(systemPromptTemplate, 5, scheduler,
 				vectorStore);
 
 		// When
@@ -176,29 +176,29 @@ class MemZeroChatMemoryAdvisorTest {
 	@Test
 	void testConstants() {
 		// Then
-		assertThat(MemZeroChatMemoryAdvisor.USER_ID).isEqualTo("user_id");
-		assertThat(MemZeroChatMemoryAdvisor.AGENT_ID).isEqualTo("agent_id");
-		assertThat(MemZeroChatMemoryAdvisor.RUN_ID).isEqualTo("run_id");
-		assertThat(MemZeroChatMemoryAdvisor.FILTERS).isEqualTo("filters");
+		assertThat(Mem0ChatMemoryAdvisor.USER_ID).isEqualTo("user_id");
+		assertThat(Mem0ChatMemoryAdvisor.AGENT_ID).isEqualTo("agent_id");
+		assertThat(Mem0ChatMemoryAdvisor.RUN_ID).isEqualTo("run_id");
+		assertThat(Mem0ChatMemoryAdvisor.FILTERS).isEqualTo("filters");
 	}
 
 	@Test
 	void testBeforeWithFilters() {
 		// Given
 		Map<String, Object> metadata = new HashMap<>();
-		metadata.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user");
-		metadata.put(MemZeroChatMemoryAdvisor.AGENT_ID, "test-agent");
-		metadata.put(MemZeroChatMemoryAdvisor.RUN_ID, "test-run");
+		metadata.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user");
+		metadata.put(Mem0ChatMemoryAdvisor.AGENT_ID, "test-agent");
+		metadata.put(Mem0ChatMemoryAdvisor.RUN_ID, "test-run");
 
 		UserMessage userMessage = UserMessage.builder().text("test query").metadata(metadata).build();
 		Prompt prompt = new Prompt(userMessage);
 		Map<String, Object> context = new HashMap<>();
-		context.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user");
-		context.put(MemZeroChatMemoryAdvisor.AGENT_ID, "test-agent");
-		context.put(MemZeroChatMemoryAdvisor.RUN_ID, "test-run");
+		context.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user");
+		context.put(Mem0ChatMemoryAdvisor.AGENT_ID, "test-agent");
+		context.put(Mem0ChatMemoryAdvisor.RUN_ID, "test-run");
 		Map<String, Object> filters = new HashMap<>();
 		filters.put("category", "test");
-		context.put(MemZeroChatMemoryAdvisor.FILTERS, filters);
+		context.put(Mem0ChatMemoryAdvisor.FILTERS, filters);
 		ChatClientRequest request = new ChatClientRequest(prompt, context);
 
 		Document mockDocument = new Document("test memory content");
@@ -216,16 +216,16 @@ class MemZeroChatMemoryAdvisorTest {
 	void testBeforeWithNoSearchResults() {
 		// Given
 		Map<String, Object> metadata = new HashMap<>();
-		metadata.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user");
-		metadata.put(MemZeroChatMemoryAdvisor.AGENT_ID, "test-agent");
-		metadata.put(MemZeroChatMemoryAdvisor.RUN_ID, "test-run");
+		metadata.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user");
+		metadata.put(Mem0ChatMemoryAdvisor.AGENT_ID, "test-agent");
+		metadata.put(Mem0ChatMemoryAdvisor.RUN_ID, "test-run");
 
 		UserMessage userMessage = UserMessage.builder().text("test query").metadata(metadata).build();
 		Prompt prompt = new Prompt(userMessage);
 		Map<String, Object> context = new HashMap<>();
-		context.put(MemZeroChatMemoryAdvisor.USER_ID, "test-user");
-		context.put(MemZeroChatMemoryAdvisor.AGENT_ID, "test-agent");
-		context.put(MemZeroChatMemoryAdvisor.RUN_ID, "test-run");
+		context.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user");
+		context.put(Mem0ChatMemoryAdvisor.AGENT_ID, "test-agent");
+		context.put(Mem0ChatMemoryAdvisor.RUN_ID, "test-run");
 		ChatClientRequest request = new ChatClientRequest(prompt, context);
 
 		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of());

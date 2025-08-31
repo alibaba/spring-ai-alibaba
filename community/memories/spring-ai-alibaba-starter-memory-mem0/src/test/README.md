@@ -6,16 +6,16 @@
 
 ### 单元测试
 
-- `MemZeroChatMemoryAdvisorTest.java` - MemZeroChatMemoryAdvisor 的单元测试
-- `MemZeroMemoryStoreTest.java` - MemZeroMemoryStore 的单元测试
-- `MemZeroServiceClientTest.java` - MemZeroServiceClient 的单元测试
-- `MemZeroFilterExpressionConverterTest.java` - MemZeroFilterExpressionConverter 的单元测试
-- `MemZeroChatMemoryAutoConfigurationTest.java` - 自动配置的单元测试
-- `MemZeroChatMemoryPropertiesTest.java` - 配置属性的单元测试
+- `Mem0ChatMemoryAdvisorTest.java` - Mem0ChatMemoryAdvisor 的单元测试
+- `Mem0MemoryStoreTest.java` - Mem0MemoryStore 的单元测试
+- `Mem0ServiceClientTest.java` - Mem0ServiceClient 的单元测试
+- `Mem0FilterExpressionConverterTest.java` - Mem0FilterExpressionConverter 的单元测试
+- `Mem0ChatMemoryAutoConfigurationTest.java` - 自动配置的单元测试
+- `Mem0ChatMemoryPropertiesTest.java` - 配置属性的单元测试
 
 ### 集成测试
 
-- `MemZeroChatMemoryIntegrationTest.java` - 使用 TestContainers 的集成测试
+- `Mem0ChatMemoryIntegrationTest.java` - 使用 TestContainers 的集成测试
 
 ### 测试工具
 
@@ -44,7 +44,7 @@ mvn test -Dtest="*IntegrationTest" -DfailIfNoTests=false
 ### 运行特定测试类
 
 ```bash
-mvn test -Dtest=MemZeroChatMemoryAdvisorTest
+mvn test -Dtest=Mem0ChatMemoryAdvisorTest
 ```
 
 ## 测试依赖
@@ -67,7 +67,7 @@ mvn test -Dtest=MemZeroChatMemoryAdvisorTest
 
 ## 测试覆盖范围
 
-### MemZeroChatMemoryAdvisor 测试
+### Mem0ChatMemoryAdvisor 测试
 
 - 构造函数测试
 - before() 方法测试（包含有效请求、空消息、空元数据等场景）
@@ -77,7 +77,7 @@ mvn test -Dtest=MemZeroChatMemoryAdvisorTest
 - 过滤器测试
 - 无搜索结果测试
 
-### MemZeroMemoryStore 测试
+### Mem0MemoryStore 测试
 
 - Builder 模式测试
 - add() 方法测试
@@ -86,14 +86,14 @@ mvn test -Dtest=MemZeroChatMemoryAdvisorTest
 - 异常处理测试
 - 多文档操作测试
 
-### MemZeroServiceClient 测试
+### Mem0ServiceClient 测试
 
 - 构造函数测试
 - 各种请求对象创建测试
 - 配置测试
 - 重置功能测试
 
-### MemZeroFilterExpressionConverter 测试
+### Mem0FilterExpressionConverter 测试
 
 - 各种过滤器表达式转换测试
 - 复杂嵌套表达式测试
