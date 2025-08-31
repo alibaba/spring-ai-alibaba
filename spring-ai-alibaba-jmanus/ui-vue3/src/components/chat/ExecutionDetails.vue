@@ -70,30 +70,6 @@
         <div v-if="isAgentExpanded(agentIndex)" class="agent-content">
           <!-- Agent execution info -->
           <div class="agent-execution-info">
-            <div class="execution-meta">
-              <div v-if="agentExecution.startTime" class="meta-item">
-                <span class="meta-label">{{ $t('chat.startTime') }}:</span>
-                <span class="meta-value">{{ formatDateTime(agentExecution.startTime) }}</span>
-              </div>
-              <div v-if="agentExecution.endTime" class="meta-item">
-                <span class="meta-label">{{ $t('chat.endTime') }}:</span>
-                <span class="meta-value">{{ formatDateTime(agentExecution.endTime) }}</span>
-              </div>
-              <div v-if="agentExecution.modelName" class="meta-item">
-                <span class="meta-label">{{ $t('chat.model') }}:</span>
-                <span class="meta-value">{{ agentExecution.modelName }}</span>
-              </div>
-            </div>
-            
-            <!-- Agent request -->
-            <div v-if="agentExecution.agentRequest" class="agent-request">
-              <div class="request-header">
-                <Icon icon="carbon:chat" class="request-icon" />
-                <span class="request-label">{{ $t('chat.agentRequest') }}:</span>
-              </div>
-              <pre class="request-content">{{ agentExecution.agentRequest }}</pre>
-            </div>
-
             <!-- Agent result -->
             <div v-if="agentExecution.result" class="agent-result">
               <div class="result-header">
@@ -852,49 +828,21 @@ initializeExpandedState()
         .agent-execution-info {
           margin-bottom: 16px;
           
-          .execution-meta {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 8px;
-            margin-bottom: 12px;
-            
-            .meta-item {
-              display: flex;
-              align-items: center;
-              gap: 6px;
-              
-              .meta-label {
-                color: #aaaaaa;
-                font-size: 12px;
-                font-weight: 500;
-              }
-              
-              .meta-value {
-                color: #ffffff;
-                font-size: 12px;
-              }
-            }
-          }
-          
-          .agent-request, .agent-result, .agent-error {
+          .agent-result, .agent-error {
             margin-bottom: 12px;
             
             &:last-child {
               margin-bottom: 0;
             }
             
-            .request-header, .result-header, .error-header {
+            .result-header, .error-header {
               display: flex;
               align-items: center;
               gap: 6px;
               margin-bottom: 6px;
               
-              .request-icon, .result-icon, .error-icon {
+              .result-icon, .error-icon {
                 font-size: 14px;
-              }
-              
-              .request-icon {
-                color: #667eea;
               }
               
               .result-icon {
@@ -905,14 +853,14 @@ initializeExpandedState()
                 color: #ef4444;
               }
               
-              .request-label, .result-label, .error-label {
+              .result-label, .error-label {
                 color: #ffffff;
                 font-size: 13px;
                 font-weight: 500;
               }
             }
             
-            .request-content, .result-content, .error-content {
+            .result-content, .error-content {
               margin: 0;
               padding: 8px;
               background: rgba(0, 0, 0, 0.2);

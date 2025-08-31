@@ -76,7 +76,6 @@ public class PlanExecutionRecord {
 	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime endTime;
 
-
 	// Current step index being executed
 	private Integer currentStepIndex;
 
@@ -95,7 +94,8 @@ public class PlanExecutionRecord {
 	// Actual calling model
 	private String modelName;
 
-	// Parent tool call information that triggered this sub-plan (for sub-plan detail displaying)
+	// Parent tool call information that triggered this sub-plan (for sub-plan detail
+	// displaying)
 	private ActToolInfo parentActToolCall;
 
 	/**
@@ -146,8 +146,8 @@ public class PlanExecutionRecord {
 	}
 
 	/**
-	 * Dynamically update currentStepIndex based on agentExecutionSequence
-	 * This method analyzes the execution state of agents to determine the current step
+	 * Dynamically update currentStepIndex based on agentExecutionSequence This method
+	 * analyzes the execution state of agents to determine the current step
 	 */
 	public void updateCurrentStepIndex() {
 		if (this.agentExecutionSequence == null || this.agentExecutionSequence.isEmpty()) {
@@ -164,7 +164,7 @@ public class PlanExecutionRecord {
 		// Find the currently running step
 		for (int i = 0; i < this.agentExecutionSequence.size(); i++) {
 			AgentExecutionRecordSimple agent = this.agentExecutionSequence.get(i);
-			if (agent != null &&ExecutionStatus.RUNNING.equals(agent.getStatus())) {
+			if (agent != null && ExecutionStatus.RUNNING.equals(agent.getStatus())) {
 				this.currentStepIndex = i;
 				return;
 			}

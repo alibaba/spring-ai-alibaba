@@ -81,11 +81,8 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 			if (executionSteps != null && !executionSteps.isEmpty()) {
 				for (ExecutionStep step : executionSteps) {
 					// Create or update AgentExecutionRecordEntity for each step
-					String agentName = step.getAgent() != null ? step.getAgent().getName() : "Unknown Agent";
-					String description = step.getAgent() != null ? step.getAgent().getDescription()
-							: "No description available";
-					AgentExecutionRecordEntity agentRecord = createOrUpdateAgentExecutionRecord(step, agentName,
-							description);
+				
+					AgentExecutionRecordEntity agentRecord = createOrUpdateAgentExecutionRecord(step);
 					if (agentRecord != null) {
 						// Add to plan execution record
 						planExecutionRecordEntity.addAgentExecutionRecord(agentRecord);
@@ -139,16 +136,42 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 	/**
 	 * Create or update AgentExecutionRecordEntity for a given ExecutionStep
 	 * @param step ExecutionStep to process
-	 * @param agentName Agent name
-	 * @param description Agent description
 	 * @return AgentExecutionRecordEntity instance, or null if creation failed
 	 */
-	private AgentExecutionRecordEntity createOrUpdateAgentExecutionRecord(ExecutionStep step, String agentName,
-			String description) {
+	private AgentExecutionRecordEntity createOrUpdateAgentExecutionRecord(ExecutionStep step) {
 		try {
 			if (step == null || step.getStepId() == null) {
 				logger.warn("ExecutionStep or stepId is null, skipping agent record creation");
 				return null;
+			}
+
+			// Extract agent name and request from stepRequirement
+			String extractedAgentName = "Unknown Agent";
+			String agentRequest = null;
+			
+			if (step.getStepRequirement() != null && !step.getStepRequirement().trim().isEmpty()) {
+				String stepReq = step.getStepRequirement().trim();
+				// Parse format: "[AGENT_NAME] request content"
+				if (stepReq.startsWith("[") && stepReq.contains("]")) {
+					int endBracketIndex = stepReq.indexOf("]");
+					if (endBracketIndex > 1) {
+						String bracketContent = stepReq.substring(1, endBracketIndex).trim();
+						String requestContent = stepReq.substring(endBracketIndex + 1).trim();
+						
+						// Use extracted agent name if available
+						if (!bracketContent.isEmpty()) {
+							extractedAgentName = bracketContent;
+						}
+						
+						// Set the request content
+						if (!requestContent.isEmpty()) {
+							agentRequest = requestContent;
+						}
+						
+						logger.debug("Extracted agent name: '{}' and request: '{}' from stepRequirement: '{}'", 
+								extractedAgentName, agentRequest, stepReq);
+					}
+				}
 			}
 
 			// 1. Find existing AgentExecutionRecordEntity by stepId
@@ -162,20 +185,24 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 				logger.debug("Updating existing AgentExecutionRecordEntity for step ID: {}", step.getStepId());
 
 				// Update fields if they have changed
-				if (agentName != null) {
-					agentRecord.setAgentName(agentName);
-				}
-				if (description != null) {
-					agentRecord.setAgentDescription(description);
+				agentRecord.setAgentName(extractedAgentName);
+				// Set agent request if extracted
+				if (agentRequest != null) {
+					agentRecord.setAgentRequest(agentRequest);
 				}
 
 			}
 			else {
 				// 2. Create new record
 				agentRecord = new AgentExecutionRecordEntity(step.getStepId(),
-						agentName != null ? agentName : "Unknown Agent",
-						description != null ? description : "No description available");
+						extractedAgentName,
+						"No description available");
 				logger.debug("Created new AgentExecutionRecordEntity for step ID: {}", step.getStepId());
+
+				// Set agent request for new records
+				if (agentRequest != null) {
+					agentRecord.setAgentRequest(agentRequest);
+				}
 			}
 
 			// Set additional fields
@@ -186,8 +213,8 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 			// Set step index
 			agentRecord.setCurrentStep(step.getStepIndex() != null ? step.getStepIndex() : 0);
 
-			logger.debug("Processed AgentExecutionRecordEntity for step ID: {} with agent: {}", step.getStepId(),
-					agentRecord.getAgentName());
+			logger.debug("Processed AgentExecutionRecordEntity for step ID: {} with agent: '{}' and request: '{}'",
+					step.getStepId(), agentRecord.getAgentName(), agentRequest);
 
 			return agentRecord;
 

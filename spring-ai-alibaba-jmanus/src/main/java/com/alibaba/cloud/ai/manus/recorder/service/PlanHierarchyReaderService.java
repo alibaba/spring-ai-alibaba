@@ -47,11 +47,11 @@ public class PlanHierarchyReaderService {
 
 	/**
 	 * Read plan execution records by rootPlanId and convert to VO objects with hierarchy.
-	 * 
-	 * Data model explanation:
-	 * - Root plan: currentPlanId = rootPlanId (root plan points to itself)
-	 * - Sub plans: currentPlanId ≠ rootPlanId, but rootPlanId field points to root plan
-	 * 
+	 *
+	 * Data model explanation: - Root plan: currentPlanId = rootPlanId (root plan points
+	 * to itself) - Sub plans: currentPlanId ≠ rootPlanId, but rootPlanId field points to
+	 * root plan
+	 *
 	 * Since rootPlanId is unique, this method returns a single root plan with all its
 	 * sub-plans.
 	 * @param rootPlanId The root plan ID to search for
@@ -74,7 +74,8 @@ public class PlanHierarchyReaderService {
 				return null;
 			}
 
-			// Step 2: Find all plans that have this rootPlanId (including the root plan itself)
+			// Step 2: Find all plans that have this rootPlanId (including the root plan
+			// itself)
 			// This includes the root plan and all its sub-plans
 			List<PlanExecutionRecordEntity> planEntities = planExecutionRecordRepository.findByRootPlanId(rootPlanId);
 
@@ -165,7 +166,7 @@ public class PlanHierarchyReaderService {
 
 		// Set basic properties
 		vo.setId(entity.getId());
-		vo.setCurrentPlanId(entity.getCurrentPlanId());  // 使用setter设置currentPlanId
+		vo.setCurrentPlanId(entity.getCurrentPlanId()); // 使用setter设置currentPlanId
 		vo.setTitle(entity.getTitle());
 		vo.setUserRequest(entity.getUserRequest());
 		vo.setStartTime(entity.getStartTime());
@@ -193,16 +194,19 @@ public class PlanHierarchyReaderService {
 		// Query parent ActToolInfo by toolCallId for sub-plan detail displaying
 		if (entity.getToolCallId() != null && !entity.getToolCallId().trim().isEmpty()) {
 			try {
-				Optional<ActToolInfoEntity> actToolInfoEntityOpt = actToolInfoRepository.findByToolCallId(entity.getToolCallId());
+				Optional<ActToolInfoEntity> actToolInfoEntityOpt = actToolInfoRepository
+					.findByToolCallId(entity.getToolCallId());
 				if (actToolInfoEntityOpt.isPresent()) {
 					ActToolInfoEntity actToolInfoEntity = actToolInfoEntityOpt.get();
 					ActToolInfo parentActToolCall = convertToActToolInfo(actToolInfoEntity);
 					vo.setParentActToolCall(parentActToolCall);
 					logger.debug("Found parent ActToolInfo for toolCallId: {}", entity.getToolCallId());
-				} else {
+				}
+				else {
 					logger.debug("No parent ActToolInfo found for toolCallId: {}", entity.getToolCallId());
 				}
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				logger.error("Failed to query parent ActToolInfo for toolCallId: {}", entity.getToolCallId(), e);
 			}
 		}
@@ -267,12 +271,10 @@ public class PlanHierarchyReaderService {
 	 * Build hierarchy relationships between plans using subPlanExecutionRecords. This
 	 * method establishes parent-child relationships by populating the
 	 * subPlanExecutionRecords field in AgentExecutionRecordSimple objects.
-	 * 
-	 * Hierarchy logic:
-	 * - For each plan, look through its agent execution sequence
-	 * - For each agent, find sub-plans where parentPlanId = current plan's currentPlanId
-	 * - This creates a tree structure: Root Plan -> Agents -> Sub Plans
-	 * 
+	 *
+	 * Hierarchy logic: - For each plan, look through its agent execution sequence - For
+	 * each agent, find sub-plans where parentPlanId = current plan's currentPlanId - This
+	 * creates a tree structure: Root Plan -> Agents -> Sub Plans
 	 * @param planRecords List of plan records to build hierarchy for
 	 */
 	private void buildHierarchyRelationships(List<PlanExecutionRecord> planRecords) {
@@ -298,7 +300,8 @@ public class PlanHierarchyReaderService {
 							logger.debug("Found {} sub-plans for agent {} in plan {}", subPlans.size(),
 									agentRecord.getAgentName(), plan.getCurrentPlanId());
 						}
-					} else {
+					}
+					else {
 						logger.warn("Plan with null currentPlanId found, skipping hierarchy building for this plan");
 					}
 				}
@@ -310,10 +313,9 @@ public class PlanHierarchyReaderService {
 
 	/**
 	 * Find sub-plans for a given parent plan.
-	 * 
-	 * This method finds all plans where parentPlanId = the input parentPlanId.
-	 * It's used to build the hierarchy: Parent Plan -> Sub Plans
-	 * 
+	 *
+	 * This method finds all plans where parentPlanId = the input parentPlanId. It's used
+	 * to build the hierarchy: Parent Plan -> Sub Plans
 	 * @param parentPlanId The parent plan ID to search for sub-plans
 	 * @param planMap Map of all plans for quick lookup
 	 * @return List of sub-plans that belong to the specified parent plan
@@ -324,7 +326,7 @@ public class PlanHierarchyReaderService {
 		if (parentPlanId == null) {
 			return new ArrayList<>();
 		}
-		
+
 		return planMap.values()
 			.stream()
 			.filter(plan -> parentPlanId.equals(plan.getParentPlanId()))

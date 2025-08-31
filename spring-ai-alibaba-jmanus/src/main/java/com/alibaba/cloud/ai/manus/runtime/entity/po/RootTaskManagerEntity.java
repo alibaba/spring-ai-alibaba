@@ -24,12 +24,12 @@ import java.util.List;
 
 /**
  * Root Task Manager Entity for managing high-level task operations and state.
- * 
- * This entity serves as the central coordinator for root-level tasks with three main responsibilities:
- * 1. Store the desired state of the task with root plan ID (run, stop, etc.)
- * 2. Store the user input form data for the task
- * 3. Store the task execution results and outcomes
- * 
+ *
+ * This entity serves as the central coordinator for root-level tasks with three main
+ * responsibilities: 1. Store the desired state of the task with root plan ID (run, stop,
+ * etc.) 2. Store the user input form data for the task 3. Store the task execution
+ * results and outcomes
+ *
  * @author AI Assistant
  * @since 2025
  */
@@ -37,314 +37,304 @@ import java.util.List;
 @Table(name = "root_task_manager")
 public class RootTaskManagerEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    /**
-     * Root plan ID - the main identifier for the entire task hierarchy
-     */
-    @Column(name = "root_plan_id", nullable = false, unique = true, length = 255)
-    private String rootPlanId;
+	/**
+	 * Root plan ID - the main identifier for the entire task hierarchy
+	 */
+	@Column(name = "root_plan_id", nullable = false, unique = true, length = 255)
+	private String rootPlanId;
 
-    /**
-     * User's desired task state - what the user wants the task to do
-     * Values: START, STOP, PAUSE, RESUME, CANCEL
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "desired_task_state", nullable = false, length = 50)
-    private DesiredTaskState desiredTaskState;
+	/**
+	 * User's desired task state - what the user wants the task to do Values: START, STOP,
+	 * PAUSE, RESUME, CANCEL
+	 */
+	@Enumerated(EnumType.STRING)
+	@Column(name = "desired_task_state", nullable = false, length = 50)
+	private DesiredTaskState desiredTaskState;
 
+	/**
+	 * Task execution result (merged summary and details)
+	 */
+	@Column(name = "task_result", columnDefinition = "TEXT")
+	private String taskResult;
 
+	/**
+	 * Task execution start time
+	 */
+	@Column(name = "start_time")
+	private LocalDateTime startTime;
 
-    /**
-     * Task execution result (merged summary and details)
-     */
-    @Column(name = "task_result", columnDefinition = "TEXT")
-    private String taskResult;
+	/**
+	 * Task execution end time
+	 */
+	@Column(name = "end_time")
+	private LocalDateTime endTime;
 
-    /**
-     * Task execution start time
-     */
-    @Column(name = "start_time")
-    private LocalDateTime startTime;
+	/**
+	 * Last update time for the task
+	 */
+	@Column(name = "last_updated")
+	private LocalDateTime lastUpdated;
 
-    /**
-     * Task execution end time
-     */
-    @Column(name = "end_time")
-    private LocalDateTime endTime;
+	/**
+	 * Task creation time
+	 */
+	@Column(name = "created_at", nullable = false)
+	private LocalDateTime createdAt;
 
-    /**
-     * Last update time for the task
-     */
-    @Column(name = "last_updated")
-    private LocalDateTime lastUpdated;
+	/**
+	 * User who created the task
+	 */
+	@Column(name = "created_by", length = 100)
+	private String createdBy;
 
-    /**
-     * Task creation time
-     */
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+	/**
+	 * One-to-many relationship with UserInputWaitStateEntity
+	 */
+	@OneToMany(mappedBy = "rootTaskManager", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	private List<UserInputWaitStateEntity> userInputWaitStates = new ArrayList<>();
 
-    /**
-     * User who created the task
-     */
-    @Column(name = "created_by", length = 100)
-    private String createdBy;
+	// Enums for user's desired task state
+	public enum DesiredTaskState {
 
-    /**
-     * One-to-many relationship with UserInputWaitStateEntity
-     */
-    @OneToMany(mappedBy = "rootTaskManager", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<UserInputWaitStateEntity> userInputWaitStates = new ArrayList<>();
+		START, // User wants the task to start
+		STOP, // User wants the task to stop
+		PAUSE, // User wants the task to pause
+		RESUME, // User wants the task to resume
+		CANCEL, // User wants the task to be cancelled
+		WAIT // User wants the task to wait for input
 
+	}
 
+	// Constructors
+	public RootTaskManagerEntity() {
+		this.createdAt = LocalDateTime.now();
+		this.lastUpdated = LocalDateTime.now();
+		this.desiredTaskState = DesiredTaskState.WAIT;
+	}
 
-    // Enums for user's desired task state
-    public enum DesiredTaskState {
-        START,          // User wants the task to start
-        STOP,           // User wants the task to stop
-        PAUSE,          // User wants the task to pause
-        RESUME,         // User wants the task to resume
-        CANCEL,         // User wants the task to be cancelled
-        WAIT            // User wants the task to wait for input
-    }
+	public RootTaskManagerEntity(String rootPlanId) {
+		this();
+		this.rootPlanId = rootPlanId;
+	}
 
-    // Constructors
-    public RootTaskManagerEntity() {
-        this.createdAt = LocalDateTime.now();
-        this.lastUpdated = LocalDateTime.now();
-        this.desiredTaskState = DesiredTaskState.WAIT;
-    }
+	// Pre-persist and pre-update hooks
+	@PrePersist
+	protected void onCreate() {
+		this.createdAt = LocalDateTime.now();
+		this.lastUpdated = LocalDateTime.now();
+	}
 
-    public RootTaskManagerEntity(String rootPlanId) {
-        this();
-        this.rootPlanId = rootPlanId;
-    }
+	@PreUpdate
+	protected void onUpdate() {
+		this.lastUpdated = LocalDateTime.now();
+	}
 
-    // Pre-persist and pre-update hooks
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.lastUpdated = LocalDateTime.now();
-    }
+	// Getters and Setters
+	public Long getId() {
+		return id;
+	}
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.lastUpdated = LocalDateTime.now();
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+	public String getRootPlanId() {
+		return rootPlanId;
+	}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	public void setRootPlanId(String rootPlanId) {
+		this.rootPlanId = rootPlanId;
+	}
 
-    public String getRootPlanId() {
-        return rootPlanId;
-    }
+	public DesiredTaskState getDesiredTaskState() {
+		return desiredTaskState;
+	}
 
-    public void setRootPlanId(String rootPlanId) {
-        this.rootPlanId = rootPlanId;
-    }
+	public void setDesiredTaskState(DesiredTaskState desiredTaskState) {
+		this.desiredTaskState = desiredTaskState;
+	}
 
+	public String getTaskResult() {
+		return taskResult;
+	}
 
+	public void setTaskResult(String taskResult) {
+		this.taskResult = taskResult;
+	}
 
-    public DesiredTaskState getDesiredTaskState() {
-        return desiredTaskState;
-    }
+	public LocalDateTime getStartTime() {
+		return startTime;
+	}
 
-    public void setDesiredTaskState(DesiredTaskState desiredTaskState) {
-        this.desiredTaskState = desiredTaskState;
-    }
+	public void setStartTime(LocalDateTime startTime) {
+		this.startTime = startTime;
+	}
 
-    public String getTaskResult() {
-        return taskResult;
-    }
+	public LocalDateTime getEndTime() {
+		return endTime;
+	}
 
-    public void setTaskResult(String taskResult) {
-        this.taskResult = taskResult;
-    }
+	public void setEndTime(LocalDateTime endTime) {
+		this.endTime = endTime;
+	}
 
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
+	public LocalDateTime getLastUpdated() {
+		return lastUpdated;
+	}
 
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
+	public void setLastUpdated(LocalDateTime lastUpdated) {
+		this.lastUpdated = lastUpdated;
+	}
 
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
 
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
-    }
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
 
-    public LocalDateTime getLastUpdated() {
-        return lastUpdated;
-    }
+	public String getCreatedBy() {
+		return createdBy;
+	}
 
-    public void setLastUpdated(LocalDateTime lastUpdated) {
-        this.lastUpdated = lastUpdated;
-    }
+	public void setCreatedBy(String createdBy) {
+		this.createdBy = createdBy;
+	}
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+	public List<UserInputWaitStateEntity> getUserInputWaitStates() {
+		return userInputWaitStates;
+	}
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+	public void setUserInputWaitStates(List<UserInputWaitStateEntity> userInputWaitStates) {
+		this.userInputWaitStates = userInputWaitStates;
+	}
 
-    public String getCreatedBy() {
-        return createdBy;
-    }
+	/**
+	 * Add a user input wait state to this root task manager
+	 */
+	public void addUserInputWaitState(UserInputWaitStateEntity waitState) {
+		if (this.userInputWaitStates == null) {
+			this.userInputWaitStates = new ArrayList<>();
+		}
+		this.userInputWaitStates.add(waitState);
+		waitState.setRootTaskManager(this);
+	}
 
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
+	/**
+	 * Remove a user input wait state from this root task manager
+	 */
+	public void removeUserInputWaitState(UserInputWaitStateEntity waitState) {
+		if (this.userInputWaitStates != null) {
+			this.userInputWaitStates.remove(waitState);
+			waitState.setRootTaskManager(null);
+		}
+	}
 
-    public List<UserInputWaitStateEntity> getUserInputWaitStates() {
-        return userInputWaitStates;
-    }
+	// Business logic methods for setting user's desired state
 
-    public void setUserInputWaitStates(List<UserInputWaitStateEntity> userInputWaitStates) {
-        this.userInputWaitStates = userInputWaitStates;
-    }
+	/**
+	 * Set user's desire to start the task
+	 */
+	public void setUserWantsToStart() {
+		this.desiredTaskState = DesiredTaskState.START;
+		this.startTime = LocalDateTime.now();
+		this.lastUpdated = LocalDateTime.now();
+	}
 
-    /**
-     * Add a user input wait state to this root task manager
-     */
-    public void addUserInputWaitState(UserInputWaitStateEntity waitState) {
-        if (this.userInputWaitStates == null) {
-            this.userInputWaitStates = new ArrayList<>();
-        }
-        this.userInputWaitStates.add(waitState);
-        waitState.setRootTaskManager(this);
-    }
+	/**
+	 * Set user's desire to stop the task
+	 */
+	public void setUserWantsToStop() {
+		this.desiredTaskState = DesiredTaskState.STOP;
+		this.endTime = LocalDateTime.now();
+		this.lastUpdated = LocalDateTime.now();
+	}
 
-    /**
-     * Remove a user input wait state from this root task manager
-     */
-    public void removeUserInputWaitState(UserInputWaitStateEntity waitState) {
-        if (this.userInputWaitStates != null) {
-            this.userInputWaitStates.remove(waitState);
-            waitState.setRootTaskManager(null);
-        }
-    }
+	/**
+	 * Set user's desire to pause the task
+	 */
+	public void setUserWantsToPause() {
+		this.desiredTaskState = DesiredTaskState.PAUSE;
+		this.lastUpdated = LocalDateTime.now();
+	}
 
+	/**
+	 * Set user's desire to resume the task
+	 */
+	public void setUserWantsToResume() {
+		this.desiredTaskState = DesiredTaskState.RESUME;
+		this.lastUpdated = LocalDateTime.now();
+	}
 
+	/**
+	 * Set user's desire to cancel the task
+	 */
+	public void setUserWantsToCancel() {
+		this.desiredTaskState = DesiredTaskState.CANCEL;
+		this.endTime = LocalDateTime.now();
+		this.lastUpdated = LocalDateTime.now();
+	}
 
-    // Business logic methods for setting user's desired state
+	/**
+	 * Set user's desire to wait for input
+	 */
+	public void setUserWantsToWait() {
+		this.desiredTaskState = DesiredTaskState.WAIT;
+		this.lastUpdated = LocalDateTime.now();
+	}
 
-    /**
-     * Set user's desire to start the task
-     */
-    public void setUserWantsToStart() {
-        this.desiredTaskState = DesiredTaskState.START;
-        this.startTime = LocalDateTime.now();
-        this.lastUpdated = LocalDateTime.now();
-    }
+	/**
+	 * Check if user wants the task to start
+	 */
+	public boolean userWantsToStart() {
+		return this.desiredTaskState == DesiredTaskState.START;
+	}
 
-    /**
-     * Set user's desire to stop the task
-     */
-    public void setUserWantsToStop() {
-        this.desiredTaskState = DesiredTaskState.STOP;
-        this.endTime = LocalDateTime.now();
-        this.lastUpdated = LocalDateTime.now();
-    }
+	/**
+	 * Check if user wants the task to stop
+	 */
+	public boolean userWantsToStop() {
+		return this.desiredTaskState == DesiredTaskState.STOP;
+	}
 
-    /**
-     * Set user's desire to pause the task
-     */
-    public void setUserWantsToPause() {
-        this.desiredTaskState = DesiredTaskState.PAUSE;
-        this.lastUpdated = LocalDateTime.now();
-    }
+	/**
+	 * Check if user wants the task to pause
+	 */
+	public boolean userWantsToPause() {
+		return this.desiredTaskState == DesiredTaskState.PAUSE;
+	}
 
-    /**
-     * Set user's desire to resume the task
-     */
-    public void setUserWantsToResume() {
-        this.desiredTaskState = DesiredTaskState.RESUME;
-        this.lastUpdated = LocalDateTime.now();
-    }
+	/**
+	 * Check if user wants the task to resume
+	 */
+	public boolean userWantsToResume() {
+		return this.desiredTaskState == DesiredTaskState.RESUME;
+	}
 
-    /**
-     * Set user's desire to cancel the task
-     */
-    public void setUserWantsToCancel() {
-        this.desiredTaskState = DesiredTaskState.CANCEL;
-        this.endTime = LocalDateTime.now();
-        this.lastUpdated = LocalDateTime.now();
-    }
+	/**
+	 * Check if user wants the task to cancel
+	 */
+	public boolean userWantsToCancel() {
+		return this.desiredTaskState == DesiredTaskState.CANCEL;
+	}
 
-    /**
-     * Set user's desire to wait for input
-     */
-    public void setUserWantsToWait() {
-        this.desiredTaskState = DesiredTaskState.WAIT;
-        this.lastUpdated = LocalDateTime.now();
-    }
+	/**
+	 * Check if user wants the task to wait
+	 */
+	public boolean userWantsToWait() {
+		return this.desiredTaskState == DesiredTaskState.WAIT;
+	}
 
-    /**
-     * Check if user wants the task to start
-     */
-    public boolean userWantsToStart() {
-        return this.desiredTaskState == DesiredTaskState.START;
-    }
+	@Override
+	public String toString() {
+		return "RootTaskManagerEntity{" + "id=" + id + ", rootPlanId='" + rootPlanId + '\'' + ", desiredTaskState="
+				+ desiredTaskState + ", startTime=" + startTime + ", endTime=" + endTime + ", userInputWaitStatesCount="
+				+ (userInputWaitStates != null ? userInputWaitStates.size() : 0) + '}';
+	}
 
-    /**
-     * Check if user wants the task to stop
-     */
-    public boolean userWantsToStop() {
-        return this.desiredTaskState == DesiredTaskState.STOP;
-    }
-
-    /**
-     * Check if user wants the task to pause
-     */
-    public boolean userWantsToPause() {
-        return this.desiredTaskState == DesiredTaskState.PAUSE;
-    }
-
-    /**
-     * Check if user wants the task to resume
-     */
-    public boolean userWantsToResume() {
-        return this.desiredTaskState == DesiredTaskState.RESUME;
-    }
-
-    /**
-     * Check if user wants the task to cancel
-     */
-    public boolean userWantsToCancel() {
-        return this.desiredTaskState == DesiredTaskState.CANCEL;
-    }
-
-    /**
-     * Check if user wants the task to wait
-     */
-    public boolean userWantsToWait() {
-        return this.desiredTaskState == DesiredTaskState.WAIT;
-    }
-
-    @Override
-    public String toString() {
-        return "RootTaskManagerEntity{" +
-                "id=" + id +
-                ", rootPlanId='" + rootPlanId + '\'' +
-                ", desiredTaskState=" + desiredTaskState +
-                ", startTime=" + startTime +
-                ", endTime=" + endTime +
-                ", userInputWaitStatesCount=" + (userInputWaitStates != null ? userInputWaitStates.size() : 0) +
-                '}';
-    }
 }

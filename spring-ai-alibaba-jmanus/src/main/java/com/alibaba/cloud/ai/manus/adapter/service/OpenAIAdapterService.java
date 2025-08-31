@@ -85,6 +85,7 @@ public class OpenAIAdapterService {
 
 	@Autowired
 	private PlanHierarchyReaderService planHierarchyReaderService;
+
 	/**
 	 * Process OpenAI chat completion request and return response
 	 */
