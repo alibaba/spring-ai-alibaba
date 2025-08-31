@@ -15,11 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph.agent.a2a;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.a2a.A2A;
 import io.a2a.spec.AgentCard;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;

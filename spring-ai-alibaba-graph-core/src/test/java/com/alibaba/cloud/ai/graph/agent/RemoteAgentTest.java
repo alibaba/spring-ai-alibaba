@@ -16,23 +16,23 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import java.util.HashMap;
-//import java.util.Map;
-//import java.util.Optional;
+import java.util.Map;
+import java.util.Optional;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
-//import com.alibaba.cloud.ai.graph.OverAllState;
-//import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-//import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
-//import com.alibaba.cloud.ai.graph.NodeOutput;
-//import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-//import com.alibaba.cloud.ai.graph.agent.a2a.RemoteAgentCard;
+import com.alibaba.cloud.ai.graph.agent.a2a.RemoteAgentCard;
 
 import org.springframework.ai.chat.model.ChatModel;
 
@@ -61,44 +61,44 @@ class RemoteAgentTest {
 			return keyStrategyHashMap;
 		};
 
-		// A2aRemoteAgent currencyExchangeAgent = A2aRemoteAgent.builder()
-		// .name("writer_agent")
-		// .agentCard(RemoteAgentCard.builder().url("http://192.168.239.195:10000").build())
-		// .description("可以写文章。")
-		// .outputKey("output")
-		// .build();
-		//
-		// try {
-		// // Start streaming and consume chunks as they arrive
-		// AsyncGenerator<NodeOutput> generator = currencyExchangeAgent
-		// .stream(Map.of("input", "你好，给我说一下人民币到日元的汇率"));
-		// System.out.println("Begin streaming response...");
-		// int chunkCount = 0;
-		// while (true) {
-		// AsyncGenerator.Data<NodeOutput> data = generator.next();
-		// if (data.isDone()) {
-		// System.out.println("Streaming completed. Total chunks: " + chunkCount);
-		// break;
-		// }
-		// NodeOutput outBase = data.getData().join();
-		// chunkCount++;
-		// if (outBase instanceof StreamingOutput so) {
-		// System.out.println("chunk[" + chunkCount + "]: " + so.chunk());
-		// } else {
-		// System.out.println("chunk[" + chunkCount + "]: " + outBase.toString());
-		// }
-		// }
-		// } catch (java.util.concurrent.CompletionException e) {
-		// e.printStackTrace();
-		// }
-		//
-		// try {
-		// Optional<OverAllState> result = currencyExchangeAgent.invoke(Map.of("input",
-		// "你好，给我说一下人民币到日元的汇率"));
-		// System.out.println("Final Result: " + result.get());
-		// } catch (Exception e) {
-		// e.printStackTrace();
-		// }
+		A2aRemoteAgent currencyExchangeAgent = A2aRemoteAgent.builder()
+				.name("writer_agent")
+				.agentCard(RemoteAgentCard.builder().url("http://0.0.0.0:8080").build())
+				.description("可以写文章。")
+				.outputKey("output")
+				.build();
+
+		try {
+			// Start streaming and consume chunks as they arrive
+			AsyncGenerator<NodeOutput> generator = currencyExchangeAgent.stream(Map.of("input", "你好，给我写个100字的散文"));
+			int chunkCount = 0;
+			while (true) {
+				AsyncGenerator.Data<NodeOutput> data = generator.next();
+				if (data.isDone()) {
+					System.out.println("Streaming completed. Total chunks: " + chunkCount);
+					break;
+				}
+				NodeOutput outBase = data.getData().join();
+				chunkCount++;
+				if (outBase instanceof StreamingOutput so) {
+					System.out.println("chunk[" + chunkCount + "]: " + so.chunk());
+				}
+				else {
+					System.out.println("chunk[" + chunkCount + "]: " + outBase.toString());
+				}
+			}
+		}
+		catch (java.util.concurrent.CompletionException e) {
+			e.printStackTrace();
+		}
+
+        try {
+            Optional<OverAllState> result = currencyExchangeAgent.invoke(Map.of("input",
+                    "你好，给我写一个100字的描写西湖的文章"));
+            System.out.println("Final Result: " + result.get());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 	}
 
 }

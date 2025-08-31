@@ -15,22 +15,15 @@
  */
 package com.alibaba.cloud.ai.graph.agent.a2a;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.nio.charset.StandardCharsets;
-
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
-import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.a2a.spec.AgentCard;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -40,10 +33,17 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
 import org.springframework.util.StringUtils;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class A2aNode implements NodeAction {
 
@@ -132,10 +132,10 @@ public class A2aNode implements NodeAction {
 							String line;
 							while ((line = reader.readLine()) != null) {
 								String trimmed = line.trim();
-								if (!trimmed.startsWith("data: ")) {
+								if (!trimmed.startsWith("data:")) {
 									continue;
 								}
-								String jsonContent = trimmed.substring(6);
+								String jsonContent = trimmed.substring(5).trim();
 								if ("[DONE]".equals(jsonContent)) {
 									break;
 								}
@@ -176,7 +176,6 @@ public class A2aNode implements NodeAction {
 							queue.add(AsyncGenerator.Data
 								.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", state)));
 						}
-						// fallthrough to done with final value
 					}
 				}
 			}
