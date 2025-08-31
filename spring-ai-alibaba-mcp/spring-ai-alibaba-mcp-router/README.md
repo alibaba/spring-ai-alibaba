@@ -133,6 +133,32 @@ spring:
         router:
           enabled: true
           service-names: ["echo-server", "weather-server"]
+# 开启 OAuth 验证配置
+spring:
+  ai:
+    alibaba:
+      mcp:
+        gateway:
+          oauth:
+            enabled: true
+            # OAuth 配置
+            provider:
+              client-id: your-client-id
+              client-secret: your-client-secret
+              token-uri: https://your-oauth-server.com/oauth/token
+              authorization-uri: https://your-oauth-server.com/oauth/authorize
+              user-info-uri: https://your-oauth-server.com/userinfo
+              grant-type: client_credentials
+              scope: read,write
+              # token 缓存配置
+            token-cache:
+              enabled: true 
+              max-size: 1000
+              refresh-before-expiry: PT5M # 在过期多久前刷新缓存
+              # 重试配置，最大重试次数和间隔           
+            retry:
+              max-attempts: 3
+              backoff: PT1S
 ```
 
 ### 3. 使用示例
