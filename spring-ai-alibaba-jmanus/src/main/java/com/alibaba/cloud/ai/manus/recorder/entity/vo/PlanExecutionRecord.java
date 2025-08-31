@@ -106,6 +106,8 @@ public class PlanExecutionRecord {
 		this.completed = false;
 		this.agentExecutionSequence = new ArrayList<>();
 		this.id = generateId();
+		// Initialize current step index
+		this.currentStepIndex = 0;
 	}
 
 	/**
@@ -114,6 +116,8 @@ public class PlanExecutionRecord {
 	 */
 	public void addAgentExecutionRecord(AgentExecutionRecordSimple record) {
 		this.agentExecutionSequence.add(record);
+		// Dynamically update current step index
+		updateCurrentStepIndex();
 	}
 
 	/**
@@ -126,6 +130,8 @@ public class PlanExecutionRecord {
 
 	public void setAgentExecutionSequence(List<AgentExecutionRecordSimple> agentExecutionSequence) {
 		this.agentExecutionSequence = agentExecutionSequence;
+		// Update current step index after setting the sequence
+		updateCurrentStepIndex();
 	}
 
 	/**
@@ -135,6 +141,46 @@ public class PlanExecutionRecord {
 		this.endTime = LocalDateTime.now();
 		this.completed = true;
 		this.summary = summary;
+		// Update current step index when plan is completed
+		updateCurrentStepIndex();
+	}
+
+	/**
+	 * Dynamically update currentStepIndex based on agentExecutionSequence
+	 * This method analyzes the execution state of agents to determine the current step
+	 */
+	public void updateCurrentStepIndex() {
+		if (this.agentExecutionSequence == null || this.agentExecutionSequence.isEmpty()) {
+			this.currentStepIndex = 0;
+			return;
+		}
+
+		// If plan is completed, set to the last step
+		if (this.completed) {
+			this.currentStepIndex = this.agentExecutionSequence.size() - 1;
+			return;
+		}
+
+		// Find the currently running step
+		for (int i = 0; i < this.agentExecutionSequence.size(); i++) {
+			AgentExecutionRecordSimple agent = this.agentExecutionSequence.get(i);
+			if (agent != null &&ExecutionStatus.RUNNING.equals(agent.getStatus())) {
+				this.currentStepIndex = i;
+				return;
+			}
+		}
+
+		// If no step is running, find the first unfinished step
+		for (int i = 0; i < this.agentExecutionSequence.size(); i++) {
+			AgentExecutionRecordSimple agent = this.agentExecutionSequence.get(i);
+			if (agent != null && !ExecutionStatus.FINISHED.equals(agent.getStatus())) {
+				this.currentStepIndex = i;
+				return;
+			}
+		}
+
+		// If all steps are completed, set to the last step
+		this.currentStepIndex = this.agentExecutionSequence.size() - 1;
 	}
 
 	/**

@@ -54,9 +54,7 @@
             <Icon :icon="getAgentStatusIcon(agentExecution.status)" class="agent-status-icon" />
             <div class="agent-details">
               <div class="agent-name">{{ agentExecution.agentName || $t('chat.unknownAgent') }}</div>
-              <div class="agent-description" v-if="agentExecution.agentDescription">
-                {{ agentExecution.agentDescription }}
-              </div>
+              <pre class="request-content">{{ agentExecution.agentRequest }}</pre>
             </div>
           </div>
           <div class="agent-controls">
@@ -155,10 +153,10 @@
                 </div>
 
                 <!-- Sub-plan progress -->
-                <div v-if="subPlan.steps?.length" class="sub-plan-progress">
+                <div v-if="subPlan.agentExecutionSequence?.length" class="sub-plan-progress">
                   <div class="progress-info">
                     <span class="progress-text">
-                      {{ $t('chat.progress') }}: {{ (subPlan.currentStepIndex ?? 0) + 1 }} / {{ subPlan.steps.length }}
+                      {{ $t('chat.progress') }}: {{ getSubPlanCompletedCount(subPlan) }} / {{ subPlan.agentExecutionSequence.length }}
                     </span>
                     <div class="progress-bar">
                       <div 
@@ -169,28 +167,24 @@
                   </div>
                 </div>
 
-                <!-- Sub-plan steps preview -->
-                <div v-if="subPlan.steps?.length" class="sub-plan-steps-preview">
-                  <div class="steps-preview-header">
-                    <span class="steps-label">{{ $t('chat.steps') }}:</span>
+                <!-- Sub-plan agent execution preview -->
+                <div v-if="subPlan.agentExecutionSequence?.length" class="sub-plan-agents-preview">
+                  <div class="agents-preview-header">
+                    <span class="agents-label">{{ $t('chat.agentExecutions') }}:</span>
                   </div>
-                  <div class="steps-list">
+                  <div class="agents-list">
                     <div
-                      v-for="(step, stepIndex) in subPlan.steps.slice(0, 3)"
-                      :key="stepIndex"
-                      class="step-preview-item"
-                      :class="{
-                        'completed': stepIndex < (subPlan.currentStepIndex ?? 0),
-                        'current': stepIndex === (subPlan.currentStepIndex ?? 0),
-                        'pending': stepIndex > (subPlan.currentStepIndex ?? 0)
-                      }"
+                      v-for="(agent, agentIndex) in subPlan.agentExecutionSequence.slice(0, 3)"
+                      :key="agent.id || agentIndex"
+                      class="agent-preview-item"
+                      :class="getAgentPreviewStatusClass(agent.status)"
                     >
-                      <Icon :icon="getStepStatusIcon(stepIndex, subPlan)" class="step-icon" />
-                      <span class="step-text">{{ step }}</span>
+                      <Icon :icon="getAgentPreviewStatusIcon(agent.status)" class="agent-icon" />
+                      <span class="agent-text">{{ agent.agentName || $t('chat.unknownAgent') }}</span>
                     </div>
-                    <div v-if="subPlan.steps.length > 3" class="more-steps">
+                    <div v-if="subPlan.agentExecutionSequence.length > 3" class="more-agents">
                       <span class="more-text">
-                        {{ $t('chat.andMoreSteps', { count: subPlan.steps.length - 3 }) }}
+                        {{ $t('chat.andMoreAgents', { count: subPlan.agentExecutionSequence.length - 3 }) }}
                       </span>
                     </div>
                   </div>
@@ -512,27 +506,41 @@ const getSubPlanStatusIcon = (subPlan: PlanExecutionRecord): string => {
 }
 
 const getSubPlanProgress = (subPlan: PlanExecutionRecord): number => {
-  if (!subPlan.steps?.length) return 0
+  if (!subPlan.agentExecutionSequence?.length) return 0
   if (subPlan.completed) return 100
   
-  const currentStep = (subPlan.currentStepIndex ?? 0) + 1
-  return Math.min(100, (currentStep / subPlan.steps.length) * 100)
+  const completedCount = getSubPlanCompletedCount(subPlan)
+  return Math.min(100, (completedCount / subPlan.agentExecutionSequence.length) * 100)
 }
 
-// Step status methods for sub-plan steps preview
-const getStepStatusIcon = (stepIndex: number, subPlan: PlanExecutionRecord): string => {
-  const currentStepIndex = subPlan.currentStepIndex ?? 0
-  
-  if (subPlan.completed) {
-    return 'carbon:checkmark'
+// Get completed agent count for sub-plan
+const getSubPlanCompletedCount = (subPlan: PlanExecutionRecord): number => {
+  if (!subPlan.agentExecutionSequence?.length) return 0
+  return subPlan.agentExecutionSequence.filter(agent => agent.status === 'FINISHED').length
+}
+
+// Agent preview status methods for sub-plan agent preview
+const getAgentPreviewStatusClass = (status?: ExecutionStatus): string => {
+  switch (status) {
+    case 'FINISHED':
+      return 'completed'
+    case 'RUNNING':
+      return 'running'
+    case 'IDLE':
+    default:
+      return 'pending'
   }
-  
-  if (stepIndex < currentStepIndex) {
-    return 'carbon:checkmark'
-  } else if (stepIndex === currentStepIndex) {
-    return 'carbon:play'
-  } else {
-    return 'carbon:dot-mark'
+}
+
+const getAgentPreviewStatusIcon = (status?: ExecutionStatus): string => {
+  switch (status) {
+    case 'FINISHED':
+      return 'carbon:checkmark'
+    case 'RUNNING':
+      return 'carbon:play'
+    case 'IDLE':
+    default:
+      return 'carbon:dot-mark'
   }
 }
 
@@ -1076,20 +1084,20 @@ initializeExpandedState()
                 }
               }
               
-              .sub-plan-steps-preview {
-                .steps-preview-header {
+              .sub-plan-agents-preview {
+                .agents-preview-header {
                   color: #aaaaaa;
                   font-size: 11px;
                   margin-bottom: 6px;
                   font-weight: 500;
                 }
                 
-                .steps-preview-list {
+                .agents-list {
                   display: flex;
                   flex-wrap: wrap;
                   gap: 4px;
                   
-                  .step-indicator {
+                  .agent-preview-item {
                     display: flex;
                     align-items: center;
                     gap: 4px;
@@ -1098,7 +1106,7 @@ initializeExpandedState()
                     border-radius: 4px;
                     font-size: 10px;
                     
-                    .step-icon {
+                    .agent-icon {
                       font-size: 10px;
                       
                       &.completed {
@@ -1114,7 +1122,7 @@ initializeExpandedState()
                       }
                     }
                     
-                    .step-text {
+                    .agent-text {
                       color: #cccccc;
                       max-width: 80px;
                       overflow: hidden;
