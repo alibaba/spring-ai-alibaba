@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ResourceLoader;
 
 @AutoConfiguration
-@ConditionalOnProperty(prefix = "mem0.server", name = "version", matchIfMissing = false)
+@ConditionalOnProperty(prefix = Mem0ChatMemoryProperties.MEM0_PREFIX + ".server", name = "version", matchIfMissing = false)
 @EnableConfigurationProperties({ Mem0ChatMemoryProperties.class })
 public class Mem0ChatMemoryAutoConfiguration {
 

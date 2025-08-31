@@ -8,7 +8,7 @@ import java.util.Map;
 @ConfigurationProperties(prefix = Mem0ChatMemoryProperties.MEM0_PREFIX)
 public class Mem0ChatMemoryProperties {
 
-	public static final String MEM0_PREFIX = "mem0";
+	public static final String MEM0_PREFIX = "spring.ai.alibaba.mem0";
 
 	private Client client;
 
