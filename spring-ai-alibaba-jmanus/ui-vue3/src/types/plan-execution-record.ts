@@ -216,8 +216,7 @@ export interface PlanExecutionRecord {
   /** Timestamp when execution ended */
   endTime?: string
 
-  /** List of plan steps */
-  steps?: string[]
+
 
   /** Current step index being executed */
   currentStepIndex?: number

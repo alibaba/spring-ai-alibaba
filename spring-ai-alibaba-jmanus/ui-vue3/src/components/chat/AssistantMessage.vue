@@ -21,6 +21,17 @@
       :thinking-details="message.thinkingDetails"
     />
     
+    <!-- Plan execution section (when available) -->
+    <ExecutionDetails
+      v-if="message.planExecution"
+      :plan-execution="message.planExecution"
+      :step-actions="message.stepActions || []"
+      :generic-input="message.genericInput || ''"
+      @step-selected="(stepIndex: number) => handleStepClick(message, stepIndex)"
+      @sub-plan-step-selected="(stepIndex: number, subStepIndex: number) => handleSubPlanStepClick(message, stepIndex, subStepIndex)"
+      @user-input-submitted="(inputData: any) => handleUserInputSubmit(message, inputData)"
+    />
+    
     <!-- Response section -->
     <ResponseSection
       v-if="message.content || message.error || isStreaming"
@@ -38,6 +49,7 @@
 <script setup lang="ts">
 import ThinkingSection from './ThinkingSection.vue'
 import ResponseSection from './ResponseSection.vue'
+import ExecutionDetails from './ExecutionDetails.vue'
 import type { ChatMessage } from './composables/useChatMessages'
 
 interface Props {
@@ -65,6 +77,22 @@ const handleRegenerate = () => {
 
 const handleRetry = () => {
   emit('retry', props.message.id)
+}
+
+// Plan execution event handlers
+const handleStepClick = (message: ChatMessage, stepIndex: number) => {
+  console.log('[AssistantMessage] Step clicked:', stepIndex, 'for message:', message.id)
+  // Handle step selection - can be extended for more functionality
+}
+
+const handleSubPlanStepClick = (message: ChatMessage, stepIndex: number, subStepIndex: number) => {
+  console.log('[AssistantMessage] Sub-plan step clicked:', stepIndex, subStepIndex, 'for message:', message.id)
+  // Handle sub-plan step selection - can be extended for more functionality
+}
+
+const handleUserInputSubmit = (message: ChatMessage, inputData: any) => {
+  console.log('[AssistantMessage] User input submitted:', inputData, 'for message:', message.id)
+  // Handle user input submission - can be extended for more functionality
 }
 </script>
 

@@ -375,13 +375,7 @@ export class PlanExecutionManager {
         this.setCachedPlanRecord(details.rootPlanId, details)
       }
 
-      if (!details.steps || details.steps.length === 0) {
-        console.log('[PlanExecutionManager] Simple response without steps detected, handling as completed')
-        // For simple responses, emit completion directly
-        this.emitPlanUpdate(details.rootPlanId ?? "");
-        this.handlePlanCompletion(details)
-        return;
-      }
+
 
       this.emitPlanUpdate(details.rootPlanId ?? "");
 

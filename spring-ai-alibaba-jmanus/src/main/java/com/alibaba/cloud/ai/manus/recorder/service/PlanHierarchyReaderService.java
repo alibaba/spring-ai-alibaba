@@ -47,6 +47,11 @@ public class PlanHierarchyReaderService {
 
 	/**
 	 * Read plan execution records by rootPlanId and convert to VO objects with hierarchy.
+	 * 
+	 * Data model explanation:
+	 * - Root plan: currentPlanId = rootPlanId (root plan points to itself)
+	 * - Sub plans: currentPlanId ≠ rootPlanId, but rootPlanId field points to root plan
+	 * 
 	 * Since rootPlanId is unique, this method returns a single root plan with all its
 	 * sub-plans.
 	 * @param rootPlanId The root plan ID to search for
@@ -59,7 +64,8 @@ public class PlanHierarchyReaderService {
 				return null;
 			}
 
-			// First, find the root plan itself
+			// Step 1: Find the root plan itself
+			// Root plan's currentPlanId should equal rootPlanId
 			Optional<PlanExecutionRecordEntity> rootPlanEntityOpt = planExecutionRecordRepository
 				.findByCurrentPlanId(rootPlanId);
 
@@ -68,7 +74,8 @@ public class PlanHierarchyReaderService {
 				return null;
 			}
 
-			// Find all plans that have this rootPlanId (including the root plan itself)
+			// Step 2: Find all plans that have this rootPlanId (including the root plan itself)
+			// This includes the root plan and all its sub-plans
 			List<PlanExecutionRecordEntity> planEntities = planExecutionRecordRepository.findByRootPlanId(rootPlanId);
 
 			if (planEntities.isEmpty()) {
@@ -78,7 +85,7 @@ public class PlanHierarchyReaderService {
 
 			logger.debug("Found {} plans for rootPlanId: {}", planEntities.size(), rootPlanId);
 
-			// Convert to VO objects and build hierarchy
+			// Step 3: Convert to VO objects and build hierarchy
 			List<PlanExecutionRecord> planRecords = new ArrayList<>();
 
 			for (PlanExecutionRecordEntity planEntity : planEntities) {
@@ -86,10 +93,11 @@ public class PlanHierarchyReaderService {
 				planRecords.add(planRecord);
 			}
 
-			// Build hierarchy relationships
+			// Step 4: Build hierarchy relationships between plans
 			buildHierarchyRelationships(planRecords);
 
-			// Find and return the root plan from the converted records
+			// Step 5: Find and return the root plan from the converted records
+			// Root plan's currentPlanId should equal the input rootPlanId
 			PlanExecutionRecord rootPlan = planRecords.stream()
 				.filter(plan -> rootPlanId.equals(plan.getCurrentPlanId()))
 				.findFirst()
@@ -153,10 +161,11 @@ public class PlanHierarchyReaderService {
 	 * @return Converted VO object
 	 */
 	private PlanExecutionRecord convertToPlanExecutionRecord(PlanExecutionRecordEntity entity) {
-		PlanExecutionRecord vo = new PlanExecutionRecord(entity.getCurrentPlanId());
+		PlanExecutionRecord vo = new PlanExecutionRecord();
 
 		// Set basic properties
 		vo.setId(entity.getId());
+		vo.setCurrentPlanId(entity.getCurrentPlanId());  // 使用setter设置currentPlanId
 		vo.setTitle(entity.getTitle());
 		vo.setUserRequest(entity.getUserRequest());
 		vo.setStartTime(entity.getStartTime());
@@ -179,11 +188,6 @@ public class PlanHierarchyReaderService {
 				.map(this::convertToAgentExecutionRecordSimple)
 				.collect(Collectors.toList());
 			vo.setAgentExecutionSequence(agentRecords);
-		}
-
-		// Set steps if available
-		if (entity.getSteps() != null) {
-			entity.getSteps().forEach(vo::addStep);
 		}
 
 		// Query parent ActToolInfo by toolCallId for sub-plan detail displaying
@@ -263,6 +267,12 @@ public class PlanHierarchyReaderService {
 	 * Build hierarchy relationships between plans using subPlanExecutionRecords. This
 	 * method establishes parent-child relationships by populating the
 	 * subPlanExecutionRecords field in AgentExecutionRecordSimple objects.
+	 * 
+	 * Hierarchy logic:
+	 * - For each plan, look through its agent execution sequence
+	 * - For each agent, find sub-plans where parentPlanId = current plan's currentPlanId
+	 * - This creates a tree structure: Root Plan -> Agents -> Sub Plans
+	 * 
 	 * @param planRecords List of plan records to build hierarchy for
 	 */
 	private void buildHierarchyRelationships(List<PlanExecutionRecord> planRecords) {
@@ -270,21 +280,26 @@ public class PlanHierarchyReaderService {
 			return;
 		}
 
-		// Create a map for quick lookup
+		// Create a map for quick lookup by currentPlanId
 		java.util.Map<String, PlanExecutionRecord> planMap = planRecords.stream()
 			.collect(Collectors.toMap(PlanExecutionRecord::getCurrentPlanId, plan -> plan));
 
-		// Build hierarchy relationships
+		// Build hierarchy relationships for each plan
 		for (PlanExecutionRecord plan : planRecords) {
 			if (plan.getAgentExecutionSequence() != null) {
 				for (AgentExecutionRecordSimple agentRecord : plan.getAgentExecutionSequence()) {
 					// Find sub-plans for this agent
-					List<PlanExecutionRecord> subPlans = findSubPlansForAgent(plan.getCurrentPlanId(), planMap);
+					// Safety check: ensure currentPlanId is not null
+					if (plan.getCurrentPlanId() != null) {
+						List<PlanExecutionRecord> subPlans = findSubPlansForAgent(plan.getCurrentPlanId(), planMap);
 
-					if (!subPlans.isEmpty()) {
-						agentRecord.setSubPlanExecutionRecords(subPlans);
-						logger.debug("Found {} sub-plans for agent {} in plan {}", subPlans.size(),
-								agentRecord.getAgentName(), plan.getCurrentPlanId());
+						if (!subPlans.isEmpty()) {
+							agentRecord.setSubPlanExecutionRecords(subPlans);
+							logger.debug("Found {} sub-plans for agent {} in plan {}", subPlans.size(),
+									agentRecord.getAgentName(), plan.getCurrentPlanId());
+						}
+					} else {
+						logger.warn("Plan with null currentPlanId found, skipping hierarchy building for this plan");
 					}
 				}
 			}
@@ -295,12 +310,21 @@ public class PlanHierarchyReaderService {
 
 	/**
 	 * Find sub-plans for a given parent plan.
-	 * @param parentPlanId The parent plan ID
+	 * 
+	 * This method finds all plans where parentPlanId = the input parentPlanId.
+	 * It's used to build the hierarchy: Parent Plan -> Sub Plans
+	 * 
+	 * @param parentPlanId The parent plan ID to search for sub-plans
 	 * @param planMap Map of all plans for quick lookup
-	 * @return List of sub-plans
+	 * @return List of sub-plans that belong to the specified parent plan
 	 */
 	private List<PlanExecutionRecord> findSubPlansForAgent(String parentPlanId,
 			java.util.Map<String, PlanExecutionRecord> planMap) {
+		// Safety check: avoid NullPointerException when parentPlanId is null
+		if (parentPlanId == null) {
+			return new ArrayList<>();
+		}
+		
 		return planMap.values()
 			.stream()
 			.filter(plan -> parentPlanId.equals(plan.getParentPlanId()))

@@ -146,6 +146,12 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			return "Uploaded Files State: No plan ID available";
 		}
 
+		// 检查 rootPlanId 是否有效
+		if (rootPlanId == null || rootPlanId.trim().isEmpty()) {
+			log.warn("getCurrentToolStateString called with null or empty rootPlanId");
+			return "Uploaded Files State: Invalid root plan ID";
+		}
+
 		log.debug("🔍 getCurrentToolStateString called for planId: {}", currentPlanId);
 
 		try {
@@ -225,6 +231,12 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	 * Smart analyze all uploaded files and provide processing recommendations
 	 */
 	private ToolExecuteResult smartAnalyzeAllFiles() {
+		// 检查 rootPlanId 是否有效
+		if (rootPlanId == null || rootPlanId.trim().isEmpty()) {
+			log.warn("smartAnalyzeAllFiles called with null or empty rootPlanId");
+			return new ToolExecuteResult("Error: Invalid root plan ID");
+		}
+
 		try {
 			Path uploadsDir = directoryManager.getRootPlanDirectory(rootPlanId).resolve("uploads");
 
@@ -774,9 +786,10 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 		}
 
 		try {
-			Path rootDir = directoryManager.getRootPlanDirectory("").getParent();
-			if (rootDir == null || !Files.exists(rootDir)) {
-				log.debug("Root directory not found or doesn't exist");
+			// 修复：使用更合理的方式获取根目录
+			Path innerStorageRoot = directoryManager.getInnerStorageRoot();
+			if (innerStorageRoot == null || !Files.exists(innerStorageRoot)) {
+				log.debug("Inner storage root directory not found or doesn't exist");
 				cachedFallbackDir = null;
 				return null;
 			}
@@ -785,7 +798,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			long mostRecentTime = 0;
 
 			// Search through all plan directories, prioritizing temp- prefixed ones
-			try (var stream = Files.list(rootDir)) {
+			try (var stream = Files.list(innerStorageRoot)) {
 				List<Path> allPlanDirs = stream.filter(Files::isDirectory).toList();
 
 				// Sort to prioritize temp- prefixed directories

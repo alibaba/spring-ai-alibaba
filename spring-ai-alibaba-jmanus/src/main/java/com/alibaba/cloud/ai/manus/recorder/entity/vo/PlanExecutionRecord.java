@@ -76,8 +76,6 @@ public class PlanExecutionRecord {
 	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime endTime;
 
-	// List of plan steps
-	private List<String> steps;
 
 	// Current step index being executed
 	private Integer currentStepIndex;
@@ -104,31 +102,10 @@ public class PlanExecutionRecord {
 	 * Default constructor for Jackson and other frameworks.
 	 */
 	public PlanExecutionRecord() {
-		this.steps = new ArrayList<>();
-		this.completed = false;
-		this.agentExecutionSequence = new ArrayList<>();
-		this.id = generateId();
-	}
-
-	/**
-	 * Constructor for creating a new execution record
-	 * @param currentPlanId The unique identifier for the current plan.
-	 */
-	public PlanExecutionRecord(String currentPlanId) {
-		this.currentPlanId = currentPlanId;
-		this.steps = new ArrayList<>();
 		this.startTime = LocalDateTime.now();
 		this.completed = false;
 		this.agentExecutionSequence = new ArrayList<>();
 		this.id = generateId();
-	}
-
-	/**
-	 * Add an execution step
-	 * @param step Step description
-	 */
-	public void addStep(String step) {
-		this.steps.add(step);
 	}
 
 	/**
@@ -258,14 +235,6 @@ public class PlanExecutionRecord {
 
 	public void setEndTime(LocalDateTime endTime) {
 		this.endTime = endTime;
-	}
-
-	public List<String> getSteps() {
-		return steps;
-	}
-
-	public void setSteps(List<String> steps) {
-		this.steps = steps;
 	}
 
 	public Integer getCurrentStepIndex() {

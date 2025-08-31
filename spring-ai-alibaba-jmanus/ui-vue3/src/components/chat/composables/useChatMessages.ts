@@ -18,8 +18,7 @@ import { ref, computed, readonly } from 'vue'
 import type { PlanExecutionRecord, AgentExecutionRecordSimple } from '@/types/plan-execution-record'
 
 // Local interface to handle readonly compatibility issues
-export interface CompatiblePlanExecutionRecord extends Omit<PlanExecutionRecord, 'steps' | 'agentExecutionSequence'> {
-  steps?: string[] | undefined // Make mutable for UI state management
+export interface CompatiblePlanExecutionRecord extends Omit<PlanExecutionRecord, 'agentExecutionSequence'> {
   agentExecutionSequence?: CompatibleAgentExecutionRecordSimple[] | undefined
 }
 
@@ -62,10 +61,6 @@ function convertPlanExecutionRecord<T extends Record<string, any>>(
   record: T
 ): CompatiblePlanExecutionRecord {
   const converted = { ...record } as unknown as CompatiblePlanExecutionRecord
-  
-  if ('steps' in record && Array.isArray(record.steps)) {
-    converted.steps = [...record.steps] as MakeMutable<typeof record.steps>
-  }
   
   if ('agentExecutionSequence' in record && Array.isArray(record.agentExecutionSequence)) {
     converted.agentExecutionSequence = record.agentExecutionSequence.map(
