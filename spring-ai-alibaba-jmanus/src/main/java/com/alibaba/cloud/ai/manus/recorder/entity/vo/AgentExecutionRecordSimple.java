@@ -54,8 +54,8 @@ public class AgentExecutionRecordSimple {
 	// Unique identifier of the record
 	private Long id;
 
-	// Conversation ID this record belongs to
-	private String conversationId;
+	private String stepId;
+
 
 	// Name of the agent that created this record
 	private String agentName;
@@ -103,8 +103,9 @@ public class AgentExecutionRecordSimple {
 	}
 
 	// Constructor with parameters
-	public AgentExecutionRecordSimple(String conversationId, String agentName, String agentDescription) {
-		this.conversationId = conversationId;
+	public AgentExecutionRecordSimple(String stepId, String agentName, String agentDescription) {
+		
+		this.stepId = stepId;
 		this.agentName = agentName;
 		this.agentDescription = agentDescription;
 		this.startTime = LocalDateTime.now();
@@ -212,14 +213,6 @@ public class AgentExecutionRecordSimple {
 		this.modelName = modelName;
 	}
 
-	public String getConversationId() {
-		return conversationId;
-	}
-
-	public void setConversationId(String conversationId) {
-		this.conversationId = conversationId;
-	}
-
 	public List<PlanExecutionRecord> getSubPlanExecutionRecords() {
 		return subPlanExecutionRecords;
 	}
@@ -228,9 +221,16 @@ public class AgentExecutionRecordSimple {
 		this.subPlanExecutionRecords = subPlanExecutionRecords;
 	}
 
+	public String getStepId() {
+		return stepId;
+	}
+
+	public void setStepId(String stepId) {
+		this.stepId = stepId;
+	}
 	@Override
 	public String toString() {
-		return "AgentExecutionRecordSimple{" + "id='" + id + '\'' + ", conversationId='" + conversationId + '\''
+		return "AgentExecutionRecordSimple{" + "id='" + id + '\'' + '\''
 				+ ", agentName='" + agentName + '\'' + ", status='" + status + '\'' + ", currentStep=" + currentStep
 				+ ", maxSteps=" + maxSteps + ", stepsCount="
 				+ (subPlanExecutionRecords != null ? subPlanExecutionRecords.size() : 0) + ", subPlanCount="
