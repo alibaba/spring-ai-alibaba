@@ -19,7 +19,7 @@
  *
  * Hierarchy:
  * PlanExecutionRecord (Main)
- *   └── agentExecutionSequence: AgentExecutionRecordSimple[]
+ *   └── agentExecutionSequence: AgentExecutionRecord[]
  *       └── subPlanExecutionRecords: PlanExecutionRecord[] (recursive)
  */
 
@@ -105,14 +105,18 @@ export interface ThinkActRecord {
 }
 
 /**
- * Maps to Java: com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecordSimple
+ * Maps to Java: com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecord
  *
- * Simplified agent execution record class for tracking and recording detailed information about
- * BaseAgent execution process. Used in VO layer for data transfer.
+ * Unified agent execution record class for tracking and recording detailed information about
+ * BaseAgent execution process. This class combines the functionality of both Simple and Detail
+ * versions to provide a single, comprehensive record structure.
  */
-export interface AgentExecutionRecordSimple {
+export interface AgentExecutionRecord {
   /** Unique identifier of the record */
   id?: number
+
+  /** Step ID this record belongs to */
+  stepId?: string
 
   /** Conversation ID this record belongs to */
   conversationId?: string
@@ -149,6 +153,9 @@ export interface AgentExecutionRecordSimple {
 
   /** Model name called */
   modelName?: string
+
+  /** List of ThinkActRecord for detailed execution process */
+  thinkActSteps?: ThinkActRecord[]
 
   /** Sub-plan execution records for this agent */
   subPlanExecutionRecords?: PlanExecutionRecord[]
@@ -230,9 +237,9 @@ export interface PlanExecutionRecord {
   /**
    * List to maintain the sequence of agent executions
    * This is the main data source for step-by-step execution details
-   * Uses AgentExecutionRecordSimple instead of full AgentExecutionRecord
+   * Uses AgentExecutionRecord (unified version)
    */
-  agentExecutionSequence?: AgentExecutionRecordSimple[]
+  agentExecutionSequence?: AgentExecutionRecord[]
 
   /** Field to store user input wait state */
   userInputWaitState?: UserInputWaitState
@@ -275,86 +282,4 @@ export interface PlanExecutionRecord {
 // API response type for getDetails method
 export type PlanExecutionRecordResponse = PlanExecutionRecord | null
 
-// Legacy aliases for backward compatibility
-export type PlanDetails = PlanExecutionRecord
-export type PlanDetailsResponse = PlanExecutionRecordResponse
 
-// Keep the old AgentExecutionRecord interface for backward compatibility
-// but mark it as deprecated in favor of AgentExecutionRecordSimple
-/**
- * @deprecated Use AgentExecutionRecordSimple instead
- * Maps to Java: com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord
- */
-export interface AgentExecutionRecord {
-  /** Unique identifier of the record */
-  id?: number
-
-  /** Conversation ID this record belongs to */
-  conversationId?: string
-
-  /** Name of the agent that created this record */
-  agentName?: string
-
-  /** Description information of the agent */
-  agentDescription?: string
-
-  /** Timestamp when execution started */
-  startTime?: string
-
-  /** Timestamp when execution ended */
-  endTime?: string
-
-  /** Maximum allowed number of steps */
-  maxSteps?: number
-
-  /** Current execution step number */
-  currentStep?: number
-
-  /** Execution status (IDLE, RUNNING, FINISHED) */
-  status?: string
-
-  /** Record list of think-act steps, existing as sub-steps */
-  thinkActSteps?: ThinkActRecord[]
-
-  /** Request content for agent execution */
-  agentRequest?: string
-
-  /** Execution result */
-  result?: string
-
-  /** Error message if execution encounters problems */
-  errorMessage?: string
-
-  /** Model name called */
-  modelName?: string
-}
-
-// Legacy FormInput interface for backward compatibility  
-/**
- * @deprecated Use UserInputWaitState.formInputs as Array<Record<string, string>> instead
- */
-export interface FormInput {
-  /** Input field label */
-  label: string
-
-  /** Input field type */
-  type?: 'text' | 'number' | 'email' | 'password' | 'textarea' | 'select' | 'checkbox' | 'radio'
-
-  /** Input field value */
-  value?: string
-
-  /** Whether this field is required */
-  required?: boolean | string
-
-  /** Field placeholder text */
-  placeholder?: string
-
-  /** Field name (for form submission) */
-  name?: string
-
-  /** Options for select, checkbox, or radio fields */
-  options?: string[]
-
-  /** Field validation rules */
-  validation?: Record<string, any>
-}

@@ -317,15 +317,16 @@
 import { ref, reactive, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import type { PlanExecutionRecord, AgentExecutionRecordSimple, ExecutionStatus } from '@/types/plan-execution-record'
+import type { PlanExecutionRecord, AgentExecutionRecord, ExecutionStatus } from '@/types/plan-execution-record'
+import type { CompatiblePlanExecutionRecord } from './composables/useChatMessages'
 
 interface Props {
-  planExecution: PlanExecutionRecord
+  planExecution: CompatiblePlanExecutionRecord
   genericInput?: string
 }
 
 interface Emits {
-  (e: 'agent-selected', agentIndex: number, agent: AgentExecutionRecordSimple): void
+  (e: 'agent-selected', agentIndex: number, agent: AgentExecutionRecord): void
   (e: 'sub-plan-selected', agentIndex: number, subPlanIndex: number, subPlan: PlanExecutionRecord): void
   (e: 'user-input-submitted', inputData: any): void
 }

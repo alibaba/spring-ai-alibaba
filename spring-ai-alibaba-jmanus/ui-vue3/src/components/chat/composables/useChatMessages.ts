@@ -15,16 +15,11 @@
  */
 
 import { ref, computed, readonly } from 'vue'
-import type { PlanExecutionRecord, AgentExecutionRecordSimple } from '@/types/plan-execution-record'
+import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
 
 // Local interface to handle readonly compatibility issues
 export interface CompatiblePlanExecutionRecord extends Omit<PlanExecutionRecord, 'agentExecutionSequence'> {
-  agentExecutionSequence?: CompatibleAgentExecutionRecordSimple[] | undefined
-}
-
-// Local interface for agent execution record compatibility  
-export interface CompatibleAgentExecutionRecordSimple extends Omit<AgentExecutionRecordSimple, 'subPlanExecutionRecords'> {
-  subPlanExecutionRecords?: CompatiblePlanExecutionRecord[] | undefined
+  agentExecutionSequence?: AgentExecutionRecord[] | undefined
 }
 
 // Message interface
@@ -72,12 +67,12 @@ function convertPlanExecutionRecord<T extends Record<string, any>>(
 }
 
 /**
- * Convert readonly AgentExecutionRecordSimple to mutable compatible version with strong typing
+ * Convert readonly AgentExecutionRecord to mutable compatible version with strong typing
  */
 function convertAgentExecutionRecord<T extends Record<string, any>>(
   record: T
-): CompatibleAgentExecutionRecordSimple {
-  const converted = { ...record } as unknown as CompatibleAgentExecutionRecordSimple
+): AgentExecutionRecord {
+  const converted = { ...record } as unknown as AgentExecutionRecord
   
   if ('subPlanExecutionRecords' in record && Array.isArray(record.subPlanExecutionRecords)) {
     converted.subPlanExecutionRecords = record.subPlanExecutionRecords.map(

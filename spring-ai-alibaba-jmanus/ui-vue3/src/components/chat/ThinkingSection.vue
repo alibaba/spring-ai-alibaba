@@ -32,7 +32,7 @@
       <!-- Execution Details Component -->
       <ExecutionDetails
         v-if="thinkingDetails || planExecution"
-        :plan-execution="thinkingDetails || planExecution"
+        :plan-execution="(thinkingDetails || planExecution)!"
         :step-actions="stepActions || []"
         :generic-input="genericInput || ''"
         @agent-selected="handleAgentSelected"
@@ -62,7 +62,7 @@
 import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import ExecutionDetails from './ExecutionDetails.vue'
-import type { PlanExecutionRecord, AgentExecutionRecordSimple } from '@/types/plan-execution-record'
+import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
 import type { CompatiblePlanExecutionRecord } from './composables/useChatMessages'
 
 interface Props {
@@ -75,7 +75,7 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'agent-selected', agentIndex: number, agent: AgentExecutionRecordSimple): void
+  (e: 'agent-selected', agentIndex: number, agent: AgentExecutionRecord): void
   (e: 'sub-plan-selected', agentIndex: number, subPlanIndex: number, subPlan: PlanExecutionRecord): void
   (e: 'user-input-submitted', inputData: any): void
 }
@@ -91,7 +91,7 @@ const shouldShowThinking = computed(() => {
 })
 
 // Event handlers
-const handleAgentSelected = (agentIndex: number, agent: AgentExecutionRecordSimple) => {
+const handleAgentSelected = (agentIndex: number, agent: AgentExecutionRecord) => {
   emit('agent-selected', agentIndex, agent)
 }
 
