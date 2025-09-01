@@ -61,44 +61,45 @@ class RemoteAgentTest {
 			return keyStrategyHashMap;
 		};
 
-//		A2aRemoteAgent currencyExchangeAgent = A2aRemoteAgent.builder()
-//				.name("writer_agent")
-//				.agentCard(RemoteAgentCard.builder().url("http://0.0.0.0:8080").build())
-//				.description("可以写文章。")
-//				.outputKey("output")
-//				.build();
-//
-//		try {
-//			// Start streaming and consume chunks as they arrive
-//			AsyncGenerator<NodeOutput> generator = currencyExchangeAgent.stream(Map.of("input", "你好，给我写个100字的散文"));
-//			int chunkCount = 0;
-//			while (true) {
-//				AsyncGenerator.Data<NodeOutput> data = generator.next();
-//				if (data.isDone()) {
-//					System.out.println("Streaming completed. Total chunks: " + chunkCount);
-//					break;
-//				}
-//				NodeOutput outBase = data.getData().join();
-//				chunkCount++;
-//				if (outBase instanceof StreamingOutput so) {
-//					System.out.println("chunk[" + chunkCount + "]: " + so.chunk());
-//				}
-//				else {
-//					System.out.println("chunk[" + chunkCount + "]: " + outBase.toString());
-//				}
-//			}
-//		}
-//		catch (java.util.concurrent.CompletionException e) {
-//			e.printStackTrace();
-//		}
-//
-//        try {
-//            Optional<OverAllState> result = currencyExchangeAgent.invoke(Map.of("input",
-//                    "你好，给我写一个100字的描写西湖的文章"));
-//            System.out.println("Final Result: " + result.get());
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+		// A2aRemoteAgent currencyExchangeAgent = A2aRemoteAgent.builder()
+		// .name("writer_agent")
+		// .agentCard(RemoteAgentCard.builder().url("http://0.0.0.0:8080").build())
+		// .description("可以写文章。")
+		// .outputKey("output")
+		// .build();
+		//
+		// try {
+		// // Start streaming and consume chunks as they arrive
+		// AsyncGenerator<NodeOutput> generator =
+		// currencyExchangeAgent.stream(Map.of("input", "你好，给我写个100字的散文"));
+		// int chunkCount = 0;
+		// while (true) {
+		// AsyncGenerator.Data<NodeOutput> data = generator.next();
+		// if (data.isDone()) {
+		// System.out.println("Streaming completed. Total chunks: " + chunkCount);
+		// break;
+		// }
+		// NodeOutput outBase = data.getData().join();
+		// chunkCount++;
+		// if (outBase instanceof StreamingOutput so) {
+		// System.out.println("chunk[" + chunkCount + "]: " + so.chunk());
+		// }
+		// else {
+		// System.out.println("chunk[" + chunkCount + "]: " + outBase.toString());
+		// }
+		// }
+		// }
+		// catch (java.util.concurrent.CompletionException e) {
+		// e.printStackTrace();
+		// }
+		//
+		// try {
+		// Optional<OverAllState> result = currencyExchangeAgent.invoke(Map.of("input",
+		// "你好，给我写一个100字的描写西湖的文章"));
+		// System.out.println("Final Result: " + result.get());
+		// } catch (Exception e) {
+		// e.printStackTrace();
+		// }
 	}
 
 }

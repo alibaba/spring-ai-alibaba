@@ -100,7 +100,6 @@ public class A2aRemoteAgent extends BaseAgent {
 		throw new UnsupportedOperationException("A2aRemoteAgent has not support schedule.");
 	}
 
-
 	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
 			throws GraphStateException, GraphRunnerException {
 		if (!streaming) {
