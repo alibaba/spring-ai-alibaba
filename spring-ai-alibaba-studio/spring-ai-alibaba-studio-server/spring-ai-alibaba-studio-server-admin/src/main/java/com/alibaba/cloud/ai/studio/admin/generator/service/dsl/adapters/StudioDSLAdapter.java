@@ -32,13 +32,13 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.NodeDataConverter
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.Serializer;
 import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
 import com.alibaba.cloud.ai.studio.core.workflow.WorkflowConfig;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +53,9 @@ import java.util.stream.Stream;
 @Component
 public class StudioDSLAdapter extends AbstractDSLAdapter {
 
-	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+		.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+		.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
 
 	public StudioDSLAdapter(List<NodeDataConverter<? extends NodeData>> nodeDataConverters,
 			@Qualifier("json") Serializer serializer) {
