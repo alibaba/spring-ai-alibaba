@@ -27,35 +27,41 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Agent execution record class for tracking and recording detailed information about
- * BaseAgent execution process.
+ * Unified agent execution record class for tracking and recording detailed information
+ * about BaseAgent execution process.
+ *
+ * This class combines the functionality of both AgentExecutionRecordSimple and
+ * AgentExecutionRecordDetail to provide a single, comprehensive record structure.
  *
  * Data structure is divided into three main parts:
  *
- * 1. Basic Info - id: unique identifier of the record - conversationId: conversation
- * unique identifier - agentName: agent name - agentDescription: agent description -
- * startTime: execution start time - endTime: execution end time
+ * 1. Basic Info - id: unique identifier of the record - stepId: step identifier -
+ * conversationId: conversation unique identifier - agentName: agent name -
+ * agentDescription: agent description - startTime: execution start time - endTime:
+ * execution end time
  *
  * 2. Execution Data - maxSteps: maximum execution steps - currentStep: current execution
  * step - status: execution status (IDLE, RUNNING, FINISHED) - thinkActSteps: think-act
  * step record list, each element is a ThinkActRecord object - agentRequest: input prompt
  * template
  *
- * 3. Execution Result - isCompleted: whether completed - isStuck: whether stuck - result:
- * execution result - errorMessage: error message (if any)
+ * 3. Execution Result - result: execution result - errorMessage: error message (if any) -
+ * modelName: actual calling model - subPlanExecutionRecords: sub-plan execution records
  *
  * @see BaseAgent
  * @see ThinkActRecord
  * @see JsonSerializable
  */
-
-public class AgentExecutionRecordSimple {
+public class AgentExecutionRecord {
 
 	// Unique identifier of the record
 	private Long id;
 
+	// Step ID this record belongs to
 	private String stepId;
 
+	// Conversation ID this record belongs to
+	private String conversationId;
 
 	// Name of the agent that created this record
 	private String agentName;
@@ -94,35 +100,67 @@ public class AgentExecutionRecordSimple {
 	// Actual calling model
 	private String modelName;
 
+	// List of ThinkActRecord for detailed execution process
+	private List<ThinkActRecord> thinkActSteps;
+
 	// Sub-plan execution records list
 	private List<PlanExecutionRecord> subPlanExecutionRecords;
 
 	// Default constructor
-	public AgentExecutionRecordSimple() {
+	public AgentExecutionRecord() {
+		this.thinkActSteps = new ArrayList<>();
 		this.subPlanExecutionRecords = new ArrayList<>();
 	}
 
-	// Constructor with parameters
-	public AgentExecutionRecordSimple(String stepId, String agentName, String agentDescription) {
-		
+	// Constructor with basic parameters
+	public AgentExecutionRecord(String stepId, String agentName, String agentDescription) {
 		this.stepId = stepId;
 		this.agentName = agentName;
 		this.agentDescription = agentDescription;
 		this.startTime = LocalDateTime.now();
 		this.status = ExecutionStatus.IDLE;
 		this.currentStep = 0;
+		this.thinkActSteps = new ArrayList<>();
+		this.subPlanExecutionRecords = new ArrayList<>();
+	}
+
+	// Constructor with conversation ID
+	public AgentExecutionRecord(String stepId, String conversationId, String agentName, String agentDescription) {
+		this.stepId = stepId;
+		this.conversationId = conversationId;
+		this.agentName = agentName;
+		this.agentDescription = agentDescription;
+		this.startTime = LocalDateTime.now();
+		this.status = ExecutionStatus.IDLE;
+		this.currentStep = 0;
+		this.thinkActSteps = new ArrayList<>();
 		this.subPlanExecutionRecords = new ArrayList<>();
 	}
 
 	// Getters and setters
 
 	public Long getId() {
-
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public String getStepId() {
+		return stepId;
+	}
+
+	public void setStepId(String stepId) {
+		this.stepId = stepId;
+	}
+
+	public String getConversationId() {
+		return conversationId;
+	}
+
+	public void setConversationId(String conversationId) {
+		this.conversationId = conversationId;
 	}
 
 	public String getAgentName() {
@@ -213,6 +251,14 @@ public class AgentExecutionRecordSimple {
 		this.modelName = modelName;
 	}
 
+	public List<ThinkActRecord> getThinkActSteps() {
+		return thinkActSteps;
+	}
+
+	public void setThinkActSteps(List<ThinkActRecord> thinkActSteps) {
+		this.thinkActSteps = thinkActSteps;
+	}
+
 	public List<PlanExecutionRecord> getSubPlanExecutionRecords() {
 		return subPlanExecutionRecords;
 	}
@@ -221,20 +267,51 @@ public class AgentExecutionRecordSimple {
 		this.subPlanExecutionRecords = subPlanExecutionRecords;
 	}
 
-	public String getStepId() {
-		return stepId;
+	// Utility methods
+
+	/**
+	 * Check if the execution is completed
+	 */
+	public boolean isCompleted() {
+		return status == ExecutionStatus.FINISHED;
 	}
 
-	public void setStepId(String stepId) {
-		this.stepId = stepId;
+	/**
+	 * Check if the execution is running
+	 */
+	public boolean isRunning() {
+		return status == ExecutionStatus.RUNNING;
 	}
+
+	/**
+	 * Check if the execution is idle
+	 */
+	public boolean isIdle() {
+		return status == ExecutionStatus.IDLE;
+	}
+
+	/**
+	 * Get the number of completed think-act steps
+	 */
+	public int getCompletedThinkActStepsCount() {
+		if (thinkActSteps == null)
+			return 0;
+		return (int) thinkActSteps.stream().filter(step -> step.getStatus() == ExecutionStatus.FINISHED).count();
+	}
+
+	/**
+	 * Get the number of sub-plan execution records
+	 */
+	public int getSubPlanCount() {
+		return subPlanExecutionRecords != null ? subPlanExecutionRecords.size() : 0;
+	}
+
 	@Override
 	public String toString() {
-		return "AgentExecutionRecordSimple{" + "id='" + id + '\'' + '\''
-				+ ", agentName='" + agentName + '\'' + ", status='" + status + '\'' + ", currentStep=" + currentStep
-				+ ", maxSteps=" + maxSteps + ", stepsCount="
-				+ (subPlanExecutionRecords != null ? subPlanExecutionRecords.size() : 0) + ", subPlanCount="
-				+ (subPlanExecutionRecords != null ? subPlanExecutionRecords.size() : 0) + '}';
+		return "AgentExecutionRecord{" + "id=" + id + ", stepId='" + stepId + '\'' + ", conversationId='"
+				+ conversationId + '\'' + ", agentName='" + agentName + '\'' + ", status=" + status + ", currentStep="
+				+ currentStep + ", maxSteps=" + maxSteps + ", thinkActStepsCount="
+				+ (thinkActSteps != null ? thinkActSteps.size() : 0) + ", subPlanCount=" + getSubPlanCount() + '}';
 	}
 
 }

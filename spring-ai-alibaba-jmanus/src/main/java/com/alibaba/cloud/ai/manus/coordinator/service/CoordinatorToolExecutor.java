@@ -30,7 +30,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import com.alibaba.cloud.ai.manus.coordinator.tool.CoordinatorTool;
 import com.alibaba.cloud.ai.manus.planning.service.IPlanParameterMappingService;
-import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecordSimple;
+import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanHierarchyReaderService;
@@ -253,15 +253,15 @@ public class CoordinatorToolExecutor {
 			throw new IllegalArgumentException("Plan execution record cannot be empty");
 		}
 
-		List<AgentExecutionRecordSimple> sequence = record.getAgentExecutionSequence();
+		List<AgentExecutionRecord> sequence = record.getAgentExecutionSequence();
 		if (sequence == null || sequence.isEmpty()) {
 			throw new RuntimeException("Agent execution sequence is empty, unable to obtain result output");
 		}
 
 		// Get the last Agent execution record
-		AgentExecutionRecordSimple lastAgentRecord = sequence.get(sequence.size() - 1);
+		AgentExecutionRecord lastAgentRecord = sequence.get(sequence.size() - 1);
 
-		// Since AgentExecutionRecordSimple doesn't maintain thinkActSteps,
+		// Since AgentExecutionRecord doesn't maintain thinkActSteps in the sequence view,
 		// we need to retrieve them from the database using the agent execution ID
 		List<ThinkActRecordEntity> thinkActEntities = thinkActRecordRepository
 			.findByParentExecutionId(lastAgentRecord.getId());

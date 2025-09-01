@@ -20,6 +20,10 @@ import com.alibaba.cloud.ai.manus.agent.AgentState;
 import com.alibaba.cloud.ai.manus.recorder.repository.ActToolInfoRepository;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder.ActToolParam;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionStep;
+import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecord;
+import com.alibaba.cloud.ai.manus.recorder.entity.vo.ThinkActRecord;
+import com.alibaba.cloud.ai.manus.recorder.entity.vo.ExecutionStatus;
+import java.util.ArrayList;
 
 import jakarta.annotation.Resource;
 
@@ -81,7 +85,7 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 			if (executionSteps != null && !executionSteps.isEmpty()) {
 				for (ExecutionStep step : executionSteps) {
 					// Create or update AgentExecutionRecordEntity for each step
-				
+
 					AgentExecutionRecordEntity agentRecord = createOrUpdateAgentExecutionRecord(step);
 					if (agentRecord != null) {
 						// Add to plan execution record
@@ -148,7 +152,7 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 			// Extract agent name and request from stepRequirement
 			String extractedAgentName = "Unknown Agent";
 			String agentRequest = null;
-			
+
 			if (step.getStepRequirement() != null && !step.getStepRequirement().trim().isEmpty()) {
 				String stepReq = step.getStepRequirement().trim();
 				// Parse format: "[AGENT_NAME] request content"
@@ -157,18 +161,18 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 					if (endBracketIndex > 1) {
 						String bracketContent = stepReq.substring(1, endBracketIndex).trim();
 						String requestContent = stepReq.substring(endBracketIndex + 1).trim();
-						
+
 						// Use extracted agent name if available
 						if (!bracketContent.isEmpty()) {
 							extractedAgentName = bracketContent;
 						}
-						
+
 						// Set the request content
 						if (!requestContent.isEmpty()) {
 							agentRequest = requestContent;
 						}
-						
-						logger.debug("Extracted agent name: '{}' and request: '{}' from stepRequirement: '{}'", 
+
+						logger.debug("Extracted agent name: '{}' and request: '{}' from stepRequirement: '{}'",
 								extractedAgentName, agentRequest, stepReq);
 					}
 				}
@@ -194,8 +198,7 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 			}
 			else {
 				// 2. Create new record
-				agentRecord = new AgentExecutionRecordEntity(step.getStepId(),
-						extractedAgentName,
+				agentRecord = new AgentExecutionRecordEntity(step.getStepId(), extractedAgentName,
 						"No description available");
 				logger.debug("Created new AgentExecutionRecordEntity for step ID: {}", step.getStepId());
 
@@ -602,6 +605,117 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 		}
 		catch (Exception e) {
 			logger.error("Failed to record plan completion for currentPlanId: {}", currentPlanId, e);
+		}
+	}
+
+	/**
+	 * Get detailed agent execution record by stepId
+	 * @param stepId The step ID to query
+	 * @return Detailed agent execution record with ThinkActRecord details
+	 */
+	public AgentExecutionRecord getAgentExecutionDetail(String stepId) {
+		try {
+			if (stepId == null || stepId.trim().isEmpty()) {
+				logger.warn("StepId is null or empty, cannot fetch agent execution detail");
+				return null;
+			}
+
+			// Find the agent execution record by stepId
+			Optional<AgentExecutionRecordEntity> agentRecordOpt = agentExecutionRecordRepository.findByStepId(stepId);
+
+			if (!agentRecordOpt.isPresent()) {
+				logger.warn("Agent execution record not found for stepId: {}", stepId);
+				return null;
+			}
+
+			AgentExecutionRecordEntity agentRecord = agentRecordOpt.get();
+
+			// Convert to AgentExecutionRecord
+			AgentExecutionRecord detail = new AgentExecutionRecord(agentRecord.getStepId(), agentRecord.getAgentName(),
+					agentRecord.getAgentDescription());
+
+			// Set basic properties
+			detail.setId(agentRecord.getId());
+			detail.setStartTime(agentRecord.getStartTime());
+			detail.setEndTime(agentRecord.getEndTime());
+			detail.setStatus(convertToExecutionStatus(agentRecord.getStatus()));
+			detail.setAgentRequest(agentRecord.getAgentRequest());
+			detail.setResult(agentRecord.getResult());
+			detail.setErrorMessage(agentRecord.getErrorMessage());
+			detail.setModelName(agentRecord.getModelName());
+
+			// Fetch and set ThinkActRecord details
+			List<ThinkActRecord> thinkActSteps = fetchThinkActRecords(agentRecord.getId());
+			detail.setThinkActSteps(thinkActSteps);
+
+			logger.info("Successfully fetched agent execution detail for stepId: {} with {} think-act steps", stepId,
+					thinkActSteps.size());
+
+			return detail;
+		}
+		catch (Exception e) {
+			logger.error("Error fetching agent execution detail for stepId: {}", stepId, e);
+			return null;
+		}
+	}
+
+	/**
+	 * Fetch ThinkActRecord details for a given agent execution ID
+	 * @param agentExecutionId The agent execution record ID
+	 * @return List of ThinkActRecord
+	 */
+	private List<ThinkActRecord> fetchThinkActRecords(Long agentExecutionId) {
+		try {
+			// Find all ThinkActRecordEntity by parentExecutionId
+			List<ThinkActRecordEntity> thinkActEntities = thinkActRecordRepository
+				.findByParentExecutionId(agentExecutionId);
+
+			List<ThinkActRecord> thinkActRecords = new ArrayList<>();
+
+			for (ThinkActRecordEntity entity : thinkActEntities) {
+				ThinkActRecord record = new ThinkActRecord(entity.getParentExecutionId());
+				record.setId(entity.getId());
+				record.setThinkInput(entity.getThinkInput());
+				record.setThinkOutput(entity.getThinkOutput());
+				record.setErrorMessage(entity.getErrorMessage());
+
+				// Convert ActToolInfoEntity to ActToolInfo if available
+				if (entity.getActToolInfoList() != null && !entity.getActToolInfoList().isEmpty()) {
+					// Note: You'll need to implement ActToolInfo conversion
+					// For now, we'll set actionNeeded to true if there are tools
+					record.setActionNeeded(true);
+				}
+
+				thinkActRecords.add(record);
+			}
+
+			return thinkActRecords;
+		}
+		catch (Exception e) {
+			logger.error("Error fetching ThinkActRecord details for agentExecutionId: {}", agentExecutionId, e);
+			return new ArrayList<>();
+		}
+	}
+
+	/**
+	 * Convert ExecutionStatusEntity to ExecutionStatus
+	 * @param statusEntity The entity status
+	 * @return Corresponding ExecutionStatus
+	 */
+	private ExecutionStatus convertToExecutionStatus(ExecutionStatusEntity statusEntity) {
+		if (statusEntity == null) {
+			return ExecutionStatus.IDLE;
+		}
+
+		switch (statusEntity) {
+			case IDLE:
+				return ExecutionStatus.IDLE;
+			case RUNNING:
+				return ExecutionStatus.RUNNING;
+			case FINISHED:
+				return ExecutionStatus.FINISHED;
+			default:
+				return ExecutionStatus.IDLE;
 		}
 	}
 

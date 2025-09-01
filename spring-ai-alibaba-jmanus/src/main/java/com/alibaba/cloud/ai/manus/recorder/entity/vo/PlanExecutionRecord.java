@@ -86,7 +86,7 @@ public class PlanExecutionRecord {
 	private String summary;
 
 	// List to maintain the sequence of agent executions
-	private List<AgentExecutionRecordSimple> agentExecutionSequence;
+	private List<AgentExecutionRecord> agentExecutionSequence;
 
 	// Field to store user input wait state
 	private UserInputWaitState userInputWaitState;
@@ -114,7 +114,7 @@ public class PlanExecutionRecord {
 	 * Add agent execution record
 	 * @param record Execution record
 	 */
-	public void addAgentExecutionRecord(AgentExecutionRecordSimple record) {
+	public void addAgentExecutionRecord(AgentExecutionRecord record) {
 		this.agentExecutionSequence.add(record);
 		// Dynamically update current step index
 		updateCurrentStepIndex();
@@ -124,11 +124,11 @@ public class PlanExecutionRecord {
 	 * Get agent execution records sorted by execution order
 	 * @return List of execution records
 	 */
-	public List<AgentExecutionRecordSimple> getAgentExecutionSequence() {
+	public List<AgentExecutionRecord> getAgentExecutionSequence() {
 		return agentExecutionSequence;
 	}
 
-	public void setAgentExecutionSequence(List<AgentExecutionRecordSimple> agentExecutionSequence) {
+	public void setAgentExecutionSequence(List<AgentExecutionRecord> agentExecutionSequence) {
 		this.agentExecutionSequence = agentExecutionSequence;
 		// Update current step index after setting the sequence
 		updateCurrentStepIndex();
@@ -163,7 +163,7 @@ public class PlanExecutionRecord {
 
 		// Find the currently running step
 		for (int i = 0; i < this.agentExecutionSequence.size(); i++) {
-			AgentExecutionRecordSimple agent = this.agentExecutionSequence.get(i);
+			AgentExecutionRecord agent = this.agentExecutionSequence.get(i);
 			if (agent != null && ExecutionStatus.RUNNING.equals(agent.getStatus())) {
 				this.currentStepIndex = i;
 				return;
@@ -172,7 +172,7 @@ public class PlanExecutionRecord {
 
 		// If no step is running, find the first unfinished step
 		for (int i = 0; i < this.agentExecutionSequence.size(); i++) {
-			AgentExecutionRecordSimple agent = this.agentExecutionSequence.get(i);
+			AgentExecutionRecord agent = this.agentExecutionSequence.get(i);
 			if (agent != null && !ExecutionStatus.FINISHED.equals(agent.getStatus())) {
 				this.currentStepIndex = i;
 				return;

@@ -21,7 +21,9 @@ import com.alibaba.cloud.ai.manus.exception.PlanException;
 import com.alibaba.cloud.ai.manus.memory.entity.MemoryEntity;
 import com.alibaba.cloud.ai.manus.memory.service.MemoryService;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.PlanExecutionRecord;
+import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanHierarchyReaderService;
+import com.alibaba.cloud.ai.manus.recorder.service.NewRepoPlanExecutionRecorder;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.manus.runtime.service.PlanIdDispatcher;
 import com.alibaba.cloud.ai.manus.runtime.service.PlanningCoordinator;
@@ -69,6 +71,9 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	@Autowired
 	private MemoryService memoryService;
+
+	@Autowired
+	private NewRepoPlanExecutionRecorder planExecutionRecorder;
 
 	@Autowired
 	public ManusController(ObjectMapper objectMapper) {
@@ -240,6 +245,31 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			logger.error("Unexpected error submitting user input for plan {}: {}", planId, e.getMessage(), e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body(Map.of("error", "An unexpected error occurred.", "planId", planId));
+		}
+	}
+
+	/**
+	 * Get detailed agent execution record by stepId
+	 * @param stepId The step ID to query
+	 * @return Detailed agent execution record with ThinkActRecord details
+	 */
+	@GetMapping("/agent-execution/{stepId}")
+	public ResponseEntity<AgentExecutionRecord> getAgentExecutionDetail(@PathVariable("stepId") String stepId) {
+		try {
+			logger.info("Fetching agent execution detail for stepId: {}", stepId);
+
+			AgentExecutionRecord detail = planExecutionRecorder.getAgentExecutionDetail(stepId);
+			if (detail == null) {
+				logger.warn("Agent execution detail not found for stepId: {}", stepId);
+				return ResponseEntity.notFound().build();
+			}
+
+			logger.info("Successfully retrieved agent execution detail for stepId: {}", stepId);
+			return ResponseEntity.ok(detail);
+		}
+		catch (Exception e) {
+			logger.error("Error fetching agent execution detail for stepId: {}", stepId, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 	}
 

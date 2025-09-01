@@ -47,7 +47,7 @@
             {{
               selectedStep.title ||
               selectedStep.description ||
-              t('rightPanel.defaultStepTitle', { number: selectedStep.index + 1 })
+              t('rightPanel.defaultStepTitle', { number: 1 })
             }}
           </h3>
 
@@ -227,7 +227,7 @@
                     <span class="value">{{
                         selectedStep.title ||
                         selectedStep.description ||
-                        $t('rightPanel.stepNumber', { number: selectedStep.index + 1 })
+                        selectedStep.stepId
                       }}</span>
                   </div>
                   <div class="info-item" v-if="selectedStep.description">
@@ -315,34 +315,24 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import { planExecutionManager } from '@/utils/plan-execution-manager'
-import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-execution-record'
+import { fetchAgentExecutionDetail, refreshAgentExecutionDetail } from '@/api/agent-execution'
+import type { AgentExecutionRecordDetail } from '@/types/agent-execution-detail'
 import FileBrowser from '@/components/file-browser/index.vue'
 
 // Define props interface
 interface Props {
   currentRootPlanId?: string | null
+  selectedStepId?: string | null
 }
 
 const props = defineProps<Props>()
 
-// Define step selection context interface
-interface StepSelectionContext {
-  planId: string
-  stepIndex: number
-  rootPlanId?: string    // For sub-plan steps, reference to root plan
-  subPlanId?: string     // For sub-plan steps
-  subStepIndex?: number  // For sub-plan steps
-  isSubPlan: boolean     // Flag to indicate if this is a sub-plan step
-}
-
 // Define selected step interface
 interface SelectedStep {
-  planId: string
-  index: number
+  stepId: string
   title: string
   description: string
-  agentExecution?: AgentExecutionRecord
+  agentExecution?: AgentExecutionRecordDetail
   completed: boolean
   current: boolean
 }
@@ -352,17 +342,13 @@ const { t } = useI18n()
 // DOM element reference
 const scrollContainer = ref<HTMLElement>()
 
-// Local state - replacing store state
-const currentDisplayedPlanId = ref<string>()
+// Local state
 const selectedStep = ref<SelectedStep | null>()
 const activeTab = ref<'details' | 'files'>('details')
 
 // Keep track of the last executed plan for file browser
 const lastExecutedPlanId = ref<string | null>(localStorage.getItem('jmanus-last-plan-id'))
 const hasExecutedAnyPlan = ref(localStorage.getItem('jmanus-has-executed-plan') === 'true')
-
-// Current step selection context for auto-refresh
-const currentStepContext = ref<StepSelectionContext | null>(null)
 
 // Scroll-related state
 const showScrollToBottomButton = ref(false)
@@ -392,322 +378,97 @@ const shouldShowNoTaskMessage = computed(() => {
   return !fileBrowserPlanId.value && !hasExecutedAnyPlan.value
 })
 
-// Actions - Plan data management and refresh control
+// Actions - Step selection and refresh control
+
 /**
- * Primary method for external refresh control of the right panel component.
- *
- * USAGE:
- * This method should be called by external components (typically Direct component)
- * to trigger a refresh of the plan progress display and step details. It serves as
- * the main entry point for updating the component's state based on plan execution changes.
- *
- * REFRESH LOGIC:
- * 1. Validates if the provided rootPlanId matches the currently displayed plan
- * 2. Updates plan progress information (current step vs total steps)
- * 3. If a step is currently selected and belongs to the provided rootPlanId:
- *    - Re-fetches the latest plan execution data
- *    - Refreshes the step details display with updated information
- *    - Auto-scrolls to show latest content if user was previously at bottom
- *
- * KEY DESIGN PRINCIPLE:
- * This component does NOT maintain internal auto-refresh timers. Instead, it relies
- * entirely on external calls to this method for updates. This allows parent components
- * to have full control over when and how frequently the refresh occurs.
- *
- * CONSISTENCY CHECK:
- * Only updates are allowed for the currently displayed plan to prevent conflicting updates.
- *
- * ================================================================================
- *
- * Main method for external refresh control of the right panel component.
- *
- * Usage:
- * This method should be called by external components (usually the Direct component) to trigger
- * refresh of plan progress display and step details.
- * It serves as the main entry point for updating component state based on plan execution changes.
- *
- * Refresh logic:
- * 1. Verify that the provided rootPlanId matches the currently displayed plan
- * 2. Update plan progress information (current step vs total steps)
- * 3. If there is a currently selected step belonging to the provided rootPlanId:
- *    - Re-fetch the latest plan execution data
- *    - Refresh step details display and update information
- *    - Auto-scroll to show latest content if user was previously at bottom
- *
- * Key design principle:
- * This component does not maintain internal auto-refresh timers. Instead, it relies entirely
- * on external calls to this method for updates.
- * This allows parent components to have complete control over when and how frequently to refresh.
- *
- * Consistency check:
- * Only allows updates to the currently displayed plan to prevent conflicting update operations.
- *
- * @param rootPlanId - The ID of the root plan execution to refresh
+ * Handle step selection by stepId
+ * @param stepId - The step ID to display
  */
-const updateDisplayedPlanProgress = (rootPlanId: string) => {
-  console.log(`[RightPanel] updateDisplayedPlanProgress called with rootPlanId: ${rootPlanId}`)
+const handleStepSelected = async (stepId: string) => {
+  console.log('[RightPanel] Step selected:', { stepId })
 
-  // Check if there's a currently selected step and validate plan consistency
-  if (selectedStep.value && currentStepContext.value) {
-    // Determine the current root plan ID based on step context
-    const currentRootPlanId = currentStepContext.value.rootPlanId ?? currentDisplayedPlanId.value
+  if (!stepId) {
+    console.warn('[RightPanel] No stepId provided')
+    selectedStep.value = null
+    return
+  }
 
-    // Only update if the provided rootPlanId matches the currently displayed plan
-    if (currentRootPlanId && currentRootPlanId !== rootPlanId) {
-      console.log(`[RightPanel] Plan ID mismatch - skipping update. Current: ${currentRootPlanId}, Requested: ${rootPlanId}`)
+  try {
+    // Fetch agent execution detail from API
+    const agentExecutionDetail = await fetchAgentExecutionDetail(stepId)
+    
+    if (!agentExecutionDetail) {
+      console.warn('[RightPanel] Agent execution detail not found for stepId:', stepId)
+      selectedStep.value = null
       return
     }
-  }
 
-  console.log(`[RightPanel] Plan ID validation passed - proceeding with update for rootPlanId: ${rootPlanId}`)
-
-  // Get plan data from plan execution manager
-  const planData = planExecutionManager.getCachedPlanRecord(rootPlanId)
-  if (!planData) {
-    console.warn(`[RightPanel] Plan data not found for rootPlanId: ${rootPlanId}`)
-    return
-  }
-
-  // Update UI state, such as progress bars
-  if (planData.steps && planData.steps.length > 0) {
-    const totalSteps = planData.steps.length
-    const currentStep = (planData.currentStepIndex ?? 0) + 1
-    console.log(`[RightPanel] Progress: ${currentStep} / ${totalSteps}`)
-  }
-
-  // If there's a selected step and it belongs to the current plan, refresh its details
-  if (selectedStep.value && currentDisplayedPlanId.value) {
-    // Check if the selected step belongs to the current root plan
-    const isCurrentPlanStep = currentDisplayedPlanId.value === rootPlanId ||
-                             (currentStepContext.value?.rootPlanId === rootPlanId)
-
-    if (isCurrentPlanStep) {
-      console.log(`[RightPanel] Refreshing selected step details for plan: ${rootPlanId}`)
-
-      // Get the current step context
-      if (currentStepContext.value) {
-        const ctx = currentStepContext.value
-
-        // Re-fetch and update the step details
-        const planRecord = findPlanExecutionRecord(ctx.planId, ctx.rootPlanId, ctx.subPlanId)
-        if (planRecord) {
-          displayStepDetails(planRecord, ctx.stepIndex, ctx.planId, ctx.isSubPlan)
-          // Auto-scroll to latest content if previously at bottom
-          autoScrollToBottomIfNeeded()
-        } else {
-          console.warn(`[RightPanel] Could not find plan record for refresh:`, ctx)
-        }
-      }
+    // Create step data object
+    const stepData: SelectedStep = {
+      stepId: stepId,
+      title: agentExecutionDetail.agentName || `Step ${stepId}`,
+      description: agentExecutionDetail.agentDescription || '',
+      agentExecution: agentExecutionDetail,
+      completed: agentExecutionDetail.status === 'FINISHED',
+      current: agentExecutionDetail.status === 'RUNNING'
     }
+
+    selectedStep.value = stepData
+    console.log('[RightPanel] Step details updated:', stepData)
+
+    // Delay scroll state check to ensure DOM is updated
+    setTimeout(() => {
+      checkScrollState()
+    }, 100)
+
+    // Auto-scroll to latest content if previously at bottom
+    autoScrollToBottomIfNeeded()
+  } catch (error) {
+    console.error('[RightPanel] Error fetching step details:', error)
+    selectedStep.value = null
   }
 }
 
-// Actions - Step selection handling (callable methods for external components)
 /**
- * Unified step selection handler - handles both regular steps and sub-plan steps
- * @param planId - The plan ID to display (can be main plan or sub-plan)
- * @param stepIndex - The step index to display
- * @param rootPlanId - Optional root plan ID for sub-plan steps
- * @param subPlanId - Optional sub-plan ID for sub-plan steps
- * @param subStepIndex - Optional sub-step index for sub-plan steps
+ * Refresh the currently selected step
  */
-const handleStepSelected = (
-  planId: string,
-  stepIndex: number,
-  rootPlanId?: string,
-  subPlanId?: string,
-  subStepIndex?: number
-) => {
-  console.log('[RightPanel] Step selected:', {
-    planId,
-    stepIndex,
-    rootPlanId,
-    subPlanId,
-    subStepIndex
-  })
-
-  const isSubPlan = !!(rootPlanId && subPlanId && subStepIndex !== undefined)
-
-  // Set current step context for auto-refresh
-  currentStepContext.value = {
-    planId,
-    stepIndex,
-    isSubPlan,
-    ...(isSubPlan && { rootPlanId, subPlanId, subStepIndex })
-  }
-
-  // Find the PlanExecutionRecord based on parameters
-  const planRecord = findPlanExecutionRecord(planId, rootPlanId, subPlanId)
-
-  if (!planRecord) {
-    console.warn('[RightPanel] Plan data not found:', { planId, rootPlanId, subPlanId })
-    selectedStep.value = null
-    currentStepContext.value = null
+const refreshCurrentStep = async () => {
+  if (!selectedStep.value?.stepId) {
+    console.warn('[RightPanel] No step selected for refresh')
     return
   }
 
-  // Display step details using unified logic
-  displayStepDetails(planRecord, stepIndex, planId, isSubPlan)
-}
-
-/**
- * Find PlanExecutionRecord based on parameters
- * For regular steps: directly get from planExecutionManager
- * For sub-plan steps: traverse root plan to find the sub-plan record
- */
-const findPlanExecutionRecord = (
-  planId: string,
-  rootPlanId?: string,
-  subPlanId?: string
-): PlanExecutionRecord | null => {
-  // For regular steps, directly get from manager
-  if (!rootPlanId || !subPlanId) {
-    return planExecutionManager.getCachedPlanRecord(planId) ?? null
-  }
-
-  // For sub-plan steps, first try direct access
-  const directRecord = planExecutionManager.getCachedPlanRecord(planId)
-  if (directRecord) {
-    return directRecord
-  }
-
-  // If direct access fails, traverse root plan to find sub-plan
-  const rootPlanData = planExecutionManager.getCachedPlanRecord(rootPlanId)
-  if (!rootPlanData?.agentExecutionSequence) {
-    return null
-  }
-
-  // Traverse all agent execution records to find the sub-plan
-  for (const agentExecution of rootPlanData.agentExecutionSequence) {
-    if (agentExecution.thinkActSteps) {
-      for (const thinkActStep of agentExecution.thinkActSteps) {
-        if (thinkActStep.subPlanExecutionRecord?.currentPlanId === subPlanId) {
-          return thinkActStep.subPlanExecutionRecord
-        }
-      }
+  console.log('[RightPanel] Refreshing current step:', selectedStep.value.stepId)
+  
+  try {
+    const agentExecutionDetail = await refreshAgentExecutionDetail(selectedStep.value.stepId)
+    
+    if (agentExecutionDetail && selectedStep.value) {
+      // Update the existing step data
+      selectedStep.value.agentExecution = agentExecutionDetail
+      selectedStep.value.completed = agentExecutionDetail.status === 'FINISHED'
+      selectedStep.value.current = agentExecutionDetail.status === 'RUNNING'
+      
+      console.log('[RightPanel] Step refreshed successfully')
+      
+      // Auto-scroll to latest content if previously at bottom
+      autoScrollToBottomIfNeeded()
     }
+  } catch (error) {
+    console.error('[RightPanel] Error refreshing step:', error)
   }
-
-  return null
 }
 
-/**
- * Unified display logic for step details
- */
-const displayStepDetails = (
-  planRecord: PlanExecutionRecord,
-  stepIndex: number,
-  planId: string,
-  isSubPlan: boolean
-) => {
-  // Validate step index
-  if (!planRecord.steps || stepIndex >= planRecord.steps.length) {
+// Watch for selectedStepId prop changes
+watch(() => props.selectedStepId, async (newStepId) => {
+  if (newStepId) {
+    await handleStepSelected(newStepId)
+  } else {
     selectedStep.value = null
-    currentStepContext.value = null
-    console.warn('[RightPanel] Invalid step data:', {
-      planId,
-      stepIndex,
-      hasSteps: !!planRecord.steps,
-      stepsLength: planRecord.steps?.length,
-      message: 'Invalid step index'
-    })
-    return
   }
+}, { immediate: true })
 
-  currentDisplayedPlanId.value = planId
-  const step = planRecord.steps[stepIndex]
-  const agentExecution = planRecord.agentExecutionSequence?.[stepIndex]
 
-  console.log('[RightPanel] Step data details:', {
-    planId,
-    stepIndex,
-    step,
-    hasAgentExecutionSequence: !!planRecord.agentExecutionSequence,
-    agentExecutionSequenceLength: planRecord.agentExecutionSequence?.length,
-    agentExecution,
-    hasThinkActSteps: !!agentExecution?.thinkActSteps,
-    thinkActStepsLength: agentExecution?.thinkActSteps?.length,
-    isSubPlan
-  })
-
-  // Determine if step is completed
-  const isStepCompleted =
-    agentExecution?.status === 'FINISHED' ;
-
-  const isCurrent =
-    !isStepCompleted && stepIndex === planRecord.currentStepIndex && !planRecord.completed
-
-  // Construct step details object
-  const stepData: SelectedStep = {
-    planId: planId,
-    index: stepIndex,
-    title: typeof step === 'string'
-      ? step
-      : (step as any).title || (step as any).description || (step as any).name ||
-        `${isSubPlan ? 'Sub ' : ''}Step ${stepIndex + 1}`,
-    description: typeof step === 'string' ? step : (step as any).description || step,
-    completed: isStepCompleted,
-    current: isCurrent,
-  }
-
-  if (agentExecution) {
-    stepData.agentExecution = agentExecution
-  }
-
-  selectedStep.value = stepData
-
-  console.log('[RightPanel] Step details updated:', {
-    planId,
-    stepIndex,
-    stepTitle: selectedStep.value.title,
-    hasAgentExecution: !!agentExecution,
-    hasThinkActSteps: (agentExecution?.thinkActSteps?.length ?? 0) > 0,
-    completed: isStepCompleted,
-    current: isCurrent,
-    planCurrentStep: planRecord.currentStepIndex,
-    planCompleted: planRecord.completed,
-    isSubPlan
-  })
-
-  // Process sub-plan data if exists - just log for debugging
-  if (agentExecution?.thinkActSteps) {
-    agentExecution.thinkActSteps.forEach((thinkActStep: any, index: number) => {
-      if (thinkActStep.subPlanExecutionRecord) {
-        console.log(`[RightPanel] Found sub-plan in thinkActStep ${index}:`, thinkActStep.subPlanExecutionRecord)
-      }
-    })
-  }
-
-  // Note: Auto-refresh is now controlled externally via updateDisplayedPlanProgress
-  // No internal auto-refresh logic needed
-
-  // Delay scroll state check to ensure DOM is updated
-  setTimeout(() => {
-    checkScrollState()
-  }, 100)
-
-  // After data update, auto-scroll to latest content if previously at bottom
-  autoScrollToBottomIfNeeded()
-}
-
-/**
- * Handle sub-plan step selection - wrapper for backward compatibility
- * @param rootPlanId - The root plan ID
- * @param subPlanId - The sub-plan ID to display
- * @param stepIndex - The parent step index (not used in new logic but kept for compatibility)
- * @param subStepIndex - The sub-step index to display
- */
-const handleSubPlanStepSelected = (rootPlanId: string, subPlanId: string, stepIndex: number, subStepIndex: number) => {
-  console.log('[RightPanel] Sub plan step selected (delegating to unified handler):', {
-    rootPlanId,
-    subPlanId,
-    stepIndex,
-    subStepIndex
-  })
-
-  // Delegate to unified handler
-  handleStepSelected(subPlanId, subStepIndex, rootPlanId, subPlanId, subStepIndex)
-}
 
 // Actions - Scroll management
 const setScrollContainer = (element: HTMLElement | null) => {
@@ -788,7 +549,6 @@ const formatJson = (jsonData: any): string => {
 // Actions - Resource cleanup
 const cleanup = () => {
   selectedStep.value = null
-  currentDisplayedPlanId.value = undefined
   shouldAutoScrollToBottom.value = true
 
   if (scrollContainer.value) {
@@ -857,15 +617,13 @@ onMounted(() => {
 // Lifecycle - cleanup on unmount
 onUnmounted(() => {
   console.log('[RightPanel] Component unmounting, cleaning up...')
-  currentStepContext.value = null // Clear step context
   cleanup()
 })
 
 // Expose methods to parent component - only keep necessary interfaces
 defineExpose({
-  updateDisplayedPlanProgress,
   handleStepSelected,
-  handleSubPlanStepSelected,
+  refreshCurrentStep,
 })
 </script>
 

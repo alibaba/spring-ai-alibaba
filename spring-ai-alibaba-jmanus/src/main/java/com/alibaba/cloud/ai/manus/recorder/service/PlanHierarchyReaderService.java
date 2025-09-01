@@ -13,7 +13,7 @@ import com.alibaba.cloud.ai.manus.recorder.entity.po.PlanExecutionRecordEntity;
 import com.alibaba.cloud.ai.manus.recorder.entity.po.AgentExecutionRecordEntity;
 import com.alibaba.cloud.ai.manus.recorder.entity.po.ExecutionStatusEntity;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.PlanExecutionRecord;
-import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecordSimple;
+import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.ExecutionStatus;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.ActToolInfo;
 import com.alibaba.cloud.ai.manus.recorder.entity.po.ActToolInfoEntity;
@@ -184,9 +184,9 @@ public class PlanHierarchyReaderService {
 
 		// Convert agent execution records to simple versions
 		if (entity.getAgentExecutionSequence() != null && !entity.getAgentExecutionSequence().isEmpty()) {
-			List<AgentExecutionRecordSimple> agentRecords = entity.getAgentExecutionSequence()
+			List<AgentExecutionRecord> agentRecords = entity.getAgentExecutionSequence()
 				.stream()
-				.map(this::convertToAgentExecutionRecordSimple)
+				.map(this::convertToAgentExecutionRecord)
 				.collect(Collectors.toList());
 			vo.setAgentExecutionSequence(agentRecords);
 		}
@@ -215,13 +215,12 @@ public class PlanHierarchyReaderService {
 	}
 
 	/**
-	 * Convert AgentExecutionRecordEntity to AgentExecutionRecordSimple VO object. This is
-	 * a simplified version without ThinkActRecord and ActToolInfo details.
+	 * Convert AgentExecutionRecordEntity to AgentExecutionRecord VO object.
 	 * @param entity The PO entity to convert
-	 * @return Converted simple VO object
+	 * @return Converted VO object
 	 */
-	private AgentExecutionRecordSimple convertToAgentExecutionRecordSimple(AgentExecutionRecordEntity entity) {
-		AgentExecutionRecordSimple vo = new AgentExecutionRecordSimple(entity.getStepId(), entity.getAgentName(),
+	private AgentExecutionRecord convertToAgentExecutionRecord(AgentExecutionRecordEntity entity) {
+		AgentExecutionRecord vo = new AgentExecutionRecord(entity.getStepId(), entity.getAgentName(),
 				entity.getAgentDescription());
 
 		// Set basic properties
@@ -270,7 +269,7 @@ public class PlanHierarchyReaderService {
 	/**
 	 * Build hierarchy relationships between plans using subPlanExecutionRecords. This
 	 * method establishes parent-child relationships by populating the
-	 * subPlanExecutionRecords field in AgentExecutionRecordSimple objects.
+	 * subPlanExecutionRecords field in AgentExecutionRecord objects.
 	 *
 	 * Hierarchy logic: - For each plan, look through its agent execution sequence - For
 	 * each agent, find sub-plans where parentPlanId = current plan's currentPlanId - This
@@ -289,7 +288,7 @@ public class PlanHierarchyReaderService {
 		// Build hierarchy relationships for each plan
 		for (PlanExecutionRecord plan : planRecords) {
 			if (plan.getAgentExecutionSequence() != null) {
-				for (AgentExecutionRecordSimple agentRecord : plan.getAgentExecutionSequence()) {
+				for (AgentExecutionRecord agentRecord : plan.getAgentExecutionSequence()) {
 					// Find sub-plans for this agent
 					// Safety check: ensure currentPlanId is not null
 					if (plan.getCurrentPlanId() != null) {
