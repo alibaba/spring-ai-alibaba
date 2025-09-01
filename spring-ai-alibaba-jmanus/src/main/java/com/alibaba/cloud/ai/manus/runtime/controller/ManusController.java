@@ -143,9 +143,11 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	}
 
 	/**
-	 * Get detailed execution record
+	 * Get execution record overview (without detailed ThinkActRecord information)
+	 * Note: This method returns basic execution information and does not include
+	 * detailed ThinkActRecord steps for each agent execution.
 	 * @param planId Plan ID
-	 * @return JSON representation of execution record
+	 * @return JSON representation of execution record overview
 	 */
 	@GetMapping("/details/{planId}")
 	public synchronized ResponseEntity<?> getExecutionDetails(@PathVariable("planId") String planId) {
@@ -249,7 +251,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	}
 
 	/**
-	 * Get detailed agent execution record by stepId
+	 * Get detailed agent execution record by stepId (includes ThinkActRecord details)
 	 * @param stepId The step ID to query
 	 * @return Detailed agent execution record with ThinkActRecord details
 	 */
