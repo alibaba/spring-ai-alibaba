@@ -29,6 +29,7 @@
       @copy="handleCopy"
       @regenerate="handleRegenerate"
       @retry="handleRetry"
+      @step-selected="handleStepSelected"
     />
   </div>
 </template>
@@ -49,6 +50,7 @@ interface Emits {
   (e: 'copy', messageId: string): void
   (e: 'regenerate', messageId: string): void
   (e: 'retry', messageId: string): void
+  (e: 'step-selected', stepId: string): void
 }
 
 const props = defineProps<Props>()
@@ -72,6 +74,10 @@ const handleRegenerate = (messageId: string) => {
 
 const handleRetry = (messageId: string) => {
   emit('retry', messageId)
+}
+
+const handleStepSelected = (stepId: string) => {
+  emit('step-selected', stepId)
 }
 </script>
 

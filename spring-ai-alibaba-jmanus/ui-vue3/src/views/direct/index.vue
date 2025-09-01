@@ -507,13 +507,13 @@ const handleInputUpdateState = (enabled: boolean, placeholder?: string) => {
   isLoading.value = !enabled
 }
 
-const handleStepSelected = (planId: string, stepIndex: number) => {
-  console.log('[DirectView] Step selected:', planId, stepIndex)
+const handleStepSelected = (stepId: string) => {
+  console.log('[DirectView] Step selected:', stepId)
 
   // Forward step selection to right panel
   if (rightPanelRef.value && typeof rightPanelRef.value.handleStepSelected === 'function') {
-    console.log('[DirectView] Forwarding step selection to right panel:', planId, stepIndex)
-    rightPanelRef.value.handleStepSelected(planId, stepIndex)
+    console.log('[DirectView] Forwarding step selection to right panel:', stepId)
+    rightPanelRef.value.handleStepSelected(stepId)
   } else {
     console.warn('[DirectView] rightPanelRef.handleStepSelected method not available')
   }

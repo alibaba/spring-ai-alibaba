@@ -19,6 +19,7 @@
     <ThinkingSection
       v-if="message.thinkingDetails"
       :thinking-details="message.thinkingDetails"
+      @step-selected="handleStepSelected"
     />
     
     <!-- Plan execution section (when available) -->
@@ -27,8 +28,7 @@
       :plan-execution="message.planExecution"
       :step-actions="message.stepActions || []"
       :generic-input="message.genericInput || ''"
-      @step-selected="(stepIndex: number) => handleStepClick(message, stepIndex)"
-      @sub-plan-step-selected="(stepIndex: number, subStepIndex: number) => handleSubPlanStepClick(message, stepIndex, subStepIndex)"
+      @step-selected="handleStepSelected"
       @user-input-submitted="(inputData: any) => handleUserInputSubmit(message, inputData)"
     />
     
@@ -61,6 +61,7 @@ interface Emits {
   (e: 'copy', messageId: string): void
   (e: 'regenerate', messageId: string): void
   (e: 'retry', messageId: string): void
+  (e: 'step-selected', stepId: string): void
 }
 
 const props = defineProps<Props>()
@@ -93,6 +94,11 @@ const handleSubPlanStepClick = (message: ChatMessage, stepIndex: number, subStep
 const handleUserInputSubmit = (message: ChatMessage, inputData: any) => {
   console.log('[AssistantMessage] User input submitted:', inputData, 'for message:', message.id)
   // Handle user input submission - can be extended for more functionality
+}
+
+const handleStepSelected = (stepId: string) => {
+  console.log('[AssistantMessage] Step selected:', stepId)
+  emit('step-selected', stepId)
 }
 </script>
 

@@ -49,7 +49,7 @@
         :class="getAgentStatusClass(agentExecution.status)"
       >
         <!-- Agent execution header -->
-        <div class="agent-header" @click="toggleAgentExpanded(agentIndex)">
+        <div class="agent-header" @click="handleAgentClick(agentExecution)">
           <div class="agent-info">
             <Icon :icon="getAgentStatusIcon(agentExecution.status)" class="agent-status-icon" />
             <div class="agent-details">
@@ -61,108 +61,104 @@
             <div class="agent-status-badge" :class="getAgentStatusClass(agentExecution.status)">
               {{ getAgentStatusText(agentExecution.status) }}
             </div>
-            <Icon :icon="isAgentExpanded(agentIndex) ? 'carbon:chevron-up' : 'carbon:chevron-down'" 
-                  class="expand-icon" />
+            <Icon icon="carbon:arrow-right" class="step-select-icon" />
           </div>
         </div>
 
-        <!-- Agent execution details (expandable) -->
-        <div v-if="isAgentExpanded(agentIndex)" class="agent-content">
-          <!-- Agent execution info -->
-          <div class="agent-execution-info">
-            <!-- Agent result -->
-            <div v-if="agentExecution.result" class="agent-result">
-              <div class="result-header">
-                <Icon icon="carbon:checkmark" class="result-icon" />
-                <span class="result-label">{{ $t('chat.agentResult') }}:</span>
-              </div>
-              <pre class="result-content">{{ agentExecution.result }}</pre>
+        <!-- Agent execution info -->
+        <div class="agent-execution-info">
+          <!-- Agent result -->
+          <div v-if="agentExecution.result" class="agent-result">
+            <div class="result-header">
+              <Icon icon="carbon:checkmark" class="result-icon" />
+              <span class="result-label">{{ $t('chat.agentResult') }}:</span>
             </div>
-
-            <!-- Error message -->
-            <div v-if="agentExecution.errorMessage" class="agent-error">
-              <div class="error-header">
-                <Icon icon="carbon:warning" class="error-icon" />
-                <span class="error-label">{{ $t('chat.errorMessage') }}:</span>
-              </div>
-              <pre class="error-content">{{ agentExecution.errorMessage }}</pre>
-            </div>
+            <pre class="result-content">{{ agentExecution.result }}</pre>
           </div>
 
-          <!-- Sub-plan executions -->
-          <div v-if="agentExecution.subPlanExecutionRecords?.length" class="sub-plans-container">
-            <div class="sub-plans-header">
-              <Icon icon="carbon:tree-view" class="sub-plans-icon" />
-              <span class="sub-plans-title">
-                {{ $t('chat.subPlanExecutions') }} ({{ agentExecution.subPlanExecutionRecords.length }})
-              </span>
+          <!-- Error message -->
+          <div v-if="agentExecution.errorMessage" class="agent-error">
+            <div class="error-header">
+              <Icon icon="carbon:warning" class="error-icon" />
+              <span class="error-label">{{ $t('chat.errorMessage') }}:</span>
             </div>
-            
-            <div class="sub-plans-list">
-              <div
-                v-for="(subPlan, subPlanIndex) in agentExecution.subPlanExecutionRecords"
-                :key="subPlan.currentPlanId || subPlanIndex"
-                class="sub-plan-item"
-                :class="getSubPlanStatusClass(subPlan)"
-                @click="handleSubPlanClick(agentIndex, subPlanIndex, subPlan)"
-              >
-                <!-- Sub-plan header -->
-                <div class="sub-plan-header">
-                  <div class="sub-plan-info">
-                    <Icon :icon="getSubPlanStatusIcon(subPlan)" class="sub-plan-status-icon" />
-                    <div class="sub-plan-details">
-                      <div class="sub-plan-title">
-                        {{ subPlan.title || $t('chat.subPlan') }} #{{ subPlanIndex + 1 }}
-                      </div>
-                      <div class="sub-plan-id">{{ subPlan.currentPlanId }}</div>
+            <pre class="error-content">{{ agentExecution.errorMessage }}</pre>
+          </div>
+        </div>
+
+        <!-- Sub-plan executions -->
+        <div v-if="agentExecution.subPlanExecutionRecords?.length" class="sub-plans-container">
+          <div class="sub-plans-header">
+            <Icon icon="carbon:tree-view" class="sub-plans-icon" />
+            <span class="sub-plans-title">
+              {{ $t('chat.subPlanExecutions') }} ({{ agentExecution.subPlanExecutionRecords.length }})
+            </span>
+          </div>
+          
+          <div class="sub-plans-list">
+            <div
+              v-for="(subPlan, subPlanIndex) in agentExecution.subPlanExecutionRecords"
+              :key="subPlan.currentPlanId || subPlanIndex"
+              class="sub-plan-item"
+              :class="getSubPlanStatusClass(subPlan)"
+              @click="handleSubPlanClick(agentIndex, subPlanIndex, subPlan)"
+            >
+              <!-- Sub-plan header -->
+              <div class="sub-plan-header">
+                <div class="sub-plan-info">
+                  <Icon :icon="getSubPlanStatusIcon(subPlan)" class="sub-plan-status-icon" />
+                  <div class="sub-plan-details">
+                    <div class="sub-plan-title">
+                      {{ subPlan.title || $t('chat.subPlan') }} #{{ subPlanIndex + 1 }}
                     </div>
-                  </div>
-                  <div class="sub-plan-meta">
-                    <div class="sub-plan-status-badge" :class="getSubPlanStatusClass(subPlan)">
-                      {{ getSubPlanStatusText(subPlan) }}
-                    </div>
-                    <div v-if="subPlan.parentActToolCall" class="trigger-tool">
-                      <Icon icon="carbon:function" class="trigger-icon" />
-                      <span class="trigger-text">{{ subPlan.parentActToolCall.name }}</span>
-                    </div>
+                    <div class="sub-plan-id">{{ subPlan.currentPlanId }}</div>
                   </div>
                 </div>
+                <div class="sub-plan-meta">
+                  <div class="sub-plan-status-badge" :class="getSubPlanStatusClass(subPlan)">
+                    {{ getSubPlanStatusText(subPlan) }}
+                  </div>
+                  <div v-if="subPlan.parentActToolCall" class="trigger-tool">
+                    <Icon icon="carbon:function" class="trigger-icon" />
+                    <span class="trigger-text">{{ subPlan.parentActToolCall.name }}</span>
+                  </div>
+                </div>
+              </div>
 
-                <!-- Sub-plan progress -->
-                <div v-if="subPlan.agentExecutionSequence?.length" class="sub-plan-progress">
-                  <div class="progress-info">
-                    <span class="progress-text">
-                      {{ $t('chat.progress') }}: {{ getSubPlanCompletedCount(subPlan) }} / {{ subPlan.agentExecutionSequence.length }}
+              <!-- Sub-plan progress -->
+              <div v-if="subPlan.agentExecutionSequence?.length" class="sub-plan-progress">
+                <div class="progress-info">
+                  <span class="progress-text">
+                    {{ $t('chat.progress') }}: {{ getSubPlanCompletedCount(subPlan) }} / {{ subPlan.agentExecutionSequence.length }}
+                  </span>
+                  <div class="progress-bar">
+                    <div 
+                      class="progress-fill" 
+                      :style="{ width: getSubPlanProgress(subPlan) + '%' }"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sub-plan agent execution preview -->
+              <div v-if="subPlan.agentExecutionSequence?.length" class="sub-plan-agents-preview">
+                <div class="agents-preview-header">
+                  <span class="agents-label">{{ $t('chat.agentExecutions') }}:</span>
+                </div>
+                <div class="agents-list">
+                  <div
+                    v-for="(agent, agentIndex) in subPlan.agentExecutionSequence.slice(0, 3)"
+                    :key="agent.id || agentIndex"
+                    class="agent-preview-item"
+                    :class="getAgentPreviewStatusClass(agent.status)"
+                  >
+                    <Icon :icon="getAgentPreviewStatusIcon(agent.status)" class="agent-icon" />
+                    <span class="agent-text">{{ agent.agentName || $t('chat.unknownAgent') }}</span>
+                  </div>
+                  <div v-if="subPlan.agentExecutionSequence.length > 3" class="more-agents">
+                    <span class="more-text">
+                      {{ $t('chat.andMoreAgents', { count: subPlan.agentExecutionSequence.length - 3 }) }}
                     </span>
-                    <div class="progress-bar">
-                      <div 
-                        class="progress-fill" 
-                        :style="{ width: getSubPlanProgress(subPlan) + '%' }"
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Sub-plan agent execution preview -->
-                <div v-if="subPlan.agentExecutionSequence?.length" class="sub-plan-agents-preview">
-                  <div class="agents-preview-header">
-                    <span class="agents-label">{{ $t('chat.agentExecutions') }}:</span>
-                  </div>
-                  <div class="agents-list">
-                    <div
-                      v-for="(agent, agentIndex) in subPlan.agentExecutionSequence.slice(0, 3)"
-                      :key="agent.id || agentIndex"
-                      class="agent-preview-item"
-                      :class="getAgentPreviewStatusClass(agent.status)"
-                    >
-                      <Icon :icon="getAgentPreviewStatusIcon(agent.status)" class="agent-icon" />
-                      <span class="agent-text">{{ agent.agentName || $t('chat.unknownAgent') }}</span>
-                    </div>
-                    <div v-if="subPlan.agentExecutionSequence.length > 3" class="more-agents">
-                      <span class="more-text">
-                        {{ $t('chat.andMoreAgents', { count: subPlan.agentExecutionSequence.length - 3 }) }}
-                      </span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -329,6 +325,7 @@ interface Emits {
   (e: 'agent-selected', agentIndex: number, agent: AgentExecutionRecord): void
   (e: 'sub-plan-selected', agentIndex: number, subPlanIndex: number, subPlan: PlanExecutionRecord): void
   (e: 'user-input-submitted', inputData: any): void
+  (e: 'step-selected', stepId: string): void
 }
 
 const props = defineProps<Props>()
@@ -338,24 +335,19 @@ const emit = defineEmits<Emits>()
 const { t } = useI18n()
 
 // Local state
-const expandedAgents = reactive<Set<number>>(new Set())
 const formInputsStore = reactive<Record<number, string>>({})
 const genericInput = ref(props.genericInput || '')
 
 // Computed properties
 const agentExecutionSequence = computed(() => props.planExecution?.agentExecutionSequence ?? [])
 
-// Agent expansion state management
-const toggleAgentExpanded = (agentIndex: number) => {
-  if (expandedAgents.has(agentIndex)) {
-    expandedAgents.delete(agentIndex)
+// Agent click handler
+const handleAgentClick = (agentExecution: AgentExecutionRecord) => {
+  if (agentExecution.stepId) {
+    emit('step-selected', agentExecution.stepId)
   } else {
-    expandedAgents.add(agentIndex)
+    console.warn('[ExecutionDetails] Agent execution has no stepId:', agentExecution)
   }
-}
-
-const isAgentExpanded = (agentIndex: number): boolean => {
-  return expandedAgents.has(agentIndex)
 }
 
 // Plan status methods
@@ -588,17 +580,7 @@ const isRequired = (required: boolean | string | undefined): boolean => {
   return false
 }
 
-// Auto-expand running agents on mount
-const initializeExpandedState = () => {
-  agentExecutionSequence.value.forEach((agent, index) => {
-    if (agent.status === 'RUNNING' || agent.subPlanExecutionRecords?.length) {
-      expandedAgents.add(index)
-    }
-  })
-}
 
-// Initialize on component mount
-initializeExpandedState()
 </script>
 
 <style lang="less" scoped>.execution-details {
@@ -813,140 +795,252 @@ initializeExpandedState()
             }
           }
           
-          .expand-icon {
+          .step-select-icon {
             font-size: 16px;
-            color: #aaaaaa;
+            color: #667eea;
             transition: transform 0.2s ease;
           }
         }
       }
       
-      .agent-content {
+      .agent-execution-info {
+        padding: 16px;
+        background: rgba(0, 0, 0, 0.1);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        margin-bottom: 16px;
+        
+        .agent-result, .agent-error {
+          margin-bottom: 12px;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+          
+          .result-header, .error-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+            
+            .result-icon, .error-icon {
+              font-size: 14px;
+            }
+            
+            .result-icon {
+              color: #22c55e;
+            }
+            
+            .error-icon {
+              color: #ef4444;
+            }
+            
+            .result-label, .error-label {
+              color: #ffffff;
+              font-size: 13px;
+              font-weight: 500;
+            }
+          }
+          
+          .result-content, .error-content {
+            margin: 0;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+            color: #cccccc;
+          }
+          
+          .error-content {
+            color: #ff9999;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+          }
+        }
+      }
+      
+      .sub-plans-container {
         padding: 16px;
         background: rgba(0, 0, 0, 0.1);
         border-top: 1px solid rgba(255, 255, 255, 0.05);
         
-        .agent-execution-info {
-          margin-bottom: 16px;
+        .sub-plans-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
           
-          .agent-result, .agent-error {
-            margin-bottom: 12px;
-            
-            &:last-child {
-              margin-bottom: 0;
-            }
-            
-            .result-header, .error-header {
-              display: flex;
-              align-items: center;
-              gap: 6px;
-              margin-bottom: 6px;
-              
-              .result-icon, .error-icon {
-                font-size: 14px;
-              }
-              
-              .result-icon {
-                color: #22c55e;
-              }
-              
-              .error-icon {
-                color: #ef4444;
-              }
-              
-              .result-label, .error-label {
-                color: #ffffff;
-                font-size: 13px;
-                font-weight: 500;
-              }
-            }
-            
-            .result-content, .error-content {
-              margin: 0;
-              padding: 8px;
-              background: rgba(0, 0, 0, 0.2);
-              border-radius: 4px;
-              font-family: monospace;
-              font-size: 12px;
-              white-space: pre-wrap;
-              max-height: 150px;
-              overflow-y: auto;
-              color: #cccccc;
-            }
-            
-            .error-content {
-              color: #ff9999;
-              border: 1px solid rgba(239, 68, 68, 0.2);
-            }
+          .sub-plans-icon {
+            font-size: 16px;
+            color: #667eea;
+          }
+          
+          .sub-plans-title {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 14px;
           }
         }
         
-        .sub-plans-container {
-          .sub-plans-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-            
-            .sub-plans-icon {
-              font-size: 16px;
-              color: #667eea;
-            }
-            
-            .sub-plans-title {
-              color: #ffffff;
-              font-weight: 600;
-              font-size: 14px;
-            }
-          }
+        .sub-plans-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
           
-          .sub-plans-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+          .sub-plan-item {
+            background: rgba(102, 126, 234, 0.05);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            border-radius: 6px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
             
-            .sub-plan-item {
-              background: rgba(102, 126, 234, 0.05);
-              border: 1px solid rgba(102, 126, 234, 0.1);
-              border-radius: 6px;
-              padding: 12px;
-              cursor: pointer;
-              transition: all 0.2s ease;
+            &:hover {
+              background: rgba(102, 126, 234, 0.1);
+              border-color: rgba(102, 126, 234, 0.2);
+            }
+            
+            &.running {
+              border-color: rgba(102, 126, 234, 0.3);
+              background: rgba(102, 126, 234, 0.08);
+              box-shadow: 0 0 8px rgba(102, 126, 234, 0.15);
+            }
+            
+            &.completed {
+              border-color: rgba(34, 197, 94, 0.3);
+              background: rgba(34, 197, 94, 0.05);
+            }
+            
+            &.pending {
+              opacity: 0.7;
+            }
+            
+            .sub-plan-header {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 8px;
               
-              &:hover {
-                background: rgba(102, 126, 234, 0.1);
-                border-color: rgba(102, 126, 234, 0.2);
-              }
-              
-              &.running {
-                border-color: rgba(102, 126, 234, 0.3);
-                background: rgba(102, 126, 234, 0.08);
-                box-shadow: 0 0 8px rgba(102, 126, 234, 0.15);
-              }
-              
-              &.completed {
-                border-color: rgba(34, 197, 94, 0.3);
-                background: rgba(34, 197, 94, 0.05);
-              }
-              
-              &.pending {
-                opacity: 0.7;
-              }
-              
-              .sub-plan-header {
+              .sub-plan-info {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                margin-bottom: 8px;
+                gap: 8px;
+                flex: 1;
                 
-                .sub-plan-info {
+                .sub-plan-status-icon {
+                  font-size: 16px;
+                  
+                  &.completed {
+                    color: #22c55e;
+                  }
+                  
+                  &.running {
+                    color: #667eea;
+                  }
+                  
+                  &.in-progress {
+                    color: #fbbf24;
+                  }
+                  
+                  &.pending {
+                    color: #9ca3af;
+                  }
+                }
+                
+                .sub-plan-details {
+                  .sub-plan-title {
+                    font-weight: 600;
+                    color: #ffffff;
+                    font-size: 13px;
+                    margin-bottom: 2px;
+                  }
+                  
+                  .sub-plan-id {
+                    color: #aaaaaa;
+                    font-size: 11px;
+                    font-family: monospace;
+                  }
+                }
+              }
+              
+              .sub-plan-status-badge {
+                padding: 2px 6px;
+                border-radius: 8px;
+                font-size: 10px;
+                font-weight: 500;
+                
+                &.completed {
+                  background: rgba(34, 197, 94, 0.2);
+                  color: #22c55e;
+                }
+                
+                &.running {
+                  background: rgba(102, 126, 234, 0.2);
+                  color: #667eea;
+                }
+                
+                &.in-progress {
+                  background: rgba(251, 191, 36, 0.2);
+                  color: #fbbf24;
+                }
+                
+                &.pending {
+                  background: rgba(156, 163, 175, 0.2);
+                  color: #9ca3af;
+                }
+              }
+            }
+            
+            .sub-plan-progress {
+              margin-bottom: 8px;
+              
+              .progress-bar-container {
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 4px;
+                height: 4px;
+                overflow: hidden;
+                
+                .progress-bar {
+                  height: 100%;
+                  background: linear-gradient(90deg, #667eea, #764ba2);
+                  transition: width 0.3s ease;
+                  border-radius: 4px;
+                }
+              }
+              
+              .progress-text {
+                color: #aaaaaa;
+                font-size: 10px;
+                margin-top: 4px;
+              }
+            }
+            
+            .sub-plan-agents-preview {
+              .agents-preview-header {
+                color: #aaaaaa;
+                font-size: 11px;
+                margin-bottom: 6px;
+                font-weight: 500;
+              }
+              
+              .agents-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                
+                .agent-preview-item {
                   display: flex;
                   align-items: center;
-                  gap: 8px;
-                  flex: 1;
+                  gap: 4px;
+                  padding: 2px 6px;
+                  background: rgba(0, 0, 0, 0.2);
+                  border-radius: 4px;
+                  font-size: 10px;
                   
-                  .sub-plan-status-icon {
-                    font-size: 16px;
+                  .agent-icon {
+                    font-size: 10px;
                     
                     &.completed {
                       color: #22c55e;
@@ -956,128 +1050,17 @@ initializeExpandedState()
                       color: #667eea;
                     }
                     
-                    &.in-progress {
-                      color: #fbbf24;
-                    }
-                    
                     &.pending {
                       color: #9ca3af;
                     }
                   }
                   
-                  .sub-plan-details {
-                    .sub-plan-title {
-                      font-weight: 600;
-                      color: #ffffff;
-                      font-size: 13px;
-                      margin-bottom: 2px;
-                    }
-                    
-                    .sub-plan-id {
-                      color: #aaaaaa;
-                      font-size: 11px;
-                      font-family: monospace;
-                    }
-                  }
-                }
-                
-                .sub-plan-status-badge {
-                  padding: 2px 6px;
-                  border-radius: 8px;
-                  font-size: 10px;
-                  font-weight: 500;
-                  
-                  &.completed {
-                    background: rgba(34, 197, 94, 0.2);
-                    color: #22c55e;
-                  }
-                  
-                  &.running {
-                    background: rgba(102, 126, 234, 0.2);
-                    color: #667eea;
-                  }
-                  
-                  &.in-progress {
-                    background: rgba(251, 191, 36, 0.2);
-                    color: #fbbf24;
-                  }
-                  
-                  &.pending {
-                    background: rgba(156, 163, 175, 0.2);
-                    color: #9ca3af;
-                  }
-                }
-              }
-              
-              .sub-plan-progress {
-                margin-bottom: 8px;
-                
-                .progress-bar-container {
-                  background: rgba(0, 0, 0, 0.2);
-                  border-radius: 4px;
-                  height: 4px;
-                  overflow: hidden;
-                  
-                  .progress-bar {
-                    height: 100%;
-                    background: linear-gradient(90deg, #667eea, #764ba2);
-                    transition: width 0.3s ease;
-                    border-radius: 4px;
-                  }
-                }
-                
-                .progress-text {
-                  color: #aaaaaa;
-                  font-size: 10px;
-                  margin-top: 4px;
-                }
-              }
-              
-              .sub-plan-agents-preview {
-                .agents-preview-header {
-                  color: #aaaaaa;
-                  font-size: 11px;
-                  margin-bottom: 6px;
-                  font-weight: 500;
-                }
-                
-                .agents-list {
-                  display: flex;
-                  flex-wrap: wrap;
-                  gap: 4px;
-                  
-                  .agent-preview-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                    padding: 2px 6px;
-                    background: rgba(0, 0, 0, 0.2);
-                    border-radius: 4px;
-                    font-size: 10px;
-                    
-                    .agent-icon {
-                      font-size: 10px;
-                      
-                      &.completed {
-                        color: #22c55e;
-                      }
-                      
-                      &.running {
-                        color: #667eea;
-                      }
-                      
-                      &.pending {
-                        color: #9ca3af;
-                      }
-                    }
-                    
-                    .agent-text {
-                      color: #cccccc;
-                      max-width: 80px;
-                      overflow: hidden;
-                      text-overflow: ellipsis;
-                      white-space: nowrap;
-                    }
+                  .agent-text {
+                    color: #cccccc;
+                    max-width: 80px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
                   }
                 }
               }

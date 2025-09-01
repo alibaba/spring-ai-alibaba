@@ -38,6 +38,7 @@
         @agent-selected="handleAgentSelected"
         @sub-plan-selected="handleSubPlanSelected"
         @user-input-submitted="handleUserInputSubmit"
+        @step-selected="handleStepSelected"
       />
 
       <!-- Display the default processing state only when there is no final content -->
@@ -78,6 +79,7 @@ interface Emits {
   (e: 'agent-selected', agentIndex: number, agent: AgentExecutionRecord): void
   (e: 'sub-plan-selected', agentIndex: number, subPlanIndex: number, subPlan: PlanExecutionRecord): void
   (e: 'user-input-submitted', inputData: any): void
+  (e: 'step-selected', stepId: string): void
 }
 
 const props = defineProps<Props>()
@@ -101,6 +103,10 @@ const handleSubPlanSelected = (agentIndex: number, subPlanIndex: number, subPlan
 
 const handleUserInputSubmit = (inputData: any) => {
   emit('user-input-submitted', inputData)
+}
+
+const handleStepSelected = (stepId: string) => {
+  emit('step-selected', stepId)
 }
 </script>
 

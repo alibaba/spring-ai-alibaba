@@ -31,6 +31,7 @@
         @copy="handleCopyMessage"
         @regenerate="handleRegenerateMessage"
         @retry="handleRetryMessage"
+        @step-selected="handleStepSelected"
       />
       
       <!-- Loading indicator -->
@@ -76,6 +77,10 @@ interface Props {
   initialPrompt?: string
 }
 
+interface Emits {
+  (e: 'step-selected', stepId: string): void
+}
+
 // Simple input message interface for demo
 interface InputMessage {
   input: string
@@ -86,6 +91,8 @@ const props = withDefaults(defineProps<Props>(), {
   mode: 'plan',
   initialPrompt: ''
 })
+
+const emit = defineEmits<Emits>()
 
 // Initialize composables
 const { t } = useI18n()
@@ -184,6 +191,11 @@ const handleRetryMessage = (messageId: string) => {
     startStreaming(messageId)
     // Trigger retry logic here
   }
+}
+
+const handleStepSelected = (stepId: string) => {
+  console.log('[ChatContainer] Step selected:', stepId)
+  emit('step-selected', stepId)
 }
 
 // Message handling methods
