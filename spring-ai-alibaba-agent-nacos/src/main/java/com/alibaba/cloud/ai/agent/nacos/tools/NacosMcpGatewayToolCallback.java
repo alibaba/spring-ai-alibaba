@@ -16,13 +16,14 @@
 
 package com.alibaba.cloud.ai.agent.nacos.tools;
 
-import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
 import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolDefinition;
 import com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate.RequestTemplateInfo;
 import com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate.RequestTemplateParser;
@@ -72,6 +73,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 
 	private final WebClient.Builder webClientBuilder;
 
+	private McpServersVO.McpServerVO mcpServerVO;
 	static ObjectMapper objectMapper = new ObjectMapper();
 
 	static {
@@ -79,11 +81,11 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 		objectMapper.setSerializationInclusion(Include.NON_NULL);
 	}
 
-	public NacosMcpGatewayToolCallback(final McpGatewayToolDefinition toolDefinition, NacosMcpOperationService nacosMcpOperationService) {
+	public NacosMcpGatewayToolCallback(final McpGatewayToolDefinition toolDefinition, NacosMcpOperationService nacosMcpOperationService, McpServersVO.McpServerVO mcpServerVO) {
 		this.webClientBuilder = null;
 		this.toolDefinition = (NacosMcpGatewayToolDefinition) toolDefinition;
 		this.nacosMcpOperationService = nacosMcpOperationService;
-
+		this.mcpServerVO = mcpServerVO;
 		// 尝试获取配置属性
 		// try {
 		// NacosMcpGatewayProperties properties = SpringBeanUtils.getInstance()
@@ -482,17 +484,18 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			String exportPath = remoteServerConfig.getExportPath();
 
 			// 构建基础URL，根据协议类型调整
-			String baseUrl;
+
+			StringBuilder baseUrl;
 			if ("mcp-sse".equalsIgnoreCase(protocol)) {
-				baseUrl = "https://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
+				baseUrl = new StringBuilder("https://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort());
 			}
 			else {
 				// mcp-streamable 或其他协议
-				baseUrl = "https://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
+				baseUrl = new StringBuilder("https://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort());
 			}
 
 			logger.info("[handleMcpStreamProtocol] Processing {} protocol with args: {} and baseUrl: {}", protocol,
-					args, baseUrl);
+					args, baseUrl.toString());
 
 			try {
 				// 获取工具名称 - 从工具定义名称中提取实际的工具名称
@@ -517,24 +520,36 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				}
 
 				// 构建传输层
-				String sseEndpoint = "/sse";
+				StringBuilder sseEndpoint = new StringBuilder("/sse");
 				if (exportPath != null && !exportPath.isEmpty()) {
-					sseEndpoint = exportPath;
+					sseEndpoint = new StringBuilder(exportPath);
+					if (mcpServerVO.getPassQueryParams() != null) {
+
+
+						if (!sseEndpoint.toString().contains("?")) {
+							sseEndpoint.append("?");
+						}
+						Iterator<Map.Entry<String, String>> iterator = mcpServerVO.getPassQueryParams().entrySet()
+								.iterator();
+						while (iterator.hasNext()) {
+							Map.Entry<String, String> next = iterator.next();
+							sseEndpoint.append(next.getKey()).append("=").append(next.getValue())
+									.append(iterator.hasNext() ? "&" : "");
+						}
+					}
 				}
 
-				HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl)
-						.sseEndpoint(sseEndpoint);
+				HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl.toString())
+						.sseEndpoint(sseEndpoint.toString());
 
 				// 添加自定义请求头（如果需要）
 				// 这里可以根据需要添加认证头等
-
 				HttpClientSseClientTransport transport = transportBuilder.build();
 
 				// 创建MCP同步客户端
 				McpSyncClient client = McpClient.sync(transport).build();
 
 				try {
-					System.out.println(new Date()+"1111");
 					// 初始化客户端
 					InitializeResult initializeResult = client.initialize();
 					logger.info("[handleMcpStreamProtocol] MCP Client initialized: {}", initializeResult);
@@ -569,8 +584,6 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 					throw new RuntimeException(e);
 				}
 				finally {
-					System.out.println(new Date()+"222");
-
 					// 清理资源
 					try {
 						if (client != null) {

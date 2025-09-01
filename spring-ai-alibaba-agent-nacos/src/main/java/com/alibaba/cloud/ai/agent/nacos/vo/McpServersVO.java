@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.agent.nacos.vo;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import lombok.Data;
@@ -17,7 +18,11 @@ public class McpServersVO {
 
 		String version;
 
-		Set<String> blackTools;
+		Set<String> whiteTools;
+
+		Map<String, String> passHeaders;
+
+		Map<String, String> passQueryParams;
 
 	}
 

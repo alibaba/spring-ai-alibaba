@@ -16,18 +16,24 @@
 
 package com.alibaba.cloud.ai.agent.nacos;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+import ch.qos.logback.classic.Level;
+import com.alibaba.cloud.ai.agent.nacos.tools.NacosMcpGatewayToolCallback;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
 class ReactAgentNacosTest {
@@ -36,6 +42,11 @@ class ReactAgentNacosTest {
 
 	@BeforeEach
 	void setUp() {
+		System.setProperty("logging.level.com.alibaba.", "ERROR");
+		((ch.qos.logback.classic.Logger)LoggerFactory.getLogger(NacosMcpGatewayToolCallback.class)).setLevel(Level.ERROR);
+		((ch.qos.logback.classic.Logger)LoggerFactory.getLogger("com.alibaba.nacos")).setLevel(Level.ERROR);
+		((ch.qos.logback.classic.Logger)LoggerFactory.getLogger("io.modelcontextprotocol")).setLevel(Level.ERROR);
+
 		properties = new Properties();
 		properties.put("serverAddr", "127.0.0.1:8848");
 		properties.put("namespace", "71ced124-cb8e-4c2e-9ad1-f124a6f77a93");
@@ -48,13 +59,15 @@ class ReactAgentNacosTest {
 		ReactAgent agent = ((NacosReactAgentBuilder) ReactAgent.builder(new NacosAgentBuilderFactory())).nacosOptions(
 				nacosOptions).build();
 
-		//Thread.sleep(15000L);
-		for (int i = 0; i < 20; i++) {
+		for (int i = 0; i < 100; i++) {
+			System.out.println("第" + (i+1) + "轮");
 			var runnableConfig = RunnableConfig.builder().threadId(UUID.randomUUID().toString()).build();
 			try {
 				Optional<OverAllState> result = agent.invoke(
-						Map.of("messages", List.of(new UserMessage("介绍下沈从文。在回答的最后顺便告诉现在阿里巴巴的股价"))), runnableConfig);
-				System.out.println(result.get().data());
+						Map.of("messages", List.of(new UserMessage("我现在在哪个区"))), runnableConfig);
+				//System.out.println(result.get().data());
+
+				System.out.println(((ArrayList)(result.get().data().get("messages"))).stream().filter(a->a instanceof AssistantMessage&&((AssistantMessage) a).getToolCalls().isEmpty()).collect(Collectors.toList()));
 			}
 			catch (Throwable throwable) {
 				throwable.printStackTrace();

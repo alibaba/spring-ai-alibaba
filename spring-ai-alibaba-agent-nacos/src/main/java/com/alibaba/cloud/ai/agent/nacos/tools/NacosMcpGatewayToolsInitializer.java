@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.definition.NacosMcpGatewayToolDefinition;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
@@ -42,10 +43,13 @@ public class NacosMcpGatewayToolsInitializer {
 
 	private final NacosMcpOperationService nacosMcpOperationService;
 
+	private List<McpServersVO.McpServerVO> mcpServers;
+
 	public NacosMcpGatewayToolsInitializer(NacosMcpOperationService nacosMcpOperationService,
-			NacosMcpGatewayProperties nacosMcpGatewayProperties) {
+			NacosMcpGatewayProperties nacosMcpGatewayProperties, List<McpServersVO.McpServerVO> mcpServers) {
 		this.nacosMcpGatewayProperties = nacosMcpGatewayProperties;
 		this.nacosMcpOperationService = nacosMcpOperationService;
+		this.mcpServers = mcpServers;
 	}
 
 	public List<ToolCallback> initializeTools() {
@@ -55,7 +59,8 @@ public class NacosMcpGatewayToolsInitializer {
 			return new ArrayList<>();
 		}
 		List<ToolCallback> allTools = new ArrayList<>();
-		for (String serviceName : serviceNames) {
+		for (McpServersVO.McpServerVO serverVO : mcpServers) {
+			String serviceName = serverVO.getMcpServerName();
 			try {
 				McpServerDetailInfo serviceDetail = nacosMcpOperationService.getServerDetail(serviceName);
 				if (serviceDetail == null) {
@@ -65,7 +70,7 @@ public class NacosMcpGatewayToolsInitializer {
 				String protocol = serviceDetail.getProtocol();
 				if ("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)
 						|| "mcp-sse".equalsIgnoreCase(protocol) || "mcp-streamable".equalsIgnoreCase(protocol)) {
-					List<ToolCallback> tools = parseToolsFromMcpServerDetailInfo(serviceDetail);
+					List<ToolCallback> tools = parseToolsFromMcpServerDetailInfo(serviceDetail, serverVO);
 					if (CollectionUtils.isEmpty(tools)) {
 						logger.warn("No tools defined for service: {}", serviceName);
 						continue;
@@ -88,7 +93,7 @@ public class NacosMcpGatewayToolsInitializer {
 		return allTools;
 	}
 
-	private List<ToolCallback> parseToolsFromMcpServerDetailInfo(McpServerDetailInfo mcpServerDetailInfo) {
+	private List<ToolCallback> parseToolsFromMcpServerDetailInfo(McpServerDetailInfo mcpServerDetailInfo, McpServersVO.McpServerVO serverVO) {
 		try {
 			McpToolSpecification toolSpecification = mcpServerDetailInfo.getToolSpec();
 			String protocol = mcpServerDetailInfo.getProtocol();
@@ -101,6 +106,11 @@ public class NacosMcpGatewayToolsInitializer {
 					return new ArrayList<>();
 				}
 				for (McpTool tool : toolsList) {
+
+					if (!CollectionUtils.isEmpty(serverVO.getWhiteTools()) && !serverVO.getWhiteTools()
+							.contains(tool.getName())) {
+						continue;
+					}
 					String toolName = tool.getName();
 					String toolDescription = tool.getDescription();
 					Map<String, Object> inputSchema = tool.getInputSchema();
@@ -118,7 +128,7 @@ public class NacosMcpGatewayToolsInitializer {
 							.remoteServerConfig(mcpServerRemoteServiceConfig)
 							.toolsMeta(metaInfo)
 							.build();
-					toolCallbacks.add(new NacosMcpGatewayToolCallback(toolDefinition, nacosMcpOperationService));
+					toolCallbacks.add(new NacosMcpGatewayToolCallback(toolDefinition, nacosMcpOperationService, serverVO));
 				}
 			}
 			return toolCallbacks;

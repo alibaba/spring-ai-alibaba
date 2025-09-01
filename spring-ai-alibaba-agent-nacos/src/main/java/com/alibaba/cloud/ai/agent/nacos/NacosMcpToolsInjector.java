@@ -1,8 +1,6 @@
 package com.alibaba.cloud.ai.agent.nacos;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.agent.nacos.tools.NacosMcpGatewayToolsInitializer;
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
@@ -10,10 +8,8 @@ import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.alibaba.nacos.api.exception.NacosException;
-import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +27,7 @@ public class NacosMcpToolsInjector {
 		return null;
 	}
 
-	public static void registry(LlmNode llmNode,ToolNode toolNode,NacosOptions nacosOptions, String agentId)  {
+	public static void registry(LlmNode llmNode, ToolNode toolNode, NacosOptions nacosOptions, String agentId) {
 
 		try {
 			nacosOptions.getNacosConfigService()
@@ -40,7 +36,7 @@ public class NacosMcpToolsInjector {
 						public void receiveConfigInfo(String configInfo) {
 							McpServersVO mcpServersVO = JSON.parseObject(configInfo, McpServersVO.class);
 							List<ToolCallback> toolCallbacks = convert(nacosOptions, mcpServersVO);
-							if (toolCallbacks!=null){
+							if (toolCallbacks != null) {
 								toolNode.setToolCallbacks(toolCallbacks);
 								llmNode.setToolCallbacks(toolCallbacks);
 							}
@@ -67,10 +63,11 @@ public class NacosMcpToolsInjector {
 
 	public static List<ToolCallback> convert(NacosOptions nacosOptions, McpServersVO mcpServersVO) {
 
-		NacosMcpGatewayProperties nacosMcpGatewayProperties=new NacosMcpGatewayProperties();
-		nacosMcpGatewayProperties.setServiceNames(mcpServersVO.getMcpServers().stream().map(McpServersVO.McpServerVO::getMcpServerName).toList());
+		NacosMcpGatewayProperties nacosMcpGatewayProperties = new NacosMcpGatewayProperties();
+		nacosMcpGatewayProperties.setServiceNames(mcpServersVO.getMcpServers().stream()
+				.map(McpServersVO.McpServerVO::getMcpServerName).toList());
 		NacosMcpGatewayToolsInitializer nacosMcpGatewayToolsInitializer = new NacosMcpGatewayToolsInitializer(
-				nacosOptions.mcpOperationService, nacosMcpGatewayProperties);
+				nacosOptions.mcpOperationService, nacosMcpGatewayProperties, mcpServersVO.getMcpServers());
 		List<ToolCallback> toolCallbacks = nacosMcpGatewayToolsInitializer.initializeTools();
 
 		return toolCallbacks;
