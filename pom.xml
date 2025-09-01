@@ -51,6 +51,7 @@
         <!-- Spring AI Alibaba Modules -->
         <module>spring-ai-alibaba-bom</module>
         <module>spring-ai-alibaba-mcp</module>
+        <module>spring-ai-alibaba-a2a</module>
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-prompt</module>
         <module>spring-ai-alibaba-graph-core</module>
@@ -174,6 +175,9 @@
         <!-- Spring AI Alibaba Graph Observation -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-graph-observation</module>
 
+        <!-- Sprint AI Alibaba A2A Server -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-server</module>
+
         <!-- Spring AI Alibaba Spring Boot Starters -->
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
@@ -184,6 +188,8 @@
 
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>
+
     </modules>
 
     <scm>
@@ -268,6 +274,8 @@
         <poi.version>5.4.0</poi.version>
 
         <mcp.version>0.10.0</mcp.version>
+
+        <a2a-sdk.version>0.2.5</a2a-sdk.version>
 
         <opentelemetry.version>1.38.0</opentelemetry.version>
 

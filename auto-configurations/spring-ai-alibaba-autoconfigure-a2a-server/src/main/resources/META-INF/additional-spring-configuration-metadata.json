@@ -1,0 +1,48 @@
+{
+  "groups": [
+    {
+      "name": "spring.ai.alibaba.a2a.server",
+      "type": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "description": "Configuration properties for A2A Server."
+    }
+  ],
+  "properties": [
+    {
+      "name": "spring.ai.alibaba.a2a.server.type",
+      "type": "java.lang.String",
+      "description": "Type of A2A Server, enum of `jsonrpc`, `grpc`, `rest`.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "defaultValue": "jsonrpc"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.agent-card-url",
+      "type": "java.lang.String",
+      "description": "The agent card well known url.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "defaultValue": "/.well-known/agent.json"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.message-url",
+      "type": "java.lang.String",
+      "description": "The basic context path url for request A2A server.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "defaultValue": "/a2a"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.address",
+      "type": "java.lang.String",
+      "description": "The server address for request A2A server.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "defaultValue": "${server.address}"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.port",
+      "type": "java.lang.Integer",
+      "description": "The server port for request A2A server.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "defaultValue": "${server.port}"
+    }
+  ],
+  "hints": []
+}
