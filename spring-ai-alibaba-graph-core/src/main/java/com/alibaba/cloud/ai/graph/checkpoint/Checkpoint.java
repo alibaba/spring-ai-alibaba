@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.graph.checkpoint;
 
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 import java.util.UUID;
@@ -60,7 +62,9 @@ public class Checkpoint {
 		return new Checkpoint(UUID.randomUUID().toString(), checkpoint.state, checkpoint.nodeId, checkpoint.nextNodeId);
 	}
 
-	private Checkpoint(String id, Map<String, Object> state, String nodeId, String nextNodeId) {
+	@JsonCreator
+	private Checkpoint(@JsonProperty("id") String id, @JsonProperty("state") Map<String, Object> state,
+			@JsonProperty("nodeId") String nodeId, @JsonProperty("nextNodeId") String nextNodeId) {
 
 		this.id = requireNonNull(id, "id cannot be null");
 		this.state = requireNonNull(state, "state cannot be null");
