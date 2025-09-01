@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder.ActTool
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionStep;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.ThinkActRecord;
+import com.alibaba.cloud.ai.manus.recorder.entity.vo.ActToolInfo;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.ExecutionStatus;
 import java.util.ArrayList;
 
@@ -681,8 +682,17 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 
 				// Convert ActToolInfoEntity to ActToolInfo if available
 				if (entity.getActToolInfoList() != null && !entity.getActToolInfoList().isEmpty()) {
-					// Note: You'll need to implement ActToolInfo conversion
-					// For now, we'll set actionNeeded to true if there are tools
+					List<ActToolInfo> actToolInfoList = new ArrayList<>();
+					for (ActToolInfoEntity toolInfoEntity : entity.getActToolInfoList()) {
+						ActToolInfo actToolInfo = new ActToolInfo(
+							toolInfoEntity.getName(),
+							toolInfoEntity.getParameters(),
+							toolInfoEntity.getToolCallId()
+						);
+						actToolInfo.setResult(toolInfoEntity.getResult());
+						actToolInfoList.add(actToolInfo);
+					}
+					record.setActToolInfoList(actToolInfoList);
 					record.setActionNeeded(true);
 				}
 

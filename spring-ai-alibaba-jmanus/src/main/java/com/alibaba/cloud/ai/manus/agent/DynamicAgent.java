@@ -229,14 +229,17 @@ public class DynamicAgent extends ReActAgent {
 
 			// Get execution result of the last tool
 			List<String> resultList = new ArrayList<>();
+			boolean shouldTerminate = false;
+			int executedToolCount = 0;
+			
 			if (!toolResponseMessage.getResponses().isEmpty()) {
-				int index = 0;
 				for (ToolResponseMessage.ToolResponse toolCallResponse : toolResponseMessage.getResponses()) {
-					ToolCall toolCall = toolCalls.get(index);
+					ToolCall toolCall = toolCalls.get(executedToolCount);
 					String toolName = toolCall.name();
-					ActToolParam param = actToolInfoList.get(index);
+					ActToolParam param = actToolInfoList.get(executedToolCount);
 
 					ToolCallBiFunctionDef<?> toolInstance = getToolCallBackContext(toolName).getFunctionInstance();
+					
 					if (toolInstance instanceof FormInputTool) {
 						AgentExecResult formResult = handleFormInputTool((FormInputTool) toolInstance, param);
 						param.setResult(formResult.getResult());
@@ -244,17 +247,18 @@ public class DynamicAgent extends ReActAgent {
 					}
 					else if (toolInstance instanceof TerminableTool) {
 						TerminableTool terminableTool = (TerminableTool) toolInstance;
+						param.setResult(toolCallResponse.responseData());
+						resultList.add(param.getResult());
+						
 						if (terminableTool.canTerminate()) {
 							log.info("TerminableTool can terminate for planId: {}", getCurrentPlanId());
 							userInputService.removeFormInputTool(getCurrentPlanId());
-							param.setResult(toolCallResponse.responseData());
-							resultList.add(param.getResult());
-							break;
+							shouldTerminate = true;
+							executedToolCount++;
+							break; // Stop processing remaining tools when termination is indicated
 						}
 						else {
 							log.info("TerminableTool cannot terminate yet for planId: {}", getCurrentPlanId());
-							param.setResult(toolCallResponse.responseData());
-							resultList.add(param.getResult());
 						}
 					}
 					else {
@@ -262,17 +266,16 @@ public class DynamicAgent extends ReActAgent {
 						resultList.add(toolCallResponse.responseData());
 						log.info("Tool {} executed successfully for planId: {}", toolName, getCurrentPlanId());
 					}
-					index++;
+					executedToolCount++;
 				}
-				if (index == toolCalls.size()) {
-					recordActionResult(actToolInfoList);
-					return new AgentExecResult(resultList.toString(), AgentState.COMPLETED);
-				}
-				else {
-					List<ActToolParam> executedTools = actToolInfoList.subList(0, index);
-					recordActionResult(executedTools);
-					return new AgentExecResult(resultList.toString(), AgentState.COMPLETED);
-				}
+
+				// Record the results of executed tools
+				List<ActToolParam> executedTools = actToolInfoList.subList(0, executedToolCount);
+				recordActionResult(executedTools);
+				
+				// Return result with appropriate state
+				return new AgentExecResult(resultList.toString(), 
+					shouldTerminate ? AgentState.COMPLETED : AgentState.IN_PROGRESS);
 			}
 			return new AgentExecResult("tool call is empty", AgentState.IN_PROGRESS);
 
