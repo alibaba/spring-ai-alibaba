@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.App;
 import com.alibaba.cloud.ai.studio.admin.generator.model.AppModeEnum;
@@ -111,7 +112,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 		boolean hasCode = nodes.stream().map(Node::getData).anyMatch(nd -> nd instanceof CodeNodeData);
 
-		String stateSectionStr = renderStateSections(workflow.getWorkflowVars());
+		String stateSectionStr = renderStateSections(
+				Stream.of(workflow.getWorkflowVars(), workflow.getEnvVars()).flatMap(List::stream).toList());
 		String nodeSectionStr = renderNodeSections(nodes, varNames);
 		String edgeSectionStr = renderEdgeSections(workflow.getGraph().getEdges(), nodes, varNames);
 
@@ -131,7 +133,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		String template = """
 				() -> {
 				  Map<String, KeyStrategy> strategies = new HashMap<>();
-				  strategies.put("sys_query", (o1, o2) -> o2);
 				  %s
 				  return strategies;
 				}

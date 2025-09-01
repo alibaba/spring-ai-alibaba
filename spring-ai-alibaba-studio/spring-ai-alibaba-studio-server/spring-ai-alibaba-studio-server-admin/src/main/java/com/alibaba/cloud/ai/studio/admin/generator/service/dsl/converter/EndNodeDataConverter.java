@@ -90,7 +90,7 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 			@Override
 			public EndNodeData parse(Map<String, Object> data) throws JsonProcessingException {
 				EndNodeData nodeData = new EndNodeData();
-				// TODO: 支持文本输出
+
 				String outputType = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param",
 						"output_type");
 				nodeData.setOutputType(outputType);
@@ -156,16 +156,17 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 		super.postProcessOutput(data, varName);
 	}
 
-    @Override
-    public BiConsumer<EndNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
-        return switch (dialectType) {
-            case STUDIO -> super.postProcessConsumer(dialectType)
-                    .andThen((nodeData, idToVarName) -> {
-                        // 格式化textTemplate
-                        BiFunction<String, Map<String, String>, String> converted = NodeDataConverter.convertVarReserveFunction(dialectType);
-                        nodeData.setTextTemplate(converted.apply(nodeData.getTextTemplate(), idToVarName));
-                    });
-            default -> super.postProcessConsumer(dialectType);
-        };
-    }
+	@Override
+	public BiConsumer<EndNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case STUDIO -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
+				// 格式化textTemplate
+				BiFunction<String, Map<String, String>, String> converted = NodeDataConverter
+					.convertVarReserveFunction(dialectType);
+				nodeData.setTextTemplate(converted.apply(nodeData.getTextTemplate(), idToVarName));
+			});
+			default -> super.postProcessConsumer(dialectType);
+		};
+	}
+
 }

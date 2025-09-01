@@ -25,7 +25,7 @@ public class Variable {
 
 	private String name;
 
-	private String value;
+	private Object value;
 
 	// todo: use VariableType Enum
 	private String valueType;
@@ -56,11 +56,11 @@ public class Variable {
 		return this;
 	}
 
-	public String getValue() {
+	public Object getValue() {
 		return value;
 	}
 
-	public Variable setValue(String value) {
+	public Variable setValue(Object value) {
 		this.value = value;
 		return this;
 	}
