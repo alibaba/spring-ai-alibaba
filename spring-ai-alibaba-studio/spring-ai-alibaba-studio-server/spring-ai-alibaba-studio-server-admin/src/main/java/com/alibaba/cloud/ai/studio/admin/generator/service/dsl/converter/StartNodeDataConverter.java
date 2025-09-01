@@ -132,6 +132,10 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 
 	@Override
 	public String generateVarName(int count) {
+		// 让输入变量名称为start_xxx，方便用户理解
+		if (count == 1) {
+			return "start";
+		}
 		return "startNode" + count;
 	}
 
