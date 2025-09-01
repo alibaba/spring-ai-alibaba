@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.memory.mem0.mem0;
+package com.alibaba.cloud.ai.memory.mem0.core;
 
+import com.alibaba.cloud.ai.memory.mem0.advisor.Mem0ChatMemoryAdvisor;
+import com.alibaba.cloud.ai.memory.mem0.model.Mem0ServerRequest;
+import com.alibaba.cloud.ai.memory.mem0.model.Mem0ServerResp;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

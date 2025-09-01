@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.memory.mem0.config;
 
-import com.alibaba.cloud.ai.memory.mem0.mem0.Mem0MemoryStore;
-import com.alibaba.cloud.ai.memory.mem0.mem0.Mem0ServiceClient;
+import com.alibaba.cloud.ai.memory.mem0.core.Mem0MemoryStore;
+import com.alibaba.cloud.ai.memory.mem0.core.Mem0ServiceClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.vectorstore.VectorStore;

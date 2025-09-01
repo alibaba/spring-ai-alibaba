@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.memory.mem0.mem0;
+package com.alibaba.cloud.ai.memory.mem0.core;
 
 import com.alibaba.cloud.ai.memory.mem0.config.Mem0ChatMemoryProperties;
+import com.alibaba.cloud.ai.memory.mem0.model.Mem0ServerRequest;
+import com.alibaba.cloud.ai.memory.mem0.model.Mem0ServerResp;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -151,7 +153,7 @@ public class Mem0ServiceClient {
 			throw new RuntimeException("Failed to add memory: " + errorBody, e);
 		}
 		catch (Exception e) {
-			logger.error("UNKNOW error adding memory: {}", e.getMessage(), e);
+			logger.error("UNKNOWN error adding memory: {}", e.getMessage(), e);
 			throw new RuntimeException("Failed to add memory", e);
 		}
 

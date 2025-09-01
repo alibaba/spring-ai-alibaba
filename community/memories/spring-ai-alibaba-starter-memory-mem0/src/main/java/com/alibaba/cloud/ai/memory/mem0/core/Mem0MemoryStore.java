@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.memory.mem0.mem0;
+package com.alibaba.cloud.ai.memory.mem0.core;
 
+import com.alibaba.cloud.ai.memory.mem0.model.Mem0ServerRequest;
+import com.alibaba.cloud.ai.memory.mem0.model.Mem0ServerResp;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -32,7 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.alibaba.cloud.ai.memory.mem0.mem0.Mem0ChatMemoryAdvisor.*;
+import static com.alibaba.cloud.ai.memory.mem0.advisor.Mem0ChatMemoryAdvisor.*;
 
 /**
  * @author miaoyumeng
