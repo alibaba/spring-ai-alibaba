@@ -170,7 +170,7 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 			converter.postProcessOutput(data, varName);
 
 			// 获得处理输入变量名称的Consumer，当所有节点都处理完时使用
-			postProcessConsumers.put(data.getClass(), converter.postProcessConsumer(DSLDialectType.DIFY));
+			postProcessConsumers.put(data.getClass(), converter.postProcessConsumer(DSLDialectType.STUDIO));
 
 			node.setData(data);
 			node.setType(nodeType.value());
