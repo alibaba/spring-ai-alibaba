@@ -85,7 +85,7 @@ public abstract class FlowAgent extends BaseAgent {
 			this.compiledGraph = getAndCompileGraph();
 		}
 		return node_async(
-				new ReactAgent.SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
+				new ReactAgent.SubGraphStreamingNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
 	}
 
 	@Override
