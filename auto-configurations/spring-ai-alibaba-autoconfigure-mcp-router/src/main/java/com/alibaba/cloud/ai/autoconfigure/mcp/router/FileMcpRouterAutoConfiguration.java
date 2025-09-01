@@ -29,17 +29,19 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableConfigurationProperties(McpRouterProperties.class)
-@ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class FileMcpRouterAutoConfiguration {
 
-    private static final Logger log = LoggerFactory.getLogger(FileMcpRouterAutoConfiguration.class);
+	private static final Logger log = LoggerFactory.getLogger(FileMcpRouterAutoConfiguration.class);
 
-    @Value("${spring.ai.dashscope.api-key:default_api_key}")
-    private String apiKey;
+	@Value("${spring.ai.dashscope.api-key:default_api_key}")
+	private String apiKey;
 
-    @Bean
-    @ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "discovery-type", havingValue = "file")
-    public McpServiceDiscovery fileConfigMcpServiceDiscovery(McpRouterProperties properties) {
-        return new FileConfigMcpServiceDiscovery(properties);
-    }
+	@Bean
+	@ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "discovery-type", havingValue = "file")
+	public McpServiceDiscovery fileConfigMcpServiceDiscovery(McpRouterProperties properties) {
+		return new FileConfigMcpServiceDiscovery(properties);
+	}
+
 }
