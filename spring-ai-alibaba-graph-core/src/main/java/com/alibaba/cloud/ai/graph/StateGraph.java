@@ -400,11 +400,13 @@ public class StateGraph {
 	 * @throws GraphStateException if there are errors related to the graph state
 	 */
 	void validateGraph() throws GraphStateException {
+		for (var node : nodes.elements) {
+			node.validate();
+		}
+
 		var edgeStart = edges.edgeBySourceId(START).orElseThrow(Errors.missingEntryPoint::exception);
 
 		edgeStart.validate(nodes);
-
-		validateNode(nodes);
 
 		for (Edge edge : edges.elements) {
 			edge.validate(nodes);

@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.utils.TypeRef;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -36,6 +38,33 @@ public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 	 * Prefix used to indicate an interrupt node.
 	 */
 	String INTERRUPT_PREFIX = "__NODE_INTERRUPT__";
+
+	/**
+	 * Returns a type-safe metadata value for the given key.
+	 * <p>
+	 * This method retrieves the metadata object and attempts to cast it to the specified
+	 * type.
+	 * @param <T> the type of the metadata value
+	 * @param key the metadata key
+	 * @param typeRef a {@link TypeRef} representing the desired type of the value
+	 * @return an {@link Optional} containing the metadata value cast to the specified
+	 * type, or an empty {@link Optional} if the key is not found or the value cannot be
+	 * cast.
+	 */
+	default <T> Optional<T> metadata(String key, TypeRef<T> typeRef) {
+		return metadata(key).flatMap(typeRef::cast);
+	}
+
+	/**
+	 * return metadata value for key
+	 * @param key given metadata key
+	 * @return metadata value for key if any
+	 * @deprecated use {@link #metadata(String)} instead
+	 */
+	@Deprecated(forRemoval = true)
+	default Optional<Object> getMetadata(String key) {
+		return metadata(key);
+	};
 
 	/**
 	 * Formats a node ID by prefixing it with the interrupt prefix. The formatted node ID
@@ -60,7 +89,9 @@ public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 		}
 
 		protected Builder(Map<String, Object> metadata) {
-			this.metadata = metadata;
+			if (metadata != null && !metadata.isEmpty()) {
+				this.metadata = new HashMap<>(metadata);
+			}
 		}
 
 		@SuppressWarnings("unchecked")

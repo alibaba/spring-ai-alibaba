@@ -353,10 +353,7 @@ public class StateGraphMemorySaverTest {
 		var saver = new MemorySaver();
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), saver)
-				.type(SaverEnum.MEMORY.getValue())
-				.build())
+			.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
 			.interruptBefore("tools")
 			.build();
 
@@ -374,8 +371,9 @@ public class StateGraphMemorySaverTest {
 		assertEquals(2, results.size());
 		assertEquals(START, results.get(0).node());
 		assertEquals("agent", results.get(1).node());
-		List<String> messages = (List<String>) results.get(0).state().value("messages").get();
-		assertTrue(!messages.isEmpty());
+		List<String> messages = results.get(1).state().value("messages", List.class).get();
+		messages.get(messages.size() - 1);
+		assertTrue(messages.get(messages.size() - 1) != null);
 
 		var state = app.getState(runnableConfig);
 
@@ -390,9 +388,9 @@ public class StateGraphMemorySaverTest {
 		assertEquals("tools", results.get(0).node());
 		assertEquals("agent", results.get(1).node());
 		assertEquals(END, results.get(2).node());
-		messages = (List<String>) results.get(0).state().value("messages").get();
-		assertTrue(!messages.isEmpty());
-		assertEquals("whether in Naples is sunny", messages.get(messages.size() - 1));
+		List<String> messages2 = results.get(2).state().value("messages", List.class).get();
+		assertTrue(messages2.get(messages.size() - 1) != null);
+		assertEquals("whether in Naples is sunny", messages2.get(messages2.size() - 1));
 
 	}
 

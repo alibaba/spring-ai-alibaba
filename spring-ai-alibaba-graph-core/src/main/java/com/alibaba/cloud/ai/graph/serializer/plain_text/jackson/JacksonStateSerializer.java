@@ -57,7 +57,8 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 	private void configureObjectMapper(ObjectMapper mapper) {
 		mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
-		// Create a secure polymorphic type validator with blacklist for dangerous classes
+		// Create a secure polymorphic type validator with blacklist for dangerous
+		// classes
 		PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
 			// Allow most types by default, but deny dangerous ones
 			.allowIfBaseType(Object.class)
@@ -124,9 +125,12 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			Class<?> userMessageClass = Class.forName("org.springframework.ai.chat.messages.UserMessage");
 			Class<?> assistantMessageClass = Class.forName("org.springframework.ai.chat.messages.AssistantMessage");
 			Class<?> systemMessageClass = Class.forName("org.springframework.ai.chat.messages.SystemMessage");
+			Class<?> toolResponseMessageClass = Class
+				.forName("org.springframework.ai.chat.messages.ToolResponseMessage");
 
 			// Create unified deserializer for all Spring AI Message classes
 			SpringAIMessageDeserializer messageDeserializer = new SpringAIMessageDeserializer();
+			SpringAIToolResponseMessageDeserializer toolResponseDeserializer = new SpringAIToolResponseMessageDeserializer();
 
 			// Register custom deserializers for each message type
 			@SuppressWarnings("unchecked")
@@ -135,10 +139,13 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			Class<Object> assistantClass = (Class<Object>) assistantMessageClass;
 			@SuppressWarnings("unchecked")
 			Class<Object> systemClass = (Class<Object>) systemMessageClass;
+			@SuppressWarnings("unchecked")
+			Class<Object> toolResponseClass = (Class<Object>) toolResponseMessageClass;
 
 			springAIModule.addDeserializer(userClass, messageDeserializer);
 			springAIModule.addDeserializer(assistantClass, messageDeserializer);
 			springAIModule.addDeserializer(systemClass, messageDeserializer);
+			springAIModule.addDeserializer(toolResponseClass, toolResponseDeserializer);
 
 		}
 		catch (ClassNotFoundException e) {
@@ -342,6 +349,176 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 				return simpleName.substring(0, simpleName.length() - 7).toUpperCase();
 			}
 			return simpleName.toUpperCase();
+		}
+
+	}
+
+	/**
+	 * Custom deserializer for Spring AI ToolResponseMessage
+	 */
+	public static class SpringAIToolResponseMessageDeserializer
+			extends com.fasterxml.jackson.databind.JsonDeserializer<Object> {
+
+		@Override
+		public Object deserialize(com.fasterxml.jackson.core.JsonParser p,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+			try {
+				com.fasterxml.jackson.databind.JsonNode node = p.getCodec().readTree(p);
+
+				// Extract tool responses - support multiple field names
+				java.util.List<Object> toolResponses = extractToolResponses(node, ctxt);
+
+				// Extract metadata - support multiple field names
+				java.util.Map<String, Object> metadata = extractMetadata(node, ctxt);
+
+				// Create ToolResponseMessage using reflection
+				return createToolResponseMessage(toolResponses, metadata);
+
+			}
+			catch (Exception e) {
+				throw new com.fasterxml.jackson.databind.JsonMappingException(p,
+						"Cannot deserialize Spring AI ToolResponseMessage", e);
+			}
+		}
+
+		/**
+		 * Extract tool responses from JsonNode
+		 */
+		private java.util.List<Object> extractToolResponses(com.fasterxml.jackson.databind.JsonNode node,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+			java.util.List<Object> toolResponses = new java.util.ArrayList<>();
+
+			// Try different field names for tool responses
+			com.fasterxml.jackson.databind.JsonNode responsesNode = node.get("toolResponses");
+			if (responsesNode == null) {
+				responsesNode = node.get("responses");
+			}
+			if (responsesNode == null) {
+				responsesNode = node.get("toolResponse");
+			}
+
+			if (responsesNode != null && responsesNode.isArray()) {
+				for (com.fasterxml.jackson.databind.JsonNode responseNode : responsesNode) {
+					// Try to deserialize as ToolResponse object
+					try {
+						Class<?> toolResponseClass = Class
+							.forName("org.springframework.ai.chat.messages.ToolResponseMessage$ToolResponse");
+						Object toolResponse = ctxt.readTreeAsValue(responseNode, toolResponseClass);
+						toolResponses.add(toolResponse);
+					}
+					catch (Exception e) {
+						// Fallback: create a simple object representation
+						if (responseNode.isObject()) {
+							java.util.Map<String, Object> responseMap = new java.util.HashMap<>();
+							responseNode.fields().forEachRemaining(entry -> {
+								responseMap.put(entry.getKey(), convertJsonNodeToValue(entry.getValue()));
+							});
+							toolResponses.add(responseMap);
+						}
+					}
+				}
+			}
+
+			return toolResponses;
+		}
+
+		/**
+		 * Extract metadata from JsonNode
+		 */
+		private java.util.Map<String, Object> extractMetadata(com.fasterxml.jackson.databind.JsonNode node,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) {
+			java.util.Map<String, Object> metadata = new java.util.HashMap<>();
+
+			// Try different field names for metadata
+			com.fasterxml.jackson.databind.JsonNode metadataNode = node.get("metadata");
+			if (metadataNode == null) {
+				metadataNode = node.get("properties");
+			}
+
+			if (metadataNode != null && metadataNode.isObject()) {
+				metadataNode.fields().forEachRemaining(entry -> {
+					metadata.put(entry.getKey(), convertJsonNodeToValue(entry.getValue()));
+				});
+			}
+
+			return metadata;
+		}
+
+		/**
+		 * Create ToolResponseMessage using reflection
+		 */
+		private Object createToolResponseMessage(java.util.List<Object> toolResponses,
+				java.util.Map<String, Object> metadata) {
+			try {
+				Class<?> toolResponseMessageClass = Class
+					.forName("org.springframework.ai.chat.messages.ToolResponseMessage");
+
+				// Try different constructors
+				try {
+					// Constructor with tool responses and metadata
+					return toolResponseMessageClass.getConstructor(java.util.List.class, java.util.Map.class)
+						.newInstance(toolResponses, metadata);
+				}
+				catch (Exception e) {
+					try {
+						// Constructor with just tool responses
+						return toolResponseMessageClass.getConstructor(java.util.List.class).newInstance(toolResponses);
+					}
+					catch (Exception e2) {
+						// Fallback: try to find any constructor that takes a list
+						for (java.lang.reflect.Constructor<?> constructor : toolResponseMessageClass
+							.getConstructors()) {
+							Class<?>[] paramTypes = constructor.getParameterTypes();
+							if (paramTypes.length == 1 && java.util.List.class.isAssignableFrom(paramTypes[0])) {
+								return constructor.newInstance(toolResponses);
+							}
+							else if (paramTypes.length == 2 && java.util.List.class.isAssignableFrom(paramTypes[0])
+									&& java.util.Map.class.isAssignableFrom(paramTypes[1])) {
+								return constructor.newInstance(toolResponses, metadata);
+							}
+						}
+						throw new RuntimeException("No suitable constructor found for ToolResponseMessage");
+					}
+				}
+			}
+			catch (Exception e) {
+				throw new RuntimeException("Failed to create ToolResponseMessage instance", e);
+			}
+		}
+
+		/**
+		 * Convert JsonNode to appropriate value
+		 */
+		private Object convertJsonNodeToValue(com.fasterxml.jackson.databind.JsonNode node) {
+			if (node == null || node.isNull()) {
+				return null;
+			}
+			else if (node.isTextual()) {
+				return node.asText();
+			}
+			else if (node.isNumber()) {
+				return node.numberValue();
+			}
+			else if (node.isBoolean()) {
+				return node.asBoolean();
+			}
+			else if (node.isArray()) {
+				java.util.List<Object> list = new java.util.ArrayList<>();
+				for (com.fasterxml.jackson.databind.JsonNode element : node) {
+					list.add(convertJsonNodeToValue(element));
+				}
+				return list;
+			}
+			else if (node.isObject()) {
+				java.util.Map<String, Object> map = new java.util.HashMap<>();
+				node.fields().forEachRemaining(entry -> {
+					map.put(entry.getKey(), convertJsonNodeToValue(entry.getValue()));
+				});
+				return map;
+			}
+			else {
+				return node.asText();
+			}
 		}
 
 	}
