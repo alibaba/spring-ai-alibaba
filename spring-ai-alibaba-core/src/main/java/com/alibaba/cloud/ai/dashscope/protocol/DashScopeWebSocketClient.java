@@ -101,22 +101,22 @@ public class DashScopeWebSocketClient extends WebSocketListener {
 		}
 	}
 
-        public void sendBinary(ByteBuffer binary) {
-                if (!isOpen.get()) {
-                        establishWebSocketClient();
-                }
+	public void sendBinary(ByteBuffer binary) {
+		if (!isOpen.get()) {
+			establishWebSocketClient();
+		}
 
-                if (binary == null) {
-                        logger.error("binary data is null");
-                        return;
-                }
+		if (binary == null) {
+			logger.error("binary data is null");
+			return;
+		}
 
-                boolean success = webSocketClient.send(ByteString.of(binary));
+		boolean success = webSocketClient.send(ByteString.of(binary));
 
-                if (!success) {
-                        logger.error("send binary failed");
-                }
-        }
+		if (!success) {
+			logger.error("send binary failed");
+		}
+	}
 
 	private void establishWebSocketClient() {
 		HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
