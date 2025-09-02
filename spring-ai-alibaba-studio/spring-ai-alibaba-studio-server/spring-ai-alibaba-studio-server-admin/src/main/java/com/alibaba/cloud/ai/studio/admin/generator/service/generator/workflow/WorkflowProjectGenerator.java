@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,6 +39,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Workflow;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.CodeNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.KnowledgeRetrievalNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLAdapter;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.GraphProjectDescription;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.ProjectGenerator;
 import io.spring.initializr.generator.io.template.MustacheTemplateRenderer;
@@ -63,6 +65,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 	private final String GRAPH_BUILDER_EDGE_SECTION = "edgeSection";
 
 	private final String GRAPH_BUILDER_IMPORT_SECTION = "importSection";
+
+	private final String GRAPH_BUILDER_ASSIST_METHOD_CODE = "assistMethodCode";
 
 	private final String GRAPH_RUN_TEMPLATE_NAME = "GraphRunController.java";
 
@@ -112,6 +116,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 		boolean hasCode = nodes.stream().map(Node::getData).anyMatch(nd -> nd instanceof CodeNodeData);
 
+		String assistMethodCode = renderAssistMethodCode(nodes, projectDescription.getDslDialectType());
 		String stateSectionStr = renderStateSections(
 				Stream.of(workflow.getWorkflowVars(), workflow.getEnvVars()).flatMap(List::stream).toList());
 		String nodeSectionStr = renderNodeSections(nodes, varNames);
@@ -120,10 +125,24 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		Map<String, Object> graphBuilderModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
 				GRAPH_BUILDER_STATE_SECTION, stateSectionStr, GRAPH_BUILDER_NODE_SECTION, nodeSectionStr,
 				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr, HAS_RETRIEVER, hasRetriever, GRAPH_BUILDER_IMPORT_SECTION,
-				renderImportSection(workflow), HAS_CODE, hasCode);
+				renderImportSection(workflow), HAS_CODE, hasCode, GRAPH_BUILDER_ASSIST_METHOD_CODE, assistMethodCode);
 		Map<String, Object> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
 		renderAndWriteTemplates(List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
 				List.of(graphBuilderModel, graphRunControllerModel), projectRoot, projectDescription);
+	}
+
+	private String renderAssistMethodCode(List<Node> nodes, DSLDialectType dialectType) {
+		StringBuilder sb = new StringBuilder();
+		nodes.stream()
+			.map(Node::getType)
+			.map(NodeType::fromValue)
+			.map(Optional::orElseThrow)
+			.flatMap(type -> nodeNodeSections.stream().filter(section -> section.support(type)))
+			.forEach(section -> {
+				sb.append(section.assistMethodCode(dialectType));
+				sb.append(String.format("%n"));
+			});
+		return sb.toString();
 	}
 
 	private String renderStateSections(List<Variable> overallStateVars) {
