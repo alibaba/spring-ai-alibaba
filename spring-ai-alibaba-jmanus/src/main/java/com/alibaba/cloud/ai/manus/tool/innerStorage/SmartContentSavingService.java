@@ -176,30 +176,32 @@ public class SmartContentSavingService implements ISmartContentSavingService {
 				"""
 						%sBut the function returned content is too long, so it was automatically stored in a file
 
-						## You can freely use the following two operations to meet user expectations (no need to follow order, but according to user expectations)
+						## You can freely use the following operations to meet user expectations (no need to follow order, but according to user expectations)
 
-						### Operation 1: Use inner_storage_content_tool to get specific content
+						### Operation 1: Use extract_relevant_content to get specific content from the stored file
 						```json
 						{
 						  "action": "extract_relevant_content",
-						  "file_name": "%s",
-						  "query_key": "Keywords or questions you want to query, be specific and don't miss any requirements from user requests"
+						  "fileName": "%s",
+						  "queryKey": "Keywords or questions you want to query, be specific and don't miss any requirements from user requests",
+						  "outputFormatSpecification": "Specify the desired output format for the extracted content"
 						}
 						```
 
-						### Operation 2: Use file_merge_tool to aggregate (or copy) files to specified folder
+						### Operation 2: Use get_folder_content to get content from all files in a folder
 						```json
 						{
-						  "action": "merge_file",
-						  "file_name": "%s",
-						  "target_folder": "merged_data"
+						  "action": "get_folder_content",
+						  "folderName": "folder_name_or_relative_path",
+						  "queryKey": "Keywords or questions you want to query, be specific and don't miss any requirements from user requests",
+						  "outputFormatSpecification": "Specify the desired output format for the extracted content"
 						}
 						```
 
 						Please choose appropriate tools and parameters for subsequent operations based on specific requirements.
 
 						""",
-				methodInfo, storageFileName, storageFileName);
+				methodInfo, storageFileName);
 	}
 
 	/**
