@@ -73,7 +73,8 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 							StartNodeData.StartInput.class);
 					String inputType = startInput.getType();
 					String varType = VariableType.fromDifyValue(inputType).orElse(VariableType.OBJECT).value();
-					outputs.add(new Variable(startInput.getVariable(), varType));
+					outputs.add(new Variable(startInput.getVariable(),
+							VariableType.fromDifyValue(varType).orElse(VariableType.OBJECT)));
 					startInputs.add(startInput);
 					inputs.add(new VariableSelector("", startInput.getVariable(), startInput.getLabel()));
 				}
@@ -105,7 +106,8 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 					.flatMap(List::stream)
 					.map(MapReadUtil::safeCastToMapWithStringKey)
 					.map(mp -> new Variable(MapReadUtil.getMapDeepValue(mp, String.class, "key"),
-							MapReadUtil.getMapDeepValue(mp, String.class, "type"))
+							VariableType.fromStudioValue(MapReadUtil.getMapDeepValue(mp, String.class, "type"))
+								.orElse(VariableType.OBJECT))
 						.setDescription(MapReadUtil.getMapDeepValue(mp, String.class, "desc")))
 					.toList();
 				StartNodeData nodeData = new StartNodeData();
@@ -147,7 +149,8 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 				if (data.getStartInputs() != null) {
 					List<Variable> vars = new ArrayList<>(data.getStartInputs()
 						.stream()
-						.map(input -> new Variable(input.getVariable(), input.getType()))
+						.map(input -> new Variable(input.getVariable(),
+								VariableType.fromDifyValue(input.getType()).orElse(VariableType.OBJECT)))
 						.peek(variable -> variable.setName(variable.getName()))
 						.toList());
 					data.setOutputs(

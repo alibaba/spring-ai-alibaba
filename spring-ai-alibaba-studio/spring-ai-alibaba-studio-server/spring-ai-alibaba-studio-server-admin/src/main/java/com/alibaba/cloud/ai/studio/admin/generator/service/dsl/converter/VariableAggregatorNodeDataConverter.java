@@ -26,6 +26,7 @@ import java.util.function.BiConsumer;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
@@ -96,7 +97,8 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
 					vars = (List<List<String>>) varRaw;
 				}
 
-				String outputType = (String) data.get("output_type");
+				String outputTypeStr = (String) data.get("output_type");
+				VariableType outputType = VariableType.fromDifyValue(outputTypeStr).orElse(VariableType.OBJECT);
 				List<VariableSelector> inputs = Collections.emptyList();
 				List<Variable> outputs = new ArrayList<>();
 				VariableAggregatorNodeData variableAggregatorNodeData = new VariableAggregatorNodeData(inputs, outputs,
@@ -166,7 +168,8 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
 						List<Variable> outputs = nodeData.getAdvancedSettings()
 							.getGroups()
 							.stream()
-							.map(group -> new Variable(group.getGroupName(), group.getOutputType()))
+							.map(group -> new Variable(group.getGroupName(),
+									VariableType.fromDifyValue(group.getOutputType()).orElse(VariableType.OBJECT)))
 							.toList();
 						nodeData.setOutputs(outputs);
 					}

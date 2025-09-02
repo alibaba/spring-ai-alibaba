@@ -54,16 +54,16 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 			public IterationNodeData parse(Map<String, Object> data) throws JsonProcessingException {
 				// 获取输入输出的类型，从 array[xxx] 中提取xxx
 				Pattern typePattern = Pattern.compile("array\\[(.*?)]");
-				String inputType = "object";
-				String outputType = "object";
+				VariableType inputType = VariableType.OBJECT;
+				VariableType outputType = VariableType.OBJECT;
 				Matcher inputTypeMatcher = typePattern
 					.matcher((String) data.getOrDefault("iterator_input_type", "object"));
 				Matcher outputTypeMatcher = typePattern.matcher((String) data.getOrDefault("output_type", "object"));
 				if (inputTypeMatcher.find()) {
-					inputType = inputTypeMatcher.group(1);
+					inputType = VariableType.fromDifyValue(inputTypeMatcher.group(1)).orElse(VariableType.OBJECT);
 				}
 				if (outputTypeMatcher.find()) {
-					outputType = outputTypeMatcher.group(1);
+					outputType = VariableType.fromDifyValue(outputTypeMatcher.group(1)).orElse(VariableType.OBJECT);
 				}
 				List<String> inputSelector = (List<String>) data.get("iterator_selector");
 				List<String> outputSelector = (List<String>) data.get("output_selector");
@@ -151,11 +151,11 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 	@Override
 	public Stream<Variable> extractWorkflowVars(IterationNodeData nodeData) {
 		return Stream.concat(nodeData.getOutputs().stream(),
-				Stream.of(new Variable(nodeData.getInnerArrayKey(), "string"),
-						new Variable(nodeData.getInnerStartFlagKey(), VariableType.STRING.value()),
-						new Variable(nodeData.getInnerEndFlagKey(), VariableType.STRING.value()),
+				Stream.of(new Variable(nodeData.getInnerArrayKey(), VariableType.STRING),
+						new Variable(nodeData.getInnerStartFlagKey(), VariableType.STRING),
+						new Variable(nodeData.getInnerEndFlagKey(), VariableType.STRING),
 						new Variable(nodeData.getInnerItemKey(), nodeData.getInputType()),
-						new Variable(nodeData.getInnerIndexKey(), VariableType.NUMBER.value()),
+						new Variable(nodeData.getInnerIndexKey(), VariableType.NUMBER),
 						new Variable(nodeData.getInnerItemResultKey(), nodeData.getOutputType())));
 	}
 

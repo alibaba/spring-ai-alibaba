@@ -70,7 +70,7 @@ public class TemplateTransformNodeDataConverter extends AbstractNodeDataConverte
 					}).toList();
 				}
 
-				List<Variable> outputs = List.of(new Variable("result", VariableType.STRING.value()));
+				List<Variable> outputs = List.of(new Variable("result", VariableType.STRING));
 
 				return new TemplateTransformNodeData(inputs, outputs).setTemplate((String) data.get("template"));
 			}
@@ -89,8 +89,7 @@ public class TemplateTransformNodeDataConverter extends AbstractNodeDataConverte
 
 				Map<String, Object> outputVars = new HashMap<>();
 				nodeData.getOutputs().forEach(variable -> {
-					outputVars.put(variable.getName(), Map.of("type",
-							VariableType.fromValue(variable.getValueType()).orElse(VariableType.STRING).difyValue()));
+					outputVars.put(variable.getName(), Map.of("type", variable.getValueType().difyValue()));
 				});
 				data.put("outputs", outputVars);
 

@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.ParameterParsingNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
@@ -127,7 +128,8 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 				List<Variable> variableList = nodeData.getParameters()
 					.stream()
 					.map(mp -> new Variable(mp.getOrDefault("name", "unknown").toString(),
-							mp.getOrDefault("type", "string").toString())
+							VariableType.fromDifyValue(mp.getOrDefault("type", "string").toString())
+								.orElse(VariableType.OBJECT))
 						.setDescription(mp.getOrDefault("description", "").toString()))
 					.toList();
 				nodeData.setOutputs(variableList);

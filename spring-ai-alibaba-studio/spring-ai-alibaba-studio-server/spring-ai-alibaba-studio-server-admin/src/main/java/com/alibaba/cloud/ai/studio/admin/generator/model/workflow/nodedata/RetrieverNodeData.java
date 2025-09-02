@@ -25,10 +25,7 @@ import java.util.Map;
 
 public class RetrieverNodeData extends NodeData {
 
-	public static final List<Variable> INPUT_SCHEMA = List.of(new Variable("query", VariableType.STRING.value()));
-
-	public static final List<Variable> OUTPUT_SCHEMA = List
-		.of(new Variable("documents", VariableType.ARRAY_OBJECT.value()));
+	public static final List<Variable> OUTPUT_SCHEMA = List.of(new Variable("documents", VariableType.ARRAY_OBJECT));
 
 	public static final RerankOptions DEFAULT_RERANK_OPTIONS = new RerankOptions();
 

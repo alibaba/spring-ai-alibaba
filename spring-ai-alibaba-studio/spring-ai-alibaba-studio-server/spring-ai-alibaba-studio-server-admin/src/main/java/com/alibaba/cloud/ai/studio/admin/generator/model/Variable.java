@@ -27,8 +27,7 @@ public class Variable {
 
 	private Object value;
 
-	// todo: use VariableType Enum
-	private String valueType;
+	private VariableType valueType;
 
 	private String description;
 
@@ -60,7 +59,7 @@ public class Variable {
 	 * @param name a valid variable name
 	 * @param valueType a {@link VariableType} value
 	 */
-	public Variable(String name, String valueType) {
+	public Variable(String name, VariableType valueType) {
 		this.name = name;
 		this.valueType = valueType;
 	}
@@ -83,11 +82,11 @@ public class Variable {
 		return this;
 	}
 
-	public String getValueType() {
+	public VariableType getValueType() {
 		return valueType;
 	}
 
-	public Variable setValueType(String valueType) {
+	public Variable setValueType(VariableType valueType) {
 		this.valueType = valueType;
 		return this;
 	}

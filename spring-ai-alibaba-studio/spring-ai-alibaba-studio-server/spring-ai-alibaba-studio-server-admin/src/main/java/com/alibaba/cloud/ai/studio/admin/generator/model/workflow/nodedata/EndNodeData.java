@@ -30,7 +30,7 @@ import org.springframework.util.StringUtils;
 public class EndNodeData extends NodeData {
 
 	public static Variable getDefaultOutputSchema() {
-		return new Variable("output", VariableType.ARRAY_STRING.value());
+		return new Variable("output", VariableType.ARRAY_STRING);
 	}
 
 	private String outputKey;

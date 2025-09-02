@@ -38,10 +38,8 @@ import org.springframework.http.HttpMethod;
 public class HttpNodeData extends NodeData {
 
 	public static List<Variable> getDefaultOutputSchemas() {
-		return List.of(new Variable("body", VariableType.STRING.value()),
-				new Variable("status_code", VariableType.NUMBER.value()),
-				new Variable("headers", VariableType.OBJECT.value()),
-				new Variable("files", VariableType.ARRAY_FILE.value()));
+		return List.of(new Variable("body", VariableType.STRING), new Variable("status_code", VariableType.NUMBER),
+				new Variable("headers", VariableType.OBJECT), new Variable("files", VariableType.ARRAY_FILE));
 	}
 
 	/** HTTP method, default GET */

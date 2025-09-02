@@ -35,7 +35,7 @@ import org.springframework.ai.vectorstore.filter.Filter;
 public class KnowledgeRetrievalNodeData extends NodeData {
 
 	public static Variable getDefaultOutputSchema() {
-		return new Variable("result", VariableType.ARRAY_OBJECT.value());
+		return new Variable("result", VariableType.ARRAY_OBJECT);
 	}
 
 	private String userPromptKey;

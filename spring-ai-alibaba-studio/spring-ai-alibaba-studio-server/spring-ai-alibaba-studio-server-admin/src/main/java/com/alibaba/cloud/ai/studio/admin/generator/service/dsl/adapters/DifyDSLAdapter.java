@@ -130,14 +130,13 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 				.peek(v -> v.setName("env_" + v.getName()))
 				.toList();
 		}
-		List<Variable> sysVars = List.of(new Variable("sys_query", VariableType.STRING.value()),
-				new Variable("sys_files", VariableType.ARRAY_FILE.value()),
-				new Variable("sys_dialogue_count", VariableType.NUMBER.value()),
-				new Variable("sys_conversation_id", VariableType.STRING.value()),
-				new Variable("sys_user_id", VariableType.STRING.value()),
-				new Variable("sys_app_id", VariableType.STRING.value()),
-				new Variable("sys_workflow_id", VariableType.STRING.value()),
-				new Variable("sys_workflow_run_id", VariableType.STRING.value()));
+		List<Variable> sysVars = List.of(new Variable("sys_query", VariableType.STRING),
+				new Variable("sys_files", VariableType.ARRAY_FILE),
+				new Variable("sys_dialogue_count", VariableType.NUMBER),
+				new Variable("sys_conversation_id", VariableType.STRING),
+				new Variable("sys_user_id", VariableType.STRING), new Variable("sys_app_id", VariableType.STRING),
+				new Variable("sys_workflow_id", VariableType.STRING),
+				new Variable("sys_workflow_run_id", VariableType.STRING));
 		workflow.setEnvVars(Stream.of(envVars, sysVars).flatMap(List::stream).toList());
 
 		Graph graph = constructGraph((Map<String, Object>) workflowData.get("graph"));

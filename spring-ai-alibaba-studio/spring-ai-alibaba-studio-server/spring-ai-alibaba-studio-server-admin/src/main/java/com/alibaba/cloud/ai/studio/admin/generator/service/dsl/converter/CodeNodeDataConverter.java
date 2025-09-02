@@ -66,7 +66,7 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 					String difyType = (String) entry.getValue().get("type");
 					VariableType varType = VariableType.fromDifyValue(difyType)
 						.orElseThrow(() -> new IllegalArgumentException("Unsupported dify variable type: " + difyType));
-					return new Variable(varName, varType.value());
+					return new Variable(varName, varType);
 				}).toList();
 
 				return new CodeNodeData(inputs, outputs).setCode((String) data.get("code"))
@@ -86,8 +86,7 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 				data.put("variables", inputVars);
 				Map<String, Object> outputVars = new HashMap<>();
 				nodeData.getOutputs().forEach(variable -> {
-					outputVars.put(variable.getName(), Map.of("type",
-							VariableType.fromValue(variable.getValueType()).orElse(VariableType.OBJECT).difyValue()));
+					outputVars.put(variable.getName(), Map.of("type", variable.getValueType().difyValue()));
 				});
 				data.put("outputs", outputVars);
 				return data;
