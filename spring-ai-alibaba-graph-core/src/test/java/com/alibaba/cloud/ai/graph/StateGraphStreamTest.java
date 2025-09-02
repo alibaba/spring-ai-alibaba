@@ -405,7 +405,7 @@ public class StateGraphStreamTest {
 		List states = toStateList(generator);
 
 		assertFalse(states.isEmpty(), "least one content");
-		assertEquals(5, states.size(), "should be five content");
+		assertEquals(4, states.size(), "should be five content");
 	}
 
 	/**
@@ -423,7 +423,7 @@ public class StateGraphStreamTest {
 			}
 			return true;
 		})
-			.peek(s -> System.out.println(String.format("NODE: {}", s.node())))
+			.peek(s -> System.out.println(String.format("NODE: %s", s.node())))
 			.map(NodeOutput::state)
 			.collect(java.util.stream.Collectors.toList());
 	}

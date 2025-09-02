@@ -20,12 +20,15 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.SubGraphNode;
 
+import java.util.Objects;
+
 public class SubCompiledGraphNode extends Node implements SubGraphNode {
 
 	private final CompiledGraph subGraph;
 
 	public SubCompiledGraphNode(String id, CompiledGraph subGraph) {
-		super(id, (config) -> new SubCompiledGraphNodeAction(subGraph));
+		super(Objects.requireNonNull(id, "id cannot be null"),
+				(config) -> new SubCompiledGraphNodeAction(id, config, subGraph));
 		this.subGraph = subGraph;
 	}
 

@@ -78,6 +78,18 @@ public class MongoSaver implements BaseCheckpointSaver {
 		Runtime.getRuntime().addShutdownHook(new Thread(client::close));
 	}
 
+	/**
+	 * Instantiates a new Mongo saver.
+	 * @param client the client
+	 */
+	public MongoSaver(MongoClient client, ObjectMapper objectMapper) {
+		this.client = client;
+		this.database = client.getDatabase(DB_NAME);
+		this.txnOptions = TransactionOptions.builder().writeConcern(WriteConcern.MAJORITY).build();
+		this.objectMapper = objectMapper;
+		Runtime.getRuntime().addShutdownHook(new Thread(client::close));
+	}
+
 	@Override
 	public Collection<Checkpoint> list(RunnableConfig config) {
 		Optional<String> configOption = config.threadId();
