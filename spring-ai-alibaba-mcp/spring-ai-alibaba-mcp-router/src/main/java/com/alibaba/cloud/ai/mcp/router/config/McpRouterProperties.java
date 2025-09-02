@@ -72,7 +72,6 @@ public class McpRouterProperties {
 	 */
 	private String discoveryType = "nacos"; // 默认为 nacos
 
-	// ... getters and setters
 
 	public String getDiscoveryType() {
 		return discoveryType;
