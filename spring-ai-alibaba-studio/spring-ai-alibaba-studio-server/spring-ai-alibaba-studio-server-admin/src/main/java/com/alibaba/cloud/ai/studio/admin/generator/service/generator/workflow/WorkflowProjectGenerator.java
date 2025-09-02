@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -135,8 +134,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		StringBuilder sb = new StringBuilder();
 		nodes.stream()
 			.map(Node::getType)
-			.map(NodeType::fromValue)
-			.map(Optional::orElseThrow)
 			.distinct()
 			.flatMap(type -> nodeNodeSections.stream().filter(section -> section.support(type)))
 			.forEach(section -> {
@@ -169,7 +166,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		StringBuilder sb = new StringBuilder();
 		for (Node node : nodes) {
 			String varName = varNames.get(node.getId());
-			NodeType nodeType = NodeType.fromValue(node.getType()).orElseThrow();
+			NodeType nodeType = node.getType();
 			for (NodeSection section : nodeNodeSections) {
 				if (section.support(nodeType)) {
 					sb.append(section.render(node, varName));
@@ -201,7 +198,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			String tgtVar = varNames.get(targetId);
 
 			Node sourceNode = nodeMap.get(sourceId);
-			String sourceType = sourceNode != null ? sourceNode.getType() : null;
+			NodeType sourceType = sourceNode != null ? sourceNode.getType() : null;
 
 			// Skip if already rendered as conditional
 			if (edge.getSourceHandle() != null && !"source".equals(edge.getSourceHandle()) && edge.isDify()) {
@@ -210,7 +207,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 			// 迭代节点作为边的终止点时直接使用节点ID，作为边的起始点时使用ID_out
 			// todo: 修改迭代节点终止ID，防止与变量冲突（Dify不冲突）
-			if (sourceType != null && sourceType.equalsIgnoreCase("iteration") && edge.isDify()) {
+			if (sourceType != null && NodeType.ITERATION.equals(sourceType) && edge.isDify()) {
 				srcVar += "_out";
 			}
 
@@ -221,7 +218,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			renderedEdges.add(key);
 
 			// START and END special handling
-			if (NodeType.START.value().equals(sourceType)) {
+			if (NodeType.START.equals(sourceType)) {
 				sb.append(String.format("stateGraph.addEdge(START, \"%s\");%n", tgtVar));
 			}
 			else {
@@ -233,7 +230,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		for (Map.Entry<String, List<Edge>> entry : conditionalEdgesMap.entrySet()) {
 			String nodeId = entry.getKey();
 			Node node = nodeMap.get(nodeId);
-			NodeType nodeType = NodeType.fromValue(node.getType()).orElseThrow();
+			NodeType nodeType = node.getType();
 			for (NodeSection section : nodeNodeSections) {
 				if (section.support(nodeType)) {
 					String edgeCode = section.renderConditionalEdges(node.getData(), nodeMap, entry, varNames);
@@ -244,7 +241,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 		// 统一生成end节点到StateGraph.END的边（避免边重复）
 		List<String> endNodeList = nodes.stream()
-			.filter(node -> NodeType.END.value().equals(node.getType()))
+			.filter(node -> NodeType.END.equals(node.getType()))
 			.map(Node::getId)
 			.map(varNames::get)
 			.toList();
@@ -260,54 +257,53 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private String renderImportSection(Workflow workflow) {
 		// construct a list of node types
-		Map<String, List<String>> nodeTypeToClass = Map.ofEntries(
-				Map.entry(NodeType.ANSWER.value(), List.of("com.alibaba.cloud.ai.graph.node.AnswerNode")),
-				Map.entry(NodeType.CODE.value(), List.of("com.alibaba.cloud.ai.graph.node.code.CodeExecutorNodeAction",
+		Map<NodeType, List<String>> nodeTypeToClass = Map.ofEntries(
+				Map.entry(NodeType.ANSWER, List.of("com.alibaba.cloud.ai.graph.node.AnswerNode")),
+				Map.entry(NodeType.CODE, List.of("com.alibaba.cloud.ai.graph.node.code.CodeExecutorNodeAction",
 						"com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig",
 						"com.alibaba.cloud.ai.graph.node.code.CodeExecutor",
 						"com.alibaba.cloud.ai.graph.node.code.LocalCommandlineCodeExecutor", "java.io.IOException",
 						"java.nio.file.Files", "java.nio.file.Path", "java.util.stream.Collectors")),
-				Map.entry(NodeType.AGENT.value(),
+				Map.entry(NodeType.AGENT,
 						List.of("com.alibaba.cloud.ai.graph.node.AgentNode",
 								"org.springframework.ai.tool.ToolCallback")),
-				Map.entry(NodeType.LLM.value(),
+				Map.entry(NodeType.LLM,
 						List.of("com.alibaba.cloud.ai.graph.node.LlmNode",
 								"org.springframework.ai.chat.messages.AssistantMessage")),
-				Map.entry(NodeType.BRANCH.value(),
+				Map.entry(NodeType.BRANCH,
 						List.of("com.alibaba.cloud.ai.graph.node.BranchNode",
 								"static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async")),
-				Map.entry(NodeType.DOC_EXTRACTOR.value(),
-						List.of("com.alibaba.cloud.ai.graph.node.DocumentExtractorNode")),
-				Map.entry(NodeType.HTTP.value(),
+				Map.entry(NodeType.DOC_EXTRACTOR, List.of("com.alibaba.cloud.ai.graph.node.DocumentExtractorNode")),
+				Map.entry(NodeType.HTTP,
 						List.of("com.alibaba.cloud.ai.graph.node.HttpNode", "org.springframework.http.HttpMethod")),
-				Map.entry(NodeType.LIST_OPERATOR.value(),
+				Map.entry(NodeType.LIST_OPERATOR,
 						List.of("com.alibaba.cloud.ai.graph.node.ListOperatorNode", "java.util.Comparator")),
-				Map.entry(NodeType.QUESTION_CLASSIFIER.value(),
+				Map.entry(NodeType.QUESTION_CLASSIFIER,
 						List.of("com.alibaba.cloud.ai.graph.node.QuestionClassifierNode",
 								"static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async")),
-				Map.entry(NodeType.PARAMETER_PARSING.value(),
+				Map.entry(NodeType.PARAMETER_PARSING,
 						List.of("com.alibaba.cloud.ai.graph.node.ParameterParsingNode", "java.util.stream.Collectors")),
-				Map.entry(NodeType.TEMPLATE_TRANSFORM.value(),
+				Map.entry(NodeType.TEMPLATE_TRANSFORM,
 						List.of("com.alibaba.cloud.ai.graph.node.TemplateTransformNode")),
-				Map.entry(NodeType.TOOL.value(),
+				Map.entry(NodeType.TOOL,
 						List.of("com.alibaba.cloud.ai.graph.node.ToolNode", "java.util.function.Function",
 								"org.springframework.ai.tool.function.FunctionToolCallback")),
-				Map.entry(NodeType.RETRIEVER.value(), List.of("com.alibaba.cloud.ai.graph.node.KnowledgeRetrievalNode",
+				Map.entry(NodeType.RETRIEVER, List.of("com.alibaba.cloud.ai.graph.node.KnowledgeRetrievalNode",
 						"org.springframework.ai.embedding.EmbeddingModel", "org.springframework.ai.reader.TextReader",
 						"org.springframework.ai.transformer.splitter.TokenTextSplitter",
 						"org.springframework.ai.vectorstore.SimpleVectorStore",
 						"org.springframework.ai.vectorstore.VectorStore",
 						"org.springframework.beans.factory.annotation.Value", "org.springframework.core.io.Resource",
 						"org.springframework.ai.document.Document")),
-				Map.entry(NodeType.AGGREGATOR.value(),
+				Map.entry(NodeType.AGGREGATOR,
 						List.of("com.alibaba.cloud.ai.graph.node.VariableAggregatorNode",
 								"java.util.stream.Collectors")),
-				Map.entry(NodeType.ASSIGNER.value(), List.of("com.alibaba.cloud.ai.graph.node.AssignerNode")),
-				Map.entry(NodeType.ITERATION.value(), List.of("com.alibaba.cloud.ai.graph.node.IterationNode")),
-				Map.entry(NodeType.END.value(), List.of("java.util.stream.Stream", "java.util.stream.Collectors",
+				Map.entry(NodeType.ASSIGNER, List.of("com.alibaba.cloud.ai.graph.node.AssignerNode")),
+				Map.entry(NodeType.ITERATION, List.of("com.alibaba.cloud.ai.graph.node.IterationNode")),
+				Map.entry(NodeType.END, List.of("java.util.stream.Stream", "java.util.stream.Collectors",
 						"org.springframework.ai.chat.prompt.PromptTemplate")));
 
-		Set<String> uniqueTypes = workflow.getGraph()
+		Set<NodeType> uniqueTypes = workflow.getGraph()
 			.getNodes()
 			.stream()
 			.map(Node::getType)

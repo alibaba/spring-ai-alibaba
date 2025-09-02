@@ -85,8 +85,7 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 		// 节点的输出变量
 		List<Variable> extraVars = graph.getNodes().stream().flatMap(node -> {
-			NodeType type = NodeType.fromValue(node.getType())
-				.orElseThrow(() -> new IllegalArgumentException("Unsupported NodeType: " + node.getType()));
+			NodeType type = node.getType();
 			@SuppressWarnings("unchecked")
 			NodeDataConverter<NodeData> conv = (NodeDataConverter<NodeData>) getNodeDataConverter(type);
 			return conv.extractWorkflowVars(node.getData());
@@ -152,7 +151,7 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 			// 构造Node
 			Node node = new Node();
-			node.setId(nodeId).setType(nodeType.value()).setTitle(nodeTitle);
+			node.setId(nodeId).setType(nodeType).setTitle(nodeTitle);
 
 			// convert node data using specific WorkflowNodeDataConverter
 			@SuppressWarnings("unchecked")
@@ -170,7 +169,7 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 			postProcessConsumers.put(data.getClass(), converter.postProcessConsumer(DSLDialectType.STUDIO));
 
 			node.setData(data);
-			node.setType(nodeType.value());
+			node.setType(nodeType);
 			nodes.add(node);
 		}
 

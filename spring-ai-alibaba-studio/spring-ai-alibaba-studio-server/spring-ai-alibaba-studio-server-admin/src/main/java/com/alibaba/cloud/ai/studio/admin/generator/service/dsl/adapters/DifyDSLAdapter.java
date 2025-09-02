@@ -145,8 +145,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		workflow.setGraph(graph);
 		// register overAllState output key
 		List<Variable> extraVars = graph.getNodes().stream().flatMap(node -> {
-			NodeType type = NodeType.fromValue(node.getType())
-				.orElseThrow(() -> new IllegalArgumentException("Unsupported NodeType: " + node.getType()));
+			NodeType type = node.getType();
 			@SuppressWarnings("unchecked")
 			NodeDataConverter<NodeData> conv = (NodeDataConverter<NodeData>) getNodeDataConverter(type);
 			return conv.extractWorkflowVars(node.getData());
@@ -227,7 +226,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			postProcessConsumers.put(data.getClass(), converter.postProcessConsumer(DSLDialectType.DIFY));
 
 			node.setData(data);
-			node.setType(nodeType.value());
+			node.setType(nodeType);
 			nodes.add(node);
 		}
 
@@ -292,8 +291,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		for (Node node : nodes) {
 			Map<String, Object> n = objectMapper.convertValue(node, new TypeReference<>() {
 			});
-			NodeType nodeType = NodeType.fromValue(node.getType())
-				.orElseThrow(() -> new NotImplementedException("Unsupported NodeType: " + node.getType()));
+			NodeType nodeType = node.getType();
 			NodeDataConverter<? extends NodeData> nodeDataConverter = getNodeDataConverter(nodeType);
 			Map<String, Object> nodeData = dumpMapData(nodeDataConverter, node.getData());
 			nodeData.put("type", nodeType.difyValue());
