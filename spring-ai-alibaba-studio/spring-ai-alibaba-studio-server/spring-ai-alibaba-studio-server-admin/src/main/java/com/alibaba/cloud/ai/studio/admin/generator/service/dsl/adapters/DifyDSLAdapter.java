@@ -205,6 +205,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
 			// convert node map to workflow node using jackson
 			nodeMap.remove("data");
+			nodeMap.remove("type");
 			Node node = objectMapper.convertValue(nodeMap, Node.class);
 			// set title and desc
 			node.setTitle((String) nodeDataMap.get("title")).setDesc((String) nodeDataMap.get("desc"));
