@@ -35,9 +35,6 @@ public class FileMcpRouterAutoConfiguration {
 
 	private static final Logger log = LoggerFactory.getLogger(FileMcpRouterAutoConfiguration.class);
 
-	@Value("${spring.ai.dashscope.api-key:default_api_key}")
-	private String apiKey;
-
 	@Bean
 	@ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "discovery-type", havingValue = "file")
 	public McpServiceDiscovery fileConfigMcpServiceDiscovery(McpRouterProperties properties) {
