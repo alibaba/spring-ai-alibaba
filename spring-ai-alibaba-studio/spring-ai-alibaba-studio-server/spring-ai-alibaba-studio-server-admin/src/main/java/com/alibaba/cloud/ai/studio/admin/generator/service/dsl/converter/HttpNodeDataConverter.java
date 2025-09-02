@@ -35,7 +35,6 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.HttpNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
-import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.NodeDataConverter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -265,34 +264,39 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 	public BiConsumer<HttpNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
 			case DIFY -> super.postProcessConsumer(dialectType).andThen((httpNodeData, idToVarName) -> {
-				var function = NodeDataConverter.convertVarReserveFunction(dialectType);
 				// 将headers，params，body的Dify参数占位符转化为SAA中间变量
 				httpNodeData.setHeaders(httpNodeData.getHeaders()
 					.entrySet()
 					.stream()
 					.collect(Collectors.toMap(
 							// HttpNode源代码使用${}的变量格式
-							entry -> function.apply(entry.getKey().replace("{{#", "${{#"), idToVarName),
-							entry -> function.apply(entry.getValue().replace("{{#", "${{#"), idToVarName),
+							entry -> this.convertVarTemplate(dialectType, entry.getKey().replace("{{#", "${{#"),
+									idToVarName),
+							entry -> this.convertVarTemplate(dialectType, entry.getValue().replace("{{#", "${{#"),
+									idToVarName),
 							(oldVal, newVal) -> newVal)));
 				httpNodeData.setQueryParams(httpNodeData.getQueryParams()
 					.entrySet()
 					.stream()
 					.collect(Collectors.toMap(
-							entry -> function.apply(entry.getKey().replace("{{#", "${{#"), idToVarName),
-							entry -> function.apply(entry.getValue().replace("{{#", "${{#"), idToVarName),
+							entry -> this.convertVarTemplate(dialectType, entry.getKey().replace("{{#", "${{#"),
+									idToVarName),
+							entry -> this.convertVarTemplate(dialectType, entry.getValue().replace("{{#", "${{#"),
+									idToVarName),
 							(oldVal, newVal) -> newVal)));
 				httpNodeData.getBody().setData(httpNodeData.getBody().getData().stream().peek(data -> {
 					if (data.getKey() != null)
-						data.setKey(function.apply(data.getKey().replace("{{#", "${{#"), idToVarName));
+						data.setKey(this.convertVarTemplate(dialectType, data.getKey().replace("{{#", "${{#"),
+								idToVarName));
 					if (data.getValue() != null)
-						data.setValue(function.apply(data.getValue().replace("{{#", "${{#"), idToVarName));
+						data.setValue(this.convertVarTemplate(dialectType, data.getValue().replace("{{#", "${{#"),
+								idToVarName));
 				}).toList());
 				// 处理rawBodyMap
 				Map<String, Object> rawBodyMap = httpNodeData.getRawBodyMap();
 				if (!CollectionUtils.isEmpty(rawBodyMap)) {
 					String json = JsonParser.toJson(rawBodyMap);
-					json = function.apply(json.replace("{{#", "${{#"), idToVarName);
+					json = this.convertVarTemplate(dialectType, json.replace("{{#", "${{#"), idToVarName);
 					try {
 						httpNodeData.setRawBodyMap(JsonParser.fromJson(json, new TypeReference<Map<String, Object>>() {
 						}));

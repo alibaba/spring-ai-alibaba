@@ -31,7 +31,6 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.LLMNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
-import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.NodeDataConverter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.stereotype.Component;
@@ -346,8 +345,8 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 		return switch (dialectType) {
 			case DIFY -> super.postProcessConsumer(dialectType).andThen((data, idToVarName) -> {
 				// 替换Dify的变量占位符
-				UnaryOperator<String> convertString = (
-						prompt) -> NodeDataConverter.convertVarReserveFunction(dialectType).apply(prompt, idToVarName);
+				UnaryOperator<String> convertString = (prompt) -> this.convertVarTemplate(dialectType, prompt,
+						idToVarName);
 				UnaryOperator<LLMNodeData.PromptTemplate> convertTemplate = (promptTemplate) -> {
 					String prompt = promptTemplate.getText();
 					return promptTemplate.setText(convertString.apply(prompt));

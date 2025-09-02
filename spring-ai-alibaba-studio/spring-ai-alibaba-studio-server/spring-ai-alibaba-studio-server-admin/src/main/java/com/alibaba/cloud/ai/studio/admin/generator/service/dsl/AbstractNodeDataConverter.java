@@ -17,13 +17,18 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.dsl;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.google.common.base.Strings;
 import org.apache.commons.lang3.NotImplementedException;
+import org.springframework.util.StringUtils;
 
 /**
  * AbstractNodeDataConverter defines the interface to convert node data using a
@@ -93,5 +98,55 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 	}
 
 	protected abstract List<DialectConverter<T>> getDialectConverters();
+
+	/**
+	 * 将文本中变量占位符进行转化，比如Dify DSL的"你好，{{#123.query#}}"转化为"你好，{nodeName1.query}"
+	 * @param dialectType dsl语言
+	 * @param templateString 模板字符串
+	 * @param idToVarName nodeId转nodeVarName的映射
+	 * @return 转换结果
+	 */
+	protected String convertVarTemplate(DSLDialectType dialectType, String templateString,
+			Map<String, String> idToVarName) {
+		BiFunction<String, Map<String, String>, String> func = switch (dialectType) {
+			case DIFY -> (str, map) -> {
+				// todo: 模板支持上下文
+				if (Strings.isNullOrEmpty(str)) {
+					return str;
+				}
+				StringBuilder result = new StringBuilder();
+				Pattern pattern = Pattern.compile("\\{\\{#(\\w+)\\.(\\w+)#}}");
+				Matcher matcher = pattern.matcher(str);
+				while (matcher.find()) {
+					String nodeId = matcher.group(1);
+					String varName = matcher.group(2);
+					String res = "{" + map.getOrDefault(nodeId, StringUtils.hasText(nodeId) ? nodeId : "unknown") + "_"
+							+ varName + "}";
+					matcher.appendReplacement(result, Matcher.quoteReplacement(res));
+				}
+				matcher.appendTail(result);
+				return result.toString();
+			};
+			case STUDIO -> (str, map) -> {
+				if (Strings.isNullOrEmpty(str)) {
+					return str;
+				}
+				StringBuilder result = new StringBuilder();
+				Pattern pattern = Pattern.compile("\\$\\{(\\w+)\\.(\\w+)}");
+				Matcher matcher = pattern.matcher(str);
+				while (matcher.find()) {
+					String nodeId = matcher.group(1);
+					String varName = matcher.group(2);
+					String res = "{" + map.getOrDefault(nodeId, StringUtils.hasText(nodeId) ? nodeId : "unknown") + "_"
+							+ varName + "}";
+					matcher.appendReplacement(result, Matcher.quoteReplacement(res));
+				}
+				matcher.appendTail(result);
+				return result.toString();
+			};
+			default -> (str, map) -> str;
+		};
+		return func.apply(templateString, idToVarName);
+	}
 
 }

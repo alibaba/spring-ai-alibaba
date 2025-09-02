@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -32,7 +31,6 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.EndNo
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 
-import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.stereotype.Component;
@@ -161,9 +159,7 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 		return switch (dialectType) {
 			case STUDIO -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
 				// 格式化textTemplate
-				BiFunction<String, Map<String, String>, String> converted = NodeDataConverter
-					.convertVarReserveFunction(dialectType);
-				nodeData.setTextTemplate(converted.apply(nodeData.getTextTemplate(), idToVarName));
+				nodeData.setTextTemplate(this.convertVarTemplate(dialectType, nodeData.getTextTemplate(), idToVarName));
 			});
 			default -> super.postProcessConsumer(dialectType);
 		};

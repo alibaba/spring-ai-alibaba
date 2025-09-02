@@ -31,6 +31,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 
 import org.springframework.stereotype.Component;
 
+// TODO：支持多模型、重试机制
 @Component
 public class LLMNodeSection implements NodeSection<LLMNodeData> {
 

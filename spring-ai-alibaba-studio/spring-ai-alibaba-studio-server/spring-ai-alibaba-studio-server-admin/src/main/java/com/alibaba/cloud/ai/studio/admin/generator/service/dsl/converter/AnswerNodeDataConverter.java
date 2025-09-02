@@ -27,7 +27,6 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.AnswerNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
-import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.utils.StringTemplateUtil;
 
 import org.springframework.stereotype.Component;
@@ -107,10 +106,8 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 	@Override
 	public BiConsumer<AnswerNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
-				var func = NodeDataConverter.convertVarReserveFunction(dialectType);
-				nodeData.setAnswer(func.apply(nodeData.getAnswer(), idToVarName));
-			});
+			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> nodeData
+				.setAnswer(this.convertVarTemplate(dialectType, nodeData.getAnswer(), idToVarName)));
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}
