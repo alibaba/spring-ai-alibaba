@@ -137,6 +137,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			.map(Node::getType)
 			.map(NodeType::fromValue)
 			.map(Optional::orElseThrow)
+            .distinct()
 			.flatMap(type -> nodeNodeSections.stream().filter(section -> section.support(type)))
 			.forEach(section -> {
 				sb.append(section.assistMethodCode(dialectType));

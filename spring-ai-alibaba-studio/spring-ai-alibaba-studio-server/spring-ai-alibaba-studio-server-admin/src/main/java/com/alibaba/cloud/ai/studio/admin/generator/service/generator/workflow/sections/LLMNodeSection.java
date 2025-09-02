@@ -159,7 +159,7 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 		sb.append(".build();\n");
 
 		// 用于将LLMNode的结果转化为Dify定义的输出结果的辅助节点代码
-		String assistantNodeCode = String.format("assistLLMNodeAction(%s, \"%s\")", varName,
+		String assistantNodeCode = String.format("wrapperLLMNodeAction(%s, \"%s\")", varName,
 				((LLMNodeData) node.getData()).getOutputKey());
 
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
@@ -172,7 +172,7 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 	public String assistMethodCode(DSLDialectType dialectType) {
 		return switch (dialectType) {
 			case DIFY -> """
-					private NodeAction assistLLMNodeAction(NodeAction nodeAction, String key) {
+					private NodeAction wrapperLLMNodeAction(NodeAction nodeAction, String key) {
 					    return state -> {
 					        Map<String, Object> result = nodeAction.apply(state);
 					        Object object = result.get(key);
