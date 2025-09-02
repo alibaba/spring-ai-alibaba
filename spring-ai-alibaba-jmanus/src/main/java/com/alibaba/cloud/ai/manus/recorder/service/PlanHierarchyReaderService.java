@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.alibaba.cloud.ai.manus.recorder.entity.po.PlanExecutionRecordEntity;
 import com.alibaba.cloud.ai.manus.recorder.entity.po.AgentExecutionRecordEntity;
 import com.alibaba.cloud.ai.manus.recorder.entity.po.ExecutionStatusEntity;
+import com.alibaba.cloud.ai.manus.recorder.entity.po.ThinkActRecordEntity;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.ExecutionStatus;
@@ -20,6 +21,7 @@ import com.alibaba.cloud.ai.manus.recorder.entity.po.ActToolInfoEntity;
 import com.alibaba.cloud.ai.manus.recorder.repository.PlanExecutionRecordRepository;
 import com.alibaba.cloud.ai.manus.recorder.repository.AgentExecutionRecordRepository;
 import com.alibaba.cloud.ai.manus.recorder.repository.ActToolInfoRepository;
+import com.alibaba.cloud.ai.manus.recorder.repository.ThinkActRecordRepository;
 
 import jakarta.annotation.Resource;
 
@@ -44,6 +46,9 @@ public class PlanHierarchyReaderService {
 
 	@Resource
 	private ActToolInfoRepository actToolInfoRepository;
+
+	@Resource
+	private ThinkActRecordRepository thinkActRecordRepository;
 
 	/**
 	 * Read plan execution records by rootPlanId and convert to VO objects with hierarchy.
@@ -289,19 +294,16 @@ public class PlanHierarchyReaderService {
 		for (PlanExecutionRecord plan : planRecords) {
 			if (plan.getAgentExecutionSequence() != null) {
 				for (AgentExecutionRecord agentRecord : plan.getAgentExecutionSequence()) {
-					// Find sub-plans for this agent
-					// Safety check: ensure currentPlanId is not null
-					if (plan.getCurrentPlanId() != null) {
-						List<PlanExecutionRecord> subPlans = findSubPlansForAgent(plan.getCurrentPlanId(), planMap);
+					// Find sub-plans for this specific agent using enhanced SQL-based approach
+					List<PlanExecutionRecord> subPlans = findSubPlansForAgent(agentRecord, planMap);
 
-						if (!subPlans.isEmpty()) {
-							agentRecord.setSubPlanExecutionRecords(subPlans);
-							logger.debug("Found {} sub-plans for agent {} in plan {}", subPlans.size(),
-									agentRecord.getAgentName(), plan.getCurrentPlanId());
-						}
-					}
-					else {
-						logger.warn("Plan with null currentPlanId found, skipping hierarchy building for this plan");
+					if (!subPlans.isEmpty()) {
+						agentRecord.setSubPlanExecutionRecords(subPlans);
+						logger.debug("Found {} sub-plans for agent {} (ID: {}) in plan {}", subPlans.size(),
+								agentRecord.getAgentName(), agentRecord.getId(), plan.getCurrentPlanId());
+					} else {
+						logger.debug("No sub-plans found for agent {} (ID: {}) in plan {}",
+								agentRecord.getAgentName(), agentRecord.getId(), plan.getCurrentPlanId());
 					}
 				}
 			}
@@ -311,25 +313,80 @@ public class PlanHierarchyReaderService {
 	}
 
 	/**
-	 * Find sub-plans for a given parent plan.
+	 * Find sub-plans for a specific agent execution record using enhanced SQL-based approach.
 	 *
-	 * This method finds all plans where parentPlanId = the input parentPlanId. It's used
-	 * to build the hierarchy: Parent Plan -> Sub Plans
-	 * @param parentPlanId The parent plan ID to search for sub-plans
+	 * This method uses the following logic:
+	 * 1. Query ActToolInfo by toolCallId from sub-plans
+	 * 2. Query ThinkActRecord by ActToolInfo relationship
+	 * 3. Get parentExecutionId from ThinkActRecord
+	 * 4. Match parentExecutionId with AgentExecutionRecord.id in the current plan's agent sequence
+	 *
+	 * @param agentRecord The agent execution record to find sub-plans for
 	 * @param planMap Map of all plans for quick lookup
-	 * @return List of sub-plans that belong to the specified parent plan
+	 * @return List of sub-plans that belong to the specified agent execution record
 	 */
-	private List<PlanExecutionRecord> findSubPlansForAgent(String parentPlanId,
+	private List<PlanExecutionRecord> findSubPlansForAgent(AgentExecutionRecord agentRecord,
 			java.util.Map<String, PlanExecutionRecord> planMap) {
-		// Safety check: avoid NullPointerException when parentPlanId is null
-		if (parentPlanId == null) {
+		if (agentRecord == null || agentRecord.getId() == null) {
+			logger.debug("Agent record or ID is null, returning empty sub-plans list");
 			return new ArrayList<>();
 		}
+		List<PlanExecutionRecord> matchingSubPlans = new ArrayList<>();
+		Long agentExecutionId = agentRecord.getId();
 
-		return planMap.values()
+		// Find all sub-plans (plans with non-null toolCallId)
+		List<PlanExecutionRecord> subPlans = planMap.values()
 			.stream()
-			.filter(plan -> parentPlanId.equals(plan.getParentPlanId()))
+			.filter(plan -> plan.getToolCallId() != null && !plan.getToolCallId().trim().isEmpty())
 			.collect(Collectors.toList());
+
+		logger.debug("Found {} sub-plans with toolCallId for agent execution ID: {}", subPlans.size(), agentExecutionId);
+
+		// For each sub-plan, check if it was triggered by this agent
+		for (PlanExecutionRecord subPlan : subPlans) {
+			try {
+				// Step 1: Query ActToolInfo by toolCallId
+				Optional<ActToolInfoEntity> actToolInfoOpt = actToolInfoRepository
+					.findByToolCallId(subPlan.getToolCallId());
+
+				if (!actToolInfoOpt.isPresent()) {
+					logger.debug("No ActToolInfo found for toolCallId: {}", subPlan.getToolCallId());
+					continue;
+				}
+
+				// Step 2: Query ThinkActRecord by ActToolInfo relationship
+				Optional<ThinkActRecordEntity> thinkActRecordOpt = thinkActRecordRepository
+					.findByActToolInfoToolCallId(subPlan.getToolCallId());
+
+				if (!thinkActRecordOpt.isPresent()) {
+					logger.debug("No ThinkActRecord found for toolCallId: {}", subPlan.getToolCallId());
+					continue;
+				}
+
+				// Step 3: Get parentExecutionId from ThinkActRecord
+				ThinkActRecordEntity thinkActRecord = thinkActRecordOpt.get();
+				Long parentExecutionId = thinkActRecord.getParentExecutionId();
+
+				if (parentExecutionId == null) {
+					logger.debug("ThinkActRecord has null parentExecutionId for toolCallId: {}", subPlan.getToolCallId());
+					continue;
+				}
+
+				// Step 4: Match parentExecutionId with AgentExecutionRecord.id
+				if (agentExecutionId.equals(parentExecutionId)) {
+					matchingSubPlans.add(subPlan);
+					logger.debug("Found matching sub-plan {} for agent execution ID: {} via toolCallId: {}",
+							subPlan.getCurrentPlanId(), agentExecutionId, subPlan.getToolCallId());
+				}
+
+			} catch (Exception e) {
+				logger.error("Error processing sub-plan {} for agent execution ID: {}",
+						subPlan.getCurrentPlanId(), agentExecutionId, e);
+			}
+		}
+
+		logger.debug("Found {} matching sub-plans for agent execution ID: {}", matchingSubPlans.size(), agentExecutionId);
+		return matchingSubPlans;
 	}
 
 	/**

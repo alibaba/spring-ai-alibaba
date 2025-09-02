@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.manus.recorder.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.alibaba.cloud.ai.manus.recorder.entity.po.ThinkActRecordEntity;
@@ -35,5 +37,11 @@ public interface ThinkActRecordRepository extends JpaRepository<ThinkActRecordEn
 	 * Find think-act record by ID
 	 */
 	Optional<ThinkActRecordEntity> findById(Long id);
+
+	/**
+	 * Find think-act record by tool call ID through ActToolInfo relationship
+	 */
+	@Query("SELECT t FROM ThinkActRecordEntity t JOIN t.actToolInfoList a WHERE a.toolCallId = :toolCallId")
+	Optional<ThinkActRecordEntity> findByActToolInfoToolCallId(@Param("toolCallId") String toolCallId);
 
 }
