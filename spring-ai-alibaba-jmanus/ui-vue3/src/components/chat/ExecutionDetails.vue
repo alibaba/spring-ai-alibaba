@@ -765,6 +765,23 @@ const isRequired = (required: boolean | string | undefined): boolean => {
               font-size: 12px;
               line-height: 1.3;
             }
+            
+            .request-content {
+              margin: 4px 0 0 0;
+              padding: 8px;
+              background: rgba(0, 0, 0, 0.2);
+              border-radius: 4px;
+              font-family: monospace;
+              font-size: 14px;
+              color: #cccccc;
+              white-space: pre-wrap;
+              word-wrap: break-word;
+              word-break: break-word;
+              overflow-wrap: break-word;
+              max-height: 120px;
+              overflow-y: auto;
+              line-height: 1.4;
+            }
           }
         }
         

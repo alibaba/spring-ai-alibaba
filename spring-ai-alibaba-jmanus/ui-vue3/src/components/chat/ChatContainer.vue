@@ -81,13 +81,9 @@ interface Emits {
   (e: 'step-selected', stepId: string): void
 }
 
-// Simple input message interface for demo
-interface InputMessage {
-  input: string
-  attachments?: File[]
-}
+// InputMessage interface removed - not needed in display component
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   mode: 'plan',
   initialPrompt: ''
 })
@@ -198,66 +194,7 @@ const handleStepSelected = (stepId: string) => {
   emit('step-selected', stepId)
 }
 
-// Message handling methods
-const sendMessage = async (query: InputMessage) => {
-  let assistantMessage: any = null
-  
-  try {
-    console.log('[ChatContainer] Processing query:', query)
-    
-    // Add user message to UI
-    const userMessage = addMessage('user', query.input)
-    if (query.attachments) {
-      updateMessage(userMessage.id, { attachments: query.attachments })
-    }
-
-    // Add assistant thinking message
-    assistantMessage = addMessage('assistant', '', {
-      thinking: t('chat.thinkingProcessing')
-    })
-
-    startStreaming(assistantMessage.id)
-
-    // Import and call DirectApiService to send message to backend
-    const { DirectApiService } = await import('@/api/direct-api-service')
-    
-    console.log('[ChatContainer] Calling DirectApiService.sendMessage')
-    const response = await DirectApiService.sendMessage(query)
-    console.log('[ChatContainer] API response received:', response)
-
-    // Handle the response
-    if (response.planId) {
-      // Plan mode: Update message with plan execution info
-      updateMessage(assistantMessage.id, {
-        thinking: t('chat.planningExecution'),
-        planExecution: { 
-          currentPlanId: response.planId,
-          rootPlanId: response.planId,
-          status: 'running'
-        }
-      })
-      
-      // Start polling for plan updates
-      planExecutionManager.handlePlanExecutionRequested(response.planId, query.input)
-      console.log('[ChatContainer] Started polling for plan execution updates')
-    } else {
-      // Direct mode: Show the response
-      updateMessage(assistantMessage.id, {
-        content: response.message || response.result || 'No response received from backend'
-      })
-      stopStreaming(assistantMessage.id)
-    }
-    
-  } catch (error: any) {
-    console.error('[ChatContainer] Send message failed:', error)
-    
-    // Show error message
-    const errorMessage = addMessage('assistant', `Error: ${error?.message || 'Failed to send message'}`)
-    if (assistantMessage) {
-      stopStreaming(assistantMessage.id)
-    }
-  }
-}
+// Message handling methods removed - ChatContainer is now a pure display component
 
 // Plan execution handlers
 const handlePlanUpdate = (rootPlanId: string) => {
@@ -337,7 +274,7 @@ const handlePlanError = (message: string) => {
   console.log('[ChatContainer] Plan error:', message)
   
   // Show error message
-  const errorMessage = addMessage('assistant', `Error: ${message}`)
+  addMessage('assistant', `Error: ${message}`)
   console.error('[ChatContainer] Plan execution error:', message)
 }
 
@@ -345,10 +282,7 @@ const handlePlanError = (message: string) => {
 
 // Lifecycle
 onMounted(() => {
-  // Process initial prompt if provided
-  if (props.initialPrompt) {
-    sendMessage({ input: props.initialPrompt })
-  }
+  // Initial prompt processing removed - handled by parent component
 
   // Auto-scroll to bottom when new messages are added
   watch(messages, () => {
@@ -374,15 +308,15 @@ onUnmounted(() => {
 
 // Expose methods for parent components
 defineExpose({
-  handleSendMessage: sendMessage, // Alias for backward compatibility
-  sendMessage,
   scrollToBottom,
   handlePlanUpdate,
   handlePlanCompleted,
   handleDialogRoundStart,
   handlePlanError,
   addMessage,
-  updateMessage
+  updateMessage,
+  startStreaming,
+  stopStreaming
 })
 </script>
 

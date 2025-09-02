@@ -279,14 +279,14 @@ onMounted(() => {
     taskStore.markTaskAsProcessed()
 
     // Execute task directly without showing content in input box
-    nextTick(() => {
-      if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
-        console.log('[Direct] Calling chatRef.handleSendMessage with taskContent:', taskContent)
-        chatRef.value.handleSendMessage({
+    nextTick(async () => {
+      try {
+        console.log('[Direct] Calling handleChatSendMessage with taskContent:', taskContent)
+        await handleChatSendMessage({
           input: taskContent
         })
-      } else {
-        console.warn('[Direct] chatRef.handleSendMessage method not available, falling back to prompt')
+      } catch (error) {
+        console.warn('[Direct] handleChatSendMessage failed, falling back to prompt:', error)
         prompt.value = taskContent
       }
     })
@@ -345,12 +345,12 @@ watch(
       console.log('[Direct] Received new task from store:', taskContent)
 
       // Execute task directly without showing content in input box
-      nextTick(() => {
-        if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
-          console.log('[Direct] Directly executing new task via chatRef.handleSendMessage:', taskContent)
-          chatRef.value.handleSendMessage({ input: taskContent })
-        } else {
-          console.warn('[Direct] chatRef.handleSendMessage method not available for new task')
+      nextTick(async () => {
+        try {
+          console.log('[Direct] Directly executing new task via handleChatSendMessage:', taskContent)
+          await handleChatSendMessage({ input: taskContent })
+        } catch (error) {
+          console.warn('[Direct] handleChatSendMessage failed for new task:', error)
         }
       })
     } else {
@@ -474,21 +474,79 @@ const shouldProcessEventForCurrentPlan = (rootPlanId: string, allowSpecialIds: b
   return false
 }
 
-// New event handler function
-const handleSendMessage = (message: InputMessage) => {
+// Handle message sending from ChatContainer via event
+const handleChatSendMessage = async (query: InputMessage) => {
+  let assistantMessage: any = null
+  
+  try {
+    console.log('[DirectView] Processing send-message event:', query)
+    
+    // Add user message to UI
+    const userMessage = chatRef.value?.addMessage('user', query.input)
+    if ((query as any).attachments && userMessage) {
+      chatRef.value?.updateMessage(userMessage.id, { attachments: (query as any).attachments })
+    }
+
+    // Add assistant thinking message
+    assistantMessage = chatRef.value?.addMessage('assistant', '', {
+      thinking: t('chat.thinkingProcessing')
+    })
+
+    if (assistantMessage) {
+      chatRef.value?.startStreaming(assistantMessage.id)
+    }
+
+    // Import and call DirectApiService to send message to backend
+    const { DirectApiService } = await import('@/api/direct-api-service')
+    
+    console.log('[DirectView] Calling DirectApiService.sendMessage')
+    const response = await DirectApiService.sendMessage(query)
+    console.log('[DirectView] API response received:', response)
+
+    // Handle the response
+    if (response.planId && assistantMessage) {
+      // Plan mode: Update message with plan execution info
+      chatRef.value?.updateMessage(assistantMessage.id, {
+        thinking: t('chat.planningExecution'),
+        planExecution: { 
+          currentPlanId: response.planId,
+          rootPlanId: response.planId,
+          status: 'running'
+        }
+      })
+      
+      // Set current root plan ID for the new plan execution
+      currentRootPlanId.value = response.planId
+      console.log('[DirectView] Set currentRootPlanId to:', response.planId)
+      
+      // Start polling for plan updates
+      planExecutionManager.handlePlanExecutionRequested(response.planId, query.input)
+      console.log('[DirectView] Started polling for plan execution updates')
+    } else if (assistantMessage) {
+      // Direct mode: Show the response
+      chatRef.value?.updateMessage(assistantMessage.id, {
+        content: response.message || response.result || 'No response received from backend'
+      })
+      chatRef.value?.stopStreaming(assistantMessage.id)
+    }
+    
+  } catch (error: any) {
+    console.error('[DirectView] Send message failed:', error)
+    
+    // Show error message
+    chatRef.value?.addMessage('assistant', `Error: ${error?.message || 'Failed to send message'}`)
+    if (assistantMessage) {
+      chatRef.value?.stopStreaming(assistantMessage.id)
+    }
+  }
+}
+
+// Event handler for input area send button
+const handleSendMessage = async (message: InputMessage) => {
   console.log('[DirectView] Send message from input:', JSON.stringify(message))
 
-  // In direct mode, only call chat component's handleSendMessage
-  // It will handle both UI update and API call via handleDirectMode
-  if (chatRef.value && typeof chatRef.value.handleSendMessage === 'function') {
-    console.log('[DirectView] Calling chatRef.handleSendMessage:', JSON.stringify(message))
-    chatRef.value.handleSendMessage(message)
-  } else {
-    console.warn('[DirectView] chatRef.handleSendMessage method not available')
-  }
-
-  // Remove the duplicate API call - chat component's handleDirectMode will handle this
-  // planExecutionManager.handleUserMessageSendRequested(message) // Removed to prevent double API calls
+  // Directly handle the message sending
+  await handleChatSendMessage(message)
 }
 
 const handleInputClear = () => {
@@ -573,14 +631,27 @@ const handlePlanExecutionRequested = async (payload: {
 
   // Mark whether user message has been added
   let userMessageAdded = false;
+  let assistantMessage: any = null;
 
-  // First call chat component's addMessage to update UI (avoid triggering user-message-send-requested event)
-  if (chatRef.value && typeof chatRef.value.addMessage === 'function') {
-    console.log('[DirectView] Calling chatRef.addMessage for plan execution:', payload.title)
-    chatRef.value.addMessage('user', payload.title)
+  // Add user and assistant messages using the same pattern as handleChatSendMessage
+  try {
+    console.log('[DirectView] Adding messages for plan execution:', payload.title)
+    
+    // Add user message
+    chatRef.value?.addMessage('user', payload.title)
     userMessageAdded = true;
-  } else {
-    console.warn('[DirectView] chatRef.addMessage method not available')
+    
+    // Add assistant message to show system feedback
+    assistantMessage = chatRef.value?.addMessage('assistant', '', {
+      thinking: t('chat.planningExecution')
+    })
+    
+    if (assistantMessage) {
+      chatRef.value?.startStreaming(assistantMessage.id)
+      console.log('[DirectView] Added assistant message for plan execution:', assistantMessage.id)
+    }
+  } catch (messageError) {
+    console.warn('[DirectView] Failed to add messages:', messageError)
   }
   try {
     // Get the plan template ID
@@ -615,9 +686,19 @@ const handlePlanExecutionRequested = async (payload: {
 
     console.log('[Direct] Plan execution API response:', response)
 
-    // Use the returned planId to start the plan execution process and let the manager handle all message processing
-    if (response.planId) {
+    // Use the returned planId to start the plan execution process
+    if (response.planId && assistantMessage) {
       console.log('[Direct] Got planId from response:', response.planId, 'starting plan execution')
+
+      // Update assistant message with plan execution info
+      chatRef.value?.updateMessage(assistantMessage.id, {
+        thinking: t('chat.planningExecution'),
+        planExecution: { 
+          currentPlanId: response.planId,
+          rootPlanId: response.planId,
+          status: 'running'
+        }
+      })
 
       // Set current root plan ID for the new plan execution
       currentRootPlanId.value = response.planId
@@ -637,19 +718,27 @@ const handlePlanExecutionRequested = async (payload: {
     // Clear current root plan ID on error
     currentRootPlanId.value = null
 
-    // Get chat component reference to display error
-    if (chatRef.value && typeof chatRef.value.addMessage === 'function') {
+    // Handle error messages using consistent pattern
+    try {
       console.log('[Direct] Adding error messages to chat')
+      
       // Only add user message if it hasn't been added before
       if (!userMessageAdded) {
-        chatRef.value.addMessage('user', payload.title)
+        chatRef.value?.addMessage('user', payload.title)
       }
-      // Then add error message
-      chatRef.value.addMessage('assistant', `${t('direct.executionFailed')}: ${error.message || t('common.unknownError')}`, {
-        thinking: undefined,
-      })
-    } else {
-      console.error('[Direct] Chat ref not available, showing alert')
+      
+      // Update assistant message with error or add new error message
+      if (assistantMessage) {
+        chatRef.value?.updateMessage(assistantMessage.id, {
+          content: `${t('direct.executionFailed')}: ${error.message || t('common.unknownError')}`,
+          thinking: undefined
+        })
+        chatRef.value?.stopStreaming(assistantMessage.id)
+      } else {
+        chatRef.value?.addMessage('assistant', `${t('direct.executionFailed')}: ${error.message || t('common.unknownError')}`)
+      }
+    } catch (errorHandlingError) {
+      console.error('[Direct] Failed to add error messages:', errorHandlingError)
       alert(`${t('direct.executionFailed')}: ${error.message || t('common.unknownError')}`)
     }
   } finally {

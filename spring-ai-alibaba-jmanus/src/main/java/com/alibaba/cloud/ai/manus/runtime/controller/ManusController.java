@@ -141,7 +141,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			return ResponseEntity.internalServerError().body(errorResponse);
 		}
 	}
-
 	/**
 	 * Get execution record overview (without detailed ThinkActRecord information)
 	 * Note: This method returns basic execution information and does not include
