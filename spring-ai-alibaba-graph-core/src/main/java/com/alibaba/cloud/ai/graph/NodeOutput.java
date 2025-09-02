@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import java.util.Objects;
+
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
 
 /**
@@ -39,6 +43,24 @@ public class NodeOutput {
 
 	private boolean subGraph = false;
 
+	/**
+	 * Checks if the current node refers to the start of the graph processing.
+	 * @return {@code true} if the current node refers to the start of the graph
+	 * processing
+	 */
+	public boolean isSTART() {
+		return Objects.equals(node(), START);
+	}
+
+	/**
+	 * Checks if the current node refers to the end of the graph processing. useful to
+	 * understand if the workflow has been interrupted.
+	 * @return {@code true} if the current node refers to the end of the graph processing
+	 */
+	public boolean isEND() {
+		return Objects.equals(node(), END);
+	}
+
 	public boolean isSubGraph() {
 		return subGraph;
 	}
@@ -54,14 +76,6 @@ public class NodeOutput {
 
 	public OverAllState state() {
 		return state;
-	}
-
-	/**
-	 * @deprecated Use {@link #state()} instead.
-	 */
-	@Deprecated
-	public OverAllState getState() {
-		return state();
 	}
 
 	protected NodeOutput(String node, OverAllState state) {

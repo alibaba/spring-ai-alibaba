@@ -80,6 +80,33 @@ spring:
           nodes: localhost:6379,localhost:6380,localhost:6381
 ```
 
+### 配置SSL
+```yaml
+# 基础spring.ssl配置(可选pem或jks配置)，参考spring.ssl原始配置
+spring:
+  ssl:
+    bundle:
+      pem:
+        myPemBundle:
+          keystore:
+            certificate: "classpath:cert.pem"
+            private-key: "classpath:key.pem"
+          truststore:
+            certificate: "classpath:cert.pem"
+  ai:
+    memory:
+      redis:
+        # Supports standalone and cluster
+        mode: standalone
+        # Supports jedis, lettuce, and redisson
+        client-type: lettuce
+        host: localhost
+        port: 6379
+        ssl:
+          enabled: true
+          bundle: myPemBundle
+```
+
 ### 完全配置-单机
 ```yaml
 spring:
@@ -122,8 +149,8 @@ public class CustomJedisRedisChatMemoryAutoConfiguration extends RedisChatMemory
 
     private static final Logger logger = LoggerFactory.getLogger(CustomJedisRedisChatMemoryAutoConfiguration.class);
 
-    public CustomJedisRedisChatMemoryAutoConfiguration(RedisChatMemoryProperties properties, RedisChatMemoryConnectionDetails connectionDetails) {
-        super(properties, connectionDetails);
+    public CustomJedisRedisChatMemoryAutoConfiguration(RedisChatMemoryProperties properties, RedisChatMemoryConnectionDetails connectionDetails, ObjectProvider<SslBundles> sslBundles) {
+        super(properties, connectionDetails, sslBundles);
     }
 
     @Bean
@@ -140,6 +167,9 @@ public class CustomJedisRedisChatMemoryAutoConfiguration extends RedisChatMemory
                 .username(standaloneConfiguration.username())
                 .password(standaloneConfiguration.password())
                 .timeout(standaloneConfiguration.timeout())
+                .sslBundles(standaloneConfiguration.sslBundles())
+                .useSsl(standaloneConfiguration.ssl().isEnabled())
+                .bundle(standaloneConfiguration.ssl().getBundle())
                 // using your JedisPoolConfig here
                 .poolConfig(new JedisPoolConfig())
                 .build();
@@ -153,6 +183,9 @@ public class CustomJedisRedisChatMemoryAutoConfiguration extends RedisChatMemory
                 .username(clusterConfiguration.username())
                 .password(clusterConfiguration.password())
                 .timeout(clusterConfiguration.timeout())
+                .sslBundles(clusterConfiguration.sslBundles())
+                .useSsl(clusterConfiguration.ssl().isEnabled())
+                .bundle(clusterConfiguration.ssl().getBundle())
                 // using your JedisPoolConfig here
                 .poolConfig(new JedisPoolConfig())
                 .build();
@@ -176,8 +209,8 @@ public class CustomLettuceRedisChatMemoryAutoConfiguration extends RedisChatMemo
 
     private static final Logger logger = LoggerFactory.getLogger(CustomLettuceRedisChatMemoryAutoConfiguration.class);
 
-    public CustomLettuceRedisChatMemoryAutoConfiguration(RedisChatMemoryProperties properties, RedisChatMemoryConnectionDetails connectionDetails) {
-        super(properties, connectionDetails);
+    public CustomLettuceRedisChatMemoryAutoConfiguration(RedisChatMemoryProperties properties, RedisChatMemoryConnectionDetails connectionDetails, ObjectProvider<SslBundles> sslBundles) {
+        super(properties, connectionDetails, sslBundles);
     }
 
     @Override
@@ -195,6 +228,9 @@ public class CustomLettuceRedisChatMemoryAutoConfiguration extends RedisChatMemo
                 .username(standaloneConfiguration.username())
                 .password(standaloneConfiguration.password())
                 .timeout(standaloneConfiguration.timeout())
+                .sslBundles(standaloneConfiguration.sslBundles())
+                .useSsl(standaloneConfiguration.ssl().isEnabled())
+                .bundle(standaloneConfiguration.ssl().getBundle())
                 // using your GenericObjectPoolConfig here
                 .poolConfig(new GenericObjectPoolConfig<>())
                 .build();
@@ -208,6 +244,9 @@ public class CustomLettuceRedisChatMemoryAutoConfiguration extends RedisChatMemo
                 .username(clusterConfiguration.username())
                 .password(clusterConfiguration.password())
                 .timeout(clusterConfiguration.timeout())
+                .sslBundles(clusterConfiguration.sslBundles())
+                .useSsl(clusterConfiguration.ssl().isEnabled())
+                .bundle(clusterConfiguration.ssl().getBundle())
                 // using your GenericObjectPoolConfig here
                 .poolConfig(new GenericObjectPoolConfig<>())
                 .build();
@@ -231,8 +270,8 @@ public class CustomRedissonRedisChatMemoryAutoConfiguration extends RedisChatMem
 
     private static final Logger logger = LoggerFactory.getLogger(CustomRedissonRedisChatMemoryAutoConfiguration.class);
 
-    public CustomRedissonRedisChatMemoryAutoConfiguration(RedisChatMemoryProperties properties, RedisChatMemoryConnectionDetails connectionDetails) {
-        super(properties, connectionDetails);
+    public CustomRedissonRedisChatMemoryAutoConfiguration(RedisChatMemoryProperties properties, RedisChatMemoryConnectionDetails connectionDetails, ObjectProvider<SslBundles> sslBundles) {
+        super(properties, connectionDetails, sslBundles);
     }
 
     @Override
@@ -250,6 +289,9 @@ public class CustomRedissonRedisChatMemoryAutoConfiguration extends RedisChatMem
                 .username(configuration.username())
                 .password(configuration.password())
                 .timeout(configuration.timeout())
+                .sslBundles(configuration.sslBundles())
+                .useSsl(configuration.ssl().isEnabled())
+                .bundle(configuration.ssl().getBundle())
                 // using your Config here
                 .redissonConfig(new Config())
                 .build();
@@ -263,6 +305,9 @@ public class CustomRedissonRedisChatMemoryAutoConfiguration extends RedisChatMem
                 .username(configuration.username())
                 .password(configuration.password())
                 .timeout(configuration.timeout())
+                .sslBundles(configuration.sslBundles())
+                .useSsl(configuration.ssl().isEnabled())
+                .bundle(configuration.ssl().getBundle())
                 // using your Config here
                 .redissonConfig(new Config())
                 .build();

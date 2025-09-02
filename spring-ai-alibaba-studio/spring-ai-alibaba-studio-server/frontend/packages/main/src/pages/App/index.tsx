@@ -223,34 +223,6 @@ const HomePage: React.FC = () => {
                 className={styles.clickableCard}
               />
             </div>
-          </div>
-        </div>
-
-        {/* 第三栏：智能体管理 */}
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>智能体管理</h2>
-          <div className={styles.cardGrid}>
-            <div className={styles.cardItem}>
-              <ProCard
-                title="智能体管理"
-                logo={
-                  <div className={styles.cardIconDisabled}>
-                    <img
-                      src="/images/management.svg"
-                      alt="Agent Management"
-                      className={styles.iconImage}
-                    />
-                  </div>
-                }
-                info={[
-                  {
-                    content: '集中管理智能体生命周期，包括创建、配置、部署、监控和版本控制等功能',
-                  },
-                ]}
-                onClick={handleAgentManagementCardClick}
-                className={styles.disabledCard}
-              />
-            </div>
 
             <div className={styles.cardItem}>
               <ProCard
@@ -314,6 +286,34 @@ const HomePage: React.FC = () => {
                   },
                 ]}
                 onClick={handlePromptEngineeringCardClick}
+                className={styles.disabledCard}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 第三栏：智能体管理 */}
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>智能体管理</h2>
+          <div className={styles.cardGrid}>
+            <div className={styles.cardItem}>
+              <ProCard
+                title="智能体管理"
+                logo={
+                  <div className={styles.cardIconDisabled}>
+                    <img
+                      src="/images/management.svg"
+                      alt="Agent Management"
+                      className={styles.iconImage}
+                    />
+                  </div>
+                }
+                info={[
+                  {
+                    content: '集中管理智能体生命周期，包括创建、配置、部署、监控和版本控制等功能',
+                  },
+                ]}
+                onClick={handleAgentManagementCardClick}
                 className={styles.disabledCard}
               />
             </div>

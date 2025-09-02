@@ -31,11 +31,10 @@ INSERT IGNORE INTO `agent_knowledge` (`id`, `agent_id`, `title`, `content`, `typ
 (7, 4, '库存管理最佳实践', '库存管理的核心要点：\n1. 安全库存设置：确保不断货\n2. ABC分类管理：重点管理A类物料\n3. 先进先出原则：避免库存积压\n4. 定期盘点：确保数据准确性\n5. 供应商管理：建立稳定供应关系', 'document', '最佳实践', '库存管理,安全库存,ABC分类,盘点', 'active', NULL, 'text', 'completed', 2100246635, NOW(), NOW());
 
 -- 数据源示例数据
+-- 示例数据源可以运行docker-compose-datasource.yml建立，或者手动修改为自己的数据源
 INSERT IGNORE INTO `datasource` (`id`, `name`, `type`, `host`, `port`, `database_name`, `username`, `password`, `connection_url`, `status`, `test_status`, `description`, `creator_id`, `create_time`, `update_time`) VALUES 
-(1, '生产环境MySQL数据库', 'mysql', '192.168.1.100', 3306, 'production_db', 'app_user', 'encrypted_password_123', 'jdbc:mysql://192.168.1.100:3306/production_db', 'active', 'success', '生产环境主数据库，包含核心业务数据', 2100246635, NOW(), NOW()),
-(2, '数据仓库PostgreSQL', 'postgresql', '192.168.1.101', 5432, 'data_warehouse', 'analytics_user', 'encrypted_password_456', 'jdbc:postgresql://192.168.1.101:5432/data_warehouse', 'active', 'success', '数据仓库，用于数据分析和报表生成', 2100246635, NOW(), NOW()),
-(3, '测试环境MySQL', 'mysql', '192.168.1.102', 3306, 'test_db', 'test_user', 'encrypted_password_789', 'jdbc:mysql://192.168.1.102:3306/test_db', 'active', 'failed', '测试环境数据库，用于开发测试', 2100246635, NOW(), NOW()),
-(4, 'CDP客户数据平台', 'postgresql', '192.168.1.103', 5432, 'customer_data', 'cdp_user', 'encrypted_password_abc', 'jdbc:postgresql://192.168.1.103:5432/customer_data', 'inactive', 'unknown', 'CDP客户数据平台，包含客户360度数据', 2100246635, NOW(), NOW());
+(1, '生产环境MySQL数据库', 'mysql', 'mysql-data', 3306, 'product_db', 'root', 'root', 'jdbc:mysql://mysql-data:3306/product_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true', 'active', 'success', '生产环境主数据库，包含核心业务数据', 2100246635, NOW(), NOW()),
+(2, '数据仓库PostgreSQL', 'postgresql', 'postgres-data', 5432, 'data_warehouse', 'postgres', 'postgres', 'jdbc:postgresql://postgres-data:5432/data_warehouse', 'active', 'success', '数据仓库，用于数据分析和报表生成', 2100246635, NOW(), NOW());
 
 -- 智能体数据源关联示例数据
 INSERT IGNORE INTO `agent_datasource` (`id`, `agent_id`, `datasource_id`, `is_active`, `create_time`, `update_time`) VALUES 

@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.studio.admin.generator.service.dsl;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -22,6 +23,8 @@ import java.util.stream.Stream;
 import com.alibaba.cloud.ai.studio.admin.generator.model.App;
 import com.alibaba.cloud.ai.studio.admin.generator.model.AppMetadata;
 import com.alibaba.cloud.ai.studio.admin.generator.model.chatbot.ChatBot;
+import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Workflow;
 
 /**
@@ -30,6 +33,23 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Workflow;
 public abstract class AbstractDSLAdapter implements DSLAdapter {
 
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AbstractDSLAdapter.class);
+
+	protected final List<NodeDataConverter<? extends NodeData>> nodeDataConverters;
+
+	protected final Serializer serializer;
+
+	protected AbstractDSLAdapter(List<NodeDataConverter<? extends NodeData>> nodeDataConverters,
+			Serializer serializer) {
+		this.nodeDataConverters = nodeDataConverters;
+		this.serializer = serializer;
+	}
+
+	protected NodeDataConverter<? extends NodeData> getNodeDataConverter(NodeType nodeType) {
+		return nodeDataConverters.stream()
+			.filter(converter -> converter.supportNodeType(nodeType))
+			.findFirst()
+			.orElseThrow(() -> new IllegalArgumentException("invalid node type " + nodeType));
+	}
 
 	@Override
 	public App importDSL(String dsl) {

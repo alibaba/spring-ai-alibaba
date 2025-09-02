@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.rag.RagProperties;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.slf4j.Logger;
@@ -48,7 +49,7 @@ public class ProfessionalKbDecisionNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("Professional KB decision node is running.");
-		String query = state.value("query", "");
+		String query = StateUtil.getQuery(state);
 		Map<String, Object> updated = new HashMap<>();
 
 		// 如果没有启用专业知识库决策，直接返回不使用

@@ -40,7 +40,7 @@
 "area/graph":
   - changed-files:
       - any-glob-to-any-file:
-          - "spring-ai-alibaba-graph/**/*"
+          - "spring-ai-alibaba-graph-core/**/*"
 "area/core":
   - changed-files:
       - any-glob-to-any-file:

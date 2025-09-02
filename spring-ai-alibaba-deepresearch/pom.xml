@@ -24,8 +24,9 @@
         <spring-ai.version>1.0.0</spring-ai.version>
         <spring-ai-alibaba.version>1.0.0.3</spring-ai-alibaba.version>
 
-        <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
+        <openhtmltopdf.version>1.1.30</openhtmltopdf.version>
         <commonmark.version>0.24.0</commonmark.version>
+        <pdfbox.version>3.0.4</pdfbox.version>
 
         <!-- CheckStyle Maven Plugin -->
         <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
@@ -155,13 +156,13 @@
         </dependency>
 
         <dependency>
-            <groupId>com.openhtmltopdf</groupId>
+            <groupId>io.github.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-core</artifactId>
             <version>${openhtmltopdf.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>com.openhtmltopdf</groupId>
+            <groupId>io.github.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-pdfbox</artifactId>
             <version>${openhtmltopdf.version}</version>
             <exclusions>
@@ -173,7 +174,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.openhtmltopdf</groupId>
+            <groupId>io.github.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-slf4j</artifactId>
             <version>${openhtmltopdf.version}</version>
         </dependency>
@@ -227,6 +228,16 @@
     </dependencies>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>xmpbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>

@@ -33,6 +33,9 @@ public class Edge {
 
 	private Integer zIndex = 0;
 
+	// Temp field
+	private boolean isDify = true;
+
 	public String getId() {
 		return id;
 	}
@@ -93,6 +96,15 @@ public class Edge {
 
 	public Edge setzIndex(Integer zIndex) {
 		this.zIndex = zIndex;
+		return this;
+	}
+
+	public boolean isDify() {
+		return isDify;
+	}
+
+	public Edge setDify(boolean isDify) {
+		this.isDify = isDify;
 		return this;
 	}
 

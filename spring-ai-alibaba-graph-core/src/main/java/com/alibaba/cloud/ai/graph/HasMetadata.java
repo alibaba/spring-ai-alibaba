@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.utils.TypeRef;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -38,14 +40,19 @@ public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 	String INTERRUPT_PREFIX = "__NODE_INTERRUPT__";
 
 	/**
-	 * Formats a node ID by prefixing it with the interrupt prefix. The formatted node ID
-	 * follows the pattern "__INTERRUPT__(nodeId)".
-	 * @param nodeId the node ID to format, cannot be null
-	 * @return the formatted node ID string
-	 * @throws NullPointerException if nodeId is null
+	 * Returns a type-safe metadata value for the given key.
+	 * <p>
+	 * This method retrieves the metadata object and attempts to cast it to the specified
+	 * type.
+	 * @param <T> the type of the metadata value
+	 * @param key the metadata key
+	 * @param typeRef a {@link TypeRef} representing the desired type of the value
+	 * @return an {@link Optional} containing the metadata value cast to the specified
+	 * type, or an empty {@link Optional} if the key is not found or the value cannot be
+	 * cast.
 	 */
-	static String formatNodeId(String nodeId) {
-		return format("%s(%s)", INTERRUPT_PREFIX, requireNonNull(nodeId, "nodeId cannot be null!"));
+	default <T> Optional<T> metadata(String key, TypeRef<T> typeRef) {
+		return metadata(key).flatMap(typeRef::cast);
 	}
 
 	/**
@@ -59,6 +66,17 @@ public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 		return metadata(key);
 	};
 
+	/**
+	 * Formats a node ID by prefixing it with the interrupt prefix. The formatted node ID
+	 * follows the pattern "__INTERRUPT__(nodeId)".
+	 * @param nodeId the node ID to format, cannot be null
+	 * @return the formatted node ID string
+	 * @throws NullPointerException if nodeId is null
+	 */
+	static String formatNodeId(String nodeId) {
+		return format("%s(%s)", INTERRUPT_PREFIX, requireNonNull(nodeId, "nodeId cannot be null!"));
+	}
+
 	class Builder<B extends Builder<B>> {
 
 		private Map<String, Object> metadata;
@@ -71,7 +89,9 @@ public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 		}
 
 		protected Builder(Map<String, Object> metadata) {
-			this.metadata = metadata;
+			if (metadata != null && !metadata.isEmpty()) {
+				this.metadata = new HashMap<>(metadata);
+			}
 		}
 
 		@SuppressWarnings("unchecked")

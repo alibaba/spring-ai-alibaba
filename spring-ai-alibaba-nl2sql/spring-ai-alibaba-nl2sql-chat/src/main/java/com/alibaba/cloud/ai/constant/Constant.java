@@ -130,4 +130,9 @@ public class Constant {
 
 	public static final String PYTHON_ANALYSIS_NODE_OUTPUT = "PYTHON_ANALYSIS_NODE_OUTPUT";
 
+	// nl2sql接口预留相关
+	public static final String IS_ONLY_NL2SQL = "IS_ONLY_NL2SQL";
+
+	public static final String ONLY_NL2SQL_OUTPUT = "ONLY_NL2SQL_OUTPUT";
+
 }

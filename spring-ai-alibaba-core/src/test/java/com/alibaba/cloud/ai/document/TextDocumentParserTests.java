@@ -62,24 +62,21 @@ class TextDocumentParserTests {
 
 	@Test
 	void testParseEmptyText() {
-		// Test parsing empty text should throw exception
+		// An empty string should trigger an IllegalArgumentException.
 		String text = "";
 		TextDocumentParser parser = new TextDocumentParser();
 
-		RuntimeException exception = assertThrows(RuntimeException.class, () -> parser.parse(toInputStream(text)));
-
-		assertThat(exception).hasRootCauseInstanceOf(Exception.class);
+		assertThrows(IllegalArgumentException.class, () -> parser.parse(toInputStream(text)));
 	}
 
 	@Test
 	void testParseBlankText() {
-		// Test parsing blank text (only whitespace) should throw exception
+		// A blank string containing spaces or inserted characters should also throw an
+		// IllegalArgumentException.
 		String text = "   \n\t   ";
 		TextDocumentParser parser = new TextDocumentParser();
 
-		RuntimeException exception = assertThrows(RuntimeException.class, () -> parser.parse(toInputStream(text)));
-
-		assertThat(exception).hasRootCauseInstanceOf(Exception.class);
+		assertThrows(IllegalArgumentException.class, () -> parser.parse(toInputStream(text)));
 	}
 
 	@Test

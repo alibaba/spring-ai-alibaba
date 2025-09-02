@@ -1,0 +1,116 @@
+#Copyright 2024-2025 the original author or authors.
+#
+#Licensed under the Apache License, Version 2.0 (the "License");
+#you may not use this file except in compliance with the License.
+#You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#Unless required by applicable law or agreed to in writing, software
+#distributed under the License is distributed on an "AS IS" BASIS,
+#WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#See the License for the specific language governing permissions and
+#limitations under the License.
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: nl2sql-mysql-inner
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: nl2sql_db
+#    volumes:
+#      - nl2sql-mysql-inner-data:/var/lib/mysql
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 后端服务
+  backend:
+    build:
+      context: ..
+      dockerfile: ./docker-file/Dockerfile-backend
+    container_name: nl2sql-backend
+    environment:
+      - NL2SQL_DATASOURCE_URL=jdbc:mysql://mysql:3306/nl2sql_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - NL2SQL_DATASOURCE_USERNAME=root
+      - NL2SQL_DATASOURCE_USERNAME=root
+      - AI_DASHSCOPE_API_KEY=${AI_DASHSCOPE_API_KEY}
+    ports:
+      - "8065:8065"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mysql-data:
+        condition: service_healthy
+      postgres-data:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: no
+
+  # Vue前端服务
+  frontend:
+    build:
+      context: ..
+      dockerfile: ./docker-file/Dockerfile-frontend
+    container_name: nl2sql-frontend
+    ports:
+      - "3000:3000"  # 只暴露前端端口
+    depends_on:
+      - backend
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # MySQL 模拟数据源
+  mysql-data:
+    image: mysql:8.0
+    container_name: nl2sql-mysql-datasource
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    networks:
+      - app-network
+    volumes:
+      - ./config/mysql:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL 模拟数据源
+  postgres-data:
+    image: postgres:15
+    container_name: nl2sql-postgres-datasource
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      - app-network
+    volumes:
+      - ./config/postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  nl2sql-mysql-inner-data:
+
+networks:
+  app-network:
+    driver: bridge
+    name: "nl2sql-network"

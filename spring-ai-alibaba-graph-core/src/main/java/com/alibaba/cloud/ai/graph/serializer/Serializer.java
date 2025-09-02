@@ -55,19 +55,9 @@ public interface Serializer<T> {
 		}
 	}
 
-	@Deprecated(forRemoval = true)
-	default byte[] writeObject(T object) throws IOException {
-		return objectToBytes(object);
-	}
-
-	@Deprecated(forRemoval = true)
-	default T readObject(byte[] bytes) throws IOException, ClassNotFoundException {
-		return bytesToObject(bytes);
-	}
-
 	default T cloneObject(T object) throws IOException, ClassNotFoundException {
 		Objects.requireNonNull(object, "object cannot be null");
-		return readObject(writeObject(object));
+		return bytesToObject(objectToBytes(object));
 	}
 
 }

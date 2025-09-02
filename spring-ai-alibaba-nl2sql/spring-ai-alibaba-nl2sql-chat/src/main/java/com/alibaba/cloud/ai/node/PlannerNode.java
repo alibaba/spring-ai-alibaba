@@ -34,6 +34,7 @@ import java.util.Map;
 
 import static com.alibaba.cloud.ai.constant.Constant.BUSINESS_KNOWLEDGE;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
+import static com.alibaba.cloud.ai.constant.Constant.IS_ONLY_NL2SQL;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_ERROR;
 import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_MODEL;
@@ -60,6 +61,9 @@ public class PlannerNode implements NodeAction {
 		String businessKnowledgePrompt = (String) state.value(BUSINESS_KNOWLEDGE).orElse("");
 		String semanticModelPrompt = (String) state.value(SEMANTIC_MODEL).orElse("");
 
+		// 是否为NL2SQL模式
+		Boolean onlyNl2sql = state.value(IS_ONLY_NL2SQL, false);
+
 		SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
 		String schemaStr = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
 
@@ -79,7 +83,10 @@ public class PlannerNode implements NodeAction {
 
 		Map<String, Object> params = Map.of("user_question", userPrompt, "schema", schemaStr, "business_knowledge",
 				businessKnowledgePrompt, "semantic_model", semanticModelPrompt);
-		String plannerPrompt = PromptConstant.getPlannerPromptTemplate().render(params);
+		// 根据模式选择planer的Prompt
+		String plannerPrompt = (onlyNl2sql ? PromptConstant.getPlannerNl2sqlOnlyTemplate()
+				: PromptConstant.getPlannerPromptTemplate())
+			.render(params);
 		Flux<ChatResponse> chatResponseFlux = chatClient.prompt().user(plannerPrompt).stream().chatResponse();
 
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,

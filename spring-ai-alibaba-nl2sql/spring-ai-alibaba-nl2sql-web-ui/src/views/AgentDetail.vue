@@ -464,20 +464,10 @@
 
             <!-- Prompt配置 -->
             <div v-if="activeTab === 'prompt'" class="tab-content">
-              <div class="content-header">
-                <h2>自定义Prompt配置（待实现）</h2>
-                <p class="content-subtitle">TODO：这里配置的Prompt仅用作效果优化，需支持多个提示词配置，系统已内置提示词<br/>如：<br/>1. 查询的年销售额精确到小数点后两位。<br/>2. 报告格式第一章节请先总结年销售额</p>
-              </div>
-              <div class="prompt-config-section">
-                <div class="form-group">
-                  <label>智能体Prompt</label>
-                  <textarea v-model="agent.prompt" class="form-control" rows="8" 
-                    placeholder="请输入智能体的提示词，定义智能体的基本行为和角色"></textarea>
-                </div>
-                <div class="form-actions">
-                  <button class="btn btn-primary" @click="updateAgent">保存配置</button>
-                </div>
-              </div>
+              <PromptOptimizationConfig 
+                :prompt-type="'report-generator'"
+                :agent-prompt="agent.prompt"
+              />
             </div>
 
             <!-- 数据源配置 -->
@@ -1406,11 +1396,13 @@ import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { agentApi, businessKnowledgeApi, semanticModelApi, datasourceApi, presetQuestionApi } from '../utils/api.js'
 import AgentDebugPanel from '../components/AgentDebugPanel.vue'
+import PromptOptimizationConfig from '../components/PromptOptimizationConfig.vue'
 
 export default {
   name: 'AgentDetail',
   components: {
-    AgentDebugPanel
+    AgentDebugPanel,
+    PromptOptimizationConfig
   },
   setup() {
     const router = useRouter()
@@ -3783,11 +3775,6 @@ html {
   background: #f5f5f5;
   color: #999;
   border: 1px solid #d9d9d9;
-}
-
-/* Prompt配置样式 */
-.prompt-config-section {
-  max-width: 800px;
 }
 
 /* 审计日志样式 */

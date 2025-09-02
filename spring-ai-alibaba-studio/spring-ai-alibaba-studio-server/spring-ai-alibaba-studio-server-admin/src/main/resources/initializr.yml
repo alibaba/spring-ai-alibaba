@@ -208,13 +208,13 @@ initializr:
           id: spring-ai-alibaba-graph
           group-id: com.alibaba.cloud.ai
           artifact-id: spring-ai-alibaba-graph-core
-          version: 1.0.0.3-SNAPSHOT
+          version: 1.0.0.4-SNAPSHOT
           description: Building agent using Spring AI Alibaba Graph
         - name: Spring AI Alibaba Dashscope
           id: spring-ai-alibaba-starter-dashscope
           group-id: com.alibaba.cloud.ai
           artifact-id: spring-ai-alibaba-starter-dashscope
-          version: 1.0.0.3-SNAPSHOT
+          version: 1.0.0.4-SNAPSHOT
           description: DashScope Model adapted Starter
     - name: Developer Tools
       content:

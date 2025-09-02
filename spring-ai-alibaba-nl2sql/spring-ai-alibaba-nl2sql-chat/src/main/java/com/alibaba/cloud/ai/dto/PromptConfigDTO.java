@@ -21,16 +21,17 @@ package com.alibaba.cloud.ai.dto;
  *
  * @author Makoto
  */
+
 public record PromptConfigDTO(String id, // Configuration ID (required for update)
 		String name, // Configuration name
 		String promptType, // Prompt type
-		String systemPrompt, // User-defined system prompt content
+		String optimizationPrompt, // User-defined system prompt content
 		Boolean enabled, // Whether to enable this configuration
 		String description, // Configuration description
 		String creator // Creator
 ) {
-	public PromptConfigDTO(String promptType, String systemPrompt) {
-		this(null, null, promptType, systemPrompt, true, null, null);
+	public PromptConfigDTO(String promptType, String optimizationPrompt) {
+		this(null, null, promptType, optimizationPrompt, true, null, null);
 	}
 
 	@Override
@@ -61,8 +62,8 @@ public record PromptConfigDTO(String id, // Configuration ID (required for updat
 	}
 
 	@Override
-	public String systemPrompt() {
-		return systemPrompt;
+	public String optimizationPrompt() {
+		return optimizationPrompt;
 	}
 
 	@Override

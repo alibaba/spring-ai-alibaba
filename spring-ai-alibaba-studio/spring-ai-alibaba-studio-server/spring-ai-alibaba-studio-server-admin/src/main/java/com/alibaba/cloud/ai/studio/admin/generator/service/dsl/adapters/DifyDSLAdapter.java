@@ -58,21 +58,9 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
 	private static final String[] DIFY_WORKFLOW_MODES = { "workflow", "advanced-chat" };
 
-	private final List<NodeDataConverter<? extends NodeData>> nodeDataConverters;
-
-	private final Serializer serializer;
-
 	public DifyDSLAdapter(List<NodeDataConverter<? extends NodeData>> nodeDataConverters,
 			@Qualifier("yaml") Serializer serializer) {
-		this.nodeDataConverters = nodeDataConverters;
-		this.serializer = serializer;
-	}
-
-	private NodeDataConverter<? extends NodeData> getNodeDataConverter(NodeType nodeType) {
-		return nodeDataConverters.stream()
-			.filter(converter -> converter.supportNodeType(nodeType))
-			.findFirst()
-			.orElseThrow(() -> new IllegalArgumentException("invalid dify node type " + nodeType));
+		super(nodeDataConverters, serializer);
 	}
 
 	@Override

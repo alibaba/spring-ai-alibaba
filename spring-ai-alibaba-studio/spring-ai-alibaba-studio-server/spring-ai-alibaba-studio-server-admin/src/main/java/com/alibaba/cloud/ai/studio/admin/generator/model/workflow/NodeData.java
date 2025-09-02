@@ -73,8 +73,4 @@ public class NodeData {
 		this.varName = varName;
 	}
 
-	public static String defaultOutputKey(String nodeId) {
-		return nodeId + "_output";
-	}
-
 }

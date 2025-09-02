@@ -30,6 +30,12 @@
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-nl2sql-chat</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jboss.slf4j</groupId>
+                    <artifactId>slf4j-jboss-logmanager</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -163,7 +169,16 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration></configuration>
+                <configuration>
+                    <mainClass>com.alibaba.cloud.ai.Application</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

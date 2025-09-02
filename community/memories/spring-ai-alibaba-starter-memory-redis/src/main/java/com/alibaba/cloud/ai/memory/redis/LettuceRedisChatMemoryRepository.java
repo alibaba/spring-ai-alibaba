@@ -15,13 +15,17 @@
  */
 package com.alibaba.cloud.ai.memory.redis;
 
+import com.alibaba.cloud.ai.memory.redis.builder.RedisChatMemoryBuilder;
 import io.lettuce.core.ClientOptions;
 import io.lettuce.core.SocketOptions;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.boot.ssl.SslBundle;
+import org.springframework.boot.ssl.SslOptions;
 import org.springframework.data.redis.connection.*;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -32,7 +36,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -71,55 +74,12 @@ public class LettuceRedisChatMemoryRepository extends BaseRedisChatMemoryReposit
 		return new RedisBuilder();
 	}
 
-	public static class RedisBuilder {
-
-		private String host = "127.0.0.1";
-
-		/**
-		 * example 127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381
-		 */
-		private List<String> nodes = new ArrayList<>();
-
-		private int port = 6379;
-
-		private String username;
-
-		private String password;
-
-		private int timeout = 2000;
+	public static class RedisBuilder extends RedisChatMemoryBuilder<RedisBuilder> {
 
 		private GenericObjectPoolConfig<?> poolConfig;
 
-		private boolean useCluster = false;
-
-		public RedisBuilder host(String host) {
-			this.host = host;
-			return this;
-		}
-
-		public RedisBuilder nodes(List<String> nodes) {
-			this.nodes = nodes;
-			this.useCluster = true;
-			return this;
-		}
-
-		public RedisBuilder port(int port) {
-			this.port = port;
-			return this;
-		}
-
-		public RedisBuilder username(String username) {
-			this.username = username;
-			return this;
-		}
-
-		public RedisBuilder password(String password) {
-			this.password = password;
-			return this;
-		}
-
-		public RedisBuilder timeout(int timeout) {
-			this.timeout = timeout;
+		@Override
+		protected RedisBuilder self() {
 			return this;
 		}
 
@@ -138,12 +98,7 @@ public class LettuceRedisChatMemoryRepository extends BaseRedisChatMemoryReposit
 				if (StringUtils.hasText(password)) {
 					clusterConfig.setPassword(password);
 				}
-				LettucePoolingClientConfiguration.LettucePoolingClientConfigurationBuilder clientBuilder = LettucePoolingClientConfiguration
-					.builder()
-					.commandTimeout(Duration.ofMillis(timeout))
-					.poolConfig(poolConfig != null ? poolConfig : createDefaultPoolConfig())
-					.clientOptions(createClientOptions());
-				lettuceConnectionFactory = new LettuceConnectionFactory(clusterConfig, clientBuilder.build());
+				lettuceConnectionFactory = new LettuceConnectionFactory(clusterConfig, applyConfiguration());
 			}
 			else {
 				RedisStandaloneConfiguration standaloneConfig = new RedisStandaloneConfiguration(host, port);
@@ -153,19 +108,49 @@ public class LettuceRedisChatMemoryRepository extends BaseRedisChatMemoryReposit
 				if (StringUtils.hasText(password)) {
 					standaloneConfig.setPassword(password);
 				}
-				LettucePoolingClientConfiguration.LettucePoolingClientConfigurationBuilder clientBuilder = LettucePoolingClientConfiguration
-					.builder()
-					.commandTimeout(Duration.ofMillis(timeout))
-					.poolConfig(poolConfig != null ? poolConfig : createDefaultPoolConfig())
-					.clientOptions(createClientOptions());
-				lettuceConnectionFactory = new LettuceConnectionFactory(standaloneConfig, clientBuilder.build());
+				lettuceConnectionFactory = new LettuceConnectionFactory(standaloneConfig, applyConfiguration());
 			}
 			lettuceConnectionFactory.setShareNativeConnection(false);
 			lettuceConnectionFactory.afterPropertiesSet();
 			return new LettuceRedisChatMemoryRepository(lettuceConnectionFactory);
 		}
 
+		private LettuceClientConfiguration applyConfiguration() {
+			// apply pool
+			LettuceClientConfiguration.LettuceClientConfigurationBuilder builder = LettucePoolingClientConfiguration
+				.builder()
+				.poolConfig(createDefaultPoolConfig());
+			// apply timeout
+			builder.commandTimeout(Duration.ofMillis(timeout));
+			ClientOptions.Builder clientOptions = createClientOptions();
+			// apply ssl
+			if (useSsl && StringUtils.hasText(bundle)) {
+				if (sslBundles == null) {
+					throw new IllegalStateException(
+							"spring.ssl configuration is required when use SSL in redis chat memory");
+				}
+				builder.useSsl();
+				SslBundle sslBundle = sslBundles.getBundle(bundle);
+				io.lettuce.core.SslOptions.Builder sslOptionsBuilder = io.lettuce.core.SslOptions.builder();
+				sslOptionsBuilder.keyManager(sslBundle.getManagers().getKeyManagerFactory());
+				sslOptionsBuilder.trustManager(sslBundle.getManagers().getTrustManagerFactory());
+				SslOptions sslOptions = sslBundle.getOptions();
+				if (sslOptions.getCiphers() != null) {
+					sslOptionsBuilder.cipherSuites(sslOptions.getCiphers());
+				}
+				if (sslOptions.getEnabledProtocols() != null) {
+					sslOptionsBuilder.protocols(sslOptions.getEnabledProtocols());
+				}
+				clientOptions.sslOptions(sslOptionsBuilder.build());
+			}
+			builder.clientOptions(clientOptions.build());
+			return builder.build();
+		}
+
 		private GenericObjectPoolConfig<?> createDefaultPoolConfig() {
+			if (poolConfig != null) {
+				return poolConfig;
+			}
 			GenericObjectPoolConfig<?> config = new GenericObjectPoolConfig<>();
 			config.setMaxTotal(8);
 			config.setMaxIdle(8);
@@ -173,13 +158,12 @@ public class LettuceRedisChatMemoryRepository extends BaseRedisChatMemoryReposit
 			return config;
 		}
 
-		private ClientOptions createClientOptions() {
+		private ClientOptions.Builder createClientOptions() {
 			return ClientOptions.builder()
 				.socketOptions(
 						SocketOptions.builder().connectTimeout(Duration.ofMillis(timeout)).keepAlive(true).build())
 				.autoReconnect(true)
-				.disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)
-				.build();
+				.disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS);
 		}
 
 	}

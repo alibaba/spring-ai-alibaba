@@ -39,4 +39,12 @@ public interface KeyStrategy extends BiFunction<Object, Object, Object> {
 
 	KeyStrategy MERGE = new MergeStrategy();
 
+	/**
+	 * Creates a new builder instance for constructing KeyStrategy configurations.
+	 * @return a new KeyStrategyFactoryBuilder instance
+	 */
+	static KeyStrategyFactoryBuilder builder() {
+		return new KeyStrategyFactoryBuilder();
+	}
+
 }

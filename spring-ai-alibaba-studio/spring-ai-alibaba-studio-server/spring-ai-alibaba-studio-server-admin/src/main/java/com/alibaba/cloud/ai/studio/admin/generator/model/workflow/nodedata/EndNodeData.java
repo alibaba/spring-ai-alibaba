@@ -28,6 +28,12 @@ public class EndNodeData extends NodeData {
 		return new Variable("output", VariableType.ARRAY_STRING.value());
 	}
 
+	private String outputKey;
+
+	private String outputType;
+
+	private String textTemplate;
+
 	public String getOutputKey() {
 		return outputKey;
 	}
@@ -37,7 +43,21 @@ public class EndNodeData extends NodeData {
 		return this;
 	}
 
-	private String outputKey;
+	public String getOutputType() {
+		return outputType;
+	}
+
+	public void setOutputType(String outputType) {
+		this.outputType = outputType;
+	}
+
+	public String getTextTemplate() {
+		return textTemplate;
+	}
+
+	public void setTextTemplate(String textTemplate) {
+		this.textTemplate = textTemplate;
+	}
 
 	public EndNodeData() {
 	}

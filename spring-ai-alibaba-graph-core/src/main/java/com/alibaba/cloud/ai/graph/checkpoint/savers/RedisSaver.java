@@ -61,6 +61,15 @@ public class RedisSaver implements BaseCheckpointSaver {
 		this.objectMapper = new ObjectMapper();
 	}
 
+	/**
+	 * Instantiates a new Redis saver.
+	 * @param redisson the redisson
+	 */
+	public RedisSaver(RedissonClient redisson, ObjectMapper objectMapper) {
+		this.redisson = redisson;
+		this.objectMapper = objectMapper;
+	}
+
 	@Override
 	public Collection<Checkpoint> list(RunnableConfig config) {
 		Optional<String> configOption = config.threadId();

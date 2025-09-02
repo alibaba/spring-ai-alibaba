@@ -91,55 +91,50 @@ public class BackgroundInvestigationNode implements NodeAction {
 			// 使用统一的智能搜索选择方法
 			SmartAgentUtil.SearchSelectionResult searchSelection = smartAgentSelectionHelper
 				.intelligentSearchSelection(state, query);
-			List<Map<String, String>> results = new ArrayList<>();
+			List<Map<String, String>> results;
 
 			// 使用支持工具调用的搜索方法
-			results = searchInfoService.searchInfo(state.value("enable_search_filter", true),
-					searchSelection.getSearchEnum(), query, searchSelection.getSearchPlatform());
+			results = searchInfoService.searchInfo(StateUtil.isSearchFilter(state), searchSelection.getSearchEnum(),
+					query, searchSelection.getSearchPlatform());
 			resultMap.put("site_information", results);
 			resultsList.add(results);
 		}
 
-		if (!resultsList.isEmpty()) {
-			List<String> backgroundResults = new ArrayList<>();
-			assert resultsList.size() != queries.size();
+		List<String> backgroundResults = new ArrayList<>();
+		assert resultsList.size() != queries.size();
 
-			for (int i = 0; i < resultsList.size(); i++) {
-				List<Map<String, String>> searchResults = resultsList.get(i);
+		for (int i = 0; i < resultsList.size(); i++) {
+			List<Map<String, String>> searchResults = resultsList.get(i);
 
-				String query = queries.get(i);
+			String query = queries.get(i);
 
-				Message messages = new UserMessage(
-						"搜索问题:" + query + "\n" + "以下是搜索结果：\n\n" + searchResults.stream().map(r -> {
-							return String.format("标题: %s\n权重: %s\n内容: %s\n", r.get("title"), r.get("weight"),
-									r.get("content"));
-						}).collect(Collectors.joining("\n\n")));
+			Message messages = new UserMessage(
+					"搜索问题:" + query + "\n" + "以下是搜索结果：\n\n" + searchResults.stream().map(r -> {
+						return String.format("标题: %s\n权重: %s\n内容: %s\n", r.get("title"), r.get("weight"),
+								r.get("content"));
+					}).collect(Collectors.joining("\n\n")));
 
-				String sessionId = state.value("session_id", String.class).orElse("__default__");
-				List<SessionHistory> reports = sessionContextService.getRecentReports(sessionId);
-				Message lastReportMessage;
-				if (reports != null && !reports.isEmpty()) {
-					lastReportMessage = new AssistantMessage("这是用户前几次使用DeepResearch的报告：\r\n"
-							+ reports.stream().map(SessionHistory::toString).collect(Collectors.joining("\r\n\r\n")));
-				}
-				else {
-					lastReportMessage = new AssistantMessage("这是用户的第一次询问，因此没有上下文。");
-				}
-
-				String content = backgroundAgent.prompt().messages(lastReportMessage, messages).call().content();
-
-				backgroundResults.add(content);
-
-				logger.info("背景调查报告生成已完成: {}", backgroundResults.size());
+			String sessionId = state.value("session_id", String.class).orElse("__default__");
+			List<SessionHistory> reports = sessionContextService.getRecentReports(sessionId);
+			Message lastReportMessage;
+			if (reports != null && !reports.isEmpty()) {
+				lastReportMessage = new AssistantMessage("这是用户前几次使用DeepResearch的报告：\r\n"
+						+ reports.stream().map(SessionHistory::toString).collect(Collectors.joining("\r\n\r\n")));
 			}
-			resultMap.put("background_investigation_results", backgroundResults);
+			else {
+				lastReportMessage = new AssistantMessage("这是用户的第一次询问，因此没有上下文。");
+			}
+
+			String content = backgroundAgent.prompt().messages(lastReportMessage, messages).call().content();
+
+			backgroundResults.add(content);
+
+			logger.info("背景调查报告生成已完成: {}", backgroundResults.size());
 		}
-		else {
-			logger.warn("⚠️ 搜索失败");
-		}
+		resultMap.put("background_investigation_results", backgroundResults);
 
 		String nextStep = "planner";
-		if (!state.value("enable_deepresearch", true)) {
+		if (!StateUtil.isDeepresearch(state)) {
 			nextStep = "reporter";
 		}
 		resultMap.put("background_investigation_next_node", nextStep);

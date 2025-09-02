@@ -63,7 +63,8 @@ public class McpAssignNodeProperties {
 	/**
 	 * MCP服务器信息
 	 */
-	public static record McpServerInfo(String url, String sseEndpoint, String description, boolean enabled) {
+	public static record McpServerInfo(String url, @JsonProperty("sse-endpoint") String sseEndpoint, String description,
+			boolean enabled) {
 	}
 
 }

@@ -28,7 +28,9 @@ public class PlantUMLGenerator extends DiagramGenerator {
 
 		if (ctx.isSubGraph()) {
 			ctx.sb()
-				.append(format("rectangle %s [ {{\ntitle \"%s\"\n", ctx.title(), ctx.title()))
+				// .append(format("rectangle %s [ {{\ntitle \"%s\"\n", ctx.title(),
+				// ctx.title()))
+				.append(format("package %s [\n{{\n", ctx.title()))
 				.append(format("circle \" \" as %s\n", START))
 				.append(format("circle exit as %s\n", END));
 		}
@@ -51,7 +53,7 @@ public class PlantUMLGenerator extends DiagramGenerator {
 	@Override
 	protected void appendFooter(Context ctx) {
 		if (ctx.isSubGraph()) {
-			ctx.sb().append("\n}} ]\n");
+			ctx.sb().append("}}\n]\n");
 		}
 		else {
 			ctx.sb().append("@enduml\n");

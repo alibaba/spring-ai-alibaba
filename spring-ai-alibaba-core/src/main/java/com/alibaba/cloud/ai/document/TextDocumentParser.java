@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.document;
 import org.springframework.ai.document.Document;
 import org.springframework.util.Assert;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -44,13 +45,17 @@ public class TextDocumentParser implements DocumentParser {
 	@Override
 	public List<Document> parse(InputStream inputStream) {
 		try {
-			String text = new String(inputStream.readAllBytes(), charset);
+			// Read all text from the input stream and decode it using the specified
+			// character set.
+			String text = new String(inputStream.readAllBytes(), this.charset);
+			// If the text is completely empty, report an illegal argument exception.
 			if (text.isBlank()) {
-				throw new Exception();
+				throw new IllegalArgumentException("text must not be blank");
 			}
 			return Collections.singletonList(new Document(text));
 		}
-		catch (Exception e) {
+		catch (IOException e) {
+			// Convert any IO exception into a RuntimeException for propagation.
 			throw new RuntimeException(e);
 		}
 	}

@@ -17,9 +17,11 @@
 package com.alibaba.cloud.ai.graph.internal.node;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.exception.Errors;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -35,6 +37,8 @@ import static java.lang.String.format;
  *
  */
 public class Node {
+
+	public static final String PRIVATE_PREFIX = "__";
 
 	public interface ActionFactory {
 
@@ -57,6 +61,20 @@ public class Node {
 	 */
 	public Node(String id) {
 		this(id, null);
+	}
+
+	public void validate() throws GraphStateException {
+		if (Objects.equals(id, StateGraph.END) || Objects.equals(id, StateGraph.START)) {
+			return;
+		}
+
+		if (id.isBlank()) {
+			throw Errors.invalidNodeIdentifier.exception("blank node id");
+		}
+
+		if (id.startsWith(PRIVATE_PREFIX)) {
+			throw Errors.invalidNodeIdentifier.exception("id that start with %s", PRIVATE_PREFIX);
+		}
 	}
 
 	/**

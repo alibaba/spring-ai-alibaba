@@ -89,22 +89,18 @@ public interface NodeDataConverter<T extends NodeData> {
 	 * @return 一个BiConsumer，接受参数：T nodeData和Map idToVarName
 	 */
 	default BiConsumer<T, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
-		return switch (dialectType) {
-			case DIFY -> (nodeData, idToVarName) -> {
-				// 将所有的输入变量的nodeId转化为nodeName
-				nodeData.setInputs(
-						Optional.ofNullable(nodeData.getInputs()).orElse(List.of()).stream().peek(variableSelector -> {
-							String nodeId = variableSelector.getNamespace();
-							String nodeName = idToVarName.get(nodeId);
-							if (StringUtils.hasText(nodeName)) {
-								variableSelector.setNamespace(nodeName);
-							}
-							variableSelector
-								.setNameInCode(variableSelector.getNamespace() + "_" + variableSelector.getName());
-						}).toList());
-			};
-			case CUSTOM -> (nodeData, idToVarName) -> {
-			};
+		return (nodeData, idToVarName) -> {
+			// 将所有的输入变量的nodeId转化为nodeName
+			nodeData.setInputs(
+					Optional.ofNullable(nodeData.getInputs()).orElse(List.of()).stream().peek(variableSelector -> {
+						String nodeId = variableSelector.getNamespace();
+						String nodeName = idToVarName.get(nodeId);
+						if (StringUtils.hasText(nodeName)) {
+							variableSelector.setNamespace(nodeName);
+						}
+						variableSelector
+							.setNameInCode(variableSelector.getNamespace() + "_" + variableSelector.getName());
+					}).toList());
 		};
 	}
 
@@ -134,7 +130,25 @@ public interface NodeDataConverter<T extends NodeData> {
 				matcher.appendTail(result);
 				return result.toString();
 			};
-			case CUSTOM -> (str, idToVarName) -> str;
+			case STUDIO -> (str, idToVarName) -> {
+				if (Strings.isNullOrEmpty(str)) {
+					return str;
+				}
+				StringBuilder result = new StringBuilder();
+				Pattern pattern = Pattern.compile("\\$\\{(\\w+)\\.(\\w+)}");
+				Matcher matcher = pattern.matcher(str);
+				while (matcher.find()) {
+					String nodeId = matcher.group(1);
+					String varName = matcher.group(2);
+					String res = "{"
+							+ idToVarName.getOrDefault(nodeId, StringUtils.hasText(nodeId) ? nodeId : "unknown") + "_"
+							+ varName + "}";
+					matcher.appendReplacement(result, Matcher.quoteReplacement(res));
+				}
+				matcher.appendTail(result);
+				return result.toString();
+			};
+			default -> (str, idToVarName) -> str;
 		};
 	}
 

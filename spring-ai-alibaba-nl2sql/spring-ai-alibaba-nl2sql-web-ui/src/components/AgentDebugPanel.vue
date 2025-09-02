@@ -100,7 +100,7 @@
           type="text"
           v-model="debugQuery"
           class="debug-input"
-          placeholder="请输入测试问题..."
+          placeholder="请输入问题..."
           :disabled="isDebugging || isInitializing"
           @keyup.enter="startDebug"
           ref="debugInput"
@@ -274,7 +274,7 @@ export default {
     const debugAgentId = props.agentId + DEBUG_AGENT_ID_OFFSET
 
     // 响应式数据
-    const debugQuery = ref('查询用户总数')
+    const debugQuery = ref('')
     const isDebugging = ref(false)
     const isInitializing = ref(false)
     const isInitialized = ref(false)
@@ -319,7 +319,7 @@ export default {
       if (isDebugging.value) return
 
       if (!debugQuery.value || !debugQuery.value.trim()) {
-        debugQuery.value = '查询用户总数'
+        debugQuery.value = ''
       }
 
       startDebug()

@@ -116,11 +116,6 @@ public final class CollectionsUtils {
 		return new AbstractMap.SimpleImmutableEntry<>(key, value);
 	}
 
-	@Deprecated
-	public static <T> List<T> listOf(Class<T> clazz) {
-		return Collections.emptyList();
-	}
-
 	/**
 	 * Creates a list containing the provided elements. It allows null values.
 	 * @param objects the elements to be included in the list

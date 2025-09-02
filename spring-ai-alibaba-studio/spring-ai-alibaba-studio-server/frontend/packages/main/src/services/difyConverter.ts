@@ -3,6 +3,7 @@ import { request } from '@/request';
 export interface DifyConvertParams {
   dependencies: string;
   appMode: string;
+  dslDialectType: string;
   type: string;
   language: string;
   bootVersion: string;

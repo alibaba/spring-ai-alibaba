@@ -24,6 +24,6 @@ package com.alibaba.cloud.ai.service.code;
  */
 public enum CodePoolExecutorEnum {
 
-	DOCKER, CONTAINERD, KATA, AI_SIMULATION;
+	DOCKER, CONTAINERD, KATA, AI_SIMULATION, LOCAL;
 
 }

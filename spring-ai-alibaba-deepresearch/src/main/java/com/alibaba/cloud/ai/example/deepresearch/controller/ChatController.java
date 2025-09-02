@@ -19,10 +19,10 @@ package com.alibaba.cloud.ai.example.deepresearch.controller;
 import com.alibaba.cloud.ai.example.deepresearch.config.DeepResearchProperties;
 import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
 import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
+import com.alibaba.cloud.ai.example.deepresearch.model.ApiResponse;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.FeedbackRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.GraphId;
-import com.alibaba.cloud.ai.example.deepresearch.model.response.ReportResponse;
 import com.alibaba.cloud.ai.example.deepresearch.util.SearchBeanUtil;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
@@ -138,10 +138,10 @@ public class ChatController {
 			});
 	}
 
-	@DeleteMapping("/stop")
-	public ReportResponse<?> stopGraph(@RequestBody GraphId graphId) {
-		return graphProcess.stopGraph(graphId) ? ReportResponse.success(graphId.threadId(), "Success", null)
-				: ReportResponse.error(graphId.threadId(), "Failure");
+	@PostMapping("/stop")
+	public ApiResponse<String> stopGraph(@RequestBody GraphId graphId) {
+		return graphProcess.stopGraph(graphId) ? ApiResponse.success(graphId.threadId())
+				: ApiResponse.error("Failure", graphId.threadId());
 	}
 
 	@PostMapping(value = "/resume", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
