@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.memory.redis;
 
+import com.alibaba.cloud.ai.memory.redis.serializer.MediaSerializer;
 import com.alibaba.cloud.ai.memory.redis.serializer.MessageDeserializer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,6 +43,7 @@ public abstract class BaseRedisChatMemoryRepository implements ChatMemoryReposit
 		this.objectMapper = new ObjectMapper();
 		SimpleModule module = new SimpleModule();
 		module.addDeserializer(Message.class, new MessageDeserializer());
+        module.addSerializer(org.springframework.ai.content.Media.class, new MediaSerializer());
 		this.objectMapper.registerModule(module);
 	}
 
