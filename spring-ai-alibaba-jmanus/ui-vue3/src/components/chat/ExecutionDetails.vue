@@ -140,25 +140,72 @@
                 </div>
               </div>
 
-              <!-- Sub-plan agent execution preview -->
-              <div v-if="subPlan.agentExecutionSequence?.length" class="sub-plan-agents-preview">
-                <div class="agents-preview-header">
+              <!-- Sub-plan agent execution steps -->
+              <div v-if="subPlan.agentExecutionSequence?.length" class="sub-plan-agents-steps">
+                <div class="agents-steps-header">
                   <span class="agents-label">{{ $t('chat.agentExecutions') }}:</span>
                 </div>
-                <div class="agents-list">
+                <div class="agents-steps-list">
                   <div
-                    v-for="(agent, agentIndex) in subPlan.agentExecutionSequence.slice(0, 3)"
+                    v-for="(agent, agentIndex) in subPlan.agentExecutionSequence"
                     :key="agent.id || agentIndex"
-                    class="agent-preview-item"
+                    class="agent-step-item"
                     :class="getAgentPreviewStatusClass(agent.status)"
+                    @click="handleSubPlanAgentClick(agentIndex, subPlanIndex, agent)"
                   >
-                    <Icon :icon="getAgentPreviewStatusIcon(agent.status)" class="agent-icon" />
-                    <span class="agent-text">{{ agent.agentName || $t('chat.unknownAgent') }}</span>
-                  </div>
-                  <div v-if="subPlan.agentExecutionSequence.length > 3" class="more-agents">
-                    <span class="more-text">
-                      {{ $t('chat.andMoreAgents', { count: subPlan.agentExecutionSequence.length - 3 }) }}
-                    </span>
+                    <div class="agent-step-header">
+                      <Icon :icon="getAgentPreviewStatusIcon(agent.status)" class="agent-icon" />
+                      <span class="agent-name">{{ agent.agentName || $t('chat.unknownAgent') }}</span>
+                      <div class="agent-status-badge" :class="getAgentPreviewStatusClass(agent.status)">
+                        {{ getAgentStatusText(agent.status) }}
+                      </div>
+                    </div>
+                    
+                    <!-- Agent execution info for sub-plan agents -->
+                    <div class="sub-agent-execution-info">
+                      <!-- Agent result -->
+                      <div v-if="agent.result" class="agent-result">
+                        <div class="result-header">
+                          <Icon icon="carbon:checkmark" class="result-icon" />
+                          <span class="result-label">{{ $t('chat.agentResult') }}:</span>
+                        </div>
+                        <pre class="result-content">{{ agent.result }}</pre>
+                      </div>
+
+                      <!-- Error message -->
+                      <div v-if="agent.errorMessage" class="agent-error">
+                        <div class="error-header">
+                          <Icon icon="carbon:warning" class="error-icon" />
+                          <span class="error-label">{{ $t('chat.errorMessage') }}:</span>
+                        </div>
+                        <pre class="error-content">{{ agent.errorMessage }}</pre>
+                      </div>
+
+                      <!-- Think-act steps preview -->
+                      <div v-if="agent.thinkActSteps?.length" class="think-act-preview">
+                        <div class="think-act-header">
+                          <Icon icon="carbon:thinking" class="think-act-icon" />
+                          <span class="think-act-label">{{ $t('chat.thinkActSteps') }} ({{ agent.thinkActSteps.length }})</span>
+                        </div>
+                        <div class="think-act-steps-preview">
+                          <div
+                            v-for="(step, stepIndex) in agent.thinkActSteps.slice(0, 2)"
+                            :key="step.id || stepIndex"
+                            class="think-act-step-preview"
+                            @click.stop="handleThinkActStepClick(agentIndex, subPlanIndex, stepIndex, agent)"
+                          >
+                            <span class="step-number">#{{ stepIndex + 1 }}</span>
+                            <span class="step-description">{{ step.actionDescription || $t('chat.thinking') }}</span>
+                            <Icon icon="carbon:arrow-right" class="step-arrow" />
+                          </div>
+                          <div v-if="agent.thinkActSteps.length > 2" class="more-steps">
+                            <span class="more-steps-text">
+                              {{ $t('chat.andMoreSteps', { count: agent.thinkActSteps.length - 2 }) }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -518,6 +565,22 @@ const handleSubPlanClick = (agentIndex: number, subPlanIndex: number, subPlan: P
   emit('sub-plan-selected', agentIndex, subPlanIndex, subPlan)
 }
 
+// Handle sub-plan agent click to show agent details in right panel
+const handleSubPlanAgentClick = (agentIndex: number, subPlanIndex: number, agent: AgentExecutionRecord) => {
+  // Use the agent's stepId or create a unique one for sub-plan agents
+  const stepId = agent.stepId || `subplan-${subPlanIndex}-agent-${agentIndex}`
+  
+  emit('step-selected', stepId)
+}
+
+// Handle think-act step click to show detailed step in right panel
+const handleThinkActStepClick = (agentIndex: number, subPlanIndex: number, stepIndex: number, agent: AgentExecutionRecord) => {
+  // Use the agent's stepId or create a unique one for sub-plan agents
+  const stepId = agent.stepId || `subplan-${subPlanIndex}-agent-${agentIndex}`
+  
+  emit('step-selected', stepId)
+}
+
 const handleUserInputSubmit = async () => {
   try {
     const inputData: any = {}
@@ -543,16 +606,6 @@ const handleUserInputSubmit = async () => {
 }
 
 // Helper methods
-const formatDateTime = (dateTime?: string): string => {
-  if (!dateTime) return ''
-  
-  try {
-    const date = new Date(dateTime)
-    return date.toLocaleString()
-  } catch (error) {
-    return dateTime
-  }
-}
 
 const formatToolParameters = (parameters?: string): string => {
   if (!parameters) return ''
@@ -760,11 +813,7 @@ const isRequired = (required: boolean | string | undefined): boolean => {
               margin-bottom: 2px;
             }
             
-            .agent-description {
-              color: #aaaaaa;
-              font-size: 12px;
-              line-height: 1.3;
-            }
+
             
             .request-content {
               margin: 4px 0 0 0;
@@ -982,6 +1031,32 @@ const isRequired = (required: boolean | string | undefined): boolean => {
                 }
               }
               
+              .sub-plan-meta {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                
+                .trigger-tool {
+                  display: flex;
+                  align-items: center;
+                  gap: 4px;
+                  padding: 2px 6px;
+                  background: rgba(102, 126, 234, 0.1);
+                  border-radius: 4px;
+                  font-size: 10px;
+                  
+                  .trigger-icon {
+                    font-size: 10px;
+                    color: #667eea;
+                  }
+                  
+                  .trigger-text {
+                    color: #cccccc;
+                    font-weight: 500;
+                  }
+                }
+              }
+              
               .sub-plan-status-badge {
                 padding: 2px 6px;
                 border-radius: 8px;
@@ -1013,71 +1088,240 @@ const isRequired = (required: boolean | string | undefined): boolean => {
             .sub-plan-progress {
               margin-bottom: 8px;
               
-              .progress-bar-container {
-                background: rgba(0, 0, 0, 0.2);
-                border-radius: 4px;
-                height: 4px;
-                overflow: hidden;
+              .progress-info {
+                .progress-text {
+                  color: #aaaaaa;
+                  font-size: 10px;
+                  margin-bottom: 4px;
+                }
                 
                 .progress-bar {
-                  height: 100%;
-                  background: linear-gradient(90deg, #667eea, #764ba2);
-                  transition: width 0.3s ease;
+                  background: rgba(0, 0, 0, 0.2);
                   border-radius: 4px;
+                  height: 4px;
+                  overflow: hidden;
+                  
+                  .progress-fill {
+                    height: 100%;
+                    background: linear-gradient(90deg, #667eea, #764ba2);
+                    transition: width 0.3s ease;
+                    border-radius: 4px;
+                  }
                 }
-              }
-              
-              .progress-text {
-                color: #aaaaaa;
-                font-size: 10px;
-                margin-top: 4px;
               }
             }
             
-            .sub-plan-agents-preview {
-              .agents-preview-header {
+            .sub-plan-agents-steps {
+              .agents-steps-header {
                 color: #aaaaaa;
                 font-size: 11px;
                 margin-bottom: 6px;
                 font-weight: 500;
               }
               
-              .agents-list {
+              .agents-steps-list {
                 display: flex;
-                flex-wrap: wrap;
-                gap: 4px;
+                flex-direction: column;
+                gap: 8px;
                 
-                .agent-preview-item {
-                  display: flex;
-                  align-items: center;
-                  gap: 4px;
-                  padding: 2px 6px;
-                  background: rgba(0, 0, 0, 0.2);
-                  border-radius: 4px;
-                  font-size: 10px;
+                .agent-step-item {
+                  border: 1px solid rgba(255, 255, 255, 0.1);
+                  border-radius: 6px;
+                  padding: 8px;
+                  background: rgba(0, 0, 0, 0.05);
+                  cursor: pointer;
+                  transition: all 0.2s;
                   
-                  .agent-icon {
-                    font-size: 10px;
+                  &:hover {
+                    background: rgba(0, 0, 0, 0.1);
+                    border-color: rgba(255, 255, 255, 0.2);
+                  }
+                  
+                  &.completed {
+                    border-color: rgba(34, 197, 94, 0.3);
+                    background: rgba(34, 197, 94, 0.05);
+                  }
+                  
+                  &.running {
+                    border-color: rgba(102, 126, 234, 0.3);
+                    background: rgba(102, 126, 234, 0.08);
+                  }
+                  
+                  &.pending {
+                    opacity: 0.7;
+                  }
+                  
+                  .agent-step-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-bottom: 8px;
                     
-                    &.completed {
-                      color: #22c55e;
+                    .agent-icon {
+                      font-size: 14px;
+                      
+                      &.completed {
+                        color: #22c55e;
+                      }
+                      
+                      &.running {
+                        color: #667eea;
+                      }
+                      
+                      &.pending {
+                        color: #9ca3af;
+                      }
                     }
                     
-                    &.running {
-                      color: #667eea;
+                    .agent-name {
+                      color: #ffffff;
+                      font-size: 13px;
+                      font-weight: 500;
+                      flex: 1;
                     }
                     
-                    &.pending {
-                      color: #9ca3af;
+                    .agent-status-badge {
+                      padding: 2px 6px;
+                      border-radius: 3px;
+                      font-size: 10px;
+                      font-weight: 500;
+                      
+                      &.completed {
+                        background: rgba(34, 197, 94, 0.2);
+                        color: #22c55e;
+                      }
+                      
+                      &.running {
+                        background: rgba(102, 126, 234, 0.2);
+                        color: #667eea;
+                      }
+                      
+                      &.pending {
+                        background: rgba(156, 163, 175, 0.2);
+                        color: #9ca3af;
+                      }
                     }
                   }
                   
-                  .agent-text {
-                    color: #cccccc;
-                    max-width: 80px;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
+                  .sub-agent-execution-info {
+                    margin-left: 22px;
+                    
+                    .agent-result, .agent-error {
+                      margin-bottom: 8px;
+                      
+                      &:last-child {
+                        margin-bottom: 0;
+                      }
+                      
+                      .result-header, .error-header {
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        margin-bottom: 4px;
+                        
+                        .result-icon, .error-icon {
+                          font-size: 12px;
+                        }
+                        
+                        .result-icon {
+                          color: #22c55e;
+                        }
+                        
+                        .error-icon {
+                          color: #ef4444;
+                        }
+                        
+                        .result-label, .error-label {
+                          color: #ffffff;
+                          font-size: 11px;
+                          font-weight: 500;
+                        }
+                      }
+                      
+                      .result-content, .error-content {
+                        margin: 0;
+                        padding: 6px;
+                        background: rgba(0, 0, 0, 0.2);
+                        border-radius: 3px;
+                        font-family: monospace;
+                        font-size: 10px;
+                        white-space: pre-wrap;
+                        max-height: 80px;
+                        overflow-y: auto;
+                        color: #cccccc;
+                        line-height: 1.3;
+                      }
+                    }
+                    
+                    .think-act-preview {
+                      margin-top: 8px;
+                      
+                      .think-act-header {
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        margin-bottom: 6px;
+                        
+                        .think-act-icon {
+                          font-size: 12px;
+                          color: #667eea;
+                        }
+                        
+                        .think-act-label {
+                          color: #aaaaaa;
+                          font-size: 11px;
+                          font-weight: 500;
+                        }
+                      }
+                      
+                      .think-act-steps-preview {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 3px;
+                        
+                        .think-act-step-preview {
+                          display: flex;
+                          align-items: center;
+                          gap: 6px;
+                          padding: 4px 6px;
+                          background: rgba(0, 0, 0, 0.1);
+                          border-radius: 3px;
+                          cursor: pointer;
+                          transition: all 0.2s;
+                          font-size: 10px;
+                          
+                          &:hover {
+                            background: rgba(0, 0, 0, 0.2);
+                          }
+                          
+                          .step-number {
+                            color: #667eea;
+                            font-weight: 500;
+                            min-width: 20px;
+                          }
+                          
+                          .step-description {
+                            color: #cccccc;
+                            flex: 1;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                          }
+                          
+                          .step-arrow {
+                            font-size: 10px;
+                            color: #888888;
+                          }
+                        }
+                        
+                        .more-steps {
+                          padding: 2px 6px;
+                          color: #888888;
+                          font-size: 9px;
+                          font-style: italic;
+                        }
+                      }
+                    }
                   }
                 }
               }
