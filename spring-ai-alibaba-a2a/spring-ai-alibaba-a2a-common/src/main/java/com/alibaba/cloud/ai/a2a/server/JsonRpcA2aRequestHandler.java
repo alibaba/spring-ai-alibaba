@@ -34,7 +34,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.web.servlet.function.ServerRequest;
 
 /**
- * The request handler fot A2A protocol request by JSON RPC 2.0.
+ * The request handler for A2A protocol request by JSON RPC 2.0.
  *
  * @author xiweng.yy
  */
