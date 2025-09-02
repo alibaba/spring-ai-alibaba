@@ -137,7 +137,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			.map(Node::getType)
 			.map(NodeType::fromValue)
 			.map(Optional::orElseThrow)
-            .distinct()
+			.distinct()
 			.flatMap(type -> nodeNodeSections.stream().filter(section -> section.support(type)))
 			.forEach(section -> {
 				sb.append(section.assistMethodCode(dialectType));
@@ -243,13 +243,17 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		}
 
 		// 统一生成end节点到StateGraph.END的边（避免边重复）
-		sb.append("stateGraph");
-		nodes.stream()
+		List<String> endNodeList = nodes.stream()
 			.filter(node -> NodeType.END.value().equals(node.getType()))
 			.map(Node::getId)
 			.map(varNames::get)
-			.forEach(endName -> sb.append(String.format("%n.addEdge(\"%s\", END)", endName)));
-		sb.append(String.format(";%n"));
+			.toList();
+
+		if (!endNodeList.isEmpty()) {
+			sb.append("stateGraph");
+			endNodeList.forEach(endName -> sb.append(String.format("%n.addEdge(\"%s\", END)", endName)));
+			sb.append(String.format(";%n"));
+		}
 
 		return sb.toString();
 	}

@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import com.alibaba.cloud.ai.studio.admin.generator.model.App;
 import com.alibaba.cloud.ai.studio.admin.generator.model.AppMetadata;
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.chatbot.ChatBot;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Graph;
@@ -115,16 +116,29 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		if (workflowData.containsKey("conversation_variables")) {
 			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData
 				.get("conversation_variables");
-			convVars = variables.stream().map(variable -> convertToVariable(variable, objectMapper)).toList();
+			convVars = variables.stream()
+				.map(variable -> convertToVariable(variable, objectMapper))
+				.peek(v -> v.setName("conversation_" + v.getName()))
+				.toList();
 		}
 
+		List<Variable> envVars = List.of();
 		if (workflowData.containsKey("environment_variables")) {
 			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("environment_variables");
-			List<Variable> envVars = variables.stream()
+			envVars = variables.stream()
 				.map(variable -> convertToVariable(variable, objectMapper))
-				.collect(Collectors.toList());
-			workflow.setEnvVars(envVars);
+				.peek(v -> v.setName("env_" + v.getName()))
+				.toList();
 		}
+		List<Variable> sysVars = List.of(new Variable("sys_query", VariableType.STRING.value()),
+				new Variable("sys_files", VariableType.ARRAY_FILE.value()),
+				new Variable("sys_dialogue_count", VariableType.NUMBER.value()),
+				new Variable("sys_conversation_id", VariableType.STRING.value()),
+				new Variable("sys_user_id", VariableType.STRING.value()),
+				new Variable("sys_app_id", VariableType.STRING.value()),
+				new Variable("sys_workflow_id", VariableType.STRING.value()),
+				new Variable("sys_workflow_run_id", VariableType.STRING.value()));
+		workflow.setEnvVars(Stream.of(envVars, sysVars).flatMap(List::stream).toList());
 
 		Graph graph = constructGraph((Map<String, Object>) workflowData.get("graph"));
 
