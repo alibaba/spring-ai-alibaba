@@ -58,7 +58,7 @@ public class AiSimulationCodeExecutorService implements CodePoolExecutorService 
 				```
 				""", request.code(), request.input());
 		String output = chatClient.prompt().user(userPrompt).call().content();
-		return new TaskResponse(true, output, null, null);
+		return TaskResponse.success(output);
 	}
 
 }

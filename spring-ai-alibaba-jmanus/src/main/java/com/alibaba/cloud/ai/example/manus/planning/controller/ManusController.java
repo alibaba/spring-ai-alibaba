@@ -91,20 +91,39 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	 * @return Task ID and status
 	 */
 	@PostMapping("/execute")
-	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, String> request) {
-		String query = request.get("input");
+	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, Object> request) {
+		String query = (String) request.get("input");
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Query content cannot be empty"));
 		}
 		ExecutionContext context = new ExecutionContext();
 		context.setUserRequest(query);
-		// Use PlanIdDispatcher to generate a unique plan ID
-		String planId = planIdDispatcher.generatePlanId();
-		context.setCurrentPlanId(planId);
-		context.setRootPlanId(planId);
+
+		// Use sessionPlanId from frontend if available, otherwise generate new one
+		String sessionPlanId = (String) request.get("sessionPlanId");
+		String planId;
+
+		if (sessionPlanId != null && !sessionPlanId.trim().isEmpty()) {
+			// Use existing sessionPlanId from file upload
+			planId = sessionPlanId;
+			context.setCurrentPlanId(planId);
+			context.setRootPlanId(planId);
+			logger.info("🔄 Using existing sessionPlanId: {}", planId);
+		}
+		else if (context.getCurrentPlanId() == null) {
+			// Generate new plan ID
+			planId = planIdDispatcher.generatePlanId();
+			context.setCurrentPlanId(planId);
+			context.setRootPlanId(planId);
+			logger.info("🆕 Generated new planId: {}", planId);
+		}
+		else {
+			planId = context.getCurrentPlanId();
+			logger.info("📋 Using existing context planId: {}", planId);
+		}
 		context.setNeedSummary(true);
 
-		String memoryId = request.get("memoryId");
+		String memoryId = (String) request.get("memoryId");
 
 		if (!StringUtils.hasText(memoryId)) {
 			memoryId = RandomStringUtils.randomAlphabetic(8);

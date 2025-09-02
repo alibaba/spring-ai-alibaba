@@ -16,7 +16,8 @@
 package com.alibaba.cloud.ai.autoconfigure.memory.redis;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
@@ -34,10 +35,13 @@ public abstract class RedisChatMemoryConnectionAutoConfiguration<T extends ChatM
 
 	private final RedisChatMemoryConnectionDetails connectionDetails;
 
+	private final SslBundles sslBundles;
+
 	public RedisChatMemoryConnectionAutoConfiguration(RedisChatMemoryProperties properties,
-			RedisChatMemoryConnectionDetails connectionDetails) {
+			RedisChatMemoryConnectionDetails connectionDetails, ObjectProvider<SslBundles> sslBundles) {
 		this.properties = properties;
 		this.connectionDetails = connectionDetails;
+		this.sslBundles = sslBundles.getIfAvailable();
 	}
 
 	/**
@@ -101,9 +105,10 @@ public abstract class RedisChatMemoryConnectionAutoConfiguration<T extends ChatM
 	 * @return Fully configured standalone Redis chat memory configuration
 	 */
 	protected final RedisChatMemoryStandaloneConfiguration getStandaloneConfiguration() {
-		RedisConnectionDetails.Standalone standalone = connectionDetails.getStandalone();
+		RedisMemoryConnectionDetails.Standalone standalone = connectionDetails.getStandalone();
 		return new RedisChatMemoryStandaloneConfiguration(standalone.getHost(), standalone.getPort(),
-				connectionDetails.getUsername(), connectionDetails.getPassword(), properties.getTimeout());
+				connectionDetails.getUsername(), connectionDetails.getPassword(), properties.getTimeout(),
+				properties.getSsl(), sslBundles);
 	}
 
 	/**
@@ -116,7 +121,7 @@ public abstract class RedisChatMemoryConnectionAutoConfiguration<T extends ChatM
 		}
 		List<String> nodes = getNodes(connectionDetails.getCluster());
 		return new RedisChatMemoryClusterConfiguration(nodes, connectionDetails.getUsername(),
-				connectionDetails.getPassword(), properties.getTimeout());
+				connectionDetails.getPassword(), properties.getTimeout(), properties.getSsl(), sslBundles);
 	}
 
 	/**
@@ -124,9 +129,9 @@ public abstract class RedisChatMemoryConnectionAutoConfiguration<T extends ChatM
 	 * @param cluster The cluster connection details containing node information
 	 * @return List of Redis node connection strings
 	 */
-	private List<String> getNodes(RedisConnectionDetails.Cluster cluster) {
+	private List<String> getNodes(RedisMemoryConnectionDetails.Cluster cluster) {
 		List<String> clusterNodes = new ArrayList<>();
-		for (RedisConnectionDetails.Node node : cluster.getNodes()) {
+		for (RedisMemoryConnectionDetails.Node node : cluster.getNodes()) {
 			clusterNodes.add(node.host() + ":" + node.port());
 		}
 		return clusterNodes;
