@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ToolContext;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -94,10 +95,68 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 	}
 
 	@Override
+	public ToolExecuteResult apply(Map<String, Object> input, ToolContext toolContext) {
+		// Extract toolCallId from ToolContext
+		String toolCallId = extractToolCallIdFromContext(toolContext);
+		if (toolCallId != null) {
+			logger.info("Using provided toolCallId from context: {} for tool: {}", toolCallId,
+					subplanTool.getToolName());
+			return executeSubplanWithToolCallId(input, toolCallId);
+		}
+		else {
+			throw new IllegalArgumentException("ToolCallId is required for subplan tool: " + subplanTool.getToolName());
+		}
+	}
+
+	@Override
 	public ToolExecuteResult run(Map<String, Object> input) {
+		throw new IllegalArgumentException("ToolCallId is required for subplan tool: " + subplanTool.getToolName());
+	}
+
+	@Override
+	public void cleanup(String planId) {
+		// Cleanup logic for the subplan tool
+		logger.debug("Cleaning up subplan tool: {} for planId: {}", subplanTool.getToolName(), planId);
+	}
+
+	@Override
+	public String getCurrentToolStateString() {
+		return "Ready";
+	}
+
+	// Getter for the wrapped subplan tool
+	public SubplanToolDef getSubplanTool() {
+		return subplanTool;
+	}
+
+	/**
+	 * Extract toolCallId from ToolContext. This method looks for toolCallId in the tool
+	 * context that was set by DynamicAgent.
+	 * @param toolContext The tool context containing toolCallId information
+	 * @return toolCallId if found, null otherwise
+	 */
+	private String extractToolCallIdFromContext(ToolContext toolContext) {
 		try {
-			logger.info("Executing subplan tool: {} with template: {}", subplanTool.getToolName(),
-					subplanTool.getPlanTemplateId());
+			return String.valueOf(toolContext.getContext().get("toolcallId"));
+
+		}
+		catch (Exception e) {
+			logger.warn("Error extracting toolCallId from context: {}", e.getMessage());
+			return null;
+		}
+	}
+
+	/**
+	 * Execute subplan with the provided toolCallId. This method contains the main subplan
+	 * execution logic using the provided toolCallId.
+	 * @param input The input parameters for the subplan
+	 * @param toolCallId The toolCallId to use for this execution
+	 * @return ToolExecuteResult containing the execution result
+	 */
+	private ToolExecuteResult executeSubplanWithToolCallId(Map<String, Object> input, String toolCallId) {
+		try {
+			logger.info("Executing subplan tool: {} with template: {} and toolCallId: {}", subplanTool.getToolName(),
+					subplanTool.getPlanTemplateId(), toolCallId);
 
 			// Get the plan template from PlanTemplateService
 			String planJson = planTemplateService.getLatestPlanVersion(subplanTool.getPlanTemplateId());
@@ -113,9 +172,9 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 			// Execute the plan using PlanningCoordinator
 			// Generate a new plan ID for this subplan execution using PlanIdDispatcher
 			String newPlanId = planIdDispatcher.generateSubPlanId(rootPlanId);
-			// Generate a toolcall ID for this subplan execution
-			String toolCallId = planIdDispatcher.generateToolCallId();
-			logger.info("Generated toolcall ID: {} for subplan execution: {}", toolCallId, newPlanId);
+
+			// Use the provided toolCallId instead of generating a new one
+			logger.info("Using provided toolCallId: {} for subplan execution: {}", toolCallId, newPlanId);
 
 			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByPlan(plan, rootPlanId,
 					currentPlanId, newPlanId, toolCallId);
@@ -154,22 +213,6 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 			logger.error("{} for tool: {}", errorMsg, subplanTool.getToolName(), e);
 			return new ToolExecuteResult(errorMsg);
 		}
-	}
-
-	@Override
-	public void cleanup(String planId) {
-		// Cleanup logic for the subplan tool
-		logger.debug("Cleaning up subplan tool: {} for planId: {}", subplanTool.getToolName(), planId);
-	}
-
-	@Override
-	public String getCurrentToolStateString() {
-		return "Ready";
-	}
-
-	// Getter for the wrapped subplan tool
-	public SubplanToolDef getSubplanTool() {
-		return subplanTool;
 	}
 
 }

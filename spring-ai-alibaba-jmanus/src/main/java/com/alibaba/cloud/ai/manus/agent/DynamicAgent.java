@@ -43,13 +43,12 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import reactor.core.publisher.Flux;
 
@@ -157,10 +156,13 @@ public class DynamicAgent extends ReActAgent {
 			List<Message> historyMem = chatMemory.get(getCurrentPlanId());
 			messages.addAll(historyMem);
 			messages.add(currentStepEnvMessage);
+			String toolcallId = planIdDispatcher.generateToolCallId();
 			// Call the LLM
-			ChatOptions chatOptions = OpenAiChatOptions.builder()
+			ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
 				.internalToolExecutionEnabled(false)
-				.parallelToolCalls(manusProperties.getParallelToolCalls())
+				.toolContext(Map.of("toolcallId", toolcallId))
+				// can't support by toocall options :
+				// .parallelToolCalls(manusProperties.getParallelToolCalls())
 				.build();
 			userPrompt = new Prompt(messages, chatOptions);
 			List<ToolCallback> callbacks = getToolCallList();
@@ -198,7 +200,6 @@ public class DynamicAgent extends ReActAgent {
 
 				actToolInfoList = new ArrayList<>();
 				for (ToolCall toolCall : toolCalls) {
-					String toolcallId = planIdDispatcher.generateToolCallId();
 					ActToolParam actToolInfo = new ActToolParam(toolCall.name(), toolCall.arguments(), toolcallId);
 					actToolInfoList.add(actToolInfo);
 				}
@@ -231,7 +232,7 @@ public class DynamicAgent extends ReActAgent {
 			List<String> resultList = new ArrayList<>();
 			boolean shouldTerminate = false;
 			int executedToolCount = 0;
-			
+
 			if (!toolResponseMessage.getResponses().isEmpty()) {
 				for (ToolResponseMessage.ToolResponse toolCallResponse : toolResponseMessage.getResponses()) {
 					ToolCall toolCall = toolCalls.get(executedToolCount);
@@ -239,7 +240,7 @@ public class DynamicAgent extends ReActAgent {
 					ActToolParam param = actToolInfoList.get(executedToolCount);
 
 					ToolCallBiFunctionDef<?> toolInstance = getToolCallBackContext(toolName).getFunctionInstance();
-					
+
 					if (toolInstance instanceof FormInputTool) {
 						AgentExecResult formResult = handleFormInputTool((FormInputTool) toolInstance, param);
 						param.setResult(formResult.getResult());
@@ -249,13 +250,14 @@ public class DynamicAgent extends ReActAgent {
 						TerminableTool terminableTool = (TerminableTool) toolInstance;
 						param.setResult(toolCallResponse.responseData());
 						resultList.add(param.getResult());
-						
+
 						if (terminableTool.canTerminate()) {
 							log.info("TerminableTool can terminate for planId: {}", getCurrentPlanId());
 							userInputService.removeFormInputTool(getCurrentPlanId());
 							shouldTerminate = true;
 							executedToolCount++;
-							break; // Stop processing remaining tools when termination is indicated
+							break; // Stop processing remaining tools when termination is
+									// indicated
 						}
 						else {
 							log.info("TerminableTool cannot terminate yet for planId: {}", getCurrentPlanId());
@@ -272,10 +274,10 @@ public class DynamicAgent extends ReActAgent {
 				// Record the results of executed tools
 				List<ActToolParam> executedTools = actToolInfoList.subList(0, executedToolCount);
 				recordActionResult(executedTools);
-				
+
 				// Return result with appropriate state
-				return new AgentExecResult(resultList.toString(), 
-					shouldTerminate ? AgentState.COMPLETED : AgentState.IN_PROGRESS);
+				return new AgentExecResult(resultList.toString(),
+						shouldTerminate ? AgentState.COMPLETED : AgentState.IN_PROGRESS);
 			}
 			return new AgentExecResult("tool call is empty", AgentState.IN_PROGRESS);
 

@@ -96,13 +96,13 @@ public class SubplanPlanTemplates {
 				      "type": "sequential",
 				      "steps": [
 				        {
-				          "stepRequirement": "[DEFAULT_AGENT] Read and analyze the file <<fileName>> to understand its content structure"
+				          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] Read and analyze the file <<fileName>> to understand its content structure"
 				        },
 				        {
-				          "stepRequirement": "[DEFAULT_AGENT] Extract information related to <<queryKey>> from the file content, ensuring comprehensive coverage of all relevant data, facts, and opinions"
+				          "stepRequirement": "[MAPREDUCE_MAP_TASK_AGENT] Extract information related to <<queryKey>> from the file content, ensuring comprehensive coverage of all relevant data, facts, and opinions"
 				        },
 				        {
-				          "stepRequirement": "[DEFAULT_AGENT] Format the extracted content according to <<outputFormatSpecification>> requirements and organize it systematically"
+				          "stepRequirement": "[MAPREDUCE_REDUCE_TASK_AGENT] Format the extracted content according to <<outputFormatSpecification>> requirements and organize it systematically"
 				        }
 				      ]
 				    }
@@ -125,13 +125,13 @@ public class SubplanPlanTemplates {
 				      "type": "sequential",
 				      "steps": [
 				        {
-				          "stepRequirement": "[DEFAULT_AGENT] Scan and analyze all files in folder <<folderName>> to understand their content structure"
+				          "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] Scan and analyze all files in folder <<folderName>> to understand their content structure"
 				        },
 				        {
-				          "stepRequirement": "[DEFAULT_AGENT] Extract information related to <<queryKey>> from all files, ensuring comprehensive coverage across the entire folder"
+				          "stepRequirement": "[MAPREDUCE_MAP_TASK_AGENT] Extract information related to <<queryKey>> from all files, ensuring comprehensive coverage across the entire folder"
 				        },
 				        {
-				          "stepRequirement": "[DEFAULT_AGENT] Consolidate and format the extracted content according to <<outputFormatSpecification>> requirements, organizing it systematically"
+				          "stepRequirement": "[MAPREDUCE_REDUCE_TASK_AGENT] Consolidate and format the extracted content according to <<outputFormatSpecification>> requirements, organizing it systematically"
 				        }
 				      ]
 				    }

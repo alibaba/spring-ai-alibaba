@@ -16,8 +16,8 @@
 package com.alibaba.cloud.ai.manus.subplan.initializer;
 
 import com.alibaba.cloud.ai.manus.subplan.model.po.SubplanToolDef;
+import com.alibaba.cloud.ai.manus.subplan.predefineTools.PredefinedSubplanTools;
 import com.alibaba.cloud.ai.manus.subplan.service.ISubplanToolService;
-import com.alibaba.cloud.ai.manus.subplan.tools.PredefinedSubplanTools;
 import com.alibaba.cloud.ai.manus.subplan.templates.SubplanPlanTemplates;
 import com.alibaba.cloud.ai.manus.planning.service.PlanTemplateService;
 import org.slf4j.Logger;
