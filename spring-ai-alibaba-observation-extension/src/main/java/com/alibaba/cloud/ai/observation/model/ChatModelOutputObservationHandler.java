@@ -1,7 +1,10 @@
 package com.alibaba.cloud.ai.observation.model;
 
+import static com.alibaba.cloud.ai.observation.model.semconv.MessageMode.LANGFUSE;
+
 import com.alibaba.cloud.ai.observation.model.semconv.InputOutputModel.OutputMessage;
 import com.alibaba.cloud.ai.observation.model.semconv.InputOutputUtils;
+import com.alibaba.cloud.ai.observation.model.semconv.MessageMode;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
 import io.micrometer.tracing.handler.TracingObservationHandler;
@@ -18,13 +21,21 @@ import org.springframework.util.StringUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class ArmsChatModelOutputObservationHandler implements ObservationHandler<ChatModelObservationContext> {
+public class ChatModelOutputObservationHandler implements ObservationHandler<ChatModelObservationContext> {
 
-	private static final Logger logger = LoggerFactory.getLogger(ArmsChatModelOutputObservationHandler.class);
+	private static final Logger logger = LoggerFactory.getLogger(ChatModelOutputObservationHandler.class);
 
-	private static final AttributeKey<String> GEN_AI_OUTPUT_MESSAGES = AttributeKey.stringKey("gen_ai.output.messages");
+	private final AttributeKey<String> outputMessagesKey;
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
+
+	public ChatModelOutputObservationHandler(MessageMode mode) {
+		if (mode == LANGFUSE) {
+			outputMessagesKey = AttributeKey.stringKey("output.values");
+		} else {
+			outputMessagesKey = AttributeKey.stringKey("gen_ai.output.messages");
+		}
+	}
 
 	@Override
 	public void onStop(ChatModelObservationContext context) {
@@ -35,7 +46,7 @@ public class ArmsChatModelOutputObservationHandler implements ObservationHandler
 		if (otelSpan != null) {
 			String outputMessages = getOutputMessages(context);
 			if (outputMessages != null) {
-				otelSpan.setAttribute(GEN_AI_OUTPUT_MESSAGES, outputMessages);
+				otelSpan.setAttribute(outputMessagesKey, outputMessages);
 			}
 		}
 	}

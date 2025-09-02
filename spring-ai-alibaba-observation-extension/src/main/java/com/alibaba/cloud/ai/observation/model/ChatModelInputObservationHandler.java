@@ -1,7 +1,11 @@
 package com.alibaba.cloud.ai.observation.model;
 
+import static com.alibaba.cloud.ai.observation.model.semconv.MessageMode.LANGFUSE;
+import static io.opentelemetry.api.common.AttributeKey.stringKey;
+
 import com.alibaba.cloud.ai.observation.model.semconv.InputOutputModel.ChatMessage;
 import com.alibaba.cloud.ai.observation.model.semconv.InputOutputUtils;
+import com.alibaba.cloud.ai.observation.model.semconv.MessageMode;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.Observation;
@@ -16,13 +20,21 @@ import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 
-public class ArmsChatModelInputObservationHandler implements ObservationHandler<ChatModelObservationContext> {
+public class ChatModelInputObservationHandler implements ObservationHandler<ChatModelObservationContext> {
 
-	private static final Logger logger = LoggerFactory.getLogger(ArmsChatModelInputObservationHandler.class);
+	private static final Logger logger = LoggerFactory.getLogger(ChatModelInputObservationHandler.class);
 
-	private static final AttributeKey<String> GEN_AI_INPUT_MESSAGES = AttributeKey.stringKey("gen_ai.input.messages");
+	private final AttributeKey<String> inputMessagesKey;
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
+
+	public ChatModelInputObservationHandler(MessageMode mode) {
+		if (mode == LANGFUSE) {
+			inputMessagesKey = stringKey("input.values");
+		} else {
+			inputMessagesKey = stringKey("gen_ai.input.messages");
+		}
+	}
 
 	@Override
 	public void onStop(ChatModelObservationContext context) {
@@ -31,15 +43,15 @@ public class ArmsChatModelInputObservationHandler implements ObservationHandler<
 		Span otelSpan = OpenTelemetrySpanBridge.retrieveOtelSpan(tracingContext);
 
 		if (otelSpan != null) {
-			String outputMessages = getInputMessages(context);
+			String outputMessages = getOutputMessages(context);
 			if (outputMessages != null) {
-				otelSpan.setAttribute(GEN_AI_INPUT_MESSAGES, outputMessages);
+				otelSpan.setAttribute(inputMessagesKey, outputMessages);
 			}
 		}
 	}
 
 	@Nullable
-	private String getInputMessages(ChatModelObservationContext context) {
+	private String getOutputMessages(ChatModelObservationContext context) {
 		if (CollectionUtils.isEmpty(context.getRequest().getInstructions())) {
 			return null;
 		}

@@ -27,8 +27,20 @@ public final class InputOutputModel {
 					value = "finish_reason") @JsonPropertyDescription("Reason for finishing the generation") String finishReason) {
 	}
 
+	public enum RoleEnum {
+
+		UNKNOWN("unknown"), USER("user"), ASSISTANT("assistant"), SYSTEM("system"), TOOL("tool");
+
+		public final String value;
+
+		RoleEnum(String value) {
+			this.value = value;
+		}
+
+	}
+
 	@JsonClassDescription("Text content sent to or received from the model")
-	public record TextMessagePart(@JsonProperty(required = true,
+	public record TextPart(@JsonProperty(required = true,
 			value = "type") @JsonPropertyDescription("The type of the content captured in this part") String type,
 			@JsonProperty(required = true,
 					value = "content") @JsonPropertyDescription("Text content sent to or received from the model") String content)
@@ -39,9 +51,8 @@ public final class InputOutputModel {
 	@JsonClassDescription("A tool call requested by the model")
 	public record ToolCallRequestPart(@JsonProperty(required = true,
 			value = "type") @JsonPropertyDescription("The type of the content captured in this part") String type,
-			@JsonProperty(required = true,
-					value = "id") @JsonPropertyDescription("Unique identifier for the tool call") String id,
 			@JsonProperty(required = true, value = "name") @JsonPropertyDescription("Name of the tool") String name,
+			@JsonProperty(value = "id") @JsonPropertyDescription("Unique identifier for the tool call") String id,
 			@JsonProperty(value = "arguments") @JsonPropertyDescription("Arguments for the tool call") String arguments)
 			implements
 				MessagePart {
@@ -51,9 +62,8 @@ public final class InputOutputModel {
 	public record ToolCallResponsePart(@JsonProperty(required = true,
 			value = "type") @JsonPropertyDescription("The type of the content captured in this part") String type,
 			@JsonProperty(required = true,
-					value = "id") @JsonPropertyDescription("Unique tool call identifier") String id,
-			@JsonProperty(required = true,
-					value = "response") @JsonPropertyDescription("Tool call response") String response)
+					value = "response") @JsonPropertyDescription("Tool call response") String response,
+			@JsonProperty(value = "id") @JsonPropertyDescription("Unique tool call identifier") String id)
 			implements
 				MessagePart {
 	}

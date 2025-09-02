@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.arms;
 
+import com.alibaba.cloud.ai.observation.model.semconv.MessageMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -33,12 +34,51 @@ public class ArmsCommonProperties {
 	 */
 	private boolean enabled = false;
 
+	/**
+	 * Enable Arms instrumentations and conventions.
+	 */
+	private boolean captureModelInput = false;
+
+	/**
+	 * Enable Arms instrumentations and conventions.
+	 */
+	private boolean captureModelOutput = false;
+
+	/**
+	 * ARMS export type enumeration.
+	 */
+	private MessageMode messageMode = MessageMode.OPEN_TELEMETRY;
+
 	public boolean isEnabled() {
 		return enabled;
 	}
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public boolean isCaptureModelInput() {
+		return captureModelInput;
+	}
+
+	public void setCaptureModelInput(boolean captureModelInput) {
+		this.captureModelInput = captureModelInput;
+	}
+
+	public boolean isCaptureModelOutput() {
+		return captureModelOutput;
+	}
+
+	public void setCaptureModelOutput(boolean captureModelOutput) {
+		this.captureModelOutput = captureModelOutput;
+	}
+
+	public MessageMode getMessageMode() {
+		return messageMode;
+	}
+
+	public void setMessageMode(MessageMode messageMode) {
+		this.messageMode = messageMode;
 	}
 
 }

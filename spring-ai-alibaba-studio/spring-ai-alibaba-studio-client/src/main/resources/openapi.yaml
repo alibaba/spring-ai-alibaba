@@ -1,372 +1,2447 @@
 openapi: 3.0.1
 info:
-  title: Spring AI Alibaba PlayGround APIs
-  description: Spring AI Alibaba PlayGround API Docs
-  contact:
-    name: Spring AI Alibaba Community
-    url: https://java2ai.com
-  version: v1
+  title: OpenAPI definition
+  version: v0
 servers:
-  - url: http://localhost:8080
-    description: Generated server url
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: 实验管理
+  description: 实验相关接口
+- name: 模型配置管理
+  description: 大模型配置相关接口
+- name: 分布式追踪
+  description: OpenTelemetry分布式追踪接口
+- name: 测评集管理
+  description: 测评集相关接口
+- name: Prompt管理
+  description: Prompt相关接口
+- name: 评估器管理
+  description: 评估器相关接口
 paths:
-  /api/v1/video-qa:
-    post:
+  /starter.zip:
+    get:
       tags:
-        - 视频问答 APIs
-      summary: 基于视频内容的问答接口
-      operationId: videoQuestionAnswering
+      - project-generation-controller
+      operationId: springZip
       parameters:
-        - name: prompt
-          in: query
-          required: false
-          schema:
-            type: string
-            default: 请总结这个视频的主要内容
-      requestBody:
-        content:
-          application/json:
-            schema:
-              required:
-                - video
-              type: object
-              properties:
-                video:
-                  type: string
-                  format: binary
+      - name: request
+        in: query
         required: true
+        schema:
+          $ref: "#/components/schemas/ProjectRequest"
       responses:
-        "200":
-          description: OK
+        "400":
+          description: Bad Request
           content:
             '*/*':
               schema:
-                type: array
-                items:
-                  type: string
-  /api/v1/summarizer:
-    post:
-      tags:
-        - Docs Summarize APIs
-      summary: Docs summary
-      operationId: summary
-      parameters:
-        - name: url
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: chatId
-          in: header
-          required: false
-          schema:
-            type: string
-            default: spring-ai-alibaba-docs-summary
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-      responses:
-        "200":
-          description: OK
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
           content:
             '*/*':
               schema:
-                type: array
-                items:
-                  type: string
-  /api/v1/image2text:
-    post:
-      tags:
-        - Image APIs
-      summary: DashScope Image Recognition
-      operationId: image2text
-      parameters:
-        - name: prompt
-          in: query
-          required: false
-          schema:
-            type: string
-            default: 请总结图片内容
-      requestBody:
-        content:
-          application/json:
-            schema:
-              required:
-                - image
-              type: object
-              properties:
-                image:
-                  type: string
-                  format: binary
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  type: string
-  /api/v1/audio2text:
-    post:
-      tags:
-        - Audio APIs
-      summary: DashScope Audio Transcription
-      operationId: audioToText
-      requestBody:
-        content:
-          application/json:
-            schema:
-              required:
-                - audio
-              type: object
-              properties:
-                audio:
-                  type: string
-                  format: binary
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/ResultString'
-  /api/v1/tool-call:
-    get:
-      tags:
-        - Tool Calling APIs
-      summary: DashScope ToolCall Chat
-      operationId: chat
-      parameters:
-        - name: prompt
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/ResultToolCallResp'
-  /api/v1/text2image:
-    get:
-      tags:
-        - Image APIs
-      summary: DashScope Image Generation
-      operationId: text2Image
-      parameters:
-        - name: prompt
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: style
-          in: query
-          required: false
-          schema:
-            type: string
-            default: 摄影写实
-        - name: resolution
-          in: query
-          required: false
-          schema:
-            type: string
-            default: 1080*1080
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/ResultVoid'
-  /api/v1/text2audio:
-    get:
-      tags:
-        - Audio APIs
-      summary: DashScope Speech Synthesis
-      operationId: textToAudio
-      parameters:
-        - name: prompt
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ResultByte[]"
-  /api/v1/search:
-    get:
-      tags:
-        - Web Search APIs
-      operationId: search
-      parameters:
-        - name: query
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  type: string
-  /api/v1/rag:
-    get:
-      tags:
-        - RAG APIs
-      summary: DashScope RAG
-      operationId: ragChat
-      parameters:
-        - name: prompt
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: chatId
-          in: header
-          required: false
-          schema:
-            type: string
-            default: spring-ai-alibaba-playground-rag
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  type: string
-  /api/v1/mcp:
-    get:
-      tags:
-        - MCP APIs
-      summary: DashScope Mcp Chat
-      operationId: chat_1
-      parameters:
-        - name: prompt
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: chatId
-          in: header
-          required: false
-          schema:
-            type: string
-            default: spring-ai-alibaba-playground-mcp
-      responses:
+                $ref: "#/components/schemas/ResultString"
         "200":
           description: OK
           content:
             '*/*':
               schema:
                 type: string
-  /api/v1/health:
-    get:
+                format: byte
+    post:
       tags:
-        - Base APIs
-      operationId: health
+      - project-generation-controller
+      operationId: springZip_1
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectRequest"
       responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
         "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ResultString'
-  /api/v1/deep-thinking/chat:
+                type: string
+                format: byte
+  /starter.tgz:
     get:
       tags:
-        - Chat APIs
-      operationId: deepThinkingChat
+      - project-generation-controller
+      operationId: springTgz
       parameters:
-        - name: prompt
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: model
-          in: header
-          required: false
-          schema:
-            type: string
-        - name: chatId
-          in: header
-          required: false
-          schema:
-            type: string
-            default: spring-ai-alibaba-playground-deepthink-chat
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectRequest"
       responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            application/x-compress:
+              schema:
+                type: string
+                format: byte
+    post:
+      tags:
+      - project-generation-controller
+      operationId: springTgz_1
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            application/x-compress:
+              schema:
+                type: string
+                format: byte
+  /pom:
+    get:
+      tags:
+      - project-generation-controller
+      operationId: pom
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
         "200":
           description: OK
           content:
             '*/*':
+              schema:
+                type: string
+                format: byte
+    post:
+      tags:
+      - project-generation-controller
+      operationId: pom_1
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+  /pom.xml:
+    get:
+      tags:
+      - project-generation-controller
+      operationId: pom_2
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+    post:
+      tags:
+      - project-generation-controller
+      operationId: pom_3
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+  /build:
+    get:
+      tags:
+      - project-generation-controller
+      operationId: gradle
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+    post:
+      tags:
+      - project-generation-controller
+      operationId: gradle_1
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+  /build.gradle:
+    get:
+      tags:
+      - project-generation-controller
+      operationId: gradle_2
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+    post:
+      tags:
+      - project-generation-controller
+      operationId: gradle_3
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+  /api/prompt:
+    get:
+      tags:
+      - Prompt管理
+      summary: 查询Prompt
+      description: 根据Prompt Key获取Prompt详细信息
+      operationId: getPrompt
+      parameters:
+      - name: promptKey
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPrompt"
+    put:
+      tags:
+      - Prompt管理
+      summary: 更新Prompt
+      description: 更新Prompt信息
+      operationId: updatePrompt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromptUpdateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPrompt"
+    post:
+      tags:
+      - Prompt管理
+      summary: 发布Prompt
+      description: 创建新的Prompt
+      operationId: createPrompt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromptCreateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPrompt"
+    delete:
+      tags:
+      - Prompt管理
+      summary: 删除Prompt
+      description: 删除指定Prompt
+      operationId: deletePrompt
+      parameters:
+      - name: promptKey
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultBoolean"
+  /api/model:
+    get:
+      tags:
+      - 模型配置管理
+      summary: 获取模型配置详情
+      description: 根据ID获取模型配置详情
+      operationId: getById
+      parameters:
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultModelConfigResponse"
+    put:
+      tags:
+      - 模型配置管理
+      summary: 更新模型配置
+      description: 更新指定ID的模型配置
+      operationId: update
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModelConfigUpdateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultModelConfigResponse"
+    post:
+      tags:
+      - 模型配置管理
+      summary: 创建模型配置
+      description: 创建新的模型配置
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModelConfigCreateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultModelConfigResponse"
+    delete:
+      tags:
+      - 模型配置管理
+      summary: 删除模型配置
+      description: 删除指定ID的模型配置
+      operationId: delete
+      parameters:
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /api/experiment/stop:
+    put:
+      tags:
+      - 实验管理
+      summary: 停止实验
+      description: 停止正在运行的实验
+      operationId: stop
+      parameters:
+      - name: experimentId
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultExperiment"
+  /api/experiment/restart:
+    put:
+      tags:
+      - 实验管理
+      summary: 重启实验
+      description: 重启指定实验
+      operationId: restart
+      parameters:
+      - name: experimentId
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /api/evaluator/evaluator:
+    get:
+      tags:
+      - 评估器管理
+      summary: 获取评估器详情
+      description: 根据ID获取评估器详细信息
+      operationId: get_1
+      parameters:
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultEvaluator"
+    put:
+      tags:
+      - 评估器管理
+      summary: 更新评估器
+      description: 更新评估器信息
+      operationId: update_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluatorUpdateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultEvaluator"
+    post:
+      tags:
+      - 评估器管理
+      summary: 创建评估器
+      description: 创建新的评估器
+      operationId: create_2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluatorCreateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultEvaluator"
+    delete:
+      tags:
+      - 评估器管理
+      summary: 删除评估器
+      description: 删除指定评估器
+      operationId: delete_2
+      parameters:
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /api/dataset/dataset:
+    get:
+      tags:
+      - 测评集管理
+      summary: 获取测评集详情
+      description: 根据ID获取测评集详细信息
+      operationId: getDataSet
+      parameters:
+      - name: datasetId
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultDataset"
+    put:
+      tags:
+      - 测评集管理
+      summary: 更新测评集
+      description: 更新测评集信息
+      operationId: updateDataSet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DatasetUpdateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultDataset"
+    post:
+      tags:
+      - 测评集管理
+      summary: 创建测评集
+      description: 创建新的测评集
+      operationId: createDataSet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DatasetCreateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultDataset"
+    delete:
+      tags:
+      - 测评集管理
+      summary: 删除测评集
+      description: 删除指定测评集
+      operationId: delete_3
+      parameters:
+      - name: datasetId
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /api/dataset/datasetVersion:
+    put:
+      tags:
+      - 测评集管理
+      summary: 更新测评集版本
+      description: 更新测评集版本信息
+      operationId: updateDataSetVersion
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DatasetVersionUpdateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultDatasetVersion"
+    post:
+      tags:
+      - 测评集管理
+      summary: 创建测评集新版本
+      description: 创建新的测评集版本
+      operationId: createDatasetVersion
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DatasetVersionCreateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultDatasetVersion"
+  /api/dataset/dataItem:
+    get:
+      tags:
+      - 测评集管理
+      summary: 获取数据项详情
+      description: 根据ID获取数据项详细信息
+      operationId: getItem
+      parameters: []
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultDatasetItem"
+    put:
+      tags:
+      - 测评集管理
+      summary: 更新数据项
+      description: 更新数据项信息
+      operationId: updateItem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DatasetItemUpdateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultDatasetItem"
+    post:
+      tags:
+      - 测评集管理
+      summary: 创建数据项
+      description: 创建新的测评集数据项
+      operationId: createItem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DatasetItemCreateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListDatasetItem"
+    delete:
+      tags:
+      - 测评集管理
+      summary: 删除数据项
+      description: 删除指定数据项
+      operationId: deleteItem
+      parameters:
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /api/prompt/version:
+    get:
+      tags:
+      - Prompt管理
+      summary: 获取Prompt版本详情
+      description: 根据Prompt Key和版本获取版本详细信息
+      operationId: getPromptVersion
+      parameters:
+      - name: promptKey
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: version
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPromptVersionDetail"
+    post:
+      tags:
+      - Prompt管理
+      summary: 发布Prompt版本
+      description: 创建新的Prompt版本
+      operationId: createPromptVersion
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromptVersionCreateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPromptVersion"
+  /api/prompt/run:
+    post:
+      tags:
+      - Prompt管理
+      summary: 调试Prompt
+      description: 支持持续交互的Prompt调试，返回结构化流式结果
+      operationId: runPrompt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromptRunRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            application/x-ndjson:
               schema:
                 type: array
                 items:
-                  type: string
-  /api/v1/dashscope/getModels:
+                  $ref: "#/components/schemas/PromptRunResponse"
+  /api/experiment:
     get:
       tags:
-        - Base APIs
-      operationId: getDashScopeModels
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/ResultSetMapStringString'
-  /api/v1/chat:
-    get:
-      tags:
-        - Chat APIs
-      summary: DashScope Flux Chat
-      operationId: chat_2
+      - 实验管理
+      summary: 获取实验详情
+      description: 根据ID获取实验详细信息
+      operationId: get
       parameters:
-        - name: prompt
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: model
-          in: header
-          required: false
-          schema:
-            type: string
-        - name: chatId
-          in: header
-          required: false
-          schema:
-            type: string
-            default: spring-ai-alibaba-playground-chat
+      - name: experimentId
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
       responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
         "200":
           description: OK
           content:
             '*/*':
               schema:
-                type: array
-                items:
-                  type: string
+                $ref: "#/components/schemas/ResultExperiment"
+    post:
+      tags:
+      - 实验管理
+      summary: 创建实验
+      description: 创建新的评估实验
+      operationId: create_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExperimentCreateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultExperiment"
+    delete:
+      tags:
+      - 实验管理
+      summary: 删除实验
+      description: 删除指定实验
+      operationId: delete_1
+      parameters:
+      - name: experimentId
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /api/evaluator/evaluatorVersion:
+    post:
+      tags:
+      - 评估器管理
+      summary: 创建评估器新版本
+      description: 创建新的评估器版本
+      operationId: createVersion
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluatorVersionCreateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultEvaluatorVersion"
+  /api/evaluator/debug:
+    post:
+      tags:
+      - 评估器管理
+      summary: 调试评估器
+      description: 使用测试数据调试评估器
+      operationId: debug
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluatorTestRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultEvaluatorDebugResult"
+  /metadata/config:
+    get:
+      tags:
+      - project-metadata-controller
+      operationId: config
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InitializrMetadata"
+  /metadata/client:
+    get:
+      tags:
+      - project-metadata-controller
+      operationId: serviceCapabilitiesV22_2_1_1
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            application/vnd.initializr.v2.2+json:
+              schema:
+                type: string
+            application/vnd.initializr.v2.1+json:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: string
+            application/vnd.initializr.v2+json:
+              schema:
+                type: string
+            application/hal+json:
+              schema:
+                type: string
+  /:
+    get:
+      tags:
+      - project-metadata-controller
+      operationId: serviceCapabilitiesV22_1_1_1_1_1
+      parameters:
+      - name: User-Agent
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            application/vnd.initializr.v2.2+json:
+              schema:
+                type: string
+            application/vnd.initializr.v2.1+json:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: string
+            application/vnd.initializr.v2+json:
+              schema:
+                type: string
+            application/hal+json:
+              schema:
+                type: string
+            text/plain:
+              schema:
+                type: string
+  /dependencies:
+    get:
+      tags:
+      - project-metadata-controller
+      operationId: dependenciesV22_1
+      parameters:
+      - name: bootVersion
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            application/vnd.initializr.v2.2+json:
+              schema:
+                type: string
+            application/vnd.initializr.v2.1+json:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: string
+  /api/prompts:
+    get:
+      tags:
+      - Prompt管理
+      summary: 获取Prompt列表
+      description: 分页查询Prompt列表
+      operationId: listPrompts
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/PromptListRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultPrompt"
+  /api/prompt/versions:
+    get:
+      tags:
+      - Prompt管理
+      summary: 获取Prompt版本列表
+      description: 分页查询Prompt版本列表
+      operationId: listPromptVersions
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/PromptVersionListRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultPromptVersion"
+  /api/prompt/templates:
+    get:
+      tags:
+      - Prompt管理
+      summary: 获取Prompt模板列表
+      description: 分页查询Prompt模板列表
+      operationId: listPromptTemplates
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/PromptTemplateListRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultPromptTemplate"
+  /api/prompt/template:
+    get:
+      tags:
+      - Prompt管理
+      summary: 获取Prompt模板详情
+      description: 根据模板Key获取模板详细信息
+      operationId: getPromptTemplate
+      parameters:
+      - name: promptTemplateKey
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPromptTemplateDetail"
+  /api/prompt/session:
+    get:
+      tags:
+      - Prompt管理
+      summary: 获取会话信息
+      description: 获取指定会话的详细信息
+      operationId: getSession
+      parameters:
+      - name: sessionId
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultChatSession"
+    delete:
+      tags:
+      - Prompt管理
+      summary: 删除会话
+      description: 删除指定的会话
+      operationId: deleteSession
+      parameters:
+      - name: sessionId
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /api/observability/traces:
+    get:
+      tags:
+      - 分布式追踪
+      summary: 获取Trace列表
+      description: 分页查询追踪列表，支持搜索和筛选
+      operationId: getTraces
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/TracesQueryRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultTraceSpanDTO"
+  /api/observability/traces/{traceId}:
+    get:
+      tags:
+      - 分布式追踪
+      summary: 获取单个Trace详情
+      description: 根据Trace ID获取完整的Trace数据，包含所有Span的详细信息
+      operationId: getTraceDetail
+      parameters:
+      - name: traceId
+        in: path
+        description: Trace唯一标识符
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultTraceDetailDTO"
+  /api/observability/services:
+    get:
+      tags:
+      - 分布式追踪
+      summary: 获取服务列表
+      description: 获取所有服务列表及其操作
+      operationId: getServices
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ServicesQueryRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultServicesResponseDTO"
+  /api/observability/overview:
+    get:
+      tags:
+      - 分布式追踪
+      summary: 获取概览信息
+      description: 获取当前 Studio 的概览信息
+      operationId: getOverview
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/OverviewQueryRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultOverviewStatsDTO"
+  /api/models:
+    get:
+      tags:
+      - 模型配置管理
+      summary: 获取模型配置列表
+      description: 分页查询模型配置列表
+      operationId: list
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ModelConfigQueryRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultModelConfigResponse"
+  /api/models/enabled:
+    get:
+      tags:
+      - 模型配置管理
+      summary: 获取启用的模型配置
+      description: 获取所有启用状态的模型配置列表
+      operationId: getEnabledConfigs
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListModelConfigResponse"
+  /api/model/supported:
+    get:
+      tags:
+      - 模型配置管理
+      summary: 获取支持的模型提供商
+      description: 获取支持的模型提供商
+      operationId: getSupportedProviders
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListString"
+  /api/experiments:
+    get:
+      tags:
+      - 实验管理
+      summary: 获取实验列表
+      description: 分页查询实验列表
+      operationId: list_1
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ExperimentListRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultExperiment"
+  /api/experiment/results:
+    get:
+      tags:
+      - 实验管理
+      summary: 获取实验概览结果
+      description: 查询实验评估概览结果
+      operationId: getResults
+      parameters:
+      - name: experimentId
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListExperimentEvaluatorResult"
+  /api/experiment/result:
+    get:
+      tags:
+      - 实验管理
+      summary: 获取实验详细结果
+      description: 查询实验评估详细结果
+      operationId: getResult
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ExperimentEvaluatorResultDetailListRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultExperimentEvaluatorResultDetail"
+  /api/evaluator/templates:
+    get:
+      tags:
+      - 评估器管理
+      summary: 获取评估模板列表
+      description: 获取所有可用的评估模板
+      operationId: getTemplates
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/EvaluatorTemplateListRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultEvaluatorTemplate"
+  /api/evaluator/template:
+    get:
+      tags:
+      - 评估器管理
+      summary: 获取评估模板详细信息
+      description: 获取评估模板详细信息
+      operationId: getTemplate
+      parameters:
+      - name: templateId
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultEvaluatorTemplate"
+  /api/evaluator/evaluators:
+    get:
+      tags:
+      - 评估器管理
+      summary: 获取评估器列表
+      description: 分页查询评估器列表
+      operationId: list_2
+      parameters:
+      - name: evaluatorListRequest
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/EvaluatorListRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultEvaluator"
+  /api/evaluator/evaluatorVersions:
+    get:
+      tags:
+      - 评估器管理
+      summary: 获取评估器版本列表
+      description: 分页查询评估器版本列表
+      operationId: listVersions
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/EvaluatorVersionListRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultEvaluatorVersion"
+  /api/dataset/datasets:
+    get:
+      tags:
+      - 测评集管理
+      summary: 获取测评集列表
+      description: 分页查询测评集列表
+      operationId: listDataSet
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/DatasetListRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultDataset"
+  /api/dataset/datasetVersions:
+    get:
+      tags:
+      - 测评集管理
+      summary: 获取测评集版本列表
+      description: 分页查询测评集版本列表
+      operationId: listDataSetVersion
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/DatasetVersionListRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultDatasetVersion"
+  /api/dataset/dataItems:
+    get:
+      tags:
+      - 测评集管理
+      summary: 获取数据项列表
+      description: 分页查询测评集数据项列表
+      operationId: listItems
+      parameters:
+      - name: request
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/DatasetItemListRequest"
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ResultString"
+                - $ref: "#/components/schemas/ResultValidationErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageResultDatasetItem"
 components:
   schemas:
+    FieldError:
+      type: object
+      properties:
+        field:
+          type: string
+        rejectedValue:
+          type: object
+        message:
+          type: string
+    ResultValidationErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ValidationErrorResponse"
+    ValidationErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        fieldErrors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
     ResultString:
       type: object
       properties:
@@ -377,7 +2452,78 @@ components:
           type: string
         data:
           type: string
-    ResultToolCallResp:
+    ProjectRequest:
+      type: object
+      properties:
+        dependencies:
+          type: array
+          items:
+            type: string
+        name:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        groupId:
+          type: string
+        artifactId:
+          type: string
+        version:
+          type: string
+        bootVersion:
+          type: string
+        packaging:
+          type: string
+        applicationName:
+          type: string
+        language:
+          type: string
+        packageName:
+          type: string
+        javaVersion:
+          type: string
+        baseDir:
+          type: string
+    PromptUpdateRequest:
+      required:
+      - promptKey
+      type: object
+      properties:
+        promptKey:
+          maxLength: 255
+          minLength: 1
+          pattern: "^[a-zA-Z0-9_-]+$"
+          type: string
+        promptDescription:
+          maxLength: 255
+          minLength: 0
+          type: string
+        tags:
+          maxLength: 255
+          minLength: 0
+          pattern: "^[^,]+(,[^,]+)*$|^$"
+          type: string
+    Prompt:
+      type: object
+      properties:
+        promptKey:
+          type: string
+        promptDescription:
+          type: string
+        latestVersion:
+          type: string
+        latestVersionStatus:
+          type: string
+        tags:
+          type: string
+        createTime:
+          type: integer
+          format: int64
+        updateTime:
+          type: integer
+          format: int64
+    ResultPrompt:
       type: object
       properties:
         code:
@@ -386,36 +2532,147 @@ components:
         message:
           type: string
         data:
-          $ref: '#/components/schemas/ToolCallResp'
-    ToolCallResp:
+          $ref: "#/components/schemas/Prompt"
+    ModelConfigUpdateRequest:
       type: object
       properties:
-        status:
-          type: string
-          enum:
-            - SUCCESS
-            - FAILURE
-            - UNKNOWN
-            - RUNNING
-        toolName:
-          type: string
-        toolParameters:
-          type: string
-        toolResult:
-          type: string
-        toolStartTime:
-          type: string
-          format: date-time
-        toolEndTime:
-          type: string
-          format: date-time
-        errorMessage:
-          type: string
-        toolInput:
-          type: string
-        toolCostTime:
+        id:
           type: integer
           format: int64
+        name:
+          maxLength: 100
+          minLength: 0
+          type: string
+        provider:
+          maxLength: 50
+          minLength: 0
+          type: string
+        modelName:
+          maxLength: 100
+          minLength: 0
+          type: string
+        baseUrl:
+          maxLength: 500
+          minLength: 0
+          type: string
+        apiKey:
+          maxLength: 500
+          minLength: 0
+          type: string
+        defaultParameters:
+          type: object
+          additionalProperties:
+            type: object
+        supportedParameters:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelParameterDef"
+        status:
+          type: integer
+          format: int32
+    ModelParameterDef:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        defaultValue:
+          type: object
+        minValue:
+          type: object
+        maxValue:
+          type: object
+        description:
+          type: string
+        required:
+          type: boolean
+    ModelConfigResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        provider:
+          type: string
+        modelName:
+          type: string
+        baseUrl:
+          type: string
+        defaultParameters:
+          type: object
+          additionalProperties:
+            type: object
+        supportedParameters:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelParameterDef"
+        status:
+          type: integer
+          format: int32
+        createTime:
+          type: string
+          format: date-time
+        updateTime:
+          type: string
+          format: date-time
+    ResultModelConfigResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ModelConfigResponse"
+    Experiment:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        datasetId:
+          type: integer
+          format: int64
+        datasetVersion:
+          type: string
+        evaluationObjectConfig:
+          type: string
+        evaluatorConfig:
+          type: string
+        status:
+          type: string
+        progress:
+          type: integer
+          format: int32
+        completeTime:
+          type: string
+          format: date-time
+        creator:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+        updateTime:
+          type: string
+          format: date-time
+    ResultExperiment:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/Experiment"
     ResultVoid:
       type: object
       properties:
@@ -426,7 +2683,43 @@ components:
           type: string
         data:
           type: object
-    ResultByte[]:
+    EvaluatorUpdateRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+    Evaluator:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        creator:
+          type: string
+        modelConfig:
+          type: string
+        latestVersion:
+          type: string
+        variables:
+          type: string
+        prompt:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+        updateTime:
+          type: string
+          format: date-time
+    ResultEvaluator:
       type: object
       properties:
         code:
@@ -435,45 +2728,1912 @@ components:
         message:
           type: string
         data:
-          type: string
-          format: byte
-    ResultSetMapStringString:
+          $ref: "#/components/schemas/Evaluator"
+    DatasetColumn:
       type: object
       properties:
-        code:
-          type: integer
-          format: int32
-        message:
+        name:
           type: string
-        data:
-          uniqueItems: true
+        dataType:
+          type: string
+        displayFormat:
+          type: string
+        description:
+          type: string
+        required:
+          type: boolean
+    DatasetUpdateRequest:
+      required:
+      - columnsConfig
+      - datasetId
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        columnsConfig:
           type: array
           items:
+            $ref: "#/components/schemas/DatasetColumn"
+        datasetId:
+          type: integer
+          format: int64
+    Dataset:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        columnsConfig:
+          type: string
+        creator:
+          type: string
+        dataCount:
+          type: integer
+          format: int32
+        latestVersion:
+          type: string
+        latestVersionId:
+          type: integer
+          format: int64
+        createTime:
+          type: string
+          format: date-time
+        updateTime:
+          type: string
+          format: date-time
+    ResultDataset:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/Dataset"
+    DatasetVersionUpdateRequest:
+      type: object
+      properties:
+        datasetVersionId:
+          type: integer
+          format: int64
+        description:
+          type: string
+        status:
+          type: string
+    DatasetVersion:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        datasetId:
+          type: integer
+          format: int64
+        version:
+          type: string
+        description:
+          type: string
+        dataCount:
+          type: integer
+          format: int32
+        creator:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+        columnsConfig:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetColumn"
+        status:
+          type: string
+        experiments:
+          type: string
+        datasetItems:
+          type: string
+    ResultDatasetVersion:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/DatasetVersion"
+    DatasetItemUpdateRequest:
+      required:
+      - dataContent
+      - id
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        dataContent:
+          type: string
+    DatasetItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        columnsConfig:
+          type: string
+        dataContent:
+          type: string
+        creator:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+        updateTime:
+          type: string
+          format: date-time
+    ResultDatasetItem:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/DatasetItem"
+    PromptCreateRequest:
+      required:
+      - promptKey
+      type: object
+      properties:
+        promptKey:
+          maxLength: 255
+          minLength: 1
+          pattern: "^[a-zA-Z0-9_-]+$"
+          type: string
+        promptDescription:
+          maxLength: 255
+          minLength: 0
+          type: string
+        tags:
+          maxLength: 255
+          minLength: 0
+          pattern: "^[^,]+(,[^,]+)*$|^$"
+          type: string
+    PromptVersionCreateRequest:
+      required:
+      - promptKey
+      - template
+      - version
+      type: object
+      properties:
+        promptKey:
+          maxLength: 255
+          minLength: 1
+          pattern: "^[a-zA-Z0-9_-]+$"
+          type: string
+        version:
+          maxLength: 32
+          minLength: 1
+          pattern: "^[a-zA-Z0-9._-]+$"
+          type: string
+        versionDescription:
+          maxLength: 255
+          minLength: 0
+          type: string
+        template:
+          type: string
+        variables:
+          type: string
+        modelConfig:
+          type: string
+        status:
+          pattern: ^(pre|release)$
+          type: string
+    PromptVersion:
+      type: object
+      properties:
+        version:
+          type: string
+        promptKey:
+          type: string
+        versionDescription:
+          type: string
+        createTime:
+          type: integer
+          format: int64
+        previousVersion:
+          type: string
+        status:
+          type: string
+    ResultPromptVersion:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PromptVersion"
+    PromptRunRequest:
+      required:
+      - message
+      type: object
+      properties:
+        sessionId:
+          type: string
+        promptKey:
+          maxLength: 255
+          minLength: 0
+          pattern: "^[a-zA-Z0-9_-]*$"
+          type: string
+        version:
+          maxLength: 32
+          minLength: 0
+          type: string
+        template:
+          type: string
+        variables:
+          type: string
+        modelConfig:
+          type: string
+        message:
+          type: string
+        newSession:
+          type: boolean
+    ChatMessage:
+      type: object
+      properties:
+        role:
+          type: string
+        content:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+        metrics:
+          $ref: "#/components/schemas/ChatMessageMetrics"
+    ChatMessageMetrics:
+      type: object
+      properties:
+        usage:
+          $ref: "#/components/schemas/Usage"
+    PromptRunResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        newSession:
+          type: boolean
+        content:
+          type: string
+        type:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+        messageCount:
+          type: integer
+          format: int32
+        error:
+          type: string
+        metrics:
+          $ref: "#/components/schemas/ChatMessageMetrics"
+    Usage:
+      type: object
+      properties:
+        promptTokens:
+          type: integer
+          format: int32
+        completionTokens:
+          type: integer
+          format: int32
+        totalTokens:
+          type: integer
+          format: int32
+        nativeUsage:
+          type: object
+    ModelConfigCreateRequest:
+      required:
+      - apiKey
+      - baseUrl
+      - modelName
+      - name
+      - provider
+      type: object
+      properties:
+        name:
+          maxLength: 100
+          minLength: 0
+          type: string
+        provider:
+          maxLength: 50
+          minLength: 0
+          type: string
+        modelName:
+          maxLength: 100
+          minLength: 0
+          type: string
+        baseUrl:
+          maxLength: 500
+          minLength: 0
+          type: string
+        apiKey:
+          maxLength: 500
+          minLength: 0
+          type: string
+        defaultParameters:
+          type: object
+          additionalProperties:
             type: object
-            additionalProperties:
-              type: string
-x-openapi:
-  x-setting:
-    customCode: 200
-    language: zh-CN
-    enableSwaggerModels: true
-    swaggerModelName: Swagger Models
-    enableReloadCacheParameter: false
-    enableAfterScript: true
-    enableDocumentManage: true
-    enableVersion: true
-    enableRequestCache: true
-    enableFilterMultipartApis: false
-    enableFilterMultipartApiMethodType: POST
-    enableHost: false
-    enableHostText: ""
-    enableDynamicParameter: false
-    enableDebug: true
-    enableFooter: true
-    enableFooterCustom: false
-    enableSearch: true
-    enableOpenApi: true
-    enableHomeCustom: false
-    enableGroup: true
-    enableResponseCode: true
-  x-markdownFiles: []
+        supportedParameters:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelParameterDef"
+    ExperimentCreateRequest:
+      required:
+      - creator
+      - datasetId
+      - datasetVersionId
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        datasetId:
+          type: integer
+          format: int64
+        datasetVersionId:
+          type: integer
+          format: int64
+        evaluationObjectConfig:
+          type: string
+        evaluatorConfig:
+          type: string
+        creator:
+          type: string
+    EvaluatorCreateRequest:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        creator:
+          type: string
+    EvaluatorVersionCreateRequest:
+      type: object
+      properties:
+        evaluatorId:
+          type: string
+        description:
+          type: string
+        modelConfig:
+          type: string
+        prompt:
+          type: string
+        version:
+          type: string
+        creator:
+          type: string
+        status:
+          type: string
+        variables:
+          type: string
+    EvaluatorVersion:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        description:
+          type: string
+        version:
+          type: string
+        modelConfig:
+          type: string
+        prompt:
+          type: string
+        variables:
+          type: string
+        status:
+          type: string
+        experiments:
+          type: string
+        creator:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+        updateTime:
+          type: string
+          format: date-time
+    ResultEvaluatorVersion:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/EvaluatorVersion"
+    EvaluatorTestRequest:
+      required:
+      - input
+      - modelConfig
+      - output
+      - prompt
+      type: object
+      properties:
+        modelConfig:
+          type: string
+        prompt:
+          type: string
+        variables:
+          type: string
+        input:
+          type: string
+        output:
+          type: string
+        referenceOutput:
+          type: string
+    EvaluatorDebugResult:
+      type: object
+      properties:
+        score:
+          type: string
+        reason:
+          type: string
+    ResultEvaluatorDebugResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/EvaluatorDebugResult"
+    DatasetCreateRequest:
+      required:
+      - columnsConfig
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        columnsConfig:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetColumn"
+        creator:
+          type: string
+    DatasetVersionCreateRequest:
+      required:
+      - columnsConfig
+      - datasetId
+      - datasetItems
+      type: object
+      properties:
+        datasetId:
+          type: integer
+          format: int64
+        description:
+          type: string
+        columnsConfig:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetColumn"
+        datasetItems:
+          type: array
+          items:
+            type: integer
+            format: int64
+        status:
+          type: string
+    DatasetItemCreateRequest:
+      required:
+      - datasetId
+      type: object
+      properties:
+        datasetId:
+          type: integer
+          format: int64
+        dataContent:
+          type: array
+          items:
+            type: string
+        columnsConfig:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetColumn"
+        creator:
+          type: string
+    ResultListDatasetItem:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetItem"
+    BillOfMaterials:
+      type: object
+      properties:
+        groupId:
+          type: string
+        artifactId:
+          type: string
+        version:
+          type: string
+        versionProperty:
+          $ref: "#/components/schemas/VersionProperty"
+        order:
+          type: integer
+          format: int32
+        additionalBoms:
+          type: array
+          items:
+            type: string
+        repositories:
+          type: array
+          items:
+            type: string
+        mappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Mapping"
+    DefaultMetadataElement:
+      type: object
+      properties:
+        name:
+          type: string
+        id:
+          type: string
+        default:
+          type: boolean
+    DependenciesCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - ACTION
+          - TEXT
+          - SINGLE_SELECT
+          - HIERARCHICAL_MULTI_SELECT
+        title:
+          type: string
+        description:
+          type: string
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/DependencyGroup"
+    Dependency:
+      type: object
+      properties:
+        name:
+          type: string
+        id:
+          type: string
+        aliases:
+          type: array
+          items:
+            type: string
+        facets:
+          type: array
+          items:
+            type: string
+        groupId:
+          type: string
+        artifactId:
+          type: string
+        version:
+          type: string
+        classifier:
+          type: string
+        type:
+          type: string
+        mappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Mapping"
+        scope:
+          type: string
+        description:
+          type: string
+        compatibilityRange:
+          type: string
+        bom:
+          type: string
+        repository:
+          type: string
+        weight:
+          type: integer
+          format: int32
+        starter:
+          type: boolean
+        keywords:
+          type: array
+          items:
+            type: string
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/Link"
+    DependencyGroup:
+      type: object
+      properties:
+        name:
+          type: string
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/Dependency"
+    Env:
+      type: object
+      properties:
+        artifactRepository:
+          type: string
+        springBootMetadataUrl:
+          type: string
+        googleAnalyticsTrackingCode:
+          type: string
+        fallbackApplicationName:
+          type: string
+        invalidApplicationNames:
+          type: array
+          items:
+            type: string
+        invalidPackageNames:
+          type: array
+          items:
+            type: string
+        forceSsl:
+          type: boolean
+        boms:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/BillOfMaterials"
+        repositories:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Repository"
+        gradle:
+          $ref: "#/components/schemas/Gradle"
+        kotlin:
+          $ref: "#/components/schemas/Kotlin"
+        maven:
+          $ref: "#/components/schemas/Maven"
+        platform:
+          $ref: "#/components/schemas/Platform"
+    Gradle:
+      type: object
+      properties:
+        dependencyManagementPluginVersion:
+          type: string
+    InitializrConfiguration:
+      type: object
+      properties:
+        env:
+          $ref: "#/components/schemas/Env"
+    InitializrMetadata:
+      type: object
+      properties:
+        configuration:
+          $ref: "#/components/schemas/InitializrConfiguration"
+        dependencies:
+          $ref: "#/components/schemas/DependenciesCapability"
+        types:
+          $ref: "#/components/schemas/TypeCapability"
+        bootVersions:
+          $ref: "#/components/schemas/SingleSelectCapability"
+        packagings:
+          $ref: "#/components/schemas/SingleSelectCapability"
+        javaVersions:
+          $ref: "#/components/schemas/SingleSelectCapability"
+        languages:
+          $ref: "#/components/schemas/SingleSelectCapability"
+        name:
+          $ref: "#/components/schemas/TextCapability"
+        description:
+          $ref: "#/components/schemas/TextCapability"
+        groupId:
+          $ref: "#/components/schemas/TextCapability"
+        artifactId:
+          $ref: "#/components/schemas/TextCapability"
+        version:
+          $ref: "#/components/schemas/TextCapability"
+        packageName:
+          $ref: "#/components/schemas/TextCapability"
+    Kotlin:
+      type: object
+      properties:
+        defaultVersion:
+          type: string
+        mappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Mapping"
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+        hreflang:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        deprecation:
+          type: string
+        profile:
+          type: string
+        name:
+          type: string
+        templated:
+          type: boolean
+    Mapping:
+      type: object
+      properties:
+        compatibilityRange:
+          type: string
+        groupId:
+          type: string
+        artifactId:
+          type: string
+        version:
+          type: string
+        starter:
+          type: boolean
+        bom:
+          type: string
+        repository:
+          type: string
+    Maven:
+      type: object
+      properties:
+        parent:
+          $ref: "#/components/schemas/ParentPom"
+    ParentPom:
+      type: object
+      properties:
+        groupId:
+          type: string
+        artifactId:
+          type: string
+        version:
+          type: string
+        relativePath:
+          type: string
+        includeSpringBootBom:
+          type: boolean
+    Platform:
+      type: object
+      properties:
+        compatibilityRange:
+          type: string
+        v1FormatCompatibilityRange:
+          type: string
+        v2FormatCompatibilityRange:
+          type: string
+    Repository:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          format: url
+        releasesEnabled:
+          type: boolean
+        snapshotsEnabled:
+          type: boolean
+    SingleSelectCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - ACTION
+          - TEXT
+          - SINGLE_SELECT
+          - HIERARCHICAL_MULTI_SELECT
+        title:
+          type: string
+        description:
+          type: string
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/DefaultMetadataElement"
+    TextCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - ACTION
+          - TEXT
+          - SINGLE_SELECT
+          - HIERARCHICAL_MULTI_SELECT
+        title:
+          type: string
+        description:
+          type: string
+        content:
+          type: string
+    Type:
+      type: object
+      properties:
+        name:
+          type: string
+        id:
+          type: string
+        description:
+          type: string
+        action:
+          type: string
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+        default:
+          type: boolean
+    TypeCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - ACTION
+          - TEXT
+          - SINGLE_SELECT
+          - HIERARCHICAL_MULTI_SELECT
+        title:
+          type: string
+        description:
+          type: string
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/Type"
+    VersionProperty:
+      type: object
+      properties:
+        internal:
+          type: boolean
+    PromptListRequest:
+      type: object
+      properties:
+        search:
+          pattern: ^(accurate|blur)$
+          type: string
+        tag:
+          type: string
+        promptKey:
+          type: string
+        pageNo:
+          minimum: 1
+          type: integer
+          format: int32
+        pageSize:
+          maximum: 100
+          minimum: 1
+          type: integer
+          format: int32
+    PageResultPrompt:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/Prompt"
+    ResultPageResultPrompt:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultPrompt"
+    PromptVersionListRequest:
+      required:
+      - promptKey
+      type: object
+      properties:
+        promptKey:
+          type: string
+        status:
+          pattern: ^(pre|release|all)$
+          type: string
+        pageNo:
+          minimum: 1
+          type: integer
+          format: int32
+        pageSize:
+          maximum: 100
+          minimum: 1
+          type: integer
+          format: int32
+    PageResultPromptVersion:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/PromptVersion"
+    ResultPageResultPromptVersion:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultPromptVersion"
+    PromptVersionDetail:
+      type: object
+      properties:
+        version:
+          type: string
+        promptKey:
+          type: string
+        versionDescription:
+          type: string
+        template:
+          type: string
+        variables:
+          type: string
+        modelConfig:
+          type: string
+        createTime:
+          type: integer
+          format: int64
+        previousVersion:
+          type: string
+        status:
+          type: string
+    ResultPromptVersionDetail:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PromptVersionDetail"
+    PromptTemplateListRequest:
+      type: object
+      properties:
+        search:
+          pattern: ^(accurate|blur)$
+          type: string
+        tag:
+          type: string
+        promptTemplateKey:
+          type: string
+        pageNo:
+          minimum: 1
+          type: integer
+          format: int32
+        pageSize:
+          maximum: 100
+          minimum: 1
+          type: integer
+          format: int32
+    PageResultPromptTemplate:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/PromptTemplate"
+    PromptTemplate:
+      type: object
+      properties:
+        promptTemplateKey:
+          type: string
+        templateDescription:
+          type: string
+        tags:
+          type: string
+    ResultPageResultPromptTemplate:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultPromptTemplate"
+    PromptTemplateDetail:
+      type: object
+      properties:
+        promptTemplateKey:
+          type: string
+        templateDescription:
+          type: string
+        tags:
+          type: string
+        template:
+          type: string
+        variables:
+          type: string
+        modelConfig:
+          type: string
+    ResultPromptTemplateDetail:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PromptTemplateDetail"
+    ChatSession:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        promptKey:
+          type: string
+        version:
+          type: string
+        template:
+          type: string
+        variables:
+          type: string
+        modelConfig:
+          $ref: "#/components/schemas/ModelConfigInfo"
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+        createTime:
+          type: integer
+          format: int64
+        lastUpdateTime:
+          type: integer
+          format: int64
+        messageCount:
+          type: integer
+          format: int32
+        newSession:
+          type: boolean
+    ModelConfigInfo:
+      type: object
+      properties:
+        allParameters:
+          type: object
+          additionalProperties:
+            type: object
+        modelId:
+          type: integer
+          format: int64
+    ResultChatSession:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ChatSession"
+    TracesQueryRequest:
+      required:
+      - endTime
+      - startTime
+      type: object
+      properties:
+        service:
+          type: string
+          description: 服务名称
+        spanName:
+          type: string
+          description: Span名称
+        startTime:
+          type: string
+          description: 开始时间
+          example: 2025-01-15T10:00:00Z
+        endTime:
+          type: string
+          description: 结束时间
+          example: 2025-01-15T11:00:00Z
+        limit:
+          maximum: 200
+          minimum: 1
+          type: integer
+          description: 返回结果数量限制
+          format: int32
+          default: 100
+        attributes:
+          type: string
+          description: 属性过滤JSON
+          example: "{\"gen_ai.operation_name\":\"chat\"}"
+        pageToken:
+          type: string
+          description: 分页标记
+    PageResultTraceSpanDTO:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/TraceSpanDTO"
+    ResultPageResultTraceSpanDTO:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultTraceSpanDTO"
+    SpanEventDTO:
+      type: object
+      properties:
+        time:
+          type: string
+        name:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: object
+    SpanLinkDTO:
+      type: object
+      properties:
+        traceId:
+          type: string
+        spanId:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: object
+    TraceSpanDTO:
+      type: object
+      properties:
+        traceId:
+          type: string
+        spanId:
+          type: string
+        parentSpanId:
+          type: string
+        durationNs:
+          type: integer
+          format: int64
+        spanKind:
+          type: string
+        service:
+          type: string
+        spanName:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        status:
+          type: string
+        errorCount:
+          type: integer
+          format: int32
+        attributes:
+          type: object
+          additionalProperties:
+            type: object
+        resources:
+          type: object
+          additionalProperties:
+            type: object
+        spanLinks:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpanLinkDTO"
+        spanEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpanEventDTO"
+    ResultTraceDetailDTO:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/TraceDetailDTO"
+    TraceDetailDTO:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/TraceSpanDTO"
+    ServicesQueryRequest:
+      required:
+      - endTime
+      - startTime
+      type: object
+      properties:
+        startTime:
+          type: string
+          description: 开始时间
+          example: 2025-01-15T10:00:00Z
+        endTime:
+          type: string
+          description: 结束时间
+          example: 2025-01-15T11:00:00Z
+    ResultServicesResponseDTO:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ServicesResponseDTO"
+    ServiceInfoDTO:
+      type: object
+      properties:
+        name:
+          type: string
+        operations:
+          type: array
+          items:
+            type: string
+    ServicesResponseDTO:
+      type: object
+      properties:
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceInfoDTO"
+    OverviewQueryRequest:
+      required:
+      - endTime
+      - startTime
+      type: object
+      properties:
+        startTime:
+          type: string
+          description: 开始时间
+          example: 2025-01-15T10:00:00Z
+        endTime:
+          type: string
+          description: 结束时间
+          example: 2025-01-15T11:00:00Z
+        detail:
+          type: boolean
+          description: 是否展示详情
+          default: false
+    OverviewStatsDTO:
+      type: object
+      properties:
+        span.count:
+          $ref: "#/components/schemas/StatDetail"
+        operation.count:
+          $ref: "#/components/schemas/StatDetail"
+        usage.tokens:
+          $ref: "#/components/schemas/StatDetail"
+    ResultOverviewStatsDTO:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/OverviewStatsDTO"
+    StatDetail:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+        detail:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatItem"
+    StatItem:
+      type: object
+      properties:
+        spanName:
+          type: string
+        operationName:
+          type: string
+        modelName:
+          type: string
+        total:
+          type: integer
+          format: int64
+    ModelConfigQueryRequest:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        name:
+          type: string
+        provider:
+          type: string
+        status:
+          type: integer
+          format: int32
+    PageResultModelConfigResponse:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelConfigResponse"
+    ResultPageResultModelConfigResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultModelConfigResponse"
+    ResultListModelConfigResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelConfigResponse"
+    ResultListString:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            type: string
+    ExperimentListRequest:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        name:
+          type: string
+        status:
+          type: string
+        creator:
+          type: string
+    PageResultExperiment:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/Experiment"
+    ResultPageResultExperiment:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultExperiment"
+    ExperimentEvaluatorResult:
+      type: object
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        averageScore:
+          type: number
+        evaluatorVersionId:
+          type: integer
+          format: int64
+        progress:
+          type: integer
+          format: int32
+        completeItemsCount:
+          type: integer
+          format: int32
+    ResultListExperimentEvaluatorResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExperimentEvaluatorResult"
+    ExperimentEvaluatorResultDetailListRequest:
+      required:
+      - evaluatorVersionId
+      - experimentId
+      type: object
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        evaluatorVersionId:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+    ExperimentEvaluatorResultDetail:
+      type: object
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        input:
+          type: string
+        actualOutput:
+          type: string
+        referenceOutput:
+          type: string
+        score:
+          type: number
+        reason:
+          type: string
+        evaluationTime:
+          type: string
+          format: date-time
+        evaluatorVersionId:
+          type: integer
+          format: int64
+        createTime:
+          type: string
+          format: date-time
+        updateTime:
+          type: string
+          format: date-time
+    PageResultExperimentEvaluatorResultDetail:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExperimentEvaluatorResultDetail"
+    ResultPageResultExperimentEvaluatorResultDetail:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultExperimentEvaluatorResultDetail"
+    EvaluatorTemplateListRequest:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+    EvaluatorTemplate:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        evaluatorTemplateKey:
+          type: string
+        templateDesc:
+          type: string
+        template:
+          type: string
+        variables:
+          type: string
+        modelConfig:
+          type: string
+    PageResultEvaluatorTemplate:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluatorTemplate"
+    ResultPageResultEvaluatorTemplate:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultEvaluatorTemplate"
+    ResultEvaluatorTemplate:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/EvaluatorTemplate"
+    EvaluatorListRequest:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        name:
+          type: string
+    PageResultEvaluator:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/Evaluator"
+    ResultPageResultEvaluator:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultEvaluator"
+    EvaluatorVersionListRequest:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        evaluatorId:
+          type: integer
+          format: int64
+        name:
+          type: string
+    PageResultEvaluatorVersion:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluatorVersion"
+    ResultPageResultEvaluatorVersion:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultEvaluatorVersion"
+    DatasetListRequest:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        datasetName:
+          type: string
+        creator:
+          type: string
+    PageResultDataset:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/Dataset"
+    ResultPageResultDataset:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultDataset"
+    DatasetVersionListRequest:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        datasetId:
+          type: integer
+          format: int64
+    PageResultDatasetVersion:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetVersion"
+    ResultPageResultDatasetVersion:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultDatasetVersion"
+    DatasetItemListRequest:
+      required:
+      - datasetVersionId
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        datasetVersionId:
+          type: integer
+          format: int64
+    PageResultDatasetItem:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+        totalPage:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int64
+        pageItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetItem"
+    ResultPageResultDatasetItem:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/PageResultDatasetItem"
+    ResultBoolean:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          type: boolean

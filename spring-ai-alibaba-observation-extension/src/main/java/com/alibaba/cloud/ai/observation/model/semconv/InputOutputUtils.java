@@ -8,7 +8,8 @@ import static org.springframework.ai.chat.messages.MessageType.USER;
 import com.alibaba.cloud.ai.observation.model.semconv.InputOutputModel.ChatMessage;
 import com.alibaba.cloud.ai.observation.model.semconv.InputOutputModel.MessagePart;
 import com.alibaba.cloud.ai.observation.model.semconv.InputOutputModel.OutputMessage;
-import com.alibaba.cloud.ai.observation.model.semconv.InputOutputModel.TextMessagePart;
+import com.alibaba.cloud.ai.observation.model.semconv.InputOutputModel.RoleEnum;
+import com.alibaba.cloud.ai.observation.model.semconv.InputOutputModel.TextPart;
 import com.alibaba.cloud.ai.observation.model.semconv.InputOutputModel.ToolCallRequestPart;
 import com.alibaba.cloud.ai.observation.model.semconv.InputOutputModel.ToolCallResponsePart;
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ public final class InputOutputUtils {
 		String role = getRole(message.getMessageType());
 		List<MessagePart> messageParts = new ArrayList<>();
 		if (StringUtils.hasText(message.getText())) {
-			messageParts.add(new TextMessagePart("text", message.getText()));
+			messageParts.add(new TextPart("text", message.getText()));
 		}
 		if (message instanceof AssistantMessage && ((AssistantMessage) message).hasToolCalls()) {
 			for (ToolCall toolCall : ((AssistantMessage) message).getToolCalls()) {
@@ -56,26 +57,26 @@ public final class InputOutputUtils {
 			}
 		}
 		if (StringUtils.hasText(generation.getOutput().getText())) {
-			messageParts.add(new TextMessagePart("text", generation.getOutput().getText()));
+			messageParts.add(new TextPart("text", generation.getOutput().getText()));
 		}
 		return new OutputMessage(role, messageParts, finishReason);
 	}
 
 	private static String getRole(MessageType messageType) {
 		if (messageType == USER) {
-			return "user";
+			return RoleEnum.USER.value;
 		}
 		else if (messageType == TOOL) {
-			return "tool";
+			return RoleEnum.TOOL.value;
 		}
 		else if (messageType == ASSISTANT) {
-			return "assistant";
+			return RoleEnum.ASSISTANT.value;
 		}
 		else if (messageType == SYSTEM) {
-			return "system";
+			return RoleEnum.SYSTEM.value;
 		}
 		else {
-			return "unknown";
+			return RoleEnum.UNKNOWN.value;
 		}
 	}
 

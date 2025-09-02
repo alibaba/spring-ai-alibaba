@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.arms;
 
-import com.alibaba.cloud.ai.observation.model.ArmsChatModelInputObservationHandler;
-import com.alibaba.cloud.ai.observation.model.ArmsChatModelOutputObservationHandler;
+import com.alibaba.cloud.ai.observation.model.ChatModelInputObservationHandler;
+import com.alibaba.cloud.ai.observation.model.ChatModelOutputObservationHandler;
 import com.alibaba.cloud.ai.tool.ObservableToolCallingManager;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.model.ChatModel;
@@ -31,6 +31,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
+/**
+ * @author Lumian
+ */
 @AutoConfiguration
 @ConditionalOnClass(ChatModel.class)
 @EnableConfigurationProperties(ArmsCommonProperties.class)
@@ -49,21 +52,21 @@ public class ArmsAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(value = { ArmsChatModelInputObservationHandler.class },
-			name = { "armsChatModelInputObservationHandler" })
+	@ConditionalOnMissingBean(value = { ChatModelInputObservationHandler.class },
+			name = { "chatModelInputObservationHandler" })
 	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "model.capture-input",
 			havingValue = "true")
-	ArmsChatModelInputObservationHandler armsChatModelInputObservationHandler() {
-		return new ArmsChatModelInputObservationHandler();
+	ChatModelInputObservationHandler armsChatModelInputObservationHandler(ArmsCommonProperties properties) {
+		return new ChatModelInputObservationHandler(properties.getMessageMode());
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(value = { ArmsChatModelOutputObservationHandler.class },
-			name = { "armsChatModelOutputObservationHandler" })
+	@ConditionalOnMissingBean(value = { ChatModelOutputObservationHandler.class },
+			name = { "chatModelOutputObservationHandler" })
 	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "model.capture-output",
 			havingValue = "true")
-	ArmsChatModelOutputObservationHandler armsChatModelOutputObservationHandler() {
-		return new ArmsChatModelOutputObservationHandler();
+	ChatModelOutputObservationHandler armsChatModelOutputObservationHandler(ArmsCommonProperties properties) {
+		return new ChatModelOutputObservationHandler(properties.getMessageMode());
 	}
 
 }
