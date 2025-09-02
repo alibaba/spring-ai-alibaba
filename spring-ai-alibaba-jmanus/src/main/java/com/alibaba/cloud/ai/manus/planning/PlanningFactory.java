@@ -83,7 +83,7 @@ import com.alibaba.cloud.ai.manus.tool.mapreduce.ReduceOperationTool;
 import com.alibaba.cloud.ai.manus.tool.tableProcessor.TableProcessingService;
 import com.alibaba.cloud.ai.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.manus.tool.textOperator.TextFileService;
-import com.alibaba.cloud.ai.manus.tool.uploadedFileLoader.UploadedFileLoaderTool;
+
 import com.alibaba.cloud.ai.manus.tool.pptGenerator.PptGeneratorOperator;
 import com.alibaba.cloud.ai.manus.tool.jsxGenerator.JsxGeneratorOperator;
 import com.alibaba.cloud.ai.manus.tool.excelProcessor.ExcelProcessorTool;
@@ -239,7 +239,7 @@ public class PlanningFactory implements IPlanningFactory {
 			toolDefinitions.add(new Bash(unifiedDirectoryManager, objectMapper));
 			toolDefinitions.add(new DocLoaderTool());
 			toolDefinitions.add(new TextFileOperator(textFileService, innerStorageService, objectMapper));
-			//remove temporarily , because it is hard to test.
+			// remove temporarily , because it is hard to test.
 			// toolDefinitions.add(new UploadedFileLoaderTool(unifiedDirectoryManager));
 			toolDefinitions.add(new TableProcessorTool(tableProcessingService));
 			// toolDefinitions.add(new InnerStorageTool(unifiedDirectoryManager));

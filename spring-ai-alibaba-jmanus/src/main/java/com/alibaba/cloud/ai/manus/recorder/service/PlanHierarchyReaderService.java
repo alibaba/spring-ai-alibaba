@@ -294,16 +294,18 @@ public class PlanHierarchyReaderService {
 		for (PlanExecutionRecord plan : planRecords) {
 			if (plan.getAgentExecutionSequence() != null) {
 				for (AgentExecutionRecord agentRecord : plan.getAgentExecutionSequence()) {
-					// Find sub-plans for this specific agent using enhanced SQL-based approach
+					// Find sub-plans for this specific agent using enhanced SQL-based
+					// approach
 					List<PlanExecutionRecord> subPlans = findSubPlansForAgent(agentRecord, planMap);
 
 					if (!subPlans.isEmpty()) {
 						agentRecord.setSubPlanExecutionRecords(subPlans);
 						logger.debug("Found {} sub-plans for agent {} (ID: {}) in plan {}", subPlans.size(),
 								agentRecord.getAgentName(), agentRecord.getId(), plan.getCurrentPlanId());
-					} else {
-						logger.debug("No sub-plans found for agent {} (ID: {}) in plan {}",
-								agentRecord.getAgentName(), agentRecord.getId(), plan.getCurrentPlanId());
+					}
+					else {
+						logger.debug("No sub-plans found for agent {} (ID: {}) in plan {}", agentRecord.getAgentName(),
+								agentRecord.getId(), plan.getCurrentPlanId());
 					}
 				}
 			}
@@ -313,14 +315,13 @@ public class PlanHierarchyReaderService {
 	}
 
 	/**
-	 * Find sub-plans for a specific agent execution record using enhanced SQL-based approach.
+	 * Find sub-plans for a specific agent execution record using enhanced SQL-based
+	 * approach.
 	 *
-	 * This method uses the following logic:
-	 * 1. Query ActToolInfo by toolCallId from sub-plans
-	 * 2. Query ThinkActRecord by ActToolInfo relationship
-	 * 3. Get parentExecutionId from ThinkActRecord
-	 * 4. Match parentExecutionId with AgentExecutionRecord.id in the current plan's agent sequence
-	 *
+	 * This method uses the following logic: 1. Query ActToolInfo by toolCallId from
+	 * sub-plans 2. Query ThinkActRecord by ActToolInfo relationship 3. Get
+	 * parentExecutionId from ThinkActRecord 4. Match parentExecutionId with
+	 * AgentExecutionRecord.id in the current plan's agent sequence
 	 * @param agentRecord The agent execution record to find sub-plans for
 	 * @param planMap Map of all plans for quick lookup
 	 * @return List of sub-plans that belong to the specified agent execution record
@@ -340,7 +341,8 @@ public class PlanHierarchyReaderService {
 			.filter(plan -> plan.getToolCallId() != null && !plan.getToolCallId().trim().isEmpty())
 			.collect(Collectors.toList());
 
-		logger.debug("Found {} sub-plans with toolCallId for agent execution ID: {}", subPlans.size(), agentExecutionId);
+		logger.debug("Found {} sub-plans with toolCallId for agent execution ID: {}", subPlans.size(),
+				agentExecutionId);
 
 		// For each sub-plan, check if it was triggered by this agent
 		for (PlanExecutionRecord subPlan : subPlans) {
@@ -368,7 +370,8 @@ public class PlanHierarchyReaderService {
 				Long parentExecutionId = thinkActRecord.getParentExecutionId();
 
 				if (parentExecutionId == null) {
-					logger.debug("ThinkActRecord has null parentExecutionId for toolCallId: {}", subPlan.getToolCallId());
+					logger.debug("ThinkActRecord has null parentExecutionId for toolCallId: {}",
+							subPlan.getToolCallId());
 					continue;
 				}
 
@@ -379,13 +382,15 @@ public class PlanHierarchyReaderService {
 							subPlan.getCurrentPlanId(), agentExecutionId, subPlan.getToolCallId());
 				}
 
-			} catch (Exception e) {
-				logger.error("Error processing sub-plan {} for agent execution ID: {}",
-						subPlan.getCurrentPlanId(), agentExecutionId, e);
+			}
+			catch (Exception e) {
+				logger.error("Error processing sub-plan {} for agent execution ID: {}", subPlan.getCurrentPlanId(),
+						agentExecutionId, e);
 			}
 		}
 
-		logger.debug("Found {} matching sub-plans for agent execution ID: {}", matchingSubPlans.size(), agentExecutionId);
+		logger.debug("Found {} matching sub-plans for agent execution ID: {}", matchingSubPlans.size(),
+				agentExecutionId);
 		return matchingSubPlans;
 	}
 

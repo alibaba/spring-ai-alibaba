@@ -684,11 +684,8 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 				if (entity.getActToolInfoList() != null && !entity.getActToolInfoList().isEmpty()) {
 					List<ActToolInfo> actToolInfoList = new ArrayList<>();
 					for (ActToolInfoEntity toolInfoEntity : entity.getActToolInfoList()) {
-						ActToolInfo actToolInfo = new ActToolInfo(
-							toolInfoEntity.getName(),
-							toolInfoEntity.getParameters(),
-							toolInfoEntity.getToolCallId()
-						);
+						ActToolInfo actToolInfo = new ActToolInfo(toolInfoEntity.getName(),
+								toolInfoEntity.getParameters(), toolInfoEntity.getToolCallId());
 						actToolInfo.setResult(toolInfoEntity.getResult());
 						actToolInfoList.add(actToolInfo);
 					}
