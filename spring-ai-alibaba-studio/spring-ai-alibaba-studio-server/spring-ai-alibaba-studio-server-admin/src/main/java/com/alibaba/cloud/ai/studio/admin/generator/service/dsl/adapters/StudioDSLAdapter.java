@@ -105,7 +105,8 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 		// 预制变量
 		List<Variable> reserveVars = List.of(new Variable("sys_query", VariableType.STRING.value()),
-				new Variable("sys_history_list", VariableType.ARRAY_STRING.value()));
+				new Variable("sys_history_list", VariableType.ARRAY_STRING.value())
+					.setVariableStrategy(Variable.Strategy.APPEND));
 
 		workflow.setWorkflowVars(extraVars);
 		workflow.setEnvVars(Stream.of(conversationVars, reserveVars).flatMap(List::stream).toList());

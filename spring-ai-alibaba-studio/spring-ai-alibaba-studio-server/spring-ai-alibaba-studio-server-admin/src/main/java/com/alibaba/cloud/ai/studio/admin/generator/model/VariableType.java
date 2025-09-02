@@ -39,13 +39,13 @@ public enum VariableType {
 
 	ARRAY_FILE("File[]", Object[].class, "file-list");
 
-	private String value;
+	private final String value;
 
-	private Class clazz;
+	private final Class<?> clazz;
 
-	private String difyValue;
+	private final String difyValue;
 
-	VariableType(String value, Class clazz, String difyValue) {
+	VariableType(String value, Class<?> clazz, String difyValue) {
 		this.value = value;
 		this.clazz = clazz;
 		this.difyValue = difyValue;
@@ -55,7 +55,7 @@ public enum VariableType {
 		return value;
 	}
 
-	public Class clazz() {
+	public Class<?> clazz() {
 		return clazz;
 	}
 

@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -156,7 +157,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 				""";
 
 		String keyStrategies = overallStateVars.stream()
-			.map(var -> String.format("strategies.put(\"%s\", (o1, o2) -> o2);", var.getName()))
+			.map(var -> String.format("strategies.put(\"%s\", %s);", var.getName(),
+					Optional.ofNullable(var.getVariableStrategy()).orElse(Variable.Strategy.REPLACE).getCode()))
 			.collect(Collectors.joining("\n"));
 
 		return String.format(template, keyStrategies);

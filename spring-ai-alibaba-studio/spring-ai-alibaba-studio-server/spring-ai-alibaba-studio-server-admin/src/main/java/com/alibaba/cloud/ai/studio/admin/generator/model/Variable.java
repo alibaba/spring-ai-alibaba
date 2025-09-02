@@ -19,7 +19,7 @@ import java.util.Map;
 
 /**
  * Variable is often used to represent the output of a node, or pre-defined variables in
- * an App. todo: add a strategy field
+ * an App.
  */
 public class Variable {
 
@@ -33,6 +33,24 @@ public class Variable {
 	private String description;
 
 	private Map<String, Object> extraProperties;
+
+	private Strategy variableStrategy = Strategy.REPLACE;
+
+	public enum Strategy {
+
+		REPLACE("KeyStrategy.REPLACE"), APPEND("KeyStrategy.APPEND"), MERGE("KeyStrategy.MERGE");
+
+		private final String code;
+
+		public String getCode() {
+			return code;
+		}
+
+		Strategy(String code) {
+			this.code = code;
+		}
+
+	}
 
 	public Variable() {
 	}
@@ -90,6 +108,15 @@ public class Variable {
 	public Variable setExtraProperties(Map<String, Object> extraProperties) {
 		this.extraProperties = extraProperties;
 		return this;
+	}
+
+	public Variable setVariableStrategy(Strategy variableStrategy) {
+		this.variableStrategy = variableStrategy;
+		return this;
+	}
+
+	public Strategy getVariableStrategy() {
+		return variableStrategy;
 	}
 
 }
