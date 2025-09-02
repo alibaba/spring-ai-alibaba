@@ -104,20 +104,15 @@ public class AgentNodeDataConverter extends AbstractNodeDataConverter<AgentNodeD
 	}
 
 	@Override
-	public void postProcessOutput(AgentNodeData nodeData, String varName) {
-		nodeData.setOutputs(List.of(AgentNodeData.getDefaultOutputSchema()));
-		super.postProcessOutput(nodeData, varName);
-	}
-
-	@Override
 	public BiConsumer<AgentNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> (nodeData, idToVarName) -> {
+			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				nodeData.setOutputs(List.of(AgentNodeData.getDefaultOutputSchema()));
 				// 处理指令和查询的模板
 				nodeData.setQueryPrompt(this.convertVarTemplate(dialectType, nodeData.getQueryPrompt(), idToVarName));
 				nodeData.setInstructionPrompt(
 						this.convertVarTemplate(dialectType, nodeData.getInstructionPrompt(), idToVarName));
-			};
+			}).andThen(super.postProcessConsumer(dialectType));
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}

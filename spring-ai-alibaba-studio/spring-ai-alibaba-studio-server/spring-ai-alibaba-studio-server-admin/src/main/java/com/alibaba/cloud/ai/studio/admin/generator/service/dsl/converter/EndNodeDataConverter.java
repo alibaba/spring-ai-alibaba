@@ -147,20 +147,21 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 	}
 
 	@Override
-	public void postProcessOutput(EndNodeData data, String varName) {
-		String outputKey = varName + "_" + EndNodeData.getDefaultOutputSchema().getName();
-		data.setOutputKey(outputKey);
-		data.setOutputs(List.of(EndNodeData.getDefaultOutputSchema()));
-		super.postProcessOutput(data, varName);
-	}
-
-	@Override
 	public BiConsumer<EndNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case STUDIO -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
+			case STUDIO -> emptyProcessConsumer().andThen((data, idToVarName) -> {
 				// 格式化textTemplate
-				nodeData.setTextTemplate(this.convertVarTemplate(dialectType, nodeData.getTextTemplate(), idToVarName));
-			});
+				data.setTextTemplate(this.convertVarTemplate(dialectType, data.getTextTemplate(), idToVarName));
+				// 设置输出键
+				String outputKey = data.getVarName() + "_" + EndNodeData.getDefaultOutputSchema().getName();
+				data.setOutputKey(outputKey);
+				data.setOutputs(List.of(EndNodeData.getDefaultOutputSchema()));
+			}).andThen(super.postProcessConsumer(dialectType));
+			case DIFY -> emptyProcessConsumer().andThen((data, idToVarName) -> {
+				String outputKey = data.getVarName() + "_" + EndNodeData.getDefaultOutputSchema().getName();
+				data.setOutputKey(outputKey);
+				data.setOutputs(List.of(EndNodeData.getDefaultOutputSchema()));
+			}).andThen(super.postProcessConsumer(dialectType));
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}

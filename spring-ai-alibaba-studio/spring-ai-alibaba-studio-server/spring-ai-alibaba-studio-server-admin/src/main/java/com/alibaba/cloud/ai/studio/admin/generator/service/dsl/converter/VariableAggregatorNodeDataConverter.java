@@ -156,29 +156,27 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
 	}
 
 	@Override
-	public void postProcessOutput(VariableAggregatorNodeData data, String varName) {
-		if (data.getAdvancedSettings() != null && data.getAdvancedSettings().isGroupEnabled()) {
-			List<Variable> outputs = data.getAdvancedSettings()
-				.getGroups()
-				.stream()
-				.map(group -> new Variable(group.getGroupName(), group.getOutputType()))
-				.toList();
-			data.setOutputs(outputs);
-		}
-		else {
-			Variable output = new Variable("output", data.getOutputType());
-			data.setOutputs(List.of(output));
-		}
-		data.setOutputKey(varName + "_output");
-		super.postProcessOutput(data, varName);
-	}
-
-	@Override
 	public BiConsumer<VariableAggregatorNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
 			case DIFY -> {
 				// 设置输入变量的Selector
 				BiConsumer<VariableAggregatorNodeData, Map<String, String>> consumer = ((nodeData, idToVarName) -> {
+					// 设置输出变量
+					if (nodeData.getAdvancedSettings() != null && nodeData.getAdvancedSettings().isGroupEnabled()) {
+						List<Variable> outputs = nodeData.getAdvancedSettings()
+							.getGroups()
+							.stream()
+							.map(group -> new Variable(group.getGroupName(), group.getOutputType()))
+							.toList();
+						nodeData.setOutputs(outputs);
+					}
+					else {
+						Variable output = new Variable("output", nodeData.getOutputType());
+						nodeData.setOutputs(List.of(output));
+					}
+					nodeData.setOutputKey(nodeData.getVarName() + "_output");
+
+					// 设置输入变量
 					List<VariableSelector> selectors;
 					if (nodeData.getAdvancedSettings() != null && nodeData.getAdvancedSettings().isGroupEnabled()) {
 						selectors = nodeData.getAdvancedSettings()

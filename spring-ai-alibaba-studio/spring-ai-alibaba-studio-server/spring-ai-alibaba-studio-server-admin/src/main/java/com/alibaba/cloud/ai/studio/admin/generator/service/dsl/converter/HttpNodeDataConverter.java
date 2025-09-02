@@ -254,16 +254,14 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 	}
 
 	@Override
-	public void postProcessOutput(HttpNodeData data, String varName) {
-		data.setOutputKey(varName + "_" + HttpNodeData.getDefaultOutputSchemas().get(0).getName());
-		data.setOutputs(HttpNodeData.getDefaultOutputSchemas());
-		super.postProcessOutput(data, varName);
-	}
-
-	@Override
 	public BiConsumer<HttpNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> super.postProcessConsumer(dialectType).andThen((httpNodeData, idToVarName) -> {
+			case DIFY -> emptyProcessConsumer().andThen((httpNodeData, idToVarName) -> {
+				// 设置输出键
+				httpNodeData.setOutputKey(
+						httpNodeData.getVarName() + "_" + HttpNodeData.getDefaultOutputSchemas().get(0).getName());
+				httpNodeData.setOutputs(HttpNodeData.getDefaultOutputSchemas());
+			}).andThen(super.postProcessConsumer(dialectType)).andThen((httpNodeData, idToVarName) -> {
 				// 将headers，params，body的Dify参数占位符转化为SAA中间变量
 				httpNodeData.setHeaders(httpNodeData.getHeaders()
 					.entrySet()

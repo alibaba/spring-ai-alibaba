@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.dsl;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -147,6 +148,15 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 			default -> (str, map) -> str;
 		};
 		return func.apply(templateString, idToVarName);
+	}
+
+	/**
+	 * 创建一个空处理Consumer，便于使用.andThen编程
+	 * @return BiConsumer
+	 */
+	protected BiConsumer<T, Map<String, String>> emptyProcessConsumer() {
+		return (nodeData, varNameMap) -> {
+		};
 	}
 
 }

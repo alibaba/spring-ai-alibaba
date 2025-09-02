@@ -334,16 +334,12 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 	}
 
 	@Override
-	public void postProcessOutput(LLMNodeData data, String varName) {
-		data.setOutputKey(varName + "_" + LLMNodeData.getDefaultOutputSchema().getName());
-		data.setOutputs(List.of(LLMNodeData.getDefaultOutputSchema()));
-		super.postProcessOutput(data, varName);
-	}
-
-	@Override
 	public BiConsumer<LLMNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> super.postProcessConsumer(dialectType).andThen((data, idToVarName) -> {
+			case DIFY -> emptyProcessConsumer().andThen(((data, map) -> {
+				data.setOutputKey(data.getVarName() + "_" + LLMNodeData.getDefaultOutputSchema().getName());
+				data.setOutputs(List.of(LLMNodeData.getDefaultOutputSchema()));
+			})).andThen(super.postProcessConsumer(dialectType)).andThen((data, idToVarName) -> {
 				// 替换Dify的变量占位符
 				UnaryOperator<String> convertString = (prompt) -> this.convertVarTemplate(dialectType, prompt,
 						idToVarName);

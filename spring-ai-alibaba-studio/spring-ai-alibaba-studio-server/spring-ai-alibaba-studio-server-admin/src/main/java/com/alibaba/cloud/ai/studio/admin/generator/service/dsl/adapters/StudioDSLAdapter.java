@@ -166,9 +166,6 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 			data.setVarName(varName);
 
-			// Post-processing: Overwrite the default outputKey and refresh the outputs
-			converter.postProcessOutput(data, varName);
-
 			// 获得处理输入变量名称的Consumer，当所有节点都处理完时使用
 			postProcessConsumers.put(data.getClass(), converter.postProcessConsumer(DSLDialectType.STUDIO));
 

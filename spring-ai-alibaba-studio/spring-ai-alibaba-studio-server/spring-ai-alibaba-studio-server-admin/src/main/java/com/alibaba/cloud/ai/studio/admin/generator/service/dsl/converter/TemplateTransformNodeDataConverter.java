@@ -115,13 +115,6 @@ public class TemplateTransformNodeDataConverter extends AbstractNodeDataConverte
 		return "templateTransformNode" + count;
 	}
 
-	@Override
-	public void postProcessOutput(TemplateTransformNodeData nodeData, String varName) {
-		nodeData.setOutputKey(varName + "_" + TemplateTransformNodeData.getDefaultOutputSchema().getName());
-		nodeData.setOutputs(List.of(TemplateTransformNodeData.getDefaultOutputSchema()));
-		super.postProcessOutput(nodeData, varName);
-	}
-
 	private String replacePlaceholders(String text, Map<String, String> data) {
 		Pattern pattern = Pattern.compile("\\{\\{\\s*(\\w+)\\s*\\}\\}");
 		Matcher matcher = pattern.matcher(text);
@@ -143,7 +136,11 @@ public class TemplateTransformNodeDataConverter extends AbstractNodeDataConverte
 	@Override
 	public BiConsumer<TemplateTransformNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
+			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				nodeData.setOutputKey(
+						nodeData.getVarName() + "_" + TemplateTransformNodeData.getDefaultOutputSchema().getName());
+				nodeData.setOutputs(List.of(TemplateTransformNodeData.getDefaultOutputSchema()));
+			}).andThen(super.postProcessConsumer(dialectType)).andThen((nodeData, idToVarName) -> {
 				// todo: 支持Jinja2的if、for语句
 				// 将模板中的占位变量替换为工作流的中间变量
 				Map<String, String> argToStateName = nodeData.getInputs()

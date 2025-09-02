@@ -121,17 +121,14 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 	}
 
 	@Override
-	public void postProcessOutput(IterationNodeData nodeData, String varName) {
-		nodeData.setOutputKey(varName + "_" + IterationNodeData.getDefaultOutputSchema().getName());
-		nodeData.setOutputs(List.of(IterationNodeData.getDefaultOutputSchema()));
-		nodeData.setOutput(IterationNodeData.getDefaultOutputSchema());
-		super.postProcessOutput(nodeData, varName);
-	}
-
-	@Override
 	public BiConsumer<IterationNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> super.postProcessConsumer(dialectType).andThen((iterationNodeData, varNames) -> {
+			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				nodeData
+					.setOutputKey(nodeData.getVarName() + "_" + IterationNodeData.getDefaultOutputSchema().getName());
+				nodeData.setOutputs(List.of(IterationNodeData.getDefaultOutputSchema()));
+				nodeData.setOutput(IterationNodeData.getDefaultOutputSchema());
+			}).andThen(super.postProcessConsumer(dialectType)).andThen((iterationNodeData, varNames) -> {
 				// 等待所有的节点都生成了变量名后，补充迭代节点的起始名称
 				iterationNodeData
 					.setStartNodeName(varNames.getOrDefault(iterationNodeData.getStartNodeId(), "unknown"));

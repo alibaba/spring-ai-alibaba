@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
@@ -140,16 +141,21 @@ public class StartNodeDataConverter extends AbstractNodeDataConverter<StartNodeD
 	}
 
 	@Override
-	public void postProcessOutput(StartNodeData data, String varName) {
-		if (data.getStartInputs() != null) {
-			List<Variable> vars = new ArrayList<>(data.getStartInputs()
-				.stream()
-				.map(input -> new Variable(input.getVariable(), input.getType()))
-				.peek(variable -> variable.setName(variable.getName()))
-				.toList());
-			data.setOutputs(Stream.of(data.getOutputs(), vars).filter(Objects::nonNull).flatMap(List::stream).toList());
-		}
-		super.postProcessOutput(data, varName);
+	public BiConsumer<StartNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> emptyProcessConsumer().andThen((data, map) -> {
+				if (data.getStartInputs() != null) {
+					List<Variable> vars = new ArrayList<>(data.getStartInputs()
+						.stream()
+						.map(input -> new Variable(input.getVariable(), input.getType()))
+						.peek(variable -> variable.setName(variable.getName()))
+						.toList());
+					data.setOutputs(
+							Stream.of(data.getOutputs(), vars).filter(Objects::nonNull).flatMap(List::stream).toList());
+				}
+			}).andThen(super.postProcessConsumer(dialectType));
+			default -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }
