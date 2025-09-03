@@ -33,11 +33,13 @@ import static java.util.Optional.ofNullable;
  *
  */
 public final class InterruptionMetadata extends NodeOutput implements HasMetadata<InterruptionMetadata.Builder> {
+
 	private final Map<String, Object> metadata;
 
 	private InterruptionMetadata(Builder builder) {
-        super(requireNonNull(builder.nodeId, "nodeId cannot be null!"),requireNonNull(builder.state, "state cannot be null!"));
-        this.metadata = builder.metadata();
+		super(requireNonNull(builder.nodeId, "nodeId cannot be null!"),
+				requireNonNull(builder.state, "state cannot be null!"));
+		this.metadata = builder.metadata();
 	}
 
 	/**
