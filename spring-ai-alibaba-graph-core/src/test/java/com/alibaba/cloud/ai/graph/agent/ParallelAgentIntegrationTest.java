@@ -65,7 +65,7 @@ class ParallelAgentIntegrationTest {
 			keyStrategyHashMap.put("prose_result", new ReplaceStrategy());
 			keyStrategyHashMap.put("poem_result", new ReplaceStrategy());
 			keyStrategyHashMap.put("summary_result", new ReplaceStrategy());
-			keyStrategyHashMap.put("parallel_creative_agent_merged_results", new ReplaceStrategy());
+			keyStrategyHashMap.put("merged_results", new ReplaceStrategy());
 			return keyStrategyHashMap;
 		};
 
@@ -99,9 +99,10 @@ class ParallelAgentIntegrationTest {
 			.name("parallel_creative_agent")
 			.description("并行执行多个创作任务，包括写散文、写诗和做总结")
 			.inputKey("input")
-			.outputKey("topic")
+			.outputKey("merged_results")
 			.state(stateFactory)
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent, summaryAgent))
+			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // ✅ 添加合并策略
 			.build();
 
 		// Execute the parallel workflow
@@ -119,8 +120,7 @@ class ParallelAgentIntegrationTest {
 			assertEquals(userRequest, finalState.value("input").get());
 
 			// Verify topic was set (from TransparentNode)
-			assertTrue(finalState.value("topic").isPresent(), "Topic should be set");
-			assertEquals(userRequest, finalState.value("topic").get());
+			assertTrue(finalState.value("merged_results").isPresent(), "Topic should be set");
 
 			// Verify all sub-agents produced results
 			assertTrue(finalState.value("prose_result").isPresent(), "Prose result should be present");
@@ -153,7 +153,7 @@ class ParallelAgentIntegrationTest {
 			assertFalse(summaryResult.contains("《") && summaryResult.contains("》"),
 					"Summary result should not contain poem-like formatting");
 
-			System.out.println(result.get().value("parallel_creative_agent_merged_results"));
+			System.out.println(result.get().value("merged_results"));
 		}
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();

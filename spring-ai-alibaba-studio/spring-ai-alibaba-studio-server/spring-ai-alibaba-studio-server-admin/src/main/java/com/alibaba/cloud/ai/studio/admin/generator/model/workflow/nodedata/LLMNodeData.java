@@ -27,7 +27,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 public class LLMNodeData extends NodeData {
 
 	public static Variable getDefaultOutputSchema() {
-		return new Variable("text", VariableType.STRING.value());
+		return new Variable("text", VariableType.STRING);
 	}
 
 	private ModelConfig model;

@@ -16,11 +16,13 @@
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.springframework.ai.chat.model.ChatModel;
@@ -43,6 +45,15 @@ public class LlmRoutingAgent extends FlowAgent {
 	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
 		CompiledGraph compiledGraph = getAndCompileGraph();
 		return compiledGraph.invoke(input);
+	}
+
+	@Override
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
+			throws GraphStateException, GraphRunnerException {
+		if (this.compiledGraph == null) {
+			this.compiledGraph = getAndCompileGraph();
+		}
+		return this.compiledGraph.stream(input);
 	}
 
 	@Override

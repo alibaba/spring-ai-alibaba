@@ -40,7 +40,6 @@
     <properties>
         <testcontainers.version>1.19.3</testcontainers.version>
         <httpclient.version>4.5.14</httpclient.version>
-        <a2a-sdk.version>0.2.5</a2a-sdk.version>
     </properties>
 
     <dependencies>

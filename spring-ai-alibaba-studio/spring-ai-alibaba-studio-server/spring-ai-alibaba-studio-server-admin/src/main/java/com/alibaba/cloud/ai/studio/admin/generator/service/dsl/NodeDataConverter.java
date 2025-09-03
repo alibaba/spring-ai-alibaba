@@ -19,15 +19,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
-import com.google.common.base.Strings;
 
 import org.springframework.util.StringUtils;
 
@@ -70,27 +66,19 @@ public interface NodeDataConverter<T extends NodeData> {
 	}
 
 	/**
-	 * After parseMapData is complete and varName is injected, call: Used to override the
-	 * default outputKey based on varName and refresh the list of outputs
-	 * @param nodeData {@link NodeData}
-	 * @param varName nodeVarName
-	 */
-	default void postProcessOutput(T nodeData, String varName) {
-		// 将所有的输出变量的名称统一为"nodeVarName_varName"的格式
-		Optional.ofNullable(nodeData.getOutputs())
-			.ifPresentOrElse((outputs) -> nodeData.setOutputs(outputs.stream().peek(v -> {
-				String name = v.getName();
-				v.setName(varName.concat("_").concat(name));
-			}).toList()), () -> nodeData.setOutputs(List.of()));
-	}
-
-	/**
-	 * 生成用于处理inputKey和inputSelector的Consumer
+	 * 统一处理节点的输入输出变量名称，生成用于处理outputKey、inputKey、inputSelector 以及其他需要后置处理操作的Consumer
 	 * @return 一个BiConsumer，接受参数：T nodeData和Map idToVarName
 	 */
 	default BiConsumer<T, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return (nodeData, idToVarName) -> {
-			// 将所有的输入变量的nodeId转化为nodeName
+			// 将所有的输出变量的名称统一为"nodeVarName_varName"的格式
+			Optional.ofNullable(nodeData.getOutputs())
+				.ifPresentOrElse((outputs) -> nodeData.setOutputs(outputs.stream().peek(v -> {
+					String name = v.getName();
+					v.setName(nodeData.getVarName().concat("_").concat(name));
+				}).toList()), () -> nodeData.setOutputs(List.of()));
+
+			// 将所有的输入变量的nodeId转化为nodeName，并保存到nameInCode字段中
 			nodeData.setInputs(
 					Optional.ofNullable(nodeData.getInputs()).orElse(List.of()).stream().peek(variableSelector -> {
 						String nodeId = variableSelector.getNamespace();
@@ -101,54 +89,6 @@ public interface NodeDataConverter<T extends NodeData> {
 						variableSelector
 							.setNameInCode(variableSelector.getNamespace() + "_" + variableSelector.getName());
 					}).toList());
-		};
-	}
-
-	/**
-	 * 将文本中变量占位符进行转化，比如Dify DSL的"你好，{{#123.query#}}"转化为"你好，{nodeName1.query}"
-	 * @param dialectType dsl语言
-	 * @return BiFunction，输入待转换的字符串和nodeId与nodeName的映射，输出转换结果
-	 */
-	static BiFunction<String, Map<String, String>, String> convertVarReserveFunction(DSLDialectType dialectType) {
-		return switch (dialectType) {
-			case DIFY -> (str, idToVarName) -> {
-				// todo: 模板支持上下文
-				if (Strings.isNullOrEmpty(str)) {
-					return str;
-				}
-				StringBuilder result = new StringBuilder();
-				Pattern pattern = Pattern.compile("\\{\\{#(\\w+)\\.(\\w+)#}}");
-				Matcher matcher = pattern.matcher(str);
-				while (matcher.find()) {
-					String nodeId = matcher.group(1);
-					String varName = matcher.group(2);
-					String res = "{"
-							+ idToVarName.getOrDefault(nodeId, StringUtils.hasText(nodeId) ? nodeId : "unknown") + "_"
-							+ varName + "}";
-					matcher.appendReplacement(result, Matcher.quoteReplacement(res));
-				}
-				matcher.appendTail(result);
-				return result.toString();
-			};
-			case STUDIO -> (str, idToVarName) -> {
-				if (Strings.isNullOrEmpty(str)) {
-					return str;
-				}
-				StringBuilder result = new StringBuilder();
-				Pattern pattern = Pattern.compile("\\$\\{(\\w+)\\.(\\w+)}");
-				Matcher matcher = pattern.matcher(str);
-				while (matcher.find()) {
-					String nodeId = matcher.group(1);
-					String varName = matcher.group(2);
-					String res = "{"
-							+ idToVarName.getOrDefault(nodeId, StringUtils.hasText(nodeId) ? nodeId : "unknown") + "_"
-							+ varName + "}";
-					matcher.appendReplacement(result, Matcher.quoteReplacement(res));
-				}
-				matcher.appendTail(result);
-				return result.toString();
-			};
-			default -> (str, idToVarName) -> str;
 		};
 	}
 

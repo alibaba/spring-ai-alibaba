@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import com.alibaba.cloud.ai.studio.admin.generator.model.App;
 import com.alibaba.cloud.ai.studio.admin.generator.model.AppMetadata;
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.chatbot.ChatBot;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Graph;
@@ -115,24 +116,35 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		if (workflowData.containsKey("conversation_variables")) {
 			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData
 				.get("conversation_variables");
-			convVars = variables.stream().map(variable -> convertToVariable(variable, objectMapper)).toList();
+			convVars = variables.stream()
+				.map(variable -> convertToVariable(variable, objectMapper))
+				.peek(v -> v.setName("conversation_" + v.getName()))
+				.toList();
 		}
 
+		List<Variable> envVars = List.of();
 		if (workflowData.containsKey("environment_variables")) {
 			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("environment_variables");
-			List<Variable> envVars = variables.stream()
+			envVars = variables.stream()
 				.map(variable -> convertToVariable(variable, objectMapper))
-				.collect(Collectors.toList());
-			workflow.setEnvVars(envVars);
+				.peek(v -> v.setName("env_" + v.getName()))
+				.toList();
 		}
+		List<Variable> sysVars = List.of(new Variable("sys_query", VariableType.STRING),
+				new Variable("sys_files", VariableType.ARRAY_FILE),
+				new Variable("sys_dialogue_count", VariableType.NUMBER),
+				new Variable("sys_conversation_id", VariableType.STRING),
+				new Variable("sys_user_id", VariableType.STRING), new Variable("sys_app_id", VariableType.STRING),
+				new Variable("sys_workflow_id", VariableType.STRING),
+				new Variable("sys_workflow_run_id", VariableType.STRING));
+		workflow.setEnvVars(Stream.of(envVars, sysVars).flatMap(List::stream).toList());
 
 		Graph graph = constructGraph((Map<String, Object>) workflowData.get("graph"));
 
 		workflow.setGraph(graph);
 		// register overAllState output key
 		List<Variable> extraVars = graph.getNodes().stream().flatMap(node -> {
-			NodeType type = NodeType.fromValue(node.getType())
-				.orElseThrow(() -> new IllegalArgumentException("Unsupported NodeType: " + node.getType()));
+			NodeType type = node.getType();
 			@SuppressWarnings("unchecked")
 			NodeDataConverter<NodeData> conv = (NodeDataConverter<NodeData>) getNodeDataConverter(type);
 			return conv.extractWorkflowVars(node.getData());
@@ -193,6 +205,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
 			// convert node map to workflow node using jackson
 			nodeMap.remove("data");
+			nodeMap.remove("type");
 			Node node = objectMapper.convertValue(nodeMap, Node.class);
 			// set title and desc
 			node.setTitle((String) nodeDataMap.get("title")).setDesc((String) nodeDataMap.get("desc"));
@@ -209,14 +222,11 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
 			data.setVarName(varName);
 
-			// Post-processing: Overwrite the default outputKey and refresh the outputs
-			converter.postProcessOutput(data, varName);
-
 			// 获得处理输入变量名称的Consumer，当所有节点都处理完时使用
 			postProcessConsumers.put(data.getClass(), converter.postProcessConsumer(DSLDialectType.DIFY));
 
 			node.setData(data);
-			node.setType(nodeType.value());
+			node.setType(nodeType);
 			nodes.add(node);
 		}
 
@@ -281,8 +291,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		for (Node node : nodes) {
 			Map<String, Object> n = objectMapper.convertValue(node, new TypeReference<>() {
 			});
-			NodeType nodeType = NodeType.fromValue(node.getType())
-				.orElseThrow(() -> new NotImplementedException("Unsupported NodeType: " + node.getType()));
+			NodeType nodeType = node.getType();
 			NodeDataConverter<? extends NodeData> nodeDataConverter = getNodeDataConverter(nodeType);
 			Map<String, Object> nodeData = dumpMapData(nodeDataConverter, node.getData());
 			nodeData.put("type", nodeType.difyValue());
