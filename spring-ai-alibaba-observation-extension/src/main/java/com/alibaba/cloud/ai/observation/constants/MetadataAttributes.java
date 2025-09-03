@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.observation.client.prompt;
+package com.alibaba.cloud.ai.observation.constants;
 
 public final class MetadataAttributes {
 

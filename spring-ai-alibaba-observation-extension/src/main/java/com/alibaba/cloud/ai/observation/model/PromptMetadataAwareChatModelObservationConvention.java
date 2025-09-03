@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.observation.client.prompt;
+package com.alibaba.cloud.ai.observation.model;
 
 import static com.alibaba.cloud.ai.observation.constants.MetadataAttributes.AGENT_NAME;
 import static com.alibaba.cloud.ai.observation.constants.MetadataAttributes.PROMPT_KEY;
@@ -11,23 +11,23 @@ import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import java.util.Collections;
 import java.util.Map;
-import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
-import org.springframework.ai.chat.client.observation.DefaultChatClientObservationConvention;
+import org.springframework.ai.chat.observation.ChatModelObservationContext;
+import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.lang.NonNull;
 
-public class PromptMetadataAwareChatClientObservationConvention extends DefaultChatClientObservationConvention {
+public class PromptMetadataAwareChatModelObservationConvention extends DefaultChatModelObservationConvention {
 
 	@Override
 	@NonNull
-	public KeyValues getLowCardinalityKeyValues(@NonNull ChatClientObservationContext context) {
+	public KeyValues getLowCardinalityKeyValues(@NonNull ChatModelObservationContext context) {
 		return super.getLowCardinalityKeyValues(context);
 	}
 
 	@Override
 	@NonNull
-	public KeyValues getHighCardinalityKeyValues(@NonNull ChatClientObservationContext context) {
+	public KeyValues getHighCardinalityKeyValues(@NonNull ChatModelObservationContext context) {
 		KeyValues keyValues = super.getHighCardinalityKeyValues(context);
 		keyValues = promptKey(keyValues, context);
 		keyValues = promptVersion(keyValues, context);
@@ -41,7 +41,7 @@ public class PromptMetadataAwareChatClientObservationConvention extends DefaultC
 
 	// request
 
-	protected KeyValues promptKey(KeyValues keyValues, ChatClientObservationContext context) {
+	protected KeyValues promptKey(KeyValues keyValues, ChatModelObservationContext context) {
 		Map<String, String> metadata = this.getMetadata(context);
 		if (metadata.containsKey("promptKey")) {
 			return keyValues.and(KeyValue.of(PROMPT_KEY, metadata.get("promptKey")));
@@ -49,7 +49,7 @@ public class PromptMetadataAwareChatClientObservationConvention extends DefaultC
 		return keyValues;
 	}
 
-	protected KeyValues promptVersion(KeyValues keyValues, ChatClientObservationContext context) {
+	protected KeyValues promptVersion(KeyValues keyValues, ChatModelObservationContext context) {
 		Map<String, String> metadata = this.getMetadata(context);
 		if (metadata.containsKey("promptVersion")) {
 			return keyValues.and(KeyValue.of(PROMPT_VERSION, metadata.get("promptVersion")));
@@ -57,7 +57,7 @@ public class PromptMetadataAwareChatClientObservationConvention extends DefaultC
 		return keyValues;
 	}
 
-	protected KeyValues promptTemplate(KeyValues keyValues, ChatClientObservationContext context) {
+	protected KeyValues promptTemplate(KeyValues keyValues, ChatModelObservationContext context) {
 		Map<String, String> metadata = this.getMetadata(context);
 		if (metadata.containsKey("promptTemplate")) {
 			return keyValues.and(KeyValue.of(PROMPT_TEMPLATE, metadata.get("promptTemplate")));
@@ -65,7 +65,7 @@ public class PromptMetadataAwareChatClientObservationConvention extends DefaultC
 		return keyValues;
 	}
 
-	protected KeyValues promptVariables(KeyValues keyValues, ChatClientObservationContext context) {
+	protected KeyValues promptVariables(KeyValues keyValues, ChatModelObservationContext context) {
 		Map<String, String> metadata = this.getMetadata(context);
 		if (metadata.containsKey("promptVariables")) {
 			return keyValues.and(KeyValue.of(PROMPT_VARIABLE, metadata.get("promptVariables")));
@@ -73,7 +73,7 @@ public class PromptMetadataAwareChatClientObservationConvention extends DefaultC
 		return keyValues;
 	}
 
-	protected KeyValues agentName(KeyValues keyValues, ChatClientObservationContext context) {
+	protected KeyValues agentName(KeyValues keyValues, ChatModelObservationContext context) {
 		Map<String, String> metadata = this.getMetadata(context);
 		if (metadata.containsKey("agentName")) {
 			return keyValues.and(KeyValue.of(AGENT_NAME, metadata.get("agentName")));
@@ -81,7 +81,7 @@ public class PromptMetadataAwareChatClientObservationConvention extends DefaultC
 		return keyValues;
 	}
 
-	protected KeyValues studioSource(KeyValues keyValues, ChatClientObservationContext context) {
+	protected KeyValues studioSource(KeyValues keyValues, ChatModelObservationContext context) {
 		Map<String, String> metadata = this.getMetadata(context);
 		if (metadata.containsKey("studioSource")) {
 			return keyValues.and(KeyValue.of(STUDIO_SOURCE, metadata.get("studioSource")));
@@ -90,8 +90,8 @@ public class PromptMetadataAwareChatClientObservationConvention extends DefaultC
 	}
 
 	// FIXME remove openai assert
-	private Map<String, String> getMetadata(ChatClientObservationContext context) {
-		ChatOptions options = context.getRequest().prompt().getOptions();
+	private Map<String, String> getMetadata(ChatModelObservationContext context) {
+		ChatOptions options = context.getRequest().getOptions();
 		if (options instanceof OpenAiChatOptions) {
 			Map<String, String> metadata = ((OpenAiChatOptions) options).getMetadata();
 			if (metadata != null) {
