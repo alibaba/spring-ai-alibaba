@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 
 /**
  * Render a node data
@@ -58,6 +59,15 @@ public interface NodeSection<T extends NodeData> {
 	default String renderConditionalEdges(T nodeData, Map<String, Node> nodeMap, Map.Entry<String, List<Edge>> entry,
 			Map<String, String> varNames) {
 		System.err.println("Unsupported Conditional Edges!");
+		return "";
+	}
+
+	/**
+	 * 当前类型节点的共用的辅助代码，这部分代码会生成在节点代码之前
+	 * @param dialectType DSL类型
+	 * @return 辅助代码
+	 */
+	default String assistMethodCode(DSLDialectType dialectType) {
 		return "";
 	}
 

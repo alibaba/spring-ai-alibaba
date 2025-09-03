@@ -54,16 +54,16 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 			public IterationNodeData parse(Map<String, Object> data) throws JsonProcessingException {
 				// 获取输入输出的类型，从 array[xxx] 中提取xxx
 				Pattern typePattern = Pattern.compile("array\\[(.*?)]");
-				String inputType = "object";
-				String outputType = "object";
+				VariableType inputType = VariableType.OBJECT;
+				VariableType outputType = VariableType.OBJECT;
 				Matcher inputTypeMatcher = typePattern
 					.matcher((String) data.getOrDefault("iterator_input_type", "object"));
 				Matcher outputTypeMatcher = typePattern.matcher((String) data.getOrDefault("output_type", "object"));
 				if (inputTypeMatcher.find()) {
-					inputType = inputTypeMatcher.group(1);
+					inputType = VariableType.fromDifyValue(inputTypeMatcher.group(1)).orElse(VariableType.OBJECT);
 				}
 				if (outputTypeMatcher.find()) {
-					outputType = outputTypeMatcher.group(1);
+					outputType = VariableType.fromDifyValue(outputTypeMatcher.group(1)).orElse(VariableType.OBJECT);
 				}
 				List<String> inputSelector = (List<String>) data.get("iterator_selector");
 				List<String> outputSelector = (List<String>) data.get("output_selector");
@@ -121,17 +121,14 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 	}
 
 	@Override
-	public void postProcessOutput(IterationNodeData nodeData, String varName) {
-		nodeData.setOutputKey(varName + "_" + IterationNodeData.getDefaultOutputSchema().getName());
-		nodeData.setOutputs(List.of(IterationNodeData.getDefaultOutputSchema()));
-		nodeData.setOutput(IterationNodeData.getDefaultOutputSchema());
-		super.postProcessOutput(nodeData, varName);
-	}
-
-	@Override
 	public BiConsumer<IterationNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> super.postProcessConsumer(dialectType).andThen((iterationNodeData, varNames) -> {
+			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				nodeData
+					.setOutputKey(nodeData.getVarName() + "_" + IterationNodeData.getDefaultOutputSchema().getName());
+				nodeData.setOutputs(List.of(IterationNodeData.getDefaultOutputSchema()));
+				nodeData.setOutput(IterationNodeData.getDefaultOutputSchema());
+			}).andThen(super.postProcessConsumer(dialectType)).andThen((iterationNodeData, varNames) -> {
 				// 等待所有的节点都生成了变量名后，补充迭代节点的起始名称
 				iterationNodeData
 					.setStartNodeName(varNames.getOrDefault(iterationNodeData.getStartNodeId(), "unknown"));
@@ -154,11 +151,11 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 	@Override
 	public Stream<Variable> extractWorkflowVars(IterationNodeData nodeData) {
 		return Stream.concat(nodeData.getOutputs().stream(),
-				Stream.of(new Variable(nodeData.getInnerArrayKey(), "string"),
-						new Variable(nodeData.getInnerStartFlagKey(), VariableType.STRING.value()),
-						new Variable(nodeData.getInnerEndFlagKey(), VariableType.STRING.value()),
+				Stream.of(new Variable(nodeData.getInnerArrayKey(), VariableType.STRING),
+						new Variable(nodeData.getInnerStartFlagKey(), VariableType.STRING),
+						new Variable(nodeData.getInnerEndFlagKey(), VariableType.STRING),
 						new Variable(nodeData.getInnerItemKey(), nodeData.getInputType()),
-						new Variable(nodeData.getInnerIndexKey(), VariableType.NUMBER.value()),
+						new Variable(nodeData.getInnerIndexKey(), VariableType.NUMBER),
 						new Variable(nodeData.getInnerItemResultKey(), nodeData.getOutputType())));
 	}
 

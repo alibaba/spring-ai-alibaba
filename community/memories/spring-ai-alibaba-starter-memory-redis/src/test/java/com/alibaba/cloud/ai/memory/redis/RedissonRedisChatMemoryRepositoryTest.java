@@ -40,11 +40,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration test using Testcontainers to automatically manage Redis test environment
  *
  * @author benym
- * @since 2025/7/31 16:48
+ * @since 2025/7/31 16:47
  */
-@SpringBootTest(classes = LettuceRedisChatMemoryRepositoryIT.TestConfiguration.class)
+@SpringBootTest(classes = RedissonRedisChatMemoryRepositoryTest.TestConfiguration.class)
 @Testcontainers
-public class LettuceRedisChatMemoryRepositoryIT {
+public class RedissonRedisChatMemoryRepositoryTest {
 
 	private static final int REDIS_PORT = 6379;
 
@@ -67,7 +67,7 @@ public class LettuceRedisChatMemoryRepositoryIT {
 
 	@Test
 	void correctChatMemoryRepositoryInstance() {
-		assertThat(chatMemoryRepository).isInstanceOf(LettuceRedisChatMemoryRepository.class);
+		assertThat(chatMemoryRepository).isInstanceOf(RedissonRedisChatMemoryRepository.class);
 	}
 
 	@ParameterizedTest
@@ -167,7 +167,7 @@ public class LettuceRedisChatMemoryRepositoryIT {
 		assertThat(savedMessages.size()).isEqualTo(messages.size());
 
 		// Perform cleanup operation, set max limit to 3, delete count to 2
-		LettuceRedisChatMemoryRepository redisRepository = (LettuceRedisChatMemoryRepository) chatMemoryRepository;
+		RedissonRedisChatMemoryRepository redisRepository = (RedissonRedisChatMemoryRepository) chatMemoryRepository;
 		redisRepository.clearOverLimit(conversationId, 3, 2);
 
 		// Verify only the last 3 messages are retained
@@ -184,7 +184,7 @@ public class LettuceRedisChatMemoryRepositoryIT {
 		@Bean
 		ChatMemoryRepository chatMemoryRepository() {
 			// Use Redis connection information from container to create Redis repository
-			return LettuceRedisChatMemoryRepository.builder()
+			return RedissonRedisChatMemoryRepository.builder()
 				.host(redisContainer.getHost())
 				.port(redisContainer.getMappedPort(REDIS_PORT))
 				.build();

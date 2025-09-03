@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.ParameterParsingNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
@@ -120,22 +121,19 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 	}
 
 	@Override
-	public void postProcessOutput(ParameterParsingNodeData nodeData, String varName) {
-		nodeData.setOutputKey(varName + "_output");
-		List<Variable> variableList = nodeData.getParameters()
-			.stream()
-			.map(mp -> new Variable(mp.getOrDefault("name", "unknown").toString(),
-					mp.getOrDefault("type", "string").toString())
-				.setDescription(mp.getOrDefault("description", "").toString()))
-			.toList();
-		nodeData.setOutputs(variableList);
-		super.postProcessOutput(nodeData, varName);
-	}
-
-	@Override
 	public BiConsumer<ParameterParsingNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, varName) -> {
+			case DIFY -> emptyProcessConsumer().andThen((nodeData, map) -> {
+				nodeData.setOutputKey(nodeData.getVarName() + "_output");
+				List<Variable> variableList = nodeData.getParameters()
+					.stream()
+					.map(mp -> new Variable(mp.getOrDefault("name", "unknown").toString(),
+							VariableType.fromDifyValue(mp.getOrDefault("type", "string").toString())
+								.orElse(VariableType.OBJECT))
+						.setDescription(mp.getOrDefault("description", "").toString()))
+					.toList();
+				nodeData.setOutputs(variableList);
+			}).andThen(super.postProcessConsumer(dialectType)).andThen((nodeData, varName) -> {
 				nodeData.setInputTextKey(nodeData.getInputs().get(0).getNameInCode());
 			});
 			default -> super.postProcessConsumer(dialectType);

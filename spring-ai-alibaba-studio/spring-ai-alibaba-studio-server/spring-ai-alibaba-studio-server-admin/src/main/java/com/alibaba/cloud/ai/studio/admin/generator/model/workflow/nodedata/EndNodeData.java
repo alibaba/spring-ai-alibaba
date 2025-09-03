@@ -15,17 +15,22 @@
  */
 package com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
+import org.springframework.util.StringUtils;
 
 public class EndNodeData extends NodeData {
 
 	public static Variable getDefaultOutputSchema() {
-		return new Variable("output", VariableType.ARRAY_STRING.value());
+		return new Variable("output", VariableType.ARRAY_STRING);
 	}
 
 	private String outputKey;
@@ -33,6 +38,11 @@ public class EndNodeData extends NodeData {
 	private String outputType;
 
 	private String textTemplate;
+
+	private final static Pattern VAR_PATTERN = Pattern.compile("\\{(\\w+)}");
+
+	// textTemplate出现的变量名称
+	private List<String> textTemplateVars;
 
 	public String getOutputKey() {
 		return outputKey;
@@ -57,6 +67,25 @@ public class EndNodeData extends NodeData {
 
 	public void setTextTemplate(String textTemplate) {
 		this.textTemplate = textTemplate;
+		// 更新textTemplateVars，模板的{vars}为要提取的变量
+		Matcher matcher = VAR_PATTERN.matcher(textTemplate);
+		List<String> vars = new ArrayList<>();
+		while (matcher.find()) {
+			String res = matcher.group(1);
+			if (StringUtils.hasText(res)) {
+				vars.add(res);
+			}
+		}
+		this.setTextTemplateVars(Collections.unmodifiableList(vars));
+
+	}
+
+	public List<String> getTextTemplateVars() {
+		return textTemplateVars;
+	}
+
+	public void setTextTemplateVars(List<String> textTemplateVars) {
+		this.textTemplateVars = textTemplateVars;
 	}
 
 	public EndNodeData() {
