@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.memory.redis.ssl;
 
-import com.alibaba.cloud.ai.memory.redis.RedissonRedisChatMemoryRepository;
+import com.alibaba.cloud.ai.memory.redis.LettuceRedisChatMemoryRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -47,13 +47,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integrated test redis Memory SSL support
  *
  * @author benym
- * @since 2025/8/27 14:26
+ * @since 2025/8/27 14:25
  */
 @EnableAutoConfiguration
 @Import(SslAutoConfiguration.class)
-@SpringBootTest(classes = SslRedissonRedisChatMemoryIT.TestConfiguration.class)
+@SpringBootTest(classes = SslLettuceRedisChatMemoryTest.TestConfiguration.class)
 @Testcontainers
-public class SslRedissonRedisChatMemoryIT {
+public class SslLettuceRedisChatMemoryTest {
 
 	private static final int REDIS_PORT = 6379;
 
@@ -86,7 +86,7 @@ public class SslRedissonRedisChatMemoryIT {
 
 	@Test
 	void correctChatMemoryRepositoryInstance() {
-		assertThat(chatMemoryRepository).isInstanceOf(RedissonRedisChatMemoryRepository.class);
+		assertThat(chatMemoryRepository).isInstanceOf(LettuceRedisChatMemoryRepository.class);
 	}
 
 	@ParameterizedTest
@@ -186,7 +186,7 @@ public class SslRedissonRedisChatMemoryIT {
 		assertThat(savedMessages.size()).isEqualTo(messages.size());
 
 		// Perform cleanup operation, set max limit to 3, delete count to 2
-		RedissonRedisChatMemoryRepository redisRepository = (RedissonRedisChatMemoryRepository) chatMemoryRepository;
+		LettuceRedisChatMemoryRepository redisRepository = (LettuceRedisChatMemoryRepository) chatMemoryRepository;
 		redisRepository.clearOverLimit(conversationId, 3, 2);
 
 		// Verify only the last 3 messages are retained
@@ -203,7 +203,7 @@ public class SslRedissonRedisChatMemoryIT {
 		@Bean
 		ChatMemoryRepository chatMemoryRepository(ObjectProvider<SslBundles> sslBundlesProvider) {
 			// Use Redis connection information from container to create Redis repository
-			return RedissonRedisChatMemoryRepository.builder()
+			return LettuceRedisChatMemoryRepository.builder()
 				.host(redisContainer.getHost())
 				.port(redisContainer.getMappedPort(REDIS_PORT))
 				.sslBundles(sslBundlesProvider.getIfAvailable())
