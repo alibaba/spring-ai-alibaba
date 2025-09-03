@@ -182,47 +182,44 @@ public class LettuceRedisChatMemoryRepositoryIT {
 		assertThat(savedMessages.get(2).getText()).isEqualTo(messages.get(4).getText());
 	}
 
-    @Test
-    @Disabled("Disabled until fix the bug")
-    void saveAndLoadUserMessageWithUriMedia() {
-        var conversationId = UUID.randomUUID().toString();
-        var userMessage = UserMessage.builder()
-                .text("Explain what do you see on this picture?")
-                .media(List.of(Media.builder()
-                        .mimeType(MimeTypeUtils.IMAGE_PNG)
-                        .data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
-                        .build()))
-                .build();
+	@Test
+	@Disabled("Disabled until fix the bug")
+	void saveAndLoadUserMessageWithUriMedia() {
+		var conversationId = UUID.randomUUID().toString();
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.build();
 
-        chatMemoryRepository.saveAll(conversationId, List.of(userMessage));
-        var loaded = chatMemoryRepository.findByConversationId(conversationId);
+		chatMemoryRepository.saveAll(conversationId, List.of(userMessage));
+		var loaded = chatMemoryRepository.findByConversationId(conversationId);
 
-        assertThat(loaded).isNotNull();
-        assertThat(loaded).hasSize(1);
-        assertThat(loaded.get(0).getMessageType()).isEqualTo(MessageType.USER);
-        assertThat(loaded.get(0).getText()).isEqualTo(userMessage.getText());
-    }
+		assertThat(loaded).isNotNull();
+		assertThat(loaded).hasSize(1);
+		assertThat(loaded.get(0).getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(loaded.get(0).getText()).isEqualTo(userMessage.getText());
+	}
 
-    @Test
-    void saveAndLoadUserMessageWithBytesMedia() {
-        var conversationId = UUID.randomUUID().toString();
-        byte[] bytes = new byte[] { 1, 2, 3 };
-        var userMessage = UserMessage.builder()
-                .text("Here is an inline image")
-                .media(List.of(Media.builder()
-                        .mimeType(MimeTypeUtils.IMAGE_PNG)
-                        .data(bytes)
-                        .build()))
-                .build();
+	@Test
+	void saveAndLoadUserMessageWithBytesMedia() {
+		var conversationId = UUID.randomUUID().toString();
+		byte[] bytes = new byte[] { 1, 2, 3 };
+		var userMessage = UserMessage.builder()
+			.text("Here is an inline image")
+			.media(List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(bytes).build()))
+			.build();
 
-        chatMemoryRepository.saveAll(conversationId, List.of(userMessage));
-        var loaded = chatMemoryRepository.findByConversationId(conversationId);
+		chatMemoryRepository.saveAll(conversationId, List.of(userMessage));
+		var loaded = chatMemoryRepository.findByConversationId(conversationId);
 
-        assertThat(loaded).isNotNull();
-        assertThat(loaded).hasSize(1);
-        assertThat(loaded.get(0).getMessageType()).isEqualTo(MessageType.USER);
-        assertThat(loaded.get(0).getText()).isEqualTo(userMessage.getText());
-    }
+		assertThat(loaded).isNotNull();
+		assertThat(loaded).hasSize(1);
+		assertThat(loaded.get(0).getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(loaded.get(0).getText()).isEqualTo(userMessage.getText());
+	}
 
 	@SpringBootConfiguration
 	static class TestConfiguration {
