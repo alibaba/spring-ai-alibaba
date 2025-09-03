@@ -86,7 +86,22 @@ public class SubplanToolInitializer {
 				logger.info("Created plan template: {} with title: {}", templateId, title);
 			}
 			else {
-				logger.debug("Plan template already exists: {}", templateId);
+				// Check if the template content has changed before updating
+				String latestVersion = planTemplateService.getLatestPlanVersion(templateId);
+				if (latestVersion == null
+						|| !planTemplateService.isJsonContentEquivalent(latestVersion, templateContent)) {
+					String title = extractTitleFromTemplate(templateContent);
+					boolean updated = planTemplateService.updatePlanTemplate(templateId, title, templateContent);
+					if (updated) {
+						logger.info("Updated plan template: {} with title: {} (content changed)", templateId, title);
+					}
+					else {
+						logger.warn("Failed to update plan template: {}", templateId);
+					}
+				}
+				else {
+					logger.debug("Plan template content unchanged, skipping update: {}", templateId);
+				}
 			}
 		}
 	}
@@ -98,7 +113,7 @@ public class SubplanToolInitializer {
 		logger.info("Initializing predefined subplan tools...");
 
 		// Get all predefined tools
-		List<SubplanToolDef> predefinedTools = PredefinedSubplanTools.getAllPredefinedTools();
+		List<SubplanToolDef> predefinedTools = PredefinedSubplanTools.getAllPredefinedSubplanTools();
 
 		for (SubplanToolDef tool : predefinedTools) {
 			if (subplanToolService.existsByToolName(tool.getToolName())) {

@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.manus.subplan.model.po.SubplanToolDef;
 import com.alibaba.cloud.ai.manus.tool.AbstractBaseTool;
 import com.alibaba.cloud.ai.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.manus.planning.service.PlanTemplateService;
+import com.alibaba.cloud.ai.manus.planning.service.IPlanParameterMappingService;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanInterface;
 import com.alibaba.cloud.ai.manus.runtime.service.PlanIdDispatcher;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -54,9 +56,12 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 
 	private final ObjectMapper objectMapper;
 
+	private final IPlanParameterMappingService parameterMappingService;
+
 	public SubplanToolWrapper(SubplanToolDef subplanTool, String currentPlanId, String rootPlanId,
 			PlanTemplateService planTemplateService, PlanningCoordinator planningCoordinator,
-			PlanIdDispatcher planIdDispatcher, ObjectMapper objectMapper) {
+			PlanIdDispatcher planIdDispatcher, ObjectMapper objectMapper,
+			IPlanParameterMappingService parameterMappingService) {
 		this.subplanTool = subplanTool;
 		this.currentPlanId = currentPlanId;
 		this.rootPlanId = rootPlanId;
@@ -64,6 +69,7 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 		this.planningCoordinator = planningCoordinator;
 		this.planIdDispatcher = planIdDispatcher;
 		this.objectMapper = objectMapper;
+		this.parameterMappingService = parameterMappingService;
 	}
 
 	@Override
@@ -166,12 +172,38 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 				return new ToolExecuteResult(errorMsg);
 			}
 
-			// Parse the JSON to create a PlanInterface
-			PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
-
 			// Execute the plan using PlanningCoordinator
 			// Generate a new plan ID for this subplan execution using PlanIdDispatcher
 			String newPlanId = planIdDispatcher.generateSubPlanId(rootPlanId);
+
+			// Prepare parameters for replacement - add planId to input parameters
+			Map<String, Object> parametersForReplacement = new HashMap<>();
+			if (input != null) {
+				parametersForReplacement.putAll(input);
+			}
+			// Add the generated planId to parameters
+			parametersForReplacement.put("planId", newPlanId);
+
+			// Replace parameter placeholders (<< >>) with actual input parameters
+			if (!parametersForReplacement.isEmpty()) {
+				try {
+					logger.info("Replacing parameter placeholders in plan template with input parameters: {}",
+							parametersForReplacement.keySet());
+					planJson = parameterMappingService.replaceParametersInJson(planJson, parametersForReplacement);
+					logger.debug("Parameter replacement completed successfully");
+				}
+				catch (Exception e) {
+					String errorMsg = "Failed to replace parameters in plan template: " + e.getMessage();
+					logger.error(errorMsg, e);
+					return new ToolExecuteResult(errorMsg);
+				}
+			}
+			else {
+				logger.debug("No parameter replacement needed - input: {}", input != null ? input.size() : 0);
+			}
+
+			// Parse the JSON to create a PlanInterface
+			PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
 
 			// Use the provided toolCallId instead of generating a new one
 			logger.info("Using provided toolCallId: {} for subplan execution: {}", toolCallId, newPlanId);

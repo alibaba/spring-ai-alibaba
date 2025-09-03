@@ -188,17 +188,6 @@ public class SmartContentSavingService implements ISmartContentSavingService {
 						}
 						```
 
-						### Operation 2: Use get_folder_content to get content from all files in a folder
-						```json
-						{
-						  "action": "get_folder_content",
-						  "folderName": "folder_name_or_relative_path",
-						  "queryKey": "Keywords or questions you want to query, be specific and don't miss any requirements from user requests",
-						  "outputFormatSpecification": "Specify the desired output format for the extracted content"
-						}
-						```
-
-						Please choose appropriate tools and parameters for subsequent operations based on specific requirements.
 
 						""",
 				methodInfo, storageFileName);
