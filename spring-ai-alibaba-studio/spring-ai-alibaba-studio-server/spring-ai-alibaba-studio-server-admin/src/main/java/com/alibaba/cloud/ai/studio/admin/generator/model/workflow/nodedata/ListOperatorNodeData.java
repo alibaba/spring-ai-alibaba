@@ -32,7 +32,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 public class ListOperatorNodeData extends NodeData {
 
 	public static Variable defaultOutputSchema() {
-		return new Variable("result", VariableType.ARRAY_OBJECT.value());
+		return new Variable("result", VariableType.ARRAY_OBJECT);
 	}
 
 	/**

@@ -29,7 +29,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 public class QuestionClassifierNodeData extends NodeData {
 
 	public static Variable getDefaultOutputSchema() {
-		return new Variable("class_name", VariableType.STRING.value());
+		return new Variable("class_name", VariableType.STRING);
 	}
 
 	private ModelConfig model;

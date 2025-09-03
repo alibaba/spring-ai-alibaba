@@ -150,19 +150,15 @@ public class ListOperatorNodeDataConverter extends AbstractNodeDataConverter<Lis
 	}
 
 	@Override
-	public void postProcessOutput(ListOperatorNodeData nodeData, String varName) {
-		Variable output = ListOperatorNodeData.defaultOutputSchema();
-		nodeData.setOutputKey(varName + "_" + output.getName());
-		nodeData.setOutputs(List.of(output));
-		super.postProcessOutput(nodeData, varName);
-	}
-
-	@Override
 	public BiConsumer<ListOperatorNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
-				nodeData.setInputKey(nodeData.getInputs().get(0).getNameInCode());
-			});
+			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				Variable output = ListOperatorNodeData.defaultOutputSchema();
+				nodeData.setOutputKey(nodeData.getVarName() + "_" + output.getName());
+				nodeData.setOutputs(List.of(output));
+			})
+				.andThen(super.postProcessConsumer(dialectType))
+				.andThen((nodeData, idToVarName) -> nodeData.setInputKey(nodeData.getInputs().get(0).getNameInCode()));
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}
