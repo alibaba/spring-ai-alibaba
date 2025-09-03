@@ -128,7 +128,7 @@ public class PlanExecutor extends AbstractPlanExecutor {
 
 				context.setSuccess(true);
 				result.setSuccess(true);
-				result.setFinalResult(context.getResultSummary());
+				result.setFinalResult(context.getPlan().getResult());
 
 			}
 			catch (Exception e) {

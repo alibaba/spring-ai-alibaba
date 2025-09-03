@@ -128,4 +128,17 @@ public class SequentialNode extends AbstractExecutionNode {
 		return getNodeInStr();
 	}
 
+	@Override
+	public String getResult() {
+		// Use the result from the last ExecutionStep
+		if (steps != null && !steps.isEmpty()) {
+			ExecutionStep lastStep = steps.get(steps.size() - 1);
+			if (lastStep != null && lastStep.getResult() != null) {
+				return lastStep.getResult();
+			}
+		}
+		// Return null if no steps or no result available
+		return null;
+	}
+
 }

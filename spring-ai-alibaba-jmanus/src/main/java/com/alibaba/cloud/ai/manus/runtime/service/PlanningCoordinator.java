@@ -149,7 +149,13 @@ public class PlanningCoordinator {
 			context.setCurrentPlanId(currentPlanId);
 			context.setRootPlanId(rootPlanId);
 			context.setPlan(plan);
-			context.setNeedSummary(true);
+			if(toolcallId == null) {
+				context.setNeedSummary(true);
+			}
+			else{
+				//in sub plan, we don't need to generate summary
+				context.setNeedSummary(false);
+			}
 			// Generate a memory ID if none exists, since we're using memory
 			if (context.getMemoryId() == null) {
 				String generatedMemoryId = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();

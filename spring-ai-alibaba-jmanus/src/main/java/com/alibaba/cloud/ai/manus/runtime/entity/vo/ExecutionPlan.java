@@ -205,4 +205,17 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 		return getStepsExecutionStateStringFormat(false);
 	}
 
+	@Override
+	public String getResult() {
+		// If there are steps, return the result of the last step
+		if (steps != null && !steps.isEmpty()) {
+			ExecutionStep lastStep = steps.get(steps.size() - 1);
+			if (lastStep != null && lastStep.getResult() != null) {
+				return lastStep.getResult();
+			}
+		}
+		// Return null if no steps or no result available
+		return null;
+	}
+
 }

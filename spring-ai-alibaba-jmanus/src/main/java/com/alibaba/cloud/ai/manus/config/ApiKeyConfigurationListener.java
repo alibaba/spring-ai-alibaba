@@ -46,7 +46,7 @@ public class ApiKeyConfigurationListener implements ApplicationListener<Applicat
 
 			if (apiKey == null || apiKey.trim().isEmpty()) {
 				log.warn(
-						"⚠️  No DashScope API key found. Please configure it through the web interface at /ui/index.html");
+						"⚠️ Please remember to set the API key through the web interface at /ui/index.html");
 				log.warn("    The system will not be able to use AI features until an API key is configured.");
 			}
 			else {

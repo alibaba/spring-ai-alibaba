@@ -271,4 +271,17 @@ public class MapReduceNode extends AbstractExecutionNode {
 		return getNodeInStr();
 	}
 
+	@Override
+	public String getResult() {
+		// Use the result from the last postProcessSteps
+		if (postProcessSteps != null && !postProcessSteps.isEmpty()) {
+			ExecutionStep lastPostProcessStep = postProcessSteps.get(postProcessSteps.size() - 1);
+			if (lastPostProcessStep != null && lastPostProcessStep.getResult() != null) {
+				return lastPostProcessStep.getResult();
+			}
+		}
+		// Return null if no postProcessSteps or no result available
+		return null;
+	}
+
 }

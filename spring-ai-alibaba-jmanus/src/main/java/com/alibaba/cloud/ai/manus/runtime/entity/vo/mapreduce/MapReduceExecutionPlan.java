@@ -454,4 +454,17 @@ public class MapReduceExecutionPlan extends AbstractExecutionPlan {
 		return dataPreparedCompleted && mapFirstStepInProgress;
 	}
 
+	@Override
+	public String getResult() {
+		// Get the result from the last node
+		if (steps != null && !steps.isEmpty()) {
+			ExecutionNode lastNode = steps.get(steps.size() - 1);
+			if (lastNode != null) {
+				return lastNode.getResult();
+			}
+		}
+		// Return null if no nodes or no result available
+		return null;
+	}
+
 }

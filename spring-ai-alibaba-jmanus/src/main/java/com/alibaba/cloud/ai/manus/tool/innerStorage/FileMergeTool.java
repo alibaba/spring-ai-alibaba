@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 
@@ -93,7 +94,12 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 	@Override
 	public String getDescription() {
 		return """
-				Copy a single file to a specified target folder. This tool searches for files containing the specified name and copies the found file to the target folder.
+				Copy a single file to a specified target folder within the current plan directory. 
+				This tool searches for files containing the specified name and copies the found file to the target folder.
+				
+				* IMPORTANT: target_folder must be a RELATIVE path within the current plan directory.
+				* DO NOT use absolute paths (paths starting with / or containing full directory paths).
+				* Use relative paths like: "html_data", "output", "results", etc.
 				""";
 	}
 
@@ -109,7 +115,7 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 				        },
 				        "target_folder": {
 				            "type": "string",
-				            "description": "Target folder where the file will be copied"
+				            "description": "Target folder name (RELATIVE PATH ONLY). DO NOT use absolute paths or paths starting with '/'."
 				        }
 				    },
 				    "required": ["file_name", "target_folder"]
@@ -155,8 +161,19 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 		}
 
 		try {
+			// 验证并规范化目标文件夹路径
+			String normalizedTargetFolder = validateAndNormalizeTargetFolder(targetFolder);
+			if (normalizedTargetFolder == null) {
+				return new ToolExecuteResult("Error: target_folder must be a relative path. Absolute paths are not allowed.");
+			}
+
 			Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
-			Path targetDir = planDir.resolve(targetFolder);
+			Path targetDir = planDir.resolve(normalizedTargetFolder);
+
+			// 安全检查：确保目标目录在计划目录内
+			if (!isTargetPathAllowed(planDir, targetDir)) {
+				return new ToolExecuteResult("Error: Target folder is outside the allowed plan directory scope.");
+			}
 
 			// Ensure target folder exists
 			Files.createDirectories(targetDir);
@@ -189,7 +206,7 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 			result.append("File merge successful\n");
 			result.append("Source file: ").append(actualFileName).append("\n");
 			result.append("Target folder: ").append(targetFolder).append("\n");
-			result.append("Target file path: ").append(targetFile.toString()).append("\n");
+			result.append("Target file path: ").append(targetFolder).append("/").append(actualFileName).append("\n");
 
 			return new ToolExecuteResult(result.toString());
 
@@ -243,6 +260,52 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 	public void cleanup(String planId) {
 		// File merge tool does not need to perform cleanup operations
 		log.info("FileMergeTool cleanup for plan: {}", planId);
+	}
+
+	/**
+	 * 验证并规范化目标文件夹路径
+	 * @param targetFolder 原始目标文件夹路径
+	 * @return 规范化后的相对路径，如果无效则返回null
+	 */
+	private String validateAndNormalizeTargetFolder(String targetFolder) {
+		if (targetFolder == null || targetFolder.trim().isEmpty()) {
+			return null;
+		}
+		
+		String trimmed = targetFolder.trim();
+		
+		// 检查是否为绝对路径
+		if (trimmed.startsWith("/") || trimmed.matches("^[A-Za-z]:.*")) {
+			log.warn("Absolute path detected and rejected: {}", trimmed);
+			return null;
+		}
+		
+		// 规范化路径，移除多余的路径分隔符和相对路径组件
+		Path normalized = Paths.get(trimmed).normalize();
+		
+		// 检查是否包含向上级目录的引用
+		if (normalized.toString().contains("..")) {
+			log.warn("Path traversal detected and rejected: {}", trimmed);
+			return null;
+		}
+		
+		return normalized.toString();
+	}
+
+	/**
+	 * 验证目标路径是否在允许的范围内
+	 */
+	private boolean isTargetPathAllowed(Path planDir, Path targetDir) {
+		try {
+			// 确保目标目录在计划目录内
+			Path normalizedPlanDir = planDir.toAbsolutePath().normalize();
+			Path normalizedTargetDir = targetDir.toAbsolutePath().normalize();
+			
+			return normalizedTargetDir.startsWith(normalizedPlanDir);
+		} catch (Exception e) {
+			log.error("Error validating target path", e);
+			return false;
+		}
 	}
 
 }

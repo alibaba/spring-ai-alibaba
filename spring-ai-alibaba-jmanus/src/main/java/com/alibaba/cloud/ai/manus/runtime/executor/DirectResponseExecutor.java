@@ -78,7 +78,7 @@ public class DirectResponseExecutor extends AbstractPlanExecutor {
 				// Create successful result
 				PlanExecutionResult result = new PlanExecutionResult();
 				result.setSuccess(true);
-				result.setFinalResult("");
+				result.setFinalResult(context.getPlan().getResult());
 				return result;
 			}
 			catch (Exception e) {

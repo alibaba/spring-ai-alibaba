@@ -54,4 +54,10 @@ public interface ExecutionNode {
 	 */
 	String getNodeInStr();
 
+	/**
+	 * Get the result of the node execution
+	 * @return Node execution result
+	 */
+	String getResult();
+
 }
