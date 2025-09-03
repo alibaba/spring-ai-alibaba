@@ -49,7 +49,7 @@ public class PredefinedSubplanTools {
 		SubplanToolDef tool = new SubplanToolDef();
 		tool.setToolName("extract_relevant_content");
 		tool.setToolDescription(
-				"Extract relevant content from single file with intelligent analysis and structured output");
+				"Extract relevant content from file or directory with intelligent analysis and structured output");
 		tool.setPlanTemplateId("extract_relevant_content_template");
 		tool.setEndpoint("/api/subplan/extract-content");
 		tool.setServiceGroup("content-processing");
@@ -58,7 +58,7 @@ public class PredefinedSubplanTools {
 		List<SubplanParamDef> parameters = new ArrayList<>();
 
 		// File name parameter
-		SubplanParamDef fileNameParam = new SubplanParamDef("fileName", "String", "File name to be processed", true);
+		SubplanParamDef fileNameParam = new SubplanParamDef("fileName", "String", "File path or directory path to be processed", true);
 
 		// Query key parameter
 		SubplanParamDef queryKeyParam = new SubplanParamDef("queryKey", "String",

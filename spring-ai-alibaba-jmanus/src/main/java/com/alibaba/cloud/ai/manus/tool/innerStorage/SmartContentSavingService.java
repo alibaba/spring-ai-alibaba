@@ -178,7 +178,7 @@ public class SmartContentSavingService implements ISmartContentSavingService {
 
 						## You can freely use the following operations to meet user expectations (no need to follow order, but according to user expectations)
 
-						### Operation 1: Use extract_relevant_content to get specific content from the stored file
+						### Operation 1: Use extract_relevant_content to get specific content from the stored file or directory
 						```json
 						{
 						  "action": "extract_relevant_content",

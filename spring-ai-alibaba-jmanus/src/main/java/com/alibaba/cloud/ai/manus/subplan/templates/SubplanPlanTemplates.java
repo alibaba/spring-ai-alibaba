@@ -48,13 +48,13 @@ public class SubplanPlanTemplates {
 				{
 				  "planType": "advanced",
 				  "planId": "<<planId>>",
-				  "title": "Intelligent content summarization for large files, with final merged file name output in summary",
+				  "title": "Intelligent content summarization for files or directories, with final merged file name output in summary",
 				  "steps": [
 					{
 					  "type": "mapreduce",
 					  "dataPreparedSteps": [
 						{
-						  "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] Use map_reduce_tool to split content of file <<fileName>>"
+						  "stepRequirement": "[MAPREDUCE_DATA_PREPARE_AGENT] Use map_reduce_tool to split content of file or directory <<fileName>>"
 						}
 					  ],
 					  "mapSteps": [
