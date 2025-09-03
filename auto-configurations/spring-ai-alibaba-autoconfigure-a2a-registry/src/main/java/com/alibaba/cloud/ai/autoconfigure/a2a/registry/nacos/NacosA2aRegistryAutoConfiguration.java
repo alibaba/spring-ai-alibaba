@@ -22,8 +22,8 @@ import com.alibaba.cloud.ai.a2a.registry.nacos.service.NacosA2aOperationService;
 import com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aAgentCardAutoConfiguration;
 import com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aServerRegistryAutoConfiguration;
 import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.maintainer.client.ai.A2aMaintainerFactory;
 import com.alibaba.nacos.maintainer.client.ai.A2aMaintainerService;
+import com.alibaba.nacos.maintainer.client.ai.AiMaintainerFactory;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -42,7 +42,7 @@ public class NacosA2aRegistryAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public A2aMaintainerService a2aMaintainerService(NacosA2aProperties nacosA2aProperties) throws NacosException {
-		return A2aMaintainerFactory.createA2aMaintainerService(nacosA2aProperties.getNacosProperties());
+		return AiMaintainerFactory.createAiMaintainerService(nacosA2aProperties.getNacosProperties());
 	}
 
 	@Bean
