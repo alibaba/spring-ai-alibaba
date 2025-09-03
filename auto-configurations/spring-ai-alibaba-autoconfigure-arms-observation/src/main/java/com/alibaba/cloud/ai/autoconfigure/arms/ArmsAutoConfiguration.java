@@ -15,10 +15,12 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.arms;
 
+import com.alibaba.cloud.ai.observation.client.prompt.PromptMetadataAwareChatClientObservationConvention;
 import com.alibaba.cloud.ai.observation.model.ChatModelInputObservationHandler;
 import com.alibaba.cloud.ai.observation.model.ChatModelOutputObservationHandler;
 import com.alibaba.cloud.ai.tool.ObservableToolCallingManager;
 import io.micrometer.observation.ObservationRegistry;
+import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
@@ -49,6 +51,12 @@ public class ArmsAutoConfiguration {
 			.toolCallbackResolver(toolCallbackResolver)
 			.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor)
 			.build();
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
+	ChatClientObservationConvention chatClientObservationConvention() {
+		return new PromptMetadataAwareChatClientObservationConvention();
 	}
 
 	@Bean

@@ -31,7 +31,8 @@ public class ChatModelInputObservationHandler implements ObservationHandler<Chat
 	public ChatModelInputObservationHandler(MessageMode mode) {
 		if (mode == LANGFUSE) {
 			inputMessagesKey = stringKey("input.values");
-		} else {
+		}
+		else {
 			inputMessagesKey = stringKey("gen_ai.input.messages");
 		}
 	}

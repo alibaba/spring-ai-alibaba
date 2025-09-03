@@ -42,6 +42,12 @@
             <artifactId>spring-ai-model</artifactId>
         </dependency>
 
+        <!-- FIXME: remove dependencies to openai -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-openai</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-client-chat</artifactId>

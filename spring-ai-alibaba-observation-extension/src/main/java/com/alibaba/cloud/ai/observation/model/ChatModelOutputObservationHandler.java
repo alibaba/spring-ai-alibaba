@@ -32,7 +32,8 @@ public class ChatModelOutputObservationHandler implements ObservationHandler<Cha
 	public ChatModelOutputObservationHandler(MessageMode mode) {
 		if (mode == LANGFUSE) {
 			outputMessagesKey = AttributeKey.stringKey("output.values");
-		} else {
+		}
+		else {
 			outputMessagesKey = AttributeKey.stringKey("gen_ai.output.messages");
 		}
 	}

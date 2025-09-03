@@ -45,7 +45,7 @@ public class ArmsCommonProperties {
 	private boolean captureModelOutput = false;
 
 	/**
-	 * ARMS export type enumeration.
+	 * Arms export type enumeration.
 	 */
 	private MessageMode messageMode = MessageMode.OPEN_TELEMETRY;
 
