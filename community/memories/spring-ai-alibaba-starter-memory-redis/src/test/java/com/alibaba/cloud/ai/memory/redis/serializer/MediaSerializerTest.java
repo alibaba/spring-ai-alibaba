@@ -151,7 +151,7 @@ public class MediaSerializerTest {
 	}
 
 	@Test
-	public void should_serializeSuccess_when_serializeMessage_given_stringData() {
+	public void serializeForMediaStringData() {
 		var userMessage = UserMessage.builder()
 			.text("Explain what do you see on this picture?")
 			.media(List.of(Media.builder()
@@ -170,7 +170,7 @@ public class MediaSerializerTest {
 	}
 
 	@Test
-	public void should_serializeSuccess_when_serializeMessage_given_byteData() {
+	public void serializeForMediaByteData() {
 		var userMessage = UserMessage.builder()
 			.text("Explain what do you see on this picture?")
 			.media(List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(new byte[] { 1, 2, 3 }).build()))
@@ -181,7 +181,7 @@ public class MediaSerializerTest {
 	}
 
 	@Test
-	public void should_serializeSuccess_when_useToolCall_given_ReactAgent() throws GraphStateException {
+	public void serializeUseToolCall() throws GraphStateException {
 		ToolCallback toolCallback = ToolCallbacks.from(new WeatherTool())[0];
 		ReactAgent weatherAgent = ReactAgent.builder()
 			.name("weather_agent")
