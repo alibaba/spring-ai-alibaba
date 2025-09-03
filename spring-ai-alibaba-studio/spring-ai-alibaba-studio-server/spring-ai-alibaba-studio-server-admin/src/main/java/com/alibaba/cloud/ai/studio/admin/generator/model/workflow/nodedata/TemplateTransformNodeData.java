@@ -26,7 +26,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 public class TemplateTransformNodeData extends NodeData {
 
 	public static Variable getDefaultOutputSchema() {
-		return new Variable("output", VariableType.STRING.value());
+		return new Variable("output", VariableType.STRING);
 	}
 
 	private String template;

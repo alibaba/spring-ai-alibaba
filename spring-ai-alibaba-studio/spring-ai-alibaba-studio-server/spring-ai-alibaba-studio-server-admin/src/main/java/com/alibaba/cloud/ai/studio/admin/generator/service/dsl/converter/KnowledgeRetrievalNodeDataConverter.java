@@ -230,16 +230,13 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 	}
 
 	@Override
-	public void postProcessOutput(KnowledgeRetrievalNodeData data, String varName) {
-		data.setOutputKey(varName + "_" + KnowledgeRetrievalNodeData.getDefaultOutputSchema().getName());
-		data.setOutputs(List.of(KnowledgeRetrievalNodeData.getDefaultOutputSchema()));
-		super.postProcessOutput(data, varName);
-	}
-
-	@Override
 	public BiConsumer<KnowledgeRetrievalNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
+			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				nodeData.setOutputKey(
+						nodeData.getVarName() + "_" + KnowledgeRetrievalNodeData.getDefaultOutputSchema().getName());
+				nodeData.setOutputs(List.of(KnowledgeRetrievalNodeData.getDefaultOutputSchema()));
+			}).andThen(super.postProcessConsumer(dialectType)).andThen((nodeData, idToVarName) -> {
 				nodeData.setInputKey(nodeData.getInputs().get(0).getNameInCode());
 			});
 			default -> super.postProcessConsumer(dialectType);

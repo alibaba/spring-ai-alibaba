@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.CodeNodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
 import org.springframework.stereotype.Component;
@@ -65,27 +66,37 @@ public class CodeNodeSection implements NodeSection<CodeNodeData> {
 		sb.append("    .build();\n");
 
 		// 辅助节点代码，包装codeNode，将他的返回值变量解包
-		String assistantNodeCode = String.format("""
-				(state) -> {
-				            // 将代码运行的结果拆包
-				            Map<String, Object> result = %s.apply(state);
-				            String key = "%s";
-				            Object object = result.get(key);
-				            if(!(object instanceof Map)) {
-				            	return Map.of();
-				            }
-				            return ((Map<String, Object>) object).entrySet().stream()
-				            		.collect(Collectors.toMap(
-				                    	entry -> "%s_" + entry.getKey(),
-				                    	Map.Entry::getValue
-				                    ));
-				        }
-				""", varName, data.getOutputKey(), varName);
+		String assistantNodeCode = String.format("wrapperCodeNodeAction(%s, \"%s\", \"%s\")", varName,
+				data.getOutputKey(), varName);
 
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
 				assistantNodeCode));
 
 		return sb.toString();
+	}
+
+	@Override
+	public String assistMethodCode(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> """
+					private NodeAction wrapperCodeNodeAction(NodeAction codeNodeAction, String key, String nodeName) {
+					    return state -> {
+					        // 将代码运行的结果拆包
+					        Map<String, Object> result = codeNodeAction.apply(state);
+					        Object object = result.get(key);
+					        if(!(object instanceof Map)) {
+					            return Map.of();
+					        }
+					        return ((Map<String, Object>) object).entrySet().stream()
+					                .collect(Collectors.toMap(
+					                        entry -> nodeName + "_" + entry.getKey(),
+					                        Map.Entry::getValue
+					                ));
+					    };
+					}
+					""";
+			default -> "";
+		};
 	}
 
 }
