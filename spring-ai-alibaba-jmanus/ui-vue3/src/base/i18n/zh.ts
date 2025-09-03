@@ -713,7 +713,18 @@ const words: I18nType = {
     hopeHelpful: '希望这个回答对您有帮助！',
     great: '很好！',
     ifOtherHelp: '如果您还有其他需要帮助的地方，请随时告诉我',
-    completedRequest: '我已经完成了您的请求：{result}'
+    completedRequest: '我已经完成了您的请求：{result}',
+    // 子计划执行相关
+    subPlanExecutions: '子计划执行',
+    agentExecutions: '智能体执行',
+    progress: '进度',
+    thinkActSteps: '思考-行动步骤',
+    unknownAgent: '未知智能体',
+    agentResult: '智能体结果',
+    errorMessage: '错误信息',
+    triggeredByTool: '由工具触发',
+    planExecution: '计划执行',
+    userInputRequired: '需要用户输入'
   },
 
   // 输入组件
@@ -1040,8 +1051,14 @@ const words: I18nType = {
       label: '状态',
       completed: '已完成',
       executing: '执行中',
-      pending: '待执行'
+      pending: '待执行',
+      inProgress: '进行中',
+      unknown: '未知'
     },
+    // 嵌套子计划相关
+    nestedSubPlans: '嵌套子计划',
+    directSubPlans: '直接子计划',
+    andMoreSteps: '还有 {count} 个步骤',
     // Tab 标签
     tabs: {
       details: '步骤执行详情',

@@ -745,7 +745,18 @@ const words: I18nType = {
     hopeHelpful: 'I hope this answer is helpful to you!',
     great: 'Great!',
     ifOtherHelp: 'If you need any other help, please feel free to let me know',
-    completedRequest: 'I have completed your request: {result}'
+    completedRequest: 'I have completed your request: {result}',
+    // Sub-plan execution related
+    subPlanExecutions: 'Sub-Plan Executions',
+    agentExecutions: 'Agent Executions',
+    progress: 'Progress',
+    thinkActSteps: 'Think-Act Steps',
+    unknownAgent: 'Unknown Agent',
+    agentResult: 'Agent Result',
+    errorMessage: 'Error Message',
+    triggeredByTool: 'Triggered by Tool',
+    planExecution: 'Plan Execution',
+    userInputRequired: 'User Input Required'
   },
 
   // Input component
@@ -1075,8 +1086,14 @@ const words: I18nType = {
       label: 'Status',
       completed: 'Completed',
       executing: 'Executing',
-      pending: 'Pending'
+      pending: 'Pending',
+      inProgress: 'In Progress',
+      unknown: 'Unknown'
     },
+    // Nested sub-plan related
+    nestedSubPlans: 'Nested Sub-Plans',
+    directSubPlans: 'Direct Sub-Plans',
+    andMoreSteps: 'and {count} more steps',
     // Tab labels
     tabs: {
       details: 'Step Execution Details',

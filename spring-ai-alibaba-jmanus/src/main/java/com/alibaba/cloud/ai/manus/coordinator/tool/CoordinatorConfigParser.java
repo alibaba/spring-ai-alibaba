@@ -462,7 +462,7 @@ public class CoordinatorConfigParser {
 		}
 
 		/**
-		 * Escape JSON string with optimized performance
+		 * Escape JSON string with optimized performance and UTF-8 support
 		 */
 		public static String escapeJsonString(String input) {
 			if (input == null) {
@@ -479,7 +479,17 @@ public class CoordinatorConfigParser {
 					case '\n' -> result.append("\\n");
 					case '\r' -> result.append("\\r");
 					case '\t' -> result.append("\\t");
-					default -> result.append(c);
+					case '\b' -> result.append("\\b");
+					case '\f' -> result.append("\\f");
+					default -> {
+						// Handle Unicode characters (including Chinese characters)
+						if (c < 32 || c > 126) {
+							// Escape non-ASCII characters as Unicode escape sequences
+							result.append(String.format("\\u%04x", (int) c));
+						} else {
+							result.append(c);
+						}
+					}
 				}
 			}
 			return result.toString();

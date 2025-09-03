@@ -86,7 +86,7 @@
           </div>
         </div>
 
-        <!-- Sub-plan executions -->
+        <!-- Sub-plan executions with nested support -->
         <div v-if="agentExecution.subPlanExecutionRecords?.length" class="sub-plans-container">
           <div class="sub-plans-header">
             <Icon icon="carbon:tree-view" class="sub-plans-icon" />
@@ -96,120 +96,17 @@
           </div>
           
           <div class="sub-plans-list">
-            <div
+            <RecursiveSubPlan
               v-for="(subPlan, subPlanIndex) in agentExecution.subPlanExecutionRecords"
               :key="subPlan.currentPlanId || subPlanIndex"
-              class="sub-plan-item"
-              :class="getSubPlanStatusClass(subPlan)"
-              @click="handleSubPlanClick(agentIndex, subPlanIndex, subPlan)"
-            >
-              <!-- Sub-plan header -->
-              <div class="sub-plan-header">
-                <div class="sub-plan-info">
-                  <Icon :icon="getSubPlanStatusIcon(subPlan)" class="sub-plan-status-icon" />
-                  <div class="sub-plan-details">
-                    <div class="sub-plan-title">
-                      {{ subPlan.title || $t('chat.subPlan') }} #{{ subPlanIndex + 1 }}
-                    </div>
-                    <div class="sub-plan-id">{{ subPlan.currentPlanId }}</div>
-                  </div>
-                </div>
-                <div class="sub-plan-meta">
-                  <div class="sub-plan-status-badge" :class="getSubPlanStatusClass(subPlan)">
-                    {{ getSubPlanStatusText(subPlan) }}
-                  </div>
-                  <div v-if="subPlan.parentActToolCall" class="trigger-tool">
-                    <Icon icon="carbon:function" class="trigger-icon" />
-                    <span class="trigger-text">{{ subPlan.parentActToolCall.name }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Sub-plan progress -->
-              <div v-if="subPlan.agentExecutionSequence?.length" class="sub-plan-progress">
-                <div class="progress-info">
-                  <span class="progress-text">
-                    {{ $t('chat.progress') }}: {{ getSubPlanCompletedCount(subPlan) }} / {{ subPlan.agentExecutionSequence.length }}
-                  </span>
-                  <div class="progress-bar">
-                    <div 
-                      class="progress-fill" 
-                      :style="{ width: getSubPlanProgress(subPlan) + '%' }"
-                    ></div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Sub-plan agent execution steps -->
-              <div v-if="subPlan.agentExecutionSequence?.length" class="sub-plan-agents-steps">
-                <div class="agents-steps-header">
-                  <span class="agents-label">{{ $t('chat.agentExecutions') }}:</span>
-                </div>
-                <div class="agents-steps-list">
-                  <div
-                    v-for="(agent, agentIndex) in subPlan.agentExecutionSequence"
-                    :key="agent.id || agentIndex"
-                    class="agent-step-item"
-                    :class="getAgentPreviewStatusClass(agent.status)"
-                    @click="handleSubPlanAgentClick(agentIndex, subPlanIndex, agent)"
-                  >
-                    <div class="agent-step-header">
-                      <Icon :icon="getAgentPreviewStatusIcon(agent.status)" class="agent-icon" />
-                      <span class="agent-name">{{ agent.agentName || $t('chat.unknownAgent') }}</span>
-                      <div class="agent-status-badge" :class="getAgentPreviewStatusClass(agent.status)">
-                        {{ getAgentStatusText(agent.status) }}
-                      </div>
-                    </div>
-                    
-                    <!-- Agent execution info for sub-plan agents -->
-                    <div class="sub-agent-execution-info">
-                      <!-- Agent result -->
-                      <div v-if="agent.result" class="agent-result">
-                        <div class="result-header">
-                          <Icon icon="carbon:checkmark" class="result-icon" />
-                          <span class="result-label">{{ $t('chat.agentResult') }}:</span>
-                        </div>
-                        <pre class="result-content">{{ agent.result }}</pre>
-                      </div>
-
-                      <!-- Error message -->
-                      <div v-if="agent.errorMessage" class="agent-error">
-                        <div class="error-header">
-                          <Icon icon="carbon:warning" class="error-icon" />
-                          <span class="error-label">{{ $t('chat.errorMessage') }}:</span>
-                        </div>
-                        <pre class="error-content">{{ agent.errorMessage }}</pre>
-                      </div>
-
-                      <!-- Think-act steps preview -->
-                      <div v-if="agent.thinkActSteps?.length" class="think-act-preview">
-                        <div class="think-act-header">
-                          <Icon icon="carbon:thinking" class="think-act-icon" />
-                          <span class="think-act-label">{{ $t('chat.thinkActSteps') }} ({{ agent.thinkActSteps.length }})</span>
-                        </div>
-                        <div class="think-act-steps-preview">
-                          <div
-                            v-for="(step, stepIndex) in agent.thinkActSteps.slice(0, 2)"
-                            :key="step.id || stepIndex"
-                            class="think-act-step-preview"
-                            @click.stop="handleThinkActStepClick(agentIndex, subPlanIndex, stepIndex, agent)"
-                          >
-                            <span class="step-number">#{{ stepIndex + 1 }}</span>
-                            <span class="step-description">{{ step.actionDescription || $t('chat.thinking') }}</span>
-                            <Icon icon="carbon:arrow-right" class="step-arrow" />
-                          </div>
-                          <div v-if="agent.thinkActSteps.length > 2" class="more-steps">
-                            <span class="more-steps-text">
-                              {{ $t('chat.andMoreSteps', { count: agent.thinkActSteps.length - 2 }) }}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+              :sub-plan="subPlan"
+              :sub-plan-index="subPlanIndex"
+              :nesting-level="0"
+              :max-nesting-depth="3"
+              :max-visible-steps="2"
+              @sub-plan-selected="handleSubPlanClick"
+              @step-selected="handleStepSelected"
+            />
           </div>
         </div>
       </div>
@@ -362,6 +259,7 @@ import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import type { PlanExecutionRecord, AgentExecutionRecord, ExecutionStatus } from '@/types/plan-execution-record'
 import type { CompatiblePlanExecutionRecord } from './composables/useChatMessages'
+import RecursiveSubPlan from './RecursiveSubPlan.vue'
 
 interface Props {
   planExecution: CompatiblePlanExecutionRecord
@@ -471,115 +369,20 @@ const getAgentStatusIcon = (status?: ExecutionStatus): string => {
   }
 }
 
-// Sub-plan status methods
-const getSubPlanStatusClass = (subPlan: PlanExecutionRecord): string => {
-  if (subPlan.completed) {
-    return 'completed'
-  }
-  
-  const hasRunningAgent = subPlan.agentExecutionSequence?.some(agent => agent.status === 'RUNNING')
-  if (hasRunningAgent) {
-    return 'running'
-  }
-  
-  const hasFinishedAgent = subPlan.agentExecutionSequence?.some(agent => agent.status === 'FINISHED')
-  if (hasFinishedAgent) {
-    return 'in-progress'
-  }
-  
-  return 'pending'
-}
+// Note: Sub-plan status methods are now handled by RecursiveSubPlan component
 
-const getSubPlanStatusText = (subPlan: PlanExecutionRecord): string => {
-  const statusClass = getSubPlanStatusClass(subPlan)
-  switch (statusClass) {
-    case 'completed':
-      return t('chat.status.completed')
-    case 'running':
-      return t('chat.status.executing')
-    case 'in-progress':
-      return t('chat.status.inProgress')
-    case 'pending':
-      return t('chat.status.pending')
-    default:
-      return t('chat.status.unknown')
-  }
-}
-
-const getSubPlanStatusIcon = (subPlan: PlanExecutionRecord): string => {
-  const statusClass = getSubPlanStatusClass(subPlan)
-  switch (statusClass) {
-    case 'completed':
-      return 'carbon:checkmark'
-    case 'running':
-      return 'carbon:play'
-    case 'in-progress':
-      return 'carbon:in-progress'
-    case 'pending':
-    default:
-      return 'carbon:dot-mark'
-  }
-}
-
-const getSubPlanProgress = (subPlan: PlanExecutionRecord): number => {
-  if (!subPlan.agentExecutionSequence?.length) return 0
-  if (subPlan.completed) return 100
-  
-  const completedCount = getSubPlanCompletedCount(subPlan)
-  return Math.min(100, (completedCount / subPlan.agentExecutionSequence.length) * 100)
-}
-
-// Get completed agent count for sub-plan
-const getSubPlanCompletedCount = (subPlan: PlanExecutionRecord): number => {
-  if (!subPlan.agentExecutionSequence?.length) return 0
-  return subPlan.agentExecutionSequence.filter(agent => agent.status === 'FINISHED').length
-}
-
-// Agent preview status methods for sub-plan agent preview
-const getAgentPreviewStatusClass = (status?: ExecutionStatus): string => {
-  switch (status) {
-    case 'FINISHED':
-      return 'completed'
-    case 'RUNNING':
-      return 'running'
-    case 'IDLE':
-    default:
-      return 'pending'
-  }
-}
-
-const getAgentPreviewStatusIcon = (status?: ExecutionStatus): string => {
-  switch (status) {
-    case 'FINISHED':
-      return 'carbon:checkmark'
-    case 'RUNNING':
-      return 'carbon:play'
-    case 'IDLE':
-    default:
-      return 'carbon:dot-mark'
-  }
-}
+// Note: Agent preview status methods are now handled by RecursiveSubPlan component
 
 // Event handlers
 const handleSubPlanClick = (agentIndex: number, subPlanIndex: number, subPlan: PlanExecutionRecord) => {
   emit('sub-plan-selected', agentIndex, subPlanIndex, subPlan)
 }
 
-// Handle sub-plan agent click to show agent details in right panel
-const handleSubPlanAgentClick = (agentIndex: number, subPlanIndex: number, agent: AgentExecutionRecord) => {
-  // Use the agent's stepId or create a unique one for sub-plan agents
-  const stepId = agent.stepId || `subplan-${subPlanIndex}-agent-${agentIndex}`
-  
+const handleStepSelected = (stepId: string) => {
   emit('step-selected', stepId)
 }
 
-// Handle think-act step click to show detailed step in right panel
-const handleThinkActStepClick = (agentIndex: number, subPlanIndex: number, stepIndex: number, agent: AgentExecutionRecord) => {
-  // Use the agent's stepId or create a unique one for sub-plan agents
-  const stepId = agent.stepId || `subplan-${subPlanIndex}-agent-${agentIndex}`
-  
-  emit('step-selected', stepId)
-}
+// Note: Sub-plan agent and think-act step handling is now done by RecursiveSubPlan component
 
 const handleUserInputSubmit = async () => {
   try {
