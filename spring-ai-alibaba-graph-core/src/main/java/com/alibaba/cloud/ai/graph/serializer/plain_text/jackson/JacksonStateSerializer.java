@@ -825,7 +825,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 				// Extract document content and metadata from JSON
 				String content = extractContent(node);
-				java.util.Map<String, Object> metadata = extractMetadata(node, ctxt);
+				java.util.Map<String, Object> metadata = extractMetadata(node);
 				String id = extractId(node);
 
 				// Load Document class using reflection to avoid hard dependency
@@ -907,10 +907,9 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		/**
 		 * Extract metadata from JsonNode - handles nested object structure
 		 * @param node The JSON node containing metadata
-		 * @param ctxt Deserialization context for recursive processing
 		 */
-		private java.util.Map<String, Object> extractMetadata(com.fasterxml.jackson.databind.JsonNode node,
-													  com.fasterxml.jackson.databind.DeserializationContext ctxt) {
+		private java.util.Map<String, Object> extractMetadata(com.fasterxml.jackson.databind.JsonNode node
+													 ) {
 			java.util.Map<String, Object> metadata = new java.util.HashMap<>();
 
 			// Extract metadata object if present
