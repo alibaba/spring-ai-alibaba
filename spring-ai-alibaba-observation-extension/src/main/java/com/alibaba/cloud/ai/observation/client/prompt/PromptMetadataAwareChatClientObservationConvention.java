@@ -2,6 +2,8 @@ package com.alibaba.cloud.ai.observation.client.prompt;
 
 import static com.alibaba.cloud.ai.observation.client.prompt.MetadataAttributes.AGENT_NAME;
 import static com.alibaba.cloud.ai.observation.client.prompt.MetadataAttributes.PROMPT_KEY;
+import static com.alibaba.cloud.ai.observation.client.prompt.MetadataAttributes.PROMPT_TEMPLATE;
+import static com.alibaba.cloud.ai.observation.client.prompt.MetadataAttributes.PROMPT_VARIABLE;
 import static com.alibaba.cloud.ai.observation.client.prompt.MetadataAttributes.PROMPT_VERSION;
 import static com.alibaba.cloud.ai.observation.client.prompt.MetadataAttributes.STUDIO_SOURCE;
 
@@ -29,8 +31,11 @@ public class PromptMetadataAwareChatClientObservationConvention extends DefaultC
 		KeyValues keyValues = super.getHighCardinalityKeyValues(context);
 		keyValues = promptKey(keyValues, context);
 		keyValues = promptVersion(keyValues, context);
+		keyValues = promptTemplate(keyValues, context);
+		keyValues = promptVariables(keyValues, context);
 		keyValues = agentName(keyValues, context);
 		keyValues = studioSource(keyValues, context);
+
 		return keyValues;
 	}
 
@@ -48,6 +53,22 @@ public class PromptMetadataAwareChatClientObservationConvention extends DefaultC
 		Map<String, String> metadata = this.getMetadata(context);
 		if (metadata.containsKey("promptVersion")) {
 			return keyValues.and(KeyValue.of(PROMPT_VERSION, metadata.get("promptVersion")));
+		}
+		return keyValues;
+	}
+
+	protected KeyValues promptTemplate(KeyValues keyValues, ChatClientObservationContext context) {
+		Map<String, String> metadata = this.getMetadata(context);
+		if (metadata.containsKey("promptTemplate")) {
+			return keyValues.and(KeyValue.of(PROMPT_TEMPLATE, metadata.get("promptTemplate")));
+		}
+		return keyValues;
+	}
+
+	protected KeyValues promptVariables(KeyValues keyValues, ChatClientObservationContext context) {
+		Map<String, String> metadata = this.getMetadata(context);
+		if (metadata.containsKey("promptVariables")) {
+			return keyValues.and(KeyValue.of(PROMPT_VARIABLE, metadata.get("promptVariables")));
 		}
 		return keyValues;
 	}
