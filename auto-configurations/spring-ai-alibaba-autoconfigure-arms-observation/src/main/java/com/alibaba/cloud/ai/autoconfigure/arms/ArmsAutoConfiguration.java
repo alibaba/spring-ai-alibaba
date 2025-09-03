@@ -38,11 +38,12 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @ConditionalOnClass(ChatModel.class)
+@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @EnableConfigurationProperties(ArmsCommonProperties.class)
 public class ArmsAutoConfiguration {
 
 	@Bean
-	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
+	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "tool.enabled", havingValue = "true")
 	ToolCallingManager toolCallingManager(ToolCallbackResolver toolCallbackResolver,
 			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor,
 			ObjectProvider<ObservationRegistry> observationRegistry) {
@@ -54,7 +55,6 @@ public class ArmsAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 	ChatClientObservationConvention chatClientObservationConvention() {
 		return new PromptMetadataAwareChatClientObservationConvention();
 	}
@@ -65,7 +65,7 @@ public class ArmsAutoConfiguration {
 	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "model.capture-input",
 			havingValue = "true")
 	ChatModelInputObservationHandler armsChatModelInputObservationHandler(ArmsCommonProperties properties) {
-		return new ChatModelInputObservationHandler(properties.getMessageMode());
+		return new ChatModelInputObservationHandler(properties.getModel().getMessageMode());
 	}
 
 	@Bean
@@ -74,7 +74,7 @@ public class ArmsAutoConfiguration {
 	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "model.capture-output",
 			havingValue = "true")
 	ChatModelOutputObservationHandler armsChatModelOutputObservationHandler(ArmsCommonProperties properties) {
-		return new ChatModelOutputObservationHandler(properties.getMessageMode());
+		return new ChatModelOutputObservationHandler(properties.getModel().getMessageMode());
 	}
 
 }

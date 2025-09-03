@@ -34,20 +34,9 @@ public class ArmsCommonProperties {
 	 */
 	private boolean enabled = false;
 
-	/**
-	 * Enable Arms instrumentations and conventions.
-	 */
-	private boolean captureModelInput = false;
+	private ModelProperties model = new ModelProperties();
 
-	/**
-	 * Enable Arms instrumentations and conventions.
-	 */
-	private boolean captureModelOutput = false;
-
-	/**
-	 * Arms export type enumeration.
-	 */
-	private MessageMode messageMode = MessageMode.OPEN_TELEMETRY;
+	private ToolProperties tool = new ToolProperties();
 
 	public boolean isEnabled() {
 		return enabled;
@@ -57,28 +46,77 @@ public class ArmsCommonProperties {
 		this.enabled = enabled;
 	}
 
-	public boolean isCaptureModelInput() {
-		return captureModelInput;
+	public ModelProperties getModel() {
+		return model;
 	}
 
-	public void setCaptureModelInput(boolean captureModelInput) {
-		this.captureModelInput = captureModelInput;
+	public void setModel(ModelProperties model) {
+		this.model = model;
 	}
 
-	public boolean isCaptureModelOutput() {
-		return captureModelOutput;
+	public ToolProperties getTool() {
+		return tool;
 	}
 
-	public void setCaptureModelOutput(boolean captureModelOutput) {
-		this.captureModelOutput = captureModelOutput;
+	public void setTool(ToolProperties tool) {
+		this.tool = tool;
 	}
 
-	public MessageMode getMessageMode() {
-		return messageMode;
+	public static class ModelProperties {
+
+		/**
+		 * Enable Arms instrumentations and conventions.
+		 */
+		private boolean captureInput = false;
+
+		/**
+		 * Enable Arms instrumentations and conventions.
+		 */
+		private boolean captureOutput = false;
+
+		/**
+		 * Arms export type enumeration.
+		 */
+		private MessageMode messageMode = MessageMode.OPEN_TELEMETRY;
+
+		public boolean isCaptureInput() {
+			return captureInput;
+		}
+
+		public void setCaptureInput(boolean captureInput) {
+			this.captureInput = captureInput;
+		}
+
+		public boolean isCaptureOutput() {
+			return captureOutput;
+		}
+
+		public void setCaptureOutput(boolean captureOutput) {
+			this.captureOutput = captureOutput;
+		}
+
+		public MessageMode getMessageMode() {
+			return messageMode;
+		}
+
+		public void setMessageMode(MessageMode messageMode) {
+			this.messageMode = messageMode;
+		}
+
 	}
 
-	public void setMessageMode(MessageMode messageMode) {
-		this.messageMode = messageMode;
+	public static class ToolProperties {
+
+		private boolean enabled = true;
+
+		public boolean isEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
 	}
 
 }
