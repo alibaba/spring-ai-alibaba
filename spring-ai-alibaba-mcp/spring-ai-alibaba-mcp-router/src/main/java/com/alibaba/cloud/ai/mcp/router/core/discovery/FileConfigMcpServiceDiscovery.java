@@ -18,9 +18,8 @@ package com.alibaba.cloud.ai.mcp.router.core.discovery;
 
 import com.alibaba.cloud.ai.mcp.router.config.McpRouterProperties;
 import com.alibaba.cloud.ai.mcp.router.model.McpServerInfo;
-import org.springframework.stereotype.Component;
 
-@Component
+
 public class FileConfigMcpServiceDiscovery implements McpServiceDiscovery {
 
 	private final McpRouterProperties properties;
