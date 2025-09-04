@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(classes = MemcachedTestConfiguration.class)
 @Testcontainers
-class MemcachedChatMemoryRepositoryIT {
+class MemcachedChatMemoryRepositoryTest {
 
 	private static final int MEMCACHED_PORT = 11211;
 
