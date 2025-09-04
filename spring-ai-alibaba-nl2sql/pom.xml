@@ -77,7 +77,7 @@
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <scope>runtime</scope>
-                <version>{h2.version}</version>
+                <version>${h2.version}</version>
             </dependency>
             <dependency>
                 <groupId>commons-collections</groupId>
