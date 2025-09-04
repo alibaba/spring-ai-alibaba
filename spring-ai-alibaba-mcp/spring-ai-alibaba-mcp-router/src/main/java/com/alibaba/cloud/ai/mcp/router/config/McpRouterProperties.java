@@ -28,13 +28,10 @@ public class McpRouterProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.router";
 
-	/**
-	 * 是否启用 MCP 路由器
-	 */
 	private boolean enabled = true;
 
 	/**
-	 * MCP 路由器服务名称
+	 * MCP router service names
 	 */
 	private List<String> serviceNames = new ArrayList<>();
 
@@ -55,7 +52,7 @@ public class McpRouterProperties {
 	}
 
 	/**
-	 * MCP服务配置列表
+	 * MCP router service configurations
 	 */
 	private List<McpServerInfo> services = new ArrayList<>();
 
@@ -68,10 +65,9 @@ public class McpRouterProperties {
 	}
 
 	/**
-	 * 服务发现类型 (nacos, file)
+	 * MCP router service discovery type (nacos, file, database)
 	 */
-	private String discoveryType = "nacos"; // 默认为 nacos
-
+	private String discoveryType = "nacos"; // Nacos for default
 
 	public String getDiscoveryType() {
 		return discoveryType;
