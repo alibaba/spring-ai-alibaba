@@ -20,7 +20,9 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.ai.chat.messages.Message;
@@ -35,26 +37,34 @@ public class DeepResearchStateSerializer extends PlainTextStateSerializer {
 	protected final ObjectMapper objectMapper;
 
 	public DeepResearchStateSerializer(AgentStateFactory<OverAllState> stateFactory) {
-		this(stateFactory, new ObjectMapper());
+		this(stateFactory, null);
 	}
 
-	protected DeepResearchStateSerializer(AgentStateFactory<OverAllState> stateFactory, ObjectMapper objectMapper) {
+	protected DeepResearchStateSerializer(AgentStateFactory<OverAllState> stateFactory,
+			ObjectMapper customObjectMapper) {
 		super(stateFactory);
-		this.objectMapper = objectMapper;
+		if (customObjectMapper != null) {
+			this.objectMapper = customObjectMapper;
+			return;
+		}
+		this.objectMapper = JsonMapper.builder()
+			.configure(MapperFeature.AUTO_DETECT_GETTERS, false)
+			.configure(MapperFeature.AUTO_DETECT_IS_GETTERS, false)
+			.visibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+			.build();
 
 		// register MessageDeserializer
 		SimpleModule messageModule = new SimpleModule();
 		messageModule.addDeserializer(Message.class, new MessageDeserializer());
-		objectMapper.registerModule(messageModule);
+		this.objectMapper.registerModule(messageModule);
 
 		// register DeepResearchDeserializer
 		SimpleModule stateModule = new SimpleModule();
 		stateModule.addDeserializer(OverAllState.class, new DeepResearchDeserializer(objectMapper));
-		objectMapper.registerModule(stateModule);
+		this.objectMapper.registerModule(stateModule);
 
 		// other properties
-		objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-		objectMapper.registerModule(new JavaTimeModule());
+		this.objectMapper.registerModule(new JavaTimeModule());
 	}
 
 	@Override
