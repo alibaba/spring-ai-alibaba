@@ -1,0 +1,142 @@
+{
+  "properties": [
+    {
+      "name": "spring.ai.alibaba.mem0.client.base-url",
+      "type": "java.lang.String",
+      "description": "Base URL for the Mem0 client service.",
+      "defaultValue": "http://localhost:8888"
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.client.timeout-seconds",
+      "type": "java.lang.Integer",
+      "description": "Timeout in seconds for client operations.",
+      "defaultValue": 30
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.client.max-retry-attempts",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of retry attempts for failed operations.",
+      "defaultValue": 3
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.version",
+      "type": "java.lang.String",
+      "description": "Version of the Mem0 server to connect to."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.vector-store.provider",
+      "type": "java.lang.String",
+      "description": "Provider for the vector store (e.g., qdrant, chroma, pgvector, pinecone, mongodb, milvus, baidu, upstash_vector, azure_ai_search, redis, elasticsearch, vertex_ai_vector_search, opensearch, supabase, weaviate, faiss, langchain)."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.vector-store.config",
+      "type": "java.util.Map<java.lang.String,java.lang.String>",
+      "description": "Configuration map for the vector store provider."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.graph-store.provider",
+      "type": "java.lang.String",
+      "description": "Provider for the graph store."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.graph-store.config.url",
+      "type": "java.lang.String",
+      "description": "URL for the graph store connection."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.graph-store.config.username",
+      "type": "java.lang.String",
+      "description": "Username for the graph store authentication."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.graph-store.config.password",
+      "type": "java.lang.String",
+      "description": "Password for the graph store authentication."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.graph-store.config.database",
+      "type": "java.lang.String",
+      "description": "Database name for Neo4j graph store."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.graph-store.config.base-label",
+      "type": "java.lang.Boolean",
+      "description": "Base label setting for Neo4j graph store."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.graph-store.custom-prompt",
+      "type": "java.lang.String",
+      "description": "Custom prompt template for graph store operations."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.llm.provider",
+      "type": "java.lang.String",
+      "description": "Provider for the LLM service."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.llm.config.api-key",
+      "type": "java.lang.String",
+      "description": "API key for the LLM service."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.llm.config.temperature",
+      "type": "java.lang.Double",
+      "description": "Temperature setting for LLM responses."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.llm.config.model",
+      "type": "java.lang.String",
+      "description": "Model name for the LLM service."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.llm.config.openai-base-url",
+      "type": "java.lang.String",
+      "description": "Base URL for OpenAI-compatible services."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.embedder.provider",
+      "type": "java.lang.String",
+      "description": "Provider for the embedding service."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.embedder.config.api-key",
+      "type": "java.lang.String",
+      "description": "API key for the embedding service."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.embedder.config.model",
+      "type": "java.lang.String",
+      "description": "Model name for the embedding service."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.embedder.config.openai-base-url",
+      "type": "java.lang.String",
+      "description": "Base URL for OpenAI-compatible embedding services."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.history-db-path",
+      "type": "java.lang.String",
+      "description": "Path to the history database."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.project.custom-categories",
+      "type": "java.lang.String",
+      "description": "Custom categories for the project."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.project.custom-instructions",
+      "type": "java.lang.String",
+      "description": "Custom instructions for the project."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.custom-fact-extraction-prompt",
+      "type": "java.lang.String",
+      "description": "Custom prompt for fact extraction."
+    },
+    {
+      "name": "spring.ai.alibaba.mem0.server.custom-update-memory-prompt",
+      "type": "java.lang.String",
+      "description": "Custom prompt for memory updates."
+    }
+  ]
+}

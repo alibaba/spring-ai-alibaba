@@ -87,6 +87,10 @@ public class StateGraphFileSystemSaverTest {
 
 			for (int execution = 0; execution < 2; execution++) {
 
+				// Clear checkpoints at the start of each execution to ensure clean slate
+				saver.deleteFile(runnableConfig_1);
+				saver.deleteFile(runnableConfig_2);
+
 				Optional<OverAllState> state = app.invoke(Map.of(), runnableConfig_1);
 
 				assertTrue(state.isPresent());
@@ -133,9 +137,9 @@ public class StateGraphFileSystemSaverTest {
 			}
 		}
 		finally {
-
-			// saver.clear(runnableConfig_1);
-			// saver.clear(runnableConfig_2);
+			// Cleanup checkpoints after test completion
+			saver.deleteFile(runnableConfig_1);
+			saver.deleteFile(runnableConfig_2);
 		}
 	}
 

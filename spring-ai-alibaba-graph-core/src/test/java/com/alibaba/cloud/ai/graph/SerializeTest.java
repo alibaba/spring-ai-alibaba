@@ -228,14 +228,14 @@ public class SerializeTest {
 		String json = serializer.getObjectMapper().writeValueAsString(output);
 
 		assertEquals(
-				"{\"@class\":\"com.alibaba.cloud.ai.graph.NodeOutput\",\"node\":\"node\",\"state\":null,\"subGraph\":true}",
+				"{\"@class\":\"com.alibaba.cloud.ai.graph.NodeOutput\",\"node\":\"node\",\"state\":null,\"subGraph\":true,\"start\":false,\"end\":false}",
 				json);
 
 		output.setSubGraph(false);
 		json = serializer.getObjectMapper().writeValueAsString(output);
 
 		assertEquals(
-				"{\"@class\":\"com.alibaba.cloud.ai.graph.NodeOutput\",\"node\":\"node\",\"state\":null,\"subGraph\":false}",
+				"{\"@class\":\"com.alibaba.cloud.ai.graph.NodeOutput\",\"node\":\"node\",\"state\":null,\"subGraph\":false,\"start\":false,\"end\":false}",
 				json);
 	}
 

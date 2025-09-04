@@ -127,24 +127,16 @@ public class AssignerNodeDataConverter extends AbstractNodeDataConverter<Assigne
 	}
 
 	@Override
-	public void postProcessOutput(AssignerNodeData data, String varName) {
-		// 赋值节点没有输出
-	}
-
-	@Override
 	public BiConsumer<AssignerNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> {
-				BiConsumer<AssignerNodeData, Map<String, String>> consumer = (nodeData, idToVarName) -> {
-					// 将赋值的多组变量放进Inputs里，方便格式化格式
-					List<VariableSelector> selectors = nodeData.getItems()
-						.stream()
-						.flatMap(item -> Stream.of(item.getValue(), item.getVariableSelector()))
-						.toList();
-					nodeData.setInputs(selectors);
-				};
-				yield consumer.andThen(super.postProcessConsumer(dialectType));
-			}
+			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				// 将赋值的多组变量放进Inputs里，方便格式化格式
+				List<VariableSelector> selectors = nodeData.getItems()
+					.stream()
+					.flatMap(item -> Stream.of(item.getValue(), item.getVariableSelector()))
+					.toList();
+				nodeData.setInputs(selectors);
+			}).andThen(super.postProcessConsumer(dialectType));
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}

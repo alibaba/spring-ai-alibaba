@@ -118,15 +118,15 @@ public class DocumentExtractorNodeDataConverter extends AbstractNodeDataConverte
 	}
 
 	@Override
-	public void postProcessOutput(DocumentExtractorNodeData data, String varName) {
-		data.setOutputKey(varName + "_" + DocumentExtractorNodeData.getDefaultOutputSchema().getName());
-		data.setOutputs(List.of(DocumentExtractorNodeData.getDefaultOutputSchema()));
-		super.postProcessOutput(data, varName);
-	}
-
-	@Override
 	public BiConsumer<DocumentExtractorNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
-		return super.postProcessConsumer(dialectType);
+		return switch (dialectType) {
+			case DIFY -> this.emptyProcessConsumer().andThen((data, idToVarName) -> {
+				data.setOutputKey(
+						data.getVarName() + "_" + DocumentExtractorNodeData.getDefaultOutputSchema().getName());
+				data.setOutputs(List.of(DocumentExtractorNodeData.getDefaultOutputSchema()));
+			}).andThen(super.postProcessConsumer(dialectType));
+			default -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }
