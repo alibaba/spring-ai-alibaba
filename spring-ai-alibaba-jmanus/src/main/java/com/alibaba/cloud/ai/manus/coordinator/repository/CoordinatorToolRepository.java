@@ -15,10 +15,11 @@
  */
 package com.alibaba.cloud.ai.manus.coordinator.repository;
 
-import com.alibaba.cloud.ai.manus.coordinator.entity.CoordinatorToolEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+
+import com.alibaba.cloud.ai.manus.coordinator.entity.po.CoordinatorToolEntity;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.manus.coordinator.vo;
+package com.alibaba.cloud.ai.manus.coordinator.entity.vo;
 
 import java.util.List;
 

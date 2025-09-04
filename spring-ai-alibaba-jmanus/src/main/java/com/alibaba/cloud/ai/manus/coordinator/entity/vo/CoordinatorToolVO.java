@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.manus.coordinator.vo;
+package com.alibaba.cloud.ai.manus.coordinator.entity.vo;
 
-import com.alibaba.cloud.ai.manus.coordinator.entity.CoordinatorToolEntity;
+import com.alibaba.cloud.ai.manus.coordinator.entity.po.CoordinatorToolEntity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**

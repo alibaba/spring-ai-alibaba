@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.manus.coordinator.entity;
+package com.alibaba.cloud.ai.manus.coordinator.entity.po;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

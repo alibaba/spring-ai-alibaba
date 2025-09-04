@@ -11,11 +11,10 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.alibaba.cloud.ai.manus.coordinator.entity.vo.CoordinatorConfigVO;
+import com.alibaba.cloud.ai.manus.coordinator.entity.vo.CoordinatorParameterVO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import com.alibaba.cloud.ai.manus.coordinator.vo.CoordinatorConfigVO;
-import com.alibaba.cloud.ai.manus.coordinator.vo.CoordinatorParameterVO;
 
 /**
  * CoordinatorConfig Parser
