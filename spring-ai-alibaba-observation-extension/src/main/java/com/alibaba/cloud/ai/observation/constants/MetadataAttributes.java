@@ -12,6 +12,8 @@ public final class MetadataAttributes {
 
 	public static final String AGENT_NAME = "spring.ai.alibaba.agent.name";
 
+	public static final String AGENT_IP = "spring.ai.alibaba.agent.ip";
+
 	public static final String STUDIO_SOURCE = "spring.ai.alibaba.studio.source";
 
 }

@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.observation.model;
 
+import static com.alibaba.cloud.ai.observation.constants.MetadataAttributes.AGENT_IP;
 import static com.alibaba.cloud.ai.observation.constants.MetadataAttributes.AGENT_NAME;
 import static com.alibaba.cloud.ai.observation.constants.MetadataAttributes.PROMPT_KEY;
 import static com.alibaba.cloud.ai.observation.constants.MetadataAttributes.PROMPT_TEMPLATE;
@@ -34,6 +35,7 @@ public class PromptMetadataAwareChatModelObservationConvention extends DefaultCh
 		keyValues = promptTemplate(keyValues, context);
 		keyValues = promptVariables(keyValues, context);
 		keyValues = agentName(keyValues, context);
+		keyValues = agentIp(keyValues, context);
 		keyValues = studioSource(keyValues, context);
 
 		return keyValues;
@@ -77,6 +79,14 @@ public class PromptMetadataAwareChatModelObservationConvention extends DefaultCh
 		Map<String, String> metadata = this.getMetadata(context);
 		if (metadata.containsKey("agentName")) {
 			return keyValues.and(KeyValue.of(AGENT_NAME, metadata.get("agentName")));
+		}
+		return keyValues;
+	}
+
+	protected KeyValues agentIp(KeyValues keyValues, ChatModelObservationContext context) {
+		Map<String, String> metadata = this.getMetadata(context);
+		if (metadata.containsKey("agentIp")) {
+			return keyValues.and(KeyValue.of(AGENT_IP, metadata.get("agentIp")));
 		}
 		return keyValues;
 	}
