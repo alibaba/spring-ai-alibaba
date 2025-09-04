@@ -20,96 +20,6 @@
     @confirm="handlePublish" 
   >
     <div class="modal-form wide-modal">
-      <!-- Endpoint和MCP Streamable URL配置 -->
-      <div class="form-section">
-        <div class="endpoint-url-row" :class="{ 'single-item': !isPublished }">
-          <!-- Endpoint配置 -->
-          <div class="form-item endpoint-item">
-            <label>{{ t('mcpService.endpointRequired') }}</label>
-            <div class="endpoint-container">
-              <div class="endpoint-row">
-                <div class="custom-select">
-                  <div class="select-input-container">
-                    <div class="input-content">
-                      <Icon icon="carbon:application" width="16" class="input-icon" />
-                      <input
-                        type="text"
-                        v-model="formData.endpoint"
-                        :placeholder="t('mcpService.endpointPlaceholder')"
-                        class="select-input"
-                        @focus="isDropdownOpen = true"
-                        @input="handleEndpointInput"
-                        @keydown.enter="handleEndpointEnter"
-                        @blur="handleEndpointBlur"
-                      />
-                    </div>
-                    <button class="select-arrow-btn" @click="toggleDropdown" title="展开选项">
-                      <Icon
-                        :icon="isDropdownOpen ? 'carbon:chevron-up' : 'carbon:chevron-down'"
-                        width="14"
-                        class="chevron"
-                      />
-                    </button>
-                  </div>
-
-                  <!-- 下拉选项 - 使用绝对定位，不占用文档流 -->
-                  <div v-if="isDropdownOpen" class="select-dropdown" :class="{ 'dropdown-top': dropdownPosition === 'top' }">
-                    <div class="dropdown-header">
-                      <span>{{ t('mcpService.selectEndpoint') }}</span>
-                      <button class="close-btn" @click="isDropdownOpen = false">
-                        <Icon icon="carbon:close" width="12" />
-                      </button>
-                    </div>
-                    <div class="select-options">
-                      <button
-                        v-for="endpoint in availableEndpoints"
-                        :key="endpoint"
-                        class="select-option"
-                        :class="{ active: formData.endpoint === endpoint }"
-                        @click="selectEndpoint(endpoint)"
-                      >
-                        <span class="option-name">{{ endpoint }}</span>
-                        <Icon v-if="formData.endpoint === endpoint" icon="carbon:checkmark" width="14" class="check-icon" />
-                      </button>
-                    </div>
-                    <!-- 手工输入区域 -->
-                    <div class="manual-input-section">
-                      <div class="manual-input-container">
-                        <input
-                          type="text"
-                          v-model="manualEndpointInput"
-                          :placeholder="t('mcpService.manualInput')"
-                          class="manual-input"
-                          @keydown.enter="addManualEndpoint"
-                          @blur="handleManualInputBlur"
-                        />
-                        <button class="add-manual-btn" @click="addManualEndpoint">
-                          <Icon icon="carbon:add" width="14" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div v-if="isDropdownOpen" class="backdrop" @click="isDropdownOpen = false"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- MCP Streamable URL配置 - 仅在已发布时显示 -->
-          <div v-if="isPublished" class="form-item url-item">
-            <label>{{ t('mcpService.mcpStreamableUrl') }}</label>
-            <div class="url-container">
-              <div class="url-display" @dblclick="copyEndpointUrl" :title="t('mcpService.copyUrl') + ': ' + endpointUrl">
-                <span class="url-text">{{ endpointUrl || t('mcpService.mcpStreamableUrlPlaceholder') }}</span>
-                <Icon icon="carbon:copy" width="16" class="copy-icon" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-
       <!-- Tool Name -->
       <div class="form-section">
         <div class="form-item">
@@ -119,8 +29,6 @@
             v-model="formData.serviceName"
             :placeholder="t('mcpService.toolNamePlaceholder')"
             required
-            readonly
-            class="readonly-input"
           />
         </div>
       </div>
@@ -133,7 +41,7 @@
             v-model="formData.userRequest"
             :placeholder="t('mcpService.toolDescriptionPlaceholder')"
             class="description-field"
-            rows="3"
+            rows="4"
             required
           />
         </div>
@@ -172,6 +80,114 @@
             </tbody>
           </table>
         </div>
+        <div class="parameter-description">
+          {{ t('mcpService.parameterConfigDescription') }}
+        </div>
+      </div>
+
+      <!-- MCP服务发布选项 -->
+      <div class="form-section">
+        <div class="mcp-publish-option">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              v-model="publishAsMcpService"
+              class="checkbox-input"
+            />
+            <span class="checkbox-text">{{ t('mcpService.publishAsMcpService') }}</span>
+          </label>
+          <div class="checkbox-description">
+            {{ t('mcpService.publishAsMcpServiceDescription') }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Endpoint配置 - 仅在MCP服务发布选项选中时显示 -->
+      <div v-if="publishAsMcpService" class="form-section">
+        <div class="form-item">
+          <label>{{ t('mcpService.endpointRequired') }}</label>
+          <div class="endpoint-description">
+            {{ t('mcpService.endpointDescription') }}
+          </div>
+          <div class="endpoint-container">
+            <div class="endpoint-row">
+              <div class="custom-select">
+                <div class="select-input-container">
+                  <div class="input-content">
+                    <Icon icon="carbon:application" width="16" class="input-icon" />
+                    <input
+                      type="text"
+                      v-model="formData.endpoint"
+                      :placeholder="t('mcpService.endpointPlaceholder')"
+                      class="select-input"
+                      @focus="isDropdownOpen = true"
+                      @input="handleEndpointInput"
+                      @keydown.enter="handleEndpointEnter"
+                      @blur="handleEndpointBlur"
+                    />
+                  </div>
+                  <button class="select-arrow-btn" @click="toggleDropdown" title="展开选项">
+                    <Icon
+                      :icon="isDropdownOpen ? 'carbon:chevron-up' : 'carbon:chevron-down'"
+                      width="14"
+                      class="chevron"
+                    />
+                  </button>
+                </div>
+
+                <!-- 下拉选项 - 使用绝对定位，不占用文档流 -->
+                <div v-if="isDropdownOpen" class="select-dropdown" :class="{ 'dropdown-top': dropdownPosition === 'top' }">
+                  <div class="dropdown-header">
+                    <span>{{ t('mcpService.selectEndpoint') }}</span>
+                    <button class="close-btn" @click="isDropdownOpen = false">
+                      <Icon icon="carbon:close" width="12" />
+                    </button>
+                  </div>
+                  <div class="select-options">
+                    <button
+                      v-for="endpoint in availableEndpoints"
+                      :key="endpoint"
+                      class="select-option"
+                      :class="{ active: formData.endpoint === endpoint }"
+                      @click="selectEndpoint(endpoint)"
+                    >
+                      <span class="option-name">{{ endpoint }}</span>
+                      <Icon v-if="formData.endpoint === endpoint" icon="carbon:checkmark" width="14" class="check-icon" />
+                    </button>
+                  </div>
+                  <!-- 手工输入区域 -->
+                  <div class="manual-input-section">
+                    <div class="manual-input-container">
+                      <input
+                        type="text"
+                        v-model="manualEndpointInput"
+                        :placeholder="t('mcpService.manualInput')"
+                        class="manual-input"
+                        @keydown.enter="addManualEndpoint"
+                        @blur="handleManualInputBlur"
+                      />
+                      <button class="add-manual-btn" @click="addManualEndpoint">
+                        <Icon icon="carbon:add" width="14" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div v-if="isDropdownOpen" class="backdrop" @click="isDropdownOpen = false"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MCP Streamable URL配置 - 仅在已发布时显示 -->
+        <div v-if="isPublished" class="form-item url-item">
+          <label>{{ t('mcpService.mcpStreamableUrl') }}</label>
+          <div class="url-container">
+            <div class="url-display" @dblclick="copyEndpointUrl" :title="t('mcpService.copyUrl') + ': ' + endpointUrl">
+              <span class="url-text">{{ endpointUrl || t('mcpService.mcpStreamableUrlPlaceholder') }}</span>
+              <Icon icon="carbon:copy" width="16" class="copy-icon" />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -189,11 +205,11 @@
           {{ deleting ? t('mcpService.deleting') : t('mcpService.delete') }}
         </button>
         
-        <!-- 保存按钮 - 始终显示 -->
-        <button class="action-btn primary" @click="handleSave" :disabled="saving">
-          <Icon icon="carbon:loading" v-if="saving" class="loading-icon" />
-          <Icon icon="carbon:save" v-else />
-          {{ saving ? t('mcpService.saving') : t('mcpService.save') }}
+        <!-- 发布为服务按钮 - 始终显示 -->
+        <button class="action-btn primary" @click="handlePublish" :disabled="publishing">
+          <Icon icon="carbon:loading" v-if="publishing" class="loading-icon" />
+          <Icon icon="carbon:cloud-upload" v-else />
+          {{ publishing ? t('mcpService.publishing') : t('mcpService.publishAsService') }}
         </button>
         
         <!-- 发布开关组件 - 只在已保存时显示 -->
@@ -288,6 +304,9 @@ const currentTool = ref<CoordinatorToolVO | null>(null)
 // 发布开关相关状态
 const isSaved = ref(false)
 const isPublished = ref(false)
+
+// MCP服务发布选项
+const publishAsMcpService = ref(false)
 
 // 开关文字动态居中相关
 const toggleLabelRef = ref<HTMLElement | null>(null)
@@ -460,7 +479,7 @@ const validateForm = (): boolean => {
     showMessage(t('mcpService.toolDescriptionRequiredError'), 'error')
     return false
   }
-  if (!formData.endpoint.trim()) {
+  if (publishAsMcpService.value && !formData.endpoint.trim()) {
     showMessage(t('mcpService.endpointRequiredError'), 'error')
     return false
   }
@@ -542,6 +561,7 @@ const handlePublish = async () => {
   console.log('[PublishModal] 开始处理发布请求')
   console.log('[PublishModal] 表单数据:', formData)
   console.log('[PublishModal] 当前工具:', currentTool.value)
+  console.log('[PublishModal] 发布为MCP服务:', publishAsMcpService.value)
   
   if (!validateForm()) {
     console.log('[PublishModal] 表单验证失败')
@@ -570,8 +590,14 @@ const handlePublish = async () => {
     console.log('[PublishModal] 更新工具信息')
     currentTool.value.toolName = formData.serviceName.trim()
     currentTool.value.toolDescription = formData.userRequest.trim()
-    currentTool.value.endpoint = formData.endpoint.trim()
     currentTool.value.planTemplateId = props.planTemplateId // 确保planTemplateId被设置
+
+    // 只有在发布为MCP服务时才设置endpoint
+    if (publishAsMcpService.value) {
+      currentTool.value.endpoint = formData.endpoint.trim()
+    } else {
+      currentTool.value.endpoint = ''
+    }
 
     // 3. 更新inputSchema
     const inputSchema = formData.parameters
@@ -595,37 +621,44 @@ const handlePublish = async () => {
       currentTool.value = savedTool // 更新当前工具，包含新生成的ID
     }
 
-    // 5. 发布工具
-    console.log('[PublishModal] 步骤5: 发布工具，ID:', currentTool.value.id)
-    const publishResult = await CoordinatorToolApiService.publishCoordinatorTool(currentTool.value.id!) as any
-    console.log('[PublishModal] 发布结果:', publishResult)
-    
-    if (publishResult.success) {
-      console.log('[PublishModal] 发布成功')
-      // 设置发布状态和URL - 从响应中获取正确的endpointUrl
-      publishStatus.value = publishResult.publishStatus || 'PUBLISHED'
+    // 5. 只有在发布为MCP服务时才进行发布
+    if (publishAsMcpService.value) {
+      console.log('[PublishModal] 步骤5: 发布为MCP服务，ID:', currentTool.value.id)
+      const publishResult = await CoordinatorToolApiService.publishCoordinatorTool(currentTool.value.id!) as any
+      console.log('[PublishModal] 发布结果:', publishResult)
       
-      // 优先使用响应中的endpointUrl，如果没有则构建完整URL
-      if (publishResult.endpointUrl) {
-        endpointUrl.value = publishResult.endpointUrl
-      } else if (currentTool.value.endpoint) {
-        // 构建完整的URL
-        const baseUrl = window.location.origin
-        endpointUrl.value = `${baseUrl}/mcp${currentTool.value.endpoint}`
+      if (publishResult.success) {
+        console.log('[PublishModal] 发布成功')
+        // 设置发布状态和URL - 从响应中获取正确的endpointUrl
+        publishStatus.value = publishResult.publishStatus || 'PUBLISHED'
+        
+        // 优先使用响应中的endpointUrl，如果没有则构建完整URL
+        if (publishResult.endpointUrl) {
+          endpointUrl.value = publishResult.endpointUrl
+        } else if (currentTool.value.endpoint) {
+          // 构建完整的URL
+          const baseUrl = window.location.origin
+          endpointUrl.value = `${baseUrl}/mcp${currentTool.value.endpoint}`
+        } else {
+          endpointUrl.value = ''
+        }
+        
+        console.log('[PublishModal] 设置状态 - publishStatus:', publishStatus.value, 'endpointUrl:', endpointUrl.value)
+        showMessage(t('mcpService.publishSuccess'), 'success')
+        emit('published', currentTool.value)
+        // 不立即关闭模态框，让用户可以看到URL
+        // showModal.value = false
       } else {
-        endpointUrl.value = ''
+        throw new Error(publishResult.message)
       }
-      
-      console.log('[PublishModal] 设置状态 - publishStatus:', publishStatus.value, 'endpointUrl:', endpointUrl.value)
-      showMessage(t('mcpService.publishSuccess'), 'success')
-      emit('published', currentTool.value)
-      // 不立即关闭模态框，让用户可以看到URL
-      // showModal.value = false
     } else {
-      throw new Error(publishResult.message)
+      // 只是保存，不发布为MCP服务
+      console.log('[PublishModal] 仅保存工具，不发布为MCP服务')
+      showMessage(t('mcpService.saveSuccess'), 'success')
+      emit('published', currentTool.value)
     }
   } catch (err: any) {
-    console.error('[PublishModal] 发布MCP服务失败:', err)
+    console.error('[PublishModal] 发布服务失败:', err)
     showMessage(t('mcpService.publishFailed') + ': ' + err.message, 'error')
   } finally {
     publishing.value = false
@@ -1009,6 +1042,17 @@ onMounted(async () => {
   border-color: #667eea;
   outline: none;
   background: rgba(255, 255, 255, 0.08);
+}
+
+.parameter-description {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  border-left: 3px solid rgba(102, 126, 234, 0.3);
 }
 
 /* 删除按钮和添加按钮样式已移除 */
@@ -1485,6 +1529,52 @@ onMounted(async () => {
 .add-manual-btn:hover {
   background: rgba(102, 126, 234, 0.25);
   border-color: rgba(102, 126, 234, 0.5);
+}
+
+/* MCP服务发布选项样式 */
+.mcp-publish-option {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-input {
+  width: 16px;
+  height: 16px;
+  accent-color: #667eea;
+  cursor: pointer;
+}
+
+.checkbox-text {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+}
+
+.checkbox-description {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+  margin-left: 24px;
+}
+
+.endpoint-description {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+  margin-bottom: 8px;
 }
 
 /* 两列布局样式 */
