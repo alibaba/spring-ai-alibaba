@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.action;
 
 import com.alibaba.cloud.ai.graph.HasMetadata;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 
@@ -31,34 +32,14 @@ import static java.util.Optional.ofNullable;
  * where the interruption occurred, and any additional custom metadata.
  *
  */
-public final class InterruptionMetadata implements HasMetadata<InterruptionMetadata.Builder> {
-
-	private final String nodeId;
-
-	private final OverAllState state;
+public final class InterruptionMetadata extends NodeOutput implements HasMetadata<InterruptionMetadata.Builder> {
 
 	private final Map<String, Object> metadata;
 
 	private InterruptionMetadata(Builder builder) {
+		super(requireNonNull(builder.nodeId, "nodeId cannot be null!"),
+				requireNonNull(builder.state, "state cannot be null!"));
 		this.metadata = builder.metadata();
-		this.nodeId = requireNonNull(builder.nodeId, "nodeId cannot be null!");
-		this.state = requireNonNull(builder.state, "state cannot be null!");
-	}
-
-	/**
-	 * Gets the ID of the node where the interruption occurred.
-	 * @return the node ID
-	 */
-	public String nodeId() {
-		return nodeId;
-	}
-
-	/**
-	 * Gets the state of the graph at the time of the interruption.
-	 * @return the agent state
-	 */
-	public OverAllState state() {
-		return state;
 	}
 
 	/**
@@ -80,7 +61,7 @@ public final class InterruptionMetadata implements HasMetadata<InterruptionMetad
 				\tnodeId='%s',
 				\tstate=%s,
 				\tmetadata=%s
-				}""", nodeId, state, CollectionsUtils.toString(metadata));
+				}""", node(), state(), CollectionsUtils.toString(metadata));
 	}
 
 	/**

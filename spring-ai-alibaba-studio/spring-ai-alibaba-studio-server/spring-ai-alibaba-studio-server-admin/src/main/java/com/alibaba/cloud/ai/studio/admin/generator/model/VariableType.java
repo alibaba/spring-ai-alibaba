@@ -20,47 +20,54 @@ import java.util.Optional;
 
 public enum VariableType {
 
-	STRING("String", String.class, "string"),
+	STRING("String", String.class, "string", "String"),
 
-	NUMBER("Number", Number.class, "number"),
+	NUMBER("Number", Number.class, "number", "Number"),
 
-	BOOLEAN("Boolean", Boolean.class, "not supported"),
+	BOOLEAN("Boolean", Boolean.class, "not supported", "Boolean"),
 
-	OBJECT("Object", Object.class, "object"),
+	OBJECT("Object", Object.class, "object", "Object"),
 
-	// FIXME find appropriate type
-	FILE("File", Object.class, "file"),
+	// TODO：定义文件类型对象，以实现工作流直接使用文件
+	FILE("File", Object.class, "file", "File"),
 
-	ARRAY_STRING("String[]", String[].class, "array[string]"),
+	ARRAY_STRING("String[]", String[].class, "array[string]", "String[]"),
 
-	ARRAY_NUMBER("Number[]", Number[].class, "array[number]"),
+	ARRAY_NUMBER("Number[]", Number[].class, "array[number]", "Number[]"),
 
-	ARRAY_OBJECT("Object[]", Object[].class, "array[object]"),
+	ARRAY_OBJECT("Object[]", Object[].class, "array[object]", "Object[]"),
 
-	ARRAY_FILE("File[]", Object[].class, "file-list");
+	ARRAY_FILE("File[]", Object[].class, "file-list", "File[]");
 
-	private String value;
+	private final String value;
 
-	private Class clazz;
+	private final Class<?> clazz;
 
-	private String difyValue;
+	private final String difyValue;
 
-	VariableType(String value, Class clazz, String difyValue) {
+	private final String studioValue;
+
+	VariableType(String value, Class<?> clazz, String difyValue, String studioValue) {
 		this.value = value;
 		this.clazz = clazz;
 		this.difyValue = difyValue;
+		this.studioValue = studioValue;
 	}
 
 	public String value() {
 		return value;
 	}
 
-	public Class clazz() {
+	public Class<?> clazz() {
 		return clazz;
 	}
 
 	public String difyValue() {
 		return difyValue;
+	}
+
+	public String studioValue() {
+		return studioValue;
 	}
 
 	public static Optional<VariableType> fromValue(String value) {
@@ -69,6 +76,10 @@ public enum VariableType {
 
 	public static Optional<VariableType> fromDifyValue(String difyValue) {
 		return Arrays.stream(VariableType.values()).filter(type -> type.difyValue.equals(difyValue)).findFirst();
+	}
+
+	public static Optional<VariableType> fromStudioValue(String studioValue) {
+		return Arrays.stream(VariableType.values()).filter(type -> type.studioValue.equals(studioValue)).findFirst();
 	}
 
 }

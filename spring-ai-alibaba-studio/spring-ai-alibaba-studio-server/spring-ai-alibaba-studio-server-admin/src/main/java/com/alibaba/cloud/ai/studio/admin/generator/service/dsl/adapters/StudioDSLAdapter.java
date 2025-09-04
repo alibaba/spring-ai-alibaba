@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.adapters;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.AppMetadata;
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.chatbot.ChatBot;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Graph;
@@ -30,6 +31,9 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.Serializer;
 import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
+import com.alibaba.cloud.ai.studio.core.workflow.WorkflowConfig;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -40,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author vlsmb
@@ -47,6 +52,10 @@ import java.util.stream.Collectors;
  */
 @Component
 public class StudioDSLAdapter extends AbstractDSLAdapter {
+
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+		.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+		.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
 
 	public StudioDSLAdapter(List<NodeDataConverter<? extends NodeData>> nodeDataConverters,
 			@Qualifier("json") Serializer serializer) {
@@ -74,15 +83,34 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 		Graph graph = this.constructGraph(data);
 		workflow.setGraph(graph);
 
-		// register overAllState output key
+		// 节点的输出变量
 		List<Variable> extraVars = graph.getNodes().stream().flatMap(node -> {
-			NodeType type = NodeType.fromValue(node.getType())
-				.orElseThrow(() -> new IllegalArgumentException("Unsupported NodeType: " + node.getType()));
+			NodeType type = node.getType();
 			@SuppressWarnings("unchecked")
 			NodeDataConverter<NodeData> conv = (NodeDataConverter<NodeData>) getNodeDataConverter(type);
 			return conv.extractWorkflowVars(node.getData());
 		}).toList();
+
+		// 会话变量
+		Map<?, ?> variableConfigObj = MapReadUtil.getMapDeepValue(data, Map.class, "config", "global_config",
+				"variable_config");
+		WorkflowConfig.VariableConfig variableConfig = OBJECT_MAPPER.convertValue(variableConfigObj,
+				WorkflowConfig.VariableConfig.class);
+		List<Variable> conversationVars = variableConfig.getConversationParams()
+			.stream()
+			.map(param -> new Variable("conversation_" + param.getKey(),
+					VariableType.fromStudioValue(param.getType()).orElse(VariableType.OBJECT))
+				.setDescription(param.getDesc())
+				.setValue(param.getDefaultValue()))
+			.toList();
+
+		// 预制变量
+		List<Variable> reserveVars = List.of(new Variable("sys_query", VariableType.STRING),
+				new Variable("sys_history_list", VariableType.ARRAY_STRING)
+					.setVariableStrategy(Variable.Strategy.APPEND));
+
 		workflow.setWorkflowVars(extraVars);
+		workflow.setEnvVars(Stream.of(conversationVars, reserveVars).flatMap(List::stream).toList());
 
 		return workflow;
 	}
@@ -125,7 +153,7 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 			// 构造Node
 			Node node = new Node();
-			node.setId(nodeId).setType(nodeType.value()).setTitle(nodeTitle);
+			node.setId(nodeId).setType(nodeType).setTitle(nodeTitle);
 
 			// convert node data using specific WorkflowNodeDataConverter
 			@SuppressWarnings("unchecked")
@@ -139,14 +167,11 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 			data.setVarName(varName);
 
-			// Post-processing: Overwrite the default outputKey and refresh the outputs
-			converter.postProcessOutput(data, varName);
-
 			// 获得处理输入变量名称的Consumer，当所有节点都处理完时使用
-			postProcessConsumers.put(data.getClass(), converter.postProcessConsumer(DSLDialectType.DIFY));
+			postProcessConsumers.put(data.getClass(), converter.postProcessConsumer(DSLDialectType.STUDIO));
 
 			node.setData(data);
-			node.setType(nodeType.value());
+			node.setType(nodeType);
 			nodes.add(node);
 		}
 
@@ -200,7 +225,23 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 	@Override
 	public void validateDSLData(Map<String, Object> data) {
+		String type = MapReadUtil.getMapDeepValue(data, String.class, "type");
+		if (!"workflow".equalsIgnoreCase(type)) {
+			throw new UnsupportedOperationException("Unsupported type: " + type);
+		}
 
+		Map<?, ?> config = MapReadUtil.getMapDeepValue(data, Map.class, "config");
+		if (config == null) {
+			throw new IllegalArgumentException("config is null");
+		}
+
+		// 检查config是否为WorkflowConfig
+		try {
+			OBJECT_MAPPER.convertValue(config, WorkflowConfig.class);
+		}
+		catch (Exception e) {
+			throw new IllegalArgumentException("Invalid config!");
+		}
 	}
 
 	@Override

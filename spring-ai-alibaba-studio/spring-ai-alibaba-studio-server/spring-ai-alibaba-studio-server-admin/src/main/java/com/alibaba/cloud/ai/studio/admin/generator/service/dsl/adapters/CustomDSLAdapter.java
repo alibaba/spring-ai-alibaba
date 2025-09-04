@@ -36,7 +36,6 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.Serializer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.NotImplementedException;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -119,8 +118,7 @@ public class CustomDSLAdapter extends AbstractDSLAdapter {
 	private Node constructNode(Map<String, Object> nodeMap) {
 		Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.remove("data");
 		Node node = objectMapper.convertValue(nodeMap, Node.class);
-		NodeType nodeType = NodeType.fromValue(node.getType())
-			.orElseThrow(() -> new NotImplementedException("Unsupported Node Type: " + node.getType()));
+		NodeType nodeType = node.getType();
 		NodeDataConverter<?> nodeDataConverter = getNodeDataConverter(nodeType);
 		node.setData(nodeDataConverter.parseMapData(nodeDataMap, DSLDialectType.CUSTOM));
 		return node;

@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.ParameterParsingNodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
 import org.springframework.stereotype.Component;
@@ -73,24 +74,33 @@ public class ParameterParsingNodeSection implements NodeSection<ParameterParsing
 		sb.append(".build();\n");
 
 		// 辅助节点
-		String assistNodeCode = String.format(
-				"""
-						(state) -> {
-							String key = "%s";
-							Map<String, Object> result = %s.apply(state);
-							Object object = result.get("%s");
-							if(!(object instanceof Map<?,?> map)) {
-								return Map.of();
-							}
-							return map.entrySet().stream().collect(Collectors.toMap(e -> key + "_" + e.getKey(), Map.Entry::getValue));
-						}
-						""",
-				varName, varName, d.getOutputKey());
+		String assistNodeCode = String.format("wrapperParameterNodeAction(%s, \"%s\", \"%s\")", varName, varName,
+				d.getOutputKey());
 
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
 				assistNodeCode));
 
 		return sb.toString();
+	}
+
+	@Override
+	public String assistMethodCode(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY ->
+				"""
+						private NodeAction wrapperParameterNodeAction(NodeAction nodeAction, String nodeName, String key) {
+						    return (state) -> {
+						        Map<String, Object> result = nodeAction.apply(state);
+						        Object object = result.get(key);
+						        if(!(object instanceof Map<?,?> map)) {
+						            return Map.of();
+						        }
+						        return map.entrySet().stream().collect(Collectors.toMap(e -> nodeName + "_" + e.getKey(), Map.Entry::getValue));
+						    };
+						}
+						""";
+			default -> "";
+		};
 	}
 
 }

@@ -20,6 +20,7 @@ import java.util.List;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -27,7 +28,7 @@ public class VariableAggregatorNodeData extends NodeData {
 
 	private List<List<String>> variables;
 
-	private String outputType;
+	private VariableType outputType;
 
 	private AdvancedSettings advancedSettings;
 
@@ -37,7 +38,7 @@ public class VariableAggregatorNodeData extends NodeData {
 	}
 
 	public VariableAggregatorNodeData(List<VariableSelector> inputs, List<Variable> outputs,
-			List<List<String>> variables, String outputType, AdvancedSettings advancedSettings) {
+			List<List<String>> variables, VariableType outputType, AdvancedSettings advancedSettings) {
 		super(inputs, outputs);
 		this.variables = variables;
 		this.outputType = outputType;
@@ -54,11 +55,11 @@ public class VariableAggregatorNodeData extends NodeData {
 		return this;
 	}
 
-	public String getOutputType() {
+	public VariableType getOutputType() {
 		return outputType;
 	}
 
-	public VariableAggregatorNodeData setOutputType(String outputType) {
+	public VariableAggregatorNodeData setOutputType(VariableType outputType) {
 		this.outputType = outputType;
 		return this;
 	}

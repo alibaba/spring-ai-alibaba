@@ -20,7 +20,6 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.AgentNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
-import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 @Component
@@ -106,21 +104,15 @@ public class AgentNodeDataConverter extends AbstractNodeDataConverter<AgentNodeD
 	}
 
 	@Override
-	public void postProcessOutput(AgentNodeData nodeData, String varName) {
-		nodeData.setOutputs(List.of(AgentNodeData.getDefaultOutputSchema()));
-		super.postProcessOutput(nodeData, varName);
-	}
-
-	@Override
 	public BiConsumer<AgentNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> (nodeData, idToVarName) -> {
+			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				nodeData.setOutputs(List.of(AgentNodeData.getDefaultOutputSchema()));
 				// 处理指令和查询的模板
-				BiFunction<String, Map<String, String>, String> convertFunc = NodeDataConverter
-					.convertVarReserveFunction(dialectType);
-				nodeData.setQueryPrompt(convertFunc.apply(nodeData.getQueryPrompt(), idToVarName));
-				nodeData.setInstructionPrompt(convertFunc.apply(nodeData.getInstructionPrompt(), idToVarName));
-			};
+				nodeData.setQueryPrompt(this.convertVarTemplate(dialectType, nodeData.getQueryPrompt(), idToVarName));
+				nodeData.setInstructionPrompt(
+						this.convertVarTemplate(dialectType, nodeData.getInstructionPrompt(), idToVarName));
+			}).andThen(super.postProcessConsumer(dialectType));
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}
