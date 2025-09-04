@@ -123,46 +123,14 @@
           </div>
 
           <!-- Section 1: Plan Generator -->
-          <div class="config-section">
-            <div class="section-header">
-              <Icon icon="carbon:generate" width="16" />
-              <span>{{ $t('sidebar.planGenerator') }}</span>
-            </div>
-            <div class="generator-content">
-              <textarea
-                v-model="sidebarStore.generatorPrompt"
-                class="prompt-input"
-                :placeholder="$t('sidebar.generatorPlaceholder')"
-                rows="3"
-              ></textarea>
-              <div class="generator-actions">
-                <button
-                  class="btn btn-primary btn-sm"
-                  @click="handleGeneratePlan"
-                  :disabled="sidebarStore.isGenerating || !sidebarStore.generatorPrompt.trim()"
-                >
-                  <Icon
-                    :icon="sidebarStore.isGenerating ? 'carbon:circle-dash' : 'carbon:generate'"
-                    width="14"
-                    :class="{ spinning: sidebarStore.isGenerating }"
-                  />
-                  {{ sidebarStore.isGenerating ? $t('sidebar.generating') : $t('sidebar.generatePlan') }}
-                </button>
-                <button
-                  class="btn btn-secondary btn-sm"
-                  @click="handleUpdatePlan"
-                  :disabled="
-                    sidebarStore.isGenerating ||
-                    !sidebarStore.generatorPrompt.trim() ||
-                    !sidebarStore.jsonContent.trim()
-                  "
-                >
-                  <Icon icon="carbon:edit" width="14" />
-                  {{ $t('sidebar.updatePlan') }}
-                </button>
-              </div>
-            </div>
-          </div>
+          <PlanGenerator
+            :generator-prompt="sidebarStore.generatorPrompt"
+            :json-content="sidebarStore.jsonContent"
+            :is-generating="sidebarStore.isGenerating"
+            @generate-plan="handleGeneratePlan"
+            @update-plan="handleUpdatePlan"
+            @update-generator-prompt="handleUpdateGeneratorPrompt"
+          />
 
           <!-- Section 2: JSON Editor -->
           <JsonEditor
@@ -178,63 +146,16 @@
           />
 
           <!-- Section 3: Execution Controller -->
-          <div class="config-section">
-              <div class="section-header">
-                <Icon icon="carbon:play" width="16" />
-                <span>{{ $t('sidebar.executionController') }}</span>
-              </div>
-            <div class="execution-content">
-              <div class="params-input-group">
-                <label>{{ $t('sidebar.executionParams') }}</label>
-                <div class="params-help-text">
-                  {{ $t('sidebar.executionParamsHelp') }}
-                </div>
-                <div class="params-input-container">
-                  <input
-                    v-model="sidebarStore.executionParams"
-                    class="params-input"
-                    :placeholder="$t('sidebar.executionParamsPlaceholder')"
-                  />
-                  <button
-                    class="clear-params-btn"
-                    @click="sidebarStore.clearExecutionParams"
-                    :title="$t('sidebar.clearParams')"
-                  >
-                    <Icon icon="carbon:close" width="12" />
-                  </button>
-                </div>
-              </div>
-              <div class="api-url-display">
-                <span class="api-url-label">{{ $t('sidebar.apiUrl') }}:</span>
-                <code class="api-url">{{ sidebarStore.computedApiUrl }}</code>
-              </div>
-              <div class="api-url-display">
-                <span class="api-url-label">{{ $t('sidebar.statusApiUrl') }}:</span>
-                <code class="api-url">/api/executor/details/{planId}</code>
-              </div>
-              <button
-                class="btn btn-primary execute-btn"
-                @click="handleExecutePlan"
-                :disabled="sidebarStore.isExecuting || sidebarStore.isGenerating"
-              >
-                <Icon
-                  :icon="sidebarStore.isExecuting ? 'carbon:circle-dash' : 'carbon:play'"
-                  width="16"
-                  :class="{ spinning: sidebarStore.isExecuting }"
-                />
-                {{ sidebarStore.isExecuting ? $t('sidebar.executing') : $t('sidebar.executePlan') }}
-              </button>
-              <button
-                class="btn publish-mcp-btn"
-                @click="handlePublishMcpService"
-                :disabled="!sidebarStore.currentPlanTemplateId"
-                v-if="showPublishButton"
-              >
-                <Icon icon="carbon:application" width="16" />
-                {{ t('sidebar.publishMcpService') }}
-              </button>
-            </div>
-          </div>
+          <ExecutionController
+            :current-plan-template-id="sidebarStore.currentPlanTemplateId || ''"
+            :is-executing="sidebarStore.isExecuting"
+            :is-generating="sidebarStore.isGenerating"
+            :show-publish-button="showPublishButton"
+            @execute-plan="handleExecutePlan"
+            @publish-mcp-service="handlePublishMcpService"
+            @clear-params="handleClearExecutionParams"
+            @update-execution-params="handleUpdateExecutionParams"
+          />
         </div>
       </div>
     </div>
@@ -269,6 +190,8 @@ import PublishMcpServiceModal from '@/components/publish-mcp-service-modal/index
 import type { CoordinatorToolVO, CoordinatorToolConfig } from '@/api/coordinator-tool-api-service'
 import { CoordinatorToolApiService } from '@/api/coordinator-tool-api-service'
 import JsonEditor from './JsonEditor.vue'
+import ExecutionController from './ExecutionController.vue'
+import PlanGenerator from './PlanGenerator.vue'
 
 const { t } = useI18n()
 
@@ -406,6 +329,20 @@ const handleMcpServicePublished = (tool: CoordinatorToolVO | null) => {
     console.log('MCP服务发布成功:', tool)
     // 可以在这里添加发布成功后的处理逻辑
   }
+}
+
+// Execution Controller event handlers
+const handleClearExecutionParams = () => {
+  sidebarStore.clearExecutionParams()
+}
+
+const handleUpdateExecutionParams = (params: string) => {
+  sidebarStore.executionParams = params
+}
+
+// Plan Generator event handlers
+const handleUpdateGeneratorPrompt = (prompt: string) => {
+  sidebarStore.generatorPrompt = prompt
 }
 
 // Utility functions
@@ -664,31 +601,8 @@ defineExpose({
         }
       }
 
-      .config-section {
-        margin-bottom: 16px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        padding: 12px;
 
-        .section-header {
-          display: flex;
-          align-items: center;
-          margin-bottom: 12px;
-          color: #667eea;
-          font-size: 13px;
-          font-weight: 600;
-          gap: 8px;
-
-          .section-actions {
-            margin-left: auto;
-            display: flex;
-            gap: 6px;
-          }
-        }
-
-        .json-editor,
-        .prompt-input,
-        .params-input {
+        .json-editor {
           width: 100%;
           background: rgba(0, 0, 0, 0.3);
           border: 1px solid rgba(255, 255, 255, 0.2);
@@ -722,172 +636,11 @@ defineExpose({
             font-variant-ligatures: none;
         }
 
-        .generator-content {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
 
-          .generator-actions {
-            display: flex;
-            gap: 8px;
-          }
-        }
-
-        .execution-content {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-
-          .params-input-group {
-            label {
-              display: block;
-              margin-bottom: 6px;
-              font-size: 12px;
-              color: rgba(255, 255, 255, 0.8);
-              font-weight: 500;
-            }
-
-            .params-input-container {
-              position: relative;
-              display: flex;
-              align-items: center;
-
-              .params-input {
-                min-height: auto;
-                padding-right: 32px;
-              }
-
-              .clear-params-btn {
-                position: absolute;
-                right: 8px;
-                width: 20px;
-                height: 20px;
-                background: transparent;
-                border: none;
-                border-radius: 4px;
-                color: rgba(255, 255, 255, 0.5);
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-
-                &:hover {
-                  background: rgba(255, 0, 0, 0.2);
-                  color: #ff6b6b;
-                }
-              }
-            }
-
-            .params-help-text {
-              margin-bottom: 6px;
-              font-size: 11px;
-              color: rgba(255, 255, 255, 0.6);
-              line-height: 1.4;
-              padding: 6px 8px;
-              background: rgba(102, 126, 234, 0.1);
-              border: 1px solid rgba(102, 126, 234, 0.2);
-              border-radius: 4px;
-            }
-          }
-
-          .api-url-display {
-            padding: 8px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            font-size: 11px;
-
-            .api-url-label {
-              color: rgba(255, 255, 255, 0.7);
-              margin-right: 8px;
-            }
-
-            .api-url {
-              color: #64b5f6;
-              font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-              word-break: break-all;
-            }
-          }
-
-          .execute-btn,
-          .publish-mcp-btn {
-            padding: 10px 16px;
-            font-size: 13px;
-            font-weight: 500;
-            width: 100%;
-            margin-bottom: 8px;
-          }
-
-          .publish-mcp-btn {
-            margin-bottom: 0;
-          }
-        }
       }
     }
   }
 
-  .btn {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-
-    &.btn-sm {
-      padding: 4px 8px;
-      font-size: 11px;
-    }
-
-    &.btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-
-      &:hover:not(:disabled) {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-      }
-    }
-
-    &.btn-secondary {
-      background: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-
-      &:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-      }
-    }
-
-    &.publish-mcp-btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #ffffff;
-      border: none;
-
-      &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-      }
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none !important;
-      box-shadow: none !important;
-    }
-
-    .spinning {
-      animation: spin 1s linear infinite;
-    }
-  }
 
   .new-task-section {
     margin-bottom: 16px;
@@ -1056,7 +809,6 @@ defineExpose({
       }
     }
   }
-}
 
 @keyframes spin {
   from {
