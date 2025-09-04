@@ -37,6 +37,6 @@ public class McpInspectorServiceImpl implements McpInspectorService {
     //拿到对应的信息
     @Override
     public R<String> init(McpTransportType transportType , ServerParameters serverParameters) {
-
+        return null;
     }
 }

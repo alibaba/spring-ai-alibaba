@@ -21,7 +21,5 @@ import com.alibaba.cloud.ai.common.R;
 import io.modelcontextprotocol.client.transport.ServerParameters;
 
 public interface McpInspectorService {
-
-
     R<String> init(McpTransportType transportType , ServerParameters serverParameters );
 }

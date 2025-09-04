@@ -15,12 +15,34 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.strategy;
+package com.alibaba.cloud.ai.strategy.impl;
 
+import com.alibaba.cloud.ai.common.McpTransportType;
+import com.alibaba.cloud.ai.container.McpClientContainer;
+import com.alibaba.cloud.ai.strategy.McpInspectorTransportStrategy;
 import io.modelcontextprotocol.client.McpSyncClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-public interface McpInspectorTransportStrategy {
+@Component
+public class StdioTransportProcesser extends AbstractTransport{
+    @Autowired
+    private McpClientContainer mcpClientContainer;
 
-    McpSyncClient connect();
+    @Override
+    public McpSyncClient connect() {
+        //去连接对应的mcpServer
+        return null;
+    }
+
+    @Override
+    protected McpTransportType getTransportType() {
+        return McpTransportType.STDIO;
+    }
+
+    @Override
+    protected String getClientName() {
+        return "STDIO_" + counter.getAndIncrement();
+    }
 
 }
