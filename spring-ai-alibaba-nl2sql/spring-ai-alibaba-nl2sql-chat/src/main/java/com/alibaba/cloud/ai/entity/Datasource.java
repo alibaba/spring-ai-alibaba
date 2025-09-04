@@ -232,6 +232,11 @@ public class Datasource {
 						"jdbc:postgresql://%s:%d/%s?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai",
 						host, port, databaseName);
 			}
+			else if ("h2".equalsIgnoreCase(type)) {
+				this.connectionUrl = String.format(
+						"jdbc:h2:mem:%s;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=true;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE",
+						databaseName);
+			}
 		}
 	}
 
