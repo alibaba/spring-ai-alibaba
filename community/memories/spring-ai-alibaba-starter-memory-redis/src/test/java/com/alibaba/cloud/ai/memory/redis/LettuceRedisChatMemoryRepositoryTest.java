@@ -183,7 +183,6 @@ public class LettuceRedisChatMemoryRepositoryTest {
 	}
 
 	@Test
-	@Disabled("Disabled until fix the bug")
 	void saveAndLoadUserMessageWithUriMedia() {
 		var conversationId = UUID.randomUUID().toString();
 		var userMessage = UserMessage.builder()
