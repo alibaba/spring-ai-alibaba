@@ -205,7 +205,8 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 			documentModule.addDeserializer(docClass, documentDeserializer);
 
-		} catch (ClassNotFoundException e) {
+		}
+		catch (ClassNotFoundException e) {
 			// Spring AI Document class not available, skip registration
 		}
 
@@ -818,7 +819,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 		@Override
 		public Object deserialize(com.fasterxml.jackson.core.JsonParser p,
-								  com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
 			try {
 				// Parse the JSON node from the input stream
 				com.fasterxml.jackson.databind.JsonNode node = p.getCodec().readTree(p);
@@ -831,24 +832,28 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 				// Load Document class using reflection to avoid hard dependency
 				Class<?> documentClass = Class.forName("org.springframework.ai.document.Document");
 
-				// Try constructor with id, content and metadata (most complete constructor)
+				// Try constructor with id, content and metadata (most complete
+				// constructor)
 				try {
 					return documentClass.getConstructor(String.class, String.class, java.util.Map.class)
-							.newInstance(id, content, metadata);
-				} catch (Exception e) {
+						.newInstance(id, content, metadata);
+				}
+				catch (Exception e) {
 					// Fallback: try constructor with content and metadata
 					try {
 						return documentClass.getConstructor(String.class, java.util.Map.class)
-								.newInstance(content, metadata);
-					} catch (Exception ex) {
+							.newInstance(content, metadata);
+					}
+					catch (Exception ex) {
 						// Final fallback: content-only constructor
-						return documentClass.getConstructor(String.class)
-								.newInstance(content != null ? content : "");
+						return documentClass.getConstructor(String.class).newInstance(content != null ? content : "");
 					}
 				}
 
-			} catch (Exception e) {
-				// Throw explicit exception instead of creating empty object to maintain data integrity
+			}
+			catch (Exception e) {
+				// Throw explicit exception instead of creating empty object to maintain
+				// data integrity
 				throw new com.fasterxml.jackson.databind.JsonMappingException(p,
 						"Failed to deserialize Spring AI Document: " + e.getMessage(), e);
 			}
@@ -860,76 +865,77 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		private String extractId(com.fasterxml.jackson.databind.JsonNode node) {
 			// Try different field names for document ID
 			return java.util.Optional.ofNullable(node.get("id"))
+				.map(com.fasterxml.jackson.databind.JsonNode::asText)
+				.orElseGet(() -> java.util.Optional.ofNullable(node.get("docId"))
 					.map(com.fasterxml.jackson.databind.JsonNode::asText)
-					.orElseGet(() -> java.util.Optional.ofNullable(node.get("docId"))
-							.map(com.fasterxml.jackson.databind.JsonNode::asText)
-							.orElseGet(() -> java.util.Optional.ofNullable(node.get("documentId"))
-									.map(com.fasterxml.jackson.databind.JsonNode::asText)
-									.orElse(null))); // Return null if no ID found
+					.orElseGet(() -> java.util.Optional.ofNullable(node.get("documentId"))
+						.map(com.fasterxml.jackson.databind.JsonNode::asText)
+						.orElse(null))); // Return null if no ID found
 		}
 
 		/**
 		 * Extract content from JsonNode - supports multiple field names
 		 */
 		private String extractContent(com.fasterxml.jackson.databind.JsonNode node) {
-			// Try different field names for content, similar to SpringAIMessageDeserializer
-			return java.util.Optional.ofNullable(node.get("content"))
-					.map(contentNode -> {
-						// Handle null values properly - return empty string instead of "null"
-						if (contentNode.isNull()) {
-							return "";
-						}
-						return contentNode.asText();
-					})
-					.orElseGet(() -> java.util.Optional.ofNullable(node.get("text"))
-							.map(textNode -> {
-								if (textNode.isNull()) {
-									return "";
-								}
-								return textNode.asText();
-							})
-							.orElseGet(() -> java.util.Optional.ofNullable(node.get("pageContent"))
-									.map(pageContentNode -> {
-										if (pageContentNode.isNull()) {
-											return "";
-										}
-										return pageContentNode.asText();
-									})
-									.orElseGet(() -> {
-										// If node is plain text, use it directly
-										if (node.isTextual()) {
-											return node.asText();
-										}
-										return ""; // Fallback to empty string for content
-									})));
+			// Try different field names for content, similar to
+			// SpringAIMessageDeserializer
+			return java.util.Optional.ofNullable(node.get("content")).map(contentNode -> {
+				// Handle null values properly - return empty string instead of "null"
+				if (contentNode.isNull()) {
+					return "";
+				}
+				return contentNode.asText();
+			}).orElseGet(() -> java.util.Optional.ofNullable(node.get("text")).map(textNode -> {
+				if (textNode.isNull()) {
+					return "";
+				}
+				return textNode.asText();
+			}).orElseGet(() -> java.util.Optional.ofNullable(node.get("pageContent")).map(pageContentNode -> {
+				if (pageContentNode.isNull()) {
+					return "";
+				}
+				return pageContentNode.asText();
+			}).orElseGet(() -> {
+				// If node is plain text, use it directly
+				if (node.isTextual()) {
+					return node.asText();
+				}
+				return ""; // Fallback to empty string for content
+			})));
 		}
 
 		/**
 		 * Extract metadata from JsonNode - handles nested object structure
 		 * @param node The JSON node containing metadata
 		 */
-		private java.util.Map<String, Object> extractMetadata(com.fasterxml.jackson.databind.JsonNode node
-													 ) {
+		private java.util.Map<String, Object> extractMetadata(com.fasterxml.jackson.databind.JsonNode node) {
 			java.util.Map<String, Object> metadata = new java.util.HashMap<>();
 
 			// Extract metadata object if present
 			com.fasterxml.jackson.databind.JsonNode metadataNode = node.get("metadata");
 			if (metadataNode != null && metadataNode.isObject()) {
-				// Iterate through all metadata fields and convert to appropriate Java types
+				// Iterate through all metadata fields and convert to appropriate Java
+				// types
 				metadataNode.fields().forEachRemaining(entry -> {
 					com.fasterxml.jackson.databind.JsonNode value = entry.getValue();
 					if (value.isTextual()) {
 						metadata.put(entry.getKey(), value.asText());
-					} else if (value.isNumber()) {
+					}
+					else if (value.isNumber()) {
 						metadata.put(entry.getKey(), value.numberValue());
-					} else if (value.isBoolean()) {
+					}
+					else if (value.isBoolean()) {
 						metadata.put(entry.getKey(), value.asBoolean());
-					} else if (value.isNull()) {
+					}
+					else if (value.isNull()) {
 						metadata.put(entry.getKey(), null);
-					} else if (value.isObject() || value.isArray()) {
-						// For complex objects, use recursive conversion to HashMap structure
+					}
+					else if (value.isObject() || value.isArray()) {
+						// For complex objects, use recursive conversion to HashMap
+						// structure
 						metadata.put(entry.getKey(), convertToHashMapStructure(value));
-					} else {
+					}
+					else {
 						metadata.put(entry.getKey(), value.toString());
 					}
 				});
@@ -939,7 +945,8 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		}
 
 		/**
-		 * Converts JsonNode to HashMap/ArrayList/primitive structure (same as FallbackObjectDeserializer)
+		 * Converts JsonNode to HashMap/ArrayList/primitive structure (same as
+		 * FallbackObjectDeserializer)
 		 */
 		private Object convertToHashMapStructure(com.fasterxml.jackson.databind.JsonNode node) {
 			if (node == null || node.isNull()) {
@@ -972,5 +979,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 				return node.asText();
 			}
 		}
+
 	}
+
 }
