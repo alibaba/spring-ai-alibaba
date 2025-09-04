@@ -90,7 +90,8 @@ public class ReactAgentProvider implements AgentTypeProvider {
     public CodeSections render(AgentShell shell, Map<String, Object> handle, RenderContext ctx, List<String> childVarNames) {
         String var = ctx.nextVar("reactAgent_");
 
-        String instruction = str(handle.get("instruction"));
+        // instruction 优先使用壳层，兼容旧 handle.instruction
+        String instruction = shell.getInstruction() != null && !shell.getInstruction().isBlank() ? shell.getInstruction() : str(handle.get("instruction"));
         Integer maxIter = toInt(handle.get("max_iterations"));
         boolean hasResolver = handle.containsKey("resolver") && str(handle.get("resolver")) != null;
 
@@ -115,11 +116,25 @@ public class ReactAgentProvider implements AgentTypeProvider {
         if (hasResolver) {
             code.append(tab(1)).append(".resolver(toolCallbackResolver)\n");
         }
-        // state.strategies → KeyStrategy
+        // state.strategies → KeyStrategy（全量映射，缺省时为 messages 追加策略）
         code.append(tab(1)).append(".state(() -> {\n")
-                .append(tab(2)).append("Map<String, KeyStrategy> strategies = new HashMap<>();\n")
-                .append(tab(2)).append("strategies.put(\"messages\", new AppendStrategy());\n")
-                .append(tab(2)).append("// TODO: map additional strategies from handle.state.strategies\n")
+                .append(tab(2)).append("Map<String, KeyStrategy> strategies = new HashMap<>();\n");
+
+        // 解析 handle.state.strategies 生成代码
+        Object stateObj = handle.get("state");
+        if (stateObj instanceof Map<?,?> stateMap) {
+            Object strategiesObj = stateMap.get("strategies");
+            if (strategiesObj instanceof Map<?,?> strategiesMap) {
+                for (Map.Entry<?,?> e : strategiesMap.entrySet()) {
+                    String k = String.valueOf(e.getKey());
+                    String v = String.valueOf(e.getValue());
+                    String strategyNew = (v != null && v.equalsIgnoreCase("append")) ? "new AppendStrategy()" : "new ReplaceStrategy()";
+                    code.append(tab(2)).append("strategies.put(\"").append(esc(k)).append("\", ").append(strategyNew).append(");\n");
+                }
+            }
+        }
+        // 若未显式指定 messages 策略，则默认替换
+        code.append(tab(2)).append("strategies.putIfAbsent(\"messages\", new ReplaceStrategy());\n")
                 .append(tab(2)).append("return strategies;\n")
                 .append(tab(1)).append("})\n")
                 .append(tab(1)).append(".build();\n");

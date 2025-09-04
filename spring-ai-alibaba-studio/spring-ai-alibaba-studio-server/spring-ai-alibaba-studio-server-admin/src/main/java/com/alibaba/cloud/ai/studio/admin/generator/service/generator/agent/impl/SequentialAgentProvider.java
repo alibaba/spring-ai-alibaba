@@ -76,11 +76,22 @@ public class SequentialAgentProvider implements AgentTypeProvider {
         if (childVarNames != null && !childVarNames.isEmpty()) {
             code.append(tab(1)).append(".subAgents(List.of(").append(String.join(", ", childVarNames)).append("))\n");
         }
-        // state.strategies
+        // state.strategies（全量映射，默认 messages=Append）
         code.append(tab(1)).append(".state(() -> {\n")
-                .append(tab(2)).append("Map<String, KeyStrategy> strategies = new HashMap<>();\n")
-                .append(tab(2)).append("strategies.put(\"messages\", new AppendStrategy());\n")
-                .append(tab(2)).append("// TODO: map additional strategies from handle.state.strategies\n")
+                .append(tab(2)).append("Map<String, KeyStrategy> strategies = new HashMap<>();\n");
+        Object stateObj = handle.get("state");
+        if (stateObj instanceof Map<?,?> stateMap) {
+            Object strategiesObj = stateMap.get("strategies");
+            if (strategiesObj instanceof Map<?,?> strategiesMap) {
+                for (Map.Entry<?,?> e : strategiesMap.entrySet()) {
+                    String k = String.valueOf(e.getKey());
+                    String v = String.valueOf(e.getValue());
+                    String strategyNew = (v != null && v.equalsIgnoreCase("append")) ? "new AppendStrategy()" : "new ReplaceStrategy()";
+                    code.append(tab(2)).append("strategies.put(\"").append(esc(k)).append("\", ").append(strategyNew).append(");\n");
+                }
+            }
+        }
+        code.append(tab(2)).append("strategies.putIfAbsent(\"messages\", new AppendStrategy());\n")
                 .append(tab(2)).append("return strategies;\n")
                 .append(tab(1)).append("})\n")
                 .append(tab(1)).append(".build();\n");

@@ -55,7 +55,11 @@ public class AgentDSLAdapter implements DSLAdapter {
         agent.setAgentClass(asString(firstNonBlank((String) root.get("type"), (String) root.get("agent_class"))));
         agent.setName(asString(root.get("name")));
         agent.setDescription(asString(root.get("description")));
+        agent.setInstruction(asString(root.get("instruction")));
         agent.setInputKey(asString(root.get("input_key")));
+        if (root.get("input_keys") instanceof List<?> iks) {
+            agent.setInputKeys((List<String>) (List<?>) iks);
+        }
         agent.setOutputKey(asString(root.get("output_key")));
 
         // 透传 handle（不感知字段）
@@ -74,7 +78,11 @@ public class AgentDSLAdapter implements DSLAdapter {
                     child.setAgentClass(asString(firstNonBlank((String) childRoot.get("type"), (String) childRoot.get("agent_class"))));
                     child.setName(asString(childRoot.get("name")));
                     child.setDescription(asString(childRoot.get("description")));
+                    child.setInstruction(asString(childRoot.get("instruction")));
                     child.setInputKey(asString(childRoot.get("input_key")));
+                    if (childRoot.get("input_keys") instanceof List<?> ciks) {
+                        child.setInputKeys((List<String>) (List<?>) ciks);
+                    }
                     child.setOutputKey(asString(childRoot.get("output_key")));
                     if (childRoot.get("handle") instanceof Map<?,?> ch) {
                         child.setHandle((Map<String,Object>) ch);
@@ -201,7 +209,11 @@ public class AgentDSLAdapter implements DSLAdapter {
         }
         m.put("name", agent.getName());
         m.put("description", agent.getDescription());
+        m.put("instruction", agent.getInstruction());
         m.put("input_key", agent.getInputKey());
+        if (agent.getInputKeys() != null && !agent.getInputKeys().isEmpty()) {
+            m.put("input_keys", agent.getInputKeys());
+        }
         m.put("output_key", agent.getOutputKey());
 
         // LLM

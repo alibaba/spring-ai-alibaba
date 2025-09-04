@@ -30,6 +30,8 @@ public class Agent {
     private String description;
     private String outputKey;
     private String inputKey;
+    // 新增：支持多输入键（与 schema: input_keys 对齐）
+    private List<String> inputKeys;
 
     // LLM相关配置
     private String model;
@@ -72,6 +74,9 @@ public class Agent {
 
     public String getInputKey() { return inputKey; }
     public void setInputKey(String inputKey) { this.inputKey = inputKey; }
+
+    public List<String> getInputKeys() { return inputKeys; }
+    public void setInputKeys(List<String> inputKeys) { this.inputKeys = inputKeys; }
 
     public String getModel() { return model; }
     public void setModel(String model) { this.model = model; }

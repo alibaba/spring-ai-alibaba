@@ -18,7 +18,6 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Agent 项目生成器：将 Agent  Schema 转为最小可运行工程（编译 Agent 为 CompiledGraph）
@@ -134,7 +133,15 @@ public class AgentProjectGenerator implements ProjectGenerator {
 
         // 当前节点由 Provider 渲染
         AgentTypeProvider provider = providerRegistry.get(agent.getAgentClass());
-        AgentShell shell = AgentShell.of(agent.getAgentClass(), agent.getName(), agent.getDescription(), agent.getInputKey(), agent.getOutputKey());
+        AgentShell shell = AgentShell.of(
+            agent.getAgentClass(),
+            agent.getName(),
+            agent.getDescription(),
+            agent.getInstruction(),
+            agent.getInputKey(),
+            agent.getInputKeys(),
+            agent.getOutputKey()
+        );
         Map<String,Object> handle = agent.getHandle() == null ? java.util.Map.of() : agent.getHandle();
         CodeSections me = provider.render(shell, handle, ctx, childVars);
 
