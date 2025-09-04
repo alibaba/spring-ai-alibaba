@@ -717,6 +717,7 @@ const words: I18nType = {
     // 子计划执行相关
     subPlanExecutions: '子计划执行',
     agentExecutions: '智能体执行',
+    agentExecutionSequence: '智能体执行序列',
     progress: '进度',
     thinkActSteps: '思考-行动步骤',
     unknownAgent: '未知智能体',

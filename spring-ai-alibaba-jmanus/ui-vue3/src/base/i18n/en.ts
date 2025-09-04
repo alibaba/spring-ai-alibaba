@@ -749,6 +749,7 @@ const words: I18nType = {
     // Sub-plan execution related
     subPlanExecutions: 'Sub-Plan Executions',
     agentExecutions: 'Agent Executions',
+    agentExecutionSequence: 'Agent Execution Sequence',
     progress: 'Progress',
     thinkActSteps: 'Think-Act Steps',
     unknownAgent: 'Unknown Agent',
