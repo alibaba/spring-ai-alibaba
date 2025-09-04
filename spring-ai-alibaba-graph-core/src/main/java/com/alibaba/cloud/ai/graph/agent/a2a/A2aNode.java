@@ -15,9 +15,14 @@
  */
 package com.alibaba.cloud.ai.graph.agent.a2a;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.a2a.spec.AgentCard;
 import org.apache.http.HttpEntity;
@@ -28,11 +33,17 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.springframework.util.StringUtils;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class A2aNode implements NodeAction {
 
@@ -59,25 +70,363 @@ public class A2aNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		String requestPayload = this.streaming ? buildSendStreamingMessageRequest(state, this.inputKeyFromParent)
-				: buildSendMessageRequest(state, this.inputKeyFromParent);
+		if (streaming) {
+			AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state);
+			return Map.of(StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages",
+					generator);
+		}
+		else {
+			String requestPayload = buildSendMessageRequest(state, this.inputKeyFromParent);
+			String resultText = sendMessageToServer(this.agentCard, requestPayload);
+			Map<String, Object> resultMap = autoDetectAndParseResponse(resultText);
+			Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
+			String responseText = extractResponseText(result);
+			return Map.of(this.outputKeyToParent, responseText);
+		}
+	}
 
+	/**
+	 * Create a streaming generator.
+	 */
+	private AsyncGenerator<NodeOutput> createStreamingGenerator(OverAllState state) throws Exception {
+		final String requestPayload = buildSendStreamingMessageRequest(state, this.inputKeyFromParent);
+		final BlockingQueue<AsyncGenerator.Data<NodeOutput>> queue = new LinkedBlockingQueue<>(1000);
+		final String outputKey = StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages";
+		final StringBuilder accumulated = new StringBuilder();
+
+		return AsyncGeneratorQueue.of(queue, q -> {
+			String baseUrl = resolveAgentBaseUrl(this.agentCard);
+			if (baseUrl == null || baseUrl.isBlank()) {
+				StreamingOutput errorOutput = new StreamingOutput("Error: AgentCard.url is empty", "a2aNode", state);
+				queue.add(AsyncGenerator.Data.of(errorOutput));
+				return;
+			}
+
+			try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+				HttpPost post = new HttpPost(baseUrl);
+				post.setHeader("Content-Type", "application/json");
+				post.setEntity(new StringEntity(requestPayload, ContentType.APPLICATION_JSON));
+
+				try (CloseableHttpResponse response = httpClient.execute(post)) {
+					int statusCode = response.getStatusLine().getStatusCode();
+					if (statusCode != 200) {
+						StreamingOutput errorOutput = new StreamingOutput("HTTP request failed, status: " + statusCode,
+								"a2aNode", state);
+						queue.add(AsyncGenerator.Data.of(errorOutput));
+						return;
+					}
+
+					HttpEntity entity = response.getEntity();
+					if (entity == null) {
+						StreamingOutput errorOutput = new StreamingOutput("Empty HTTP entity", "a2aNode", state);
+						queue.add(AsyncGenerator.Data.of(errorOutput));
+						return;
+					}
+
+					String contentType = entity.getContentType() != null ? entity.getContentType().getValue() : "";
+					boolean isEventStream = contentType.contains("text/event-stream");
+
+					if (isEventStream) {
+						try (BufferedReader reader = new BufferedReader(
+								new InputStreamReader(entity.getContent(), StandardCharsets.UTF_8))) {
+							String line;
+							while ((line = reader.readLine()) != null) {
+								String trimmed = line.trim();
+								if (!trimmed.startsWith("data:")) {
+									continue;
+								}
+								String jsonContent = trimmed.substring(5).trim();
+								if ("[DONE]".equals(jsonContent)) {
+									break;
+								}
+								try {
+									Map<String, Object> parsed = JSON.parseObject(jsonContent,
+											new TypeReference<Map<String, Object>>() {
+											});
+									Map<String, Object> result = (Map<String, Object>) parsed.get("result");
+									if (result != null) {
+										String text = extractResponseText(result);
+										if (text != null && !text.isEmpty()) {
+											accumulated.append(text);
+											queue.add(AsyncGenerator.Data
+												.of(new StreamingOutput(text, "a2aNode", state)));
+										}
+									}
+								}
+								catch (Exception ignore) {
+								}
+							}
+						}
+					}
+					else {
+						// Non-SSE: read the full body and emit a single output
+						String body = EntityUtils.toString(entity, "UTF-8");
+						try {
+							Map<String, Object> resultMap = JSON.parseObject(body,
+									new TypeReference<Map<String, Object>>() {
+									});
+							Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
+							String text = extractResponseText(result);
+							if (text != null && !text.isEmpty()) {
+								accumulated.append(text);
+								queue.add(AsyncGenerator.Data.of(new StreamingOutput(text, "a2aNode", state)));
+							}
+						}
+						catch (Exception ex) {
+							queue.add(AsyncGenerator.Data
+								.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", state)));
+						}
+					}
+				}
+			}
+			catch (Exception e) {
+				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", state);
+				queue.add(AsyncGenerator.Data.of(errorOutput));
+			}
+			finally {
+				queue.add(AsyncGenerator.Data.done(Map.of(outputKey, accumulated.toString())));
+			}
+		});
+	}
+
+	/**
+	 * Check whether the given text looks like an SSE response.
+	 */
+	private boolean isSSEResponse(String responseText) {
+		return responseText.contains("data: ");
+	}
+
+	/**
+	 * Create a streaming generator for SSE-formatted text.
+	 */
+	private AsyncGenerator<NodeOutput> createSseStreamingGenerator(String sseResponseText, OverAllState state) {
+		// Use the new real-time streaming method
+		return createRealTimeSseStreamingGenerator(sseResponseText, state);
+	}
+
+	/**
+	 * Create a real-time SSE streaming generator (recommended). This method starts
+	 * processing SSE data immediately and pushes chunks as they arrive.
+	 */
+	private AsyncGenerator<NodeOutput> createRealTimeSseStreamingGenerator(String sseResponseText, OverAllState state) {
+		BlockingQueue<AsyncGenerator.Data<NodeOutput>> queue = new LinkedBlockingQueue<>(1000);
+		final String outputKey = StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages";
+		final StringBuilder accumulated = new StringBuilder();
+
+		// Start async processing immediately; do not wait for the entire content
+		return AsyncGeneratorQueue.of(queue, executor -> {
+			try {
+				// Process SSE response line by line to achieve true streaming
+				String[] lines = sseResponseText.split("\n");
+
+				for (String line : lines) {
+					line = line.trim();
+					if (line.startsWith("data: ")) {
+						try {
+							String jsonContent = line.substring(6); // remove "data: "
+																	// prefix
+
+							// End marker
+							if ("[DONE]".equals(jsonContent)) {
+								break;
+							}
+
+							Map<String, Object> parsed = JSON.parseObject(jsonContent,
+									new TypeReference<Map<String, Object>>() {
+									});
+							Map<String, Object> result = (Map<String, Object>) parsed.get("result");
+
+							if (result != null) {
+								StreamingOutput streamingOutput = createStreamingOutputFromResult(result, state);
+								if (streamingOutput != null) {
+									queue.add(AsyncGenerator.Data.of(streamingOutput));
+								}
+							}
+						}
+						catch (Exception e) {
+							// Ignore parse errors and continue
+							continue;
+						}
+					}
+				}
+
+				// Signal completion with final result value
+				queue.add(AsyncGenerator.Data.done(Map.of(outputKey, accumulated.toString())));
+
+			}
+			catch (Exception e) {
+				// On error, emit an error message and signal completion
+				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", state);
+				queue.add(AsyncGenerator.Data.of(errorOutput));
+				queue.add(AsyncGenerator.Data.done(Map.of(outputKey, accumulated.toString())));
+			}
+		});
+	}
+
+	/**
+	 * Create a single-output streaming generator (for non-SSE responses).
+	 */
+	private AsyncGenerator<NodeOutput> createSingleStreamingGenerator(String responseText, OverAllState state) {
+		BlockingQueue<AsyncGenerator.Data<NodeOutput>> queue = new LinkedBlockingQueue<>(10);
+		final String outputKey = StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages";
+		final StringBuilder accumulated = new StringBuilder();
+
+		try {
+			Map<String, Object> resultMap = JSON.parseObject(responseText, new TypeReference<Map<String, Object>>() {
+			});
+			Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
+			String responseText2 = extractResponseText(result);
+
+			if (responseText2 != null && !responseText2.isEmpty()) {
+				accumulated.append(responseText2);
+				StreamingOutput streamingOutput = new StreamingOutput(responseText2, "a2aNode", state);
+				queue.add(AsyncGenerator.Data.of(streamingOutput));
+			}
+		}
+		catch (Exception e) {
+			// On parse failure, emit an error message
+			StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", state);
+			queue.add(AsyncGenerator.Data.of(errorOutput));
+		}
+
+		// Signal completion with final result value
+		queue.add(AsyncGenerator.Data.done(Map.of(outputKey, accumulated.toString())));
+
+		return new AsyncGeneratorQueue.Generator<>(queue);
+	}
+
+	/**
+	 * Create a StreamingOutput from the parsed result map.
+	 */
+	private StreamingOutput createStreamingOutputFromResult(Map<String, Object> result, OverAllState state) {
+		String text = extractResponseText(result);
+		if (text != null && !text.isEmpty()) {
+			return new StreamingOutput(text, "a2aNode", state);
+		}
+		return null;
+	}
+
+	/**
+	 * Get the streaming generator (similar to LlmNode.stream).
+	 */
+	public AsyncGenerator<NodeOutput> stream(OverAllState state) throws Exception {
+		if (!this.streaming) {
+			throw new IllegalStateException("Streaming is not enabled for this A2aNode");
+		}
+		return createStreamingGenerator(state);
+	}
+
+	/**
+	 * Get the non-streaming result (similar to LlmNode.call).
+	 */
+	public String call(OverAllState state) throws Exception {
+		String requestPayload = buildSendMessageRequest(state, this.inputKeyFromParent);
 		String resultText = sendMessageToServer(this.agentCard, requestPayload);
-
-		Map<String, Object> resultMap = JSON.parseObject(resultText, Map.class);
+		Map<String, Object> resultMap = autoDetectAndParseResponse(resultText);
 		Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
+		return extractResponseText(result);
+	}
 
-		String responseText = extractResponseText(result);
-		return Map.of(this.outputKeyToParent, responseText);
+	/**
+	 * Auto-detect response format and parse accordingly.
+	 * @param responseText The raw response text
+	 * @return Parsed result map
+	 */
+	private Map<String, Object> autoDetectAndParseResponse(String responseText) {
+		if (responseText.contains("data: ")) {
+			return parseStreamingResponse(responseText);
+		}
+		else {
+			// Standard JSON response
+			return JSON.parseObject(responseText, new TypeReference<Map<String, Object>>() {
+			});
+		}
+	}
+
+	/**
+	 * Parse streaming response in Server-Sent Events (SSE) format.
+	 * @param responseText The raw SSE response text
+	 * @return Parsed result map
+	 */
+	private Map<String, Object> parseStreamingResponse(String responseText) {
+		String[] lines = responseText.split("\n");
+		Map<String, Object> lastResult = null;
+		for (String line : lines) {
+			line = line.trim();
+			if (line.startsWith("data: ")) {
+				String jsonContent = line.substring(6); // remove "data: " prefix
+				try {
+					Map<String, Object> parsed = JSON.parseObject(jsonContent,
+							new TypeReference<Map<String, Object>>() {
+							});
+					Map<String, Object> result = (Map<String, Object>) parsed.get("result");
+					if (result != null) {
+						if (result.containsKey("artifact") || lastResult == null) {
+							lastResult = result;
+						}
+					}
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		if (lastResult == null) {
+			throw new IllegalStateException("Failed to parse any valid result from streaming response");
+		}
+		Map<String, Object> resultMap = new HashMap<>();
+		resultMap.put("result", lastResult);
+		return resultMap;
 	}
 
 	private String extractResponseText(Map<String, Object> result) {
-		if (result.containsKey("artifacts")) {
-			List<Object> artifacts = (List<Object>) result.get("artifacts");
-			StringBuilder responseBuilder = new StringBuilder();
-			for (Object artifact : artifacts) {
-				if (artifact instanceof Map) {
-					List<Object> parts = (List<Object>) ((Map<String, Object>) artifact).get("parts");
+		if (result == null) {
+			throw new IllegalStateException("Result is null, cannot extract response text");
+		}
+
+		if ("status-update".equals(result.get("kind"))) {
+			Map<String, Object> status = (Map<String, Object>) result.get("status");
+			if (status != null) {
+				String state = (String) status.get("state");
+				if ("completed".equals(state)) {
+					return "";
+				}
+				else if ("processing".equals(state)) {
+					return "";
+				}
+				else if ("failed".equals(state)) {
+					return "";
+				}
+				else if ("working".equals(state)) {
+					Map<String, Object> message = (Map<String, Object>) status.get("message");
+					if (message != null && message.containsKey("parts")) {
+						List<Object> parts = (List<Object>) message.get("parts");
+						if (parts != null && !parts.isEmpty()) {
+							Map<String, Object> lastPart = (Map<String, Object>) parts.get(parts.size() - 1);
+							if (lastPart != null) {
+								String text = (String) lastPart.get("text");
+								if (text != null) {
+									return text;
+								}
+							}
+						}
+					}
+					return "";
+				}
+				else {
+					return "Agent State: " + state;
+				}
+			}
+			return "";
+		}
+
+		if ("artifact-update".equals(result.get("kind"))) {
+			Map<String, Object> artifact = (Map<String, Object>) result.get("artifact");
+			if (artifact != null && artifact.containsKey("parts")) {
+				List<Object> parts = (List<Object>) artifact.get("parts");
+				if (parts != null && !parts.isEmpty()) {
+					StringBuilder responseBuilder = new StringBuilder();
 					for (Object part : parts) {
 						if (part instanceof Map) {
 							String text = (String) ((Map<String, Object>) part).get("text");
@@ -86,15 +435,67 @@ public class A2aNode implements NodeAction {
 							}
 						}
 					}
+					String response = responseBuilder.toString();
+					if (!response.isEmpty()) {
+						return response;
+					}
 				}
 			}
-			return responseBuilder.toString();
+			return "";
 		}
-		else {
+		if (result.containsKey("artifacts")) {
+			List<Object> artifacts = (List<Object>) result.get("artifacts");
+			if (artifacts != null && !artifacts.isEmpty()) {
+				StringBuilder responseBuilder = new StringBuilder();
+				for (Object artifact : artifacts) {
+					if (artifact instanceof Map) {
+						List<Object> parts = (List<Object>) ((Map<String, Object>) artifact).get("parts");
+						if (parts != null) {
+							for (Object part : parts) {
+								if (part instanceof Map) {
+									String text = (String) ((Map<String, Object>) part).get("text");
+									if (text != null) {
+										responseBuilder.append(text);
+									}
+								}
+							}
+						}
+					}
+				}
+				String response = responseBuilder.toString();
+				if (!response.isEmpty()) {
+					return response;
+				}
+			}
+		}
+		if (result.containsKey("parts")) {
 			List<Object> parts = (List<Object>) result.get("parts");
-			Map<String, Object> lastPart = (Map<String, Object>) parts.get(parts.size() - 1);
-			return (String) lastPart.get("text");
+			if (parts != null && !parts.isEmpty()) {
+				Map<String, Object> lastPart = (Map<String, Object>) parts.get(parts.size() - 1);
+				if (lastPart != null) {
+					String text = (String) lastPart.get("text");
+					if (text != null) {
+						return text;
+					}
+				}
+			}
 		}
+		if (result.containsKey("message")) {
+			Map<String, Object> message = (Map<String, Object>) result.get("message");
+			if (message != null && message.containsKey("parts")) {
+				List<Object> parts = (List<Object>) message.get("parts");
+				if (parts != null && !parts.isEmpty()) {
+					Map<String, Object> lastPart = (Map<String, Object>) parts.get(parts.size() - 1);
+					if (lastPart != null) {
+						String text = (String) lastPart.get("text");
+						if (text != null) {
+							return text;
+						}
+					}
+				}
+			}
+		}
+		throw new IllegalStateException("No valid text content found in result: " + result);
 	}
 
 	/**
@@ -183,6 +584,8 @@ public class A2aNode implements NodeAction {
 	 */
 	private String sendMessageToServer(AgentCard agentCard, String requestPayload) throws Exception {
 		String baseUrl = resolveAgentBaseUrl(agentCard);
+		System.out.println(baseUrl);
+		System.out.println(requestPayload);
 		if (baseUrl == null || baseUrl.isBlank()) {
 			throw new IllegalStateException("AgentCard.url is empty");
 		}

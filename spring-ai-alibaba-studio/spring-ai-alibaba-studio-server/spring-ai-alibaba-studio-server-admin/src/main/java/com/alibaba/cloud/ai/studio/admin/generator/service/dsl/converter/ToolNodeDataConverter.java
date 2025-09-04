@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -189,11 +190,15 @@ public class ToolNodeDataConverter extends AbstractNodeDataConverter<ToolNodeDat
 	}
 
 	@Override
-	public void postProcessOutput(ToolNodeData nodeData, String varName) {
-		Variable output = ToolNodeData.getDefaultOutputSchema();
-		nodeData.setOutputs(List.of(output));
-		nodeData.setOutputKey(varName + "_" + output.getName());
-		super.postProcessOutput(nodeData, varName);
+	public BiConsumer<ToolNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> emptyProcessConsumer().andThen(((nodeData, map) -> {
+				Variable output = ToolNodeData.getDefaultOutputSchema();
+				nodeData.setOutputs(List.of(output));
+				nodeData.setOutputKey(nodeData.getVarName() + "_" + output.getName());
+			})).andThen(super.postProcessConsumer(dialectType));
+			default -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

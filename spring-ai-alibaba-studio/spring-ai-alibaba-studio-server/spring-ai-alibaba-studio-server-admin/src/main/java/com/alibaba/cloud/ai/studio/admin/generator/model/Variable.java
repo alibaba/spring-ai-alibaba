@@ -19,20 +19,37 @@ import java.util.Map;
 
 /**
  * Variable is often used to represent the output of a node, or pre-defined variables in
- * an App. todo: add a strategy field
+ * an App.
  */
 public class Variable {
 
 	private String name;
 
-	private String value;
+	private Object value;
 
-	// todo: use VariableType Enum
-	private String valueType;
+	private VariableType valueType;
 
 	private String description;
 
 	private Map<String, Object> extraProperties;
+
+	private Strategy variableStrategy = Strategy.REPLACE;
+
+	public enum Strategy {
+
+		REPLACE("KeyStrategy.REPLACE"), APPEND("KeyStrategy.APPEND"), MERGE("KeyStrategy.MERGE");
+
+		private final String code;
+
+		public String getCode() {
+			return code;
+		}
+
+		Strategy(String code) {
+			this.code = code;
+		}
+
+	}
 
 	public Variable() {
 	}
@@ -42,7 +59,7 @@ public class Variable {
 	 * @param name a valid variable name
 	 * @param valueType a {@link VariableType} value
 	 */
-	public Variable(String name, String valueType) {
+	public Variable(String name, VariableType valueType) {
 		this.name = name;
 		this.valueType = valueType;
 	}
@@ -56,20 +73,20 @@ public class Variable {
 		return this;
 	}
 
-	public String getValue() {
+	public Object getValue() {
 		return value;
 	}
 
-	public Variable setValue(String value) {
+	public Variable setValue(Object value) {
 		this.value = value;
 		return this;
 	}
 
-	public String getValueType() {
+	public VariableType getValueType() {
 		return valueType;
 	}
 
-	public Variable setValueType(String valueType) {
+	public Variable setValueType(VariableType valueType) {
 		this.valueType = valueType;
 		return this;
 	}
@@ -90,6 +107,15 @@ public class Variable {
 	public Variable setExtraProperties(Map<String, Object> extraProperties) {
 		this.extraProperties = extraProperties;
 		return this;
+	}
+
+	public Variable setVariableStrategy(Strategy variableStrategy) {
+		this.variableStrategy = variableStrategy;
+		return this;
+	}
+
+	public Strategy getVariableStrategy() {
+		return variableStrategy;
 	}
 
 }

@@ -21,6 +21,7 @@ import { reactive } from 'vue'
 import { type MessageState, type MsgType } from '@/types/message'
 import { parseJsonTextStrict } from '@/utils/jsonParser'
 import type { LlmStreamNode, NormalNode } from '@/types/node'
+import type { UploadedFile } from '@/types/upload'
 export const useMessageStore = <Message extends SimpleType>() =>
   defineStore('messageStore', {
     state(): MsgType<Message> {
@@ -31,6 +32,8 @@ export const useMessageStore = <Message extends SimpleType>() =>
         history: {} as { [key: string]: MessageInfo<any>[] },
         htmlReport: {} as { [key: string]: string[] },
         report: {} as { [key: string]: any[] },
+        // { 会话id: 文件列表 }
+        uploadedFiles: {} as { [key: string]: UploadedFile[] },
       })
     },
     getters: {
@@ -98,6 +101,28 @@ export const useMessageStore = <Message extends SimpleType>() =>
           }
         }
         return false
+      },
+      // 添加文件到指定会话
+      addUploadedFile(convId: string, file: UploadedFile) {
+        if (!this.uploadedFiles[convId]) {
+          this.uploadedFiles[convId] = []
+        }
+        this.uploadedFiles[convId].push(file)
+      },
+      // 移除指定会话的文件
+      removeUploadedFile(convId: string, fileId: string) {
+        if (this.uploadedFiles[convId]) {
+          this.uploadedFiles[convId] = this.uploadedFiles[convId].filter((file: UploadedFile) => file.uid !== fileId)
+        }
+      },
+      // 更新文件状态
+      updateFileStatus(convId: string, fileId: string, status: UploadedFile['status']) {
+        if (this.uploadedFiles[convId]) {
+          const file = this.uploadedFiles[convId].find((f: UploadedFile) => f.uid === fileId)
+          if (file) {
+            file.status = status
+          }
+        }
       }
     },
     persist: true,

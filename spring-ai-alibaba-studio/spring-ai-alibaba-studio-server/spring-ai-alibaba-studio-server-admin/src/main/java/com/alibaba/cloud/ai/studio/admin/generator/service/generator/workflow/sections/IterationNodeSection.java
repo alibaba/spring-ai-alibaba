@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.sections;
 
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.IterationNodeData;
@@ -44,16 +45,16 @@ public class IterationNodeSection implements NodeSection<IterationNodeData> {
 		// 获取输入输出的泛型
 		String inputType = "Map<String, Object>";
 		String outputType = "Map<String, Object>";
-		if (data.getInputType().equalsIgnoreCase("string")) {
+		if (VariableType.STRING.equals(data.getInputType())) {
 			inputType = "String";
 		}
-		else if (data.getInputType().equalsIgnoreCase("number")) {
+		else if (VariableType.NUMBER.equals(data.getInputType())) {
 			inputType = "Number";
 		}
-		if (data.getOutputType().equalsIgnoreCase("string")) {
+		if (VariableType.STRING.equals(data.getOutputType())) {
 			outputType = "String";
 		}
-		if (data.getOutputType().equalsIgnoreCase("number")) {
+		if (VariableType.NUMBER.equals(data.getOutputType())) {
 			outputType = "Number";
 		}
 

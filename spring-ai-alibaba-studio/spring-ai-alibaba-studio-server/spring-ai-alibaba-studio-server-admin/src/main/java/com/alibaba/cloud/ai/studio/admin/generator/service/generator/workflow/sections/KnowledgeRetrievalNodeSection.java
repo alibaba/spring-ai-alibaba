@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.s
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.KnowledgeRetrievalNodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
 import org.springframework.stereotype.Component;
@@ -105,30 +106,38 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 		sb.append(".isKeyFirst(false).build();\n");
 
 		// 辅助节点代码
-		String assistNodeCode = String.format(
-				"""
-						(state) -> {
-							String key = "%s";
-							// 将结果转换为Dify工作流中需要的变量
-							Map<String, Object> result = %s.apply(state);
-							Object object = result.get(key);
-							if(object instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Document) {
-								// 返回值为Array[Object]（用List<Map>）
-								List<Document> documentList = (List<Document>) list;
-								List<Map<String, Object>> mapList = documentList.stream().map(document ->
-												Map.of("content", document.getFormattedContent(), "title", document.getId(), "url", "", "icon", "", "metadata", document.getMetadata()))
-										.toList();
-								return Map.of(key, mapList);
-							} else {
-								return Map.of(key, List.of(Map.of("content", object.toString(), "title", "unknown", "url", "unknown", "icon", "unknown", "metadata", object)));
-							}
-						}
-						""",
-				d.getOutputKey(), varName);
+		String assistNodeCode = String.format("wrapperRetrievalNodeAction(%s, \"%s\")", varName, d.getOutputKey());
 
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
 				assistNodeCode));
 		return sb.toString();
+	}
+
+	@Override
+	public String assistMethodCode(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY ->
+				"""
+						 private NodeAction wrapperRetrievalNodeAction(NodeAction nodeAction, String key) {
+						     return (state) -> {
+						         // 将结果转换为Dify工作流中需要的变量
+						         Map<String, Object> result = nodeAction.apply(state);
+						         Object object = result.get(key);
+						         if(object instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Document) {
+						             // 返回值为Array[Object]（用List<Map>）
+						             List<Document> documentList = (List<Document>) list;
+						             List<Map<String, Object>> mapList = documentList.stream().map(document ->
+						                             Map.of("content", document.getFormattedContent(), "title", document.getId(), "url", "", "icon", "", "metadata", document.getMetadata()))
+						                     .toList();
+						             return Map.of(key, mapList);
+						         } else {
+						             return Map.of(key, List.of(Map.of("content", object.toString(), "title", "unknown", "url", "unknown", "icon", "unknown", "metadata", object)));
+						         }
+						     };
+						 }
+						""";
+			default -> "";
+		};
 	}
 
 }

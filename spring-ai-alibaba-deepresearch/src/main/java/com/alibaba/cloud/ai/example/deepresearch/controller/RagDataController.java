@@ -89,12 +89,12 @@ public class RagDataController {
 	 * 批量上传用户文件接口
 	 */
 	@PostMapping(value = "/user/batch-upload", consumes = "multipart/form-data")
-	public ResponseEntity<Map<String, Object>> handleBatchUserFileUpload(
+	public ResponseEntity<ApiResponse<Map<String, Object>>> handleBatchUserFileUpload(
 			@RequestParam("files") List<MultipartFile> files, @RequestParam("session_id") String sessionId,
 			@RequestParam(value = "user_id", required = false) String userId) {
 
 		if (files == null || files.isEmpty()) {
-			return ResponseEntity.badRequest().body(Map.of("error", "No files provided"));
+			return ResponseEntity.ok(ApiResponse.error("No files provided"));
 		}
 
 		try {
@@ -108,14 +108,10 @@ public class RagDataController {
 			response.put("total_chunks", totalChunks);
 			response.put("filenames", files.stream().map(MultipartFile::getOriginalFilename).toList());
 
-			return ResponseEntity.ok(response);
+			return ResponseEntity.ok(ApiResponse.success(response));
 		}
 		catch (Exception e) {
-			Map<String, Object> errorResponse = new HashMap<>();
-			errorResponse.put("error", "Failed to process batch upload");
-			errorResponse.put("message", e.getMessage());
-			errorResponse.put("file_count", files.size());
-			return ResponseEntity.internalServerError().body(errorResponse);
+			return ResponseEntity.ok(ApiResponse.error(e.getMessage()));
 		}
 	}
 
