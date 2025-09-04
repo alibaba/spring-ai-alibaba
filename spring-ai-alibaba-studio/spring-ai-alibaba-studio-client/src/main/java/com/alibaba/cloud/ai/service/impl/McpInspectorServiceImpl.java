@@ -15,34 +15,28 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.controller;
+package com.alibaba.cloud.ai.service.impl;
 
 import com.alibaba.cloud.ai.common.McpTransportType;
 import com.alibaba.cloud.ai.common.R;
-import com.alibaba.cloud.ai.service.ChatClientDelegate;
 import com.alibaba.cloud.ai.service.McpInspectorService;
+import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.transport.ServerParameters;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Service;
 
-@RestController
-@RequestMapping("studio/api/mcpInspector")
-public class McpInspectorAPIController {
+@Service
+public class McpInspectorServiceImpl implements McpInspectorService {
 
-    private final McpInspectorService mcpInspectorService;
+    private McpClient mcpClient;
 
-    public McpInspectorAPIController(McpInspectorService mcpInspectorService) {
-        this.mcpInspectorService = mcpInspectorService;
+    public McpInspectorServiceImpl(McpClient mcpClient) {
+        this.mcpClient = mcpClient;
+
     }
 
-    @PostMapping("/init")
-    public R<String> mcpClientInit(@RequestBody McpTransportType transportType
-            , @RequestBody ServerParameters serverParameters) {
-        return mcpInspectorService.init(transportType , serverParameters );
+    //拿到对应的信息
+    @Override
+    public R<String> init(McpTransportType transportType , ServerParameters serverParameters) {
+
     }
-
-
-
 }
