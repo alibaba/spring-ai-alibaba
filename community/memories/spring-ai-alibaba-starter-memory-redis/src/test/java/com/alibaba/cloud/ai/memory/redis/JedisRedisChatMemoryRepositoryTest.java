@@ -35,6 +35,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -214,6 +215,63 @@ class JedisRedisChatMemoryRepositoryTest {
 		assertThat(loaded).hasSize(1);
 		assertThat(loaded.get(0).getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(loaded.get(0).getText()).isEqualTo(userMessage.getText());
+	}
+
+	@Test
+	void saveAndLoadToolResponseMessageBasic() {
+		var conversationId = UUID.randomUUID().toString();
+
+		var resp = new ToolResponseMessage.ToolResponse("tool-1", "vision-analyzer", "{\"result\":\"ok\"}");
+		var toolMsg = new ToolResponseMessage(List.of(resp));
+
+		chatMemoryRepository.saveAll(conversationId, List.of(toolMsg));
+		var loaded = chatMemoryRepository.findByConversationId(conversationId);
+
+		assertThat(loaded).hasSize(1);
+		assertThat(loaded.get(0).getMessageType()).isEqualTo(MessageType.TOOL);
+
+		var trm = (ToolResponseMessage) loaded.get(0);
+		assertThat(trm.getResponses()).hasSize(1);
+		assertThat(trm.getResponses().get(0).id()).isEqualTo("tool-1");
+		assertThat(trm.getResponses().get(0).name()).isEqualTo("vision-analyzer");
+		assertThat(trm.getResponses().get(0).responseData()).contains("\"result\":\"ok\"");
+	}
+
+	@Test
+	void saveAndLoadToolResponseMessageWithMetadata() {
+		var conversationId = UUID.randomUUID().toString();
+
+		var resp = new ToolResponseMessage.ToolResponse("tool-2", "math-calc", "{\"value\":42}");
+		var metadata = Map.<String, Object>of("traceId", "t-" + conversationId, "caller", "agent://unit-test");
+
+		var toolMsg = new ToolResponseMessage(List.of(resp), metadata);
+
+		chatMemoryRepository.saveAll(conversationId, List.of(toolMsg));
+		var loaded = chatMemoryRepository.findByConversationId(conversationId);
+
+		assertThat(loaded).hasSize(1);
+		var trm = (ToolResponseMessage) loaded.get(0);
+		assertThat(trm.getMessageType()).isEqualTo(MessageType.TOOL);
+		assertThat(trm.getMetadata()).containsEntry("caller", "agent://unit-test");
+		assertThat(trm.getResponses().get(0).name()).isEqualTo("math-calc");
+	}
+
+	@Test
+	void saveAndLoadToolResponseMessageWithUriMedia() {
+		var conversationId = UUID.randomUUID().toString();
+
+		var resp = new ToolResponseMessage.ToolResponse("tool-3", "vision-analyzer",
+				URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png").toString());
+		var toolMsg = new ToolResponseMessage(List.of(resp));
+
+		chatMemoryRepository.saveAll(conversationId, List.of(toolMsg));
+		var loaded = chatMemoryRepository.findByConversationId(conversationId);
+
+		assertThat(loaded).hasSize(1);
+		var trm = (ToolResponseMessage) loaded.get(0);
+		assertThat(trm.getMessageType()).isEqualTo(MessageType.TOOL);
+		assertThat(trm.getResponses().get(0).responseData())
+			.contains("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 	}
 
 	@SpringBootConfiguration
