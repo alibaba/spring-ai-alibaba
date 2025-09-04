@@ -8,8 +8,10 @@ import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -49,10 +51,24 @@ public abstract class Builder {
 
 	protected NodeAction postToolHook;
 
+	protected ObservationRegistry observationRegistry;
+	protected ChatClientObservationConvention customObservationConvention;
+
+	public Builder observationRegistry(ObservationRegistry observationRegistry) {
+		this.observationRegistry = observationRegistry;
+		return this;
+	}
+
+	public Builder customObservationConvention(ChatClientObservationConvention customObservationConvention) {
+		this.customObservationConvention = customObservationConvention;
+		return this;
+	}
+
 	public Builder name(String name) {
 		this.name = name;
 		return this;
 	}
+
 
 	public Builder chatClient(ChatClient chatClient) {
 		this.chatClient = chatClient;

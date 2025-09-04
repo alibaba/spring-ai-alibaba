@@ -26,7 +26,9 @@ public class NacosOptions {
 
 	NacosMcpOperationService mcpOperationService;
 
-	private String agentId;
+	private ObservationConfigration observationConfigration;
+
+	private String agentName;
 
 	private String mcpNamespace;
 
@@ -34,8 +36,9 @@ public class NacosOptions {
 		nacosConfigService = new NacosConfigService(properties);
 		nacosAiMaintainerService = new NacosAiMaintainerServiceImpl(properties);
 		mcpOperationService = new NacosMcpOperationService(properties);
-		agentId = properties.getProperty("agentId");
+		agentName = properties.getProperty("agentName");
 		mcpNamespace = properties.getProperty("mcpNamespace", properties.getProperty("namespace"));
 
 	}
+
 }

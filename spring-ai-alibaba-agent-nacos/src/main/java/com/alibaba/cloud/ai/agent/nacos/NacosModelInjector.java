@@ -29,7 +29,7 @@ public class NacosModelInjector {
 		}
 	}
 
-	public static ChatModel initModel(ModelVO model) {
+	public static ChatModel initModel(NacosOptions nacosOptions, ModelVO model) {
 
 		OpenAiApi openAiApi = OpenAiApi.builder()
 				.apiKey(model.getApiKey()).baseUrl(model.getBaseUrl())
@@ -44,9 +44,15 @@ public class NacosModelInjector {
 		}
 
 		OpenAiChatOptions openaiChatOptions = chatOptionsBuilder
-				.model(model.getModel()).build();
-		return OpenAiChatModel.builder().defaultOptions(openaiChatOptions).openAiApi(openAiApi)
+				.model(model.getModel())
 				.build();
+		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder().defaultOptions(openaiChatOptions)
+				.openAiApi(openAiApi)
+				.toolCallingManager(nacosOptions.getObservationConfigration().getToolCallingManager())
+				.observationRegistry(nacosOptions.getObservationConfigration().getObservationRegistry()).build();
+		openAiChatModel.setObservationConvention(nacosOptions.getObservationConfigration()
+				.getChatModelObservationConvention());
+		return openAiChatModel;
 	}
 
 	public static void registerModelListener(ChatClient chatClient, NacosOptions nacosOptions, String agentId) {
@@ -61,7 +67,7 @@ public class NacosModelInjector {
 				public void receiveConfigInfo(String configInfo) {
 					ModelVO modelVO = JSON.parseObject(configInfo, ModelVO.class);
 					try {
-						ChatModel chatModelNew = initModel(modelVO);
+						ChatModel chatModelNew = initModel(nacosOptions, modelVO);
 						replaceModel(chatClient, chatModelNew);
 					}
 					catch (Exception e) {

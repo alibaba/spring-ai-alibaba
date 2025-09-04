@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.agent.nacos.vo.AgentVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.listener.AbstractListener;
@@ -29,17 +30,15 @@ public class NacosPromptInjector {
 	 * @param agentId
 	 * @return
 	 */
-	public static PromptVO loadPromptByAgentId(NacosConfigService nacosConfigService, String agentId) {
+	public static PromptVO loadPromptByAgentId(NacosConfigService nacosConfigService, AgentVO agentVO) {
 		try {
-			String config = nacosConfigService.getConfig(String.format("prompt-%s.json", agentId), "nacos-ai-agent",
-					3000L);
-			String promptKey = (String) JSON.parseObject(config).get("promptKey");
-			return getPromptByKey(nacosConfigService, promptKey);
+			return getPromptByKey(nacosConfigService, agentVO.getPromptKey());
 		}
 		catch (NacosException e) {
 			throw new RuntimeException(e);
 		}
 	}
+
 
 	/**
 	 * load promot by prompt key.

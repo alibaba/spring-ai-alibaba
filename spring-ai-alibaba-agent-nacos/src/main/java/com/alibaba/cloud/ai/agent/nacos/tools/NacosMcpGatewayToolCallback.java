@@ -36,6 +36,7 @@ import com.alibaba.nacos.api.ai.model.mcp.McpServiceRef;
 import com.alibaba.nacos.api.ai.model.mcp.McpToolMeta;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.common.utils.JacksonUtils;
+import com.alibaba.nacos.common.utils.StringUtils;
 import com.alibaba.nacos.shaded.com.google.common.collect.Maps;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -484,14 +485,14 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			String exportPath = remoteServerConfig.getExportPath();
 
 			// 构建基础URL，根据协议类型调整
-
+			String transportProtocol = StringUtils.isNotBlank(serviceRef.getTransportProtocol()) ? serviceRef.getTransportProtocol() : "http";
 			StringBuilder baseUrl;
 			if ("mcp-sse".equalsIgnoreCase(protocol)) {
-				baseUrl = new StringBuilder("https://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort());
+				baseUrl = new StringBuilder(transportProtocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort());
 			}
 			else {
 				// mcp-streamable 或其他协议
-				baseUrl = new StringBuilder("https://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort());
+				baseUrl = new StringBuilder(transportProtocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort());
 			}
 
 			logger.info("[handleMcpStreamProtocol] Processing {} protocol with args: {} and baseUrl: {}", protocol,

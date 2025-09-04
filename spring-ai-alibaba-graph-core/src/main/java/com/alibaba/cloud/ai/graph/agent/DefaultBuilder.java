@@ -15,7 +15,7 @@ public class DefaultBuilder extends Builder {
 			if (model == null) {
 				throw new IllegalArgumentException("Either chatClient or model must be provided");
 			}
-			ChatClient.Builder clientBuilder = ChatClient.builder(model);
+			ChatClient.Builder clientBuilder = ChatClient.builder(model, observationRegistry, customObservationConvention);
 			if (chatOptions != null) {
 				clientBuilder.defaultOptions(chatOptions);
 			}

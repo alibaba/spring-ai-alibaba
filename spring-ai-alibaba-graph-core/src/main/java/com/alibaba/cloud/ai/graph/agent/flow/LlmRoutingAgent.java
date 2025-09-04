@@ -29,13 +29,10 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.node.LlmNode;
 
 import org.springframework.ai.chat.model.ChatModel;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class LlmRoutingAgent extends FlowAgent {
 	private ChatModel chatModel;

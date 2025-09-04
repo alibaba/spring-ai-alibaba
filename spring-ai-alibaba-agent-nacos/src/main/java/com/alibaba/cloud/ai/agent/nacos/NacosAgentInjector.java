@@ -1,7 +1,10 @@
 package com.alibaba.cloud.ai.agent.nacos;
 
+import com.alibaba.cloud.ai.agent.nacos.vo.AgentVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.NacosConfigService;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -25,10 +28,32 @@ public class NacosAgentInjector {
 
 	}
 
+	/**
+	 * load prompt by agent id.
+	 *
+	 * @param nacosConfigService
+	 * @param agentId
+	 * @return
+	 */
+	public static AgentVO loadAgentVO(NacosConfigService nacosConfigService, String agentId) {
+		try {
+			String config = nacosConfigService.getConfig(String.format("agent-%s.json", agentId), "nacos-ai-agent",
+					3000L);
+			return JSON.parseObject(config, AgentVO.class);
+		}
+		catch (NacosException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public static void injectPromptByAgentId(NacosConfigService nacosConfigService, ChatClient chatClient, String agentId) {
 
 		try {
-			PromptVO promptVO = NacosPromptInjector.loadPromptByAgentId(nacosConfigService, agentId);
+			AgentVO agentVO = loadAgentVO(nacosConfigService, agentId);
+			if (agentVO == null) {
+				return;
+			}
+			PromptVO promptVO = NacosPromptInjector.loadPromptByAgentId(nacosConfigService, agentVO);
 			if (promptVO != null) {
 				NacosPromptInjector.replacePrompt(chatClient, promptVO);
 			}
@@ -45,7 +70,7 @@ public class NacosAgentInjector {
 		ModelVO modelVO = NacosModelInjector.getModelByAgentId(nacosOptions, agentId);
 		if (modelVO != null) {
 			try {
-				ChatModel chatModel = NacosModelInjector.initModel(modelVO);
+				ChatModel chatModel = NacosModelInjector.initModel(nacosOptions, modelVO);
 				NacosModelInjector.replaceModel(chatClient, chatModel);
 			}
 			catch (Exception e) {
@@ -62,7 +87,7 @@ public class NacosAgentInjector {
 			return null;
 		}
 
-		return NacosModelInjector.initModel(modelVo);
+		return NacosModelInjector.initModel(nacosOptions, modelVo);
 	}
 
 }

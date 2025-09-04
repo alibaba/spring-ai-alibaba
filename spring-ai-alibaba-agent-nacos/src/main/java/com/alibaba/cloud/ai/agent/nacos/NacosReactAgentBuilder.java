@@ -8,6 +8,7 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
+import com.alibaba.nacos.common.utils.StringUtils;
 import org.apache.commons.collections4.CollectionUtils;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -39,14 +40,13 @@ public class NacosReactAgentBuilder extends DefaultBuilder {
 	@Override
 	public ReactAgent build() throws GraphStateException {
 		if (this.name == null) {
-			this.name = nacosOptions.getAgentId();
+			this.name = nacosOptions.getAgentName();
 		}
-		if (model == null) {
+		if (model == null && StringUtils.isNotBlank(this.name)) {
 			this.model = NacosAgentInjector.initModel(nacosOptions, this.name);
 		}
-
 		if (chatClient == null) {
-			ChatClient.Builder clientBuilder = ChatClient.builder(model);
+			ChatClient.Builder clientBuilder = ChatClient.builder(model, nacosOptions.getObservationConfigration().getObservationRegistry(), nacosOptions.getObservationConfigration().getChatClientObservationConvention());
 			if (chatOptions != null) {
 				clientBuilder.defaultOptions(chatOptions);
 			}
@@ -67,7 +67,7 @@ public class NacosReactAgentBuilder extends DefaultBuilder {
 			}
 			else {
 				NacosAgentInjector.injectPromptByAgentId(nacosOptions.getNacosConfigService(), chatClient,
-						nacosOptions.getAgentId());
+						nacosOptions.getAgentName());
 
 			}
 		}
