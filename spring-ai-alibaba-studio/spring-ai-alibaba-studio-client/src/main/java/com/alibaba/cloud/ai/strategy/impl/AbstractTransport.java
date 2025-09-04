@@ -20,11 +20,14 @@ package com.alibaba.cloud.ai.strategy.impl;
 import com.alibaba.cloud.ai.common.McpTransportType;
 import com.alibaba.cloud.ai.strategy.McpInspectorTransportStrategy;
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.client.transport.ServerParameters;
 import jakarta.annotation.PostConstruct;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Component
 public abstract class AbstractTransport implements McpInspectorTransportStrategy {
 
     protected AtomicInteger counter = new AtomicInteger(0);
@@ -32,17 +35,17 @@ public abstract class AbstractTransport implements McpInspectorTransportStrategy
     public static ConcurrentHashMap<McpTransportType, AbstractTransport> transportTypeMap = new ConcurrentHashMap<>();
 
     @PostConstruct
-    public void init(){
+    private void init(){
         transportTypeMap.put(getTransportType(), this);
     }
 
     @Override
-    public McpSyncClient connect() {
-        return transportTypeMap.get(getTransportType()).connect();
+    public McpSyncClient connect(ServerParameters serverParameters) {
+        return transportTypeMap.get(getTransportType()).connect(serverParameters);
     }
 
     protected abstract McpTransportType getTransportType();
 
-    protected abstract String getClientName();
+     public abstract String getClientName();
 
 }

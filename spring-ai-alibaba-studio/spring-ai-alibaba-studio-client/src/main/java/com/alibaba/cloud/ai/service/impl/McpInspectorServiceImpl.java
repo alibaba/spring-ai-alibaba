@@ -19,24 +19,32 @@ package com.alibaba.cloud.ai.service.impl;
 
 import com.alibaba.cloud.ai.common.McpTransportType;
 import com.alibaba.cloud.ai.common.R;
+import com.alibaba.cloud.ai.container.McpClientContainer;
 import com.alibaba.cloud.ai.service.McpInspectorService;
+import com.alibaba.cloud.ai.strategy.impl.AbstractTransport;
 import io.modelcontextprotocol.client.McpClient;
+import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.ServerParameters;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class McpInspectorServiceImpl implements McpInspectorService {
 
-    private McpClient mcpClient;
+    private final McpClientContainer mcpClientContainer;
 
-    public McpInspectorServiceImpl(McpClient mcpClient) {
-        this.mcpClient = mcpClient;
-
+    public McpInspectorServiceImpl(McpClientContainer mcpClientContainer) {
+        this.mcpClientContainer = mcpClientContainer;
     }
 
     //拿到对应的信息
     @Override
     public R<String> init(McpTransportType transportType , ServerParameters serverParameters) {
-        return null;
+        //创建对应的内容，然后扔到container里去
+        AbstractTransport transport = AbstractTransport.transportTypeMap.get(transportType);
+        McpSyncClient mcpClient = transport.connect(serverParameters);
+        String clientName = transport.getClientName();
+        mcpClientContainer.add(clientName , mcpClient);
+        return R.success("初始化" + clientName + "成功" );
     }
 }
