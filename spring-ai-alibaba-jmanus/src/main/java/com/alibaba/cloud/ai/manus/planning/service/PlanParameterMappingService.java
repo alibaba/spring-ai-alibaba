@@ -18,8 +18,8 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 
 	private static final Logger logger = LoggerFactory.getLogger(PlanParameterMappingService.class);
 
-	// 参数占位符的正则表达式模式：匹配 <<参数名>> 格式
-	private static final Pattern PARAMETER_PATTERN = Pattern.compile("<<(\\w+)>>");
+	// 参数占位符的正则表达式模式：匹配 <<参数名>> 格式，支持所有Unicode字符
+	private static final Pattern PARAMETER_PATTERN = Pattern.compile("<<([^<>]+)>>");
 
 	// 参数占位符的前缀和后缀
 	private static final String PLACEHOLDER_PREFIX = "<<";

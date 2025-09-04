@@ -21,7 +21,6 @@ export interface CoordinatorToolVO {
   planTemplateId: string
   endpoint: string
   inputSchema: string
-  mcpSchema: string
   publishStatus: string
   createTime?: string
   updateTime?: string
@@ -138,7 +137,6 @@ export class CoordinatorToolApiService {
       toolName: tool.toolName,
       toolDescription: tool.toolDescription,
       inputSchema: tool.inputSchema,
-      mcpSchema: tool.mcpSchema,
       planTemplateId: tool.planTemplateId,
       endpoint: tool.endpoint,
       publishStatus: tool.publishStatus
@@ -187,7 +185,6 @@ export class CoordinatorToolApiService {
       toolName: tool.toolName,
       toolDescription: tool.toolDescription,
       inputSchema: tool.inputSchema,
-      mcpSchema: tool.mcpSchema,
       planTemplateId: tool.planTemplateId,
       endpoint: tool.endpoint,
       publishStatus: tool.publishStatus

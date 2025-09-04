@@ -42,6 +42,7 @@ import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionContext;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanInterface;
 import com.alibaba.cloud.ai.manus.runtime.service.PlanIdDispatcher;
 import com.alibaba.cloud.ai.manus.runtime.service.PlanningCoordinator;
+import com.alibaba.cloud.ai.manus.planning.service.IPlanParameterMappingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -71,6 +72,9 @@ public class PlanTemplateController {
 
 	@Autowired
 	private PlanningCoordinator planningCoordinator;
+
+	@Autowired
+	private IPlanParameterMappingService parameterMappingService;
 
 	/**
 	 * Serialize plan object to JSON string
@@ -409,7 +413,7 @@ public class PlanTemplateController {
 			if (template == null) {
 				// If it doesn't exist, create a new plan
 				planTemplateService.savePlanTemplate(planTemplateId, title,
-						"User request to generate plan: " + planTemplateId, planJson);
+						title, planJson);
 				logger.info("New plan created: {}", planTemplateId);
 				return new PlanTemplateService.VersionSaveResult(true, false, "New plan created", 0);
 			}
@@ -740,6 +744,40 @@ public class PlanTemplateController {
 			logger.error("Failed to delete plan template", e);
 			return ResponseEntity.internalServerError()
 				.body(Map.of("error", "Failed to delete plan template: " + e.getMessage()));
+		}
+	}
+
+	/**
+	 * Get parameter requirements for a plan template
+	 * @param planTemplateId The plan template ID
+	 * @return List of required parameters
+	 */
+	@GetMapping("/{planTemplateId}/parameters")
+	public ResponseEntity<Map<String, Object>> getParameterRequirements(@PathVariable String planTemplateId) {
+		try {
+			PlanTemplate planTemplate = planTemplateService.getPlanTemplate(planTemplateId);
+			if (planTemplate == null) {
+				return ResponseEntity.notFound().build();
+			}
+
+			String planJson = planTemplateService.getLatestPlanVersion(planTemplateId);
+			if (planJson == null) {
+				return ResponseEntity.notFound().build();
+			}
+			
+			List<String> parameters = parameterMappingService.extractParameterPlaceholders(planJson);
+			
+			Map<String, Object> response = new HashMap<>();
+			response.put("parameters", parameters);
+			response.put("hasParameters", !parameters.isEmpty());
+			response.put("requirements", parameterMappingService.getParameterRequirements(planJson));
+			
+			return ResponseEntity.ok(response);
+		}
+		catch (Exception e) {
+			logger.error("Failed to get parameter requirements for plan template: " + planTemplateId, e);
+			return ResponseEntity.internalServerError()
+				.body(Map.of("error", "Failed to get parameter requirements: " + e.getMessage()));
 		}
 	}
 

@@ -38,8 +38,6 @@ public class CoordinatorToolEntity {
 	@Column(nullable = false, columnDefinition = "VARCHAR(2048)")
 	private String inputSchema;
 
-	@Column(nullable = false, columnDefinition = "VARCHAR(2048)")
-	private String mcpSchema;
 
 	@Column(nullable = false, length = 50)
 	private String planTemplateId;
@@ -115,13 +113,6 @@ public class CoordinatorToolEntity {
 		this.inputSchema = inputSchema;
 	}
 
-	public String getMcpSchema() {
-		return mcpSchema;
-	}
-
-	public void setMcpSchema(String mcpSchema) {
-		this.mcpSchema = mcpSchema;
-	}
 
 	public String getPlanTemplateId() {
 		return planTemplateId;

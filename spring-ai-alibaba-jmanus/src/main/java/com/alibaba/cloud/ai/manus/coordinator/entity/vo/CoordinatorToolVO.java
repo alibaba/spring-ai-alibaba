@@ -32,7 +32,6 @@ public class CoordinatorToolVO {
 
 	private String inputSchema;
 
-	private String mcpSchema;
 
 	private String planTemplateId;
 
@@ -80,13 +79,6 @@ public class CoordinatorToolVO {
 		this.inputSchema = inputSchema;
 	}
 
-	public String getMcpSchema() {
-		return mcpSchema;
-	}
-
-	public void setMcpSchema(String mcpSchema) {
-		this.mcpSchema = mcpSchema;
-	}
 
 	public String getPlanTemplateId() {
 		return planTemplateId;
@@ -124,7 +116,6 @@ public class CoordinatorToolVO {
 		vo.setToolName(entity.getToolName());
 		vo.setToolDescription(entity.getToolDescription());
 		vo.setInputSchema(entity.getInputSchema());
-		vo.setMcpSchema(entity.getMcpSchema());
 		vo.setPlanTemplateId(entity.getPlanTemplateId());
 		vo.setEndpoint(entity.getEndpoint());
 		vo.setPublishStatus(entity.getPublishStatus() != null ? entity.getPublishStatus().name() : null);
@@ -141,7 +132,6 @@ public class CoordinatorToolVO {
 		entity.setToolName(this.toolName);
 		entity.setToolDescription(this.toolDescription);
 		entity.setInputSchema(this.inputSchema);
-		entity.setMcpSchema(this.mcpSchema);
 		entity.setPlanTemplateId(this.planTemplateId);
 		entity.setEndpoint(this.endpoint);
 		if (this.publishStatus != null) {

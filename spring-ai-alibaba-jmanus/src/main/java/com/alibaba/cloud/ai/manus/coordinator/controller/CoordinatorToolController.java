@@ -79,9 +79,6 @@ public class CoordinatorToolController {
                 toolVO.setPublishStatus("UNPUBLISHED");
             }
 
-            // Generate MCP Schema from input schema
-            String mcpSchema = generateMcpSchema(toolVO.getInputSchema());
-            toolVO.setMcpSchema(mcpSchema);
 
             // Create SubplanToolDef for tool call registration
             SubplanToolDef subplanToolDef = createSubplanToolDefFromVO(toolVO);
@@ -142,9 +139,6 @@ public class CoordinatorToolController {
                 toolVO.setPublishStatus("UNPUBLISHED");
             }
 
-            // Generate MCP Schema from input schema
-            String mcpSchema = generateMcpSchema(toolVO.getInputSchema());
-            toolVO.setMcpSchema(mcpSchema);
 
             // Create updated SubplanToolDef
             SubplanToolDef updatedToolDef = createSubplanToolDefFromVO(toolVO);
@@ -299,86 +293,6 @@ public class CoordinatorToolController {
     }
 
     /**
-     * Generate MCP Schema from input schema
-     * @param inputSchema JSON string of input parameters
-     * @return MCP Schema JSON string
-     */
-    private String generateMcpSchema(String inputSchema) {
-        try {
-            // Parse input schema to extract parameters
-            JsonNode inputParams = objectMapper.readTree(inputSchema);
-            
-            // Create MCP schema structure
-            Map<String, Object> mcpSchema = new HashMap<>();
-            mcpSchema.put("name", "coordinator_tool");
-            mcpSchema.put("description", "Coordinator tool for plan execution");
-            
-            Map<String, Object> inputSchemaMap = new HashMap<>();
-            inputSchemaMap.put("type", "object");
-            
-            Map<String, Object> properties = new HashMap<>();
-            List<String> required = new ArrayList<>();
-            
-            if (inputParams.isArray()) {
-                for (JsonNode param : inputParams) {
-                    String paramName = param.get("name").asText();
-                    String paramType = param.get("type").asText();
-                    String paramDescription = param.get("description").asText();
-                    
-                    Map<String, Object> paramSchema = new HashMap<>();
-                    paramSchema.put("type", mapTypeToMcpType(paramType));
-                    paramSchema.put("description", paramDescription);
-                    
-                    properties.put(paramName, paramSchema);
-                    
-                    if (param.has("required") && param.get("required").asBoolean()) {
-                        required.add(paramName);
-                    }
-                }
-            }
-            
-            inputSchemaMap.put("properties", properties);
-            inputSchemaMap.put("required", required);
-            mcpSchema.put("inputSchema", inputSchemaMap);
-            
-            return objectMapper.writeValueAsString(mcpSchema);
-            
-        } catch (Exception e) {
-            log.warn("Failed to generate MCP schema, using default: {}", e.getMessage());
-            return "{\"name\":\"coordinator_tool\",\"description\":\"Coordinator tool for plan execution\",\"inputSchema\":{\"type\":\"object\",\"properties\":{},\"required\":[]}}";
-        }
-    }
-
-    /**
-     * Map parameter type to MCP type
-     * @param type Parameter type
-     * @return MCP type
-     */
-    private String mapTypeToMcpType(String type) {
-        if (type == null) return "string";
-        
-        switch (type.toLowerCase()) {
-            case "string":
-                return "string";
-            case "integer":
-            case "int":
-                return "number";
-            case "number":
-            case "float":
-            case "double":
-                return "number";
-            case "boolean":
-                return "boolean";
-            case "array":
-                return "array";
-            case "object":
-                return "object";
-            default:
-                return "string";
-        }
-    }
-
-    /**
      * Create SubplanToolDef from CoordinatorToolVO
      * @param toolVO CoordinatorToolVO
      * @return SubplanToolDef
@@ -449,8 +363,6 @@ public class CoordinatorToolController {
             vo.setInputSchema("[]");
         }
         
-        // Generate MCP Schema
-        vo.setMcpSchema(generateMcpSchema(vo.getInputSchema()));
         
         return vo;
     }
@@ -462,13 +374,12 @@ public class CoordinatorToolController {
      */
     private CoordinatorToolVO createDefaultToolVO(String planTemplateId) {
         CoordinatorToolVO toolVO = new CoordinatorToolVO();
-        toolVO.setToolName(planTemplateId); // Use plan template ID as tool name
-        toolVO.setToolDescription("Tool created from plan template: " + planTemplateId);
+        toolVO.setToolName(null); // Use plan template ID as tool name
+        toolVO.setToolDescription(null);
         toolVO.setPlanTemplateId(planTemplateId);
         toolVO.setEndpoint("jmanus"); // Default endpoint
         toolVO.setInputSchema("[]"); // Empty parameters by default
         toolVO.setPublishStatus("UNPUBLISHED");
-        toolVO.setMcpSchema(generateMcpSchema("[]"));
         
         return toolVO;
     }

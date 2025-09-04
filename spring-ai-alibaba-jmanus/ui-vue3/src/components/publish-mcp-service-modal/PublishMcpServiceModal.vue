@@ -50,6 +50,12 @@
       <!-- 参数配置 -->
       <div class="form-section">
         <div class="section-title">{{ t('mcpService.parameterConfig') }}</div>
+        
+        <!-- Parameter Requirements Help Text -->
+        <div v-if="parameterRequirements.hasParameters" class="params-help-text">
+          {{ t('sidebar.parameterRequirementsHelp') }}
+        </div>
+        
         <div class="parameter-table">
           <table>
             <thead>
@@ -66,6 +72,9 @@
                     v-model="param.name"
                     :placeholder="t('mcpService.parameterName')"
                     class="parameter-input"
+                    :readonly="parameterRequirements.hasParameters"
+                    :class="{ 'readonly-input': parameterRequirements.hasParameters }"
+                    required
                   />
                 </td>
                 <td>
@@ -74,14 +83,12 @@
                     v-model="param.description"
                     :placeholder="t('mcpService.parameterDescription')"
                     class="parameter-input"
+                    required
                   />
                 </td>
               </tr>
             </tbody>
           </table>
-        </div>
-        <div class="parameter-description">
-          {{ t('mcpService.parameterConfigDescription') }}
         </div>
       </div>
 
@@ -254,6 +261,7 @@ import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal/index.vue'
 import { CoordinatorToolApiService, type CoordinatorToolVO } from '@/api/coordinator-tool-api-service'
+import { PlanParameterApiService, type ParameterRequirements } from '@/api/plan-parameter-api-service'
 
 const { t } = useI18n()
 
@@ -308,6 +316,14 @@ const isPublished = ref(false)
 // MCP服务发布选项
 const publishAsMcpService = ref(false)
 
+// Parameter requirements from plan template
+const parameterRequirements = ref<ParameterRequirements>({
+  parameters: [],
+  hasParameters: false,
+  requirements: ''
+})
+const isLoadingParameters = ref(false)
+
 // 开关文字动态居中相关
 const toggleLabelRef = ref<HTMLElement | null>(null)
 
@@ -339,7 +355,10 @@ const initializeFormData = () => {
   formData.serviceName = ''
   formData.userRequest = props.planDescription || ''
   formData.endpoint = ''
-  formData.parameters = []
+  // 只有在没有从计划模板加载参数时才重置参数
+  if (!parameterRequirements.value.hasParameters) {
+    formData.parameters = []
+  }
   currentTool.value = null
   publishStatus.value = ''
   endpointUrl.value = ''
@@ -354,6 +373,41 @@ const loadEndpoints = async () => {
   } catch (err: any) {
     console.error('加载endpoints失败:', err)
     showMessage(t('mcpService.loadEndpointsFailed') + ': ' + err.message, 'error')
+  }
+}
+
+// Load parameter requirements from plan template
+const loadParameterRequirements = async () => {
+  if (!props.planTemplateId) {
+    parameterRequirements.value = {
+      parameters: [],
+      hasParameters: false,
+      requirements: ''
+    }
+    return
+  }
+
+  isLoadingParameters.value = true
+  try {
+    const requirements = await PlanParameterApiService.getParameterRequirements(props.planTemplateId)
+    parameterRequirements.value = requirements
+    
+    // Initialize form parameters with extracted parameters
+    if (requirements.hasParameters) {
+      formData.parameters = requirements.parameters.map(param => ({
+        name: param,
+        description: ''
+      }))
+    }
+  } catch (error) {
+    console.error('[PublishModal] Failed to load parameter requirements:', error)
+    parameterRequirements.value = {
+      parameters: [],
+      hasParameters: false,
+      requirements: ''
+    }
+  } finally {
+    isLoadingParameters.value = false
   }
 }
 
@@ -811,16 +865,21 @@ const loadCoordinatorToolData = async () => {
       try {
         if (tool.inputSchema) {
           const parameters = JSON.parse(tool.inputSchema)
-          if (Array.isArray(parameters)) {
+          if (Array.isArray(parameters) && parameters.length > 0) {
+            // 只有当inputSchema中有参数时才覆盖，否则保持从计划模板加载的参数
             formData.parameters = parameters.map(param => ({
               name: param.name || '',
               description: param.description || ''
             }))
+            console.log('[PublishModal] 从inputSchema加载参数:', formData.parameters)
+          } else {
+            console.log('[PublishModal] inputSchema为空，保持现有参数:', formData.parameters)
           }
         }
       } catch (e) {
         console.warn('[PublishModal] ' + t('mcpService.parseInputSchemaFailed') + ':', e)
-        formData.parameters = []
+        // 解析失败时不清空参数，保持现有参数
+        console.log('[PublishModal] 解析失败，保持现有参数:', formData.parameters)
       }
       
       console.log('[PublishModal] 表单数据已填充:', formData)
@@ -896,6 +955,11 @@ watch(() => isPublished.value, calculateToggleLabelPosition)
 watch(() => t('mcpService.published'), calculateToggleLabelPosition)
 watch(() => t('mcpService.unpublished'), calculateToggleLabelPosition)
 
+// Watch for planTemplateId changes
+watch(() => props.planTemplateId, () => {
+  loadParameterRequirements()
+})
+
 // Initialize when component mounts
 onMounted(async () => {
   if (showModal.value) {
@@ -903,6 +967,7 @@ onMounted(async () => {
     initializeFormData()
     await loadEndpoints()
     await loadCoordinatorToolData()
+    await loadParameterRequirements()
     // 计算开关文字位置
     calculateToggleLabelPosition()
   }
@@ -996,6 +1061,18 @@ onMounted(async () => {
   width: 100%;
 }
 
+/* Parameter Requirements Help Text */
+.params-help-text {
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+  padding: 6px 8px;
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: 4px;
+}
+
 /* 参数表格自适应 */
 .parameter-table {
   margin-bottom: 16px;
@@ -1044,16 +1121,13 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.parameter-description {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.4;
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 6px;
-  border-left: 3px solid rgba(102, 126, 234, 0.3);
+.readonly-input {
+  background: rgba(255, 255, 255, 0.02) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.05) !important;
 }
+
 
 /* 删除按钮和添加按钮样式已移除 */
 

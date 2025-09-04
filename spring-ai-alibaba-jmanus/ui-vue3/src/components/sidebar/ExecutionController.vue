@@ -20,25 +20,34 @@
       <span>{{ t('sidebar.executionController') }}</span>
     </div>
     <div class="execution-content">
-      <div class="params-input-group">
-        <label>{{ t('sidebar.executionParams') }}</label>
+      <!-- Parameter Requirements Display -->
+      <div class="params-requirements-group">
+        <label>{{ t('sidebar.parameterRequirements') }}</label>
         <div class="params-help-text">
-          {{ t('sidebar.executionParamsHelp') }}
+          {{ t('sidebar.parameterRequirementsHelp') }}
         </div>
-        <div class="params-input-container">
-          <input
-            v-model="executionParams"
-            class="params-input"
-            :placeholder="t('sidebar.executionParamsPlaceholder')"
-          />
-          <button
-            class="clear-params-btn"
-            @click="clearExecutionParams"
-            :title="t('sidebar.clearParams')"
+        
+        <!-- Show parameter fields only if there are parameters -->
+        <div v-if="parameterRequirements.hasParameters" class="parameter-fields">
+          <div
+            v-for="param in parameterRequirements.parameters"
+            :key="param"
+            class="parameter-field"
           >
-            <Icon icon="carbon:close" width="12" />
-          </button>
+            <label class="parameter-label">
+              {{ param }}
+              <span class="required">*</span>
+            </label>
+            <input
+              v-model="parameterValues[param]"
+              class="parameter-input"
+              :placeholder="`Enter value for ${param}`"
+              @input="updateParameterValue(param, ($event.target as HTMLInputElement).value)"
+              required
+            />
+          </div>
         </div>
+        
       </div>
       <div class="api-url-display">
         <span class="api-url-label">{{ t('sidebar.apiUrl') }}:</span>
@@ -74,9 +83,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
+import { PlanParameterApiService, type ParameterRequirements } from '@/api/plan-parameter-api-service'
 
 const { t } = useI18n()
 
@@ -106,6 +116,13 @@ const emit = defineEmits<{
 
 // Local state
 const executionParams = ref('')
+const parameterRequirements = ref<ParameterRequirements>({
+  parameters: [],
+  hasParameters: false,
+  requirements: ''
+})
+const parameterValues = ref<Record<string, string>>({})
+const isLoadingParameters = ref(false)
 
 // Computed properties
 const computedApiUrl = computed(() => {
@@ -127,9 +144,75 @@ const clearExecutionParams = () => {
   emit('clearParams')
 }
 
-// Watch for changes in execution params
+// Load parameter requirements when plan template changes
+const loadParameterRequirements = async () => {
+  if (!props.currentPlanTemplateId) {
+    parameterRequirements.value = {
+      parameters: [],
+      hasParameters: false,
+      requirements: ''
+    }
+    parameterValues.value = {}
+    return
+  }
+
+  isLoadingParameters.value = true
+  try {
+    const requirements = await PlanParameterApiService.getParameterRequirements(props.currentPlanTemplateId)
+    parameterRequirements.value = requirements
+    
+    // Initialize parameter values
+    const newValues: Record<string, string> = {}
+    requirements.parameters.forEach(param => {
+      newValues[param] = parameterValues.value[param] || ''
+    })
+    parameterValues.value = newValues
+    
+    // Update execution params with current parameter values
+    updateExecutionParamsFromParameters()
+  } catch (error) {
+    console.error('Failed to load parameter requirements:', error)
+    parameterRequirements.value = {
+      parameters: [],
+      hasParameters: false,
+      requirements: ''
+    }
+  } finally {
+    isLoadingParameters.value = false
+  }
+}
+
+// Update parameter value and sync with execution params
+const updateParameterValue = (paramName: string, value: string) => {
+  parameterValues.value[paramName] = value
+  updateExecutionParamsFromParameters()
+}
+
+// Update execution params from parameter values
+const updateExecutionParamsFromParameters = () => {
+  if (parameterRequirements.value.hasParameters) {
+    // Convert parameter values to JSON string for execution
+    executionParams.value = JSON.stringify(parameterValues.value, null, 2)
+  } else {
+    executionParams.value = ''
+  }
+  emit('updateExecutionParams', executionParams.value)
+}
+
+
+// Watch for changes in plan template ID
+watch(() => props.currentPlanTemplateId, () => {
+  loadParameterRequirements()
+})
+
+// Watch for changes in execution params (for backward compatibility)
 watch(() => executionParams.value, (newValue) => {
   emit('updateExecutionParams', newValue)
+})
+
+// Load parameters on mount
+onMounted(() => {
+  loadParameterRequirements()
 })
 
 // Expose methods for parent component
@@ -163,7 +246,7 @@ defineExpose({
   gap: 12px;
 }
 
-.params-input-group {
+.params-requirements-group {
   label {
     display: block;
     margin-bottom: 6px;
@@ -172,12 +255,44 @@ defineExpose({
     font-weight: 500;
   }
 
-  .params-input-container {
-    position: relative;
-    display: flex;
-    align-items: center;
+  .params-help-text {
+    margin-bottom: 12px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.4;
+    padding: 6px 8px;
+    background: rgba(102, 126, 234, 0.1);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 4px;
+  }
 
-    .params-input {
+  .parameter-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .parameter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .parameter-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .required {
+        color: #ff6b6b;
+        font-weight: bold;
+      }
+    }
+
+    .parameter-input {
       width: 100%;
       background: rgba(0, 0, 0, 0.3);
       border: 1px solid rgba(255, 255, 255, 0.2);
@@ -185,9 +300,8 @@ defineExpose({
       color: white;
       font-size: 12px;
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-      padding: 8px;
-      padding-right: 32px;
-      min-height: auto;
+      padding: 8px 12px;
+      min-height: 36px;
 
       &:focus {
         outline: none;
@@ -199,40 +313,10 @@ defineExpose({
         color: rgba(255, 255, 255, 0.4);
       }
     }
-
-    .clear-params-btn {
-      position: absolute;
-      right: 8px;
-      width: 20px;
-      height: 20px;
-      background: transparent;
-      border: none;
-      border-radius: 4px;
-      color: rgba(255, 255, 255, 0.5);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background: rgba(255, 0, 0, 0.2);
-        color: #ff6b6b;
-      }
-    }
   }
 
-  .params-help-text {
-    margin-bottom: 6px;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.6);
-    line-height: 1.4;
-    padding: 6px 8px;
-    background: rgba(102, 126, 234, 0.1);
-    border: 1px solid rgba(102, 126, 234, 0.2);
-    border-radius: 4px;
-  }
 }
+
 
 .api-url-display {
   padding: 8px;
