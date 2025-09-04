@@ -102,10 +102,14 @@ public class DashScopeWebSocketClient extends WebSocketListener {
 	}
 
 	public void sendBinary(ByteBuffer binary) {
-		// TODO
-		// if (!isOpen.get()) {
-		// establishWebSocketClient();
-		// }
+		if (!isOpen.get()) {
+			establishWebSocketClient();
+		}
+
+		if (binary == null) {
+			logger.error("binary data is null");
+			return;
+		}
 
 		boolean success = webSocketClient.send(ByteString.of(binary));
 

@@ -46,9 +46,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author benym
  * @since 2025/7/31 16:47
  */
-@SpringBootTest(classes = RedissonRedisChatMemoryRepositoryIT.TestConfiguration.class)
+@SpringBootTest(classes = RedissonRedisChatMemoryRepositoryTest.TestConfiguration.class)
 @Testcontainers
-public class RedissonRedisChatMemoryRepositoryIT {
+public class RedissonRedisChatMemoryRepositoryTest {
 
 	private static final int REDIS_PORT = 6379;
 

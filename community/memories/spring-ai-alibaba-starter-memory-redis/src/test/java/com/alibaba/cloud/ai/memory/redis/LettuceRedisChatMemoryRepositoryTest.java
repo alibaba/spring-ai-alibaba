@@ -13,72 +13,57 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.memory.redis.ssl;
+package com.alibaba.cloud.ai.memory.redis;
 
-import com.alibaba.cloud.ai.memory.redis.RedissonRedisChatMemoryRepository;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.*;
-import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.ai.content.Media;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.ssl.SslAutoConfiguration;
-import org.springframework.boot.ssl.SslBundles;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.util.MimeTypeUtils;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
 
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integrated test redis Memory SSL support
+ * Integration test using Testcontainers to automatically manage Redis test environment
  *
  * @author benym
- * @since 2025/8/27 14:26
+ * @since 2025/7/31 16:48
  */
-@EnableAutoConfiguration
-@Import(SslAutoConfiguration.class)
-@SpringBootTest(classes = SslRedissonRedisChatMemoryIT.TestConfiguration.class)
+@SpringBootTest(classes = LettuceRedisChatMemoryRepositoryTest.TestConfiguration.class)
 @Testcontainers
-public class SslRedissonRedisChatMemoryIT {
+public class LettuceRedisChatMemoryRepositoryTest {
 
 	private static final int REDIS_PORT = 6379;
 
 	// Define and start Redis container
 	@Container
 	private static final GenericContainer<?> redisContainer = new GenericContainer<>(DockerImageName.parse("redis:7.0"))
-		.withExposedPorts(REDIS_PORT)
-		.withCopyToContainer(MountableFile.forClasspathResource("ssl/cert.pem"), "/usr/local/etc/redis/redis.crt")
-		.withCopyToContainer(MountableFile.forClasspathResource("ssl/key.pem"), "/usr/local/etc/redis/redis.key")
-		.withCommand("redis-server", "--tls-port", "6379", "--port", "0", "--tls-cert-file",
-				"/usr/local/etc/redis/redis.crt", "--tls-key-file", "/usr/local/etc/redis/redis.key",
-				"--tls-ca-cert-file", "/usr/local/etc/redis/redis.crt", "--tls-auth-clients", "no");
+		.withExposedPorts(REDIS_PORT);
 
 	/**
 	 * Dynamically configure Redis properties
 	 */
 	@DynamicPropertySource
 	static void registerProperties(DynamicPropertyRegistry registry) {
-		registry.add("spring.ai.memory.redis.host", redisContainer::getHost);
-		registry.add("spring.ai.memory.redis.port", () -> redisContainer.getMappedPort(REDIS_PORT));
-		registry.add("spring.ai.memory.redis.ssl.enabled", () -> "true");
-		registry.add("spring.ai.memory.redis.ssl.bundle", () -> "myPemBundle");
-		registry.add("spring.ssl.bundle.pem.myPemBundle.keystore.certificate", () -> "classpath:ssl/cert.pem");
-		registry.add("spring.ssl.bundle.pem.myPemBundle.keystore.private-key", () -> "classpath:ssl/key.pem");
-		registry.add("spring.ssl.bundle.pem.myPemBundle.truststore.certificate", () -> "classpath:ssl/cert.pem");
+		registry.add("spring.redis.host", redisContainer::getHost);
+		registry.add("spring.redis.port", () -> redisContainer.getMappedPort(REDIS_PORT));
 	}
 
 	@Autowired
@@ -86,7 +71,7 @@ public class SslRedissonRedisChatMemoryIT {
 
 	@Test
 	void correctChatMemoryRepositoryInstance() {
-		assertThat(chatMemoryRepository).isInstanceOf(RedissonRedisChatMemoryRepository.class);
+		assertThat(chatMemoryRepository).isInstanceOf(LettuceRedisChatMemoryRepository.class);
 	}
 
 	@ParameterizedTest
@@ -186,7 +171,7 @@ public class SslRedissonRedisChatMemoryIT {
 		assertThat(savedMessages.size()).isEqualTo(messages.size());
 
 		// Perform cleanup operation, set max limit to 3, delete count to 2
-		RedissonRedisChatMemoryRepository redisRepository = (RedissonRedisChatMemoryRepository) chatMemoryRepository;
+		LettuceRedisChatMemoryRepository redisRepository = (LettuceRedisChatMemoryRepository) chatMemoryRepository;
 		redisRepository.clearOverLimit(conversationId, 3, 2);
 
 		// Verify only the last 3 messages are retained
@@ -197,18 +182,54 @@ public class SslRedissonRedisChatMemoryIT {
 		assertThat(savedMessages.get(2).getText()).isEqualTo(messages.get(4).getText());
 	}
 
+	@Test
+	@Disabled("Disabled until fix the bug")
+	void saveAndLoadUserMessageWithUriMedia() {
+		var conversationId = UUID.randomUUID().toString();
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.build();
+
+		chatMemoryRepository.saveAll(conversationId, List.of(userMessage));
+		var loaded = chatMemoryRepository.findByConversationId(conversationId);
+
+		assertThat(loaded).isNotNull();
+		assertThat(loaded).hasSize(1);
+		assertThat(loaded.get(0).getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(loaded.get(0).getText()).isEqualTo(userMessage.getText());
+	}
+
+	@Test
+	void saveAndLoadUserMessageWithBytesMedia() {
+		var conversationId = UUID.randomUUID().toString();
+		byte[] bytes = new byte[] { 1, 2, 3 };
+		var userMessage = UserMessage.builder()
+			.text("Here is an inline image")
+			.media(List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(bytes).build()))
+			.build();
+
+		chatMemoryRepository.saveAll(conversationId, List.of(userMessage));
+		var loaded = chatMemoryRepository.findByConversationId(conversationId);
+
+		assertThat(loaded).isNotNull();
+		assertThat(loaded).hasSize(1);
+		assertThat(loaded.get(0).getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(loaded.get(0).getText()).isEqualTo(userMessage.getText());
+	}
+
 	@SpringBootConfiguration
 	static class TestConfiguration {
 
 		@Bean
-		ChatMemoryRepository chatMemoryRepository(ObjectProvider<SslBundles> sslBundlesProvider) {
+		ChatMemoryRepository chatMemoryRepository() {
 			// Use Redis connection information from container to create Redis repository
-			return RedissonRedisChatMemoryRepository.builder()
+			return LettuceRedisChatMemoryRepository.builder()
 				.host(redisContainer.getHost())
 				.port(redisContainer.getMappedPort(REDIS_PORT))
-				.sslBundles(sslBundlesProvider.getIfAvailable())
-				.useSsl(true)
-				.bundle("myPemBundle")
 				.build();
 		}
 
