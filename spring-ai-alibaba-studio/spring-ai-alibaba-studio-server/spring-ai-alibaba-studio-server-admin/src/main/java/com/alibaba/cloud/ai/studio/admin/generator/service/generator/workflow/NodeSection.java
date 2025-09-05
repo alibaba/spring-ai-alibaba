@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
  * @author robocanic
  * @since 2025/5/23
  */
+// TODO: 将assistMethodCode生成的代码单独放在生成工程的一个类中
 public interface NodeSection<T extends NodeData> {
 
 	boolean support(NodeType nodeType);
