@@ -392,7 +392,8 @@ public class AgentVectorService {
 		if ("mysql".equalsIgnoreCase(datasource.getType())) {
 			dbConfig.setConnectionType("jdbc");
 			dbConfig.setDialectType("mysql");
-		} else if ("h2".equalsIgnoreCase(datasource.getType())) {
+		}
+		else if ("h2".equalsIgnoreCase(datasource.getType())) {
 			dbConfig.setConnectionType("jdbc");
 			dbConfig.setDialectType("h2");
 		}
