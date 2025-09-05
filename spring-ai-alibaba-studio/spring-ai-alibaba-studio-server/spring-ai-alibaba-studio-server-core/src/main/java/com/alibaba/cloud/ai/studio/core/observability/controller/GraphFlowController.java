@@ -1,14 +1,16 @@
 package com.alibaba.cloud.ai.studio.core.observability.controller;
 
-import com.alibaba.cloud.ai.studio.core.observability.exception.GraphFlowNotFoundException;
-import com.alibaba.cloud.ai.studio.core.observability.service.GraphFlowService;
-import com.alibaba.cloud.ai.studio.core.observability.model.SAAGraphFlow;
-import com.alibaba.cloud.ai.studio.core.observability.config.SAAGraphFlowRegistry;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.studio.core.observability.workflow.SAAGraphFlow;
+import com.alibaba.cloud.ai.studio.core.observability.workflow.SAAGraphFlowRegistry;
 import com.alibaba.cloud.ai.studio.core.observability.dto.SAAGraphFlowInfoDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,14 +21,12 @@ import java.util.stream.Collectors;
 public class GraphFlowController {
 
     private final SAAGraphFlowRegistry graphFlowRegistry;
-    private final GraphFlowService graphFlowService;
 
-    public GraphFlowController(SAAGraphFlowRegistry graphFlowRegistry,GraphFlowService graphFlowService) {
+    public GraphFlowController(SAAGraphFlowRegistry graphFlowRegistry) {
         this.graphFlowRegistry = graphFlowRegistry;
-        this.graphFlowService = graphFlowService;
     }
 
-    @GetMapping("")
+    @GetMapping
     @Operation(summary = "Get Flows by Owner", description = "Retrieves a list of all graph flows owned by a specific user.")
     public List<SAAGraphFlowInfoDTO> getFlowsByOwner(
         @Parameter(description = "The unique identifier of the owner.", required = true, example = "saa")
@@ -35,22 +35,49 @@ public class GraphFlowController {
         List<SAAGraphFlow> userFlows = graphFlowRegistry.findByOwnerID(ownerID);
         
         return userFlows.stream()
-                .map(graphFlowService::convertToDTO)
+                .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-
-    @GetMapping("/{flowId}")
-    @Operation(summary = "Get Flow by ID", description = "Retrieves a specific graph flow by its unique identifier.")
-    public SAAGraphFlowInfoDTO getFlowById(
-        @Parameter(description = "The unique identifier of the flow.", required = true, example = "test")
-        @PathVariable String flowId) {
+    /**
+     * Converts a {@link SAAGraphFlow} domain object into a {@link SAAGraphFlowInfoDTO}.
+     *
+     * @param flow The {@link SAAGraphFlow} object to convert.
+     * @return The corresponding {@link SAAGraphFlowInfoDTO}.
+     */
+    private SAAGraphFlowInfoDTO convertToDTO(SAAGraphFlow flow) {
+        // Generate MERMAID graph representation
+        String mermaidGraph = generateMermaidGraph(flow);
         
-        SAAGraphFlowInfoDTO flow = graphFlowService.findFlowById(flowId);
-        if (flow == null) {
-            throw new GraphFlowNotFoundException(flowId);
-        }
-        
-        return flow;
+        return new SAAGraphFlowInfoDTO(
+                flow.id(),
+                flow.title(),
+                flow.description(),
+                flow.stateGraph(),
+                flow.tags(),
+                mermaidGraph
+        );
     }
 
+    /**
+     * Generates MERMAID graph representation for the given flow.
+     * 
+     * @param flow The {@link SAAGraphFlow} object to generate MERMAID for.
+     * @return The MERMAID graph representation as a string, or an error message if generation fails.
+     */
+    private String generateMermaidGraph(SAAGraphFlow flow) {
+        try {
+            if (flow.stateGraph() != null) {
+                GraphRepresentation representation = flow.stateGraph().getGraph(
+                    GraphRepresentation.Type.MERMAID, 
+                    flow.title() != null ? flow.title() : flow.id(), 
+                    false
+                );
+                return representation.content();
+            } else {
+                return "Graph not available";
+            }
+        } catch (Exception e) {
+            return "Error generating MERMAID graph: " + e.getMessage();
+        }
+    }
 }

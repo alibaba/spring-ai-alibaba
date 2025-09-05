@@ -1,7 +1,7 @@
 package com.alibaba.cloud.ai.studio.workflow.assistant.config;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.studio.core.observability.model.SAAGraphFlow;
+import com.alibaba.cloud.ai.studio.core.observability.workflow.SAAGraphFlow;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
