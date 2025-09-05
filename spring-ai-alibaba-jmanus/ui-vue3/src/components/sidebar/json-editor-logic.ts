@@ -323,14 +323,22 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
    * Handle rollback operation
    */
   const handleRollback = () => {
-    emit('rollback')
+    try {
+      emit('rollback')
+    } catch (error) {
+      console.error('Error during rollback:', error)
+    }
   }
 
   /**
    * Handle restore operation
    */
   const handleRestore = () => {
-    emit('restore')
+    try {
+      emit('restore')
+    } catch (error) {
+      console.error('Error during restore:', error)
+    }
   }
 
   /**

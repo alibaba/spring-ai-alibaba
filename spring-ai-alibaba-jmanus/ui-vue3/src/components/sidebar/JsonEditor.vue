@@ -33,7 +33,7 @@
         <button
           class="btn btn-sm"
           @click="handleRollback"
-          :disabled="!canRollback"
+          :disabled="!(canRollback ?? false)"
           :title="$t('sidebar.rollback')"
         >
           <Icon icon="carbon:undo" width="14" />
@@ -41,7 +41,7 @@
         <button
           class="btn btn-sm"
           @click="handleRestore"
-          :disabled="!canRestore"
+          :disabled="!(canRestore ?? false)"
           :title="$t('sidebar.restore')"
         >
           <Icon icon="carbon:redo" width="14" />

@@ -139,8 +139,8 @@
             :can-restore="sidebarStore.canRestore"
             :is-generating="sidebarStore.isGenerating"
             :is-executing="sidebarStore.isExecuting"
-            @rollback="sidebarStore.rollbackVersion"
-            @restore="sidebarStore.restoreVersion"
+            @rollback="handleRollback"
+            @restore="handleRestore"
             @save="handleSaveTemplate"
             @update:json-content="(value: string) => sidebarStore.jsonContent = value"
           />
@@ -298,6 +298,33 @@ const handleUpdatePlan = async () => {
   } catch (error: any) {
     console.error('Failed to update plan:', error)
     toast.error(t('sidebar.updateFailed') + ': ' + error.message)
+  }
+}
+
+// Version control handlers
+const handleRollback = () => {
+  try {
+    if (sidebarStore && typeof sidebarStore.rollbackVersion === 'function') {
+      sidebarStore.rollbackVersion()
+    } else {
+      console.warn('sidebarStore or rollbackVersion method is not available')
+    }
+  } catch (error) {
+    console.error('Error during rollback operation:', error)
+    toast.error(t('sidebar.rollbackFailed') || 'Rollback failed')
+  }
+}
+
+const handleRestore = () => {
+  try {
+    if (sidebarStore && typeof sidebarStore.restoreVersion === 'function') {
+      sidebarStore.restoreVersion()
+    } else {
+      console.warn('sidebarStore or restoreVersion method is not available')
+    }
+  } catch (error) {
+    console.error('Error during restore operation:', error)
+    toast.error(t('sidebar.restoreFailed') || 'Restore failed')
   }
 }
 

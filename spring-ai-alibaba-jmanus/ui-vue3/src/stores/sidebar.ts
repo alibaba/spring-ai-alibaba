@@ -45,6 +45,12 @@ export class SidebarStore {
   planVersions: string[] = []
   currentVersionIndex = -1
 
+  constructor() {
+    // 确保属性正确初始化
+    this.planVersions = []
+    this.currentVersionIndex = -1
+  }
+
   // Helper function to parse date from different formats
   parseDateTime(dateValue: any): Date {
     if (!dateValue) {
@@ -76,12 +82,12 @@ export class SidebarStore {
   }
 
   get canRollback(): boolean {
-    return this.planVersions.length > 1 && this.currentVersionIndex > 0
+    return this.planVersions && this.planVersions.length > 1 && this.currentVersionIndex > 0
   }
 
   get canRestore(): boolean {
     return (
-      this.planVersions.length > 1 && this.currentVersionIndex < this.planVersions.length - 1
+      this.planVersions && this.planVersions.length > 1 && this.currentVersionIndex < this.planVersions.length - 1
     )
   }
 
@@ -216,16 +222,16 @@ export class SidebarStore {
   }
 
   rollbackVersion() {
-    if (this.canRollback) {
+    if (this.canRollback && this.planVersions && this.currentVersionIndex > 0) {
       this.currentVersionIndex--
-      this.jsonContent = this.planVersions[this.currentVersionIndex]
+      this.jsonContent = this.planVersions[this.currentVersionIndex] || ''
     }
   }
 
   restoreVersion() {
-    if (this.canRestore) {
+    if (this.canRestore && this.planVersions && this.currentVersionIndex < this.planVersions.length - 1) {
       this.currentVersionIndex++
-      this.jsonContent = this.planVersions[this.currentVersionIndex]
+      this.jsonContent = this.planVersions[this.currentVersionIndex] || ''
     }
   }
 
