@@ -195,7 +195,7 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 					String[] pathParts = path.split("/");
 					for (int i = 0; i < pathParts.length - 1; i++) {
 						if ("startup-agents".equals(pathParts[i]) && i + 1 < pathParts.length) {
-							String agentDirName = pathParts[i + 1];
+                            String agentDirName = pathParts[i + 2];
 							if (!agentList.contains(agentDirName)) {
 								agentList.add(agentDirName);
 								log.debug("Found startup agent: {}", agentDirName);
