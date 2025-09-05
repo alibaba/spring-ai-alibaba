@@ -29,19 +29,24 @@
       :step-actions="message.stepActions || []"
       :generic-input="message.genericInput || ''"
       @step-selected="handleStepSelected"
-      @user-input-submitted="(inputData: any) => handleUserInputSubmit(message, inputData)"
     />
     
     <!-- Response section -->
     <ResponseSection
-      v-if="message.content || message.error || isStreaming"
+      v-if="message.content || message.error || isStreaming || message.planExecution?.userInputWaitState?.waiting"
       :content="message.content || ''"
       :is-streaming="isStreaming || false"
-      v-bind="message.error ? { error: message.error } : {}"
+      v-bind="{
+        ...(message.error ? { error: message.error } : {}),
+        ...(message.planExecution?.userInputWaitState ? { userInputWaitState: message.planExecution.userInputWaitState } : {}),
+        ...(message.planExecution?.currentPlanId ? { planId: message.planExecution.currentPlanId } : {})
+      }"
       :timestamp="message.timestamp"
+      :generic-input="message.genericInput || ''"
       @copy="handleCopy"
       @regenerate="handleRegenerate"
       @retry="handleRetry"
+      @user-input-submitted="(inputData: any) => handleUserInputSubmit(message, inputData)"
     />
   </div>
 </template>
@@ -81,15 +86,6 @@ const handleRetry = () => {
 }
 
 // Plan execution event handlers
-const handleStepClick = (message: ChatMessage, stepIndex: number) => {
-  console.log('[AssistantMessage] Step clicked:', stepIndex, 'for message:', message.id)
-  // Handle step selection - can be extended for more functionality
-}
-
-const handleSubPlanStepClick = (message: ChatMessage, stepIndex: number, subStepIndex: number) => {
-  console.log('[AssistantMessage] Sub-plan step clicked:', stepIndex, subStepIndex, 'for message:', message.id)
-  // Handle sub-plan step selection - can be extended for more functionality
-}
 
 const handleUserInputSubmit = (message: ChatMessage, inputData: any) => {
   console.log('[AssistantMessage] User input submitted:', inputData, 'for message:', message.id)

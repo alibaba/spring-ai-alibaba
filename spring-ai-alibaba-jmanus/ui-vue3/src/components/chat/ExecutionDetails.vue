@@ -112,25 +112,16 @@
       </div>
     </div>
 
-    <!-- User input form for the main plan -->
-    <UserInputForm
-      v-if="planExecution?.userInputWaitState?.waiting"
-      :user-input-wait-state="planExecution.userInputWaitState"
-      :plan-id="planExecution.currentPlanId"
-      :generic-input="genericInput"
-      @user-input-submitted="handleUserInputSubmitted"
-    />
   </div>
 </template>
   
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import type { PlanExecutionRecord, AgentExecutionRecord, ExecutionStatus } from '@/types/plan-execution-record'
 import type { CompatiblePlanExecutionRecord } from './composables/useChatMessages'
 import RecursiveSubPlan from './RecursiveSubPlan.vue'
-import UserInputForm from './UserInputForm.vue'
 
 interface Props {
   planExecution: CompatiblePlanExecutionRecord
@@ -149,9 +140,6 @@ const emit = defineEmits<Emits>()
 
 // Initialize i18n
 const { t } = useI18n()
-
-// Local state
-const genericInput = ref(props.genericInput || '')
 
 // Computed properties
 const agentExecutionSequence = computed(() => props.planExecution?.agentExecutionSequence ?? [])
@@ -254,10 +242,6 @@ const handleStepSelected = (stepId: string) => {
 
 // Note: Sub-plan agent and think-act step handling is now done by RecursiveSubPlan component
 
-const handleUserInputSubmitted = (inputData: any) => {
-  console.log('[ExecutionDetails] User input submitted:', inputData)
-  emit('user-input-submitted', inputData)
-}
 
 // Helper methods
 

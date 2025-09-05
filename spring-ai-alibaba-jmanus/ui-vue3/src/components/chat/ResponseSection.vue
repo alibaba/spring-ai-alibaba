@@ -28,6 +28,15 @@
     </div>
     
     <div class="response-content">
+      <!-- User input form -->
+      <UserInputForm
+        v-if="userInputWaitState?.waiting"
+        :user-input-wait-state="userInputWaitState"
+        :plan-id="planId"
+        :generic-input="genericInput"
+        @user-input-submitted="handleUserInputSubmitted"
+      />
+      
       <!-- Final response with content -->
       <div v-if="content" class="final-response">
         <div class="response-text" v-html="formatResponseText(content)"></div>
@@ -84,18 +93,24 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useMessageFormatting } from './composables/useMessageFormatting'
+import UserInputForm from './UserInputForm.vue'
+import type { UserInputWaitState } from '@/types/plan-execution-record'
 
 interface Props {
   content?: string
   isStreaming?: boolean
   error?: string
   timestamp?: Date
+  userInputWaitState?: UserInputWaitState
+  planId?: string
+  genericInput?: string
 }
 
 interface Emits {
   (e: 'copy'): void
   (e: 'regenerate'): void
   (e: 'retry'): void
+  (e: 'user-input-submitted', inputData: any): void
 }
 
 const props = defineProps<Props>()
@@ -123,6 +138,11 @@ const handleRegenerate = () => {
 
 const handleRetry = () => {
   emit('retry')
+}
+
+const handleUserInputSubmitted = (inputData: any) => {
+  console.log('[ResponseSection] User input submitted:', inputData)
+  emit('user-input-submitted', inputData)
 }
 </script>
 
