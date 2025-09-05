@@ -16,9 +16,11 @@
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLAdapter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.GraphProjectDescription;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.ProjectGenerator;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ContributorFileUtil;
 import io.spring.initializr.generator.io.template.MustacheTemplateRenderer;
 import io.spring.initializr.generator.io.template.TemplateRenderer;
 import io.spring.initializr.generator.project.ProjectDescription;
@@ -79,6 +82,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private final List<NodeSection<? extends NodeData>> nodeNodeSections;
 
+	private final Map<NodeType, NodeSection<? extends NodeData>> nodeSectionMap;
+
 	public WorkflowProjectGenerator(List<DSLAdapter> dslAdapters,
 			ObjectProvider<MustacheTemplateRenderer> templateRenderer,
 			List<NodeSection<? extends NodeData>> nodeNodeSections) {
@@ -86,6 +91,15 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		this.templateRenderer = templateRenderer
 			.getIfAvailable(() -> new MustacheTemplateRenderer("classpath:/templates"));
 		this.nodeNodeSections = nodeNodeSections;
+		this.nodeSectionMap = nodeNodeSections.stream().map(nodeSection -> {
+			List<NodeType> nodeTypeList = Arrays.stream(NodeType.values()).filter(nodeSection::support).toList();
+			if (nodeTypeList.isEmpty()) {
+				return null;
+			}
+			return Map.entry(nodeTypeList.get(0), nodeSection);
+		})
+			.filter(Objects::nonNull)
+			.collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b));
 	}
 
 	@Override
@@ -122,18 +136,34 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		Map<String, Object> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
 		renderAndWriteTemplates(List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
 				List.of(graphBuilderModel, graphRunControllerModel), projectRoot, projectDescription);
+
+		// 生成需要的资源文件
+		this.generateResourceFiles(projectRoot,
+				nodes.stream()
+					.map(node -> Map.entry(node.getType(), node.getData()))
+					.map(e -> Map.entry((NodeSection<NodeData>) nodeSectionMap.get(e.getKey()), e.getValue()))
+					.map(e -> e.getKey().resourceFiles(projectDescription.getDslDialectType(), e.getValue()))
+					.flatMap(List::stream)
+					.toList());
+	}
+
+	private void generateResourceFiles(Path projectRoot, List<NodeSection.ResourceFile> resourceFiles) {
+		resourceFiles.forEach(resourceFile -> {
+			try (InputStream inputStream = resourceFile.inputStreamSupplier().get()) {
+				ContributorFileUtil.saveResourceFile(projectRoot, resourceFile.fileName(), inputStream);
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		});
 	}
 
 	private String renderAssistMethodCode(List<Node> nodes, DSLDialectType dialectType) {
 		StringBuilder sb = new StringBuilder();
-		nodes.stream()
-			.map(Node::getType)
-			.distinct()
-			.flatMap(type -> nodeNodeSections.stream().filter(section -> section.support(type)))
-			.forEach(section -> {
-				sb.append(section.assistMethodCode(dialectType));
-				sb.append(String.format("%n"));
-			});
+		nodes.stream().map(Node::getType).distinct().map(nodeSectionMap::get).forEach(section -> {
+			sb.append(section.assistMethodCode(dialectType));
+			sb.append(String.format("%n"));
+		});
 		return sb.toString();
 	}
 
@@ -162,12 +192,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		for (Node node : nodes) {
 			String varName = varNames.get(node.getId());
 			NodeType nodeType = node.getType();
-			for (NodeSection section : nodeNodeSections) {
-				if (section.support(nodeType)) {
-					sb.append(section.render(node, varName));
-					break;
-				}
-			}
+			NodeSection<? extends NodeData> section = nodeSectionMap.get(nodeType);
+			sb.append(section.render(node, varName));
 		}
 		return sb.toString();
 	}
@@ -327,7 +353,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, Object>> models, Path projectRoot,
 			ProjectDescription projectDescription) {
 		// todo: may to standardize the code format via the IdentifierGeneratorFactory
-		Path fileRoot = createDirectory(projectRoot, projectDescription);
+		Path fileRoot = ContributorFileUtil.createDirectory(projectRoot, projectDescription);
 		for (int i = 0; i < templateNames.size(); i++) {
 			String templateName = templateNames.get(i);
 			String template;
@@ -351,20 +377,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 				throw new RuntimeException("Got error when writing template " + templateName, e);
 			}
 		}
-	}
-
-	private Path createDirectory(Path projectRoot, ProjectDescription projectDescription) {
-		StringBuilder pathBuilder = new StringBuilder("src/main/").append(projectDescription.getLanguage().id());
-		String packagePath = projectDescription.getPackageName().replace('.', '/');
-		pathBuilder.append("/").append(packagePath).append("/graph/");
-		Path fileRoot;
-		try {
-			fileRoot = Files.createDirectories(projectRoot.resolve(pathBuilder.toString()));
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Got error when creating files", e);
-		}
-		return fileRoot;
 	}
 
 }

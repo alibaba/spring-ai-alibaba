@@ -15,8 +15,10 @@
  */
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
@@ -70,6 +72,20 @@ public interface NodeSection<T extends NodeData> {
 	 */
 	default String assistMethodCode(DSLDialectType dialectType) {
 		return "";
+	}
+
+	record ResourceFile(String fileName, Supplier<InputStream> inputStreamSupplier) {
+
+	}
+
+	/**
+	 * 部分节点需要额外添加的资源文件
+	 * @param dialectType DSL 类型
+	 * @param nodeData 节点数据
+	 * @return 资源文件列表
+	 */
+	default List<ResourceFile> resourceFiles(DSLDialectType dialectType, T nodeData) {
+		return List.of();
 	}
 
 }

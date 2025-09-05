@@ -25,6 +25,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 // TODO: 支持其他格式的文档，如PDF、ZIP等；解析并应用Dify的RerankModel配置
 @Component
 public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetrievalNodeData> {
@@ -129,6 +131,16 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 			default -> "";
 		});
 		return sb.toString();
+	}
+
+	@Override
+	public List<ResourceFile> resourceFiles(DSLDialectType dialectType, KnowledgeRetrievalNodeData nodeData) {
+		if (!DSLDialectType.STUDIO.equals(dialectType)) {
+			return NodeSection.super.resourceFiles(dialectType, nodeData);
+		}
+		// 根据knowledgeBaseIds获取对应的资源文件
+		// todo: 支持从OSS获取资源文件，或者在生成项目中从OSS获取资源文件
+		return List.of();
 	}
 
 }
