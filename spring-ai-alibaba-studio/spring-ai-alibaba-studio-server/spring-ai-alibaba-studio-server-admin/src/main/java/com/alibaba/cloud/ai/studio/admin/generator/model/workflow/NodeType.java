@@ -28,7 +28,7 @@ public enum NodeType {
 
 	AGENT("agent", "agent", "UNSUPPORTED"),
 
-	LLM("llm", "llm", "UNSUPPORTED"),
+	LLM("llm", "llm", "LLM"),
 
 	CODE("code", "code", "UNSUPPORTED"),
 

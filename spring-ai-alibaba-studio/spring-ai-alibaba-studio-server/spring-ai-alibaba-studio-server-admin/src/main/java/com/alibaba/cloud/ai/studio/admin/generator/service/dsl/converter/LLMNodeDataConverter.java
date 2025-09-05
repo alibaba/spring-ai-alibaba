@@ -19,6 +19,9 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -159,6 +162,40 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 	@Override
 	public String generateVarName(int count) {
 		return "LLMNode" + count;
+	}
+
+	private static final Pattern VAR_TEMPLATE_PATTERN = Pattern.compile("\\{(\\w+)}");
+
+	@Override
+	public BiConsumer<LLMNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY, STUDIO -> this.emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				// 设置输出
+				nodeData.setOutputs(LLMNodeData.getDefaultOutputSchemas(dialectType));
+				nodeData.setOutputKeyPrefix(nodeData.getVarName().concat("_"));
+
+				// 处理MessageTemplates
+				List<LLMNodeData.MessageTemplate> messageTemplates = Optional.ofNullable(nodeData.getMessageTemplates())
+					.orElse(List.of())
+					.stream()
+					.map(template -> {
+						String newText = this.convertVarTemplate(dialectType, template.template(), idToVarName);
+						Matcher matcher = VAR_TEMPLATE_PATTERN.matcher(newText);
+						List<String> keys = matcher.results().map(m -> m.group(1)).toList();
+						return new LLMNodeData.MessageTemplate(newText, keys, template.type());
+					})
+					.toList();
+				nodeData.setMessageTemplates(messageTemplates);
+
+				// 处理MemoryKey
+				if (nodeData.getMemoryKey() != null) {
+					String res = this.convertVarTemplate(dialectType, nodeData.getMemoryKey(), idToVarName);
+					nodeData.setMemoryKey(res.substring(1, res.length() - 1));
+				}
+
+			}).andThen(super.postProcessConsumer(dialectType));
+			default -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

@@ -53,6 +53,8 @@ public class LLMNodeData extends NodeData {
 
 	private String errorNextNode;
 
+	private String outputKeyPrefix;
+
 	public String getChatModeName() {
 		return chatModeName;
 	}
@@ -115,6 +117,14 @@ public class LLMNodeData extends NodeData {
 
 	public void setErrorNextNode(String errorNextNode) {
 		this.errorNextNode = errorNextNode;
+	}
+
+	public String getOutputKeyPrefix() {
+		return outputKeyPrefix;
+	}
+
+	public void setOutputKeyPrefix(String outputKeyPrefix) {
+		this.outputKeyPrefix = outputKeyPrefix;
 	}
 
 	public record MessageTemplate(String template, List<String> keys, MessageType type) {

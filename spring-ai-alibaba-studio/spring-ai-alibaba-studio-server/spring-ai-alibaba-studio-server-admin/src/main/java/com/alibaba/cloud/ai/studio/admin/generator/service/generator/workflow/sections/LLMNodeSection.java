@@ -38,8 +38,8 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 	public String render(Node node, String varName) {
 		LLMNodeData nodeData = ((LLMNodeData) node.getData());
 		return String.format("""
-				stateGraph.addNode("%s", node_async(
-				    createLLMNodeAction(%s, %s, %s, %s, %s, %s, %s, %s)
+				stateGraph.addNode("%s", AsyncNodeAction.node_async(
+				    createLLMNodeAction(%s, %s, %s, %s, %s, %s, %s, %s, %s)
 				));
 				""", varName, ObjectToCodeUtil.toCode(nodeData.getChatModeName()),
 				ObjectToCodeUtil.toCode(nodeData.getModeParams()),
@@ -47,7 +47,8 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 				ObjectToCodeUtil.toCode(nodeData.getMemoryKey()), ObjectToCodeUtil.toCode(nodeData.getMaxRetryCount()),
 				ObjectToCodeUtil.toCode(nodeData.getRetryIntervalMs()),
 				ObjectToCodeUtil.toCode(nodeData.getDefaultOutput()),
-				ObjectToCodeUtil.toCode(nodeData.getErrorNextNode()));
+				ObjectToCodeUtil.toCode(nodeData.getErrorNextNode()),
+				ObjectToCodeUtil.toCode(nodeData.getOutputKeyPrefix()));
 	}
 
 	@Override
@@ -55,6 +56,9 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 
 		return String.format(
 				"""
+						@Autowired
+						private ChatModel chatModel;
+
 						private record MessageTemplate(String template, List<String> keys, MessageType type) {
 						    public Message render(OverAllState state) {
 						        Map<String, Object> params = keys.stream()
@@ -69,17 +73,14 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 						    }
 						}
 
-						private NodeAction createLLMNodeAction(String chatModelName, Map<String, Double> modeParams,
+						private NodeAction createLLMNodeAction(String chatModelName, Map<String, Number> modeParams,
 						        List<MessageTemplate> messageTemplates, String memoryKey, Integer maxRetryCount, Integer retryIntervalMs,
-						        String defaultOutput, String errorNextNode) {
+						        String defaultOutput, String errorNextNode, String outputKeyPrefix) {
 						    // build chatClient with params
-						    var chatOptionsBuilder = DefaultToolCallingChatOptions.builder().model(chatModelName);
-						    Optional.ofNullable(modeParams.get("temperature")).ifPresent(chatOptionsBuilder::temperature);
-						    Optional.ofNullable(modeParams.get("top_p")).ifPresent(chatOptionsBuilder::topP);
-						    Optional.ofNullable(modeParams.get("max_tokens"))
-						        .ifPresent(val -> chatOptionsBuilder.maxTokens(val.intValue()));
-						    Optional.ofNullable(modeParams.get("frequency_penalty")).ifPresent(chatOptionsBuilder::frequencyPenalty);
-						    Optional.ofNullable(modeParams.get("presence_penalty")).ifPresent(chatOptionsBuilder::presencePenalty);
+						    var chatOptionsBuilder = DashScopeChatOptions.builder().withModel(chatModelName);
+						                      Optional.ofNullable(modeParams.get("temperature")).ifPresent(val -> chatOptionsBuilder.withTemperature(val.doubleValue()));
+						                      Optional.ofNullable(modeParams.get("top_p")).ifPresent(val -> chatOptionsBuilder.withTopP(val.doubleValue()));
+						                      Optional.ofNullable(modeParams.get("max_tokens")).ifPresent(val -> chatOptionsBuilder.withMaxToken(val.intValue()));
 						    final ChatClient chatClient = ChatClient.builder(chatModel).defaultOptions(chatOptionsBuilder.build()).build();
 
 						    String nextNodeKey = "next_node";
@@ -107,7 +108,11 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 						                if (content == null) {
 						                    throw new RuntimeException("ChatClient error");
 						                }
-						                return %s;
+						                Map<String, Object> map = new HashMap<>(%s);
+						                if (memoryKey != null) {
+						                    map.put(memoryKey, content);
+						                }
+						                return map;
 						            }
 						            catch (Exception e) {
 						                Thread.sleep(retryInterval);
@@ -127,10 +132,10 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 						    };
 						}
 						""",
-				dialectType.equals(DSLDialectType.DIFY) ? "Map.of(\"text\", content)"
-						: "Map.of(\"output\", content, \"reasoning_content\", content)",
-				dialectType.equals(DSLDialectType.DIFY) ? "Map.of(\"text\", defaultOutput)"
-						: "Map.of(\"output\", defaultOutput, \"reasoning_content\", defaultOutput)");
+				dialectType.equals(DSLDialectType.DIFY) ? "Map.of(outputKeyPrefix + \"text\", content)"
+						: "Map.of(outputKeyPrefix + \"output\", content, outputKeyPrefix + \"reasoning_content\", content)",
+				dialectType.equals(DSLDialectType.DIFY) ? "Map.of(outputKeyPrefix + \"text\", defaultOutput)"
+						: "Map.of(outputKeyPrefix + \"output\", defaultOutput, outputKeyPrefix + \"reasoning_content\", defaultOutput)");
 	}
 
 }
