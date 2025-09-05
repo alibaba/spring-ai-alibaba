@@ -155,8 +155,7 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 	public List<ColumnInfoBO> showColumns(Connection connection, String schema, String table) {
 		String sql = "SELECT column_name, remarks, data_type, \n"
 				+ "CASE WHEN IS_IDENTITY = 'YES' THEN TRUE ELSE FALSE END AS 主键唯一, \n"
-				+ "CASE WHEN IS_NULLABLE = 'NO' THEN TRUE ELSE FALSE END AS 非空 \n"
-				+ "FROM information_schema.COLUMNS "
+				+ "CASE WHEN IS_NULLABLE = 'NO' THEN TRUE ELSE FALSE END AS 非空 \n" + "FROM information_schema.COLUMNS "
 				+ "WHERE table_schema='%s' " + "and table_name='%s';";
 		List<ColumnInfoBO> columnInfoList = Lists.newArrayList();
 		try {
@@ -189,8 +188,7 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 	@Override
 	public List<ForeignKeyInfoBO> showForeignKeys(Connection connection, String schema, List<String> tables) {
 		String sql = "SELECT \n" + "    kc.TABLE_NAME AS 表名,\n" + "    kc.COLUMN_NAME AS 列名,\n"
-				+ "    kc2.table_name AS 引用表名,\n" + "    kc2.column_name AS 引用列名\n"
-				+ "FROM \n"
+				+ "    kc2.table_name AS 引用表名,\n" + "    kc2.column_name AS 引用列名\n" + "FROM \n"
 				+ "    information_schema.referential_constraints rc  \n"
 				+ "    join information_schema.key_column_usage kc on rc.constraint_name=kc.constraint_name \n"
 				+ "    join information_schema.key_column_usage kc2 on rc.unique_constraint_name=kc2.constraint_name \n"
