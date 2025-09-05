@@ -76,8 +76,11 @@ public class NacosReactAgentBuilder extends DefaultBuilder {
 
 		this.tools = toolCallbacks;
 
+		LlmNode.Builder llmNodeBuilder = LlmNode.builder().stream(true).chatClient(chatClient).messagesKey(this.inputKey);
+		if (outputKey != null && !outputKey.isEmpty()) {
+			llmNodeBuilder.outputKey(outputKey);
+		}
 
-		LlmNode.Builder llmNodeBuilder = LlmNode.builder().chatClient(chatClient).messagesKey("messages");
 		if (CollectionUtils.isNotEmpty(tools)) {
 			llmNodeBuilder.toolCallbacks(tools);
 		}
