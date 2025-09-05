@@ -65,7 +65,7 @@ public class UserInputService implements IUserInputService {
 								inputMap.put("name", inputItem.getName());
 							}
 							if (inputItem.getType() != null) {
-								inputMap.put("type", inputItem.getType());
+								inputMap.put("type", inputItem.getType().getValue());
 							}
 							if (inputItem.getPlaceholder() != null) {
 								inputMap.put("placeholder", inputItem.getPlaceholder());
