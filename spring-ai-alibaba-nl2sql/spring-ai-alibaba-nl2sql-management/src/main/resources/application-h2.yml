@@ -106,3 +106,15 @@ logging:
   level:
     com.alibaba.cloud.ai.mapper: debug
     org.springframework.jdbc: debug
+
+# 数据库配置
+chatbi:
+  dbconfig:
+    # 数据源配置
+    url: ${JDBC_URL:jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=true;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE}        # 如：jdbc:mysql://host:port/database
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    # 连接参数
+    connectiontype: jdbc
+    dialecttype: h2      # 可选：mysql、postgresql
+    schema: ${DB_SCHEMA}    # PostgreSQL需要

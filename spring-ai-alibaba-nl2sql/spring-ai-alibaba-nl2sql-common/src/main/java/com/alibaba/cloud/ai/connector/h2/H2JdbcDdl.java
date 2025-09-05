@@ -101,7 +101,7 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 		List<TableInfoBO> tableInfoList = Lists.newArrayList();
 		try {
 			String[][] resultArr = SqlExecutor.executeSqlAndReturnArr(connection,
-					String.format(sql, connection.getCatalog(), tablePattern));
+					String.format(sql, connection.getSchema(), tablePattern));
 			if (resultArr.length <= 1) {
 				return Lists.newArrayList();
 			}
@@ -130,7 +130,7 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 		String tableListStr = String.join(", ", tables.stream().map(x -> "'" + x + "'").collect(Collectors.toList()));
 		try {
 			String[][] resultArr = SqlExecutor.executeSqlAndReturnArr(connection,
-					String.format(sql, connection.getCatalog(), tableListStr));
+					String.format(sql, connection.getSchema(), tableListStr));
 			if (resultArr.length <= 1) {
 				return Lists.newArrayList();
 			}
@@ -153,13 +153,15 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 
 	@Override
 	public List<ColumnInfoBO> showColumns(Connection connection, String schema, String table) {
-		String sql = "SELECT column_name, remarks, data_type, " + "IF(IS_IDENTITY='YES','true','false') AS '主键唯一', \n"
-				+ "IF(IS_NULLABLE='NO','true','false') AS '非空' \n" + "FROM information_schema.COLUMNS "
+		String sql = "SELECT column_name, remarks, data_type, \n"
+				+ "CASE WHEN IS_IDENTITY = 'YES' THEN TRUE ELSE FALSE END AS 主键唯一, \n"
+				+ "CASE WHEN IS_NULLABLE = 'NO' THEN TRUE ELSE FALSE END AS 非空 \n"
+				+ "FROM information_schema.COLUMNS "
 				+ "WHERE table_schema='%s' " + "and table_name='%s';";
 		List<ColumnInfoBO> columnInfoList = Lists.newArrayList();
 		try {
 			String[][] resultArr = SqlExecutor.executeSqlAndReturnArr(connection, "INFORMATION_SCHEMA",
-					String.format(sql, connection.getCatalog(), table));
+					String.format(sql, connection.getSchema(), table));
 			if (resultArr.length <= 1) {
 				return Lists.newArrayList();
 			}
@@ -186,16 +188,18 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 
 	@Override
 	public List<ForeignKeyInfoBO> showForeignKeys(Connection connection, String schema, List<String> tables) {
-		String sql = "SELECT \n" + "    kc.TABLE_NAME AS '表名',\n" + "    kc.COLUMN_NAME AS '列名',\n"
-				+ "    kc2.table_name AS '引用表名',\n" + "    kc2.column_name AS '引用列名'\n" + "FROM \n"
+		String sql = "SELECT \n" + "    kc.TABLE_NAME AS 表名,\n" + "    kc.COLUMN_NAME AS 列名,\n"
+				+ "    kc2.table_name AS 引用表名,\n" + "    kc2.column_name AS 引用列名\n"
+				+ "FROM \n"
 				+ "    information_schema.referential_constraints rc  \n"
-				+ "  join information_schema.key_column_usage kc on rc.constraint_name=kc.constraint_name \n"
-				+ "   join information_schema.key_column_usage kc2 on rc.unique_constraint_name=kc2.constraint_name; ";
+				+ "    join information_schema.key_column_usage kc on rc.constraint_name=kc.constraint_name \n"
+				+ "    join information_schema.key_column_usage kc2 on rc.unique_constraint_name=kc2.constraint_name \n"
+				+ "WHERE kc.constraint_schema='%s' and kc.table_name in (%s) and kc2.table_name in (%s);";
 		List<ForeignKeyInfoBO> foreignKeyInfoList = Lists.newArrayList();
 		String tableListStr = String.join(", ", tables.stream().map(x -> "'" + x + "'").collect(Collectors.toList()));
 
 		try {
-			sql = String.format(sql, connection.getCatalog(), tableListStr, tableListStr);
+			sql = String.format(sql, connection.getSchema(), tableListStr, tableListStr);
 			String[][] resultArr = SqlExecutor.executeSqlAndReturnArr(connection, "INFORMATION_SCHEMA", sql);
 			if (resultArr.length <= 1) {
 				return Lists.newArrayList();
