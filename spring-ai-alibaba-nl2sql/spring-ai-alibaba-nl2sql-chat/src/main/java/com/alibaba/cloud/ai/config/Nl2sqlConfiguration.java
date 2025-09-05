@@ -144,7 +144,7 @@ public class Nl2sqlConfiguration {
 
 	public Nl2sqlConfiguration(@Qualifier("nl2SqlServiceImpl") BaseNl2SqlService nl2SqlService,
 			@Qualifier("schemaServiceImpl") BaseSchemaService schemaService,
-			@Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig,
+			@Qualifier("dbAccessor") Accessor dbAccessor, DbConfig dbConfig,
 			CodeExecutorProperties codeExecutorProperties, CodePoolExecutorService codePoolExecutor,
 			SemanticModelRecallService semanticModelRecallService,
 			BusinessKnowledgeRecallService businessKnowledgeRecallService, UserPromptConfigService promptConfigService,

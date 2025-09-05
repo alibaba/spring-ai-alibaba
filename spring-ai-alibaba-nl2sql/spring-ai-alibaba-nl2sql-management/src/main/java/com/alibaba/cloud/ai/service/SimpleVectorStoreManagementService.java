@@ -55,7 +55,7 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 
 	@Autowired
 	public SimpleVectorStoreManagementService(@Value("${spring.ai.dashscope.api-key:default_api_key}") String apiKey,
-			Gson gson, @Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig) {
+			Gson gson, @Qualifier("dbAccessor") Accessor dbAccessor, DbConfig dbConfig) {
 		this.gson = gson;
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
