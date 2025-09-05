@@ -69,9 +69,10 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 		if (!DSLDialectType.STUDIO.equals(dialectType)) {
 			sb.append(
 					"// todo: Please manually modify the parameter values passed to this method to point to the correct resource paths");
+			sb.append(String.format("%n"));
 		}
 		sb.append("""
-				public VectorStore createVectorStore(List<String> paths) {
+				private VectorStore createVectorStore(List<String> paths) {
 				    List<Resource> resources = Optional.ofNullable(paths).orElse(List.of())
 				            .stream().map(resourceLoader::getResource).toList();
 				    List<Document> documents = resources.stream().map(TextReader::new).map(TextReader::read)
