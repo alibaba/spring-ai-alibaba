@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,18 +29,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.cloud.ai.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.manus.planning.model.po.PlanTemplate;
 import com.alibaba.cloud.ai.manus.planning.service.PlanCreator;
 import com.alibaba.cloud.ai.manus.planning.service.PlanTemplateService;
-import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionContext;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanInterface;
 import com.alibaba.cloud.ai.manus.runtime.service.PlanIdDispatcher;
-import com.alibaba.cloud.ai.manus.runtime.service.PlanningCoordinator;
 import com.alibaba.cloud.ai.manus.planning.service.IPlanParameterMappingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -59,9 +55,6 @@ public class PlanTemplateController {
 	private PlanningFactory planningFactory;
 
 	@Autowired
-	private PlanExecutionRecorder planExecutionRecorder;
-
-	@Autowired
 	private PlanTemplateService planTemplateService;
 
 	@Autowired
@@ -70,8 +63,6 @@ public class PlanTemplateController {
 	@Autowired
 	private ObjectMapper objectMapper;
 
-	@Autowired
-	private PlanningCoordinator planningCoordinator;
 
 	@Autowired
 	private IPlanParameterMappingService parameterMappingService;
@@ -168,203 +159,6 @@ public class PlanTemplateController {
 			return ResponseEntity.internalServerError()
 				.body(Map.of("error", "Plan generation failed: " + e.getMessage()));
 		}
-	}
-
-	/**
-	 * Execute plan by plan template ID (POST method)
-	 * @param request Request containing plan template ID
-	 * @return Result status
-	 */
-	@PostMapping("/executePlanByTemplateId")
-	public ResponseEntity<Map<String, Object>> executePlanByTemplateId(@RequestBody Map<String, Object> request) {
-		String planTemplateId = (String) request.get("planTemplateId");
-		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
-			return ResponseEntity.badRequest().body(Map.of("error", "Plan template ID cannot be empty"));
-		}
-
-		String rawParam = (String) request.get("rawParam");
-
-		// Handle uploaded files if present
-		@SuppressWarnings("unchecked")
-		List<Map<String, Object>> uploadedFiles = (List<Map<String, Object>>) request.get("uploadedFiles");
-
-		logger.info("Received request with uploadedFiles: {}", uploadedFiles != null ? uploadedFiles.size() : "null");
-		if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
-			logger.info("First uploaded file planId: {}", uploadedFiles.get(0).get("planId"));
-		}
-
-		return executePlanAndBuildResponse(planTemplateId, rawParam, uploadedFiles);
-	}
-
-	/**
-	 * Execute plan by template ID and build response Note: This method submits the
-	 * execution task asynchronously and returns immediately. The actual execution happens
-	 * in the background. To track execution status, you may need to implement a separate
-	 * status checking endpoint.
-	 * @param planTemplateId The plan template ID to execute
-	 * @param rawParam Raw parameters for execution (can be null)
-	 * @param uploadedFiles List of uploaded files (can be null)
-	 * @return ResponseEntity with submission status
-	 */
-	private ResponseEntity<Map<String, Object>> executePlanAndBuildResponse(String planTemplateId, String rawParam,
-			List<Map<String, Object>> uploadedFiles) {
-		try {
-			// Submit the plan execution task asynchronously
-			String rootPlanId = executePlanTemplate(planTemplateId, rawParam, uploadedFiles);
-
-			// Return success immediately when task is submitted
-			Map<String, Object> response = new HashMap<>();
-			response.put("planId", rootPlanId);
-			response.put("status", "processing");
-			response.put("message", "Task submitted, processing");
-
-			return ResponseEntity.ok(response);
-
-		}
-		catch (Exception e) {
-			logger.error("Failed to submit plan execution task: {}", planTemplateId, e);
-			Map<String, Object> errorResponse = new HashMap<>();
-			errorResponse.put("error", "Failed to submit plan execution task: " + e.getMessage());
-			errorResponse.put("planId", planTemplateId);
-			return ResponseEntity.internalServerError().body(errorResponse);
-		}
-	}
-
-	/**
-	 * Execute a plan template by its ID using PlanningCoordinator This method fetches the
-	 * plan template and executes it using the common execution logic.
-	 * @param planTemplateId The ID of the plan template to execute
-	 * @param rawParam Raw parameters for the execution (can be null)
-	 * @param uploadedFiles List of uploaded files (can be null)
-	 * @return The root plan ID for this execution
-	 */
-	private String executePlanTemplate(String planTemplateId, String rawParam,
-			List<Map<String, Object>> uploadedFiles) {
-		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
-			logger.error("Plan template ID is null or empty");
-			throw new IllegalArgumentException("Plan template ID cannot be null or empty");
-		}
-
-		try {
-			// Generate a unique plan ID for this execution
-			String currentPlanId = planIdDispatcher.generatePlanId();
-			String rootPlanId = currentPlanId;
-
-			// Fetch the plan template from PlanTemplateService
-			PlanInterface plan = createPlanFromTemplate(planTemplateId, rawParam);
-
-			if (plan == null) {
-				throw new RuntimeException("Failed to create plan from template: " + planTemplateId);
-			}
-
-			// Handle uploaded files if present
-			if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
-				// Set uploaded files context to the plan
-				Map<String, String> fileContext = new HashMap<>();
-				fileContext.put("hasUploadedFiles", "true");
-				fileContext.put("fileCount", String.valueOf(uploadedFiles.size()));
-
-				// Store file names and paths as comma-separated strings
-				StringBuilder fileNames = new StringBuilder();
-				StringBuilder filePaths = new StringBuilder();
-
-				for (int i = 0; i < uploadedFiles.size(); i++) {
-					Map<String, Object> file = uploadedFiles.get(i);
-					if (i > 0) {
-						fileNames.append(",");
-						filePaths.append(",");
-					}
-					fileNames.append(String.valueOf(file.get("name")));
-					filePaths.append(String.valueOf(file.get("relativePath")));
-				}
-
-				fileContext.put("uploadedFileNames", fileNames.toString());
-				fileContext.put("uploadedFilePaths", filePaths.toString());
-				fileContext.put("uploadPlanId", currentPlanId);
-
-				// Add file context to plan's execution parameters
-				if (plan.getExecutionParams() != null) {
-					// If execution params exist, append file context
-					StringBuilder enhancedParams = new StringBuilder(plan.getExecutionParams());
-					enhancedParams.append("\nUploaded Files Context:\n");
-					for (Map.Entry<String, String> entry : fileContext.entrySet()) {
-						enhancedParams.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-					}
-					plan.setExecutionParams(enhancedParams.toString());
-				}
-				else {
-					// If no execution params, create new ones with file context
-					StringBuilder params = new StringBuilder();
-					for (Map.Entry<String, String> entry : fileContext.entrySet()) {
-						params.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-					}
-					plan.setExecutionParams(params.toString());
-				}
-				logger.info("Added uploaded files context to plan execution parameters: {} files",
-						uploadedFiles.size());
-			}
-
-			// Execute using the PlanningCoordinator's common execution logic
-			planningCoordinator.executeByPlan(plan, rootPlanId, null, currentPlanId, null);
-
-			// Return the root plan ID
-			return rootPlanId;
-
-		}
-		catch (Exception e) {
-			logger.error("Failed to execute plan template: {}", planTemplateId, e);
-			throw new RuntimeException("Execution failed: " + e.getMessage(), e);
-		}
-	}
-
-	/**
-	 * Create a plan interface from template ID and parameters. Fetches the plan template
-	 * from PlanTemplateService and converts it to PlanInterface.
-	 * @param planTemplateId The template ID
-	 * @param rawParam Raw parameters
-	 * @return PlanInterface object or null if creation fails
-	 */
-	private PlanInterface createPlanFromTemplate(String planTemplateId, String rawParam) {
-		try {
-			// Fetch the latest plan version from template service
-			String planJson = planTemplateService.getLatestPlanVersion(planTemplateId);
-
-			if (planJson == null) {
-				logger.error("No plan version found for template: {}", planTemplateId);
-				return null;
-			}
-
-			// Parse the JSON to create a PlanInterface
-			PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
-
-			logger.info("Successfully created plan interface from template: {}", planTemplateId);
-			return plan;
-
-		}
-		catch (Exception e) {
-			logger.error("Failed to create plan interface from template: {}", planTemplateId, e);
-			return null;
-		}
-	}
-
-	/**
-	 * Execute plan by plan template ID (GET method)
-	 * @param planTemplateId Plan template ID
-	 * @param allParams All URL query parameters
-	 * @return Result status
-	 */
-	@GetMapping("/execute/{planTemplateId}")
-	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdGet(
-			@PathVariable("planTemplateId") String planTemplateId,
-			@RequestParam(required = false, name = "allParams") Map<String, String> allParams) {
-		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
-			return ResponseEntity.badRequest().body(Map.of("error", "Plan template ID cannot be empty"));
-		}
-
-		logger.info("Execute plan template, ID: {}, parameters: {}", planTemplateId, allParams);
-		String rawParam = allParams != null ? allParams.get("rawParam") : null;
-		// If there are URL parameters, use the method with parameters
-		return executePlanAndBuildResponse(planTemplateId, rawParam, null);
 	}
 
 	/**
@@ -780,5 +574,4 @@ public class PlanTemplateController {
 				.body(Map.of("error", "Failed to get parameter requirements: " + e.getMessage()));
 		}
 	}
-
 }

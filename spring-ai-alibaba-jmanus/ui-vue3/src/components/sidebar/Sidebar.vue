@@ -152,6 +152,7 @@
             :is-executing="sidebarStore.isExecuting"
             :is-generating="sidebarStore.isGenerating"
             :show-publish-button="showPublishButton"
+            :tool-info="currentToolInfo"
             @execute-plan="handleExecutePlan"
             @publish-mcp-service="handlePublishMcpService"
             @clear-params="handleClearExecutionParams"
@@ -184,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, computed, onUnmounted } from 'vue'
+import { onMounted, ref, computed, onUnmounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { sidebarStore } from '@/stores/sidebar'
@@ -207,6 +208,17 @@ const startWidth = ref(0)
 
 // Component refs
 const executionControllerRef = ref<InstanceType<typeof ExecutionController> | null>(null)
+
+// Tool information state
+const currentToolInfo = ref<{
+  enableHttpService?: boolean
+  enableMcpService?: boolean
+  enableInternalToolcall?: boolean
+}>({
+  enableHttpService: false,
+  enableMcpService: false,
+  enableInternalToolcall: false
+})
 const publishMcpModalRef = ref<InstanceType<typeof PublishMcpServiceModal> | null>(null)
 
 
@@ -397,6 +409,43 @@ const handleUpdateGeneratorPrompt = (prompt: string) => {
   sidebarStore.generatorPrompt = prompt
 }
 
+// Load tool information when plan template changes
+const loadToolInfo = async (planTemplateId: string | null) => {
+  if (!planTemplateId) {
+    currentToolInfo.value = {
+      enableHttpService: false,
+      enableMcpService: false,
+      enableInternalToolcall: false
+    }
+    return
+  }
+
+  try {
+    const response = await CoordinatorToolApiService.getOrNewCoordinatorToolsByTemplate(planTemplateId)
+    if (response.success && response.data) {
+      const toolData = Array.isArray(response.data) ? response.data[0] : response.data
+      currentToolInfo.value = {
+        enableHttpService: toolData.enableHttpService || false,
+        enableMcpService: toolData.enableMcpService || false,
+        enableInternalToolcall: toolData.enableInternalToolcall || false
+      }
+    } else {
+      currentToolInfo.value = {
+        enableHttpService: false,
+        enableMcpService: false,
+        enableInternalToolcall: false
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load tool information:', error)
+    currentToolInfo.value = {
+      enableHttpService: false,
+      enableMcpService: false,
+      enableInternalToolcall: false
+    }
+  }
+}
+
 // Utility functions
 const getRelativeTimeString = (date: Date): string => {
   // Check if date is valid
@@ -468,6 +517,11 @@ const resetSidebarWidth = () => {
   sidebarWidth.value = 80
   localStorage.setItem('sidebarWidth', '80')
 }
+
+// Watch for plan template changes to load tool information
+watch(() => sidebarStore.currentPlanTemplateId, (newPlanTemplateId) => {
+  loadToolInfo(newPlanTemplateId)
+}, { immediate: true })
 
 // Lifecycle
 onMounted(() => {

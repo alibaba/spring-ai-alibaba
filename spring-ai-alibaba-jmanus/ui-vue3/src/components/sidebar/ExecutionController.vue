@@ -71,15 +71,76 @@
         {{ t('sidebar.publishMcpService') }}
       </button>
       
-      <!-- API URLs wrapper -->
-      <div class="api-urls-wrapper">
-        <div class="api-url-display">
-          <span class="api-url-label">{{ t('sidebar.apiUrl') }}:</span>
-          <code class="api-url">{{ computedApiUrl }}</code>
+      <!-- HTTP API URLs wrapper with tabs - only show when enableHttpService is true -->
+      <div v-if="toolInfo?.enableHttpService" class="call-example-wrapper">
+        <div class="call-example-header">
+          <h4 class="call-example-title">HTTP 调用示例</h4>
+          <p class="call-example-description">你已经将这个plan-act发布为http服务，可以按照下面的例子进行调用。</p>
         </div>
-        <div class="api-url-display">
-          <span class="api-url-label">{{ t('sidebar.statusApiUrl') }}:</span>
-          <code class="api-url">/api/executor/details/{planId}</code>
+        <div class="http-api-urls-wrapper">
+          <div class="tab-container">
+            <div class="tab-header">
+              <button 
+                v-for="tab in apiTabs" 
+                :key="tab.id"
+                :class="['tab-button', { active: activeTab === tab.id }]"
+                @click="activeTab = tab.id"
+              >
+                {{ tab.label }}
+              </button>
+            </div>
+            <div class="tab-content">
+              <div v-for="tab in apiTabs" :key="tab.id" v-show="activeTab === tab.id" class="tab-panel">
+                <div class="http-api-url-display">
+                  <div class="api-method">{{ tab.method }}</div>
+                  <div class="api-endpoint">{{ tab.endpoint }}</div>
+                  <div class="api-description">{{ tab.description }}</div>
+                  <div v-if="tab.example" class="api-example">
+                    <strong>Example:</strong>
+                    <pre class="example-code">{{ tab.example }}</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Internal Call wrapper - only show when enableInternalToolcall is true -->
+      <div v-if="toolInfo?.enableInternalToolcall" class="call-example-wrapper">
+        <div class="call-example-header">
+          <h4 class="call-example-title">内部调用</h4>
+          <p class="call-example-description">你已经将这个plan-act 发布为内部方法，可以在agent配置的添加工具中，找到这个工具的方法并添加和使用。</p>
+        </div>
+        <div class="internal-call-wrapper">
+          <div class="call-info">
+            <div class="call-method">内部方法调用</div>
+            <div class="call-endpoint">工具名称: {{ currentPlanTemplateId }}</div>
+            <div class="call-description">在agent配置中添加此工具后，可以直接在agent中调用此方法</div>
+            <div class="call-example">
+              <strong>使用方式:</strong>
+              <pre class="example-code">在agent配置的"添加工具"部分，搜索并添加此工具，然后在agent中直接调用</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MCP Call wrapper - only show when enableMcpService is true -->
+      <div v-if="toolInfo?.enableMcpService" class="call-example-wrapper">
+        <div class="call-example-header">
+          <h4 class="call-example-title">MCP 调用</h4>
+          <p class="call-example-description">你已经将这个plan-act 发布为mcp服务，可以通过 mcp streamable 或sse方式使用。</p>
+        </div>
+        <div class="mcp-call-wrapper">
+          <div class="call-info">
+            <div class="call-method">MCP 服务调用</div>
+            <div class="call-endpoint">MCP Endpoint: /mcp/execute</div>
+            <div class="call-description">通过MCP协议进行流式或SSE方式调用</div>
+            <div class="call-example">
+              <strong>使用方式:</strong>
+              <pre class="example-code">通过MCP客户端连接到此服务，使用streamable或SSE方式进行调用</pre>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -87,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { PlanParameterApiService, type ParameterRequirements } from '@/api/plan-parameter-api-service'
@@ -101,13 +162,23 @@ interface Props {
   isExecuting?: boolean
   isGenerating?: boolean
   showPublishButton?: boolean
+  toolInfo?: {
+    enableHttpService?: boolean
+    enableMcpService?: boolean
+    enableInternalToolcall?: boolean
+  }
 }
 
 const props = withDefaults(defineProps<Props>(), {
   currentPlanTemplateId: '',
   isExecuting: false,
   isGenerating: false,
-  showPublishButton: true
+  showPublishButton: true,
+  toolInfo: () => ({
+    enableHttpService: false,
+    enableMcpService: false,
+    enableInternalToolcall: false
+  })
 })
 
 // Emits
@@ -127,12 +198,104 @@ const parameterRequirements = ref<ParameterRequirements>({
 })
 const parameterValues = ref<Record<string, string>>({})
 const isLoadingParameters = ref(false)
+const activeTab = ref('get-sync')
+
+// API tabs configuration
+const apiTabs = ref([
+  {
+    id: 'get-sync',
+    label: 'GET + Sync',
+    method: 'GET',
+    endpoint: '/api/executor/executeByToolNameSync/{toolName}',
+    description: 'Synchronous GET request - returns execution result immediately',
+    example: `GET /api/executor/executeByToolNameSync/my-tool?allParams={"rawParam":"test"}
+Response: {
+  "status": "completed",
+  "result": "Execution result here"
+}`
+  },
+  {
+    id: 'get-async',
+    label: 'GET + Async',
+    method: 'GET',
+    endpoint: '/api/executor/executeByToolNameAsync/{toolName}',
+    description: 'Asynchronous GET request - returns task ID, check status separately',
+    example: `GET /api/executor/executeByToolNameAsync/my-tool?allParams={"rawParam":"test"}
+Response: {
+  "planId": "plan-123",
+  "status": "processing",
+  "message": "Task submitted, processing"
+}
+
+# Check execution status and get detailed results:
+GET /api/executor/details/{planId}
+Response: {
+  "currentPlanId": "plan-123",
+  "title": "Plan Title",
+  "status": "completed",
+  "summary": "Execution completed successfully",
+  "agentExecutionSequence": [...],
+  "userInputWaitState": null
+}`
+  },
+  {
+    id: 'post-sync',
+    label: 'POST + Sync',
+    method: 'POST',
+    endpoint: '/api/executor/executeByToolNameSync',
+    description: 'Synchronous POST request - returns execution result immediately',
+    example: `POST /api/executor/executeByToolNameSync
+Content-Type: application/json
+
+{
+  "toolName": "my-tool",
+  "rawParam": "test",
+  "uploadedFiles": []
+}
+
+Response: {
+  "status": "completed",
+  "result": "Execution result here"
+}`
+  },
+  {
+    id: 'post-async',
+    label: 'POST + Async',
+    method: 'POST',
+    endpoint: '/api/executor/executeByToolNameAsync',
+    description: 'Asynchronous POST request - returns task ID, check status separately',
+    example: `POST /api/executor/executeByToolNameAsync
+Content-Type: application/json
+
+{
+  "toolName": "my-tool",
+  "rawParam": "test",
+  "uploadedFiles": []
+}
+
+Response: {
+  "planId": "plan-123",
+  "status": "processing",
+  "message": "Task submitted, processing",
+  "memoryId": "ABC12345",
+  "toolName": "my-tool",
+  "planTemplateId": "template-456"
+}
+
+# Check execution status and get detailed results:
+GET /api/executor/details/{planId}
+Response: {
+  "currentPlanId": "plan-123",
+  "title": "Plan Title",
+  "status": "completed",
+  "summary": "Execution completed successfully",
+  "agentExecutionSequence": [...],
+  "userInputWaitState": null
+}`
+  }
+])
 
 // Computed properties
-const computedApiUrl = computed(() => {
-  if (!props.currentPlanTemplateId) return ''
-  return `/api/executor/execute/${props.currentPlanTemplateId}`
-})
 
 // Methods
 const handleExecutePlan = () => {
@@ -323,29 +486,207 @@ defineExpose({
 }
 
 
-.api-urls-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
+.call-example-wrapper {
+  margin-top: 12px;
 }
 
-.api-url-display {
-  padding: 8px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.call-example-header {
+  margin-bottom: 12px;
+}
+
+.call-example-title {
+  color: #667eea;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+}
+
+.call-example-description {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+  padding: 8px 12px;
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.2);
   border-radius: 6px;
+}
+
+.http-api-urls-wrapper {
+  margin-top: 0;
+}
+
+.internal-call-wrapper,
+.mcp-call-wrapper {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.call-info {
   font-size: 11px;
 
-  .api-url-label {
-    color: rgba(255, 255, 255, 0.7);
-    margin-right: 8px;
+  .call-method {
+    display: inline-block;
+    padding: 2px 6px;
+    background: #667eea;
+    color: white;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-bottom: 8px;
   }
 
-  .api-url {
+  .call-endpoint {
     color: #64b5f6;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    margin-bottom: 8px;
     word-break: break-all;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(100, 181, 246, 0.2);
+  }
+
+  .call-description {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .call-example {
+    margin-top: 8px;
+
+    strong {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 10px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .example-code {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      padding: 8px;
+      color: #e0e0e0;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 10px;
+      line-height: 1.3;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow-x: auto;
+    }
+  }
+}
+
+.tab-container {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tab-header {
+  display: flex;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab-button {
+  flex: 1;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  &.active {
+    background: rgba(102, 126, 234, 0.2);
+    color: #667eea;
+    font-weight: 600;
+  }
+}
+
+.tab-content {
+  padding: 0;
+}
+
+.tab-panel {
+  padding: 0;
+}
+
+.http-api-url-display {
+  padding: 12px;
+  font-size: 11px;
+
+  .api-method {
+    display: inline-block;
+    padding: 2px 6px;
+    background: #667eea;
+    color: white;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .api-endpoint {
+    color: #64b5f6;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    margin-bottom: 8px;
+    word-break: break-all;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(100, 181, 246, 0.2);
+  }
+
+  .api-description {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .api-example {
+    margin-top: 8px;
+
+    strong {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 10px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .example-code {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      padding: 8px;
+      color: #e0e0e0;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 10px;
+      line-height: 1.3;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow-x: auto;
+    }
   }
 }
 

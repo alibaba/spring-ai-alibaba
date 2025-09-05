@@ -51,4 +51,9 @@ public interface CoordinatorToolRepository extends JpaRepository<CoordinatorTool
 	@Query("SELECT DISTINCT c.mcpEndpoint FROM CoordinatorToolEntity c WHERE c.mcpEndpoint IS NOT NULL")
 	List<String> findAllUniqueMcpEndpoints();
 
+	/**
+	 * Find by tool name
+	 */
+	CoordinatorToolEntity findByToolName(String toolName);
+
 }

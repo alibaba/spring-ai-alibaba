@@ -20,14 +20,19 @@ import com.alibaba.cloud.ai.manus.event.PlanExceptionEvent;
 import com.alibaba.cloud.ai.manus.exception.PlanException;
 import com.alibaba.cloud.ai.manus.memory.entity.MemoryEntity;
 import com.alibaba.cloud.ai.manus.memory.service.MemoryService;
+import com.alibaba.cloud.ai.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanHierarchyReaderService;
 import com.alibaba.cloud.ai.manus.recorder.service.NewRepoPlanExecutionRecorder;
+import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult;
+import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanInterface;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.manus.runtime.service.PlanIdDispatcher;
 import com.alibaba.cloud.ai.manus.runtime.service.PlanningCoordinator;
 import com.alibaba.cloud.ai.manus.runtime.service.UserInputService;
+import com.alibaba.cloud.ai.manus.coordinator.repository.CoordinatorToolRepository;
+import com.alibaba.cloud.ai.manus.coordinator.entity.po.CoordinatorToolEntity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -43,7 +48,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -76,6 +83,12 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	private NewRepoPlanExecutionRecorder planExecutionRecorder;
 
 	@Autowired
+	private CoordinatorToolRepository coordinatorToolRepository;
+
+	@Autowired
+	private PlanTemplateService planTemplateService;
+
+	@Autowired
 	public ManusController(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
 		// Register JavaTimeModule to handle LocalDateTime serialization/deserialization
@@ -88,6 +101,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	/**
 	 * Asynchronous execution of Manus request using PlanningCoordinator
+	 * 
 	 * @param request Request containing user query
 	 * @return Task ID and status
 	 */
@@ -106,8 +120,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 				// Use existing sessionPlanId from file upload
 				planId = sessionPlanId;
 				logger.info("🔄 Using existing sessionPlanId: {}", planId);
-			}
-			else {
+			} else {
 				// Generate new plan ID
 				planId = planIdDispatcher.generatePlanId();
 				logger.info("🆕 Generated new planId: {}", planId);
@@ -132,8 +145,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			response.put("memoryId", memoryId);
 			return ResponseEntity.ok(response);
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Failed to start plan execution for planId: {}", planId, e);
 			Map<String, Object> errorResponse = new HashMap<>();
 			errorResponse.put("error", "Failed to start plan execution: " + e.getMessage());
@@ -143,9 +155,151 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	}
 
 	/**
-	 * Get execution record overview (without detailed ThinkActRecord information) Note:
+	 * Execute plan by tool name synchronously (GET method)
+	 * 
+	 * @param toolName  Tool name
+	 * @param allParams All URL query parameters
+	 * @return Execution result directly
+	 */
+	@GetMapping("/executeByToolNameSync/{toolName}")
+	public ResponseEntity<Map<String, Object>> executeByToolNameGetSync(
+			@PathVariable("toolName") String toolName,
+			@RequestParam(required = false, name = "allParams") Map<String, String> allParams) {
+		if (toolName == null || toolName.trim().isEmpty()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "Tool name cannot be empty"));
+		}
+
+		// Find the coordinator tool by tool name
+		CoordinatorToolEntity coordinatorTool = coordinatorToolRepository.findByToolName(toolName);
+		if (coordinatorTool == null) {
+			return ResponseEntity.badRequest().body(Map.of("error", "Tool not found with name: " + toolName));
+		}
+
+		// Get the plan template ID from the coordinator tool
+		String planTemplateId = coordinatorTool.getPlanTemplateId();
+		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
+			return ResponseEntity.badRequest()
+					.body(Map.of("error", "No plan template ID associated with tool: " + toolName));
+		}
+
+		logger.info("Execute tool '{}' synchronously with plan template ID '{}', parameters: {}", toolName,
+				planTemplateId, allParams);
+		String rawParam = allParams != null ? allParams.get("rawParam") : null;
+		// Execute synchronously and return result directly
+		return executePlanSyncAndBuildResponse(planTemplateId, rawParam, null);
+	}
+
+	/**
+	 * Execute plan by tool name asynchronously
+	 * 
+	 * @param request Request containing tool name and parameters
+	 * @return Task ID and status
+	 */
+	@PostMapping("/executeByToolNameAsync")
+	public ResponseEntity<Map<String, Object>> executeByToolNameAsync(@RequestBody Map<String, Object> request) {
+		String toolName = (String) request.get("toolName");
+		if (toolName == null || toolName.trim().isEmpty()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "Tool name cannot be empty"));
+		}
+
+		// Find the coordinator tool by tool name
+		CoordinatorToolEntity coordinatorTool = coordinatorToolRepository.findByToolName(toolName);
+		if (coordinatorTool == null) {
+			return ResponseEntity.badRequest().body(Map.of("error", "Tool not found with name: " + toolName));
+		}
+
+		// Get the plan template ID from the coordinator tool
+		String planTemplateId = coordinatorTool.getPlanTemplateId();
+		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
+			return ResponseEntity.badRequest()
+					.body(Map.of("error", "No plan template ID associated with tool: " + toolName));
+		}
+
+		String planId = null;
+		try {
+			// Generate new plan ID
+			planId = planIdDispatcher.generatePlanId();
+			logger.info("🆕 Generated new planId: {} for tool: {}", planId, toolName);
+
+			String memoryId = (String) request.get("memoryId");
+			if (!StringUtils.hasText(memoryId)) {
+				memoryId = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+			}
+
+			// Get raw parameters
+			String rawParam = (String) request.get("rawParam");
+			String query = rawParam != null ? rawParam : "Execute tool: " + toolName;
+
+			memoryService.saveMemory(new MemoryEntity(memoryId, query));
+
+			// Execute the plan using PlanningCoordinator (fire and forget)
+			planningCoordinator.executeByUserQuery(query, planId, null, planId, memoryId, null);
+
+			// Return task ID and initial status
+			Map<String, Object> response = new HashMap<>();
+			response.put("planId", planId);
+			response.put("status", "processing");
+			response.put("message", "Task submitted, processing");
+			response.put("memoryId", memoryId);
+			response.put("toolName", toolName);
+			response.put("planTemplateId", planTemplateId);
+
+			return ResponseEntity.ok(response);
+
+		} catch (Exception e) {
+			logger.error("Failed to start plan execution for tool: {} with planId: {}", toolName, planId, e);
+			Map<String, Object> errorResponse = new HashMap<>();
+			errorResponse.put("error", "Failed to start plan execution: " + e.getMessage());
+			errorResponse.put("planId", planId);
+			errorResponse.put("toolName", toolName);
+			return ResponseEntity.internalServerError().body(errorResponse);
+		}
+	}
+
+	/**
+	 * Execute plan by tool name synchronously (POST method)
+	 * 
+	 * @param request Request containing tool name
+	 * @return Execution result directly
+	 */
+	@PostMapping("/executeByToolNameSync")
+	public ResponseEntity<Map<String, Object>> executeByToolNameSync(@RequestBody Map<String, Object> request) {
+		String toolName = (String) request.get("toolName");
+		if (toolName == null || toolName.trim().isEmpty()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "Tool name cannot be empty"));
+		}
+
+		// Find the coordinator tool by tool name
+		CoordinatorToolEntity coordinatorTool = coordinatorToolRepository.findByToolName(toolName);
+		if (coordinatorTool == null) {
+			return ResponseEntity.badRequest().body(Map.of("error", "Tool not found with name: " + toolName));
+		}
+
+		// Get the plan template ID from the coordinator tool
+		String planTemplateId = coordinatorTool.getPlanTemplateId();
+		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
+			return ResponseEntity.badRequest()
+					.body(Map.of("error", "No plan template ID associated with tool: " + toolName));
+		}
+
+		String rawParam = (String) request.get("rawParam");
+
+		// Handle uploaded files if present
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> uploadedFiles = (List<Map<String, Object>>) request.get("uploadedFiles");
+
+		logger.info("Executing tool '{}' synchronously with plan template ID '{}', uploadedFiles: {}",
+				toolName, planTemplateId, uploadedFiles != null ? uploadedFiles.size() : "null");
+
+		return executePlanSyncAndBuildResponse(planTemplateId, rawParam, uploadedFiles);
+	}
+
+	/**
+	 * Get execution record overview (without detailed ThinkActRecord information)
+	 * Note:
 	 * This method returns basic execution information and does not include detailed
 	 * ThinkActRecord steps for each agent execution.
+	 * 
 	 * @param planId Plan ID
 	 * @return JSON representation of execution record overview
 	 */
@@ -169,8 +323,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			// class
 			planRecord.setUserInputWaitState(waitState);
 			logger.info("Plan {} is waiting for user input. Merged waitState into details response.", planId);
-		}
-		else {
+		} else {
 			planRecord.setUserInputWaitState(null); // Clear if not waiting
 		}
 
@@ -184,16 +337,16 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			// Use Jackson ObjectMapper to convert object to JSON string
 			String jsonResponse = objectMapper.writeValueAsString(planRecord);
 			return ResponseEntity.ok(jsonResponse);
-		}
-		catch (JsonProcessingException e) {
+		} catch (JsonProcessingException e) {
 			logger.error("Error serializing PlanExecutionRecord to JSON for planId: {}", planId, e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body("Error processing request: " + e.getMessage());
+					.body("Error processing request: " + e.getMessage());
 		}
 	}
 
 	/**
 	 * Delete execution record for specified plan ID
+	 * 
 	 * @param planId Plan ID
 	 * @return Result of delete operation
 	 */
@@ -210,10 +363,14 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		return ResponseEntity.ok(Map.of("message", "Execution record found (no deletion needed)", "planId", planId));
 	}
 
+
+	
 	/**
 	 * Submits user input for a plan that is waiting.
-	 * @param planId The ID of the plan.
-	 * @param formData The user-submitted form data, expected as Map<String, String>.
+	 * 
+	 * @param planId   The ID of the plan.
+	 * @param formData The user-submitted form data, expected as Map<String,
+	 *                 String>.
 	 * @return ResponseEntity indicating success or failure.
 	 */
 	@PostMapping("/submit-input/{planId}")
@@ -225,8 +382,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			boolean success = userInputService.submitUserInputs(planId, formData);
 			if (success) {
 				return ResponseEntity.ok(Map.of("message", "Input submitted successfully", "planId", planId));
-			}
-			else {
+			} else {
 				// This case might mean the plan was no longer waiting, or input was
 				// invalid.
 				// UserInputService should ideally throw specific exceptions for clearer
@@ -234,24 +390,139 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 				logger.warn("Failed to submit user input for plan {}, it might not be waiting or input was invalid.",
 						planId);
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(Map.of("error", "Failed to submit input. Plan not waiting or input invalid.", "planId",
-							planId));
+						.body(Map.of("error", "Failed to submit input. Plan not waiting or input invalid.", "planId",
+								planId));
 			}
-		}
-		catch (IllegalArgumentException e) {
+		} catch (IllegalArgumentException e) {
 			logger.error("Error submitting user input for plan {}: {}", planId, e.getMessage());
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(Map.of("error", e.getMessage(), "planId", planId));
-		}
-		catch (Exception e) {
+					.body(Map.of("error", e.getMessage(), "planId", planId));
+		} catch (Exception e) {
 			logger.error("Unexpected error submitting user input for plan {}: {}", planId, e.getMessage(), e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(Map.of("error", "An unexpected error occurred.", "planId", planId));
+					.body(Map.of("error", "An unexpected error occurred.", "planId", planId));
 		}
 	}
 
 	/**
-	 * Get detailed agent execution record by stepId (includes ThinkActRecord details)
+	 * Execute plan synchronously and build response
+	 * 
+	 * @param planTemplateId The plan template ID to execute
+	 * @param rawParam       Raw parameters for execution (can be null)
+	 * @param uploadedFiles  List of uploaded files (can be null)
+	 * @return ResponseEntity with execution result
+	 */
+	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId, String rawParam,
+			List<Map<String, Object>> uploadedFiles) {
+		try {
+			// Execute the plan template synchronously
+			PlanExecutionResult planExecutionResult = executePlanTemplateSync(planTemplateId, rawParam, uploadedFiles);
+
+			// Return success with execution result
+			Map<String, Object> response = new HashMap<>();
+			response.put("status", "completed");
+			response.put("result", planExecutionResult.getFinalResult());
+
+			return ResponseEntity.ok(response);
+
+		} catch (Exception e) {
+			logger.error("Failed to execute plan template synchronously: {}", planTemplateId, e);
+			Map<String, Object> errorResponse = new HashMap<>();
+			errorResponse.put("error", "Execution failed: " + e.getMessage());
+			errorResponse.put("status", "failed");
+			return ResponseEntity.internalServerError().body(errorResponse);
+		}
+	}
+
+	/**
+	 * Execute a plan template synchronously by its ID
+	 * 
+	 * @param planTemplateId The ID of the plan template to execute
+	 * @param rawParam       Raw parameters for the execution (can be null)
+	 * @param uploadedFiles  List of uploaded files (can be null)
+	 * @return The root plan ID for this execution
+	 */
+	private PlanExecutionResult executePlanTemplateSync(String planTemplateId, String rawParam,
+			List<Map<String, Object>> uploadedFiles) {
+		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
+			logger.error("Plan template ID is null or empty");
+			throw new IllegalArgumentException("Plan template ID cannot be null or empty");
+		}
+
+		try {
+			// Generate a unique plan ID for this execution
+			String currentPlanId = planIdDispatcher.generatePlanId();
+			String rootPlanId = currentPlanId;
+
+			// Fetch the plan template from PlanTemplateService
+			PlanInterface plan = createPlanFromTemplate(planTemplateId, rawParam);
+
+			if (plan == null) {
+				throw new RuntimeException("Failed to create plan from template: " + planTemplateId);
+			}
+
+			// Handle uploaded files if present
+			if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
+				logger.info("Uploaded files will be handled by the execution context for plan template: {}",
+						uploadedFiles.size());
+			}
+
+			// Execute using the PlanningCoordinator's execution logic (async but we'll wait
+			// for result)
+			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByPlan(plan, rootPlanId, null,
+					currentPlanId, null);
+
+			// Wait for completion synchronously
+			PlanExecutionResult result = future.get();
+
+			if (!result.isSuccess()) {
+				throw new RuntimeException("Plan execution failed: " + result.getErrorMessage());
+			}
+
+			// Return the root plan ID
+			return result;
+
+		} catch (Exception e) {
+			logger.error("Failed to execute plan template synchronously: {}", planTemplateId, e);
+			throw new RuntimeException("Synchronous execution failed: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Create a plan interface from template ID and parameters. Fetches the plan
+	 * template
+	 * from PlanTemplateService and converts it to PlanInterface.
+	 * 
+	 * @param planTemplateId The template ID
+	 * @param rawParam       Raw parameters
+	 * @return PlanInterface object or null if creation fails
+	 */
+	private PlanInterface createPlanFromTemplate(String planTemplateId, String rawParam) {
+		try {
+			// Fetch the latest plan version from template service
+			String planJson = planTemplateService.getLatestPlanVersion(planTemplateId);
+
+			if (planJson == null) {
+				logger.error("No plan version found for template: {}", planTemplateId);
+				return null;
+			}
+
+			// Parse the JSON to create a PlanInterface
+			PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
+
+			logger.info("Successfully created plan interface from template: {}", planTemplateId);
+			return plan;
+
+		} catch (Exception e) {
+			logger.error("Failed to create plan interface from template: {}", planTemplateId, e);
+			return null;
+		}
+	}
+
+	/**
+	 * Get detailed agent execution record by stepId (includes ThinkActRecord
+	 * details)
+	 * 
 	 * @param stepId The step ID to query
 	 * @return Detailed agent execution record with ThinkActRecord details
 	 */
@@ -268,8 +539,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 			logger.info("Successfully retrieved agent execution detail for stepId: {}", stepId);
 			return ResponseEntity.ok(detail);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Error fetching agent execution detail for stepId: {}", stepId, e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
