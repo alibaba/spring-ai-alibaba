@@ -113,16 +113,15 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 			configPath = CONFIG_BASE_PATH + agentName.toLowerCase() + "/agent-config.yml";
 		}
 
-		String configContent = loadConfigContent(configPath);
-
-		if (configContent.isEmpty()) {
-			log.warn("Agent configuration file does not exist or is empty: {}", configPath);
-			return null;
-		}
-
 		try {
+            ClassPathResource resource = new ClassPathResource(configPath);
+            if (!resource.exists()) {
+                log.warn("Configuration file does not exist: {}", configPath);
+                return null;
+            }
+
 			Yaml yaml = new Yaml();
-			Map<String, Object> yamlData = yaml.load(configContent);
+			Map<String, Object> yamlData = yaml.load(resource.getInputStream());
 
 			if (yamlData == null) {
 				log.warn("YAML configuration file parsing result is empty: {}", configPath);
