@@ -15,7 +15,7 @@ public class DefaultBuilder extends Builder {
 			if (model == null) {
 				throw new IllegalArgumentException("Either chatClient or model must be provided");
 			}
-			ChatClient.Builder clientBuilder = ChatClient.builder(model, observationRegistry, customObservationConvention);
+			ChatClient.Builder clientBuilder = ChatClient.builder(model);
 			if (chatOptions != null) {
 				clientBuilder.defaultOptions(chatOptions);
 			}
@@ -25,7 +25,13 @@ public class DefaultBuilder extends Builder {
 			chatClient = clientBuilder.build();
 		}
 
-		LlmNode.Builder llmNodeBuilder = LlmNode.builder().chatClient(chatClient).messagesKey("messages");
+		LlmNode.Builder llmNodeBuilder = LlmNode.builder()
+				.stream(true)
+				.chatClient(chatClient)
+				.messagesKey(this.inputKey);
+		if (outputKey != null && !outputKey.isEmpty()) {
+			llmNodeBuilder.outputKey(outputKey);
+		}
 		if (CollectionUtils.isNotEmpty(tools)) {
 			llmNodeBuilder.toolCallbacks(tools);
 		}
@@ -44,5 +50,6 @@ public class DefaultBuilder extends Builder {
 
 		return new ReactAgent(llmNode, toolNode, this);
 	}
+
 }
 

@@ -39,7 +39,7 @@ public class NacosReactAgentBuilder extends DefaultBuilder {
 
 	@Override
 	public ReactAgent build() throws GraphStateException {
-		if (this.name == null) {
+		if (super.name == null) {
 			this.name = nacosOptions.getAgentName();
 		}
 		if (model == null && StringUtils.isNotBlank(this.name)) {
