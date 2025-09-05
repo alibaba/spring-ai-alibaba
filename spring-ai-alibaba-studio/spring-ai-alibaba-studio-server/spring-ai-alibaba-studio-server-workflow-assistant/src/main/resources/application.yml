@@ -1,0 +1,41 @@
+server:
+  port: 8091
+
+spring:
+  application:
+    name: spring-ai-alibaba-graph-example
+
+  ai:
+    dashscope:
+      api-key: 
+      chat:
+        options:
+          model: qwen-plus
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/test
+    username: root
+    password: apple438
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      filters: stat,wall,slf4j
+      filter:
+        stat:
+          log-slow-sql: true
+          slow-sql-millis: 1000
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+rocketmq:
+  endpoints: 127.0.0.1:18080
+  document-index-topic: topic_saa_studio_document_index
+  document_index_group: group_saa_studio_document_index
+
+jwt:
+  access-token-expiration: 7200
+  refresh-token-expiration: 2592000
