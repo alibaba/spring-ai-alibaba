@@ -28,16 +28,11 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -46,9 +41,6 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 
 @Component
 public class ComplexSupportGraphBuilder {
-
-	@Value("classpath:tes/manual.txt")
-	private Resource manualResource;
 
 	@Bean
 	public CompiledGraph buildGraph(ChatModel chatModel, VectorStore vectorStore,
@@ -71,7 +63,7 @@ public class ComplexSupportGraphBuilder {
 
 		// —— 1. Document extraction ——
 		DocumentExtractorNode extractNode = DocumentExtractorNode.builder()
-			.fileList(List.of(getResourceFilePath(manualResource)))
+			.fileList(List.of("data/manual.txt"))
 			.paramsKey("attachments")
 			.outputKey("docs")
 			.build();
@@ -169,56 +161,6 @@ public class ComplexSupportGraphBuilder {
 			.addEdge("finalAnswer", END);
 
 		return graph.compile();
-	}
-
-	/**
-	 * Converts a Spring {@link Resource} to an absolute file path.
-	 * <p>
-	 * This is a workaround because {@code DocumentExtractorNode} requires a direct file system path
-	 * and cannot handle classpath resources, especially when running from a JAR file.
-	 * </p><p>
-	 * This method implements a robust strategy:
-	 * <ul>
-	 *     <li>If the resource is a file on the file system (e.g., during development), it returns its absolute path.</li>
-	 *     <li>If the resource is inside a JAR file, it extracts the resource to a temporary file
-	 *     and returns the path to that temporary file.</li>
-	 * </ul>
-	 * A shutdown hook is registered to clean up the temporary file on JVM exit.
-	 * </p>
-	 *
-	 * @param resource the Spring resource to resolve.
-	 * @return the absolute file path of the resource.
-	 * @throws RuntimeException if the resource cannot be resolved to a file path.
-	 */
-	private String getResourceFilePath(Resource resource) {
-		try {
-			// This works only if the resource is directly on the filesystem.
-			// It will fail if the resource is inside a JAR.
-			return resource.getFile().getAbsolutePath();
-		}
-		catch (IOException e) {
-			// This is the fallback for resources inside a JAR.
-			try {
-				Path tempFile = Files.createTempFile("resource-", "-" + resource.getFilename());
-				try (var inputStream = resource.getInputStream()) {
-					Files.copy(inputStream, tempFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-				}
-				// Ensure the temporary file is deleted when the application shuts down.
-				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-					try {
-						Files.deleteIfExists(tempFile);
-					}
-					catch (IOException ex) {
-						// Log the error but don't prevent shutdown
-						System.err.println("Failed to delete temporary file: " + tempFile);
-					}
-				}));
-				return tempFile.toAbsolutePath().toString();
-			}
-			catch (IOException ex) {
-				throw new RuntimeException("Failed to resolve resource to a file path: " + resource, ex);
-			}
-		}
 	}
 
 }
