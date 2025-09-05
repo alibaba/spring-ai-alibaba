@@ -145,6 +145,47 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 	// Data structures:
 	/**
+	 * Enum for supported input field types
+	 */
+	public enum InputType {
+		TEXT("text"),
+		NUMBER("number"),
+		EMAIL("email"),
+		PASSWORD("password"),
+		TEXTAREA("textarea"),
+		SELECT("select"),
+		CHECKBOX("checkbox"),
+		RADIO("radio");
+
+		private final String value;
+
+		InputType(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+
+		@Override
+		public String toString() {
+			return value;
+		}
+
+		public static InputType fromString(String value) {
+			if (value == null) {
+				return TEXT; // default
+			}
+			for (InputType type : InputType.values()) {
+				if (type.value.equalsIgnoreCase(value)) {
+					return type;
+				}
+			}
+			return TEXT; // default fallback
+		}
+	}
+
+	/**
 	 * Form input item containing label and corresponding value.
 	 */
 	public static class InputItem {
@@ -155,7 +196,7 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 		private String value;
 
-		private String type;
+		private InputType type;
 
 		private Boolean required;
 
@@ -172,6 +213,12 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 		}
 
 		public InputItem(String name, String label, String type) {
+			this.name = name;
+			this.label = label;
+			this.type = InputType.fromString(type);
+		}
+
+		public InputItem(String name, String label, InputType type) {
 			this.name = name;
 			this.label = label;
 			this.type = type;
@@ -201,12 +248,16 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 			this.value = value;
 		}
 
-		public String getType() {
+		public InputType getType() {
 			return type;
 		}
 
-		public void setType(String type) {
+		public void setType(InputType type) {
 			this.type = type;
+		}
+
+		public void setType(String type) {
+			this.type = InputType.fromString(type);
 		}
 
 		public Boolean getRequired() {
