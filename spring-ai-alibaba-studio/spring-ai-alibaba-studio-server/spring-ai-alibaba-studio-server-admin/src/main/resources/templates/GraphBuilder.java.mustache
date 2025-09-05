@@ -24,18 +24,12 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 
 @Component
 public class GraphBuilder {
-    {{#hasRetriever}}
-    // todo: add your knowledge base
-    @Value("${rag.source:classpath:${}")
-    private Resource ragSource;
-    {{/hasRetriever}}
 
     {{assistMethodCode}}
 
     @Bean
     public CompiledGraph buildGraph(
         ChatModel chatModel
-        {{#hasRetriever}}, VectorStore vectorStore{{/hasRetriever}}
         {{#hasCode}}, CodeExecutionConfig codeExecutionConfig, CodeExecutor codeExecutor{{/hasCode}}
         ) throws Exception {
         ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
@@ -49,19 +43,6 @@ public class GraphBuilder {
         {{edgeSection}}
         return stateGraph.compile();
     }
-
-    {{#hasRetriever}}
-        @Bean
-        public VectorStore customVectorStore(EmbeddingModel embeddingModel) {
-            var chunks = new TokenTextSplitter()
-                .transform(new TextReader(ragSource).read());
-            SimpleVectorStore vectorStore = SimpleVectorStore
-                .builder(embeddingModel)
-                .build();
-            vectorStore.write(chunks);
-            return vectorStore;
-        }
-    {{/hasRetriever}}
 
     {{#hasCode}}
         @Bean

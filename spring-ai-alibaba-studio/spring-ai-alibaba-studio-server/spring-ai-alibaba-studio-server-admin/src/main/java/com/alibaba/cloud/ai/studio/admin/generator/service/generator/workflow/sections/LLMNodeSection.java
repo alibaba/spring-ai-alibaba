@@ -38,10 +38,11 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 	public String render(Node node, String varName) {
 		LLMNodeData nodeData = ((LLMNodeData) node.getData());
 		return String.format("""
+				// —— LLMNode [%s] ——%n
 				stateGraph.addNode("%s", AsyncNodeAction.node_async(
 				    createLLMNodeAction(%s, %s, %s, %s, %s, %s, %s, %s, %s)
 				));
-				""", varName, ObjectToCodeUtil.toCode(nodeData.getChatModeName()),
+				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getChatModeName()),
 				ObjectToCodeUtil.toCode(nodeData.getModeParams()),
 				ObjectToCodeUtil.toCode(nodeData.getMessageTemplates()),
 				ObjectToCodeUtil.toCode(nodeData.getMemoryKey()), ObjectToCodeUtil.toCode(nodeData.getMaxRetryCount()),

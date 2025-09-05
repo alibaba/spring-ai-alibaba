@@ -32,7 +32,7 @@ public enum NodeType {
 
 	CODE("code", "code", "UNSUPPORTED"),
 
-	RETRIEVER("retriever", "knowledge-retrieval", "UNSUPPORTED"),
+	RETRIEVER("retriever", "knowledge-retrieval", "Retrieval"),
 
 	AGGREGATOR("aggregator", "variable-aggregator", "UNSUPPORTED"),
 

@@ -22,8 +22,10 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.Knowl
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
 import org.springframework.stereotype.Component;
 
+// TODO: 支持其他格式的文档，如PDF、ZIP等；解析并应用Dify的RerankModel配置
 @Component
 public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetrievalNodeData> {
 
@@ -34,97 +36,60 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 
 	@Override
 	public String render(Node node, String varName) {
-		KnowledgeRetrievalNodeData d = (KnowledgeRetrievalNodeData) node.getData();
-		String id = node.getId();
-		StringBuilder sb = new StringBuilder();
-
-		sb.append(String.format("// —— KnowledgeRetrievalNode [%s] ——%n", id));
-		sb.append(String.format("KnowledgeRetrievalNode %s = KnowledgeRetrievalNode.builder()%n", varName));
-
-		sb.append(String.format(".inputKey(\"%s\")%n", d.getInputKey()));
-
-		if (d.getUserPrompt() != null) {
-			sb.append(String.format(".userPrompt(\"%s\")%n", escape(d.getUserPrompt())));
-		}
-		if (d.getTopKKey() != null) {
-			sb.append(String.format(".topKKey(\"%s\")%n", escape(d.getTopKKey())));
-		}
-		if (d.getTopK() != null) {
-			sb.append(String.format(".topK(%d)%n", d.getTopK()));
-		}
-		if (d.getSimilarityThresholdKey() != null) {
-			sb.append(String.format(".similarityThresholdKey(\"%s\")%n", escape(d.getSimilarityThresholdKey())));
-		}
-		if (d.getSimilarityThreshold() != null) {
-			sb.append(String.format(".similarityThreshold(%s)%n", d.getSimilarityThreshold()));
-		}
-		if (d.getFilterExpressionKey() != null) {
-			sb.append(String.format(".filterExpressionKey(\"%s\")%n", escape(d.getFilterExpressionKey())));
-		}
-		if (d.getFilterExpression() != null) {
-			sb.append(String.format(".filterExpression(%s)%n", d.getFilterExpression().toString()));
-		}
-		if (d.getEnableRankerKey() != null) {
-			sb.append(String.format(".enableRankerKey(\"%s\")%n", escape(d.getEnableRankerKey())));
-		}
-		if (d.getEnableRanker() != null) {
-			sb.append(String.format(".enableRanker(%b)%n", d.getEnableRanker()));
-		}
-		if (d.getRerankModelKey() != null) {
-			sb.append(String.format(".rerankModelKey(\"%s\")%n", escape(d.getRerankModelKey())));
-		}
-		if (d.getRerankModel() != null) {
-			sb.append(String.format(".rerankModel(%s)%n", d.getRerankModel()));
-		}
-		if (d.getRerankOptionsKey() != null) {
-			sb.append(String.format(".rerankOptionsKey(\"%s\")%n", escape(d.getRerankOptionsKey())));
-		}
-		if (d.getRerankOptions() != null) {
-			sb.append(String.format(".rerankOptions(%s)%n", d.getRerankOptions()));
-		}
-		if (d.getVectorStoreKey() != null) {
-			sb.append(String.format(".vectorStoreKey(\"%s\")%n", escape(d.getVectorStoreKey())));
-		}
-
-		if (d.getRetrievalMode() != null) {
-			sb.append(String.format(".retrievalMode(\"%s\")%n", escape(d.getRetrievalMode())));
-		}
-		if (d.getEmbeddingModelName() != null) {
-			sb.append(String.format(".embeddingModelName(\"%s\")%n", escape(d.getEmbeddingModelName())));
-		}
-		if (d.getEmbeddingProviderName() != null) {
-			sb.append(String.format(".embeddingProviderName(\"%s\")%n", escape(d.getEmbeddingProviderName())));
-		}
-		if (d.getVectorWeight() != null) {
-			sb.append(String.format(".vectorWeight(%s)%n", d.getVectorWeight()));
-		}
-		if (d.getOutputKey() != null) {
-			sb.append(String.format(".outputKey(\"%s\")%n", escape(d.getOutputKey())));
-		}
-		sb.append(".vectorStore(vectorStore)\n");
-
-		sb.append(".isKeyFirst(false).build();\n");
-
-		// 辅助节点代码
-		String assistNodeCode = String.format("wrapperRetrievalNodeAction(%s, \"%s\")", varName, d.getOutputKey());
-
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
-				assistNodeCode));
-		return sb.toString();
+		KnowledgeRetrievalNodeData nodeData = (KnowledgeRetrievalNodeData) node.getData();
+		return String.format("""
+				// —— KnowledgeRetrievalNode [%s] ——%n
+				KnowledgeRetrievalNode %s = KnowledgeRetrievalNode.builder()
+				    .topK(%s)
+				    .similarityThreshold(%s)
+				    .inputKey(%s)
+				    .outputKey(%s)
+				    .vectorStore(createVectorStore(%s))
+				    .build();
+				stateGraph.addNode("%s", AsyncNodeAction.node_async(wrapperRetrievalNodeAction(%s, "%s")));
+				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getTopK()),
+				ObjectToCodeUtil.toCode(nodeData.getThreshold()), ObjectToCodeUtil.toCode(nodeData.getInputKey()),
+				ObjectToCodeUtil.toCode(nodeData.getOutputKey()),
+				ObjectToCodeUtil.toCode(nodeData.getKnowledgeBaseIds()), varName, varName, nodeData.getOutputKey());
 	}
 
 	@Override
 	public String assistMethodCode(DSLDialectType dialectType) {
-		return switch (dialectType) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("""
+				@Autowired
+				private ResourceLoader resourceLoader;
+
+				@Autowired
+				private EmbeddingModel embeddingModel;
+
+				""");
+		if (!DSLDialectType.STUDIO.equals(dialectType)) {
+			sb.append(
+					"// todo: Please manually modify the parameter values passed to this method to point to the correct resource paths");
+		}
+		sb.append("""
+				public VectorStore createVectorStore(List<String> paths) {
+				    List<Resource> resources = Optional.ofNullable(paths).orElse(List.of())
+				            .stream().map(resourceLoader::getResource).toList();
+				    List<Document> documents = resources.stream().map(TextReader::new).map(TextReader::read)
+				            .flatMap(List::stream).toList();
+				    List<Document> chunks = new TokenTextSplitter().transform(documents);
+				    SimpleVectorStore vectorStore = SimpleVectorStore.builder(embeddingModel).build();
+				    vectorStore.write(chunks);
+				    return vectorStore;
+				}
+				""");
+		sb.append(switch (dialectType) {
 			case DIFY ->
 				"""
 						 private NodeAction wrapperRetrievalNodeAction(NodeAction nodeAction, String key) {
-						     return (state) -> {
-						         // 将结果转换为Dify工作流中需要的变量
+						     return state -> {
+						         // Convert the result to the variable format required by the Dify workflow
 						         Map<String, Object> result = nodeAction.apply(state);
 						         Object object = result.get(key);
 						         if(object instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Document) {
-						             // 返回值为Array[Object]（用List<Map>）
+						             // Return value is Array[Object] (using List<Map>)
 						             List<Document> documentList = (List<Document>) list;
 						             List<Map<String, Object>> mapList = documentList.stream().map(document ->
 						                             Map.of("content", document.getFormattedContent(), "title", document.getId(), "url", "", "icon", "", "metadata", document.getMetadata()))
@@ -136,8 +101,34 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 						     };
 						 }
 						""";
+			case STUDIO ->
+				"""
+						   private NodeAction wrapperRetrievalNodeAction(NodeAction nodeAction, String key) {
+						       return state -> {
+						           // Convert the result to the variable format required by the workflow
+						           Map<String, Object> result = nodeAction.apply(state);
+						           Object object = result.get(key);
+						           if (object instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Document) {
+						               // Return value is Array[Object] (using List<Map>)
+						               List<Document> documentList = (List<Document>) list;
+						               List<Map<String, Object>> mapList = documentList.stream()
+						                   .map(document -> Map.<String, Object>of("doc_id", document.getId(), "doc_name",
+						                           Optional.ofNullable(document.getText()).orElse("unknown"), "title", document.getId(),
+						                           "text", document.getFormattedContent(), "score",
+						                           Optional.ofNullable(document.getScore()).orElse(0.0), "page_number", 0, "chunk_id",
+						                           document.getId()))
+						                   .toList();
+						               return Map.of(key, mapList);
+						           }
+						           else {
+						               return Map.of(key, List.of());
+						           }
+						       };
+						   }
+						""";
 			default -> "";
-		};
+		});
+		return sb.toString();
 	}
 
 }
