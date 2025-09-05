@@ -25,7 +25,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
 import org.springframework.stereotype.Component;
 
-// TODO：支持异常分支、支持DashScope平台以外其他模型
+// TODO：支持异常分支、支持DashScope平台以外其他模型、Dify的结构化输出
 @Component
 public class LLMNodeSection implements NodeSection<LLMNodeData> {
 
@@ -78,9 +78,12 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 						        String defaultOutput, String errorNextNode, String outputKeyPrefix) {
 						    // build chatClient with params
 						    var chatOptionsBuilder = DashScopeChatOptions.builder().withModel(chatModelName);
-						                      Optional.ofNullable(modeParams.get("temperature")).ifPresent(val -> chatOptionsBuilder.withTemperature(val.doubleValue()));
-						                      Optional.ofNullable(modeParams.get("top_p")).ifPresent(val -> chatOptionsBuilder.withTopP(val.doubleValue()));
-						                      Optional.ofNullable(modeParams.get("max_tokens")).ifPresent(val -> chatOptionsBuilder.withMaxToken(val.intValue()));
+						    Optional.ofNullable(modeParams.get("temperature")).ifPresent(val -> chatOptionsBuilder.withTemperature(val.doubleValue()));
+						    Optional.ofNullable(modeParams.get("seed")).ifPresent(val -> chatOptionsBuilder.withSeed(val.intValue()));
+						    Optional.ofNullable(modeParams.get("top_p")).ifPresent(val -> chatOptionsBuilder.withTopP(val.doubleValue()));
+						    Optional.ofNullable(modeParams.get("top_k")).ifPresent(val -> chatOptionsBuilder.withTopK(val.intValue()));
+						    Optional.ofNullable(modeParams.get("max_tokens")).ifPresent(val -> chatOptionsBuilder.withMaxToken(val.intValue()));
+						    Optional.ofNullable(modeParams.get("repetition_penalty")).ifPresent(val -> chatOptionsBuilder.withRepetitionPenalty(val.doubleValue()));
 						    final ChatClient chatClient = ChatClient.builder(chatModel).defaultOptions(chatOptionsBuilder.build()).build();
 
 						    String nextNodeKey = "next_node";

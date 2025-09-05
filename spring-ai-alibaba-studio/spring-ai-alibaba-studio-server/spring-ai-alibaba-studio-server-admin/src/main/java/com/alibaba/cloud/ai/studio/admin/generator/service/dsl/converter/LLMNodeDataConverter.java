@@ -56,10 +56,52 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 	private enum LLMNodeConverter {
 
 		DIFY(new DialectConverter<>() {
-			@SuppressWarnings("unchecked")
 			@Override
 			public LLMNodeData parse(Map<String, Object> data) {
-				throw new UnsupportedOperationException();
+				LLMNodeData nodeData = new LLMNodeData();
+
+				// 获取必要的信息
+				String modeName = MapReadUtil.getMapDeepValue(data, String.class, "model", "name");
+				Map<String, Object> modeParams = MapReadUtil.safeCastToMapWithStringKey(
+						MapReadUtil.getMapDeepValue(data, Map.class, "model", "completion_params"));
+
+				// MessageTemplate的keys字段将在postProcess中确定，所以这里先设置为空
+				List<LLMNodeData.MessageTemplate> messageTemplates = Optional
+					.ofNullable(MapReadUtil
+						.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "prompt_template")))
+					.orElse(List.of())
+					.stream()
+					.filter(map -> map.containsKey("role") && map.containsKey("text"))
+					.map(map -> new LLMNodeData.MessageTemplate(map.get("text").toString(), List.of(),
+							MessageType.fromValue(map.get("role").toString())))
+					.toList();
+
+				Boolean retryEnable = MapReadUtil.getMapDeepValue(data, Boolean.class, "retry_config", "retry_enabled");
+				Integer maxRetryCount = Boolean.TRUE.equals(retryEnable)
+						? MapReadUtil.getMapDeepValue(data, Integer.class, "retry_config", "max_retries") : 1;
+				Integer retryIntervalMs = Boolean.TRUE.equals(retryEnable)
+						? MapReadUtil.getMapDeepValue(data, Integer.class, "retry_config", "retry_interval") : 1000;
+
+				String errorStrategy = MapReadUtil.getMapDeepValue(data, String.class, "error_strategy");
+				List<Map<String, Object>> defaultValues = Optional
+					.ofNullable(MapReadUtil
+						.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "default_value")))
+					.orElse(List.of());
+				String defaultOutput = null;
+				String errorNextNode = null;
+				if (!defaultValues.isEmpty()) {
+					defaultOutput = defaultValues.get(0).get("value").toString();
+				}
+
+				// 设置NodeData
+				nodeData.setChatModeName(modeName);
+				nodeData.setModeParams(modeParams);
+				nodeData.setMessageTemplates(messageTemplates);
+				nodeData.setMaxRetryCount(maxRetryCount);
+				nodeData.setRetryIntervalMs(retryIntervalMs);
+				nodeData.setDefaultOutput(defaultOutput);
+				nodeData.setErrorNextNode(errorNextNode);
+				return nodeData;
 			}
 
 			@Override
