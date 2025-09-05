@@ -163,7 +163,7 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 	 * Scan all available startup agent configuration directories
 	 * @return agent directory name list
 	 */
-	public List<String> scanAvailableAgents() {
+	public List<String> scanAvailableAgents(String language) {
 		try {
 			ClassPathResource baseResource = new ClassPathResource(CONFIG_BASE_PATH);
 			if (!baseResource.exists()) {
@@ -181,6 +181,10 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 
 			// Scan for all agent-config.yml files in subdirectories
 			String pattern = CONFIG_BASE_PATH + "*/agent-config.yml";
+            if (language != null && !language.trim().isEmpty()) {
+                // Multi-language path: prompts/startup-agents/zh/agent_name/agent-config.yml
+                pattern = CONFIG_BASE_PATH + language + "/*/agent-config.yml";
+            }
 			Resource[] resources = resolver.getResources("classpath:" + pattern);
 
 			for (Resource resource : resources) {

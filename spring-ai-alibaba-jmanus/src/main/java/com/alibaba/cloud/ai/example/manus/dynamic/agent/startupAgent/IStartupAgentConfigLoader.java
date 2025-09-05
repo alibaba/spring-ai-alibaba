@@ -40,6 +40,6 @@ public interface IStartupAgentConfigLoader {
 	/**
 	 * Scan available agents
 	 */
-	List<String> scanAvailableAgents();
+	List<String> scanAvailableAgents(String language);
 
 }
