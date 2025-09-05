@@ -257,6 +257,7 @@
 import { ref, reactive, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
+import { CommonApiService } from '@/api/common-api-service'
 import type { PlanExecutionRecord, AgentExecutionRecord, ExecutionStatus } from '@/types/plan-execution-record'
 import type { CompatiblePlanExecutionRecord } from './composables/useChatMessages'
 import RecursiveSubPlan from './RecursiveSubPlan.vue'
@@ -400,6 +401,16 @@ const handleUserInputSubmit = async () => {
       })
     } else {
       inputData.genericInput = genericInput.value
+    }
+
+    console.log('[ExecutionDetails] Submitting user input:', inputData, 'for planId:', props.planExecution.currentPlanId)
+
+    // Submit user input to backend API
+    if (props.planExecution.currentPlanId) {
+      await CommonApiService.submitFormInput(props.planExecution.currentPlanId, inputData)
+      console.log('[ExecutionDetails] User input submitted successfully')
+    } else {
+      console.error('[ExecutionDetails] No currentPlanId available for user input submission')
     }
 
     emit('user-input-submitted', inputData)
