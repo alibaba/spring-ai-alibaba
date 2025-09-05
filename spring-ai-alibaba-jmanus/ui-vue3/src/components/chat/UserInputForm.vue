@@ -193,7 +193,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { CommonApiService } from '@/api/common-api-service'
@@ -218,18 +218,33 @@ useI18n()
 // Local state
 const formInputsStore = reactive<Record<number, string | string[]>>({})
 const genericInput = ref(props.genericInput || '')
+const isInitialized = ref(false)
+const initializationTimeout = ref<number | null>(null)
 
 // Initialize form inputs based on type
 const initializeFormInputs = () => {
   const formInputs = props.userInputWaitState?.formInputs
   if (formInputs && formInputs.length > 0) {
-    formInputs.forEach((input, index) => {
-      if (input.type === 'checkbox') {
-        formInputsStore[index] = []
-      } else {
-        formInputsStore[index] = ''
-      }
-    })
+    // Only initialize if not already initialized or if form structure changed
+    const needsInitialization = !isInitialized.value || 
+      Object.keys(formInputsStore).length !== formInputs.length
+    
+    if (needsInitialization) {
+      formInputs.forEach((input, index) => {
+        // Only initialize if this field doesn't exist or is empty
+        if (!(index in formInputsStore) || 
+            (input.type === 'checkbox' && !Array.isArray(formInputsStore[index])) ||
+            (input.type !== 'checkbox' && formInputsStore[index] === '')) {
+          
+          if (input.type === 'checkbox') {
+            formInputsStore[index] = []
+          } else {
+            formInputsStore[index] = ''
+          }
+        }
+      })
+      isInitialized.value = true
+    }
   }
 }
 
@@ -239,7 +254,17 @@ onMounted(() => {
 })
 
 watch(() => props.userInputWaitState?.formInputs, () => {
-  initializeFormInputs()
+  // Clear any existing timeout
+  if (initializationTimeout.value) {
+    clearTimeout(initializationTimeout.value)
+  }
+  
+  // Debounce initialization to avoid frequent resets
+  initializationTimeout.value = setTimeout(() => {
+    // Reset initialization flag when form structure changes
+    isInitialized.value = false
+    initializeFormInputs()
+  }, 100) // 100ms debounce
 }, { deep: true })
 
 // Event handlers
@@ -297,6 +322,13 @@ const isRequired = (required: boolean | string | undefined): boolean => {
   if (typeof required === 'string') return required === 'true'
   return false
 }
+
+// Cleanup on unmount
+onUnmounted(() => {
+  if (initializationTimeout.value) {
+    clearTimeout(initializationTimeout.value)
+  }
+})
 </script>
 
 <style lang="less" scoped>

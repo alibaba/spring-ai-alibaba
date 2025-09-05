@@ -49,14 +49,6 @@
         </div>
         
       </div>
-      <div class="api-url-display">
-        <span class="api-url-label">{{ t('sidebar.apiUrl') }}:</span>
-        <code class="api-url">{{ computedApiUrl }}</code>
-      </div>
-      <div class="api-url-display">
-        <span class="api-url-label">{{ t('sidebar.statusApiUrl') }}:</span>
-        <code class="api-url">/api/executor/details/{planId}</code>
-      </div>
       <button
         class="btn btn-primary execute-btn"
         @click="handleExecutePlan"
@@ -78,6 +70,18 @@
         <Icon icon="carbon:application" width="16" />
         {{ t('sidebar.publishMcpService') }}
       </button>
+      
+      <!-- API URLs wrapper -->
+      <div class="api-urls-wrapper">
+        <div class="api-url-display">
+          <span class="api-url-label">{{ t('sidebar.apiUrl') }}:</span>
+          <code class="api-url">{{ computedApiUrl }}</code>
+        </div>
+        <div class="api-url-display">
+          <span class="api-url-label">{{ t('sidebar.statusApiUrl') }}:</span>
+          <code class="api-url">/api/executor/details/{planId}</code>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -318,6 +322,13 @@ defineExpose({
 
 }
 
+
+.api-urls-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
 
 .api-url-display {
   padding: 8px;
