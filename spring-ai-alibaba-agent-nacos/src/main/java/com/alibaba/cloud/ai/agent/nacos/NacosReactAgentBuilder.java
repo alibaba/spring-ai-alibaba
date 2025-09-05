@@ -46,7 +46,9 @@ public class NacosReactAgentBuilder extends DefaultBuilder {
 			this.model = NacosAgentInjector.initModel(nacosOptions, this.name);
 		}
 		if (chatClient == null) {
-			ChatClient.Builder clientBuilder = ChatClient.builder(model, nacosOptions.getObservationConfigration().getObservationRegistry(), nacosOptions.getObservationConfigration().getChatClientObservationConvention());
+			ChatClient.Builder clientBuilder = ChatClient.builder(model, nacosOptions.getObservationConfigration()
+					.getObservationRegistry(), nacosOptions.getObservationConfigration()
+					.getChatClientObservationConvention());
 			if (chatOptions != null) {
 				clientBuilder.defaultOptions(chatOptions);
 			}
@@ -76,7 +78,8 @@ public class NacosReactAgentBuilder extends DefaultBuilder {
 
 		this.tools = toolCallbacks;
 
-		LlmNode.Builder llmNodeBuilder = LlmNode.builder().stream(true).chatClient(chatClient).messagesKey(this.inputKey);
+		LlmNode.Builder llmNodeBuilder = LlmNode.builder().stream(true).chatClient(chatClient)
+				.messagesKey(this.inputKey);
 		if (outputKey != null && !outputKey.isEmpty()) {
 			llmNodeBuilder.outputKey(outputKey);
 		}
