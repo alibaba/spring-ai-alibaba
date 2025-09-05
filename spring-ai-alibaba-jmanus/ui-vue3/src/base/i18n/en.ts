@@ -1065,8 +1065,6 @@ const words: I18nType = {
     stepExecuting: 'Step is executing, please wait...',
     step: 'Step',
     executingAgent: 'Executing Agent',
-    description: 'Description',
-    request: 'Request',
     callingModel: 'Calling Model',
     executionResult: 'Execution Result',
     executing: 'Executing...',

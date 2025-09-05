@@ -1030,8 +1030,6 @@ const words: I18nType = {
     stepExecuting: '步骤正在执行中，请稍候...',
     step: '步骤',
     executingAgent: '执行智能体',
-    description: '描述',
-    request: '请求',
     callingModel: '调用模型',
     executionResult: '执行结果',
     executing: '执行中...',

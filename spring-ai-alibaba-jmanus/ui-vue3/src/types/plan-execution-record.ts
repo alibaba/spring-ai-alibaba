@@ -170,8 +170,8 @@ export interface UserInputWaitState {
   /** Plan ID */
   planId?: string
 
-  /** Message to display to user */
-  message?: string
+  /** Title to display to user */
+  title?: string
 
   /** Whether the plan is currently waiting for user input */
   waiting?: boolean

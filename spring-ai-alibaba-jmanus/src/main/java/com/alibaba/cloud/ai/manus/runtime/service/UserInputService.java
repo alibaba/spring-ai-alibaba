@@ -42,8 +42,8 @@ public class UserInputService implements IUserInputService {
 		formInputToolMap.remove(planId);
 	}
 
-	public UserInputWaitState createUserInputWaitState(String planId, String message, FormInputTool formInputTool) {
-		UserInputWaitState waitState = new UserInputWaitState(planId, message, true);
+	public UserInputWaitState createUserInputWaitState(String planId, String title, FormInputTool formInputTool) {
+		UserInputWaitState waitState = new UserInputWaitState(planId, title, true);
 		if (formInputTool != null) {
 			// Assume FormInputTool has methods getFormDescription() and getFormInputs()
 			// to get form information
@@ -53,6 +53,10 @@ public class UserInputService implements IUserInputService {
 			// structure of FormInputTool
 			FormInputTool.UserFormInput latestFormInput = formInputTool.getLatestUserFormInput();
 			if (latestFormInput != null) {
+				// Use title from form input if available, otherwise use the provided title
+				if (latestFormInput.getTitle() != null && !latestFormInput.getTitle().isEmpty()) {
+					waitState.setTitle(latestFormInput.getTitle());
+				}
 				waitState.setFormDescription(latestFormInput.getDescription());
 				if (latestFormInput.getInputs() != null) {
 					List<Map<String, String>> formInputsForState = latestFormInput.getInputs()
@@ -95,7 +99,7 @@ public class UserInputService implements IUserInputService {
 			// getInputState
 			// and
 			// InputState
-			// Assuming a default message or retrieve from tool if available
+			// Assuming a default title or retrieve from tool if available
 			return createUserInputWaitState(planId, "Awaiting user input.", tool);
 		}
 		return null; // Or a UserInputWaitState with waiting=false

@@ -48,11 +48,11 @@ public interface IUserInputService {
 	/**
 	 * Create user input waiting state
 	 * @param planId Plan ID
-	 * @param message Message
+	 * @param title Title
 	 * @param formInputTool Form input tool
 	 * @return User input waiting state
 	 */
-	UserInputWaitState createUserInputWaitState(String planId, String message, FormInputTool formInputTool);
+	UserInputWaitState createUserInputWaitState(String planId, String title, FormInputTool formInputTool);
 
 	/**
 	 * Get waiting state

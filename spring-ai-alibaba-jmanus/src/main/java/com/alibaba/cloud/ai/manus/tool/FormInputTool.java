@@ -40,6 +40,10 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 				{
 				    "type": "object",
 				    "properties": {
+				        "title": {
+				            "type": "string",
+				            "description": "Title of the form displayed to the user"
+				        },
 				        "description": {
 				            "type": "string",
 				            "description": "Description of the form and what information is being collected"
@@ -83,7 +87,7 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 				            "description": "Array of input field definitions"
 				        }
 				    },
-				    "required": ["description", "inputs"]
+				    "required": ["title", "description", "inputs"]
 				}
 				""";
 	}
@@ -295,12 +299,20 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 		private String description;
 
+		private String title;
+
 		public UserFormInput() {
 		}
 
 		public UserFormInput(List<InputItem> inputs, String description) {
 			this.inputs = inputs;
 			this.description = description;
+		}
+
+		public UserFormInput(List<InputItem> inputs, String description, String title) {
+			this.inputs = inputs;
+			this.description = description;
+			this.title = title;
 		}
 
 		public List<InputItem> getInputs() {
@@ -317,6 +329,14 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 
 		public void setDescription(String description) {
 			this.description = description;
+		}
+
+		public String getTitle() {
+			return title;
+		}
+
+		public void setTitle(String title) {
+			this.title = title;
 		}
 
 	}

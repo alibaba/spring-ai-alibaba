@@ -21,7 +21,7 @@
     </div>
     
     <p class="user-input-message">
-      {{ userInputWaitState?.message ?? $t('chat.userInput.message') }}
+      {{ userInputWaitState?.title ?? $t('chat.userInput.message') }}
     </p>
     
     <p v-if="userInputWaitState?.formDescription" class="form-description">
@@ -116,6 +116,48 @@
               </option>
             </select>
 
+            <div
+              v-else-if="input.type === 'checkbox' && input.options"
+              class="checkbox-group"
+            >
+              <label
+                v-for="option in getOptionsArray(input.options)"
+                :key="option"
+                class="checkbox-item"
+              >
+                <input
+                  type="checkbox"
+                  :id="`form-input-${input.label.replace(/\W+/g, '_')}-${option.replace(/\W+/g, '_')}`"
+                  :name="input.label"
+                  :value="option"
+                  v-model="formInputsStore[inputIndex]"
+                  class="form-checkbox"
+                />
+                <span class="checkbox-label">{{ option }}</span>
+              </label>
+            </div>
+
+            <div
+              v-else-if="input.type === 'radio' && input.options"
+              class="radio-group"
+            >
+              <label
+                v-for="option in getOptionsArray(input.options)"
+                :key="option"
+                class="radio-item"
+              >
+                <input
+                  type="radio"
+                  :id="`form-input-${input.label.replace(/\W+/g, '_')}-${option.replace(/\W+/g, '_')}`"
+                  :name="input.label"
+                  :value="option"
+                  v-model="formInputsStore[inputIndex]"
+                  class="form-radio"
+                />
+                <span class="radio-label">{{ option }}</span>
+              </label>
+            </div>
+
             <input
               v-else
               type="text"
@@ -151,7 +193,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { CommonApiService } from '@/api/common-api-service'
@@ -174,8 +216,31 @@ const emit = defineEmits<Emits>()
 useI18n()
 
 // Local state
-const formInputsStore = reactive<Record<number, string>>({})
+const formInputsStore = reactive<Record<number, string | string[]>>({})
 const genericInput = ref(props.genericInput || '')
+
+// Initialize form inputs based on type
+const initializeFormInputs = () => {
+  const formInputs = props.userInputWaitState?.formInputs
+  if (formInputs && formInputs.length > 0) {
+    formInputs.forEach((input, index) => {
+      if (input.type === 'checkbox') {
+        formInputsStore[index] = []
+      } else {
+        formInputsStore[index] = ''
+      }
+    })
+  }
+}
+
+// Initialize on mount and when formInputs change
+onMounted(() => {
+  initializeFormInputs()
+})
+
+watch(() => props.userInputWaitState?.formInputs, () => {
+  initializeFormInputs()
+}, { deep: true })
 
 // Event handlers
 const handleUserInputSubmit = async () => {
@@ -189,7 +254,12 @@ const handleUserInputSubmit = async () => {
         const input = formInputs[numIndex]
         if (input) {
           const label = input.label || `input_${index}`
-          inputData[label] = value
+          // Handle checkbox arrays - convert to string if it's an array
+          if (Array.isArray(value)) {
+            inputData[label] = value.join(', ')
+          } else {
+            inputData[label] = value
+          }
         }
       })
     } else {
@@ -326,6 +396,38 @@ const isRequired = (required: boolean | string | undefined): boolean => {
         option {
           background: #2d3748;
           color: #ffffff;
+        }
+      }
+      
+      .checkbox-group,
+      .radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        
+        .checkbox-item,
+        .radio-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          padding: 4px 0;
+          
+          .form-checkbox,
+          .form-radio {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            cursor: pointer;
+            accent-color: #667eea;
+          }
+          
+          .checkbox-label,
+          .radio-label {
+            color: #ffffff;
+            font-size: 14px;
+            user-select: none;
+          }
         }
       }
     }

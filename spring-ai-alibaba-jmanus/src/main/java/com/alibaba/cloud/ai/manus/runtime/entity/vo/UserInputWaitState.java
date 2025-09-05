@@ -23,7 +23,7 @@ public class UserInputWaitState implements Serializable {
 
 	private String planId;
 
-	private String message;
+	private String title;
 
 	private boolean waiting;
 
@@ -34,9 +34,9 @@ public class UserInputWaitState implements Serializable {
 	public UserInputWaitState() {
 	}
 
-	public UserInputWaitState(String planId, String message, boolean waiting) {
+	public UserInputWaitState(String planId, String title, boolean waiting) {
 		this.planId = planId;
-		this.message = message;
+		this.title = title;
 		this.waiting = waiting;
 	}
 
@@ -48,12 +48,12 @@ public class UserInputWaitState implements Serializable {
 		this.planId = planId;
 	}
 
-	public String getMessage() {
-		return message;
+	public String getTitle() {
+		return title;
 	}
 
-	public void setMessage(String message) {
-		this.message = message;
+	public void setTitle(String title) {
+		this.title = title;
 	}
 
 	public boolean isWaiting() {
