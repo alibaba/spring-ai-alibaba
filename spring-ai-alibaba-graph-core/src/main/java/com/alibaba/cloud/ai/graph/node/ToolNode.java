@@ -52,7 +52,7 @@ public class ToolNode implements NodeAction {
 		this.toolCallbackResolver = resolver;
 	}
 
-	void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		this.toolCallbacks = toolCallbacks;
 	}
 

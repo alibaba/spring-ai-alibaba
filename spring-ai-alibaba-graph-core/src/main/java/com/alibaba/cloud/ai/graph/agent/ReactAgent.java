@@ -21,29 +21,30 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
+import com.alibaba.cloud.ai.graph.agent.factory.DefaultAgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import org.apache.commons.collections4.CollectionUtils;
-
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -84,7 +85,7 @@ public class ReactAgent extends BaseAgent {
 
 	private String inputKey;
 
-	protected ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
+	public ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
 		this.name = builder.name;
 		this.description = builder.description;
 		this.instruction = builder.instruction;
@@ -223,8 +224,8 @@ public class ReactAgent extends BaseAgent {
 
 		if (postLlmHook != null) {
 			graph.addEdge("llm", "postLlm")
-				.addConditionalEdges("postLlm", edge_async(this::think),
-						Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
+					.addConditionalEdges("postLlm", edge_async(this::think),
+							Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
 		}
 		else {
 			graph.addConditionalEdges("llm", edge_async(this::think),
@@ -332,178 +333,11 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	public static Builder builder() {
-		return new Builder();
+		return new DefaultAgentBuilderFactory().builder();
 	}
 
-	public static class Builder {
-
-		private String name;
-
-		private String description;
-
-		private String instruction;
-
-		private String outputKey;
-
-		private ChatModel model;
-
-		private ChatOptions chatOptions;
-
-		private ChatClient chatClient;
-
-		private List<ToolCallback> tools;
-
-		private ToolCallbackResolver resolver;
-
-		private int maxIterations = 10;
-
-		private CompileConfig compileConfig;
-
-		private KeyStrategyFactory keyStrategyFactory;
-
-		private Function<OverAllState, Boolean> shouldContinueFunc;
-
-		private NodeAction preLlmHook;
-
-		private NodeAction postLlmHook;
-
-		private NodeAction preToolHook;
-
-		private NodeAction postToolHook;
-
-		private String inputKey = "messages";
-
-		public Builder name(String name) {
-			this.name = name;
-			return this;
-		}
-
-		public Builder chatClient(ChatClient chatClient) {
-			this.chatClient = chatClient;
-			return this;
-		}
-
-		public Builder model(ChatModel model) {
-			this.model = model;
-			return this;
-		}
-
-		public Builder chatOptions(ChatOptions chatOptions) {
-			this.chatOptions = chatOptions;
-			return this;
-		}
-
-		public Builder tools(List<ToolCallback> tools) {
-			this.tools = tools;
-			return this;
-		}
-
-		public Builder resolver(ToolCallbackResolver resolver) {
-			this.resolver = resolver;
-			return this;
-		}
-
-		public Builder maxIterations(int maxIterations) {
-			this.maxIterations = maxIterations;
-			return this;
-		}
-
-		public Builder state(KeyStrategyFactory keyStrategyFactory) {
-			this.keyStrategyFactory = keyStrategyFactory;
-			return this;
-		}
-
-		public Builder compileConfig(CompileConfig compileConfig) {
-			this.compileConfig = compileConfig;
-			return this;
-		}
-
-		public Builder shouldContinueFunction(Function<OverAllState, Boolean> shouldContinueFunc) {
-			this.shouldContinueFunc = shouldContinueFunc;
-			return this;
-		}
-
-		public Builder description(String description) {
-			this.description = description;
-			return this;
-		}
-
-		public Builder instruction(String instruction) {
-			this.instruction = instruction;
-			return this;
-		}
-
-		public Builder outputKey(String outputKey) {
-			this.outputKey = outputKey;
-			return this;
-		}
-
-		public Builder preLlmHook(NodeAction preLlmHook) {
-			this.preLlmHook = preLlmHook;
-			return this;
-		}
-
-		public Builder postLlmHook(NodeAction postLlmHook) {
-			this.postLlmHook = postLlmHook;
-			return this;
-		}
-
-		public Builder preToolHook(NodeAction preToolHook) {
-			this.preToolHook = preToolHook;
-			return this;
-		}
-
-		public Builder postToolHook(NodeAction postToolHook) {
-			this.postToolHook = postToolHook;
-			return this;
-		}
-
-		public Builder inputKey(String inputKey) {
-			this.inputKey = inputKey;
-			return this;
-		}
-
-		public ReactAgent build() throws GraphStateException {
-			if (chatClient == null) {
-				if (model == null) {
-					throw new IllegalArgumentException("Either chatClient or model must be provided");
-				}
-				ChatClient.Builder clientBuilder = ChatClient.builder(model);
-				if (chatOptions != null) {
-					clientBuilder.defaultOptions(chatOptions);
-				}
-				if (instruction != null) {
-					clientBuilder.defaultSystem(instruction);
-				}
-				chatClient = clientBuilder.build();
-			}
-
-			LlmNode.Builder llmNodeBuilder = LlmNode.builder()
-				.stream(true)
-				.chatClient(chatClient)
-				.messagesKey(this.inputKey);
-			if (outputKey != null && !outputKey.isEmpty()) {
-				llmNodeBuilder.outputKey(outputKey);
-			}
-			if (CollectionUtils.isNotEmpty(tools)) {
-				llmNodeBuilder.toolCallbacks(tools);
-			}
-			LlmNode llmNode = llmNodeBuilder.build();
-
-			ToolNode toolNode = null;
-			if (resolver != null) {
-				toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
-			}
-			else if (tools != null) {
-				toolNode = ToolNode.builder().toolCallbacks(tools).build();
-			}
-			else {
-				toolNode = ToolNode.builder().build();
-			}
-
-			return new ReactAgent(llmNode, toolNode, this);
-		}
-
+	public static Builder builder(AgentBuilderFactory agentBuilderFactory) {
+		return agentBuilderFactory.builder();
 	}
 
 	public static class SubGraphNodeAdapter implements NodeAction {
