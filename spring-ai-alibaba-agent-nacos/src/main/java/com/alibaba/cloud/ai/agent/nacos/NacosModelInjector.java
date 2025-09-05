@@ -42,7 +42,7 @@ public class NacosModelInjector {
 		if (model.getMaxTokens() != null) {
 			chatOptionsBuilder.maxTokens(Integer.parseInt(model.getMaxTokens()));
 		}
-
+		chatOptionsBuilder.internalToolExecutionEnabled(false);
 		OpenAiChatOptions openaiChatOptions = chatOptionsBuilder
 				.model(model.getModel())
 				.build();

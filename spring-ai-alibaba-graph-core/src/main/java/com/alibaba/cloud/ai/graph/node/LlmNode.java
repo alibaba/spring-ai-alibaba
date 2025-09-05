@@ -32,7 +32,6 @@ import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.StringUtils;
 
@@ -161,11 +160,9 @@ public class LlmNode implements NodeAction {
 
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec() {
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-				.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks)
-						.internalToolExecutionEnabled(false).build())
+				.toolCallbacks(toolCallbacks)
 				.messages(messages)
 				.advisors(advisors);
-
 		if (StringUtils.hasLength(systemPrompt)) {
 			if (!params.isEmpty()) {
 				systemPrompt = renderPromptTemplate(systemPrompt, params);
