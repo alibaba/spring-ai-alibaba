@@ -155,6 +155,7 @@ const saveJsonPlanToTemplate = async (jsonPlan: any) => {
     }
   } catch (error: any) {
     console.error('[Sidebar] Failed to save the plan to the template library:', error);
+    // Note: This would need toast import if used in this context
     alert(error.message || t('sidebar.saveFailed'));
   }
 }

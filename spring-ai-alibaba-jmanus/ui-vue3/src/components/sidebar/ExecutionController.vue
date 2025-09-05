@@ -218,7 +218,8 @@ onMounted(() => {
 // Expose methods for parent component
 defineExpose({
   executionParams,
-  clearExecutionParams
+  clearExecutionParams,
+  loadParameterRequirements
 })
 </script>
 

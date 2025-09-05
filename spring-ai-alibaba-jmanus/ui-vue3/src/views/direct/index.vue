@@ -739,6 +739,7 @@ const handlePlanExecutionRequested = async (payload: {
       }
     } catch (errorHandlingError) {
       console.error('[Direct] Failed to add error messages:', errorHandlingError)
+      // Note: This would need toast import if used in this context
       alert(`${t('direct.executionFailed')}: ${error.message || t('common.unknownError')}`)
     }
   } finally {

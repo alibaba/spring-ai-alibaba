@@ -147,6 +147,7 @@
 
           <!-- Section 3: Execution Controller -->
           <ExecutionController
+            ref="executionControllerRef"
             :current-plan-template-id="sidebarStore.currentPlanTemplateId || ''"
             :is-executing="sidebarStore.isExecuting"
             :is-generating="sidebarStore.isGenerating"
@@ -173,6 +174,7 @@
 
   <!-- 发布MCP服务模态框 -->
   <PublishMcpServiceModal
+    ref="publishMcpModalRef"
     v-model="showPublishMcpModal"
     :plan-template-id="sidebarStore.currentPlanTemplateId || ''"
     :plan-title="sidebarStore.selectedTemplate?.title || ''"
@@ -192,14 +194,20 @@ import { CoordinatorToolApiService } from '@/api/coordinator-tool-api-service'
 import JsonEditor from './JsonEditor.vue'
 import ExecutionController from './ExecutionController.vue'
 import PlanGenerator from './PlanGenerator.vue'
+import { useToast } from '@/plugins/useToast'
 
 const { t } = useI18n()
+const toast = useToast()
 
 // Sidebar width management
 const sidebarWidth = ref(80) // Default width percentage
 const isResizing = ref(false)
 const startX = ref(0)
 const startWidth = ref(0)
+
+// Component refs
+const executionControllerRef = ref<InstanceType<typeof ExecutionController> | null>(null)
+const publishMcpModalRef = ref<InstanceType<typeof PublishMcpServiceModal> | null>(null)
 
 
 
@@ -246,35 +254,50 @@ const handleSaveTemplate = async () => {
     const saveResult = await sidebarStore.saveTemplate()
 
     if (saveResult?.duplicate) {
-      alert(t('sidebar.saveCompleted', { message: saveResult.message, versionCount: saveResult.versionCount }))
+      toast.success(t('sidebar.saveCompleted', { message: saveResult.message, versionCount: saveResult.versionCount }))
     } else if (saveResult?.saved) {
-      alert(t('sidebar.saveSuccess', { message: saveResult.message, versionCount: saveResult.versionCount }))
+      toast.success(t('sidebar.saveSuccess', { message: saveResult.message, versionCount: saveResult.versionCount }))
+      // 保存成功后刷新参数要求
+      refreshParameterRequirements()
     } else if (saveResult?.message) {
-      alert(t('sidebar.saveStatus', { message: saveResult.message }))
+      toast.success(t('sidebar.saveStatus', { message: saveResult.message }))
     }
   } catch (error: any) {
     console.error('Failed to save plan modifications:', error)
-    alert(error.message || t('sidebar.saveFailed'))
+    toast.error(error.message || t('sidebar.saveFailed'))
+  }
+}
+
+// 刷新参数要求的方法
+const refreshParameterRequirements = () => {
+  // 通过 ref 获取 ExecutionController 组件并调用其刷新方法
+  if (executionControllerRef.value) {
+    executionControllerRef.value.loadParameterRequirements()
+  }
+  
+  // 刷新 PublishMcpServiceModal 中的参数要求
+  if (publishMcpModalRef.value) {
+    publishMcpModalRef.value.loadParameterRequirements()
   }
 }
 
 const handleGeneratePlan = async () => {
   try {
     await sidebarStore.generatePlan()
-    alert(t('sidebar.generateSuccess', { templateId: sidebarStore.selectedTemplate?.id ?? t('sidebar.unknown') }))
+    toast.success(t('sidebar.generateSuccess', { templateId: sidebarStore.selectedTemplate?.id ?? t('sidebar.unknown') }))
   } catch (error: any) {
     console.error('Failed to generate plan:', error)
-    alert(t('sidebar.generateFailed') + ': ' + error.message)
+    toast.error(t('sidebar.generateFailed') + ': ' + error.message)
   }
 }
 
 const handleUpdatePlan = async () => {
   try {
     await sidebarStore.updatePlan()
-    alert(t('sidebar.updateSuccess'))
+    toast.success(t('sidebar.updateSuccess'))
   } catch (error: any) {
     console.error('Failed to update plan:', error)
-    alert(t('sidebar.updateFailed') + ': ' + error.message)
+    toast.error(t('sidebar.updateFailed') + ': ' + error.message)
   }
 }
 
@@ -298,7 +321,7 @@ const handleExecutePlan = async () => {
     console.log('[Sidebar] Event emitted')
   } catch (error: any) {
     console.error('Error executing plan:', error)
-    alert(t('sidebar.executeFailed') + ': ' + error.message)
+    toast.error(t('sidebar.executeFailed') + ': ' + error.message)
   } finally {
     sidebarStore.finishPlanExecution()
   }
@@ -313,7 +336,7 @@ const handlePublishMcpService = () => {
   
   if (!sidebarStore.currentPlanTemplateId) {
     console.log('[Sidebar] 没有选择计划模板，显示警告')
-    alert(t('mcpService.selectPlanTemplateFirst'))
+    toast.error(t('mcpService.selectPlanTemplateFirst'))
     return
   }
   
