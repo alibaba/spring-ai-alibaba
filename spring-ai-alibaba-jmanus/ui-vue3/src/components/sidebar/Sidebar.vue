@@ -347,9 +347,11 @@ const handlePublishMcpService = () => {
 const handleMcpServicePublished = (tool: CoordinatorToolVO | null) => {
   if (tool === null) {
     console.log('MCP服务删除成功')
+    toast.success(t('mcpService.deleteSuccess'))
     // 可以在这里添加删除成功后的处理逻辑，比如刷新列表等
   } else {
     console.log('MCP服务发布成功:', tool)
+    toast.success(t('mcpService.publishSuccess'))
     // 可以在这里添加发布成功后的处理逻辑
   }
 }

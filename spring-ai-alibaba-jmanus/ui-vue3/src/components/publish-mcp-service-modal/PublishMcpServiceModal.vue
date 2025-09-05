@@ -47,6 +47,19 @@
         </div>
       </div>
 
+      <!-- Service Group -->
+      <div class="form-section">
+        <div class="form-item">
+          <label>{{ t('mcpService.serviceGroup') }}</label>
+          <input
+            type="text"
+            v-model="formData.serviceGroup"
+            :placeholder="t('mcpService.serviceGroupPlaceholder')"
+            required
+          />
+        </div>
+      </div>
+
       <!-- 参数配置 -->
       <div class="form-section">
         <div class="section-title">{{ t('mcpService.parameterConfig') }}</div>
@@ -232,7 +245,7 @@
               </div>
 
               <!-- MCP Streamable URL配置 - 仅在已发布时显示 -->
-              <div v-if="isPublished" class="form-item url-item">
+              <div v-if="publishStatus === 'PUBLISHED'" class="form-item url-item">
                 <label>{{ t('mcpService.mcpStreamableUrl') }}</label>
                 <div class="url-container">
                   <div class="url-display" @dblclick="copyEndpointUrl" :title="t('mcpService.copyUrl') + ': ' + endpointUrl">
@@ -269,25 +282,6 @@
           {{ publishing ? t('mcpService.publishing') : t('mcpService.publishAsService') }}
         </button>
         
-        <!-- 发布开关组件 - 只在已保存时显示 -->
-        <div 
-          v-if="isSaved && currentTool?.id" 
-          class="publish-toggle-container"
-        >
-          <div class="publish-toggle" @click="handlePublishToggle">
-            <div class="toggle-track" :class="{ 'toggle-on': isPublished, 'toggle-off': !isPublished }">
-              <div class="toggle-thumb" :class="{ 'thumb-on': isPublished, 'thumb-off': !isPublished }"></div>
-              <span 
-                ref="toggleLabelRef"
-                class="toggle-label" 
-                :class="{ 'label-on': isPublished, 'label-off': !isPublished }"
-                :style="toggleLabelStyle"
-              >
-                {{ isPublished ? t('mcpService.published') : t('mcpService.unpublished') }}
-              </span>
-            </div>
-          </div>
-        </div>
       </div>
     </template>
   </Modal>
@@ -306,7 +300,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/components/modal/index.vue'
@@ -359,9 +353,8 @@ const manualEndpointInput = ref('')
 // 当前工具数据，用于判断是创建还是更新
 const currentTool = ref<CoordinatorToolVO | null>(null)
 
-// 发布开关相关状态
+// 发布状态
 const isSaved = ref(false)
-const isPublished = ref(false)
 
 // 服务发布选项
 const publishAsMcpService = ref(false)
@@ -375,8 +368,6 @@ const parameterRequirements = ref<ParameterRequirements>({
 })
 const isLoadingParameters = ref(false)
 
-// 开关文字动态居中相关
-const toggleLabelRef = ref<HTMLElement | null>(null)
 
 // HTTP 服务相关状态 (保留用于未来扩展)
 // const isHttpDropdownOpen = ref(false)
@@ -419,10 +410,6 @@ const curlCommand = computed(() => {
   return curlCmd
 })
 
-// 计算开关文字样式
-const toggleLabelStyle = computed(() => {
-  return {}
-})
 
 // 计算完整的URL功能已移除
 
@@ -432,6 +419,7 @@ const formData = reactive({
   userRequest: '',
   endpoint: '',
   httpEndpoint: '',
+  serviceGroup: '',
   parameters: [] as Array<{ name: string; description: string }>
 })
 
@@ -448,6 +436,7 @@ const initializeFormData = () => {
   formData.serviceName = ''
   formData.userRequest = props.planDescription || ''
   formData.endpoint = ''
+  formData.serviceGroup = ''
   // 只有在没有从计划模板加载参数时才重置参数
   if (!parameterRequirements.value.hasParameters) {
     formData.parameters = []
@@ -456,7 +445,6 @@ const initializeFormData = () => {
   publishStatus.value = ''
   endpointUrl.value = ''
   isSaved.value = false
-  isPublished.value = false
 }
 
 // 加载可用的endpoints
@@ -643,6 +631,10 @@ const validateForm = (): boolean => {
     showMessage(t('mcpService.toolDescriptionRequiredError'), 'error')
     return false
   }
+  if (!formData.serviceGroup.trim()) {
+    showMessage(t('mcpService.serviceGroupRequiredError'), 'error')
+    return false
+  }
   if (publishAsMcpService.value && !formData.endpoint.trim()) {
     showMessage(t('mcpService.endpointRequiredError'), 'error')
     return false
@@ -684,7 +676,8 @@ const handleSave = async () => {
     console.log('[PublishModal] 更新工具信息')
     currentTool.value.toolName = formData.serviceName.trim()
     currentTool.value.toolDescription = formData.userRequest.trim()
-    currentTool.value.endpoint = formData.endpoint.trim()
+    currentTool.value.serviceGroup = formData.serviceGroup.trim()
+    // 这个字段已经不再使用，由新的字段替代
     currentTool.value.planTemplateId = props.planTemplateId // 确保planTemplateId被设置
 
     // 3. 更新inputSchema
@@ -756,15 +749,24 @@ const handlePublish = async () => {
     console.log('[PublishModal] 更新工具信息')
     currentTool.value.toolName = formData.serviceName.trim()
     currentTool.value.toolDescription = formData.userRequest.trim()
+    currentTool.value.serviceGroup = formData.serviceGroup.trim()
     currentTool.value.planTemplateId = props.planTemplateId // 确保planTemplateId被设置
 
-    // 设置endpoint - 根据发布类型设置不同的endpoint
+    // 设置服务启用状态和对应的endpoint
+    currentTool.value.enableInternalToolcall = !publishAsMcpService.value && !publishAsHttpService.value
+    currentTool.value.enableHttpService = publishAsHttpService.value
+    currentTool.value.enableMcpService = publishAsMcpService.value
+    
+    // 设置对应的endpoint
     if (publishAsMcpService.value) {
-      currentTool.value.endpoint = formData.endpoint.trim()
+      currentTool.value.mcpEndpoint = formData.endpoint.trim()
+      currentTool.value.httpEndpoint = undefined
     } else if (publishAsHttpService.value) {
-      currentTool.value.endpoint = formData.httpEndpoint.trim() || '/api/http/execute'
+      currentTool.value.httpEndpoint = formData.httpEndpoint.trim() || '/api/http/execute'
+      currentTool.value.mcpEndpoint = undefined
     } else {
-      currentTool.value.endpoint = ''
+      currentTool.value.httpEndpoint = undefined
+      currentTool.value.mcpEndpoint = undefined
     }
 
     // 3. 更新inputSchema
@@ -792,38 +794,25 @@ const handlePublish = async () => {
     // 5. 根据发布类型进行相应的发布操作
     if (publishAsMcpService.value) {
       console.log('[PublishModal] 步骤5: 发布为MCP服务，ID:', currentTool.value.id)
-      const publishResult = await CoordinatorToolApiService.publishCoordinatorTool(currentTool.value.id!) as any
-      console.log('[PublishModal] 发布结果:', publishResult)
+      // MCP服务发布成功，直接设置状态和URL
+      publishStatus.value = 'PUBLISHED'
       
-      if (publishResult.success) {
-        console.log('[PublishModal] MCP服务发布成功')
-        // 设置发布状态和URL - 从响应中获取正确的endpointUrl
-        publishStatus.value = publishResult.publishStatus || 'PUBLISHED'
-        
-        // 优先使用响应中的endpointUrl，如果没有则构建完整URL
-        if (publishResult.endpointUrl) {
-          endpointUrl.value = publishResult.endpointUrl
-        } else if (currentTool.value.endpoint) {
-          // 构建完整的URL
-          const baseUrl = window.location.origin
-          endpointUrl.value = `${baseUrl}/mcp${currentTool.value.endpoint}`
-        } else {
-          endpointUrl.value = ''
-        }
-        
-        console.log('[PublishModal] 设置状态 - publishStatus:', publishStatus.value, 'endpointUrl:', endpointUrl.value)
-        showMessage(t('mcpService.publishSuccess'), 'success')
-        emit('published', currentTool.value)
-        // 不立即关闭模态框，让用户可以看到URL
-        // showModal.value = false
+      // 构建完整的URL
+      if (currentTool.value.mcpEndpoint) {
+        const baseUrl = window.location.origin
+        endpointUrl.value = `${baseUrl}/mcp${currentTool.value.mcpEndpoint}`
       } else {
-        throw new Error(publishResult.message)
+        endpointUrl.value = ''
       }
+      
+      console.log('[PublishModal] MCP服务发布成功，endpointUrl:', endpointUrl.value)
+      showMessage(t('mcpService.publishSuccess'), 'success')
+      emit('published', currentTool.value)
     } else if (publishAsHttpService.value) {
       console.log('[PublishModal] 步骤5: 发布为HTTP服务，ID:', currentTool.value.id)
       // 对于HTTP服务，我们直接设置endpoint URL
       publishStatus.value = 'PUBLISHED'
-      endpointUrl.value = currentTool.value.endpoint || formData.httpEndpoint.trim()
+      endpointUrl.value = currentTool.value.httpEndpoint || formData.httpEndpoint.trim()
       
       console.log('[PublishModal] HTTP服务发布成功，endpointUrl:', endpointUrl.value)
       showMessage(t('mcpService.httpPublishSuccess'), 'success')
@@ -844,36 +833,6 @@ const handlePublish = async () => {
 
 // Handle cancel functionality removed
 
-// Handle publish toggle switch
-const handlePublishToggle = async () => {
-  if (publishing.value) return
-  
-  publishing.value = true
-  try {
-    if (isPublished.value) {
-      // 取消发布 - 暂时使用更新状态的方式
-      console.log('[PublishModal] 取消发布MCP服务')
-      if (currentTool.value) {
-        currentTool.value.publishStatus = 'UNPUBLISHED'
-        await CoordinatorToolApiService.updateCoordinatorTool(currentTool.value.id!, currentTool.value)
-        isPublished.value = false
-        endpointUrl.value = '' // 清空endpointUrl
-        showMessage(t('mcpService.unpublishSuccess'), 'success')
-      }
-    } else {
-      // 发布
-      console.log('[PublishModal] 发布MCP服务')
-      await handlePublish()
-      isPublished.value = true
-      // handlePublish已经处理了endpointUrl的设置
-    }
-  } catch (error: any) {
-    console.error('[PublishModal] 发布开关操作失败:', error)
-    showMessage(t('mcpService.unpublishFailed') + ': ' + error.message, 'error')
-  } finally {
-    publishing.value = false
-  }
-}
 
 // Handle delete
 const handleDelete = async () => {
@@ -923,8 +882,6 @@ const watchModal = async () => {
     initializeFormData()
     await loadEndpoints()
     await loadCoordinatorToolData()
-    // 计算开关文字位置
-    calculateToggleLabelPosition()
   }
 }
 
@@ -958,7 +915,6 @@ const loadCoordinatorToolData = async () => {
       
       // 设置发布状态和URL
       publishStatus.value = tool.publishStatus || ''
-      isPublished.value = tool.publishStatus === 'PUBLISHED'
       // 只有已存在的工具（有ID）才设置为已保存
       isSaved.value = !!(tool.id)
       
@@ -967,10 +923,10 @@ const loadCoordinatorToolData = async () => {
         // 检查是否有后端返回的endpointUrl
         if ((result as any).endpointUrl) {
           endpointUrl.value = (result as any).endpointUrl
-        } else if (tool.endpoint) {
+        } else if (tool.mcpEndpoint) {
           // 如果没有后端返回的endpointUrl，则构建
           const baseUrl = window.location.origin
-          endpointUrl.value = `${baseUrl}/mcp${tool.endpoint}`
+          endpointUrl.value = `${baseUrl}/mcp${tool.mcpEndpoint}`
         } else {
           endpointUrl.value = ''
         }
@@ -982,7 +938,22 @@ const loadCoordinatorToolData = async () => {
       // 填充表单数据
       formData.serviceName = tool.toolName || ''
       formData.userRequest = tool.toolDescription || props.planDescription || ''
-      formData.endpoint = tool.endpoint || ''
+      formData.serviceGroup = tool.serviceGroup || ''
+      
+      // 根据服务类型设置表单数据
+      if (tool.enableMcpService) {
+        formData.endpoint = tool.mcpEndpoint || ''
+        publishAsMcpService.value = true
+        publishAsHttpService.value = false
+      } else if (tool.enableHttpService) {
+        formData.httpEndpoint = tool.httpEndpoint || ''
+        publishAsMcpService.value = false
+        publishAsHttpService.value = true
+      } else {
+        // 默认内部 toolcall
+        publishAsMcpService.value = false
+        publishAsHttpService.value = false
+      }
       
       // 解析inputSchema为参数
       try {
@@ -1017,66 +988,7 @@ const loadCoordinatorToolData = async () => {
 // Watch props changes
 watch(() => props.modelValue, watchModal)
 
-// 计算开关文字位置的函数
-const calculateToggleLabelPosition = () => {
-  nextTick(() => {
-    if (!toggleLabelRef.value) return
-    
-    const label = toggleLabelRef.value
-    const track = label.parentElement as HTMLElement
-    if (!track) return
-    
-    // 获取轨道和滑块的尺寸
-    const trackRect = track.getBoundingClientRect()
-    const thumb = track.querySelector('.toggle-thumb') as HTMLElement
-    const thumbRect = thumb ? thumb.getBoundingClientRect() : null
-    
-    // 计算可用空间
-    const thumbWidth = thumbRect ? thumbRect.width : 32
-    const availableWidth = trackRect.width - thumbWidth - 4 // 4px是滑块的margin
-    
-    // 计算文字宽度
-    const textWidth = label.scrollWidth
-    
-    // 如果文字宽度小于可用空间，则居中显示
-    if (textWidth <= availableWidth) {
-      const centerOffset = (availableWidth - textWidth) / 2
-      if (isPublished.value) {
-        // 开启状态：文字在左侧，滑块在右侧
-        label.style.position = 'absolute'
-        label.style.left = `${8 + centerOffset}px`
-        label.style.right = 'auto'
-        label.style.transform = 'none'
-      } else {
-        // 关闭状态：文字在右侧，滑块在左侧
-        label.style.position = 'absolute'
-        label.style.right = `${8 + centerOffset}px`
-        label.style.left = 'auto'
-        label.style.transform = 'none'
-      }
-    } else {
-      // 如果文字宽度大于可用空间，则使用默认的padding
-      if (isPublished.value) {
-        label.style.position = 'absolute'
-        label.style.left = '8px'
-        label.style.right = '50px'
-        label.style.transform = 'none'
-      } else {
-        label.style.position = 'absolute'
-        label.style.left = '50px'
-        label.style.right = '8px'
-        label.style.transform = 'none'
-      }
-    }
-  })
-}
 
-// Watch isPublished changes to recalculate label position
-watch(() => isPublished.value, calculateToggleLabelPosition)
-
-// Watch text content changes to recalculate label position
-watch(() => t('mcpService.published'), calculateToggleLabelPosition)
-watch(() => t('mcpService.unpublished'), calculateToggleLabelPosition)
 
 // Watch for planTemplateId changes
 watch(() => props.planTemplateId, () => {
@@ -1091,8 +1003,6 @@ onMounted(async () => {
     await loadEndpoints()
     await loadCoordinatorToolData()
     await loadParameterRequirements()
-    // 计算开关文字位置
-    calculateToggleLabelPosition()
   }
 })
 
@@ -1931,97 +1841,6 @@ defineExpose({
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* 发布开关样式 */
-.publish-toggle-container {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: all 0.3s ease;
-  min-width: 195px; /* 从156px增加25%到195px */
-}
-
-.publish-toggle {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  user-select: none;
-  width: 195px; /* 从156px增加25%到195px */
-  flex-shrink: 0; /* 防止收缩 */
-}
-
-.toggle-track {
-  position: relative;
-  width: 130px; /* 从104px增加25%到130px */
-  height: 36px; /* 与保存按钮一致 */
-  border-radius: 18px;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* 改为两端对齐 */
-  padding: 0 12px; /* 添加左右内边距 */
-  overflow: hidden; /* 防止文字溢出 */
-}
-
-.toggle-track.toggle-on {
-  background: #4caf50;
-  box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.3);
-}
-
-.toggle-track.toggle-off {
-  background: rgba(120, 120, 120, 0.6);
-  box-shadow: 0 0 0 1px rgba(120, 120, 120, 0.3);
-}
-
-.toggle-thumb {
-  position: absolute;
-  top: 2px;
-  width: 32px; /* 调整大小以适应36px高度 */
-  height: 32px; /* 调整大小以适应36px高度 */
-  border-radius: 16px; /* 与轨道圆角保持一致 */
-  background: #fff;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 2; /* 确保在文字之上 */
-}
-
-.toggle-thumb.thumb-on {
-  right: 2px; /* 开启状态：滑块在右侧 */
-}
-
-.toggle-thumb.thumb-off {
-  left: 2px; /* 关闭状态：滑块在左侧 */
-}
-
-.toggle-label {
-  font-size: 12px; /* 调整字体大小以适应较小的高度 */
-  font-weight: 500;
-  transition: all 0.3s ease;
-  color: #fff;
-  z-index: 1;
-  white-space: nowrap;
-  flex: 1; /* 自适应剩余空间 */
-  text-align: center; /* 文字居中 */
-  padding: 0 8px; /* 左右内边距，避免与滑块重叠 */
-  line-height: 32px; /* 垂直居中 */
-  position: absolute; /* 支持动态定位 */
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.toggle-label.label-on {
-  color: #fff;
-  text-align: center; /* 改为居中对齐 */
-}
-
-.toggle-label.label-off {
-  color: #fff;
-  text-align: center; /* 改为居中对齐 */
-}
 
 .backdrop {
   position: fixed;

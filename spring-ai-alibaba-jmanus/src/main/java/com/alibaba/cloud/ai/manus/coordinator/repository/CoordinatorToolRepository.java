@@ -40,9 +40,15 @@ public interface CoordinatorToolRepository extends JpaRepository<CoordinatorTool
 	List<CoordinatorToolEntity> findByPublishStatus(CoordinatorToolEntity.PublishStatus publishStatus);
 
 	/**
-	 * Find all unique endpoints
+	 * Find all unique HTTP endpoints
 	 */
-	@Query("SELECT DISTINCT c.endpoint FROM CoordinatorToolEntity c")
-	List<String> findAllUniqueEndpoints();
+	@Query("SELECT DISTINCT c.httpEndpoint FROM CoordinatorToolEntity c WHERE c.httpEndpoint IS NOT NULL")
+	List<String> findAllUniqueHttpEndpoints();
+	
+	/**
+	 * Find all unique MCP endpoints
+	 */
+	@Query("SELECT DISTINCT c.mcpEndpoint FROM CoordinatorToolEntity c WHERE c.mcpEndpoint IS NOT NULL")
+	List<String> findAllUniqueMcpEndpoints();
 
 }

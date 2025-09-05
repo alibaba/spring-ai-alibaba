@@ -35,9 +35,19 @@ public class CoordinatorToolVO {
 
 	private String planTemplateId;
 
-	private String endpoint;
+	private String httpEndpoint;
+
+	private String mcpEndpoint;
 
 	private String publishStatus;
+
+	private String serviceGroup = null;
+
+	private Boolean enableInternalToolcall = true;
+
+	private Boolean enableHttpService = false;
+
+	private Boolean enableMcpService = false;
 
 	public CoordinatorToolVO() {
 	}
@@ -88,12 +98,20 @@ public class CoordinatorToolVO {
 		this.planTemplateId = planTemplateId;
 	}
 
-	public String getEndpoint() {
-		return endpoint;
+	public String getHttpEndpoint() {
+		return httpEndpoint;
 	}
 
-	public void setEndpoint(String endpoint) {
-		this.endpoint = endpoint;
+	public void setHttpEndpoint(String httpEndpoint) {
+		this.httpEndpoint = httpEndpoint;
+	}
+
+	public String getMcpEndpoint() {
+		return mcpEndpoint;
+	}
+
+	public void setMcpEndpoint(String mcpEndpoint) {
+		this.mcpEndpoint = mcpEndpoint;
 	}
 
 	public String getPublishStatus() {
@@ -102,6 +120,38 @@ public class CoordinatorToolVO {
 
 	public void setPublishStatus(String publishStatus) {
 		this.publishStatus = publishStatus;
+	}
+
+	public String getServiceGroup() {
+		return serviceGroup;
+	}
+
+	public void setServiceGroup(String serviceGroup) {
+		this.serviceGroup = serviceGroup;
+	}
+
+	public Boolean getEnableInternalToolcall() {
+		return enableInternalToolcall;
+	}
+
+	public void setEnableInternalToolcall(Boolean enableInternalToolcall) {
+		this.enableInternalToolcall = enableInternalToolcall;
+	}
+
+	public Boolean getEnableHttpService() {
+		return enableHttpService;
+	}
+
+	public void setEnableHttpService(Boolean enableHttpService) {
+		this.enableHttpService = enableHttpService;
+	}
+
+	public Boolean getEnableMcpService() {
+		return enableMcpService;
+	}
+
+	public void setEnableMcpService(Boolean enableMcpService) {
+		this.enableMcpService = enableMcpService;
 	}
 
 	/**
@@ -117,8 +167,13 @@ public class CoordinatorToolVO {
 		vo.setToolDescription(entity.getToolDescription());
 		vo.setInputSchema(entity.getInputSchema());
 		vo.setPlanTemplateId(entity.getPlanTemplateId());
-		vo.setEndpoint(entity.getEndpoint());
+		vo.setHttpEndpoint(entity.getHttpEndpoint());
+		vo.setMcpEndpoint(entity.getMcpEndpoint());
 		vo.setPublishStatus(entity.getPublishStatus() != null ? entity.getPublishStatus().name() : null);
+		vo.setServiceGroup(entity.getServiceGroup());
+		vo.setEnableInternalToolcall(entity.getEnableInternalToolcall());
+		vo.setEnableHttpService(entity.getEnableHttpService());
+		vo.setEnableMcpService(entity.getEnableMcpService());
 		// Explicitly do not set createTime and updateTime fields
 		return vo;
 	}
@@ -133,18 +188,25 @@ public class CoordinatorToolVO {
 		entity.setToolDescription(this.toolDescription);
 		entity.setInputSchema(this.inputSchema);
 		entity.setPlanTemplateId(this.planTemplateId);
-		entity.setEndpoint(this.endpoint);
+		entity.setHttpEndpoint(this.httpEndpoint);
+		entity.setMcpEndpoint(this.mcpEndpoint);
 		if (this.publishStatus != null) {
 			entity.setPublishStatus(CoordinatorToolEntity.PublishStatus.valueOf(this.publishStatus));
 		}
+		entity.setServiceGroup(this.serviceGroup);
+		entity.setEnableInternalToolcall(this.enableInternalToolcall);
+		entity.setEnableHttpService(this.enableHttpService);
+		entity.setEnableMcpService(this.enableMcpService);
 		return entity;
 	}
 
 	@Override
 	public String toString() {
 		return "CoordinatorToolVO{" + "id=" + id + ", toolName='" + toolName + '\'' + ", toolDescription='"
-				+ toolDescription + '\'' + ", planTemplateId='" + planTemplateId + '\'' + ", endpoint='" + endpoint
-				+ '\'' + ", publishStatus='" + publishStatus + '}';
+				+ toolDescription + '\'' + ", planTemplateId='" + planTemplateId + '\'' + ", httpEndpoint='" + httpEndpoint
+				+ '\'' + ", mcpEndpoint='" + mcpEndpoint + '\'' + ", publishStatus='" + publishStatus 
+				+ "', serviceGroup='" + serviceGroup + "', enableInternalToolcall=" + enableInternalToolcall 
+				+ ", enableHttpService=" + enableHttpService + ", enableMcpService=" + enableMcpService + '}';
 	}
 
 }

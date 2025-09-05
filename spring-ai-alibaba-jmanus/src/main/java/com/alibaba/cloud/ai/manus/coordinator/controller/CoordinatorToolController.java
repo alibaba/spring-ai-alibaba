@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/coordinator-tools")
@@ -44,6 +45,9 @@ public class CoordinatorToolController {
 
     @Autowired
     private ObjectMapper objectMapper;
+    
+    @Autowired
+    private com.alibaba.cloud.ai.manus.coordinator.repository.CoordinatorToolRepository coordinatorToolRepository;
 
     /**
      * Create coordinator tool
@@ -66,8 +70,25 @@ public class CoordinatorToolController {
                 log.error("Plan template ID is required but was null or empty");
                 return ResponseEntity.badRequest().build();
             }
-            if (toolVO.getEndpoint() == null || toolVO.getEndpoint().trim().isEmpty()) {
-                log.error("Endpoint is required but was null or empty");
+            
+            // Validate service enablement and endpoints
+            if (toolVO.getEnableHttpService() != null && toolVO.getEnableHttpService() && 
+                (toolVO.getHttpEndpoint() == null || toolVO.getHttpEndpoint().trim().isEmpty())) {
+                log.error("HTTP endpoint is required when HTTP service is enabled");
+                return ResponseEntity.badRequest().build();
+            }
+            if (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService() && 
+                (toolVO.getMcpEndpoint() == null || toolVO.getMcpEndpoint().trim().isEmpty())) {
+                log.error("MCP endpoint is required when MCP service is enabled");
+                return ResponseEntity.badRequest().build();
+            }
+            
+            // At least one service must be enabled
+            boolean hasEnabledService = (toolVO.getEnableInternalToolcall() != null && toolVO.getEnableInternalToolcall()) ||
+                                      (toolVO.getEnableHttpService() != null && toolVO.getEnableHttpService()) ||
+                                      (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService());
+            if (!hasEnabledService) {
+                log.error("At least one service must be enabled");
                 return ResponseEntity.badRequest().build();
             }
 
@@ -77,6 +98,15 @@ public class CoordinatorToolController {
             }
             if (toolVO.getPublishStatus() == null) {
                 toolVO.setPublishStatus("UNPUBLISHED");
+            }
+            if (toolVO.getEnableInternalToolcall() == null) {
+                toolVO.setEnableInternalToolcall(true);
+            }
+            if (toolVO.getEnableHttpService() == null) {
+                toolVO.setEnableHttpService(false);
+            }
+            if (toolVO.getEnableMcpService() == null) {
+                toolVO.setEnableMcpService(false);
             }
 
 
@@ -119,8 +149,24 @@ public class CoordinatorToolController {
                 log.error("Plan template ID is required but was null or empty");
                 return ResponseEntity.badRequest().build();
             }
-            if (toolVO.getEndpoint() == null || toolVO.getEndpoint().trim().isEmpty()) {
-                log.error("Endpoint is required but was null or empty");
+            // Validate service enablement and endpoints
+            if (toolVO.getEnableHttpService() != null && toolVO.getEnableHttpService() && 
+                (toolVO.getHttpEndpoint() == null || toolVO.getHttpEndpoint().trim().isEmpty())) {
+                log.error("HTTP endpoint is required when HTTP service is enabled");
+                return ResponseEntity.badRequest().build();
+            }
+            if (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService() && 
+                (toolVO.getMcpEndpoint() == null || toolVO.getMcpEndpoint().trim().isEmpty())) {
+                log.error("MCP endpoint is required when MCP service is enabled");
+                return ResponseEntity.badRequest().build();
+            }
+            
+            // At least one service must be enabled
+            boolean hasEnabledService = (toolVO.getEnableInternalToolcall() != null && toolVO.getEnableInternalToolcall()) ||
+                                      (toolVO.getEnableHttpService() != null && toolVO.getEnableHttpService()) ||
+                                      (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService());
+            if (!hasEnabledService) {
+                log.error("At least one service must be enabled");
                 return ResponseEntity.badRequest().build();
             }
 
@@ -158,21 +204,7 @@ public class CoordinatorToolController {
         }
     }
 
-    /**
-     * Publish tool
-     */
-    @PostMapping("/{id}/publish")
-    public ResponseEntity<Map<String, Object>> publishCoordinatorTool(@PathVariable("id") Long id) {
-        return null;
-    }
 
-    /**
-     * Unpublish tool
-     */
-    @PostMapping("/{id}/unpublish")
-    public ResponseEntity<Map<String, Object>> unpublishCoordinatorTool(@PathVariable("id") Long id) {
-        return null;
-    }
 
     /**
      * Get or create coordinator tool by plan template ID
@@ -238,14 +270,34 @@ public class CoordinatorToolController {
     @GetMapping("/endpoints")
     public ResponseEntity<List<String>> getAllEndpoints() {
         try {
+            // Get HTTP endpoints from CoordinatorToolEntity
+            List<String> httpEndpoints = coordinatorToolRepository.findAllUniqueHttpEndpoints();
+            
+            // Get MCP endpoints from CoordinatorToolEntity
+            List<String> mcpEndpoints = coordinatorToolRepository.findAllUniqueMcpEndpoints();
+            
+            // Get endpoints from SubplanToolDef (for backward compatibility)
             List<SubplanToolDef> allTools = subplanToolService.getAllSubplanTools();
-            List<String> endpoints = allTools.stream()
+            List<String> subplanEndpoints = allTools.stream()
                     .map(SubplanToolDef::getEndpoint)
                     .distinct()
                     .collect(java.util.stream.Collectors.toList());
             
-            log.info("Found {} unique endpoints", endpoints.size());
-            return ResponseEntity.ok(endpoints);
+            // Combine all endpoints
+            List<String> allEndpoints = new ArrayList<>();
+            allEndpoints.addAll(httpEndpoints);
+            allEndpoints.addAll(mcpEndpoints);
+            allEndpoints.addAll(subplanEndpoints);
+            
+            // Remove duplicates and null values
+            List<String> uniqueEndpoints = allEndpoints.stream()
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(java.util.stream.Collectors.toList());
+            
+            log.info("Found {} unique endpoints (HTTP: {}, MCP: {}, Subplan: {})", 
+                    uniqueEndpoints.size(), httpEndpoints.size(), mcpEndpoints.size(), subplanEndpoints.size());
+            return ResponseEntity.ok(uniqueEndpoints);
             
         } catch (Exception e) {
             log.error("Error getting endpoints: {}", e.getMessage(), e);
@@ -302,8 +354,21 @@ public class CoordinatorToolController {
         toolDef.setToolName(toolVO.getToolName());
         toolDef.setToolDescription(toolVO.getToolDescription());
         toolDef.setPlanTemplateId(toolVO.getPlanTemplateId());
-        toolDef.setEndpoint(toolVO.getEndpoint());
-        toolDef.setServiceGroup("coordinator-tools");
+        
+        // Set endpoint based on enabled services
+        // For internal toolcall, use a default endpoint
+        if (toolVO.getEnableInternalToolcall() != null && toolVO.getEnableInternalToolcall()) {
+            toolDef.setEndpoint("internal-toolcall");
+        } else if (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService()) {
+            toolDef.setEndpoint(toolVO.getMcpEndpoint());
+        } else if (toolVO.getEnableHttpService() != null && toolVO.getEnableHttpService()) {
+            toolDef.setEndpoint(toolVO.getHttpEndpoint());
+        } else {
+            // Fallback to internal toolcall
+            toolDef.setEndpoint("internal-toolcall");
+        }
+        
+        toolDef.setServiceGroup(toolVO.getServiceGroup());
 
         // Parse input schema and create parameters
         try {
@@ -343,8 +408,27 @@ public class CoordinatorToolController {
         vo.setToolName(toolDef.getToolName());
         vo.setToolDescription(toolDef.getToolDescription());
         vo.setPlanTemplateId(toolDef.getPlanTemplateId());
-        vo.setEndpoint(toolDef.getEndpoint());
+        
+        // Determine service types based on endpoint
+        String endpoint = toolDef.getEndpoint();
+        if ("internal-toolcall".equals(endpoint)) {
+            vo.setEnableInternalToolcall(true);
+            vo.setEnableHttpService(false);
+            vo.setEnableMcpService(false);
+        } else if (endpoint != null && endpoint.startsWith("/api/")) {
+            vo.setEnableInternalToolcall(false);
+            vo.setEnableHttpService(true);
+            vo.setHttpEndpoint(endpoint);
+            vo.setEnableMcpService(false);
+        } else {
+            vo.setEnableInternalToolcall(false);
+            vo.setEnableHttpService(false);
+            vo.setEnableMcpService(true);
+            vo.setMcpEndpoint(endpoint);
+        }
+        
         vo.setPublishStatus("UNPUBLISHED"); // Default status
+        vo.setServiceGroup(toolDef.getServiceGroup());
         
         // Convert parameters back to JSON string
         try {
@@ -377,9 +461,12 @@ public class CoordinatorToolController {
         toolVO.setToolName(null); // Use plan template ID as tool name
         toolVO.setToolDescription(null);
         toolVO.setPlanTemplateId(planTemplateId);
-        toolVO.setEndpoint("jmanus"); // Default endpoint
+        toolVO.setEnableInternalToolcall(true); // Default to internal toolcall
+        toolVO.setEnableHttpService(false);
+        toolVO.setEnableMcpService(false);
         toolVO.setInputSchema("[]"); // Empty parameters by default
         toolVO.setPublishStatus("UNPUBLISHED");
+        toolVO.setServiceGroup(null); // Will be set by user in UI
         
         return toolVO;
     }
