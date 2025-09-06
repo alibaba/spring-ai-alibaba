@@ -232,7 +232,7 @@ public class Nl2sqlConfiguration {
 			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(chatClientBuilder, nl2SqlService)))
 			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))
-			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(dbAccessor, datasourceService)))
+			.addNode(SQL_EXECUTE_NODE, node_async(new SqlExecuteNode(dbAccessor, datasourceService, dbConfig)))
 			.addNode(PYTHON_GENERATE_NODE,
 					node_async(new PythonGenerateNode(codeExecutorProperties, chatClientBuilder)))
 			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(codePoolExecutor)))
