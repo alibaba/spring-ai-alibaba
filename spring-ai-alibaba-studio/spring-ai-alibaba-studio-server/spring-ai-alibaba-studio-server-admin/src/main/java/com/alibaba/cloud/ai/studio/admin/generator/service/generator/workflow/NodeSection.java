@@ -75,7 +75,10 @@ public interface NodeSection<T extends NodeData> {
 	}
 
 	record ResourceFile(String fileName, Supplier<InputStream> inputStreamSupplier) {
-
+		@Override
+		public String toString() {
+			return String.format("\"%s\"", fileName());
+		}
 	}
 
 	/**

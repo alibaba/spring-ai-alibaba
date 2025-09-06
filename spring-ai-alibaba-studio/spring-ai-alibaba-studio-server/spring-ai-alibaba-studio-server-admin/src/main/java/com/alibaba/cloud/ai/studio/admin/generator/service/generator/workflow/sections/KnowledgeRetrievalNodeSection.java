@@ -23,11 +23,27 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
 import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
+import com.alibaba.cloud.ai.studio.core.config.StudioProperties;
+import com.alibaba.cloud.ai.studio.core.rag.DocumentService;
+import com.alibaba.cloud.ai.studio.runtime.domain.PagingList;
+import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.Document;
+import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.DocumentQuery;
+import com.alibaba.cloud.ai.studio.runtime.enums.DocumentType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 
-// TODO: 支持其他格式的文档，如PDF、ZIP等；解析并应用Dify的RerankModel配置
+// TODO: 支持其他格式的文档，如PDF、ZIP等
+// TODO: 解析并应用RerankModel、EmbeddingModel配置
+// TODO: 支持从OSS获取资源文件，或者在生成项目中从OSS获取资源文件
 @Component
 public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetrievalNodeData> {
 
@@ -36,9 +52,60 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 		return NodeType.RETRIEVER.equals(nodeType);
 	}
 
+	// 用于获取Studio存储的文档
+	private final DocumentService studioDocumentService;
+
+	private final String studioStoragePath;
+
+	public KnowledgeRetrievalNodeSection(DocumentService studioDocumentService, StudioProperties properties) {
+		this.studioDocumentService = studioDocumentService;
+		this.studioStoragePath = properties.getStoragePath();
+	}
+
 	@Override
 	public String render(Node node, String varName) {
 		KnowledgeRetrievalNodeData nodeData = (KnowledgeRetrievalNodeData) node.getData();
+
+		// 根据knowledgeBaseIds获取对应的资源文件
+		List<ResourceFile> resourceFiles = Optional.ofNullable(nodeData.getKnowledgeBaseIds())
+			.orElse(List.of())
+			.stream()
+			.map(kbId -> {
+				PagingList<Document> getSize = this.studioDocumentService.listDocuments(kbId, new DocumentQuery());
+				Long total = getSize.getTotal();
+				DocumentQuery query = new DocumentQuery();
+				query.setSize(total.intValue());
+				PagingList<Document> pagingList = this.studioDocumentService.listDocuments(kbId, query);
+				return pagingList.getRecords();
+			})
+			.flatMap(List::stream)
+			.filter(Document::getEnabled)
+			.filter(d -> StringUtils.hasText(d.getPath()))
+			.map(document -> {
+				// 文件类型
+				String contentType = document.getMetadata().getContentType();
+				// 存储形式
+				DocumentType documentType = document.getType();
+				// 存储路径
+				String path = switch (documentType) {
+					case FILE -> Path.of(studioStoragePath).resolve(document.getPath()).toAbsolutePath().toString();
+					case URL -> document.getPath();
+					default -> throw new UnsupportedOperationException("unsupported document type: " + documentType);
+				};
+				String fileName = document.getName();
+				// 构造文件记录
+				return new ResourceFile(fileName, () -> {
+					try {
+						return Files.newInputStream(Path.of(path));
+					}
+					catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				});
+			})
+			.toList();
+		nodeData.setResourceFiles(resourceFiles);
+
 		return String.format("""
 				// —— KnowledgeRetrievalNode [%s] ——%n
 				KnowledgeRetrievalNode %s = KnowledgeRetrievalNode.builder()
@@ -51,8 +118,8 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 				stateGraph.addNode("%s", AsyncNodeAction.node_async(wrapperRetrievalNodeAction(%s, "%s")));
 				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getTopK()),
 				ObjectToCodeUtil.toCode(nodeData.getThreshold()), ObjectToCodeUtil.toCode(nodeData.getInputKey()),
-				ObjectToCodeUtil.toCode(nodeData.getOutputKey()),
-				ObjectToCodeUtil.toCode(nodeData.getKnowledgeBaseIds()), varName, varName, nodeData.getOutputKey());
+				ObjectToCodeUtil.toCode(nodeData.getOutputKey()), ObjectToCodeUtil.toCode(resourceFiles), varName,
+				varName, nodeData.getOutputKey());
 	}
 
 	@Override
@@ -136,12 +203,8 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 
 	@Override
 	public List<ResourceFile> resourceFiles(DSLDialectType dialectType, KnowledgeRetrievalNodeData nodeData) {
-		if (!DSLDialectType.STUDIO.equals(dialectType)) {
-			return NodeSection.super.resourceFiles(dialectType, nodeData);
-		}
-		// 根据knowledgeBaseIds获取对应的资源文件
-		// todo: 支持从OSS获取资源文件，或者在生成项目中从OSS获取资源文件
-		return List.of();
+		return Optional.ofNullable(nodeData.getResourceFiles())
+			.orElse(NodeSection.super.resourceFiles(dialectType, nodeData));
 	}
 
 }

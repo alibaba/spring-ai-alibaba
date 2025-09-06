@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
+import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
 import java.util.List;
 
@@ -40,6 +41,8 @@ public class KnowledgeRetrievalNodeData extends NodeData {
 
 	// 对于Studio DSL，生成代码时可以根据知识库ID生成对应代码；对于Dify DSL，只能提示用户手动编写知识库代码
 	private List<String> knowledgeBaseIds;
+
+	private List<NodeSection.ResourceFile> resourceFiles;
 
 	private String inputKey;
 
@@ -83,6 +86,14 @@ public class KnowledgeRetrievalNodeData extends NodeData {
 
 	public void setOutputKey(String outputKey) {
 		this.outputKey = outputKey;
+	}
+
+	public List<NodeSection.ResourceFile> getResourceFiles() {
+		return resourceFiles;
+	}
+
+	public void setResourceFiles(List<NodeSection.ResourceFile> resourceFiles) {
+		this.resourceFiles = resourceFiles;
 	}
 
 }
