@@ -36,6 +36,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
@@ -52,6 +53,7 @@ import org.springframework.util.Assert;
  * @author why_ohh
  * @author yuluo
  * @author <a href="mailto:550588941@qq.com">why_ohh</a>
+ * @author yyyhhx
  * @since 2024/7/31 10:57
  */
 public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
@@ -230,6 +232,42 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
+	}
+
+	/**
+	 * Embed the provided texts and return the embeddings.
+	 * @return The embeddings
+	 */
+	@Override
+	public List<float[]> embed(List<String> texts) {
+		Assert.notNull(texts, "Texts must not be null");
+		return this.call(new EmbeddingRequest(texts, defaultOptions))
+			.getResults()
+			.stream()
+			.map(Embedding::getOutput)
+			.toList();
+	}
+
+	/**
+	 * Embed the provided documents and return the embeddings.
+	 * @return The embeddings
+	 */
+	@Override
+	public List<float[]> embed(List<Document> documents, EmbeddingOptions options, BatchingStrategy batchingStrategy) {
+		if (options.getModel() == null && options.getDimensions() == null && defaultOptions != null) {
+			options = defaultOptions;
+		}
+		return super.embed(documents, options, batchingStrategy);
+	}
+
+	/**
+	 * Embed the provided documents and return the response.
+	 * @return The embedding response
+	 */
+	@Override
+	public EmbeddingResponse embedForResponse(List<String> texts) {
+		Assert.notNull(texts, "Texts must not be null");
+		return this.call(new EmbeddingRequest(texts, defaultOptions));
 	}
 
 }
