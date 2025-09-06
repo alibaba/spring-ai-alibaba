@@ -133,7 +133,7 @@ spring:
         router:
           enabled: true
           service-names: ["echo-server", "weather-server"]
-# 开启 OAuth 验证配置
+# 开启 OAuth 验证配置 （除必须配置外其余配置可选）
 spring:
   ai:
     alibaba:
@@ -143,22 +143,22 @@ spring:
             enabled: true
             # OAuth 配置
             provider:
-              client-id: your-client-id
-              client-secret: your-client-secret
-              token-uri: https://your-oauth-server.com/oauth/token
-              authorization-uri: https://your-oauth-server.com/oauth/authorize
-              user-info-uri: https://your-oauth-server.com/userinfo
-              grant-type: client_credentials
-              scope: read,write
+              client-id: your-client-id  #客户端ID
+              client-secret: your-client-secret # 客户端密钥
+              token-uri: https://your-oauth-server.com/oauth/token # 获取Token的端点，必需
+              authorization-uri: https://your-oauth-server.com/oauth/authorize  # 授权端点，authorization_code类型需要
+              user-info-uri: https://your-oauth-server.com/userinfo # 用户信息端点，可选
+              grant-type: client_credentials # 授权类型，默认为"client_credentials"
+              scope: read,write # 请求的权限范围，默认为"read" 可选
               # token 缓存配置
             token-cache:
-              enabled: true 
-              max-size: 1000
-              refresh-before-expiry: PT5M # 在过期多久前刷新缓存
+              enabled: true # 是否开启 token 缓存
+              max-size: 1000 # 最大缓存大小，默认1000
+              refresh-before-expiry: PT5M # 在过期多久前刷新缓存，默认 5 分钟
               # 重试配置，最大重试次数和间隔           
             retry:
-              max-attempts: 3
-              backoff: PT1S
+              max-attempts: 3  # 最大重试次数，默认3次
+              backoff: PT1S # 重试间隔，默认1秒
 ```
 
 ### 3. 使用示例
