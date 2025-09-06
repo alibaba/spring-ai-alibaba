@@ -72,4 +72,27 @@ public interface McpServerVectorStore {
 	 */
 	void clear();
 
+	/**
+	 * 标记初始化完成，后续将使用嵌入模型进行向量搜索
+	 */
+	default void markInitializationComplete() {
+		// 默认实现为空，实现类可以选择性重写
+	}
+
+	/**
+	 * 检查是否已完成初始化
+	 * @return 是否已完成初始化
+	 */
+	default boolean isInitializationComplete() {
+		// 默认返回true，表示已初始化完成
+		return true;
+	}
+
+	/**
+	 * 重置为初始化状态，用于重新初始化
+	 */
+	default void resetInitializationState() {
+		// 默认实现为空，实现类可以选择性重写
+	}
+
 }
