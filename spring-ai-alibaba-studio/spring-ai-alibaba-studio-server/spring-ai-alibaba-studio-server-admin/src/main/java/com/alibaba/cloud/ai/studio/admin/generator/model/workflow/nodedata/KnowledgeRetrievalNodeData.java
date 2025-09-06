@@ -48,6 +48,8 @@ public class KnowledgeRetrievalNodeData extends NodeData {
 
 	private String outputKey;
 
+	private DSLDialectType dialectType;
+
 	public Integer getTopK() {
 		return topK;
 	}
@@ -94,6 +96,14 @@ public class KnowledgeRetrievalNodeData extends NodeData {
 
 	public void setResourceFiles(List<NodeSection.ResourceFile> resourceFiles) {
 		this.resourceFiles = resourceFiles;
+	}
+
+	public DSLDialectType getDialectType() {
+		return dialectType;
+	}
+
+	public void setDialectType(DSLDialectType dialectType) {
+		this.dialectType = dialectType;
 	}
 
 }

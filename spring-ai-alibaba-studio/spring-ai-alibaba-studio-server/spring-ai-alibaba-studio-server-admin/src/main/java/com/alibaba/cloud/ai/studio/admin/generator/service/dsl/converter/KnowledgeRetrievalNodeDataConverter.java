@@ -60,6 +60,7 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 			@Override
 			public KnowledgeRetrievalNodeData parse(Map<String, Object> data) {
 				KnowledgeRetrievalNodeData nodeData = new KnowledgeRetrievalNodeData();
+				nodeData.setDialectType(DSLDialectType.DIFY);
 				// 获取必要信息
 				Integer topK = MapReadUtil.getMapDeepValue(data, Integer.class, "multiple_retrieval_config", "top_k");
 				Double threshold = MapReadUtil.getMapDeepValue(data, Double.class, "multiple_retrieval_config",
@@ -97,7 +98,7 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 			@Override
 			public KnowledgeRetrievalNodeData parse(Map<String, Object> data) throws JsonProcessingException {
 				KnowledgeRetrievalNodeData nodeData = new KnowledgeRetrievalNodeData();
-
+				nodeData.setDialectType(DSLDialectType.STUDIO);
 				// 获取必要信息
 				Integer topK = MapReadUtil.getMapDeepValue(data, Integer.class, "config", "node_param", "top_k");
 				Double threshold = MapReadUtil.getMapDeepValue(data, Double.class, "config", "node_param",

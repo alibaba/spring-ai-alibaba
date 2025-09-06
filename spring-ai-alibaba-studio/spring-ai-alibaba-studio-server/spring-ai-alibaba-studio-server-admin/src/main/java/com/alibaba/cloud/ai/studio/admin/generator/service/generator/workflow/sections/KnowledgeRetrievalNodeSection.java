@@ -32,12 +32,9 @@ import com.alibaba.cloud.ai.studio.runtime.enums.DocumentType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,45 +63,48 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 	public String render(Node node, String varName) {
 		KnowledgeRetrievalNodeData nodeData = (KnowledgeRetrievalNodeData) node.getData();
 
-		// 根据knowledgeBaseIds获取对应的资源文件
-		List<ResourceFile> resourceFiles = Optional.ofNullable(nodeData.getKnowledgeBaseIds())
-			.orElse(List.of())
-			.stream()
-			.map(kbId -> {
-				PagingList<Document> getSize = this.studioDocumentService.listDocuments(kbId, new DocumentQuery());
-				Long total = getSize.getTotal();
-				DocumentQuery query = new DocumentQuery();
-				query.setSize(total.intValue());
-				PagingList<Document> pagingList = this.studioDocumentService.listDocuments(kbId, query);
-				return pagingList.getRecords();
-			})
-			.flatMap(List::stream)
-			.filter(Document::getEnabled)
-			.filter(d -> StringUtils.hasText(d.getPath()))
-			.map(document -> {
-				// 文件类型
-				String contentType = document.getMetadata().getContentType();
-				// 存储形式
-				DocumentType documentType = document.getType();
-				// 存储路径
-				String path = switch (documentType) {
-					case FILE -> Path.of(studioStoragePath).resolve(document.getPath()).toAbsolutePath().toString();
-					case URL -> document.getPath();
-					default -> throw new UnsupportedOperationException("unsupported document type: " + documentType);
-				};
-				String fileName = document.getName();
-				// 构造文件记录
-				return new ResourceFile(fileName, () -> {
-					try {
-						return Files.newInputStream(Path.of(path));
-					}
-					catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-				});
-			})
-			.toList();
-		nodeData.setResourceFiles(resourceFiles);
+		if (DSLDialectType.STUDIO.equals(nodeData.getDialectType())) {
+			// 根据knowledgeBaseIds获取对应的资源文件
+			List<ResourceFile> resourceFiles = Optional.ofNullable(nodeData.getKnowledgeBaseIds())
+				.orElse(List.of())
+				.stream()
+				.map(kbId -> {
+					PagingList<Document> getSize = this.studioDocumentService.listDocuments(kbId, new DocumentQuery());
+					Long total = getSize.getTotal();
+					DocumentQuery query = new DocumentQuery();
+					query.setSize(total.intValue());
+					PagingList<Document> pagingList = this.studioDocumentService.listDocuments(kbId, query);
+					return pagingList.getRecords();
+				})
+				.flatMap(List::stream)
+				.filter(Document::getEnabled)
+				.filter(d -> StringUtils.hasText(d.getPath()))
+				.map(document -> {
+					// 文件类型
+					String contentType = document.getMetadata().getContentType();
+					// 存储形式
+					DocumentType documentType = document.getType();
+					// 存储路径
+					String path = switch (documentType) {
+						case FILE -> Path.of(studioStoragePath).resolve(document.getPath()).toAbsolutePath().toString();
+						case URL -> document.getPath();
+						default ->
+							throw new UnsupportedOperationException("unsupported document type: " + documentType);
+					};
+					String fileName = document.getName();
+					// 构造文件记录
+					return new ResourceFile(fileName, () -> {
+						try {
+							return Files.newInputStream(Path.of(path));
+						}
+						catch (IOException e) {
+							throw new RuntimeException(e);
+						}
+					});
+				})
+				.toList();
+			nodeData.setResourceFiles(resourceFiles);
+		}
 
 		return String.format("""
 				// —— KnowledgeRetrievalNode [%s] ——%n
@@ -118,8 +118,10 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 				stateGraph.addNode("%s", AsyncNodeAction.node_async(wrapperRetrievalNodeAction(%s, "%s")));
 				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getTopK()),
 				ObjectToCodeUtil.toCode(nodeData.getThreshold()), ObjectToCodeUtil.toCode(nodeData.getInputKey()),
-				ObjectToCodeUtil.toCode(nodeData.getOutputKey()), ObjectToCodeUtil.toCode(resourceFiles), varName,
-				varName, nodeData.getOutputKey());
+				ObjectToCodeUtil.toCode(nodeData.getOutputKey()),
+				ObjectToCodeUtil.toCode(DSLDialectType.STUDIO.equals(nodeData.getDialectType())
+						? nodeData.getResourceFiles() : List.of("please_config_your_own_resource_files")),
+				varName, varName, nodeData.getOutputKey());
 	}
 
 	@Override
