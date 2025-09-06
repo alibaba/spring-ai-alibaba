@@ -44,8 +44,9 @@ public class ConfigAppStartupListener implements ApplicationListener<Application
 
 	@Override
 	public void onApplicationEvent(ApplicationStartedEvent event) {
-		initializeConfigs();
-		initializeDynamicAgents();
+        String defaultLanguage = "en";
+        initializeConfigs();
+        initializeDynamicAgents(defaultLanguage);
 	}
 
 	private void initializeConfigs() {
@@ -73,10 +74,10 @@ public class ConfigAppStartupListener implements ApplicationListener<Application
 		}
 	}
 
-	private void initializeDynamicAgents() {
+	private void initializeDynamicAgents(String language) {
 		try {
 			log.info("Starting to initialize dynamic agents...");
-			dynamicAgentScanner.scanAndSaveAgents();
+			dynamicAgentScanner.scanAndSaveAgents(language);
 			log.info("Dynamic agents initialization completed");
 		}
 		catch (Exception e) {

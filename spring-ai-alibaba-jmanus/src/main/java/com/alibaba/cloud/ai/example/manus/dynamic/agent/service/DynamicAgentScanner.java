@@ -60,7 +60,7 @@ public class DynamicAgentScanner implements IDynamicAgentScanner {
 		this.repository = repository;
 	}
 
-	public void scanAndSaveAgents() {
+	public void scanAndSaveAgents(String language) {
 		// Check configuration for YAML-based agent override behavior
 		ConfigEntity overrideConfig = configService.getConfig("manus.agents.forceOverrideFromYaml")
 			.orElseThrow(() -> new IllegalStateException("Cannot find agent override configuration item"));
@@ -72,11 +72,10 @@ public class DynamicAgentScanner implements IDynamicAgentScanner {
 		boolean shouldOverrideFromYaml = Boolean.parseBoolean(overrideConfig.getConfigValue());
 
 		if (shouldOverrideFromYaml) {
-			log.info(
-					"✅ Force override from YAML enabled - Starting to scan and override agents from YAML configuration files...");
+			log.info("✅ Force override from YAML enabled - Starting to scan and override agents from YAML configuration files...");
 
 			// Scan and save/override StartupAgent loaded from configuration file
-			scanAndSaveStartupAgents();
+			scanAndSaveStartupAgents(language);
 
 			log.info("✅ Dynamic agent override from YAML files completed");
 		}
@@ -177,17 +176,17 @@ public class DynamicAgentScanner implements IDynamicAgentScanner {
 	/**
 	 * Scan and save/override StartupAgent loaded from configuration file
 	 */
-	private void scanAndSaveStartupAgents() {
+	private void scanAndSaveStartupAgents(String language) {
 		log.info("🔍 Starting to scan YAML agent configuration files...");
 
-		List<String> agentDirs = startupAgentConfigLoader.scanAvailableAgents();
+		List<String> agentDirs = startupAgentConfigLoader.scanAvailableAgents(language);
 		int processedCount = 0;
 		int overriddenCount = 0;
 		int createdCount = 0;
 
 		for (String agentDir : agentDirs) {
 			try {
-				StartupAgentConfigLoader.AgentConfig agentConfig = startupAgentConfigLoader.loadAgentConfig(agentDir);
+				StartupAgentConfigLoader.AgentConfig agentConfig = startupAgentConfigLoader.loadAgentConfig(agentDir, language);
 				if (agentConfig != null) {
 					// Check if this is an override or new creation
 					DynamicAgentEntity existingEntity = repository.findByAgentName(agentConfig.getAgentName());

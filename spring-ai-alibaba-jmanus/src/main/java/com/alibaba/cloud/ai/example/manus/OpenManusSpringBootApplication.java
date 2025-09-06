@@ -17,6 +17,8 @@
 package com.alibaba.cloud.ai.example.manus;
 
 import com.microsoft.playwright.Playwright;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -27,7 +29,9 @@ import java.io.IOException;
 @EnableScheduling
 public class OpenManusSpringBootApplication {
 
-	public static void main(String[] args) throws IOException, InterruptedException {
+    private static final Logger log = LoggerFactory.getLogger(OpenManusSpringBootApplication.class);
+
+    public static void main(String[] args) throws IOException, InterruptedException {
 		if (args != null && args.length >= 1 && args[0].equals("playwright-init")) {
 			Playwright.create();
 			System.out.println("Playwright init finished");
@@ -36,6 +40,7 @@ public class OpenManusSpringBootApplication {
 		else {
 			SpringApplication.run(OpenManusSpringBootApplication.class, args);
 		}
+        log.info("OpenManus Spring Boot Application started");
 	}
 
 }
