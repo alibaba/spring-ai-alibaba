@@ -77,11 +77,11 @@ public class SubGraphTest {
 	 * @throws Exception If an error occurs during execution.
 	 */
 	private List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
-		return workflow.stream(input, RunnableConfig.builder().threadId("SubGraphTest").build())
-			.stream()
-			.peek(System.out::println)
+		return workflow.fluxStream(input, RunnableConfig.builder().threadId("SubGraphTest").build())
+			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
-			.toList();
+			.collectList()
+			.block();
 	}
 
 	/**

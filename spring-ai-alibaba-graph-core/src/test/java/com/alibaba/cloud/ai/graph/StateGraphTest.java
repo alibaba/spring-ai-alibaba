@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.action.*;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.state.*;
@@ -131,7 +130,7 @@ public class StateGraphTest {
 
 		CompiledGraph app = workflow.compile();
 
-		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		Optional<OverAllState> result = app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 		System.out.println("result = " + result);
 		assertTrue(result.isPresent());
 
@@ -168,7 +167,7 @@ public class StateGraphTest {
 
 		CompiledGraph app = workflow.compile();
 
-		Optional<OverAllState> result = app.invoke(Map.of());
+		Optional<OverAllState> result = app.call(Map.of());
 
 		assertTrue(result.isPresent());
 		System.out.println(result.get().data());
@@ -232,7 +231,7 @@ public class StateGraphTest {
 		var config = RunnableConfig.builder().addMetadata("configData", "test").build();
 
 		// Execute the graph with input and configured metadata
-		var result = app.invoke(Map.of("input", "test1"), config);
+		var result = app.call(Map.of("input", "test1"), config);
 		assertTrue(result.isPresent());
 
 		// Expected output after execution
@@ -270,7 +269,7 @@ public class StateGraphTest {
 
 		CompiledGraph app = workflow.compile();
 
-		Optional<OverAllState> result = app.invoke(Map.of());
+		Optional<OverAllState> result = app.call(Map.of());
 
 		assertTrue(result.isPresent());
 		log.info("{}", result.get().data());
@@ -309,7 +308,7 @@ public class StateGraphTest {
 
 		CompiledGraph app = workflow.compile();
 
-		Optional<OverAllState> result = app.invoke(Map.of());
+		Optional<OverAllState> result = app.call(Map.of());
 
 		assertTrue(result.isPresent());
 
@@ -370,15 +369,17 @@ public class StateGraphTest {
 			.addEdge("step_3", END)
 			.compile();
 
-		var result = workflowParent.stream(Map.of())
-			.stream()
-			.peek(System.out::println)
+		// 使用实时流式处理，收集最后一个状态
+		final OverAllState[] finalState = new OverAllState[1];
+		workflowParent.fluxStream(Map.of())
+			.doOnNext(System.out::println) // 实时输出每个节点执行结果
 			.map(NodeOutput::state)
-			.reduce((a, b) -> b);
+			.doOnNext(state -> finalState[0] = state) // 保存最后的状态
+			.blockLast(); // 只等待流完成，不阻塞中间过程
 
-		assertTrue(result.isPresent());
+		assertTrue(finalState[0] != null);
 		assertIterableEquals(List.of("step1", "step2", "child:step1", "child:step2", "child:step3", "step3"),
-				(List<Object>) result.get().value("messages").get());
+				(List<Object>) finalState[0].value("messages").get());
 
 	}
 
@@ -442,14 +443,15 @@ public class StateGraphTest {
 			}
 		}).build());
 
-		var result = app
-			.stream(Map.of(), RunnableConfig.builder().addParallelNodeExecutor("A", ForkJoinPool.commonPool()).build())
-			.stream()
-			.peek(System.out::println)
-			.reduce((a, b) -> b)
-			.map(NodeOutput::state);
-		assertTrue(result.isPresent());
-		List<String> messages = (List<String>) result.get().value("messages").get();
+		final OverAllState[] finalState = new OverAllState[1];
+		app.fluxStream(Map.of(), RunnableConfig.builder().addParallelNodeExecutor("A", ForkJoinPool.commonPool()).build())
+			.doOnNext(output -> System.out.println(output))
+			.map(NodeOutput::state)
+			.doOnNext(state -> finalState[0] = state)
+			.blockLast();
+
+		assertTrue(finalState[0] != null);
+		List<String> messages = (List<String>) finalState[0].value("messages").get();
 		log.info("messages: {}", messages);
 
 		// 验证所有节点都被执行，但不关心并行节点的顺序
@@ -482,15 +484,17 @@ public class StateGraphTest {
 
 		app = workflow.compile();
 
-		result = app.stream(Map.of(),
+		// 第二个测试也使用实时流式处理
+		final OverAllState[] finalState2 = new OverAllState[1];
+		app.fluxStream(Map.of(),
 				RunnableConfig.builder().addParallelNodeExecutor(START, Executors.newSingleThreadExecutor()).build())
-			.stream()
-			.peek(System.out::println)
-			.reduce((a, b) -> b)
-			.map(NodeOutput::state);
+			.doOnNext(output -> System.out.println(output)) // 实时输出每个节点执行结果
+			.map(NodeOutput::state)
+			.doOnNext(state -> finalState2[0] = state) // 保存最后的状态
+			.blockLast(); // 只等待流完成，不阻塞中间过程
 
-		assertTrue(result.isPresent());
-		List<String> messages2 = (List<String>) result.get().value("messages").get();
+		assertTrue(finalState2[0] != null);
+		List<String> messages2 = (List<String>) finalState2[0].value("messages").get();
 
 		// 验证所有节点都被执行，但不关心并行节点的顺序
 		assertEquals("B", messages2.get(messages2.size() - 2)); // B 应该是倒数第二个
@@ -506,8 +510,11 @@ public class StateGraphTest {
 
 	}
 
+	/**
+	 * Tests parallel branch execution in a graph.
+	 */
 	@Test
-	public void testWithParallelBranchWithStream() throws GraphStateException, GraphRunnerException {
+	void testWithParallelBranchWithStream() throws GraphStateException {
 		var workflow = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
 			.addNode("A1", makeNodeForStream("A1"))
 			.addNode("A2", makeNodeForStream("A2"))
@@ -520,15 +527,75 @@ public class StateGraphTest {
 			.addEdge("C", END);
 		var app = workflow.compile();
 
-		for (var output : app.stream(Map.of())) {
-			if (output instanceof AsyncGenerator<?>) {
-				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-				System.out.println("Streaming chunk: " + asyncGenerator);
-			}
-			else {
+		app.fluxStream(Map.of()).subscribe(output -> {
 				System.out.println("Node output: " + output);
-			}
-		}
+		});
+	}
+
+	@Test
+	void testCommandNode() throws Exception {
+
+		AsyncCommandAction commandAction = (state,
+				config) -> completedFuture(new Command("C2", Map.of("messages", "B", "next_node", "C2")));
+
+		var graph = new StateGraph().addNode("A", makeNode("A"))
+			.addNode("B", commandAction, EdgeMappings.builder().toEND().to("C1").to("C2").build())
+			.addNode("C1", makeNode("C1"))
+			.addNode("C2", makeNode("C2"))
+			.addEdge(START, "A")
+			.addEdge("A", "B")
+			.addEdge("C1", END)
+			.addEdge("C2", END)
+			.compile();
+
+		// 使用实时流式处理，收集所有步骤用于测试验证
+		final List<NodeOutput> allSteps = new ArrayList<>();
+		graph.fluxStream(Map.of())
+			.doOnNext(System.out::println) // 实时输出每个节点执行结果
+			.doOnNext(allSteps::add) // 收集所有步骤
+			.blockLast(); // 只等待流完成，不阻塞中间过程
+
+		assertEquals(5, allSteps.size());
+		assertEquals("B", allSteps.get(2).node());
+		assertEquals("C2", allSteps.get(2).state().value("next_node").orElse(null));
+
+	}
+
+	@Test
+	public void testRunnableInterrupt() throws Exception {
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("prop1", (o, o2) -> o2)
+			.build();
+
+		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
+			.addEdge("agent_1", "agent_2")
+			.addNode("agent_1", AsyncNodeActionWithConfig.node_async((state, config) -> {
+				log.info("agent_1\n{}", state);
+				config.markNodeAsInterrupted("agent_1");
+				return Map.of("prop1", "test");
+			}))
+			.addNode("agent_2", AsyncNodeActionWithConfig.node_async((state, config) -> {
+				log.info("agent_2\n{}", state);
+				return Map.of("prop1", "test_2");
+			}))
+			.addEdge("agent_2", END);
+
+		CompiledGraph app = workflow.compile();
+		RunnableConfig runnableConfig = new RunnableConfig.Builder().threadId("thread1").build();
+		Optional<OverAllState> result = app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"), runnableConfig);
+		System.out.println("result = " + result);
+		assertTrue(result.isPresent());
+
+		// resume - 使用实时流式处理
+		final OverAllState[] resumeState = new OverAllState[1];
+		app.fluxStream(null, runnableConfig)
+			.doOnNext(output -> System.out.println("Resume: " + output)) // 实时输出恢复过程
+			.map(NodeOutput::state)
+			.doOnNext(state -> resumeState[0] = state) // 保存最后的状态
+			.blockLast(); // 只等待流完成，不阻塞中间过程
+
+		assertTrue(resumeState[0] != null);
+		System.out.println("final result = " + Optional.of(resumeState[0]));
+
 	}
 
 	/**
@@ -638,7 +705,7 @@ public class StateGraphTest {
 
 		CompiledGraph app = workflow.compile();
 
-		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		Optional<OverAllState> result = app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 		System.out.println("result = " + result);
 		assertTrue(result.isPresent());
 
@@ -660,7 +727,7 @@ public class StateGraphTest {
 
 		CompiledGraph app = workflow.compile();
 
-		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		Optional<OverAllState> result = app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 		System.out.println("result = " + result);
 		assertTrue(result.isPresent());
 
@@ -687,7 +754,7 @@ public class StateGraphTest {
 
 		CompiledGraph app = workflow.compile();
 
-		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		Optional<OverAllState> result = app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 		System.out.println("result = " + result);
 		assertTrue(result.isPresent());
 
@@ -730,7 +797,7 @@ public class StateGraphTest {
 				}
 			}).build());
 
-		app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 	}
 
 	/**
@@ -763,7 +830,7 @@ public class StateGraphTest {
 				}
 			}).build());
 
-		app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 	}
 
 	/**
@@ -802,8 +869,8 @@ public class StateGraphTest {
 				}
 			}).build());
 
-		assertThrows(CompletionException.class,
-				(NamedExecutable) () -> app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1")));
+		assertThrows(ArithmeticException.class,
+				(NamedExecutable) () -> app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1")));
 	}
 
 	@Test
@@ -834,7 +901,7 @@ public class StateGraphTest {
 			.addEdge("agent_3", END)
 			.addEdge("agent_1", "agent_2");
 		CompiledGraph compile = workflow.compile();
-		compile.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		compile.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 	}
 
 	@Test
@@ -864,63 +931,9 @@ public class StateGraphTest {
 		System.out.println("===============mermaid===============");
 		System.out.println(mermaid);
 
-		OverAllState state = compile.invoke(Map.of()).orElseThrow();
+		OverAllState state = compile.call(Map.of()).orElseThrow();
 		assertEquals(List.of("go to command node", "node1", "node2"), state.value("messages", List.class).get());
 	}
 
-	@Test
-	void testCommandNode() throws Exception {
-
-		AsyncCommandAction commandAction = (state,
-				config) -> completedFuture(new Command("C2", Map.of("messages", "B", "next_node", "C2")));
-
-		var graph = new StateGraph().addNode("A", makeNode("A"))
-			.addNode("B", commandAction, EdgeMappings.builder().toEND().to("C1").to("C2").build())
-			.addNode("C1", makeNode("C1"))
-			.addNode("C2", makeNode("C2"))
-			.addEdge(START, "A")
-			.addEdge("A", "B")
-			.addEdge("C1", END)
-			.addEdge("C2", END)
-			.compile();
-
-		var steps = graph.stream(Map.of()).stream().peek(System.out::println).toList();
-
-		assertEquals(5, steps.size());
-		assertEquals("B", steps.get(2).node());
-		assertEquals("C2", steps.get(2).state().value("next_node").orElse(null));
-
-	}
-
-	@Test
-	public void testRunnableInterrupt() throws GraphStateException, GraphRunnerException {
-		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("prop1", (o, o2) -> o2)
-			.build();
-
-		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-			.addEdge("agent_1", "agent_2")
-			.addNode("agent_1", AsyncNodeActionWithConfig.node_async((state, config) -> {
-				log.info("agent_1\n{}", state);
-				config.markNodeAsInterrupted("agent_1");
-				return Map.of("prop1", "test");
-			}))
-			.addNode("agent_2", AsyncNodeActionWithConfig.node_async((state, config) -> {
-				log.info("agent_2\n{}", state);
-				return Map.of("prop1", "test_2");
-			}))
-			.addEdge("agent_2", END);
-
-		CompiledGraph app = workflow.compile();
-		RunnableConfig runnableConfig = new RunnableConfig.Builder().threadId("thread1").build();
-		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"), runnableConfig);
-		System.out.println("result = " + result);
-		assertTrue(result.isPresent());
-
-		// resume
-		result = app.stream(null, runnableConfig).stream().reduce((a, b) -> b).map(NodeOutput::state);
-		System.out.println("result = " + result);
-		assertTrue(result.isPresent());
-
-	}
-
 }
+

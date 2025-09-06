@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import io.a2a.spec.AgentCard;
+import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -92,7 +93,7 @@ public class A2aRemoteAgent extends BaseAgent {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return this.compiledGraph.invoke(input);
+		return this.compiledGraph.call(input);
 	}
 
 	@Override
@@ -100,15 +101,12 @@ public class A2aRemoteAgent extends BaseAgent {
 		throw new UnsupportedOperationException("A2aRemoteAgent has not support schedule.");
 	}
 
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
+	public Flux<NodeOutput> stream(Map<String, Object> input)
 			throws GraphStateException, GraphRunnerException {
-		if (!streaming) {
-			logger.warning("Streaming is not enabled for this agent.");
-		}
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return this.compiledGraph.stream(input);
+		return this.compiledGraph.fluxStream(input);
 	}
 
 	public StateGraph getStateGraph() {
@@ -247,7 +245,7 @@ public class A2aRemoteAgent extends BaseAgent {
 						"Input key '" + inputKeyFromParent + "' not found in state: " + parentState));
 
 			// invoke child graph with input
-			OverAllState childState = childGraph.invoke(Map.of("input", inputValue)).get();
+			OverAllState childState = childGraph.call(Map.of("input", inputValue)).get();
 
 			// extract output from child graph
 			Object outputValue = childState.value(outputKeyToParent)

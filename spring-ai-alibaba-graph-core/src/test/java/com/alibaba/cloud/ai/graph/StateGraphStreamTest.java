@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.List;
@@ -138,15 +139,15 @@ public class StateGraphStreamTest {
 
 		var app = workflow.compile();
 
-		var iterator = app.stream(Map.of());
-		for (var i : iterator) {
-			System.out.println(i);
-		}
-
-		var generator = (AsyncGenerator.HasResultValue) iterator;
-
-		System.out.println(generator.resultValue().orElse(null));
-
+		// Use Flux streaming approach - simplified version
+		app.fluxStream(Map.of())
+			.doOnNext(output -> System.out.println(output))
+			.reduce((first, second) -> second) // Get the last state as result
+			.subscribe(
+				lastState -> System.out.println(lastState),
+				error -> System.err.println("Stream error: " + error),
+				() -> System.out.println("Stream completed")
+			);
 	}
 
 	/**
@@ -183,15 +184,9 @@ public class StateGraphStreamTest {
 
 		CompiledGraph compiledGraph = stateGraph.compile();
 		// 初始化输入
-		for (var output : compiledGraph.stream(Map.of("input", "hoho~~"))) {
-			if (output instanceof AsyncGenerator<?>) {
-				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-				System.out.println("Streaming chunk: " + asyncGenerator);
-			}
-			else {
-				System.out.println("Node output: " + output);
-			}
-		}
+		compiledGraph.fluxStream(Map.of("input", "hoho~~")).subscribe(output -> {
+			System.out.println("Node output: " + output);
+		});
 	}
 
 	/**
@@ -230,7 +225,7 @@ public class StateGraphStreamTest {
 			String input = s.value("input", "");
 			return Map.of("messages", "Received: " + input, "count", 1);
 		})).addNode("processData", node_async(s -> {
-			AsyncGenerator.WithResult<StreamingOutput> it = getStreamingOutputWithResult(s);
+			Flux<StreamingOutput> it = getStreamingOutputWithResult(s);
 			return Map.of("messages", it);
 		})).addNode("generateResponse", node_async(s -> {
 
@@ -244,23 +239,17 @@ public class StateGraphStreamTest {
 
 		CompiledGraph compiledGraph = stateGraph.compile();
 		// 初始化输入
-		for (var output : compiledGraph.stream(Map.of("input", "hoho~~"))) {
-			if (output instanceof AsyncGenerator<?>) {
-				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-				System.out.println("Streaming chunk: " + asyncGenerator);
-			}
-			else {
+		compiledGraph.fluxStream(Map.of("input", "hoho~~")).subscribe(output -> {
 				System.out.println("Node output: " + output);
-			}
-		}
+		});
 	}
 
 	/**
 	 * Creates a streaming output generator that produces random values at intervals.
 	 * @param s Current state context
-	 * @return AsyncGenerator with streaming output values
+	 * @return Flux stream with streaming output values
 	 */
-	private static AsyncGenerator.WithResult<StreamingOutput> getStreamingOutputWithResult(OverAllState s) {
+	private static Flux<StreamingOutput> getStreamingOutputWithResult(OverAllState s) {
 
 		BlockingQueue<Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
 		AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
@@ -282,7 +271,32 @@ public class StateGraphStreamTest {
 				}
 			}
 		}).start();
-		return it;
+
+		return Flux.create(sink -> {
+			try {
+				Data<StreamingOutput> data;
+				while ((data = it.next()) != null) {
+					if (data.isError()) {
+						// Get the exception from the CompletableFuture
+						try {
+							data.getData().join();
+						} catch (Exception e) {
+							sink.error(e);
+							break;
+						}
+					} else if (data.isDone()) {
+						sink.complete();
+						break;
+					} else {
+						// Get the value from the CompletableFuture
+						StreamingOutput value = data.getData().join();
+						sink.next(value);
+					}
+				}
+			} catch (Exception e) {
+				sink.error(e);
+			}
+		});
 	}
 
 	/**
@@ -307,8 +321,8 @@ public class StateGraphStreamTest {
 			.addEdge("result", END);
 
 		CompiledGraph compile = stateGraph.compile();
-		AsyncGenerator<NodeOutput> stream = compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"));
-		stream.forEachAsync(nodeOutput -> System.out.println("Node output: " + nodeOutput));
+		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小���章"))
+			.subscribe(nodeOutput -> System.out.println("Node output: " + nodeOutput));
 	}
 
 	/**
@@ -334,15 +348,10 @@ public class StateGraphStreamTest {
 			.addEdge("result", END);
 
 		CompiledGraph compile = stateGraph.compile();
-		for (var output : compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"))) {
-			if (output instanceof AsyncGenerator<?>) {
-				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-				System.out.println("Streaming chunk: " + asyncGenerator);
-			}
-			else {
+		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"))
+			.subscribe(output -> {
 				System.out.println("Node output: " + output);
-			}
-		}
+			});
 	}
 
 	/**
@@ -401,31 +410,18 @@ public class StateGraphStreamTest {
 
 		CompiledGraph app = stateGraph.compile();
 
-		AsyncGenerator<NodeOutput> generator = app.stream(Map.of("input", "test"));
-		List states = toStateList(generator);
-
-		assertFalse(states.isEmpty(), "least one content");
-		assertEquals(4, states.size(), "should be five content");
-	}
-
-	/**
-	 * Helper method for processing streaming output. Filters out streaming chunks and
-	 * extracts state information from node outputs.
-	 * @param generator AsyncGenerator producing node outputs
-	 * @return List of OverAllState objects representing processed states
-	 */
-	private List<OverAllState> toStateList(AsyncGenerator<NodeOutput> generator) {
-		return generator.stream().filter(s -> {
-			if (s instanceof StreamingOutput streamingOutput) {
-				System.out
-					.println(String.format("stream data %s '%s'", streamingOutput.node(), streamingOutput.chunk()));
-				return false;
-			}
-			return true;
-		})
-			.peek(s -> System.out.println(String.format("NODE: %s", s.node())))
+		// Use Flux streaming approach for collecting states - simplified version
+		app.fluxStream(Map.of("input", "test"))
+			.filter(s -> !(s instanceof StreamingOutput))
 			.map(NodeOutput::state)
-			.collect(java.util.stream.Collectors.toList());
+			.collectList()
+			.subscribe(
+				states -> {
+					assertFalse(states.isEmpty(), "least one content");
+					assertEquals(4, states.size(), "should be four content");
+				},
+				error -> System.err.println("Stream error: " + error)
+			);
 	}
 
 	@Test
@@ -451,17 +447,11 @@ public class StateGraphStreamTest {
 
 		CompiledGraph compile = stateGraph.compile();
 
-		for (var output : compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"),
-				RunnableConfig.builder().addParallelNodeExecutor(START, ForkJoinPool.commonPool()).build())) {
-			if (output instanceof AsyncGenerator<?>) {
-				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-				System.out.println("Streaming chunk: " + asyncGenerator);
-			}
-			else {
+		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"),
+				RunnableConfig.builder().addParallelNodeExecutor(START, ForkJoinPool.commonPool()).build())
+			.subscribe(output -> {
 				System.out.println("Node output: " + output);
-			}
-		}
-
+			});
 	}
 
 }

@@ -83,7 +83,7 @@ public class IterationNodeTest {
 			.addEdge("generate_array", "iteration_node")
 			.addEdge("iteration_node", StateGraph.END)
 			.compile();
-		OverAllState state = graph.invoke(Map.of()).orElseThrow();
+		OverAllState state = graph.call(Map.of()).orElseThrow();
 		return state.value("result").orElseThrow().toString();
 	}
 
@@ -226,7 +226,7 @@ public class IterationNodeTest {
 			.addEdge("pass", "iteration_node2")
 			.addEdge("iteration_node2", StateGraph.END)
 			.compile();
-		OverAllState state = graph.invoke(Map.of()).orElseThrow();
+		OverAllState state = graph.call(Map.of()).orElseThrow();
 		String res = state.value("result2").orElseThrow().toString();
 		log.info("result: {}", res);
 		Assertions.assertEquals(OBJECT_MAPPER.readValue(res, new TypeReference<List<Integer>>() {
@@ -268,7 +268,7 @@ public class IterationNodeTest {
 			.addEdge("print", StateGraph.END);
 		CompiledGraph compiledGraph = stateGraph.compile();
 		log.info(compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML, "workflow").content());
-		String res = compiledGraph.invoke(Map.of()).orElseThrow().value("result", String.class).orElseThrow();
+		String res = compiledGraph.call(Map.of()).orElseThrow().value("result", String.class).orElseThrow();
 		log.info("result: {}", res);
 		Assertions.assertEquals(OBJECT_MAPPER.readValue(res, new TypeReference<List<Integer>>() {
 		}), List.of(1, 8, 27, 64, 125));

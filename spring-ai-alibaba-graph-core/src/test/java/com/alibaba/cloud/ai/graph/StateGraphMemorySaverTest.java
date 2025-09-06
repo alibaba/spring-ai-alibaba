@@ -207,7 +207,7 @@ public class StateGraphMemorySaverTest {
 
 		var runnableConfig = RunnableConfig.builder().threadId("thread_1").build();
 
-		var state = app.invoke(inputs, runnableConfig);
+		var state = app.call(inputs, runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, state.get().value("steps").get());
@@ -232,7 +232,7 @@ public class StateGraphMemorySaverTest {
 		// SUBMIT NEW THREAD 2
 		runnableConfig = RunnableConfig.builder().threadId("thread_2").build();
 
-		state = app.invoke(inputs, runnableConfig);
+		state = app.call(inputs, runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, state.get().value("steps").get());
@@ -246,7 +246,7 @@ public class StateGraphMemorySaverTest {
 		}
 
 		// RE-SUBMIT THREAD 1
-		state = app.invoke(Map.of(), runnableConfig);
+		state = app.call(Map.of(), runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps + 1, state.get().value("steps").get());
@@ -282,7 +282,7 @@ public class StateGraphMemorySaverTest {
 
 		var runnableConfig = RunnableConfig.builder().threadId("thread_1").build();
 
-		var results = app.streamSnapshots(inputs, runnableConfig).stream().collect(Collectors.toList());
+		var results = app.fluxStreamSnapshots(inputs, runnableConfig).collectList().block();
 
 		results.forEach(r -> log.info("{}: Node: {} - {}", r.getClass().getSimpleName(), r.node(),
 				r.state().value("messages").get()));
@@ -309,7 +309,7 @@ public class StateGraphMemorySaverTest {
 			log.info("SNAPSHOT HISTORY:\n{}\n", s);
 		}
 
-		results = app.stream(null, runnableConfig).stream().collect(Collectors.toList());
+		results = app.fluxStream(null, runnableConfig).collectList().block();
 
 		assertNotNull(results);
 		assertFalse(results.isEmpty());
@@ -328,7 +328,7 @@ public class StateGraphMemorySaverTest {
 		var toReplay = firstSnapshot.get().config();
 
 		toReplay = app.updateState(toReplay, Map.of("messages", "i'm bartolo"));
-		results = app.stream(null, toReplay).stream().collect(Collectors.toList());
+		results = app.fluxStream(null, toReplay).collectList().block();
 
 		assertNotNull(results);
 		assertFalse(results.isEmpty());

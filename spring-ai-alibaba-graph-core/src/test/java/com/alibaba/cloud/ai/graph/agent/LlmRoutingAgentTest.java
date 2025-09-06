@@ -32,6 +32,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class LlmRoutingAgentTest {
@@ -45,6 +47,13 @@ class LlmRoutingAgentTest {
 
 		// Create DashScope ChatModel instance
 		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
+	}
+
+	public ToolCallback createToolCallback() {
+		return FunctionToolCallback.builder("poem", new PoemTool())
+			.description("用来写诗的工具")
+			.inputType(String.class)
+			.build();
 	}
 
 	@Test
@@ -63,15 +72,16 @@ class LlmRoutingAgentTest {
 			.model(chatModel)
 			.description("可以写散文文章。")
 			.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
-			.outputKey("prose_article")
+			.outputKey("messages")
 			.build();
 
 		ReactAgent poemWriterAgent = ReactAgent.builder()
 			.name("poem_writer_agent")
 			.model(chatModel)
 			.description("可以写现代诗。")
-			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问进行回答。")
-			.outputKey("poem_article")
+			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问，调用工具进行回答。")
+			.outputKey("messages")
+			.tools(List.of(createToolCallback()))
 			.build();
 
 		LlmRoutingAgent blogAgent = LlmRoutingAgent.builder()
@@ -85,7 +95,9 @@ class LlmRoutingAgentTest {
 			.build();
 
 		try {
-			Optional<OverAllState> result = blogAgent.invoke(Map.of("input", "帮我写一个100字左右的散文"));
+			Optional<OverAllState> result = blogAgent.invoke(Map.of("input", "帮我写一个100字左右的现代诗"));
+			blogAgent.invoke(Map.of("input", "帮我写一个100字左右的现代诗"));
+			blogAgent.invoke(Map.of("input", "帮我写一个100字左右的现代诗"));
 			System.out.println(result.get());
 		}
 		catch (java.util.concurrent.CompletionException e) {

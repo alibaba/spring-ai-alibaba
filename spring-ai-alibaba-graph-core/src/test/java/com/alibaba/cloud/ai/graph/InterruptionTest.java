@@ -62,19 +62,19 @@ public class InterruptionTest {
 
 		var runnableConfig = RunnableConfig.builder().build();
 
-		var results = workflow.stream(Map.of(), runnableConfig)
-			.stream()
-			.peek(System.out::println)
+		var results = workflow.fluxStream(Map.of(), runnableConfig)
+			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
-			.toList();
+			.collectList()
+			.block();
 
 		assertIterableEquals(List.of(START, "A", "B"), results);
 
-		results = workflow.stream(null, runnableConfig)
-			.stream()
-			.peek(System.out::println)
+		results = workflow.fluxStream(null, runnableConfig)
+			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
-			.toList();
+			.collectList()
+			.block();
 		assertIterableEquals(List.of("D", END), results);
 
 		var snapshotForNodeB = workflow.getStateHistory(runnableConfig)
@@ -85,11 +85,11 @@ public class InterruptionTest {
 
 		runnableConfig = workflow.updateState(snapshotForNodeB.config(), Map.of("messages", "C"));
 
-		results = workflow.stream(null, runnableConfig)
-			.stream()
-			.peek(System.out::println)
+		results = workflow.fluxStream(null, runnableConfig)
+			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
-			.toList();
+			.collectList()
+			.block();
 		assertIterableEquals(List.of("D", END), results);
 	}
 
@@ -116,20 +116,20 @@ public class InterruptionTest {
 
 		var runnableConfig = RunnableConfig.builder().build();
 
-		var results = workflow.stream(Map.of(), runnableConfig)
-			.stream()
-			.peek(System.out::println)
+		var results = workflow.fluxStream(Map.of(), runnableConfig)
+			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
-			.toList();
+			.collectList()
+			.block();
 
 		assertIterableEquals(List.of(START, "A", "B"), results);
 
 		runnableConfig = workflow.updateState(runnableConfig, Map.of("messages", "C"));
-		results = workflow.stream(null, runnableConfig)
-			.stream()
-			.peek(System.out::println)
+		results = workflow.fluxStream(null, runnableConfig)
+			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
-			.toList();
+			.collectList()
+			.block();
 		assertIterableEquals(List.of("C", END), results);
 	}
 

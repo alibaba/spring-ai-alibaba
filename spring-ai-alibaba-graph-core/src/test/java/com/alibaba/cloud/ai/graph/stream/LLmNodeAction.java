@@ -47,12 +47,7 @@ public class LLmNodeAction implements NodeAction {
 		// Create prompt with user message
 		UserMessage message = new UserMessage((String) state.value(OverAllState.DEFAULT_INPUT_KEY).get());
 		Flux<ChatResponse> stream = chatModel.stream(new Prompt(message));
-		var generator = StreamingChatGenerator.builder()
-			.startingNode(nodeId)
-			.startingState(state)
-			.mapResult(response -> Map.of("messages", Objects.requireNonNull(response.getResult().getOutput())))
-			.build(stream);
-		return Map.of("messages", generator);
+		return Map.of("messages", stream);
 	}
 
 }

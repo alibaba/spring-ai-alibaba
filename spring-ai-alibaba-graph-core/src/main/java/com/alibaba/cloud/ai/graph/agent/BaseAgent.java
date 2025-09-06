@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
+import reactor.core.publisher.Flux;
 
 import org.springframework.scheduling.Trigger;
 
@@ -121,7 +122,7 @@ public abstract class BaseAgent {
 	public abstract ScheduledAgentTask schedule(ScheduleConfig scheduleConfig)
 			throws GraphStateException, GraphRunnerException;
 
-	public abstract AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
+	public abstract Flux<NodeOutput> stream(Map<String, Object> input)
 			throws GraphStateException, GraphRunnerException;
 
 }

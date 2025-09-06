@@ -159,7 +159,7 @@ class ReactAgentHookTest {
 
 		// 创建包含时间查询的提示词
 		List<Message> messages = List.of(new UserMessage("查询北京天气"));
-		Optional<OverAllState> result = graph.invoke(Map.of("llm_input_messages", messages));
+		Optional<OverAllState> result = graph.call(Map.of("llm_input_messages", messages));
 		System.out.println(result.get());
 
 		System.out.println("==testReactAgentWithPreLlmHook==");
@@ -194,7 +194,7 @@ class ReactAgentHookTest {
 		CompiledGraph graph = agent.getAndCompileGraph();
 		// 创建包含时间查询的提示词
 		List<Message> messages = List.of(new UserMessage("查询北京天气"));
-		Optional<OverAllState> result = graph.invoke(Map.of("messages", messages));
+		Optional<OverAllState> result = graph.call(Map.of("messages", messages));
 		System.out.println(result);
 
 		System.out.println("==testReactAgentWithPostLlmHook==");
@@ -264,7 +264,7 @@ class ReactAgentHookTest {
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 		List<Message> messages = List.of(new UserMessage("查询北京天气"));
-		Optional<OverAllState> result = graph.invoke(Map.of("llm_input_messages", messages));
+		Optional<OverAllState> result = graph.call(Map.of("llm_input_messages", messages));
 		System.out.println(result);
 
 		System.out.println("==testReactAgentWithPreToolHook==");

@@ -35,6 +35,7 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import org.apache.commons.collections4.CollectionUtils;
 
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -108,16 +109,16 @@ public class ReactAgent extends BaseAgent {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return this.compiledGraph.invoke(input);
+		return this.compiledGraph.call(input);
 	}
 
 	@Override
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
+	public Flux<NodeOutput> stream(Map<String, Object> input)
 			throws GraphStateException, GraphRunnerException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return this.compiledGraph.stream(input);
+		return this.compiledGraph.fluxStream(input);
 	}
 
 	@Override
@@ -529,7 +530,7 @@ public class ReactAgent extends BaseAgent {
 			List<Message> messages = List.of(message);
 
 			// invoke child graph
-			OverAllState childState = childGraph.invoke(Map.of("messages", messages)).get();
+			OverAllState childState = childGraph.call(Map.of("messages", messages)).get();
 
 			// extract output from child graph
 			List<Message> reactMessages = (List<Message>) childState.value("messages").orElseThrow();
@@ -563,7 +564,7 @@ public class ReactAgent extends BaseAgent {
 			Message message = new UserMessage(input);
 			List<Message> messages = List.of(message);
 
-			AsyncGenerator<NodeOutput> child = childGraph.stream(Map.of("messages", messages));
+			AsyncGenerator<NodeOutput> child = AsyncGenerator.fromFlux(childGraph.fluxStream(Map.of("messages", messages)));
 
 			AsyncGenerator<NodeOutput> wrapped = new AsyncGenerator<NodeOutput>() {
 				private volatile Map<String, Object> lastStateData;

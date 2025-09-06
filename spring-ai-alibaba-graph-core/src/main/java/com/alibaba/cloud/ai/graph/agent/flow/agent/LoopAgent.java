@@ -25,6 +25,8 @@ import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.util.StringUtils;
 
@@ -104,19 +106,19 @@ public class LoopAgent extends FlowAgent {
 	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
 		CompiledGraph compiledGraph = this.getAndCompileGraph();
 		// Initialize outputKey as an empty list to collect loop results
-		return compiledGraph.invoke(Stream.of(input, Map.of(this.outputKey(), new ArrayList<>()))
+		return compiledGraph.call(Stream.of(input, Map.of(this.outputKey(), new ArrayList<>()))
 			.map(Map::entrySet)
 			.flatMap(Collection::stream)
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> newValue)));
 	}
 
 	@Override
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
+	public Flux<NodeOutput> stream(Map<String, Object> input)
 			throws GraphStateException, GraphRunnerException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return this.compiledGraph.stream(input);
+		return this.compiledGraph.fluxStream(input);
 	}
 
 	public static Builder builder() {

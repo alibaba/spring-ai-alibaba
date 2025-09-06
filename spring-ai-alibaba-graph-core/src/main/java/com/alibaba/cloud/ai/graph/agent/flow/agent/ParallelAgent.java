@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -71,17 +72,13 @@ public class ParallelAgent extends FlowAgent {
 
 	@Override
 	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.invoke(input);
+		return compiledGraph.call(input);
 	}
 
 	@Override
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
+	public Flux<NodeOutput> stream(Map<String, Object> input)
 			throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.stream(input);
+		return this.compiledGraph.fluxStream(input);
 	}
 
 	@Override

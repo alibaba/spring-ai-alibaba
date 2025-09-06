@@ -124,7 +124,7 @@ public class CompiledSubGraphTest {
 		Map<String, Object> input = Map.of();
 		do {
 			try {
-				for (var output : parentGraph.stream(input, runnableConfig)) {
+				for (var output : parentGraph.fluxStream(input, runnableConfig).toIterable()) {
 					System.out.println("output: " + output);
 				}
 
@@ -194,16 +194,15 @@ public class CompiledSubGraphTest {
 
 		Map<String, Object> input = Map.of();
 
-		var graphIterator = parentGraph.stream(input, runnableConfig);
-
-		var output = graphIterator.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
+		var results = parentGraph.fluxStream(input, runnableConfig).collectList().block();
+		var output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
 		assertTrue(output.isPresent());
 
 		assertFalse(output.get().isEND());
 		assertInstanceOf(NodeOutput.class, output.get());
 
-		var iteratorResult = AsyncGenerator.resultValue(graphIterator);
+		var iteratorResult = AsyncGenerator.resultValue(results.iterator());
 
 		assertTrue(iteratorResult.isPresent());
 		assertInstanceOf(InterruptionMetadata.class, iteratorResult.get());
@@ -212,9 +211,8 @@ public class CompiledSubGraphTest {
 
 		input = null;
 
-		graphIterator = parentGraph.stream(input, runnableConfig);
-
-		output = graphIterator.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
+		results = parentGraph.fluxStream(input, runnableConfig).collectList().block();
+		output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
 		assertTrue(output.isPresent());
 		assertTrue(output.get().isEND());
@@ -253,16 +251,15 @@ public class CompiledSubGraphTest {
 
 		Map<String, Object> input = Map.of();
 
-		var graphIterator = parentGraph.stream(input, runnableConfig);
-
-		var output = graphIterator.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
+		var results = parentGraph.fluxStream(input, runnableConfig).collectList().block();
+		var output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
 		assertTrue(output.isPresent());
 
 		assertFalse(output.get().isEND());
 		assertInstanceOf(NodeOutput.class, output.get());
 
-		var iteratorResult = AsyncGenerator.resultValue(graphIterator);
+		var iteratorResult = AsyncGenerator.resultValue(results.iterator());
 
 		assertTrue(iteratorResult.isPresent());
 		assertInstanceOf(InterruptionMetadata.class, iteratorResult.get());
@@ -271,9 +268,8 @@ public class CompiledSubGraphTest {
 
 		input = null;
 
-		graphIterator = parentGraph.stream(input, runnableConfig);
-
-		output = graphIterator.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
+		results = parentGraph.fluxStream(input, runnableConfig).collectList().block();
+		output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
 		assertTrue(output.isPresent());
 		assertTrue(output.get().isEND());
@@ -317,9 +313,8 @@ public class CompiledSubGraphTest {
 
 		Map<String, Object> input = Map.of();
 
-		var graphIterator = stateGraph.stream(input, runnableConfig);
-
-		var output = graphIterator.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
+		var results = stateGraph.fluxStream(input, runnableConfig).collectList().block();
+		var output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
 	}
 
