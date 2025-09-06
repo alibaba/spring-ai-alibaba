@@ -111,8 +111,25 @@ public class ReactAgent extends BaseAgent {
 		return this.compiledGraph.invoke(input);
 	}
 
+	public Optional<OverAllState> invoke(Map<String, Object> input, RunnableConfig runnableConfig)
+			throws GraphStateException, GraphRunnerException {
+		if (this.compiledGraph == null) {
+			this.compiledGraph = getAndCompileGraph();
+		}
+		return this.compiledGraph.invoke(input);
+	}
+
 	@Override
 	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
+			throws GraphStateException, GraphRunnerException {
+		if (this.compiledGraph == null) {
+			this.compiledGraph = getAndCompileGraph();
+		}
+		return this.compiledGraph.stream(input);
+	}
+
+	@Override
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input, RunnableConfig runnableConfig)
 			throws GraphStateException, GraphRunnerException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();

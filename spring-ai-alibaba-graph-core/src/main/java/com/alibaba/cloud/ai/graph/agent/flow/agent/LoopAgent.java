@@ -21,7 +21,6 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -101,22 +100,15 @@ public class LoopAgent extends FlowAgent {
 	}
 
 	@Override
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
+	public Optional<OverAllState> invoke(Map<String, Object> input, RunnableConfig runnableConfig)
+			throws GraphStateException, GraphRunnerException {
 		CompiledGraph compiledGraph = this.getAndCompileGraph();
 		// Initialize outputKey as an empty list to collect loop results
 		return compiledGraph.invoke(Stream.of(input, Map.of(this.outputKey(), new ArrayList<>()))
 			.map(Map::entrySet)
 			.flatMap(Collection::stream)
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> newValue)));
-	}
-
-	@Override
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
-			throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.stream(input);
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> newValue)),
+				runnableConfig);
 	}
 
 	public static Builder builder() {

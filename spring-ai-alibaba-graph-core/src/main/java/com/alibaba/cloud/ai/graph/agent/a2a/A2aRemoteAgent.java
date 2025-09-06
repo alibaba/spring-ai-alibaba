@@ -88,11 +88,12 @@ public class A2aRemoteAgent extends BaseAgent {
 	}
 
 	@Override
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
+	public Optional<OverAllState> invoke(Map<String, Object> input, RunnableConfig runnableConfig)
+			throws GraphStateException, GraphRunnerException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return this.compiledGraph.invoke(input);
+		return this.compiledGraph.invoke(input, runnableConfig);
 	}
 
 	@Override
@@ -100,7 +101,7 @@ public class A2aRemoteAgent extends BaseAgent {
 		throw new UnsupportedOperationException("A2aRemoteAgent has not support schedule.");
 	}
 
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input, RunnableConfig runnableConfig)
 			throws GraphStateException, GraphRunnerException {
 		if (!streaming) {
 			logger.warning("Streaming is not enabled for this agent.");
@@ -108,7 +109,7 @@ public class A2aRemoteAgent extends BaseAgent {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return this.compiledGraph.stream(input);
+		return this.compiledGraph.stream(input, runnableConfig);
 	}
 
 	public StateGraph getStateGraph() {
