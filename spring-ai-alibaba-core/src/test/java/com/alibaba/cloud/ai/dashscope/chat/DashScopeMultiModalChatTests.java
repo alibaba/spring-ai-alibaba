@@ -302,7 +302,7 @@ public class DashScopeMultiModalChatTests {
 
 	/**
 	 * Integration test for image processing with URL This test will only run if
-	 * DASHSCOPE_API_KEY environment variable is set
+	 * AI_DASHSCOPE_API_KEY environment variable is set
 	 */
 	@Test
 	@Tag("integration")
