@@ -740,7 +740,6 @@ export default {
 /* 左侧导航栏 */
 .sidebar {
   width: 240px;
-  background: var(--bg-primary);
   border-right: 1px solid var(--border-secondary);
   display: flex;
   flex-direction: column;
