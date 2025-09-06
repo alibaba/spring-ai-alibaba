@@ -16,6 +16,9 @@
 
 package com.alibaba.cloud.ai.graph.node.code.entity;
 
+import java.util.List;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Represents the result of code execution.
  *
@@ -26,9 +29,14 @@ package com.alibaba.cloud.ai.graph.node.code.entity;
  * @author HeYQ
  * @since 0.0.1
  */
-public record CodeExecutionResult(int exitCode, String logs, String extra) {
+public record CodeExecutionResult(int exitCode, String logs, String extra, @Nullable List<Object> result) {
 
 	public CodeExecutionResult(int exitCode, String logs) {
 		this(exitCode, logs, null);
 	}
+
+	public CodeExecutionResult(int exitCode, String logs, String extra) {
+		this(exitCode, logs, extra, null);
+	}
+
 }

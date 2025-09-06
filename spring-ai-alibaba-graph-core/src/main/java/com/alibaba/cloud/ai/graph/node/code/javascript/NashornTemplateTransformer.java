@@ -13,19 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.alibaba.cloud.ai.graph.node.code.javascript;
 
-package com.alibaba.cloud.ai.graph.node.code.entity;
-
+import com.alibaba.cloud.ai.graph.node.code.TemplateTransformer;
+import com.alibaba.cloud.ai.graph.node.code.entity.RunnerAndPreload;
 import java.util.List;
 
 /**
- * @author HeYQ
- * @since 0.0.1
+ * Nashorn code template transformer Used to convert user code into executable Java
+ * programs
+ *
+ * @author XenoAmess
+ * @since 2025-08-30 10:00
  */
-public record CodeBlock(String language, String code, List<Object> inputs) {
+public class NashornTemplateTransformer extends TemplateTransformer {
 
-	public CodeBlock(String language, String code) {
-		this(language, code, List.of());
+	@Override
+	public String getRunnerScript() {
+		return "";
+	}
+
+	@Override
+	public RunnerAndPreload transformCaller(String code, List<Object> inputs) throws Exception {
+		return new RunnerAndPreload(code, "");
 	}
 
 }
