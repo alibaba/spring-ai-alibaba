@@ -220,8 +220,8 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Spring version -->
-        <spring-ai.version>1.0.0</spring-ai.version>
-        <spring-boot.version>3.4.5</spring-boot.version>
+        <spring-ai.version>1.0.1</spring-ai.version>
+        <spring-boot.version>3.4.8</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
         <!-- DashScope SDK Version -->
@@ -248,7 +248,7 @@
         <commons-exec.version>1.3</commons-exec.version>
         <commons-collections4.version>4.4</commons-collections4.version>
 
-        <docker-java>3.3.3</docker-java>
+        <docker-java.version>3.5.3</docker-java.version>
 
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
 
@@ -348,7 +348,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
+            <dependency>
+                <groupId>com.github.docker-java</groupId>
+                <artifactId>docker-java-bom</artifactId>
+                <version>${docker-java.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
