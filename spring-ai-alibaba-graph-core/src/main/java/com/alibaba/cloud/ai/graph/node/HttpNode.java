@@ -15,6 +15,22 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
@@ -25,6 +41,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
+
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -39,23 +58,6 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
-
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static java.lang.String.format;
 
@@ -69,7 +71,26 @@ public class HttpNode implements NodeAction {
 
 	private static final long DEFAULT_MAX_RETRY_INTERVAL = 1000;
 
-	private static final ObjectMapper mapper = new ObjectMapper();
+	private static final ObjectMapper DEFAULT_MAPPER = new ObjectMapper();
+
+	/**
+	 * Default string replacement function that cleans JSON template strings.
+	 */
+	private static final Function<Object, Object> DEFAULT_VARIABLE_FILTER = jsonTemplate -> {
+		if (jsonTemplate instanceof String && StringUtils.hasText((String) jsonTemplate)) {
+			return ((String) jsonTemplate).replace("```json", "")
+				.replace("```", "")
+				.replace("\n", "")
+				.replace("\r", "")
+				.replace("\t", "")
+				.replace("\"", "\\\"");
+		}
+		return jsonTemplate;
+	};
+
+	private final ObjectMapper mapper;
+
+	private final Function<Object, Object> variableFilter;
 
 	private final WebClient webClient;
 
@@ -99,6 +120,8 @@ public class HttpNode implements NodeAction {
 		this.authConfig = builder.authConfig;
 		this.retryConfig = builder.retryConfig;
 		this.outputKey = builder.outputKey;
+		this.mapper = builder.objectMapper != null ? builder.objectMapper : DEFAULT_MAPPER;
+		this.variableFilter = builder.variableFilter != null ? builder.variableFilter : DEFAULT_VARIABLE_FILTER;
 	}
 
 	@Override
@@ -148,8 +171,8 @@ public class HttpNode implements NodeAction {
 		while (matcher.find()) {
 			String key = matcher.group(1);
 			Object value = state.value(key).orElse("");
-			String strReplaced = getStrReplaced(value.toString());
-			matcher.appendReplacement(result, Matcher.quoteReplacement(strReplaced));
+			Object replaced = variableFilter.apply(value);
+			matcher.appendReplacement(result, Matcher.quoteReplacement(replaced != null ? replaced.toString() : ""));
 		}
 		matcher.appendTail(result);
 		return result.toString();
@@ -259,30 +282,15 @@ public class HttpNode implements NodeAction {
 	}
 
 	/**
-	 * Get string replaced.
-	 * @param jsonTemplate JSON template
-	 * @return string replaced
-	 */
-	private static String getStrReplaced(String jsonTemplate) {
-		return jsonTemplate == null ? ""
-				: jsonTemplate.replace("```json", "")
-					.replace("```", "")
-					.replace("\n", "")
-					.replace("\r", "")
-					.replace("\t", "")
-					.replace("\"", "\\\"");
-	}
-
-	/**
 	 * Parse nested JSON string.
 	 * @param json JSON string
 	 * @return parsed JSON object
 	 * @throws JsonProcessingException if parsing fails
 	 */
-	public static Object parseNestedJson(String json) throws JsonProcessingException {
-		JsonNode rootNode = mapper.readTree(json);
+	public Object parseNestedJson(String json) throws JsonProcessingException {
+		JsonNode rootNode = this.mapper.readTree(json);
 		if (rootNode.isObject()) {
-			Map<String, Object> map = mapper.convertValue(rootNode, Map.class);
+			Map<String, Object> map = this.mapper.convertValue(rootNode, Map.class);
 			for (Map.Entry<String, Object> entry : map.entrySet()) {
 				Object value = entry.getValue();
 				if (value instanceof String valueStr) {
@@ -303,7 +311,7 @@ public class HttpNode implements NodeAction {
 			return map;
 		}
 		else {
-			return mapper.convertValue(rootNode, Object.class);
+			return this.mapper.convertValue(rootNode, Object.class);
 		}
 	}
 
@@ -341,8 +349,7 @@ public class HttpNode implements NodeAction {
 		else {
 			String text = new String(body, StandardCharsets.UTF_8);
 			try {
-				ObjectMapper objectMapper = new ObjectMapper();
-				Map<String, Object> map = objectMapper.readValue(text, Map.class);
+				Map<String, Object> map = this.mapper.readValue(text, Map.class);
 				result.put("body", map);
 			}
 			catch (Exception ex) {
@@ -416,6 +423,15 @@ public class HttpNode implements NodeAction {
 
 		private String outputKey;
 
+		private ObjectMapper objectMapper;
+
+		private Function<Object, Object> variableFilter;
+
+		public Builder objectMapper(ObjectMapper objectMapper) {
+			this.objectMapper = objectMapper;
+			return this;
+		}
+
 		public Builder webClient(WebClient webClient) {
 			this.webClient = webClient;
 			return this;
@@ -458,6 +474,19 @@ public class HttpNode implements NodeAction {
 
 		public Builder outputKey(String outputKey) {
 			this.outputKey = outputKey;
+			return this;
+		}
+
+		/**
+		 * Set a custom string filter function for processing variable replacement values.
+		 * This function will be applied to all string values during variable replacement.
+		 * If not set, a default filter will be used that cleans JSON template strings.
+		 * @param variableFilter the function to filter string values during variable
+		 * replacement
+		 * @return this builder
+		 */
+		public Builder variableFilter(Function<Object, Object> variableFilter) {
+			this.variableFilter = variableFilter;
 			return this;
 		}
 
