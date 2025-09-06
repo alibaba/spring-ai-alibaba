@@ -73,7 +73,7 @@ public class StreamingResponseHandler {
 		public List<ToolCall> getEffectiveToolCalls() {
 			return lastResponse != null && lastResponse.getResult() != null
 					&& lastResponse.getResult().getOutput() != null
-							? lastResponse.getResult().getOutput().getToolCalls() : null;
+							? lastResponse.getResult().getOutput().getToolCalls() : Collections.emptyList();
 		}
 
 		/**
@@ -83,7 +83,7 @@ public class StreamingResponseHandler {
 		public String getEffectiveText() {
 			return lastResponse != null && lastResponse.getResult() != null
 					&& lastResponse.getResult().getOutput() != null ? lastResponse.getResult().getOutput().getText()
-							: null;
+							: "";
 		}
 
 	}
