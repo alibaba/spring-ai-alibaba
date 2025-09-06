@@ -295,7 +295,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, AppEntity> implements
 		if (StringUtils.isNotBlank(query.getType())) {
 			queryWrapper.eq(AppEntity::getType, query.getType());
 		}
-		queryWrapper.ne(AppEntity::getStatus, CommonStatus.DELETED.getStatus());
+		if (query.getStatus() == null || query.getStatus() == AppStatus.DELETED) {
+			queryWrapper.ne(AppEntity::getStatus, CommonStatus.DELETED.getStatus());
+		}
+		else {
+			queryWrapper.eq(AppEntity::getStatus, query.getStatus().getStatus());
+		}
 		queryWrapper.orderByDesc(AppEntity::getId);
 
 		IPage<AppEntity> pageResult = this.page(page, queryWrapper);

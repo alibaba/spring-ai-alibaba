@@ -16,23 +16,23 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.function.UnaryOperator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.LLMNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.stereotype.Component;
 
 /**
@@ -56,239 +56,57 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 	private enum LLMNodeConverter {
 
 		DIFY(new DialectConverter<>() {
-			@SuppressWarnings("unchecked")
 			@Override
 			public LLMNodeData parse(Map<String, Object> data) {
-				LLMNodeData nd = new LLMNodeData();
-				// variable_selector -> inputs
-				List<String> sel = (List<String>) data.get("variable_selector");
-				if (sel != null && sel.size() == 2) {
-					nd.setInputs(Collections.singletonList(new VariableSelector(sel.get(0), sel.get(1))));
+				LLMNodeData nodeData = new LLMNodeData();
+
+				// 获取必要的信息
+				String modeName = MapReadUtil.getMapDeepValue(data, String.class, "model", "name");
+				Map<String, Object> modeParams = MapReadUtil.safeCastToMapWithStringKey(
+						MapReadUtil.getMapDeepValue(data, Map.class, "model", "completion_params"));
+
+				// MessageTemplate的keys字段将在postProcess中确定，所以这里先设置为空
+				List<LLMNodeData.MessageTemplate> messageTemplates = Optional
+					.ofNullable(MapReadUtil
+						.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "prompt_template")))
+					.orElse(List.of())
+					.stream()
+					.filter(map -> map.containsKey("role") && map.containsKey("text"))
+					.map(map -> new LLMNodeData.MessageTemplate(map.get("text").toString(), List.of(),
+							MessageType.fromValue(map.get("role").toString())))
+					.toList();
+
+				Boolean retryEnable = MapReadUtil.getMapDeepValue(data, Boolean.class, "retry_config", "retry_enabled");
+				Integer maxRetryCount = Boolean.TRUE.equals(retryEnable)
+						? MapReadUtil.getMapDeepValue(data, Integer.class, "retry_config", "max_retries") : 1;
+				Integer retryIntervalMs = Boolean.TRUE.equals(retryEnable)
+						? MapReadUtil.getMapDeepValue(data, Integer.class, "retry_config", "retry_interval") : 1000;
+
+				String errorStrategy = MapReadUtil.getMapDeepValue(data, String.class, "error_strategy");
+				List<Map<String, Object>> defaultValues = Optional
+					.ofNullable(MapReadUtil
+						.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "default_value")))
+					.orElse(List.of());
+				String defaultOutput = null;
+				String errorNextNode = null;
+				if (!defaultValues.isEmpty()) {
+					defaultOutput = defaultValues.get(0).get("value").toString();
 				}
 
-				// prompt_template (List of {role,text})
-				List<Map<String, Object>> prompts = (List<Map<String, Object>>) data.get("prompt_template");
-				if (prompts != null) {
-					List<LLMNodeData.PromptTemplate> pt = prompts.stream()
-						.map(m -> new LLMNodeData.PromptTemplate((String) m.get("role"), (String) m.get("text")))
-						.collect(Collectors.toList());
-					nd.setPromptTemplate(pt);
-				}
-
-				// model (mode,name,provider,completion_params)
-				Map<String, Object> modelMap = (Map<String, Object>) data.get("model");
-				if (modelMap != null) {
-					LLMNodeData.ModelConfig mc = new LLMNodeData.ModelConfig();
-					mc.setMode((String) modelMap.get("mode"))
-						.setName((String) modelMap.get("name"))
-						.setProvider((String) modelMap.get("provider"));
-
-					Map<String, Object> cpMap = (Map<String, Object>) modelMap.get("completion_params");
-					if (cpMap != null) {
-						LLMNodeData.CompletionParams cp = new LLMNodeData.CompletionParams();
-						if (cpMap.get("max_tokens") != null) {
-							cp.setMaxTokens(((Number) cpMap.get("max_tokens")).intValue());
-						}
-						mc.setCompletionParams(cp);
-					}
-					nd.setModel(mc);
-				}
-
-				// memory_config
-				Map<String, Object> memMap = (Map<String, Object>) data.get("memory_config");
-				if (memMap != null) {
-					LLMNodeData.MemoryConfig mem = new LLMNodeData.MemoryConfig();
-					mem.setEnabled((Boolean) memMap.getOrDefault("enabled", false))
-						.setWindowSize(((Number) memMap.getOrDefault("window_size", 20)).intValue())
-						.setWindowEnabled((Boolean) memMap.getOrDefault("window_enabled", true))
-						.setIncludeLastMessage((Boolean) memMap.getOrDefault("include_last_message", false))
-						.setLastMessageTemplate((String) memMap.get("last_message_template"));
-					nd.setMemoryConfig(mem);
-				}
-
-				// system_prompt_template
-				nd.setSystemPromptTemplate((String) data.get("system_prompt_template"));
-
-				// user_prompt_template
-				nd.setUserPromptTemplate((String) data.get("user_prompt_template"));
-
-				// system_prompt_template_key
-				nd.setSystemPromptTemplateKey((String) data.get("system_prompt_template_key"));
-
-				// user_prompt_template_key
-				nd.setUserPromptTemplateKey((String) data.get("user_prompt_template_key"));
-
-				// params (Map<String,Object>)
-				Map<String, Object> pmap = (Map<String, Object>) data.get("params");
-				if (pmap != null) {
-					nd.setParams(new LinkedHashMap<>(pmap));
-				}
-
-				// params_key
-				nd.setParamsKey((String) data.get("params_key"));
-
-				// messages (List of {role,content})
-				List<Map<String, Object>> mList = (List<Map<String, Object>>) data.get("messages");
-				if (mList != null) {
-					List<LLMNodeData.Message> msgObjs = mList.stream()
-						.map(m -> new LLMNodeData.Message((String) m.get("role"), (String) m.get("content")))
-						.collect(Collectors.toList());
-					nd.setMessages(msgObjs);
-				}
-
-				// messages_key
-				nd.setMessagesKey((String) data.get("messages_key"));
-
-				// advisors (List of {name,prompt})
-				List<Map<String, Object>> aList = (List<Map<String, Object>>) data.get("advisors");
-				if (aList != null) {
-					List<LLMNodeData.Advisor> advObjs = aList.stream()
-						.map(m -> new LLMNodeData.Advisor((String) m.get("name"), (String) m.get("prompt")))
-						.collect(Collectors.toList());
-					nd.setAdvisors(advObjs);
-				}
-
-				// tool_callbacks (List of {name,args})
-				List<Map<String, Object>> tList = (List<Map<String, Object>>) data.get("tool_callbacks");
-				if (tList != null) {
-					List<LLMNodeData.ToolCallback> cbObjs = tList.stream()
-						.map(m -> new LLMNodeData.ToolCallback((String) m.get("name"),
-								(Map<String, Object>) m.get("args")))
-						.collect(Collectors.toList());
-					nd.setToolCallbacks(cbObjs);
-				}
-
-				// output_key
-				String outputKey = (String) data.get("output_key");
-				nd.setOutputKey(outputKey);
-				return nd;
+				// 设置NodeData
+				nodeData.setChatModeName(modeName);
+				nodeData.setModeParams(modeParams);
+				nodeData.setMessageTemplates(messageTemplates);
+				nodeData.setMaxRetryCount(maxRetryCount);
+				nodeData.setRetryIntervalMs(retryIntervalMs);
+				nodeData.setDefaultOutput(defaultOutput);
+				nodeData.setErrorNextNode(errorNextNode);
+				return nodeData;
 			}
 
 			@Override
 			public Map<String, Object> dump(LLMNodeData nd) {
-				Map<String, Object> m = new LinkedHashMap<>();
-
-				// variable_selector
-				if (nd.getInputs() != null && !nd.getInputs().isEmpty()) {
-					VariableSelector vs = nd.getInputs().get(0);
-					m.put("variable_selector", List.of(vs.getNamespace(), vs.getName()));
-				}
-
-				// prompt_template
-				if (nd.getPromptTemplate() != null && !nd.getPromptTemplate().isEmpty()) {
-					List<Map<String, Object>> pt = nd.getPromptTemplate().stream().map(t -> {
-						Map<String, Object> entry = new LinkedHashMap<>();
-						entry.put("role", t.getRole());
-						entry.put("text", t.getText());
-						return entry;
-					}).collect(Collectors.toList());
-					m.put("prompt_template", pt);
-				}
-
-				// model
-				if (nd.getModel() != null) {
-					Map<String, Object> mc = new LinkedHashMap<>();
-					mc.put("mode", nd.getModel().getMode());
-					mc.put("name", nd.getModel().getName());
-					mc.put("provider", nd.getModel().getProvider());
-					if (nd.getModel().getCompletionParams() != null) {
-						Map<String, Object> cpm = new LinkedHashMap<>();
-						LLMNodeData.CompletionParams cp = nd.getModel().getCompletionParams();
-						if (cp.getMaxTokens() != null) {
-							cpm.put("max_tokens", cp.getMaxTokens());
-						}
-						// … 其他字段同理 …
-						mc.put("completion_params", cpm);
-					}
-					m.put("model", mc);
-				}
-
-				// memory_config
-				if (nd.getMemoryConfig() != null) {
-					Map<String, Object> mm = new LinkedHashMap<>();
-					LLMNodeData.MemoryConfig mem = nd.getMemoryConfig();
-					mm.put("enabled", mem.getEnabled());
-					mm.put("window_size", mem.getWindowSize());
-					mm.put("window_enabled", mem.getWindowEnabled());
-					mm.put("include_last_message", mem.getIncludeLastMessage());
-					mm.put("last_message_template", mem.getLastMessageTemplate());
-					m.put("memory_config", mm);
-				}
-
-				// system_prompt_template
-				if (nd.getSystemPromptTemplate() != null) {
-					m.put("system_prompt_template", nd.getSystemPromptTemplate());
-				}
-
-				// user_prompt_template
-				if (nd.getUserPromptTemplate() != null) {
-					m.put("user_prompt_template", nd.getUserPromptTemplate());
-				}
-
-				// system_prompt_template_key
-				if (nd.getSystemPromptTemplateKey() != null) {
-					m.put("system_prompt_template_key", nd.getSystemPromptTemplateKey());
-				}
-
-				// user_prompt_template_key
-				if (nd.getUserPromptTemplateKey() != null) {
-					m.put("user_prompt_template_key", nd.getUserPromptTemplateKey());
-				}
-
-				// params
-				if (nd.getParams() != null && !nd.getParams().isEmpty()) {
-					m.put("params", nd.getParams());
-				}
-
-				// params_key
-				if (nd.getParamsKey() != null) {
-					m.put("params_key", nd.getParamsKey());
-				}
-
-				// messages
-				if (nd.getMessages() != null && !nd.getMessages().isEmpty()) {
-					List<Map<String, Object>> ml = nd.getMessages().stream().map(msg -> {
-						Map<String, Object> entry = new LinkedHashMap<>();
-						entry.put("role", msg.getRole());
-						entry.put("content", msg.getContent());
-						return entry;
-					}).collect(Collectors.toList());
-					m.put("messages", ml);
-				}
-
-				// messages_key
-				if (nd.getMessagesKey() != null) {
-					m.put("messages_key", nd.getMessagesKey());
-				}
-
-				// advisors
-				if (nd.getAdvisors() != null && !nd.getAdvisors().isEmpty()) {
-					List<Map<String, Object>> al = nd.getAdvisors().stream().map(a -> {
-						Map<String, Object> entry = new LinkedHashMap<>();
-						entry.put("name", a.getName());
-						entry.put("prompt", a.getPrompt());
-						return entry;
-					}).collect(Collectors.toList());
-					m.put("advisors", al);
-				}
-
-				// tool_callbacks
-				if (nd.getToolCallbacks() != null && !nd.getToolCallbacks().isEmpty()) {
-					List<Map<String, Object>> tl = nd.getToolCallbacks().stream().map(tc -> {
-						Map<String, Object> entry = new LinkedHashMap<>();
-						entry.put("name", tc.getName());
-						entry.put("args", tc.getArgs());
-						return entry;
-					}).collect(Collectors.toList());
-					m.put("tool_callbacks", tl);
-				}
-
-				// output_key
-				if (nd.getOutputKey() != null) {
-					m.put("output_key", nd.getOutputKey());
-				}
-
-				return m;
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
@@ -305,7 +123,62 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 
 			@Override
 			public LLMNodeData parse(Map<String, Object> data) throws JsonProcessingException {
-				return null;
+				LLMNodeData nodeData = new LLMNodeData();
+
+				// 从data中提取必要信息
+				Map<String, Object> modeConfigMap = MapReadUtil.safeCastToMapWithStringKey(
+						MapReadUtil.getMapDeepValue(data, Map.class, "config", "node_param", "model_config"));
+				String modeName = MapReadUtil.getMapDeepValue(modeConfigMap, String.class, "model_id");
+
+				Map<String, Object> modeParams = Optional
+					.ofNullable(MapReadUtil
+						.safeCastToListWithMap(MapReadUtil.getMapDeepValue(modeConfigMap, List.class, "params")))
+					.orElse(List.of())
+					.stream()
+					.filter(map -> Boolean.TRUE.equals(map.get("enable")))
+					.filter(map -> map.containsKey("key") && map.containsKey("value"))
+					.map(map -> Map.entry(map.get("key").toString(), map.get("value")))
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b));
+
+				String systemPrompt = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param",
+						"sys_prompt_content");
+				String userPrompt = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param",
+						"prompt_content");
+				// MessageTemplate的keys字段将在postProcess中确定，所以这里先设置为空
+				List<LLMNodeData.MessageTemplate> messageTemplates = List.of(
+						new LLMNodeData.MessageTemplate(systemPrompt, List.of(), MessageType.SYSTEM),
+						new LLMNodeData.MessageTemplate(userPrompt, List.of(), MessageType.USER));
+
+				String memoryKey = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param",
+						"short_memory", "param", "value");
+
+				Boolean retryEnable = MapReadUtil.getMapDeepValue(data, Boolean.class, "config", "node_param",
+						"retry_config", "retry_enabled");
+				Integer maxRetryCount = Boolean.TRUE.equals(retryEnable) ? MapReadUtil.getMapDeepValue(data,
+						Integer.class, "config", "node_param", "retry_config", "max_retries") : 1;
+				Integer retryIntervalMs = Boolean.TRUE.equals(retryEnable) ? MapReadUtil.getMapDeepValue(data,
+						Integer.class, "config", "node_param", "retry_config", "retry_interval") : 1000;
+
+				String errorStrategy = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param",
+						"try_catch_config", "strategy");
+				String defaultOutput = null;
+				String errorNextNode = null;
+				List<Map<String, Object>> defaultOutputs = MapReadUtil.safeCastToListWithMap(MapReadUtil
+					.getMapDeepValue(data, List.class, "config", "node_param", "try_catch_config", "default_values"));
+				if (defaultOutputs != null && !defaultOutputs.isEmpty()) {
+					defaultOutput = MapReadUtil.getMapDeepValue(defaultOutputs.get(0), String.class, "value");
+				}
+
+				// 设置nodeData
+				nodeData.setChatModeName(modeName);
+				nodeData.setModeParams(modeParams);
+				nodeData.setMessageTemplates(messageTemplates);
+				nodeData.setMemoryKey(memoryKey);
+				nodeData.setMaxRetryCount(maxRetryCount);
+				nodeData.setRetryIntervalMs(retryIntervalMs);
+				nodeData.setDefaultOutput(defaultOutput);
+				nodeData.setErrorNextNode(errorNextNode);
+				return nodeData;
 			}
 
 			@Override
@@ -333,30 +206,36 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 		return "LLMNode" + count;
 	}
 
+	private static final Pattern VAR_TEMPLATE_PATTERN = Pattern.compile("\\{(\\w+)}");
+
 	@Override
 	public BiConsumer<LLMNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> emptyProcessConsumer().andThen(((data, map) -> {
-				data.setOutputKey(data.getVarName() + "_" + LLMNodeData.getDefaultOutputSchema().getName());
-				data.setOutputs(List.of(LLMNodeData.getDefaultOutputSchema()));
-			})).andThen(super.postProcessConsumer(dialectType)).andThen((data, idToVarName) -> {
-				// 替换Dify的变量占位符
-				UnaryOperator<String> convertString = (prompt) -> this.convertVarTemplate(dialectType, prompt,
-						idToVarName);
-				UnaryOperator<LLMNodeData.PromptTemplate> convertTemplate = (promptTemplate) -> {
-					String prompt = promptTemplate.getText();
-					return promptTemplate.setText(convertString.apply(prompt));
-				};
-				data.setPromptTemplate(Optional.ofNullable(data.getPromptTemplate())
+			case DIFY, STUDIO -> this.emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				// 设置输出
+				nodeData.setOutputs(LLMNodeData.getDefaultOutputSchemas(dialectType));
+				nodeData.setOutputKeyPrefix(nodeData.getVarName().concat("_"));
+
+				// 处理MessageTemplates
+				List<LLMNodeData.MessageTemplate> messageTemplates = Optional.ofNullable(nodeData.getMessageTemplates())
+					.orElse(List.of())
 					.stream()
-					.flatMap(List::stream)
-					.map(convertTemplate)
-					.toList())
-					.setUserPromptTemplate(
-							Optional.ofNullable(data.getUserPromptTemplate()).map(convertString).orElse(null))
-					.setSystemPromptTemplate(
-							Optional.ofNullable(data.getSystemPromptTemplate()).map(convertString).orElse(null));
-			});
+					.map(template -> {
+						String newText = this.convertVarTemplate(dialectType, template.template(), idToVarName);
+						Matcher matcher = VAR_TEMPLATE_PATTERN.matcher(newText);
+						List<String> keys = matcher.results().map(m -> m.group(1)).toList();
+						return new LLMNodeData.MessageTemplate(newText, keys, template.type());
+					})
+					.toList();
+				nodeData.setMessageTemplates(messageTemplates);
+
+				// 处理MemoryKey
+				if (nodeData.getMemoryKey() != null) {
+					String res = this.convertVarTemplate(dialectType, nodeData.getMemoryKey(), idToVarName);
+					nodeData.setMemoryKey(res.substring(1, res.length() - 1));
+				}
+
+			}).andThen(super.postProcessConsumer(dialectType));
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}

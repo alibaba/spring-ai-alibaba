@@ -286,7 +286,7 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 		private String enableRankerKey;
 
-		private Boolean enableRanker;
+		private Boolean enableRanker = false;
 
 		private String rerankModelKey;
 
