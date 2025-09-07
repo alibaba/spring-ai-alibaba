@@ -183,9 +183,11 @@ spring:
               backoff: PT1S
 ```
 以上是根据 Gihub oauth 应用进行的配置，同时 provider 部分的配置也支持自定义 oauth 配置，需要让 oauth 服务器暴露对应的 url 进行填写。
+## 快速开始
+
 ### 1. 添加依赖
 
-```
+```xml
 <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-mcp-router</artifactId>
@@ -195,7 +197,7 @@ spring:
 
 ### 2. 配置属性
 
-```
+```yaml
 spring:
   ai:
     dashscope:
@@ -249,7 +251,7 @@ spring:
 
 ### 1. 初始化服务
 
-```
+```bash
 curl -X POST http://localhost:18080/api/mcp-router/initialize \
   -H "Content-Type: application/json" \
   -d '["mcp-database-server", "mcp-weather-server", "mcp-file-server"]'
@@ -257,19 +259,19 @@ curl -X POST http://localhost:18080/api/mcp-router/initialize \
 
 ### 2. 搜索服务
 
-```
+```bash
 curl "http://localhost:18080/api/mcp-router/search?query=数据库查询&limit=5"
 ```
 
 ### 3. 获取所有服务
 
-```
+```bash
 curl http://localhost:18080/api/mcp-router/services
 ```
 
 ### 4. 获取统计信息
 
-```
+```bash
 curl http://localhost:18080/api/mcp-router/statistics
 ```
 
@@ -279,7 +281,7 @@ curl http://localhost:18080/api/mcp-router/statistics
 
 支持配置不同的 Embedding Model：
 
-```
+```yaml
 spring:
   ai:
     dashscope:
@@ -299,7 +301,7 @@ spring:
 
 ### MCP Router 配置
 
-```
+```yaml
 spring:
   ai:
     alibaba:
@@ -318,7 +320,7 @@ spring:
 
 实现 `McpServiceDiscovery` 接口：
 
-```
+```java
 @Component
 public class CustomServiceDiscovery implements McpServiceDiscovery {
     // 实现接口方法
@@ -329,7 +331,7 @@ public class CustomServiceDiscovery implements McpServiceDiscovery {
 
 实现 `McpServerVectorStore` 接口：
 
-```
+```java
 @Component
 public class CustomVectorStore implements McpServerVectorStore {
     // 实现接口方法
@@ -340,7 +342,7 @@ public class CustomVectorStore implements McpServerVectorStore {
 
 继承 `AbstractRouterWatcher`：
 
-```
+```java
 @Component
 public class CustomWatcher extends AbstractRouterWatcher {
     @Override
@@ -379,7 +381,7 @@ public class CustomWatcher extends AbstractRouterWatcher {
 
 ### 日志配置
 
-```
+```yaml
 logging:
   level:
     com.alibaba.cloud.ai.mcp.router: DEBUG
