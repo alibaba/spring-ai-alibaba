@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.manus.coordinator.controller;
 
 import com.alibaba.cloud.ai.manus.coordinator.entity.vo.CoordinatorToolVO;
+import com.alibaba.cloud.ai.manus.coordinator.entity.po.CoordinatorToolEntity;
 import com.alibaba.cloud.ai.manus.subplan.model.po.SubplanToolDef;
 import com.alibaba.cloud.ai.manus.subplan.model.po.SubplanParamDef;
 import com.alibaba.cloud.ai.manus.subplan.service.ISubplanToolService;
@@ -72,11 +73,6 @@ public class CoordinatorToolController {
             }
             
             // Validate service enablement and endpoints
-            if (toolVO.getEnableHttpService() != null && toolVO.getEnableHttpService() && 
-                (toolVO.getHttpEndpoint() == null || toolVO.getHttpEndpoint().trim().isEmpty())) {
-                log.error("HTTP endpoint is required when HTTP service is enabled");
-                return ResponseEntity.badRequest().build();
-            }
             if (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService() && 
                 (toolVO.getMcpEndpoint() == null || toolVO.getMcpEndpoint().trim().isEmpty())) {
                 log.error("MCP endpoint is required when MCP service is enabled");
@@ -100,7 +96,7 @@ public class CoordinatorToolController {
                 toolVO.setPublishStatus("UNPUBLISHED");
             }
             if (toolVO.getEnableInternalToolcall() == null) {
-                toolVO.setEnableInternalToolcall(true);
+                toolVO.setEnableInternalToolcall(false);
             }
             if (toolVO.getEnableHttpService() == null) {
                 toolVO.setEnableHttpService(false);
@@ -110,15 +106,21 @@ public class CoordinatorToolController {
             }
 
 
-            // Create SubplanToolDef for tool call registration
+            // Create and save CoordinatorToolEntity
+            CoordinatorToolEntity entity = toolVO.toEntity();
+            CoordinatorToolEntity savedEntity = coordinatorToolRepository.save(entity);
+            log.info("Successfully saved CoordinatorToolEntity: {} with ID: {}", savedEntity.getToolName(), savedEntity.getId());
+
+            // Create SubplanToolDef for tool call registration (for backward compatibility)
             SubplanToolDef subplanToolDef = createSubplanToolDefFromVO(toolVO);
+            subplanToolDef.setId(savedEntity.getId()); // Use the same ID
             
             // Register the tool in subplan tool service
             SubplanToolDef registeredTool = subplanToolService.registerSubplanTool(subplanToolDef);
             log.info("Successfully registered subplan tool: {} with ID: {}", registeredTool.getToolName(), registeredTool.getId());
 
-            // Convert SubplanToolDef back to CoordinatorToolVO and return
-            CoordinatorToolVO resultVO = convertSubplanToolDefToVO(registeredTool);
+            // Convert CoordinatorToolEntity back to CoordinatorToolVO and return
+            CoordinatorToolVO resultVO = CoordinatorToolVO.fromEntity(savedEntity);
             return ResponseEntity.ok(resultVO);
 
         } catch (Exception e) {
@@ -150,11 +152,6 @@ public class CoordinatorToolController {
                 return ResponseEntity.badRequest().build();
             }
             // Validate service enablement and endpoints
-            if (toolVO.getEnableHttpService() != null && toolVO.getEnableHttpService() && 
-                (toolVO.getHttpEndpoint() == null || toolVO.getHttpEndpoint().trim().isEmpty())) {
-                log.error("HTTP endpoint is required when HTTP service is enabled");
-                return ResponseEntity.badRequest().build();
-            }
             if (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService() && 
                 (toolVO.getMcpEndpoint() == null || toolVO.getMcpEndpoint().trim().isEmpty())) {
                 log.error("MCP endpoint is required when MCP service is enabled");
@@ -170,10 +167,10 @@ public class CoordinatorToolController {
                 return ResponseEntity.badRequest().build();
             }
 
-            // Check if tool exists
-            SubplanToolDef existingTool = subplanToolService.getByToolName(toolVO.getToolName());
-            if (existingTool == null || !existingTool.getId().equals(id)) {
-                log.error("Tool not found with ID: {}", id);
+            // Check if CoordinatorToolEntity exists
+            CoordinatorToolEntity existingEntity = coordinatorToolRepository.findById(id).orElse(null);
+            if (existingEntity == null) {
+                log.error("CoordinatorToolEntity not found with ID: {}", id);
                 return ResponseEntity.notFound().build();
             }
 
@@ -185,17 +182,22 @@ public class CoordinatorToolController {
                 toolVO.setPublishStatus("UNPUBLISHED");
             }
 
+            // Update CoordinatorToolEntity
+            updateCoordinatorToolEntityFromVO(existingEntity, toolVO);
+            CoordinatorToolEntity savedEntity = coordinatorToolRepository.save(existingEntity);
+            log.info("Successfully updated CoordinatorToolEntity: {} with ID: {}", savedEntity.getToolName(), savedEntity.getId());
 
-            // Create updated SubplanToolDef
-            SubplanToolDef updatedToolDef = createSubplanToolDefFromVO(toolVO);
-            updatedToolDef.setId(id); // Set the ID for update
-
-            // Update the tool in subplan tool service
-            SubplanToolDef savedTool = subplanToolService.updateSubplanTool(updatedToolDef);
-            log.info("Successfully updated subplan tool: {} with ID: {}", savedTool.getToolName(), savedTool.getId());
+            // Also update SubplanToolDef for backward compatibility
+            SubplanToolDef existingTool = subplanToolService.getByToolName(toolVO.getToolName());
+            if (existingTool != null && existingTool.getId().equals(id)) {
+                SubplanToolDef updatedToolDef = createSubplanToolDefFromVO(toolVO);
+                updatedToolDef.setId(id);
+                subplanToolService.updateSubplanTool(updatedToolDef);
+                log.info("Successfully updated subplan tool: {} with ID: {}", updatedToolDef.getToolName(), updatedToolDef.getId());
+            }
 
             // Convert back to VO and return
-            CoordinatorToolVO resultVO = convertSubplanToolDefToVO(savedTool);
+            CoordinatorToolVO resultVO = CoordinatorToolVO.fromEntity(savedEntity);
             return ResponseEntity.ok(resultVO);
 
         } catch (Exception e) {
@@ -207,49 +209,64 @@ public class CoordinatorToolController {
 
 
     /**
+     * Get coordinator tool by plan template ID (only if exists)
+     */
+    @GetMapping("/get-by-template/{planTemplateId}")
+    public ResponseEntity<CoordinatorToolVO> getCoordinatorToolsByTemplate(
+            @PathVariable("planTemplateId") String planTemplateId) {
+        return processCoordinatorToolRequest(planTemplateId, false);
+    }
+
+    /**
      * Get or create coordinator tool by plan template ID
      */
     @GetMapping("/get-or-new-by-template/{planTemplateId}")
-    public ResponseEntity<Map<String, Object>> getOrNewCoordinatorToolsByTemplate(
+    public ResponseEntity<CoordinatorToolVO> getOrNewCoordinatorToolsByTemplate(
             @PathVariable("planTemplateId") String planTemplateId) {
-        Map<String, Object> result = new HashMap<>();
+        return processCoordinatorToolRequest(planTemplateId, true);
+    }
+    /**
+     * Common method to process coordinator tool requests
+     * @param planTemplateId The plan template ID
+     * @param createIfNotExists Whether to create a new tool if it doesn't exist
+     * @return ResponseEntity with CoordinatorToolVO
+     */
+    private ResponseEntity<CoordinatorToolVO> processCoordinatorToolRequest(
+            String planTemplateId, boolean createIfNotExists) {
         
         try {
-            log.info("Getting or creating coordinator tool for plan template: {}", planTemplateId);
+            String operation = createIfNotExists ? "Getting or creating" : "Getting";
+            log.info("{} coordinator tool for plan template: {}", operation, planTemplateId);
             
-            // Check if tool already exists in SubplanToolDef
-            List<SubplanToolDef> existingTools = subplanToolService.getSubplanToolsByTemplate(planTemplateId);
+            // Check if tool already exists in CoordinatorToolEntity
+            List<CoordinatorToolEntity> existingTools = coordinatorToolRepository.findByPlanTemplateId(planTemplateId);
             
             if (!existingTools.isEmpty()) {
                 // Tool already exists, return it
-                SubplanToolDef existingTool = existingTools.get(0);
-                CoordinatorToolVO toolVO = convertSubplanToolDefToVO(existingTool);
-                
-                result.put("success", true);
-                result.put("message", "Found existing coordinator tool");
-                result.put("data", toolVO);
-                result.put("publishStatus", toolVO.getPublishStatus());
+                CoordinatorToolEntity existingTool = existingTools.get(0);
+                CoordinatorToolVO toolVO = CoordinatorToolVO.fromEntity(existingTool);
                 
                 log.info("Found existing tool: {}", existingTool.getToolName());
-                return ResponseEntity.ok(result);
+                return ResponseEntity.ok(toolVO);
             }
             
-            // Tool doesn't exist, create a new one with default values
-            CoordinatorToolVO newToolVO = createDefaultToolVO(planTemplateId);
-            
-            result.put("success", true);
-            result.put("message", "Created new coordinator tool from plan template");
-            result.put("data", newToolVO);
-            result.put("publishStatus", newToolVO.getPublishStatus());
-            
-            log.info("Created new tool for plan template: {}", planTemplateId);
-            return ResponseEntity.ok(result);
+            // Tool doesn't exist
+            if (createIfNotExists) {
+                // Create a new one with default values (not saved to database)
+                CoordinatorToolVO newToolVO = createDefaultToolVO(planTemplateId);
+                
+                log.info("Created default tool VO for plan template: {}", planTemplateId);
+                return ResponseEntity.ok(newToolVO);
+            } else {
+                // Tool doesn't exist and we're not creating it
+                log.info("No tool found for plan template: {}", planTemplateId);
+                return ResponseEntity.notFound().build();
+            }
             
         } catch (Exception e) {
-            log.error("Error getting or creating coordinator tool: {}", e.getMessage(), e);
-            result.put("success", false);
-            result.put("message", "Error processing request: " + e.getMessage());
-            return ResponseEntity.status(500).body(result);
+            String operation = createIfNotExists ? "getting or creating" : "getting";
+            log.error("Error {} coordinator tool: {}", operation, e.getMessage(), e);
+            return ResponseEntity.status(500).build();
         }
     }
 
@@ -270,8 +287,6 @@ public class CoordinatorToolController {
     @GetMapping("/endpoints")
     public ResponseEntity<List<String>> getAllEndpoints() {
         try {
-            // Get HTTP endpoints from CoordinatorToolEntity
-            List<String> httpEndpoints = coordinatorToolRepository.findAllUniqueHttpEndpoints();
             
             // Get MCP endpoints from CoordinatorToolEntity
             List<String> mcpEndpoints = coordinatorToolRepository.findAllUniqueMcpEndpoints();
@@ -285,7 +300,6 @@ public class CoordinatorToolController {
             
             // Combine all endpoints
             List<String> allEndpoints = new ArrayList<>();
-            allEndpoints.addAll(httpEndpoints);
             allEndpoints.addAll(mcpEndpoints);
             allEndpoints.addAll(subplanEndpoints);
             
@@ -295,8 +309,8 @@ public class CoordinatorToolController {
                     .distinct()
                     .collect(java.util.stream.Collectors.toList());
             
-            log.info("Found {} unique endpoints (HTTP: {}, MCP: {}, Subplan: {})", 
-                    uniqueEndpoints.size(), httpEndpoints.size(), mcpEndpoints.size(), subplanEndpoints.size());
+            log.info("Found {} unique endpoints (MCP: {}, Subplan: {})", 
+                    uniqueEndpoints.size(), mcpEndpoints.size(), subplanEndpoints.size());
             return ResponseEntity.ok(uniqueEndpoints);
             
         } catch (Exception e) {
@@ -345,6 +359,35 @@ public class CoordinatorToolController {
     }
 
     /**
+     * Update CoordinatorToolEntity from CoordinatorToolVO
+     * @param entity CoordinatorToolEntity to update
+     * @param toolVO CoordinatorToolVO with new values
+     */
+    private void updateCoordinatorToolEntityFromVO(CoordinatorToolEntity entity, CoordinatorToolVO toolVO) {
+        entity.setToolName(toolVO.getToolName());
+        entity.setToolDescription(toolVO.getToolDescription());
+        entity.setInputSchema(toolVO.getInputSchema());
+        entity.setPlanTemplateId(toolVO.getPlanTemplateId());
+        entity.setMcpEndpoint(toolVO.getMcpEndpoint());
+        entity.setServiceGroup(toolVO.getServiceGroup());
+        
+        // Set publish status
+        if (toolVO.getPublishStatus() != null) {
+            try {
+                entity.setPublishStatus(CoordinatorToolEntity.PublishStatus.valueOf(toolVO.getPublishStatus()));
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid publish status: {}, using UNPUBLISHED", toolVO.getPublishStatus());
+                entity.setPublishStatus(CoordinatorToolEntity.PublishStatus.UNPUBLISHED);
+            }
+        }
+        
+        // Set service enablement flags
+        entity.setEnableInternalToolcall(toolVO.getEnableInternalToolcall() != null ? toolVO.getEnableInternalToolcall() : true);
+        entity.setEnableHttpService(toolVO.getEnableHttpService() != null ? toolVO.getEnableHttpService() : false);
+        entity.setEnableMcpService(toolVO.getEnableMcpService() != null ? toolVO.getEnableMcpService() : false);
+    }
+
+    /**
      * Create SubplanToolDef from CoordinatorToolVO
      * @param toolVO CoordinatorToolVO
      * @return SubplanToolDef
@@ -356,13 +399,11 @@ public class CoordinatorToolController {
         toolDef.setPlanTemplateId(toolVO.getPlanTemplateId());
         
         // Set endpoint based on enabled services
-        // For internal toolcall, use a default endpoint
-        if (toolVO.getEnableInternalToolcall() != null && toolVO.getEnableInternalToolcall()) {
-            toolDef.setEndpoint("internal-toolcall");
-        } else if (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService()) {
+        // Priority: MCP > Internal Toolcall
+        if (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService() && toolVO.getMcpEndpoint() != null) {
             toolDef.setEndpoint(toolVO.getMcpEndpoint());
-        } else if (toolVO.getEnableHttpService() != null && toolVO.getEnableHttpService()) {
-            toolDef.setEndpoint(toolVO.getHttpEndpoint());
+        } else if (toolVO.getEnableInternalToolcall() != null && toolVO.getEnableInternalToolcall()) {
+            toolDef.setEndpoint("internal-toolcall");
         } else {
             // Fallback to internal toolcall
             toolDef.setEndpoint("internal-toolcall");
@@ -397,59 +438,6 @@ public class CoordinatorToolController {
         return toolDef;
     }
 
-    /**
-     * Convert SubplanToolDef to CoordinatorToolVO
-     * @param toolDef SubplanToolDef
-     * @return CoordinatorToolVO
-     */
-    private CoordinatorToolVO convertSubplanToolDefToVO(SubplanToolDef toolDef) {
-        CoordinatorToolVO vo = new CoordinatorToolVO();
-        vo.setId(toolDef.getId());
-        vo.setToolName(toolDef.getToolName());
-        vo.setToolDescription(toolDef.getToolDescription());
-        vo.setPlanTemplateId(toolDef.getPlanTemplateId());
-        
-        // Determine service types based on endpoint
-        String endpoint = toolDef.getEndpoint();
-        if ("internal-toolcall".equals(endpoint)) {
-            vo.setEnableInternalToolcall(true);
-            vo.setEnableHttpService(false);
-            vo.setEnableMcpService(false);
-        } else if (endpoint != null && endpoint.startsWith("/api/")) {
-            vo.setEnableInternalToolcall(false);
-            vo.setEnableHttpService(true);
-            vo.setHttpEndpoint(endpoint);
-            vo.setEnableMcpService(false);
-        } else {
-            vo.setEnableInternalToolcall(false);
-            vo.setEnableHttpService(false);
-            vo.setEnableMcpService(true);
-            vo.setMcpEndpoint(endpoint);
-        }
-        
-        vo.setPublishStatus("UNPUBLISHED"); // Default status
-        vo.setServiceGroup(toolDef.getServiceGroup());
-        
-        // Convert parameters back to JSON string
-        try {
-            List<Map<String, Object>> paramList = new ArrayList<>();
-            for (SubplanParamDef param : toolDef.getInputSchema()) {
-                Map<String, Object> paramMap = new HashMap<>();
-                paramMap.put("name", param.getName());
-                paramMap.put("type", param.getType());
-                paramMap.put("description", param.getDescription());
-                paramMap.put("required", param.isRequired());
-                paramList.add(paramMap);
-            }
-            vo.setInputSchema(objectMapper.writeValueAsString(paramList));
-        } catch (Exception e) {
-            log.warn("Failed to convert parameters to JSON: {}", e.getMessage());
-            vo.setInputSchema("[]");
-        }
-        
-        
-        return vo;
-    }
 
     /**
      * Create default CoordinatorToolVO for a plan template
@@ -458,15 +446,15 @@ public class CoordinatorToolController {
      */
     private CoordinatorToolVO createDefaultToolVO(String planTemplateId) {
         CoordinatorToolVO toolVO = new CoordinatorToolVO();
-        toolVO.setToolName(null); // Use plan template ID as tool name
-        toolVO.setToolDescription(null);
+        toolVO.setToolName("planTemplate-" + planTemplateId); // Use plan template ID as tool name
+        toolVO.setToolDescription(""); // Set empty string instead of null
         toolVO.setPlanTemplateId(planTemplateId);
         toolVO.setEnableInternalToolcall(true); // Default to internal toolcall
         toolVO.setEnableHttpService(false);
         toolVO.setEnableMcpService(false);
         toolVO.setInputSchema("[]"); // Empty parameters by default
         toolVO.setPublishStatus("UNPUBLISHED");
-        toolVO.setServiceGroup(null); // Will be set by user in UI
+        toolVO.setServiceGroup(""); // Set empty string instead of null
         
         return toolVO;
     }

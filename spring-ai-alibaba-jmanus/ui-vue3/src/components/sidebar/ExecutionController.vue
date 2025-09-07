@@ -115,7 +115,7 @@
         <div class="internal-call-wrapper">
           <div class="call-info">
             <div class="call-method">内部方法调用</div>
-            <div class="call-endpoint">工具名称: {{ currentPlanTemplateId }}</div>
+            <div class="call-endpoint">工具名称: {{ toolInfo?.toolName || currentPlanTemplateId }}</div>
             <div class="call-description">在agent配置中添加此工具后，可以直接在agent中调用此方法</div>
             <div class="call-example">
               <strong>使用方式:</strong>
@@ -166,6 +166,7 @@ interface Props {
     enableHttpService?: boolean
     enableMcpService?: boolean
     enableInternalToolcall?: boolean
+    toolName?: string
   }
 }
 

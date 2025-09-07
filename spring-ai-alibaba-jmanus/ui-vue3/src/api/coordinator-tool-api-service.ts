@@ -92,13 +92,47 @@ export class CoordinatorToolApiService {
   }
 
   /**
+   * 根据计划模板ID获取协调器工具（仅获取已存在的）
+   */
+  public static async getCoordinatorToolsByTemplate(planTemplateId: string): Promise<CoordinatorToolVO | null> {
+    console.log('[CoordinatorToolApiService] 开始获取协调器工具，planTemplateId:', planTemplateId)
+    console.log('[CoordinatorToolApiService] 请求URL:', `${this.BASE_URL}/get-by-template/${planTemplateId}`)
+    
+    try {
+      const response = await fetch(`${this.BASE_URL}/get-by-template/${planTemplateId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      console.log('[CoordinatorToolApiService] 响应状态:', response.status)
+      console.log('[CoordinatorToolApiService] 响应状态文本:', response.statusText)
+
+      if (response.status === 404) {
+        console.log('[CoordinatorToolApiService] 工具不存在')
+        return null
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[CoordinatorToolApiService] 响应错误内容:', errorText)
+        throw new Error(`Failed to get coordinator tools: ${response.status} - ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log('[CoordinatorToolApiService] 获取协调器工具成功，结果:', result)
+      return result
+    } catch (error: any) {
+      console.error('[CoordinatorToolApiService] 获取协调器工具失败:', error)
+      throw new Error('获取协调器工具失败: ' + error.message)
+    }
+  }
+
+  /**
    * 根据计划模板ID获取或创建协调器工具
    */
-  public static async getOrNewCoordinatorToolsByTemplate(planTemplateId: string): Promise<{
-    success: boolean
-    message: string
-    data: CoordinatorToolVO | CoordinatorToolVO[]
-  }> {
+  public static async getOrNewCoordinatorToolsByTemplate(planTemplateId: string): Promise<CoordinatorToolVO> {
     console.log('[CoordinatorToolApiService] 开始获取或创建协调器工具，planTemplateId:', planTemplateId)
     console.log('[CoordinatorToolApiService] 请求URL:', `${this.BASE_URL}/get-or-new-by-template/${planTemplateId}`)
     

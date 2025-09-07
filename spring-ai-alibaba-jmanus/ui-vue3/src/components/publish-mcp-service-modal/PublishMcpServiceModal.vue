@@ -28,6 +28,7 @@
             type="text"
             v-model="formData.serviceName"
             :placeholder="t('mcpService.toolNamePlaceholder')"
+            :class="{ 'error': !formData.serviceName || !formData.serviceName.trim() }"
             required
           />
         </div>
@@ -40,6 +41,7 @@
           <textarea
             v-model="formData.userRequest"
             :placeholder="t('mcpService.toolDescriptionPlaceholder')"
+            :class="{ 'error': !formData.userRequest || !formData.userRequest.trim() }"
             class="description-field"
             rows="4"
             required
@@ -55,6 +57,7 @@
             type="text"
             v-model="formData.serviceGroup"
             :placeholder="t('mcpService.serviceGroupPlaceholder')"
+            :class="{ 'error': !formData.serviceGroup || !formData.serviceGroup.trim() }"
             required
           />
         </div>
@@ -108,6 +111,21 @@
       <!-- 服务发布选项 -->
       <div class="form-section">
         <div class="service-publish-options">
+          <!-- Internal Toolcall发布选项 -->
+          <div class="internal-toolcall-publish-option">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                v-model="publishAsInternalToolcall"
+                class="checkbox-input"
+              />
+              <span class="checkbox-text">{{ t('mcpService.publishAsInternalToolcall') }}</span>
+            </label>
+            <div class="checkbox-description">
+              {{ t('mcpService.publishAsInternalToolcallDescription') }}
+            </div>
+          </div>
+          
           <!-- HTTP POST服务发布选项 -->
           <div class="http-publish-option">
             <label class="checkbox-label">
@@ -122,36 +140,6 @@
               {{ t('mcpService.publishAsHttpServiceDescription') }}
             </div>
             
-            <!-- HTTP POST服务配置 - 仅在HTTP服务发布选项选中时显示 -->
-            <div v-if="publishAsHttpService" class="form-section">
-              <div class="form-item">
-                <label>{{ t('mcpService.httpEndpointRequired') }}</label>
-                <div class="endpoint-description">
-                  {{ t('mcpService.httpEndpointDescription') }}
-                </div>
-                <div class="curl-command-container">
-                  <div class="curl-command-header">
-                    <Icon icon="carbon:terminal" width="16" class="terminal-icon" />
-                    <span class="curl-title">{{ t('mcpService.curlCommand') }}</span>
-                    <button 
-                      class="copy-curl-btn" 
-                      @click="copyCurlCommand"
-                      :title="t('mcpService.copyCurlCommand')"
-                    >
-                      <Icon icon="carbon:copy" width="14" />
-                      {{ t('mcpService.copy') }}
-                    </button>
-                  </div>
-                  <textarea
-                    :value="curlCommand"
-                    readonly
-                    class="curl-command-textarea"
-                    rows="4"
-                    :placeholder="t('mcpService.curlCommandPlaceholder')"
-                  ></textarea>
-                </div>
-              </div>
-            </div>
           </div>
           
           <!-- MCP服务发布选项 -->
@@ -339,7 +327,6 @@ const showModal = computed({
 const error = ref('')
 const success = ref('')
 const publishing = ref(false)
-const saving = ref(false)
 const deleting = ref(false)
 const availableEndpoints = ref<string[]>([])
 
@@ -359,6 +346,7 @@ const isSaved = ref(false)
 // 服务发布选项
 const publishAsMcpService = ref(false)
 const publishAsHttpService = ref(false)
+const publishAsInternalToolcall = ref(true) // Default to true
 
 // Parameter requirements from plan template
 const parameterRequirements = ref<ParameterRequirements>({
@@ -369,56 +357,14 @@ const parameterRequirements = ref<ParameterRequirements>({
 const isLoadingParameters = ref(false)
 
 
-// HTTP 服务相关状态 (保留用于未来扩展)
-// const isHttpDropdownOpen = ref(false)
-
-// 计算 curl 命令
-const curlCommand = computed(() => {
-  if (!publishAsHttpService.value || !formData.serviceName.trim()) {
-    return ''
-  }
-  
-  const baseUrl = window.location.origin
-  const endpoint = formData.httpEndpoint.trim() || '/api/http/execute'
-  const fullUrl = `${baseUrl}${endpoint}`
-  
-  // 构建参数示例
-  const parameters = formData.parameters
-    .filter(param => param.name.trim() && param.description.trim())
-    .map(param => param.name.trim())
-  
-  let curlCmd = `curl -X POST "${fullUrl}" \\\n`
-  curlCmd += `  -H "Content-Type: application/json" \\\n`
-  curlCmd += `  -d '{\n`
-  curlCmd += `    "serviceName": "${formData.serviceName.trim()}",\n`
-  curlCmd += `    "userRequest": "${formData.userRequest.trim()}"`
-  
-  if (parameters.length > 0) {
-    curlCmd += `,\n    "parameters": {\n`
-    parameters.forEach((param, index) => {
-      curlCmd += `      "${param}": "your_${param}_value"`
-      if (index < parameters.length - 1) {
-        curlCmd += ','
-      }
-      curlCmd += '\n'
-    })
-    curlCmd += `    }`
-  }
-  
-  curlCmd += `\n  }'`
-  
-  return curlCmd
-})
 
 
-// 计算完整的URL功能已移除
 
 // Form data
 const formData = reactive({
   serviceName: '',
   userRequest: '',
   endpoint: '',
-  httpEndpoint: '',
   serviceGroup: '',
   parameters: [] as Array<{ name: string; description: string }>
 })
@@ -429,11 +375,9 @@ const modalTitle = computed(() => {
   return isUpdate ? t('mcpService.updateService') : t('mcpService.createService')
 })
 
-// 状态图标相关计算属性已移除
-
 // 初始化表单数据
 const initializeFormData = () => {
-  formData.serviceName = ''
+  formData.serviceName = '' // 当没有实体时显示为空
   formData.userRequest = props.planDescription || ''
   formData.endpoint = ''
   formData.serviceGroup = ''
@@ -491,8 +435,6 @@ const loadParameterRequirements = async () => {
     isLoadingParameters.value = false
   }
 }
-
-// 参数操作方法已移除
 
 // 下拉框相关方法
 const toggleDropdown = () => {
@@ -572,26 +514,7 @@ const handleEndpointBlur = () => {
   }
 }
 
-// 选择HTTP endpoint (保留用于未来扩展)
-// const selectHttpEndpoint = (endpoint: string) => {
-//   formData.httpEndpoint = endpoint
-//   isHttpDropdownOpen.value = false
-// }
 
-// 复制 curl 命令到剪贴板
-const copyCurlCommand = async () => {
-  try {
-    await navigator.clipboard.writeText(curlCommand.value)
-    showMessage(t('mcpService.curlCommandCopied'), 'success')
-  } catch (err) {
-    console.error('Failed to copy curl command:', err)
-    showMessage(t('mcpService.copyFailed'), 'error')
-  }
-}
-
-// 复制到剪贴板功能已移除
-
-// 复制完整URL功能已移除
 
 // 复制endpointUrl
 const copyEndpointUrl = async () => {
@@ -623,96 +546,53 @@ const showMessage = (msg: string, type: 'success' | 'error' | 'info') => {
 
 // 验证表单
 const validateForm = (): boolean => {
-  if (!formData.serviceName.trim()) {
+  // 验证工具名称
+  if (!formData.serviceName || !formData.serviceName.trim()) {
     showMessage(t('mcpService.toolNameRequiredError'), 'error')
     return false
   }
-  if (!formData.userRequest.trim()) {
+  
+  // 验证工具描述
+  if (!formData.userRequest || !formData.userRequest.trim()) {
     showMessage(t('mcpService.toolDescriptionRequiredError'), 'error')
     return false
   }
-  if (!formData.serviceGroup.trim()) {
+  
+  // 验证服务分组
+  if (!formData.serviceGroup || !formData.serviceGroup.trim()) {
     showMessage(t('mcpService.serviceGroupRequiredError'), 'error')
     return false
   }
-  if (publishAsMcpService.value && !formData.endpoint.trim()) {
+  
+  // 验证MCP服务端点
+  if (publishAsMcpService.value && (!formData.endpoint || !formData.endpoint.trim())) {
     showMessage(t('mcpService.endpointRequiredError'), 'error')
     return false
   }
-  // HTTP 服务不需要验证 endpoint，使用默认的 curl 命令
+  
+  
+  // 确保至少选择一种服务
+  if (!publishAsInternalToolcall.value && !publishAsHttpService.value && !publishAsMcpService.value) {
+    showMessage('请至少选择一种服务类型', 'error')
+    return false
+  }
+  
+  // 验证参数名称和描述
+  for (let i = 0; i < formData.parameters.length; i++) {
+    const param = formData.parameters[i]
+    if (param.name && !param.description.trim()) {
+      showMessage(`参数"${param.name}"的描述不能为空`, 'error')
+      return false
+    }
+    if (param.description && !param.name.trim()) {
+      showMessage(`参数描述"${param.description}"对应的名称不能为空`, 'error')
+      return false
+    }
+  }
+  
   return true
 }
 
-// 处理保存
-const handleSave = async () => {
-  console.log('[PublishModal] 开始处理保存请求')
-  console.log('[PublishModal] 表单数据:', formData)
-  console.log('[PublishModal] 当前工具:', currentTool.value)
-  
-  if (!validateForm()) {
-    console.log('[PublishModal] 表单验证失败')
-    return
-  }
-
-  saving.value = true
-  try {
-    // 1. 如果没有当前工具数据，先获取或创建
-    if (!currentTool.value) {
-      console.log('[PublishModal] 没有当前工具数据，先获取或创建')
-      const result = await CoordinatorToolApiService.getOrNewCoordinatorToolsByTemplate(props.planTemplateId)
-      
-      if (!result.success) {
-        throw new Error(result.message)
-      }
-
-      if (Array.isArray(result.data)) {
-        currentTool.value = result.data[0]
-      } else {
-        currentTool.value = result.data as CoordinatorToolVO
-      }
-    }
-
-    // 2. 更新工具信息
-    console.log('[PublishModal] 更新工具信息')
-    currentTool.value.toolName = formData.serviceName.trim()
-    currentTool.value.toolDescription = formData.userRequest.trim()
-    currentTool.value.serviceGroup = formData.serviceGroup.trim()
-    // 这个字段已经不再使用，由新的字段替代
-    currentTool.value.planTemplateId = props.planTemplateId // 确保planTemplateId被设置
-
-    // 3. 更新inputSchema
-    const inputSchema = formData.parameters
-      .filter(param => param.name.trim() && param.description.trim())
-      .map(param => ({
-        name: param.name.trim(),
-        description: param.description.trim(),
-        type: 'string'
-      }))
-    
-    currentTool.value.inputSchema = JSON.stringify(inputSchema)
-    console.log('[PublishModal] 更新后的工具信息:', currentTool.value)
-
-    // 4. 保存工具
-    let savedTool: CoordinatorToolVO
-    if (currentTool.value.id) {
-      console.log('[PublishModal] 更新现有工具，ID:', currentTool.value.id)
-      savedTool = await CoordinatorToolApiService.updateCoordinatorTool(currentTool.value.id, currentTool.value)
-    } else {
-      console.log('[PublishModal] 创建新工具')
-      savedTool = await CoordinatorToolApiService.createCoordinatorTool(currentTool.value)
-      currentTool.value = savedTool // 更新当前工具，包含新生成的ID
-    }
-
-    console.log('[PublishModal] 保存成功:', savedTool)
-    showMessage(t('mcpService.saveSuccess'), 'success')
-    isSaved.value = true
-  } catch (err: any) {
-    console.error('[PublishModal] 保存MCP服务失败:', err)
-    showMessage(t('mcpService.saveFailed') + ': ' + err.message, 'error')
-  } finally {
-    saving.value = false
-  }
-}
 
 // 处理发布
 const handlePublish = async () => {
@@ -732,17 +612,7 @@ const handlePublish = async () => {
     // 1. 如果没有当前工具数据，先获取或创建
     if (!currentTool.value) {
       console.log('[PublishModal] 没有当前工具数据，先获取或创建')
-      const result = await CoordinatorToolApiService.getOrNewCoordinatorToolsByTemplate(props.planTemplateId)
-      
-      if (!result.success) {
-        throw new Error(result.message)
-      }
-
-      if (Array.isArray(result.data)) {
-        currentTool.value = result.data[0]
-      } else {
-        currentTool.value = result.data as CoordinatorToolVO
-      }
+      currentTool.value = await CoordinatorToolApiService.getOrNewCoordinatorToolsByTemplate(props.planTemplateId)
     }
 
     // 2. 更新工具信息
@@ -753,21 +623,17 @@ const handlePublish = async () => {
     currentTool.value.planTemplateId = props.planTemplateId // 确保planTemplateId被设置
 
     // 设置服务启用状态和对应的endpoint
-    currentTool.value.enableInternalToolcall = !publishAsMcpService.value && !publishAsHttpService.value
+    currentTool.value.enableInternalToolcall = publishAsInternalToolcall.value
     currentTool.value.enableHttpService = publishAsHttpService.value
     currentTool.value.enableMcpService = publishAsMcpService.value
     
-    // 设置对应的endpoint
+    // 设置对应的endpoint - 现在支持多种服务同时启用
     if (publishAsMcpService.value) {
       currentTool.value.mcpEndpoint = formData.endpoint.trim()
-      currentTool.value.httpEndpoint = undefined
-    } else if (publishAsHttpService.value) {
-      currentTool.value.httpEndpoint = formData.httpEndpoint.trim() || '/api/http/execute'
-      currentTool.value.mcpEndpoint = undefined
     } else {
-      currentTool.value.httpEndpoint = undefined
       currentTool.value.mcpEndpoint = undefined
     }
+    
 
     // 3. 更新inputSchema
     const inputSchema = formData.parameters
@@ -792,30 +658,29 @@ const handlePublish = async () => {
     }
 
     // 5. 根据发布类型进行相应的发布操作
-    if (publishAsMcpService.value) {
-      console.log('[PublishModal] 步骤5: 发布为MCP服务，ID:', currentTool.value.id)
-      // MCP服务发布成功，直接设置状态和URL
+    const enabledServices = []
+    if (publishAsInternalToolcall.value) enabledServices.push('内部方法调用')
+    if (publishAsHttpService.value) enabledServices.push('HTTP服务')
+    if (publishAsMcpService.value) enabledServices.push('MCP服务')
+    
+    if (enabledServices.length > 0) {
+      console.log('[PublishModal] 步骤5: 发布服务，ID:', currentTool.value.id, '启用服务:', enabledServices.join(', '))
       publishStatus.value = 'PUBLISHED'
       
-      // 构建完整的URL
-      if (currentTool.value.mcpEndpoint) {
+      // 构建服务URL信息
+      const serviceUrls = []
+      if (publishAsMcpService.value && currentTool.value.mcpEndpoint) {
         const baseUrl = window.location.origin
-        endpointUrl.value = `${baseUrl}/mcp${currentTool.value.mcpEndpoint}`
-      } else {
-        endpointUrl.value = ''
+        serviceUrls.push(`MCP: ${baseUrl}/mcp${currentTool.value.mcpEndpoint}`)
+      }
+      if (publishAsInternalToolcall.value) {
+        serviceUrls.push(`内部调用: ${formData.serviceName}`)
       }
       
-      console.log('[PublishModal] MCP服务发布成功，endpointUrl:', endpointUrl.value)
-      showMessage(t('mcpService.publishSuccess'), 'success')
-      emit('published', currentTool.value)
-    } else if (publishAsHttpService.value) {
-      console.log('[PublishModal] 步骤5: 发布为HTTP服务，ID:', currentTool.value.id)
-      // 对于HTTP服务，我们直接设置endpoint URL
-      publishStatus.value = 'PUBLISHED'
-      endpointUrl.value = currentTool.value.httpEndpoint || formData.httpEndpoint.trim()
+      endpointUrl.value = serviceUrls.join('\n')
       
-      console.log('[PublishModal] HTTP服务发布成功，endpointUrl:', endpointUrl.value)
-      showMessage(t('mcpService.httpPublishSuccess'), 'success')
+      console.log('[PublishModal] 服务发布成功，服务URLs:', endpointUrl.value)
+      showMessage(t('mcpService.publishSuccess'), 'success')
       emit('published', currentTool.value)
     } else {
       // 只是保存，不发布为任何服务
@@ -830,9 +695,6 @@ const handlePublish = async () => {
     publishing.value = false
   }
 }
-
-// Handle cancel functionality removed
-
 
 // Handle delete
 const handleDelete = async () => {
@@ -894,94 +756,73 @@ const loadCoordinatorToolData = async () => {
   
   try {
     console.log('[PublishModal] 开始加载协调器工具数据，planTemplateId:', props.planTemplateId)
-    const result = await CoordinatorToolApiService.getOrNewCoordinatorToolsByTemplate(props.planTemplateId)
-    console.log('[PublishModal] 获取协调器工具数据结果:', result)
+    const tool = await CoordinatorToolApiService.getOrNewCoordinatorToolsByTemplate(props.planTemplateId)
+    console.log('[PublishModal] 获取协调器工具数据结果:', tool)
     
-    if (result.success && result.data) {
-      let tool: CoordinatorToolVO
-      
-      if (Array.isArray(result.data)) {
-        // 如果已存在，使用第一个
-        tool = result.data[0]
-        console.log('[PublishModal] 使用已存在的工具:', tool)
-      } else {
-        // 如果不存在，创建新的
-        tool = result.data as CoordinatorToolVO
-        console.log('[PublishModal] 使用新创建的工具:', tool)
-      }
-      
-      // 保存当前工具数据
-      currentTool.value = tool
-      
-      // 设置发布状态和URL
-      publishStatus.value = tool.publishStatus || ''
-      // 只有已存在的工具（有ID）才设置为已保存
-      isSaved.value = !!(tool.id)
-      
-      // 使用后端返回的endpointUrl，如果没有则构建
-      if (tool.publishStatus === 'PUBLISHED') {
-        // 检查是否有后端返回的endpointUrl
-        if ((result as any).endpointUrl) {
-          endpointUrl.value = (result as any).endpointUrl
-        } else if (tool.mcpEndpoint) {
-          // 如果没有后端返回的endpointUrl，则构建
-          const baseUrl = window.location.origin
-          endpointUrl.value = `${baseUrl}/mcp${tool.mcpEndpoint}`
-        } else {
-          endpointUrl.value = ''
-        }
+    // 保存当前工具数据
+    currentTool.value = tool
+    
+    // 设置发布状态和URL
+    publishStatus.value = tool.publishStatus || ''
+    // 只有已存在的工具（有ID）才设置为已保存
+    isSaved.value = !!(tool.id)
+    
+    // 使用后端返回的endpointUrl，如果没有则构建
+    if (tool.publishStatus === 'PUBLISHED') {
+      // 检查是否有后端返回的endpointUrl
+      if ((tool as any).endpointUrl) {
+        endpointUrl.value = (tool as any).endpointUrl
+      } else if (tool.mcpEndpoint) {
+        // 如果没有后端返回的endpointUrl，则构建
+        const baseUrl = window.location.origin
+        endpointUrl.value = `${baseUrl}/mcp${tool.mcpEndpoint}`
       } else {
         endpointUrl.value = ''
       }
-      
-      console.log('[PublishModal] 加载工具数据 - publishStatus:', publishStatus.value, 'endpointUrl:', endpointUrl.value)
-      // 填充表单数据
-      formData.serviceName = tool.toolName || ''
-      formData.userRequest = tool.toolDescription || props.planDescription || ''
-      formData.serviceGroup = tool.serviceGroup || ''
-      
-      // 根据服务类型设置表单数据
-      if (tool.enableMcpService) {
-        formData.endpoint = tool.mcpEndpoint || ''
-        publishAsMcpService.value = true
-        publishAsHttpService.value = false
-      } else if (tool.enableHttpService) {
-        formData.httpEndpoint = tool.httpEndpoint || ''
-        publishAsMcpService.value = false
-        publishAsHttpService.value = true
-      } else {
-        // 默认内部 toolcall
-        publishAsMcpService.value = false
-        publishAsHttpService.value = false
-      }
-      
-      // 解析inputSchema为参数
-      try {
-        if (tool.inputSchema) {
-          const parameters = JSON.parse(tool.inputSchema)
-          if (Array.isArray(parameters) && parameters.length > 0) {
-            // 只有当inputSchema中有参数时才覆盖，否则保持从计划模板加载的参数
-            formData.parameters = parameters.map(param => ({
-              name: param.name || '',
-              description: param.description || ''
-            }))
-            console.log('[PublishModal] 从inputSchema加载参数:', formData.parameters)
-          } else {
-            console.log('[PublishModal] inputSchema为空，保持现有参数:', formData.parameters)
-          }
-        }
-      } catch (e) {
-        console.warn('[PublishModal] ' + t('mcpService.parseInputSchemaFailed') + ':', e)
-        // 解析失败时不清空参数，保持现有参数
-        console.log('[PublishModal] 解析失败，保持现有参数:', formData.parameters)
-      }
-      
-      console.log('[PublishModal] 表单数据已填充:', formData)
     } else {
-      console.log('[PublishModal] 获取协调器工具数据失败:', result.message)
+      endpointUrl.value = ''
     }
+    
+    console.log('[PublishModal] 加载工具数据 - publishStatus:', publishStatus.value, 'endpointUrl:', endpointUrl.value)
+    // 填充表单数据
+    formData.serviceName = tool.toolName || ''
+    formData.userRequest = tool.toolDescription || props.planDescription || ''
+    formData.serviceGroup = tool.serviceGroup || ''
+    
+    // 根据服务类型设置表单数据
+    publishAsMcpService.value = tool.enableMcpService || false
+    publishAsHttpService.value = tool.enableHttpService || false
+    publishAsInternalToolcall.value = tool.enableInternalToolcall || false
+    
+    if (tool.enableMcpService) {
+      formData.endpoint = tool.mcpEndpoint || ''
+    }
+    
+    // 解析inputSchema为参数
+    try {
+      if (tool.inputSchema) {
+        const parameters = JSON.parse(tool.inputSchema)
+        if (Array.isArray(parameters) && parameters.length > 0) {
+          // 只有当inputSchema中有参数时才覆盖，否则保持从计划模板加载的参数
+          formData.parameters = parameters.map(param => ({
+            name: param.name || '',
+            description: param.description || ''
+          }))
+          console.log('[PublishModal] 从inputSchema加载参数:', formData.parameters)
+        } else {
+          console.log('[PublishModal] inputSchema为空，保持现有参数:', formData.parameters)
+        }
+      }
+    } catch (e) {
+      console.warn('[PublishModal] ' + t('mcpService.parseInputSchemaFailed') + ':', e)
+      // 解析失败时不清空参数，保持现有参数
+      console.log('[PublishModal] 解析失败，保持现有参数:', formData.parameters)
+    }
+    
+    console.log('[PublishModal] 表单数据已填充:', formData)
   } catch (err: any) {
     console.error('[PublishModal] ' + t('mcpService.loadToolDataFailed') + ':', err)
+    showMessage(t('mcpService.loadToolDataFailed') + ': ' + err.message, 'error')
   }
 }
 
@@ -1651,7 +1492,8 @@ defineExpose({
 }
 
 .mcp-publish-option,
-.http-publish-option {
+.http-publish-option,
+.internal-toolcall-publish-option {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1661,7 +1503,7 @@ defineExpose({
   border-radius: 8px;
 }
 
-/* .http-publish-option 现在与 .mcp-publish-option 使用相同的样式 */
+/* .http-publish-option, .mcp-publish-option, .internal-toolcall-publish-option 现在使用相同的样式 */
 
 .checkbox-label {
   display: flex;
@@ -1693,78 +1535,6 @@ defineExpose({
 
 /* HTTP服务选项现在与MCP服务使用相同的样式，无需特殊处理 */
 
-/* curl 命令显示区域样式 */
-.curl-command-container {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  border-radius: 8px;
-  padding: 12px;
-  margin-top: 8px;
-}
-
-.curl-command-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.terminal-icon {
-  color: #10b981;
-}
-
-.curl-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #10b981;
-  flex: 1;
-}
-
-.copy-curl-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  border-radius: 4px;
-  color: #10b981;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.copy-curl-btn:hover {
-  background: rgba(16, 185, 129, 0.2);
-  border-color: rgba(16, 185, 129, 0.5);
-}
-
-.curl-command-textarea {
-  width: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  border-radius: 6px;
-  color: #10b981;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 11px;
-  line-height: 1.4;
-  padding: 12px;
-  resize: none;
-  outline: none;
-  white-space: pre;
-  overflow-x: auto;
-}
-
-.curl-command-textarea:focus {
-  border-color: rgba(16, 185, 129, 0.5);
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
-}
-
-.curl-command-textarea::placeholder {
-  color: rgba(16, 185, 129, 0.5);
-}
 
 .endpoint-description {
   font-size: 12px;
@@ -1891,6 +1661,25 @@ defineExpose({
   }
 }
 
+/* 必填字段样式 */
+.required {
+  color: #ff4d4f;
+  margin-left: 4px;
+}
+
+/* 错误状态样式 */
+.form-item input.error,
+.form-item textarea.error {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.1);
+}
+
+.form-item input.error:focus,
+.form-item textarea.error:focus {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
 /* 提示消息 */
 .error-toast,
 .success-toast {
@@ -1904,7 +1693,7 @@ defineExpose({
   border-radius: 8px;
   color: #fff;
   cursor: pointer;
-  z-index: 1000;
+  z-index: 10000; /* 确保在模态框之上 */
   animation: slideIn 0.3s ease;
 }
 

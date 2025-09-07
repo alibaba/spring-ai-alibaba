@@ -214,10 +214,12 @@ const currentToolInfo = ref<{
   enableHttpService?: boolean
   enableMcpService?: boolean
   enableInternalToolcall?: boolean
+  toolName?: string
 }>({
   enableHttpService: false,
   enableMcpService: false,
-  enableInternalToolcall: false
+  enableInternalToolcall: false,
+  toolName: ''
 })
 const publishMcpModalRef = ref<InstanceType<typeof PublishMcpServiceModal> | null>(null)
 
@@ -387,11 +389,23 @@ const handleMcpServicePublished = (tool: CoordinatorToolVO | null) => {
   if (tool === null) {
     console.log('MCP服务删除成功')
     toast.success(t('mcpService.deleteSuccess'))
-    // 可以在这里添加删除成功后的处理逻辑，比如刷新列表等
+    // 重置工具信息
+    currentToolInfo.value = {
+      enableHttpService: false,
+      enableMcpService: false,
+      enableInternalToolcall: false,
+      toolName: ''
+    }
   } else {
     console.log('MCP服务发布成功:', tool)
     toast.success(t('mcpService.publishSuccess'))
-    // 可以在这里添加发布成功后的处理逻辑
+    // 更新工具信息
+    currentToolInfo.value = {
+      enableHttpService: tool.enableHttpService || false,
+      enableMcpService: tool.enableMcpService || false,
+      enableInternalToolcall: tool.enableInternalToolcall || false,
+      toolName: tool.toolName || `planTemplate-${sidebarStore.currentPlanTemplateId}`
+    }
   }
 }
 
@@ -415,25 +429,28 @@ const loadToolInfo = async (planTemplateId: string | null) => {
     currentToolInfo.value = {
       enableHttpService: false,
       enableMcpService: false,
-      enableInternalToolcall: false
+      enableInternalToolcall: false,
+      toolName: ''
     }
     return
   }
 
   try {
-    const response = await CoordinatorToolApiService.getOrNewCoordinatorToolsByTemplate(planTemplateId)
-    if (response.success && response.data) {
-      const toolData = Array.isArray(response.data) ? response.data[0] : response.data
+    const toolData = await CoordinatorToolApiService.getCoordinatorToolsByTemplate(planTemplateId)
+    if (toolData) {
       currentToolInfo.value = {
         enableHttpService: toolData.enableHttpService || false,
         enableMcpService: toolData.enableMcpService || false,
-        enableInternalToolcall: toolData.enableInternalToolcall || false
+        enableInternalToolcall: toolData.enableInternalToolcall || false,
+        toolName: toolData.toolName || `planTemplate-${planTemplateId}`
       }
     } else {
+      // No tool found or not published, don't show any call examples
       currentToolInfo.value = {
         enableHttpService: false,
         enableMcpService: false,
-        enableInternalToolcall: false
+        enableInternalToolcall: false,
+        toolName: `planTemplate-${planTemplateId}`
       }
     }
   } catch (error) {
@@ -441,7 +458,8 @@ const loadToolInfo = async (planTemplateId: string | null) => {
     currentToolInfo.value = {
       enableHttpService: false,
       enableMcpService: false,
-      enableInternalToolcall: false
+      enableInternalToolcall: false,
+      toolName: `planTemplate-${planTemplateId}`
     }
   }
 }
