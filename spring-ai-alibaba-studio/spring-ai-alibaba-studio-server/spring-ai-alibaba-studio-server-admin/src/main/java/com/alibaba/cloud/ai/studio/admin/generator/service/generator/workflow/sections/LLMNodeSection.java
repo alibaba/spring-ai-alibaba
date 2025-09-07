@@ -119,7 +119,12 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 						                return map;
 						            }
 						            catch (Exception e) {
-						                Thread.sleep(retryInterval);
+						                try {
+						                    Thread.sleep(retryInterval);
+						                } catch (InterruptedException ie) {
+						                    Thread.currentThread().interrupt();
+						                    break;
+						                }
 						            }
 						        }
 

@@ -86,8 +86,27 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 					DocumentType documentType = document.getType();
 					// 存储路径
 					String path = switch (documentType) {
-						case FILE -> Path.of(studioStoragePath).resolve(document.getPath()).toAbsolutePath().toString();
-						case URL -> document.getPath();
+						case FILE -> {
+							{
+								Path p = Path.of(studioStoragePath);
+								Path resolvedPath = p.resolve(document.getPath()).normalize();
+
+								// 安全检查：确保解析后的路径仍在允许的目录范围内
+								if (!resolvedPath.startsWith(p.normalize())) {
+									throw new SecurityException("非法路径访问尝试: " + document.getPath());
+								}
+
+								yield resolvedPath.toAbsolutePath().toString();
+							}
+						}
+						case URL -> {
+							// 对URL路径进行基本验证
+							String urlPath = document.getPath();
+							if (urlPath == null || urlPath.trim().isEmpty()) {
+								throw new IllegalArgumentException("URL路径不能为空");
+							}
+							yield urlPath;
+						}
 						default ->
 							throw new UnsupportedOperationException("unsupported document type: " + documentType);
 					};
