@@ -74,10 +74,19 @@ public interface NodeSection<T extends NodeData> {
 		return "";
 	}
 
-	record ResourceFile(String fileName, Supplier<InputStream> inputStreamSupplier) {
+	record ResourceFile(String fileName, Type type, Supplier<InputStream> inputStreamSupplier) {
+
 		@Override
 		public String toString() {
-			return String.format("\"%s\"", fileName());
+			return String.format("\"%s\"", switch (type()) {
+				case CLASS_PATH -> "classpath:" + fileName();
+				default -> fileName();
+			});
+		}
+		public enum Type {
+
+			LOCAL, URL, CLASS_PATH
+
 		}
 	}
 

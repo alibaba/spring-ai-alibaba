@@ -112,7 +112,12 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 					};
 					String fileName = document.getName();
 					// 构造文件记录
-					return new ResourceFile(fileName, () -> {
+					return new ResourceFile(fileName, switch (documentType) {
+						case FILE -> ResourceFile.Type.CLASS_PATH;
+						case URL -> ResourceFile.Type.URL;
+						default ->
+							throw new UnsupportedOperationException("unsupported document type: " + documentType);
+					}, () -> {
 						try {
 							return Files.newInputStream(Path.of(path));
 						}
