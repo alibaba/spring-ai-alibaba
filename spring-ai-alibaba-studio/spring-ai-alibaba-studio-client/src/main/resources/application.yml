@@ -10,4 +10,4 @@ mybatis-plus:
     cache-enabled: false
     map-underscore-to-camel-case: true
 server:
-  port: 18080
+  port: 8080
