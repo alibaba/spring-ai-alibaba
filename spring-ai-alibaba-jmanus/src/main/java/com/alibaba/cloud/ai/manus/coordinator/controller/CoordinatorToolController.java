@@ -371,15 +371,6 @@ public class CoordinatorToolController {
         entity.setMcpEndpoint(toolVO.getMcpEndpoint());
         entity.setServiceGroup(toolVO.getServiceGroup());
         
-        // Set publish status
-        if (toolVO.getPublishStatus() != null) {
-            try {
-                entity.setPublishStatus(CoordinatorToolEntity.PublishStatus.valueOf(toolVO.getPublishStatus()));
-            } catch (IllegalArgumentException e) {
-                log.warn("Invalid publish status: {}, using UNPUBLISHED", toolVO.getPublishStatus());
-                entity.setPublishStatus(CoordinatorToolEntity.PublishStatus.UNPUBLISHED);
-            }
-        }
         
         // Set service enablement flags
         entity.setEnableInternalToolcall(toolVO.getEnableInternalToolcall() != null ? toolVO.getEnableInternalToolcall() : true);
@@ -446,15 +437,15 @@ public class CoordinatorToolController {
      */
     private CoordinatorToolVO createDefaultToolVO(String planTemplateId) {
         CoordinatorToolVO toolVO = new CoordinatorToolVO();
-        toolVO.setToolName("planTemplate-" + planTemplateId); // Use plan template ID as tool name
-        toolVO.setToolDescription(""); // Set empty string instead of null
+        toolVO.setToolName(null); // Use plan template ID as tool name
+        toolVO.setToolDescription(null); // Set empty string instead of null
         toolVO.setPlanTemplateId(planTemplateId);
         toolVO.setEnableInternalToolcall(true); // Default to internal toolcall
         toolVO.setEnableHttpService(false);
         toolVO.setEnableMcpService(false);
         toolVO.setInputSchema("[]"); // Empty parameters by default
         toolVO.setPublishStatus("UNPUBLISHED");
-        toolVO.setServiceGroup(""); // Set empty string instead of null
+        toolVO.setServiceGroup(null); // Set empty string instead of null
         
         return toolVO;
     }

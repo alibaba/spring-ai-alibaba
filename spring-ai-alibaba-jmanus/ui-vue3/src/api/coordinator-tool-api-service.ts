@@ -22,7 +22,6 @@ export interface CoordinatorToolVO {
   httpEndpoint?: string | undefined
   mcpEndpoint?: string | undefined
   inputSchema: string
-  publishStatus: string
   serviceGroup?: string
   enableInternalToolcall?: boolean
   enableHttpService?: boolean
@@ -183,7 +182,6 @@ export class CoordinatorToolApiService {
       enableInternalToolcall: tool.enableInternalToolcall,
       enableHttpService: tool.enableHttpService,
       enableMcpService: tool.enableMcpService,
-      publishStatus: tool.publishStatus
     }
     
     console.log('[CoordinatorToolApiService] 清理后的发送数据:', JSON.stringify(requestData, null, 2))
@@ -236,7 +234,6 @@ export class CoordinatorToolApiService {
       enableInternalToolcall: tool.enableInternalToolcall,
       enableHttpService: tool.enableHttpService,
       enableMcpService: tool.enableMcpService,
-      publishStatus: tool.publishStatus
     }
     
     console.log('[CoordinatorToolApiService] 清理后的发送数据:', requestData)

@@ -169,7 +169,6 @@ public class CoordinatorToolVO {
 		vo.setPlanTemplateId(entity.getPlanTemplateId());
 		vo.setHttpEndpoint(entity.getHttpEndpoint());
 		vo.setMcpEndpoint(entity.getMcpEndpoint());
-		vo.setPublishStatus(entity.getPublishStatus() != null ? entity.getPublishStatus().name() : null);
 		vo.setServiceGroup(entity.getServiceGroup());
 		vo.setEnableInternalToolcall(entity.getEnableInternalToolcall());
 		vo.setEnableHttpService(entity.getEnableHttpService());
@@ -177,7 +176,7 @@ public class CoordinatorToolVO {
 		// Explicitly do not set createTime and updateTime fields
 		return vo;
 	}
-
+ 
 	/**
 	 * Convert to Entity
 	 */
@@ -190,9 +189,7 @@ public class CoordinatorToolVO {
 		entity.setPlanTemplateId(this.planTemplateId);
 		entity.setHttpEndpoint(this.httpEndpoint);
 		entity.setMcpEndpoint(this.mcpEndpoint);
-		if (this.publishStatus != null) {
-			entity.setPublishStatus(CoordinatorToolEntity.PublishStatus.valueOf(this.publishStatus));
-		}
+	
 		entity.setServiceGroup(this.serviceGroup);
 		entity.setEnableInternalToolcall(this.enableInternalToolcall);
 		entity.setEnableHttpService(this.enableHttpService);

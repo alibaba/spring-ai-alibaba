@@ -71,6 +71,26 @@
         {{ t('sidebar.publishMcpService') }}
       </button>
       
+      <!-- Internal Call wrapper - only show when enableInternalToolcall is true -->
+      <div v-if="toolInfo?.enableInternalToolcall" class="call-example-wrapper">
+        <div class="call-example-header">
+          <h4 class="call-example-title">内部调用</h4>
+          <p class="call-example-description">你已经将这个plan-act 发布为内部方法，可以在agent配置的添加工具中，找到这个工具的方法并添加和使用。</p>
+        </div>
+        <div class="internal-call-wrapper">
+          <div class="call-info">
+            <div class="call-method">内部方法调用</div>
+            <div class="call-endpoint">工具名称: {{ toolInfo?.toolName || currentPlanTemplateId }}</div>
+            <div v-if="toolInfo?.serviceGroup" class="call-endpoint">服务组: {{ toolInfo.serviceGroup }}</div>
+            <div class="call-description">在agent配置中添加此工具后，可以直接在agent中调用此方法</div>
+            <div class="call-example">
+              <strong>使用方式:</strong>
+              <pre class="example-code">在agent配置的"添加工具"部分，搜索并添加此工具，然后在agent中直接调用</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- HTTP API URLs wrapper with tabs - only show when enableHttpService is true -->
       <div v-if="toolInfo?.enableHttpService" class="call-example-wrapper">
         <div class="call-example-header">
@@ -106,25 +126,6 @@
         </div>
       </div>
 
-      <!-- Internal Call wrapper - only show when enableInternalToolcall is true -->
-      <div v-if="toolInfo?.enableInternalToolcall" class="call-example-wrapper">
-        <div class="call-example-header">
-          <h4 class="call-example-title">内部调用</h4>
-          <p class="call-example-description">你已经将这个plan-act 发布为内部方法，可以在agent配置的添加工具中，找到这个工具的方法并添加和使用。</p>
-        </div>
-        <div class="internal-call-wrapper">
-          <div class="call-info">
-            <div class="call-method">内部方法调用</div>
-            <div class="call-endpoint">工具名称: {{ toolInfo?.toolName || currentPlanTemplateId }}</div>
-            <div class="call-description">在agent配置中添加此工具后，可以直接在agent中调用此方法</div>
-            <div class="call-example">
-              <strong>使用方式:</strong>
-              <pre class="example-code">在agent配置的"添加工具"部分，搜索并添加此工具，然后在agent中直接调用</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- MCP Call wrapper - only show when enableMcpService is true -->
       <div v-if="toolInfo?.enableMcpService" class="call-example-wrapper">
         <div class="call-example-header">
@@ -152,6 +153,7 @@ import { ref, watch, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { PlanParameterApiService, type ParameterRequirements } from '@/api/plan-parameter-api-service'
+import type { CoordinatorToolVO } from '@/api/coordinator-tool-api-service'
 
 const { t } = useI18n()
 
@@ -162,12 +164,7 @@ interface Props {
   isExecuting?: boolean
   isGenerating?: boolean
   showPublishButton?: boolean
-  toolInfo?: {
-    enableHttpService?: boolean
-    enableMcpService?: boolean
-    enableInternalToolcall?: boolean
-    toolName?: string
-  }
+  toolInfo?: CoordinatorToolVO
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -176,9 +173,14 @@ const props = withDefaults(defineProps<Props>(), {
   isGenerating: false,
   showPublishButton: true,
   toolInfo: () => ({
+    toolName: '',
+    toolDescription: '',
+    planTemplateId: '',
+    inputSchema: '[]',
     enableHttpService: false,
     enableMcpService: false,
-    enableInternalToolcall: false
+    enableInternalToolcall: false,
+    serviceGroup: ''
   })
 })
 

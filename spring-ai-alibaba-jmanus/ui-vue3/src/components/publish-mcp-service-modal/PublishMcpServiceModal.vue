@@ -232,8 +232,8 @@
                 </div>
               </div>
 
-              <!-- MCP Streamable URL配置 - 仅在已发布时显示 -->
-              <div v-if="publishStatus === 'PUBLISHED'" class="form-item url-item">
+              <!-- MCP Streamable URL配置 -->
+              <div v-if="endpointUrl" class="form-item url-item">
                 <label>{{ t('mcpService.mcpStreamableUrl') }}</label>
                 <div class="url-container">
                   <div class="url-display" @dblclick="copyEndpointUrl" :title="t('mcpService.copyUrl') + ': ' + endpointUrl">
@@ -331,7 +331,6 @@ const deleting = ref(false)
 const availableEndpoints = ref<string[]>([])
 
 // 新增的响应式数据
-const publishStatus = ref('')
 const endpointUrl = ref('')
 const isDropdownOpen = ref(false)
 const dropdownPosition = ref('bottom')
@@ -386,7 +385,6 @@ const initializeFormData = () => {
     formData.parameters = []
   }
   currentTool.value = null
-  publishStatus.value = ''
   endpointUrl.value = ''
   isSaved.value = false
 }
@@ -665,7 +663,6 @@ const handlePublish = async () => {
     
     if (enabledServices.length > 0) {
       console.log('[PublishModal] 步骤5: 发布服务，ID:', currentTool.value.id, '启用服务:', enabledServices.join(', '))
-      publishStatus.value = 'PUBLISHED'
       
       // 构建服务URL信息
       const serviceUrls = []
@@ -762,28 +759,22 @@ const loadCoordinatorToolData = async () => {
     // 保存当前工具数据
     currentTool.value = tool
     
-    // 设置发布状态和URL
-    publishStatus.value = tool.publishStatus || ''
     // 只有已存在的工具（有ID）才设置为已保存
     isSaved.value = !!(tool.id)
     
-    // 使用后端返回的endpointUrl，如果没有则构建
-    if (tool.publishStatus === 'PUBLISHED') {
-      // 检查是否有后端返回的endpointUrl
-      if ((tool as any).endpointUrl) {
-        endpointUrl.value = (tool as any).endpointUrl
-      } else if (tool.mcpEndpoint) {
-        // 如果没有后端返回的endpointUrl，则构建
-        const baseUrl = window.location.origin
-        endpointUrl.value = `${baseUrl}/mcp${tool.mcpEndpoint}`
-      } else {
-        endpointUrl.value = ''
-      }
-    } else {
-      endpointUrl.value = ''
+    // 构建服务URL信息
+    const serviceUrls = []
+    if (tool.enableMcpService && tool.mcpEndpoint) {
+      const baseUrl = window.location.origin
+      serviceUrls.push(`MCP: ${baseUrl}/mcp${tool.mcpEndpoint}`)
+    }
+    if (tool.enableInternalToolcall) {
+      serviceUrls.push(`内部调用: ${tool.toolName}`)
     }
     
-    console.log('[PublishModal] 加载工具数据 - publishStatus:', publishStatus.value, 'endpointUrl:', endpointUrl.value)
+    endpointUrl.value = serviceUrls.join('\n')
+    
+    console.log('[PublishModal] 加载工具数据 - endpointUrl:', endpointUrl.value)
     // 填充表单数据
     formData.serviceName = tool.toolName || ''
     formData.userRequest = tool.toolDescription || props.planDescription || ''

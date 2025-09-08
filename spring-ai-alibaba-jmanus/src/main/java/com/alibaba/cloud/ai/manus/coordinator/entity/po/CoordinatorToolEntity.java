@@ -35,7 +35,7 @@ public class CoordinatorToolEntity {
 	@Column(nullable = false, length = 200)
 	private String toolDescription;
 
-	@Column(nullable = false, columnDefinition = "VARCHAR(2048)")
+	@Column(columnDefinition = "VARCHAR(2048)")
 	private String inputSchema;
 
 
@@ -51,9 +51,6 @@ public class CoordinatorToolEntity {
 	@Column(length = 100)
 	private String serviceGroup;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private PublishStatus publishStatus;
 
 	@Column(nullable = false)
 	private Boolean enableInternalToolcall = true;
@@ -70,29 +67,9 @@ public class CoordinatorToolEntity {
 	@Column(nullable = false)
 	private LocalDateTime updateTime;
 
-	/**
-	 * Publish Status Enum
-	 */
-	public enum PublishStatus {
-
-		PUBLISHED("published"), UNPUBLISHED("unpublished");
-
-		private final String description;
-
-		PublishStatus(String description) {
-			this.description = description;
-		}
-
-		public String getDescription() {
-			return description;
-		}
-
-	}
-
 	public CoordinatorToolEntity() {
 		this.createTime = LocalDateTime.now();
 		this.updateTime = LocalDateTime.now();
-		this.publishStatus = PublishStatus.UNPUBLISHED;
 		this.enableInternalToolcall = true;
 		this.enableHttpService = false;
 		this.enableMcpService = false;
@@ -156,13 +133,6 @@ public class CoordinatorToolEntity {
 		this.mcpEndpoint = mcpEndpoint;
 	}
 
-	public PublishStatus getPublishStatus() {
-		return publishStatus;
-	}
-
-	public void setPublishStatus(PublishStatus publishStatus) {
-		this.publishStatus = publishStatus;
-	}
 
 	public Boolean getEnableInternalToolcall() {
 		return enableInternalToolcall;
@@ -225,7 +195,7 @@ public class CoordinatorToolEntity {
 	public String toString() {
 		return "CoordinatorToolEntity{" + "id=" + id + ", toolName='" + toolName + '\'' + ", toolDescription='"
 				+ toolDescription + '\'' + ", planTemplateId='" + planTemplateId + '\'' + ", httpEndpoint='" + httpEndpoint
-				+ '\'' + ", mcpEndpoint='" + mcpEndpoint + '\'' + ", publishStatus=" + publishStatus 
+				+ '\'' + ", mcpEndpoint='" + mcpEndpoint + '\'' 
 				+ ", enableInternalToolcall=" + enableInternalToolcall + ", enableHttpService=" + enableHttpService
 				+ ", enableMcpService=" + enableMcpService + ", createTime=" + createTime + ", updateTime="
 				+ updateTime + '}';

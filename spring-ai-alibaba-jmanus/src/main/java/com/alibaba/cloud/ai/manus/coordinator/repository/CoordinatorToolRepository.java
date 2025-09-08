@@ -35,11 +35,6 @@ public interface CoordinatorToolRepository extends JpaRepository<CoordinatorTool
 	List<CoordinatorToolEntity> findByPlanTemplateId(String planTemplateId);
 
 	/**
-	 * Find by publish status
-	 */
-	List<CoordinatorToolEntity> findByPublishStatus(CoordinatorToolEntity.PublishStatus publishStatus);
-
-	/**
 	 * Find all unique HTTP endpoints
 	 */
 	@Query("SELECT DISTINCT c.httpEndpoint FROM CoordinatorToolEntity c WHERE c.httpEndpoint IS NOT NULL")
