@@ -138,7 +138,6 @@ public class AgentProjectGenerator implements ProjectGenerator {
             agent.getName(),
             agent.getDescription(),
             agent.getInstruction(),
-            agent.getInputKey(),
             agent.getInputKeys(),
             agent.getOutputKey()
         );

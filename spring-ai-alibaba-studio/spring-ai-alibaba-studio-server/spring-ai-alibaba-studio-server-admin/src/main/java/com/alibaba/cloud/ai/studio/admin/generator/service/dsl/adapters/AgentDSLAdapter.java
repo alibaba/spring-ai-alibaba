@@ -159,7 +159,7 @@ public class AgentDSLAdapter implements DSLAdapter {
 
     @Override
     public Boolean supportDialect(DSLDialectType dialectType) {
-        return DSLDialectType.AGENT.equals(dialectType);
+        return DSLDialectType.SAA_AGENT.equals(dialectType);
     }
 
 

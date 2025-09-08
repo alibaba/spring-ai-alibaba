@@ -65,20 +65,22 @@ public class SequentialAgentProvider implements AgentTypeProvider {
 
         StringBuilder code = new StringBuilder();
         code.append("SequentialAgent ").append(var).append(" = SequentialAgent.builder()\n")
-                .append(tab(1)).append(".name(\"").append(esc(shell.getName())).append("\")\n")
-                .append(tab(1)).append(".description(\"").append(esc(nvl(shell.getDescription()))).append("\")\n");
+                .append(".name(\"").append(esc(shell.getName())).append("\")\n")
+                .append(".description(\"").append(esc(nvl(shell.getDescription()))).append("\")\n");
         if (shell.getOutputKey() != null) {
-            code.append(tab(1)).append(".outputKey(\"").append(esc(shell.getOutputKey())).append("\")\n");
+            code.append(".outputKey(\"").append(esc(shell.getOutputKey())).append("\")\n");
         }
-        if (shell.getInputKey() != null) {
-            code.append(tab(1)).append(".inputKey(\"").append(esc(shell.getInputKey())).append("\")\n");
+        if (shell.getInputKeys() != null && !shell.getInputKeys().isEmpty()) {
+            // todo: 目前取第一个作为主输入键， 后续计划将多个inputKey通过占位符注入到instruction中
+            String primaryInputKey = shell.getInputKeys().get(0);
+            code.append(".llmInputMessagesKey(\"").append(esc(primaryInputKey)).append("\")\n");
         }
         if (childVarNames != null && !childVarNames.isEmpty()) {
-            code.append(tab(1)).append(".subAgents(List.of(").append(String.join(", ", childVarNames)).append("))\n");
+            code.append(".subAgents(List.of(").append(String.join(", ", childVarNames)).append("))\n");
         }
         // state.strategies（全量映射，默认 messages=Append）
-        code.append(tab(1)).append(".state(() -> {\n")
-                .append(tab(2)).append("Map<String, KeyStrategy> strategies = new HashMap<>();\n");
+        code.append(".state(() -> {\n")
+                .append("Map<String, KeyStrategy> strategies = new HashMap<>();\n");
         Object stateObj = handle.get("state");
         if (stateObj instanceof Map<?,?> stateMap) {
             Object strategiesObj = stateMap.get("strategies");
@@ -87,14 +89,14 @@ public class SequentialAgentProvider implements AgentTypeProvider {
                     String k = String.valueOf(e.getKey());
                     String v = String.valueOf(e.getValue());
                     String strategyNew = (v != null && v.equalsIgnoreCase("append")) ? "new AppendStrategy()" : "new ReplaceStrategy()";
-                    code.append(tab(2)).append("strategies.put(\"").append(esc(k)).append("\", ").append(strategyNew).append(");\n");
+                    code.append("strategies.put(\"").append(esc(k)).append("\", ").append(strategyNew).append(");\n");
                 }
             }
         }
-        code.append(tab(2)).append("strategies.putIfAbsent(\"messages\", new AppendStrategy());\n")
-                .append(tab(2)).append("return strategies;\n")
-                .append(tab(1)).append("})\n")
-                .append(tab(1)).append(".build();\n");
+        code.append("strategies.putIfAbsent(\"messages\", new AppendStrategy());\n")
+                .append("return strategies;\n")
+                .append("})\n")
+                .append(".build();\n");
 
         return new CodeSections()
                 .imports(
@@ -108,7 +110,6 @@ public class SequentialAgentProvider implements AgentTypeProvider {
                 .var(var);
     }
 
-    private static String tab(int n) { return "\t".repeat(Math.max(0, n)); }
     private static String nvl(String s) { return s == null ? "" : s; }
     private static String esc(String s) { return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\""); }
 }

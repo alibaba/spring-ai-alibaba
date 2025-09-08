@@ -97,30 +97,33 @@ public class ReactAgentProvider implements AgentTypeProvider {
 
         StringBuilder code = new StringBuilder();
         code.append("ReactAgent ").append(var).append(" = ReactAgent.builder()\n")
-                .append(tab(1)).append(".name(\"").append(esc(shell.getName())).append("\")\n")
-                .append(tab(1)).append(".description(\"").append(esc(nvl(shell.getDescription()))).append("\")\n");
+                .append(".name(\"").append(esc(shell.getName())).append("\")\n")
+                .append(".description(\"").append(esc(nvl(shell.getDescription()))).append("\")\n");
         if (shell.getOutputKey() != null) {
-            code.append(tab(1)).append(".outputKey(\"").append(esc(shell.getOutputKey())).append("\")\n");
+            code.append(".outputKey(\"").append(esc(shell.getOutputKey())).append("\")\n");
         }
-        if (shell.getInputKey() != null) {
-            code.append(tab(1)).append(".llmInputMessagesKey(\"").append(esc(shell.getInputKey())).append("\")\n");
+        if (shell.getInputKeys() != null && !shell.getInputKeys().isEmpty()) {
+            // todo: 目前取第一个作为主输入键， 后续计划将多个inputKey通过占位符注入到instruction中
+            String primaryInputKey = shell.getInputKeys().get(0);
+            code.append(".llmInputMessagesKey(\"").append(esc(primaryInputKey)).append("\")\n");
         }
-        code.append(tab(1)).append(".model(chatModel)\n");
+        code.append(".model(chatModel)\n");
 
         if (instruction != null && !instruction.isBlank()) {
-            code.append(tab(1)).append(".instruction(\"").append(esc(instruction)).append("\")\n");
+            code.append(".instruction(\"").append(esc(instruction)).append("\")\n");
         }
         if (maxIter != null && maxIter > 0) {
-            code.append(tab(1)).append(".maxIterations(").append(maxIter).append(")\n");
+            code.append(".maxIterations(").append(maxIter).append(")\n");
         }
         if (hasResolver) {
-            code.append(tab(1)).append(".resolver(toolCallbackResolver)\n");
+            code.append(".resolver(toolCallbackResolver)\n");
         }
         // state.strategies → KeyStrategy（全量映射，缺省时为 messages 追加策略）
-        code.append(tab(1)).append(".state(() -> {\n")
-                .append(tab(2)).append("Map<String, KeyStrategy> strategies = new HashMap<>();\n");
+        code.append(".state(() -> {\n")
+                .append("Map<String, KeyStrategy> strategies = new HashMap<>();\n");
 
         // 解析 handle.state.strategies 生成代码
+        boolean hasMessagesStrategy = false;
         Object stateObj = handle.get("state");
         if (stateObj instanceof Map<?,?> stateMap) {
             Object strategiesObj = stateMap.get("strategies");
@@ -129,23 +132,35 @@ public class ReactAgentProvider implements AgentTypeProvider {
                     String k = String.valueOf(e.getKey());
                     String v = String.valueOf(e.getValue());
                     String strategyNew = (v != null && v.equalsIgnoreCase("append")) ? "new AppendStrategy()" : "new ReplaceStrategy()";
-                    code.append(tab(2)).append("strategies.put(\"").append(esc(k)).append("\", ").append(strategyNew).append(");\n");
+                    code.append("strategies.put(\"").append(esc(k)).append("\", ").append(strategyNew).append(");\n");
+
+                    if ("messages".equals(k)) {
+                        hasMessagesStrategy = true;
+                    }
                 }
             }
         }
-        // 若未显式指定 messages 策略，则默认替换
-        code.append(tab(2)).append("strategies.putIfAbsent(\"messages\", new ReplaceStrategy());\n")
-                .append(tab(2)).append("return strategies;\n")
-                .append(tab(1)).append("})\n")
-                .append(tab(1)).append(".build();\n");
+
+        // 若未显式指定 messages 策略，则添加默认策略
+        if (!hasMessagesStrategy) {
+            code.append("strategies.put(\"messages\", new AppendStrategy());\n");
+        }
+
+        code.append("return strategies;\n")
+                .append("})\n")
+                .append(".build();\n");
 
         return new CodeSections()
                 .imports(
+                        "import com.alibaba.cloud.ai.graph.CompiledGraph;",
                         "import com.alibaba.cloud.ai.graph.agent.ReactAgent;",
                         "import com.alibaba.cloud.ai.graph.KeyStrategy;",
                         "import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;",
                         "import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;",
                         "import org.springframework.ai.chat.model.ChatModel;",
+                        "import org.springframework.context.annotation.Bean;",
+                        "import org.springframework.stereotype.Component;",
+                        hasResolver ? "import org.springframework.beans.factory.ObjectProvider;" : null,
                         hasResolver ? "import org.springframework.ai.tool.resolution.ToolCallbackResolver;" : null,
                         "import java.util.*;"
                 )
@@ -154,7 +169,6 @@ public class ReactAgentProvider implements AgentTypeProvider {
                 .resolver(hasResolver);
     }
 
-    private static String tab(int n) { return "\t".repeat(Math.max(0, n)); }
     private static String nvl(String s) { return s == null ? "" : s; }
     private static String esc(String s) { return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\""); }
     private static String str(Object o) { return o == null ? null : String.valueOf(o); }
