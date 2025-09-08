@@ -16,469 +16,124 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata;
 
+import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
+import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
+import org.springframework.ai.chat.messages.MessageType;
+
 import java.util.List;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
-import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
-import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
-import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
-
 public class LLMNodeData extends NodeData {
 
-	public static Variable getDefaultOutputSchema() {
-		return new Variable("text", VariableType.STRING);
+	public static List<Variable> getDefaultOutputSchemas(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> List.of(new Variable("text", VariableType.STRING));
+			case STUDIO -> List.of(new Variable("output", VariableType.STRING),
+					new Variable("reasoning_content", VariableType.STRING));
+			default -> List.of();
+		};
 	}
 
-	private ModelConfig model;
+	private String chatModeName;
 
-	private List<PromptTemplate> promptTemplate;
+	private Map<String, Object> modeParams;
 
-	private MemoryConfig memoryConfig;
+	private List<MessageTemplate> messageTemplates;
 
-	private String systemPromptTemplate;
+	private String memoryKey;
 
-	private String userPromptTemplate;
+	private Integer maxRetryCount;
 
-	private String systemPromptTemplateKey;
+	private Integer retryIntervalMs;
 
-	private String userPromptTemplateKey;
+	private String defaultOutput;
 
-	private Map<String, Object> params;
+	private String errorNextNode;
 
-	private String paramsKey;
+	private String outputKeyPrefix;
 
-	private List<Message> messages;
-
-	private String messagesKey;
-
-	private List<Advisor> advisors;
-
-	private List<ToolCallback> toolCallbacks;
-
-	private String outputKey;
-
-	public LLMNodeData() {
+	public String getChatModeName() {
+		return chatModeName;
 	}
 
-	public LLMNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
-		super(inputs, outputs);
+	public void setChatModeName(String chatModeName) {
+		this.chatModeName = chatModeName;
 	}
 
-	public ModelConfig getModel() {
-		return model;
+	public Map<String, Object> getModeParams() {
+		return modeParams;
 	}
 
-	public LLMNodeData setModel(ModelConfig model) {
-		this.model = model;
-		return this;
+	public void setModeParams(Map<String, Object> modeParams) {
+		this.modeParams = modeParams;
 	}
 
-	public List<PromptTemplate> getPromptTemplate() {
-		return promptTemplate;
+	public List<MessageTemplate> getMessageTemplates() {
+		return messageTemplates;
 	}
 
-	public LLMNodeData setPromptTemplate(List<PromptTemplate> promptTemplate) {
-		this.promptTemplate = promptTemplate;
-		return this;
+	public void setMessageTemplates(List<MessageTemplate> messageTemplates) {
+		this.messageTemplates = messageTemplates;
 	}
 
-	public MemoryConfig getMemoryConfig() {
-		return memoryConfig;
+	public String getMemoryKey() {
+		return memoryKey;
 	}
 
-	public LLMNodeData setMemoryConfig(MemoryConfig memoryConfig) {
-		this.memoryConfig = memoryConfig;
-		return this;
+	public void setMemoryKey(String memoryKey) {
+		this.memoryKey = memoryKey;
 	}
 
-	public String getSystemPromptTemplate() {
-		return systemPromptTemplate;
+	public Integer getMaxRetryCount() {
+		return maxRetryCount;
 	}
 
-	public LLMNodeData setSystemPromptTemplate(String systemPromptTemplate) {
-		this.systemPromptTemplate = systemPromptTemplate;
-		return this;
+	public void setMaxRetryCount(Integer maxRetryCount) {
+		this.maxRetryCount = maxRetryCount;
 	}
 
-	public String getUserPromptTemplate() {
-		return userPromptTemplate;
+	public Integer getRetryIntervalMs() {
+		return retryIntervalMs;
 	}
 
-	public LLMNodeData setUserPromptTemplate(String userPromptTemplate) {
-		this.userPromptTemplate = userPromptTemplate;
-		return this;
+	public void setRetryIntervalMs(Integer retryIntervalMs) {
+		this.retryIntervalMs = retryIntervalMs;
 	}
 
-	public String getSystemPromptTemplateKey() {
-		return systemPromptTemplateKey;
+	public String getDefaultOutput() {
+		return defaultOutput;
 	}
 
-	public LLMNodeData setSystemPromptTemplateKey(String systemPromptTemplateKey) {
-		this.systemPromptTemplateKey = systemPromptTemplateKey;
-		return this;
+	public void setDefaultOutput(String defaultOutput) {
+		this.defaultOutput = defaultOutput;
 	}
 
-	public String getUserPromptTemplateKey() {
-		return userPromptTemplateKey;
+	public String getErrorNextNode() {
+		return errorNextNode;
 	}
 
-	public LLMNodeData setUserPromptTemplateKey(String userPromptTemplateKey) {
-		this.userPromptTemplateKey = userPromptTemplateKey;
-		return this;
+	public void setErrorNextNode(String errorNextNode) {
+		this.errorNextNode = errorNextNode;
 	}
 
-	public Map<String, Object> getParams() {
-		return params;
+	public String getOutputKeyPrefix() {
+		return outputKeyPrefix;
 	}
 
-	public LLMNodeData setParams(Map<String, Object> params) {
-		this.params = params;
-		return this;
+	public void setOutputKeyPrefix(String outputKeyPrefix) {
+		this.outputKeyPrefix = outputKeyPrefix;
 	}
 
-	public String getParamsKey() {
-		return paramsKey;
-	}
-
-	public LLMNodeData setParamsKey(String paramsKey) {
-		this.paramsKey = paramsKey;
-		return this;
-	}
-
-	public List<Message> getMessages() {
-		return messages;
-	}
-
-	public LLMNodeData setMessages(List<Message> messages) {
-		this.messages = messages;
-		return this;
-	}
-
-	public String getMessagesKey() {
-		return messagesKey;
-	}
-
-	public LLMNodeData setMessagesKey(String messagesKey) {
-		this.messagesKey = messagesKey;
-		return this;
-	}
-
-	public List<Advisor> getAdvisors() {
-		return advisors;
-	}
-
-	public LLMNodeData setAdvisors(List<Advisor> advisors) {
-		this.advisors = advisors;
-		return this;
-	}
-
-	public List<ToolCallback> getToolCallbacks() {
-		return toolCallbacks;
-	}
-
-	public LLMNodeData setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		this.toolCallbacks = toolCallbacks;
-		return this;
-	}
-
-	public String getOutputKey() {
-		return outputKey;
-	}
-
-	public LLMNodeData setOutputKey(String outputKey) {
-		this.outputKey = outputKey;
-		return this;
-	}
-
-	public static class PromptTemplate {
-
-		private String role;
-
-		private String text;
-
-		public PromptTemplate() {
-		}
-
-		public PromptTemplate(String role, String text) {
-			this.role = role;
-			this.text = text;
-		}
-
-		public String getRole() {
-			return role;
-		}
-
-		public PromptTemplate setRole(String role) {
-			this.role = role;
-			return this;
-		}
-
-		public String getText() {
-			return text;
-		}
-
-		public PromptTemplate setText(String text) {
-			this.text = text;
-			return this;
-		}
-
-	}
-
-	public static class ModelConfig {
-
-		private String mode;
-
-		private String name;
-
-		private String provider;
-
-		private CompletionParams completionParams;
-
-		public String getMode() {
-			return mode;
-		}
-
-		public ModelConfig setMode(String mode) {
-			this.mode = mode;
-			return this;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public ModelConfig setName(String name) {
-			this.name = name;
-			return this;
-		}
-
-		public String getProvider() {
-			return provider;
-		}
-
-		public ModelConfig setProvider(String provider) {
-			this.provider = provider;
-			return this;
-		}
-
-		public CompletionParams getCompletionParams() {
-			return completionParams;
-		}
-
-		public ModelConfig setCompletionParams(CompletionParams completionParams) {
-			this.completionParams = completionParams;
-			return this;
-		}
-
-	}
-
-	public static class CompletionParams {
-
-		private Integer maxTokens;
-
-		private Float repetitionPenalty;
-
-		private String responseFormat;
-
-		private Integer seed;
-
-		private List<String> stop;
-
-		private Float temperature;
-
-		private Float topP;
-
-		private Integer topK;
-
-		public Integer getMaxTokens() {
-			return maxTokens;
-		}
-
-		public CompletionParams setMaxTokens(Integer maxTokens) {
-			this.maxTokens = maxTokens;
-			return this;
-		}
-
-	}
-
-	public static class MemoryConfig {
-
-		private Boolean enabled = false;
-
-		private Integer windowSize = 20;
-
-		private Boolean windowEnabled = true;
-
-		private Boolean includeLastMessage = false;
-
-		private String lastMessageTemplate;
-
-		public Boolean getEnabled() {
-			return enabled;
-		}
-
-		public MemoryConfig setEnabled(Boolean enabled) {
-			this.enabled = enabled;
-			return this;
-		}
-
-		public Integer getWindowSize() {
-			return windowSize;
-		}
-
-		public MemoryConfig setWindowSize(Integer windowSize) {
-			this.windowSize = windowSize;
-			return this;
-		}
-
-		public Boolean getWindowEnabled() {
-			return windowEnabled;
-		}
-
-		public MemoryConfig setWindowEnabled(Boolean windowEnabled) {
-			this.windowEnabled = windowEnabled;
-			return this;
-		}
-
-		public Boolean getIncludeLastMessage() {
-			return includeLastMessage;
-		}
-
-		public MemoryConfig setIncludeLastMessage(Boolean includeLastMessage) {
-			this.includeLastMessage = includeLastMessage;
-			return this;
-		}
-
-		public String getLastMessageTemplate() {
-			return lastMessageTemplate;
-		}
-
-		public MemoryConfig setLastMessageTemplate(String lastMessageTemplate) {
-			this.lastMessageTemplate = lastMessageTemplate;
-			return this;
-		}
-
-	}
-
-	public static class Message {
-
-		private String role;
-
-		private String content;
-
-		public Message() {
-		}
-
-		public Message(String role, String content) {
-			this.role = role;
-			this.content = content;
-		}
-
-		public String getRole() {
-			return role;
-		}
-
-		public Message setRole(String role) {
-			this.role = role;
-			return this;
-		}
-
-		public String getContent() {
-			return content;
-		}
-
-		public Message setContent(String content) {
-			this.content = content;
-			return this;
-		}
+	public record MessageTemplate(String template, List<String> keys, MessageType type) {
 
 		@Override
 		public String toString() {
-			return String.format("new Message(\"%s\", \"%s\")", role == null ? "" : role.replace("\"", "\\\""),
-					content == null ? "" : content.replace("\"", "\\\""));
+			return String.format("new MessageTemplate(\"%s\", %s, MessageType.%s)", this.template(),
+					ObjectToCodeUtil.toCode(this.keys()), this.type().getValue().toUpperCase());
 		}
-
-	}
-
-	public static class Advisor {
-
-		private String name;
-
-		private String prompt;
-
-		public Advisor() {
-		}
-
-		public Advisor(String name, String prompt) {
-			this.name = name;
-			this.prompt = prompt;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public Advisor setName(String name) {
-			this.name = name;
-			return this;
-		}
-
-		public String getPrompt() {
-			return prompt;
-		}
-
-		public Advisor setPrompt(String prompt) {
-			this.prompt = prompt;
-			return this;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("new Advisor(\"%s\", \"%s\")", name == null ? "" : name.replace("\"", "\\\""),
-					prompt == null ? "" : prompt.replace("\"", "\\\""));
-		}
-
-	}
-
-	public static class ToolCallback {
-
-		private String name;
-
-		private Map<String, Object> args;
-
-		public ToolCallback() {
-		}
-
-		public ToolCallback(String name, Map<String, Object> args) {
-			this.name = name;
-			this.args = args;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public ToolCallback setName(String name) {
-			this.name = name;
-			return this;
-		}
-
-		public Map<String, Object> getArgs() {
-			return args;
-		}
-
-		public ToolCallback setArgs(Map<String, Object> args) {
-			this.args = args;
-			return this;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("new ToolCallback(\"%s\", %s)", name == null ? "" : name.replace("\"", "\\\""),
-					args == null ? "Map.of()" : args.toString().replace("\"", "\\\""));
-		}
-
 	}
 
 }

@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 server:
-  port: 18080
+  port: 28080
 spring:
   application:
     name: spring-ai-alibaba-graph-example
