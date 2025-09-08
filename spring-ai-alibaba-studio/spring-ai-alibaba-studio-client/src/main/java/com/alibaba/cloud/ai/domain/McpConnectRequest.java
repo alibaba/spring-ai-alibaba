@@ -15,14 +15,34 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.strategy;
+package com.alibaba.cloud.ai.domain;
 
-import com.alibaba.cloud.ai.domain.McpConnectRequest;
-import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.ServerParameters;
+import com.alibaba.cloud.ai.common.McpTransportType;
+import com.fasterxml.jackson.databind.JsonNode;
 
-public interface McpInspectorTransportStrategy {
+public class McpConnectRequest {
+    private McpTransportType transportType;
 
-    McpSyncClient connect(McpConnectRequest connectRequest);
+    private JsonNode params;
 
+    public JsonNode getParams() {
+        return params;
+    }
+
+    public void setParams(JsonNode params) {
+        this.params = params;
+    }
+
+    public McpTransportType getTransportType() {
+        return transportType;
+    }
+
+    public void setTransportType(McpTransportType transportType) {
+        this.transportType = transportType;
+    }
+
+    @Override
+    public String toString() {
+        return transportType + ":" + params;
+    }
 }

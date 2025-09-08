@@ -17,13 +17,17 @@
 
 package com.alibaba.cloud.ai.controller;
 
-import com.alibaba.cloud.ai.common.McpTransportType;
 import com.alibaba.cloud.ai.common.R;
-import com.alibaba.cloud.ai.config.McpClientConfig;
-import com.alibaba.cloud.ai.service.ChatClientDelegate;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.domain.McpConnectRequest;
+import com.alibaba.cloud.ai.domain.McpParams;
 import com.alibaba.cloud.ai.service.McpInspectorService;
-import io.modelcontextprotocol.client.transport.ServerParameters;
+import io.modelcontextprotocol.spec.McpSchema;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+
+import java.awt.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("studio/api/mcpInspector")
@@ -36,8 +40,13 @@ public class McpInspectorAPIController {
     }
 
     @PostMapping("/init")
-    public R<String> mcpClientInit(@RequestBody McpClientConfig mcpClientConfig) {
-        return mcpInspectorService.init(mcpClientConfig);
+    public R<String> mcpClientInit(@RequestBody McpConnectRequest request) {
+        return mcpInspectorService.init(request);
+    }
+
+    @PostMapping(value = "/list")
+    public R<McpSchema.ListToolsResult> mcpClientList(@RequestBody String clientName) {
+        return mcpInspectorService.listTools(clientName);
     }
 
 

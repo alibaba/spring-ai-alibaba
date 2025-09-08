@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.strategy.impl;
+package com.alibaba.cloud.ai.strategy.transport.impl;
 
 import com.alibaba.cloud.ai.common.McpTransportType;
-import com.alibaba.cloud.ai.container.McpClientContainer;
-import com.alibaba.cloud.ai.strategy.McpInspectorTransportStrategy;
+import com.alibaba.cloud.ai.domain.McpConnectRequest;
+import com.alibaba.cloud.ai.domain.impl.StdioParams;
+import com.alibaba.cloud.ai.strategy.McpParameterFactory;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.ServerParameters;
@@ -30,15 +31,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class StdioTransportProcesser extends AbstractTransport{
+public class StdioTransportProcesser extends AbstractTransport {
     private final Logger log = LoggerFactory.getLogger(StdioTransportProcesser.class);
 
+    @Autowired
+    private McpParameterFactory parameterFactory;
+
     @Override
-    public McpSyncClient connect() {
+    public McpSyncClient connect(McpConnectRequest mcpConnectRequest) {
+        StdioParams stdioParams = parameterFactory.parse(McpTransportType.STDIO,mcpConnectRequest.getParams());
+        ServerParameters serverParameters = ServerParameters.builder(stdioParams.getCommand())
+                .args(stdioParams.getArgs())
+                .env(stdioParams.getEnv())
+                .build();
         //去连接对应的mcpServer
+        log.info("Connect server parameters: " + serverParameters);
         McpSyncClient mcpStdioClient = McpClient.sync(
                 new StdioClientTransport(serverParameters)
         ).build();
+        log.info("Connect mcp stdio client: " + mcpStdioClient);
+        if(!mcpStdioClient.isInitialized()) {
+            mcpStdioClient.initialize();
+        }
         return mcpStdioClient;
     }
 

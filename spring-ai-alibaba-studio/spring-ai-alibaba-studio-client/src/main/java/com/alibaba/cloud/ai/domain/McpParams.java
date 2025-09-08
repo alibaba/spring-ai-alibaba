@@ -15,14 +15,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.strategy;
+package com.alibaba.cloud.ai.domain;
 
-import com.alibaba.cloud.ai.domain.McpConnectRequest;
-import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.ServerParameters;
+public interface McpParams {}
 
-public interface McpInspectorTransportStrategy {
-
-    McpSyncClient connect(McpConnectRequest connectRequest);
-
-}

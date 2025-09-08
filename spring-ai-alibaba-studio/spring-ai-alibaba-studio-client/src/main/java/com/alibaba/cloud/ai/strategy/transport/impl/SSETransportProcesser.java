@@ -15,20 +15,17 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.strategy.impl;
+package com.alibaba.cloud.ai.strategy.transport.impl;
 
 import com.alibaba.cloud.ai.common.McpTransportType;
 import com.alibaba.cloud.ai.container.McpClientContainer;
-import io.modelcontextprotocol.client.McpClient;
+import com.alibaba.cloud.ai.domain.McpConnectRequest;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
-import io.modelcontextprotocol.client.transport.ServerParameters;
-import io.modelcontextprotocol.client.transport.StdioClientTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class SSETransportProcesser extends AbstractTransport{
+public class SSETransportProcesser extends AbstractTransport {
 
     private final Logger log = LoggerFactory.getLogger(SSETransportProcesser.class);
 
@@ -40,13 +37,9 @@ public class SSETransportProcesser extends AbstractTransport{
         return McpTransportType.SSE;
     }
     @Override
-    public McpSyncClient connect(ServerParameters serverParameters) {
+    public McpSyncClient connect(McpConnectRequest mcpConnectRequest) {
         //去连接对应的mcpServer
-        log.info("current command is {} , current args is {}" , serverParameters.getCommand(), serverParameters.getArgs());
-        McpSyncClient mcpStdioClient = McpClient.sync(
-                new HttpClientSseClientTransport()
-        ).build();
-        return mcpStdioClient;
+        return null;
     }
 
     @Override

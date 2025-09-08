@@ -19,40 +19,50 @@ package com.alibaba.cloud.ai.service.impl;
 
 import com.alibaba.cloud.ai.common.McpTransportType;
 import com.alibaba.cloud.ai.common.R;
-import com.alibaba.cloud.ai.config.McpClientConfig;
 import com.alibaba.cloud.ai.container.McpClientContainer;
+import com.alibaba.cloud.ai.domain.McpConnectRequest;
 import com.alibaba.cloud.ai.service.McpInspectorService;
-import com.alibaba.cloud.ai.strategy.impl.AbstractTransport;
+import com.alibaba.cloud.ai.strategy.McpParameterFactory;
+import com.alibaba.cloud.ai.strategy.transport.impl.AbstractTransport;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.ServerParameters;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.modelcontextprotocol.spec.McpClientTransport;
+import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class McpInspectorServiceImpl implements McpInspectorService {
 
     private final McpClientContainer mcpClientContainer;
 
-    public McpInspectorServiceImpl(McpClientContainer mcpClientContainer) {
+    private final McpParameterFactory parameterFactory;
+
+    public McpInspectorServiceImpl(McpClientContainer mcpClientContainer, McpParameterFactory parameterFactory) {
         this.mcpClientContainer = mcpClientContainer;
+        this.parameterFactory = parameterFactory;
     }
 
     //拿到对应的信息
     @Override
-    public R<String> init(McpClientConfig mcpClientConfig) {
-        //创建对应的内容，然后扔到container里去
-        AbstractTransport transport = AbstractTransport.transportTypeMap.get(mcpClientConfig.getTransportType());
-        //这里还要去处理对应的参数。
-        //每个策略再写个参数的获取
-        ServerParameters serverParameters = ServerParameters.builder(mcpClientConfig.getCommand())
-                .args(mcpClientConfig.getArgs())
-                .env(mcpClientConfig.getEnv())
-                .build();
-        McpSyncClient mcpClient = transport.connect();
-        String clientName = transport.getClientName();
-        mcpClientContainer.add(clientName , mcpClient);
-        return R.success("初始化" + clientName + "成功" );
+    public R<String> init(McpConnectRequest request) {
+        McpTransportType transportType = request.getTransportType();
+        AbstractTransport abstractTransport = AbstractTransport.transportTypeMap.get(transportType);
+        if (abstractTransport == null) {
+            throw new RuntimeException("Unsupported transport type: " + transportType);
+        }
+        String clientName = abstractTransport.getClientName();
+        McpSyncClient mcpClient = abstractTransport.connect(request);
+        mcpClientContainer.add(clientName,mcpClient);
+        return R.success(clientName);
     }
 
+    @Override
+    public R<McpSchema.ListToolsResult> listTools(String clientName) {
+        McpSyncClient mcpSyncClient = mcpClientContainer.get(clientName);
+        return R.success(mcpSyncClient.listTools());
+
+    }
 }

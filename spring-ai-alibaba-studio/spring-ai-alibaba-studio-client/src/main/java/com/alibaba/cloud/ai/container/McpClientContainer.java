@@ -40,7 +40,11 @@ public class McpClientContainer implements DisposableBean {
     }
 
     public McpSyncClient get(String clientName){
+        if(!mcpClients.containsKey(clientName)){
+            throw new RuntimeException("Unknown client: " + clientName);
+        }
         return mcpClients.get(clientName);
+
     }
 
     @Override

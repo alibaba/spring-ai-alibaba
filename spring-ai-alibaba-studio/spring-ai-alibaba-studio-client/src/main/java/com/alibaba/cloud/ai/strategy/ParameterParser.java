@@ -17,12 +17,14 @@
 
 package com.alibaba.cloud.ai.strategy;
 
-import com.alibaba.cloud.ai.domain.McpConnectRequest;
-import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.ServerParameters;
+import com.alibaba.cloud.ai.common.McpTransportType;
+import com.alibaba.cloud.ai.domain.McpParams;
+import com.fasterxml.jackson.databind.JsonNode;
 
-public interface McpInspectorTransportStrategy {
+import java.io.IOException;
 
-    McpSyncClient connect(McpConnectRequest connectRequest);
+public interface ParameterParser<T extends McpParams> {
+    McpTransportType supportTransportType();
 
+    T parse(JsonNode jsonNode) throws IOException;
 }

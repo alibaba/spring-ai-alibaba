@@ -16,11 +16,14 @@
  */
 package com.alibaba.cloud.ai.service;
 
-import com.alibaba.cloud.ai.common.McpTransportType;
 import com.alibaba.cloud.ai.common.R;
-import com.alibaba.cloud.ai.config.McpClientConfig;
-import io.modelcontextprotocol.client.transport.ServerParameters;
+import com.alibaba.cloud.ai.domain.McpConnectRequest;
+import io.modelcontextprotocol.spec.McpSchema;
+
+import java.util.List;
 
 public interface McpInspectorService {
-    R<String> init(McpClientConfig mcpClientConfig);
+    R<String> init(McpConnectRequest request);
+
+    R<McpSchema.ListToolsResult> listTools(String clientName);
 }

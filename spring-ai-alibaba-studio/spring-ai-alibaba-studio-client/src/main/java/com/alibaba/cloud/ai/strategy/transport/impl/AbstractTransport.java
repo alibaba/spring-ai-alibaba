@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.strategy.impl;
+package com.alibaba.cloud.ai.strategy.transport.impl;
 
 import com.alibaba.cloud.ai.common.McpTransportType;
+import com.alibaba.cloud.ai.domain.McpConnectRequest;
 import com.alibaba.cloud.ai.strategy.McpInspectorTransportStrategy;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.ServerParameters;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
@@ -40,12 +40,14 @@ public abstract class AbstractTransport implements McpInspectorTransportStrategy
     }
 
     @Override
-    public McpSyncClient connect() {
-        return transportTypeMap.get(getTransportType()).connect();
+    public McpSyncClient connect(McpConnectRequest mcpConnectRequest) {
+        return transportTypeMap.get(getTransportType()).connect(mcpConnectRequest);
     }
 
     protected abstract McpTransportType getTransportType();
 
      public abstract String getClientName();
+
+
 
 }

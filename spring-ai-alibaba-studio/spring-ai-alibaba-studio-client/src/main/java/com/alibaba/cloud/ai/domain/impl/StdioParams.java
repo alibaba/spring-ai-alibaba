@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.config;
+package com.alibaba.cloud.ai.domain.impl;
 
-import com.alibaba.cloud.ai.common.McpTransportType;
+import com.alibaba.cloud.ai.domain.McpParams;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.modelcontextprotocol.client.transport.ServerParameters;
 
@@ -26,59 +26,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class McpClientConfig {
-    private McpTransportType transportType;
-
-    @JsonProperty("command")
+public class StdioParams implements McpParams {
     private String command;
 
-    @JsonProperty("args")
-    private List<String> args = new ArrayList<>();
+    private List<String> args = List.of();
 
-    @JsonProperty("env")
-    private Map<String, String> env;
-
-    public McpClientConfig(String command, List<String> args, Map<String, String> env) {
-        this.command = command;
-        this.args = args;
-        if (env != null && !env.isEmpty()) {
-            this.env.putAll(env);
-        }
-    }
-    public McpClientConfig(String command, List<String> args) {
-        this(command, args, null);
-    }
-    public McpClientConfig(){
-
-    }
-
-
-    public McpTransportType getTransportType() {
-        return transportType;
-    }
+    private Map<String, String> env = Map.of();
 
     public String getCommand() {
         return command;
+    }
+
+    public void setCommand(String command) {
+        this.command = command;
     }
 
     public List<String> getArgs() {
         return args;
     }
 
-    public Map<String, String> getEnv() {
-        return env;
-    }
-
-    public void setTransportType(McpTransportType transportType) {
-        this.transportType = transportType;
-    }
-
     public void setArgs(List<String> args) {
         this.args = args;
     }
 
-    public void setCommand(String command) {
-        this.command = command;
+    public Map<String, String> getEnv() {
+        return env;
     }
 
     public void setEnv(Map<String, String> env) {
