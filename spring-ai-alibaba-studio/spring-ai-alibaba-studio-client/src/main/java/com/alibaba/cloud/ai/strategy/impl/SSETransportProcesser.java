@@ -19,37 +19,38 @@ package com.alibaba.cloud.ai.strategy.impl;
 
 import com.alibaba.cloud.ai.common.McpTransportType;
 import com.alibaba.cloud.ai.container.McpClientContainer;
-import com.alibaba.cloud.ai.strategy.McpInspectorTransportStrategy;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.client.transport.ServerParameters;
 import io.modelcontextprotocol.client.transport.StdioClientTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
-public class StdioTransportProcesser extends AbstractTransport{
-    private final Logger log = LoggerFactory.getLogger(StdioTransportProcesser.class);
+public class SSETransportProcesser extends AbstractTransport{
+
+    private final Logger log = LoggerFactory.getLogger(SSETransportProcesser.class);
+
+    @Autowired
+    private McpClientContainer mcpClientContainer;
 
     @Override
-    public McpSyncClient connect() {
+    protected McpTransportType getTransportType() {
+        return McpTransportType.SSE;
+    }
+    @Override
+    public McpSyncClient connect(ServerParameters serverParameters) {
         //去连接对应的mcpServer
+        log.info("current command is {} , current args is {}" , serverParameters.getCommand(), serverParameters.getArgs());
         McpSyncClient mcpStdioClient = McpClient.sync(
-                new StdioClientTransport(serverParameters)
+                new HttpClientSseClientTransport()
         ).build();
         return mcpStdioClient;
     }
 
     @Override
-    protected McpTransportType getTransportType() {
-        return McpTransportType.STDIO;
-    }
-
-    @Override
     public String getClientName() {
-        return "STDIO_" + counter.getAndIncrement();
+        return  "SSE_" + counter.incrementAndGet();
     }
-
 }

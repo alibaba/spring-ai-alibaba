@@ -18,8 +18,9 @@ package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.common.McpTransportType;
 import com.alibaba.cloud.ai.common.R;
+import com.alibaba.cloud.ai.config.McpClientConfig;
 import io.modelcontextprotocol.client.transport.ServerParameters;
 
 public interface McpInspectorService {
-    R<String> init(McpTransportType transportType , ServerParameters serverParameters );
+    R<String> init(McpClientConfig mcpClientConfig);
 }

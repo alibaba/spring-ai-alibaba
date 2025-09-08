@@ -40,8 +40,8 @@ public abstract class AbstractTransport implements McpInspectorTransportStrategy
     }
 
     @Override
-    public McpSyncClient connect(ServerParameters serverParameters) {
-        return transportTypeMap.get(getTransportType()).connect(serverParameters);
+    public McpSyncClient connect() {
+        return transportTypeMap.get(getTransportType()).connect();
     }
 
     protected abstract McpTransportType getTransportType();

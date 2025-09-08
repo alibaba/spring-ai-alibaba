@@ -19,13 +19,11 @@ package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.common.McpTransportType;
 import com.alibaba.cloud.ai.common.R;
+import com.alibaba.cloud.ai.config.McpClientConfig;
 import com.alibaba.cloud.ai.service.ChatClientDelegate;
 import com.alibaba.cloud.ai.service.McpInspectorService;
 import io.modelcontextprotocol.client.transport.ServerParameters;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("studio/api/mcpInspector")
@@ -38,9 +36,8 @@ public class McpInspectorAPIController {
     }
 
     @PostMapping("/init")
-    public R<String> mcpClientInit(@RequestBody McpTransportType transportType
-            , @RequestBody ServerParameters serverParameters) {
-        return mcpInspectorService.init(transportType , serverParameters );
+    public R<String> mcpClientInit(@RequestBody McpClientConfig mcpClientConfig) {
+        return mcpInspectorService.init(mcpClientConfig);
     }
 
 
