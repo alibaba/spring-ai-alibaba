@@ -46,12 +46,26 @@ public class NacosModelInjector {
 		OpenAiChatOptions openaiChatOptions = chatOptionsBuilder
 				.model(model.getModel())
 				.build();
-		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder().defaultOptions(openaiChatOptions)
-				.openAiApi(openAiApi)
-				.toolCallingManager(nacosOptions.getObservationConfigration().getToolCallingManager())
-				.observationRegistry(nacosOptions.getObservationConfigration().getObservationRegistry()).build();
-		openAiChatModel.setObservationConvention(nacosOptions.getObservationConfigration()
-				.getChatModelObservationConvention());
+		OpenAiChatModel.Builder builder = OpenAiChatModel.builder().defaultOptions(openaiChatOptions)
+				.openAiApi(openAiApi);
+
+		//inject observation config.
+		ObservationConfigration observationConfigration = nacosOptions.getObservationConfigration();
+		if (observationConfigration != null) {
+			if (observationConfigration.getToolCallingManager() != null) {
+				builder.toolCallingManager(observationConfigration.getToolCallingManager());
+			}
+			if (observationConfigration.getObservationRegistry() != null) {
+				builder.observationRegistry(observationConfigration.getObservationRegistry());
+			}
+		}
+
+		OpenAiChatModel openAiChatModel = builder.build();
+		if (observationConfigration != null && observationConfigration.getChatModelObservationConvention() != null) {
+			openAiChatModel.setObservationConvention(observationConfigration
+					.getChatModelObservationConvention());
+		}
+
 		return openAiChatModel;
 	}
 

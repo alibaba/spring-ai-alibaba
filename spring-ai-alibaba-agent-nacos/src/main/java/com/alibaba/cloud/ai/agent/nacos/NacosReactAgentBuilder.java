@@ -9,6 +9,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.nacos.common.utils.StringUtils;
+import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.collections4.CollectionUtils;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -20,56 +21,52 @@ public class NacosReactAgentBuilder extends DefaultBuilder {
 	private NacosOptions nacosOptions;
 
 	public NacosReactAgentBuilder nacosOptions(NacosOptions nacosOptions) {
-		this.nacosOptions = nacosOptions;
-		return this;
+		this.nacosOptions = nacosOptions; return this;
 	}
 
 	@Override
 	public Builder model(ChatModel model) {
-		super.model(model);
-		nacosOptions.modelSpecified = true;
-		return this;
+		super.model(model); nacosOptions.modelSpecified = true; return this;
 	}
 
 	public Builder instruction(String instruction) {
-		super.instruction(instruction);
-		nacosOptions.promptSpecified = true;
-		return this;
+		super.instruction(instruction); nacosOptions.promptSpecified = true; return this;
 	}
 
 	@Override
 	public ReactAgent build() throws GraphStateException {
 		if (super.name == null) {
 			this.name = nacosOptions.getAgentName();
-		}
-		if (model == null && StringUtils.isNotBlank(this.name)) {
+		} if (model == null && StringUtils.isNotBlank(this.name)) {
 			this.model = NacosAgentInjector.initModel(nacosOptions, this.name);
-		}
-		if (chatClient == null) {
-			ChatClient.Builder clientBuilder = ChatClient.builder(model, nacosOptions.getObservationConfigration()
-					.getObservationRegistry(), nacosOptions.getObservationConfigration()
-					.getChatClientObservationConvention());
+		} if (chatClient == null) {
+			ChatClient.Builder clientBuilder = null;
+
+			ObservationConfigration observationConfigration = nacosOptions.getObservationConfigration();
+			if (observationConfigration == null) {
+				clientBuilder = ChatClient.builder(model);
+			}
+			else {
+				clientBuilder = ChatClient.builder(model, observationConfigration.getObservationRegistry() == null ? ObservationRegistry.NOOP : observationConfigration.getObservationRegistry(), nacosOptions.getObservationConfigration()
+						.getChatClientObservationConvention());
+			}
+
 			if (chatOptions != null) {
 				clientBuilder.defaultOptions(chatOptions);
-			}
-			if (instruction != null) {
+			} if (instruction != null) {
 				clientBuilder.defaultSystem(instruction);
-			}
-			chatClient = clientBuilder.build();
+			} chatClient = clientBuilder.build();
 		}
 
 		if (!nacosOptions.modelSpecified) {
 			NacosAgentInjector.injectModel(nacosOptions, chatClient, this.name);
-		}
-		if (!nacosOptions.promptSpecified) {
+		} if (!nacosOptions.promptSpecified) {
 			if (nacosOptions.promptKey != null) {
-				NacosAgentInjector.injectPrompt(nacosOptions.getNacosConfigService(), chatClient,
-						nacosOptions.promptKey);
+				NacosAgentInjector.injectPrompt(nacosOptions.getNacosConfigService(), chatClient, nacosOptions.promptKey);
 
 			}
 			else {
-				NacosAgentInjector.injectPromptByAgentId(nacosOptions.getNacosConfigService(), chatClient,
-						nacosOptions.getAgentName());
+				NacosAgentInjector.injectPromptByAgentId(nacosOptions.getNacosConfigService(), chatClient, nacosOptions.getAgentName());
 
 			}
 		}
@@ -79,18 +76,15 @@ public class NacosReactAgentBuilder extends DefaultBuilder {
 		this.tools = toolCallbacks;
 
 		LlmNode.Builder llmNodeBuilder = LlmNode.builder().stream(true).chatClient(chatClient)
-				.messagesKey(this.inputKey);
-		if (outputKey != null && !outputKey.isEmpty()) {
+				.messagesKey(this.inputKey); if (outputKey != null && !outputKey.isEmpty()) {
 			llmNodeBuilder.outputKey(outputKey);
 		}
 
 		if (CollectionUtils.isNotEmpty(tools)) {
 			llmNodeBuilder.toolCallbacks(tools);
-		}
-		LlmNode llmNode = llmNodeBuilder.build();
+		} LlmNode llmNode = llmNodeBuilder.build();
 
-		ToolNode toolNode = null;
-		if (resolver != null) {
+		ToolNode toolNode = null; if (resolver != null) {
 			toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 		}
 		else if (tools != null) {
@@ -98,8 +92,7 @@ public class NacosReactAgentBuilder extends DefaultBuilder {
 		}
 		else {
 			toolNode = ToolNode.builder().build();
-		}
-		NacosMcpToolsInjector.registry(llmNode, toolNode, nacosOptions, this.name);
+		} NacosMcpToolsInjector.registry(llmNode, toolNode, nacosOptions, this.name);
 		return new ReactAgent(llmNode, toolNode, this);
 	}
 }
