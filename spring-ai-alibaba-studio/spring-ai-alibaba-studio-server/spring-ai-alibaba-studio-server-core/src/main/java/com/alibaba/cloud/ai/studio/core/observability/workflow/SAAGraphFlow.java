@@ -7,7 +7,7 @@ import java.util.Objects;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 
-public record SAAGraphFlow(String id, String title, String description, List<String> tags, String ownerID,
+public record SAAGraphFlow(String graphId, String title, String description, List<String> tags, String ownerID,
 		CompileConfig compileConfig, StateGraph stateGraph) {
 
 	public SAAGraphFlow {
@@ -19,7 +19,7 @@ public record SAAGraphFlow(String id, String title, String description, List<Str
 	}
 	public static class Builder {
 
-		private String id;
+		private String graphId;
 
 		private String description;
 
@@ -33,8 +33,8 @@ public record SAAGraphFlow(String id, String title, String description, List<Str
 
 		private StateGraph stateGraph;
 
-		public Builder id(String id) {
-			this.id = id;
+		public Builder id(String graphId) {
+			this.graphId = graphId;
 			return this;
 		}
 
@@ -84,12 +84,12 @@ public record SAAGraphFlow(String id, String title, String description, List<Str
 		 */
 		public SAAGraphFlow build() {
 			// Perform validation for required fields before creating the object.
-			Objects.requireNonNull(id, "ID cannot be null");
+			Objects.requireNonNull(graphId, "GraphID cannot be null");
 			Objects.requireNonNull(title, "Title cannot be null");
 			Objects.requireNonNull(stateGraph, "State cannot be null");
 			// Ensure the list of tags is immutable in the final record.
 			List<String> immutableTags = List.copyOf(this.tags);
-			return new SAAGraphFlow(id, title, description, immutableTags, ownerID, compileConfig, stateGraph);
+			return new SAAGraphFlow(graphId, title, description, immutableTags, ownerID, compileConfig, stateGraph);
 		}
 	}
 
