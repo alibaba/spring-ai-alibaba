@@ -34,6 +34,7 @@ import org.eclipse.text.edits.TextEdit;
 /**
  * Use the CodeFormatter from Eclipse JDT Core to format all generated Java files.
  */
+// TODO: 移除未使用的import语句
 public class EclipseJdtFormatProjectContributor implements ProjectContributor {
 
 	@Override

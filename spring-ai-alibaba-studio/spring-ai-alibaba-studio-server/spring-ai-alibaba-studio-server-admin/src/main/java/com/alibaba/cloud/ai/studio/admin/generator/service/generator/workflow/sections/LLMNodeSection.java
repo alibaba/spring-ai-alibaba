@@ -16,23 +16,16 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.sections;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.LLMNodeData;
-import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.LLMNodeData.PromptTemplate;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
 import org.springframework.stereotype.Component;
 
-// TODO：支持多模型、重试机制
+// TODO：支持异常分支、支持DashScope平台以外其他模型、Dify的结构化输出
 @Component
 public class LLMNodeSection implements NodeSection<LLMNodeData> {
 
@@ -43,179 +36,115 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 
 	@Override
 	public String render(Node node, String varName) {
-		LLMNodeData d = (LLMNodeData) node.getData();
-		List<String> promptList = new ArrayList<>();
-
-		List<PromptTemplate> promptTemplates = null;
-		if (d.getPromptTemplate() != null) {
-			promptTemplates = d.getPromptTemplate();
-			for (PromptTemplate promptTemplate : promptTemplates) {
-				if (promptTemplate.getRole() != null && promptTemplate.getText() != null) {
-					promptList.add(transformPlaceholders(promptTemplate.getText()));
-				}
-			}
-		}
-
-		if (d.getSystemPromptTemplate() != null) {
-			promptList.add(transformPlaceholders(d.getSystemPromptTemplate()));
-		}
-		if (d.getUserPromptTemplate() != null) {
-			promptList.add(transformPlaceholders(d.getUserPromptTemplate()));
-		}
-
-		String id = node.getId();
-		StringBuilder sb = new StringBuilder();
-
-		sb.append(String.format("// —— LlmNode [%s] ——%n", id));
-		sb.append(String.format("LlmNode %s = LlmNode.builder()%n", varName));
-
-		for (PromptTemplate promptTemplate : promptTemplates) {
-			if (promptTemplate.getRole() != null && promptTemplate.getText() != null) {
-				if (promptTemplate.getRole().equals("system")) {
-					sb.append(String.format(".systemPromptTemplate(\"%s\")%n",
-							escape(transformPlaceholders(promptTemplate.getText()))));
-				}
-				else if (promptTemplate.getRole().equals("user")) {
-					sb.append(String.format(".userPromptTemplate(\"%s\")%n",
-							escape(transformPlaceholders(promptTemplate.getText()))));
-				}
-			}
-		}
-
-		if (d.getSystemPromptTemplate() != null) {
-			sb.append(String.format(".systemPromptTemplate(\"%s\")%n",
-					escape(transformPlaceholders(d.getSystemPromptTemplate()))));
-		}
-
-		if (d.getUserPromptTemplate() != null) {
-			sb.append(String.format(".userPromptTemplate(\"%s\")%n",
-					escape(transformPlaceholders(d.getUserPromptTemplate()))));
-		}
-
-		if (d.getSystemPromptTemplateKey() != null) {
-			sb.append(String.format(".systemPromptTemplateKey(\"%s\")%n", escape(d.getSystemPromptTemplateKey())));
-		}
-
-		if (d.getUserPromptTemplateKey() != null) {
-			sb.append(String.format(".userPromptTemplateKey(\"%s\")%n", escape(d.getUserPromptTemplateKey())));
-		}
-
-		List<String> params = extractKeysFromList(promptList);
-		if (!params.isEmpty()) {
-			Map<String, String> paramMap = params.stream().distinct().collect(Collectors.toMap(k -> k, k -> ""));
-
-			String joined = paramMap.entrySet()
-				.stream()
-				.map(e -> String.format("\"%s\", \"%s\"", escape(e.getKey()), "null"))
-				.collect(Collectors.joining(", "));
-
-			sb.append(String.format(".params(Map.of(%s))%n", joined));
-		}
-
-		if (d.getParamsKey() != null) {
-			sb.append(String.format(".paramsKey(\"%s\")%n", escape(d.getParamsKey())));
-		}
-
-		List<?> messages = d.getMessages();
-		if (messages != null && !messages.isEmpty()) {
-			String joined = messages.stream()
-				.map(Object::toString)
-				.map(this::escape)
-				.map(s -> "\"" + s + "\"")
-				.collect(Collectors.joining(", "));
-			sb.append(String.format(".messages(List.of(%s))%n", joined));
-		}
-
-		if (d.getMessagesKey() != null) {
-			sb.append(String.format(".messagesKey(\"%s\")%n", escape(d.getMessagesKey())));
-		}
-
-		List<?> advisors = d.getAdvisors();
-		if (advisors != null && !advisors.isEmpty()) {
-			String joined = advisors.stream()
-				.map(Object::toString)
-				.map(this::escape)
-				.map(s -> "\"" + s + "\"")
-				.collect(Collectors.joining(", "));
-			sb.append(String.format(".advisors(List.of(%s))%n", joined));
-		}
-
-		List<?> toolCallbacks = d.getToolCallbacks();
-		if (toolCallbacks != null && !toolCallbacks.isEmpty()) {
-			String joined = toolCallbacks.stream()
-				.map(Object::toString)
-				.map(this::escape)
-				.map(s -> "\"" + s + "\"")
-				.collect(Collectors.joining(", "));
-			sb.append(String.format(".toolCallbacks(List.of(%s))%n", joined));
-		}
-
-		sb.append(".chatClient(chatClient)\n");
-
-		if (d.getOutputKey() != null) {
-			sb.append(String.format(".outputKey(\"%s\")%n", escape(d.getOutputKey())));
-		}
-
-		sb.append(".build();\n");
-
-		// 用于将LLMNode的结果转化为Dify定义的输出结果的辅助节点代码
-		String assistantNodeCode = String.format("wrapperLLMNodeAction(%s, \"%s\")", varName,
-				((LLMNodeData) node.getData()).getOutputKey());
-
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
-				assistantNodeCode));
-
-		return sb.toString();
+		LLMNodeData nodeData = ((LLMNodeData) node.getData());
+		return String.format("""
+				// —— LLMNode [%s] ——%n
+				stateGraph.addNode("%s", AsyncNodeAction.node_async(
+				    createLLMNodeAction(%s, %s, %s, %s, %s, %s, %s, %s, %s)
+				));
+				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getChatModeName()),
+				ObjectToCodeUtil.toCode(nodeData.getModeParams()),
+				ObjectToCodeUtil.toCode(nodeData.getMessageTemplates()),
+				ObjectToCodeUtil.toCode(nodeData.getMemoryKey()), ObjectToCodeUtil.toCode(nodeData.getMaxRetryCount()),
+				ObjectToCodeUtil.toCode(nodeData.getRetryIntervalMs()),
+				ObjectToCodeUtil.toCode(nodeData.getDefaultOutput()),
+				ObjectToCodeUtil.toCode(nodeData.getErrorNextNode()),
+				ObjectToCodeUtil.toCode(nodeData.getOutputKeyPrefix()));
 	}
 
 	@Override
 	public String assistMethodCode(DSLDialectType dialectType) {
-		return switch (dialectType) {
-			case DIFY -> """
-					private NodeAction wrapperLLMNodeAction(NodeAction nodeAction, String key) {
-					    return state -> {
-					        Map<String, Object> result = nodeAction.apply(state);
-					        Object object = result.get(key);
-					        if(object instanceof AssistantMessage && ((AssistantMessage) object).getText() != null) {
-					            return Map.of(key, ((AssistantMessage) object).getText());
-					        }
-					        return Map.of(key, object != null ? object.toString() : "unknown");
-					    };
-					}
-					""";
-			default -> "";
-		};
-	}
 
-	// Extract variable
-	private static List<String> extractKeysFromList(List<String> inputList) {
-		List<String> result = new ArrayList<>();
-		Pattern pattern = Pattern.compile("\\{(\\w+)}");
+		return String.format(
+				"""
+						@Autowired
+						private ChatModel chatModel;
 
-		for (String input : inputList) {
-			Matcher matcher = pattern.matcher(input);
-			while (matcher.find()) {
-				result.add(matcher.group(1));
-			}
-		}
-		return result;
-	}
+						private record MessageTemplate(String template, List<String> keys, MessageType type) {
+						    public Message render(OverAllState state) {
+						        Map<String, Object> params = keys.stream()
+						            .collect(Collectors.toMap(key -> key, key -> state.value(key, ""), (o1, o2) -> o2));
+						        String text = new PromptTemplate(template).render(params);
+						        return switch (type) {
+						            case USER -> new UserMessage(text);
+						            case SYSTEM -> new SystemMessage(text);
+						            case TOOL -> throw new UnsupportedOperationException("Tool message not supported");
+						            case ASSISTANT -> new AssistantMessage(text);
+						        };
+						    }
+						}
 
-	// Format prompt
-	private static String transformPlaceholders(String input) {
-		if (input == null)
-			return null;
+						private NodeAction createLLMNodeAction(String chatModelName, Map<String, Number> modeParams,
+						        List<MessageTemplate> messageTemplates, String memoryKey, Integer maxRetryCount, Integer retryIntervalMs,
+						        String defaultOutput, String errorNextNode, String outputKeyPrefix) {
+						    // build chatClient with params
+						    var chatOptionsBuilder = DashScopeChatOptions.builder().withModel(chatModelName);
+						    Optional.ofNullable(modeParams.get("temperature")).ifPresent(val -> chatOptionsBuilder.withTemperature(val.doubleValue()));
+						    Optional.ofNullable(modeParams.get("seed")).ifPresent(val -> chatOptionsBuilder.withSeed(val.intValue()));
+						    Optional.ofNullable(modeParams.get("top_p")).ifPresent(val -> chatOptionsBuilder.withTopP(val.doubleValue()));
+						    Optional.ofNullable(modeParams.get("top_k")).ifPresent(val -> chatOptionsBuilder.withTopK(val.intValue()));
+						    Optional.ofNullable(modeParams.get("max_tokens")).ifPresent(val -> chatOptionsBuilder.withMaxToken(val.intValue()));
+						    Optional.ofNullable(modeParams.get("repetition_penalty")).ifPresent(val -> chatOptionsBuilder.withRepetitionPenalty(val.doubleValue()));
+						    final ChatClient chatClient = ChatClient.builder(chatModel).defaultOptions(chatOptionsBuilder.build()).build();
 
-		Pattern pattern = Pattern.compile("\\{\\{#.*?\\.(.*?)#}}");
-		Matcher matcher = pattern.matcher(input);
+						    String nextNodeKey = "next_node";
 
-		StringBuffer sb = new StringBuffer();
-		while (matcher.find()) {
-			String key = matcher.group(1);
-			matcher.appendReplacement(sb, "{" + key + "}");
-		}
-		matcher.appendTail(sb);
-		return sb.toString();
+						    return state -> {
+						        String memories;
+						        if (memoryKey == null || state.value(memoryKey).isEmpty()) {
+						            memories = "This is the user's first request without context";
+						        }
+						        else {
+						            memories = String.format("This is the history of previous requests:\\n %%s",
+						                    state.value(memoryKey, List.of()).toString());
+						        }
+
+						        // call chatClient
+						        int retryCount = Optional.ofNullable(maxRetryCount).orElse(1);
+						        int retryInterval = Optional.ofNullable(retryIntervalMs).orElse(1000);
+						        while (retryCount-- > 0) {
+						            try {
+						                // build messages
+						                List<Message> messages = messageTemplates.stream()
+						                    .map(messageTemplate -> messageTemplate.render(state))
+						                    .toList();
+						                String content = chatClient.prompt().system(memories).messages(messages).call().content();
+						                if (content == null) {
+						                    throw new RuntimeException("ChatClient error");
+						                }
+						                Map<String, Object> map = new HashMap<>(%s);
+						                if (memoryKey != null) {
+						                    map.put(memoryKey, content);
+						                }
+						                return map;
+						            }
+						            catch (Exception e) {
+						                try {
+						                    Thread.sleep(retryInterval);
+						                } catch (InterruptedException ie) {
+						                    Thread.currentThread().interrupt();
+						                    break;
+						                }
+						            }
+						        }
+
+						        // error handling
+						        if (defaultOutput != null) {
+						            return %s;
+						        }
+						        else if (errorNextNode != null) {
+						            return Map.of(nextNodeKey, errorNextNode);
+						        }
+						        else {
+						            throw new IllegalStateException("No default output or error next node provided");
+						        }
+						    };
+						}
+						""",
+				dialectType.equals(DSLDialectType.DIFY) ? "Map.of(outputKeyPrefix + \"text\", content)"
+						: "Map.of(outputKeyPrefix + \"output\", content, outputKeyPrefix + \"reasoning_content\", content)",
+				dialectType.equals(DSLDialectType.DIFY) ? "Map.of(outputKeyPrefix + \"text\", defaultOutput)"
+						: "Map.of(outputKeyPrefix + \"output\", defaultOutput, outputKeyPrefix + \"reasoning_content\", defaultOutput)");
 	}
 
 }
