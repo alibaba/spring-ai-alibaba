@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -444,7 +443,8 @@ public class StateGraphTest {
 		}).build());
 
 		final OverAllState[] finalState = new OverAllState[1];
-		app.fluxStream(Map.of(), RunnableConfig.builder().addParallelNodeExecutor("A", ForkJoinPool.commonPool()).build())
+		app.fluxStream(Map.of(),
+				RunnableConfig.builder().addParallelNodeExecutor("A", ForkJoinPool.commonPool()).build())
 			.doOnNext(output -> System.out.println(output))
 			.map(NodeOutput::state)
 			.doOnNext(state -> finalState[0] = state)
@@ -528,7 +528,7 @@ public class StateGraphTest {
 		var app = workflow.compile();
 
 		app.fluxStream(Map.of()).subscribe(output -> {
-				System.out.println("Node output: " + output);
+			System.out.println("Node output: " + output);
 		});
 	}
 
@@ -936,4 +936,3 @@ public class StateGraphTest {
 	}
 
 }
-

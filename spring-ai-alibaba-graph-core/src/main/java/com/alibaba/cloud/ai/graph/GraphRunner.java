@@ -13,44 +13,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.async;
+package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.CommandNode;
+import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.utils.TypeRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.*;
 import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
  * A reactive graph execution engine based on Project Reactor. This completely replaces
  * the traditional Iterable-based AsyncGenerator approach.
  */
-public class GraphEngine {
+public class GraphRunner {
 
-	private static final Logger log = LoggerFactory.getLogger(GraphEngine.class);
+	private static final Logger log = LoggerFactory.getLogger(GraphRunner.class);
 
 	private static final String INTERRUPT_AFTER = "__INTERRUPTED__";
 
@@ -62,20 +65,21 @@ public class GraphEngine {
 
 	private final AtomicReference<Object> resultValue = new AtomicReference<>();
 
-	public GraphEngine(CompiledGraph compiledGraph, OverAllState initialState, RunnableConfig config) {
+	public GraphRunner(CompiledGraph compiledGraph, OverAllState initialState, RunnableConfig config) {
 		this.compiledGraph = compiledGraph;
 		this.initialState = initialState;
 		this.config = config;
 	}
 
-	public Flux<NodeOutput> asFlux() {
+	public Flux<Data<NodeOutput>> run() {
 		return Flux.create(sink -> {
 			try {
 				GeneratorContext context = new GeneratorContext(initialState, config, compiledGraph);
 				processGraphExecution(sink, context);
 			}
 			catch (Exception e) {
-				sink.error(e);
+				sink.next(Data.error(e));
+				sink.complete();
 			}
 		}, FluxSink.OverflowStrategy.BUFFER);
 	}
@@ -84,10 +88,34 @@ public class GraphEngine {
 		return Optional.ofNullable(resultValue.get());
 	}
 
-	private void processGraphExecution(FluxSink<NodeOutput> sink, GeneratorContext context) {
+	private void processGraphExecution(FluxSink<Data<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			if (context.shouldStop() || context.isMaxIterationsReached()) {
 				handleCompletion(sink, context);
+				return;
+			}
+
+			final var returnFromEmbed = context.getReturnFromEmbedAndReset();
+			// Is it a resume from embed flux, can from a subgraph or normal node.
+			if (returnFromEmbed.isPresent()) {
+				var interruption = returnFromEmbed.get().value(new TypeRef<InterruptionMetadata>() {
+				});
+				if (interruption.isPresent()) {
+					sink.next(Data.done(interruption.get()));
+					sink.complete();
+					return;
+				}
+				sink.next(Data.done(context.buildCurrentNodeOutput()));
+				sink.complete();
+				return;
+			}
+
+			// TODO, duplicate interruption mechanism with handleInterruption() below?
+			// possibly needs to be unified.
+			if (context.getCurrentNodeId() != null && config.isInterrupted(context.getCurrentNodeId())) {
+				config.withNodeResumed(context.getCurrentNodeId());
+				sink.next(Data.done(Data.done(context.getCurrentState())));
+				sink.complete();
 				return;
 			}
 
@@ -101,25 +129,35 @@ public class GraphEngine {
 				return;
 			}
 
+			final var resumeFrom = context.getResumeFromAndReset();
+			if (resumeFrom.isPresent()) {
+				if (compiledGraph.compileConfig.interruptBeforeEdge()
+						&& Objects.equals(context.getNextNodeId(), INTERRUPT_AFTER)) {
+					var nextNodeCommand = context.nextNodeId(resumeFrom.get(), context.getCurrentState());
+					// nextNodeId = nextNodeCommand.gotoNode();
+					context.setNextNodeId(nextNodeCommand.gotoNode());
+					context.updateCurrentState(nextNodeCommand.update());
+					context.setCurrentNodeId(null);
+				}
+			}
+
 			if (context.shouldInterrupt()) {
 				handleInterruption(sink, context);
 				return;
 			}
 
-
-
 			// Execute current node
 			executeCurrentNode(sink, context);
-
 		}
 		catch (Exception e) {
 			context.doListeners(ERROR, e);
 			log.error("Error during graph execution", e);
-			sink.error(e);
+			sink.next(Data.error(e));
+			sink.complete();
 		}
 	}
 
-	private void handleStartNode(FluxSink<NodeOutput> sink, GeneratorContext context) {
+	private void handleStartNode(FluxSink<Data<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			context.doListeners(START, null);
 			Command nextCommand = context.getEntryPoint();
@@ -130,29 +168,31 @@ public class GraphEngine {
 			NodeOutput output = context.buildOutput(START, cp);
 
 			context.setCurrentNodeId(context.getNextNodeId());
-			sink.next(output);
+			sink.next(Data.of(output));
 
 			// Continue to next node
 			processGraphExecution(sink, context);
 		}
 		catch (Exception e) {
-			sink.error(e);
+			sink.next(Data.error(e));
+			sink.complete();
 		}
 	}
 
-	private void handleEndNode(FluxSink<NodeOutput> sink, GeneratorContext context) {
+	private void handleEndNode(FluxSink<Data<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			context.doListeners(END, null);
 			NodeOutput output = context.buildNodeOutput(END);
-			sink.next(output);
+			sink.next(Data.of(output));
 			handleCompletion(sink, context);
 		}
 		catch (Exception e) {
-			sink.error(e);
+			sink.next(Data.error(e));
+			sink.complete();
 		}
 	}
 
-	private void handleCompletion(FluxSink<NodeOutput> sink, GeneratorContext context) {
+	private void handleCompletion(FluxSink<Data<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			if (compiledGraph.compileConfig.releaseThread()
 					&& compiledGraph.compileConfig.checkpointSaver().isPresent()) {
@@ -164,34 +204,40 @@ public class GraphEngine {
 			else {
 				resultValue.set(context.getCurrentState());
 			}
+			sink.next(Data.done(resultValue.get()));
 			sink.complete();
 		}
 		catch (Exception e) {
-			sink.error(e);
+			sink.next(Data.error(e));
+			sink.complete();
 		}
 	}
 
-	private void handleInterruption(FluxSink<NodeOutput> sink, GeneratorContext context) {
+	private void handleInterruption(FluxSink<Data<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			InterruptionMetadata metadata = InterruptionMetadata
 				.builder(context.getCurrentNodeId(), context.cloneState(context.getCurrentState()))
 				.build();
 			resultValue.set(metadata);
+			sink.next(Data.done(metadata));
 			sink.complete();
 		}
 		catch (Exception e) {
-			sink.error(e);
+			sink.next(Data.error(e));
+			sink.complete();
 		}
 	}
 
-	private void executeCurrentNode(FluxSink<NodeOutput> sink, GeneratorContext context) {
+	private void executeCurrentNode(FluxSink<Data<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			context.setCurrentNodeId(context.getNextNodeId());
 			String currentNodeId = context.getCurrentNodeId();
 			AsyncNodeActionWithConfig action = context.getNodeAction(currentNodeId);
 
 			if (action == null) {
-				throw RunnableErrors.missingNode.exception(currentNodeId);
+				sink.next(Data.error(RunnableErrors.missingNode.exception(currentNodeId)));
+				sink.complete();
+				return;
 			}
 
 			// Check for interruptable action
@@ -200,6 +246,7 @@ public class GraphEngine {
 					.interrupt(currentNodeId, context.cloneState(context.getCurrentState()));
 				if (interruptMetadata.isPresent()) {
 					resultValue.set(interruptMetadata.get());
+					sink.next(Data.done(interruptMetadata.get()));
 					sink.complete();
 					return;
 				}
@@ -212,16 +259,18 @@ public class GraphEngine {
 			Mono.fromFuture(action.apply(context.getOverallState(), context.config))
 				.subscribe(updateState -> handleActionResult(sink, context, action, updateState), error -> {
 					context.doListeners(NODE_AFTER, null);
-					sink.error(error);
+					sink.next(Data.error(error));
+					sink.complete();
 				});
 
 		}
 		catch (Exception e) {
-			sink.error(e);
+			sink.next(Data.error(e));
+			sink.complete();
 		}
 	}
 
-	private void handleActionResult(FluxSink<NodeOutput> sink, GeneratorContext context,
+	private void handleActionResult(FluxSink<Data<NodeOutput>> sink, GeneratorContext context,
 			AsyncNodeActionWithConfig action, Map<String, Object> updateState) {
 		try {
 			context.doListeners(NODE_AFTER, null);
@@ -231,10 +280,17 @@ public class GraphEngine {
 				return;
 			}
 
-			// Check for embedded Flux generators
-			Optional<Flux<NodeOutput>> embedFlux = getEmbedFlux(updateState);
+			// Check for embedded flux stream
+			Optional<Flux<Data<NodeOutput>>> embedFlux = getEmbedFlux(updateState);
 			if (embedFlux.isPresent()) {
 				handleEmbeddedFlux(sink, context, embedFlux.get(), updateState);
+				return;
+			}
+
+			// FIXME, remove this this deprecated embedded generator support
+			Optional<AsyncGenerator<NodeOutput>> embedGenerator = getEmbedGenerator(updateState);
+			if (embedGenerator.isPresent()) {
+				handleEmbeddedGenerator(sink, context, embedGenerator.get(), updateState);
 				return;
 			}
 
@@ -254,18 +310,19 @@ public class GraphEngine {
 			}
 
 			NodeOutput output = context.buildCurrentNodeOutput();
-			sink.next(output);
+			sink.next(Data.of(output));
 
 			// Continue to next node
 			processGraphExecution(sink, context);
 
 		}
 		catch (Exception e) {
-			sink.error(e);
+			sink.next(Data.error(e));
+			sink.complete();
 		}
 	}
 
-	private void handleCommandAction(FluxSink<NodeOutput> sink, GeneratorContext context,
+	private void handleCommandAction(FluxSink<Data<NodeOutput>> sink, GeneratorContext context,
 			Map<String, Object> updateState) {
 		try {
 			AsyncCommandAction commandAction = (AsyncCommandAction) updateState.get("command");
@@ -277,41 +334,72 @@ public class GraphEngine {
 					context.setNextNodeId(command.gotoNode());
 
 					NodeOutput output = context.buildCurrentNodeOutput();
-					sink.next(output);
+					sink.next(Data.of(output));
 					processGraphExecution(sink, context);
 				}
 				catch (Exception e) {
-					sink.error(e);
+					sink.next(Data.error(e));
+					sink.complete();
 				}
-			}, sink::error);
+			}, error -> {
+				sink.next(Data.error(error));
+				sink.complete();
+			});
 		}
 		catch (Exception e) {
-			sink.error(e);
+			sink.next(Data.error(e));
+			sink.complete();
 		}
 	}
 
-	private void handleEmbeddedFlux(FluxSink<NodeOutput> sink, GeneratorContext context, Flux<NodeOutput> embedFlux,
-			Map<String, Object> partialState) {
-		// Remove Flux from partial state
-		Map<String, Object> cleanPartialState = partialState.entrySet()
-			.stream()
-			.filter(e -> !(e.getValue() instanceof Flux))
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+	private void handleEmbeddedFlux(FluxSink<Data<NodeOutput>> sink, GeneratorContext context,
+			Flux<Data<NodeOutput>> embedFlux, Map<String, Object> partialState) {
 
-		// Apply partial state update first
-		if (!cleanPartialState.isEmpty()) {
-			Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
-					cleanPartialState, context.getKeyStrategyMap());
-			context.updateCurrentState(intermediateState);
-			context.getOverallState().updateState(intermediateState);
-		}
+		var result = new AtomicReference<Object>(null);
 
 		// Process embedded Flux
-		embedFlux.doOnNext(output -> {
-			output.setSubGraph(true);
-			sink.next(output);
-		}).doOnError(sink::error).doOnComplete(() -> {
+		embedFlux.doOnNext(data -> {
+			if (data.getOutput() != null) {
+				var output = data.getOutput().join();
+				output.setSubGraph(true);
+				sink.next(Data.of(output));
+			}
+			result.set(data);
+		}).doOnError(error -> {
+			sink.next(Data.error(error));
+			sink.complete();
+		}).doOnComplete(() -> {
 			try {
+				var data = (Data) result.get();
+				var nodeResultValue = data.resultValue;
+
+				if (nodeResultValue instanceof InterruptionMetadata) {
+					context.setReturnFromEmbedWithValue(nodeResultValue);
+					sink.complete();
+					return;
+				}
+
+				if (nodeResultValue != null) {
+					if (nodeResultValue instanceof Map<?, ?>) {
+						// Remove Flux from partial state
+						Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
+							.stream()
+							.filter(e -> !(e.getValue() instanceof Flux))
+							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+						// Apply partial state update first
+						Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
+								partialStateWithoutFlux, context.getKeyStrategyMap());
+						var currentState = OverAllState.updateState(intermediateState,
+								(Map<String, Object>) nodeResultValue, context.getKeyStrategyMap());
+						context.updateCurrentState(currentState);
+						context.getOverallState().updateState(currentState);
+					}
+					else {
+						throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
+					}
+				}
+
 				// After embedded flux completes, continue with main flow
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
 				context.setNextNodeId(nextCommand.gotoNode());
@@ -320,17 +408,87 @@ public class GraphEngine {
 				processGraphExecution(sink, context);
 			}
 			catch (Exception e) {
-				sink.error(e);
+				sink.next(Data.error(e));
+				sink.complete();
 			}
 		}).subscribe();
 	}
 
-	private Optional<Flux<NodeOutput>> getEmbedFlux(Map<String, Object> partialState) {
+	private Optional<Flux<Data<NodeOutput>>> getEmbedFlux(Map<String, Object> partialState) {
 		return partialState.entrySet()
 			.stream()
 			.filter(e -> e.getValue() instanceof Flux)
 			.findFirst()
-			.map(e -> (Flux<NodeOutput>) e.getValue());
+			.map(e -> (Flux<Data<NodeOutput>>) e.getValue());
+	}
+
+	/**
+	 * Gets embed generator from partial state.
+	 * @param partialState the partial state containing generator instances
+	 * @return an Optional containing Data with the generator if found, empty otherwise
+	 */
+	@Deprecated
+	private Optional<AsyncGenerator<NodeOutput>> getEmbedGenerator(Map<String, Object> partialState) {
+		return partialState.entrySet()
+			.stream()
+			.filter(e -> e.getValue() instanceof AsyncGenerator)
+			.findFirst()
+			.map(generatorEntry -> (AsyncGenerator<NodeOutput>) generatorEntry.getValue());
+	}
+
+	@Deprecated
+	private void handleEmbeddedGenerator(FluxSink<Data<NodeOutput>> sink, GeneratorContext context,
+			AsyncGenerator<NodeOutput> generator, Map<String, Object> partialState) {
+
+		generator.stream().peek(output -> {
+			output.setSubGraph(true);
+			sink.next(Data.of(output));
+		});
+
+		try {
+			var iteratorResult = AsyncGenerator.resultValue(generator);
+			if (iteratorResult.isPresent()) {
+				var nodeResultValue = iteratorResult.get();
+
+				if (nodeResultValue instanceof InterruptionMetadata) {
+					context.setReturnFromEmbedWithValue(nodeResultValue);
+					sink.complete();
+					return;
+				}
+
+				if (nodeResultValue != null) {
+					if (nodeResultValue instanceof Map<?, ?>) {
+						// Remove Flux from partial state
+						Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
+							.stream()
+							.filter(e -> !(e.getValue() instanceof Flux))
+							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+						// Apply partial state update first
+						Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
+								partialStateWithoutFlux, context.getKeyStrategyMap());
+						var currentState = OverAllState.updateState(intermediateState,
+								(Map<String, Object>) nodeResultValue, context.getKeyStrategyMap());
+						context.updateCurrentState(currentState);
+						context.getOverallState().updateState(currentState);
+					}
+					else {
+						throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
+					}
+				}
+			}
+
+			// After embedded flux completes, continue with main flow
+			Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
+			context.setNextNodeId(nextCommand.gotoNode());
+			context.updateCurrentState(nextCommand.update());
+
+			processGraphExecution(sink, context);
+		}
+		catch (Exception e) {
+			sink.next(Data.error(e));
+			sink.complete();
+		}
 	}
 
 	/**
@@ -338,11 +496,17 @@ public class GraphEngine {
 	 */
 	private static class GeneratorContext {
 
+		record ReturnFromEmbed(Object value) {
+			<T> Optional<T> value(TypeRef<T> ref) {
+				return ofNullable(value).flatMap(ref::cast);
+			}
+		}
+
 		private final CompiledGraph compiledGraph;
 
 		private OverAllState overallState;
 
-		private final RunnableConfig config;
+		private RunnableConfig config;
 
 		private final AtomicInteger iteration = new AtomicInteger(0);
 
@@ -351,6 +515,10 @@ public class GraphEngine {
 		private String nextNodeId;
 
 		private Map<String, Object> currentState;
+
+		private String resumeFrom;
+
+		private ReturnFromEmbed returnFromEmbed;
 
 		public GeneratorContext(OverAllState initialState, RunnableConfig config, CompiledGraph compiledGraph)
 				throws Exception {
@@ -373,10 +541,25 @@ public class GraphEngine {
 			var checkpoint = saver.get(config)
 				.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
 
+			var startCheckpointNextNodeAction = compiledGraph.getNodeAction(checkpoint.getNextNodeId());
+			if (startCheckpointNextNodeAction instanceof SubCompiledGraphNodeAction action) {
+				// RESUME FORM SUBGRAPH DETECTED
+				this.config = RunnableConfig.builder(config)
+					.checkPointId(null) // Reset checkpoint id
+					.addMetadata(action.resumeSubGraphId(), true) // add metadata for
+					// sub graph
+					.build();
+			}
+			else {
+				// Reset checkpoint id
+				this.config = config.withCheckPointId(null);
+			}
+
 			this.currentState = checkpoint.getState();
 			this.currentNodeId = null;
 			this.nextNodeId = checkpoint.getNextNodeId();
 			this.overallState = initialState.input(this.currentState);
+			this.resumeFrom = checkpoint.getNodeId();
 
 			log.trace("RESUME FROM {}", checkpoint.getNodeId());
 		}
@@ -536,6 +719,78 @@ public class GraphEngine {
 
 		public Map<String, com.alibaba.cloud.ai.graph.KeyStrategy> getKeyStrategyMap() {
 			return compiledGraph.getKeyStrategyMap();
+		}
+
+		Optional<String> getResumeFromAndReset() {
+			final var result = ofNullable(resumeFrom);
+			resumeFrom = null;
+			return result;
+		}
+
+		Optional<ReturnFromEmbed> getReturnFromEmbedAndReset() {
+			var result = ofNullable(returnFromEmbed);
+			returnFromEmbed = null;
+			return result;
+		}
+
+		void setReturnFromEmbedWithValue(Object value) {
+			returnFromEmbed = new ReturnFromEmbed(value);
+		}
+
+	}
+
+	/**
+	 * Represents a data element in the Flux.
+	 *
+	 * @param <E> the type of the data element
+	 */
+	public static class Data<E> {
+
+		final CompletableFuture<E> output;
+
+		final Object resultValue;
+
+		public Data(CompletableFuture<E> data, Object resultValue) {
+			this.output = data;
+			this.resultValue = resultValue;
+		}
+
+		public CompletableFuture<E> getOutput() {
+			return output;
+		}
+
+		public Optional<Object> resultValue() {
+			return resultValue == null ? Optional.empty() : Optional.of(resultValue);
+		}
+
+		public boolean isDone() {
+			return output == null;
+		}
+
+		public boolean isError() {
+			return output != null && output.isCompletedExceptionally();
+		}
+
+		public static <E> Data<E> of(CompletableFuture<E> data) {
+			return new Data<>(data, null);
+		}
+
+		public static <E> Data<E> of(E data) {
+			return new Data<>(completedFuture(data), null);
+		}
+
+		public static <E> Data<E> done() {
+			return new Data<>(null, null);
+		}
+
+		public static <E> Data<E> done(Object resultValue) {
+			return new Data<>(null, resultValue);
+		}
+
+		public static <E> Data<E> error(Throwable exception) {
+			CompletableFuture<E> future = new CompletableFuture<>();
+			future.completeExceptionally(exception);
+			return Data.of(future);
 		}
 
 	}

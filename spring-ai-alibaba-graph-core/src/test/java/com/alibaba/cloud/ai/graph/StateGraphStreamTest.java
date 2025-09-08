@@ -143,11 +143,9 @@ public class StateGraphStreamTest {
 		app.fluxStream(Map.of())
 			.doOnNext(output -> System.out.println(output))
 			.reduce((first, second) -> second) // Get the last state as result
-			.subscribe(
-				lastState -> System.out.println(lastState),
-				error -> System.err.println("Stream error: " + error),
-				() -> System.out.println("Stream completed")
-			);
+			.subscribe(lastState -> System.out.println(lastState),
+					error -> System.err.println("Stream error: " + error),
+					() -> System.out.println("Stream completed"));
 	}
 
 	/**
@@ -240,7 +238,7 @@ public class StateGraphStreamTest {
 		CompiledGraph compiledGraph = stateGraph.compile();
 		// 初始化输入
 		compiledGraph.fluxStream(Map.of("input", "hoho~~")).subscribe(output -> {
-				System.out.println("Node output: " + output);
+			System.out.println("Node output: " + output);
 		});
 	}
 
@@ -280,20 +278,24 @@ public class StateGraphStreamTest {
 						// Get the exception from the CompletableFuture
 						try {
 							data.getData().join();
-						} catch (Exception e) {
+						}
+						catch (Exception e) {
 							sink.error(e);
 							break;
 						}
-					} else if (data.isDone()) {
+					}
+					else if (data.isDone()) {
 						sink.complete();
 						break;
-					} else {
+					}
+					else {
 						// Get the value from the CompletableFuture
 						StreamingOutput value = data.getData().join();
 						sink.next(value);
 					}
 				}
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				sink.error(e);
 			}
 		});
@@ -348,10 +350,9 @@ public class StateGraphStreamTest {
 			.addEdge("result", END);
 
 		CompiledGraph compile = stateGraph.compile();
-		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"))
-			.subscribe(output -> {
-				System.out.println("Node output: " + output);
-			});
+		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章")).subscribe(output -> {
+			System.out.println("Node output: " + output);
+		});
 	}
 
 	/**
@@ -415,13 +416,10 @@ public class StateGraphStreamTest {
 			.filter(s -> !(s instanceof StreamingOutput))
 			.map(NodeOutput::state)
 			.collectList()
-			.subscribe(
-				states -> {
-					assertFalse(states.isEmpty(), "least one content");
-					assertEquals(4, states.size(), "should be four content");
-				},
-				error -> System.err.println("Stream error: " + error)
-			);
+			.subscribe(states -> {
+				assertFalse(states.isEmpty(), "least one content");
+				assertEquals(4, states.size(), "should be four content");
+			}, error -> System.err.println("Stream error: " + error));
 	}
 
 	@Test
@@ -447,8 +445,9 @@ public class StateGraphStreamTest {
 
 		CompiledGraph compile = stateGraph.compile();
 
-		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"),
-				RunnableConfig.builder().addParallelNodeExecutor(START, ForkJoinPool.commonPool()).build())
+		compile
+			.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"),
+					RunnableConfig.builder().addParallelNodeExecutor(START, ForkJoinPool.commonPool()).build())
 			.subscribe(output -> {
 				System.out.println("Node output: " + output);
 			});

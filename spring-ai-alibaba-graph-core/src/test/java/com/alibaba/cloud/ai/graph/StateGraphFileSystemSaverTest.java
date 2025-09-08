@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
@@ -23,11 +22,14 @@ import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -320,13 +322,24 @@ public class StateGraphFileSystemSaverTest {
 		assertEquals(expectedSteps, messages.size());
 
 		// RE-SUBMIT THREAD 1
-		var iterator = app.stream(Map.of(), runnableConfig_1);
+		var dataFlux = app.fluxDataStream(Map.of(), runnableConfig_1);
 
-		state_1 = iterator.stream().reduce((a, b) -> b).map(NodeOutput::state);
+		AtomicReference<Object> lastResult = new AtomicReference<>();
+		state_1 = dataFlux.flatMap(data -> {
+			if (data.isDone()) {
+				// TODO, collect data.resultValue if necessary.
+				lastResult.set(data.resultValue());
+				return Flux.empty();
+			}
+			if (data.isError()) {
+				return Mono.fromFuture(data.getOutput()).onErrorMap(throwable -> throwable).flux();
+			}
+			return Mono.fromFuture(data.getOutput()).flux();
+		}).reduce((a, b) -> b).map(NodeOutput::state).blockOptional();
+
 		assertTrue(state_1.isPresent());
-		assertInstanceOf(AsyncGenerator.HasResultValue.class, iterator);
 
-		var result = ((AsyncGenerator.HasResultValue) iterator).resultValue();
+		var result = (Optional<Object>) lastResult.get();
 
 		assertTrue(result.isPresent());
 		assertInstanceOf(BaseCheckpointSaver.Tag.class, result.get());

@@ -22,7 +22,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import com.alibaba.cloud.ai.graph.*;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.GraphRunner;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
@@ -113,8 +113,7 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	@Override
-	public Flux<NodeOutput> stream(Map<String, Object> input)
-			throws GraphStateException, GraphRunnerException {
+	public Flux<NodeOutput> stream(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
@@ -564,52 +563,10 @@ public class ReactAgent extends BaseAgent {
 			Message message = new UserMessage(input);
 			List<Message> messages = List.of(message);
 
-			AsyncGenerator<NodeOutput> child = AsyncGenerator.fromFlux(childGraph.fluxStream(Map.of("messages", messages)));
+			Flux<GraphRunner.Data<NodeOutput>> subGraphFlux = childGraph.fluxDataStream(Map.of("messages", messages),
+					RunnableConfig.builder().build());
 
-			AsyncGenerator<NodeOutput> wrapped = new AsyncGenerator<NodeOutput>() {
-				private volatile Map<String, Object> lastStateData;
-
-				@Override
-				public Data<NodeOutput> next() {
-					Data<NodeOutput> data = child.next();
-					if (data.isDone()) {
-						String result = extractAssistantText(lastStateData);
-						return Data.done(Map.of(outputKeyToParent, result));
-					}
-					if (data.isError()) {
-						return data;
-					}
-					return Data.of(data.getData().thenApply(n -> {
-						try {
-							lastStateData = n.state().data();
-						}
-						catch (Exception ignored) {
-						}
-						return n;
-					}));
-				}
-			};
-
-			return Map.of(outputKeyToParent, wrapped);
-		}
-
-		private String extractAssistantText(Map<String, Object> stateData) {
-			if (stateData == null) {
-				return "";
-			}
-			Object msgs = stateData.get("messages");
-			if (!(msgs instanceof List)) {
-				return "";
-			}
-			List<?> list = (List<?>) msgs;
-			if (list.isEmpty()) {
-				return "";
-			}
-			Object last = list.get(list.size() - 1);
-			if (last instanceof AssistantMessage assistant) {
-				return assistant.getText();
-			}
-			return "";
+			return Map.of(outputKeyToParent, subGraphFlux);
 		}
 
 	}

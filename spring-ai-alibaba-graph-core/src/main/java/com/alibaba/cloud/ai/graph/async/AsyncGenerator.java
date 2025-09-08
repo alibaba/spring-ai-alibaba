@@ -441,6 +441,7 @@ public interface AsyncGenerator<E> extends Iterable<E>, AsyncGeneratorOperators<
 
 }
 
+@Deprecated
 class InternalIterator<E> implements Iterator<E>, AsyncGenerator.HasResultValue {
 
 	private final AsyncGenerator<E> delegate;

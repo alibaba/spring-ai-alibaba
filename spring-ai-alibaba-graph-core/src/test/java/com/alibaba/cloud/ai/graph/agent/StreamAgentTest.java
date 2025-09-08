@@ -21,7 +21,6 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.fastjson.JSON;
@@ -31,15 +30,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.http.codec.ServerSentEvent;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class StreamAgentTest {
@@ -94,20 +90,18 @@ class StreamAgentTest {
 
 		try {
 			Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
-			AsyncGenerator<NodeOutput> result = blogAgent.stream(Map.of("input", "帮我写一个100字左右的散文"));
-			processStream(result, sink).get();
+			Flux<NodeOutput> result = blogAgent.stream(Map.of("input", "帮我写一个100字左右的散文"));
+			processStream(result, sink);
 		}
-		catch (CompletionException e) {
+		catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		// Verify all hooks were executed
 	}
 
-	CompletableFuture<Void> processStream(AsyncGenerator<NodeOutput> generator,
-			Sinks.Many<ServerSentEvent<String>> sink) {
-		ExecutorService executor = Executors.newSingleThreadExecutor();
-		return generator.forEachAsync(output -> {
+	void processStream(Flux<NodeOutput> flux, Sinks.Many<ServerSentEvent<String>> sink) {
+		flux.doOnNext(output -> {
 			try {
 				System.out.println(output);
 				String nodeName = output.node();
@@ -124,15 +118,14 @@ class StreamAgentTest {
 				sink.tryEmitNext(ServerSentEvent.builder(content).build());
 			}
 			catch (Exception e) {
-				throw new CompletionException(e);
+				sink.tryEmitError(e);
 			}
-		}).thenAccept(v -> {
+		}).doOnComplete(() -> {
 			// 正常完成
 			sink.tryEmitComplete();
-		}).exceptionally(e -> {
-			sink.tryEmitError(e);
-			return null;
-		});
+		}).doOnError(error -> {
+			sink.tryEmitError(error);
+		}).subscribe(); // 启动流处理
 	}
 
 }

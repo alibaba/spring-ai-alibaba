@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.*;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
-import com.alibaba.cloud.ai.graph.async.GraphEngine;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.Errors;
@@ -45,6 +44,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.*;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * The type Compiled graph.
@@ -425,6 +425,21 @@ public class CompiledGraph {
 		return maxIterations;
 	}
 
+	public Flux<GraphRunner.Data<NodeOutput>> fluxDataStream(Map<String, Object> inputs, RunnableConfig config) {
+		return fluxDataStream(stateCreate(inputs), config);
+	}
+
+	public Flux<GraphRunner.Data<NodeOutput>> fluxDataStream(OverAllState state, RunnableConfig config) {
+		Objects.requireNonNull(config, "config cannot be null");
+		try {
+			GraphRunner runner = new GraphRunner(this, state, config);
+			return runner.run();
+		}
+		catch (Exception e) {
+			return Flux.error(e);
+		}
+	}
+
 	/**
 	 * Creates a Flux stream of NodeOutput based on the provided inputs. This is the
 	 * modern reactive approach using Project Reactor.
@@ -433,14 +448,7 @@ public class CompiledGraph {
 	 * @return a Flux stream of NodeOutput
 	 */
 	public Flux<NodeOutput> fluxStream(Map<String, Object> inputs, RunnableConfig config) {
-		Objects.requireNonNull(config, "config cannot be null");
-		try {
-			GraphEngine generator = new GraphEngine(this, stateCreate(inputs), config);
-			return generator.asFlux();
-		}
-		catch (Exception e) {
-			return Flux.error(e);
-		}
+		return fluxStreamFromInitialNode(stateCreate(inputs), config);
 	}
 
 	/**
@@ -452,8 +460,17 @@ public class CompiledGraph {
 	public Flux<NodeOutput> fluxStreamFromInitialNode(OverAllState overAllState, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 		try {
-			GraphEngine generator = new GraphEngine(this, overAllState, config);
-			return generator.asFlux();
+			GraphRunner runner = new GraphRunner(this, overAllState, config);
+			return runner.run().flatMap(data -> {
+				if (data.isDone()) {
+					// TODO, collect data.resultValue if necessary.
+					return Flux.empty();
+				}
+				if (data.isError()) {
+					return Mono.fromFuture(data.getOutput()).onErrorMap(throwable -> throwable).flux();
+				}
+				return Mono.fromFuture(data.getOutput()).flux();
+			});
 		}
 		catch (Exception e) {
 			return Flux.error(e);
@@ -747,13 +764,14 @@ public class CompiledGraph {
 		Flux<NodeOutput> flux = fluxStreamSnapshots(inputs, config);
 		return AsyncGenerator.fromFlux(flux);
 	}
+
 }
 
 /**
  * The type Processed nodes edges and config.
  */
 record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interruptsBefore,
-										   Set<String> interruptsAfter) {
+		Set<String> interruptsAfter) {
 
 	/**
 	 * Instantiates a new Processed nodes edges and config.
@@ -812,8 +830,8 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 
 			// Process Interruption (Before) Subgraph(s)
 			interruptsBefore = interruptsBefore.stream()
-					.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId : interrupt)
-					.collect(Collectors.toUnmodifiableSet());
+				.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId : interrupt)
+				.collect(Collectors.toUnmodifiableSet());
 
 			var edgesWithSubgraphTargetId = edges.edgesByTargetId(subgraphNode.id());
 
@@ -845,28 +863,28 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 			if (interruptsAfter.contains(subgraphNode.id())) {
 
 				var exceptionMessage = (edgeWithSubgraphSourceId.target()
-						.id() == null) ? "'interruption after' on subgraph is not supported yet!" : format(
-						"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: '%s'",
-						edgeWithSubgraphSourceId.target().id());
+					.id() == null) ? "'interruption after' on subgraph is not supported yet!" : format(
+							"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: '%s'",
+							edgeWithSubgraphSourceId.target().id());
 				throw new GraphStateException(exceptionMessage);
 			}
 
 			sgEdgesEnd.stream()
-					.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-							id -> (Objects.equals(id, END) ? edgeWithSubgraphSourceId.target()
-									: new EdgeValue(subgraphNode.formatId(id)))))
-					.forEach(edges.elements::add);
+				.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
+						id -> (Objects.equals(id, END) ? edgeWithSubgraphSourceId.target()
+								: new EdgeValue(subgraphNode.formatId(id)))))
+				.forEach(edges.elements::add);
 			edges.elements.remove(edgeWithSubgraphSourceId);
 
 			//
 			// Process edges
 			//
 			processedSubGraphEdges.elements.stream()
-					.filter(e -> !Objects.equals(e.sourceId(), START))
-					.filter(e -> !e.anyMatchByTargetId(END))
-					.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-							id -> new EdgeValue(subgraphNode.formatId(id))))
-					.forEach(edges.elements::add);
+				.filter(e -> !Objects.equals(e.sourceId(), START))
+				.filter(e -> !e.anyMatchByTargetId(END))
+				.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
+						id -> new EdgeValue(subgraphNode.formatId(id))))
+				.forEach(edges.elements::add);
 
 			//
 			// Process nodes
@@ -892,4 +910,3 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter);
 	}
 }
-

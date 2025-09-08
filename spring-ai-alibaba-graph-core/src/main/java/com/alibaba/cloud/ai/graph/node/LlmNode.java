@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.streaming.StreamingChatGenerator;
+import com.alibaba.cloud.ai.graph.streaming.FluxConverter;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -88,13 +88,13 @@ public class LlmNode implements NodeAction {
 		// add streaming support
 		if (Boolean.TRUE.equals(stream)) {
 			Flux<ChatResponse> chatResponseFlux = stream();
-			var generator = StreamingChatGenerator.builder()
+			var dataFlux = FluxConverter.builder()
 				.startingNode("llmNode")
 				.startingState(state)
 				.mapResult(response -> Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages",
 						Objects.requireNonNull(response.getResult().getOutput())))
 				.build(chatResponseFlux);
-			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", generator);
+			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", dataFlux);
 		}
 		else {
 

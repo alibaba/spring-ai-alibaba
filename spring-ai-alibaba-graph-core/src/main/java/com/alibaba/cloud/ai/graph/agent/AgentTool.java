@@ -20,7 +20,6 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import org.springframework.ai.chat.messages.Message;
