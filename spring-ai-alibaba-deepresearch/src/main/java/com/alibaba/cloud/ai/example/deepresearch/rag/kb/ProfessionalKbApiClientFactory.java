@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 专业知识库API客户端工厂 根据配置创建相应的API客户端
+ * Professional Knowledge Base API Client Factory: Creates corresponding API clients based on configuration
  *
  * @author hupei
  */
@@ -46,16 +46,16 @@ public class ProfessionalKbApiClientFactory {
 	}
 
 	/**
-	 * 根据知识库配置创建API客户端
-	 * @param knowledgeBase 知识库配置
-	 * @return API客户端，如果配置不支持则返回null
+	 * Creates an API client based on the knowledge base configuration
+	 * @param knowledgeBase Knowledge base configuration
+	 * @return API client, returns null if the configuration is not supported
 	 */
 	public ProfessionalKbApiClient createClient(RagProperties.ProfessionalKnowledgeBases.KnowledgeBase knowledgeBase) {
 		if (knowledgeBase == null || !knowledgeBase.isEnabled()) {
 			return null;
 		}
 
-		// 只处理API类型的知识库
+		// Only processes API-type knowledge bases.
 		if (!"api".equalsIgnoreCase(knowledgeBase.getType())) {
 			logger.debug("Knowledge base {} is not API type, skipping", knowledgeBase.getId());
 			return null;
@@ -69,7 +69,7 @@ public class ProfessionalKbApiClientFactory {
 
 		String provider = apiConfig.getProvider();
 		if (provider == null) {
-			provider = "custom"; // 默认使用自定义客户端
+			provider = "custom"; // Uses the custom client by default.
 		}
 
 		try {
@@ -91,9 +91,9 @@ public class ProfessionalKbApiClientFactory {
 	}
 
 	/**
-	 * 批量创建所有启用的知识库的API客户端
-	 * @param knowledgeBases 知识库配置列表
-	 * @return 知识库ID到API客户端的映射
+	 * Batch creates API clients for all enabled knowledge bases
+	 * @param knowledgeBases List of knowledge base configurations
+	 * @return Map of knowledge base IDs to API clients
 	 */
 	public Map<String, ProfessionalKbApiClient> createClients(
 			List<RagProperties.ProfessionalKnowledgeBases.KnowledgeBase> knowledgeBases) {

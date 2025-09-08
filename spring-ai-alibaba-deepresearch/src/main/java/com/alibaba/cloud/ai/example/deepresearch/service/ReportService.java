@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.service;
 
 /**
- * 报告服务接口
+ * Report Service Interface
  *
  * @author huangzhen
  * @since 2025/6/20
@@ -25,29 +25,29 @@ package com.alibaba.cloud.ai.example.deepresearch.service;
 public interface ReportService {
 
 	/**
-	 * 存储报告
-	 * @param threadId 线程ID
-	 * @param report 报告内容
+	 * Stores a report
+	 * @param threadId Thread ID
+	 * @param report Report content
 	 */
 	void saveReport(String threadId, String report);
 
 	/**
-	 * 获取报告
-	 * @param threadId 线程ID
-	 * @return 报告内容，如果不存在返回 null
+	 * Retrieves a report
+	 * @param threadId Thread ID
+	 * @return Report content, returns null if not found
 	 */
 	String getReport(String threadId);
 
 	/**
-	 * 检查报告是否存在
-	 * @param threadId 线程ID
-	 * @return 是否存在
+	 * Checks if a report exists
+	 * @param threadId Thread ID
+	 * @return Whether the report exists
 	 */
 	boolean existsReport(String threadId);
 
 	/**
-	 * 删除报告
-	 * @param threadId 线程ID
+	 * Deletes a report
+	 * @param threadId Thread ID
 	 */
 	void deleteReport(String threadId);
 

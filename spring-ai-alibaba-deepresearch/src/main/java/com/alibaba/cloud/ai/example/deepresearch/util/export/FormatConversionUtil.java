@@ -31,7 +31,7 @@ import java.io.OutputStream;
 import java.net.URL;
 
 /**
- * 格式转换工具类，提供Markdown到PDF的转换
+ * Format conversion utility class providing Markdown to PDF conversion
  *
  * @author sixiyida
  * @since 2025/6/20
@@ -40,12 +40,12 @@ public final class FormatConversionUtil {
 
 	private static final Logger logger = LoggerFactory.getLogger(FormatConversionUtil.class);
 
-	// HTTP连接超时设置（毫秒）
+	// HTTP connection timeout settings (milliseconds)
 	private static final int RESOURCE_HTTP_CONNECT_TIMEOUT = 1000;
 
 	private static final int RESOURCE_HTTP_READ_TIMEOUT = 1000;
 
-	// 字体路径
+	// Font path
 	private static final String FONT_PATH = "report/fonts/AlibabaPuHuiTi-3-55-Regular.ttf";
 
 	private static final String FONT_FAMILY = "AlibabaPuHuiTi";
@@ -53,10 +53,10 @@ public final class FormatConversionUtil {
 	private static final int FONT_WEIGHT = 400; // Regular
 
 	/**
-	 * 将HTML内容转换为PDF字节数组
-	 * @param htmlContent HTML内容
-	 * @return PDF内容的字节数组
-	 * @throws RuntimeException 如果转换失败
+	 * Converts HTML content to PDF byte array
+	 * @param htmlContent HTML content
+	 * @return Byte array of PDF content
+	 * @throws RuntimeException If conversion fails
 	 */
 	public static byte[] convertHtmlToPdfBytes(String htmlContent) {
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -77,8 +77,8 @@ public final class FormatConversionUtil {
 	}
 
 	/**
-	 * 创建PDF渲染器构建器
-	 * @return 配置好的PdfRendererBuilder实例
+	 * Creates a PDF renderer builder
+	 * @return Configured PdfRendererBuilder instance
 	 */
 	private static PdfRendererBuilder createPdfRendererBuilder() {
 		PdfRendererBuilder builder = new PdfRendererBuilder();
@@ -89,8 +89,8 @@ public final class FormatConversionUtil {
 	}
 
 	/**
-	 * 配置字体
-	 * @param builder PDF渲染器构建器
+	 * Configures fonts
+	 * @param builder PDF renderer builder
 	 */
 	private static void configureFont(PdfRendererBuilder builder) {
 		try {
@@ -111,8 +111,8 @@ public final class FormatConversionUtil {
 	}
 
 	/**
-	 * 配置基础URI
-	 * @param builder PDF渲染器构建器
+	 * Configures base URI
+	 * @param builder PDF renderer builder
 	 */
 	private static void configureBaseUri(PdfRendererBuilder builder) {
 		String baseUri = getBaseUri();
@@ -122,8 +122,8 @@ public final class FormatConversionUtil {
 	}
 
 	/**
-	 * 获取基础URI
-	 * @return 基础URI，如果获取失败则返回null
+	 * Retrieves the base URI
+	 * @return Base URI, returns null if retrieval fails
 	 */
 	private static String getBaseUri() {
 		try {
@@ -141,10 +141,10 @@ public final class FormatConversionUtil {
 	}
 
 	/**
-	 * 将HTML内容转换为PDF并保存到文件
-	 * @param htmlContent HTML内容
-	 * @param pdfFilePath 输出PDF文件路径
-	 * @throws RuntimeException 如果保存失败
+	 * Converts HTML content to PDF and saves to file
+	 * @param htmlContent HTML content
+	 * @param pdfFilePath Output PDF file path
+	 * @throws RuntimeException If saving fails
 	 */
 	public static void convertHtmlToPdfFile(String htmlContent, String pdfFilePath) {
 		try (OutputStream os = new FileOutputStream(pdfFilePath)) {
@@ -159,26 +159,26 @@ public final class FormatConversionUtil {
 	}
 
 	/**
-	 * 将Markdown内容直接转换为PDF字节数组
-	 * @param markdownContent Markdown内容
-	 * @return PDF内容的字节数组
+	 * Directly converts Markdown content to PDF byte array
+	 * @param markdownContent Markdown content
+	 * @return Byte array of PDF content
 	 */
 	public static byte[] convertMarkdownToPdfBytes(String markdownContent) {
-		// 将Markdown转换为HTML
+		// Convert Markdown to HTML
 		String htmlContent = HtmlGenerationUtil.markdownToHtml(markdownContent);
-		// 将HTML转换为PDF
+		// Convert HTML to PDF
 		return convertHtmlToPdfBytes(htmlContent);
 	}
 
 	/**
-	 * 将Markdown内容直接转换为PDF并保存到文件
-	 * @param markdownContent Markdown内容
-	 * @param pdfFilePath 输出PDF文件路径
+	 * Directly converts Markdown content to PDF and saves to file
+	 * @param markdownContent Markdown content
+	 * @param pdfFilePath Output PDF file path
 	 */
 	public static void convertMarkdownToPdfFile(String markdownContent, String pdfFilePath) {
-		// 将Markdown转换为HTML
+		// Convert Markdown to HTML
 		String htmlContent = HtmlGenerationUtil.markdownToHtml(markdownContent);
-		// 将HTML转换为PDF并保存
+		// Convert HTML to PDF and save
 		convertHtmlToPdfFile(htmlContent, pdfFilePath);
 	}
 

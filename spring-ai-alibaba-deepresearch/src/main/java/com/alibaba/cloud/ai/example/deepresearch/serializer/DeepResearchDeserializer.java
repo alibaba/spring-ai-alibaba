@@ -43,15 +43,15 @@ public class DeepResearchDeserializer extends JsonDeserializer<OverAllState> {
 		});
 		Map<String, Object> newData = new HashMap<>();
 
-		// 处理Plan
+		// Process Plan
 		Plan currentPlan = objectMapper.convertValue(data.get("current_plan"), Plan.class);
 		newData.put("current_plan", currentPlan);
 
-		// 处理search_engine
+		// Process search_engine
 		SearchEnum searchEnum = objectMapper.convertValue(data.get("search_engine"), SearchEnum.class);
 		newData.put("search_engine", searchEnum);
 
-		// 处理其他数据
+		// Process other data
 		data.forEach((key, value) -> {
 			if (!newData.containsKey(key)) {
 				newData.put(key, value);

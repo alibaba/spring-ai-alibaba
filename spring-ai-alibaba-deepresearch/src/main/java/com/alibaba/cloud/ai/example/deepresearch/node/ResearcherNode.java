@@ -136,13 +136,13 @@ public class ResearcherNode implements NodeAction {
 			AgentSelectionResult agentSelection = selectSmartAgent(assignedStep, taskContent, state);
 			ChatClient selectedAgent = agentSelection.getSelectedAgent();
 
-			// 将智能Agent的状态更新合并到updated中
+			// Merging the state updates from the intelligent agent into the updated state
 			updated.putAll(agentSelection.getStateUpdate());
 
 			// Call agent
 			var requestSpec = selectedAgent.prompt();
 
-			// 使用MCP工厂创建MCP提供者
+			// Using an MCP factory to create an MCP provider
 			AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null
 					? mcpFactory.createProvider(state, "researchAgent") : null;
 			if (mcpProvider != null) {
@@ -261,7 +261,8 @@ public class ResearcherNode implements NodeAction {
 	}
 
 	/**
-	 * 智能选择Agent 如果智能Agent功能开启，则根据问题类型选择专业化Agent 否则使用原有的researchAgent
+	 * Intelligent Agent Selection: If the intelligent agent feature is enabled, a specialized agent is selected based on the question type;
+	 * otherwise, the original researchAgent is used.
 	 */
 	private AgentSelectionResult selectSmartAgent(Plan.Step step, String taskContent, OverAllState state) {
 		String questionContent = step.getTitle();

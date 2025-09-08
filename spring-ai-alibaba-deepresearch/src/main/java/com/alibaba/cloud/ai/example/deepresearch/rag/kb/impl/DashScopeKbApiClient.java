@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * DashScope专业知识库API客户端实现
+ * DashScope professional knowledge base API client implementation
  *
  * @author hupei
  */
@@ -59,23 +59,23 @@ public class DashScopeKbApiClient implements ProfessionalKbApiClient {
 		}
 
 		try {
-			// 构建请求体
+			// Constructing the request body
 			Map<String, Object> requestBody = new HashMap<>();
 			requestBody.put("model", apiConfig.getModel() != null ? apiConfig.getModel() : "text-embedding-v1");
 			requestBody.put("input", Map.of("query", query));
 
-			// 从options中获取maxResults，如果没有则使用配置的默认值
+			// Retrieving maxResults from options; if not available, using the configured default value
 			int maxResults = (int) options.getOrDefault("maxResults", apiConfig.getMaxResults());
 			requestBody.put("parameters", Map.of("size", maxResults));
 
-			// 构建请求URL
+			// Constructing the request URL
 			String url = apiConfig.getUrl();
 			if (url == null || url.isEmpty()) {
-				// DashScope默认API端点
+				// Default DashScope API endpoint
 				url = "https://dashscope.aliyuncs.com/api/v1/services/knowledge-base/text-search";
 			}
 
-			// 发送请求
+			// Send request
 			ResponseEntity<Map> response = restClient.post()
 				.uri(url)
 				.contentType(MediaType.APPLICATION_JSON)
@@ -84,7 +84,7 @@ public class DashScopeKbApiClient implements ProfessionalKbApiClient {
 				.retrieve()
 				.toEntity(Map.class);
 
-			// 解析响应
+			// Parsing the response
 			return parseResponse(response.getBody());
 
 		}
@@ -105,7 +105,7 @@ public class DashScopeKbApiClient implements ProfessionalKbApiClient {
 	}
 
 	/**
-	 * 解析DashScope API响应
+	 * Parsing the DashScope API response.
 	 */
 	private List<KbSearchResult> parseResponse(Map<String, Object> responseBody) {
 		List<KbSearchResult> results = new ArrayList<>();
@@ -115,26 +115,26 @@ public class DashScopeKbApiClient implements ProfessionalKbApiClient {
 		}
 
 		try {
-			// DashScope响应格式解析
+			// DashScope response format parsing
 			Map<String, Object> output = (Map<String, Object>) responseBody.get("output");
 			if (output != null) {
 				List<Map<String, Object>> nodes = (List<Map<String, Object>>) output.get("nodes");
 				if (nodes != null) {
 					for (Map<String, Object> node : nodes) {
-						// 解析各个字段
+						// Parsing each field
 						String id = (String) node.get("id");
 						String title = (String) node.get("title");
 						String content = (String) node.get("content");
 						String url = (String) node.get("url");
 
-						// 解析score
+						// Parsing score
 						Double score = null;
 						Object scoreObj = node.get("score");
 						if (scoreObj instanceof Number) {
 							score = ((Number) scoreObj).doubleValue();
 						}
 
-						// 添加额外的元数据
+						// Adding additional metadata
 						Map<String, Object> metadata = new HashMap<>();
 						metadata.put("source", "dashscope");
 						metadata.put("provider", getProvider());
@@ -142,7 +142,7 @@ public class DashScopeKbApiClient implements ProfessionalKbApiClient {
 							metadata.putAll((Map<String, Object>) node.get("metadata"));
 						}
 
-						// 使用record的构造函数创建实例
+						// Using the record constructor to create an instance
 						KbSearchResult result = new KbSearchResult(id, title, content, url, score, metadata);
 						results.add(result);
 					}

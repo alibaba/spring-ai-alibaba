@@ -29,58 +29,62 @@ import java.util.Map;
 public record ChatRequest(
 
 		/**
-		 * 会话 ID。默认值为 "__default__"，表示使用默认会话。
+		 * Session ID. Default: "__default__", indicating the use of the default session
 		 */
 		@JsonProperty(value = "session_id", defaultValue = "__default__") String sessionId,
 
 		/**
-		 * 线程 ID，用于标识当前对话的唯一性。
+		 * Thread ID, used to identify the uniqueness of the current conversation
 		 */
 		@JsonProperty(value = "thread_id", defaultValue = "") String threadId,
 		/**
-		 * 最大计划迭代次数，用于控制处理请求的最大步骤数。 默认值为 1，表示至少执行一次完整流程。
+		 * Maximum planning iteration count, used to control the maximum number of steps for processing requests
+		 * Default value is 1, indicating at least one complete execution of the process
 		 */
 		@JsonProperty(value = "max_plan_iterations", defaultValue = "1") Integer maxPlanIterations,
 		/**
-		 * 最大步骤数，用于控制单次请求的步骤数。 默认值为 3，表示最多执行 3 步。
+		 * Maximum step count, used to control the number of steps per request
+		 * Defaults to 3, indicating a maximum of 3 steps will be executed
 		 */
 		@JsonProperty(value = "max_step_num", defaultValue = "3") Integer maxStepNum,
 		/**
-		 * 是否自动接受计划，用于控制是否自动接受生成的计划。 默认值为 true，表示自动接受计划。
+		 * Whether to automatically accept the plan, used to control whether to automatically accept the generated plan
+		 * Default value is true, indicating that the plan is automatically accepted
 		 */
 		@JsonProperty(value = "auto_accepted_plan", defaultValue = "true") Boolean autoAcceptPlan,
 		/**
-		 * 中断反馈，用于控制中断后的反馈信息。
+		 * Interrupt feedback, used to control the feedback message after an interruption
 		 */
 		@JsonProperty(value = "interrupt_feedback") String interruptFeedback,
 		/**
-		 * 是否启用背景调查，用于控制是否启用背景调查 默认值为 true，表示启用背景调查
+		 * Whether to enable background check, used to control if the background check is enabled
+		 * The default value is true, meaning the background check is enabled
 		 */
 		@JsonProperty(value = "enable_deepresearch", defaultValue = "true") Boolean enableDeepResearch,
 		/**
-		 * MCP 设置
+		 * MCP setting
 		 */
 		@JsonProperty(value = "mcp_settings") Map<String, Object> mcpSettings,
 
 		@JsonProperty(value = "query", defaultValue = "草莓蛋糕怎么做呀") String query,
 
 		/**
-		 * 搜索引擎，默认为Tavily
+		 * Search engine. Default: Tavily
 		 */
 		@JsonProperty(value = "search_engine", defaultValue = "tavily") SearchEnum searchEngine,
 
 		/**
-		 * 是否开启网站过滤，默认为true
+		 * Whether to enable website filtering. Default: true
 		 */
 		@JsonProperty(value = "enable_search_filter", defaultValue = "true") Boolean enableSearchFilter,
 
 		/**
-		 * 优化查询条数，默认为3
+		 * Optimize Query Count. Default: 3
 		 */
 		@JsonProperty(value = "optimize_query_num", defaultValue = "3") Integer optimizeQueryNum,
 
 		/**
-		 * 用户是否上传文件，默认为false
+		 * Whether the user is allowed to upload files. Default: false
 		 */
 		@JsonProperty(value = "user_upload_file", defaultValue = "false") Boolean isUploadFile) {
 }

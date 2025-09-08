@@ -51,7 +51,7 @@ public class ParallelExecutorNode implements NodeAction {
 
 		Plan curPlan = StateUtil.getPlan(state);
 		for (Plan.Step step : curPlan.getSteps()) {
-			// 跳过不需要处理的步骤
+			// Skipping steps that do not require processing.
 			if (StringUtils.hasText(step.getExecutionRes()) || StringUtils.hasText(step.getExecutionStatus())) {
 				continue;
 			}
@@ -72,7 +72,7 @@ public class ParallelExecutorNode implements NodeAction {
 					currResearcher = (currResearcher + 1) % parallelNodeCount.get(ParallelEnum.RESEARCHER.getValue());
 					break;
 
-				// 处理其他可能的StepType
+				// Processing other possible StepTypes.
 				default:
 					logger.debug("Unhandled step type: {}", stepType);
 			}

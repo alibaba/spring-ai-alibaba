@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 导出服务配置类
+ * Export the service configuration class
  *
  * @author sixiyida
  * @since 2025/6/20

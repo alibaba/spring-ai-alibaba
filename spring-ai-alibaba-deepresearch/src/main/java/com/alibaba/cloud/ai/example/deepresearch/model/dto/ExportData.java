@@ -20,27 +20,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record ExportData(
 		/**
-		 * 操作是否成功
+		 * Whether the operation succeeded
 		 */
 		@JsonProperty("success") boolean success,
 
 		/**
-		 * 导出格式
+		 * Export format
 		 */
 		@JsonProperty("format") String format,
 
 		/**
-		 * 导出文件路径
+		 * Path to the exported file
 		 */
 		@JsonProperty("file_path") String filePath,
 
 		/**
-		 * 下载URL
+		 * Download URL
 		 */
 		@JsonProperty("download_url") String downloadUrl,
 
 		/**
-		 * 错误信息，仅当success为false时有值
+		 * Error message, only has value when success is false
 		 */
 		@JsonProperty("error") String error) {
 	public static ExportData success(String format, String filePath, String downloadUrl) {

@@ -138,7 +138,7 @@ public class DeepResearchConfiguration {
 	@Autowired
 	private SearchFilterService searchFilterService;
 
-	// 可选的工具调用服务（智能平台用）
+	// Optional tool invocation service (for intelligent platforms)
 	@Autowired(required = false)
 	private ToolCallingSearchService toolCallingSearchService;
 
@@ -171,7 +171,7 @@ public class DeepResearchConfiguration {
 
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			// 条件边控制：跳转下一个节点
+			// Conditional edge control: jump to next node.
 			keyStrategyHashMap.put("coordinator_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("rewrite_multi_query_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("background_investigation_next_node", new ReplaceStrategy());
@@ -179,7 +179,7 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("information_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("human_next_node", new ReplaceStrategy());
 			keyStrategyHashMap.put("research_team_next_node", new ReplaceStrategy());
-			// 用户输入
+			// User input
 			keyStrategyHashMap.put("query", new ReplaceStrategy());
 			keyStrategyHashMap.put("optimize_queries", new ReplaceStrategy());
 			keyStrategyHashMap.put("thread_id", new ReplaceStrategy());
@@ -195,11 +195,11 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("feed_back", new ReplaceStrategy());
 			keyStrategyHashMap.put("feed_back_content", new ReplaceStrategy());
 
-			// 专业知识库决策相关
+			// Expert knowledge base decision-related
 			keyStrategyHashMap.put("use_professional_kb", new ReplaceStrategy());
 			keyStrategyHashMap.put("selected_knowledge_bases", new ReplaceStrategy());
 
-			// 节点输出
+			// Node output
 			keyStrategyHashMap.put("background_investigation_results", new ReplaceStrategy());
 			keyStrategyHashMap.put("site_information", new ReplaceStrategy());
 			keyStrategyHashMap.put("output", new ReplaceStrategy());
@@ -240,7 +240,7 @@ public class DeepResearchConfiguration {
 			.addNode("parallel_executor", node_async(new ParallelExecutorNode(deepResearchProperties)))
 			.addNode("reporter", node_async(new ReporterNode(reporterAgent, reportService, sessionContextService)));
 
-		// 添加并行节点块
+		// Add parallel node block
 		configureParallelNodes(stateGraph);
 
 		stateGraph.addEdge(START, "coordinator")

@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * MCP 服务控制器 提供默认 MCP 服务信息的 REST API 接口
+ * MCP service controller provides a REST API interface for default MCP service information
  *
  * @author Makoto
  * @since 2025/1/24
@@ -48,8 +48,9 @@ public class McpController {
 	}
 
 	/**
-	 * 获取所有默认 MCP 服务信息概览 返回系统中配置的所有 MCP 服务信息
-	 * @return MCP 服务信息概览
+	 * Retrieve an overview of all default MCP services.
+	 * Returns information about all MCP services configured in the system.
+	 * @return MCP Services Overview
 	 */
 	@GetMapping("/services")
 	public ResponseEntity<Map<String, Object>> getAllMcpServices() {

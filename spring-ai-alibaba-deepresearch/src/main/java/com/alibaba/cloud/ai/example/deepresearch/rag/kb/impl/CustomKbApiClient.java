@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 自定义专业知识库API客户端实现 支持通用的REST API调用
+ * Custom professional knowledge base API client implementation supporting universal REST API calls.
  *
  * @author hupei
  */
@@ -60,13 +60,13 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 		}
 
 		try {
-			// 构建请求URL
+			// Constructing the request URL
 			int maxResults = (int) options.getOrDefault("maxResults", apiConfig.getMaxResults());
 			UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(apiConfig.getUrl())
 				.queryParam("q", query)
 				.queryParam("limit", maxResults);
 
-			// 发送GET请求
+			// Sending a GET request
 			RestClient.RequestHeadersSpec<?> request = restClient.get()
 				.uri(builder.toUriString())
 				.accept(MediaType.APPLICATION_JSON);
@@ -77,7 +77,7 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 
 			ResponseEntity<Map> response = request.retrieve().toEntity(Map.class);
 
-			// 解析响应
+			// Parsing the response
 			return parseResponse(response.getBody());
 
 		}
@@ -98,7 +98,7 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 	}
 
 	/**
-	 * 解析自定义API响应 支持多种常见的响应格式
+	 * Parsing custom API responses, supporting multiple common response formats
 	 */
 	private List<KbSearchResult> parseResponse(Map<String, Object> responseBody) {
 		List<KbSearchResult> results = new ArrayList<>();
@@ -108,29 +108,29 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 		}
 
 		try {
-			// 尝试解析不同的响应格式
+			// Attempting to parse different response formats
 			List<Map<String, Object>> items = extractItemsFromResponse(responseBody);
 
 			for (Map<String, Object> item : items) {
-				// 尝试多种字段名称映射
+				// Attempting multiple field name mappings
 				String id = getStringValue(item, "id", "doc_id", "document_id");
 				String title = getStringValue(item, "title", "name", "heading");
 				String content = getStringValue(item, "content", "text", "body", "description");
 				String url = getStringValue(item, "url", "link", "source_url");
 
-				// 解析score
+				// Parsing the score
 				Double score = getDoubleValue(item, "score", "relevance", "confidence");
 
-				// 添加元数据
+				// Adding metadata
 				Map<String, Object> metadata = new HashMap<>();
 				metadata.put("source", "custom_api");
 				metadata.put("provider", getProvider());
 				metadata.put("api_url", apiConfig.getUrl());
 
-				// 包含原始数据作为元数据
+				// Including raw data as metadata
 				metadata.put("original_data", item);
 
-				// 使用record构造函数创建实例
+				// Using the record constructor to create an instance
 				KbSearchResult result = new KbSearchResult(id, title, content, url, score, metadata);
 				results.add(result);
 			}
@@ -144,10 +144,10 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 	}
 
 	/**
-	 * 从响应中提取项目列表，支持多种格式
+	 * Extracting the list of items from the response, supporting multiple formats
 	 */
 	private List<Map<String, Object>> extractItemsFromResponse(Map<String, Object> responseBody) {
-		// 尝试常见的数组字段名
+		// Attempting common array field names
 		String[] arrayFields = { "results", "data", "items", "documents", "docs" };
 
 		for (String field : arrayFields) {
@@ -157,7 +157,7 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 			}
 		}
 
-		// 如果响应本身就是数组格式
+		// If the response itself is in array format
 		if (responseBody.containsKey("content") || responseBody.containsKey("title")) {
 			return Collections.singletonList(responseBody);
 		}
@@ -166,7 +166,7 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 	}
 
 	/**
-	 * 从item中获取字符串值，尝试多个字段名
+	 * Retrieving string values from items, attempting multiple field names
 	 */
 	private String getStringValue(Map<String, Object> item, String... fieldNames) {
 		for (String fieldName : fieldNames) {
@@ -179,7 +179,7 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 	}
 
 	/**
-	 * 从item中获取Double值，尝试多个字段名
+	 * Retrieving Double values from items, attempting multiple field names
 	 */
 	private Double getDoubleValue(Map<String, Object> item, String... fieldNames) {
 		for (String fieldName : fieldNames) {
@@ -192,7 +192,7 @@ public class CustomKbApiClient implements ProfessionalKbApiClient {
 					return Double.parseDouble((String) value);
 				}
 				catch (NumberFormatException e) {
-					// 忽略解析错误
+					// Ignoring parsing errors
 				}
 			}
 		}

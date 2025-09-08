@@ -81,7 +81,8 @@ public class AgentsConfiguration {
 	}
 
 	/**
-	 * 获取指定代理的MCP工具回调, 这边我把mcp创建的部分改为在结点处进行动态创建和加载，所以会返回空数组
+	 * Fetch MCP tool callbacks for the specified agent
+	 * Returns an empty array because the MCP components are dynamically created and loaded on the node, as per the revised architecture.
 	 */
 	private ToolCallback[] getMcpToolCallbacks(String agentName) {
 		if (CollectionUtils.isEmpty(agent2SyncMcpToolCallbackProvider)
@@ -103,12 +104,12 @@ public class AgentsConfiguration {
 			}
 		}
 
-		// 如果没有找到有效的工具回调提供者，返回空数组
+		// If no valid tool callback provider is found, return an empty array.
 		return new ToolCallback[0];
 	}
 
 	/**
-	 * 提取MutiAgent配置
+	 * Extract the Multi-Agent configuration
 	 */
 	private ChatClient.Builder configureAgentBuilder(ChatClient.Builder builder, String agentName,
 			AgentType agentType) {
@@ -165,9 +166,9 @@ public class AgentsConfiguration {
 	public ChatClient coordinatorAgent(ChatClient.Builder coordinatorChatClientBuilder, PlannerTool plannerTool) {
 		return coordinatorChatClientBuilder
 			.defaultOptions(ToolCallingChatOptions.builder()
-				.internalToolExecutionEnabled(false) // 禁用内部工具执行
+				.internalToolExecutionEnabled(false) // Disable internal tool execution.
 				.build())
-			// 当前CoordinatorNode节点只绑定一个计划工具
+			// A single planning tool is bound to the current CoordinatorNode instance.
 			.defaultTools(plannerTool)
 			.build();
 	}

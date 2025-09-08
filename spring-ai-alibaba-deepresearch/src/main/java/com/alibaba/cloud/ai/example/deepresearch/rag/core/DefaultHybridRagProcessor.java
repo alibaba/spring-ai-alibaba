@@ -46,7 +46,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * 统一的RAG处理器实现，整合RagAdvisorConfiguration中的前后处理逻辑 和RrfHybridElasticsearchRetriever的混合查询能力
+ * A unified RAG processor implementation that integrates the pre-processing and post-processing logic from RagAdvisorConfiguration
+ * with the hybrid querying capabilities of RrfHybridElasticsearchRetriever.
  *
  * @author hupei
  */
@@ -77,7 +78,7 @@ public class DefaultHybridRagProcessor implements HybridRagProcessor {
 		this.ragProperties = ragProperties;
 		this.rrfFusionStrategy = rrfFusionStrategy;
 
-		// 初始化混合检索器
+		// Initializing the hybridRetriever
 		if (ragProperties.getVectorStoreType().equalsIgnoreCase("elasticsearch")
 				&& ragProperties.getElasticsearch().getHybrid().isEnabled()) {
 			this.hybridRetriever = new RrfHybridElasticsearchRetriever(restClient, embeddingModel,
@@ -87,7 +88,7 @@ public class DefaultHybridRagProcessor implements HybridRagProcessor {
 			this.hybridRetriever = null;
 		}
 
-		// 初始化查询处理器
+		// Initializing the query processor
 		this.queryExpander = ragProperties.getPipeline().isQueryExpansionEnabled()
 				? MultiQueryExpander.builder().chatClientBuilder(chatClientBuilder).build() : null;
 
@@ -98,7 +99,7 @@ public class DefaultHybridRagProcessor implements HybridRagProcessor {
 					.build()
 				: null;
 
-		// 初始化文档后处理器
+		// Initializing the documentPostProcessor
 		this.documentPostProcessor = ragProperties.getPipeline().isPostProcessingSelectFirstEnabled()
 				? new DocumentSelectFirstProcess() : null;
 	}
@@ -107,16 +108,16 @@ public class DefaultHybridRagProcessor implements HybridRagProcessor {
 	public List<Document> process(org.springframework.ai.rag.Query query, Map<String, Object> options) {
 		logger.debug("Starting RAG processing for query: {}", query.text());
 
-		// 1. 查询前处理
+		// 1. process before query
 		List<org.springframework.ai.rag.Query> processedQueries = preProcess(query, options);
 
-		// 2. 构建过滤表达式
+		// 2. Constructing filter expressions
 		Query filterExpression = buildFilterExpression(options);
 
-		// 3. 执行混合检索
+		// 3. Executing hybrid retrieval
 		List<Document> documents = hybridRetrieve(processedQueries, filterExpression, options);
 
-		// 4. 文档后处理
+		// 4. Document post-processing
 		List<Document> finalDocuments = postProcess(documents, options);
 
 		logger.debug("RAG processing completed. Retrieved {} documents", finalDocuments.size());
@@ -129,7 +130,7 @@ public class DefaultHybridRagProcessor implements HybridRagProcessor {
 		List<org.springframework.ai.rag.Query> queries = new ArrayList<>();
 		queries.add(query);
 
-		// 查询翻译
+		// Query translation
 		if (queryTransformer != null) {
 			queries = queries.stream().flatMap(q -> {
 				org.springframework.ai.rag.Query transformed = queryTransformer.transform(q);
@@ -137,7 +138,7 @@ public class DefaultHybridRagProcessor implements HybridRagProcessor {
 			}).collect(Collectors.toList());
 		}
 
-		// 查询扩展
+		// Query expansion
 		if (queryExpander != null) {
 			queries = queries.stream().flatMap(q -> queryExpander.expand(q).stream()).collect(Collectors.toList());
 		}
@@ -151,32 +152,32 @@ public class DefaultHybridRagProcessor implements HybridRagProcessor {
 		List<Document> allDocuments = new ArrayList<>();
 
 		for (org.springframework.ai.rag.Query query : queries) {
-			// 如果配置了ES混合查询且可用，使用混合检索器
+			// If ES hybrid query is configured and available, use the hybrid retriever
 			if (hybridRetriever != null) {
 				List<Document> hybridResults = hybridRetriever.retrieve(query, filterExpression);
 				allDocuments.addAll(hybridResults);
 			}
 			else {
-				// 否则使用标准向量搜索
+				// Otherwise, use standard vector search
 				List<Document> vectorResults = performVectorSearch(query, options);
 				allDocuments.addAll(vectorResults);
 			}
 		}
 
-		// 去重（基于文档ID或内容）
+		// Deduplication (based on document ID or content)
 		return deduplicateDocuments(allDocuments);
 	}
 
 	@Override
 	public List<Document> postProcess(List<Document> documents, Map<String, Object> options) {
-		// 优先使用RRF rerank，如果启用的话
+		// Prioritize using RRF rerank if it is enabled
 		if (ragProperties.getPipeline().isRerankEnabled()) {
 			org.springframework.ai.rag.Query query = new org.springframework.ai.rag.Query(
 					options.getOrDefault("query", "").toString());
 			return rrfFusionStrategy.process(query, documents);
 		}
 
-		// 否则使用传统的后处理器
+		// Otherwise, use the traditional post-processor
 		if (documentPostProcessor != null) {
 			return documentPostProcessor.process(null, documents);
 		}
@@ -193,7 +194,7 @@ public class DefaultHybridRagProcessor implements HybridRagProcessor {
 		BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
 		boolean hasConditions = false;
 
-		// 按照VectorStoreDataIngestionService中的元数据逻辑构建过滤条件
+		// Constructing filter conditions based on the metadata logic in the VectorStoreDataIngestionService
 		if (options.containsKey("source_type")) {
 			boolQueryBuilder
 				.must(TermQuery.of(t -> t.field("metadata.source_type").value(options.get("source_type").toString()))
@@ -221,7 +222,7 @@ public class DefaultHybridRagProcessor implements HybridRagProcessor {
 		var filterBuilder = new FilterExpressionBuilder();
 		var searchRequestBuilder = SearchRequest.builder().query(query.text());
 
-		// 构建向量搜索的过滤表达式
+		// Constructing filter expressions for vector search
 		if (options.containsKey("source_type")) {
 			var filterExpression = filterBuilder.eq("source_type", options.get("source_type").toString());
 

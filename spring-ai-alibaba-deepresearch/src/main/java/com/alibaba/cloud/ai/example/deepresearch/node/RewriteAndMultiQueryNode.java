@@ -53,7 +53,7 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 	public RewriteAndMultiQueryNode(ChatClient.Builder rewriteAndMultiQueryAgentBuilder) {
 		this.rewriteAndMultiQueryAgentBuilder = rewriteAndMultiQueryAgentBuilder;
 
-		// 查询重写
+		// Query rewriting
 		this.queryTransformer = RewriteQueryTransformer.builder()
 			.chatClientBuilder(rewriteAndMultiQueryAgentBuilder)
 			.build();
@@ -68,10 +68,10 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 		String queryText = StateUtil.getQuery(state);
 		assert queryText != null;
 		Query query = Query.builder().text(queryText).build();
-		// 查询重写
+		// Query rewriting
 		Query rewriteQuery = queryTransformer.transform(query);
 
-		// 查询拓展
+		// Query expansion
 		int optimizeQueryNum = StateUtil.getOptimizeQueryNum(state);
 		optimizeQueryNum = Math.max(MinOptimizeQueryNum, Math.min(MaxOptimizeQueryNum, optimizeQueryNum));
 		QueryExpander queryExpander = MultiQueryExpander.builder()
@@ -83,7 +83,7 @@ public class RewriteAndMultiQueryNode implements NodeAction {
 		List<Query> multiQueries = queryExpander.expand(rewriteQuery);
 		List<String> newQueries = multiQueries.stream().map(Query::text).collect(Collectors.toList());
 		updated.put("optimize_queries", newQueries);
-		// 判断是否需要用户上传
+		// Determining whether user uploads are required
 		if (state.value("user_upload_file", false)) {
 			nextStep = "user_file_rag";
 		}

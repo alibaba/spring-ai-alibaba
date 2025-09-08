@@ -53,15 +53,15 @@ public class RagNodeService {
 	private HybridRagProcessor hybridRagProcessor;
 
 	/**
-	 * 创建用户文件RAG节点，优先使用统一的HybridRagProcessor
+	 * Creates a user file RAG node, prioritizing the use of the unified HybridRagProcessor
 	 */
 	public AsyncNodeAction createUserFileRagNode() {
 		if (hybridRagProcessor != null) {
-			// 使用统一的RAG处理器，包含完整的前后处理和混合查询逻辑
+			// Use the unified RAG processor, which includes complete pre-processing, post-processing, and hybrid query logic
 			return node_async(new RagNode(hybridRagProcessor, ragAgent));
 		}
 		else {
-			// 回退到传统的策略模式
+			// Fallback to the traditional strategy pattern
 			return node_async(
 					new RagNode(userFileRetrievalStrategy != null ? List.of(userFileRetrievalStrategy) : List.of(),
 							fusionStrategy, ragAgent));
@@ -69,15 +69,15 @@ public class RagNodeService {
 	}
 
 	/**
-	 * 创建专业知识库RAG节点，优先使用统一的HybridRagProcessor
+	 * Creates a professional knowledge base RAG node, prioritizing the use of the unified HybridRagProcessor
 	 */
 	public AsyncNodeAction createProfessionalKbRagNode() {
 		if (hybridRagProcessor != null) {
-			// 使用统一的RAG处理器，包含完整的前后处理和混合查询逻辑
+			// Use the unified RAG processor, which includes complete pre-processing, post-processing, and hybrid query logic
 			return node_async(new RagNode(hybridRagProcessor, ragAgent));
 		}
 		else {
-			// 回退到传统的策略模式
+			// Fallback to the traditional strategy pattern
 			return node_async(
 					new RagNode(professionalKbEsStrategy != null ? List.of(professionalKbEsStrategy) : List.of(),
 							fusionStrategy, ragAgent));

@@ -24,7 +24,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import java.util.List;
 
 /**
- * 会话记录，用于存储用户与LLM的交互结果
+ * Stores the interaction results between the user and the LLM.
  */
 public class SessionHistory {
 
@@ -70,7 +70,7 @@ public class SessionHistory {
 	}
 
 	/**
-	 * 将会话记录转为UserMessage和AssistantMessage
+	 * Transforms conversation history into UserMessage and AssistantMessage objects
 	 */
 	public List<Message> convertToMessage() {
 		return List.of(new UserMessage(userQuery), new AssistantMessage(report));

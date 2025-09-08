@@ -60,11 +60,11 @@ public class CoordinatorNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("coordinator node is running.");
 		List<Message> messages = new ArrayList<>();
-		// 1. 添加消息
-		// 1.1 添加预置提示消息
+		// 1. Add message
+		// 1.1 Adding preset prompt messages
 		messages.add(TemplateUtil.getMessage("coordinator"));
 
-		// 添加前几次同一会话的报告
+		// Adding reports from previous interactions within the same session
 		String sessionId = StateUtil.getSessionId(state);
 		List<SessionHistory> reports = sessionContextService.getRecentReports(sessionId);
 		Message lastReportMessage;
@@ -77,21 +77,21 @@ public class CoordinatorNode implements NodeAction {
 		}
 		messages.add(lastReportMessage);
 
-		// 1.2 添加用户提问
+		// 1.2 Adding user queries
 		messages.add(new UserMessage(StateUtil.getQuery(state)));
 		logger.debug("Current Coordinator messages: {}", messages);
 
-		// 发起调用并获取完整响应
+		// Initiating the call and retrieving the full response
 		ChatResponse response = coordinatorAgent.prompt().messages(messages).call().chatResponse();
 
 		String nextStep = END;
 		boolean deepResearch = false;
 		Map<String, Object> updated = new HashMap<>();
 
-		// 获取 assistant 消息内容
+		// Retrieving the content of the assistant message
 		assert response != null;
 		AssistantMessage assistantMessage = response.getResult().getOutput();
-		// 判断是否触发工具调用
+		// Determining if a tool invocation is triggered
 		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
 			logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
 			nextStep = "rewrite_multi_query";

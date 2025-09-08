@@ -35,7 +35,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 报告导出服务，负责将报告转换为不同格式并保存到本地 支持Markdown和PDF格式，并提供文件下载功能
+ * Report Export Service
+ * Responsible for converting reports to different formats and saving them locally
+ * Supports Markdown and PDF formats, and provides file download functionality
  *
  * @author sixiyida
  * @since 2025/6/20
@@ -55,8 +57,8 @@ public class ExportService {
 	private final String basePath;
 
 	/**
-	 * 构造函数，初始化导出路径
-	 * @param basePath 导出基础路径
+	 * Constructor, initializes the export path
+	 * @param basePath Base export path
 	 */
 	public ExportService(String basePath) {
 		this.basePath = basePath;
@@ -66,19 +68,19 @@ public class ExportService {
 	}
 
 	/**
-	 * 将内容保存到文件
-	 * @param content 内容
-	 * @param filePath 文件路径
-	 * @return 保存的文件路径
+	 * Saves content to a file
+	 * @param content Content to save
+	 * @param filePath File path
+	 * @return Saved file path
 	 */
 	public String saveContentToFile(String content, String filePath) {
 		return FileOperationUtil.saveContentToFile(content, filePath);
 	}
 
 	/**
-	 * 将报告内容保存为Markdown格式
-	 * @param threadId 线程ID
-	 * @return 保存的文件路径，如果报告不存在则返回null
+	 * Saves report content in Markdown format
+	 * @param threadId Thread ID
+	 * @return Saved file path, returns null if the report does not exist
 	 */
 	public String saveAsMarkdown(String threadId) {
 		String content = reportService.getReport(threadId);
@@ -92,9 +94,9 @@ public class ExportService {
 	}
 
 	/**
-	 * 将报告内容转换为PDF并保存
-	 * @param threadId 线程ID
-	 * @return 保存的PDF文件路径，如果报告不存在则返回null
+	 * Converts report content to PDF and saves it
+	 * @param threadId Thread ID
+	 * @return Saved PDF file path, returns null if the report does not exist
 	 */
 	public String saveAsPdf(String threadId) {
 		String content = reportService.getReport(threadId);
@@ -109,10 +111,10 @@ public class ExportService {
 	}
 
 	/**
-	 * 获取指定格式报告的文件路径
-	 * @param threadId 线程ID
-	 * @param format 文件格式
-	 * @return 文件路径，如果格式不支持则返回null
+	 * Retrieves the file path of the report in the specified format
+	 * @param threadId Thread ID
+	 * @param format File format
+	 * @return File path, returns null if the format is not supported
 	 */
 	public String getReportFilePath(String threadId, String format) {
 		if (!isSupportedFormat(format)) {
@@ -125,10 +127,10 @@ public class ExportService {
 	}
 
 	/**
-	 * 检查指定格式的报告文件是否存在
-	 * @param threadId 线程ID
-	 * @param format 文件格式
-	 * @return 文件是否存在
+	 * Checks if the report file in the specified format exists
+	 * @param threadId Thread ID
+	 * @param format File format
+	 * @return Whether the file exists
 	 */
 	public boolean reportFileExists(String threadId, String format) {
 		String filePath = getReportFilePath(threadId, format);
@@ -136,9 +138,9 @@ public class ExportService {
 	}
 
 	/**
-	 * 从Markdown内容中提取标题
-	 * @param content Markdown内容
-	 * @return 提取的标题，如果未找到则返回null
+	 * Extracts the title from Markdown content
+	 * @param content Markdown content
+	 * @return Extracted title, returns null if not found
 	 */
 	public String extractTitleFromContent(String content) {
 		if (content == null || content.isEmpty()) {
@@ -154,40 +156,40 @@ public class ExportService {
 	}
 
 	/**
-	 * 直接下载报告文件
-	 * @param threadId 线程ID
-	 * @param format 文件格式
-	 * @return 文件下载响应
-	 * @throws IOException 如果文件不存在或不可读
-	 * @throws RuntimeException 如果报告不存在或格式不支持
+	 * Directly downloads the report file
+	 * @param threadId Thread ID
+	 * @param format File format
+	 * @return File download response
+	 * @throws IOException If the file does not exist or is unreadable
+	 * @throws RuntimeException If the report does not exist or the format is not supported
 	 */
 	public ResponseEntity<Resource> downloadReport(String threadId, String format) throws IOException {
-		// 检查线程ID对应导出的报告是否存在
+		// Check if the exported report corresponding to the thread ID exists
 		if (!existsReportByThreadId(threadId)) {
 			throw new RuntimeException("Report not found for thread: " + threadId);
 		}
 
-		// 获取文件路径
+		// Get the file path
 		String filePath = getReportFilePath(threadId, format);
 		if (filePath == null) {
 			throw new RuntimeException("Unsupported format: " + format);
 		}
 
-		// 获取报告内容以提取标题
+		// Get report content to extract title
 		String content = reportService.getReport(threadId);
 		String title = extractTitleFromContent(content);
 
 		logger.debug("Extracted title: {}", title);
 
-		// 如果文件不存在，则生成文件
+		// If the file does not exist, generate it
 		if (!FileOperationUtil.fileExists(filePath)) {
 			logger.info("File does not exist, generating: {}", filePath);
 
-			// 根据请求的格式导出文件
+			// Export file according to the requested format
 			filePath = "markdown".equals(format) || "md".equals(format) ? saveAsMarkdown(threadId)
 					: saveAsPdf(threadId);
 
-			// 统一使用markdown作为键
+			// Uniformly use 'markdown' as the key
 			if ("md".equals(format)) {
 				format = "markdown";
 			}
@@ -200,7 +202,7 @@ public class ExportService {
 			logger.info("File already exists, using: {}", filePath);
 		}
 
-		// 准备文件下载显示名称
+		// Prepare file download display name
 		String extension = "markdown".equals(format) || "md".equals(format) ? "md" : format;
 		String displayFilename = null;
 
@@ -209,16 +211,16 @@ public class ExportService {
 			logger.info("Using title for download filename: {}", displayFilename);
 		}
 
-		// 返回文件下载响应
+		// Return file download response
 		MediaType mediaType = getMediaTypeForFormat(format);
 		return displayFilename != null ? FileOperationUtil.getFileDownload(filePath, mediaType, displayFilename)
 				: FileOperationUtil.getFileDownload(filePath, mediaType);
 	}
 
 	/**
-	 * 获取格式对应的媒体类型
-	 * @param format 文件格式
-	 * @return 对应的媒体类型
+	 * Retrieves the media type corresponding to the format
+	 * @param format File format
+	 * @return Corresponding media type
 	 */
 	private MediaType getMediaTypeForFormat(String format) {
 		return switch (format) {
@@ -229,29 +231,29 @@ public class ExportService {
 	}
 
 	/**
-	 * 获取文件下载的ResponseEntity
-	 * @param filePath 文件路径
-	 * @param mediaType 媒体类型
-	 * @return 包含文件的ResponseEntity
-	 * @throws IOException 如果文件不存在或不可读
+	 * Retrieves the ResponseEntity for file download
+	 * @param filePath File path
+	 * @param mediaType Media type
+	 * @return ResponseEntity containing the file
+	 * @throws IOException If the file does not exist or is unreadable
 	 */
 	public ResponseEntity<Resource> getFileDownload(String filePath, MediaType mediaType) throws IOException {
 		return FileOperationUtil.getFileDownload(filePath, mediaType);
 	}
 
 	/**
-	 * 检查线程ID对应的报告是否存在
-	 * @param threadId 线程ID
-	 * @return 是否存在
+	 * Checks if the report corresponding to the thread ID exists
+	 * @param threadId Thread ID
+	 * @return Whether the report exists
 	 */
 	public boolean existsReportByThreadId(String threadId) {
 		return reportService.existsReport(threadId);
 	}
 
 	/**
-	 * 检查格式是否支持
-	 * @param format 导出格式
-	 * @return 是否支持
+	 * Checks if the format is supported
+	 * @param format Export format
+	 * @return Whether the format is supported
 	 */
 	public boolean isSupportedFormat(String format) {
 		return SUPPORTED_FORMATS.contains(format);

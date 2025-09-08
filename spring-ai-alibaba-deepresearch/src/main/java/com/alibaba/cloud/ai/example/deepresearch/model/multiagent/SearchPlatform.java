@@ -19,25 +19,25 @@ package com.alibaba.cloud.ai.example.deepresearch.model.multiagent;
 import java.util.List;
 
 /**
- * 搜索平台枚举，定义不同主题对应的搜索平台
+ * Search platform enumeration, defining search platforms corresponding to different themes
  *
  * @author Makoto
  * @since 2025/07/17
  */
 public enum SearchPlatform {
 
-	// 学术研究专用工具
+	// Academic research specialized tools
 	OPENALEX("openalex", "OpenAlex学术搜索", "学术论文、期刊文章、学术会议论文搜索", List.of(AgentType.ACADEMIC_RESEARCH)),
 
-	// 旅游生活专用工具
+	// Travel and lifestyle specialized tools
 	OPENTRIPMAP("opentripmap", "OpenTripMap景点搜索", "全球旅游景点和设施信息", List.of(AgentType.LIFESTYLE_TRAVEL)),
 
 	TRIPADVISOR("tripadvisor", "TripAdvisor旅游搜索", "旅游景点、酒店、餐厅信息", List.of(AgentType.LIFESTYLE_TRAVEL)),
 
-	// 百科知识专用工具
+	// Encyclopedia knowledge specialized tools
 	WIKIPEDIA("wikipedia", "维基百科", "百科知识、概念解释、历史文化信息", List.of(AgentType.ENCYCLOPEDIA)),
 
-	// 数据分析专用工具
+	// Data analysis specialized tools
 	WORLDBANK_DATA("worldbankdata", "世界银行数据", "全球发展指标和国家统计数据", List.of(AgentType.DATA_ANALYSIS)),
 
 	GOOGLE_SCHOLAR("googlescholar", "Google Scholar", "学术论文、引用分析、学者信息", List.of(AgentType.ACADEMIC_RESEARCH)),

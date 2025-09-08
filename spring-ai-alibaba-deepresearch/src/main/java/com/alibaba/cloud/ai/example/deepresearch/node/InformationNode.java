@@ -61,10 +61,10 @@ public class InformationNode implements NodeAction {
 			logger.info("反序列成功，convert: {}", curPlan);
 		}
 		catch (Exception e) {
-			// 2.2 反序列化失败，尝试重新生成计划
+			// 2.2 Deserialization failed, attempting to regenerate the plan.
 			logger.error("反序列化失败");
 			if (StateUtil.getPlanIterations(state) < StateUtil.getPlanMaxIterations(state)) {
-				// 尝试重新生成计划
+				// Attempting to regenerate the plan
 				updated.put("plan_iterations", StateUtil.getPlanIterations(state) + 1);
 				nextStep = "planner";
 				updated.put("information_next_node", nextStep);
@@ -78,7 +78,7 @@ public class InformationNode implements NodeAction {
 				return updated;
 			}
 		}
-		// 2.3 上下文不足，跳转到human_feedback节点
+		// 2.3 Insufficient context, transitioning to the human_feedback node
 		if (!StateUtil.getAutoAcceptedPlan(state)) {
 			nextStep = "human_feedback";
 		}

@@ -88,12 +88,12 @@ public class BackgroundInvestigationNode implements NodeAction {
 		assert queries != null && !queries.isEmpty();
 
 		for (String query : queries) {
-			// 使用统一的智能搜索选择方法
+			// Using a unified intelligent search selection method
 			SmartAgentUtil.SearchSelectionResult searchSelection = smartAgentSelectionHelper
 				.intelligentSearchSelection(state, query);
 			List<Map<String, String>> results;
 
-			// 使用支持工具调用的搜索方法
+			// Using a search method that supports tool invocation
 			results = searchInfoService.searchInfo(StateUtil.isSearchFilter(state), searchSelection.getSearchEnum(),
 					query, searchSelection.getSearchPlatform());
 			resultMap.put("site_information", results);

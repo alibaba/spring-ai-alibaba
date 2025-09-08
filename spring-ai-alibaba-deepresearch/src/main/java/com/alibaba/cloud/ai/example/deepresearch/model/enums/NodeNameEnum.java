@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.model.enums;
 
 /**
- * StateGraph 节点枚举，统一管理所有流程节点名称，和给前端渲染的节点title。
+ * StateGraph node enumeration, centrally managing all workflow node names and node titles for frontend rendering.
  */
 public enum NodeNameEnum {
 
@@ -30,7 +30,7 @@ public enum NodeNameEnum {
 	private final String nodeName;
 
 	/**
-	 * 前端渲染的标题
+	 * Frontend rendering title
 	 */
 	private final String displayTitle;
 

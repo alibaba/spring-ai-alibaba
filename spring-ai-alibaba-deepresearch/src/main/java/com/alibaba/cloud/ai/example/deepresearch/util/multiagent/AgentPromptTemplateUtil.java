@@ -22,7 +22,8 @@ import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import static com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil.loadFileContent;
 
 /**
- * Agent提示词模板工具类 从classpath加载markdown文件作为提示词模板
+ * Agent Prompt Template Utility Class
+ * Loads markdown files from classpath as prompt templates
  *
  * @author Makoto
  * @since 2025/07/17
@@ -38,28 +39,28 @@ public class AgentPromptTemplateUtil {
 	}
 
 	/**
-	 * 获取问题分类的系统提示词
-	 * @return 分类系统提示词
-	 * @throws RuntimeException 当文件加载失败时抛出异常
+	 * Retrieves the system prompt for question classification
+	 * @return Classification system prompt
+	 * @throws RuntimeException When file loading fails
 	 */
 	public static String getClassificationPrompt() {
 		return loadFileContent(CLASSIFIER_PROMPT_PATH);
 	}
 
 	/**
-	 * 获取搜索平台选择的系统提示词
-	 * @return 搜索平台选择系统提示词
-	 * @throws RuntimeException 当文件加载失败时抛出异常
+	 * Retrieves the system prompt for search platform selection
+	 * @return Search platform selection system prompt
+	 * @throws RuntimeException When file loading fails
 	 */
 	public static String getSearchPlatformSelectionPrompt() {
 		return loadFileContent(SEARCH_PLATFORM_SELECTOR_PROMPT_PATH);
 	}
 
 	/**
-	 * 构建完整的Agent提示词（系统提示词 + 引用指导）
-	 * @param agentType Agent类型
-	 * @return 完整的提示词
-	 * @throws RuntimeException 当Agent类型不支持或文件加载失败时抛出异常
+	 * Constructs a complete agent prompt (system prompt + citation guidance)
+	 * @param agentType Agent type
+	 * @return Complete prompt
+	 * @throws RuntimeException When the agent type is unsupported or file loading fails
 	 */
 	public static String buildCompletePrompt(AgentType agentType) {
 		return getSystemPrompt(agentType) + "\n\n" + agentType.getCitationGuidance();

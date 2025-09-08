@@ -70,16 +70,16 @@ public class ReporterNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("reporter node is running.");
 
-		// 从 OverAllState 中获取线程ID
+		// Retrieving the thread ID from the OverAllState
 		String threadId = StateUtil.getThreadId(state);
 		String sessionId = StateUtil.getSessionId(state);
 		logger.info("Thread ID from state: {}", threadId);
 		logger.info("Session ID from state: {}", sessionId);
 
-		// 添加消息
+		// Add message
 		List<Message> messages = new ArrayList<>();
 
-		// 添加背景调查的信息
+		// Adding background investigation information
 		List<String> backgroundInvestigationResults = state.value("background_investigation_results",
 				(List<String>) null);
 		assert backgroundInvestigationResults != null && !backgroundInvestigationResults.isEmpty();
@@ -89,15 +89,15 @@ public class ReporterNode implements NodeAction {
 			}
 		}
 
-		// 添加深度研究信息
+		// Adding in-depth research information
 		if (state.value("enable_deepresearch", true)) {
 			Plan currentPlan = StateUtil.getPlan(state);
 
-			// 1.1 研究报告格式消息
+			// 1.1 Research report formatted message
 			messages.add(new UserMessage(
 					MessageFormat.format(RESEARCH_FORMAT, currentPlan.getTitle(), currentPlan.getThought())));
 
-			// 1.2 添加研究组节点返回的信息
+			// 1.2 Adding information returned by the research group node
 			List<String> researcherTeam = List.of(ParallelEnum.RESEARCHER.getValue(), ParallelEnum.CODER.getValue());
 			for (String content : StateUtil.getParallelMessages(state, researcherTeam,
 					StateUtil.getMaxStepNum(state))) {
@@ -105,7 +105,7 @@ public class ReporterNode implements NodeAction {
 				messages.add(new UserMessage(content));
 			}
 
-			// 1.3 添加专业知识库决策节点返回的信息
+			// 1.3 Adding information returned by the professional knowledge base decision node
 			if (state.value("use_professional_kb", false) && StringUtils.hasText(StateUtil.getRagContent(state))) {
 				messages.add(new UserMessage(StateUtil.getRagContent(state)));
 			}

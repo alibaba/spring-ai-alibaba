@@ -22,29 +22,29 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 专业知识库API客户端接口
+ * Professional Knowledge Base API Client Interface
  *
  * @author hupei
  */
 public interface ProfessionalKbApiClient {
 
 	/**
-	 * 搜索知识库
-	 * @param query 查询文本
-	 * @param options 选项参数，可包含maxResults、timeout等
-	 * @return 搜索结果列表
+	 * Searches the knowledge base
+	 * @param query The search query text
+	 * @param options Configuration parameters that may include maxResults, timeout, etc.
+	 * @return List of search results
 	 */
 	List<KbSearchResult> search(String query, Map<String, Object> options);
 
 	/**
-	 * 获取支持的提供商类型
-	 * @return 提供商类型，如"dashscope", "custom"等
+	 * Retrieves the supported provider types
+	 * @return Provider types such as "dashscope", "custom", etc.
 	 */
 	String getProvider();
 
 	/**
-	 * 检查客户端是否已正确配置
-	 * @return 是否可用
+	 * Checks whether the client is properly configured
+	 * @return Availability status
 	 */
 	boolean isAvailable();
 

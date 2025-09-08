@@ -31,7 +31,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * MCP 服务类 负责 MCP 服务相关的业务逻辑
+ * MCP Service Class
+ * Responsible for business logic related to MCP services
  *
  * @author Makoto
  * @since 2025/1/24
@@ -44,17 +45,17 @@ public class McpService {
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
-	 * 获取所有 MCP 服务信息
-	 * @return MCP 服务信息列表
+	 * Retrieves all MCP service information
+	 * @return List of MCP service information
 	 */
 	public List<McpServerInfo> getAllMcpServices() {
 		return loadMcpServicesFromConfig();
 	}
 
 	/**
-	 * 创建服务摘要信息
-	 * @param services MCP 服务列表
-	 * @return 摘要信息
+	 * Creates service summary information
+	 * @param services List of MCP services
+	 * @return Summary information
 	 */
 	public Map<String, Object> createServiceSummary(List<McpServerInfo> services) {
 		Map<String, Object> summary = new HashMap<>();
@@ -78,8 +79,8 @@ public class McpService {
 	}
 
 	/**
-	 * 从配置文件加载 MCP 服务信息
-	 * @return MCP 服务信息列表
+	 * Loads MCP service information from configuration files
+	 * @return List of MCP service information
 	 */
 	private List<McpServerInfo> loadMcpServicesFromConfig() {
 		List<McpServerInfo> services = new ArrayList<>();
@@ -111,10 +112,10 @@ public class McpService {
 	}
 
 	/**
-	 * 解析单个服务器信息
-	 * @param agentName 代理名称
-	 * @param serverNode 服务器节点
-	 * @return MCP 服务器信息
+	 * Parses individual server information
+	 * @param agentName Agent name
+	 * @param serverNode Server node
+	 * @return MCP server information
 	 */
 	private McpServerInfo parseServerInfo(String agentName, JsonNode serverNode) {
 		String url = getNodeText(serverNode, "url");
@@ -127,10 +128,10 @@ public class McpService {
 	}
 
 	/**
-	 * 安全地获取节点文本值
-	 * @param node 节点
-	 * @param fieldName 字段名
-	 * @return 文本值，如果节点为 null 或不存在则返回 null
+	 * Safely retrieves node text values
+	 * @param node Node
+	 * @param fieldName Field name
+	 * @return Text value, returns null if the node is null or does not exist
 	 */
 	private String getNodeText(JsonNode node, String fieldName) {
 		JsonNode fieldNode = node.get(fieldName);

@@ -41,6 +41,7 @@ import java.util.Objects;
 
 /**
  * A NodeAction that uses the RAG pipeline to generate a response based on user input.
+ * Using a unified HybridRagProcessor for RAG pre-processing, post-processing, and hybrid querying.
  * 使用统一的HybridRagProcessor进行RAG前后处理和混合查询
  *
  * @author hupei
@@ -58,7 +59,7 @@ public class RagNode implements NodeAction {
 	private final HybridRagProcessor hybridRagProcessor;
 
 	/**
-	 * 支持传统的策略模式构造函数（向后兼容）
+	 * Supporting traditional strategy pattern constructors (backward compatibility)
 	 */
 	public RagNode(List<RetrievalStrategy> retrievalStrategies, FusionStrategy fusionStrategy, ChatClient ragAgent) {
 		this.retrievalStrategies = retrievalStrategies;
@@ -68,7 +69,7 @@ public class RagNode implements NodeAction {
 	}
 
 	/**
-	 * 新的统一RAG处理器构造函数
+	 * New unified RAG processor constructor
 	 */
 	public RagNode(HybridRagProcessor hybridRagProcessor, ChatClient ragAgent) {
 		this.hybridRagProcessor = hybridRagProcessor;
@@ -85,18 +86,18 @@ public class RagNode implements NodeAction {
 		Map<String, Object> options = new HashMap<>();
 		state.value("session_id", String.class).ifPresent(v -> options.put("session_id", v));
 		state.value("user_id", String.class).ifPresent(v -> options.put("user_id", v));
-		options.put("query", queryText); // 添加查询文本供后处理使用
+		options.put("query", queryText); // Adding query text for post-processing use
 
 		List<Document> documents = new ArrayList<>();
 
-		// 使用统一的RAG处理器或传统的策略模式
+		// Using a unified RAG processor or the traditional strategy pattern
 		if (hybridRagProcessor != null) {
-			// 使用统一的RAG处理器，包含完整的前后处理逻辑
+			// Using a unified RAG processor that includes comprehensive pre-processing and post-processing logic
 			Query query = new Query(queryText);
 			documents = hybridRagProcessor.process(query, options);
 		}
 		else if (retrievalStrategies != null && fusionStrategy != null) {
-			// 传统策略模式（向后兼容）
+			// Traditional strategy pattern (backward compatible)
 			List<List<Document>> allResults = new ArrayList<>();
 			for (RetrievalStrategy strategy : retrievalStrategies) {
 				allResults.add(strategy.retrieve(queryText, options));
@@ -104,13 +105,13 @@ public class RagNode implements NodeAction {
 			documents = fusionStrategy.fuse(allResults);
 		}
 
-		// 构建上下文
+		// Constructing the context
 		StringBuilder contextBuilder = new StringBuilder();
 		for (Document doc : documents) {
 			contextBuilder.append(doc.getText()).append("\n");
 		}
 
-		// 生成响应
+		// Generating the response
 		Flux<ChatResponse> streamResult = ragAgent.prompt()
 			.messages(new UserMessage(contextBuilder.toString()))
 			.user(queryText)

@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * MCP配置合并工具类
+ * MCP Configuration Merging Utility Class
  *
  * @author Makoto
  */
@@ -41,7 +41,7 @@ public class McpConfigMergeUtil {
 	private static final Logger logger = LoggerFactory.getLogger(McpConfigMergeUtil.class);
 
 	/**
-	 * 合并静态配置和动态配置
+	 * Merges static and dynamic configurations
 	 */
 	public static Map<String, McpAssignNodeProperties.McpServerConfig> mergeAgent2McpConfigs(
 			Map<String, McpAssignNodeProperties.McpServerConfig> staticConfig, Map<String, Object> runtimeSettings,
@@ -49,7 +49,7 @@ public class McpConfigMergeUtil {
 
 		Map<String, McpAssignNodeProperties.McpServerConfig> result = new HashMap<>();
 
-		// 这边复制所有静态配置
+		// Copy all static configurations here
 		for (Map.Entry<String, McpAssignNodeProperties.McpServerConfig> entry : staticConfig.entrySet()) {
 			String agentName = entry.getKey();
 			List<McpAssignNodeProperties.McpServerInfo> staticServers = new ArrayList<>(
@@ -57,7 +57,7 @@ public class McpConfigMergeUtil {
 			result.put(agentName, new McpAssignNodeProperties.McpServerConfig(staticServers));
 		}
 
-		// 处理动态配置
+		// Process dynamic configurations
 		for (Map.Entry<String, Object> entry : runtimeSettings.entrySet()) {
 			String agentName = entry.getKey();
 
@@ -68,7 +68,7 @@ public class McpConfigMergeUtil {
 					McpAssignNodeProperties.McpServerConfig dynamicConfig = objectMapper.convertValue(agentConfig,
 							McpAssignNodeProperties.McpServerConfig.class);
 
-					// 合并该Agent的服务器配置
+					// Merge server configurations for this agent
 					List<McpAssignNodeProperties.McpServerInfo> mergedServers = mergeAgent2McpServers(
 							result.getOrDefault(agentName, new McpAssignNodeProperties.McpServerConfig(List.of()))
 								.mcpServers(),
@@ -84,7 +84,7 @@ public class McpConfigMergeUtil {
 	}
 
 	/**
-	 * 合并服务器配置列表（相同URL覆盖，新URL追加）
+	 * Merges server configuration lists (same URLs are overwritten, new URLs are appended)
 	 */
 	public static List<McpAssignNodeProperties.McpServerInfo> mergeAgent2McpServers(
 			List<McpAssignNodeProperties.McpServerInfo> staticServers,
@@ -96,7 +96,7 @@ public class McpConfigMergeUtil {
 			serverMap.put(server.url(), server);
 		}
 
-		// 动态服务器覆盖或添加
+		// Dynamic server override or addition
 		for (McpAssignNodeProperties.McpServerInfo server : dynamicServers) {
 			serverMap.put(server.url(), server);
 		}
@@ -105,7 +105,7 @@ public class McpConfigMergeUtil {
 	}
 
 	/**
-	 * 创建Transport的辅助方法
+	 * Helper method for creating Transport
 	 */
 	public static List<NamedClientMcpTransport> createAgent2McpTransports(String agentName,
 			McpAssignNodeProperties.McpServerConfig config, WebClient.Builder webClientBuilderTemplate,

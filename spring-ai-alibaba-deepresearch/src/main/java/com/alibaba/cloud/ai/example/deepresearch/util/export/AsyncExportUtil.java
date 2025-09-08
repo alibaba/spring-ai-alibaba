@@ -24,7 +24,7 @@ import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * 异步导出工具类，提供异步PDF转换功能
+ * Asynchronous export utility class providing asynchronous PDF conversion functionality
  *
  * @author sixiyida
  * @since 2025/6/20
@@ -34,11 +34,11 @@ public class AsyncExportUtil {
 	private static final Logger logger = LoggerFactory.getLogger(AsyncExportUtil.class);
 
 	/**
-	 * 异步将内容转换为PDF
-	 * @param content 报告内容
-	 * @param title 报告标题
-	 * @param basePath 基础路径
-	 * @return CompletableFuture包含PDF文件路径
+	 * Asynchronously converts content to PDF
+	 * @param content Report content
+	 * @param title Report title
+	 * @param basePath Base path
+	 * @return CompletableFuture containing the PDF file path
 	 */
 	public static CompletableFuture<String> saveAsPdfAsync(String content, String title, String basePath,
 			ThreadPoolTaskExecutor executor) {
@@ -47,10 +47,10 @@ public class AsyncExportUtil {
 				String filename = FileOperationUtil.generateFilename(title, "pdf");
 				String pdfFilePath = basePath + File.separator + filename;
 
-				// 直接将Markdown转换为PDF
+				// Directly convert Markdown to PDF
 				byte[] pdfBytes = FormatConversionUtil.convertMarkdownToPdfBytes(content);
 
-				// 保存到文件
+				// Save to file
 				try (java.io.FileOutputStream fos = new java.io.FileOutputStream(pdfFilePath)) {
 					fos.write(pdfBytes);
 				}

@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.config.DeepResearchProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 导出功能相关的配置属性
+ * Configuration properties related to the export functionality
  *
  * @author sixiyida
  * @since 2025/6/20

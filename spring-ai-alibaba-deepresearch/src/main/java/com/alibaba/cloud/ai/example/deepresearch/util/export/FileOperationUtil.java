@@ -31,7 +31,7 @@ import java.nio.file.Paths;
 import java.util.regex.Pattern;
 
 /**
- * 文件操作工具类，提供基础的文件读写功能
+ * File operation utility class providing basic file read/write functionality
  *
  * @author sixiyida
  * @since 2025/6/20
@@ -47,10 +47,10 @@ public final class FileOperationUtil {
 	private static final String DEFAULT_FILENAME = "report";
 
 	/**
-	 * 从文件读取内容
-	 * @param filePath 文件路径
-	 * @return 文件内容
-	 * @throws RuntimeException 如果文件读取失败
+	 * Reads content from a file
+	 * @param filePath File path
+	 * @return File content
+	 * @throws RuntimeException If file reading fails
 	 */
 	public static String readFromFile(String filePath) {
 		try {
@@ -63,19 +63,19 @@ public final class FileOperationUtil {
 	}
 
 	/**
-	 * 将内容保存到文件
-	 * @param content 内容
-	 * @param filePath 文件路径
-	 * @return 保存的文件路径
-	 * @throws RuntimeException 如果文件保存失败
+	 * Saves content to a file
+	 * @param content Content
+	 * @param filePath File path
+	 * @return Saved file path
+	 * @throws RuntimeException If file saving fails
 	 */
 	public static String saveContentToFile(String content, String filePath) {
 		try {
-			// 确保父目录存在
+			// Ensure parent directory exists
 			Path path = Paths.get(filePath);
 			createParentDirectories(path);
 
-			// 写入内容
+			// Write content
 			Files.writeString(path, content);
 			logger.info("Content saved to file: {}", filePath);
 			return filePath;
@@ -87,9 +87,9 @@ public final class FileOperationUtil {
 	}
 
 	/**
-	 * 创建父目录（如果不存在）
-	 * @param path 文件路径
-	 * @throws IOException 如果目录创建失败
+	 * Creates parent directories (if they do not exist)
+	 * @param path File path
+	 * @throws IOException If directory creation fails
 	 */
 	private static void createParentDirectories(Path path) throws IOException {
 		Path parent = path.getParent();
@@ -99,10 +99,10 @@ public final class FileOperationUtil {
 	}
 
 	/**
-	 * 创建目录（如果不存在）
-	 * @param directoryPath 目录路径
-	 * @throws IllegalArgumentException 如果目录路径为null
-	 * @throws RuntimeException 如果目录创建失败
+	 * Creates a directory (if it does not exist)
+	 * @param directoryPath Directory path
+	 * @throws IllegalArgumentException If the directory path is null
+	 * @throws RuntimeException If directory creation fails
 	 */
 	public static void createDirectoryIfNotExists(String directoryPath) {
 		if (directoryPath == null) {
@@ -124,18 +124,18 @@ public final class FileOperationUtil {
 	}
 
 	/**
-	 * 生成文件名，使用线程ID作为文件名
-	 * @param threadId 线程ID
-	 * @param extension 扩展名
-	 * @return 生成的文件名
+	 * Generates a filename using the thread ID as the filename
+	 * @param threadId Thread ID
+	 * @param extension File extension
+	 * @return Generated filename
 	 */
 	public static String generateFilename(String threadId, String extension) {
-		// 清理线程ID，移除不适合作为文件名的字符
+		// Clean thread ID by removing characters unsuitable for filenames
 		String cleanThreadId = INVALID_FILENAME_CHARS.matcher(threadId).replaceAll("").trim();
 
 		cleanThreadId = WHITESPACE.matcher(cleanThreadId).replaceAll("_");
 
-		// 如果清理后线程ID为空，使用"report"作为默认名称
+		// If the thread ID is empty after cleaning, use "report" as the default name
 		if (cleanThreadId.isEmpty()) {
 			cleanThreadId = DEFAULT_FILENAME;
 		}
@@ -144,10 +144,10 @@ public final class FileOperationUtil {
 	}
 
 	/**
-	 * 生成文件名，使用自定义标题作为文件名
-	 * @param title 标题
-	 * @param extension 扩展名
-	 * @return 生成的文件名
+	 * Generates a filename using a custom title as the filename
+	 * @param title Title
+	 * @param extension File extension
+	 * @return Generated filename
 	 */
 	public static String generateFilenameFromTitle(String title, String extension) {
 		if (title == null || title.trim().isEmpty()) {
@@ -170,12 +170,12 @@ public final class FileOperationUtil {
 	}
 
 	/**
-	 * 获取文件下载的ResponseEntity
-	 * @param filePath 文件路径
-	 * @param mediaType 媒体类型
-	 * @return 包含文件的ResponseEntity
-	 * @throws IOException 如果文件不存在或不可读
-	 * @throws RuntimeException 如果文件无法读取
+	 * Retrieves the ResponseEntity for file download
+	 * @param filePath File path
+	 * @param mediaType Media type
+	 * @return ResponseEntity containing the file
+	 * @throws IOException If the file does not exist or is unreadable
+	 * @throws RuntimeException If the file cannot be read
 	 */
 	public static ResponseEntity<Resource> getFileDownload(String filePath, MediaType mediaType) throws IOException {
 		Path path = Paths.get(filePath);
@@ -194,13 +194,13 @@ public final class FileOperationUtil {
 	}
 
 	/**
-	 * 获取文件下载的ResponseEntity，使用自定义的显示文件名
-	 * @param filePath 文件路径
-	 * @param mediaType 媒体类型
-	 * @param displayFilename 显示的文件名
-	 * @return 包含文件的ResponseEntity
-	 * @throws IOException 如果文件不存在或不可读
-	 * @throws RuntimeException 如果文件无法读取
+	 * Retrieves the ResponseEntity for file download using a custom display filename
+	 * @param filePath File path
+	 * @param mediaType Media type
+	 * @param displayFilename Display filename
+	 * @return ResponseEntity containing the file
+	 * @throws IOException If the file does not exist or is unreadable
+	 * @throws RuntimeException If the file cannot be read
 	 */
 	public static ResponseEntity<Resource> getFileDownload(String filePath, MediaType mediaType, String displayFilename)
 			throws IOException {
@@ -208,12 +208,12 @@ public final class FileOperationUtil {
 		Resource resource = new UrlResource(path.toUri());
 
 		if (resource.exists() && resource.isReadable()) {
-			// 获取文件扩展名
+			// Get file extension
 			String originalFilename = path.getFileName().toString();
 			String extension = originalFilename.contains(".")
 					? originalFilename.substring(originalFilename.lastIndexOf(".")) : "";
 
-			// 确保显示文件名有正确的扩展名
+			// Ensure display filename has correct extension
 			if (displayFilename == null || displayFilename.trim().isEmpty()) {
 				displayFilename = originalFilename;
 			}
@@ -242,9 +242,9 @@ public final class FileOperationUtil {
 	}
 
 	/**
-	 * 检查文件是否存在
-	 * @param filePath 文件路径
-	 * @return 文件是否存在
+	 * Checks if a file exists
+	 * @param filePath File path
+	 * @return Whether the file exists
 	 */
 	public static boolean fileExists(String filePath) {
 		return filePath != null && Files.exists(Paths.get(filePath));

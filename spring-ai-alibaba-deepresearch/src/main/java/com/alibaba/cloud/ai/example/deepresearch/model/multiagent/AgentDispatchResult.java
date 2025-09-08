@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Agent分派结果
+ * Agent dispatch result
  *
  * @author Makoto
  * @since 2025/07/17
@@ -78,14 +78,14 @@ public class AgentDispatchResult {
 	}
 
 	/**
-	 * 获取智能Agent配置的状态更新Map
-	 * @return 包含智能Agent配置的状态更新Map
+	 * Retrieves the status update map for intelligent agent configuration
+	 * @return Map containing status updates for intelligent agent configuration
 	 */
 	public Map<String, Object> getStateUpdate() {
 		if (success && agentType != null && searchPlatforms != null) {
 			return SmartAgentUtil.createSmartAgentStateUpdate(searchPlatforms, agentType);
 		}
-		return Map.of(); // 返回空Map而不是null
+		return Map.of(); // Return an empty Map instead of null
 	}
 
 	@Override

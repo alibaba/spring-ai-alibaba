@@ -21,7 +21,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.Map;
 
 /**
- * 智能Agent配置属性
+ * Intelligent agent configuration properties
  *
  * @author Makoto
  * @since 2025/07/17
@@ -52,7 +52,7 @@ public class SmartAgentProperties {
 	}
 
 	/**
-	 * 搜索平台配置
+	 * Search platform configuration
 	 */
 	public static class SearchPlatformConfig {
 

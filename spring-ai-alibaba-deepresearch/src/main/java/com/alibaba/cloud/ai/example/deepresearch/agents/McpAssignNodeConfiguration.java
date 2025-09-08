@@ -41,7 +41,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * 分配指定的mcp给指定的节点
+ * Allocate the specified MCP to the target node
  *
  * @author Makoto
  */
@@ -62,7 +62,7 @@ public class McpAssignNodeConfiguration {
 	private ObjectMapper objectMapper;
 
 	/**
-	 * 读取JSON配置文件
+	 * Parse the JSON configuration file
 	 */
 	@Bean(name = "agent2mcpConfig")
 	public Map<String, McpAssignNodeProperties.McpServerConfig> agent2mcpConfig() {
@@ -85,22 +85,23 @@ public class McpAssignNodeConfiguration {
 	}
 
 	/**
-	 * 支持运行时配置的MCP配置提供者
+	 * MCP configuration provider with runtime configuration support
 	 */
 	@Bean(name = "agent2mcpConfigWithRuntime")
 	public Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> agent2mcpConfigWithRuntime(
 			@Qualifier("agent2mcpConfig") Map<String, McpAssignNodeProperties.McpServerConfig> staticConfig) {
 
 		return state -> {
-			// 获取运行时MCP设置
+			// Fetch the runtime MCP configuration
 			Map<String, Object> runtimeMcpSettings = state.value("mcp_settings", Map.class)
 				.orElse(Collections.emptyMap());
 			return McpConfigMergeUtil.mergeAgent2McpConfigs(staticConfig, runtimeMcpSettings, objectMapper);
 		};
 	}
 
-	// MCP客户端创建逻辑已移动到各个节点内部处理
-	// 配置类现在只负责提供配置信息，实际的客户端创建在节点运行时进行
+	// The MCP client creation logic has been moved to be handled internally within each node.
+	// The configuration class is now solely responsible for providing configuration data,
+	// while the actual client instantiation is performed during node runtime.
 
 	private String connectedClientName(String clientName, String serverConnectionName) {
 		return clientName + " - " + serverConnectionName;

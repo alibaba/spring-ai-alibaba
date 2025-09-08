@@ -55,7 +55,7 @@ public class CoderNode implements NodeAction {
 
 	private final ReflectionProcessor reflectionProcessor;
 
-	// MCP工厂
+	// MCP factory
 	private final McpProviderFactory mcpFactory;
 
 	public CoderNode(ChatClient coderAgent, String executorNodeId, ReflectionProcessor reflectionProcessor,
@@ -101,10 +101,10 @@ public class CoderNode implements NodeAction {
 					buildTaskMessageWithReflectionHistory(assignedStep, state.value("locale", "en-US"))));
 			logger.debug("{} Node message: {}", nodeName, messages);
 
-			// 调用agent
+			// Use agent
 			var requestSpec = coderAgent.prompt().messages(messages);
 
-			// 使用MCP工厂创建MCP客户端
+			// Using an MCP factory to create an MCP client.
 			AsyncMcpToolCallbackProvider mcpProvider = mcpFactory != null
 					? mcpFactory.createProvider(state, "coderAgent") : null;
 			if (mcpProvider != null) {

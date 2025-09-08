@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.model.dto;
 
 /**
- * MCP 服务信息数据传输对象
+ * DTO containing MCP service information for API communication
  *
  * @author Makoto
  * @since 2025/1/24
@@ -26,9 +26,9 @@ public record McpServerInfo(String agentName, String agentDisplayName, String ur
 		String serviceName) {
 
 	/**
-	 * 从 URL 中提取服务名称
-	 * @param url MCP 服务器 URL
-	 * @return 服务名称
+	 * Extracts service name from URL
+	 * @param url MCP server URL
+	 * @return service name
 	 */
 	public static String extractServiceName(String url) {
 		if (url == null || url.isEmpty()) {
@@ -44,9 +44,9 @@ public record McpServerInfo(String agentName, String agentDisplayName, String ur
 	}
 
 	/**
-	 * 获取代理显示名称
-	 * @param agentName 代理名称
-	 * @return 代理显示名称
+	 * Retrieves formatted display name for agent
+	 * @param agentName internal agent identifier
+	 * @return user-friendly display name
 	 */
 	public static String getAgentDisplayName(String agentName) {
 		// TODO: 可以在这里添加其他服务的agent名称映射逻辑

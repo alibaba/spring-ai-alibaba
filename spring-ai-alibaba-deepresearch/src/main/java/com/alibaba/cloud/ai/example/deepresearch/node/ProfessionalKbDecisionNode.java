@@ -29,7 +29,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 专业知识库决策节点，根据查询内容和知识库描述智能判断是否需要查询专业知识库
+ * Professional Knowledge Base Decision Node
+ * Intelligently determines whether a query to the professional knowledge base is required based on the query content
+ * and knowledge base description
  *
  * @author hupei
  */
@@ -52,14 +54,14 @@ public class ProfessionalKbDecisionNode implements NodeAction {
 		String query = StateUtil.getQuery(state);
 		Map<String, Object> updated = new HashMap<>();
 
-		// 如果没有启用专业知识库决策，直接返回不使用
+		// If the professional knowledge base decision is not enabled, directly return without using it
 		if (!ragProperties.getProfessionalKnowledgeBases().isDecisionEnabled()) {
 			updated.put("use_professional_kb", false);
 			updated.put("selected_knowledge_bases", Collections.emptyList());
 			return updated;
 		}
 
-		// 获取已启用的专业知识库列表
+		// Retrieving the list of enabled professional knowledge bases
 		List<RagProperties.ProfessionalKnowledgeBases.KnowledgeBase> enabledKbs = ragProperties
 			.getProfessionalKnowledgeBases()
 			.getKnowledgeBases()
@@ -75,13 +77,13 @@ public class ProfessionalKbDecisionNode implements NodeAction {
 			return updated;
 		}
 
-		// 构建决策提示词
+		// Constructing decision prompts
 		String decisionPrompt = buildDecisionPrompt(query, enabledKbs);
 
-		// 调用大模型进行决策
+		// Invoking the large language model for decision-making
 		ChatResponse response = chatClient.prompt().user(decisionPrompt).call().chatResponse();
 
-		// 解析响应
+		// Parsing the response
 		List<String> selectedKbIds = parseDecisionResponse(response, enabledKbs);
 
 		boolean useKb = !selectedKbIds.isEmpty();
@@ -99,7 +101,7 @@ public class ProfessionalKbDecisionNode implements NodeAction {
 	}
 
 	/**
-	 * 构建决策提示词
+	 * Constructing decision prompts
 	 */
 	private String buildDecisionPrompt(String query, List<RagProperties.ProfessionalKnowledgeBases.KnowledgeBase> kbs) {
 		StringBuilder prompt = new StringBuilder();
@@ -123,7 +125,7 @@ public class ProfessionalKbDecisionNode implements NodeAction {
 	}
 
 	/**
-	 * 解析大模型的决策响应
+	 * Parsing the decision response from the large language model
 	 */
 	private List<String> parseDecisionResponse(ChatResponse response,
 			List<RagProperties.ProfessionalKnowledgeBases.KnowledgeBase> kbs) {
@@ -134,17 +136,17 @@ public class ProfessionalKbDecisionNode implements NodeAction {
 		String responseText = response.getResult().getOutput().getText().trim();
 		logger.debug("Decision response: {}", responseText);
 
-		// 解析SELECTED格式的响应
+		// Parsing the response in SELECTED format
 		if (responseText.contains("SELECTED:")) {
 			String selectedPart = responseText.substring(responseText.indexOf("SELECTED:") + 9).trim();
-			// 移除方括号
+			// Removing square brackets
 			selectedPart = selectedPart.replaceAll("[\\[\\]]", "").trim();
 
 			if (selectedPart.isEmpty()) {
 				return Collections.emptyList();
 			}
 
-			// 分割知识库ID
+			// Splitting knowledge base IDs
 			String[] kbIds = selectedPart.split(",");
 			List<String> validKbIds = new ArrayList<>();
 			Set<String> availableKbIds = kbs.stream()
@@ -161,7 +163,7 @@ public class ProfessionalKbDecisionNode implements NodeAction {
 			return validKbIds;
 		}
 
-		// 兜底策略：如果响应包含"yes"或"是"，选择第一个知识库
+		// Fallback strategy: If the response contains "yes" or "是", select the first knowledge base.
 		if (responseText.toLowerCase().contains("yes") || responseText.contains("是")) {
 			return kbs.isEmpty() ? Collections.emptyList() : Collections.singletonList(kbs.get(0).getId());
 		}

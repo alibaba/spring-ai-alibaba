@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 报告 Redis 服务类
+ * Report Redis Service Class
  *
  * @author huangzhen
  * @since 2025/6/18
@@ -39,12 +39,12 @@ public class ReportRedisService implements ReportService {
 	private final RedisTemplate<String, Object> redisTemplate;
 
 	/**
-	 * Redis key 前缀
+	 * Redis key prefix
 	 */
 	private static final String REPORT_KEY_PREFIX = "deepresearch:report:";
 
 	/**
-	 * 默认过期时间（24小时）
+	 * Default expiration time (24 hours)
 	 */
 	private static final long DEFAULT_EXPIRE_HOURS = 24;
 
@@ -53,9 +53,9 @@ public class ReportRedisService implements ReportService {
 	}
 
 	/**
-	 * 存储报告到 Redis
-	 * @param threadId 线程ID
-	 * @param report 报告内容
+	 * Stores reports in Redis
+	 * @param threadId Thread ID
+	 * @param report Report content
 	 */
 	@Override
 	public void saveReport(String threadId, String report) {
@@ -71,9 +71,9 @@ public class ReportRedisService implements ReportService {
 	}
 
 	/**
-	 * 从 Redis 获取报告
-	 * @param threadId 线程ID
-	 * @return 报告内容，如果不存在返回 null
+	 * Retrieves reports from Redis
+	 * @param threadId Thread ID
+	 * @return Report content, returns null if not found
 	 */
 	@Override
 	public String getReport(String threadId) {
@@ -96,9 +96,9 @@ public class ReportRedisService implements ReportService {
 	}
 
 	/**
-	 * 检查报告是否存在
-	 * @param threadId 线程ID
-	 * @return 是否存在
+	 * Retrieves reports from Redis
+	 * @param threadId Thread ID
+	 * @return Report content, returns null if not found
 	 */
 	@Override
 	public boolean existsReport(String threadId) {
@@ -114,8 +114,8 @@ public class ReportRedisService implements ReportService {
 	}
 
 	/**
-	 * 删除报告
-	 * @param threadId 线程ID
+	 * Deletes a report
+	 * @param threadId Thread ID
 	 */
 	@Override
 	public void deleteReport(String threadId) {
@@ -131,8 +131,8 @@ public class ReportRedisService implements ReportService {
 	}
 
 	/**
-	 * 构建 Redis key
-	 * @param threadId 线程ID
+	 * Constructs Redis key
+	 * @param threadId Thread ID
 	 * @return Redis key
 	 */
 	private String buildKey(String threadId) {

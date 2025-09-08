@@ -32,7 +32,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import java.util.List;
 
 /**
- * 智能Agent选择辅助器
+ * Intelligent Agent Selection Assistant
  *
  * @author Makoto
  * @since 2025/07/17
@@ -59,11 +59,11 @@ public class SmartAgentSelectionHelperService {
 	}
 
 	/**
-	 * 选择合适的智能Agent
-	 * @param questionContent 问题内容
-	 * @param state 全局状态
-	 * @param fallbackAgent 回退Agent
-	 * @return Agent选择结果
+	 * Selects the appropriate intelligent agent
+	 * @param questionContent The content of the question
+	 * @param state The global state
+	 * @param fallbackAgent The fallback agent
+	 * @return Agent selection result
 	 */
 	public AgentSelectionResult selectSmartAgent(String questionContent, OverAllState state, ChatClient fallbackAgent) {
 		if (!AgentIntegrationUtil.isSmartAgentAvailable(smartAgentProperties, smartAgentDispatcher)) {
@@ -90,7 +90,7 @@ public class SmartAgentSelectionHelperService {
 	}
 
 	/**
-	 * 智能搜索选择的核心逻辑（统一的问题分类和平台选择）
+	 * Core logic for intelligent search selection (unified question classification and platform selection)
 	 */
 	private AgentType classifyQueryAndLog(String query) {
 		AgentType agentType = questionClassifierService.classifyQuestion(query);
@@ -99,10 +99,10 @@ public class SmartAgentSelectionHelperService {
 	}
 
 	/**
-	 * 统一的智能搜索选择方法
-	 * @param state 全局状态
-	 * @param query 查询内容
-	 * @return 搜索选择结果
+	 * Unified intelligent search selection method
+	 * @param state Global state
+	 * @param query Query content
+	 * @return Search selection result
 	 */
 	public SmartAgentUtil.SearchSelectionResult intelligentSearchSelection(OverAllState state, String query) {
 		if (!AgentIntegrationUtil.isSmartAgentAvailable(smartAgentProperties, questionClassifierService,

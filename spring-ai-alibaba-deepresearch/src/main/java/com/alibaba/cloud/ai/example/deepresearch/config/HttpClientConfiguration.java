@@ -27,7 +27,8 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 /**
- * HTTP客户端配置 提供RestClient等HTTP客户端的Bean配置，支持配置化参数
+ * HTTP client configuration.
+ * Provides Bean configuration for RestClient and other HTTP clients, supporting configurable parameters.
  *
  * @author hupei
  */
@@ -44,7 +45,7 @@ public class HttpClientConfiguration {
 	}
 
 	/**
-	 * 配置RestClient Bean 支持配置化的超时时间和连接参数
+	 * Configures RestClient Bean with configurable timeout and connection parameters.
 	 */
 	@Bean
 	public RestClient restClient() {
@@ -55,7 +56,7 @@ public class HttpClientConfiguration {
 	}
 
 	/**
-	 * 配置HTTP请求工厂 使用Apache HttpComponents以获得更好的性能和配置选项
+	 * Configure HTTP request factory using Apache HttpComponents for enhanced performance and configuration options.
 	 */
 	@Bean
 	public ClientHttpRequestFactory clientHttpRequestFactory() {
@@ -72,7 +73,7 @@ public class HttpClientConfiguration {
 	}
 
 	/**
-	 * RestClient.Builder Bean（用于其他组件自定义RestClient）
+	 * RestClient.Builder Bean (For customizing RestClient in other components)
 	 */
 	@Bean
 	public RestClient.Builder restClientBuilder() {
@@ -80,38 +81,38 @@ public class HttpClientConfiguration {
 	}
 
 	/**
-	 * HTTP客户端配置属性
+	 * HTTP client configuration properties
 	 */
 	@ConfigurationProperties(prefix = "spring.ai.alibaba.deepresearch.http-client")
 	public static class HttpClientProperties {
 
 		/**
-		 * 连接超时时间（毫秒）
+		 * Connection timeout duration (in milliseconds)
 		 */
 		private int connectTimeoutMs = 30000;
 
 		/**
-		 * 读取超时时间（毫秒）
+		 * Read timeout duration (in milliseconds)
 		 */
 		private int readTimeoutMs = 60000;
 
 		/**
-		 * 连接请求超时时间（毫秒）
+		 * Connection request timeout duration (in milliseconds)
 		 */
 		private int connectionRequestTimeoutMs = 10000;
 
 		/**
-		 * 最大连接数
+		 * Maximum number of connections
 		 */
 		private int maxConnections = 100;
 
 		/**
-		 * 每个路由的最大连接数
+		 * Maximum connections per route
 		 */
 		private int maxConnectionsPerRoute = 20;
 
 		/**
-		 * 连接存活时间（毫秒）
+		 * Connection keep-alive duration (in milliseconds)
 		 */
 		private int connectionTimeToLiveMs = 300000;
 
@@ -121,12 +122,12 @@ public class HttpClientConfiguration {
 		private boolean poolingEnabled = true;
 
 		/**
-		 * 是否启用重试机制
+		 * Connection pool enabled
 		 */
 		private boolean retryEnabled = true;
 
 		/**
-		 * 最大重试次数
+		 * Whether to enable retry mechanism
 		 */
 		private int maxRetryAttempts = 3;
 

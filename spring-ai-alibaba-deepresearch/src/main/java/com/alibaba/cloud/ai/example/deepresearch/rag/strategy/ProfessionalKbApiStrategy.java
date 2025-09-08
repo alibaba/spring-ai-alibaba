@@ -38,7 +38,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 专业知识库API策略，支持多种API提供商 使用封装的SDK进行API调用，支持扩展更多专业知识库
+ * Professional Knowledge Base API strategy, supporting multiple API providers.
+ * Utilizes encapsulated SDKs for API calls and allows for expansion to additional professional knowledge bases.
  *
  * @author hupei
  */
@@ -62,7 +63,7 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 		this.clientFactory = clientFactory;
 		this.ragProperties = ragProperties;
 
-		// 初始化API客户端
+		// Initializing the API client
 		this.apiClients = initializeApiClients();
 	}
 
@@ -74,16 +75,16 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 	@Override
 	public List<Document> retrieve(String query, Map<String, Object> options) {
 		try {
-			// 1. 查询前处理（查询扩展、翻译等）
+			// 1. Performing query pre-processing (query expansion, translation, etc.)
 			Query ragQuery = new Query(query);
 			List<Query> processedQueries = hybridRagProcessor.preProcess(ragQuery, options);
 
 			List<Document> allDocuments = new ArrayList<>();
 
-			// 2. 获取选中的知识库列表
+			// 2. Retrieving the list of selected knowledge bases
 			List<String> selectedKbIds = getSelectedKnowledgeBaseIds(options);
 
-			// 3. 对每个处理后的查询和选中的知识库进行搜索
+			// 3. Searching for each processed query and selected knowledge base
 			for (Query processedQuery : processedQueries) {
 				for (String kbId : selectedKbIds) {
 					List<Document> kbDocuments = searchKnowledgeBase(kbId, processedQuery.text(), options);
@@ -91,7 +92,7 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 				}
 			}
 
-			// 4. 文档后处理（去重、排序等）
+			// 4. Performing document post-processing (deduplication, sorting, etc.)
 			return hybridRagProcessor.postProcess(allDocuments, options);
 
 		}
@@ -102,18 +103,18 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 	}
 
 	/**
-	 * 初始化所有API客户端
+	 * Initializes all API clients
 	 */
 	private Map<String, ProfessionalKbApiClient> initializeApiClients() {
 		List<RagProperties.ProfessionalKnowledgeBases.KnowledgeBase> knowledgeBases = ragProperties
-			.getProfessionalKnowledgeBases()
-			.getKnowledgeBases();
+				.getProfessionalKnowledgeBases()
+				.getKnowledgeBases();
 
 		return clientFactory.createClients(knowledgeBases);
 	}
 
 	/**
-	 * 获取选中的知识库ID列表
+	 * Retrieves the list of selected knowledge base IDs
 	 */
 	@SuppressWarnings("unchecked")
 	private List<String> getSelectedKnowledgeBaseIds(Map<String, Object> options) {
@@ -121,18 +122,18 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 
 		if (selectedKbs instanceof List) {
 			return ((List<?>) selectedKbs).stream()
-				.filter(Objects::nonNull)
-				.map(Object::toString)
-				.filter(id -> apiClients.containsKey(id))
-				.collect(Collectors.toList());
+					.filter(Objects::nonNull)
+					.map(Object::toString)
+					.filter(id -> apiClients.containsKey(id))
+					.collect(Collectors.toList());
 		}
 
-		// 如果没有指定，使用所有可用的API类型知识库
+		// If none specified, use all available API-type knowledge bases
 		return apiClients.keySet().stream().sorted().collect(Collectors.toList());
 	}
 
 	/**
-	 * 搜索指定的知识库
+	 * Searches the specified knowledge base
 	 */
 	private List<Document> searchKnowledgeBase(String kbId, String query, Map<String, Object> options) {
 		ProfessionalKbApiClient client = apiClients.get(kbId);
@@ -142,21 +143,20 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 		}
 
 		try {
-			// 准备搜索选项
+			// Prepare search options
 			Map<String, Object> searchOptions = new HashMap<>(options);
 
-			// 从知识库配置中获取最大结果数
+			// Retrieve max results from knowledge base configuration
 			RagProperties.ProfessionalKnowledgeBases.KnowledgeBase kbConfig = findKnowledgeBaseConfig(kbId);
 			if (kbConfig != null && kbConfig.getApi() != null) {
 				searchOptions.put("maxResults", kbConfig.getApi().getMaxResults());
 			}
 
-			// 调用API进行搜索
+			// Call API to perform search
 			List<KbSearchResult> searchResults = client.search(query, searchOptions);
 
-			// 转换为Document格式
+			// Convert to Document format
 			return convertToDocuments(searchResults, kbId, kbConfig);
-
 		}
 		catch (Exception e) {
 			logger.error("Error searching knowledge base: {}", kbId, e);
@@ -165,24 +165,24 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 	}
 
 	/**
-	 * 查找知识库配置
+	 * Finds the knowledge base configuration
 	 */
 	private RagProperties.ProfessionalKnowledgeBases.KnowledgeBase findKnowledgeBaseConfig(String kbId) {
 		return ragProperties.getProfessionalKnowledgeBases()
-			.getKnowledgeBases()
-			.stream()
-			.filter(kb -> kbId.equals(kb.getId()))
-			.findFirst()
-			.orElse(null);
+				.getKnowledgeBases()
+				.stream()
+				.filter(kb -> kbId.equals(kb.getId()))
+				.findFirst()
+				.orElse(null);
 	}
 
 	/**
-	 * 将API搜索结果转换为Document格式，保持与VectorStoreDataIngestionService元数据逻辑一致
+	 * Converts API search results to Document format, maintaining consistency with VectorStoreDataIngestionService metadata logic
 	 */
 	private List<Document> convertToDocuments(List<KbSearchResult> searchResults, String kbId,
-			RagProperties.ProfessionalKnowledgeBases.KnowledgeBase kbConfig) {
+											  RagProperties.ProfessionalKnowledgeBases.KnowledgeBase kbConfig) {
 		return searchResults.stream().map(result -> {
-			// 构建文档内容
+			// Build document content
 			StringBuilder contentBuilder = new StringBuilder();
 			if (result.title() != null && !result.title().trim().isEmpty()) {
 				contentBuilder.append("Title: ").append(result.title()).append("\n\n");
@@ -191,7 +191,7 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 				contentBuilder.append(result.content());
 			}
 
-			// 构建元数据，与VectorStoreDataIngestionService的逻辑保持一致
+			// Build metadata consistent with VectorStoreDataIngestionService logic
 			Map<String, Object> metadata = new HashMap<>();
 			metadata.put("source_type", SourceTypeEnum.PROFESSIONAL_KB_API.getValue());
 			metadata.put("kb_id", kbId);
@@ -206,12 +206,12 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 			metadata.put("title", result.title());
 			metadata.put("api_provider", apiClients.get(kbId).getProvider());
 
-			// 添加搜索相关的元数据
+			// Add search-related metadata
 			if (result.score() != null) {
 				metadata.put("search_score", result.score());
 			}
 
-			// 包含原始元数据
+			// Include original metadata
 			if (result.metadata() != null) {
 				metadata.putAll(result.metadata());
 			}
@@ -221,14 +221,14 @@ public class ProfessionalKbApiStrategy implements RetrievalStrategy {
 	}
 
 	/**
-	 * 获取可用的知识库列表（用于监控和调试）
+	 * Retrieves the list of available knowledge bases (for monitoring and debugging)
 	 */
 	public Set<String> getAvailableKnowledgeBases() {
 		return apiClients.keySet();
 	}
 
 	/**
-	 * 重新初始化API客户端（用于配置更新后的重新加载）
+	 * Reinitializes API clients (for reloading after configuration updates)
 	 */
 	public void reinitializeClients() {
 		logger.info("Reinitializing professional KB API clients");

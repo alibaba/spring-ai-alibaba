@@ -27,22 +27,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record ReportResponse<T>(
 
 		/**
-		 * 线程ID，用于标识当前对话的唯一性
+		 * Unique identifier for the current conversation thread
 		 */
 		@JsonProperty("thread_id") String threadId,
 
 		/**
-		 * 状态
+		 * status
 		 */
 		@JsonProperty("status") String status,
 
 		/**
-		 * 消息
+		 * message
 		 */
 		@JsonProperty("message") String message,
 
 		/**
-		 * 数据
+		 * data
 		 */
 		@JsonProperty("report_information") T data) {
 	public static <T> ReportResponse<T> success(String threadId, String message, T data) {

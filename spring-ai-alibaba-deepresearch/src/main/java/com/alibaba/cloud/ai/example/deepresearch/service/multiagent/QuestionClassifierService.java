@@ -28,7 +28,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 /**
- * 问题分类器服务，根据用户问题内容判断应该使用哪种类型的Agent 重构后使用SmartAgentUtil和AgentPromptTemplateUtil工具类
+ * Question Classifier Service: Determines the appropriate type of agent based on the content of the user's question.
+ * Refactored to utilize the SmartAgentUtil and AgentPromptTemplateUtil utility classes.
  *
  * @author Makoto
  * @since 2025/07/17
@@ -49,14 +50,14 @@ public class QuestionClassifierService {
 	}
 
 	/**
-	 * 分类用户问题，返回对应的Agent类型
+	 * Classify user questions and return the corresponding agent type
 	 */
 	public AgentType classifyQuestion(String question) {
 		if (question == null || question.trim().isEmpty()) {
 			return AgentType.GENERAL_RESEARCH;
 		}
 
-		// 直接使用AI模型进行问题分类决策
+		// Directly use the AI model for question classification decisions
 		String aiClassification = classifierClient.prompt()
 			.user("请分析以下问题并返回最适合的Agent类型代码：\n\n" + question)
 			.call()

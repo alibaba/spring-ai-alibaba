@@ -25,22 +25,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record FeedbackRequest(
 		/**
-		 * 会话 ID。默认值为 "__default__"，表示使用默认会话。
+		 * session_id. Defaults to "__default__", indicating the default session is used.
 		 */
 		@JsonProperty(value = "session_id", defaultValue = "__default__") String sessionId,
 
 		/**
-		 * 线程 ID，用于标识当前对话的唯一性。
+		 * Unique identifier for the current conversation thread
 		 */
 		@JsonProperty(value = "thread_id", defaultValue = "") String threadId,
 
 		/**
-		 * 是否接受Planner的计划，true为接受，false为重新生成
+		 *  Determines whether to accept the Planner's proposal. true: accept, false: regenerate. Default: true.
 		 */
 		@JsonProperty(value = "feed_back", defaultValue = "true") Boolean feedBack,
 
 		/**
-		 * 用户反馈内容，重新生成Planner计划是给予额外的上下文信息
+		 * User feedback content provides additional contextual information for regenerating the Planner's plan.
 		 */
 		@JsonProperty(value = "feed_back_content", defaultValue = "") String feedBackContent) {
 }

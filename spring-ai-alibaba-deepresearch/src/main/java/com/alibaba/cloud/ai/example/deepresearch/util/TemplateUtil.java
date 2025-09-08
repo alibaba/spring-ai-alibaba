@@ -37,23 +37,23 @@ import java.util.stream.Collectors;
 public class TemplateUtil {
 
 	public static Message getMessage(String promptName) throws IOException {
-		// 读取 resources/prompts 下的 md 文件
+		// Read md files under resources/prompts
 		ClassPathResource resource = new ClassPathResource("prompts/" + promptName + ".md");
 		String template = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
 
-		// 替换 {{ CURRENT_TIME }} 占位符
+		// Replace {{ CURRENT_TIME }} placeholder
 		String systemPrompt = template.replace("{{ CURRENT_TIME }}", LocalDateTime.now().toString());
 		SystemMessage systemMessage = new SystemMessage(systemPrompt);
 		return systemMessage;
 	}
 
 	public static Message getMessage(String promptName, OverAllState state) throws IOException {
-		// 读取 resources/prompts 下的 md 文件
+		// Read md files under resources/prompts
 		ClassPathResource resource = new ClassPathResource("prompts/" + promptName + ".md");
 		String template = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
-		// 替换 {{ CURRENT_TIME }} 占位符
+		// Replace {{ CURRENT_TIME }} placeholder
 		String systemPrompt = template.replace("{{ CURRENT_TIME }}", LocalDateTime.now().toString());
-		// 替换 {{ max_step_num }} 占位符
+		// Replace {{ max_step_num }} placeholder
 		systemPrompt = systemPrompt.replace("{{ max_step_num }}", StateUtil.getMaxStepNum(state).toString());
 
 		SystemMessage systemMessage = new SystemMessage(systemPrompt);

@@ -25,7 +25,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
- * Redis 配置类
+ * Redis configuration
  *
  * @author huangzhen
  * @since 2025/6/18
@@ -35,7 +35,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class RedisConfig {
 
 	/**
-	 * 配置 RedisTemplate
+	 * Configures RedisTemplate
 	 * @param redisConnectionFactory Redis 连接工厂
 	 * @return RedisTemplate 实例
 	 */
@@ -44,15 +44,15 @@ public class RedisConfig {
 		RedisTemplate<String, Object> template = new RedisTemplate<>();
 		template.setConnectionFactory(redisConnectionFactory);
 
-		// 设置键的序列化器
+		// Sets the key serializer for Redis operations
 		template.setKeySerializer(new StringRedisSerializer());
 		template.setHashKeySerializer(new StringRedisSerializer());
 
-		// 设置值的序列化器
+		// Sets the value serializer for Redis operations
 		template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
 		template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
 
-		// 设置默认序列化器
+		// Sets the default serializer for Redis operations
 		template.setDefaultSerializer(new GenericJackson2JsonRedisSerializer());
 
 		template.afterPropertiesSet();

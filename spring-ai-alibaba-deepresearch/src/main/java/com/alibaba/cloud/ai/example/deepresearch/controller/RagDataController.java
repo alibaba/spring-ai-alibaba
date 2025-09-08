@@ -86,7 +86,7 @@ public class RagDataController {
 	}
 
 	/**
-	 * 批量上传用户文件接口
+	 * Batch upload user files interface
 	 */
 	@PostMapping(value = "/user/batch-upload", consumes = "multipart/form-data")
 	public ResponseEntity<ApiResponse<Map<String, Object>>> handleBatchUserFileUpload(
@@ -116,7 +116,7 @@ public class RagDataController {
 	}
 
 	/**
-	 * 上传文件到专业知识库ES接口
+	 * Upload files to expert knowledge base ES interface
 	 */
 	@PostMapping(value = "/professional-kb/upload", consumes = "multipart/form-data")
 	public ResponseEntity<Map<String, Object>> handleProfessionalKbUpload(@RequestParam("file") MultipartFile file,
@@ -152,7 +152,7 @@ public class RagDataController {
 	}
 
 	/**
-	 * 批量上传文件到专业知识库ES接口
+	 * Batch upload files to expert knowledge base ES interface
 	 */
 	@PostMapping(value = "/professional-kb/batch-upload", consumes = "multipart/form-data")
 	public ResponseEntity<ApiResponse<Map<String, Object>>> handleBatchProfessionalKbUpload(

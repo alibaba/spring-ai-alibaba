@@ -42,7 +42,7 @@ import reactor.core.publisher.Flux;
 import java.util.Optional;
 
 /**
- * 报告查询控制器
+ * Controller of Report query
  *
  * @author huangzhen
  * @since 2025/6/18
@@ -63,9 +63,9 @@ public class ReportController {
 	private ChatClient interactionAgent;
 
 	/**
-	 * 根据线程ID获取报告
+	 * Retrieves report by thread ID
 	 * @param threadId 线程ID
-	 * @return 报告内容
+	 * @return report content
 	 */
 	@GetMapping("/{threadId}")
 	public ResponseEntity<ReportResponse<String>> getReport(@PathVariable String threadId) {
@@ -85,9 +85,9 @@ public class ReportController {
 	}
 
 	/**
-	 * 检查报告是否存在
+	 * Checks if report exists
 	 * @param threadId 线程ID
-	 * @return 是否存在
+	 * @return Existence status
 	 */
 	@GetMapping("/{threadId}/exists")
 	public ResponseEntity<ReportResponse<Boolean>> existsReport(@PathVariable String threadId) {
@@ -105,9 +105,9 @@ public class ReportController {
 	}
 
 	/**
-	 * 删除报告
+	 * Deletes report
 	 * @param threadId 线程ID
-	 * @return 删除结果
+	 * @return Deletion result
 	 */
 	@DeleteMapping("/{threadId}")
 	public ResponseEntity<ReportResponse> deleteReport(@PathVariable String threadId) {
@@ -130,9 +130,9 @@ public class ReportController {
 	}
 
 	/**
-	 * 导出报告，返回导出文件的元数据信息
-	 * @param request 包含线程ID和导出格式的请求
-	 * @return 导出文件的元数据信息
+	 * Exports report and returns metadata information of the exported file
+	 * @param request Request containing thread ID and export format
+	 * @return Metadata information of the exported file
 	 */
 	@PostMapping("/export")
 	public ResponseEntity<ReportResponse> exportReport(@RequestBody ExportRequest request) {
@@ -146,30 +146,30 @@ public class ReportController {
 
 			logger.info("Exporting report for threadId: {}, format: {}", threadId, format);
 
-			// 检查线程ID对应的报告是否存在
+			// Check if the report corresponding to the thread ID exists
 			if (!exportService.existsReportByThreadId(threadId)) {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(ReportResponse.error(threadId, "Report not found for thread: " + threadId));
 			}
 
-			// 检查请求的格式是否支持
+			// Check if the requested format is supported
 			if (!exportService.isSupportedFormat(format)) {
 				return ResponseEntity.badRequest()
 					.body(ReportResponse.error(threadId,
 							"Unsupported format: " + format + ", only markdown and pdf are supported"));
 			}
 
-			// 实际保存文件
+			// Save file
 			String filePath = exportReport(threadId, format);
 			if (filePath == null) {
 				return ResponseEntity.badRequest()
 					.body(ReportResponse.error(threadId, "Failed to export report to format: " + format));
 			}
 
-			// 构建下载URL
+			// Construct download URL
 			String downloadUrl = "/api/reports/download/" + threadId + "?format=" + format;
 
-			// 构建成功响应
+			// Construct success response
 			ReportResponse<ExportData> response = ReportResponse.success(threadId, "Report exported successfully",
 					ExportData.success(format, filePath, downloadUrl));
 			return ResponseEntity.ok(response);
@@ -182,10 +182,10 @@ public class ReportController {
 	}
 
 	/**
-	 * 下载指定格式的报告文件
+	 * Downloads report file in specified format
 	 * @param threadId 线程ID
 	 * @param format 文件格式
-	 * @return 文件下载响应
+	 * @return File download response
 	 */
 	@GetMapping("/download/{threadId}")
 	public ResponseEntity<?> downloadReport(@PathVariable String threadId,
@@ -194,14 +194,14 @@ public class ReportController {
 		format = format.toLowerCase();
 
 		try {
-			// 检查格式是否支持
+			// Check if the format is supported
 			if (!exportService.isSupportedFormat(format)) {
 				return ResponseEntity.badRequest()
 					.body(ReportResponse.error(threadId,
 							"Unsupported format: " + format + ", only markdown and pdf are supported"));
 			}
 
-			// 统一使用markdown作为键
+			// Consistently use Markdown as the key format
 			if ("md".equals(format)) {
 				format = "markdown";
 			}
@@ -216,7 +216,7 @@ public class ReportController {
 	}
 
 	/**
-	 * 构建交互式HTML报告
+	 * Construct interactive HTML report
 	 * @param threadId
 	 * @return
 	 */
@@ -235,15 +235,15 @@ public class ReportController {
 			logger.debug("Found report for threadId: {} ,Report info: {}", threadId, reportInfo);
 		}
 		logger.info("Building interactive HTML report");
-		// 使用ChatClient来构建HTML报告
+		// Use ChatClient to construct HTML report
 		return interactionAgent.prompt(reportInfo).stream().chatResponse();
 	}
 
 	/**
-	 * 根据线程ID和格式导出报告
+	 * Exports report by thread ID and format
 	 * @param threadId 线程ID
 	 * @param format 导出格式
-	 * @return 导出文件的路径
+	 * @return Path to the exported file
 	 */
 	private String exportReport(String threadId, String format) {
 		if ("markdown".equals(format) || "md".equals(format)) {

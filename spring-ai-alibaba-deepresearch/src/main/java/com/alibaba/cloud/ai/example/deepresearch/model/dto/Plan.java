@@ -55,7 +55,7 @@ public class Plan {
 		private String executionStatus;
 
 		/**
-		 * 反思历史记录，记录每次反思的评估过程和结果
+		 * Reflection history log, recording the evaluation process and results of each reflection.
 		 */
 		private List<ReflectionResult> reflectionHistory;
 
@@ -119,7 +119,7 @@ public class Plan {
 		}
 
 		/**
-		 * 添加反思记录
+		 * Add reflection record
 		 */
 		public void addReflectionRecord(ReflectionResult record) {
 			getReflectionHistory().add(record);

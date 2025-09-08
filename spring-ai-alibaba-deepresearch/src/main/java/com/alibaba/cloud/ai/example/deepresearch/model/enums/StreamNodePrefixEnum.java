@@ -17,7 +17,8 @@
 package com.alibaba.cloud.ai.example.deepresearch.model.enums;
 
 /**
- * 流式节点前缀枚举。 用于标识流式输出节点的类型前缀，给前端用于展示
+ * Streaming node prefix enumeration.
+ * Used to identify type prefixes of streaming output nodes, provided to frontend for display purposes.
  */
 public enum StreamNodePrefixEnum {
 
@@ -26,16 +27,16 @@ public enum StreamNodePrefixEnum {
 	CODER_REFLECT_LLM_STREAM("coder_reflect_llm_stream", true), CODER_LLM_STREAM("coder_llm_stream", true),
 	REPORTER_LLM_STREAM("reporter_llm_stream", true);
 
-	/** 节点前缀字符串 */
+	/** Node prefix string */
 	private final String prefix;
 
-	/** 是否需要前端展示 */
+	/** Whether frontend display is required */
 	private final boolean visible;
 
 	/**
-	 * 构造方法。
-	 * @param prefix 节点前缀字符串
-	 * @param visible 是否可见
+	 * Constructor
+	 * @param prefix Node prefix string
+	 * @param visible Whether frontend display is required
 	 */
 	StreamNodePrefixEnum(String prefix, boolean visible) {
 		this.prefix = prefix;
@@ -43,15 +44,15 @@ public enum StreamNodePrefixEnum {
 	}
 
 	/**
-	 * 获取前缀字符串。
-	 * @return 前缀
+	 * Get prefix string
+	 * @return prefix
 	 */
 	public String getPrefix() {
 		return prefix;
 	}
 
 	/**
-	 * 获取是否可见。
+	 * Get visibility status
 	 * @return visible
 	 */
 	public boolean isVisible() {
@@ -59,9 +60,9 @@ public enum StreamNodePrefixEnum {
 	}
 
 	/**
-	 * 判断给定节点名是否以任一枚举前缀开头。
-	 * @param nodeName 节点名
-	 * @return 匹配到的枚举实例，未匹配返回null
+	 * Checks whether the specified node name begins with any predefined prefix from the enumeration
+	 * @param nodeName name of the node to check
+	 * @return the matching enumeration instance, or null if no prefix matches
 	 */
 	public static StreamNodePrefixEnum match(String nodeName) {
 		for (StreamNodePrefixEnum p : values()) {

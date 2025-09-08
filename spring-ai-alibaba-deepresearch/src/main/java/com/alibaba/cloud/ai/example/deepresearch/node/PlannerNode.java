@@ -61,12 +61,12 @@ public class PlannerNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("planner node is running.");
 		List<Message> messages = new ArrayList<>();
-		// 1. 添加消息
-		// 1.1 添加预置提示消息
+		// 1. Add message
+		// 1.1 Adding preset prompt messages
 		messages.add(TemplateUtil.getMessage("planner", state));
-		// 1.2 添加用户提问
+		// 1.2 Adding user queries
 		messages.add(TemplateUtil.getOptQuryMessage(state));
-		// 1.3 添加背景调查消息
+		// 1.3 Adding background investigation messages
 		if (state.value("enable_deepresearch", true)) {
 			List<String> backgroundInvestigationResults = state.value("background_investigation_results",
 					(List<String>) null);
@@ -77,19 +77,19 @@ public class PlannerNode implements NodeAction {
 				}
 			}
 		}
-		// 1.4 添加用户反馈消息
+		// 1.4 Adding user feedback messages
 		String feedBackContent = state.value("feed_back_content", "").toString();
 		if (StringUtils.hasText(feedBackContent)) {
 			messages.add(new UserMessage(feedBackContent));
 		}
-		// 1.5 添加用户上传的RAG查询结果
+		// 1.5 Adding the RAG query results uploaded by the user
 		String ragContent = StateUtil.getRagContent(state);
 		if (StringUtils.hasText(ragContent)) {
 			messages.add(new UserMessage(ragContent));
 		}
 
 		logger.debug("messages: {}", messages);
-		// 2. 规划任务
+		// 2. Planning the task
 		String prefix = StreamNodePrefixEnum.PLANNER_LLM_STREAM.getPrefix();
 		String stepTitleKey = prefix + "_step_title";
 		state.registerKeyAndStrategy(stepTitleKey, new ReplaceStrategy());

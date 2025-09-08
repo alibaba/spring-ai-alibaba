@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.example.deepresearch.model.req.GraphId;
 import java.util.List;
 
 /**
- * 记录某会话Id的上下文（如线程ID等信息）
+ * Records the context (such as thread ID, etc.) for a specific session ID
  *
  * @author vlsmb
  * @since 2025/8/6

@@ -34,52 +34,55 @@ public class RagProperties {
 	public static final String RAG_PREFIX = DeepResearchProperties.PREFIX + ".rag";
 
 	/**
-	 * 是否启用RAG功能，默认为false。
+	 * Whether to enable the RAG feature
+	 * The default value is false
 	 */
 	private boolean enabled = false;
 
 	/**
-	 * 向量存储类型，默认为"simple"，可选值还包括"elasticsearch"。
+	 * Vector store type
+	 * Defaults to "simple"
+	 * Other available options include "elasticsearch"
 	 */
 	private String vectorStoreType = "simple";
 
 	/**
-	 * 请求超时时间，单位为秒，默认为60秒。
+	 * Request timeout (in seconds). Default: 60
 	 */
 	private Integer timeoutSeconds = 60;
 
 	/**
-	 * 重试次数，默认为2次。
+	 * Number of retry attempts. Default: 2
 	 */
 	private Integer retryTimes = 2;
 
 	/**
-	 * 简单向量存储配置。
+	 * Simple vector store configuration
 	 */
 	private final Simple simple = new Simple();
 
 	/**
-	 * RAG增强配置。
+	 * RAG enhancement configuration
 	 */
 	private final Pipeline pipeline = new Pipeline();
 
 	/**
-	 * 数据加载相关的配置
+	 * Data loading configuration
 	 */
 	private final Data data = new Data();
 
 	/**
-	 * Elasticsearch配置属性
+	 * Elasticsearch configuration properties
 	 */
 	private final Elasticsearch elasticsearch = new Elasticsearch();
 
 	/**
-	 * 专业知识库配置
+	 * Knowledge base configuration
 	 */
 	private final ProfessionalKnowledgeBases professionalKnowledgeBases = new ProfessionalKnowledgeBases();
 
 	/**
-	 * 文本分割配置
+	 * Text splitting configuration
 	 */
 	private final TextSplitter textSplitter = new TextSplitter();
 
@@ -141,12 +144,12 @@ public class RagProperties {
 	}
 
 	/**
-	 * 简单向量存储配置。
+	 * Simple vector store configuration.
 	 */
 	public static class Simple {
 
 		/**
-		 * 简单向量存储的存储路径，默认为"vector_store.json"。
+		 * Storage path for the simple vector store. Default: "vector_store.json"
 		 */
 		private String storagePath = "vector_store.json";
 
@@ -161,32 +164,32 @@ public class RagProperties {
 	}
 
 	/**
-	 * RAG增强配置。
+	 * RAG enhancement configuration
 	 */
 	public static class Pipeline {
 
 		/**
-		 * 是否启用查询扩展功能，默认为false。
+		 * Whether to enable query expansion. Default: false
 		 */
 		private boolean queryExpansionEnabled = false;
 
 		/**
-		 * 是否启用查询翻译功能，默认为false。
+		 * Whether to enable query translation. Default: false
 		 */
 		private boolean queryTranslationEnabled = false;
 
 		/**
-		 * 查询翻译的目标语言，默认为"English"。
+		 * Target language for query translation. Default: English
 		 */
 		private String queryTranslationLanguage = "English";
 
 		/**
-		 * 是否启用后处理选择第一个结果功能，默认为false。
+		 * Whether to enable first result selection in post-processing. Default: false
 		 */
 		private boolean postProcessingSelectFirstEnabled = false;
 
 		/**
-		 * 搜索配置
+		 * Search configuration
 		 */
 		private int topK = 5;
 
@@ -195,7 +198,7 @@ public class RagProperties {
 		private boolean deduplicationEnabled = true;
 
 		/**
-		 * 后处理配置
+		 * Post-processing configuration
 		 */
 		private boolean rerankEnabled = true;
 
@@ -287,42 +290,42 @@ public class RagProperties {
 	}
 
 	/**
-	 * Elasticsearch配置
+	 * Elasticsearch configuration
 	 */
 	public static class Elasticsearch {
 
 		/**
-		 * Elasticsearch索引名称，默认为"spring-ai-rag-es-index"。
+		 * Elasticsearch index name. Default: "spring-ai-rag-es-index"。
 		 */
 		private String indexName = "spring-ai-rag-es-index";
 
 		/**
-		 * 向量维度，默认为1536。
+		 * Vector dimension. Default: 1536。
 		 */
 		private int dimensions = 1536;
 
 		/**
-		 * Elasticsearch连接URI，例如"http://localhost:9200"。
+		 * Elasticsearch connection URI, e.g., "http://localhost:9200"
 		 */
 		private String uris;
 
 		/**
-		 * Elasticsearch用户名。
+		 * Elasticsearch username
 		 */
 		private String username;
 
 		/**
-		 * Elasticsearch密码。
+		 * Elasticsearch password
 		 */
 		private String password;
 
 		/**
-		 * 相似度函数配置。
+		 * Similarity function configuration
 		 */
 		private SimilarityFunction similarityFunction;
 
 		/**
-		 * 混合搜索配置
+		 * Hybrid search configuration
 		 */
 		private final Hybrid hybrid = new Hybrid();
 
@@ -380,32 +383,34 @@ public class RagProperties {
 		}
 
 		/**
-		 * 混合搜索配置。 混合搜索结合了BM25和KNN搜索，使用RRF算法进行结果融合。
+		 * Hybrid search configuration.
+		 * Hybrid search combines BM25 and KNN retrieval methods,
+		 * using the Reciprocal Rank Fusion (RRF) algorithm for result fusion.
 		 */
 		public static class Hybrid {
 
 			/**
-			 * 是否启用混合搜索，默认为false。
+			 * Whether to enable hybrid search. Default: false
 			 */
 			private boolean enabled = false;
 
 			/**
-			 * BM25搜索的权重。
+			 * Weight for BM25 search
 			 */
 			private float bm25Boost = 1.0f;
 
 			/**
-			 * KNN搜索的权重。
+			 * Weight for KNN search
 			 */
 			private float knnBoost = 1.0f;
 
 			/**
-			 * RRF算法中的窗口大小。
+			 * Window size for the RRF algorithm
 			 */
 			private int rrfWindowSize = 10;
 
 			/**
-			 * RRF算法中的排名常数。
+			 * Ranking constant for the RRF algorithm
 			 */
 			private int rrfRankConstant = 60;
 
@@ -454,18 +459,18 @@ public class RagProperties {
 	}
 
 	/**
-	 * 数据加载相关的配置。
+	 * Data loading configuration
 	 */
 	public static class Data {
 
 		/**
-		 * 应用启动时加载的数据源位置. 支持ant-style patterns, e.g., "classpath:/data/*.md",
+		 * Data source location loaded at application startup. Supports ant-style patterns, e.g., "classpath:/data/*.md",
 		 * "file:/path/to/docs/"
 		 */
 		private List<String> locations = new ArrayList<>();
 
 		/**
-		 * 定时扫描文件夹的配置
+		 * Scheduled folder scanning configuration
 		 */
 		private final Scan scan = new Scan();
 
@@ -484,22 +489,22 @@ public class RagProperties {
 		public static class Scan {
 
 			/**
-			 * 是否启用定时扫描，默认为false。
+			 * Whether to enable scheduled scanning. Default: false
 			 */
 			private boolean enabled = false;
 
 			/**
-			 * 要扫描的目录路径。
+			 * Directory path to scan
 			 */
 			private String directory;
 
 			/**
-			 * 定时任务的cron表达式，默认每小时执行一次。
+			 * Cron expression for the scheduled task. Defaults to running hourly
 			 */
 			private String cron = "0 0 * * * *";
 
 			/**
-			 * 处理完成后的文件归档目录。
+			 * Archive directory for processed files
 			 */
 			private String archiveDirectory;
 
@@ -541,17 +546,17 @@ public class RagProperties {
 	}
 
 	/**
-	 * 专业知识库配置
+	 * Knowledge base configuration
 	 */
 	public static class ProfessionalKnowledgeBases {
 
 		/**
-		 * 是否启用专业知识库决策，默认为true
+		 * Whether to enable expert knowledge base decision-making. Default: true
 		 */
 		private boolean decisionEnabled = true;
 
 		/**
-		 * 专业知识库列表
+		 * List of expert knowledge bases
 		 */
 		private List<KnowledgeBase> knowledgeBases = new ArrayList<>();
 
@@ -572,42 +577,42 @@ public class RagProperties {
 		}
 
 		/**
-		 * 单个专业知识库配置
+		 * Individual expert knowledge base configuration
 		 */
 		public static class KnowledgeBase {
 
 			/**
-			 * 知识库ID
+			 * ID of knowledgeBase
 			 */
 			private String id;
 
 			/**
-			 * 知识库名称
+			 * Name of knowledgeBase
 			 */
 			private String name;
 
 			/**
-			 * 知识库描述，用于大模型判断是否需要查询
+			 * Description of knowledgeBase, used by the large language model to determine if querying is needed
 			 */
 			private String description;
 
 			/**
-			 * 知识库类型：api, elasticsearch
+			 * Type of knowledgeBase: api, elasticsearch
 			 */
 			private String type = "api";
 
 			/**
-			 * API配置
+			 * API configuration
 			 */
 			private final Api api = new Api();
 
 			/**
-			 * 是否启用
+			 * Whether enable
 			 */
 			private boolean enabled = true;
 
 			/**
-			 * 优先级，数字越小优先级越高
+			 * Priority (lower numerical values indicate higher priority)
 			 */
 			private int priority = 100;
 
@@ -664,12 +669,12 @@ public class RagProperties {
 			}
 
 			/**
-			 * API配置
+			 * API configuration
 			 */
 			public static class Api {
 
 				/**
-				 * API类型：dashscope, custom
+				 * API type: dashscope, custom
 				 */
 				private String provider = "dashscope";
 
@@ -684,17 +689,17 @@ public class RagProperties {
 				private String apiKey;
 
 				/**
-				 * 模型名称（适用于dashscope等）
+				 * Model name (applicable to DashScope and similar platforms)
 				 */
 				private String model;
 
 				/**
-				 * 请求超时时间（毫秒）
+				 * Request timeout duration (in milliseconds)
 				 */
 				private int timeoutMs = 30000;
 
 				/**
-				 * 最大返回结果数
+				 * Maximum number of returned results
 				 */
 				private int maxResults = 5;
 
@@ -753,37 +758,37 @@ public class RagProperties {
 	}
 
 	/**
-	 * 文本分割配置
+	 * Text splitting configuration
 	 */
 	public static class TextSplitter {
 
 		/**
-		 * 默认分块大小（token数量），默认800
+		 * Default chunk size (in tokens). Default: 800
 		 */
 		private int defaultChunkSize = 800;
 
 		/**
-		 * 分块重叠大小（token数量），默认100
+		 * Chunk overlap size (in tokens). Default: 100
 		 */
 		private int overlap = 100;
 
 		/**
-		 * 最小分块大小（token数量），默认5
+		 * Minimum chunk size (in tokens). Default: 5
 		 */
 		private int minChunkSizeToSplit = 5;
 
 		/**
-		 * 最大分块大小（token数量），默认10000
+		 * Maximum chunk size (in tokens). Default: 10000
 		 */
 		private int maxChunkSize = 10000;
 
 		/**
-		 * 是否保持分隔符，默认true
+		 * Whether to preserve separators. Default: true
 		 */
 		private boolean keepSeparator = true;
 
 		/**
-		 * 是否启用调试模式，默认false
+		 * Whether to enable debug mode. Default: false
 		 */
 		private boolean debugMode = false;
 

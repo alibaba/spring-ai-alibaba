@@ -58,7 +58,7 @@ public class VectorStoreDataIngestionService {
 		this.vectorStore = vectorStore;
 		this.ragProperties = ragProperties;
 
-		// 使用配置化的文本分割器
+		// Use a configurable text splitter
 		RagProperties.TextSplitter splitterConfig = ragProperties.getTextSplitter();
 		this.textSplitter = new TokenTextSplitter(splitterConfig.getDefaultChunkSize(), splitterConfig.getOverlap(),
 				splitterConfig.getMinChunkSizeToSplit(), splitterConfig.getMaxChunkSize(),
@@ -73,7 +73,7 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 从单个资源加载、处理并存入向量数据库
+	 * Loads, processes, and stores a single resource into the vector database
 	 * @param resource Spring Resource, e.g., FileSystemResource, ClassPathResource, or
 	 * MultipartFile.getResource()
 	 */
@@ -85,7 +85,7 @@ public class VectorStoreDataIngestionService {
 			}
 
 			logger.info("Ingesting data from resource: {}", resource.getFilename());
-			// TikaDocumentReader 支持多种文档格式(PDF, DOCX, MD, etc.)
+			// TikaDocumentReader supports multiple document formats (PDF, DOCX, MD, etc.)
 			var documentReader = new TikaDocumentReader(resource);
 			List<Document> documents = documentReader.get();
 			List<Document> splitDocuments = this.textSplitter.apply(documents);
@@ -99,7 +99,7 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 批量处理多个资源
+	 * Batch processes multiple resources
 	 * @param resources List of resources to ingest
 	 */
 	public void ingest(List<Resource> resources) {
@@ -107,21 +107,21 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 处理并存储上传的文件
-	 * @param file 上传的文件
-	 * @param sessionId 会话ID
-	 * @param userId 用户ID
+	 * Processes and stores uploaded files
+	 * @param file Uploaded file
+	 * @param sessionId Session ID
+	 * @param userId User ID
 	 */
 	public void processAndStore(MultipartFile file, String sessionId, String userId) {
 		batchProcessAndStore(List.of(file), sessionId, userId);
 	}
 
 	/**
-	 * 批量处理并存储上传的文件
-	 * @param files 上传的文件列表
-	 * @param sessionId 会话ID
-	 * @param userId 用户ID
-	 * @return 成功处理的文档片段数量
+	 * Batch processes and stores uploaded files
+	 * @param files List of uploaded files
+	 * @param sessionId Session ID
+	 * @param userId User ID
+	 * @return Number of successfully processed document fragments
 	 */
 	public int batchProcessAndStore(List<MultipartFile> files, String sessionId, String userId) {
 		if (files == null || files.isEmpty()) {
@@ -142,21 +142,21 @@ public class VectorStoreDataIngestionService {
 					continue;
 				}
 
-				// 1. 解析文档
+				// 1. Parse document
 				TikaDocumentReader reader = new TikaDocumentReader(file.getResource());
 				List<Document> documents = reader.get();
 
-				// 2. 分块
+				// 2. Chunking
 				List<Document> chunks = textSplitter.apply(documents);
 
-				// 3. 元数据富化
+				// 3. Metadata enrichment
 				AtomicInteger chunkCounter = new AtomicInteger(0);
 				List<Document> enrichedChunks = chunks.stream()
 					.map(chunk -> enrichUserUploadMetadata(chunk, file.getOriginalFilename(), sessionId, userId,
 							uploadTimestamp, chunkCounter.getAndIncrement(), file.getSize(), file.getContentType()))
 					.collect(Collectors.toList());
 
-				// 4. 存储
+				// 4. Storage
 				vectorStore.add(enrichedChunks);
 				totalChunks += enrichedChunks.size();
 
@@ -175,11 +175,11 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 从Resource批量处理并存储用户文件
-	 * @param resources 资源列表
-	 * @param sessionId 会话ID
-	 * @param userId 用户ID
-	 * @return 成功处理的文档片段数量
+	 * Batch processes and stores user files from Resources
+	 * @param resources List of resources
+	 * @param sessionId Session ID
+	 * @param userId User ID
+	 * @return Number of successfully processed document fragments
 	 */
 	public int batchProcessAndStoreResources(List<Resource> resources, String sessionId, String userId) {
 		if (resources == null || resources.isEmpty()) {
@@ -200,21 +200,21 @@ public class VectorStoreDataIngestionService {
 					continue;
 				}
 
-				// 1. 解析文档
+				// 1. Parse document
 				TikaDocumentReader reader = new TikaDocumentReader(resource);
 				List<Document> documents = reader.get();
 
-				// 2. 分块
+				// 2. Chunking
 				List<Document> chunks = textSplitter.apply(documents);
 
-				// 3. 元数据富化
+				// 3. Metadata enrichment
 				AtomicInteger chunkCounter = new AtomicInteger(0);
 				List<Document> enrichedChunks = chunks.stream()
 					.map(chunk -> enrichUserResourceUploadMetadata(chunk, resource.getFilename(), sessionId, userId,
 							uploadTimestamp, chunkCounter.getAndIncrement()))
 					.collect(Collectors.toList());
 
-				// 4. 存储
+				// 4. Storage
 				vectorStore.add(enrichedChunks);
 				totalChunks += enrichedChunks.size();
 
@@ -233,13 +233,14 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 批量上传文档到专业知识库ES 与ProfessionalKbEsStrategy的元数据保持一致
-	 * @param files 上传的文件列表
-	 * @param kbId 知识库ID
-	 * @param kbName 知识库名称
-	 * @param kbDescription 知识库描述
-	 * @param category 文档分类（可选）
-	 * @return 上传成功的文档数量
+	 * Batch uploads documents to the professional knowledge base ES
+	 * Maintains metadata consistency with ProfessionalKbEsStrategy
+	 * @param files List of uploaded files
+	 * @param kbId Knowledge base ID
+	 * @param kbName Knowledge base name
+	 * @param kbDescription Knowledge base description
+	 * @param category Document category (optional)
+	 * @return Number of successfully uploaded documents
 	 */
 	public int batchUploadToProfessionalKbEs(List<MultipartFile> files, String kbId, String kbName,
 			String kbDescription, String category) {
@@ -261,14 +262,14 @@ public class VectorStoreDataIngestionService {
 					continue;
 				}
 
-				// 1. 解析文档
+				// 1. Parse document
 				TikaDocumentReader reader = new TikaDocumentReader(file.getResource());
 				List<Document> documents = reader.get();
 
-				// 2. 分块
+				// 2. Chunking
 				List<Document> chunks = textSplitter.apply(documents);
 
-				// 3. 元数据富化，与ProfessionalKbEsStrategy保持一致
+				// 3. Metadata enrichment, maintaining consistency with ProfessionalKbEsStrategy
 				AtomicInteger chunkCounter = new AtomicInteger(0);
 				List<Document> enrichedChunks = chunks.stream()
 					.map(chunk -> enrichProfessionalKbEsMetadata(chunk, file.getOriginalFilename(), kbId, kbName,
@@ -276,7 +277,7 @@ public class VectorStoreDataIngestionService {
 							file.getContentType()))
 					.collect(Collectors.toList());
 
-				// 4. 存储到ES
+				// 4. Store to ES
 				vectorStore.add(enrichedChunks);
 				totalChunks += enrichedChunks.size();
 
@@ -294,13 +295,13 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 单个文档上传到专业知识库ES
-	 * @param file 上传的文件
-	 * @param kbId 知识库ID
-	 * @param kbName 知识库名称
-	 * @param kbDescription 知识库描述
-	 * @param category 文档分类（可选）
-	 * @return 上传成功的文档片段数量
+	 * Uploads a single document to the professional knowledge base ES
+	 * @param file Uploaded file
+	 * @param kbId Knowledge base ID
+	 * @param kbName Knowledge base name
+	 * @param kbDescription Knowledge base description
+	 * @param category Document category (optional)
+	 * @return Number of successfully uploaded document fragments
 	 */
 	public int uploadToProfessionalKbEs(MultipartFile file, String kbId, String kbName, String kbDescription,
 			String category) {
@@ -308,13 +309,13 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 从Resource批量上传到专业知识库ES
-	 * @param resources 资源列表
-	 * @param kbId 知识库ID
-	 * @param kbName 知识库名称
-	 * @param kbDescription 知识库描述
-	 * @param category 文档分类（可选）
-	 * @return 上传成功的文档片段数量
+	 * Batch uploads from Resources to the professional knowledge base ES
+	 * @param resources List of resources
+	 * @param kbId Knowledge base ID
+	 * @param kbName Knowledge base name
+	 * @param kbDescription Knowledge base description
+	 * @param category Document category (optional)
+	 * @return Number of successfully uploaded document fragments
 	 */
 	public int batchUploadResourcesToProfessionalKbEs(List<Resource> resources, String kbId, String kbName,
 			String kbDescription, String category) {
@@ -336,21 +337,21 @@ public class VectorStoreDataIngestionService {
 					continue;
 				}
 
-				// 1. 解析文档
+				// 1. Parse document
 				TikaDocumentReader reader = new TikaDocumentReader(resource);
 				List<Document> documents = reader.get();
 
-				// 2. 分块
+				// 2. Chunking
 				List<Document> chunks = textSplitter.apply(documents);
 
-				// 3. 元数据富化，与ProfessionalKbEsStrategy保持一致
+				// 3. Metadata enrichment, maintaining consistency with ProfessionalKbEsStrategy
 				AtomicInteger chunkCounter = new AtomicInteger(0);
 				List<Document> enrichedChunks = chunks.stream()
 					.map(chunk -> enrichProfessionalKbEsResourceMetadata(chunk, resource.getFilename(), kbId, kbName,
 							kbDescription, category, uploadTimestamp, chunkCounter.getAndIncrement()))
 					.collect(Collectors.toList());
 
-				// 4. 存储到ES
+				// 4. Store to ES
 				vectorStore.add(enrichedChunks);
 				totalChunks += enrichedChunks.size();
 
@@ -369,17 +370,17 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 从文本内容提取标题
-	 * @param text 文本内容
-	 * @param filename 文件名（回退标题）
-	 * @return 提取的标题
+	 * Extracts title from text content
+	 * @param text Text content
+	 * @param filename File name (fallback title)
+	 * @return Extracted title
 	 */
 	private String extractTitle(String text, String filename) {
 		if (text == null || text.isBlank()) {
 			return filename != null ? filename : "Untitled";
 		}
 
-		// 简单的标题提取逻辑：取第一行作为标题，最多50个字符
+		// Simple title extraction logic: take the first line as the title, maximum 50 characters
 		String firstLine = text.split("\n")[0].trim();
 		if (firstLine.length() > 50) {
 			firstLine = firstLine.substring(0, 50) + "...";
@@ -389,17 +390,17 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 为用户上传的MultipartFile丰富元数据
+	 * Enriches metadata for user-uploaded MultipartFile
 	 */
 	private Document enrichUserUploadMetadata(Document chunk, String originalFilename, String sessionId, String userId,
 			String uploadTimestamp, int chunkId, long fileSize, String contentType) {
 		Map<String, Object> metadata = createBaseMetadata(chunk, originalFilename, uploadTimestamp, chunkId);
 
-		// 用户上传文件特有元数据
+		// User-uploaded file specific metadata
 		metadata.put("file_size", fileSize);
 		metadata.put("content_type", contentType);
 
-		// 核心元数据
+		// Core metadata
 		metadata.put("source_type", SourceTypeEnum.USER_UPLOAD.getValue());
 
 		if (userId != null && !userId.isBlank()) {
@@ -411,13 +412,13 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 为用户上传的Resource丰富元数据
+	 * Enriches metadata for user-uploaded Resource
 	 */
 	private Document enrichUserResourceUploadMetadata(Document chunk, String originalFilename, String sessionId,
 			String userId, String uploadTimestamp, int chunkId) {
 		Map<String, Object> metadata = createBaseMetadata(chunk, originalFilename, uploadTimestamp, chunkId);
 
-		// 核心元数据
+		// Core metadata
 		metadata.put("source_type", SourceTypeEnum.USER_UPLOAD.getValue());
 		metadata.put("session_id", sessionId);
 		if (userId != null && !userId.isBlank()) {
@@ -428,27 +429,27 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 为专业知识库ES的MultipartFile丰富元数据
+	 * Enriches metadata for professional knowledge base ES MultipartFile
 	 */
 	private Document enrichProfessionalKbEsMetadata(Document chunk, String originalFilename, String kbId, String kbName,
 			String kbDescription, String category, String uploadTimestamp, int chunkId, long fileSize,
 			String contentType) {
 		Map<String, Object> metadata = createBaseMetadata(chunk, originalFilename, uploadTimestamp, chunkId);
 
-		// 核心元数据，与ProfessionalKbEsStrategy一致
+		// Core metadata, consistent with ProfessionalKbEsStrategy
 		metadata.put("source_type", SourceTypeEnum.PROFESSIONAL_KB_ES.getValue());
 		metadata.put("session_id", "professional_kb_es");
 
-		// 专业知识库文件特有元数据
+		// Professional knowledge base file specific metadata
 		metadata.put("file_size", fileSize);
 		metadata.put("content_type", contentType);
 
-		// 可选分类
+		// Optional category
 		if (category != null && !category.isBlank()) {
 			metadata.put("category", category);
 		}
 
-		// 专业知识库特有元数据
+		// Professional knowledge base specific metadata
 		metadata.put("kb_id", kbId);
 		metadata.put("kb_name", kbName);
 		metadata.put("kb_description", kbDescription);
@@ -457,22 +458,22 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 为专业知识库ES的Resource丰富元数据
+	 * Enriches metadata for professional knowledge base ES Resource
 	 */
 	private Document enrichProfessionalKbEsResourceMetadata(Document chunk, String originalFilename, String kbId,
 			String kbName, String kbDescription, String category, String uploadTimestamp, int chunkId) {
 		Map<String, Object> metadata = createBaseMetadata(chunk, originalFilename, uploadTimestamp, chunkId);
 
-		// 核心元数据，与ProfessionalKbEsStrategy一致
+		// Core metadata, consistent with ProfessionalKbEsStrategy
 		metadata.put("source_type", SourceTypeEnum.PROFESSIONAL_KB_ES.getValue());
 		metadata.put("session_id", "professional_kb_es");
 
-		// 专业知识库特有元数据
+		// Professional knowledge base specific metadata
 		metadata.put("kb_id", kbId);
 		metadata.put("kb_name", kbName);
 		metadata.put("kb_description", kbDescription);
 
-		// 可选分类
+		// Optional category
 		if (category != null && !category.isBlank()) {
 			metadata.put("category", category);
 		}
@@ -481,18 +482,18 @@ public class VectorStoreDataIngestionService {
 	}
 
 	/**
-	 * 创建基础元数据
+	 * Creates base metadata
 	 */
 	private Map<String, Object> createBaseMetadata(Document chunk, String originalFilename, String uploadTimestamp,
 			int chunkId) {
 		Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
 
-		// 文档元数据
+		// Document metadata
 		metadata.put("original_filename", originalFilename);
 		metadata.put("upload_timestamp", uploadTimestamp);
 		metadata.put("chunk_id", chunkId);
 
-		// 添加搜索用的标题字段
+		// Add title field for search purposes
 		String title = extractTitle(chunk.getText(), originalFilename);
 		metadata.put("title", title);
 

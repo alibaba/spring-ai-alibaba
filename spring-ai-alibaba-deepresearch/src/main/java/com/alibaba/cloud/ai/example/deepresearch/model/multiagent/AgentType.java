@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.model.multiagent;
 
 /**
- * Agent类型枚举，定义不同类型的研究Agent
+ * Agent type enumeration, defining different types of research agents
  *
  * @author Makoto
  * @since 2025/07/17

@@ -63,7 +63,7 @@ public class RagDataAutoConfiguration implements ApplicationRunner {
 	}
 
 	/**
-	 * 1. 应用启动时执行，加载初始化数据
+	 * 1. Execute on application startup to load initial data
 	 */
 	@Override
 	public void run(ApplicationArguments args) throws Exception {
@@ -83,7 +83,7 @@ public class RagDataAutoConfiguration implements ApplicationRunner {
 	}
 
 	/**
-	 * 2. 定时任务，扫描指定目录
+	 * 2. Scheduled data ingestion from a designated directory
 	 */
 	@Scheduled(cron = "${spring.ai.alibaba.deepresearch.rag.data.scan.cron:0 0 * * * *}")
 	@ConditionalOnProperty(prefix = RagProperties.RAG_PREFIX + ".data.scan", name = "enabled", havingValue = "true")

@@ -28,7 +28,7 @@ import java.net.URL;
 import java.util.List;
 
 /**
- * HTML生成工具类，提供Markdown到HTML的转换功能
+ * HTML generation utility class providing Markdown to HTML conversion functionality
  *
  * @author sixiyida
  * @since 2025/6/20
@@ -37,14 +37,14 @@ public final class HtmlGenerationUtil {
 
 	private static final Logger logger = LoggerFactory.getLogger(HtmlGenerationUtil.class);
 
-	// 资源路径
+	// Resource paths
 	private static final String FONT_PATH = "report/fonts/AlibabaPuHuiTi-3-55-Regular.ttf";
 
 	private static final String CSS_PATH = "report/css/github-markdown.css";
 
 	private static final String FONT_FAMILY = "AlibabaPuHuiTi";
 
-	// HTML模板部分
+	// HTML template section
 	private static final String HTML_HEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 			+ "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n"
 			+ "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n" + "<head>\n"
@@ -67,9 +67,9 @@ public final class HtmlGenerationUtil {
 	}
 
 	/**
-	 * 将Markdown内容转换为HTML
-	 * @param markdownContent Markdown内容
-	 * @return 转换后的HTML内容
+	 * Converts Markdown content to HTML
+	 * @param markdownContent Markdown content
+	 * @return Converted HTML content
 	 */
 	public static String convertMarkdownToHtml(String markdownContent) {
 		Node document = markdownParser.parse(markdownContent);
@@ -77,14 +77,14 @@ public final class HtmlGenerationUtil {
 	}
 
 	/**
-	 * 将HTML内容包装成完整的HTML文档
-	 * @param htmlContent HTML内容
-	 * @return 完整的HTML文档
+	 * Wraps HTML content into a complete HTML document
+	 * @param htmlContent HTML content
+	 * @return Complete HTML document
 	 */
 	public static String wrapHtmlContent(String htmlContent) {
 		StringBuilder html = new StringBuilder(HTML_HEADER);
 
-		// 添加CSS链接 - 确保CSS始终被加载
+		// Add CSS link - ensure CSS is always loaded
 		String cssUrl = getResourceUrl(CSS_PATH);
 		if (cssUrl != null && !cssUrl.isEmpty()) {
 			html.append("    <link rel=\"stylesheet\" type=\"text/css\" href=\"").append(cssUrl).append("\"/>\n");
@@ -93,10 +93,10 @@ public final class HtmlGenerationUtil {
 			logger.warn("External CSS file not found. Styling may be affected.");
 		}
 
-		// 添加样式
+		// Add styles
 		html.append(HTML_STYLE_START);
 
-		// 添加字体
+		// Add fonts
 		String fontUrl = getResourceUrl(FONT_PATH);
 		if (fontUrl != null && !fontUrl.isEmpty()) {
 			html.append("        @font-face {\n")
@@ -111,7 +111,7 @@ public final class HtmlGenerationUtil {
 				.append("        }\n");
 		}
 
-		// 结束样式，添加HTML内容和页脚
+		// End styles, add HTML content and footer
 		html.append(HTML_STYLE_END).append(htmlContent).append(HTML_FOOTER);
 
 		String result = html.toString();
@@ -120,9 +120,9 @@ public final class HtmlGenerationUtil {
 	}
 
 	/**
-	 * 获取资源URL
-	 * @param resourcePath 资源路径
-	 * @return 资源URL字符串，如果获取失败则返回null
+	 * Retrieves resource URL
+	 * @param resourcePath Resource path
+	 * @return Resource URL string, returns null if retrieval fails
 	 */
 	private static String getResourceUrl(String resourcePath) {
 		try {
@@ -143,9 +143,9 @@ public final class HtmlGenerationUtil {
 	}
 
 	/**
-	 * 将Markdown内容转换为完整的HTML文档
-	 * @param markdownContent Markdown内容
-	 * @return 完整的HTML文档
+	 * Converts Markdown content to a complete HTML document
+	 * @param markdownContent Markdown content
+	 * @return Complete HTML document
 	 */
 	public static String markdownToHtml(String markdownContent) {
 		String htmlContent = convertMarkdownToHtml(markdownContent);

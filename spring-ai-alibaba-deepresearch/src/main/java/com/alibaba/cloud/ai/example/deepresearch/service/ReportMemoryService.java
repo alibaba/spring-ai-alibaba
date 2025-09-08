@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 基于内存的报告服务类（当Redis不可用时使用）
+ * In-memory report service class (used when Redis is unavailable)
  *
  * @author huangzhen
  * @since 2025/6/20
@@ -37,14 +37,14 @@ public class ReportMemoryService implements ReportService {
 	private static final Logger logger = LoggerFactory.getLogger(ReportMemoryService.class);
 
 	/**
-	 * 内存存储，使用ConcurrentHashMap保证线程安全
+	 * In-memory storage using ConcurrentHashMap to ensure thread safety
 	 */
 	private final Map<String, String> reportStorage = new ConcurrentHashMap<>();
 
 	/**
-	 * 存储报告到内存
-	 * @param threadId 线程ID
-	 * @param report 报告内容
+	 * Stores reports in memory
+	 * @param threadId Thread ID
+	 * @param report Report content
 	 */
 	@Override
 	public void saveReport(String threadId, String report) {
@@ -59,9 +59,9 @@ public class ReportMemoryService implements ReportService {
 	}
 
 	/**
-	 * 从内存获取报告
-	 * @param threadId 线程ID
-	 * @return 报告内容，如果不存在返回 null
+	 * Retrieves reports from memory
+	 * @param threadId Thread ID
+	 * @return Report content, returns null if not found
 	 */
 	@Override
 	public String getReport(String threadId) {
@@ -83,9 +83,9 @@ public class ReportMemoryService implements ReportService {
 	}
 
 	/**
-	 * 检查报告是否存在
-	 * @param threadId 线程ID
-	 * @return 是否存在
+	 * Checks if a report exists
+	 * @param threadId Thread ID
+	 * @return Whether the report exists
 	 */
 	@Override
 	public boolean existsReport(String threadId) {
@@ -101,8 +101,8 @@ public class ReportMemoryService implements ReportService {
 	}
 
 	/**
-	 * 删除报告
-	 * @param threadId 线程ID
+	 * Deletes a report
+	 * @param threadId Thread ID
 	 */
 	@Override
 	public void deleteReport(String threadId) {

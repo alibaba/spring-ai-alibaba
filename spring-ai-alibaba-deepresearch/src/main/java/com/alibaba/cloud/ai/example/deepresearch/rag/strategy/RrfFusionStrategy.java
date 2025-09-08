@@ -30,8 +30,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * RAG中RRF（Reciprocal Rank Fusion）融合策略实现。 该策略根据文档在多个结果列表中的排名，计算其 RRF 分数，并返回融合后的文档列表。
- * 同时实现DocumentPostProcessor接口，支持后处理的rerank功能。
+ * Implementation of RRF (Reciprocal Rank Fusion) fusion strategy in RAG.
+ * This strategy calculates the RRF score of documents based on their rankings
+ * across multiple result lists and returns a fused document list.
+ * Also implements the DocumentPostProcessor interface to support reranking
+ * functionality in post-processing.
  *
  * @author hupei
  */
@@ -64,7 +67,7 @@ public class RrfFusionStrategy implements FusionStrategy, DocumentPostProcessor 
 			return List.of();
 		}
 		if (results.size() == 1) {
-			return results.get(0); // 如果只有一个结果列表，无需融合
+			return results.get(0); // If there is only one result list, no fusion is needed
 		}
 
 		return fuseInternal(results, defaultTopK, defaultThreshold);
@@ -72,19 +75,19 @@ public class RrfFusionStrategy implements FusionStrategy, DocumentPostProcessor 
 
 	@Override
 	public List<Document> process(Query query, List<Document> documents) {
-		// 将单个文档列表视为多个来源的结果进行rerank
-		// 按source_type分组，然后使用RRF进行融合
+		// Treats a single document list as results from multiple sources for reranking
+		// Groups by source_type, then uses RRF for fusion
 		Map<String, List<Document>> documentsBySource = groupDocumentsBySource(documents);
 
-		// 转换为List<List<Document>>格式
+		// Convert to List<List<Document>> format
 		List<List<Document>> results = new ArrayList<>(documentsBySource.values());
 
-		// 使用RRF融合并应用topK和threshold限制
+		// Use RRF fusion and apply topK and threshold constraints
 		return fuseInternal(results, defaultTopK, defaultThreshold);
 	}
 
 	/**
-	 * 内部融合方法，支持topK和threshold限制
+	 * Internal fusion method with support for topK and threshold constraints
 	 */
 	private List<Document> fuseInternal(List<List<Document>> results, int topK, double threshold) {
 		if (results == null || results.isEmpty()) {
@@ -95,25 +98,25 @@ public class RrfFusionStrategy implements FusionStrategy, DocumentPostProcessor 
 			return singleResult.stream().limit(topK).collect(Collectors.toList());
 		}
 
-		// 使用 Map 来存储每个文档的 RRF 分数，以文档ID为键
+		// Use a Map to store RRF scores for each document, keyed by document ID
 		Map<String, Double> rrfScores = new HashMap<>();
-		// 使用 Map 来存储文档ID到 Document 对象的映射，避免重复存储
+		// Use a Map to store document ID to Document object mapping to avoid duplicate storage
 		Map<String, Document> documentMap = new HashMap<>();
 
 		for (List<Document> resultList : results) {
 			for (int i = 0; i < resultList.size(); i++) {
 				Document doc = resultList.get(i);
-				int rank = i + 1; // 排名从1开始
+				int rank = i + 1; // Ranking starts from 1
 				String docId = getDocumentId(doc);
 
-				// 更新文档的 RRF 分数
+				// Update the document's RRF score
 				rrfScores.merge(docId, 1.0 / (k + rank), Double::sum);
-				// 如果是第一次遇到该文档，则存入 map
+				// If encountering this document for the first time, store it in the map
 				documentMap.putIfAbsent(docId, doc);
 			}
 		}
 
-		// 根据 RRF 分数对文档ID进行降序排序，并应用过滤条件
+		// Sort document IDs in descending order based on RRF scores and apply filtering conditions
 		return rrfScores.entrySet()
 			.stream()
 			.sorted(Map.Entry.<String, Double>comparingByValue().reversed())
@@ -124,7 +127,7 @@ public class RrfFusionStrategy implements FusionStrategy, DocumentPostProcessor 
 	}
 
 	/**
-	 * 按来源分组文档
+	 * Groups documents by source
 	 */
 	private Map<String, List<Document>> groupDocumentsBySource(List<Document> documents) {
 		Map<String, List<Document>> groups = new LinkedHashMap<>();
@@ -138,19 +141,20 @@ public class RrfFusionStrategy implements FusionStrategy, DocumentPostProcessor 
 	}
 
 	/**
-	 * 获取文档ID，优先使用文档自身ID，否则使用内容hash
+	 * Retrieves the document ID, prioritizing the document's own ID;
+	 * otherwise uses a content hash.
 	 */
 	private String getDocumentId(Document document) {
 		if (document.getId() != null && !document.getId().isEmpty()) {
 			return document.getId();
 		}
 
-		// 使用内容hash作为ID
+		// Use content hash as ID
 		return String.valueOf(document.getText().hashCode());
 	}
 
 	/**
-	 * 获取文档来源，从元数据中读取source_type
+	 * Retrieves the document source by reading source_type from metadata
 	 */
 	private String getDocumentSource(Document document) {
 		Object sourceType = document.getMetadata().get("source_type");
@@ -158,7 +162,7 @@ public class RrfFusionStrategy implements FusionStrategy, DocumentPostProcessor 
 			return sourceType.toString();
 		}
 
-		// 默认来源
+		// Default source
 		return "default";
 	}
 

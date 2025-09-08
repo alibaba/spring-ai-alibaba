@@ -21,20 +21,20 @@ import org.springframework.ai.document.Document;
 import java.util.List;
 
 /**
- * 定义了融合多个检索结果列表的策略接口。
+ * Defines a strategy interface for merging multiple retrieval result lists.
  */
 public interface FusionStrategy {
 
 	/**
-	 * 将多个已排序的文档列表融合成一个单一的、重新排序的列表。
-	 * @param results 包含多个检索结果列表的列表。
-	 * @return 经过融合和重新排序的单一文档列表。
+	 * Merges multiple ranked document lists into a single, re-ranked list.
+	 * @param results A list containing multiple retrieval result lists.
+	 * @return A single merged and re-ranked document list.
 	 */
 	List<Document> fuse(List<List<Document>> results);
 
 	/**
-	 * 返回此策略的唯一名称。
-	 * @return 策略名称。
+	 * Returns the unique name of this strategy.
+	 * @return The strategy name.
 	 */
 	String getStrategyName();
 

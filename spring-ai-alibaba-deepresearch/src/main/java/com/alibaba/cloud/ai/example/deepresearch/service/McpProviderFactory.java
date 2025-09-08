@@ -33,7 +33,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * MCP提供者工厂服务 负责创建和管理MCP提供者
+ * MCP Provider Factory Service
+ * Responsible for creating and managing MCP providers
  *
  * @author Makoto
  */
@@ -64,10 +65,10 @@ public class McpProviderFactory {
 	}
 
 	/**
-	 * 核心方法：直接创建MCP提供者
-	 * @param state 状态对象
-	 * @param agentName 代理名称
-	 * @return MCP工具回调提供者
+	 * Core method: Directly creates an MCP provider
+	 * @param state State object
+	 * @param agentName Agent name
+	 * @return MCP tool callback provider
 	 */
 	public AsyncMcpToolCallbackProvider createProvider(OverAllState state, String agentName) {
 		return McpClientUtil.createMcpProvider(state, agentName, mcpConfigProvider, mcpAsyncClientConfigurer,

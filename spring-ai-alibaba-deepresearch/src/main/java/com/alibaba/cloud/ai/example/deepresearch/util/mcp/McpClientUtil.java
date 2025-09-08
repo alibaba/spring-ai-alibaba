@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * MCP客户端创建和初始化工具类
+ * MCP client creation and initialization utility class
  *
  * @author Makoto
  */
@@ -45,15 +45,15 @@ public class McpClientUtil {
 	private static final Logger logger = LoggerFactory.getLogger(McpClientUtil.class);
 
 	/**
-	 * 创建MCP客户端提供者
-	 * @param state 状态对象
-	 * @param agentName 代理名称 (如: "coderAgent", "researchAgent")
-	 * @param mcpConfigProvider MCP配置提供者
-	 * @param mcpAsyncClientConfigurer MCP异步客户端配置器
-	 * @param commonProperties MCP客户端通用属性
-	 * @param webClientBuilderTemplate WebClient构建器模板
-	 * @param objectMapper JSON对象映射器
-	 * @return AsyncMcpToolCallbackProvider 或 null
+	 * Creates an MCP client provider
+	 * @param state State object
+	 * @param agentName Agent name (e.g., "coderAgent", "researchAgent")
+	 * @param mcpConfigProvider MCP configuration provider
+	 * @param mcpAsyncClientConfigurer MCP async client configurer
+	 * @param commonProperties MCP client common properties
+	 * @param webClientBuilderTemplate WebClient builder template
+	 * @param objectMapper JSON object mapper
+	 * @return AsyncMcpToolCallbackProvider or null
 	 */
 	public static AsyncMcpToolCallbackProvider createMcpProvider(OverAllState state, String agentName,
 			Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> mcpConfigProvider,
@@ -66,7 +66,7 @@ public class McpClientUtil {
 		}
 
 		try {
-			// 获取配置
+			// Get configuration
 			Map<String, McpAssignNodeProperties.McpServerConfig> mcpAgentConfigs = mcpConfigProvider.apply(state);
 			McpAssignNodeProperties.McpServerConfig config = mcpAgentConfigs.get(agentName);
 
@@ -86,7 +86,7 @@ public class McpClientUtil {
 					continue;
 				}
 
-				// 为每个服务器动态创建transport
+				// Dynamically create transport for each server
 				List<NamedClientMcpTransport> namedTransports = McpConfigMergeUtil.createAgent2McpTransports(agentName,
 						new McpAssignNodeProperties.McpServerConfig(List.of(serverInfo)), webClientBuilderTemplate,
 						objectMapper);
@@ -99,7 +99,7 @@ public class McpClientUtil {
 					spec = mcpAsyncClientConfigurer.configure(namedTransport.name(), spec);
 					McpAsyncClient client = spec.build();
 
-					// 初始化MCP客户端
+					// Initialize MCP client
 					client.initialize().block(java.time.Duration.ofMinutes(2));
 
 					mcpAsyncClients.add(client);
@@ -121,13 +121,13 @@ public class McpClientUtil {
 	}
 
 	/**
-	 * 检查MCP配置是否可用
-	 * @param mcpConfigProvider MCP配置提供者
-	 * @param mcpAsyncClientConfigurer MCP异步客户端配置器
-	 * @param commonProperties MCP客户端通用属性
-	 * @param webClientBuilderTemplate WebClient构建器模板
-	 * @param objectMapper JSON对象映射器
-	 * @return true 如果所有必需的组件都可用
+	 * Checks if MCP configuration is available
+	 * @param mcpConfigProvider MCP configuration provider
+	 * @param mcpAsyncClientConfigurer MCP async client configurer
+	 * @param commonProperties MCP client common properties
+	 * @param webClientBuilderTemplate WebClient builder template
+	 * @param objectMapper JSON object mapper
+	 * @return true if all required components are available
 	 */
 	public static boolean isMcpConfigurationAvailable(
 			Function<OverAllState, Map<String, McpAssignNodeProperties.McpServerConfig>> mcpConfigProvider,

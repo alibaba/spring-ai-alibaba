@@ -23,50 +23,50 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 统一的RAG处理器接口，支持前后处理逻辑、混合查询和过滤表达式
+ * A unified RAG processor interface that supports pre-processing and post-processing logic, hybrid querying, and filter expressions.
  *
  * @author hupei
  */
 public interface HybridRagProcessor {
 
 	/**
-	 * 执行完整的RAG处理流程
-	 * @param query 原始查询
-	 * @param options 选项参数，包含session_id, user_id等上下文信息
-	 * @return 处理后的文档列表
+	 * Executes the complete RAG processing pipeline
+	 * @param query The original query
+	 * @param options Configuration parameters containing context information such as session_id, user_id
+	 * @return Processed document list
 	 */
 	List<Document> process(Query query, Map<String, Object> options);
 
 	/**
-	 * 查询前处理：查询扩展、翻译等
-	 * @param query 原始查询
-	 * @param options 选项参数
-	 * @return 处理后的查询列表
+	 * Query pre-processing: query expansion, translation, etc.
+	 * @param query The original query
+	 * @param options Configuration parameters
+	 * @return Processed query list
 	 */
 	List<Query> preProcess(Query query, Map<String, Object> options);
 
 	/**
-	 * 执行混合检索（支持ES混合查询和向量搜索）
-	 * @param queries 处理后的查询列表
-	 * @param filterExpression 过滤表达式，与VectorStoreDataIngestionService的元数据逻辑一致
-	 * @param options 选项参数
-	 * @return 检索到的文档列表
+	 * Executes hybrid retrieval (supports ES hybrid query and vector search)
+	 * @param queries Processed query list
+	 * @param filterExpression Filter expression consistent with VectorStoreDataIngestionService's metadata logic
+	 * @param options Configuration parameters
+	 * @return Retrieved document list
 	 */
 	List<Document> hybridRetrieve(List<Query> queries,
 			co.elastic.clients.elasticsearch._types.query_dsl.Query filterExpression, Map<String, Object> options);
 
 	/**
-	 * 文档后处理：相关性排序、去重、压缩等
-	 * @param documents 检索到的文档列表
-	 * @param options 选项参数
-	 * @return 后处理的文档列表
+	 * Document post-processing: relevance sorting, deduplication, compression, etc.
+	 * @param documents Retrieved document list
+	 * @param options Configuration parameters
+	 * @return Post-processed document list
 	 */
 	List<Document> postProcess(List<Document> documents, Map<String, Object> options);
 
 	/**
-	 * 根据元数据上下文构建ES过滤表达式
-	 * @param options 包含session_id, user_id, source_type等的选项参数
-	 * @return ES过滤查询对象
+	 * Constructs ES filter expressions based on metadata context
+	 * @param options Configuration parameters including session_id, user_id, source_type, etc.
+	 * @return ES filter query object
 	 */
 	co.elastic.clients.elasticsearch._types.query_dsl.Query buildFilterExpression(Map<String, Object> options);
 

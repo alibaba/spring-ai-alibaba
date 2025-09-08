@@ -65,10 +65,10 @@ public class GraphProcess {
 
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-	// 任务被中断时发送给前端的信息
+	// Message sent to frontend when a task is interrupted
 	public static final String TASK_STOPPED_MESSAGE_TEMPLATE = "{\"nodeName\": \"__END__\",\"graphId\": %s, \"displayTitle\": \"结束\", \"content\": { \"reason\": \"%s\"}} ";
 
-	// 线程数需要大于2
+	// Number of threads must be greater than 2
 	private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
 	private final CompiledGraph compiledGraph;
@@ -109,20 +109,20 @@ public class GraphProcess {
 	public void processStream(GraphId graphId, AsyncGenerator<NodeOutput> generator,
 			Sinks.Many<ServerSentEvent<String>> sink) {
 		final String graphIdStr = this.safeObjectToJson(graphId);
-		// 创建一个任务，且遇见中断时停止图的运行
+		// Create a task and stop graph execution upon interruption
 		Future<?> future = executor.submit(() -> {
 			AsyncGenerator.Data<NodeOutput> next;
 
 			while (true) {
 				NodeOutput output;
-				// 另外发起一个线程，用于迭代generator
+				// Launch a separate thread for iterating over the generator
 				Future<AsyncGenerator.Data<NodeOutput>> nextFuture = executor.submit(generator::next);
 				try {
 					next = nextFuture.get();
 					if (next.isDone()) {
 						break;
 					}
-					// 获取NodeOutput
+					// Get NodeOutput
 					output = next.getData().get();
 				}
 				catch (CancellationException | ExecutionException e) {
@@ -159,7 +159,7 @@ public class GraphProcess {
 					sink.tryEmitNext(ServerSentEvent.builder(content).build());
 				}
 
-				// 检测任务是否被中断
+				// Check if the task has been interrupted
 				if (Thread.currentThread().isInterrupted()) {
 					logger.info("Stopped by user at node: {}", nodeName);
 					sink.tryEmitNext(
@@ -170,13 +170,13 @@ public class GraphProcess {
 				}
 			}
 
-			// 任务正常完成
+			// Task completed successfully
 			logger.info("Stream processing completed.");
 			sink.tryEmitComplete();
-			// 从任务Map中移出
+			// Remove form the Map of task
 			graphTaskFutureMap.remove(graphId);
 		});
-		// 存放到Map中
+		// Put into Map
 		Future<?> oldFuture = graphTaskFutureMap.put(graphId, future);
 		Optional.ofNullable(oldFuture).ifPresent((f) -> {
 			if (!f.isDone()) {
@@ -186,9 +186,9 @@ public class GraphProcess {
 	}
 
 	/**
-	 * 终止运行中的图
+	 * Terminates a running graph
 	 * @param graphId graphId
-	 * @return 是否成功
+	 * @return whether the operation succeeded
 	 */
 	public boolean stopGraph(GraphId graphId) {
 		Future<?> future = this.graphTaskFutureMap.remove(graphId);
@@ -230,7 +230,7 @@ public class GraphProcess {
 			return "";
 		}
 		Object content;
-		// 不同节点给前端的内容不一样
+		// Different nodes provide varying content to the frontend
 		content = switch (nodeEnum) {
 			case START -> {
 				String query = output.state().data().get("query").toString();

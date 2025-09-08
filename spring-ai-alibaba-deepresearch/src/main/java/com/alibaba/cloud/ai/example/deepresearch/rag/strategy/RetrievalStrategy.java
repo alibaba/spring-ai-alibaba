@@ -21,22 +21,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 定义了从数据源检索文档的策略接口。 每种数据源（如用户上传的文件、专业知识库）都应有其具体的实现。
+ * Defines a strategy interface for retrieving documents from data sources.
+ * Each data source (e.g., user-uploaded files, professional knowledge bases)
+ * should have its specific implementation.
  */
 public interface RetrievalStrategy {
 
 	/**
-	 * 根据查询和选项从特定数据源检索相关文档。
-	 * @param query 用户的查询字符串。
-	 * @param options 包含额外参数的映射，例如 session_id, user_id 等，用于上下文过滤。
-	 * @return 相关文档的列表。
+	 * Retrieves relevant documents from a specific data source based on the query and options.
+	 * @param query The user's query string.
+	 * @param options A map containing additional parameters such as session_id, user_id, etc.,
+	 *                used for context filtering.
+	 * @return A list of relevant documents.
 	 */
 	List<Document> retrieve(String query, Map<String, Object> options);
 
 	/**
-	 * 返回此策略的唯一名称，用于在配置中识别和选择。
-	 * @return 策略名称。
+	 * Returns the unique name of this strategy, used for identification and selection in configuration.
+	 * @return The strategy name.
 	 */
 	String getStrategyName();
-
 }

@@ -22,7 +22,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.List;
 
 /**
- * MCP代理节点分配配置属性
+ * MCP agent node allocation configuration properties
  *
  * @author Makoto
  */
@@ -32,7 +32,7 @@ public class McpAssignNodeProperties {
 	public static final String MCP_ASSIGN_NODE_PREFIX = DeepResearchProperties.PREFIX + ".mcp";
 
 	/**
-	 * 是否启用MCP代理节点分配
+	 * Whether to enable MCP agent node allocation
 	 */
 	private boolean enabled = true;
 
@@ -55,13 +55,13 @@ public class McpAssignNodeProperties {
 	}
 
 	/**
-	 * MCP服务器配置
+	 * MCP server configuration
 	 */
 	public static record McpServerConfig(@JsonProperty("mcp-servers") List<McpServerInfo> mcpServers) {
 	}
 
 	/**
-	 * MCP服务器信息
+	 * MCP server information
 	 */
 	public static record McpServerInfo(String url, @JsonProperty("sse-endpoint") String sseEndpoint, String description,
 			boolean enabled) {

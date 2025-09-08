@@ -124,18 +124,18 @@ public class SearchInfoService {
 	}
 
 	/**
-	 * 支持工具调用的搜索方法
-	 * @param enableSearchFilter 是否启用搜索过滤
-	 * @param searchEnum 搜索引擎枚举
-	 * @param query 搜索查询
-	 * @param searchPlatform 搜索平台（用于工具调用）
-	 * @return 搜索结果列表
-	 * @throws InterruptedException 中断异常
+	 * Search method supporting tool invocation
+	 * @param enableSearchFilter Whether to enable search filtering
+	 * @param searchEnum Search engine enumeration
+	 * @param query Search query
+	 * @param searchPlatform Search platform (for tool invocation)
+	 * @return List of search results
+	 * @throws InterruptedException Interrupted exception
 	 */
 	public List<Map<String, String>> searchInfo(boolean enableSearchFilter, SearchEnum searchEnum, String query,
 			SearchPlatform searchPlatform) throws InterruptedException {
 
-		// 如果是工具调用搜索且工具调用服务可用
+		// If it is a tool invocation search and the tool invocation service is available
 		if (SmartAgentUtil.isToolCallingPlatform(searchPlatform) && toolCallingSearchService != null) {
 			try {
 				List<Map<String, String>> toolCallingResults = toolCallingSearchService
@@ -149,7 +149,7 @@ public class SearchInfoService {
 			}
 		}
 
-		// 回退到传统搜索方法
+		// Fallback to traditional search methods
 		return searchInfo(enableSearchFilter, searchEnum != null ? searchEnum : SearchEnum.TAVILY, query);
 	}
 

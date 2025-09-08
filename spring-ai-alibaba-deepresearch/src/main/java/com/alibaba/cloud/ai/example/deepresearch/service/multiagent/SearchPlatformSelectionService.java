@@ -36,7 +36,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 搜索平台选择服务，根据Agent类型和问题内容智能选择最合适的搜索平台
+ * Search Platform Selection Service
+ * Intelligently selects the most appropriate search platform based on agent type and question content
  *
  * @author Makoto
  * @since 2025/07/17
@@ -63,12 +64,12 @@ public class SearchPlatformSelectionService {
 	}
 
 	/**
-	 * 根据Agent类型选择主要搜索平台（统一的平台选择逻辑）
+	 * Selecting the primary search platform based on agent type (unified platform selection logic)
 	 */
 	private SearchPlatform selectPlatformInternal(AgentType agentType, String question) {
 		SearchPlatform primaryPlatform = getPrimaryPlatformFromConfig(agentType);
 
-		// 如果配置中没有，则使用AI智能选择
+		// If not configured, use AI intelligent selection
 		if (primaryPlatform == null) {
 			primaryPlatform = selectPrimaryPlatformByAI(agentType, question);
 		}
@@ -77,7 +78,7 @@ public class SearchPlatformSelectionService {
 	}
 
 	/**
-	 * 根据Agent类型选择主要搜索平台
+	 * Select the primary search platform based on the agent type
 	 */
 	public List<SearchEnum> selectSearchPlatforms(AgentType agentType, String question) {
 		List<SearchEnum> searchPlatforms = new ArrayList<>();
@@ -86,7 +87,8 @@ public class SearchPlatformSelectionService {
 			SearchPlatform primaryPlatform = selectPlatformInternal(agentType, question);
 
 			if (SmartAgentUtil.isToolCallingPlatform(primaryPlatform)) {
-				// 对于工具调用平台，返回一个特殊标识，让调用方知道需要使用工具调用。使用 TAVILY 作为占位符，实际会被工具调用覆盖
+				// For the tool invocation platform, return a special identifier to inform the caller that tool invocation is required.
+				// Use TAVILY as a placeholder, which will be overridden by the actual tool invocation.
 				searchPlatforms.add(SearchEnum.TAVILY);
 				logger.info("Selected tool calling platform for agent type {}: {}", agentType,
 						primaryPlatform.getName());
@@ -98,7 +100,7 @@ public class SearchPlatformSelectionService {
 				}
 			}
 
-			// 如果主要搜索平台不可用，使用默认的通用搜索
+			// If the primary search platform is unavailable, use the default general search
 			if (searchPlatforms.isEmpty()) {
 				addDefaultSearchEngines(searchPlatforms);
 			}
@@ -116,7 +118,7 @@ public class SearchPlatformSelectionService {
 	}
 
 	/**
-	 * 获取选择的搜索平台（用于工具调用）
+	 * Retrieve the selected search platform (for tool invocation)
 	 */
 	public SearchPlatform getSelectedSearchPlatform(AgentType agentType, String question) {
 		if (agentType == null) {
@@ -126,7 +128,7 @@ public class SearchPlatformSelectionService {
 	}
 
 	/**
-	 * 从配置中获取主要搜索平台
+	 * Obtain the primary search platform from the configuration
 	 */
 	private SearchPlatform getPrimaryPlatformFromConfig(AgentType agentType) {
 		if (smartAgentProperties.getSearchPlatformMapping() == null) {
@@ -150,10 +152,10 @@ public class SearchPlatformSelectionService {
 	}
 
 	/**
-	 * 使用AI智能选择搜索平台
-	 * @param agentType Agent类型
-	 * @param question 问题内容
-	 * @return 选择的搜索平台，如果AI选择失败则返回默认平台
+	 * Uses AI to intelligently select a search platform
+	 * @param agentType The type of agent
+	 * @param question The content of the question
+	 * @return The selected search platform; returns the default platform if AI selection fails
 	 */
 	private SearchPlatform selectPrimaryPlatformByAI(AgentType agentType, String question) {
 		try {
@@ -178,9 +180,9 @@ public class SearchPlatformSelectionService {
 	}
 
 	/**
-	 * 根据Agent类型获取默认搜索平台
-	 * @param agentType Agent类型
-	 * @return 默认搜索平台
+	 * Retrieves the default search platform based on the agent type
+	 * @param agentType The type of agent
+	 * @return The default search platform
 	 */
 	private SearchPlatform getDefaultPlatformForAgentType(AgentType agentType) {
 		return switch (agentType) {
@@ -193,7 +195,7 @@ public class SearchPlatformSelectionService {
 	}
 
 	/**
-	 * 添加默认搜索引擎
+	 * Adds the default search engine
 	 */
 	private void addDefaultSearchEngines(List<SearchEnum> searchPlatforms) {
 		List<SearchEnum> defaultEngines = Arrays.asList(SearchEnum.TAVILY, SearchEnum.ALIYUN, SearchEnum.BAIDU,
@@ -212,7 +214,7 @@ public class SearchPlatformSelectionService {
 	}
 
 	/**
-	 * 获取搜索策略描述
+	 * Retrieves the search strategy description
 	 */
 	public String getSearchStrategyDescription(AgentType agentType) {
 		return SmartAgentUtil.getSearchStrategyDescription(agentType);

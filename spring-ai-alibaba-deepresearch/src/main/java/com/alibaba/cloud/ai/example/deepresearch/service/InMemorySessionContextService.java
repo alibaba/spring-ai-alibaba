@@ -49,7 +49,7 @@ public class InMemorySessionContextService implements SessionContextService {
 	public void addSessionHistory(GraphId graphId, SessionHistory sessionHistory) {
 		sessionThreadMap.putIfAbsent(graphId.sessionId(), new CopyOnWriteArrayList<>());
 		sessionThreadMap.get(graphId.sessionId()).add(graphId.threadId());
-		// 会话的报告信息由reportService维护
+		// Session report information is maintained by reportService
 		reportService.saveReport(graphId.threadId(), sessionHistory.getReport());
 		sessionHistory.setReport("");
 		sessionHistoryMap.put(graphId.threadId(), sessionHistory);

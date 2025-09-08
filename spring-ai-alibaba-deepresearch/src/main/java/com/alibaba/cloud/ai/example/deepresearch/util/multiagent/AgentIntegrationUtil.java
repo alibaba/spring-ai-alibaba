@@ -25,7 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Agent集成工具类 统一处理智能Agent的集成逻辑，提供智能Agent选择、错误处理等功能
+ * Agent Integration Utility Class
+ * Uniformly handles the integration logic of intelligent agents,
+ * providing intelligent agent selection, error handling, and other functionalities
  *
  * @author Makoto
  * @since 2025/07/17
@@ -35,7 +37,7 @@ public class AgentIntegrationUtil {
 	private static final Logger logger = LoggerFactory.getLogger(AgentIntegrationUtil.class);
 
 	/**
-	 * 创建智能Agent选择辅助器
+	 * Creates an intelligent agent selection assistant
 	 */
 	public static SmartAgentSelectionHelperService createSelectionHelper(SmartAgentProperties smartAgentProperties,
 			SmartAgentDispatcherService smartAgentDispatcher, QuestionClassifierService questionClassifierService,

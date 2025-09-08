@@ -19,19 +19,20 @@ package com.alibaba.cloud.ai.example.deepresearch.model.req;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 报告导出请求
+ * Report Export Request
  *
  * @author sixiyida
  * @since 2025/6/20
  */
 public record ExportRequest(
 		/**
-		 * 导出格式，支持 "markdown"/"md"、"pdf"
+		 * The export format, accepts "markdown", "md", or "pdf".
 		 */
 		@JsonProperty(value = "format", defaultValue = "markdown") String format,
 
 		/**
-		 * 线程ID，用于标识当前对话的唯一性 默认值为 "__default__"，表示使用默认线程
+		 * Thread_id, Used to uniquely identify the current conversation.
+		 * Defaults to "__default__", indicating the default thread is used.
 		 */
 		@JsonProperty(value = "thread_id", defaultValue = "__default__") String threadId) {
 }

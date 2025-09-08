@@ -43,7 +43,7 @@ public class ResearchTeamNode implements NodeAction {
 		Map<String, Object> updated = new HashMap<>();
 
 		Plan curPlan = StateUtil.getPlan(state);
-		// 判断steps里的每个step都有执行结果
+		// Determining whether each step in the steps has an execution result
 		if (!areAllExecutionResultsPresent(curPlan)) {
 			nextStep = "parallel_executor";
 		}

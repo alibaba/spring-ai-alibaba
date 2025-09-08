@@ -44,13 +44,15 @@ public class ProfessionalKbEsStrategy implements RetrievalStrategy {
 
 	@Override
 	public List<Document> retrieve(String query, Map<String, Object> options) {
-		// 构建专业知识库检索的上下文选项，与VectorStoreDataIngestionService的元数据逻辑一致
+		// Build context options for professional knowledge base retrieval,
+		// consistent with VectorStoreDataIngestionService metadata logic
 		Map<String, Object> ragOptions = new HashMap<>(options);
 		ragOptions.put("source_type", SourceTypeEnum.PROFESSIONAL_KB_ES.getValue());
-		// 专业知识库使用固定的session_id标识
+		// Professional knowledge bases use fixed session_id identifier
 		ragOptions.put("session_id", "professional_kb_es");
 
-		// 使用统一的RAG处理器执行完整的处理流程，包含ES混合查询
+		// Use unified RAG processor to execute complete processing pipeline,
+		// including ES hybrid query
 		Query ragQuery = new Query(query);
 		return hybridRagProcessor.process(ragQuery, ragOptions);
 	}

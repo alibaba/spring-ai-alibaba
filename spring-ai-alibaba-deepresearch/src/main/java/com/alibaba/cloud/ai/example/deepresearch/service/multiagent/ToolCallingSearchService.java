@@ -33,7 +33,8 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * 工具调用搜索服务，根据不同的Agent类型调用相应的专用工具调用服务
+ * Tool Invocation Search Service
+ * Invokes corresponding specialized tool invocation services based on different agent types
  *
  * @author Makoto
  * @since 2025/07/17
@@ -45,24 +46,22 @@ public class ToolCallingSearchService {
 
 	private static final Logger logger = LoggerFactory.getLogger(ToolCallingSearchService.class);
 
-	// 学术研究工具
+	// Academic research tool
 	private final SearchService openAlexService;
 
-	// 旅游生活工具
+	// Travel & lifestyle tools
 	private final SearchService openTripMapService;
-
 	private final SearchService tripAdvisorService;
 
-	// 百科知识工具
+	// Encyclopedia knowledge tools
 	private final SearchService wikipediaService;
 
-	// 数据分析工具
+	// Data analysis tools
 	private final SearchService worldBankDataService;
-
 	private final SearchService googleScholarService;
 
 	/**
-	 * 构造器注入所有搜索服务依赖
+	 * Constructor injection for all search service dependencies
 	 */
 	public ToolCallingSearchService(@Nullable @Qualifier("openAlex") SearchService openAlexService,
 			@Nullable @Qualifier("openTripMapService") SearchService openTripMapService,
@@ -79,10 +78,10 @@ public class ToolCallingSearchService {
 	}
 
 	/**
-	 * 根据搜索平台执行工具调用搜索
-	 * @param platform 搜索平台
-	 * @param query 搜索查询
-	 * @return 搜索结果
+	 * Executes tool invocation search based on the search platform
+	 * @param platform Search platform
+	 * @param query Search query
+	 * @return Search results
 	 */
 	public List<Map<String, String>> performToolCallingSearch(SearchPlatform platform, String query) {
 		try {
@@ -107,7 +106,7 @@ public class ToolCallingSearchService {
 	}
 
 	/**
-	 * 根据搜索平台获取对应的搜索服务
+	 * Retrieves the corresponding search service based on the search platform
 	 */
 	private SearchService getSearchService(SearchPlatform platform) {
 		return switch (platform) {
@@ -122,7 +121,7 @@ public class ToolCallingSearchService {
 	}
 
 	/**
-	 * 将工具调用结果转换为标准搜索结果格式
+	 * Converts tool invocation results to standard search result format
 	 */
 	private List<Map<String, String>> convertToSearchResults(List<SearchService.SearchContent> contents,
 			SearchPlatform platform) {

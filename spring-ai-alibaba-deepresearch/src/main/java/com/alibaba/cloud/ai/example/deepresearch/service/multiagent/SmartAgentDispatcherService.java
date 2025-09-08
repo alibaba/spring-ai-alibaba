@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * 智能Agent调度器，根据问题分类结果将任务分配给对应的Agent
+ * Intelligent Agent Dispatcher: Assigns tasks to corresponding agents based on question classification results.
  *
  * @author Makoto
  * @since 2025/07/17
@@ -71,7 +71,9 @@ public class SmartAgentDispatcherService {
 	private ChatClient dataAnalysisAgent;
 
 	/**
-	 * 智能分派任务到合适的Agent,实现问题分类，搜索平台选择和Agent选择等功能，获取搜索策略描述等信息，更新状态中的搜索配置的功能
+	 * Intelligently dispatches tasks to appropriate agents, implementing functions such as question classification,
+	 * search platform selection, and agent selection. Retrieves search strategy descriptions and other information,
+	 * and updates search configurations in the state.
 	 */
 	public AgentDispatchResult dispatchToAgent(String question, OverAllState state) {
 		try {
@@ -98,7 +100,7 @@ public class SmartAgentDispatcherService {
 	}
 
 	/**
-	 * 根据Agent类型选择对应的ChatClient
+	 * Selects the corresponding ChatClient based on the agent type
 	 */
 	private ChatClient selectAgent(AgentType agentType) {
 		return switch (agentType) {
