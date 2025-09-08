@@ -58,6 +58,11 @@ public class SqlExecutor {
 					statement.execute("set search_path = '" + schema + "';");
 				}
 			}
+			else if (dialect.equals(DatabaseDialectEnum.H2.code)) {
+				if (StringUtils.isNotEmpty(schema)) {
+					statement.execute("use " + schema + ";");
+				}
+			}
 
 			try (ResultSet rs = statement.executeQuery(sql)) {
 				return ResultSetBuilder.buildFrom(rs, schema);

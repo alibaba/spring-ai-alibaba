@@ -101,7 +101,7 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 		List<TableInfoBO> tableInfoList = Lists.newArrayList();
 		try {
 			String[][] resultArr = SqlExecutor.executeSqlAndReturnArr(connection,
-					String.format(sql, connection.getSchema(), tablePattern));
+					String.format(sql, schema, tablePattern));
 			if (resultArr.length <= 1) {
 				return Lists.newArrayList();
 			}
@@ -112,7 +112,7 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 				}
 				String tableName = resultArr[i][0];
 				String tableDesc = resultArr[i][1];
-				tableInfoList.add(TableInfoBO.builder().name(tableName).description(tableDesc).build());
+				tableInfoList.add(TableInfoBO.builder().schema(schema).name(tableName).description(tableDesc).build());
 			}
 		}
 		catch (SQLException e) {
@@ -130,7 +130,7 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 		String tableListStr = String.join(", ", tables.stream().map(x -> "'" + x + "'").collect(Collectors.toList()));
 		try {
 			String[][] resultArr = SqlExecutor.executeSqlAndReturnArr(connection,
-					String.format(sql, connection.getSchema(), tableListStr));
+					String.format(sql, schema, tableListStr));
 			if (resultArr.length <= 1) {
 				return Lists.newArrayList();
 			}
@@ -141,7 +141,7 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 				}
 				String tableName = resultArr[i][0];
 				String tableDesc = resultArr[i][1];
-				tableInfoList.add(TableInfoBO.builder().name(tableName).description(tableDesc).build());
+				tableInfoList.add(TableInfoBO.builder().schema(schema).name(tableName).description(tableDesc).build());
 			}
 		}
 		catch (SQLException e) {
@@ -160,7 +160,7 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 		List<ColumnInfoBO> columnInfoList = Lists.newArrayList();
 		try {
 			String[][] resultArr = SqlExecutor.executeSqlAndReturnArr(connection, "INFORMATION_SCHEMA",
-					String.format(sql, connection.getSchema(), table));
+					String.format(sql, schema, table));
 			if (resultArr.length <= 1) {
 				return Lists.newArrayList();
 			}
@@ -197,7 +197,7 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 		String tableListStr = String.join(", ", tables.stream().map(x -> "'" + x + "'").collect(Collectors.toList()));
 
 		try {
-			sql = String.format(sql, connection.getSchema(), tableListStr, tableListStr);
+			sql = String.format(sql, schema, tableListStr, tableListStr);
 			String[][] resultArr = SqlExecutor.executeSqlAndReturnArr(connection, "INFORMATION_SCHEMA", sql);
 			if (resultArr.length <= 1) {
 				return Lists.newArrayList();

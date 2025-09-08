@@ -185,6 +185,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 		// Execute business logic first - actual SQL execution
 		DbQueryParameter dbQueryParameter = new DbQueryParameter();
 		dbQueryParameter.setSql(sqlQuery);
+		dbQueryParameter.setSchema(dbConfig.getSchema());
 
 		try {
 			// Execute SQL query and get results immediately

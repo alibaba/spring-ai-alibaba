@@ -2,7 +2,7 @@ server:
   port: 8065
 spring:
   datasource:
-    url: ${NL2SQL_DATASOURCE_URL:jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=true;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE}
+    url: ${NL2SQL_DATASOURCE_URL:jdbc:h2:mem:nl2sql_database;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=true;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE}
     username: ${NL2SQL_DATASOURCE_USERNAME:root}
     password: ${NL2SQL_DATASOURCE_PASSWORD:root}
     driver-class-name: org.h2.Driver
@@ -19,8 +19,12 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:sql/schema-h2.sql
-      data-locations: classpath:sql/data-h2.sql
+      schema-locations:
+        - classpath:sql/h2/schema-h2.sql
+        - classpath:sql/h2/product_schema.sql
+      data-locations:
+        - classpath:sql/h2/data-h2.sql
+        - classpath:sql/h2/product_data.sql
       continue-on-error: true
       separator: ;
       encoding: utf-8
@@ -111,10 +115,10 @@ logging:
 chatbi:
   dbconfig:
     # 数据源配置
-    url: ${JDBC_URL:jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=true;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE}        # 如：jdbc:mysql://host:port/database
+    url: ${JDBC_URL:jdbc:h2:mem:nl2sql_database;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=true;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE}        # 如：jdbc:mysql://host:port/database
     username: ${DB_USER:root}
     password: ${DB_PASSWORD:root}
     # 连接参数
     connectiontype: jdbc
-    dialecttype: h2      # 可选：mysql、postgresql
-    schema: ${DB_SCHEMA}    # PostgreSQL需要
+    dialecttype: h2      # 可选：mysql、postgresql、h2
+    schema: ${DB_SCHEMA:product_db}    # PostgreSQL h2需要
