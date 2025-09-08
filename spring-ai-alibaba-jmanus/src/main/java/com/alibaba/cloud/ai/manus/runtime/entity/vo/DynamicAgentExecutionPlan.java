@@ -1,0 +1,292 @@
+/*
+ * Copyright 2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.alibaba.cloud.ai.manus.runtime.entity.vo;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.alibaba.cloud.ai.manus.agent.AgentState;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+/**
+ * Dynamic Agent Execution Plan - Specialized execution plan for DynamicToolsAgent
+ * with user-selected tools support
+ */
+public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
+
+	private List<ExecutionStep> steps;
+
+	/**
+	 * Plan type for Jackson polymorphic deserialization
+	 */
+	private String planType = "dynamic_agent";
+
+	/**
+	 * List of user-selected tool keys for DynamicToolsAgent
+	 * This allows users to specify which tools should be available for this specific plan
+	 */
+	private List<String> selectedToolKeys;
+
+	/**
+	 * Default constructor - required for Jackson deserialization
+	 */
+	public DynamicAgentExecutionPlan() {
+		super();
+		this.steps = new ArrayList<>();
+		this.selectedToolKeys = new ArrayList<>();
+	}
+
+	public DynamicAgentExecutionPlan(String currentPlanId, String rootPlanId, String title) {
+		super(currentPlanId, rootPlanId, title);
+		this.steps = new ArrayList<>();
+		this.selectedToolKeys = new ArrayList<>();
+	}
+
+	public DynamicAgentExecutionPlan(String currentPlanId, String rootPlanId, String title, 
+			List<String> selectedToolKeys) {
+		super(currentPlanId, rootPlanId, title);
+		this.steps = new ArrayList<>();
+		this.selectedToolKeys = selectedToolKeys != null ? new ArrayList<>(selectedToolKeys) : new ArrayList<>();
+	}
+
+	@JsonIgnore
+	public String getPlanType() {
+		return planType;
+	}
+
+	public void setPlanType(String planType) {
+		this.planType = planType;
+	}
+
+	// DynamicAgentExecutionPlan specific methods
+
+	public List<ExecutionStep> getSteps() {
+		return steps;
+	}
+
+	public void setSteps(List<ExecutionStep> steps) {
+		this.steps = steps;
+	}
+
+	@JsonIgnore
+	public int getStepCount() {
+		return steps.size();
+	}
+
+	/**
+	 * Get the list of user-selected tool keys
+	 * @return List of selected tool keys
+	 */
+	public List<String> getSelectedToolKeys() {
+		return selectedToolKeys;
+	}
+
+	/**
+	 * Set the list of user-selected tool keys
+	 * @param selectedToolKeys List of selected tool keys
+	 */
+	public void setSelectedToolKeys(List<String> selectedToolKeys) {
+		this.selectedToolKeys = selectedToolKeys != null ? new ArrayList<>(selectedToolKeys) : new ArrayList<>();
+	}
+
+	/**
+	 * Add a tool key to the selected tools list
+	 * @param toolKey Tool key to add
+	 */
+	public void addSelectedToolKey(String toolKey) {
+		if (toolKey != null && !selectedToolKeys.contains(toolKey)) {
+			selectedToolKeys.add(toolKey);
+		}
+	}
+
+	/**
+	 * Remove a tool key from the selected tools list
+	 * @param toolKey Tool key to remove
+	 */
+	public void removeSelectedToolKey(String toolKey) {
+		selectedToolKeys.remove(toolKey);
+	}
+
+	/**
+	 * Check if a specific tool key is selected
+	 * @param toolKey Tool key to check
+	 * @return true if the tool key is selected, false otherwise
+	 */
+	public boolean isToolKeySelected(String toolKey) {
+		return selectedToolKeys.contains(toolKey);
+	}
+
+
+	// Implementation of AbstractExecutionPlan abstract methods
+
+	@Override
+	@JsonIgnore
+	public List<ExecutionStep> getAllSteps() {
+		return new ArrayList<>(steps);
+	}
+
+	@Override
+	@JsonIgnore
+	public int getTotalStepCount() {
+		return getStepCount();
+	}
+
+	@Override
+	public void addStep(ExecutionStep step) {
+		this.steps.add(step);
+	}
+
+	@Override
+	public void removeStep(ExecutionStep step) {
+		this.steps.remove(step);
+	}
+
+	@Override
+	@JsonIgnore
+	public boolean isEmpty() {
+		return steps.isEmpty();
+	}
+
+	@Override
+	protected void clearSteps() {
+		steps.clear();
+	}
+
+	@Override
+	@JsonIgnore
+	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
+		StringBuilder state = new StringBuilder();
+
+		state.append("- User Original Requirements (This requirement is the user's initial input, information can be referenced, but in the current interaction round only the current step requirements need to be completed!) :\n");
+		state.append(title).append("\n");
+		if (getUserRequest() != null && !getUserRequest().isEmpty()) {
+			state.append("").append(getUserRequest()).append("\n\n");
+		}
+
+		// Add Dynamic Agent specific information
+		if (selectedToolKeys != null && !selectedToolKeys.isEmpty()) {
+			state.append("- Selected Tools: ").append(String.join(", ", selectedToolKeys)).append("\n");
+		}
+
+		state.append("\n- Execution Parameters: ").append("\n");
+		if (executionParams != null && !executionParams.isEmpty()) {
+			state.append(executionParams).append("\n\n");
+		}
+		else {
+			state.append("No execution parameters provided.\n\n");
+		}
+
+		state.append("- Historical Executed Step Records:\n");
+		state.append(getStepsExecutionStateStringFormat(onlyCompletedAndFirstInProgress));
+
+		return state.toString();
+	}
+
+	/**
+	 * Get step execution status in string format
+	 * @param onlyCompletedAndFirstInProgress When true, only output all completed steps
+	 * and the first step in progress
+	 * @return Formatted step execution status string
+	 */
+	@JsonIgnore
+	public String getStepsExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
+		StringBuilder state = new StringBuilder();
+		boolean foundInProgress = false;
+
+		for (int i = 0; i < steps.size(); i++) {
+			ExecutionStep step = steps.get(i);
+
+			// If onlyCompletedAndFirstInProgress is true, only show COMPLETED status
+			// steps and the first IN_PROGRESS status step
+			if (onlyCompletedAndFirstInProgress) {
+				// If it's COMPLETED status, always show
+				if (step.getStatus() == AgentState.COMPLETED) {
+					// Do nothing, continue to show
+				}
+				// If it's IN_PROGRESS status and haven't found other IN_PROGRESS steps
+				// yet
+				else if (step.getStatus() == AgentState.IN_PROGRESS && !foundInProgress) {
+					foundInProgress = true; // Mark that IN_PROGRESS step has been found
+				}
+				// All other cases (not COMPLETED and not the first IN_PROGRESS)
+				else {
+					continue; // Skip steps that don't meet the criteria
+				}
+			}
+
+			String symbol = switch (step.getStatus()) {
+				case COMPLETED -> "[completed]";
+				case IN_PROGRESS -> "[in_progress]";
+				case BLOCKED -> "[blocked]";
+				case NOT_STARTED -> "[not_started]";
+				default -> "[ ]";
+			};
+
+			state.append(i + 1)
+				.append(".  **Step ")
+				.append(i)
+				.append(":**\n")
+				.append("    *   **Status:** ")
+				.append(symbol)
+				.append("\n")
+				.append("    *   **Action:** ")
+				.append(step.getStepRequirement())
+				.append("\n");
+
+			String result = step.getResult();
+			if (result != null && !result.isEmpty()) {
+				state.append("    *   **Result:** ").append(result).append("\n\n");
+			}
+
+		}
+		return state.toString();
+	}
+
+	/**
+	 * Get all step execution status in string format (compatible with old version)
+	 * @return Formatted step execution status string
+	 */
+	@JsonIgnore
+	public String getStepsExecutionStateStringFormat() {
+		return getStepsExecutionStateStringFormat(false);
+	}
+
+	@Override
+	public String getResult() {
+		// If there are steps, return the result of the last step
+		if (steps != null && !steps.isEmpty()) {
+			ExecutionStep lastStep = steps.get(steps.size() - 1);
+			if (lastStep != null && lastStep.getResult() != null) {
+				return lastStep.getResult();
+			}
+		}
+		// Return null if no steps or no result available
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		return "DynamicAgentExecutionPlan{" +
+				"planType='" + planType + '\'' +
+				", selectedToolKeys=" + selectedToolKeys +
+				", steps=" + steps.size() +
+				", currentPlanId='" + currentPlanId + '\'' +
+				", rootPlanId='" + rootPlanId + '\'' +
+				", title='" + title + '\'' +
+				'}';
+	}
+
+}

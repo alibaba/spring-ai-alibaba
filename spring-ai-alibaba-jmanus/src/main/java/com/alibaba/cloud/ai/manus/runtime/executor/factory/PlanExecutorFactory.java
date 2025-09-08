@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanInterface;
 import com.alibaba.cloud.ai.manus.runtime.executor.DirectResponseExecutor;
+import com.alibaba.cloud.ai.manus.runtime.executor.DynamicAgentPlanExecutor;
 import com.alibaba.cloud.ai.manus.runtime.executor.LevelBasedExecutorPool;
 import com.alibaba.cloud.ai.manus.runtime.executor.MapReducePlanExecutor;
 import com.alibaba.cloud.ai.manus.runtime.executor.PlanExecutor;
@@ -99,6 +100,7 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 		return switch (planType.toLowerCase()) {
 			case "simple" -> createSimpleExecutor();
 			case "advanced" -> createAdvancedExecutor();
+			case "dynamic_agent" -> createDynamicAgentExecutor();
 			default -> {
 				log.warn("Unknown plan type: {}, defaulting to simple executor", planType);
 				yield createSimpleExecutor();
@@ -137,11 +139,21 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 	}
 
 	/**
+	 * Create a dynamic agent plan executor for DynamicToolsAgent execution
+	 * @return DynamicAgentPlanExecutor instance for dynamic agent plans
+	 */
+	private PlanExecutorInterface createDynamicAgentExecutor() {
+		log.debug("Creating dynamic agent plan executor");
+		List<DynamicAgentEntity> agents = dynamicAgentLoader.getAllAgents();
+		return new DynamicAgentPlanExecutor(agents, recorder, agentService, llmService, manusProperties, levelBasedExecutorPool);
+	}
+
+	/**
 	 * Get supported plan types
 	 * @return Array of supported plan type strings
 	 */
 	public String[] getSupportedPlanTypes() {
-		return new String[] { "simple", "advanced", "direct" };
+		return new String[] { "simple", "advanced", "direct", "dynamic_agent" };
 	}
 
 	/**
@@ -154,7 +166,8 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 			return false;
 		}
 		String normalizedType = planType.toLowerCase();
-		return "simple".equals(normalizedType) || "advanced".equals(normalizedType) || "direct".equals(normalizedType);
+		return "simple".equals(normalizedType) || "advanced".equals(normalizedType) || 
+			   "direct".equals(normalizedType) || "dynamic_agent".equals(normalizedType);
 	}
 
 	/**
@@ -174,6 +187,7 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 			case "simple" -> createSimpleExecutor();
 			case "advanced" -> createAdvancedExecutor();
 			case "direct" -> createDirectResponseExecutor();
+			case "dynamic_agent" -> createDynamicAgentExecutor();
 			default -> {
 				log.warn("Unknown explicit plan type: {}, defaulting to simple executor", planType);
 				yield createSimpleExecutor();

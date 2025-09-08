@@ -29,7 +29,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 		defaultImpl = ExecutionPlan.class // Default implementation is ExecutionPlan
 )
 @JsonSubTypes({ @JsonSubTypes.Type(value = ExecutionPlan.class, name = "simple"),
-		@JsonSubTypes.Type(value = MapReduceExecutionPlan.class, name = "advanced") })
+		@JsonSubTypes.Type(value = MapReduceExecutionPlan.class, name = "advanced"),
+		@JsonSubTypes.Type(value = DynamicAgentExecutionPlan.class, name = "dynamic_agent") })
 public interface PlanInterface {
 
 	/**
