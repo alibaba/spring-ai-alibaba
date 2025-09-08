@@ -8,7 +8,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since 2025/8/28 17:54
  */
 public class RenderContext {
-    private final AtomicInteger seq = new AtomicInteger(0);
 
-    public String nextVar(String base) { return base + seq.incrementAndGet(); }
+	private final AtomicInteger seq = new AtomicInteger(0);
+
+	public String nextVar(String base) {
+		return base + seq.incrementAndGet();
+	}
+
 }

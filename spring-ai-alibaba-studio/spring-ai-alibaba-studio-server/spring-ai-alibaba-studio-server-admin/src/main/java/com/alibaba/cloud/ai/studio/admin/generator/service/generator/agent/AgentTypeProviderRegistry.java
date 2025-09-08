@@ -14,17 +14,18 @@ import java.util.stream.Collectors;
 @Component
 public class AgentTypeProviderRegistry {
 
-    private final Map<String, AgentTypeProvider> providers;
+	private final Map<String, AgentTypeProvider> providers;
 
-    public AgentTypeProviderRegistry(List<AgentTypeProvider> providers) {
-        this.providers = providers.stream().collect(Collectors.toMap(AgentTypeProvider::type, p -> p));
-    }
+	public AgentTypeProviderRegistry(List<AgentTypeProvider> providers) {
+		this.providers = providers.stream().collect(Collectors.toMap(AgentTypeProvider::type, p -> p));
+	}
 
-    public AgentTypeProvider get(String type) {
-        AgentTypeProvider p = providers.get(type);
-        if (p == null) {
-            throw new IllegalArgumentException("No AgentTypeProvider for type: " + type);
-        }
-        return p;
-    }
+	public AgentTypeProvider get(String type) {
+		AgentTypeProvider p = providers.get(type);
+		if (p == null) {
+			throw new IllegalArgumentException("No AgentTypeProvider for type: " + type);
+		}
+		return p;
+	}
+
 }

@@ -26,9 +26,9 @@ public enum DSLDialectType {
 
 	CUSTOM("custom", ".yml"),
 
-    SAA_AGENT("saa-agent", ".yaml");
+	SAA_AGENT("saa-agent", ".yaml");
 
-    private final String value;
+	private final String value;
 
 	private final String fileExtension;
 

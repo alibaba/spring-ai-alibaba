@@ -20,8 +20,7 @@ import java.util.Objects;
 
 public enum AppModeEnum {
 
-	WORKFLOW("workflow"),
-	AGENT("agent");
+	WORKFLOW("workflow"), AGENT("agent");
 
 	private String value;
 

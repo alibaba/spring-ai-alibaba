@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.studio.admin.generator.model.agent;
 
 import java.util.List;
 import java.util.Map;
+
 /**
  * @author yHong
  * @version 1.0
@@ -24,90 +25,186 @@ import java.util.Map;
  */
 public class Agent {
 
-    // 基础属性
-    private String agentClass;  // ReactAgent, SequentialAgent, ParallelAgent.etc
-    private String name;
-    private String description;
-    private String outputKey;
-    private String inputKey;
-    // 新增：支持多输入键（与 schema: input_keys 对齐）
-    private List<String> inputKeys;
+	// 基础属性
+	private String agentClass; // ReactAgent, SequentialAgent, ParallelAgent.etc
 
-    // LLM相关配置
-    private String model;
-    private String instruction;
-    private Integer maxIterations;
-    private Map<String, Object> chatOptions;
+	private String name;
 
-    // 工具配置
-    private List<String> tools;
-    private Map<String, Object> toolConfig;
+	private String description;
 
-    // 子agent配置
-    private List<Agent> subAgents;
+	private String outputKey;
 
-    // 流程控制配置
-    private Map<String, Object> flowConfig;
+	private String inputKey;
 
-    // 状态管理配置
-    private Map<String, String> stateConfig;
+	// 支持多输入键（与 schema: input_keys 对齐）
+	private List<String> inputKeys;
 
-    // 钩子配置
-    private Map<String, Object> hooks;
+	// LLM相关配置
+	private String model;
 
-    // 动态 handle：原样透传每种 agent type 的专属配置
-    private Map<String, Object> handle;
+	private String instruction;
 
-    public Agent() {}
+	private Integer maxIterations;
 
-    public String getAgentClass() { return agentClass; }
-    public void setAgentClass(String agentClass) { this.agentClass = agentClass; }
+	private Map<String, Object> chatOptions;
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+	// 工具配置
+	private List<String> tools;
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+	private Map<String, Object> toolConfig;
 
-    public String getOutputKey() { return outputKey; }
-    public void setOutputKey(String outputKey) { this.outputKey = outputKey; }
+	// 子agent配置
+	private List<Agent> subAgents;
 
-    public String getInputKey() { return inputKey; }
-    public void setInputKey(String inputKey) { this.inputKey = inputKey; }
+	// 流程控制配置
+	private Map<String, Object> flowConfig;
 
-    public List<String> getInputKeys() { return inputKeys; }
-    public void setInputKeys(List<String> inputKeys) { this.inputKeys = inputKeys; }
+	// 状态管理配置
+	private Map<String, String> stateConfig;
 
-    public String getModel() { return model; }
-    public void setModel(String model) { this.model = model; }
+	// 钩子配置
+	private Map<String, Object> hooks;
 
-    public String getInstruction() { return instruction; }
-    public void setInstruction(String instruction) { this.instruction = instruction; }
+	// 动态 handle：原样透传每种 agent type 的专属配置
+	private Map<String, Object> handle;
 
-    public Integer getMaxIterations() { return maxIterations; }
-    public void setMaxIterations(Integer maxIterations) { this.maxIterations = maxIterations; }
+	public Agent() {
+	}
 
-    public Map<String, Object> getChatOptions() { return chatOptions; }
-    public void setChatOptions(Map<String, Object> chatOptions) { this.chatOptions = chatOptions; }
+	public String getAgentClass() {
+		return agentClass;
+	}
 
-    public List<String> getTools() { return tools; }
-    public void setTools(List<String> tools) { this.tools = tools; }
+	public void setAgentClass(String agentClass) {
+		this.agentClass = agentClass;
+	}
 
-    public Map<String, Object> getToolConfig() { return toolConfig; }
-    public void setToolConfig(Map<String, Object> toolConfig) { this.toolConfig = toolConfig; }
+	public String getName() {
+		return name;
+	}
 
-    public List<Agent> getSubAgents() { return subAgents; }
-    public void setSubAgents(List<Agent> subAgents) { this.subAgents = subAgents; }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-    public Map<String, Object> getFlowConfig() { return flowConfig; }
-    public void setFlowConfig(Map<String, Object> flowConfig) { this.flowConfig = flowConfig; }
+	public String getDescription() {
+		return description;
+	}
 
-    public Map<String, String> getStateConfig() { return stateConfig; }
-    public void setStateConfig(Map<String, String> stateConfig) { this.stateConfig = stateConfig; }
+	public void setDescription(String description) {
+		this.description = description;
+	}
 
-    public Map<String, Object> getHooks() { return hooks; }
-    public void setHooks(Map<String, Object> hooks) { this.hooks = hooks; }
+	public String getOutputKey() {
+		return outputKey;
+	}
 
-    public Map<String, Object> getHandle() { return handle; }
-    public void setHandle(Map<String, Object> handle) { this.handle = handle; }
+	public void setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
+	}
+
+	public String getInputKey() {
+		return inputKey;
+	}
+
+	public void setInputKey(String inputKey) {
+		this.inputKey = inputKey;
+	}
+
+	public List<String> getInputKeys() {
+		return inputKeys;
+	}
+
+	public void setInputKeys(List<String> inputKeys) {
+		this.inputKeys = inputKeys;
+	}
+
+	public String getModel() {
+		return model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
+
+	public String getInstruction() {
+		return instruction;
+	}
+
+	public void setInstruction(String instruction) {
+		this.instruction = instruction;
+	}
+
+	public Integer getMaxIterations() {
+		return maxIterations;
+	}
+
+	public void setMaxIterations(Integer maxIterations) {
+		this.maxIterations = maxIterations;
+	}
+
+	public Map<String, Object> getChatOptions() {
+		return chatOptions;
+	}
+
+	public void setChatOptions(Map<String, Object> chatOptions) {
+		this.chatOptions = chatOptions;
+	}
+
+	public List<String> getTools() {
+		return tools;
+	}
+
+	public void setTools(List<String> tools) {
+		this.tools = tools;
+	}
+
+	public Map<String, Object> getToolConfig() {
+		return toolConfig;
+	}
+
+	public void setToolConfig(Map<String, Object> toolConfig) {
+		this.toolConfig = toolConfig;
+	}
+
+	public List<Agent> getSubAgents() {
+		return subAgents;
+	}
+
+	public void setSubAgents(List<Agent> subAgents) {
+		this.subAgents = subAgents;
+	}
+
+	public Map<String, Object> getFlowConfig() {
+		return flowConfig;
+	}
+
+	public void setFlowConfig(Map<String, Object> flowConfig) {
+		this.flowConfig = flowConfig;
+	}
+
+	public Map<String, String> getStateConfig() {
+		return stateConfig;
+	}
+
+	public void setStateConfig(Map<String, String> stateConfig) {
+		this.stateConfig = stateConfig;
+	}
+
+	public Map<String, Object> getHooks() {
+		return hooks;
+	}
+
+	public void setHooks(Map<String, Object> hooks) {
+		this.hooks = hooks;
+	}
+
+	public Map<String, Object> getHandle() {
+		return handle;
+	}
+
+	public void setHandle(Map<String, Object> handle) {
+		this.handle = handle;
+	}
+
 }

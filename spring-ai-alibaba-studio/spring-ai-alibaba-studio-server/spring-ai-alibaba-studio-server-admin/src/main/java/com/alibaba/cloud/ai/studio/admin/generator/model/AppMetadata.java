@@ -21,7 +21,7 @@ public class AppMetadata {
 
 	public static final String WORKFLOW_MODE = "workflow";
 
-    public static final String AGENT_MODE = "agent";
+	public static final String AGENT_MODE = "agent";
 
 	public static final String[] SUPPORT_MODES = { CHATBOT_MODE, WORKFLOW_MODE, AGENT_MODE };
 

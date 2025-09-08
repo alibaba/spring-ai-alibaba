@@ -17,165 +17,186 @@ import java.util.Map;
 @Component
 public class ReactAgentProvider implements AgentTypeProvider {
 
-    @Override public String type() { return "ReactAgent"; }
-    @Override public String handleVersion() { return "v1"; }
+	@Override
+	public String type() {
+		return "ReactAgent";
+	}
 
-    @Override
-    public String jsonSchema() {
-        // 最小 JSON Schema（可逐步完善）
-        return """
-      {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "title": "ReactAgent Handle",
-        "type": "object",
-        "properties": {
-          "instruction": { "type": "string", "title": "System Instruction" },
-          "model": {
-            "type": "object",
-            "title": "Model Override",
-            "properties": {
-              "provider": { "type": "string" },
-              "name": { "type": "string" },
-              "options": { "type": "object" },
-              "chat_client_bean": { "type": "string" }
-            }
-          },
-          "resolver": { "type": "string", "title": "Tool Resolver Bean" },
-          "tools": { "type": "array", "items": { "type": "string" } },
-          "max_iterations": { "type": "integer", "minimum": 1, "default": 6 },
-          "chat_options": { "type": "object" },
-          "compile_config": { "type": "object" },
-          "state": {
-            "type": "object",
-            "properties": {
-              "strategies": {
-                "type": "object",
-                "additionalProperties": { "type": "string", "enum": ["append", "replace"] }
-              }
-            }
-          },
-          "hooks": {
-            "type": "object",
-            "properties": {
-              "pre_llm": { "type": "array", "items": { "type": "string" } },
-              "post_llm": { "type": "array", "items": { "type": "string" } },
-              "pre_tool": { "type": "array", "items": { "type": "string" } },
-              "post_tool": { "type": "array", "items": { "type": "string" } }
-            }
-          }
-        }
-      }
-      """;
-    }
+	@Override
+	public String handleVersion() {
+		return "v1";
+	}
 
-    @Override
-    public Map<String, Object> defaultHandle() {
-        return Map.of(
-                "instruction", "You are a helpful AI assistant.",
-                "max_iterations", 6,
-                "tools", List.of(),
-                "chat_options", Map.of(),
-                "compile_config", Map.of(),
-                "state", Map.of("strategies", Map.of("messages", "append"))
-        );
-    }
+	@Override
+	public String jsonSchema() {
+		// 最小 JSON Schema（可逐步完善）
+		return """
+				{
+				  "$schema": "https://json-schema.org/draft/2020-12/schema",
+				  "title": "ReactAgent Handle",
+				  "type": "object",
+				  "properties": {
+				    "instruction": { "type": "string", "title": "System Instruction" },
+				    "model": {
+				      "type": "object",
+				      "title": "Model Override",
+				      "properties": {
+				        "provider": { "type": "string" },
+				        "name": { "type": "string" },
+				        "options": { "type": "object" },
+				        "chat_client_bean": { "type": "string" }
+				      }
+				    },
+				    "resolver": { "type": "string", "title": "Tool Resolver Bean" },
+				    "tools": { "type": "array", "items": { "type": "string" } },
+				    "max_iterations": { "type": "integer", "minimum": 1, "default": 6 },
+				    "chat_options": { "type": "object" },
+				    "compile_config": { "type": "object" },
+				    "state": {
+				      "type": "object",
+				      "properties": {
+				        "strategies": {
+				          "type": "object",
+				          "additionalProperties": { "type": "string", "enum": ["append", "replace"] }
+				        }
+				      }
+				    },
+				    "hooks": {
+				      "type": "object",
+				      "properties": {
+				        "pre_llm": { "type": "array", "items": { "type": "string" } },
+				        "post_llm": { "type": "array", "items": { "type": "string" } },
+				        "pre_tool": { "type": "array", "items": { "type": "string" } },
+				        "post_tool": { "type": "array", "items": { "type": "string" } }
+				      }
+				    }
+				  }
+				}
+				""";
+	}
 
-    @Override
-    public Map<String, Object> migrate(Map<String, Object> oldHandle, String fromVersion) {
-        // v1 初版不做迁移
-        return oldHandle;
-    }
+	@Override
+	public Map<String, Object> defaultHandle() {
+		return Map.of("instruction", "You are a helpful AI assistant.", "max_iterations", 6, "tools", List.of(),
+				"chat_options", Map.of(), "compile_config", Map.of(), "state",
+				Map.of("strategies", Map.of("messages", "append")));
+	}
 
-    @Override
-    public CodeSections render(AgentShell shell, Map<String, Object> handle, RenderContext ctx, List<String> childVarNames) {
-        String var = ctx.nextVar("reactAgent_");
+	@Override
+	public Map<String, Object> migrate(Map<String, Object> oldHandle, String fromVersion) {
+		// 初版不做迁移
+		return oldHandle;
+	}
 
-        // instruction 优先使用壳层，兼容旧 handle.instruction
-        String instruction = shell.getInstruction() != null && !shell.getInstruction().isBlank() ? shell.getInstruction() : str(handle.get("instruction"));
-        Integer maxIter = toInt(handle.get("max_iterations"));
-        boolean hasResolver = handle.containsKey("resolver") && str(handle.get("resolver")) != null;
+	@Override
+	public CodeSections render(AgentShell shell, Map<String, Object> handle, RenderContext ctx,
+			List<String> childVarNames) {
+		String var = ctx.nextVar("reactAgent_");
 
-        StringBuilder code = new StringBuilder();
-        code.append("ReactAgent ").append(var).append(" = ReactAgent.builder()\n")
-                .append(".name(\"").append(esc(shell.getName())).append("\")\n")
-                .append(".description(\"").append(esc(nvl(shell.getDescription()))).append("\")\n");
-        if (shell.getOutputKey() != null) {
-            code.append(".outputKey(\"").append(esc(shell.getOutputKey())).append("\")\n");
-        }
-        if (shell.getInputKeys() != null && !shell.getInputKeys().isEmpty()) {
-            // todo: 目前取第一个作为主输入键， 后续计划将多个inputKey通过占位符注入到instruction中
-            String primaryInputKey = shell.getInputKeys().get(0);
-            code.append(".llmInputMessagesKey(\"").append(esc(primaryInputKey)).append("\")\n");
-        }
-        code.append(".model(chatModel)\n");
+		// instruction 优先使用壳层
+		String instruction = shell.getInstruction() != null && !shell.getInstruction().isBlank()
+				? shell.getInstruction() : str(handle.get("instruction"));
+		Integer maxIter = toInt(handle.get("max_iterations"));
+		boolean hasResolver = handle.containsKey("resolver") && str(handle.get("resolver")) != null;
 
-        if (instruction != null && !instruction.isBlank()) {
-            code.append(".instruction(\"").append(esc(instruction)).append("\")\n");
-        }
-        if (maxIter != null && maxIter > 0) {
-            code.append(".maxIterations(").append(maxIter).append(")\n");
-        }
-        if (hasResolver) {
-            code.append(".resolver(toolCallbackResolver)\n");
-        }
-        // state.strategies → KeyStrategy（全量映射，缺省时为 messages 追加策略）
-        code.append(".state(() -> {\n")
-                .append("Map<String, KeyStrategy> strategies = new HashMap<>();\n");
+		StringBuilder code = new StringBuilder();
+		code.append("ReactAgent ")
+			.append(var)
+			.append(" = ReactAgent.builder()\n")
+			.append(".name(\"")
+			.append(esc(shell.getName()))
+			.append("\")\n")
+			.append(".description(\"")
+			.append(esc(nvl(shell.getDescription())))
+			.append("\")\n");
+		if (shell.getOutputKey() != null) {
+			code.append(".outputKey(\"").append(esc(shell.getOutputKey())).append("\")\n");
+		}
+		if (shell.getInputKeys() != null && !shell.getInputKeys().isEmpty()) {
+			// todo: 目前取第一个作为主输入键， 后续计划将多个inputKey通过占位符注入到instruction中
+			String primaryInputKey = shell.getInputKeys().get(0);
+			code.append(".llmInputMessagesKey(\"").append(esc(primaryInputKey)).append("\")\n");
+		}
+		code.append(".model(chatModel)\n");
 
-        // 解析 handle.state.strategies 生成代码
-        boolean hasMessagesStrategy = false;
-        Object stateObj = handle.get("state");
-        if (stateObj instanceof Map<?,?> stateMap) {
-            Object strategiesObj = stateMap.get("strategies");
-            if (strategiesObj instanceof Map<?,?> strategiesMap) {
-                for (Map.Entry<?,?> e : strategiesMap.entrySet()) {
-                    String k = String.valueOf(e.getKey());
-                    String v = String.valueOf(e.getValue());
-                    String strategyNew = (v != null && v.equalsIgnoreCase("append")) ? "new AppendStrategy()" : "new ReplaceStrategy()";
-                    code.append("strategies.put(\"").append(esc(k)).append("\", ").append(strategyNew).append(");\n");
+		if (instruction != null && !instruction.isBlank()) {
+			code.append(".instruction(\"").append(esc(instruction)).append("\")\n");
+		}
+		if (maxIter != null && maxIter > 0) {
+			code.append(".maxIterations(").append(maxIter).append(")\n");
+		}
+		if (hasResolver) {
+			code.append(".resolver(toolCallbackResolver)\n");
+		}
+		// state.strategies → KeyStrategy（全量映射，缺省时为 messages 追加策略）
+		code.append(".state(() -> {\n").append("Map<String, KeyStrategy> strategies = new HashMap<>();\n");
 
-                    if ("messages".equals(k)) {
-                        hasMessagesStrategy = true;
-                    }
-                }
-            }
-        }
+		// 解析 handle.state.strategies 生成代码
+		boolean hasMessagesStrategy = false;
+		Object stateObj = handle.get("state");
+		if (stateObj instanceof Map<?, ?> stateMap) {
+			Object strategiesObj = stateMap.get("strategies");
+			if (strategiesObj instanceof Map<?, ?> strategiesMap) {
+				for (Map.Entry<?, ?> e : strategiesMap.entrySet()) {
+					String k = String.valueOf(e.getKey());
+					String v = String.valueOf(e.getValue());
+					String strategyNew = (v != null && v.equalsIgnoreCase("append")) ? "new AppendStrategy()"
+							: "new ReplaceStrategy()";
+					code.append("strategies.put(\"").append(esc(k)).append("\", ").append(strategyNew).append(");\n");
 
-        // 若未显式指定 messages 策略，则添加默认策略
-        if (!hasMessagesStrategy) {
-            code.append("strategies.put(\"messages\", new AppendStrategy());\n");
-        }
+					if ("messages".equals(k)) {
+						hasMessagesStrategy = true;
+					}
+				}
+			}
+		}
 
-        code.append("return strategies;\n")
-                .append("})\n")
-                .append(".build();\n");
+		// 若未显式指定 messages 策略，则添加默认策略
+		if (!hasMessagesStrategy) {
+			code.append("strategies.put(\"messages\", new AppendStrategy());\n");
+		}
 
-        return new CodeSections()
-                .imports(
-                        "import com.alibaba.cloud.ai.graph.CompiledGraph;",
-                        "import com.alibaba.cloud.ai.graph.agent.ReactAgent;",
-                        "import com.alibaba.cloud.ai.graph.KeyStrategy;",
-                        "import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;",
-                        "import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;",
-                        "import org.springframework.ai.chat.model.ChatModel;",
-                        "import org.springframework.context.annotation.Bean;",
-                        "import org.springframework.stereotype.Component;",
-                        hasResolver ? "import org.springframework.beans.factory.ObjectProvider;" : null,
-                        hasResolver ? "import org.springframework.ai.tool.resolution.ToolCallbackResolver;" : null,
-                        "import java.util.*;"
-                )
-                .code(code.toString())
-                .var(var)
-                .resolver(hasResolver);
-    }
+		code.append("return strategies;\n").append("})\n").append(".build();\n");
 
-    private static String nvl(String s) { return s == null ? "" : s; }
-    private static String esc(String s) { return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\""); }
-    private static String str(Object o) { return o == null ? null : String.valueOf(o); }
-    private static Integer toInt(Object v) {
-        if (v instanceof Integer i) return i;
-        if (v instanceof Number n) return n.intValue();
-        if (v instanceof String s) try { return Integer.parseInt(s.trim()); } catch (Exception ignore) {}
-        return null;
-    }
+		return new CodeSections().imports("import com.alibaba.cloud.ai.graph.CompiledGraph;",
+				"import com.alibaba.cloud.ai.graph.agent.ReactAgent;", "import com.alibaba.cloud.ai.graph.KeyStrategy;",
+				"import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;",
+				"import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;",
+				"import org.springframework.ai.chat.model.ChatModel;",
+				"import org.springframework.context.annotation.Bean;",
+				"import org.springframework.stereotype.Component;",
+				hasResolver ? "import org.springframework.beans.factory.ObjectProvider;" : null,
+				hasResolver ? "import org.springframework.ai.tool.resolution.ToolCallbackResolver;" : null,
+				"import java.util.*;")
+			.code(code.toString())
+			.var(var)
+			.resolver(hasResolver);
+	}
+
+	private static String nvl(String s) {
+		return s == null ? "" : s;
+	}
+
+	private static String esc(String s) {
+		return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
+	}
+
+	private static String str(Object o) {
+		return o == null ? null : String.valueOf(o);
+	}
+
+	private static Integer toInt(Object v) {
+		if (v instanceof Integer i)
+			return i;
+		if (v instanceof Number n)
+			return n.intValue();
+		if (v instanceof String s)
+			try {
+				return Integer.parseInt(s.trim());
+			}
+			catch (Exception ignore) {
+			}
+		return null;
+	}
+
 }
