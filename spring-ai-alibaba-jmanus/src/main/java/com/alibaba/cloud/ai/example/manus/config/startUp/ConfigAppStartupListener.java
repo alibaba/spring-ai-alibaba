@@ -44,9 +44,9 @@ public class ConfigAppStartupListener implements ApplicationListener<Application
 
 	@Override
 	public void onApplicationEvent(ApplicationStartedEvent event) {
-        String defaultLanguage = "en";
-        initializeConfigs();
-        initializeDynamicAgents(defaultLanguage);
+		String defaultLanguage = "en";
+		initializeConfigs();
+		initializeDynamicAgents(defaultLanguage);
 	}
 
 	private void initializeConfigs() {

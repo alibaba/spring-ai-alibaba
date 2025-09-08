@@ -72,7 +72,8 @@ public class DynamicAgentScanner implements IDynamicAgentScanner {
 		boolean shouldOverrideFromYaml = Boolean.parseBoolean(overrideConfig.getConfigValue());
 
 		if (shouldOverrideFromYaml) {
-			log.info("✅ Force override from YAML enabled - Starting to scan and override agents from YAML configuration files...");
+			log.info(
+					"✅ Force override from YAML enabled - Starting to scan and override agents from YAML configuration files...");
 
 			// Scan and save/override StartupAgent loaded from configuration file
 			scanAndSaveStartupAgents(language);
@@ -186,7 +187,8 @@ public class DynamicAgentScanner implements IDynamicAgentScanner {
 
 		for (String agentDir : agentDirs) {
 			try {
-				StartupAgentConfigLoader.AgentConfig agentConfig = startupAgentConfigLoader.loadAgentConfig(agentDir, language);
+				StartupAgentConfigLoader.AgentConfig agentConfig = startupAgentConfigLoader.loadAgentConfig(agentDir,
+						language);
 				if (agentConfig != null) {
 					// Check if this is an override or new creation
 					DynamicAgentEntity existingEntity = repository.findByAgentName(agentConfig.getAgentName());

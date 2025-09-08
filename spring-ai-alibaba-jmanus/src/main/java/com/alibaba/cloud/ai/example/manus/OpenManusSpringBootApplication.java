@@ -29,9 +29,9 @@ import java.io.IOException;
 @EnableScheduling
 public class OpenManusSpringBootApplication {
 
-    private static final Logger log = LoggerFactory.getLogger(OpenManusSpringBootApplication.class);
+	private static final Logger log = LoggerFactory.getLogger(OpenManusSpringBootApplication.class);
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		if (args != null && args.length >= 1 && args[0].equals("playwright-init")) {
 			Playwright.create();
 			System.out.println("Playwright init finished");
@@ -40,7 +40,7 @@ public class OpenManusSpringBootApplication {
 		else {
 			SpringApplication.run(OpenManusSpringBootApplication.class, args);
 		}
-        log.info("OpenManus Spring Boot Application started");
+		log.info("OpenManus Spring Boot Application started");
 	}
 
 }
