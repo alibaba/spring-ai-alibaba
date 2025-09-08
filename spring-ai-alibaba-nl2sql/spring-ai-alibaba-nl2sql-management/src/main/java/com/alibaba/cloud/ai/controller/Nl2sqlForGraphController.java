@@ -170,9 +170,10 @@ public class Nl2sqlForGraphController {
 
 		logger.info("Starting stream search for query: {} with agentId: {}", query, agentId);
 
+		// 创建响应流
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 
-		// Use streaming processing and pass agentId to the state
+		// 启动流式处理
 		AsyncGenerator<NodeOutput> generator = compiledGraph
 			.stream(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId));
 

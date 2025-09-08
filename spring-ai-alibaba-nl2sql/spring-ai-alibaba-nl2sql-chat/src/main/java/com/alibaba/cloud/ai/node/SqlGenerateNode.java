@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.util.ChatResponseUtil;
 import com.alibaba.cloud.ai.util.MarkdownParser;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -79,6 +80,7 @@ public class SqlGenerateNode implements NodeAction {
 
 		// Get necessary input parameters
 		String plannerNodeOutput = StateUtils.getStringValue(state, PLANNER_NODE_OUTPUT);
+		plannerNodeOutput = StringUtils.substringAfter(plannerNodeOutput, "</think>\n");
 		Plan plan = converter.convert(plannerNodeOutput);
 		Integer currentStep = StateUtils.getObjectValue(state, PLAN_CURRENT_STEP, Integer.class, 1);
 
@@ -217,7 +219,7 @@ public class SqlGenerateNode implements NodeAction {
 
 			}
 			catch (Exception e) {
-				logger.warn("第{}轮SQL优化失败: {}", round, e.getMessage());
+				logger.warn("第{}轮SQL优化失败: ", round, e);
 			}
 		}
 

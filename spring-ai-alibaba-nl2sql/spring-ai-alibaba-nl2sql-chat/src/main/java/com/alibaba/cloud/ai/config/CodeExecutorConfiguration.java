@@ -24,6 +24,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * python执行器配置
+ *
  * @author vlsmb
  * @since 2025/7/14
  */

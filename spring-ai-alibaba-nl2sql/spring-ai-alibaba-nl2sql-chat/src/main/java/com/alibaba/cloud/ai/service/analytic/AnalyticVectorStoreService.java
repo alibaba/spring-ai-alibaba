@@ -18,14 +18,12 @@ package com.alibaba.cloud.ai.service.analytic;
 import com.alibaba.cloud.ai.annotation.ConditionalOnADBEnabled;
 import com.alibaba.cloud.ai.request.SearchRequest;
 import com.alibaba.cloud.ai.service.base.BaseVectorStoreService;
-import com.alibaba.cloud.ai.vectorstore.analyticdb.AnalyticDbVectorStoreProperties;
-import com.aliyun.gpdb20160503.Client;
-import com.aliyun.gpdb20160503.models.QueryCollectionDataRequest;
 import com.aliyun.gpdb20160503.models.QueryCollectionDataResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.milvus.MilvusVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -46,14 +44,11 @@ public class AnalyticVectorStoreService extends BaseVectorStoreService {
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	@Autowired
-	@Qualifier("dashscopeEmbeddingModel")
+	@Qualifier("ollamaEmbeddingModel")
 	private EmbeddingModel embeddingModel;
 
 	@Autowired
-	private AnalyticDbVectorStoreProperties analyticDbVectorStoreProperties;
-
-	@Autowired
-	private Client client;
+	private MilvusVectorStore milvusVectorStore;
 
 	@Override
 	protected EmbeddingModel getEmbeddingModel() {
@@ -68,9 +63,11 @@ public class AnalyticVectorStoreService extends BaseVectorStoreService {
 		String filter = String.format("jsonb_extract_path_text(metadata, 'vectorType') = '%s'",
 				searchRequestDTO.getVectorType());
 
-		QueryCollectionDataRequest request = buildBaseRequest(searchRequestDTO).setFilter(filter);
-
-		return executeQuery(request);
+		return milvusVectorStore.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
+			.topK(searchRequestDTO.getTopK())
+			.query(searchRequestDTO.getQuery())
+			.filterExpression(filter)
+			.build());
 	}
 
 	/**
@@ -78,42 +75,11 @@ public class AnalyticVectorStoreService extends BaseVectorStoreService {
 	 */
 	@Override
 	public List<Document> searchWithFilter(SearchRequest searchRequestDTO) {
-		QueryCollectionDataRequest request = buildBaseRequest(searchRequestDTO)
-			.setFilter(searchRequestDTO.getFilterFormatted());
-		return executeQuery(request);
-	}
-
-	/**
-	 * Build basic query request object
-	 */
-	private QueryCollectionDataRequest buildBaseRequest(SearchRequest searchRequestDTO) {
-		QueryCollectionDataRequest queryCollectionDataRequest = new QueryCollectionDataRequest()
-			.setDBInstanceId(analyticDbVectorStoreProperties.getDbInstanceId())
-			.setRegionId(analyticDbVectorStoreProperties.getRegionId())
-			.setNamespace(analyticDbVectorStoreProperties.getNamespace())
-			.setNamespacePassword(analyticDbVectorStoreProperties.getNamespacePassword())
-			.setCollection(analyticDbVectorStoreProperties.getCollectName())
-			.setIncludeValues(false)
-			.setMetrics(analyticDbVectorStoreProperties.getMetrics())
-			.setTopK((long) searchRequestDTO.getTopK());
-		if (searchRequestDTO.getQuery() != null) {
-			queryCollectionDataRequest.setVector(embedDouble(searchRequestDTO.getQuery()));
-			queryCollectionDataRequest.setContent(searchRequestDTO.getQuery());
-		}
-		return queryCollectionDataRequest;
-	}
-
-	/**
-	 * Execute actual query and parse results
-	 */
-	private List<Document> executeQuery(QueryCollectionDataRequest request) {
-		try {
-			QueryCollectionDataResponse response = client.queryCollectionData(request);
-			return parseDocuments(response);
-		}
-		catch (Exception e) {
-			throw new RuntimeException("向量数据库查询失败: " + e.getMessage(), e);
-		}
+		return milvusVectorStore.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
+			.topK(searchRequestDTO.getTopK())
+			.query(searchRequestDTO.getQuery())
+			.filterExpression(searchRequestDTO.getFilterFormatted())
+			.build());
 	}
 
 	/**

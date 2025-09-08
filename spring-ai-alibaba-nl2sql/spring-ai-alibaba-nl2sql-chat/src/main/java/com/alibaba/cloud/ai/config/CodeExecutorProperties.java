@@ -20,6 +20,8 @@ import com.alibaba.cloud.ai.service.code.CodePoolExecutorEnum;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * python 执行器配置变量
+ *
  * @author vlsmb
  * @since 2025/7/12
  */

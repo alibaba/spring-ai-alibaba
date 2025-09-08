@@ -22,6 +22,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 自然语言转SQL控制器
+ * <p>
+ * 该控制器提供将自然语言转换为SQL查询的功能，主要用于数据分析场景。 仅在ADB(AnalyticDB)功能启用时加载此控制器。
+ *
+ * @author Alibaba Cloud
+ * @since 1.0.0
+ */
 @RestController
 @ConditionalOnADBEnabled
 public class AnalyticNl2SqlController {
@@ -32,6 +40,12 @@ public class AnalyticNl2SqlController {
 		this.nl2SqlService = nl2SqlService;
 	}
 
+	/**
+	 * 将自然语言输入转换为SQL查询
+	 * @param input 用户输入的自然语言查询
+	 * @return 生成的SQL查询语句
+	 * @throws Exception 转换过程中可能发生的异常
+	 */
 	@PostMapping("/chat")
 	public String nl2Sql(@RequestBody String input) throws Exception {
 		return nl2SqlService.nl2sql(input);

@@ -15,26 +15,19 @@
  */
 package com.alibaba.cloud.ai.util;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingOptions;
+import jakarta.annotation.Resource;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.OpenAiEmbeddingModel;
-import org.springframework.ai.openai.OpenAiEmbeddingOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.OllamaEmbeddingModel;
+import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.util.StringUtils;
 
 /**
  * AI 模型配置类
@@ -63,11 +56,17 @@ import org.springframework.util.StringUtils;
 @Configuration
 public class AiConfiguration {
 
-	@Value("${spring.ai.openai.api-key}")
+	@Value("${spring.ai.openai.api-key:}")
 	private String openAiApiKey;
 
 	@Value("${spring.ai.openai.base-url:}")
 	private String baseUrl;
+
+	@Value("${spring.ai.ollama.base-url:}")
+	private String ollamaBaseUrl;
+
+	@Value("${spring.ai.ollama.model:}")
+	private String ollamaModel;
 
 	@Value("${spring.ai.openai.model:}")
 	private String model;
@@ -87,11 +86,14 @@ public class AiConfiguration {
 	@Value("${spring.ai.openai.completions-path:}")
 	private String openAiCompletionsPath;
 
+	@Resource
+	private OllamaEmbeddingModel ollamaEmbeddingModel;
+
 	@Bean
 	public ChatModel chatModel() {
-		OpenAiApi openAiApi = OpenAiApi.builder().apiKey(openAiApiKey).baseUrl(baseUrl).build();
-		OpenAiChatOptions openAiChatOptions = OpenAiChatOptions.builder().model(model).temperature(0.7).build();
-		return OpenAiChatModel.builder().openAiApi(openAiApi).defaultOptions(openAiChatOptions).build();
+		OllamaApi ollamaApi = OllamaApi.builder().baseUrl(ollamaBaseUrl).build();
+		OllamaOptions ollamaOptions = OllamaOptions.builder().model(ollamaModel).temperature(0.7).build();
+		return OllamaChatModel.builder().ollamaApi(ollamaApi).defaultOptions(ollamaOptions).build();
 	}
 
 	@Bean
@@ -99,22 +101,28 @@ public class AiConfiguration {
 		return ChatClient.create(chatModel);
 	}
 
+	@Bean("embeddingModel")
+	@Primary
+	public EmbeddingModel ollamaEmbeddingModel() {
+		return ollamaEmbeddingModel;
+	}
+
 	/**
 	 * DashScope EmbeddingModel configuration
 	 * <p>
 	 * Enabled when spring.ai.dashscope.api-key is configured, highest priority
 	 */
-	@Bean("embeddingModel")
-	@Primary
-	@ConditionalOnProperty(name = "spring.ai.dashscope.api-key")
-	@ConditionalOnMissingBean(EmbeddingModel.class)
-	public EmbeddingModel dashScopeEmbeddingModel() {
-		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(dashScopeApiKey).build();
-		DashScopeEmbeddingOptions options = DashScopeEmbeddingOptions.builder()
-			.withModel(dashScopeEmbeddingModel)
-			.build();
-		return new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED, options);
-	}
+	// @Bean("embeddingModel")
+	// @Primary
+	// @ConditionalOnProperty(name = "spring.ai.dashscope.api-key")
+	// @ConditionalOnMissingBean(EmbeddingModel.class)
+	// public EmbeddingModel dashScopeEmbeddingModel() {
+	// DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(dashScopeApiKey).build();
+	// DashScopeEmbeddingOptions options = DashScopeEmbeddingOptions.builder()
+	// .withModel(dashScopeEmbeddingModel)
+	// .build();
+	// return new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED, options);
+	// }
 
 	/**
 	 * Custom OpenAI EmbeddingModel configuration
@@ -123,25 +131,29 @@ public class AiConfiguration {
 	 * <p>
 	 * Use @ConditionalOnMissingBean to avoid conflict with auto-configuration
 	 */
-	@Bean("embeddingModel")
-	@Primary
-	@ConditionalOnProperty(name = "spring.ai.dashscope.api-key", havingValue = "", matchIfMissing = true)
-	@ConditionalOnMissingBean(EmbeddingModel.class)
-	public EmbeddingModel customOpenAiEmbeddingModel() {
-		if (!StringUtils.hasText(openAiApiKey)) {
-			throw new IllegalStateException(
-					"Either spring.ai.dashscope.api-key or spring.ai.openai.api-key must be configured");
-		}
-		OpenAiApi.Builder builder = OpenAiApi.builder().apiKey(openAiApiKey).baseUrl(baseUrl);
-		if (StringUtils.hasText(openAiEmbeddingsPath)) {
-			builder.embeddingsPath(openAiEmbeddingsPath);
-		}
-		if (StringUtils.hasText(openAiCompletionsPath)) {
-			builder.completionsPath(openAiCompletionsPath);
-		}
-		OpenAiApi openAiApi = builder.build();
-		OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder().model(openAiEmbeddingModel).build();
-		return new OpenAiEmbeddingModel(openAiApi, MetadataMode.EMBED, options);
-	}
+	// @Bean("embeddingModel")
+	// @Primary
+	// @ConditionalOnProperty(name = "spring.ai.dashscope.api-key", havingValue = "",
+	// matchIfMissing = true)
+	// @ConditionalOnMissingBean(EmbeddingModel.class)
+	// public EmbeddingModel customOpenAiEmbeddingModel() {
+	// if (!StringUtils.hasText(openAiApiKey)) {
+	// throw new IllegalStateException(
+	// "Either spring.ai.dashscope.api-key or spring.ai.openai.api-key must be
+	// configured");
+	// }
+	// OpenAiApi.Builder builder =
+	// OpenAiApi.builder().apiKey(openAiApiKey).baseUrl(baseUrl);
+	// if (StringUtils.hasText(openAiEmbeddingsPath)) {
+	// builder.embeddingsPath(openAiEmbeddingsPath);
+	// }
+	// if (StringUtils.hasText(openAiCompletionsPath)) {
+	// builder.completionsPath(openAiCompletionsPath);
+	// }
+	// OpenAiApi openAiApi = builder.build();
+	// OpenAiEmbeddingOptions options =
+	// OpenAiEmbeddingOptions.builder().model(openAiEmbeddingModel).build();
+	// return new OpenAiEmbeddingModel(openAiApi, MetadataMode.EMBED, options);
+	// }
 
 }

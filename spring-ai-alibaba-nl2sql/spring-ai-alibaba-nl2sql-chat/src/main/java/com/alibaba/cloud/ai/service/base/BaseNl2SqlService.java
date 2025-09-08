@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.util.DateTimeUtil;
 import com.alibaba.cloud.ai.util.MarkdownParser;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -183,6 +184,7 @@ public class BaseNl2SqlService {
 			// Call LLM to get expanded questions
 			logger.debug("Calling LLM for question expansion");
 			String content = aiService.call(prompt);
+			content = StringUtils.substringAfter(content, "</think>\n");
 
 			// Parse JSON response
 			List<String> expandedQuestions = new Gson().fromJson(content, new TypeToken<List<String>>() {
@@ -238,7 +240,7 @@ public class BaseNl2SqlService {
 		String prompt = PromptHelper.buildQueryToKeywordsPrompt(query);
 		logger.debug("Calling LLM for keyword extraction");
 		String content = aiService.call(prompt);
-
+		content = StringUtils.substringAfter(content, "</think>\n");
 		List<String> keywords = new Gson().fromJson(content, new TypeToken<List<String>>() {
 		}.getType());
 		logger.debug("Extracted {} keywords: {}", keywords != null ? keywords.size() : 0, keywords);
@@ -328,10 +330,13 @@ public class BaseNl2SqlService {
 	public Set<String> fineSelect(SchemaDTO schemaDTO, String sqlGenerateSchemaMissingAdvice) {
 		logger.debug("Fine selecting tables based on advice: {}", sqlGenerateSchemaMissingAdvice);
 		String schemaInfo = buildMixMacSqlDbPrompt(schemaDTO, true);
-		String prompt = " 建议：" + sqlGenerateSchemaMissingAdvice
-				+ " \n 请按照建议进行返回相关表的名称，只返回建议中提到的表名，返回格式为：[\"a\",\"b\",\"c\"] \n " + schemaInfo;
+		String prompt = " 候选表：" + sqlGenerateSchemaMissingAdvice
+				+ " \n 请按照建议进行返回相关表的名称，只返回【候选表】中提到的表名，返回格式为：[\"a\",\"b\",\"c\"] \n " +
+				" \n 请按照建议进行返回相关表的名称，只返回【候选表】中提到的表名，返回格式为：[\"a\",\"b\",\"c\"] \n " +
+				" \n 请按照建议进行返回相关表的名称，只返回【候选表】中提到的表名，返回格式为：[\"a\",\"b\",\"c\"] \n " + schemaInfo;
 		logger.debug("Calling LLM for table selection with advice");
 		String content = aiService.call(prompt);
+		content = StringUtils.substringAfter(content, "</think>\n");
 		if (content != null && !content.trim().isEmpty()) {
 			String jsonContent = MarkdownParser.extractText(content);
 			List<String> tableList;
@@ -362,7 +367,14 @@ public class BaseNl2SqlService {
 		logger.debug("Fine selecting schema for query: {} with {} evidences", query, evidenceList.size());
 		String prompt = buildMixSelectorPrompt(evidenceList, query, schemaDTO);
 		logger.debug("Calling LLM for schema fine selection");
-		String content = aiService.call(prompt);
+		String systemPrompt = """
+				你是一个专业的数据分析师，能严格的按照json格式输出需要的表名称，不会额外输出多余的内容。输出格式如下：
+				```json
+				["table_name1", "table_name2", "table_name3", "table_name4"]
+				```
+				""";
+		String content = aiService.callWithSystemPrompt(systemPrompt, prompt);
+		content = StringUtils.substringAfter(content, "</think>\n");
 		Set<String> selectedTables = new HashSet<>();
 
 		if (sqlGenerateSchemaMissingAdvice != null) {
@@ -371,8 +383,9 @@ public class BaseNl2SqlService {
 		}
 
 		if (content != null && !content.trim().isEmpty()) {
+			logger.info("Fine selected tables: {}", content);
 			String jsonContent = MarkdownParser.extractText(content);
-			List<String> tableList;
+			List<String> tableList = null;
 			try {
 				tableList = new Gson().fromJson(jsonContent, new TypeToken<List<String>>() {
 				}.getType());
@@ -384,7 +397,7 @@ public class BaseNl2SqlService {
 				// tables based on your question.
 				// TODO 目前异常接口直接返回500，未返回向异常常信息，后续优化将异常返回给用户
 				logger.error("Failed to parse fine selection response: {}", jsonContent, e);
-				throw new IllegalStateException(jsonContent);
+//				throw new IllegalStateException(jsonContent);
 			}
 			if (tableList != null && !tableList.isEmpty()) {
 				selectedTables.addAll(tableList.stream().map(String::toLowerCase).collect(Collectors.toSet()));

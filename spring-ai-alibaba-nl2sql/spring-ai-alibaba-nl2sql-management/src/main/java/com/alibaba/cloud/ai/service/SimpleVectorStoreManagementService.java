@@ -16,20 +16,17 @@
 package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.connector.accessor.Accessor;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingOptions;
-import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.connector.bo.ColumnInfoBO;
 import com.alibaba.cloud.ai.connector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.connector.bo.ForeignKeyInfoBO;
 import com.alibaba.cloud.ai.connector.bo.TableInfoBO;
+import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.request.DeleteRequest;
 import com.alibaba.cloud.ai.request.EvidenceRequest;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.google.gson.Gson;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -55,17 +52,13 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 
 	@Autowired
 	public SimpleVectorStoreManagementService(@Value("${spring.ai.dashscope.api-key:default_api_key}") String apiKey,
-			Gson gson, @Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig) {
+			Gson gson, @Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig,
+			OllamaEmbeddingModel ollamaEmbeddingModel) {
 		this.gson = gson;
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
 
-		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(apiKey).build();
-		DashScopeEmbeddingModel dashScopeEmbeddingModel = new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED,
-				DashScopeEmbeddingOptions.builder()
-					.withModel(DashScopeApi.EmbeddingModel.EMBEDDING_V4.getValue())
-					.build());
-		this.vectorStore = SimpleVectorStore.builder(dashScopeEmbeddingModel).build();
+		this.vectorStore = SimpleVectorStore.builder(ollamaEmbeddingModel).build();
 	}
 
 	/**

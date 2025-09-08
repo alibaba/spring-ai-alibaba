@@ -66,7 +66,7 @@ public class AnalyticDbVectorStoreManagementService implements VectorStoreManage
 	private static final String METADATA_FIELD_NAME = "metadata";
 
 	@Autowired
-	@Qualifier("dashscopeEmbeddingModel")
+	@Qualifier("ollamaEmbeddingModel")
 	private EmbeddingModel embeddingModel;
 
 	@Autowired

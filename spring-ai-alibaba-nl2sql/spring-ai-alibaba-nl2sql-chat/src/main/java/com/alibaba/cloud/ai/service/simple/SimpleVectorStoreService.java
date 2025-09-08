@@ -94,6 +94,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	 * @param schemaInitRequest schema initialization request
 	 * @throws Exception if an error occurs
 	 */
+	@Override
 	public Boolean schema(SchemaInitRequest schemaInitRequest) throws Exception {
 		log.info("Starting schema initialization for database: {}, schema: {}, tables: {}",
 				schemaInitRequest.getDbConfig().getUrl(), schemaInitRequest.getDbConfig().getSchema(),

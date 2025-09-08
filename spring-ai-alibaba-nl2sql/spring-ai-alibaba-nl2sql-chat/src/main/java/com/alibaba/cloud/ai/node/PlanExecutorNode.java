@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.model.execution.ExecutionStep;
 import com.alibaba.cloud.ai.model.execution.Plan;
 import com.alibaba.cloud.ai.util.StateUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -69,6 +70,8 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 
 		// 1. Validate the Plan
 		String plannerOutput = StateUtils.getStringValue(state, PLANNER_NODE_OUTPUT);
+
+		plannerOutput = StringUtils.substringAfter(plannerOutput, "</think>\n");
 		try {
 			Plan plan = converter.convert(plannerOutput);
 

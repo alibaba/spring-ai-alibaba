@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.service.UserPromptConfigService;
 import com.alibaba.cloud.ai.util.StateUtils;
 import com.alibaba.cloud.ai.util.StreamingChatGeneratorUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -84,6 +85,7 @@ public class ReportGeneratorNode implements NodeAction {
 				HashMap.class, new HashMap<>());
 
 		logger.info("Planner node output: {}", plannerNodeOutput);
+		plannerNodeOutput = StringUtils.substringAfter(plannerNodeOutput, "</think>\n");
 
 		// Parse plan and get current step
 		Plan plan = converter.convert(plannerNodeOutput);

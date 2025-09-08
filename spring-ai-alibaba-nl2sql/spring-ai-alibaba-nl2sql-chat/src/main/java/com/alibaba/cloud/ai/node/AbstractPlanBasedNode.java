@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.model.execution.ExecutionStep;
 import com.alibaba.cloud.ai.model.execution.Plan;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -58,6 +59,8 @@ public abstract class AbstractPlanBasedNode implements NodeAction {
 		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
 			.orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
 
+		plannerNodeOutput = StringUtils.substringAfter(plannerNodeOutput, "</think>\n");
+
 		Plan plan = converter.convert(plannerNodeOutput);
 		if (plan == null) {
 			throw new IllegalStateException("计划解析失败");
@@ -87,6 +90,9 @@ public abstract class AbstractPlanBasedNode implements NodeAction {
 	protected Plan getPlan(OverAllState state) {
 		String plannerNodeOutput = (String) state.value(PLANNER_NODE_OUTPUT)
 			.orElseThrow(() -> new IllegalStateException("计划节点输出为空"));
+
+		plannerNodeOutput = StringUtils.substringAfter(plannerNodeOutput, "</think>\n");
+
 		Plan plan = converter.convert(plannerNodeOutput);
 		if (plan == null) {
 			throw new IllegalStateException("计划解析失败");

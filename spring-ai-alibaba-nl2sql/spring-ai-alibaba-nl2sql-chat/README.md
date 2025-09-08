@@ -211,8 +211,8 @@ chatbi:
     password: ${DB_PASSWORD}
     
     # 连接参数
-    connectiontype: jdbc
-    dialecttype: mysql      # 可选：mysql、postgresql
+    connectionType: jdbc
+    dialectType: mysql      # 可选：mysql、postgresql
     schema: ${DB_SCHEMA}    # PostgreSQL需要
 
 # REST超时配置
