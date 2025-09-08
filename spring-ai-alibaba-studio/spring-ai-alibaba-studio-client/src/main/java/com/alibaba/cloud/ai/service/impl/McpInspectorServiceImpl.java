@@ -24,10 +24,7 @@ import com.alibaba.cloud.ai.domain.McpConnectRequest;
 import com.alibaba.cloud.ai.service.McpInspectorService;
 import com.alibaba.cloud.ai.strategy.McpParameterFactory;
 import com.alibaba.cloud.ai.strategy.transport.impl.AbstractTransport;
-import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.ServerParameters;
-import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.stereotype.Service;
 

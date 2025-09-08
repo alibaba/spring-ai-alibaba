@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.strategy;
 
 import com.alibaba.cloud.ai.domain.McpConnectRequest;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.ServerParameters;
 
 public interface McpInspectorTransportStrategy {
 

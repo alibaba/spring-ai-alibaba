@@ -18,16 +18,10 @@
 package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.common.R;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.domain.McpConnectRequest;
-import com.alibaba.cloud.ai.domain.McpParams;
 import com.alibaba.cloud.ai.service.McpInspectorService;
 import io.modelcontextprotocol.spec.McpSchema;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-
-import java.awt.*;
-import java.util.List;
 
 @RestController
 @RequestMapping("studio/api/mcpInspector")

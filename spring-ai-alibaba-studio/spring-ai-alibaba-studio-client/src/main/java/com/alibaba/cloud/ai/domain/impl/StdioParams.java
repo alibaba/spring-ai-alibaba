@@ -18,11 +18,7 @@
 package com.alibaba.cloud.ai.domain.impl;
 
 import com.alibaba.cloud.ai.domain.McpParams;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.modelcontextprotocol.client.transport.ServerParameters;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 

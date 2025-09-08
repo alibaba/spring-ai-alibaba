@@ -18,7 +18,6 @@
 package com.alibaba.cloud.ai.strategy.parameter.impl;
 
 import com.alibaba.cloud.ai.common.McpTransportType;
-import com.alibaba.cloud.ai.domain.McpParams;
 import com.alibaba.cloud.ai.domain.impl.StdioParams;
 import com.alibaba.cloud.ai.strategy.ParameterParser;
 import com.fasterxml.jackson.databind.JsonNode;

@@ -20,8 +20,6 @@ import com.alibaba.cloud.ai.common.R;
 import com.alibaba.cloud.ai.domain.McpConnectRequest;
 import io.modelcontextprotocol.spec.McpSchema;
 
-import java.util.List;
-
 public interface McpInspectorService {
 
 	R<String> init(McpConnectRequest request);

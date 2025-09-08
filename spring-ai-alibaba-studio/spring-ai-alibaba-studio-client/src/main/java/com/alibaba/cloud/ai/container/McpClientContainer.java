@@ -17,7 +17,6 @@
 
 package com.alibaba.cloud.ai.container;
 
-import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Component;
@@ -25,7 +24,6 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-//记得关闭所有的资源，因为这里mcpClient连接会有其他的资源
 @Component
 public class McpClientContainer implements DisposableBean {
 
@@ -48,7 +46,7 @@ public class McpClientContainer implements DisposableBean {
 	}
 
 	@Override
-	public void destroy() throws Exception {
+	public void destroy() {
 		mcpClients.values().forEach(McpSyncClient::closeGracefully);
 	}
 
