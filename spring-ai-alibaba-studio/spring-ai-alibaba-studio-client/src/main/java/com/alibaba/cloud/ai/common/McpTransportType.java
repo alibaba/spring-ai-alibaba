@@ -18,7 +18,7 @@
 package com.alibaba.cloud.ai.common;
 
 public enum McpTransportType {
-    STDIO,
-    SSE,
-    StreamableHTTP
+
+	STDIO, SSE, StreamableHTTP
+
 }

@@ -36,33 +36,34 @@ import java.util.List;
 @Service
 public class McpInspectorServiceImpl implements McpInspectorService {
 
-    private final McpClientContainer mcpClientContainer;
+	private final McpClientContainer mcpClientContainer;
 
-    private final McpParameterFactory parameterFactory;
+	private final McpParameterFactory parameterFactory;
 
-    public McpInspectorServiceImpl(McpClientContainer mcpClientContainer, McpParameterFactory parameterFactory) {
-        this.mcpClientContainer = mcpClientContainer;
-        this.parameterFactory = parameterFactory;
-    }
+	public McpInspectorServiceImpl(McpClientContainer mcpClientContainer, McpParameterFactory parameterFactory) {
+		this.mcpClientContainer = mcpClientContainer;
+		this.parameterFactory = parameterFactory;
+	}
 
-    //拿到对应的信息
-    @Override
-    public R<String> init(McpConnectRequest request) {
-        McpTransportType transportType = request.getTransportType();
-        AbstractTransport abstractTransport = AbstractTransport.transportTypeMap.get(transportType);
-        if (abstractTransport == null) {
-            throw new RuntimeException("Unsupported transport type: " + transportType);
-        }
-        String clientName = abstractTransport.getClientName();
-        McpSyncClient mcpClient = abstractTransport.connect(request);
-        mcpClientContainer.add(clientName,mcpClient);
-        return R.success(clientName);
-    }
+	// 拿到对应的信息
+	@Override
+	public R<String> init(McpConnectRequest request) {
+		McpTransportType transportType = request.getTransportType();
+		AbstractTransport abstractTransport = AbstractTransport.transportTypeMap.get(transportType);
+		if (abstractTransport == null) {
+			throw new RuntimeException("Unsupported transport type: " + transportType);
+		}
+		String clientName = abstractTransport.getClientName();
+		McpSyncClient mcpClient = abstractTransport.connect(request);
+		mcpClientContainer.add(clientName, mcpClient);
+		return R.success(clientName);
+	}
 
-    @Override
-    public R<McpSchema.ListToolsResult> listTools(String clientName) {
-        McpSyncClient mcpSyncClient = mcpClientContainer.get(clientName);
-        return R.success(mcpSyncClient.listTools());
+	@Override
+	public R<McpSchema.ListToolsResult> listTools(String clientName) {
+		McpSyncClient mcpSyncClient = mcpClientContainer.get(clientName);
+		return R.success(mcpSyncClient.listTools());
 
-    }
+	}
+
 }

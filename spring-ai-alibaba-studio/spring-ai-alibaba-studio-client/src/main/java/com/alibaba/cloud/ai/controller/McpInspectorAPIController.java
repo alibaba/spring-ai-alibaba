@@ -33,19 +33,20 @@ import java.util.List;
 @RequestMapping("studio/api/mcpInspector")
 public class McpInspectorAPIController {
 
-    private final McpInspectorService mcpInspectorService;
+	private final McpInspectorService mcpInspectorService;
 
-    public McpInspectorAPIController(McpInspectorService mcpInspectorService) {
-        this.mcpInspectorService = mcpInspectorService;
-    }
+	public McpInspectorAPIController(McpInspectorService mcpInspectorService) {
+		this.mcpInspectorService = mcpInspectorService;
+	}
 
-    @PostMapping("/init")
-    public R<String> mcpClientInit(@RequestBody McpConnectRequest request) {
-        return mcpInspectorService.init(request);
-    }
+	@PostMapping("/init")
+	public R<String> mcpClientInit(@RequestBody McpConnectRequest request) {
+		return mcpInspectorService.init(request);
+	}
 
-    @PostMapping(value = "/list")
-    public R<McpSchema.ListToolsResult> mcpClientList(@RequestBody String clientName) {
-        return mcpInspectorService.listTools(clientName);
-    }
+	@PostMapping(value = "/list")
+	public R<McpSchema.ListToolsResult> mcpClientList(@RequestBody String clientName) {
+		return mcpInspectorService.listTools(clientName);
+	}
+
 }

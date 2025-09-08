@@ -30,15 +30,16 @@ import java.io.IOException;
 @Component
 public class StreamableHttpParameterParser implements ParameterParser {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+	private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    @Override
-    public McpTransportType supportTransportType() {
-        return McpTransportType.StreamableHTTP;
-    }
+	@Override
+	public McpTransportType supportTransportType() {
+		return McpTransportType.StreamableHTTP;
+	}
 
-    @Override
-    public McpParams parse(JsonNode jsonNode) throws IOException {
-        return MAPPER.treeToValue(jsonNode, StreamableParams.class);
-    }
+	@Override
+	public McpParams parse(JsonNode jsonNode) throws IOException {
+		return MAPPER.treeToValue(jsonNode, StreamableParams.class);
+	}
+
 }

@@ -31,15 +31,16 @@ import java.util.Map;
 @Component
 public class SSEParameterParser implements ParameterParser {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+	private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    @Override
-    public McpTransportType supportTransportType() {
-        return McpTransportType.SSE;
-    }
+	@Override
+	public McpTransportType supportTransportType() {
+		return McpTransportType.SSE;
+	}
 
-    @Override
-    public McpParams parse(JsonNode jsonNode) throws IOException {
-        return MAPPER.treeToValue(jsonNode, SSEParams.class);
-    }
+	@Override
+	public McpParams parse(JsonNode jsonNode) throws IOException {
+		return MAPPER.treeToValue(jsonNode, SSEParams.class);
+	}
+
 }

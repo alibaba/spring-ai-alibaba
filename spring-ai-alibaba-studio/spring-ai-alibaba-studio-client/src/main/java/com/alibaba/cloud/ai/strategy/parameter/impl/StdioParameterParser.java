@@ -30,15 +30,16 @@ import java.io.IOException;
 @Component
 public class StdioParameterParser implements ParameterParser<StdioParams> {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+	private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    @Override
-    public McpTransportType supportTransportType() {
-        return McpTransportType.STDIO;
-    }
+	@Override
+	public McpTransportType supportTransportType() {
+		return McpTransportType.STDIO;
+	}
 
-    @Override
-    public StdioParams parse(JsonNode jsonNode) throws IOException {
-        return MAPPER.treeToValue(jsonNode, StdioParams.class);
-    }
+	@Override
+	public StdioParams parse(JsonNode jsonNode) throws IOException {
+		return MAPPER.treeToValue(jsonNode, StdioParams.class);
+	}
+
 }

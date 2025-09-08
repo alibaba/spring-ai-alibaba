@@ -28,36 +28,36 @@ import java.util.Map;
 @Component
 public class HistoryMsgContainer {
 
-    private final McpClientContainer mcpClientContainer;
+	private final McpClientContainer mcpClientContainer;
 
-    private final Map<String,List<HistoryMessage>> historyMessages = new HashMap<>();
+	private final Map<String, List<HistoryMessage>> historyMessages = new HashMap<>();
 
-    public HistoryMsgContainer(McpClientContainer mcpClientContainer) {
-        this.mcpClientContainer = mcpClientContainer;
-    }
+	public HistoryMsgContainer(McpClientContainer mcpClientContainer) {
+		this.mcpClientContainer = mcpClientContainer;
+	}
 
-    public void addHistoryMessage(String clientName , HistoryMessage historyMessage) {
-        if(mcpClientContainer.get(clientName) == null) {
-            throw new RuntimeException("没有这个Mcp服务！");
-        }
-        //如果client里没有这个名字，那么不应该处理
-        historyMessages.computeIfAbsent(clientName, k -> new ArrayList<>()).add(historyMessage);
-    }
+	public void addHistoryMessage(String clientName, HistoryMessage historyMessage) {
+		if (mcpClientContainer.get(clientName) == null) {
+			throw new RuntimeException("没有这个Mcp服务！");
+		}
+		// 如果client里没有这个名字，那么不应该处理
+		historyMessages.computeIfAbsent(clientName, k -> new ArrayList<>()).add(historyMessage);
+	}
 
-    //这里的clientName由后端发送，随后从前端拿到特定的内容
-    public List<HistoryMessage> getHistoryMessages(String clientName) {
-        if(mcpClientContainer.get(clientName) == null) {
-            throw new RuntimeException("没有这个Mcp服务！");
-        }
-        return historyMessages.get(clientName);
-    }
+	// 这里的clientName由后端发送，随后从前端拿到特定的内容
+	public List<HistoryMessage> getHistoryMessages(String clientName) {
+		if (mcpClientContainer.get(clientName) == null) {
+			throw new RuntimeException("没有这个Mcp服务！");
+		}
+		return historyMessages.get(clientName);
+	}
 
-    public void clearHistoryMessages(String clientName) {
-        //这里也许可以做个切片
-        if(mcpClientContainer.get(clientName) == null) {
-            throw new RuntimeException("没有这个Mcp服务！");
-        }
-        historyMessages.remove(clientName);
-    }
+	public void clearHistoryMessages(String clientName) {
+		// 这里也许可以做个切片
+		if (mcpClientContainer.get(clientName) == null) {
+			throw new RuntimeException("没有这个Mcp服务！");
+		}
+		historyMessages.remove(clientName);
+	}
 
 }

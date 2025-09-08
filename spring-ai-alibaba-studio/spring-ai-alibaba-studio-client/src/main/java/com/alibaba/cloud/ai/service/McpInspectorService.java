@@ -23,7 +23,9 @@ import io.modelcontextprotocol.spec.McpSchema;
 import java.util.List;
 
 public interface McpInspectorService {
-    R<String> init(McpConnectRequest request);
 
-    R<McpSchema.ListToolsResult> listTools(String clientName);
+	R<String> init(McpConnectRequest request);
+
+	R<McpSchema.ListToolsResult> listTools(String clientName);
+
 }

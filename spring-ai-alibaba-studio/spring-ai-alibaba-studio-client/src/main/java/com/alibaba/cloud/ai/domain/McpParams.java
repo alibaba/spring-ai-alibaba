@@ -17,5 +17,6 @@
 
 package com.alibaba.cloud.ai.domain;
 
-public interface McpParams {}
+public interface McpParams {
 
+}

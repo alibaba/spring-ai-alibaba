@@ -29,26 +29,27 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class McpClientContainer implements DisposableBean {
 
-    private final Map<String , McpSyncClient> mcpClients = new ConcurrentHashMap<>();
+	private final Map<String, McpSyncClient> mcpClients = new ConcurrentHashMap<>();
 
-    public void add(String clientName , McpSyncClient mcpClient) {
-        mcpClients.put(clientName, mcpClient);
-    }
+	public void add(String clientName, McpSyncClient mcpClient) {
+		mcpClients.put(clientName, mcpClient);
+	}
 
-    public void remove(String clientName){
-        mcpClients.remove(clientName);
-    }
+	public void remove(String clientName) {
+		mcpClients.remove(clientName);
+	}
 
-    public McpSyncClient get(String clientName){
-        if(!mcpClients.containsKey(clientName)){
-            throw new RuntimeException("Unknown client: " + clientName);
-        }
-        return mcpClients.get(clientName);
+	public McpSyncClient get(String clientName) {
+		if (!mcpClients.containsKey(clientName)) {
+			throw new RuntimeException("Unknown client: " + clientName);
+		}
+		return mcpClients.get(clientName);
 
-    }
+	}
 
-    @Override
-    public void destroy() throws Exception {
-        mcpClients.values().forEach(McpSyncClient::closeGracefully);
-    }
+	@Override
+	public void destroy() throws Exception {
+		mcpClients.values().forEach(McpSyncClient::closeGracefully);
+	}
+
 }

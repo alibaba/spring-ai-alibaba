@@ -23,6 +23,6 @@ import io.modelcontextprotocol.client.transport.ServerParameters;
 
 public interface McpInspectorTransportStrategy {
 
-    McpSyncClient connect(McpConnectRequest connectRequest);
+	McpSyncClient connect(McpConnectRequest connectRequest);
 
 }

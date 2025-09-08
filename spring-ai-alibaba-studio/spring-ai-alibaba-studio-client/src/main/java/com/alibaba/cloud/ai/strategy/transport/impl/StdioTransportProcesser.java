@@ -32,38 +32,37 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class StdioTransportProcesser extends AbstractTransport {
-    private final Logger log = LoggerFactory.getLogger(StdioTransportProcesser.class);
 
-    @Autowired
-    private McpParameterFactory parameterFactory;
+	private final Logger log = LoggerFactory.getLogger(StdioTransportProcesser.class);
 
-    @Override
-    public McpSyncClient connect(McpConnectRequest mcpConnectRequest) {
-        StdioParams stdioParams = parameterFactory.parse(McpTransportType.STDIO,mcpConnectRequest.getParams());
-        ServerParameters serverParameters = ServerParameters.builder(stdioParams.getCommand())
-                .args(stdioParams.getArgs())
-                .env(stdioParams.getEnv())
-                .build();
-        //去连接对应的mcpServer
-        log.info("Connect server parameters: " + serverParameters);
-        McpSyncClient mcpStdioClient = McpClient.sync(
-                new StdioClientTransport(serverParameters)
-        ).build();
-        log.info("Connect mcp stdio client: " + mcpStdioClient);
-        if(!mcpStdioClient.isInitialized()) {
-            mcpStdioClient.initialize();
-        }
-        return mcpStdioClient;
-    }
+	@Autowired
+	private McpParameterFactory parameterFactory;
 
-    @Override
-    protected McpTransportType getTransportType() {
-        return McpTransportType.STDIO;
-    }
+	@Override
+	public McpSyncClient connect(McpConnectRequest mcpConnectRequest) {
+		StdioParams stdioParams = parameterFactory.parse(McpTransportType.STDIO, mcpConnectRequest.getParams());
+		ServerParameters serverParameters = ServerParameters.builder(stdioParams.getCommand())
+			.args(stdioParams.getArgs())
+			.env(stdioParams.getEnv())
+			.build();
+		// 去连接对应的mcpServer
+		log.info("Connect server parameters: " + serverParameters);
+		McpSyncClient mcpStdioClient = McpClient.sync(new StdioClientTransport(serverParameters)).build();
+		log.info("Connect mcp stdio client: " + mcpStdioClient);
+		if (!mcpStdioClient.isInitialized()) {
+			mcpStdioClient.initialize();
+		}
+		return mcpStdioClient;
+	}
 
-    @Override
-    public String getClientName() {
-        return "STDIO_" + counter.getAndIncrement();
-    }
+	@Override
+	protected McpTransportType getTransportType() {
+		return McpTransportType.STDIO;
+	}
+
+	@Override
+	public String getClientName() {
+		return "STDIO_" + counter.getAndIncrement();
+	}
 
 }

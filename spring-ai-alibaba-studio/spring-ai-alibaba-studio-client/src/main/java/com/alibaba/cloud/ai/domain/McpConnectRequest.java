@@ -21,28 +21,30 @@ import com.alibaba.cloud.ai.common.McpTransportType;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class McpConnectRequest {
-    private McpTransportType transportType;
 
-    private JsonNode params;
+	private McpTransportType transportType;
 
-    public JsonNode getParams() {
-        return params;
-    }
+	private JsonNode params;
 
-    public void setParams(JsonNode params) {
-        this.params = params;
-    }
+	public JsonNode getParams() {
+		return params;
+	}
 
-    public McpTransportType getTransportType() {
-        return transportType;
-    }
+	public void setParams(JsonNode params) {
+		this.params = params;
+	}
 
-    public void setTransportType(McpTransportType transportType) {
-        this.transportType = transportType;
-    }
+	public McpTransportType getTransportType() {
+		return transportType;
+	}
 
-    @Override
-    public String toString() {
-        return transportType + ":" + params;
-    }
+	public void setTransportType(McpTransportType transportType) {
+		this.transportType = transportType;
+	}
+
+	@Override
+	public String toString() {
+		return transportType + ":" + params;
+	}
+
 }

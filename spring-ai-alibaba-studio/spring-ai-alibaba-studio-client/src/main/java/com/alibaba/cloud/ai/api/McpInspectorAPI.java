@@ -19,7 +19,7 @@ package com.alibaba.cloud.ai.api;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "McpInspector" , description = "the mcp inspector API")
+@Tag(name = "McpInspector", description = "the mcp inspector API")
 public interface McpInspectorAPI {
 
 }

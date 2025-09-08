@@ -35,35 +35,38 @@ import org.springframework.stereotype.Component;
 @Component
 public class StreamableHttpTransportProcesser extends AbstractTransport {
 
-    private final Logger log = LoggerFactory.getLogger(StreamableHttpTransportProcesser.class);
+	private final Logger log = LoggerFactory.getLogger(StreamableHttpTransportProcesser.class);
 
-    @Autowired
-    private McpClientContainer mcpClientContainer;
+	@Autowired
+	private McpClientContainer mcpClientContainer;
 
-    @Autowired
-    private McpParameterFactory parameterFactory;
+	@Autowired
+	private McpParameterFactory parameterFactory;
 
-    @Override
-    protected McpTransportType getTransportType() {
-        return McpTransportType.StreamableHTTP;
-    }
-    @Override
-    public McpSyncClient connect(McpConnectRequest mcpConnectRequest) {
-        //去连接对应的mcpServer
-        StreamableParams streamableParams = parameterFactory.parse(mcpConnectRequest.getTransportType(), mcpConnectRequest.getParams());
-        HttpClientStreamableHttpTransport httpClientStreamableHttpTransport   = HttpClientStreamableHttpTransport.builder(streamableParams.getBaseUri())
-                .build();
-        McpSyncClient mcpSyncClient= McpClient.sync(httpClientStreamableHttpTransport)
-                .build();
-        mcpClientContainer.add(getClientName(), mcpSyncClient);
-        if(!mcpSyncClient.isInitialized()){
-            mcpSyncClient.initialize();
-        }
-        return mcpSyncClient;
-    }
+	@Override
+	protected McpTransportType getTransportType() {
+		return McpTransportType.StreamableHTTP;
+	}
 
-    @Override
-    public String getClientName() {
-        return  "StreamableHttp_" + counter.getAndIncrement();
-    }
+	@Override
+	public McpSyncClient connect(McpConnectRequest mcpConnectRequest) {
+		// 去连接对应的mcpServer
+		StreamableParams streamableParams = parameterFactory.parse(mcpConnectRequest.getTransportType(),
+				mcpConnectRequest.getParams());
+		HttpClientStreamableHttpTransport httpClientStreamableHttpTransport = HttpClientStreamableHttpTransport
+			.builder(streamableParams.getBaseUri())
+			.build();
+		McpSyncClient mcpSyncClient = McpClient.sync(httpClientStreamableHttpTransport).build();
+		mcpClientContainer.add(getClientName(), mcpSyncClient);
+		if (!mcpSyncClient.isInitialized()) {
+			mcpSyncClient.initialize();
+		}
+		return mcpSyncClient;
+	}
+
+	@Override
+	public String getClientName() {
+		return "StreamableHttp_" + counter.getAndIncrement();
+	}
+
 }

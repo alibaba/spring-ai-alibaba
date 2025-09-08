@@ -24,7 +24,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 
 public interface ParameterParser<T extends McpParams> {
-    McpTransportType supportTransportType();
 
-    T parse(JsonNode jsonNode) throws IOException;
+	McpTransportType supportTransportType();
+
+	T parse(JsonNode jsonNode) throws IOException;
+
 }

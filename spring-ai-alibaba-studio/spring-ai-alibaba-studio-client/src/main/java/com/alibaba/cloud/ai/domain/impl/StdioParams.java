@@ -27,33 +27,35 @@ import java.util.List;
 import java.util.Map;
 
 public class StdioParams implements McpParams {
-    private String command;
 
-    private List<String> args = List.of();
+	private String command;
 
-    private Map<String, String> env = Map.of();
+	private List<String> args = List.of();
 
-    public String getCommand() {
-        return command;
-    }
+	private Map<String, String> env = Map.of();
 
-    public void setCommand(String command) {
-        this.command = command;
-    }
+	public String getCommand() {
+		return command;
+	}
 
-    public List<String> getArgs() {
-        return args;
-    }
+	public void setCommand(String command) {
+		this.command = command;
+	}
 
-    public void setArgs(List<String> args) {
-        this.args = args;
-    }
+	public List<String> getArgs() {
+		return args;
+	}
 
-    public Map<String, String> getEnv() {
-        return env;
-    }
+	public void setArgs(List<String> args) {
+		this.args = args;
+	}
 
-    public void setEnv(Map<String, String> env) {
-        this.env = env;
-    }
+	public Map<String, String> getEnv() {
+		return env;
+	}
+
+	public void setEnv(Map<String, String> env) {
+		this.env = env;
+	}
+
 }

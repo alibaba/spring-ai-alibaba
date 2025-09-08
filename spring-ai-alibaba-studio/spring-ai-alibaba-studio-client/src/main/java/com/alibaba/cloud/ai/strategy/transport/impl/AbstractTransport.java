@@ -30,24 +30,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public abstract class AbstractTransport implements McpInspectorTransportStrategy {
 
-    protected AtomicInteger counter = new AtomicInteger(0);
+	protected AtomicInteger counter = new AtomicInteger(0);
 
-    public static ConcurrentHashMap<McpTransportType, AbstractTransport> transportTypeMap = new ConcurrentHashMap<>();
+	public static ConcurrentHashMap<McpTransportType, AbstractTransport> transportTypeMap = new ConcurrentHashMap<>();
 
-    @PostConstruct
-    private void init(){
-        transportTypeMap.put(getTransportType(), this);
-    }
+	@PostConstruct
+	private void init() {
+		transportTypeMap.put(getTransportType(), this);
+	}
 
-    @Override
-    public McpSyncClient connect(McpConnectRequest mcpConnectRequest) {
-        return transportTypeMap.get(getTransportType()).connect(mcpConnectRequest);
-    }
+	@Override
+	public McpSyncClient connect(McpConnectRequest mcpConnectRequest) {
+		return transportTypeMap.get(getTransportType()).connect(mcpConnectRequest);
+	}
 
-    protected abstract McpTransportType getTransportType();
+	protected abstract McpTransportType getTransportType();
 
-     public abstract String getClientName();
-
-
+	public abstract String getClientName();
 
 }

@@ -35,36 +35,38 @@ import org.springframework.stereotype.Component;
 @Component
 public class SSETransportProcesser extends AbstractTransport {
 
-    private final Logger log = LoggerFactory.getLogger(SSETransportProcesser.class);
+	private final Logger log = LoggerFactory.getLogger(SSETransportProcesser.class);
 
-    @Autowired
-    private McpClientContainer mcpClientContainer;
+	@Autowired
+	private McpClientContainer mcpClientContainer;
 
-    @Autowired
-    private McpParameterFactory parameterFactory;
+	@Autowired
+	private McpParameterFactory parameterFactory;
 
-    @Override
-    protected McpTransportType getTransportType() {
-        return McpTransportType.SSE;
-    }
-    @Override
-    public McpSyncClient connect(McpConnectRequest mcpConnectRequest) {
-        //去连接对应的mcpServer
-        SSEParams sseParams= parameterFactory.parse(mcpConnectRequest.getTransportType(), mcpConnectRequest.getParams());
-        HttpClientSseClientTransport sseTransport = HttpClientSseClientTransport.builder(sseParams.getBaseUri())
-                .sseEndpoint(sseParams.getSseEndpoint())
-                .build();
-        McpSyncClient mcpSyncClient= McpClient.sync(sseTransport)
-                .build();
-        mcpClientContainer.add(getClientName(), mcpSyncClient);
-        if(!mcpSyncClient.isInitialized()){
-            mcpSyncClient.initialize();
-        }
-        return mcpSyncClient;
-    }
+	@Override
+	protected McpTransportType getTransportType() {
+		return McpTransportType.SSE;
+	}
 
-    @Override
-    public String getClientName() {
-        return  "SSE_" + counter.getAndIncrement();
-    }
+	@Override
+	public McpSyncClient connect(McpConnectRequest mcpConnectRequest) {
+		// 去连接对应的mcpServer
+		SSEParams sseParams = parameterFactory.parse(mcpConnectRequest.getTransportType(),
+				mcpConnectRequest.getParams());
+		HttpClientSseClientTransport sseTransport = HttpClientSseClientTransport.builder(sseParams.getBaseUri())
+			.sseEndpoint(sseParams.getSseEndpoint())
+			.build();
+		McpSyncClient mcpSyncClient = McpClient.sync(sseTransport).build();
+		mcpClientContainer.add(getClientName(), mcpSyncClient);
+		if (!mcpSyncClient.isInitialized()) {
+			mcpSyncClient.initialize();
+		}
+		return mcpSyncClient;
+	}
+
+	@Override
+	public String getClientName() {
+		return "SSE_" + counter.getAndIncrement();
+	}
+
 }

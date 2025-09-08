@@ -30,24 +30,24 @@ import java.util.stream.Collectors;
 @Component
 public class McpParameterFactory {
 
-    private final Map<McpTransportType , ParameterParser<? extends McpParams>> parserMap;
+	private final Map<McpTransportType, ParameterParser<? extends McpParams>> parserMap;
 
-    public McpParameterFactory(List<ParameterParser<? extends McpParams>> parsers) {
-        parserMap = parsers.stream()
-                .collect(Collectors.toMap(ParameterParser::supportTransportType, p -> p));
-    }
+	public McpParameterFactory(List<ParameterParser<? extends McpParams>> parsers) {
+		parserMap = parsers.stream().collect(Collectors.toMap(ParameterParser::supportTransportType, p -> p));
+	}
 
-    @SuppressWarnings("unchecked")
-    public <T extends McpParams> T parse(McpTransportType type, JsonNode node) {
-        ParameterParser<? extends McpParams> parser = parserMap.get(type);
-        if (parser == null) {
-            throw new IllegalArgumentException("Unknown transport " + type);
-        }
-        try {
-            return (T) parser.parse(node);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Parse error", e);
-        }
-    }
+	@SuppressWarnings("unchecked")
+	public <T extends McpParams> T parse(McpTransportType type, JsonNode node) {
+		ParameterParser<? extends McpParams> parser = parserMap.get(type);
+		if (parser == null) {
+			throw new IllegalArgumentException("Unknown transport " + type);
+		}
+		try {
+			return (T) parser.parse(node);
+		}
+		catch (IOException e) {
+			throw new IllegalArgumentException("Parse error", e);
+		}
+	}
 
 }

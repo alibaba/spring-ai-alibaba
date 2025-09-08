@@ -20,23 +20,25 @@ package com.alibaba.cloud.ai.domain.impl;
 import com.alibaba.cloud.ai.domain.McpParams;
 
 public class StreamableParams implements McpParams {
-    private String baseUri;
 
-    private String endpoint = "/mcp";
+	private String baseUri;
 
-    public String getBaseUri() {
-        return baseUri;
-    }
+	private String endpoint = "/mcp";
 
-    public void setBaseUri(String baseUri) {
-        this.baseUri = baseUri;
-    }
+	public String getBaseUri() {
+		return baseUri;
+	}
 
-    public String getEndpoint() {
-        return endpoint;
-    }
+	public void setBaseUri(String baseUri) {
+		this.baseUri = baseUri;
+	}
 
-    public void setEndpoint(String endpoint) {
-        this.endpoint = endpoint;
-    }
+	public String getEndpoint() {
+		return endpoint;
+	}
+
+	public void setEndpoint(String endpoint) {
+		this.endpoint = endpoint;
+	}
+
 }

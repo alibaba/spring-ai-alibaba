@@ -20,24 +20,25 @@ package com.alibaba.cloud.ai.domain.impl;
 import com.alibaba.cloud.ai.domain.McpParams;
 
 public class SSEParams implements McpParams {
-    private String baseUri;
 
-    private String sseEndpoint = "/sse";
+	private String baseUri;
 
+	private String sseEndpoint = "/sse";
 
-    public String getBaseUri() {
-        return baseUri;
-    }
+	public String getBaseUri() {
+		return baseUri;
+	}
 
-    public void setBaseUri(String baseUri) {
-        this.baseUri = baseUri;
-    }
+	public void setBaseUri(String baseUri) {
+		this.baseUri = baseUri;
+	}
 
-    public String getSseEndpoint() {
-        return sseEndpoint;
-    }
+	public String getSseEndpoint() {
+		return sseEndpoint;
+	}
 
-    public void setSseEndpoint(String sseEndpoint) {
-        this.sseEndpoint = sseEndpoint;
-    }
+	public void setSseEndpoint(String sseEndpoint) {
+		this.sseEndpoint = sseEndpoint;
+	}
+
 }

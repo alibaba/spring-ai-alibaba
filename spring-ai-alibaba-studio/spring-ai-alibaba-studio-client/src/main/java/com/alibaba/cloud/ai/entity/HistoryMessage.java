@@ -21,40 +21,44 @@ import io.modelcontextprotocol.spec.McpSchema;
 
 public class HistoryMessage {
 
-    private  String method;
-    private  McpSchema.Request params;
-    private Object response;
+	private String method;
 
-    public HistoryMessage(String method, McpSchema.Request request, Object result) {
-        this.method = method;
-        this.params = request;
-        this.response = result;
-    }
-    // 无参构造器
-    public HistoryMessage() {}
+	private McpSchema.Request params;
 
+	private Object response;
 
-    public String getMethod() {
-        return method;
-    }
+	public HistoryMessage(String method, McpSchema.Request request, Object result) {
+		this.method = method;
+		this.params = request;
+		this.response = result;
+	}
 
-    public void setMethod(String method) {
-        this.method = method;
-    }
+	// 无参构造器
+	public HistoryMessage() {
+	}
 
-    public McpSchema.Request getParams() {
-        return params;
-    }
+	public String getMethod() {
+		return method;
+	}
 
-    public void setParams(McpSchema.Request params) {
-        this.params = params;
-    }
+	public void setMethod(String method) {
+		this.method = method;
+	}
 
-    public Object getResponse() {
-        return response;
-    }
+	public McpSchema.Request getParams() {
+		return params;
+	}
 
-    public void setResponse(Object response) {
-        this.response = response;
-    }
+	public void setParams(McpSchema.Request params) {
+		this.params = params;
+	}
+
+	public Object getResponse() {
+		return response;
+	}
+
+	public void setResponse(Object response) {
+		this.response = response;
+	}
+
 }
