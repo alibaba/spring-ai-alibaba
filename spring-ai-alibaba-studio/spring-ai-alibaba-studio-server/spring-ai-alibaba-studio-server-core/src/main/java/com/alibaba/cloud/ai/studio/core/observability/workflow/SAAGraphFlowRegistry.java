@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.studio.core.observability.workflow;
 
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.util.Collection;
@@ -27,10 +28,10 @@ public class SAAGraphFlowRegistry {
 
 		// 将它们注册到我们的 Map 中
 		flows.forEach(flow -> {
-			if (flowRegistry.containsKey(flow.id())) {
-				throw new IllegalStateException("Duplicate Flow ID found: " + flow.id());
+			if (flowRegistry.containsKey(flow.graphId())) {
+				throw new IllegalStateException("Duplicate Flow ID found: " + flow.graphId());
 			}
-			flowRegistry.put(flow.id(), flow);
+			flowRegistry.put(flow.graphId(), flow);
 		});
 
 		System.out.println("Initialized GraphFlowRegistry. Found " + flowRegistry.size() + " flows.");
@@ -50,6 +51,30 @@ public class SAAGraphFlowRegistry {
 			.stream()
 			.filter(flow -> ownerID.equals(flow.ownerID()))
 			.collect(Collectors.toList());
+	}
+
+	/**
+	 * 根据 flowId 查询并返回指定的流程。
+	 * @param flowId 流程的唯一标识符
+	 * @return 匹配的 SAAGraphFlow，如果不存在则返回 null
+	 */
+	public SAAGraphFlow findById(String flowId) {
+		if (flowId == null || flowId.isBlank()) {
+			return null;
+		}
+		return flowRegistry.get(flowId);
+	}
+
+	/**
+	 * 检查指定的 flowId 是否存在。
+	 * @param flowId 流程的唯一标识符
+	 * @return 如果存在返回 true，否则返回 false
+	 */
+	public boolean existsById(String flowId) {
+		if (flowId == null || flowId.isBlank()) {
+			return false;
+		}
+		return flowRegistry.containsKey(flowId);
 	}
 
 	/**

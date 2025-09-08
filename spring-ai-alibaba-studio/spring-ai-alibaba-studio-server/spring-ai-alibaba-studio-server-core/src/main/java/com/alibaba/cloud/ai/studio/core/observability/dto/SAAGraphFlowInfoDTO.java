@@ -1,7 +1,6 @@
 package com.alibaba.cloud.ai.studio.core.observability.dto;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
-
 import java.util.List;
 
 public record SAAGraphFlowInfoDTO(
