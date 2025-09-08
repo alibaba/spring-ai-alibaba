@@ -48,7 +48,7 @@ public class BusinessKnowledgeRecallService {
 			return new BusinessKnowledgeDTO(rs.getString("business_term"), // businessTerm
 					rs.getString("description"), // description
 					rs.getString("synonyms"), // synonyms
-					rs.getObject("is_recall", boolean.class), // defaultRecall (convert to
+					rs.getObject("is_recall", Boolean.class), // defaultRecall (convert to
 																// Boolean)
 					rs.getString("data_set_id") // datasetId
 			);
