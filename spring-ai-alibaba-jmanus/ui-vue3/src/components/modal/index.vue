@@ -48,8 +48,9 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { onMounted, onUnmounted } from 'vue'
 
-defineProps({
+const props = defineProps({
   modelValue: {
     type: Boolean,
     required: true,
@@ -73,7 +74,7 @@ defineProps({
 
 })
 
-defineEmits(['update:modelValue', 'confirm'])
+const emit = defineEmits(['update:modelValue', 'confirm'])
 
 const handleOverlayClick = (e: MouseEvent) => {
   if (e.target === e.currentTarget) {
@@ -81,6 +82,20 @@ const handleOverlayClick = (e: MouseEvent) => {
     e.preventDefault()
   }
 }
+
+const handleEscKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && props.modelValue) {
+    emit('update:modelValue', false)
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', handleEscKey)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscKey)
+})
 
 
 </script>

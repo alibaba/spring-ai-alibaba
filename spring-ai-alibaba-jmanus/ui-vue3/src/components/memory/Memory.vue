@@ -210,7 +210,7 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, ref} from 'vue';
+import {onMounted, onUnmounted, ref} from 'vue';
 import {MemoryApiService} from '@/api/memory-api-service'
 import type { Message} from '@/api/memory-api-service'
 import {Icon} from '@iconify/vue'
@@ -231,8 +231,24 @@ const currentDeleteId = ref<string | null>(null);
 const expandedMap = new Map()
 const emit = defineEmits<MemoryEmits>()
 
+// Handle ESC key to close modals
+const handleEscKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    if (showDeleteModal.value) {
+      closeDeleteModal()
+    } else if (showNameModal.value) {
+      closeNameModal()
+    }
+  }
+}
+
 onMounted(() => {
   memoryStore.setLoadMessages(loadMessages)
+  document.addEventListener('keydown', handleEscKey)
+});
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscKey)
 });
 
 const loadMessages = async () => {

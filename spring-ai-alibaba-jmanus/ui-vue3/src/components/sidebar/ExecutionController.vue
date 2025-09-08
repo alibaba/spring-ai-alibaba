@@ -68,7 +68,7 @@
         v-if="showPublishButton"
       >
         <Icon icon="carbon:application" width="16" />
-        {{ t('sidebar.publishMcpService') }}
+        {{ buttonText }}
       </button>
       
       <!-- Internal Call wrapper - only show when enableInternalToolcall is true -->
@@ -149,7 +149,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { PlanParameterApiService, type ParameterRequirements } from '@/api/plan-parameter-api-service'
@@ -299,6 +299,15 @@ Response: {
 ])
 
 // Computed properties
+const isAnyServiceEnabled = computed(() => {
+  return props.toolInfo?.enableInternalToolcall || 
+         props.toolInfo?.enableHttpService || 
+         props.toolInfo?.enableMcpService
+})
+
+const buttonText = computed(() => {
+  return isAnyServiceEnabled.value ? t('sidebar.updateServiceStatus') : t('sidebar.publishMcpService')
+})
 
 // Methods
 const handleExecutePlan = () => {

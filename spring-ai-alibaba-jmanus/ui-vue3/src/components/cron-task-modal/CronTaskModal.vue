@@ -481,13 +481,28 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
+// Handle ESC key to close modals
+const handleEscKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    if (showDeleteConfirm.value) {
+      cancelDelete()
+    } else if (showCreateOptions.value) {
+      cancelCreateOptions()
+    } else if (modelValue.value) {
+      emit('update:modelValue', false)
+    }
+  }
+}
+
 // Lifecycle hooks
 onMounted(() => {
   document.addEventListener('click', handleClickOutside, true)
+  document.addEventListener('keydown', handleEscKey)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside, true)
+  document.removeEventListener('keydown', handleEscKey)
 })
 
 // Watch modal display state, load task list
