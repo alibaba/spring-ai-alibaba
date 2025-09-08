@@ -1,7 +1,7 @@
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.impl;
 
+import com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.AbstractAgentTypeProvider;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.AgentShell;
-import com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.AgentTypeProvider;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.CodeSections;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.RenderContext;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import java.util.Map;
  * @since 2025/8/28 17:57
  */
 @Component
-public class ReactAgentProvider implements AgentTypeProvider {
+public class ReactAgentProvider extends AbstractAgentTypeProvider {
 
 	@Override
 	public String type() {
@@ -99,23 +99,13 @@ public class ReactAgentProvider implements AgentTypeProvider {
 		Integer maxIter = toInt(handle.get("max_iterations"));
 		boolean hasResolver = handle.containsKey("resolver") && str(handle.get("resolver")) != null;
 
-		StringBuilder code = new StringBuilder();
-		code.append("ReactAgent ")
-			.append(var)
-			.append(" = ReactAgent.builder()\n")
-			.append(".name(\"")
-			.append(esc(shell.getName()))
-			.append("\")\n")
-			.append(".description(\"")
-			.append(esc(nvl(shell.getDescription())))
-			.append("\")\n");
-		if (shell.getOutputKey() != null) {
-			code.append(".outputKey(\"").append(esc(shell.getOutputKey())).append("\")\n");
-		}
+		StringBuilder code = generateBasicBuilderCode("ReactAgent", var, shell);
+		
+		// ReactAgent 特有的字段
 		if (shell.getInputKeys() != null && !shell.getInputKeys().isEmpty()) {
 			// todo: 目前取第一个作为主输入键， 后续计划将多个inputKey通过占位符注入到instruction中
 			String primaryInputKey = shell.getInputKeys().get(0);
-			code.append(".llmInputMessagesKey(\"").append(esc(primaryInputKey)).append("\")\n");
+			code.append(".inputKey(\"").append(esc(primaryInputKey)).append("\")\n");
 		}
 		code.append(".model(chatModel)\n");
 
@@ -128,35 +118,11 @@ public class ReactAgentProvider implements AgentTypeProvider {
 		if (hasResolver) {
 			code.append(".resolver(toolCallbackResolver)\n");
 		}
-		// state.strategies → KeyStrategy（全量映射，缺省时为 messages 追加策略）
-		code.append(".state(() -> {\n").append("Map<String, KeyStrategy> strategies = new HashMap<>();\n");
 
-		// 解析 handle.state.strategies 生成代码
-		boolean hasMessagesStrategy = false;
-		Object stateObj = handle.get("state");
-		if (stateObj instanceof Map<?, ?> stateMap) {
-			Object strategiesObj = stateMap.get("strategies");
-			if (strategiesObj instanceof Map<?, ?> strategiesMap) {
-				for (Map.Entry<?, ?> e : strategiesMap.entrySet()) {
-					String k = String.valueOf(e.getKey());
-					String v = String.valueOf(e.getValue());
-					String strategyNew = (v != null && v.equalsIgnoreCase("append")) ? "new AppendStrategy()"
-							: "new ReplaceStrategy()";
-					code.append("strategies.put(\"").append(esc(k)).append("\", ").append(strategyNew).append(");\n");
-
-					if ("messages".equals(k)) {
-						hasMessagesStrategy = true;
-					}
-				}
-			}
-		}
-
-		// 若未显式指定 messages 策略，则添加默认策略
-		if (!hasMessagesStrategy) {
-			code.append("strategies.put(\"messages\", new AppendStrategy());\n");
-		}
-
-		code.append("return strategies;\n").append("})\n").append(".build();\n");
+		StateStrategyResult stateResult = generateStateStrategyCode(handle, "new AppendStrategy()");
+		code.append(stateResult.code);
+		
+		code.append(".build();\n");
 
 		return new CodeSections().imports("import com.alibaba.cloud.ai.graph.CompiledGraph;",
 				"import com.alibaba.cloud.ai.graph.agent.ReactAgent;", "import com.alibaba.cloud.ai.graph.KeyStrategy;",
@@ -173,30 +139,32 @@ public class ReactAgentProvider implements AgentTypeProvider {
 			.resolver(hasResolver);
 	}
 
-	private static String nvl(String s) {
-		return s == null ? "" : s;
-	}
 
-	private static String esc(String s) {
-		return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
-	}
-
-	private static String str(Object o) {
-		return o == null ? null : String.valueOf(o);
-	}
-
-	private static Integer toInt(Object v) {
-		if (v instanceof Integer i)
-			return i;
-		if (v instanceof Number n)
-			return n.intValue();
-		if (v instanceof String s)
-			try {
-				return Integer.parseInt(s.trim());
+	@Override
+	@SuppressWarnings("unchecked")
+	protected void validateSpecific(Map<String, Object> root) {
+		// ReactAgent 必须有 model 配置
+		Map<String, Object> handle = requireHandle(root);
+		
+		if (handle.get("model") == null) {
+			throw new IllegalArgumentException("ReactAgent requires model configuration in handle");
+		}
+		
+		// 如果有 tools，检查相关配置
+		if (handle.get("tools") instanceof List<?> tools && !tools.isEmpty()) {
+			// 检查 tools 是否为空字符串
+			for (Object tool : tools) {
+				if (tool instanceof String s && s.trim().isEmpty()) {
+					throw new IllegalArgumentException("ReactAgent tool names cannot be empty");
+				}
 			}
-			catch (Exception ignore) {
-			}
-		return null;
+		}
+		
+		// 检查 max_iterations 如果存在，必须是正数
+		Object maxIterations = handle.get("max_iterations");
+		if (maxIterations != null) {
+			requirePositiveNumber(maxIterations, "max_iterations", 1);
+		}
 	}
 
 }

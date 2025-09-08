@@ -1,7 +1,7 @@
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.impl;
 
+import com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.AbstractAgentTypeProvider;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.AgentShell;
-import com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.AgentTypeProvider;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.CodeSections;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.RenderContext;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import java.util.Map;
  * @since 2025/8/28 17:59
  */
 @Component
-public class SequentialAgentProvider implements AgentTypeProvider {
+public class SequentialAgentProvider extends AbstractAgentTypeProvider {
 
 	@Override
 	public String type() {
@@ -67,54 +67,23 @@ public class SequentialAgentProvider implements AgentTypeProvider {
 			List<String> childVarNames) {
 		String var = ctx.nextVar("seqAgent_");
 
-		StringBuilder code = new StringBuilder();
-		code.append("SequentialAgent ")
-			.append(var)
-			.append(" = SequentialAgent.builder()\n")
-			.append(".name(\"")
-			.append(esc(shell.getName()))
-			.append("\")\n")
-			.append(".description(\"")
-			.append(esc(nvl(shell.getDescription())))
-			.append("\")\n");
-		if (shell.getOutputKey() != null) {
-			code.append(".outputKey(\"").append(esc(shell.getOutputKey())).append("\")\n");
-		}
+		// 使用基类方法生成基础 builder 代码
+		StringBuilder code = generateBasicBuilderCode("SequentialAgent", var, shell);
+		
+		// SequentialAgent 特有的字段
 		if (shell.getInputKeys() != null && !shell.getInputKeys().isEmpty()) {
 			String primaryInputKey = shell.getInputKeys().get(0);
 			code.append(".inputKey(\"").append(esc(primaryInputKey)).append("\")\n");
 		}
-		if (childVarNames != null && !childVarNames.isEmpty()) {
-			code.append(".subAgents(List.of(").append(String.join(", ", childVarNames)).append("))\n");
-		}
-		// state.strategies（全量映射，默认 messages=Append）
-		code.append(".state(() -> {\n").append("Map<String, KeyStrategy> strategies = new HashMap<>();\n");
-
-		boolean hasMessagesStrategy = false;
-		Object stateObj = handle.get("state");
-		if (stateObj instanceof Map<?, ?> stateMap) {
-			Object strategiesObj = stateMap.get("strategies");
-			if (strategiesObj instanceof Map<?, ?> strategiesMap) {
-				for (Map.Entry<?, ?> e : strategiesMap.entrySet()) {
-					String k = String.valueOf(e.getKey());
-					String v = String.valueOf(e.getValue());
-					String strategyNew = (v != null && v.equalsIgnoreCase("append")) ? "new AppendStrategy()"
-							: "new ReplaceStrategy()";
-					code.append("strategies.put(\"").append(esc(k)).append("\", ").append(strategyNew).append(");\n");
-
-					if ("messages".equals(k)) {
-						hasMessagesStrategy = true;
-					}
-				}
-			}
-		}
-
-		// 只有当 messages 未被显式定义时，才添加默认策略
-		if (!hasMessagesStrategy) {
-			code.append("strategies.put(\"messages\", new AppendStrategy());\n");
-		}
-
-		code.append("return strategies;\n").append("})\n").append(".build();\n");
+		
+		// 使用基类方法添加子代理
+		appendSubAgents(code, childVarNames);
+		
+		// 使用基类方法生成状态策略代码
+		StateStrategyResult stateResult = generateStateStrategyCode(handle, "new AppendStrategy()");
+		code.append(stateResult.code);
+		
+		code.append(".build();\n");
 
 		return new CodeSections()
 			.imports("import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;",
@@ -125,12 +94,11 @@ public class SequentialAgentProvider implements AgentTypeProvider {
 			.var(var);
 	}
 
-	private static String nvl(String s) {
-		return s == null ? "" : s;
-	}
 
-	private static String esc(String s) {
-		return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
+	@Override
+	protected void validateSpecific(Map<String, Object> root) {
+		// SequentialAgent 必须有至少一个子代理
+		requireSubAgents(root, 1);
 	}
 
 }

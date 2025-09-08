@@ -28,4 +28,7 @@ public interface AgentTypeProvider {
 	// 渲染代码分段：根据壳层 + handle + 子 Agent 变量名（父节点调用时传入）产出代码与导入
 	CodeSections render(AgentShell shell, Map<String, Object> handle, RenderContext ctx, List<String> childVarNames);
 
+	// 校验 DSL 数据的有效性
+	void validateDSL(Map<String, Object> root);
+
 }

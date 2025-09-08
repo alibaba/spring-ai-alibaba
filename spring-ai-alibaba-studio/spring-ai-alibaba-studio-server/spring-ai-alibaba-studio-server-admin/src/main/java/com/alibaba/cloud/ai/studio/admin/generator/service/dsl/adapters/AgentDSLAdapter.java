@@ -6,6 +6,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.agent.Agent;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLAdapter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.Serializer;
+import com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.AgentTypeProvider;
+import com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent.AgentTypeProviderRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -24,10 +26,13 @@ public class AgentDSLAdapter implements DSLAdapter {
 	private final Serializer serializer;
 
 	private final ObjectMapper objectMapper;
+	
+	private final AgentTypeProviderRegistry providerRegistry;
 
-	public AgentDSLAdapter(@Qualifier("yaml") Serializer serializer) {
+	public AgentDSLAdapter(@Qualifier("yaml") Serializer serializer, AgentTypeProviderRegistry providerRegistry) {
 		this.serializer = serializer;
 		this.objectMapper = new ObjectMapper();
+		this.providerRegistry = providerRegistry;
 	}
 
 	@Override
@@ -113,33 +118,19 @@ public class AgentDSLAdapter implements DSLAdapter {
 		if (isBlank(type) || isBlank(name)) {
 			throw new IllegalArgumentException("invalid agent dsl: 'type/agent_class' and 'name' are required");
 		}
-		// 针对 parallel 的基本校验（与 ParallelAgent 约束对齐）
-		if ("parallel".equalsIgnoreCase(type)) {
-			Object subs = root.get("sub_agents");
-			if (!(subs instanceof List)) {
-				throw new IllegalArgumentException("Parallel agent requires 'sub_agents' (array)");
-			}
-			@SuppressWarnings("unchecked")
-			List<Map<String, Object>> subAgents = (List<Map<String, Object>>) subs;
-			int size = subAgents.size();
-			if (size < 2 || size > 10) {
-				throw new IllegalArgumentException("Parallel agent requires 2-10 sub_agents, got: " + size);
-			}
-			// 校验子 agent 的 output_key 唯一
-			Set<String> keys = new HashSet<>();
-			Set<String> dup = new HashSet<>();
-			for (Map<String, Object> sa : subAgents) {
-				Map<String, Object> sar = getAgentRoot(sa);
-				if (sar == null)
-					sar = sa;
-				String ok = (String) sar.get("output_key");
-				if (ok != null && !keys.add(ok)) {
-					dup.add(ok);
-				}
-			}
-			if (!dup.isEmpty()) {
-				throw new IllegalArgumentException("Duplicate output keys among sub_agents: " + dup);
-			}
+		// 针对不同 Agent 类型的校验
+		validateAgentTypeSpecificConstraints(type, root);
+	}
+
+	private void validateAgentTypeSpecificConstraints(String type, Map<String, Object> root) {
+		if (type == null || root == null) {
+			return;
+		}
+
+		// 使用 AgentTypeProvider 进行校验
+		AgentTypeProvider provider = providerRegistry.get(type);
+		if (provider != null) {
+			provider.validateDSL(root);
 		}
 	}
 
@@ -262,22 +253,9 @@ public class AgentDSLAdapter implements DSLAdapter {
 			m.put("state", state);
 		}
 
-		// 并行/流程配置回写（只对 parallel 做结构化映射）
-		Map<String, Object> flowCfg = agent.getFlowConfig();
-		if (flowCfg != null
-				&& "parallel".equalsIgnoreCase(String.valueOf(flowCfg.getOrDefault("type", agent.getAgentClass())))) {
-			Map<String, Object> merge = new HashMap<>();
-			Object ms = flowCfg.get("merge_strategy");
-			if (ms instanceof String)
-				merge.put("strategy", ms);
-			Object sep = flowCfg.get("separator");
-			if (sep instanceof String)
-				merge.put("separator", sep);
-			if (!merge.isEmpty())
-				m.put("merge", merge);
-			Object mc = flowCfg.get("max_concurrency");
-			if (mc instanceof Number)
-				m.put("max_concurrency", ((Number) mc).intValue());
+		// 导出 handle（如果存在）
+		if (agent.getHandle() != null && !agent.getHandle().isEmpty()) {
+			m.put("handle", agent.getHandle());
 		}
 
 		// 递归 sub_agents
