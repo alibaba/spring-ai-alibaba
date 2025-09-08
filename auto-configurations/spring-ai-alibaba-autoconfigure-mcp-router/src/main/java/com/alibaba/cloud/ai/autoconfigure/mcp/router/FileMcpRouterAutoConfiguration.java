@@ -21,21 +21,22 @@ import com.alibaba.cloud.ai.mcp.router.core.discovery.FileConfigMcpServiceDiscov
 import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscovery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableConfigurationProperties(McpRouterProperties.class)
-@ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnExpression(
+		"${" + McpRouterProperties.CONFIG_PREFIX + ".enabled:true} == true " +
+		"and '${" + McpRouterProperties.CONFIG_PREFIX + ".discovery-type}' == 'file'"
+)
 public class FileMcpRouterAutoConfiguration {
 
 	private static final Logger log = LoggerFactory.getLogger(FileMcpRouterAutoConfiguration.class);
 
 	@Bean
-	@ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "discovery-type", havingValue = "file")
 	public McpServiceDiscovery fileConfigMcpServiceDiscovery(McpRouterProperties properties) {
 		return new FileConfigMcpServiceDiscovery(properties);
 	}
