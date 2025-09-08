@@ -100,7 +100,7 @@ public class ReactAgentProvider extends AbstractAgentTypeProvider {
 		boolean hasResolver = handle.containsKey("resolver") && str(handle.get("resolver")) != null;
 
 		StringBuilder code = generateBasicBuilderCode("ReactAgent", var, shell);
-		
+
 		// ReactAgent 特有的字段
 		if (shell.getInputKeys() != null && !shell.getInputKeys().isEmpty()) {
 			// todo: 目前取第一个作为主输入键， 后续计划将多个inputKey通过占位符注入到instruction中
@@ -121,7 +121,7 @@ public class ReactAgentProvider extends AbstractAgentTypeProvider {
 
 		StateStrategyResult stateResult = generateStateStrategyCode(handle, "new AppendStrategy()");
 		code.append(stateResult.code);
-		
+
 		code.append(".build();\n");
 
 		return new CodeSections().imports("import com.alibaba.cloud.ai.graph.CompiledGraph;",
@@ -139,17 +139,16 @@ public class ReactAgentProvider extends AbstractAgentTypeProvider {
 			.resolver(hasResolver);
 	}
 
-
 	@Override
 	@SuppressWarnings("unchecked")
 	protected void validateSpecific(Map<String, Object> root) {
 		// ReactAgent 必须有 model 配置
 		Map<String, Object> handle = requireHandle(root);
-		
+
 		if (handle.get("model") == null) {
 			throw new IllegalArgumentException("ReactAgent requires model configuration in handle");
 		}
-		
+
 		// 如果有 tools，检查相关配置
 		if (handle.get("tools") instanceof List<?> tools && !tools.isEmpty()) {
 			// 检查 tools 是否为空字符串
@@ -159,7 +158,7 @@ public class ReactAgentProvider extends AbstractAgentTypeProvider {
 				}
 			}
 		}
-		
+
 		// 检查 max_iterations 如果存在，必须是正数
 		Object maxIterations = handle.get("max_iterations");
 		if (maxIterations != null) {

@@ -26,7 +26,7 @@ public class AgentDSLAdapter implements DSLAdapter {
 	private final Serializer serializer;
 
 	private final ObjectMapper objectMapper;
-	
+
 	private final AgentTypeProviderRegistry providerRegistry;
 
 	public AgentDSLAdapter(@Qualifier("yaml") Serializer serializer, AgentTypeProviderRegistry providerRegistry) {

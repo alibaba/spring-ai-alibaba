@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * AgentTypeProvider 的抽象基类，提供通用的校验逻辑和渲染工具
- * 
+ *
  * @author yHong
  * @version 1.0
  * @since 2025/9/8 18:31
@@ -21,23 +21,22 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 		if (root == null) {
 			throw new IllegalArgumentException(type() + " requires valid configuration");
 		}
-		
+
 		String name = (String) root.get("name");
 		if (isBlank(name)) {
 			throw new IllegalArgumentException(type() + " requires 'name' field");
 		}
-		
+
 		// 调用子类特定的校验逻辑
 		validateSpecific(root);
 	}
-	
+
 	/**
 	 * 子类实现特定的校验逻辑
 	 * @param root DSL 根对象
 	 */
 	protected abstract void validateSpecific(Map<String, Object> root);
-	
-	
+
 	/**
 	 * 校验 handle 是否存在
 	 * @param root DSL 根对象
@@ -51,7 +50,7 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 		}
 		return handle;
 	}
-	
+
 	/**
 	 * 校验必须有子代理
 	 * @param root DSL 根对象
@@ -65,11 +64,12 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 		}
 		List<Map<String, Object>> subAgents = (List<Map<String, Object>>) subs;
 		if (subAgents.size() < minCount) {
-			throw new IllegalArgumentException(type() + " requires at least " + minCount + " sub-agent(s), got: " + subAgents.size());
+			throw new IllegalArgumentException(
+					type() + " requires at least " + minCount + " sub-agent(s), got: " + subAgents.size());
 		}
 		return subAgents;
 	}
-	
+
 	/**
 	 * 校验数值字段
 	 * @param value 字段值
@@ -90,14 +90,14 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 		}
 		return num;
 	}
-	
+
 	/**
 	 * 检查字符串是否为空
 	 */
 	protected boolean isBlank(String s) {
 		return s == null || s.trim().isEmpty();
 	}
-	
+
 	/**
 	 * 检查是否有有效的输入键
 	 */
@@ -106,7 +106,7 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 		List<?> inputKeys = (List<?>) root.get("input_keys");
 		return !isBlank(inputKey) || (inputKeys != null && !inputKeys.isEmpty());
 	}
-	
+
 	/**
 	 * 生成基础 builder 代码（name, description, outputKey）
 	 * @param builderName builder 类名（如 "ReactAgent", "SequentialAgent"）
@@ -116,29 +116,37 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 	 */
 	protected StringBuilder generateBasicBuilderCode(String builderName, String varName, AgentShell shell) {
 		StringBuilder code = new StringBuilder();
-		code.append(builderName).append(" ").append(varName)
-			.append(" = ").append(builderName).append(".builder()\n")
-			.append(".name(\"").append(esc(shell.getName())).append("\")\n")
-			.append(".description(\"").append(esc(nvl(shell.getDescription()))).append("\")\n");
-		
+		code.append(builderName)
+			.append(" ")
+			.append(varName)
+			.append(" = ")
+			.append(builderName)
+			.append(".builder()\n")
+			.append(".name(\"")
+			.append(esc(shell.getName()))
+			.append("\")\n")
+			.append(".description(\"")
+			.append(esc(nvl(shell.getDescription())))
+			.append("\")\n");
+
 		if (shell.getOutputKey() != null) {
 			code.append(".outputKey(\"").append(esc(shell.getOutputKey())).append("\")\n");
 		}
-		
+
 		return code;
 	}
-	
+
 	/**
 	 * 生成状态策略代码
 	 * @param handle Agent handle 配置
 	 * @param defaultMessagesStrategy 当 messages 策略未定义时的默认值（null 表示不添加默认值）
 	 * @return 生成的状态策略代码和是否有 messages 策略的标志
 	 */
-	protected StateStrategyResult generateStateStrategyCode(Map<String, Object> handle, String defaultMessagesStrategy) {
+	protected StateStrategyResult generateStateStrategyCode(Map<String, Object> handle,
+			String defaultMessagesStrategy) {
 		StringBuilder code = new StringBuilder();
-		code.append(".state(() -> {\n")
-			.append("Map<String, KeyStrategy> strategies = new HashMap<>();\n");
-		
+		code.append(".state(() -> {\n").append("Map<String, KeyStrategy> strategies = new HashMap<>();\n");
+
 		boolean hasMessagesStrategy = false;
 		Object stateObj = handle.get("state");
 		if (stateObj instanceof Map<?, ?> stateMap) {
@@ -147,43 +155,43 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 				for (Map.Entry<?, ?> e : strategiesMap.entrySet()) {
 					String k = String.valueOf(e.getKey());
 					String v = String.valueOf(e.getValue());
-					String strategyNew = (v != null && v.equalsIgnoreCase("append")) 
-						? "new AppendStrategy()"
-						: "new ReplaceStrategy()";
-					code.append("strategies.put(\"").append(esc(k)).append("\", ")
-						.append(strategyNew).append(");\n");
-					
+					String strategyNew = (v != null && v.equalsIgnoreCase("append")) ? "new AppendStrategy()"
+							: "new ReplaceStrategy()";
+					code.append("strategies.put(\"").append(esc(k)).append("\", ").append(strategyNew).append(");\n");
+
 					if ("messages".equals(k)) {
 						hasMessagesStrategy = true;
 					}
 				}
 			}
 		}
-		
+
 		// 添加默认 messages 策略（如果需要）
 		if (!hasMessagesStrategy && defaultMessagesStrategy != null) {
 			code.append("strategies.put(\"messages\", ").append(defaultMessagesStrategy).append(");\n");
 		}
-		
-		code.append("return strategies;\n")
-			.append("})\n");
-		
+
+		code.append("return strategies;\n").append("})\n");
+
 		return new StateStrategyResult(code.toString(), hasMessagesStrategy);
 	}
-	
+
 	/**
 	 * 状态策略生成结果
 	 */
 	protected static class StateStrategyResult {
+
 		public final String code;
+
 		public final boolean hasMessagesStrategy;
-		
+
 		public StateStrategyResult(String code, boolean hasMessagesStrategy) {
 			this.code = code;
 			this.hasMessagesStrategy = hasMessagesStrategy;
 		}
+
 	}
-	
+
 	/**
 	 * 添加子代理列表
 	 */
@@ -192,28 +200,28 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 			code.append(".subAgents(List.of(").append(String.join(", ", childVarNames)).append("))\n");
 		}
 	}
-	
+
 	/**
 	 * null 值转空字符串
 	 */
 	protected static String nvl(String s) {
 		return s == null ? "" : s;
 	}
-	
+
 	/**
 	 * 转义字符串用于代码生成
 	 */
 	protected static String esc(String s) {
 		return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
 	}
-	
+
 	/**
 	 * 对象转字符串
 	 */
 	protected static String str(Object o) {
 		return o == null ? null : String.valueOf(o);
 	}
-	
+
 	/**
 	 * 对象转整数
 	 */
@@ -227,9 +235,11 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 		if (v instanceof String s) {
 			try {
 				return Integer.parseInt(s.trim());
-			} catch (Exception ignore) {
+			}
+			catch (Exception ignore) {
 			}
 		}
 		return null;
 	}
+
 }
