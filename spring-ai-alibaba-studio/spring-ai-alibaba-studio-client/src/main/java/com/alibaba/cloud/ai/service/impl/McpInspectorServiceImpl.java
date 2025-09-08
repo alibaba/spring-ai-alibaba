@@ -22,19 +22,15 @@ import com.alibaba.cloud.ai.common.R;
 import com.alibaba.cloud.ai.container.McpClientContainer;
 import com.alibaba.cloud.ai.domain.McpConnectRequest;
 import com.alibaba.cloud.ai.service.McpInspectorService;
-import com.alibaba.cloud.ai.strategy.McpParameterFactory;
 import com.alibaba.cloud.ai.strategy.transport.impl.AbstractTransport;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 public class McpInspectorServiceImpl implements McpInspectorService {
 
 	private final McpClientContainer mcpClientContainer;
-
 
 	public McpInspectorServiceImpl(McpClientContainer mcpClientContainer) {
 		this.mcpClientContainer = mcpClientContainer;
