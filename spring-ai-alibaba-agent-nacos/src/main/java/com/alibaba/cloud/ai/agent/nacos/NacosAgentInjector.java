@@ -1,0 +1,93 @@
+package com.alibaba.cloud.ai.agent.nacos;
+
+import com.alibaba.cloud.ai.agent.nacos.vo.AgentVO;
+import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
+import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.nacos.api.exception.NacosException;
+import com.alibaba.nacos.client.config.NacosConfigService;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
+
+public class NacosAgentInjector {
+
+	public static void injectPrompt(NacosConfigService nacosConfigService, ChatClient chatClient, String promptKey) {
+
+		try {
+			PromptVO promptVO = NacosPromptInjector.getPromptByKey(nacosConfigService, promptKey);
+			if (promptVO != null) {
+				NacosPromptInjector.replacePrompt(chatClient, promptVO);
+			}
+			NacosPromptInjector.registerPromptListener(nacosConfigService, chatClient, promptKey);
+		}
+
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	/**
+	 * load prompt by agent id.
+	 *
+	 * @param nacosConfigService
+	 * @param agentId
+	 * @return
+	 */
+	public static AgentVO loadAgentVO(NacosConfigService nacosConfigService, String agentId) {
+		try {
+			String config = nacosConfigService.getConfig(String.format("agent-%s.json", agentId), "nacos-ai-agent",
+					3000L);
+			return JSON.parseObject(config, AgentVO.class);
+		}
+		catch (NacosException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static void injectPromptByAgentId(NacosConfigService nacosConfigService, ChatClient chatClient, String agentId) {
+
+		try {
+			AgentVO agentVO = loadAgentVO(nacosConfigService, agentId);
+			if (agentVO == null) {
+				return;
+			}
+			PromptVO promptVO = NacosPromptInjector.loadPromptByAgentId(nacosConfigService, agentVO);
+			if (promptVO != null) {
+				NacosPromptInjector.replacePrompt(chatClient, promptVO);
+			}
+			NacosPromptInjector.registryPromptByAgentId(chatClient, nacosConfigService, agentId, promptVO);
+		}
+
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	public static void injectModel(NacosOptions nacosOptions, ChatClient chatClient, String agentId) {
+		ModelVO modelVO = NacosModelInjector.getModelByAgentId(nacosOptions, agentId);
+		if (modelVO != null) {
+			try {
+				ChatModel chatModel = NacosModelInjector.initModel(nacosOptions, modelVO);
+				NacosModelInjector.replaceModel(chatClient, chatModel);
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+		NacosModelInjector.registerModelListener(chatClient, nacosOptions, agentId);
+	}
+
+
+	public static ChatModel initModel(NacosOptions nacosOptions, String agentId) {
+		ModelVO modelVo = NacosModelInjector.getModelByAgentId(nacosOptions, agentId);
+		if (modelVo == null) {
+			return null;
+		}
+
+		return NacosModelInjector.initModel(nacosOptions, modelVo);
+	}
+
+}
