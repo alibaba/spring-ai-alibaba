@@ -35,11 +35,9 @@ public class McpInspectorServiceImpl implements McpInspectorService {
 
 	private final McpClientContainer mcpClientContainer;
 
-	private final McpParameterFactory parameterFactory;
 
-	public McpInspectorServiceImpl(McpClientContainer mcpClientContainer, McpParameterFactory parameterFactory) {
+	public McpInspectorServiceImpl(McpClientContainer mcpClientContainer) {
 		this.mcpClientContainer = mcpClientContainer;
-		this.parameterFactory = parameterFactory;
 	}
 
 	// 拿到对应的信息
