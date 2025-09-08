@@ -101,7 +101,7 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 	protected abstract List<DialectConverter<T>> getDialectConverters();
 
 	/**
-	 * 将文本中变量占位符进行转化，比如Dify DSL的"你好，{{#123.query#}}"转化为"你好，{nodeName1.query}"
+	 * 将文本中变量占位符进行转化，比如Dify DSL的"你好，{{#123.query#}}"转化为"你好，{nodeName1_query}"
 	 * @param dialectType dsl语言
 	 * @param templateString 模板字符串
 	 * @param idToVarName nodeId转nodeVarName的映射
