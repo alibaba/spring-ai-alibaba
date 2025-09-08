@@ -28,10 +28,8 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableConfigurationProperties(McpRouterProperties.class)
-@ConditionalOnExpression(
-		"${" + McpRouterProperties.CONFIG_PREFIX + ".enabled:true} == true " +
-		"and '${" + McpRouterProperties.CONFIG_PREFIX + ".discovery-type}' == 'file'"
-)
+@ConditionalOnExpression("${" + McpRouterProperties.CONFIG_PREFIX + ".enabled:true} == true " + "and '${"
+		+ McpRouterProperties.CONFIG_PREFIX + ".discovery-type}' == 'file'")
 public class FileMcpRouterAutoConfiguration {
 
 	private static final Logger log = LoggerFactory.getLogger(FileMcpRouterAutoConfiguration.class);
