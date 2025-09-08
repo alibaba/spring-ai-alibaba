@@ -31,11 +31,12 @@ import org.springframework.core.io.Resource;
 class VectorStoreConfig {
 
 	/**
-	 * Define a default VectorStore bean so that the KnowledgeRetrievalNode can get it
+	 * Define a default VectorStore bean so that the KnowledgeRetrievalNode can get it.
+	 * Following Single Responsibility Principle - this configuration class is solely responsible for VectorStore setup.
 	 */
 
 	@Value("classpath:data/manual.txt")
-	Resource ragSource;
+	private Resource ragSource;
 
 	@Bean
 	@Primary
