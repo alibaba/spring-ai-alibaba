@@ -34,7 +34,7 @@ public class GeneratorController extends ProjectGenerationController<GraphProjec
 	@Override
 	public GraphProjectRequest projectRequest(Map<String, String> headers) {
 		GraphProjectRequest request = new GraphProjectRequest();
-		BeanWrapperImpl bean = new BeanWrapperImpl(request);
+		BeanWrapperImpl bean = new BeanWrapperImpl(this);
 		getMetadata().defaults().forEach((key, value) -> {
 			if (bean.isWritableProperty(key)) {
 				// We want to be able to infer a package name if none has been
