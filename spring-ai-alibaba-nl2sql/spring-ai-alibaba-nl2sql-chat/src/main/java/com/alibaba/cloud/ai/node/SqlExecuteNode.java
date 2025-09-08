@@ -61,10 +61,13 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 
 	private final DatasourceService datasourceService;
 
-	public SqlExecuteNode(Accessor dbAccessor, DatasourceService datasourceService) {
+	private final DbConfig dbConfig;
+
+	public SqlExecuteNode(Accessor dbAccessor, DatasourceService datasourceService, DbConfig dbConfig) {
 		super();
 		this.dbAccessor = dbAccessor;
 		this.datasourceService = datasourceService;
+		this.dbConfig = dbConfig;
 	}
 
 	@Override
@@ -97,7 +100,8 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 			// Get the agent ID from the state
 			String agentIdStr = StateUtils.getStringValue(state, Constant.AGENT_ID);
 			if (agentIdStr == null || agentIdStr.trim().isEmpty()) {
-				throw new RuntimeException("未找到智能体ID，无法获取数据源配置");
+				// 返回默认数据源
+				return dbConfig;
 			}
 
 			Integer agentId = Integer.valueOf(agentIdStr);
