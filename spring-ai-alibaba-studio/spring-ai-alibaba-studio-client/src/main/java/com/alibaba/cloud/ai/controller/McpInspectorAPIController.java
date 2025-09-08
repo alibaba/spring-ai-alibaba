@@ -48,7 +48,4 @@ public class McpInspectorAPIController {
     public R<McpSchema.ListToolsResult> mcpClientList(@RequestBody String clientName) {
         return mcpInspectorService.listTools(clientName);
     }
-
-
-
 }

@@ -20,22 +20,22 @@ package com.alibaba.cloud.ai.strategy.transport.impl;
 import com.alibaba.cloud.ai.common.McpTransportType;
 import com.alibaba.cloud.ai.container.McpClientContainer;
 import com.alibaba.cloud.ai.domain.McpConnectRequest;
-import com.alibaba.cloud.ai.domain.McpParams;
 import com.alibaba.cloud.ai.domain.impl.SSEParams;
-import com.alibaba.cloud.ai.model.ChatClient;
+import com.alibaba.cloud.ai.domain.impl.StreamableParams;
 import com.alibaba.cloud.ai.strategy.McpParameterFactory;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SSETransportProcesser extends AbstractTransport {
+public class StreamableHttpTransportProcesser extends AbstractTransport {
 
-    private final Logger log = LoggerFactory.getLogger(SSETransportProcesser.class);
+    private final Logger log = LoggerFactory.getLogger(StreamableHttpTransportProcesser.class);
 
     @Autowired
     private McpClientContainer mcpClientContainer;
@@ -45,16 +45,15 @@ public class SSETransportProcesser extends AbstractTransport {
 
     @Override
     protected McpTransportType getTransportType() {
-        return McpTransportType.SSE;
+        return McpTransportType.StreamableHTTP;
     }
     @Override
     public McpSyncClient connect(McpConnectRequest mcpConnectRequest) {
         //去连接对应的mcpServer
-        SSEParams sseParams= parameterFactory.parse(mcpConnectRequest.getTransportType(), mcpConnectRequest.getParams());
-        HttpClientSseClientTransport sseTransport = HttpClientSseClientTransport.builder(sseParams.getBaseUri())
-                .sseEndpoint(sseParams.getSseEndpoint())
+        StreamableParams streamableParams = parameterFactory.parse(mcpConnectRequest.getTransportType(), mcpConnectRequest.getParams());
+        HttpClientStreamableHttpTransport httpClientStreamableHttpTransport   = HttpClientStreamableHttpTransport.builder(streamableParams.getBaseUri())
                 .build();
-        McpSyncClient mcpSyncClient= McpClient.sync(sseTransport)
+        McpSyncClient mcpSyncClient= McpClient.sync(httpClientStreamableHttpTransport)
                 .build();
         mcpClientContainer.add(getClientName(), mcpSyncClient);
         if(!mcpSyncClient.isInitialized()){
@@ -65,6 +64,6 @@ public class SSETransportProcesser extends AbstractTransport {
 
     @Override
     public String getClientName() {
-        return  "SSE_" + counter.getAndIncrement();
+        return  "StreamableHttp_" + counter.getAndIncrement();
     }
 }
