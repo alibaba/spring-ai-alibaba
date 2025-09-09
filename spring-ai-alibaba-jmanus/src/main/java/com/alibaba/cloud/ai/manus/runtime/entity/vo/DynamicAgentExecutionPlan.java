@@ -34,11 +34,6 @@ public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
 	 */
 	private String planType = "dynamic_agent";
 
-	/**
-	 * List of user-selected tool keys for DynamicToolsAgent
-	 * This allows users to specify which tools should be available for this specific plan
-	 */
-	private List<String> selectedToolKeys;
 
 	/**
 	 * Default constructor - required for Jackson deserialization
@@ -46,21 +41,13 @@ public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
 	public DynamicAgentExecutionPlan() {
 		super();
 		this.steps = new ArrayList<>();
-		this.selectedToolKeys = new ArrayList<>();
 	}
 
 	public DynamicAgentExecutionPlan(String currentPlanId, String rootPlanId, String title) {
 		super(currentPlanId, rootPlanId, title);
 		this.steps = new ArrayList<>();
-		this.selectedToolKeys = new ArrayList<>();
 	}
 
-	public DynamicAgentExecutionPlan(String currentPlanId, String rootPlanId, String title, 
-			List<String> selectedToolKeys) {
-		super(currentPlanId, rootPlanId, title);
-		this.steps = new ArrayList<>();
-		this.selectedToolKeys = selectedToolKeys != null ? new ArrayList<>(selectedToolKeys) : new ArrayList<>();
-	}
 
 	@JsonIgnore
 	public String getPlanType() {
@@ -86,48 +73,6 @@ public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
 		return steps.size();
 	}
 
-	/**
-	 * Get the list of user-selected tool keys
-	 * @return List of selected tool keys
-	 */
-	public List<String> getSelectedToolKeys() {
-		return selectedToolKeys;
-	}
-
-	/**
-	 * Set the list of user-selected tool keys
-	 * @param selectedToolKeys List of selected tool keys
-	 */
-	public void setSelectedToolKeys(List<String> selectedToolKeys) {
-		this.selectedToolKeys = selectedToolKeys != null ? new ArrayList<>(selectedToolKeys) : new ArrayList<>();
-	}
-
-	/**
-	 * Add a tool key to the selected tools list
-	 * @param toolKey Tool key to add
-	 */
-	public void addSelectedToolKey(String toolKey) {
-		if (toolKey != null && !selectedToolKeys.contains(toolKey)) {
-			selectedToolKeys.add(toolKey);
-		}
-	}
-
-	/**
-	 * Remove a tool key from the selected tools list
-	 * @param toolKey Tool key to remove
-	 */
-	public void removeSelectedToolKey(String toolKey) {
-		selectedToolKeys.remove(toolKey);
-	}
-
-	/**
-	 * Check if a specific tool key is selected
-	 * @param toolKey Tool key to check
-	 * @return true if the tool key is selected, false otherwise
-	 */
-	public boolean isToolKeySelected(String toolKey) {
-		return selectedToolKeys.contains(toolKey);
-	}
 
 
 	// Implementation of AbstractExecutionPlan abstract methods
@@ -176,10 +121,6 @@ public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
 			state.append("").append(getUserRequest()).append("\n\n");
 		}
 
-		// Add Dynamic Agent specific information
-		if (selectedToolKeys != null && !selectedToolKeys.isEmpty()) {
-			state.append("- Selected Tools: ").append(String.join(", ", selectedToolKeys)).append("\n");
-		}
 
 		state.append("\n- Execution Parameters: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
@@ -281,7 +222,6 @@ public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
 	public String toString() {
 		return "DynamicAgentExecutionPlan{" +
 				"planType='" + planType + '\'' +
-				", selectedToolKeys=" + selectedToolKeys +
 				", steps=" + steps.size() +
 				", currentPlanId='" + currentPlanId + '\'' +
 				", rootPlanId='" + rootPlanId + '\'' +

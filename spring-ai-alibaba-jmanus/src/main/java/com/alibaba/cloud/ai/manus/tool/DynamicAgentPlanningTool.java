@@ -47,7 +47,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 		public StepDefinition() {
 		}
 
-		public StepDefinition(String stepRequirement, String agentName, String modelName, List<String> availableToolKeys) {
+		public StepDefinition(String stepRequirement, String agentName, String modelName, List<String> selectedToolKeys) {
 			this.stepRequirement = stepRequirement;
 			this.agentName = agentName;
 			this.modelName = modelName;
@@ -102,18 +102,16 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 
 		private boolean directResponse = false;
 
-		private List<String> selectedToolKeys;
 
 		public DynamicAgentPlanningInput() {
 		}
 
-		public DynamicAgentPlanningInput(String command, String title, List<StepDefinition> steps, boolean directResponse, List<String> selectedToolKeys) {
+		public DynamicAgentPlanningInput(String command, String title, List<StepDefinition> steps, boolean directResponse) {
 			this.command = command;
 			this.title = title;
 			this.steps = steps;
 			this.terminateColumns = null;
 			this.directResponse = directResponse;
-			this.selectedToolKeys = selectedToolKeys;
 		}
 
 		public String getCommand() {
@@ -156,13 +154,6 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			this.directResponse = directResponse;
 		}
 
-		public List<String> getSelectedToolKeys() {
-			return selectedToolKeys;
-		}
-
-		public void setSelectedToolKeys(List<String> selectedToolKeys) {
-			this.selectedToolKeys = selectedToolKeys;
-		}
 	}
 
 	public String getCurrentPlanId() {
@@ -284,8 +275,6 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 		String title = input.getTitle();
 		List<StepDefinition> steps = input.getSteps();
 		boolean directResponse = input.isDirectResponse();
-		List<String> selectedToolKeys = input.getSelectedToolKeys();
-
 		// Support directResponse mode
 		if (directResponse) {
 			log.info("Direct response mode enabled for dynamic agent");
@@ -293,13 +282,13 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			plan.setTitle(title);
 			plan.setDirectResponse(true);
 			plan.setUserRequest(title); // Here title is the user request content
-			plan.setSelectedToolKeys(selectedToolKeys != null ? selectedToolKeys : new ArrayList<>());
+			
 			this.currentPlan = plan;
 			return new ToolExecuteResult("Direct response mode: dynamic agent plan created successfully");
 		}
 
 		return switch (command) {
-			case "create" -> createDynamicAgentPlan(title, steps, input.getTerminateColumns(), selectedToolKeys);
+			case "create" -> createDynamicAgentPlan(title, steps, input.getTerminateColumns());
 			default -> {
 				log.info("Received invalid command: {}", command);
 				throw new IllegalArgumentException("Invalid command: " + command);
@@ -323,7 +312,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 		return executionStep;
 	}
 
-	public ToolExecuteResult createDynamicAgentPlan(String title, List<StepDefinition> steps, String terminateColumns, List<String> selectedToolKeys) {
+	public ToolExecuteResult createDynamicAgentPlan(String title, List<StepDefinition> steps, String terminateColumns) {
 		if (title == null || steps == null || steps.isEmpty()) {
 			log.info("Missing required parameters when creating dynamic agent plan: title={}, steps={}", title, steps);
 			return new ToolExecuteResult("Required parameters missing");
@@ -331,7 +320,6 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 
 		DynamicAgentExecutionPlan plan = new DynamicAgentExecutionPlan();
 		plan.setTitle(title);
-		plan.setSelectedToolKeys(selectedToolKeys != null ? selectedToolKeys : new ArrayList<>());
 
 		int index = 0;
 		for (StepDefinition step : steps) {
