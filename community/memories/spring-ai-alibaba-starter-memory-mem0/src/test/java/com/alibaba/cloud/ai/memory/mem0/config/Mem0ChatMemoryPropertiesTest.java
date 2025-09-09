@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 单元测试 for Mem0ChatMemoryProperties
+ * Unit tests for Mem0ChatMemoryProperties
  *
  * @author Morain Miao
  * @since 1.0.0
@@ -34,7 +34,7 @@ class Mem0ChatMemoryPropertiesTest {
 
 		// Then
 		assertThat(properties).isNotNull();
-		// 注意：client和server字段在默认构造函数中为null，需要手动初始化
+		// Note: The client and server fields are null in the default constructor and need to be manually initialized.
 		assertThat(properties.getClient()).isNull();
 		assertThat(properties.getServer()).isNull();
 	}
@@ -88,7 +88,7 @@ class Mem0ChatMemoryPropertiesTest {
 		// Given
 		Mem0ChatMemoryProperties.Client client = new Mem0ChatMemoryProperties.Client();
 
-		// Then - 验证默认值
+		// Then - Verify default values
 		assertThat(client.getBaseUrl()).isEqualTo("http://localhost:8888");
 		assertThat(client.getTimeoutSeconds()).isEqualTo(30);
 	}
@@ -98,7 +98,7 @@ class Mem0ChatMemoryPropertiesTest {
 		// Given
 		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server();
 
-		// Then - 验证默认值
+		// Then - Verify default values
 		assertThat(server.getVersion()).isNull();
 		assertThat(server.getProject()).isNull();
 		assertThat(server.getVectorStore()).isNull();
@@ -113,7 +113,7 @@ class Mem0ChatMemoryPropertiesTest {
 		Mem0ChatMemoryProperties properties1 = new Mem0ChatMemoryProperties();
 		Mem0ChatMemoryProperties properties2 = new Mem0ChatMemoryProperties();
 
-		// When - 需要先初始化client对象
+		// When - The client object needs to be initialized first
 		Mem0ChatMemoryProperties.Client client1 = new Mem0ChatMemoryProperties.Client();
 		Mem0ChatMemoryProperties.Client client2 = new Mem0ChatMemoryProperties.Client();
 		client1.setBaseUrl("http://localhost:8888");

@@ -122,7 +122,8 @@ public class Mem0ChatMemoryProperties {
 			private String provider;
 
 			/**
-			 * 支持如下向量数据库，具体配置可以去查看官方文档或Mem0源码 "qdrant": "QdrantConfig", "chroma":
+			 * The following vector databases are supported. For specific configurations, please refer to the official documentation or Mem0 source code.
+			 *  "qdrant": "QdrantConfig", "chroma":
 			 * "ChromaDbConfig", "pgvector": "PGVectorConfig", "pinecone":
 			 * "PineconeConfig", "mongodb": "MongoDBConfig", "milvus": "MilvusDBConfig",
 			 * "baidu": "BaiduDBConfig", "upstash_vector": "UpstashVectorConfig",
@@ -210,7 +211,7 @@ public class Mem0ChatMemoryProperties {
 
 				private String password;
 
-				// neo4j 支持下面两项
+				// Neo4j supports the following two items:
 				private String database;
 
 				private Boolean baseLabel;

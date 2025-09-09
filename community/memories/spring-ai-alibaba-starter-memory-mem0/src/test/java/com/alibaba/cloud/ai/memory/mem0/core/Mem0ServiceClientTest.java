@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 单元测试 for Mem0ServiceClient
+ * Unit tests for Mem0ServiceClient
  *
  * @author Morain Miao
  * @since 1.0.0
@@ -65,15 +65,15 @@ class Mem0ServiceClientTest {
 
 	@Test
 	void testConstructorWithNullProperties() {
-		// 由于构造函数没有null检查，这里会抛出NullPointerException
-		// 但不是在构造函数中，而是在后续使用config时
+		// Since the constructor lacks null checks, a NullPointerException will be thrown here
+		// Not in the constructor itself, but when the config is subsequently used
 		assertThatThrownBy(() -> new Mem0ServiceClient(null, resourceLoader)).isInstanceOf(NullPointerException.class);
 	}
 
 	@Test
 	void testConstructorWithNullResourceLoader() {
-		// 由于构造函数没有null检查，这里不会抛出异常
-		// 但在后续使用resourceLoader时会抛出异常
+		// Since the constructor lacks null checks, no exception will be thrown here
+		// But an exception will be thrown when resourceLoader is subsequently used
 		Mem0ServiceClient client = new Mem0ServiceClient(properties, null);
 		assertThat(client).isNotNull();
 	}
@@ -88,8 +88,8 @@ class Mem0ServiceClientTest {
 			.runId("test-run")
 			.build();
 
-		// When & Then - 由于需要真实的HTTP连接，这里主要测试方法调用不会抛出异常
-		// 在实际测试中，应该使用WireMock或TestContainers来模拟HTTP服务
+		// When & Then - Since a real HTTP connection is required, this primarily tests that the method invocation does not throw exceptions
+		// In actual testing, WireMock or TestContainers should be used to mock the HTTP service
 		assertThat(memoryCreate).isNotNull();
 		assertThat(memoryCreate.getUserId()).isEqualTo("test-user");
 		assertThat(memoryCreate.getAgentId()).isEqualTo("test-agent");
@@ -101,7 +101,7 @@ class Mem0ServiceClientTest {
 		// Given
 		String memoryId = "test-memory-id";
 
-		// When & Then - 测试方法存在且可以调用
+		// When & Then - Test that the method exists and can be invoked
 		assertThat(memoryId).isEqualTo("test-memory-id");
 	}
 
@@ -114,7 +114,7 @@ class Mem0ServiceClientTest {
 		searchRequest.setAgentId("test-agent");
 		searchRequest.setRunId("test-run");
 
-		// When & Then - 测试请求对象创建正确
+		// When & Then - Verify that the request object is created correctly
 		assertThat(searchRequest.getQuery()).isEqualTo("test query");
 		assertThat(searchRequest.getUserId()).isEqualTo("test-user");
 		assertThat(searchRequest.getAgentId()).isEqualTo("test-agent");
@@ -127,7 +127,7 @@ class Mem0ServiceClientTest {
 		Mem0ChatMemoryProperties.Server serverConfig = new Mem0ChatMemoryProperties.Server();
 		serverConfig.setVersion("v1.1");
 
-		// When & Then - 测试配置对象创建正确
+		// When & Then - Verify that the configuration object is created correctly
 		assertThat(serverConfig.getVersion()).isEqualTo("v1.1");
 	}
 

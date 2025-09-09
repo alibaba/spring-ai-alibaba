@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 测试工具类 提供常用的测试辅助方法
+ * Test utility class providing common helper methods for testing
  *
  * @author Morain Miao
  * @since 1.0.0
@@ -37,18 +37,18 @@ import java.util.UUID;
 public class TestUtils {
 
 	/**
-	 * 创建测试用的Mem0ChatMemoryProperties
+	 * Creates test Mem0ChatMemoryProperties for testing
 	 */
 	public static Mem0ChatMemoryProperties createTestProperties() {
 		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties();
 
-		// 配置客户端
+		// Configure client
 		Mem0ChatMemoryProperties.Client client = new Mem0ChatMemoryProperties.Client();
 		client.setBaseUrl("http://localhost:8888");
 		client.setTimeoutSeconds(30);
 		properties.setClient(client);
 
-		// 配置服务器
+		// Configure server
 		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server();
 		server.setVersion("v1.1");
 		properties.setServer(server);
@@ -56,9 +56,9 @@ public class TestUtils {
 		return properties;
 	}
 
-	/**
-	 * 创建测试用的UserMessage
-	 */
+    /**
+     * Creates test UserMessage for testing
+     */
 	public static UserMessage createTestUserMessage(String content) {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user-" + UUID.randomUUID());
@@ -68,9 +68,9 @@ public class TestUtils {
 		return UserMessage.builder().text(content).metadata(metadata).build();
 	}
 
-	/**
-	 * 创建测试用的Document
-	 */
+    /**
+     * Creates test Document for testing
+     */
 	public static Document createTestDocument(String content) {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("role", "user");
@@ -82,7 +82,7 @@ public class TestUtils {
 	}
 
 	/**
-	 * 创建测试用的Document列表
+	 * Creates test Document list for testing
 	 */
 	public static java.util.List<Document> createTestDocuments(int count) {
 		java.util.List<Document> documents = new java.util.ArrayList<>();
@@ -93,7 +93,7 @@ public class TestUtils {
 	}
 
 	/**
-	 * 创建测试用的Mem0ServerRequest.MemoryCreate
+	 * Creates Mem0ServerRequest.MemoryCreate for testing
 	 */
 	public static Mem0ServerRequest.MemoryCreate createTestMemoryCreate() {
 		return Mem0ServerRequest.MemoryCreate.builder()
@@ -105,7 +105,7 @@ public class TestUtils {
 	}
 
 	/**
-	 * 创建测试用的Mem0ServerRequest.SearchRequest
+	 * Creates Mem0ServerRequest.SearchRequest for testing
 	 */
 	public static Mem0ServerRequest.SearchRequest createTestSearchRequest() {
 		Mem0ServerRequest.SearchRequest searchRequest = new Mem0ServerRequest.SearchRequest();
@@ -118,7 +118,7 @@ public class TestUtils {
 	}
 
 	/**
-	 * 创建测试用的Mem0ServerResp
+	 * Creates Mem0ServerResp for testing
 	 */
 	public static Mem0ServerResp createTestSearchResponse() {
 		Mem0ServerResp response = new Mem0ServerResp();
@@ -127,35 +127,35 @@ public class TestUtils {
 	}
 
 	/**
-	 * 生成随机UUID字符串
+	 * Generates a random UUID string
 	 */
 	public static String randomId() {
 		return UUID.randomUUID().toString();
 	}
 
 	/**
-	 * 生成随机用户ID
+	 * Generates a random user ID
 	 */
 	public static String randomUserId() {
 		return "user-" + UUID.randomUUID().toString().substring(0, 8);
 	}
 
 	/**
-	 * 生成随机代理ID
+	 * Generates a random agent ID
 	 */
 	public static String randomAgentId() {
 		return "agent-" + UUID.randomUUID().toString().substring(0, 8);
 	}
 
 	/**
-	 * 生成随机运行ID
+	 * Generates a random run ID
 	 */
 	public static String randomRunId() {
 		return "run-" + UUID.randomUUID().toString().substring(0, 8);
 	}
 
 	/**
-	 * 创建测试用的消息列表
+	 * Creates test message list for testing
 	 */
 	public static java.util.List<Message> createTestMessages(int count) {
 		java.util.List<Message> messages = new java.util.ArrayList<>();
@@ -166,7 +166,7 @@ public class TestUtils {
 	}
 
 	/**
-	 * 创建测试用的元数据
+	 * Creates test metadata for testing
 	 */
 	public static Map<String, Object> createTestMetadata() {
 		Map<String, Object> metadata = new HashMap<>();

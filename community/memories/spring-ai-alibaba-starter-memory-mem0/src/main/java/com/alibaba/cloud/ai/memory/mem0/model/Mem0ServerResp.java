@@ -24,10 +24,10 @@ import java.util.Map;
 
 public class Mem0ServerResp {
 
-	// 关系数据
+	// Relationship data
 	private List<Mem0Results> results;
 
-	// 关系数据
+	// Relationship data
 	private List<Mem0Relation> relations;
 
 	public Mem0ServerResp() {
@@ -57,23 +57,24 @@ public class Mem0ServerResp {
 	}
 
 	/**
-	 * Mem0 关系数据模型 对应 Mem0 服务返回的 relations 数组中的每个关系对象
+	 * Mem0 Relationship Data Model
+	 * Corresponds to each relationship object in the relations array returned by the Mem0 service
 	 */
 	public static class Mem0Relation {
 
-		private String source; // 源节点
+		private String source; // Source node
 
-		private String relationship; // 关系类型
+		private String relationship; // Relationship type
 
-		private String target; // 目标路径
+		private String target; // Target path
 
-		private String destination; // 目的地
+		private String destination; // Destination
 
-		// 默认构造函数
+		// Default constructor
 		public Mem0Relation() {
 		}
 
-		// 完整构造函数
+		// Full constructor
 		public Mem0Relation(String source, String relationship, String target, String destination) {
 			this.source = source;
 			this.relationship = relationship;
@@ -126,7 +127,7 @@ public class Mem0ServerResp {
 
 		private String id;
 
-		private String memory; // 实际的记忆内容
+		private String memory; // Actual memory content
 
 		private String hash;
 
