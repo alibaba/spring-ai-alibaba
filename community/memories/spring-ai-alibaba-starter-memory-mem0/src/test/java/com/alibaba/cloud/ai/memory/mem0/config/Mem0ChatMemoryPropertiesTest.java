@@ -34,7 +34,8 @@ class Mem0ChatMemoryPropertiesTest {
 
 		// Then
 		assertThat(properties).isNotNull();
-		// Note: The client and server fields are null in the default constructor and need to be manually initialized.
+		// Note: The client and server fields are null in the default constructor and need
+		// to be manually initialized.
 		assertThat(properties.getClient()).isNull();
 		assertThat(properties.getServer()).isNull();
 	}

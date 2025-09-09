@@ -39,8 +39,8 @@ import java.util.*;
 /**
  * Mem0 API Client Implementation
  *
- * Directly calls the Mem0 REST API interface. 
- * Reference documentation: http://localhost:8888/docs
+ * Directly calls the Mem0 REST API interface. Reference documentation:
+ * http://localhost:8888/docs
  */
 public class Mem0ServiceClient {
 
@@ -227,7 +227,8 @@ public class Mem0ServiceClient {
 	 */
 	public Mem0ServerResp searchMemories(Mem0ServerRequest.SearchRequest searchRequest) {
 		try {
-			// The SEARCH_ENDPOINT requires the query field to have a value, so a fallback mechanism is implemented
+			// The SEARCH_ENDPOINT requires the query field to have a value, so a fallback
+			// mechanism is implemented
 			if (!StringUtils.hasText(searchRequest.getQuery())) {
 				return getAllMemories(searchRequest.getUserId(), searchRequest.getRunId(), searchRequest.getAgentId());
 			}
@@ -248,7 +249,8 @@ public class Mem0ServiceClient {
 
 			if (response != null) {
 				logger.info("Received response from Mem0: " + response);
-				// The Mem0 service returns data in the format {"results":[],"relations":[]}
+				// The Mem0 service returns data in the format
+				// {"results":[],"relations":[]}
 				return objectMapper.readValue(response, new TypeReference<Mem0ServerResp>() {
 				});
 

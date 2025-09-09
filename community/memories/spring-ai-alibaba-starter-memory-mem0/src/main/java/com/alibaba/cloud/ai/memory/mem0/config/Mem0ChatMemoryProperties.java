@@ -122,16 +122,16 @@ public class Mem0ChatMemoryProperties {
 			private String provider;
 
 			/**
-			 * The following vector databases are supported. For specific configurations, please refer to the official documentation or Mem0 source code.
-			 *  "qdrant": "QdrantConfig", "chroma":
-			 * "ChromaDbConfig", "pgvector": "PGVectorConfig", "pinecone":
-			 * "PineconeConfig", "mongodb": "MongoDBConfig", "milvus": "MilvusDBConfig",
-			 * "baidu": "BaiduDBConfig", "upstash_vector": "UpstashVectorConfig",
-			 * "azure_ai_search": "AzureAISearchConfig", "redis": "RedisDBConfig",
-			 * "elasticsearch": "ElasticsearchConfig", "vertex_ai_vector_search":
-			 * "GoogleMatchingEngineConfig", "opensearch": "OpenSearchConfig", "supabase":
-			 * "SupabaseConfig", "weaviate": "WeaviateConfig", "faiss": "FAISSConfig",
-			 * "langchain": "LangchainConfig",
+			 * The following vector databases are supported. For specific configurations,
+			 * please refer to the official documentation or Mem0 source code. "qdrant":
+			 * "QdrantConfig", "chroma": "ChromaDbConfig", "pgvector": "PGVectorConfig",
+			 * "pinecone": "PineconeConfig", "mongodb": "MongoDBConfig", "milvus":
+			 * "MilvusDBConfig", "baidu": "BaiduDBConfig", "upstash_vector":
+			 * "UpstashVectorConfig", "azure_ai_search": "AzureAISearchConfig", "redis":
+			 * "RedisDBConfig", "elasticsearch": "ElasticsearchConfig",
+			 * "vertex_ai_vector_search": "GoogleMatchingEngineConfig", "opensearch":
+			 * "OpenSearchConfig", "supabase": "SupabaseConfig", "weaviate":
+			 * "WeaviateConfig", "faiss": "FAISSConfig", "langchain": "LangchainConfig",
 			 */
 			private Map<String, String> config;
 

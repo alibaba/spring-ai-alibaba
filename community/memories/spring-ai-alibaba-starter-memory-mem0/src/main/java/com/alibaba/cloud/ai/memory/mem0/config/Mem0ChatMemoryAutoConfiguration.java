@@ -39,7 +39,8 @@ public class Mem0ChatMemoryAutoConfiguration {
 	public Mem0ServiceClient mem0ServiceClient(Mem0ChatMemoryProperties properties, ResourceLoader resourceLoader) {
 		Mem0ServiceClient mem0ServiceClient = new Mem0ServiceClient(properties, resourceLoader);
 		logger.info("Initialized Mem0Service Client.success!");
-		// Pass the client configuration items to the Server to initialize the Mem0 instance
+		// Pass the client configuration items to the Server to initialize the Mem0
+		// instance
 		mem0ServiceClient.configure(properties.getServer());
 		logger.info("Initialized Mem0ZeroService Server success!.");
 		return mem0ServiceClient;

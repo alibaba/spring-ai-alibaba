@@ -108,7 +108,8 @@ class Mem0ChatMemoryAdvisorTest {
 		// Given
 		Map<String, Object> context = new HashMap<>();
 		context.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user");
-		// Use a Prompt containing only AssistantMessage to ensure getUserMessage() returns null
+		// Use a Prompt containing only AssistantMessage to ensure getUserMessage()
+		// returns null
 		Prompt prompt = new Prompt(List.of(new AssistantMessage("assistant-only")));
 		ChatClientRequest request = new ChatClientRequest(prompt, context);
 
@@ -236,7 +237,8 @@ class Mem0ChatMemoryAdvisorTest {
 
 		// Then
 		assertThat(result).isNotNull();
-		// Verify that the returned request contains the enhanced user message but no memory content
+		// Verify that the returned request contains the enhanced user message but no
+		// memory content
 		assertThat(result.prompt().getUserMessage()).isNotNull();
 		assertThat(result.prompt().getUserMessage().getText()).contains("test query");
 		verify(vectorStore).similaritySearch(any(SearchRequest.class));

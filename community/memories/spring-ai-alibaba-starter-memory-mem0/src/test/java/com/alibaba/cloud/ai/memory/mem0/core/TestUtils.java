@@ -56,9 +56,9 @@ public class TestUtils {
 		return properties;
 	}
 
-    /**
-     * Creates test UserMessage for testing
-     */
+	/**
+	 * Creates test UserMessage for testing
+	 */
 	public static UserMessage createTestUserMessage(String content) {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user-" + UUID.randomUUID());
@@ -68,9 +68,9 @@ public class TestUtils {
 		return UserMessage.builder().text(content).metadata(metadata).build();
 	}
 
-    /**
-     * Creates test Document for testing
-     */
+	/**
+	 * Creates test Document for testing
+	 */
 	public static Document createTestDocument(String content) {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("role", "user");

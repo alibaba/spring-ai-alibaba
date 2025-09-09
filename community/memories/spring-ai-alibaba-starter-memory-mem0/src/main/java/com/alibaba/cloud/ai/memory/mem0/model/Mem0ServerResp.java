@@ -57,8 +57,8 @@ public class Mem0ServerResp {
 	}
 
 	/**
-	 * Mem0 Relationship Data Model
-	 * Corresponds to each relationship object in the relations array returned by the Mem0 service
+	 * Mem0 Relationship Data Model Corresponds to each relationship object in the
+	 * relations array returned by the Mem0 service
 	 */
 	public static class Mem0Relation {
 

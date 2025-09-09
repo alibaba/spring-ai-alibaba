@@ -65,7 +65,8 @@ class Mem0ServiceClientTest {
 
 	@Test
 	void testConstructorWithNullProperties() {
-		// Since the constructor lacks null checks, a NullPointerException will be thrown here
+		// Since the constructor lacks null checks, a NullPointerException will be thrown
+		// here
 		// Not in the constructor itself, but when the config is subsequently used
 		assertThatThrownBy(() -> new Mem0ServiceClient(null, resourceLoader)).isInstanceOf(NullPointerException.class);
 	}
@@ -88,8 +89,10 @@ class Mem0ServiceClientTest {
 			.runId("test-run")
 			.build();
 
-		// When & Then - Since a real HTTP connection is required, this primarily tests that the method invocation does not throw exceptions
-		// In actual testing, WireMock or TestContainers should be used to mock the HTTP service
+		// When & Then - Since a real HTTP connection is required, this primarily tests
+		// that the method invocation does not throw exceptions
+		// In actual testing, WireMock or TestContainers should be used to mock the HTTP
+		// service
 		assertThat(memoryCreate).isNotNull();
 		assertThat(memoryCreate.getUserId()).isEqualTo("test-user");
 		assertThat(memoryCreate.getAgentId()).isEqualTo("test-agent");

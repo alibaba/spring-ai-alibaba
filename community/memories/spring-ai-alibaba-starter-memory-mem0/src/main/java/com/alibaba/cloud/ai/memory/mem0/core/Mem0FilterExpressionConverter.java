@@ -189,8 +189,8 @@ public class Mem0FilterExpressionConverter extends AbstractFilterExpressionConve
 	}
 
 	/**
-	 * Creates an icontains filter (Mem0 specific) 
-	 * Note: This is not a standard Spring AI operator and requires direct construction of the Mem0 format
+	 * Creates an icontains filter (Mem0 specific) Note: This is not a standard Spring AI
+	 * operator and requires direct construction of the Mem0 format
 	 */
 	public static Map<String, Object> icontains(String field, String value) {
 		Map<String, Object> result = new HashMap<>();
