@@ -21,8 +21,7 @@ public class Node implements RunnableModel {
 
 	private String id;
 
-	// todo: 使用NodeTypeEnum
-	private String type;
+	private NodeType type;
 
 	private String title;
 
@@ -55,11 +54,11 @@ public class Node implements RunnableModel {
 		return this;
 	}
 
-	public String getType() {
+	public NodeType getType() {
 		return type;
 	}
 
-	public Node setType(String type) {
+	public Node setType(NodeType type) {
 		this.type = type;
 		return this;
 	}

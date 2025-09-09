@@ -26,7 +26,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 public class AnswerNodeData extends NodeData {
 
 	public static List<Variable> getDefaultOutputs() {
-		return List.of(new Variable("answer", VariableType.STRING.value()));
+		return List.of(new Variable("answer", VariableType.STRING));
 	}
 
 	// a string template

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
@@ -65,7 +66,7 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 					String difyType = (String) entry.getValue().get("type");
 					VariableType varType = VariableType.fromDifyValue(difyType)
 						.orElseThrow(() -> new IllegalArgumentException("Unsupported dify variable type: " + difyType));
-					return new Variable(varName, varType.value());
+					return new Variable(varName, varType);
 				}).toList();
 
 				return new CodeNodeData(inputs, outputs).setCode((String) data.get("code"))
@@ -85,8 +86,7 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 				data.put("variables", inputVars);
 				Map<String, Object> outputVars = new HashMap<>();
 				nodeData.getOutputs().forEach(variable -> {
-					outputVars.put(variable.getName(), Map.of("type",
-							VariableType.fromValue(variable.getValueType()).orElse(VariableType.OBJECT).difyValue()));
+					outputVars.put(variable.getName(), Map.of("type", variable.getValueType().difyValue()));
 				});
 				data.put("outputs", outputVars);
 				return data;
@@ -111,10 +111,14 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 	}
 
 	@Override
-	public void postProcessOutput(CodeNodeData nodeData, String varName) {
-		// code节点将返回{"varName.output": {...}}的数据，之后拆包成若干输出数据
-		nodeData.setOutputKey(varName + "_" + CodeNodeData.getDefaultOutputSchema().getName());
-		super.postProcessOutput(nodeData, varName);
+	public BiConsumer<CodeNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> this.emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				// code节点将返回{"varName.output": {...}}的数据，之后拆包成若干输出数据
+				nodeData.setOutputKey(nodeData.getVarName() + "_" + CodeNodeData.getDefaultOutputSchema().getName());
+			}).andThen(super.postProcessConsumer(dialectType));
+			default -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

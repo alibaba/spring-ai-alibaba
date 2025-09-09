@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -87,7 +88,7 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 			@Override
 			public EndNodeData parse(Map<String, Object> data) throws JsonProcessingException {
 				EndNodeData nodeData = new EndNodeData();
-				// TODO: 支持文本输出
+
 				String outputType = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param",
 						"output_type");
 				nodeData.setOutputType(outputType);
@@ -146,11 +147,23 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 	}
 
 	@Override
-	public void postProcessOutput(EndNodeData data, String varName) {
-		String outputKey = varName + "_" + EndNodeData.getDefaultOutputSchema().getName();
-		data.setOutputKey(outputKey);
-		data.setOutputs(List.of(EndNodeData.getDefaultOutputSchema()));
-		super.postProcessOutput(data, varName);
+	public BiConsumer<EndNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case STUDIO -> emptyProcessConsumer().andThen((data, idToVarName) -> {
+				// 格式化textTemplate
+				data.setTextTemplate(this.convertVarTemplate(dialectType, data.getTextTemplate(), idToVarName));
+				// 设置输出键
+				String outputKey = data.getVarName() + "_" + EndNodeData.getDefaultOutputSchema().getName();
+				data.setOutputKey(outputKey);
+				data.setOutputs(List.of(EndNodeData.getDefaultOutputSchema()));
+			}).andThen(super.postProcessConsumer(dialectType));
+			case DIFY -> emptyProcessConsumer().andThen((data, idToVarName) -> {
+				String outputKey = data.getVarName() + "_" + EndNodeData.getDefaultOutputSchema().getName();
+				data.setOutputKey(outputKey);
+				data.setOutputs(List.of(EndNodeData.getDefaultOutputSchema()));
+			}).andThen(super.postProcessConsumer(dialectType));
+			default -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

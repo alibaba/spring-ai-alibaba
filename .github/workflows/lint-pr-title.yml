@@ -61,6 +61,7 @@ jobs:
             ci
             nl2sql
             community
+            a2a
           # e.g. feat(core): add new feature
           # if false: feat: add new feature
           requireScope: true
