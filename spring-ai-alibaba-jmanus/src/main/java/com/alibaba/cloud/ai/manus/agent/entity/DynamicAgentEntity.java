@@ -35,10 +35,6 @@ public class DynamicAgentEntity {
 	@Column(nullable = false, length = 1000)
 	private String agentDescription;
 
-	@Column(nullable = true, length = 40000)
-	@Deprecated
-	private String systemPrompt = "";
-
 	@Column(nullable = false, length = 40000)
 	private String nextStepPrompt;
 
@@ -83,26 +79,6 @@ public class DynamicAgentEntity {
 
 	public void setAgentDescription(String agentDescription) {
 		this.agentDescription = agentDescription;
-	}
-
-	/**
-	 * This is no longer used, merge the two parts into one nextStepPrompt. The current
-	 * implementation will ignore this content.
-	 * @return
-	 */
-	@Deprecated
-	public String getSystemPrompt() {
-		return systemPrompt;
-	}
-
-	/**
-	 * This is no longer used, merge the two parts into one nextStepPrompt. The current
-	 * implementation will ignore this content.
-	 * @return
-	 */
-	@Deprecated
-	public void setSystemPrompt(String systemPrompt) {
-		this.systemPrompt = systemPrompt;
 	}
 
 	public String getNextStepPrompt() {

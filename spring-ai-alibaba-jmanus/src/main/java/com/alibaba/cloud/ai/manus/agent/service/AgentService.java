@@ -54,5 +54,7 @@ public interface AgentService {
 			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step);
 
 	BaseAgent createConfigurableDynamicBaseAgent(String name, String currentPlanId, String rootPlanId,
-			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step);
+			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step,
+			String modelName, List<String> availableToolKeys);
+
 }

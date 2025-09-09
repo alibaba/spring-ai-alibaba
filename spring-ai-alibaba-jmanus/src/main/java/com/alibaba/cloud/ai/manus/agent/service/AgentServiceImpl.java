@@ -50,6 +50,7 @@ import com.alibaba.cloud.ai.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.manus.mcp.service.IMcpService;
 import com.alibaba.cloud.ai.manus.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.manus.model.model.vo.ModelConfig;
+import com.alibaba.cloud.ai.manus.model.repository.DynamicModelRepository;
 import com.alibaba.cloud.ai.manus.namespace.namespace.vo.NamespaceConfig;
 import com.alibaba.cloud.ai.manus.namespace.service.NamespaceService;
 
@@ -78,6 +79,8 @@ public class AgentServiceImpl implements AgentService {
 
 	private final PlanIdDispatcher planIdDispatcher;
 
+	private final DynamicModelRepository modelRepository;
+
 	@Autowired
 	@Lazy
 	private ILlmService llmService;
@@ -93,7 +96,8 @@ public class AgentServiceImpl implements AgentService {
 	public AgentServiceImpl(DynamicAgentRepository repository, @Lazy IPlanningFactory planningFactory, 
 			@Lazy IMcpService mcpService, NamespaceService namespaceService, PlanExecutionRecorder recorder,
 			ManusProperties properties, UserInputService userInputService, PromptService promptService,
-			StreamingResponseHandler streamingResponseHandler, PlanIdDispatcher planIdDispatcher) {
+			StreamingResponseHandler streamingResponseHandler, PlanIdDispatcher planIdDispatcher,
+			DynamicModelRepository modelRepository) {
 		this.repository = repository;
 		this.planningFactory = planningFactory;
 		this.mcpService = mcpService;
@@ -104,6 +108,7 @@ public class AgentServiceImpl implements AgentService {
 		this.promptService = promptService;
 		this.streamingResponseHandler = streamingResponseHandler;
 		this.planIdDispatcher = planIdDispatcher;
+		this.modelRepository = modelRepository;
 	}
 
 	@Override
@@ -145,7 +150,6 @@ public class AgentServiceImpl implements AgentService {
 			}
 
 			DynamicAgentEntity entity = new DynamicAgentEntity();
-			entity = mergePrompts(entity, config.getName());
 			updateEntityFromConfig(entity, config);
 			entity = repository.save(entity);
 			log.info("Successfully created new Agent: {}", config.getName());
@@ -189,7 +193,7 @@ public class AgentServiceImpl implements AgentService {
 		repository.deleteById(Long.parseLong(id));
 	}
 
-	public DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting, ExecutionStep step) {
+	private DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting, ExecutionStep step, List<String> availableToolKeys, String modelName) {
 
 		// Check if this is a ConfigurableDynaAgent
 		if ("ConfigurableDynaAgent".equals(agentName)) {
@@ -197,9 +201,20 @@ public class AgentServiceImpl implements AgentService {
 			String description = "A configurable dynamic agent";
 			String nextStepPrompt = "Based on the current environment information and prompt to make a next step decision";
 			
+			// Query model entity by modelName
+			DynamicModelEntity modelEntity = null;
+			if (modelName != null && !modelName.trim().isEmpty()) {
+				modelEntity = modelRepository.findByModelName(modelName);
+				if (modelEntity == null) {
+					log.warn("Model not found for name: {}, using null model", modelName);
+				} else {
+					log.info("Found model entity for ConfigurableDynaAgent: {}", modelName);
+				}
+			}
+			
 			return new ConfigurableDynaAgent(llmService, recorder, properties, name, description, nextStepPrompt, 
-					null, toolCallingManager, initialAgentSetting, userInputService, promptService, 
-					null, streamingResponseHandler, step, planIdDispatcher);
+				availableToolKeys, toolCallingManager, initialAgentSetting, userInputService, promptService, 
+				modelEntity, streamingResponseHandler, step, planIdDispatcher);
 		}
 
 		DynamicAgentEntity entity = repository.findByNamespaceAndAgentName(namespace, agentName);
@@ -244,11 +259,9 @@ public class AgentServiceImpl implements AgentService {
 
 	private AgentConfig mapToAgentConfig(DynamicAgentEntity entity) {
 		AgentConfig config = new AgentConfig();
-		entity = mergePrompts(entity, entity.getAgentName());
 		config.setId(entity.getId().toString());
 		config.setName(entity.getAgentName());
 		config.setDescription(entity.getAgentDescription());
-		config.setSystemPrompt(entity.getSystemPrompt());
 		config.setNextStepPrompt(entity.getNextStepPrompt());
 		config.setAvailableTools(entity.getAvailableToolKeys());
 		config.setClassName(entity.getClassName());
@@ -304,7 +317,6 @@ public class AgentServiceImpl implements AgentService {
 		entity.setAgentName(config.getName());
 		entity.setAgentDescription(config.getDescription());
 		String nextStepPrompt = config.getNextStepPrompt();
-		entity = mergePrompts(entity, config.getName());
 		entity.setNextStepPrompt(nextStepPrompt);
 
 		// 1. Create new collection to ensure uniqueness and order
@@ -336,24 +348,6 @@ public class AgentServiceImpl implements AgentService {
 			entity.setBuiltIn(config.getBuiltIn());
 		}
 	}
-
-	private DynamicAgentEntity mergePrompts(DynamicAgentEntity entity, String agentName) {
-		// The SystemPrompt property here is deprecated, use nextStepPrompt directly
-		if (StringUtils.isNotBlank(entity.getSystemPrompt())) {
-			String systemPrompt = entity.getSystemPrompt();
-			String nextPrompt = entity.getNextStepPrompt();
-			// The SystemPrompt property here is deprecated, use nextStepPrompt directly
-			if (nextPrompt != null && !nextPrompt.trim().isEmpty()) {
-				nextPrompt = systemPrompt + "\n" + nextPrompt;
-			}
-			log.warn(
-					"Agent[{}] SystemPrompt is not empty, but the property is deprecated, only keep nextPrompt. This time merge the agent content. If you need this content to take effect in prompt, please directly update the unique prompt in the interface. Current specified value: {}",
-					agentName, nextPrompt);
-			entity.setSystemPrompt(" ");
-		}
-		return entity;
-	}
-
 	@Override
 	public BaseAgent createDynamicBaseAgent(String name, String planId, String rootPlanId,
 			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step) {
@@ -362,7 +356,7 @@ public class AgentServiceImpl implements AgentService {
 
 		try {
 			// Load existing Agent through local loadAgent method
-			DynamicAgent agent = loadAgent(name, initialAgentSetting, step);
+			DynamicAgent agent = loadAgent(name, initialAgentSetting, step, null, null);
 
 			// Set planId
 			agent.setCurrentPlanId(planId);
@@ -386,8 +380,9 @@ public class AgentServiceImpl implements AgentService {
 
 	@Override
 	public BaseAgent createConfigurableDynamicBaseAgent(String name, String planId, String rootPlanId,
-			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step) {
-		DynamicAgent loadedAgent = loadAgent(name, initialAgentSetting, step);
+			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step,
+			String modelName, List<String> availableToolKeys) {
+		DynamicAgent loadedAgent = loadAgent(name, initialAgentSetting, step, availableToolKeys, modelName);
 		if (!(loadedAgent instanceof ConfigurableDynaAgent)) {
 			throw new IllegalArgumentException("Agent " + name + " is not a ConfigurableDynaAgent");
 		}
@@ -408,4 +403,5 @@ public class AgentServiceImpl implements AgentService {
 		});
 		return agent;
 	}
+
 }
