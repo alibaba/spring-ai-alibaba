@@ -15,13 +15,16 @@
  */
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 
 /**
  * Render a node data
@@ -29,6 +32,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
  * @author robocanic
  * @since 2025/5/23
  */
+// TODO: 将assistMethodCode生成的代码单独放在生成工程的一个类中
 public interface NodeSection<T extends NodeData> {
 
 	boolean support(NodeType nodeType);
@@ -59,6 +63,41 @@ public interface NodeSection<T extends NodeData> {
 			Map<String, String> varNames) {
 		System.err.println("Unsupported Conditional Edges!");
 		return "";
+	}
+
+	/**
+	 * 当前类型节点的共用的辅助代码，这部分代码会生成在节点代码之前
+	 * @param dialectType DSL类型
+	 * @return 辅助代码
+	 */
+	default String assistMethodCode(DSLDialectType dialectType) {
+		return "";
+	}
+
+	record ResourceFile(String fileName, Type type, Supplier<InputStream> inputStreamSupplier) {
+
+		@Override
+		public String toString() {
+			return String.format("\"%s\"", switch (type()) {
+				case CLASS_PATH -> "classpath:" + fileName();
+				default -> fileName();
+			});
+		}
+		public enum Type {
+
+			LOCAL, URL, CLASS_PATH
+
+		}
+	}
+
+	/**
+	 * 部分节点需要额外添加的资源文件
+	 * @param dialectType DSL 类型
+	 * @param nodeData 节点数据
+	 * @return 资源文件列表
+	 */
+	default List<ResourceFile> resourceFiles(DSLDialectType dialectType, T nodeData) {
+		return List.of();
 	}
 
 }

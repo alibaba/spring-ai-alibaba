@@ -32,14 +32,14 @@ import org.springframework.util.StringUtils;
 public class IterationNodeData extends NodeData {
 
 	public static Variable getDefaultOutputSchema() {
-		return new Variable("output", VariableType.ARRAY_STRING.value());
+		return new Variable("output", VariableType.ARRAY_STRING);
 	}
 
 	private String id;
 
-	private String inputType;
+	private VariableType inputType;
 
-	private String outputType;
+	private VariableType outputType;
 
 	private VariableSelector inputSelector;
 
@@ -72,7 +72,7 @@ public class IterationNodeData extends NodeData {
 
 	private Variable output;
 
-	public IterationNodeData(String id, String inputType, String outputType, VariableSelector inputSelector,
+	public IterationNodeData(String id, VariableType inputType, VariableType outputType, VariableSelector inputSelector,
 			VariableSelector outputSelector, String startNodeId, String endNodeId, String inputKey, String outputKey) {
 		this.id = id;
 		this.inputType = inputType;
@@ -108,19 +108,19 @@ public class IterationNodeData extends NodeData {
 		this.id = id;
 	}
 
-	public String getInputType() {
+	public VariableType getInputType() {
 		return inputType;
 	}
 
-	public void setInputType(String inputType) {
+	public void setInputType(VariableType inputType) {
 		this.inputType = inputType;
 	}
 
-	public String getOutputType() {
+	public VariableType getOutputType() {
 		return outputType;
 	}
 
-	public void setOutputType(String outputType) {
+	public void setOutputType(VariableType outputType) {
 		this.outputType = outputType;
 	}
 
@@ -248,9 +248,9 @@ public class IterationNodeData extends NodeData {
 
 		private String id;
 
-		private String inputType;
+		private VariableType inputType;
 
-		private String outputType;
+		private VariableType outputType;
 
 		private VariableSelector inputSelector;
 
@@ -275,12 +275,12 @@ public class IterationNodeData extends NodeData {
 			return this;
 		}
 
-		public Builder inputType(String inputType) {
+		public Builder inputType(VariableType inputType) {
 			this.inputType = inputType;
 			return this;
 		}
 
-		public Builder outputType(String outputType) {
+		public Builder outputType(VariableType outputType) {
 			this.outputType = outputType;
 			return this;
 		}

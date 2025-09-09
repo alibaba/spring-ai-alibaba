@@ -216,7 +216,7 @@ public class BaseNl2SqlService {
 	public List<String> extractEvidences(String query, String agentId) {
 		logger.debug("Extracting evidences for query: {} with agentId: {}", query, agentId);
 		List<Document> evidenceDocuments;
-		if (agentId != null) {
+		if (agentId != null && !agentId.trim().isEmpty()) {
 			evidenceDocuments = vectorStoreService.getDocumentsForAgent(agentId, query, "evidence");
 		}
 		else {

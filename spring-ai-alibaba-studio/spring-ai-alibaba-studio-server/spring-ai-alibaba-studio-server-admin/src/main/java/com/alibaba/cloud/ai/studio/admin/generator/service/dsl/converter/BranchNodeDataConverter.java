@@ -131,10 +131,6 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 	}
 
 	@Override
-	public void postProcessOutput(BranchNodeData data, String varName) {
-	}
-
-	@Override
 	public Stream<Variable> extractWorkflowVars(BranchNodeData data) {
 		return Stream.empty();
 	}

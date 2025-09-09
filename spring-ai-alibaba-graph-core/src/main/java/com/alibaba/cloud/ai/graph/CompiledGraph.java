@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
-import com.alibaba.cloud.ai.graph.internal.node.CommandNode;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
@@ -890,19 +889,6 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 			// Process nodes
 			//
 			processedSubGraphNodes.elements.stream().map(n -> {
-				if (n instanceof CommandNode commandNode) {
-					Map<String, String> mappings = commandNode.getMappings();
-					HashMap<String, String> newMappings = new HashMap<>();
-					mappings.forEach((key, value) -> {
-						newMappings.put(key, subgraphNode.formatId(value));
-					});
-					return new CommandNode(subgraphNode.formatId(n.id()),
-							AsyncCommandAction.node_async((state, config1) -> {
-								Command command = commandNode.getAction().apply(state, config1).join();
-								String NewGoToNode = subgraphNode.formatId(command.gotoNode());
-								return new Command(NewGoToNode, command.update());
-							}), newMappings);
-				}
 				return n.withIdUpdated(subgraphNode::formatId);
 			}).forEach(nodes.elements::add);
 		}

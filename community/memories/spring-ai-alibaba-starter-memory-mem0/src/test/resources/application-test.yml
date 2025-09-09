@@ -1,0 +1,22 @@
+# Mem0测试配置
+mem0:
+  server:
+    version: v1.1
+  client:
+    base-url: http://localhost:8888
+    timeout-seconds: 30
+
+# 测试环境配置
+spring:
+  application:
+    name: mem0-test
+  profiles:
+    active: test
+
+# 日志配置
+logging:
+  level:
+    com.alibaba.example.chatmemory.mem0: DEBUG
+    org.springframework.ai: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

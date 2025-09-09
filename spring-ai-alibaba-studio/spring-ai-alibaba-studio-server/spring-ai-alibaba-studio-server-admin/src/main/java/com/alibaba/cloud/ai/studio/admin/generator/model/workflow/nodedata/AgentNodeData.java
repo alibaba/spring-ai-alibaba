@@ -26,7 +26,7 @@ import java.util.Map;
 public class AgentNodeData extends NodeData {
 
 	public static Variable getDefaultOutputSchema() {
-		return new Variable("text", VariableType.STRING.value());
+		return new Variable("text", VariableType.STRING);
 	}
 
 	private Map<String, Object> agentParameterMap;

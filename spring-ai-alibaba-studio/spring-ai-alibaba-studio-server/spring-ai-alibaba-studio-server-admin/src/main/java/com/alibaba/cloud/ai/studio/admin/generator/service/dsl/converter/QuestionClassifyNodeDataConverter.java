@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
@@ -195,10 +196,15 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 	}
 
 	@Override
-	public void postProcessOutput(QuestionClassifierNodeData data, String varName) {
-		data.setOutputKey(varName + "_" + QuestionClassifierNodeData.getDefaultOutputSchema().getName());
-		data.setOutputs(List.of(QuestionClassifierNodeData.getDefaultOutputSchema()));
-		super.postProcessOutput(data, varName);
+	public BiConsumer<QuestionClassifierNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> emptyProcessConsumer().andThen((data, map) -> {
+				data.setOutputKey(
+						data.getVarName() + "_" + QuestionClassifierNodeData.getDefaultOutputSchema().getName());
+				data.setOutputs(List.of(QuestionClassifierNodeData.getDefaultOutputSchema()));
+			}).andThen(super.postProcessConsumer(dialectType));
+			default -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

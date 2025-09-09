@@ -18,6 +18,9 @@ package com.alibaba.cloud.ai.graph.internal.node;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import reactor.core.publisher.Flux;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
+import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,9 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -45,7 +51,12 @@ public class ParallelNode extends Node {
 		@SuppressWarnings("unchecked")
 		private CompletableFuture<Map<String, Object>> evalNodeActionSync(AsyncNodeActionWithConfig action,
 				OverAllState state, RunnableConfig config) {
-			return action.apply(state, config);
+			LifeListenerUtil.processListenersLIFO(nodeId, new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()),
+					state.data(), config, NODE_BEFORE, null);
+			return action.apply(state, config)
+				.whenComplete((stringObjectMap, throwable) -> LifeListenerUtil.processListenersLIFO(nodeId,
+						new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()), state.data(), config, NODE_AFTER,
+						throwable));
 		}
 
 		private CompletableFuture<Map<String, Object>> evalNodeActionAsync(AsyncNodeActionWithConfig action,
