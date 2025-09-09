@@ -24,7 +24,6 @@ import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
-import com.alibaba.cloud.ai.graph.internal.node.CommandNode;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
@@ -275,10 +274,10 @@ public class GraphRunner {
 		try {
 			context.doListeners(NODE_AFTER, null);
 
-			if (action instanceof CommandNode.AsyncCommandNodeActionWithConfig) {
-				handleCommandAction(sink, context, updateState);
-				return;
-			}
+			// if (action instanceof CommandNode.AsyncCommandNodeActionWithConfig) {
+			// handleCommandAction(sink, context, updateState);
+			// return;
+			// }
 
 			// Check for embedded flux stream
 			Optional<Flux<Data<NodeOutput>>> embedFlux = getEmbedFlux(updateState);

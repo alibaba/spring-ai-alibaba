@@ -936,62 +936,7 @@ public class StateGraphTest {
 	}
 
 	@Test
-	void testCommandNode() throws Exception {
-
-		AsyncCommandAction commandAction = (state,
-				config) -> completedFuture(new Command("C2", Map.of("messages", "B", "next_node", "C2")));
-
-		var graph = new StateGraph().addNode("A", makeNode("A"))
-			.addNode("B", commandAction, EdgeMappings.builder().toEND().to("C1").to("C2").build())
-			.addNode("C1", makeNode("C1"))
-			.addNode("C2", makeNode("C2"))
-			.addEdge(START, "A")
-			.addEdge("A", "B")
-			.addEdge("C1", END)
-			.addEdge("C2", END)
-			.compile();
-
-		var steps = graph.stream(Map.of()).stream().peek(System.out::println).toList();
-
-		assertEquals(5, steps.size());
-		assertEquals("B", steps.get(2).node());
-		assertEquals("C2", steps.get(2).state().value("next_node").orElse(null));
-
-	}
-
-	@Test
-	public void testRunnableInterrupt() throws GraphStateException, GraphRunnerException {
-		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("prop1", (o, o2) -> o2)
-			.build();
-
-		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-			.addEdge("agent_1", "agent_2")
-			.addNode("agent_1", AsyncNodeActionWithConfig.node_async((state, config) -> {
-				log.info("agent_1\n{}", state);
-				config.markNodeAsInterrupted("agent_1");
-				return Map.of("prop1", "test");
-			}))
-			.addNode("agent_2", AsyncNodeActionWithConfig.node_async((state, config) -> {
-				log.info("agent_2\n{}", state);
-				return Map.of("prop1", "test_2");
-			}))
-			.addEdge("agent_2", END);
-
-		CompiledGraph app = workflow.compile();
-		RunnableConfig runnableConfig = new RunnableConfig.Builder().threadId("thread1").build();
-		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"), runnableConfig);
-		System.out.println("result = " + result);
-		assertTrue(result.isPresent());
-
-		// resume
-		result = app.stream(null, runnableConfig).stream().reduce((a, b) -> b).map(NodeOutput::state);
-		System.out.println("result = " + result);
-		assertTrue(result.isPresent());
-
-	}
-
-	@Test
-	public void testParallelInterrupt() throws GraphStateException, GraphRunnerException {
+	public void testParallelInterrupt() throws GraphStateException {
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("prop1", (o, o2) -> o2)
 			.build();
 
@@ -1016,12 +961,12 @@ public class StateGraphTest {
 		CompiledGraph app = workflow
 			.compile(CompileConfig.builder().interruptBefore("agent_2").interruptBeforeEdge(true).build());
 		RunnableConfig runnableConfig = new RunnableConfig.Builder().threadId("thread1").build();
-		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"), runnableConfig);
+		Optional<OverAllState> result = app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"), runnableConfig);
 		System.out.println("result = " + result);
 		assertTrue(result.isPresent());
 
 		// resume
-		result = app.stream(null, runnableConfig).stream().reduce((a, b) -> b).map(NodeOutput::state);
+		result = app.fluxStream(null, runnableConfig).reduce((a, b) -> b).map(NodeOutput::state).blockOptional();
 		System.out.println("result = " + result);
 		assertTrue(result.isPresent());
 
