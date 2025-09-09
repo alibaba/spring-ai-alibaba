@@ -2,8 +2,8 @@
   "name": "main",
   "version": "0.0.1",
   "scripts": {
-    "build": "DID_YOU_KNOW=none umi build",
-    "dev": "DID_YOU_KNOW=none umi dev",
+    "build": "cross-env DID_YOU_KNOW=none umi build",
+    "dev": "cross-env DID_YOU_KNOW=none umi dev",
     "postinstall": "umi setup",
     "setup": "umi setup",
     "start": "npm run dev"
