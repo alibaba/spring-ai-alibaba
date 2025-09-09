@@ -31,11 +31,6 @@ public class Edge {
 
 	private Map<String, Object> data;
 
-	private Integer zIndex = 0;
-
-	// Temp field
-	private boolean isDify = true;
-
 	public String getId() {
 		return id;
 	}
@@ -87,24 +82,6 @@ public class Edge {
 
 	public Edge setData(Map<String, Object> data) {
 		this.data = data;
-		return this;
-	}
-
-	public Integer getzIndex() {
-		return zIndex;
-	}
-
-	public Edge setzIndex(Integer zIndex) {
-		this.zIndex = zIndex;
-		return this;
-	}
-
-	public boolean isDify() {
-		return isDify;
-	}
-
-	public Edge setDify(boolean isDify) {
-		this.isDify = isDify;
 		return this;
 	}
 

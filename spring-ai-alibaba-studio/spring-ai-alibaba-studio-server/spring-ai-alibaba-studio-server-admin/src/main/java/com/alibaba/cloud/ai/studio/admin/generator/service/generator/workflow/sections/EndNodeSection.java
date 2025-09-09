@@ -86,6 +86,7 @@ public class EndNodeSection implements NodeSection<EndNodeData> {
 			.append("\", AsyncNodeAction.node_async(")
 			.append(codeStr)
 			.append("));");
+		sb.append(String.format("%n"));
 		return sb.toString();
 	}
 

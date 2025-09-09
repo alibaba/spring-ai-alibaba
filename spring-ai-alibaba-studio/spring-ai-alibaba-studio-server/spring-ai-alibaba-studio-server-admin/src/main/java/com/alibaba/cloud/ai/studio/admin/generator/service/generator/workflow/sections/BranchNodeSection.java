@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.s
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,6 +31,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 
 import org.springframework.stereotype.Component;
 
+// TODO: 对于Dify的条件渲染，将CaseID格式化为比较易懂的格式
 @Component
 public class BranchNodeSection implements NodeSection<BranchNodeData> {
 
@@ -52,9 +54,8 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 	}
 
 	@Override
-	public String renderConditionalEdges(BranchNodeData branchNodeData, Map<String, Node> nodeMap,
-			Map.Entry<String, List<Edge>> entry, Map<String, String> varNames) {
-		String srcVar = varNames.get(entry.getKey());
+	public String renderEdges(BranchNodeData branchNodeData, List<Edge> edges) {
+		String srcVar = branchNodeData.getVarName();
 		StringBuilder sb = new StringBuilder();
 		List<Case> cases = branchNodeData.getCases();
 
@@ -70,7 +71,7 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 				}
 
 				// 根据变量类型生成安全的访问代码
-				String objName = generateSafeVariableAccess(condition, nodeMap);
+				String objName = generateSafeVariableAccess(condition);
 				return condition.getComparisonOperator().convert(objName, constValue);
 			}).toList();
 			conditionsBuffer.append("if(");
@@ -84,12 +85,11 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 		conditionsBuffer.append("return \"false\";");
 
 		// 构建Map
-		Map<String, String> edgeCaseMap = entry.getValue()
-			.stream()
+		Map<String, String> edgeCaseMap = edges.stream()
 			.collect(Collectors.toMap(Edge::getSourceHandle, Edge::getTarget));
 		String edgeCaseMapStr = "Map.of(" + edgeCaseMap.entrySet()
 			.stream()
-			.flatMap(e -> Stream.of(e.getKey(), varNames.getOrDefault(e.getValue(), "unknown")))
+			.flatMap(e -> Stream.of(e.getKey(), e.getValue()))
 			.map(v -> String.format("\"%s\"", v))
 			.collect(Collectors.joining(", ")) + ")";
 
@@ -105,9 +105,9 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 		return sb.toString();
 	}
 
-	private String generateSafeVariableAccess(Case.Condition condition, Map<String, Node> nodeMap) {
+	private String generateSafeVariableAccess(Case.Condition condition) {
 		String varType = condition.getVarType();
-		String variablePath = buildVariablePath(condition, nodeMap);
+		String variablePath = buildVariablePath(condition);
 
 		switch (varType.toLowerCase()) {
 			case "file":
@@ -148,29 +148,12 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 		}
 	}
 
-	private String buildVariablePath(Case.Condition condition, Map<String, Node> nodeMap) {
+	private String buildVariablePath(Case.Condition condition) {
 		VariableSelector variableSelector = condition.getVariableSelector();
 		if (variableSelector == null) {
 			return "unknown";
 		}
-
-		// 其中第一个是节点ID，第二个是变量名，第三个是属性
-
-		String nodeId = variableSelector.getNamespace();
-		String variableName = variableSelector.getName();
-
-		// 如果有节点映射，尝试获取正确的变量名
-		if (nodeMap.containsKey(nodeId)) {
-			Node inputNode = nodeMap.get(nodeId);
-			if (inputNode.getData().getOutputs() != null && !inputNode.getData().getOutputs().isEmpty()) {
-				// 使用输出定义中的变量名
-				String outputName = inputNode.getData().getOutputs().get(0).getName();
-				return outputName != null ? outputName : variableName;
-			}
-		}
-
-		// 如果无法从节点映射获取，直接使用变量名
-		return variableName != null ? variableName : "unknown";
+		return Optional.ofNullable(variableSelector.getNameInCode()).orElse("unknown");
 	}
 
 }

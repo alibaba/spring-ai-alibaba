@@ -21,12 +21,12 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -80,8 +80,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private final TemplateRenderer templateRenderer;
 
-	private final List<NodeSection<? extends NodeData>> nodeNodeSections;
-
 	private final Map<NodeType, NodeSection<? extends NodeData>> nodeSectionMap;
 
 	public WorkflowProjectGenerator(List<DSLAdapter> dslAdapters,
@@ -90,7 +88,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		this.dslAdapters = dslAdapters;
 		this.templateRenderer = templateRenderer
 			.getIfAvailable(() -> new MustacheTemplateRenderer("classpath:/templates"));
-		this.nodeNodeSections = nodeNodeSections;
 		this.nodeSectionMap = nodeNodeSections.stream().map(nodeSection -> {
 			List<NodeType> nodeTypeList = Arrays.stream(NodeType.values()).filter(nodeSection::support).toList();
 			if (nodeTypeList.isEmpty()) {
@@ -198,67 +195,29 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return sb.toString();
 	}
 
-	// TODO: 目前这里渲染edge的逻辑与Dify转换高度耦合，需要优化
 	private String renderEdgeSections(List<Edge> edges, List<Node> nodes, Map<String, String> varNames) {
+		// 将Edge里的source和target都转换成varName
+		edges.forEach(edge -> {
+			edge.setSource(varNames.getOrDefault(edge.getSource(), edge.getSource()));
+			edge.setTarget(varNames.getOrDefault(edge.getTarget(), edge.getTarget()));
+		});
+
+		// nodeVarName -> node的映射
+		Map<String, Node> nodeMap = nodes.stream()
+			.collect(Collectors.toMap(node -> node.getData().getVarName(), Function.identity()));
+
+		// 根据source进行分组
+		Map<String, List<Edge>> edgeGroup = edges.stream().collect(Collectors.groupingBy(Edge::getSource));
+
 		StringBuilder sb = new StringBuilder();
-		Map<String, Node> nodeMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
 
-		// conditional edge set: sourceId -> List<Edge>
-		Map<String, List<Edge>> conditionalEdgesMap = edges.stream()
-			.filter(e -> e.getSourceHandle() != null && !"source".equals(e.getSourceHandle()))
-			.collect(Collectors.groupingBy(Edge::getSource));
-
-		// Set to track rendered edges to avoid duplicates
-		Set<String> renderedEdges = new HashSet<>();
-
-		// common edge
-		for (Edge edge : edges) {
-			String sourceId = edge.getSource();
-			String targetId = edge.getTarget();
-			String srcVar = varNames.get(sourceId);
-			String tgtVar = varNames.get(targetId);
-
-			Node sourceNode = nodeMap.get(sourceId);
-			NodeType sourceType = sourceNode != null ? sourceNode.getType() : null;
-
-			// Skip if already rendered as conditional
-			if (edge.getSourceHandle() != null && !"source".equals(edge.getSourceHandle()) && edge.isDify()) {
-				continue;
-			}
-
-			// 迭代节点作为边的终止点时直接使用节点ID，作为边的起始点时使用ID_out
-			// todo: 修改迭代节点终止ID，防止与变量冲突（Dify不冲突）
-			if (sourceType != null && NodeType.ITERATION.equals(sourceType) && edge.isDify()) {
-				srcVar += "_out";
-			}
-
-			String key = srcVar + "->" + tgtVar;
-			if (renderedEdges.contains(key)) {
-				continue;
-			}
-			renderedEdges.add(key);
-
-			// START and END special handling
-			if (NodeType.START.equals(sourceType)) {
-				sb.append(String.format("stateGraph.addEdge(START, \"%s\");%n", tgtVar));
-			}
-			else {
-				sb.append(String.format("stateGraph.addEdge(\"%s\", \"%s\");%n", srcVar, tgtVar));
-			}
-		}
-
-		// conditional edge（aggregate by sourceId）
-		for (Map.Entry<String, List<Edge>> entry : conditionalEdgesMap.entrySet()) {
-			String nodeId = entry.getKey();
-			Node node = nodeMap.get(nodeId);
-			NodeType nodeType = node.getType();
-			for (NodeSection section : nodeNodeSections) {
-				if (section.support(nodeType)) {
-					String edgeCode = section.renderConditionalEdges(node.getData(), nodeMap, entry, varNames);
-					sb.append(edgeCode);
-				}
-			}
-		}
+		// 调用每一个source节点的renderEdges方法
+		edgeGroup.forEach((varName, edgeList) -> {
+			NodeType nodeType = nodeMap.get(varName).getType();
+			@SuppressWarnings("unchecked")
+			NodeSection<NodeData> section = (NodeSection<NodeData>) nodeSectionMap.get(nodeType);
+			sb.append(section.renderEdges(nodeMap.get(varName).getData(), edgeList));
+		});
 
 		// 统一生成end节点到StateGraph.END的边（避免边重复）
 		List<String> endNodeList = nodes.stream()
@@ -268,6 +227,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			.toList();
 
 		if (!endNodeList.isEmpty()) {
+			sb.append(String.format("// Edges For [end]%n"));
 			sb.append("stateGraph");
 			endNodeList.forEach(endName -> sb.append(String.format("%n.addEdge(\"%s\", END)", endName)));
 			sb.append(String.format(";%n"));

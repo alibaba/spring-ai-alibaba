@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.s
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
@@ -100,21 +99,18 @@ public class QuestionClassifierNodeSection implements NodeSection<QuestionClassi
 	}
 
 	@Override
-	public String renderConditionalEdges(QuestionClassifierNodeData nodeData, Map<String, Node> nodeMap,
-			Map.Entry<String, List<Edge>> entry, Map<String, String> varNames) {
-		String sourceId = entry.getKey();
-		List<Edge> condEdges = entry.getValue();
+	public String renderEdges(QuestionClassifierNodeData nodeData, List<Edge> edges) {
 		List<String> conditions = new ArrayList<>();
 		List<String> mappings = new ArrayList<>();
-		String srcVar = varNames.get(sourceId);
+		String srcVar = nodeData.getVarName();
 		StringBuilder sb = new StringBuilder();
 
 		// 如果输出的都不是预定分类，则使用最后一个分类
 		String lastConditionKey = "unknown";
 
-		for (Edge e : condEdges) {
+		for (Edge e : edges) {
 			String conditionKey = resolveConditionKey(nodeData, e.getSourceHandle());
-			String tgtVar2 = varNames.get(e.getTarget());
+			String tgtVar2 = e.getTarget();
 			lastConditionKey = conditionKey;
 			conditions.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
 			mappings.add(String.format("\"%s\", \"%s\"", conditionKey, tgtVar2));
