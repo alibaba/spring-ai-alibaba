@@ -43,7 +43,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * 单元测试 for Mem0ChatMemoryAdvisor
+ * Unit tests for Mem0ChatMemoryAdvisor
  *
  * @author Morain Miao
  * @since 1.0.0
@@ -97,7 +97,7 @@ class Mem0ChatMemoryAdvisorTest {
 
 		// Then
 		assertThat(result).isNotNull();
-		// 验证返回的请求包含增强的用户消息
+		// Verify that the returned request contains the enhanced user message
 		assertThat(result.prompt().getUserMessage()).isNotNull();
 		assertThat(result.prompt().getUserMessage().getText()).contains("test query");
 		verify(vectorStore).similaritySearch(any(SearchRequest.class));
@@ -108,7 +108,8 @@ class Mem0ChatMemoryAdvisorTest {
 		// Given
 		Map<String, Object> context = new HashMap<>();
 		context.put(Mem0ChatMemoryAdvisor.USER_ID, "test-user");
-		// 使用仅包含 AssistantMessage 的 Prompt，确保 getUserMessage() 返回 null
+		// Use a Prompt containing only AssistantMessage to ensure getUserMessage()
+		// returns null
 		Prompt prompt = new Prompt(List.of(new AssistantMessage("assistant-only")));
 		ChatClientRequest request = new ChatClientRequest(prompt, context);
 
@@ -125,7 +126,7 @@ class Mem0ChatMemoryAdvisorTest {
 	@Test
 	void testBeforeWithEmptyMetadata() {
 		// Given
-		// 明确提供一个空的 metadata，触发断言
+		// Explicitly provide an empty metadata to trigger the assertion
 		UserMessage userMessage = UserMessage.builder().text("test query").metadata(new HashMap<>()).build();
 		Prompt prompt = new Prompt(userMessage);
 		Map<String, Object> context = new HashMap<>();
@@ -236,7 +237,8 @@ class Mem0ChatMemoryAdvisorTest {
 
 		// Then
 		assertThat(result).isNotNull();
-		// 验证返回的请求包含增强的用户消息，但没有记忆内容
+		// Verify that the returned request contains the enhanced user message but no
+		// memory content
 		assertThat(result.prompt().getUserMessage()).isNotNull();
 		assertThat(result.prompt().getUserMessage().getText()).contains("test query");
 		verify(vectorStore).similaritySearch(any(SearchRequest.class));
