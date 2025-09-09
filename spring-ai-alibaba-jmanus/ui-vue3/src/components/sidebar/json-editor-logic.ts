@@ -100,7 +100,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
 
       const parsed = JSON.parse(jsonContent)
       
-      parsedData.planType = 'simple' // Always use simple as default
+      parsedData.planType = parsed.planType || 'simple' // Use planType from JSON or default to simple
       parsedData.title = parsed.title || ''
       parsedData.directResponse = false // Always use false as default
       parsedData.planId = parsed.planId || ''

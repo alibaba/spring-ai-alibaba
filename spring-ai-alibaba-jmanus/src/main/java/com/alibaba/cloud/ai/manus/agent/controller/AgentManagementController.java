@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.manus.agent.controller;
 import com.alibaba.cloud.ai.manus.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.manus.agent.model.enums.AgentEnum;
 import com.alibaba.cloud.ai.manus.agent.service.AgentInitializationService;
-import com.alibaba.cloud.ai.manus.agent.service.IDynamicAgentLoader;
+import com.alibaba.cloud.ai.manus.agent.service.AgentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +43,7 @@ public class AgentManagementController {
 	private AgentInitializationService agentInitializationService;
 
 	@Autowired
-	private IDynamicAgentLoader agentLoader;
+	private AgentService agentService;
 
 	@Value("${namespace.value}")
 	private String namespace;
@@ -54,7 +54,7 @@ public class AgentManagementController {
 	@GetMapping
 	public ResponseEntity<List<DynamicAgentEntity>> getAllAgents() {
 		try {
-			List<DynamicAgentEntity> agents = agentLoader.getAllAgents();
+			List<DynamicAgentEntity> agents = agentService.getAllAgents();
 			return ResponseEntity.ok(agents);
 		}
 		catch (Exception e) {
@@ -145,7 +145,7 @@ public class AgentManagementController {
 	@GetMapping("/stats")
 	public ResponseEntity<Map<String, Object>> getAgentStats() {
 		try {
-			List<DynamicAgentEntity> agents = agentLoader.getAllAgents();
+			List<DynamicAgentEntity> agents = agentService.getAllAgents();
 
 			return ResponseEntity.ok(Map.of("total", agents.size(), "namespace", namespace, "supportedLanguages",
 					AgentEnum.getSupportedLanguages()));

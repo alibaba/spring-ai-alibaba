@@ -490,14 +490,6 @@ const planTypeError = ref<string | null>(null)
 // Initialize selectedToolKeys from parsedData if it exists
 const initializeSelectedToolKeys = () => {
   try {
-    // Validate that plan type is dynamic_agent
-    if (parsedData.planType !== 'dynamic_agent') {
-      const errorMessage = `JsonEditorV2 only supports 'dynamic_agent' plan type. Current plan type: ${parsedData.planType}`
-      planTypeError.value = errorMessage
-      console.error(errorMessage)
-      return
-    }
-    
     // Clear any previous errors
     planTypeError.value = null
     
@@ -512,6 +504,17 @@ const initializeSelectedToolKeys = () => {
     console.error(errorMessage, error)
   }
 }
+
+// Watch for parsedData changes to validate plan type
+watch(() => parsedData.planType, (newPlanType) => {
+  if (newPlanType && newPlanType !== 'dynamic_agent') {
+    const errorMessage = `JsonEditorV2 only supports 'dynamic_agent' plan type. Current plan type: ${newPlanType}`
+    planTypeError.value = errorMessage
+    console.error(errorMessage)
+  } else {
+    planTypeError.value = null
+  }
+}, { immediate: true })
 
 // Load available tools
 const loadAvailableTools = async () => {

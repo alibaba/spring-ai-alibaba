@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.manus.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.manus.agent.model.Tool;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionStep;
 
@@ -37,6 +38,12 @@ public interface AgentService {
 	List<Tool> getAvailableTools();
 
 	/**
+	 * Get all dynamic agent entities for the current namespace
+	 * @return List of DynamicAgentEntity objects
+	 */
+	List<DynamicAgentEntity> getAllAgents();
+
+	/**
 	 * Create and return a usable BaseAgent object, similar to the
 	 * createPlanningCoordinator method in PlanningFactory
 	 * @param name Agent name
@@ -46,4 +53,6 @@ public interface AgentService {
 	BaseAgent createDynamicBaseAgent(String name, String currentPlanId, String rootPlanId,
 			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step);
 
+	BaseAgent createConfigurableDynamicBaseAgent(String name, String currentPlanId, String rootPlanId,
+			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step);
 }

@@ -268,7 +268,7 @@ export class SidebarStore {
     if (!this.generatorPrompt.trim()) return
     this.isGenerating = true
     try {
-      const response = await PlanActApiService.generatePlan(this.generatorPrompt)
+      const response = await PlanActApiService.generatePlan(this.generatorPrompt, undefined, this.planType)
       this.jsonContent = response.planJson || ''
       if (this.selectedTemplate && this.selectedTemplate.id.startsWith('new-')) {
         let title = 'New Plan Template'
@@ -311,7 +311,8 @@ export class SidebarStore {
       const response = await PlanActApiService.updatePlanTemplate(
         this.selectedTemplate.id,
         this.generatorPrompt,
-        this.jsonContent
+        this.jsonContent,
+        this.planType
       )
       this.jsonContent = response.planJson || ''
       if (this.currentVersionIndex < this.planVersions.length - 1) {

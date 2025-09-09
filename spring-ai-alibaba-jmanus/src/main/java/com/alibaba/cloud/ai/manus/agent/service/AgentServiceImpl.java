@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.manus.agent.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -25,15 +26,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.cloud.ai.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.manus.agent.ConfigurableDynaAgent;
 import com.alibaba.cloud.ai.manus.agent.DynamicAgent;
 import com.alibaba.cloud.ai.manus.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.manus.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.manus.agent.model.Tool;
 import com.alibaba.cloud.ai.manus.agent.repository.DynamicAgentRepository;
+import com.alibaba.cloud.ai.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.manus.llm.StreamingResponseHandler;
+import com.alibaba.cloud.ai.manus.prompt.service.PromptService;
+import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.manus.runtime.service.PlanIdDispatcher;
+import com.alibaba.cloud.ai.manus.runtime.service.UserInputService;
 import com.alibaba.cloud.ai.manus.planning.IPlanningFactory;
 import com.alibaba.cloud.ai.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionStep;
@@ -49,8 +58,6 @@ public class AgentServiceImpl implements AgentService {
 
 	private static final Logger log = LoggerFactory.getLogger(AgentServiceImpl.class);
 
-	private final IDynamicAgentLoader dynamicAgentLoader;
-
 	private final DynamicAgentRepository repository;
 
 	private final IPlanningFactory planningFactory;
@@ -58,6 +65,18 @@ public class AgentServiceImpl implements AgentService {
 	private final IMcpService mcpService;
 
 	private final NamespaceService namespaceService;
+
+	private final PlanExecutionRecorder recorder;
+
+	private final ManusProperties properties;
+
+	private final UserInputService userInputService;
+
+	private final PromptService promptService;
+
+	private final StreamingResponseHandler streamingResponseHandler;
+
+	private final PlanIdDispatcher planIdDispatcher;
 
 	@Autowired
 	@Lazy
@@ -67,14 +86,24 @@ public class AgentServiceImpl implements AgentService {
 	@Lazy
 	private ToolCallingManager toolCallingManager;
 
+	@Value("${namespace.value}")
+	private String namespace;
+
 	@Autowired
-	public AgentServiceImpl(@Lazy IDynamicAgentLoader dynamicAgentLoader, DynamicAgentRepository repository,
-			@Lazy IPlanningFactory planningFactory, @Lazy IMcpService mcpService, NamespaceService namespaceService) {
-		this.dynamicAgentLoader = dynamicAgentLoader;
+	public AgentServiceImpl(DynamicAgentRepository repository, @Lazy IPlanningFactory planningFactory, 
+			@Lazy IMcpService mcpService, NamespaceService namespaceService, PlanExecutionRecorder recorder,
+			ManusProperties properties, UserInputService userInputService, PromptService promptService,
+			StreamingResponseHandler streamingResponseHandler, PlanIdDispatcher planIdDispatcher) {
 		this.repository = repository;
 		this.planningFactory = planningFactory;
 		this.mcpService = mcpService;
 		this.namespaceService = namespaceService;
+		this.recorder = recorder;
+		this.properties = properties;
+		this.userInputService = userInputService;
+		this.promptService = promptService;
+		this.streamingResponseHandler = streamingResponseHandler;
+		this.planIdDispatcher = planIdDispatcher;
 	}
 
 	@Override
@@ -158,6 +187,36 @@ public class AgentServiceImpl implements AgentService {
 		}
 
 		repository.deleteById(Long.parseLong(id));
+	}
+
+	public DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting, ExecutionStep step) {
+
+		// Check if this is a ConfigurableDynaAgent
+		if ("ConfigurableDynaAgent".equals(agentName)) {
+			String name = "ConfigurableDynaAgent";
+			String description = "A configurable dynamic agent";
+			String nextStepPrompt = "Based on the current environment information and prompt to make a next step decision";
+			
+			return new ConfigurableDynaAgent(llmService, recorder, properties, name, description, nextStepPrompt, 
+					null, toolCallingManager, initialAgentSetting, userInputService, promptService, 
+					null, streamingResponseHandler, step, planIdDispatcher);
+		}
+
+		DynamicAgentEntity entity = repository.findByNamespaceAndAgentName(namespace, agentName);
+		if (entity == null) {
+			throw new IllegalArgumentException("Agent not found: " + agentName);
+		}
+
+		return new DynamicAgent(llmService, recorder, properties, entity.getAgentName(), entity.getAgentDescription(),
+				entity.getNextStepPrompt(), entity.getAvailableToolKeys(), toolCallingManager, initialAgentSetting,
+				userInputService, promptService, entity.getModel(), streamingResponseHandler, step, planIdDispatcher);
+	}
+
+	public List<DynamicAgentEntity> getAllAgents() {
+		return repository.findAllByNamespace(namespace)
+			.stream()
+			.filter(entity -> Objects.equals(entity.getNamespace(), namespace))
+			.toList();
 	}
 
 	public List<Tool> getAvailableTools() {
@@ -302,8 +361,8 @@ public class AgentServiceImpl implements AgentService {
 		log.info("Create new BaseAgent: {}, planId: {}", name, planId);
 
 		try {
-			// Load existing Agent through dynamicAgentLoader
-			DynamicAgent agent = dynamicAgentLoader.loadAgent(name, initialAgentSetting, step);
+			// Load existing Agent through local loadAgent method
+			DynamicAgent agent = loadAgent(name, initialAgentSetting, step);
 
 			// Set planId
 			agent.setCurrentPlanId(planId);
@@ -325,4 +384,28 @@ public class AgentServiceImpl implements AgentService {
 		}
 	}
 
+	@Override
+	public BaseAgent createConfigurableDynamicBaseAgent(String name, String planId, String rootPlanId,
+			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step) {
+		DynamicAgent loadedAgent = loadAgent(name, initialAgentSetting, step);
+		if (!(loadedAgent instanceof ConfigurableDynaAgent)) {
+			throw new IllegalArgumentException("Agent " + name + " is not a ConfigurableDynaAgent");
+		}
+		ConfigurableDynaAgent agent = (ConfigurableDynaAgent) loadedAgent;
+
+		// Set planId
+		agent.setCurrentPlanId(planId);
+		agent.setRootPlanId(rootPlanId);
+		// Set tool callback mapping
+		Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId, rootPlanId,
+				expectedReturnInfo);
+		agent.setToolCallbackProvider(new ToolCallbackProvider() {
+
+			@Override
+			public Map<String, ToolCallBackContext> getToolCallBackContext() {
+				return toolCallbackMap;
+			}
+		});
+		return agent;
+	}
 }

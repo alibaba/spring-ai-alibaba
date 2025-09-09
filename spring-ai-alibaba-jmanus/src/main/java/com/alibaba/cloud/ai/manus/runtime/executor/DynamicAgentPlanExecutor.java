@@ -26,7 +26,6 @@ import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionStep;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanInterface;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.StepResult;
-import com.alibaba.cloud.ai.manus.runtime.entity.vo.DynamicAgentExecutionPlan;
 
 import java.util.HashMap;
 import java.util.List;
@@ -84,16 +83,6 @@ public class DynamicAgentPlanExecutor extends AbstractPlanExecutor {
 			plan.setRootPlanId(context.getRootPlanId());
 			plan.updateStepIndices();
 
-			// Validate that this is a DynamicAgentExecutionPlan
-			if (!(plan instanceof DynamicAgentExecutionPlan)) {
-				log.error("DynamicAgentPlanExecutor can only execute DynamicAgentExecutionPlan, but got: {}",
-						plan.getClass().getSimpleName());
-				result.setSuccess(false);
-				result.setErrorMessage("Invalid plan type for DynamicAgentPlanExecutor");
-				return result;
-			}
-
-			DynamicAgentExecutionPlan dynamicPlan = (DynamicAgentExecutionPlan) plan;
 
 			try {
 				List<ExecutionStep> steps = plan.getAllSteps();
@@ -102,16 +91,11 @@ public class DynamicAgentPlanExecutor extends AbstractPlanExecutor {
 						context.getUserRequest(), steps, context.getParentPlanId(), context.getRootPlanId(),
 						context.getToolCallId());
 
-				// Log selected tools for debugging
-				if (dynamicPlan.getSelectedToolKeys() != null && !dynamicPlan.getSelectedToolKeys().isEmpty()) {
-					log.info("Executing Dynamic Agent plan with selected tools: {}", 
-							String.join(", ", dynamicPlan.getSelectedToolKeys()));
-				}
 
 				if (steps != null && !steps.isEmpty()) {
 					for (ExecutionStep step : steps) {
 						// Execute step with Dynamic Agent specific tool selection
-						BaseAgent stepExecutor = executeStepWithDynamicTools(step, context, dynamicPlan);
+						BaseAgent stepExecutor = executeStepWithDynamicTools(step, context);
 						if (stepExecutor != null) {
 							lastExecutor = stepExecutor;
 
@@ -154,8 +138,7 @@ public class DynamicAgentPlanExecutor extends AbstractPlanExecutor {
 	 * @param dynamicPlan Dynamic Agent execution plan containing selected tools
 	 * @return BaseAgent executor for the step
 	 */
-	private BaseAgent executeStepWithDynamicTools(ExecutionStep step, ExecutionContext context, 
-			DynamicAgentExecutionPlan dynamicPlan) {
+	private BaseAgent executeStepWithDynamicTools(ExecutionStep step, ExecutionContext context) {
 		
 		String stepType = getStepFromStepReq(step.getStepRequirement());
 		int stepIndex = step.getStepIndex();
@@ -170,12 +153,12 @@ public class DynamicAgentPlanExecutor extends AbstractPlanExecutor {
 		initSettings.put(STEP_TEXT_KEY, stepText);
 		initSettings.put(EXTRA_PARAMS_KEY, context.getPlan().getExecutionParams());
 
-		// Add Dynamic Agent specific settings
-		if (dynamicPlan.getSelectedToolKeys() != null && !dynamicPlan.getSelectedToolKeys().isEmpty()) {
-			initSettings.put("selectedToolKeys", dynamicPlan.getSelectedToolKeys());
-			log.debug("Setting selected tools for step {}: {}", stepIndex, dynamicPlan.getSelectedToolKeys());
-		}
+        if("ConfigurableDynaAgent".equalsIgnoreCase(stepType)) {
 
+            //special for configurable dynamic agent, because it's not in database ;
+            return agentService.createDynamicBaseAgent(stepType, context.getPlan().getCurrentPlanId(), context.getPlan().getRootPlanId(), initSettings,
+						expectedReturnInfo, step);
+        }
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
 				BaseAgent executor = agentService.createDynamicBaseAgent(agent.getAgentName(),

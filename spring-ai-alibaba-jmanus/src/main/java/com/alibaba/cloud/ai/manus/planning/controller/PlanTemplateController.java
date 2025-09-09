@@ -78,79 +78,6 @@ public class PlanTemplateController {
 	}
 
 	/**
-	 * Generate dynamic agent plan
-	 * @param request Request containing plan requirements
-	 * @return Complete JSON data for the dynamic agent plan
-	 */
-	@PostMapping("/generate-dynamic-agent")
-	public ResponseEntity<Map<String, Object>> generateDynamicAgentPlan(@RequestBody Map<String, String> request) {
-		String query = request.get("query");
-
-		if (query == null || query.trim().isEmpty()) {
-			return ResponseEntity.badRequest().body(Map.of("error", "Plan description cannot be empty"));
-		}
-
-		ExecutionContext context = new ExecutionContext();
-		// Set the user request directly
-		String enhancedQuery = String.format(
-				"Build a dynamic agent execution plan for: %s.",
-				query);
-		context.setUserRequest(enhancedQuery);
-
-		// Use PlanIdDispatcher to generate a unique plan template ID
-		String planTemplateId = planIdDispatcher.generatePlanTemplateId();
-		context.setCurrentPlanId(planTemplateId);
-		context.setRootPlanId(planTemplateId);
-		context.setNeedSummary(false); // We don't need to generate a summary, because we
-										// only need the plan
-
-		try {
-			// Create DynamicAgentPlanCreator using PlanningFactory
-			IPlanCreator planCreator = planningFactory.createPlanCreator("dynamic_agent");
-
-			// Create plan using DynamicAgentPlanCreator directly
-			planCreator.createPlanWithoutMemory(context);
-			logger.info("Dynamic agent plan generation successful: {}", planTemplateId);
-
-			// Get the generated plan from the recorder
-			if (context.getPlan() == null) {
-				return ResponseEntity.internalServerError()
-					.body(Map.of("error", "Dynamic agent plan generation failed, cannot get plan data"));
-			}
-
-			// Get plan JSON - using Jackson serialization
-			String planJson;
-			try {
-				planJson = planToJson(context.getPlan());
-			}
-			catch (Exception jsonException) {
-				logger.error("Failed to serialize dynamic agent plan to JSON", jsonException);
-				return ResponseEntity.internalServerError()
-					.body(Map.of("error", "Plan serialization failed: " + jsonException.getMessage()));
-			}
-
-			// Save to version history
-			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planJson);
-
-			// Return plan data
-			Map<String, Object> response = new HashMap<>();
-			response.put("planTemplateId", planTemplateId);
-			response.put("status", "completed");
-			response.put("planJson", planJson);
-			response.put("saved", saveResult.isSaved());
-			response.put("duplicate", saveResult.isDuplicate());
-			response.put("saveMessage", saveResult.getMessage());
-
-			return ResponseEntity.ok(response);
-		}
-		catch (Exception e) {
-			logger.error("Dynamic agent plan generation failed", e);
-			return ResponseEntity.internalServerError()
-				.body(Map.of("error", "Dynamic agent plan generation failed: " + e.getMessage()));
-		}
-	}
-
-	/**
 	 * Generate plan
 	 * @param request Request containing plan requirements and optional JSON data
 	 * @return Complete JSON data for the plan
@@ -159,7 +86,12 @@ public class PlanTemplateController {
 	public ResponseEntity<Map<String, Object>> generatePlan(@RequestBody Map<String, String> request) {
 		String query = request.get("query");
 		String existingJson = request.get("existingJson"); // Get possible existing JSON
-															// data
+		String planType = request.get("planType"); // Get plan type
+		
+		// Default to simple plan type if not specified
+		if (planType == null || planType.trim().isEmpty()) {
+			planType = "simple";
+		}
 
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Plan description cannot be empty"));
@@ -189,8 +121,8 @@ public class PlanTemplateController {
 										// only need the plan
 
 		try {
-			// Create PlanCreator using PlanningFactory
-			IPlanCreator planCreator = planningFactory.createPlanCreator("simple");
+			// Create PlanCreator using PlanningFactory with specified plan type
+			IPlanCreator planCreator = planningFactory.createPlanCreator(planType);
 
 			// Create plan using PlanCreator directly
 			planCreator.createPlanWithoutMemory(context);
@@ -477,102 +409,6 @@ public class PlanTemplateController {
 				.body(Map.of("error", "Failed to get plan template list: " + e.getMessage()));
 		}
 	}
-
-	/**
-	 * Update dynamic agent plan template
-	 * @param request Request containing plan template ID, plan requirements and optional JSON data
-	 * @return Updated dynamic agent plan JSON data
-	 */
-	@PostMapping("/update-dynamic-agent")
-	public ResponseEntity<Map<String, Object>> updateDynamicAgentPlanTemplate(@RequestBody Map<String, String> request) {
-		String planId = request.get("planId");
-		String query = request.get("query");
-		String existingJson = request.get("existingJson");
-
-		if (planId == null || planId.trim().isEmpty()) {
-			return ResponseEntity.badRequest().body(Map.of("error", "Plan template ID cannot be empty"));
-		}
-
-		if (query == null || query.trim().isEmpty()) {
-			return ResponseEntity.badRequest().body(Map.of("error", "Plan description cannot be empty"));
-		}
-
-		// Check if the plan template exists
-		PlanTemplate template = planTemplateService.getPlanTemplate(planId);
-		if (template == null) {
-			return ResponseEntity.notFound().build();
-		}
-
-		ExecutionContext context = new ExecutionContext();
-		// If there is existing JSON data, add it to the user request
-		String enhancedQuery;
-		if (existingJson != null && !existingJson.trim().isEmpty()) {
-			// Escape curly braces in JSON to prevent String.format from misinterpreting
-			// them as placeholders
-			String escapedJson = existingJson.replace("{", "\\{").replace("}", "\\}");
-			enhancedQuery = String.format(
-					"Refer to the past execution plan %s and the user's new query: %s. Update this dynamic agent execution plan.",
-					escapedJson, query);
-		}
-		else {
-			enhancedQuery = String.format(
-					"Update dynamic agent execution plan for: %s.",
-					query);
-		}
-		context.setUserRequest(enhancedQuery);
-
-		// Use the existing plan template ID
-		context.setCurrentPlanId(planId);
-		context.setRootPlanId(planId);
-		context.setNeedSummary(false); // We don't need to generate a summary, because we
-										// only need the plan
-
-		try {
-			// Create DynamicAgentPlanCreator using PlanningFactory
-			IPlanCreator planCreator = planningFactory.createPlanCreator("dynamic_agent");
-
-			// Create plan using DynamicAgentPlanCreator directly
-			planCreator.createPlanWithoutMemory(context);
-			logger.info("Dynamic agent plan template updated successfully: {}", planId);
-
-			// Get the generated plan from the recorder
-			if (context.getPlan() == null) {
-				return ResponseEntity.internalServerError()
-					.body(Map.of("error", "Dynamic agent plan update failed, cannot get plan data"));
-			}
-
-			// Get plan JSON - using Jackson serialization
-			String planJson;
-			try {
-				planJson = planToJson(context.getPlan());
-			}
-			catch (Exception jsonException) {
-				logger.error("Failed to serialize dynamic agent plan to JSON", jsonException);
-				return ResponseEntity.internalServerError()
-					.body(Map.of("error", "Plan serialization failed: " + jsonException.getMessage()));
-			}
-
-			// Save to version history
-			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planJson);
-
-			// Return plan data
-			Map<String, Object> response = new HashMap<>();
-			response.put("planTemplateId", planId);
-			response.put("status", "completed");
-			response.put("planJson", planJson);
-			response.put("saved", saveResult.isSaved());
-			response.put("duplicate", saveResult.isDuplicate());
-			response.put("saveMessage", saveResult.getMessage());
-
-			return ResponseEntity.ok(response);
-		}
-		catch (Exception e) {
-			logger.error("Failed to update dynamic agent plan template", e);
-			return ResponseEntity.internalServerError()
-				.body(Map.of("error", "Failed to update dynamic agent plan template: " + e.getMessage()));
-		}
-	}
-
 	/**
 	 * Update plan template
 	 * @param request Request containing plan template ID, plan requirements and optional
@@ -584,6 +420,12 @@ public class PlanTemplateController {
 		String planId = request.get("planId");
 		String query = request.get("query");
 		String existingJson = request.get("existingJson"); // Get possible existing JSON
+		String planType = request.get("planType"); // Get plan type
+		
+		// Default to simple plan type if not specified
+		if (planType == null || planType.trim().isEmpty()) {
+			planType = "simple";
+		}
 
 		if (planId == null || planId.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Plan template ID cannot be empty"));
@@ -626,9 +468,11 @@ public class PlanTemplateController {
 		// new_code
 
 		try {
-			// Immediately execute the create plan stage, not asynchronously
-			// planningCoordinator.createPlan(context); // This line is removed as per the
-			// new_code
+			// Create PlanCreator using PlanningFactory with specified plan type
+			IPlanCreator planCreator = planningFactory.createPlanCreator(planType);
+			
+			// Create plan using PlanCreator directly
+			planCreator.createPlanWithoutMemory(context);
 			logger.info("Plan template updated successfully: {}", planId);
 
 			// Get the generated plan from the recorder

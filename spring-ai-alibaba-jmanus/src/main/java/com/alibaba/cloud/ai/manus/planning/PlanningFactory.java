@@ -47,7 +47,6 @@ import com.alibaba.cloud.ai.manus.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.manus.cron.service.CronService;
 import com.alibaba.cloud.ai.manus.agent.entity.DynamicAgentEntity;
-import com.alibaba.cloud.ai.manus.agent.service.IDynamicAgentLoader;
 import com.alibaba.cloud.ai.manus.agent.service.AgentService;
 import com.alibaba.cloud.ai.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.manus.llm.StreamingResponseHandler;
@@ -136,9 +135,6 @@ public class PlanningFactory implements IPlanningFactory {
 	private ToolCallingManager toolCallingManager;
 
 	@Autowired
-	private IDynamicAgentLoader dynamicAgentLoader;
-
-	@Autowired
 	private MapReduceSharedStateManager sharedStateManager;
 
 	@Autowired
@@ -195,7 +191,7 @@ public class PlanningFactory implements IPlanningFactory {
 					streamingResponseHandler, agentService);
 		} else {
 			// Get all dynamic agents from the database for simple plans
-			List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
+			List<DynamicAgentEntity> agentEntities = agentService.getAllAgents();
 			PlanningToolInterface planningTool = new PlanningTool();
 			return new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService, manusProperties,
 					streamingResponseHandler);

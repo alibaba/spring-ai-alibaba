@@ -24,10 +24,11 @@ export class PlanActApiService {
   private static readonly CRON_TASK_URL = '/api/cron-tasks'
 
   // Generate plan
-  public static async generatePlan(query: string, existingJson?: string): Promise<any> {
+  public static async generatePlan(query: string, existingJson?: string, planType: string = 'simple'): Promise<any> {
     return LlmCheckService.withLlmCheck(async () => {
-      const requestBody: Record<string, any> = { query }
+      const requestBody: Record<string, any> = { query, planType }
       if (existingJson) requestBody.existingJson = existingJson
+      
       const response = await fetch(`${this.PLAN_TEMPLATE_URL}/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -122,10 +123,11 @@ export class PlanActApiService {
   }
 
   // Update existing plan template
-  public static async updatePlanTemplate(planId: string, query: string, existingJson?: string): Promise<any> {
+  public static async updatePlanTemplate(planId: string, query: string, existingJson?: string, planType: string = 'simple'): Promise<any> {
     return LlmCheckService.withLlmCheck(async () => {
-      const requestBody: Record<string, any> = { planId, query }
+      const requestBody: Record<string, any> = { planId, query, planType }
       if (existingJson) requestBody.existingJson = existingJson
+      
       const response = await fetch(`${this.PLAN_TEMPLATE_URL}/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
