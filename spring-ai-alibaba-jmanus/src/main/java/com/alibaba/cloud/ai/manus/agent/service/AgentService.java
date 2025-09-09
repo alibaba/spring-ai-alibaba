@@ -48,12 +48,15 @@ public interface AgentService {
 	 * createPlanningCoordinator method in PlanningFactory
 	 * @param name Agent name
 	 * @param currentPlanId Plan ID, used to identify the plan the agent belongs to
+	 * @param rootPlanId Root plan ID
+	 * @param initialAgentSetting Initial agent settings
+	 * @param expectedReturnInfo Expected return information
+	 * @param step Execution step
+	 * @param modelName Model name to query from repository (optional, can be null)
+	 * @param availableToolKeys List of available tool keys (optional, can be null)
 	 * @return Created BaseAgent object
 	 */
 	BaseAgent createDynamicBaseAgent(String name, String currentPlanId, String rootPlanId,
-			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step);
-
-	BaseAgent createConfigurableDynamicBaseAgent(String name, String currentPlanId, String rootPlanId,
 			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step,
 			String modelName, List<String> availableToolKeys);
 

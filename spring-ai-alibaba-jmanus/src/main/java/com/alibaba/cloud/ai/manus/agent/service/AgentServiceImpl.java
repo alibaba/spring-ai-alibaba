@@ -21,7 +21,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -350,13 +349,14 @@ public class AgentServiceImpl implements AgentService {
 	}
 	@Override
 	public BaseAgent createDynamicBaseAgent(String name, String planId, String rootPlanId,
-			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step) {
+			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step,
+			String modelName, List<String> availableToolKeys) {
 
 		log.info("Create new BaseAgent: {}, planId: {}", name, planId);
 
 		try {
 			// Load existing Agent through local loadAgent method
-			DynamicAgent agent = loadAgent(name, initialAgentSetting, step, null, null);
+			DynamicAgent agent = loadAgent(name, initialAgentSetting, step, availableToolKeys, modelName);
 
 			// Set planId
 			agent.setCurrentPlanId(planId);
@@ -376,32 +376,6 @@ public class AgentServiceImpl implements AgentService {
 		catch (Exception e) {
 			throw new RuntimeException("Failed to create dynamic base agent: " + name, e);
 		}
-	}
-
-	@Override
-	public BaseAgent createConfigurableDynamicBaseAgent(String name, String planId, String rootPlanId,
-			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step,
-			String modelName, List<String> availableToolKeys) {
-		DynamicAgent loadedAgent = loadAgent(name, initialAgentSetting, step, availableToolKeys, modelName);
-		if (!(loadedAgent instanceof ConfigurableDynaAgent)) {
-			throw new IllegalArgumentException("Agent " + name + " is not a ConfigurableDynaAgent");
-		}
-		ConfigurableDynaAgent agent = (ConfigurableDynaAgent) loadedAgent;
-
-		// Set planId
-		agent.setCurrentPlanId(planId);
-		agent.setRootPlanId(rootPlanId);
-		// Set tool callback mapping
-		Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId, rootPlanId,
-				expectedReturnInfo);
-		agent.setToolCallbackProvider(new ToolCallbackProvider() {
-
-			@Override
-			public Map<String, ToolCallBackContext> getToolCallBackContext() {
-				return toolCallbackMap;
-			}
-		});
-		return agent;
 	}
 
 }
