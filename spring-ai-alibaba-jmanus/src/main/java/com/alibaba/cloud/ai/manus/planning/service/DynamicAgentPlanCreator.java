@@ -16,7 +16,8 @@
 package com.alibaba.cloud.ai.manus.planning.service;
 
 import com.alibaba.cloud.ai.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.manus.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.manus.agent.model.Tool;
+import com.alibaba.cloud.ai.manus.agent.service.AgentService;
 import com.alibaba.cloud.ai.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.manus.memory.advisor.CustomMessageChatMemoryAdvisor;
@@ -49,11 +50,12 @@ public class DynamicAgentPlanCreator implements IPlanCreator {
 
 	private static final Logger log = LoggerFactory.getLogger(DynamicAgentPlanCreator.class);
 
-	private final List<DynamicAgentEntity> agents;
 
 	private final ILlmService llmService;
 
 	private final PlanningToolInterface planningTool;
+
+	private final AgentService agentService;
 
 	protected final PlanExecutionRecorder recorder;
 
@@ -63,16 +65,16 @@ public class DynamicAgentPlanCreator implements IPlanCreator {
 
 	private final StreamingResponseHandler streamingResponseHandler;
 
-	public DynamicAgentPlanCreator(List<DynamicAgentEntity> agents, ILlmService llmService, PlanningToolInterface planningTool,
+	public DynamicAgentPlanCreator(ILlmService llmService, PlanningToolInterface planningTool,
 			PlanExecutionRecorder recorder, PromptService promptService, ManusProperties manusProperties,
-			StreamingResponseHandler streamingResponseHandler) {
-		this.agents = agents;
+			StreamingResponseHandler streamingResponseHandler, AgentService agentService) {
 		this.llmService = llmService;
 		this.planningTool = planningTool;
 		this.recorder = recorder;
 		this.promptService = promptService;
 		this.manusProperties = manusProperties;
 		this.streamingResponseHandler = streamingResponseHandler;
+		this.agentService = agentService;
 	}
 
 	/**
@@ -108,10 +110,10 @@ public class DynamicAgentPlanCreator implements IPlanCreator {
 		String memoryType = useMemory ? "with memory" : "without memory";
 
 		try {
-			// Build agent information with tool details
-			String agentsInfo = buildDynamicAgentsInfo(agents);
-			// Generate dynamic agent plan prompt
-			String planPrompt = generateDynamicAgentPlanPrompt(context.getUserRequest(), agentsInfo);
+			// Get all available tools
+			List<Tool> availableTools = agentService.getAvailableTools();
+			// Generate dynamic agent plan prompt with tools information
+			String planPrompt = generateDynamicAgentPlanPrompt(context.getUserRequest(), availableTools);
 
 			PlanInterface executionPlan = null;
 			String outputText = null;
@@ -203,41 +205,27 @@ public class DynamicAgentPlanCreator implements IPlanCreator {
 		}
 	}
 
-	/**
-	 * Build the dynamic agent information string with tool details
-	 * @param agents agent list
-	 * @return formatted dynamic agent information
-	 */
-	private String buildDynamicAgentsInfo(List<DynamicAgentEntity> agents) {
-		StringBuilder agentsInfo = new StringBuilder("Available Dynamic Agents:\n");
-		for (DynamicAgentEntity agent : agents) {
-			agentsInfo.append("- Agent Name: ")
-				.append(agent.getAgentName())
-				.append("\n  Description: ")
-				.append(agent.getAgentDescription())
-				.append("\n  Available Tools: ");
-			
-			if (agent.getAvailableToolKeys() != null && !agent.getAvailableToolKeys().isEmpty()) {
-				agentsInfo.append(String.join(", ", agent.getAvailableToolKeys()));
-			} else {
-				agentsInfo.append("None specified");
-			}
-			
-			agentsInfo.append("\n");
-		}
-		return agentsInfo.toString();
-	}
 
 	/**
 	 * Generate the dynamic agent plan prompt
 	 * @param request user request
-	 * @param agentsInfo agent information
+	 * @param availableTools all available tools
 	 * @return formatted prompt string
 	 */
-	private String generateDynamicAgentPlanPrompt(String request, String agentsInfo) {
+	private String generateDynamicAgentPlanPrompt(String request, List<Tool> availableTools) {
 		// Escape special characters in request to prevent StringTemplate parsing errors
 		String escapedRequest = escapeForStringTemplate(request);
-		Map<String, Object> variables = Map.of("agentsInfo", agentsInfo, "request", escapedRequest);
+		
+		// Build tools information string
+		StringBuilder toolsInfo = new StringBuilder();
+		for (Tool tool : availableTools) {
+			toolsInfo.append("- ").append(tool.getName()).append(": ").append(tool.getDescription()).append("\n");
+		}
+		
+		Map<String, Object> variables = Map.of(
+			"request", escapedRequest,
+			"toolsInfo", toolsInfo.toString()
+		);
 		return promptService.renderPrompt(PromptEnum.PLANNING_PLAN_DYNAMIC_AGENT_CREATION.getPromptName(), variables);
 	}
 

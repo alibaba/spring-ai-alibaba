@@ -48,6 +48,7 @@ import com.alibaba.cloud.ai.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.manus.cron.service.CronService;
 import com.alibaba.cloud.ai.manus.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.manus.agent.service.IDynamicAgentLoader;
+import com.alibaba.cloud.ai.manus.agent.service.AgentService;
 import com.alibaba.cloud.ai.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.manus.mcp.model.vo.McpServiceEntity;
@@ -154,6 +155,9 @@ public class PlanningFactory implements IPlanningFactory {
 	private ISubplanToolService subplanToolService;
 
 	@Autowired
+	private AgentService agentService;
+
+	@Autowired
 	private PptGeneratorOperator pptGeneratorOperator;
 
 	@Value("${agent.init}")
@@ -185,14 +189,13 @@ public class PlanningFactory implements IPlanningFactory {
 	 * @return configured plan creator instance
 	 */
 	public IPlanCreator createPlanCreator(String planType) {
-		// Get all dynamic agents from the database
-		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
-
 		if ("dynamic_agent".equals(planType)) {
 			DynamicAgentPlanningTool dynamicAgentPlanningTool = new DynamicAgentPlanningTool();
-			return new DynamicAgentPlanCreator(agentEntities, llmService, dynamicAgentPlanningTool, recorder, promptService, manusProperties,
-					streamingResponseHandler);
+			return new DynamicAgentPlanCreator(llmService, dynamicAgentPlanningTool, recorder, promptService, manusProperties,
+					streamingResponseHandler, agentService);
 		} else {
+			// Get all dynamic agents from the database for simple plans
+			List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
 			PlanningToolInterface planningTool = new PlanningTool();
 			return new PlanCreator(agentEntities, llmService, planningTool, recorder, promptService, manusProperties,
 					streamingResponseHandler);
