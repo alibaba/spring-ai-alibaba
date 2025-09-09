@@ -150,6 +150,18 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 		return func.apply(templateString, idToVarName);
 	}
 
+	private static final Pattern VAR_TEMPLATE_PATTERN = Pattern.compile("\\{(\\w+)}");
+
+	/**
+	 * 获取模板中的变量占位符，比如"你好{var1}，{var2}"返回"[var1, var2]"
+	 * @param template 模板字符串
+	 * @return 变量占位符列表
+	 */
+	protected List<String> getVarTemplateKeys(String template) {
+		Matcher matcher = VAR_TEMPLATE_PATTERN.matcher(template);
+		return matcher.results().map(m -> m.group(1)).toList();
+	}
+
 	/**
 	 * 创建一个空处理Consumer，便于使用.andThen编程
 	 * @return BiConsumer

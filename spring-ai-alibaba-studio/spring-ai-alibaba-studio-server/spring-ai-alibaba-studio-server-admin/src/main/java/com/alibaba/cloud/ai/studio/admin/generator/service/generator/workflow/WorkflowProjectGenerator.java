@@ -276,10 +276,13 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return sb.toString();
 	}
 
+	// TODO: 将这部份逻辑放到NodeSection中，每一个节点提供要导入的类
 	private String renderImportSection(Workflow workflow) {
 		// construct a list of node types
 		Map<NodeType, List<String>> nodeTypeToClass = Map.ofEntries(
 				Map.entry(NodeType.ANSWER, List.of("com.alibaba.cloud.ai.graph.node.AnswerNode")),
+				Map.entry(NodeType.MIDDLE_OUTPUT,
+						List.of("java.util.stream.Collectors", "org.springframework.ai.chat.prompt.PromptTemplate")),
 				Map.entry(NodeType.CODE, List.of("com.alibaba.cloud.ai.graph.node.code.CodeExecutorNodeAction",
 						"com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig",
 						"com.alibaba.cloud.ai.graph.node.code.CodeExecutor",

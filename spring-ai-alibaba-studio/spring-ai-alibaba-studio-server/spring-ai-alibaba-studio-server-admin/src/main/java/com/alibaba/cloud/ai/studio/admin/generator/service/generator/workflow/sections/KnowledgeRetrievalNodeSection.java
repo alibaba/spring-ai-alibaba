@@ -131,7 +131,7 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 		}
 
 		return String.format("""
-				// —— KnowledgeRetrievalNode [%s] ——%n
+				// —— KnowledgeRetrievalNode [%s] ——
 				KnowledgeRetrievalNode %s = KnowledgeRetrievalNode.builder()
 				    .topK(%s)
 				    .similarityThreshold(%s)
@@ -140,6 +140,7 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 				    .vectorStore(createVectorStore(%s))
 				    .build();
 				stateGraph.addNode("%s", AsyncNodeAction.node_async(wrapperRetrievalNodeAction(%s, "%s")));
+
 				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getTopK()),
 				ObjectToCodeUtil.toCode(nodeData.getThreshold()), ObjectToCodeUtil.toCode(nodeData.getInputKey()),
 				ObjectToCodeUtil.toCode(nodeData.getOutputKey()),

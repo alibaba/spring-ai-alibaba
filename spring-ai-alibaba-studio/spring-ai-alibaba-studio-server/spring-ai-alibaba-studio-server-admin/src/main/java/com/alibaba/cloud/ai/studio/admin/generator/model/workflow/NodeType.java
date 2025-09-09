@@ -26,6 +26,8 @@ public enum NodeType {
 
 	ANSWER("answer", "answer", "UNSUPPORTED"),
 
+	MIDDLE_OUTPUT("middle-output", "UNSUPPORTED", "Output"),
+
 	AGENT("agent", "agent", "UNSUPPORTED"),
 
 	LLM("llm", "llm", "LLM"),
