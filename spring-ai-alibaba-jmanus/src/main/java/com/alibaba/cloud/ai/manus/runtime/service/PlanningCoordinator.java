@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.manus.runtime.service;
 
-import com.alibaba.cloud.ai.manus.planning.service.PlanCreator;
+import com.alibaba.cloud.ai.manus.planning.service.IPlanCreator;
 import com.alibaba.cloud.ai.manus.planning.service.PlanFinalizer;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionContext;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult;
@@ -69,6 +69,22 @@ public class PlanningCoordinator {
 	 */
 	public CompletableFuture<PlanExecutionResult> executeByUserQuery(String userQuery, String rootPlanId,
 			String parentPlanId, String currentPlanId, String memoryId, String toolcallId) {
+		return executeByUserQuery(userQuery, rootPlanId, parentPlanId, currentPlanId, memoryId, toolcallId, "simple");
+	}
+
+	/**
+	 * Execute plan by user query using plan creator and then execute the created plan
+	 * @param userQuery The user's query/request
+	 * @param rootPlanId The root plan ID for the execution context
+	 * @param parentPlanId The ID of the parent plan (can be null for root plans)
+	 * @param currentPlanId The current plan ID for execution
+	 * @param memoryId The memory ID for the execution context
+	 * @param toolcallId The ID of the tool call that triggered this plan execution
+	 * @param planType The type of plan to create ("simple" or "dynamic_agent")
+	 * @return A CompletableFuture that completes with the execution result
+	 */
+	public CompletableFuture<PlanExecutionResult> executeByUserQuery(String userQuery, String rootPlanId,
+			String parentPlanId, String currentPlanId, String memoryId, String toolcallId, String planType) {
 		try {
 			log.info("Starting plan execution for user query: {}", userQuery);
 
@@ -88,8 +104,8 @@ public class PlanningCoordinator {
 			context.setParentPlanId(parentPlanId);
 			context.setToolCallId(toolcallId);
 
-			// Create plan using PlanningFactory
-			PlanCreator planCreator = planningFactory.createPlanCreator();
+			// Create plan using PlanningFactory with specified plan type
+			IPlanCreator planCreator = planningFactory.createPlanCreator(planType);
 			planCreator.createPlanWithoutMemory(context);
 
 			// Check if plan was created successfully

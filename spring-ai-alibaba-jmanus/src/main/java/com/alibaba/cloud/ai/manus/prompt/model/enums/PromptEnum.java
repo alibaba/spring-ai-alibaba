@@ -20,6 +20,8 @@ import org.springframework.ai.chat.messages.MessageType;
 
 public enum PromptEnum {
 
+	PLANNING_PLAN_DYNAMIC_AGENT_CREATION("PLANNING_PLAN_DYNAMIC_AGENT_CREATION", MessageType.SYSTEM, PromptType.PLANNING, true,
+			"planning/plan-dynamic-agent-creation.txt"),
 	PLANNING_PLAN_CREATION("PLANNING_PLAN_CREATION", MessageType.SYSTEM, PromptType.PLANNING, true,
 			"planning/plan-creation.txt"),
 	AGENT_CURRENT_STEP_ENV("AGENT_CURRENT_STEP_ENV", MessageType.USER, PromptType.AGENT, true,

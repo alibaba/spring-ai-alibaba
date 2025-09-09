@@ -127,13 +127,15 @@
             :generator-prompt="sidebarStore.generatorPrompt"
             :json-content="sidebarStore.jsonContent"
             :is-generating="sidebarStore.isGenerating"
+            :plan-type="sidebarStore.planType"
             @generate-plan="handleGeneratePlan"
             @update-plan="handleUpdatePlan"
             @update-generator-prompt="handleUpdateGeneratorPrompt"
+            @update-plan-type="handleUpdatePlanType"
           />
 
-          <!-- Section 2: JSON Editor -->
-          <JsonEditor
+          <!-- Section 2: JSON Editor V2 -->
+          <JsonEditorV2
             :json-content="sidebarStore.jsonContent"
             :can-rollback="sidebarStore.canRollback"
             :can-restore="sidebarStore.canRestore"
@@ -192,7 +194,7 @@ import { sidebarStore } from '@/stores/sidebar'
 import PublishMcpServiceModal from '@/components/publish-mcp-service-modal/PublishMcpServiceModal.vue'
 import type { CoordinatorToolVO, CoordinatorToolConfig } from '@/api/coordinator-tool-api-service'
 import { CoordinatorToolApiService } from '@/api/coordinator-tool-api-service'
-import JsonEditor from './JsonEditor.vue'
+import JsonEditorV2 from './JsonEditorV2.vue'
 import ExecutionController from './ExecutionController.vue'
 import PlanGenerator from './PlanGenerator.vue'
 import { useToast } from '@/plugins/useToast'
@@ -423,6 +425,10 @@ const handleUpdateExecutionParams = (params: string) => {
 // Plan Generator event handlers
 const handleUpdateGeneratorPrompt = (prompt: string) => {
   sidebarStore.generatorPrompt = prompt
+}
+
+const handleUpdatePlanType = (planType: string) => {
+  sidebarStore.planType = planType
 }
 
 // Load tool information when plan template changes

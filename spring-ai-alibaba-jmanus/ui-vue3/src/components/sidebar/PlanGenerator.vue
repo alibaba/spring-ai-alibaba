@@ -20,6 +20,15 @@
       <span>{{ t('sidebar.planGenerator') }}</span>
     </div>
     <div class="generator-content">
+      <!-- Plan Type Selection -->
+      <div class="plan-type-selection">
+        <label class="form-label">{{ t('sidebar.planType') }}</label>
+        <select v-model="selectedPlanType" class="form-select">
+          <option value="simple">{{ t('sidebar.simplePlan') }}</option>
+          <option value="dynamic_agent">{{ t('sidebar.dynamicAgentPlan') }}</option>
+        </select>
+      </div>
+      
       <textarea
         v-model="generatorPrompt"
         class="prompt-input"
@@ -68,19 +77,24 @@ interface Props {
   generatorPrompt: string
   jsonContent: string
   isGenerating: boolean
+  planType?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  planType: 'dynamic_agent'
+})
 
 // Emits
 const emit = defineEmits<{
   generatePlan: []
   updatePlan: []
   updateGeneratorPrompt: [prompt: string]
+  updatePlanType: [planType: string]
 }>()
 
 // Local state
 const generatorPrompt = ref(props.generatorPrompt)
+const selectedPlanType = ref(props.planType)
 
 // Watch for changes in generator prompt
 watch(() => props.generatorPrompt, (newValue) => {
@@ -89,6 +103,15 @@ watch(() => props.generatorPrompt, (newValue) => {
 
 watch(generatorPrompt, (newValue) => {
   emit('updateGeneratorPrompt', newValue)
+})
+
+// Watch for changes in plan type
+watch(() => props.planType, (newValue) => {
+  selectedPlanType.value = newValue
+})
+
+watch(selectedPlanType, (newValue) => {
+  emit('updatePlanType', newValue)
 })
 
 // Methods
@@ -127,7 +150,42 @@ defineExpose({
 .generator-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+}
+
+.plan-type-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.form-select {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 11px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.form-select option {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
 }
 
 .prompt-input {

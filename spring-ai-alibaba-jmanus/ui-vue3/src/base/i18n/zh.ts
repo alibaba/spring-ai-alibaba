@@ -849,6 +849,20 @@ const words: I18nType = {
     agentLoadError: '加载智能体失败',
     retryLoadAgents: '重新加载智能体',
     availableTools: '可用工具',
+    
+    // Plan Type Selection
+    planType: '计划类型',
+    simplePlan: '简单计划',
+    advancedPlan: '高级计划（MapReduce）',
+    dynamicAgentPlan: '动态智能体计划',
+    
+    // Tool Selection
+    selectedTools: '已选工具',
+    addTools: '添加工具',
+    removeTool: '移除工具',
+  clearAllTools: '清空所有工具',
+  noToolsSelected: '未选择任何工具',
+  planTypeError: '计划类型错误',
 
     // 通用错误信息
     loadingFailed: '加载失败',

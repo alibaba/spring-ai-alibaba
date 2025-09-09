@@ -25,7 +25,9 @@ import com.alibaba.cloud.ai.manus.prompt.service.PromptService;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionContext;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanInterface;
+import com.alibaba.cloud.ai.manus.runtime.entity.vo.DynamicAgentExecutionPlan;
 import com.alibaba.cloud.ai.manus.tool.PlanningToolInterface;
+import com.alibaba.cloud.ai.manus.tool.DynamicAgentPlanningTool;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,11 +43,11 @@ import java.util.Map;
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
- * The class responsible for creating the execution plan
+ * The class responsible for creating dynamic agent execution plans
  */
-public class PlanCreator implements IPlanCreator {
+public class DynamicAgentPlanCreator implements IPlanCreator {
 
-	private static final Logger log = LoggerFactory.getLogger(PlanCreator.class);
+	private static final Logger log = LoggerFactory.getLogger(DynamicAgentPlanCreator.class);
 
 	private final List<DynamicAgentEntity> agents;
 
@@ -61,7 +63,7 @@ public class PlanCreator implements IPlanCreator {
 
 	private final StreamingResponseHandler streamingResponseHandler;
 
-	public PlanCreator(List<DynamicAgentEntity> agents, ILlmService llmService, PlanningToolInterface planningTool,
+	public DynamicAgentPlanCreator(List<DynamicAgentEntity> agents, ILlmService llmService, PlanningToolInterface planningTool,
 			PlanExecutionRecorder recorder, PromptService promptService, ManusProperties manusProperties,
 			StreamingResponseHandler streamingResponseHandler) {
 		this.agents = agents;
@@ -74,27 +76,26 @@ public class PlanCreator implements IPlanCreator {
 	}
 
 	/**
-	 * Create an execution plan with memory support
-	 * @param context execution context, containing the user request and the execution
-	 * process information
+	 * Create a dynamic agent execution plan with memory support
+	 * @param context execution context, containing the user request and the execution process information
 	 */
+	@Override
 	public void createPlanWithMemory(ExecutionContext context) {
 		createPlanInternal(context, true);
 	}
 
 	/**
-	 * Create an execution plan without memory support
-	 * @param context execution context, containing the user request and the execution
-	 * process information
+	 * Create a dynamic agent execution plan without memory support
+	 * @param context execution context, containing the user request and the execution process information
 	 */
+	@Override
 	public void createPlanWithoutMemory(ExecutionContext context) {
 		createPlanInternal(context, false);
 	}
 
 	/**
-	 * Internal method that handles the common plan creation logic
-	 * @param context execution context, containing the user request and the execution
-	 * process information
+	 * Internal method that handles the common dynamic agent plan creation logic
+	 * @param context execution context, containing the user request and the execution process information
 	 * @param useMemory whether to use memory support
 	 */
 	private void createPlanInternal(ExecutionContext context, boolean useMemory) {
@@ -107,10 +108,10 @@ public class PlanCreator implements IPlanCreator {
 		String memoryType = useMemory ? "with memory" : "without memory";
 
 		try {
-			// Build agent information
-			String agentsInfo = buildAgentsInfo(agents);
-			// Generate plan prompt
-			String planPrompt = generatePlanPrompt(context.getUserRequest(), agentsInfo);
+			// Build agent information with tool details
+			String agentsInfo = buildDynamicAgentsInfo(agents);
+			// Generate dynamic agent plan prompt
+			String planPrompt = generateDynamicAgentPlanPrompt(context.getUserRequest(), agentsInfo);
 
 			PlanInterface executionPlan = null;
 			String outputText = null;
@@ -119,7 +120,7 @@ public class PlanCreator implements IPlanCreator {
 			int maxRetries = 3;
 			for (int attempt = 1; attempt <= maxRetries; attempt++) {
 				try {
-					log.info("Attempting to create plan {}, attempt: {}/{}", memoryType, attempt, maxRetries);
+					log.info("Attempting to create dynamic agent plan {}, attempt: {}/{}", memoryType, attempt, maxRetries);
 
 					// Use LLM to generate the plan
 					PromptTemplate promptTemplate = new PromptTemplate(planPrompt);
@@ -141,29 +142,36 @@ public class PlanCreator implements IPlanCreator {
 					// Use streaming response handler for plan creation
 					Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
 					String planCreationText = streamingResponseHandler.processStreamingTextResponse(responseFlux,
-							"Plan creation " + memoryType, context.getCurrentPlanId());
+							"Dynamic agent plan creation " + memoryType, context.getCurrentPlanId());
 					outputText = planCreationText;
 
-					executionPlan = planningTool.getCurrentPlan();
-
-					if (executionPlan != null) {
-						// Set the user input part of the plan, for later storage and use.
-						executionPlan.setUserRequest(context.getUserRequest());
-						executionPlan.setCurrentPlanId(planId);
-						executionPlan.setRootPlanId(planId);
-						log.info("Plan created successfully {} on attempt {}: {}", memoryType, attempt, executionPlan);
-						break;
+					// Get the plan from the dynamic agent planning tool
+					if (planningTool instanceof DynamicAgentPlanningTool) {
+						DynamicAgentExecutionPlan dynamicPlan = ((DynamicAgentPlanningTool) planningTool).getCurrentPlan();
+						if (dynamicPlan != null) {
+							executionPlan = dynamicPlan;
+							// Set the user input part of the plan, for later storage and use.
+							executionPlan.setUserRequest(context.getUserRequest());
+							executionPlan.setCurrentPlanId(planId);
+							executionPlan.setRootPlanId(planId);
+							log.info("Dynamic agent plan created successfully {} on attempt {}: {}", memoryType, attempt, executionPlan);
+							break;
+						}
+					} else {
+						throw new RuntimeException(String.format("Dynamic agent plan creation attempt %d failed: planningTool.getCurrentPlan() returned null",
+								attempt));	
 					}
-					else {
-						log.warn("Plan creation attempt {} failed: planningTool.getCurrentPlan() returned null",
+					
+					if (executionPlan == null) {
+						log.warn("Dynamic agent plan creation attempt {} failed: planningTool.getCurrentPlan() returned null",
 								attempt);
 						if (attempt == maxRetries) {
-							log.error("Failed to create plan {} after {} attempts", memoryType, maxRetries);
+							log.error("Failed to create dynamic agent plan {} after {} attempts", memoryType, maxRetries);
 						}
 					}
 				}
 				catch (Exception e) {
-					log.warn("Exception during plan creation {} attempt {}: {}", memoryType, attempt, e.getMessage());
+					log.warn("Exception during dynamic agent plan creation {} attempt {}: {}", memoryType, attempt, e.getMessage());
 					e.printStackTrace();
 					if (attempt == maxRetries) {
 						throw e;
@@ -175,52 +183,62 @@ public class PlanCreator implements IPlanCreator {
 			// Check if plan was created successfully
 			if (executionPlan != null) {
 				currentPlan = planningTool.getCurrentPlan();
-				currentPlan.setCurrentPlanId(planId);
-				currentPlan.setRootPlanId(planId);
-				currentPlan.setPlanningThinking(outputText);
+				if (currentPlan != null) {
+					currentPlan.setCurrentPlanId(planId);
+					currentPlan.setRootPlanId(planId);
+					currentPlan.setPlanningThinking(outputText);
+				}
 			}
 			else {
-				throw new RuntimeException("Failed to create a valid execution plan " + memoryType + " after retries");
+				throw new RuntimeException("Failed to create a valid dynamic agent execution plan " + memoryType + " after retries");
 			}
 
 			context.setPlan(currentPlan);
 
 		}
 		catch (Exception e) {
-			log.error("Error creating plan {} for request: {}", memoryType, context.getUserRequest(), e);
+			log.error("Error creating dynamic agent plan {} for request: {}", memoryType, context.getUserRequest(), e);
 			// Handle the exception
-			throw new RuntimeException("Failed to create plan " + memoryType, e);
+			throw new RuntimeException("Failed to create dynamic agent plan " + memoryType, e);
 		}
 	}
 
 	/**
-	 * Build the agent information string
+	 * Build the dynamic agent information string with tool details
 	 * @param agents agent list
-	 * @return formatted agent information
+	 * @return formatted dynamic agent information
 	 */
-	private String buildAgentsInfo(List<DynamicAgentEntity> agents) {
-		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
+	private String buildDynamicAgentsInfo(List<DynamicAgentEntity> agents) {
+		StringBuilder agentsInfo = new StringBuilder("Available Dynamic Agents:\n");
 		for (DynamicAgentEntity agent : agents) {
 			agentsInfo.append("- Agent Name: ")
 				.append(agent.getAgentName())
 				.append("\n  Description: ")
 				.append(agent.getAgentDescription())
-				.append("\n");
+				.append("\n  Available Tools: ");
+			
+			if (agent.getAvailableToolKeys() != null && !agent.getAvailableToolKeys().isEmpty()) {
+				agentsInfo.append(String.join(", ", agent.getAvailableToolKeys()));
+			} else {
+				agentsInfo.append("None specified");
+			}
+			
+			agentsInfo.append("\n");
 		}
 		return agentsInfo.toString();
 	}
 
 	/**
-	 * Generate the plan prompt
+	 * Generate the dynamic agent plan prompt
 	 * @param request user request
 	 * @param agentsInfo agent information
 	 * @return formatted prompt string
 	 */
-	private String generatePlanPrompt(String request, String agentsInfo) {
+	private String generateDynamicAgentPlanPrompt(String request, String agentsInfo) {
 		// Escape special characters in request to prevent StringTemplate parsing errors
 		String escapedRequest = escapeForStringTemplate(request);
 		Map<String, Object> variables = Map.of("agentsInfo", agentsInfo, "request", escapedRequest);
-		return promptService.renderPrompt(PromptEnum.PLANNING_PLAN_CREATION.getPromptName(), variables);
+		return promptService.renderPrompt(PromptEnum.PLANNING_PLAN_DYNAMIC_AGENT_CREATION.getPromptName(), variables);
 	}
 
 	/**
@@ -244,5 +262,4 @@ public class PlanCreator implements IPlanCreator {
 			.replace("]", "\\]")
 			.replace("\"", "\\\"");
 	}
-
 }

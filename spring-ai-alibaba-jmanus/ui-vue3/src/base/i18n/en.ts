@@ -882,6 +882,20 @@ const words: I18nType = {
     agentLoadError: 'Failed to load agents',
     retryLoadAgents: 'Retry loading agents',
     availableTools: 'Available Tools',
+    
+    // Plan Type Selection
+    planType: 'Plan Type',
+    simplePlan: 'Simple Plan',
+    advancedPlan: 'Advanced Plan (MapReduce)',
+    dynamicAgentPlan: 'Dynamic Agent Plan',
+    
+    // Tool Selection
+    selectedTools: 'Selected Tools',
+    addTools: 'Add Tools',
+    removeTool: 'Remove Tool',
+  clearAllTools: 'Clear All Tools',
+  noToolsSelected: 'No tools selected',
+  planTypeError: 'Plan Type Error',
 
     // Common error messages
     loadingFailed: 'Loading failed',
