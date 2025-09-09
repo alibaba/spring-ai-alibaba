@@ -6,23 +6,29 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.studio.core.observability.model.EnhancedNodeOutput;
+import com.alibaba.cloud.ai.studio.core.observability.model.ResponseBody;
+import com.alibaba.cloud.ai.studio.core.observability.model.ResponseResultType;
 import com.alibaba.cloud.ai.studio.core.observability.service.CurrentGraphService;
 import com.alibaba.cloud.ai.studio.core.observability.model.SAAGraphFlow;
 import com.alibaba.cloud.ai.studio.core.observability.config.SAAGraphFlowRegistry;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j; // 引入日志
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestParam;
 import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 @Data
-@Slf4j // 添加 Slf4j 注解以便使用日志
+@Slf4j
 public class CurrentGraphProxyImpl implements CurrentGraphService {
 
     private final SAAGraphFlowRegistry graphFlowRegistry;
@@ -40,18 +46,18 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
     }
 
     @Override
-    public ResponseEntity<Boolean> switchTo(String graphId) {
+    public ResponseEntity<ResponseBody> switchTo(String graphId) {
         if (graphId == null || graphId.isBlank()) {
             log.warn("Attempted to switch to a null or blank graphId.");
             this.currentGraphId = null;
             this.compiledGraph = null;
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(false);
+            return ResponseEntity.badRequest().body(new ResponseBody(ResponseResultType.SUCCESS,"Attempted to switch to a null or blank graphId",null));
         }
 
         SAAGraphFlow graphToSwitch = graphFlowRegistry.findById(graphId);
         if (graphToSwitch == null) {
             log.error("Failed to switch: Graph with ID '{}' not found in registry.", graphId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(false);
+            return ResponseEntity.badRequest().body(new ResponseBody(ResponseResultType.ERROR,"Attempted to switch to a null or blank graphId",null));
         }
 
         try {
@@ -61,10 +67,10 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
             this.currentGraphId = graphId;
             this.compiledGraph = newCompiledGraph;
 
-            return ResponseEntity.status(HttpStatus.OK).body(true);
+            return ResponseEntity.status(HttpStatus.OK).body(new ResponseBody(ResponseResultType.SUCCESS,"Successfully compiled graph with ID: " + graphId,null));
         } catch (Exception e) {
             log.error("Failed to compile graph with ID '{}'. Please check the graph definition.", graphId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseBody(ResponseResultType.ERROR,"Failed to compile graph with ID: {}", graphId));
         }
     }
 
@@ -77,9 +83,6 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
         return DEFAULT_EMPTY_GRAPH_FLOW;
     }
 
-    /**
-     * 【核心修改】为流处理方法增加保护
-     */
     @Override
     public Flux<Map<String, Object>> writeStreamSnapshots(@RequestParam("text") String inputText) {
         if (compiledGraph == null) {
@@ -138,22 +141,27 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
             try {
                 Map<String, LocalDateTime> nodeStartTimes = new ConcurrentHashMap<>();
                 int[] executionOrder = {0}; // 使用数组来保证在lambda中可变
+                StateGraph stateGraph = getCurrentGraph().stateGraph(); // TODO: 获取父节点
 
                 compiledGraph.stream(Map.of("original_text", inputText), cfg)
                         .forEachAsync(node -> {
                             String nodeId = node.node();
                             Map<String, Object> nodeData = node.state().data();
-                            
+
+//                          TODO  List<String> parentNodes = stateGraph.getPredecessors(nodeId).stream()
+//                                    .map(predecessor -> predecessor.getId())
+//                                    .collect(Collectors.toList());
+                            List<String> parentNodes = Collections.emptyList();
                             // 构建增强的节点输出
                             EnhancedNodeOutput enhancedOutput = EnhancedNodeOutput.builder()
                                     .nodeId(nodeId)
-                                    .nodeName(extractNodeName(nodeId)) // 从节点ID提取名称，可根据实际情况调整
-                                    .nodeType(extractNodeType(nodeData)) // 从数据中提取节点类型
                                     .executionStatus("SUCCESS")
                                     .startTime(nodeStartTimes.getOrDefault(nodeId, LocalDateTime.now()))
                                     .endTime(LocalDateTime.now())
                                     .durationMs(calculateDuration(nodeStartTimes.get(nodeId)))
+                                    .inputData(node.state().data())
                                     .data(nodeData)
+                                    .parentNodes(parentNodes)
                                     .executionOrder(++executionOrder[0])
                                     .isFinal(isLastNode(nodeId))
                                     .build();
@@ -165,13 +173,10 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
                                 // execute Error
                                 EnhancedNodeOutput errorOutput = EnhancedNodeOutput.builder()
                                         .nodeId("ERROR")
-                                        .nodeName("执行错误")
-                                        .nodeType("ERROR")
                                         .executionStatus("FAILED")
                                         .endTime(LocalDateTime.now())
                                         .errorMessage(e.getMessage())
                                         .build();
-                                
                                 sink.next(errorOutput);
                                 sink.error(e);
                             } else {
@@ -182,23 +187,6 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
                 sink.error(new RuntimeException("Error in enhanced stream execution: " + e.getMessage(), e));
             }
         });
-    }
-
-    /**
-     * 从节点ID提取节点名称
-     * 可根据实际的节点命名规则进行调整
-     */
-    private String extractNodeName(String nodeId) {
-        if (nodeId == null) return "未知节点";
-        
-        // 简单的名称映射，可以根据实际需求扩展
-        switch (nodeId) {
-            case "summarizer": return "文本摘要";
-            case "rewriter": return "文本重写";
-            case "titleGenerator": return "标题生成";
-            case "extractDocs": return "文档提取";
-            default: return nodeId; // 默认返回节点ID作为名称
-        }
     }
 
     /**
@@ -247,7 +235,6 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
                 .stateGraph(emptyStateGraph)
                 .build();
     }
-
     @Override
     public ResponseEntity<Void> run() {
         if (compiledGraph == null) {

@@ -29,19 +29,7 @@ public class EnhancedNodeOutput {
      */
     @JsonProperty("node_id")
     private String nodeId;
-    
-    /**
-     * 节点名称
-     */
-    @JsonProperty("node_name")
-    private String nodeName;
-    
-    /**
-     * 节点类型
-     */
-    @JsonProperty("node_type")
-    private String nodeType;
-    
+
     /**
      * 执行状态
      * EXECUTING - 执行中
@@ -112,8 +100,6 @@ public class EnhancedNodeOutput {
     public static EnhancedNodeOutput createStarting(String nodeId, String nodeName, String nodeType) {
         return EnhancedNodeOutput.builder()
                 .nodeId(nodeId)
-                .nodeName(nodeName)
-                .nodeType(nodeType)
                 .executionStatus("EXECUTING")
                 .startTime(LocalDateTime.now())
                 .build();
@@ -129,8 +115,6 @@ public class EnhancedNodeOutput {
         
         return EnhancedNodeOutput.builder()
                 .nodeId(nodeId)
-                .nodeName(nodeName)
-                .nodeType(nodeType)
                 .executionStatus("SUCCESS")
                 .startTime(startTime)
                 .endTime(endTime)
@@ -149,8 +133,6 @@ public class EnhancedNodeOutput {
         
         return EnhancedNodeOutput.builder()
                 .nodeId(nodeId)
-                .nodeName(nodeName)
-                .nodeType(nodeType)
                 .executionStatus("FAILED")
                 .startTime(startTime)
                 .endTime(endTime)
