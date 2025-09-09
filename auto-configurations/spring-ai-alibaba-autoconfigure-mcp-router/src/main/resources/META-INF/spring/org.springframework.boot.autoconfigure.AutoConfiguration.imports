@@ -15,6 +15,7 @@
 #
 com.alibaba.cloud.ai.autoconfigure.mcp.router.NacosMcpRouterAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.mcp.router.FileMcpRouterAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.router.DbMcpRouterAutoConfiguration
 
 com.alibaba.cloud.ai.autoconfigure.mcp.gateway.core.McpGatewayServerAutoConfiguration
 #com.alibaba.cloud.ai.autoconfigure.mcp.gateway.core.McpGatewaySseServerAutoConfiguration

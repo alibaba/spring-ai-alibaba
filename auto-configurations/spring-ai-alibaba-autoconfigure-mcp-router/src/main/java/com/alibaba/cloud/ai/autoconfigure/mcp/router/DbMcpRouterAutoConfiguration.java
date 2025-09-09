@@ -17,8 +17,9 @@
 package com.alibaba.cloud.ai.autoconfigure.mcp.router;
 
 import com.alibaba.cloud.ai.mcp.router.config.McpRouterProperties;
-import com.alibaba.cloud.ai.mcp.router.core.discovery.FileConfigMcpServiceDiscovery;
+import com.alibaba.cloud.ai.mcp.router.config.DbMcpProperties;
 import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscovery;
+import com.alibaba.cloud.ai.mcp.router.core.discovery.DbMcpServiceDiscovery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -30,16 +31,17 @@ import org.springframework.context.annotation.Configuration;
  * @author digitzh
  */
 @Configuration
-@EnableConfigurationProperties(McpRouterProperties.class)
-@ConditionalOnExpression("${" + McpRouterProperties.CONFIG_PREFIX + ".enabled:true} == true " + "and '${"
-		+ McpRouterProperties.CONFIG_PREFIX + ".discovery-type}' == 'file'")
-public class FileMcpRouterAutoConfiguration {
+@EnableConfigurationProperties({ McpRouterProperties.class, DbMcpProperties.class })
+@ConditionalOnExpression("$" + "{" + McpRouterProperties.CONFIG_PREFIX + ".enabled:true} == true " + "and '$" + "{"
+		+ McpRouterProperties.CONFIG_PREFIX + ".discovery-type}' == 'database'")
+public class DbMcpRouterAutoConfiguration {
 
-	private static final Logger log = LoggerFactory.getLogger(FileMcpRouterAutoConfiguration.class);
+	private static final Logger log = LoggerFactory.getLogger(DbMcpRouterAutoConfiguration.class);
 
 	@Bean
-	public McpServiceDiscovery fileConfigMcpServiceDiscovery(McpRouterProperties properties) {
-		return new FileConfigMcpServiceDiscovery(properties);
+	public McpServiceDiscovery mySqlMcpServiceDiscovery(DbMcpProperties dbMcpProperties) {
+		log.info("Creating DB MCP service discovery with configuration: {}", dbMcpProperties);
+		return new DbMcpServiceDiscovery(dbMcpProperties);
 	}
 
 }
