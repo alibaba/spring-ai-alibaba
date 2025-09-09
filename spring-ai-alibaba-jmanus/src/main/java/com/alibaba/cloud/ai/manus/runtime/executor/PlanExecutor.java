@@ -15,21 +15,13 @@
  */
 package com.alibaba.cloud.ai.manus.runtime.executor;
 
-import com.alibaba.cloud.ai.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.manus.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.manus.agent.service.AgentService;
 import com.alibaba.cloud.ai.manus.llm.ILlmService;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionContext;
-import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionStep;
-import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult;
-import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanInterface;
-import com.alibaba.cloud.ai.manus.runtime.entity.vo.StepResult;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 
 /**
  * Basic implementation class responsible for executing plans Now uses level-based
@@ -37,7 +29,6 @@ import java.util.concurrent.ExecutorService;
  */
 public class PlanExecutor extends AbstractPlanExecutor {
 
-	private final LevelBasedExecutorPool levelBasedExecutorPool;
 
 	/**
 	 * Constructor for PlanExecutor
@@ -50,98 +41,9 @@ public class PlanExecutor extends AbstractPlanExecutor {
 	 */
 	public PlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, AgentService agentService,
 			ILlmService llmService, ManusProperties manusProperties, LevelBasedExecutorPool levelBasedExecutorPool) {
-		super(agents, recorder, agentService, llmService, manusProperties);
-		this.levelBasedExecutorPool = levelBasedExecutorPool;
+		super(agents, recorder, agentService, llmService, manusProperties, levelBasedExecutorPool);
+
 	}
 
-	/**
-	 * Execute all steps asynchronously and return a CompletableFuture with execution
-	 * results. Uses level-based executor pools based on plan depth.
-	 *
-	 * Usage example: <pre>
-	 * CompletableFuture<PlanExecutionResult> future = planExecutor.executeAllStepsAsync(context);
-	 *
-	 * future.whenComplete((result, throwable) -> {
-	 *     if (throwable != null) {
-	 *         // Handle execution error
-	 *         System.err.println("Execution failed: " + throwable.getMessage());
-	 *     } else {
-	 *         // Handle successful completion
-	 *         if (result.isSuccess()) {
-	 *             String finalResult = result.getEffectiveResult();
-	 *             System.out.println("Final result: " + finalResult);
-	 *
-	 *             // Access individual step results
-	 *             for (StepResult step : result.getStepResults()) {
-	 *                 System.out.println("Step " + step.getStepIndex() + ": " + step.getResult());
-	 *             }
-	 *         } else {
-	 *             System.err.println("Execution failed: " + result.getErrorMessage());
-	 *         }
-	 *     }
-	 * });
-	 * </pre>
-	 * @param context Execution context containing user request and execution process
-	 * information
-	 * @return CompletableFuture containing PlanExecutionResult with all step results
-	 */
-	public CompletableFuture<PlanExecutionResult> executeAllStepsAsync(ExecutionContext context) {
-		// Get the plan depth from context to determine which executor pool to use
-		int planDepth = context.getPlanDepth();
-
-		// Get the appropriate executor for this depth level
-		ExecutorService executor = levelBasedExecutorPool.getExecutorForLevel(planDepth);
-
-		return CompletableFuture.supplyAsync(() -> {
-			PlanExecutionResult result = new PlanExecutionResult();
-			BaseAgent lastExecutor = null;
-			PlanInterface plan = context.getPlan();
-			plan.setCurrentPlanId(context.getCurrentPlanId());
-			plan.setRootPlanId(context.getRootPlanId());
-			plan.updateStepIndices();
-
-			try {
-				List<ExecutionStep> steps = plan.getAllSteps();
-
-				recorder.recordPlanExecutionStart(context.getCurrentPlanId(), context.getPlan().getTitle(),
-						context.getUserRequest(), steps, context.getParentPlanId(), context.getRootPlanId(),
-						context.getToolCallId());
-
-				if (steps != null && !steps.isEmpty()) {
-					for (ExecutionStep step : steps) {
-						BaseAgent stepExecutor = executeStep(step, context);
-						if (stepExecutor != null) {
-							lastExecutor = stepExecutor;
-
-							// Collect step result
-							StepResult stepResult = new StepResult();
-							stepResult.setStepIndex(step.getStepIndex());
-							stepResult.setStepRequirement(step.getStepRequirement());
-							stepResult.setResult(step.getResult());
-							stepResult.setStatus(step.getStatus());
-							stepResult.setAgentName(stepExecutor.getName());
-
-							result.addStepResult(stepResult);
-						}
-					}
-				}
-
-				context.setSuccess(true);
-				result.setSuccess(true);
-				result.setFinalResult(context.getPlan().getResult());
-
-			}
-			catch (Exception e) {
-				context.setSuccess(false);
-				result.setSuccess(false);
-				result.setErrorMessage(e.getMessage());
-			}
-			finally {
-				performCleanup(context, lastExecutor);
-			}
-
-			return result;
-		}, executor);
-	}
 
 }

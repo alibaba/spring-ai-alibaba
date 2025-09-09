@@ -108,8 +108,8 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 	public MapReducePlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
 			AgentService agentService, ILlmService llmService, ManusProperties manusProperties,
-			ObjectMapper objectMapper) {
-		super(agents, recorder, agentService, llmService, manusProperties);
+			ObjectMapper objectMapper, LevelBasedExecutorPool levelBasedExecutorPool) {
+		super(agents, recorder, agentService, llmService, manusProperties,  levelBasedExecutorPool);
 		OBJECT_MAPPER = objectMapper;
 
 		// Initialize thread pool with current configuration

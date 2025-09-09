@@ -21,6 +21,7 @@ import java.util.Map;
 import com.alibaba.cloud.ai.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.manus.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.manus.agent.model.Tool;
+import com.alibaba.cloud.ai.manus.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionStep;
 
 public interface AgentService {
@@ -52,12 +53,12 @@ public interface AgentService {
 	 * @param initialAgentSetting Initial agent settings
 	 * @param expectedReturnInfo Expected return information
 	 * @param step Execution step
-	 * @param modelName Model name to query from repository (optional, can be null)
+	 * @param modelEntity Dynamic model entity (optional, can be null)
 	 * @param availableToolKeys List of available tool keys (optional, can be null)
 	 * @return Created BaseAgent object
 	 */
 	BaseAgent createDynamicBaseAgent(String name, String currentPlanId, String rootPlanId,
 			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step,
-			String modelName, List<String> availableToolKeys);
+			DynamicModelEntity modelEntity, List<String> availableToolKeys);
 
 }

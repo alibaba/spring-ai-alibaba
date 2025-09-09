@@ -38,9 +38,5 @@ public interface IPlanExecutorFactory {
 	 */
 	boolean isPlanTypeSupported(String planType);
 
-	/**
-	 * Create executor by plan type and ID
-	 */
-	PlanExecutorInterface createExecutorByType(String planType, String planId);
 
 }

@@ -21,14 +21,19 @@ import com.alibaba.cloud.ai.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.manus.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.manus.agent.service.AgentService;
 import com.alibaba.cloud.ai.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.manus.model.entity.DynamicModelEntity;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionContext;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionStep;
+import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult;
+import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanInterface;
+import com.alibaba.cloud.ai.manus.runtime.entity.vo.StepResult;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,7 +41,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Abstract base class for plan executors. Contains common logic and basic functionality
+ * Abstract base class for plan executors. Contains common logic and basic
+ * functionality
  * for all executor types.
  */
 public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
@@ -45,11 +51,14 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
 	protected final PlanExecutionRecorder recorder;
 
-	// Pattern to match square brackets at the beginning of a string, supports Chinese and
+	// Pattern to match square brackets at the beginning of a string, supports
+	// Chinese and
 	// other characters
 	protected final Pattern pattern = Pattern.compile("^\\s*\\[([^\\]]+)\\]");
 
 	protected final List<DynamicAgentEntity> agents;
+
+	protected final LevelBasedExecutorPool levelBasedExecutorPool;
 
 	protected final AgentService agentService;
 
@@ -69,17 +78,19 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	public static final String EXECUTION_ENV_STRING_KEY = "current_step_env_data";
 
 	public AbstractPlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
-			AgentService agentService, ILlmService llmService, ManusProperties manusProperties) {
+			AgentService agentService, ILlmService llmService, ManusProperties manusProperties, LevelBasedExecutorPool levelBasedExecutorPool) {
 		this.agents = agents;
 		this.recorder = recorder;
 		this.agentService = agentService;
 		this.llmService = llmService;
 		this.manusProperties = manusProperties;
+		this.levelBasedExecutorPool = levelBasedExecutorPool;
 	}
 
 	/**
 	 * General logic for executing a single step.
-	 * @param step The execution step
+	 * 
+	 * @param step    The execution step
 	 * @param context The execution context
 	 * @return The step executor
 	 */
@@ -101,12 +112,10 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			recorder.recordStepEnd(step, context.getCurrentPlanId());
 
 			return executor;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Error executing step: {}", step.getStepRequirement(), e);
 			step.setResult("Execution failed: " + e.getMessage());
-		}
-		finally {
+		} finally {
 			recorder.recordStepEnd(step, context.getCurrentPlanId());
 		}
 		return null;
@@ -143,9 +152,12 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
+				// Get model entity from agent - it's already loaded via @ManyToOne
+				DynamicModelEntity modelEntity = agent.getModel();
+
 				BaseAgent executor = agentService.createDynamicBaseAgent(agent.getAgentName(),
 						context.getPlan().getCurrentPlanId(), context.getPlan().getRootPlanId(), initSettings,
-						expectedReturnInfo, step);
+						expectedReturnInfo, step, modelEntity, agent.getAvailableToolKeys());
 				return executor;
 			}
 		}
@@ -157,27 +169,95 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 		return recorder;
 	}
 
+
 	/**
-	 * Parse columns string by splitting with comma or Chinese comma.
-	 * @param columnsInString the columns string to parse
-	 * @return list of column names
+	 * Execute all steps asynchronously and return a CompletableFuture with execution
+	 * results. Uses level-based executor pools based on plan depth.
+	 *
+	 * Usage example: <pre>
+	 * CompletableFuture<PlanExecutionResult> future = planExecutor.executeAllStepsAsync(context);
+	 *
+	 * future.whenComplete((result, throwable) -> {
+	 *     if (throwable != null) {
+	 *         // Handle execution error
+	 *         System.err.println("Execution failed: " + throwable.getMessage());
+	 *     } else {
+	 *         // Handle successful completion
+	 *         if (result.isSuccess()) {
+	 *             String finalResult = result.getEffectiveResult();
+	 *             System.out.println("Final result: " + finalResult);
+	 *
+	 *             // Access individual step results
+	 *             for (StepResult step : result.getStepResults()) {
+	 *                 System.out.println("Step " + step.getStepIndex() + ": " + step.getResult());
+	 *             }
+	 *         } else {
+	 *             System.err.println("Execution failed: " + result.getErrorMessage());
+	 *         }
+	 *     }
+	 * });
+	 * </pre>
+	 * @param context Execution context containing user request and execution process
+	 * information
+	 * @return CompletableFuture containing PlanExecutionResult with all step results
 	 */
-	protected List<String> parseColumns(String columnsInString) {
-		List<String> columns = new ArrayList<>();
-		if (columnsInString == null || columnsInString.trim().isEmpty()) {
-			return columns;
-		}
+	public CompletableFuture<PlanExecutionResult> executeAllStepsAsync(ExecutionContext context) {
+		// Get the plan depth from context to determine which executor pool to use
+		int planDepth = context.getPlanDepth();
 
-		// Split by comma (,) or Chinese comma (，)
-		String[] parts = columnsInString.split("[,，]");
-		for (String part : parts) {
-			String trimmed = part.trim();
-			if (!trimmed.isEmpty()) {
-				columns.add(trimmed);
+		// Get the appropriate executor for this depth level
+		ExecutorService executor = levelBasedExecutorPool.getExecutorForLevel(planDepth);
+
+		return CompletableFuture.supplyAsync(() -> {
+			PlanExecutionResult result = new PlanExecutionResult();
+			BaseAgent lastExecutor = null;
+			PlanInterface plan = context.getPlan();
+			plan.setCurrentPlanId(context.getCurrentPlanId());
+			plan.setRootPlanId(context.getRootPlanId());
+			plan.updateStepIndices();
+
+			try {
+				List<ExecutionStep> steps = plan.getAllSteps();
+
+				recorder.recordPlanExecutionStart(context.getCurrentPlanId(), context.getPlan().getTitle(),
+						context.getUserRequest(), steps, context.getParentPlanId(), context.getRootPlanId(),
+						context.getToolCallId());
+
+				if (steps != null && !steps.isEmpty()) {
+					for (ExecutionStep step : steps) {
+						BaseAgent stepExecutor = executeStep(step, context);
+						if (stepExecutor != null) {
+							lastExecutor = stepExecutor;
+
+							// Collect step result
+							StepResult stepResult = new StepResult();
+							stepResult.setStepIndex(step.getStepIndex());
+							stepResult.setStepRequirement(step.getStepRequirement());
+							stepResult.setResult(step.getResult());
+							stepResult.setStatus(step.getStatus());
+							stepResult.setAgentName(stepExecutor.getName());
+
+							result.addStepResult(stepResult);
+						}
+					}
+				}
+
+				context.setSuccess(true);
+				result.setSuccess(true);
+				result.setFinalResult(context.getPlan().getResult());
+
 			}
-		}
+			catch (Exception e) {
+				context.setSuccess(false);
+				result.setSuccess(false);
+				result.setErrorMessage(e.getMessage());
+			}
+			finally {
+				performCleanup(context, lastExecutor);
+			}
 
-		return columns;
+			return result;
+		}, executor);
 	}
 
 	/**

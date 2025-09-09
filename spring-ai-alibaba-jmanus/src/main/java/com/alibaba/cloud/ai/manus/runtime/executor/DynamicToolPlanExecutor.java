@@ -27,9 +27,7 @@ import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanInterface;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.StepResult;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
@@ -40,11 +38,10 @@ import org.slf4j.LoggerFactory;
  * Dynamic Agent Plan Executor - Specialized executor for DynamicAgentExecutionPlan
  * with user-selected tools support
  */
-public class DynamicAgentPlanExecutor extends AbstractPlanExecutor {
+public class DynamicToolPlanExecutor extends AbstractPlanExecutor {
 
-	private static final Logger log = LoggerFactory.getLogger(DynamicAgentPlanExecutor.class);
+	private static final Logger log = LoggerFactory.getLogger(DynamicToolPlanExecutor.class);
 
-	private final LevelBasedExecutorPool levelBasedExecutorPool;
 
 	/**
 	 * Constructor for DynamicAgentPlanExecutor
@@ -55,19 +52,18 @@ public class DynamicAgentPlanExecutor extends AbstractPlanExecutor {
 	 * @param manusProperties Manus properties
 	 * @param levelBasedExecutorPool Level-based executor pool for depth-based execution
 	 */
-	public DynamicAgentPlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, 
+	public DynamicToolPlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, 
 			AgentService agentService, ILlmService llmService, ManusProperties manusProperties, 
 			LevelBasedExecutorPool levelBasedExecutorPool) {
-		super(agents, recorder, agentService, llmService, manusProperties);
-		this.levelBasedExecutorPool = levelBasedExecutorPool;
+		super(agents, recorder, agentService, llmService, manusProperties, levelBasedExecutorPool);
+		
 	}
-
 	/**
-	 * Execute all steps asynchronously with Dynamic Agent specific tool selection
-	 * @param context Execution context containing user request and execution process information
+	 * </pre>
+	 * @param context Execution context containing user request and execution process
+	 * information
 	 * @return CompletableFuture containing PlanExecutionResult with all step results
 	 */
-	@Override
 	public CompletableFuture<PlanExecutionResult> executeAllStepsAsync(ExecutionContext context) {
 		// Get the plan depth from context to determine which executor pool to use
 		int planDepth = context.getPlanDepth();
@@ -83,7 +79,6 @@ public class DynamicAgentPlanExecutor extends AbstractPlanExecutor {
 			plan.setRootPlanId(context.getRootPlanId());
 			plan.updateStepIndices();
 
-
 			try {
 				List<ExecutionStep> steps = plan.getAllSteps();
 
@@ -91,11 +86,9 @@ public class DynamicAgentPlanExecutor extends AbstractPlanExecutor {
 						context.getUserRequest(), steps, context.getParentPlanId(), context.getRootPlanId(),
 						context.getToolCallId());
 
-
 				if (steps != null && !steps.isEmpty()) {
 					for (ExecutionStep step : steps) {
-						// Execute step with Dynamic Agent specific tool selection
-						BaseAgent stepExecutor = executeStepWithDynamicTools(step, context);
+						BaseAgent stepExecutor = executeStep(step, context);
 						if (stepExecutor != null) {
 							lastExecutor = stepExecutor;
 
@@ -118,7 +111,6 @@ public class DynamicAgentPlanExecutor extends AbstractPlanExecutor {
 
 			}
 			catch (Exception e) {
-				log.error("Error during Dynamic Agent plan execution", e);
 				context.setSuccess(false);
 				result.setSuccess(false);
 				result.setErrorMessage(e.getMessage());
@@ -129,71 +121,6 @@ public class DynamicAgentPlanExecutor extends AbstractPlanExecutor {
 
 			return result;
 		}, executor);
-	}
-
-	/**
-	 * Execute a single step with Dynamic Agent specific tool selection
-	 * @param step Execution step to execute
-	 * @param context Execution context
-	 * @param dynamicPlan Dynamic Agent execution plan containing selected tools
-	 * @return BaseAgent executor for the step
-	 */
-	private BaseAgent executeStepWithDynamicTools(ExecutionStep step, ExecutionContext context) {
-		
-		String stepType = getStepFromStepReq(step.getStepRequirement());
-		int stepIndex = step.getStepIndex();
-		String expectedReturnInfo = step.getTerminateColumns();
-
-		String planStatus = context.getPlan().getPlanExecutionStateStringFormat(true);
-		String stepText = step.getStepRequirement();
-
-		Map<String, Object> initSettings = new HashMap<>();
-		initSettings.put(PLAN_STATUS_KEY, planStatus);
-		initSettings.put(CURRENT_STEP_INDEX_KEY, String.valueOf(stepIndex));
-		initSettings.put(STEP_TEXT_KEY, stepText);
-		initSettings.put(EXTRA_PARAMS_KEY, context.getPlan().getExecutionParams());
-
-        if("ConfigurableDynaAgent".equalsIgnoreCase(stepType)) {
-
-            //special for configurable dynamic agent, because it's not in database ;
-            return agentService.createDynamicBaseAgent(stepType, context.getPlan().getCurrentPlanId(), context.getPlan().getRootPlanId(), initSettings,
-						expectedReturnInfo, step);
-        }
-		for (DynamicAgentEntity agent : agents) {
-			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
-				BaseAgent executor = agentService.createDynamicBaseAgent(agent.getAgentName(),
-						context.getPlan().getCurrentPlanId(), context.getPlan().getRootPlanId(), initSettings,
-						expectedReturnInfo, step);
-				return executor;
-			}
-		}
-		throw new IllegalArgumentException(
-				"No Agent Executor found for step type, check your agents list : " + stepType);
-	}
-
-	/**
-	 * Get the step type from step requirement
-	 * @param stepRequirement Step requirement string
-	 * @return Step type extracted from requirement
-	 */
-	protected String getStepFromStepReq(String stepRequirement) {
-		// This method should extract the agent type from the step requirement
-		// For now, return a default or extract from the requirement
-		if (stepRequirement == null || stepRequirement.trim().isEmpty()) {
-			return "DEFAULT_AGENT";
-		}
-		
-		// Look for agent type in square brackets like [AgentType]
-		if (stepRequirement.contains("[") && stepRequirement.contains("]")) {
-			int start = stepRequirement.indexOf("[");
-			int end = stepRequirement.indexOf("]", start);
-			if (start != -1 && end != -1 && end > start) {
-				return stepRequirement.substring(start + 1, end).trim();
-			}
-		}
-		
-		// Default fallback
-		return "DEFAULT_AGENT";
 	}
 
 }
