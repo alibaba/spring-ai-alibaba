@@ -2,6 +2,7 @@ package com.alibaba.cloud.ai.studio.core.observability.service;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.studio.core.observability.model.EnhancedNodeOutput;
+import com.alibaba.cloud.ai.studio.core.observability.model.ResponseBody;
 import com.alibaba.cloud.ai.studio.core.observability.model.SAAGraphFlow;
 import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Flux;
@@ -12,9 +13,9 @@ public interface CurrentGraphService {
 
     ResponseEntity<Void> run();
 
-    ResponseEntity<Boolean> switchTo(String graphId);
+    ResponseEntity<ResponseBody> switchTo(String graphId);
 
-    SAAGraphFlow getCurrentGraph();
+    SAAGraphFlow getCurrentGraph( );
 
     /**
      * 流式调用写作助手 - 快照模式（获取每个节点完成后的状态快照）
