@@ -47,7 +47,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 		public StepDefinition() {
 		}
 
-		public StepDefinition(String stepRequirement, String agentName, String modelName, List<String> selectedToolKeys) {
+		public StepDefinition(String stepRequirement, String agentName, String modelName, List<String> availableToolKeys) {
 			this.stepRequirement = stepRequirement;
 			this.agentName = agentName;
 			this.modelName = modelName;
@@ -208,7 +208,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 						   "description": "Model name to use for this step (optional)",
 						   "type": "string"
 					   },
-					   "selectedToolKeys": {
+					   "availableToolKeys": {
 						   "description": "List of tool keys available for this step (optional)",
 						   "type": "array",
 						   "items": {
@@ -222,6 +222,13 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			  "terminateColumns": {
 				   "description": "Terminate structure output columns for all steps (optional, will be applied to every step)",
 				   "type": "string"
+			  },
+			  "selectedToolKeys": {
+				   "description": "List of selected tool keys for dynamic agent execution",
+				   "type": "array",
+				   "items": {
+					   "type": "string"
+				   }
 			  }
 			 },
 			 "required": [

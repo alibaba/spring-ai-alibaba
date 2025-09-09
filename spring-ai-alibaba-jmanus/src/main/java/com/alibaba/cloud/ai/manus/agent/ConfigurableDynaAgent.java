@@ -68,14 +68,14 @@ public class ConfigurableDynaAgent extends DynamicAgent {
 	 */
 	public ConfigurableDynaAgent(ILlmService llmService, PlanExecutionRecorder planExecutionRecorder,
             ManusProperties manusProperties, String name, String description, String nextStepPrompt,
-			List<String> selectedToolKeys, ToolCallingManager toolCallingManager,
+			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
 			Map<String, Object> initialAgentSetting, UserInputService userInputService, PromptService promptService,
 			DynamicModelEntity model, StreamingResponseHandler streamingResponseHandler, ExecutionStep step,
 			PlanIdDispatcher planIdDispatcher) {
         super(llmService, planExecutionRecorder, manusProperties, name, description, nextStepPrompt,
-        selectedToolKeys, toolCallingManager, initialAgentSetting, userInputService, promptService,
+                availableToolKeys, toolCallingManager, initialAgentSetting, userInputService, promptService,
                 model, streamingResponseHandler, step, planIdDispatcher);
-		this.availableToolKeys = selectedToolKeys;
+		this.availableToolKeys = availableToolKeys != null ? new ArrayList<>(availableToolKeys) : new ArrayList<>();
 	}
 
 
