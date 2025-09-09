@@ -1,15 +1,18 @@
 package com.alibaba.cloud.ai.studio.core.observability.service;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.studio.core.observability.workflow.SAAGraphFlow;
+import com.alibaba.cloud.ai.studio.core.observability.model.EnhancedNodeOutput;
+import com.alibaba.cloud.ai.studio.core.observability.model.SAAGraphFlow;
+import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
-public interface CurrentGraphProxy {
-    Boolean run();
+public interface CurrentGraphService {
 
-    Boolean switchTo(String graphId);
+    ResponseEntity<Void> run();
+
+    ResponseEntity<Boolean> switchTo(String graphId);
 
     SAAGraphFlow getCurrentGraph();
 
@@ -24,5 +27,12 @@ public interface CurrentGraphProxy {
      * 示例请求：GET /write/stream?text=今天我去了西湖，天气特别好，感觉特别开心
      */
     Flux<NodeOutput> writeStream(String inputText);
+
+    /**
+     * 流式调用写作助手 - 增强流式输出（获取包含完整节点信息的输出）
+     * 包含节点名称、ID、执行状态、时间戳等完整信息
+     * 示例请求：GET /write/stream_enhanced?text=今天我去了西湖，天气特别好，感觉特别开心
+     */
+    Flux<EnhancedNodeOutput> writeStreamEnhanced(String inputText);
 
 }

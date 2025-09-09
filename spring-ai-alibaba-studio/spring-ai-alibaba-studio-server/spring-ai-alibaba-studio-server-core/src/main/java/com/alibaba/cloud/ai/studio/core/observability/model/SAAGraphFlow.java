@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.studio.core.observability.workflow;
+package com.alibaba.cloud.ai.studio.core.observability.model;
 
 import java.util.ArrayList;
 import java.util.List;
