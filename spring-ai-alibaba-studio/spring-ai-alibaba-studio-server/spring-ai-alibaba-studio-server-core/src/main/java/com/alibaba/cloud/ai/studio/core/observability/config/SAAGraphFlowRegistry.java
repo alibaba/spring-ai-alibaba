@@ -1,7 +1,7 @@
-package com.alibaba.cloud.ai.studio.core.observability.workflow;
+package com.alibaba.cloud.ai.studio.core.observability.config;
 
+import com.alibaba.cloud.ai.studio.core.observability.model.SAAGraphFlow;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.util.Collection;

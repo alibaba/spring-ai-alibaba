@@ -1,7 +1,7 @@
 package com.alibaba.cloud.ai.studio.core.observability.service;
 
 import com.alibaba.cloud.ai.studio.core.observability.dto.SAAGraphFlowInfoDTO;
-import com.alibaba.cloud.ai.studio.core.observability.workflow.SAAGraphFlow;
+import com.alibaba.cloud.ai.studio.core.observability.model.SAAGraphFlow;
 
 public interface GraphFlowService {
     /**

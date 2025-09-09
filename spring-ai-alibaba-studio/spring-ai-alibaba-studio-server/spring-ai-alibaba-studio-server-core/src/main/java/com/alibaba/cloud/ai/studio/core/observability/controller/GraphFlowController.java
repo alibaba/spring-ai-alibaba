@@ -1,11 +1,9 @@
 package com.alibaba.cloud.ai.studio.core.observability.controller;
 
-import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.studio.core.observability.exception.GraphFlowNotFoundException;
-import com.alibaba.cloud.ai.studio.core.observability.service.CurrentGraphProxy;
 import com.alibaba.cloud.ai.studio.core.observability.service.GraphFlowService;
-import com.alibaba.cloud.ai.studio.core.observability.workflow.SAAGraphFlow;
-import com.alibaba.cloud.ai.studio.core.observability.workflow.SAAGraphFlowRegistry;
+import com.alibaba.cloud.ai.studio.core.observability.model.SAAGraphFlow;
+import com.alibaba.cloud.ai.studio.core.observability.config.SAAGraphFlowRegistry;
 import com.alibaba.cloud.ai.studio.core.observability.dto.SAAGraphFlowInfoDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
