@@ -18,6 +18,8 @@ package com.alibaba.cloud.ai.manus.runtime.entity.vo;
 import com.alibaba.cloud.ai.manus.agent.AgentState;
 import com.alibaba.cloud.ai.manus.agent.BaseAgent;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -42,6 +44,12 @@ public class ExecutionStep {
 
 	private String stepRequirement;
 
+	private String agentName;
+
+	private List<String> selectedToolKeys;
+
+	private String modelName;
+	
 	@JsonIgnore
 	private String result;
 
@@ -101,6 +109,30 @@ public class ExecutionStep {
 
 	public void setStepRequirement(String stepRequirement) {
 		this.stepRequirement = stepRequirement;
+	}
+
+	public String getAgentName() {
+		return agentName;
+	}
+
+	public void setAgentName(String agentName) {
+		this.agentName = agentName;
+	}
+
+	public List<String> getSelectedToolKeys() {
+		return selectedToolKeys;
+	}
+
+	public void setSelectedToolKeys(List<String> selectedToolKeys) {
+		this.selectedToolKeys = selectedToolKeys;
+	}
+
+	public String getModelName() {
+		return modelName;
+	}
+
+	public void setModelName(String modelName) {
+		this.modelName = modelName;
 	}
 
 	@JsonIgnore

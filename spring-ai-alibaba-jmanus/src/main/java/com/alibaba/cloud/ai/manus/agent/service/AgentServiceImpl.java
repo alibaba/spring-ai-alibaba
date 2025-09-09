@@ -187,7 +187,7 @@ public class AgentServiceImpl implements AgentService {
 		repository.deleteById(Long.parseLong(id));
 	}
 
-	private DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting, ExecutionStep step, List<String> availableToolKeys, DynamicModelEntity modelEntity) {
+	private DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting, ExecutionStep step, List<String> selectedToolKeys, DynamicModelEntity modelEntity) {
 
 		// Check if this is a ConfigurableDynaAgent
 		if ("ConfigurableDynaAgent".equals(agentName)) {
@@ -203,7 +203,7 @@ public class AgentServiceImpl implements AgentService {
 			}
 			
 			return new ConfigurableDynaAgent(llmService, recorder, properties, name, description, nextStepPrompt, 
-				availableToolKeys, toolCallingManager, initialAgentSetting, userInputService, promptService, 
+				selectedToolKeys, toolCallingManager, initialAgentSetting, userInputService, promptService, 
 				modelEntity, streamingResponseHandler, step, planIdDispatcher);
 		}
 
@@ -341,13 +341,13 @@ public class AgentServiceImpl implements AgentService {
 	@Override
 	public BaseAgent createDynamicBaseAgent(String name, String planId, String rootPlanId,
 			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step,
-			DynamicModelEntity modelEntity, List<String> availableToolKeys) {
+			DynamicModelEntity modelEntity, List<String> selectedToolKeys) {
 
 		log.info("Create new BaseAgent: {}, planId: {}", name, planId);
 
 		try {
 			// Load existing Agent through local loadAgent method
-			DynamicAgent agent = loadAgent(name, initialAgentSetting, step, availableToolKeys, modelEntity);
+			DynamicAgent agent = loadAgent(name, initialAgentSetting, step, selectedToolKeys, modelEntity);
 
 			// Set planId
 			agent.setCurrentPlanId(planId);

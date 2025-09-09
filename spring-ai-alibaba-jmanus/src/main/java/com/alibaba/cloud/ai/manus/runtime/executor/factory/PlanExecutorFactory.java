@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.manus.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.manus.agent.service.AgentService;
 import com.alibaba.cloud.ai.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.manus.model.repository.DynamicModelRepository;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanInterface;
 import com.alibaba.cloud.ai.manus.runtime.executor.DirectResponseExecutor;
@@ -57,15 +58,19 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 
 	private final LevelBasedExecutorPool levelBasedExecutorPool;
 
+	private final DynamicModelRepository dynamicModelRepository;
+
 	public PlanExecutorFactory(ILlmService llmService, AgentService agentService, 
 			PlanExecutionRecorder recorder, ManusProperties manusProperties,
-			ObjectMapper objectMapper, LevelBasedExecutorPool levelBasedExecutorPool) {
+			ObjectMapper objectMapper, LevelBasedExecutorPool levelBasedExecutorPool,
+			DynamicModelRepository dynamicModelRepository) {
 		this.llmService = llmService;
 		this.agentService = agentService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
 		this.objectMapper = objectMapper;
 		this.levelBasedExecutorPool = levelBasedExecutorPool;
+		this.dynamicModelRepository = dynamicModelRepository;
 	}
 
 	/**
@@ -105,7 +110,7 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 	private PlanExecutorInterface createDynamicToolExecutor() {
 		log.debug("Creating dynamic agent plan executor");
 		List<DynamicAgentEntity> agents = agentService.getAllAgents();
-		return new DynamicToolPlanExecutor(agents, recorder, agentService, llmService, manusProperties, levelBasedExecutorPool);
+		return new DynamicToolPlanExecutor(agents, recorder, agentService, llmService, manusProperties, levelBasedExecutorPool, dynamicModelRepository);
 	}
 
 	/**

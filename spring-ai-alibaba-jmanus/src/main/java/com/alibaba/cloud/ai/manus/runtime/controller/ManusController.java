@@ -191,6 +191,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	/**
 	 * Execute plan by tool name asynchronously
+	 * If tool is not published, treat toolName as planTemplateId
 	 * 
 	 * @param request Request containing tool name and parameters
 	 * @return Task ID and status
@@ -202,38 +203,59 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			return ResponseEntity.badRequest().body(Map.of("error", "Tool name cannot be empty"));
 		}
 
-		// Find the coordinator tool by tool name
+		String planTemplateId = null;
+		boolean isPublishedTool = false;
+
+		// First, try to find the coordinator tool by tool name
 		CoordinatorToolEntity coordinatorTool = coordinatorToolRepository.findByToolName(toolName);
-		if (coordinatorTool == null) {
-			return ResponseEntity.badRequest().body(Map.of("error", "Tool not found with name: " + toolName));
+		if (coordinatorTool != null) {
+			// Tool is published, get plan template ID from coordinator tool
+			planTemplateId = coordinatorTool.getPlanTemplateId();
+			isPublishedTool = true;
+			logger.info("Found published tool: {} with plan template ID: {}", toolName, planTemplateId);
+		} else {
+			// Tool is not published, treat toolName as planTemplateId
+			planTemplateId = toolName;
+			logger.info("Tool not published, using toolName as planTemplateId: {}", planTemplateId);
 		}
 
-		// Get the plan template ID from the coordinator tool
-		String planTemplateId = coordinatorTool.getPlanTemplateId();
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			return ResponseEntity.badRequest()
-					.body(Map.of("error", "No plan template ID associated with tool: " + toolName));
+					.body(Map.of("error", "No plan template ID found for tool: " + toolName));
 		}
 
-		String planId = null;
 		try {
-			// Generate new plan ID
-			planId = planIdDispatcher.generatePlanId();
-			logger.info("🆕 Generated new planId: {} for tool: {}", planId, toolName);
-
+			// Get raw parameters
+			String rawParam = (String) request.get("rawParam");
 			String memoryId = (String) request.get("memoryId");
+			
+			// Handle uploaded files if present
+			@SuppressWarnings("unchecked")
+			List<Map<String, Object>> uploadedFiles = (List<Map<String, Object>>) request.get("uploadedFiles");
+
+			// Generate plan ID first
+			String planId = planIdDispatcher.generatePlanId();
+			logger.info("🆕 Generated new planId: {} for tool: {} (planTemplateId: {})", planId, toolName, planTemplateId);
+
+			// Execute the plan template asynchronously using the new unified method
+			CompletableFuture<PlanExecutionResult> future = executePlanTemplate(planTemplateId, rawParam, uploadedFiles, memoryId, true);
+			
+			// Start the async execution (fire and forget)
+			future.whenComplete((result, throwable) -> {
+				if (throwable != null) {
+					logger.error("Async plan execution failed for planId: {}", planId, throwable);
+				} else {
+					logger.info("Async plan execution completed for planId: {}", planId);
+				}
+			});
+
+			// Generate memory ID if not provided
 			if (!StringUtils.hasText(memoryId)) {
 				memoryId = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 			}
 
-			// Get raw parameters
-			String rawParam = (String) request.get("rawParam");
-			String query = rawParam != null ? rawParam : "Execute tool: " + toolName;
-
+			String query = rawParam != null ? rawParam : "Execute plan template: " + planTemplateId;
 			memoryService.saveMemory(new MemoryEntity(memoryId, query));
-
-			// Execute the plan using PlanningCoordinator (fire and forget)
-			planningCoordinator.executeByUserQuery(query, planId, null, planId, memoryId, null);
 
 			// Return task ID and initial status
 			Map<String, Object> response = new HashMap<>();
@@ -243,15 +265,16 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			response.put("memoryId", memoryId);
 			response.put("toolName", toolName);
 			response.put("planTemplateId", planTemplateId);
+			response.put("isPublishedTool", isPublishedTool);
 
 			return ResponseEntity.ok(response);
 
 		} catch (Exception e) {
-			logger.error("Failed to start plan execution for tool: {} with planId: {}", toolName, planId, e);
+			logger.error("Failed to start plan execution for tool: {} with planTemplateId: {}", toolName, planTemplateId, e);
 			Map<String, Object> errorResponse = new HashMap<>();
 			errorResponse.put("error", "Failed to start plan execution: " + e.getMessage());
-			errorResponse.put("planId", planId);
 			errorResponse.put("toolName", toolName);
+			errorResponse.put("planTemplateId", planTemplateId);
 			return ResponseEntity.internalServerError().body(errorResponse);
 		}
 	}
@@ -415,8 +438,9 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId, String rawParam,
 			List<Map<String, Object>> uploadedFiles) {
 		try {
-			// Execute the plan template synchronously
-			PlanExecutionResult planExecutionResult = executePlanTemplateSync(planTemplateId, rawParam, uploadedFiles);
+			// Execute the plan template synchronously using the new unified method
+			CompletableFuture<PlanExecutionResult> future = executePlanTemplate(planTemplateId, rawParam, uploadedFiles, null, false);
+			PlanExecutionResult planExecutionResult = future.get();
 
 			// Return success with execution result
 			Map<String, Object> response = new HashMap<>();
@@ -435,15 +459,17 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	}
 
 	/**
-	 * Execute a plan template synchronously by its ID
+	 * Execute a plan template by its ID with support for both sync and async execution
 	 * 
 	 * @param planTemplateId The ID of the plan template to execute
 	 * @param rawParam       Raw parameters for the execution (can be null)
 	 * @param uploadedFiles  List of uploaded files (can be null)
-	 * @return The root plan ID for this execution
+	 * @param memoryId       Memory ID for the execution (can be null)
+	 * @param isAsync        Whether to execute asynchronously (true) or synchronously (false)
+	 * @return CompletableFuture<PlanExecutionResult> for async execution, or completed future for sync execution
 	 */
-	private PlanExecutionResult executePlanTemplateSync(String planTemplateId, String rawParam,
-			List<Map<String, Object>> uploadedFiles) {
+	private CompletableFuture<PlanExecutionResult> executePlanTemplate(String planTemplateId, String rawParam,
+			List<Map<String, Object>> uploadedFiles, String memoryId, boolean isAsync) {
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			logger.error("Plan template ID is null or empty");
 			throw new IllegalArgumentException("Plan template ID cannot be null or empty");
@@ -454,12 +480,19 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			String currentPlanId = planIdDispatcher.generatePlanId();
 			String rootPlanId = currentPlanId;
 
-			// Fetch the plan template from PlanTemplateService
-			PlanInterface plan = createPlanFromTemplate(planTemplateId, rawParam);
-
-			if (plan == null) {
-				throw new RuntimeException("Failed to create plan from template: " + planTemplateId);
+			// Generate memory ID if not provided
+			if (!StringUtils.hasText(memoryId)) {
+				memoryId = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 			}
+
+			// Get the latest plan version JSON string
+			String planJson = planTemplateService.getLatestPlanVersion(planTemplateId);
+			if (planJson == null) {
+				throw new RuntimeException("Plan template not found: " + planTemplateId);
+			}
+
+			// Parse the plan JSON to create PlanInterface
+			PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
 
 			// Handle uploaded files if present
 			if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
@@ -467,57 +500,30 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 						uploadedFiles.size());
 			}
 
-			// Execute using the PlanningCoordinator's execution logic (async but we'll wait
-			// for result)
+			// Execute using the PlanningCoordinator
 			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByPlan(plan, rootPlanId, null,
 					currentPlanId, null);
 
-			// Wait for completion synchronously
-			PlanExecutionResult result = future.get();
-
-			if (!result.isSuccess()) {
-				throw new RuntimeException("Plan execution failed: " + result.getErrorMessage());
+			if (isAsync) {
+				// Return the future for async execution
+				return future;
+			} else {
+				// Wait for completion synchronously
+				PlanExecutionResult result = future.get();
+				if (!result.isSuccess()) {
+					throw new RuntimeException("Plan execution failed: " + result.getErrorMessage());
+				}
+				return CompletableFuture.completedFuture(result);
 			}
 
-			// Return the root plan ID
-			return result;
-
 		} catch (Exception e) {
-			logger.error("Failed to execute plan template synchronously: {}", planTemplateId, e);
-			throw new RuntimeException("Synchronous execution failed: " + e.getMessage(), e);
+			logger.error("Failed to execute plan template: {}", planTemplateId, e);
+			CompletableFuture<PlanExecutionResult> failedFuture = new CompletableFuture<>();
+			failedFuture.completeExceptionally(new RuntimeException("Plan execution failed: " + e.getMessage(), e));
+			return failedFuture;
 		}
 	}
 
-	/**
-	 * Create a plan interface from template ID and parameters. Fetches the plan
-	 * template
-	 * from PlanTemplateService and converts it to PlanInterface.
-	 * 
-	 * @param planTemplateId The template ID
-	 * @param rawParam       Raw parameters
-	 * @return PlanInterface object or null if creation fails
-	 */
-	private PlanInterface createPlanFromTemplate(String planTemplateId, String rawParam) {
-		try {
-			// Fetch the latest plan version from template service
-			String planJson = planTemplateService.getLatestPlanVersion(planTemplateId);
-
-			if (planJson == null) {
-				logger.error("No plan version found for template: {}", planTemplateId);
-				return null;
-			}
-
-			// Parse the JSON to create a PlanInterface
-			PlanInterface plan = objectMapper.readValue(planJson, PlanInterface.class);
-
-			logger.info("Successfully created plan interface from template: {}", planTemplateId);
-			return plan;
-
-		} catch (Exception e) {
-			logger.error("Failed to create plan interface from template: {}", planTemplateId, e);
-			return null;
-		}
-	}
 
 	/**
 	 * Get detailed agent execution record by stepId (includes ThinkActRecord

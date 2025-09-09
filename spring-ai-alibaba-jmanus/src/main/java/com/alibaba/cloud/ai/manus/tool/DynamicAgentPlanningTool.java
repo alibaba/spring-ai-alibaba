@@ -36,6 +36,58 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 	}
 
 	/**
+	 * Step definition class for dynamic agent planning
+	 */
+	public static class StepDefinition {
+		private String stepRequirement;
+		private String agentName;
+		private String modelName;
+		private List<String> selectedToolKeys;
+
+		public StepDefinition() {
+		}
+
+		public StepDefinition(String stepRequirement, String agentName, String modelName, List<String> selectedToolKeys) {
+			this.stepRequirement = stepRequirement;
+			this.agentName = agentName;
+			this.modelName = modelName;
+			this.selectedToolKeys = selectedToolKeys;
+		}
+
+		public String getStepRequirement() {
+			return stepRequirement;
+		}
+
+		public void setStepRequirement(String stepRequirement) {
+			this.stepRequirement = stepRequirement;
+		}
+
+		public String getAgentName() {
+			return agentName;
+		}
+
+		public void setAgentName(String agentName) {
+			this.agentName = agentName;
+		}
+
+		public String getModelName() {
+			return modelName;
+		}
+
+		public void setModelName(String modelName) {
+			this.modelName = modelName;
+		}
+
+		public List<String> getSelectedToolKeys() {
+			return selectedToolKeys;
+		}
+
+		public void setSelectedToolKeys(List<String> selectedToolKeys) {
+			this.selectedToolKeys = selectedToolKeys;
+		}
+	}
+
+	/**
 	 * Internal input class for defining dynamic agent planning tool input parameters
 	 */
 	public static class DynamicAgentPlanningInput {
@@ -44,7 +96,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 
 		private String title;
 
-		private List<String> steps;
+		private List<StepDefinition> steps;
 
 		private String terminateColumns;
 
@@ -55,7 +107,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 		public DynamicAgentPlanningInput() {
 		}
 
-		public DynamicAgentPlanningInput(String command, String title, List<String> steps, boolean directResponse, List<String> selectedToolKeys) {
+		public DynamicAgentPlanningInput(String command, String title, List<StepDefinition> steps, boolean directResponse, List<String> selectedToolKeys) {
 			this.command = command;
 			this.title = title;
 			this.steps = steps;
@@ -80,11 +132,11 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			this.title = title;
 		}
 
-		public List<String> getSteps() {
+		public List<StepDefinition> getSteps() {
 			return steps;
 		}
 
-		public void setSteps(List<String> steps) {
+		public void setSteps(List<StepDefinition> steps) {
 			this.steps = steps;
 		}
 
@@ -146,19 +198,30 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			   "description": "List of plan steps for dynamic agent execution",
 			   "type": "array",
 			   "items": {
-				   "type": "string"
+				   "type": "object",
+				   "properties": {
+					   "stepRequirement": {
+						   "description": "Description of what this step should accomplish",
+						   "type": "string"
+					   },
+					   "modelName": {
+						   "description": "Model name to use for this step (optional)",
+						   "type": "string"
+					   },
+					   "selectedToolKeys": {
+						   "description": "List of tool keys available for this step (optional)",
+						   "type": "array",
+						   "items": {
+							   "type": "string"
+						   }
+					   }
+				   },
+				   "required": ["stepRequirement"]
 			   }
 			  },
 			  "terminateColumns": {
 				   "description": "Terminate structure output columns for all steps (optional, will be applied to every step)",
 				   "type": "string"
-			  },
-			  "selectedToolKeys": {
-				   "description": "List of selected tool keys for dynamic agent execution",
-				   "type": "array",
-				   "items": {
-					   "type": "string"
-				   }
 			  }
 			 },
 			 "required": [
@@ -212,7 +275,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 	public ToolExecuteResult run(DynamicAgentPlanningInput input) {
 		String command = input.getCommand();
 		String title = input.getTitle();
-		List<String> steps = input.getSteps();
+		List<StepDefinition> steps = input.getSteps();
 		boolean directResponse = input.isDirectResponse();
 		List<String> selectedToolKeys = input.getSelectedToolKeys();
 
@@ -239,17 +302,21 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 
 	/**
 	 * Create a single execution step
-	 * @param step step description
+	 * @param step step definition
 	 * @param index step index
 	 * @return created ExecutionStep instance
 	 */
-	private ExecutionStep createExecutionStep(String step, int index) {
+	private ExecutionStep createExecutionStep(StepDefinition step, int index) {
 		ExecutionStep executionStep = new ExecutionStep();
-		executionStep.setStepRequirement(step);
+		executionStep.setStepRequirement(step.getStepRequirement());
+		executionStep.setAgentName(step.getAgentName());
+		executionStep.setModelName(step.getModelName());
+		executionStep.setSelectedToolKeys(step.getSelectedToolKeys());
+		executionStep.setStepIndex(index);
 		return executionStep;
 	}
 
-	public ToolExecuteResult createDynamicAgentPlan(String title, List<String> steps, String terminateColumns, List<String> selectedToolKeys) {
+	public ToolExecuteResult createDynamicAgentPlan(String title, List<StepDefinition> steps, String terminateColumns, List<String> selectedToolKeys) {
 		if (title == null || steps == null || steps.isEmpty()) {
 			log.info("Missing required parameters when creating dynamic agent plan: title={}, steps={}", title, steps);
 			return new ToolExecuteResult("Required parameters missing");
@@ -260,7 +327,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 		plan.setSelectedToolKeys(selectedToolKeys != null ? selectedToolKeys : new ArrayList<>());
 
 		int index = 0;
-		for (String step : steps) {
+		for (StepDefinition step : steps) {
 			ExecutionStep execStep = createExecutionStep(step, index);
 			if (terminateColumns != null && !terminateColumns.isEmpty()) {
 				execStep.setTerminateColumns(terminateColumns);

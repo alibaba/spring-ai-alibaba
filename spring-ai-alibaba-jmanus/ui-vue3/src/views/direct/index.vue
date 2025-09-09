@@ -677,10 +677,10 @@ const handlePlanExecutionRequested = async (payload: {
     
     let response
     if (payload.params?.trim()) {
-      console.log('[Direct] Calling executePlan with params:', payload.params.trim())
+      console.log('[Direct] Calling executePlan with rawParam:', payload.params.trim())
       response = await PlanActApiService.executePlan(planTemplateId, payload.params.trim(), uploadedFiles)
     } else {
-      console.log('[Direct] Calling executePlan without params')
+      console.log('[Direct] Calling executePlan without rawParam')
       response = await PlanActApiService.executePlan(planTemplateId, undefined, uploadedFiles)
     }
 
