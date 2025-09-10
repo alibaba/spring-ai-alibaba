@@ -94,7 +94,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 
 		private String title;
 
-		private List<StepDefinition> steps;
+		private StepDefinition step;
 
 		private String terminateColumns;
 
@@ -104,9 +104,9 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 		public DynamicAgentPlanningInput() {
 		}
 
-		public DynamicAgentPlanningInput(String title, List<StepDefinition> steps, boolean directResponse) {
+		public DynamicAgentPlanningInput(String title, StepDefinition step, boolean directResponse) {
 			this.title = title;
-			this.steps = steps;
+			this.step = step;
 			this.terminateColumns = null;
 			this.directResponse = directResponse;
 		}
@@ -119,12 +119,12 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			this.title = title;
 		}
 
-		public List<StepDefinition> getSteps() {
-			return steps;
+		public StepDefinition getStep() {
+			return step;
 		}
 
-		public void setSteps(List<StepDefinition> steps) {
-			this.steps = steps;
+		public void setStep(StepDefinition step) {
+			this.step = step;
 		}
 
 		public String getTerminateColumns() {
@@ -167,30 +167,27 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			   "description": "Title for the dynamic agent plan",
 			   "type": "string"
 			  },
-			  "steps": {
-			   "description": "List of plan steps for dynamic agent execution",
-			   "type": "array",
-			   "items": {
-				   "type": "object",
-				   "properties": {
-					   "stepRequirement": {
-						   "description": "Description of what this step should accomplish",
-						   "type": "string"
-					   },
-					   "modelName": {
-						   "description": "Model name to use for this step (optional)",
-						   "type": "string"
-					   },
-						"selectedToolKeys": {
-							"description": "List of selected tool keys for dynamic agent execution",
-							"type": "array",
-							"items": {
-								"type": "string"
-							}
-						}
+			  "step": {
+			   "description": "Single plan step for dynamic agent execution",
+			   "type": "object",
+			   "properties": {
+				   "stepRequirement": {
+					   "description": "Description of what this step should accomplish",
+					   "type": "string"
 				   },
-				   "required": ["stepRequirement"]
-			   }
+				   "modelName": {
+					   "description": "Model name to use for this step (optional)",
+					   "type": "string"
+				   },
+					"selectedToolKeys": {
+						"description": "List of selected tool keys for dynamic agent execution",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					}
+			   },
+			   "required": ["stepRequirement"]
 			  },
 			  "terminateColumns": {
 				   "description": "Terminate structure output columns for all steps (optional, will be applied to every step)",
@@ -199,7 +196,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			 },
 			 "required": [
 			"title",
-			"steps"
+			"step"
 			 ]
 			}
 			""";
@@ -246,7 +243,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 	@Override
 	public ToolExecuteResult run(DynamicAgentPlanningInput input) {
 		String title = input.getTitle();
-		List<StepDefinition> steps = input.getSteps();
+		StepDefinition step = input.getStep();
 		boolean directResponse = input.isDirectResponse();
 		// Support directResponse mode
 		if (directResponse) {
@@ -260,7 +257,8 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			return new ToolExecuteResult("Direct response mode: dynamic agent plan created successfully");
 		}
 
-		// Since there's only one command (create), directly call createDynamicAgentPlan
+		// Convert single step to list for internal processing
+		List<StepDefinition> steps = step != null ? List.of(step) : new ArrayList<>();
 		return createDynamicAgentPlan(title, steps, input.getTerminateColumns());
 	}
 
