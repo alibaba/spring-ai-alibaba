@@ -32,14 +32,13 @@ public class EmptyNodeSection implements NodeSection<EmptyNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {
-		return nodeType.equals(NodeType.DIFY_ITERATION_START);
+		return nodeType.equals(NodeType.EMPTY);
 	}
 
 	@Override
 	public String render(Node node, String varName) {
-		EmptyNodeData data = (EmptyNodeData) node.getData();
 		StringBuilder sb = new StringBuilder();
-		String id = data.getId();
+		String id = node.getId();
 		sb.append("// —— Empty Node [").append(id).append("] ——\n");
 		sb.append("stateGraph.addNode(\"")
 			.append(varName)

@@ -16,90 +16,182 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.sections;
 
-import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
+import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.IterationNodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * @author vlsmb
  * @since 2025/7/23
  */
+// TODO: 支持并行模式、错误处理，支持Studio的默认输入值
 @Component
 public class IterationNodeSection implements NodeSection<IterationNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {
-		return nodeType.equals(NodeType.ITERATION);
+		return NodeType.ITERATION.equals(nodeType);
 	}
 
 	@Override
 	public String render(Node node, String varName) {
-		// 构建Iteration.Start -> Iteration -> Iteration.End节点
-		IterationNodeData data = (IterationNodeData) node.getData();
-		StringBuilder sb = new StringBuilder();
+		// 迭代节点在转换为Workflow的时候已经拆分为多个节点，故本方法返回空
+		return "";
+	}
 
-		// 获取输入输出的泛型
-		String inputType = "Map<String, Object>";
-		String outputType = "Map<String, Object>";
-		if (VariableType.STRING.equals(data.getInputType())) {
-			inputType = "String";
-		}
-		else if (VariableType.NUMBER.equals(data.getInputType())) {
-			inputType = "Number";
-		}
-		if (VariableType.STRING.equals(data.getOutputType())) {
-			outputType = "String";
-		}
-		if (VariableType.NUMBER.equals(data.getOutputType())) {
-			outputType = "Number";
+	@Override
+	public String renderEdges(IterationNodeData nodeData, List<Edge> edges) {
+		return "";
+	}
+
+	// 规定迭代节点的start为iterationVarName_start，end为iterationVarName_end
+
+	@Component
+	public static class IterationStartNodeSection implements NodeSection<IterationNodeData> {
+
+		@Override
+		public boolean support(NodeType nodeType) {
+			return NodeType.ITERATION_START.equals(nodeType);
 		}
 
-		sb.append("// —— IterationNode [").append(data.getId()).append("] ——\n");
-		sb.append("IterationNode.<")
-			.append(inputType)
-			.append(", ")
-			.append(outputType)
-			.append(">converter()\n")
-			.append(".subGraphStartNodeName(\"")
-			.append(data.getStartNodeName())
-			.append("\")\n")
-			.append(".subGraphEndNodeName(\"")
-			.append(data.getEndNodeName())
-			.append("\")\n")
-			.append(".tempArrayKey(\"")
-			.append(data.getInnerArrayKey())
-			.append("\")\n")
-			.append(".tempStartFlagKey(\"")
-			.append(data.getInnerStartFlagKey())
-			.append("\")\n")
-			.append(".tempEndFlagKey(\"")
-			.append(data.getInnerEndFlagKey())
-			.append("\")\n")
-			.append(".tempIndexKey(\"")
-			.append(data.getInnerIndexKey())
-			.append("\")\n")
-			.append(".iteratorItemKey(\"")
-			.append(data.getInnerItemKey())
-			.append("\")\n")
-			.append(".iteratorResultKey(\"")
-			.append(data.getInnerItemResultKey())
-			.append("\")\n")
-			.append(".inputArrayJsonKey(\"")
-			.append(data.getInputKey())
-			.append("\")\n")
-			.append(".outputArrayJsonKey(\"")
-			.append(data.getOutputKey())
-			.append("\")\n")
-			.append(".appendToStateGraph(stateGraph, \"")
-			.append(varName)
-			.append("\", \"")
-			.append(varName)
-			.append("_out\");\n\n");
-		return sb.toString();
+		@Override
+		public String render(Node node, String varName) {
+			IterationNodeData nodeData = ((IterationNodeData) node.getData());
+			return String.format("""
+					// Iteration [%s] Start Node
+					stateGraph.addNode("%s", AsyncNodeAction.node_async(
+					    createIterationStartAction("%s", "%s", "%s", "%s", "%s", %d)
+					));
+
+					""", node.getId(), nodeData.getVarName() + "_start", nodeData.getResultSelector().getNameInCode(),
+					nodeData.getVarName() + "_state", nodeData.getItemKey(), nodeData.getVarName() + "_index",
+					nodeData.getVarName() + "_isFinished", nodeData.getIndexOffset());
+		}
+
+		// TODO: 添加辅助节点以支持迭代起始节点并行
+		@Override
+		public String renderEdges(IterationNodeData nodeData, List<Edge> edges) {
+			Edge edge = edges.get(0);
+			return String.format("""
+					// Iteration [%s] Start Edge
+					stateGraph.addConditionalEdges("%s", AsyncEdgeAction.edge_async(
+					                state -> {
+					                    Boolean b = state.value("%s", false);
+					                    return b ? "end" : "iteration";
+					                }
+					        ), Map.of("end", "%s", "iteration", "%s"));
+
+					""", nodeData.getVarName(), nodeData.getVarName() + "_start", nodeData.getVarName() + "_isFinished",
+					nodeData.getVarName() + "_end", edge.getTarget());
+		}
+
+		@Override
+		public String assistMethodCode(DSLDialectType dialectType) {
+			return """
+					private NodeAction createIterationStartAction(
+					        String arrayKey, String stateKey,
+					        String itemKey, String indexKey, String flagKey,
+					        int indexOffset) {
+					    return state -> {
+					        Object arrayObj = state.value(arrayKey).orElse(List.of());
+					        List<Integer> stateList = state.value(stateKey, List.class).orElse(null);
+
+					        List<?> arrayList;
+					        if (stateList == null) {
+					            // the first time in iteration
+					            if (arrayObj instanceof List<?>) {
+					                arrayList = new ArrayList<>((List<?>) arrayObj);
+					            } else if (arrayObj.getClass().isArray()) {
+					                arrayList = new ArrayList<>(Arrays.stream((Object[])arrayObj).toList());
+					            } else {
+					                throw new IllegalStateException("value {" + arrayKey + "} is not an array!");
+					            }
+					            int len = arrayList.size();
+					            stateList = new ArrayList<>();
+					            for (int i = 0; i < len; i++) {
+					                stateList.add(i);
+					            }
+					        } else {
+					            arrayList = (List<?>) arrayObj;
+					        }
+
+					        if(stateList.isEmpty()) {
+					            return Map.of(flagKey, true);
+					        }
+					        int index = stateList.get(0);
+					        Object item = arrayList.get(index);
+					        stateList.remove(0);
+					        return Map.of(arrayKey, arrayList, stateKey, stateList, itemKey, item,
+					                indexKey, index + indexOffset, flagKey, false);
+					    };
+					}
+					""";
+		}
+
+	}
+
+	@Component
+	public static class IterationEndNodeSection implements NodeSection<IterationNodeData> {
+
+		@Override
+		public boolean support(NodeType nodeType) {
+			return NodeType.ITERATION_END.equals(nodeType);
+		}
+
+		@Override
+		public String render(Node node, String varName) {
+			IterationNodeData nodeData = ((IterationNodeData) node.getData());
+			return String.format("""
+					// Iteration [%s] End Node
+					stateGraph.addNode("%s", AsyncNodeAction.node_async(
+					    createIterationEndAction("%s", "%s", "%s")
+					));
+
+					""", nodeData.getVarName(), nodeData.getVarName() + "_end", nodeData.getVarName() + "_isFinished",
+					nodeData.getResultSelector().getNameInCode(), nodeData.getOutputKey());
+		}
+
+		// TODO: 添加辅助节点以支持迭代终止节点并行
+		@Override
+		public String renderEdges(IterationNodeData nodeData, List<Edge> edges) {
+			Edge edge = edges.get(0);
+			return String.format("""
+					// Iteration [%s] End Edge
+					stateGraph.addConditionalEdges("%s", AsyncEdgeAction.edge_async(
+					                state -> {
+					                    Boolean b = state.value("%s", false);
+					                    return b ? "finish" : "start";
+					                }
+					        ), Map.of("finish", "%s", "start", "%s"));
+
+					""", nodeData.getVarName(), nodeData.getVarName() + "_end", nodeData.getVarName() + "_isFinished",
+					edge.getTarget(), nodeData.getVarName() + "_start");
+		}
+
+		@Override
+		public String assistMethodCode(DSLDialectType dialectType) {
+			return """
+					 private NodeAction createIterationEndAction(String flagKey, String resultKey, String outputKey) {
+					     return state -> {
+					         boolean flag = state.value(flagKey, Boolean.class).orElse(true);
+					         List<Object> outputList = state.value(outputKey, List.class).orElse(new ArrayList<>());
+					         if(flag) {
+					             return Map.of(outputKey, outputList);
+					         }
+					         outputList.add(state.value(resultKey).orElseThrow());
+					         return Map.of(outputKey, outputList);
+					     };
+					 }
+					""";
+		}
+
 	}
 
 }

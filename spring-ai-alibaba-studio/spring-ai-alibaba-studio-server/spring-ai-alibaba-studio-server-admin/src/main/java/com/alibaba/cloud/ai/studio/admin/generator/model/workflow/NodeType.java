@@ -60,7 +60,11 @@ public enum NodeType {
 
 	ITERATION("iteration", "iteration", "UNSUPPORTED"),
 
-	DIFY_ITERATION_START("__empty__", "iteration-start", "UNSUPPORTED"),
+	EMPTY("empty", "UNSUPPORTED", "UNSUPPORTED"),
+
+	ITERATION_START("iteration-start", "iteration-start", "ParallelStart"),
+
+	ITERATION_END("iteration-end", "iteration-end", "ParallelEnd"),
 
 	ASSIGNER("assigner", "assigner", "UNSUPPORTED");
 

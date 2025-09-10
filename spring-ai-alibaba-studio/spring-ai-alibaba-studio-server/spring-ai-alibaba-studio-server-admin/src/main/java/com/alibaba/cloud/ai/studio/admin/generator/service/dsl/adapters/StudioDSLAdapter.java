@@ -42,6 +42,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -118,13 +120,74 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 	private Graph constructGraph(Map<String, Object> data) {
 		Graph graph = new Graph();
 
-		List<Map<String, Object>> nodeMap = MapReadUtil
-			.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "nodes"));
-		List<Map<String, Object>> edgeMap = MapReadUtil
-			.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "edges"));
+		List<Map<String, Object>> nodeMap = new ArrayList<>(Optional
+			.ofNullable(
+					MapReadUtil.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "nodes")))
+			.orElse(List.of()));
+		List<Map<String, Object>> edgeMap = new ArrayList<>(Optional
+			.ofNullable(
+					MapReadUtil.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "edges")))
+			.orElse(List.of()));
+
+		List<Map<String, Object>> innerNodeMaps = new ArrayList<>();
+		List<Map<String, Object>> innerEdgeMaps = new ArrayList<>();
+
+		// 展开迭代节点内部的Node和Edge
+		nodeMap.forEach(map -> {
+			NodeType type = NodeType.fromStudioValue(MapReadUtil.getMapDeepValue(map, String.class, "type"))
+				.orElseThrow();
+			if (NodeType.ITERATION.equals(type)) {
+				List<Map<String, Object>> innerNode = MapReadUtil.safeCastToListWithMap(
+						MapReadUtil.getMapDeepValue(map, List.class, "config", "node_param", "block", "nodes"));
+				if (innerNode != null) {
+					innerNodeMaps.addAll(innerNode);
+				}
+				List<Map<String, Object>> innerEdge = MapReadUtil.safeCastToListWithMap(
+						MapReadUtil.getMapDeepValue(map, List.class, "config", "node_param", "block", "edges"));
+				if (innerEdge != null) {
+					innerEdgeMaps.addAll(innerEdge);
+				}
+			}
+		});
+		nodeMap.addAll(innerNodeMaps);
+		edgeMap.addAll(innerEdgeMaps);
 
 		List<Node> nodes = this.constructNodes(nodeMap);
 		List<Edge> edges = this.constructEdges(edgeMap);
+
+		Map<String, String> varNames = nodes.stream()
+			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
+		Map<String, Node> nodeIdMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
+		// 将Edge里的source和target都转换成varName
+		// 将Iteration节点起始改为iteration_start，并将Iteration节点结束改为iteration_end
+		edges.forEach(edge -> {
+			if (NodeType.ITERATION.equals(nodeIdMap.get(edge.getSource()).getType())) {
+				edge.setSource(varNames.getOrDefault(edge.getSource(), edge.getSource()) + "_start");
+			}
+			else {
+				edge.setSource(varNames.getOrDefault(edge.getSource(), edge.getSource()));
+			}
+			if (NodeType.ITERATION.equals(nodeIdMap.get(edge.getTarget()).getType())) {
+				edge.setTarget(varNames.getOrDefault(edge.getTarget(), edge.getTarget()) + "_end");
+			}
+			else {
+				edge.setTarget(varNames.getOrDefault(edge.getTarget(), edge.getTarget()));
+			}
+		});
+
+		// 根据parnetId进行分组，为了给迭代节点的起始节点传递迭代数据
+		Map<String, List<Node>> groupByParentId = nodes.stream()
+			.filter(node -> Objects.nonNull(node.getParentId()))
+			.collect(Collectors.groupingBy(Node::getParentId));
+
+		groupByParentId.forEach((parentId, subNodes) -> {
+			subNodes.forEach(node -> {
+				if (NodeType.ITERATION_START.equals(node.getType()) || NodeType.ITERATION_END.equals(node.getType())) {
+					node.setData(nodeIdMap.get(parentId).getData());
+				}
+			});
+		});
+
 		graph.setNodes(nodes);
 		graph.setEdges(edges);
 		return graph;
@@ -153,7 +216,10 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 			// 构造Node
 			Node node = new Node();
-			node.setId(nodeId).setType(nodeType).setTitle(nodeTitle);
+			node.setId(nodeId)
+				.setType(nodeType)
+				.setTitle(nodeTitle)
+				.setParentId(MapReadUtil.getMapDeepValue(nodeMap, String.class, "parent_id"));
 
 			// convert node data using specific WorkflowNodeDataConverter
 			@SuppressWarnings("unchecked")

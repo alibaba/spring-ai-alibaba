@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow;
 
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;

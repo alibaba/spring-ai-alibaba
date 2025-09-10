@@ -196,12 +196,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 	}
 
 	private String renderEdgeSections(List<Edge> edges, List<Node> nodes, Map<String, String> varNames) {
-		// 将Edge里的source和target都转换成varName
-		edges.forEach(edge -> {
-			edge.setSource(varNames.getOrDefault(edge.getSource(), edge.getSource()));
-			edge.setTarget(varNames.getOrDefault(edge.getTarget(), edge.getTarget()));
-		});
-
 		// nodeVarName -> node的映射
 		Map<String, Node> nodeMap = nodes.stream()
 			.collect(Collectors.toMap(node -> node.getData().getVarName(), Function.identity()));

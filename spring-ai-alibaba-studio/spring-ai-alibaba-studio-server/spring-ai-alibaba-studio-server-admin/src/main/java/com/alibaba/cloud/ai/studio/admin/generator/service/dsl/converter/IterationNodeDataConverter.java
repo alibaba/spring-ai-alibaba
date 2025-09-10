@@ -20,17 +20,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
-import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.IterationNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import org.springframework.stereotype.Component;
@@ -44,7 +41,7 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 
 	private enum IterationNodeDialectConverter {
 
-		DIFY(new DialectConverter<IterationNodeData>() {
+		DIFY(new DialectConverter<>() {
 			@Override
 			public Boolean supportDialect(DSLDialectType dialectType) {
 				return DSLDialectType.DIFY.equals(dialectType);
@@ -52,44 +49,51 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 
 			@Override
 			public IterationNodeData parse(Map<String, Object> data) throws JsonProcessingException {
-				// 获取输入输出的类型，从 array[xxx] 中提取xxx
-				Pattern typePattern = Pattern.compile("array\\[(.*?)]");
-				VariableType inputType = VariableType.OBJECT;
-				VariableType outputType = VariableType.OBJECT;
-				Matcher inputTypeMatcher = typePattern
-					.matcher((String) data.getOrDefault("iterator_input_type", "object"));
-				Matcher outputTypeMatcher = typePattern.matcher((String) data.getOrDefault("output_type", "object"));
-				if (inputTypeMatcher.find()) {
-					inputType = VariableType.fromDifyValue(inputTypeMatcher.group(1)).orElse(VariableType.OBJECT);
-				}
-				if (outputTypeMatcher.find()) {
-					outputType = VariableType.fromDifyValue(outputTypeMatcher.group(1)).orElse(VariableType.OBJECT);
-				}
-				List<String> inputSelector = (List<String>) data.get("iterator_selector");
-				List<String> outputSelector = (List<String>) data.get("output_selector");
-				String startNodeId = (String) data.get("start_node_id");
-				String id = (String) data.get("id");
-				// 规定输出结果的节点为最后一个节点
-				String endNodeId = outputSelector.get(0);
-				// 返回
-				return IterationNodeData.builder()
-					.id(id)
-					.inputType(inputType)
-					.outputType(outputType)
-					.inputSelector(new VariableSelector(inputSelector.get(0), inputSelector.get(1), ""))
-					.outputSelector(new VariableSelector(outputSelector.get(0), outputSelector.get(1), ""))
-					.startNodeId(startNodeId)
-					.endNodeId(endNodeId)
-					.inputKey(id + "_input")
-					.outputKey(id + "_output")
-					.build();
+				IterationNodeData nodeData = new IterationNodeData();
+				int parallelCount = Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, Integer.class, "parallel_nums"))
+					.orElse(1);
+				nodeData.setParallelCount(parallelCount);
+
+				List<String> inputSelectorList = Optional
+					.ofNullable(MapReadUtil.safeCastToList(
+							MapReadUtil.getMapDeepValue(data, List.class, "iterator_selector"), String.class))
+					.orElse(List.of("unknown", "unknown"));
+				nodeData.setInputSelector(new VariableSelector(inputSelectorList.get(0), inputSelectorList.get(1)));
+
+				List<String> outputSelectorList = Optional
+					.ofNullable(MapReadUtil
+						.safeCastToList(MapReadUtil.getMapDeepValue(data, List.class, "output_selector"), String.class))
+					.orElse(List.of("unknown", "unknown"));
+				nodeData.setResultSelector(new VariableSelector(outputSelectorList.get(0), outputSelectorList.get(1)));
+
+				return nodeData;
 			}
 
 			@Override
 			public Map<String, Object> dump(IterationNodeData nodeData) {
-				return Map.of();
+				throw new UnsupportedOperationException();
 			}
-		}), CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(IterationNodeData.class));
+		})
+
+		, STUDIO(new DialectConverter<>() {
+			@Override
+			public Boolean supportDialect(DSLDialectType dialectType) {
+				return DSLDialectType.STUDIO.equals(dialectType);
+			}
+
+			@Override
+			public IterationNodeData parse(Map<String, Object> data) throws JsonProcessingException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Map<String, Object> dump(IterationNodeData nodeData) {
+				throw new UnsupportedOperationException();
+			}
+		})
+
+		, CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(IterationNodeData.class));
 
 		private final DialectConverter<IterationNodeData> dialectConverter;
 
@@ -124,39 +128,14 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 	public BiConsumer<IterationNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
 			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
-				nodeData
-					.setOutputKey(nodeData.getVarName() + "_" + IterationNodeData.getDefaultOutputSchema().getName());
-				nodeData.setOutputs(List.of(IterationNodeData.getDefaultOutputSchema()));
-				nodeData.setOutput(IterationNodeData.getDefaultOutputSchema());
-			}).andThen(super.postProcessConsumer(dialectType)).andThen((iterationNodeData, varNames) -> {
-				// 等待所有的节点都生成了变量名后，补充迭代节点的起始名称
-				iterationNodeData
-					.setStartNodeName(varNames.getOrDefault(iterationNodeData.getStartNodeId(), "unknown"));
-				iterationNodeData.setEndNodeName(varNames.getOrDefault(iterationNodeData.getEndNodeId(), "unknown"));
-
-				// 更新迭代节点的输入Key
-				VariableSelector inputSelector = iterationNodeData.getInputs().get(0);
-				iterationNodeData.setInputKey(inputSelector.getNameInCode());
-
-				// 更新迭代节点的ResultKey
-				VariableSelector outputSelector = iterationNodeData.getOutputSelector();
-				iterationNodeData.setInnerItemResultKey(
-						Optional.ofNullable(varNames.get(outputSelector.getNamespace())).orElse("unknown") + "_"
-								+ outputSelector.getName());
+				nodeData.setInputs(List.of(nodeData.getInputSelector(), nodeData.getResultSelector()));
+			}).andThen(super.postProcessConsumer(dialectType)).andThen((nodeData, idToVarName) -> {
+				nodeData.setInputSelector(nodeData.getInputs().get(0));
+				nodeData.setResultSelector(nodeData.getInputs().get(1));
+				nodeData.setInputs(null);
 			});
 			default -> super.postProcessConsumer(dialectType);
 		};
-	}
-
-	@Override
-	public Stream<Variable> extractWorkflowVars(IterationNodeData nodeData) {
-		return Stream.concat(nodeData.getOutputs().stream(),
-				Stream.of(new Variable(nodeData.getInnerArrayKey(), VariableType.STRING),
-						new Variable(nodeData.getInnerStartFlagKey(), VariableType.STRING),
-						new Variable(nodeData.getInnerEndFlagKey(), VariableType.STRING),
-						new Variable(nodeData.getInnerItemKey(), nodeData.getInputType()),
-						new Variable(nodeData.getInnerIndexKey(), VariableType.NUMBER),
-						new Variable(nodeData.getInnerItemResultKey(), nodeData.getOutputType())));
 	}
 
 }

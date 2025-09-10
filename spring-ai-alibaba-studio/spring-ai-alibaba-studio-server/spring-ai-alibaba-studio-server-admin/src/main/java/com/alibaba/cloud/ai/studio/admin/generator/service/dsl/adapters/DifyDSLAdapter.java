@@ -20,6 +20,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -40,6 +42,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractDSLAdapte
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.Serializer;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -161,18 +164,79 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
 	private Graph constructGraph(Map<String, Object> data) {
 		Graph graph = new Graph();
-		List<Node> nodes = new ArrayList<>();
+		List<Node> nodes;
 		List<Edge> edges = new ArrayList<>();
 		// convert nodes
 		if (data.containsKey("nodes")) {
 			List<Map<String, Object>> nodeMaps = (List<Map<String, Object>>) data.get("nodes");
-			nodes = constructNodes(nodeMaps);
+			nodes = new ArrayList<>(constructNodes(nodeMaps));
+		}
+		else {
+			nodes = new ArrayList<>();
 		}
 		// convert edges
 		if (data.containsKey("edges")) {
 			List<Map<String, Object>> edgeMaps = (List<Map<String, Object>>) data.get("edges");
-			edges = constructEdges(edgeMaps);
+			edges = new ArrayList<>(constructEdges(edgeMaps));
 		}
+
+		Map<String, String> varNames = nodes.stream()
+			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
+		Map<String, Node> nodeIdMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
+		Map<String, Node> nodeVarMap = nodes.stream().collect(Collectors.toMap(n -> n.getData().getVarName(), n -> n));
+		// 将Edge里的source和target都转换成varName
+		// 将Iteration节点起始改为iteration_start，并将Iteration节点结束改为iteration_end
+		edges.forEach(edge -> {
+			if (NodeType.ITERATION.equals(nodeIdMap.get(edge.getSource()).getType())) {
+				edge.setSource(varNames.getOrDefault(edge.getSource(), edge.getSource()) + "_start");
+			}
+			else {
+				edge.setSource(varNames.getOrDefault(edge.getSource(), edge.getSource()));
+			}
+			if (NodeType.ITERATION.equals(nodeIdMap.get(edge.getTarget()).getType())) {
+				edge.setTarget(varNames.getOrDefault(edge.getTarget(), edge.getTarget()) + "_end");
+			}
+			else {
+				edge.setTarget(varNames.getOrDefault(edge.getTarget(), edge.getTarget()));
+			}
+		});
+
+		// 根据parnetId进行分组，为了给迭代节点的起始节点传递迭代数据
+		Map<String, List<Node>> groupByParentId = nodes.stream()
+			.filter(node -> Objects.nonNull(node.getParentId()))
+			.collect(Collectors.groupingBy(Node::getParentId));
+
+		List<Edge> finalEdges = edges;
+		groupByParentId.forEach((parentId, subNodes) -> {
+			subNodes.forEach(node -> {
+				if (NodeType.ITERATION_START.equals(node.getType()) || NodeType.ITERATION_END.equals(node.getType())) {
+					node.setData(nodeIdMap.get(parentId).getData());
+				}
+			});
+			// 添加迭代节点的终止节点（Dify的DSL没有提供但为了后续正常转换，这里需要添加）
+			NodeData nodeData = nodeIdMap.get(parentId).getData();
+			Node endNode = new Node();
+			endNode.setData(nodeData).setType(NodeType.ITERATION_END);
+			nodes.add(endNode);
+
+			// 计算每个节点的出度，出度为0的点将与迭代终止节点相连接
+			finalEdges.stream().filter(e -> {
+				Node n = nodeVarMap.get(e.getSource());
+				return parentId.equals(n.getParentId());
+			})
+				.collect(Collectors.groupingBy(Edge::getSource))
+				.entrySet()
+				.stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().size()))
+				.entrySet()
+				.stream()
+				.filter(entry -> entry.getValue() == 0)
+				.map(Map.Entry::getKey)
+				.forEach(nodeName -> {
+					Edge edge = new Edge().setSource(nodeName).setTarget(nodeData.getVarName() + "_end");
+					finalEdges.add(edge);
+				});
+		});
 
 		graph.setNodes(nodes);
 		graph.setEdges(edges);
@@ -208,7 +272,12 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			nodeMap.remove("type");
 			Node node = objectMapper.convertValue(nodeMap, Node.class);
 			// set title and desc
-			node.setTitle((String) nodeDataMap.get("title")).setDesc((String) nodeDataMap.get("desc"));
+			String parentId = Optional.ofNullable(MapReadUtil.getMapDeepValue(nodeMap, String.class, "parentId"))
+				.or(() -> Optional.ofNullable(MapReadUtil.getMapDeepValue(nodeDataMap, String.class, "iteration_id")))
+				.orElse(null);
+			node.setTitle((String) nodeDataMap.get("title"))
+				.setDesc((String) nodeDataMap.get("desc"))
+				.setParentId(parentId);
 
 			// convert node data using specific WorkflowNodeDataConverter
 			@SuppressWarnings("unchecked")
