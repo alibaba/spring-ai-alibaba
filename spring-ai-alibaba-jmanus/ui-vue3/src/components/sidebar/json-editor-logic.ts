@@ -27,7 +27,6 @@ export interface StepData {
 }
 
 export interface ParsedPlanData {
-  command: string
   title: string
   steps: StepData[]
   terminateColumns: string
@@ -63,7 +62,6 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
 
   // Reactive parsed data
   const parsedData = reactive<ParsedPlanData>({
-    command: 'create', // Always 'create' for dynamic agent planning
     title: '',
     steps: [],
     terminateColumns: '',
@@ -79,7 +77,6 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
       if (!jsonContent) {
         // Reset to default
         Object.assign(parsedData, {
-          command: 'create', // Always 'create' for dynamic agent planning
           title: '',
           steps: [],
           terminateColumns: '',
@@ -91,7 +88,6 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
 
       const parsed = JSON.parse(jsonContent)
       
-      parsedData.command = 'create' // Always 'create' for dynamic agent planning
       parsedData.title = parsed.title || ''
       parsedData.terminateColumns = parsed.terminateColumns || ''
       parsedData.directResponse = false // Always false for dynamic agent planning
@@ -117,7 +113,6 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   const convertVisualToJson = (): string => {
     try {
       const result: any = {
-        command: parsedData.command,
         title: parsedData.title,
         steps: parsedData.steps.map(step => ({
           stepRequirement: step.stepRequirement,

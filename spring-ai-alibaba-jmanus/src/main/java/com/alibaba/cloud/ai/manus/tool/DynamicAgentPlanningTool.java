@@ -92,8 +92,6 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 	 */
 	public static class DynamicAgentPlanningInput {
 
-		private String command;
-
 		private String title;
 
 		private List<StepDefinition> steps;
@@ -106,20 +104,11 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 		public DynamicAgentPlanningInput() {
 		}
 
-		public DynamicAgentPlanningInput(String command, String title, List<StepDefinition> steps, boolean directResponse) {
-			this.command = command;
+		public DynamicAgentPlanningInput(String title, List<StepDefinition> steps, boolean directResponse) {
 			this.title = title;
 			this.steps = steps;
 			this.terminateColumns = null;
 			this.directResponse = directResponse;
-		}
-
-		public String getCommand() {
-			return command;
-		}
-
-		public void setCommand(String command) {
-			this.command = command;
 		}
 
 		public String getTitle() {
@@ -174,13 +163,6 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			{
 			 "type": "object",
 			 "properties": {
-			  "command": {
-			   "description": "create a dynamic agent execution plan, Available commands: create",
-			   "enum": [
-				   "create"
-			   ],
-			   "type": "string"
-			  },
 			  "title": {
 			   "description": "Title for the dynamic agent plan",
 			   "type": "string"
@@ -199,13 +181,13 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 						   "description": "Model name to use for this step (optional)",
 						   "type": "string"
 					   },
-					   "availableToolKeys": {
-						   "description": "List of tool keys available for this step (optional)",
-						   "type": "array",
-						   "items": {
-							   "type": "string"
-						   }
-					   }
+						"selectedToolKeys": {
+							"description": "List of selected tool keys for dynamic agent execution",
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						}
 				   },
 				   "required": ["stepRequirement"]
 			   }
@@ -213,17 +195,9 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			  "terminateColumns": {
 				   "description": "Terminate structure output columns for all steps (optional, will be applied to every step)",
 				   "type": "string"
-			  },
-			  "selectedToolKeys": {
-				   "description": "List of selected tool keys for dynamic agent execution",
-				   "type": "array",
-				   "items": {
-					   "type": "string"
-				   }
 			  }
 			 },
 			 "required": [
-			"command",
 			"title",
 			"steps"
 			 ]
@@ -271,7 +245,6 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 
 	@Override
 	public ToolExecuteResult run(DynamicAgentPlanningInput input) {
-		String command = input.getCommand();
 		String title = input.getTitle();
 		List<StepDefinition> steps = input.getSteps();
 		boolean directResponse = input.isDirectResponse();
@@ -287,13 +260,8 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			return new ToolExecuteResult("Direct response mode: dynamic agent plan created successfully");
 		}
 
-		return switch (command) {
-			case "create" -> createDynamicAgentPlan(title, steps, input.getTerminateColumns());
-			default -> {
-				log.info("Received invalid command: {}", command);
-				throw new IllegalArgumentException("Invalid command: " + command);
-			}
-		};
+		// Since there's only one command (create), directly call createDynamicAgentPlan
+		return createDynamicAgentPlan(title, steps, input.getTerminateColumns());
 	}
 
 	/**

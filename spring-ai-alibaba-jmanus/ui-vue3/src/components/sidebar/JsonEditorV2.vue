@@ -409,7 +409,6 @@ const initializeParsedData = () => {
     planTypeError.value = null
     
     // Initialize with default structure if not exists
-    parsedData.command = 'create' // Always 'create' for dynamic agent planning
     if (!parsedData.title) {
       parsedData.title = ''
     }
@@ -431,8 +430,8 @@ const initializeParsedData = () => {
 watch(() => parsedData, (newData) => {
   try {
     // Validate required fields
-    if (!newData.command || !newData.title) {
-      planTypeError.value = 'Command and title are required fields'
+    if (!newData.title) {
+      planTypeError.value = 'Title is required field'
     } else {
       planTypeError.value = null
     }
