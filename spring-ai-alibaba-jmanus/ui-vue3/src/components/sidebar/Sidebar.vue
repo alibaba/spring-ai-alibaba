@@ -448,7 +448,7 @@ const loadToolInfo = async (planTemplateId: string | null) => {
   }
 
   try {
-    const toolData = await CoordinatorToolApiService.getCoordinatorToolsByTemplate(planTemplateId)
+    const toolData = await CoordinatorToolApiService.getOrNewCoordinatorToolsByTemplate(planTemplateId)
     if (toolData) {
       currentToolInfo.value = {
         ...toolData,

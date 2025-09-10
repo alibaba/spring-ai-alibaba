@@ -70,54 +70,6 @@
         </div>
       </div>
 
-      <!-- Tool Selection Section for Dynamic Agent Plan -->
-      <div class="tool-selection-section">
-        <div class="form-row">
-          <label class="form-label">{{ $t('sidebar.selectedTools') }}</label>
-          <div class="tool-selection-container">
-            <!-- Selected Tools Display -->
-            <div class="selected-tools-display">
-              <div 
-                v-for="toolKey in selectedToolKeys" 
-                :key="toolKey"
-                class="selected-tool-item"
-              >
-                <span class="tool-name">{{ getToolName(toolKey) }}</span>
-                <button 
-                  @click="removeTool(toolKey)"
-                  class="remove-tool-btn"
-                  :title="$t('sidebar.removeTool')"
-                >
-                  <Icon icon="carbon:close" width="12" />
-                </button>
-              </div>
-              <div v-if="selectedToolKeys.length === 0" class="no-tools-selected">
-                {{ $t('sidebar.noToolsSelected') }}
-              </div>
-            </div>
-            
-            <!-- Tool Selection Controls -->
-            <div class="tool-selection-controls">
-              <button 
-                @click="showToolSelectionModal = true"
-                class="btn btn-sm btn-add-tool"
-                :disabled="isLoadingTools"
-              >
-                <Icon icon="carbon:add" width="14" />
-                {{ $t('sidebar.addTools') }}
-              </button>
-              <button 
-                @click="clearAllTools"
-                class="btn btn-sm btn-clear-tools"
-                :disabled="selectedToolKeys.length === 0"
-              >
-                <Icon icon="carbon:trash-can" width="14" />
-                {{ $t('sidebar.clearAllTools') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Steps Editor -->
       <div class="steps-section">
@@ -125,22 +77,12 @@
           <label class="form-label">{{ $t('sidebar.tasks') }}</label>
           <div class="steps-actions">
             <button 
-              @click="loadAvailableAgents" 
+              @click="addStep" 
               class="btn btn-xs"
-              :disabled="isLoadingAgents"
-              :title="$t('sidebar.refreshAgents')"
+              :title="$t('sidebar.addStep')"
             >
-              <Icon icon="carbon:reset" width="12" />
+              <Icon icon="carbon:add" width="12" />
             </button>
-            <!-- Agent count badge -->
-            <span class="agent-count-badge" v-if="hasLoadedAgents && availableAgents.length > 0">
-              {{ availableAgents.length }} agents
-            </span>
-            <!-- Error indicator -->
-            <span class="error-badge" v-if="shouldShowError">
-              <Icon icon="carbon:warning" width="12" />
-              Error
-            </span>
           </div>
         </div>
         
@@ -180,56 +122,90 @@
             </div>
             
             <div class="step-content">
-              <!-- Agent Selection -->
+              
+              <!-- Model Name -->
               <div class="form-row">
-                <label class="form-label">{{ $t('sidebar.agent') }}</label>
-                <div class="agent-selector">
-                  <select v-model="step.agentType" class="form-select agent-select" :disabled="isLoadingAgents || shouldShowError">
+                <label class="form-label">{{ $t('sidebar.modelName') }}</label>
+                <div class="model-selector">
+                  <select 
+                    v-model="step.modelName" 
+                    class="form-select model-select"
+                    :disabled="isLoadingModels"
+                  >
                     <!-- Loading state -->
-                    <option v-if="isLoadingAgents" disabled>{{ $t('sidebar.loading') }}</option>
+                    <option v-if="isLoadingModels" disabled value="">{{ $t('sidebar.loading') }}</option>
                     
                     <!-- Error state -->
-                    <option v-else-if="shouldShowError" disabled>{{ $t('sidebar.agentLoadError') }}</option>
+                    <option v-else-if="modelsLoadError" disabled value="">{{ $t('sidebar.modelLoadError') }}</option>
                     
-                    <!-- Normal state -->
-                    <template v-else>
-                      <option 
-                        v-for="agent in agentOptions" 
-                        :key="agent.id"
-                        :value="agent.id"
-                        :title="generateAgentTooltip(agent)"
-                      >
-                        {{ formatAgentDisplayText(agent) }}
-                      </option>
-                    </template>
+                    <!-- Default empty option -->
+                    <option value="">{{ $t('sidebar.noModelSelected') }}</option>
+                    
+                    <!-- Model options -->
+                    <option 
+                      v-for="model in availableModels" 
+                      :key="model.value"
+                      :value="model.value"
+                      :title="model.label"
+                    >
+                      {{ model.label }}
+                    </option>
                   </select>
                   
                   <!-- Error refresh button -->
                   <button 
-                    v-if="shouldShowError"
-                    @click="loadAvailableAgents" 
+                    v-if="modelsLoadError"
+                    @click="loadAvailableModels" 
                     class="btn btn-sm btn-danger"
-                    :title="$t('sidebar.retryLoadAgents')"
+                    :title="$t('sidebar.retryLoadModels')"
                   >
                     <Icon icon="carbon:warning" width="14" />
                     {{ $t('sidebar.retry') }}
                   </button>
-                  
-                  <!-- Normal add step button -->
-                  <button 
-                    v-else
-                    @click="addStep" 
-                    class="btn btn-sm btn-add-step"
-                    :title="$t('sidebar.addStep')"
-                  >
-                    <Icon icon="carbon:add" width="14" />
-                  </button>
                 </div>
                 
                 <!-- Error message -->
-                <div v-if="shouldShowError && agentsLoadError" class="error-message">
+                <div v-if="modelsLoadError" class="error-message">
                   <Icon icon="carbon:warning" width="12" />
-                  {{ agentsLoadError }}
+                  {{ modelsLoadError }}
+                </div>
+              </div>
+              
+              <!-- Selected Tool Keys -->
+              <div class="form-row">
+                <label class="form-label">{{ $t('sidebar.selectedToolKeys') }}</label>
+                <div class="tool-keys-container">
+                  <div class="tool-keys-display">
+                    <div 
+                      v-for="(_, toolIndex) in step.selectedToolKeys" 
+                      :key="toolIndex"
+                      class="tool-key-item"
+                    >
+                      <input 
+                        v-model="step.selectedToolKeys[toolIndex]"
+                        type="text" 
+                        class="form-input tool-key-input"
+                        :placeholder="$t('sidebar.toolKeyPlaceholder')"
+                      />
+                      <button 
+                        @click="removeToolKey(index, toolIndex)"
+                        class="remove-tool-key-btn"
+                        :title="$t('sidebar.removeToolKey')"
+                      >
+                        <Icon icon="carbon:close" width="12" />
+                      </button>
+                    </div>
+                    <div v-if="step.selectedToolKeys.length === 0" class="no-tool-keys">
+                      {{ $t('sidebar.noToolKeys') }}
+                    </div>
+                  </div>
+                  <button 
+                    @click="addToolKey(index)"
+                    class="btn btn-sm btn-add-tool-key"
+                  >
+                    <Icon icon="carbon:add" width="14" />
+                    {{ $t('sidebar.addToolKey') }}
+                  </button>
                 </div>
               </div>
               
@@ -237,7 +213,7 @@
               <div class="form-row">
                 <label class="form-label">{{ $t('sidebar.stepRequirement') }}</label>
                 <textarea 
-                  v-model="step.stepContent"
+                  v-model="step.stepRequirement"
                   class="form-textarea auto-resize"
                   :placeholder="$t('sidebar.stepRequirementPlaceholder')"
                   rows="4"
@@ -270,18 +246,6 @@
         </div>
       </div>
 
-      <!-- Plan ID Section -->
-      <div class="plan-id-section">
-        <div class="form-row">
-          <label class="form-label">{{ $t('sidebar.planId') }}</label>
-          <input 
-            v-model="parsedData.planId" 
-            type="text" 
-            class="form-input"
-            placeholder="planTemplate-1756109892045"
-          />
-        </div>
-      </div>
 
       <!-- JSON Preview (Optional) -->
       <div class="json-preview" v-if="showJsonPreview">
@@ -309,135 +273,18 @@
       </div>
     </div>
 
-    <!-- Tool Selection Modal -->
-    <Modal
-      v-model="showToolSelectionModal"
-      :title="$t('toolSelection.title')"
-      @confirm="handleToolSelectionConfirm"
-      @update:model-value="showToolSelectionModal = false"
-    >
-      <div class="tool-selection-content">
-        <!-- Search and Sort -->
-        <div class="tool-controls">
-          <div class="search-container">
-            <input
-              v-model="toolSearchQuery"
-              type="text"
-              class="search-input"
-              :placeholder="$t('toolSelection.searchPlaceholder')"
-            />
-          </div>
-          <div class="sort-container">
-            <select v-model="toolSortBy" class="sort-select">
-              <option value="group">{{ $t('toolSelection.sortByGroup') }}</option>
-              <option value="name">{{ $t('toolSelection.sortByName') }}</option>
-              <option value="enabled">{{ $t('toolSelection.sortByStatus') }}</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Tool Statistics -->
-        <div class="tool-summary">
-          <span class="summary-text">
-            {{ $t('toolSelection.summary', {
-              groups: groupedTools.size,
-              tools: totalTools,
-              selected: tempSelectedTools.length
-            }) }}
-          </span>
-        </div>
-
-        <!-- Tool Group List -->
-        <div class="tool-groups" v-if="groupedTools.size > 0">
-          <div
-            v-for="[groupName, tools] in groupedTools"
-            :key="groupName"
-            class="tool-group"
-          >
-            <!-- Group Header -->
-            <div
-              class="tool-group-header"
-              :class="{ collapsed: collapsedGroups.has(groupName) }"
-              @click="toggleGroupCollapse(groupName)"
-            >
-              <div class="group-title-area">
-                <Icon
-                  :icon="collapsedGroups.has(groupName) ? 'carbon:chevron-right' : 'carbon:chevron-down'"
-                  class="collapse-icon"
-                />
-                <Icon icon="carbon:folder" class="group-icon" />
-                <span class="group-name">{{ groupName }}</span>
-                <span class="group-count">
-                  ({{ getSelectedToolsInGroup(tools).length }}/{{ tools.length }})
-                </span>
-              </div>
-              <div class="group-actions" @click.stop>
-                <label class="group-enable-all">
-                  <input
-                    type="checkbox"
-                    class="group-enable-checkbox"
-                    :checked="isGroupFullySelected(tools)"
-                    @change="toggleGroupSelection(tools, $event)"
-                    :data-group="groupName"
-                  />
-                  <span class="enable-label">{{ $t('toolSelection.enableAll') }}</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Group Content -->
-            <div
-              class="tool-group-content"
-              :class="{ collapsed: collapsedGroups.has(groupName) }"
-            >
-              <div
-                v-for="tool in tools.filter(t => t && t.key)"
-                :key="tool.key"
-                class="tool-selection-item"
-              >
-                <div class="tool-info">
-                  <div class="tool-selection-name">{{ tool.name }}</div>
-                  <div v-if="tool.description" class="tool-selection-desc">
-                    {{ tool.description }}
-                  </div>
-                </div>
-                <div class="tool-actions">
-                  <label class="tool-enable-switch" @click.stop>
-                    <input
-                      type="checkbox"
-                      class="tool-enable-checkbox"
-                      :checked="isToolSelected(tool.key)"
-                      @change="toggleToolSelection(tool.key, $event)"
-                    />
-                    <span class="tool-enable-slider"></span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Empty State -->
-        <div v-else class="empty-state">
-          <Icon icon="carbon:tools" class="empty-icon" />
-          <p>{{ $t('toolSelection.noToolsFound') }}</p>
-        </div>
-      </div>
-    </Modal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useJsonEditor, type JsonEditorProps } from './json-editor-logic'
-import Modal from '../modal/index.vue'
-import type { Tool } from '@/api/agent-api-service'
-import { AgentApiService } from '@/api/agent-api-service'
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { ConfigApiService, type ModelOption } from '@/api/config-api-service'
 
 // Props
 const props = withDefaults(defineProps<JsonEditorProps>(), {
-  hiddenFields: () => ['currentPlanId', 'userRequest', 'rootPlanId']
+  hiddenFields: () => []
 })
 
 // Emits
@@ -451,16 +298,7 @@ const emit = defineEmits<{
 const {
   showJsonPreview,
   parsedData,
-  availableAgents,
-  isLoadingAgents,
-  agentsLoadError,
-  hasLoadedAgents,
   formattedJsonOutput,
-  agentOptions,
-  shouldShowError,
-  loadAvailableAgents,
-  formatAgentDisplayText,
-  generateAgentTooltip,
   addStep,
   removeStep,
   moveStepUp,
@@ -472,31 +310,54 @@ const {
   closeJsonPreview
 } = useJsonEditor(props, emit)
 
-// Tool selection state
-const showToolSelectionModal = ref(false)
-const availableTools = ref<Tool[]>([])
-const isLoadingTools = ref(false)
-const toolSearchQuery = ref('')
-const toolSortBy = ref<'group' | 'name' | 'enabled'>('group')
-const collapsedGroups = ref(new Set<string>())
-const tempSelectedTools = ref<string[]>([])
-
-// Selected tools for dynamic agent plan
-const selectedToolKeys = ref<string[]>([])
-
 // Error state
 const planTypeError = ref<string | null>(null)
 
-// Initialize selectedToolKeys from parsedData if it exists
-const initializeSelectedToolKeys = () => {
+// Model selection state
+const availableModels = ref<ModelOption[]>([])
+const isLoadingModels = ref(false)
+const modelsLoadError = ref<string>('')
+
+// Load available models
+const loadAvailableModels = async () => {
+  if (isLoadingModels.value) return
+  
+  isLoadingModels.value = true
+  modelsLoadError.value = ''
+  
+  try {
+    const response = await ConfigApiService.getAvailableModels()
+    if (response && response.options) {
+      availableModels.value = response.options
+    } else {
+      availableModels.value = []
+    }
+  } catch (error) {
+    console.error('Failed to load models:', error)
+    modelsLoadError.value = error instanceof Error ? error.message : 'Failed to load models'
+    availableModels.value = []
+  } finally {
+    isLoadingModels.value = false
+  }
+}
+
+// Initialize parsedData with default structure
+const initializeParsedData = () => {
   try {
     // Clear any previous errors
     planTypeError.value = null
     
-    // Try to get from parsedData if it exists (for backward compatibility)
-    const data = JSON.parse(props.jsonContent || '{}')
-    if (data.selectedToolKeys && Array.isArray(data.selectedToolKeys)) {
-      selectedToolKeys.value = data.selectedToolKeys
+    // Initialize with default structure if not exists
+    parsedData.command = 'create' // Always 'create' for dynamic agent planning
+    if (!parsedData.title) {
+      parsedData.title = ''
+    }
+    if (!parsedData.steps) {
+      parsedData.steps = []
+    }
+    parsedData.directResponse = false // Always false for dynamic agent planning
+    if (!parsedData.terminateColumns) {
+      parsedData.terminateColumns = ''
     }
   } catch (error) {
     const errorMessage = `Failed to initialize JsonEditorV2: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -505,204 +366,39 @@ const initializeSelectedToolKeys = () => {
   }
 }
 
-// Watch for parsedData changes to validate plan type
-watch(() => parsedData.planType, (newPlanType) => {
-  if (newPlanType && newPlanType !== 'dynamic_agent') {
-    const errorMessage = `JsonEditorV2 only supports 'dynamic_agent' plan type. Current plan type: ${newPlanType}`
-    planTypeError.value = errorMessage
-    console.error(errorMessage)
-  } else {
-    planTypeError.value = null
-  }
-}, { immediate: true })
-
-// Load available tools
-const loadAvailableTools = async () => {
-  if (isLoadingTools.value) return
-  
-  isLoadingTools.value = true
+// Watch for parsedData changes to validate structure
+watch(() => parsedData, (newData) => {
   try {
-    const response = await AgentApiService.getAvailableTools()
-    if (response && Array.isArray(response)) {
-      availableTools.value = response
+    // Validate required fields
+    if (!newData.command || !newData.title) {
+      planTypeError.value = 'Command and title are required fields'
+    } else {
+      planTypeError.value = null
     }
   } catch (error) {
-    console.error('Failed to load tools:', error)
-  } finally {
-    isLoadingTools.value = false
+    planTypeError.value = `Invalid data structure: ${error instanceof Error ? error.message : 'Unknown error'}`
+  }
+}, { immediate: true, deep: true })
+
+// Tool key management functions
+const addToolKey = (stepIndex: number) => {
+  if (!parsedData.steps[stepIndex].selectedToolKeys) {
+    parsedData.steps[stepIndex].selectedToolKeys = []
+  }
+  parsedData.steps[stepIndex].selectedToolKeys.push('')
+}
+
+const removeToolKey = (stepIndex: number, toolIndex: number) => {
+  if (parsedData.steps[stepIndex].selectedToolKeys) {
+    parsedData.steps[stepIndex].selectedToolKeys.splice(toolIndex, 1)
   }
 }
 
-// Tool selection logic
-const isToolSelected = (toolKey: string) => {
-  return tempSelectedTools.value.includes(toolKey)
-}
 
-const toggleToolSelection = (toolKey: string, event: Event) => {
-  event.stopPropagation()
-  const target = event.target as HTMLInputElement
-  const isChecked = target.checked
-
-  if (!toolKey) {
-    console.error('toolKey is undefined, cannot proceed')
-    return
-  }
-
-  if (isChecked) {
-    if (!tempSelectedTools.value.includes(toolKey)) {
-      tempSelectedTools.value = [...tempSelectedTools.value, toolKey]
-    }
-  } else {
-    tempSelectedTools.value = tempSelectedTools.value.filter(id => id !== toolKey)
-  }
-}
-
-// Group selection logic
-const getSelectedToolsInGroup = (tools: Tool[]) => {
-  return tools.filter(tool => tempSelectedTools.value.includes(tool.key))
-}
-
-const isGroupFullySelected = (tools: Tool[]) => {
-  return tools.length > 0 && tools.every(tool => tempSelectedTools.value.includes(tool.key))
-}
-
-
-const toggleGroupSelection = (tools: Tool[], event: Event) => {
-  event.stopPropagation()
-  const target = event.target as HTMLInputElement
-  const isChecked = target.checked
-  const toolKeys = tools.map(tool => tool.key)
-
-  if (isChecked) {
-    const newSelected = [...tempSelectedTools.value]
-    toolKeys.forEach(key => {
-      if (!newSelected.includes(key)) {
-        newSelected.push(key)
-      }
-    })
-    tempSelectedTools.value = newSelected
-  } else {
-    tempSelectedTools.value = tempSelectedTools.value.filter(id => !toolKeys.includes(id))
-  }
-}
-
-// Group collapse logic
-const toggleGroupCollapse = (groupName: string) => {
-  if (collapsedGroups.value.has(groupName)) {
-    collapsedGroups.value.delete(groupName)
-  } else {
-    collapsedGroups.value.add(groupName)
-  }
-}
-
-// Filtered and sorted tools
-const filteredTools = computed(() => {
-  let filtered = availableTools.value.filter(tool => tool.key)
-
-  if (toolSearchQuery.value) {
-    const query = toolSearchQuery.value.toLowerCase()
-    filtered = filtered.filter(
-      tool =>
-        tool.name.toLowerCase().includes(query) ||
-        tool.description.toLowerCase().includes(query) ||
-        (tool.serviceGroup?.toLowerCase().includes(query) ?? false)
-    )
-  }
-
-  switch (toolSortBy.value) {
-    case 'name':
-      filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
-      break
-    case 'enabled':
-      filtered = [...filtered].sort((a, b) => {
-        const aSelected = tempSelectedTools.value.includes(a.key)
-        const bSelected = tempSelectedTools.value.includes(b.key)
-        if (aSelected && !bSelected) return -1
-        if (!aSelected && bSelected) return 1
-        return a.name.localeCompare(b.name)
-      })
-      break
-    case 'group':
-    default:
-      filtered = [...filtered].sort((a, b) => {
-        const groupA = a.serviceGroup ?? 'Ungrouped'
-        const groupB = b.serviceGroup ?? 'Ungrouped'
-        if (groupA !== groupB) {
-          return groupA.localeCompare(groupB)
-        }
-        return a.name.localeCompare(b.name)
-      })
-      break
-  }
-
-  return filtered
-})
-
-// Tools grouped by service group
-const groupedTools = computed(() => {
-  const groups = new Map<string, Tool[]>()
-
-  filteredTools.value.forEach(tool => {
-    const groupName = tool.serviceGroup ?? 'Ungrouped'
-    if (!groups.has(groupName)) {
-      groups.set(groupName, [])
-    }
-    groups.get(groupName)!.push(tool)
-  })
-
-  return new Map([...groups.entries()].sort())
-})
-
-// Total number of tools
-const totalTools = computed(() => filteredTools.value.length)
-
-// Tool management functions
-const getToolName = (toolKey: string): string => {
-  const tool = availableTools.value.find(t => t.key === toolKey)
-  return tool ? tool.name : toolKey
-}
-
-const removeTool = (toolKey: string) => {
-  selectedToolKeys.value = selectedToolKeys.value.filter((key: string) => key !== toolKey)
-}
-
-const clearAllTools = () => {
-  selectedToolKeys.value = []
-}
-
-// Modal event handlers
-const handleToolSelectionConfirm = () => {
-  selectedToolKeys.value = [...tempSelectedTools.value]
-  showToolSelectionModal.value = false
-}
-
-// Watch for modal opening
-watch(showToolSelectionModal, (newVisible) => {
-  if (newVisible) {
-    tempSelectedTools.value = [...selectedToolKeys.value]
-    collapsedGroups.value.clear()
-    const groupNames = Array.from(groupedTools.value.keys())
-    if (groupNames.length > 1) {
-      groupNames.slice(1).forEach(name => {
-        collapsedGroups.value.add(name)
-      })
-    }
-  }
-})
-
-// Watch for selectedToolKeys changes and update JSON output
-watch(selectedToolKeys, () => {
-  // Update the JSON content to include selectedToolKeys
-  const currentData = JSON.parse(props.jsonContent || '{}')
-  currentData.selectedToolKeys = selectedToolKeys.value
-  currentData.planType = 'dynamic_agent'
-  emit('update:jsonContent', JSON.stringify(currentData, null, 2))
-}, { deep: true })
-
-// Load tools on mount
+// Initialize on mount
 onMounted(() => {
-  loadAvailableTools()
-  initializeSelectedToolKeys()
+  initializeParsedData()
+  loadAvailableModels()
 })
 
 const autoResizeTextarea = (event: Event) => {
@@ -794,9 +490,7 @@ const autoResizeTextarea = (event: Event) => {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.plan-basic-info,
-.tool-selection-section,
-.plan-id-section {
+.plan-basic-info {
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -850,44 +544,49 @@ const autoResizeTextarea = (event: Event) => {
   max-height: 240px;
 }
 
-/* Tool Selection Styles */
-.tool-selection-container {
+/* Model Selector Styles */
+.model-selector {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.model-select {
+  flex: 1;
+}
+
+/* Tool Keys Styles */
+.tool-keys-container {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.selected-tools-display {
+.tool-keys-display {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
   min-height: 32px;
   padding: 8px;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 6px;
-  align-items: flex-start;
 }
 
-.selected-tool-item {
+.tool-key-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  background: rgba(102, 126, 234, 0.2);
-  border: 1px solid rgba(102, 126, 234, 0.3);
-  border-radius: 4px;
+  gap: 6px;
+}
+
+.tool-key-input {
+  flex: 1;
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.9);
 }
 
-.tool-name {
-  font-weight: 500;
-}
-
-.remove-tool-btn {
-  width: 16px;
-  height: 16px;
+.remove-tool-key-btn {
+  width: 20px;
+  height: 20px;
   background: transparent;
   border: none;
   border-radius: 2px;
@@ -899,40 +598,28 @@ const autoResizeTextarea = (event: Event) => {
   transition: all 0.2s ease;
 }
 
-.remove-tool-btn:hover {
+.remove-tool-key-btn:hover {
   background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
 }
 
-.no-tools-selected {
+.no-tool-keys {
   color: rgba(255, 255, 255, 0.5);
   font-size: 10px;
   font-style: italic;
+  text-align: center;
+  padding: 8px;
 }
 
-.tool-selection-controls {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-add-tool {
+.btn-add-tool-key {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
+  align-self: flex-start;
 }
 
-.btn-add-tool:hover:not(:disabled) {
+.btn-add-tool-key:hover:not(:disabled) {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-}
-
-.btn-clear-tools {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-}
-
-.btn-clear-tools:hover:not(:disabled) {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
 /* Steps Section */
@@ -1152,249 +839,4 @@ const autoResizeTextarea = (event: Event) => {
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
-/* Tool Selection Modal Styles */
-.tool-selection-content {
-  min-height: 300px;
-  max-height: 500px;
-  overflow-y: auto;
-}
-
-.tool-controls {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.search-container {
-  flex: 1;
-}
-
-.search-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-  transition: all 0.3s;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: rgba(102, 126, 234, 0.5);
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.sort-container {
-  min-width: 140px;
-}
-
-.sort-select {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.tool-summary {
-  margin-bottom: 16px;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.summary-text {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
-}
-
-.tool-group {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.tool-group-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  cursor: pointer;
-  transition: all 0.3s;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.tool-group-header:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.tool-group-header.collapsed {
-  border-bottom: none;
-}
-
-.group-title-area {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-}
-
-.collapse-icon {
-  color: rgba(255, 255, 255, 0.6);
-  transition: transform 0.3s;
-}
-
-.group-icon {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.group-name {
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.group-count {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 13px;
-}
-
-.group-actions {
-  display: flex;
-  align-items: center;
-}
-
-.group-enable-all {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 13px;
-}
-
-.group-enable-checkbox {
-  cursor: pointer;
-}
-
-.tool-group-content {
-  max-height: 200px;
-  overflow-y: auto;
-  transition: all 0.3s;
-}
-
-.tool-group-content.collapsed {
-  max-height: 0;
-  overflow: hidden;
-}
-
-.tool-selection-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  transition: background-color 0.3s;
-}
-
-.tool-selection-item:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.tool-selection-item:last-child {
-  border-bottom: none;
-}
-
-.tool-info {
-  flex: 1;
-}
-
-.tool-selection-name {
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 4px;
-}
-
-.tool-selection-desc {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.tool-actions {
-  margin-left: 12px;
-}
-
-.tool-enable-switch {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 24px;
-  cursor: pointer;
-}
-
-.tool-enable-checkbox {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.tool-enable-slider {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 24px;
-  transition: all 0.3s;
-}
-
-.tool-enable-slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background: white;
-  border-radius: 50%;
-  transition: all 0.3s;
-}
-
-.tool-enable-checkbox:checked + .tool-enable-slider {
-  background: rgba(102, 126, 234, 0.8);
-}
-
-.tool-enable-checkbox:checked + .tool-enable-slider:before {
-  transform: translateX(20px);
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.6;
-}
 </style>
