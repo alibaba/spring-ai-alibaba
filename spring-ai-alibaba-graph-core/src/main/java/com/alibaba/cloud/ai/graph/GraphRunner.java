@@ -15,9 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
-import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
@@ -27,20 +27,28 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.util.CollectionUtils;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.Mono;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Mono;
+
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 
@@ -493,19 +501,13 @@ public class GraphRunner {
 	 */
 	private static class GeneratorContext {
 
-		record ReturnFromEmbed(Object value) {
-			<T> Optional<T> value(TypeRef<T> ref) {
-				return ofNullable(value).flatMap(ref::cast);
-			}
-		}
-
 		private final CompiledGraph compiledGraph;
+
+		private final AtomicInteger iteration = new AtomicInteger(0);
 
 		private OverAllState overallState;
 
 		private RunnableConfig config;
-
-		private final AtomicInteger iteration = new AtomicInteger(0);
 
 		private String currentNodeId;
 
@@ -732,6 +734,12 @@ public class GraphRunner {
 
 		void setReturnFromEmbedWithValue(Object value) {
 			returnFromEmbed = new ReturnFromEmbed(value);
+		}
+
+		record ReturnFromEmbed(Object value) {
+			<T> Optional<T> value(TypeRef<T> ref) {
+				return ofNullable(value).flatMap(ref::cast);
+			}
 		}
 
 	}

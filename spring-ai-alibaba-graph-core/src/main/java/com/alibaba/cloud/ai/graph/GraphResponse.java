@@ -129,7 +129,8 @@ public class GraphResponse<E> {
 	 * @param key the metadata key
 	 * @param type the expected type class
 	 * @param <T> the expected type
-	 * @return the metadata value cast to the expected type, or null if not found or cannot be cast
+	 * @return the metadata value cast to the expected type, or null if not found or
+	 * cannot be cast
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> T getMetadata(String key, Class<T> type) {
@@ -165,4 +166,5 @@ public class GraphResponse<E> {
 	public Object removeMetadata(String key) {
 		return this.metadata.remove(key);
 	}
+
 }
