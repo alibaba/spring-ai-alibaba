@@ -234,10 +234,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			@SuppressWarnings("unchecked")
 			List<Map<String, Object>> uploadedFiles = (List<Map<String, Object>>) request.get("uploadedFiles");
 
-			// Generate plan ID first
-			String planId = planIdDispatcher.generatePlanId();
-			logger.info("🆕 Generated new planId: {} for tool: {} (planTemplateId: {})", planId, toolName, planTemplateId);
-
 			// Execute the plan template using the new unified method
 			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, rawParam, uploadedFiles, memoryId);
 			
