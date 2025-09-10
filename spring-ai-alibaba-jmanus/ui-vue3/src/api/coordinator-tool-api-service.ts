@@ -95,10 +95,10 @@ export class CoordinatorToolApiService {
    */
   public static async getCoordinatorToolsByTemplate(planTemplateId: string): Promise<CoordinatorToolVO | null> {
     console.log('[CoordinatorToolApiService] 开始获取协调器工具，planTemplateId:', planTemplateId)
-    console.log('[CoordinatorToolApiService] 请求URL:', `${this.BASE_URL}/get-by-template/${planTemplateId}`)
+    console.log('[CoordinatorToolApiService] 请求URL:', `${this.BASE_URL}/get-get-or-new-by-template/${planTemplateId}`)
     
     try {
-      const response = await fetch(`${this.BASE_URL}/get-by-template/${planTemplateId}`, {
+      const response = await fetch(`${this.BASE_URL}/get-or-new-by-template/${planTemplateId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -109,7 +109,7 @@ export class CoordinatorToolApiService {
       console.log('[CoordinatorToolApiService] 响应状态文本:', response.statusText)
 
       if (response.status === 404) {
-        console.log('[CoordinatorToolApiService] 工具不存在')
+        console.log('[CoordinatorToolApiService] 404')
         return null
       }
 

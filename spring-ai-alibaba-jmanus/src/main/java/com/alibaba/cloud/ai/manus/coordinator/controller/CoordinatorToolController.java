@@ -440,7 +440,7 @@ public class CoordinatorToolController {
         toolVO.setToolName(null); // Use plan template ID as tool name
         toolVO.setToolDescription(null); // Set empty string instead of null
         toolVO.setPlanTemplateId(planTemplateId);
-        toolVO.setEnableInternalToolcall(true); // Default to internal toolcall
+        toolVO.setEnableInternalToolcall(false); // Default to internal toolcall
         toolVO.setEnableHttpService(false);
         toolVO.setEnableMcpService(false);
         toolVO.setInputSchema("[]"); // Empty parameters by default

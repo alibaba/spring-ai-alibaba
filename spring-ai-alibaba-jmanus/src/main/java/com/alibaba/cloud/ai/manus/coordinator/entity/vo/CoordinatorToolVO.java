@@ -43,7 +43,7 @@ public class CoordinatorToolVO {
 
 	private String serviceGroup = null;
 
-	private Boolean enableInternalToolcall = true;
+	private Boolean enableInternalToolcall = false;
 
 	private Boolean enableHttpService = false;
 
