@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph;
+package com.alibaba.cloud.ai.graph.plain_text;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.NullableObjectSerializer;
-import com.alibaba.cloud.ai.graph.serializer.ObjectStreamStateSerializer;
-import com.alibaba.cloud.ai.graph.serializer.AgentState;
+import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
@@ -45,13 +47,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SerializeTest {
 
-	// ObjectStreamStateSerializer instance for serializing and deserializing AgentState
+	// ObjectStreamStateSerializer instance for serializing and deserializing OverAllState
 	// objects
-	private final ObjectStreamStateSerializer<AgentState> stateSerializer = new ObjectStreamStateSerializer<>(
-			AgentState::new);
+	private final ObjectStreamStateSerializer stateSerializer = new ObjectStreamStateSerializer(OverAllState::new);
 
-	// Serializes an AgentState object into a byte array
-	private byte[] serializeState(AgentState state) throws Exception {
+	// Serializes an OverAllState object into a byte array
+	private byte[] serializeState(OverAllState state) throws Exception {
 		try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
 			ObjectOutputStream oas = new ObjectOutputStream(stream);
 			stateSerializer.write(state, oas);
@@ -60,8 +61,8 @@ public class SerializeTest {
 		}
 	}
 
-	// Deserializes a byte array back into an AgentState object
-	private AgentState deserializeState(byte[] bytes) throws Exception {
+	// Deserializes a byte array back into an OverAllState object
+	private OverAllState deserializeState(byte[] bytes) throws Exception {
 		try (ByteArrayInputStream stream = new ByteArrayInputStream(bytes)) {
 			ObjectInputStream ois = new ObjectInputStream(stream);
 			return stateSerializer.read(ois);
@@ -79,7 +80,8 @@ public class SerializeTest {
 
 	}
 
-	// Test case to verify serialization of a complete AgentState with various data types
+	// Test case to verify serialization of a complete OverAllState with various data
+	// types
 	// including null values
 	@Test
 	@SuppressWarnings("unchecked")
@@ -99,8 +101,8 @@ public class SerializeTest {
 			}
 		});
 
-		// Create an AgentState with mixed data types including nulls and custom objects
-		AgentState state = stateSerializer.stateOf(mapOf("a", "b", "f", null, "c", 100, "e", new ValueWithNull(null),
+		// Create an OverAllState with mixed data types including nulls and custom objects
+		OverAllState state = stateSerializer.stateOf(mapOf("a", "b", "f", null, "c", 100, "e", new ValueWithNull(null),
 				"list", listOf("aa", null, "cc", 200)));
 
 		// Perform serialization
@@ -155,8 +157,8 @@ public class SerializeTest {
 	@Test
 	public void partiallySerializeStateTest() throws Exception {
 
-		// Create AgentState with a non-serializable element
-		AgentState state = stateSerializer
+		// Create OverAllState with a non-serializable element
+		OverAllState state = stateSerializer
 			.stateOf(mapOf("a", "b", "f", new NonSerializableElement("I'M NOT SERIALIZABLE"), "c", "d"));
 
 		// Expect NotSerializableException when attempting to serialize
@@ -184,8 +186,8 @@ public class SerializeTest {
 			}
 		});
 
-		// Create AgentState with custom serialized type included
-		AgentState state = stateSerializer
+		// Create OverAllState with custom serialized type included
+		OverAllState state = stateSerializer
 			.stateOf(mapOf("a", "b", "x", new NonSerializableElement("I'M NOT SERIALIZABLE"), "f", "H", "c", "d"));
 
 		System.out.println(state);
@@ -227,16 +229,12 @@ public class SerializeTest {
 		output.setSubGraph(true);
 		String json = serializer.getObjectMapper().writeValueAsString(output);
 
-		assertEquals(
-				"{\"@class\":\"com.alibaba.cloud.ai.graph.NodeOutput\",\"node\":\"node\",\"state\":null,\"subGraph\":true,\"start\":false,\"end\":false}",
-				json);
+		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":true,\"start\":false,\"end\":false}", json);
 
 		output.setSubGraph(false);
 		json = serializer.getObjectMapper().writeValueAsString(output);
 
-		assertEquals(
-				"{\"@class\":\"com.alibaba.cloud.ai.graph.NodeOutput\",\"node\":\"node\",\"state\":null,\"subGraph\":false,\"start\":false,\"end\":false}",
-				json);
+		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":false,\"start\":false,\"end\":false}", json);
 	}
 
 }

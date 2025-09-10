@@ -33,7 +33,7 @@ import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
 import com.alibaba.cloud.ai.graph.internal.node.SubStateGraphNode;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -108,7 +108,7 @@ public class StateGraph {
 	/**
 	 * Jackson-based serializer for state.
 	 */
-	static class JacksonSerializer extends JacksonStateSerializer {
+	static class JacksonSerializer extends SpringAIJacksonStateSerializer {
 
 		/**
 		 * Instantiates a new Jackson serializer.
@@ -186,7 +186,7 @@ public class StateGraph {
 	 * Gets the state serializer used by this graph.
 	 * @return the state serializer
 	 */
-	public StateSerializer<OverAllState> getStateSerializer() {
+	public StateSerializer getStateSerializer() {
 		return stateSerializer;
 	}
 

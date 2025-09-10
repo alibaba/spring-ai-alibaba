@@ -64,8 +64,6 @@ public class ReactAgent extends BaseAgent {
 
 	private final ToolNode toolNode;
 
-	private final StateGraph graph;
-
 	private CompiledGraph compiledGraph;
 
 	private NodeAction preLlmHook;
@@ -93,10 +91,8 @@ public class ReactAgent extends BaseAgent {
 	private String inputKey;
 
 	protected ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
-		this.name = builder.name;
-		this.description = builder.description;
+		super(builder.name, builder.description, builder.outputKey);
 		this.instruction = builder.instruction;
-		this.outputKey = builder.outputKey;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
 		this.keyStrategyFactory = builder.keyStrategyFactory;
@@ -107,28 +103,10 @@ public class ReactAgent extends BaseAgent {
 		this.preToolHook = builder.preToolHook;
 		this.postToolHook = builder.postToolHook;
 		this.inputKey = builder.inputKey;
-
-		// 初始化graph
-		this.graph = initGraph();
 	}
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.call(input);
-	}
-
-	@Override
-	public Flux<NodeOutput> stream(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.fluxStream(input);
 	}
 
 	@Override
@@ -143,27 +121,6 @@ public class ReactAgent extends BaseAgent {
 
 	public CompiledGraph getCompiledGraph() throws GraphStateException {
 		return compiledGraph;
-	}
-
-	public CompiledGraph getAndCompileGraph(CompileConfig compileConfig) throws GraphStateException {
-		if (this.compileConfig == null) {
-			this.compiledGraph = getStateGraph().compile();
-		}
-		else {
-			this.compiledGraph = getStateGraph().compile(compileConfig);
-		}
-		this.compiledGraph = getStateGraph().compile(compileConfig);
-		return this.compiledGraph;
-	}
-
-	public CompiledGraph getAndCompileGraph() throws GraphStateException {
-		if (this.compileConfig == null) {
-			this.compiledGraph = getStateGraph().compile();
-		}
-		else {
-			this.compiledGraph = getStateGraph().compile(this.compileConfig);
-		}
-		return this.compiledGraph;
 	}
 
 	public NodeAction asNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException {
@@ -181,7 +138,8 @@ public class ReactAgent extends BaseAgent {
 		return node_async(new SubGraphStreamingNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
 	}
 
-	private StateGraph initGraph() throws GraphStateException {
+	@Override
+	protected StateGraph initGraph() throws GraphStateException {
 		if (keyStrategyFactory == null) {
 			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
@@ -234,8 +192,8 @@ public class ReactAgent extends BaseAgent {
 
 		if (postLlmHook != null) {
 			graph.addEdge("llm", "postLlm")
-					.addConditionalEdges("postLlm", edge_async(this::think),
-							Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
+				.addConditionalEdges("postLlm", edge_async(this::think),
+						Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
 		}
 		else {
 			graph.addConditionalEdges("llm", edge_async(this::think),
@@ -486,9 +444,9 @@ public class ReactAgent extends BaseAgent {
 			}
 
 			LlmNode.Builder llmNodeBuilder = LlmNode.builder()
-					.stream(true)
-					.chatClient(chatClient)
-					.messagesKey(this.inputKey);
+				.stream(true)
+				.chatClient(chatClient)
+				.messagesKey(this.inputKey);
 			if (outputKey != null && !outputKey.isEmpty()) {
 				llmNodeBuilder.outputKey(outputKey);
 			}

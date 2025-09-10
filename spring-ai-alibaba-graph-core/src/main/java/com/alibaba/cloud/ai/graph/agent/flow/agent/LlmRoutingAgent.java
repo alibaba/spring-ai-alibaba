@@ -38,17 +38,6 @@ public class LlmRoutingAgent extends FlowAgent {
 		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory,
 				builder.compileConfig, builder.subAgents);
 		this.chatModel = builder.chatModel;
-		this.graph = initGraph();
-	}
-
-	@Override
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		return compiledGraph.call(input);
-	}
-
-	@Override
-	public Flux<NodeOutput> stream(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		return this.compiledGraph.fluxStream(input);
 	}
 
 	@Override

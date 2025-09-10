@@ -15,10 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver;
-import com.alibaba.cloud.ai.graph.serializer.AgentState;
-import com.alibaba.cloud.ai.graph.serializer.ObjectStreamStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
+
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -34,7 +35,7 @@ public class FileSystemSaverDeleteFileTest {
 	@Test
 	public void deleteFileShouldRemoveExistingCheckpoint() throws Exception {
 		Path root = Files.createTempDirectory("checkpoint");
-		FileSystemSaver saver = new FileSystemSaver(root, new ObjectStreamStateSerializer<>(AgentState::new));
+		FileSystemSaver saver = new FileSystemSaver(root, new ObjectStreamStateSerializer(OverAllState::new));
 		RunnableConfig config = RunnableConfig.builder().threadId("t1").build();
 
 		Path checkpointFile = root.resolve("thread-t1.saver");

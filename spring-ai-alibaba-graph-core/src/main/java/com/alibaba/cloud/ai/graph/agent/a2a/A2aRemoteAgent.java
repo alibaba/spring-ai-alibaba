@@ -38,8 +38,6 @@ public class A2aRemoteAgent extends BaseAgent {
 
 	private final AgentCard agentCard;
 
-	private final StateGraph graph;
-
 	private CompiledGraph compiledGraph;
 
 	private KeyStrategyFactory keyStrategyFactory;
@@ -63,10 +61,10 @@ public class A2aRemoteAgent extends BaseAgent {
 		this.inputKey = builder.inputKey;
 		this.streaming = builder.streaming;
 		this.a2aNode = a2aNode;
-		this.graph = initGraph();
 	}
 
-	private StateGraph initGraph() throws GraphStateException {
+	@Override
+	protected StateGraph initGraph() throws GraphStateException {
 		if (keyStrategyFactory == null) {
 			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
@@ -88,23 +86,8 @@ public class A2aRemoteAgent extends BaseAgent {
 	}
 
 	@Override
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.call(input);
-	}
-
-	@Override
 	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException, GraphRunnerException {
 		throw new UnsupportedOperationException("A2aRemoteAgent has not support schedule.");
-	}
-
-	public Flux<NodeOutput> stream(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.fluxStream(input);
 	}
 
 	public StateGraph getStateGraph() {

@@ -62,15 +62,19 @@ import static java.util.stream.Collectors.toList;
 public class CompiledGraph {
 
 	private static final Logger log = LoggerFactory.getLogger(CompiledGraph.class);
+
 	private static String INTERRUPT_AFTER = "__INTERRUPTED__";
+
 	/**
 	 * The State graph.
 	 */
 	public final StateGraph stateGraph;
+
 	/**
 	 * The Compile config.
 	 */
 	public final CompileConfig compileConfig;
+
 	/**
 	 * The Nodes.
 	 */
@@ -80,8 +84,11 @@ public class CompiledGraph {
 	 * The Edges.
 	 */
 	final Map<String, EdgeValue> edges = new LinkedHashMap<>();
+
 	private final Map<String, KeyStrategy> keyStrategyMap;
+
 	private final ProcessedNodesEdgesAndConfig processedData;
+
 	private int maxIterations = 25;
 
 	/**
@@ -93,11 +100,11 @@ public class CompiledGraph {
 	protected CompiledGraph(StateGraph stateGraph, CompileConfig compileConfig) throws GraphStateException {
 		this.stateGraph = stateGraph;
 		this.keyStrategyMap = stateGraph.getKeyStrategyFactory()
-				.apply()
-				.entrySet()
-				.stream()
-				.map(e -> Map.entry(e.getKey(), e.getValue()))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+			.apply()
+			.entrySet()
+			.stream()
+			.map(e -> Map.entry(e.getKey(), e.getValue()))
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);
 
@@ -115,9 +122,9 @@ public class CompiledGraph {
 
 		// RE-CREATE THE EVENTUALLY UPDATED COMPILE CONFIG
 		this.compileConfig = CompileConfig.builder(compileConfig)
-				.interruptsBefore(processedData.interruptsBefore())
-				.interruptsAfter(processedData.interruptsAfter())
-				.build();
+			.interruptsBefore(processedData.interruptsBefore())
+			.interruptsAfter(processedData.interruptsAfter())
+			.build();
 
 		// EVALUATES NODES
 		for (var n : processedData.nodes().elements) {
@@ -134,26 +141,26 @@ public class CompiledGraph {
 			}
 			else {
 				Supplier<Stream<EdgeValue>> parallelNodeStream = () -> targets.stream()
-						.filter(target -> nodes.containsKey(target.id()));
+					.filter(target -> nodes.containsKey(target.id()));
 
 				var parallelNodeEdges = parallelNodeStream.get()
-						.map(target -> new Edge(target.id()))
-						.filter(ee -> processedData.edges().elements.contains(ee))
-						.map(ee -> processedData.edges().elements.indexOf(ee))
-						.map(index -> processedData.edges().elements.get(index))
-						.toList();
+					.map(target -> new Edge(target.id()))
+					.filter(ee -> processedData.edges().elements.contains(ee))
+					.map(ee -> processedData.edges().elements.indexOf(ee))
+					.map(index -> processedData.edges().elements.get(index))
+					.toList();
 
 				var parallelNodeTargets = parallelNodeEdges.stream()
-						.map(ee -> ee.target().id())
-						.collect(Collectors.toSet());
+					.map(ee -> ee.target().id())
+					.collect(Collectors.toSet());
 
 				if (parallelNodeTargets.size() > 1) {
 
 					// find the first defer node
 
 					var conditionalEdges = parallelNodeEdges.stream()
-							.filter(ee -> ee.target().value() != null)
-							.toList();
+						.filter(ee -> ee.target().value() != null)
+						.toList();
 					if (!conditionalEdges.isEmpty()) {
 						throw Errors.unsupportedConditionalEdgeOnParallelNode.exception(e.sourceId(),
 								conditionalEdges.stream().map(Edge::sourceId).toList());
@@ -162,9 +169,9 @@ public class CompiledGraph {
 				}
 
 				var actions = parallelNodeStream.get()
-						// .map( target -> nodes.remove(target.id()) )
-						.map(target -> nodes.get(target.id()))
-						.toList();
+					// .map( target -> nodes.remove(target.id()) )
+					.map(target -> nodes.get(target.id()))
+					.toList();
 
 				var parallelNode = new ParallelNode(e.sourceId(), actions, keyStrategyMap, compileConfig);
 
@@ -181,12 +188,12 @@ public class CompiledGraph {
 
 	public Collection<StateSnapshot> getStateHistory(RunnableConfig config) {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-				.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
+			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
 		return saver.list(config)
-				.stream()
-				.map(checkpoint -> StateSnapshot.of(keyStrategyMap, checkpoint, config, stateGraph.getStateFactory()))
-				.collect(toList());
+			.stream()
+			.map(checkpoint -> StateSnapshot.of(keyStrategyMap, checkpoint, config, stateGraph.getStateFactory()))
+			.collect(toList());
 	}
 
 	/**
@@ -209,10 +216,10 @@ public class CompiledGraph {
 	 */
 	public Optional<StateSnapshot> stateOf(RunnableConfig config) {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-				.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
+			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
 		return saver.get(config)
-				.map(checkpoint -> StateSnapshot.of(keyStrategyMap, checkpoint, config, stateGraph.getStateFactory()));
+			.map(checkpoint -> StateSnapshot.of(keyStrategyMap, checkpoint, config, stateGraph.getStateFactory()));
 
 	}
 
@@ -229,13 +236,13 @@ public class CompiledGraph {
 	public RunnableConfig updateState(RunnableConfig config, Map<String, Object> values, String asNode)
 			throws Exception {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-				.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
+			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
 		// merge values with checkpoint values
 		Checkpoint branchCheckpoint = saver.get(config)
-				.map(Checkpoint::copyOf)
-				.map(cp -> cp.updateState(values, keyStrategyMap))
-				.orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
+			.map(Checkpoint::copyOf)
+			.map(cp -> cp.updateState(values, keyStrategyMap))
+			.orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
 
 		String nextNodeId = null;
 		if (asNode != null) {
@@ -327,10 +334,10 @@ public class CompiledGraph {
 			String nextNodeId, OverAllState overAllState) throws Exception {
 		if (compileConfig.checkpointSaver().isPresent()) {
 			var cp = Checkpoint.builder()
-					.nodeId(nodeId)
-					.state(cloneState(state, overAllState))
-					.nextNodeId(nextNodeId)
-					.build();
+				.nodeId(nodeId)
+				.state(cloneState(state, overAllState))
+				.nextNodeId(nextNodeId)
+				.build();
 			compileConfig.checkpointSaver().get().put(config, cp);
 			return Optional.of(cp);
 		}
@@ -347,9 +354,9 @@ public class CompiledGraph {
 	public Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
 
 		return compileConfig.checkpointSaver()
-				.flatMap(saver -> saver.get(config))
-				.map(cp -> OverAllState.updateState(cp.getState(), inputs, keyStrategyMap))
-				.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, keyStrategyMap));
+			.flatMap(saver -> saver.get(config))
+			.map(cp -> OverAllState.updateState(cp.getState(), inputs, keyStrategyMap))
+			.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, keyStrategyMap));
 	}
 
 	/**
@@ -510,8 +517,7 @@ public class CompiledGraph {
 	 */
 	public Optional<OverAllState> call(OverAllState overAllState, RunnableConfig config) {
 		return Optional
-				.ofNullable(fluxStreamFromInitialNode(overAllState, config).last().map(NodeOutput::state)
-						.block()); // 阻塞等待结果
+			.ofNullable(fluxStreamFromInitialNode(overAllState, config).last().map(NodeOutput::state).block()); // 阻塞等待结果
 	}
 
 	/**
@@ -537,8 +543,7 @@ public class CompiledGraph {
 			resumeState.withHumanFeedback(feedback);
 
 			return Optional
-					.ofNullable(fluxStreamFromInitialNode(resumeState, config).last().map(NodeOutput::state)
-							.block()); // 阻塞等待结果
+				.ofNullable(fluxStreamFromInitialNode(resumeState, config).last().map(NodeOutput::state).block()); // 阻塞等待结果
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Resume execution failed", e);
@@ -558,10 +563,10 @@ public class CompiledGraph {
 		// Creates a new OverAllState instance using key strategies from the graph
 		// and provided input data.
 		return OverAllStateBuilder.builder()
-				.withKeyStrategies(stateGraph.getKeyStrategyFactory().apply())
-				.withData(inputs)
-				.withStore(compileConfig.getStore())
-				.build();
+			.withKeyStrategies(stateGraph.getKeyStrategyFactory().apply())
+			.withData(inputs)
+			.withStore(compileConfig.getStore())
+			.build();
 	}
 
 	/**
@@ -776,7 +781,7 @@ public class CompiledGraph {
  * The type Processed nodes edges and config.
  */
 record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interruptsBefore,
-									Set<String> interruptsAfter) {
+		Set<String> interruptsAfter) {
 
 	/**
 	 * Instantiates a new Processed nodes edges and config.
@@ -835,8 +840,8 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 
 			// Process Interruption (Before) Subgraph(s)
 			interruptsBefore = interruptsBefore.stream()
-					.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId : interrupt)
-					.collect(Collectors.toUnmodifiableSet());
+				.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId : interrupt)
+				.collect(Collectors.toUnmodifiableSet());
 
 			var edgesWithSubgraphTargetId = edges.edgesByTargetId(subgraphNode.id());
 
@@ -868,28 +873,28 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 			if (interruptsAfter.contains(subgraphNode.id())) {
 
 				var exceptionMessage = (edgeWithSubgraphSourceId.target()
-						.id() == null) ? "'interruption after' on subgraph is not supported yet!" : format(
-						"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: '%s'",
-						edgeWithSubgraphSourceId.target().id());
+					.id() == null) ? "'interruption after' on subgraph is not supported yet!" : format(
+							"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: '%s'",
+							edgeWithSubgraphSourceId.target().id());
 				throw new GraphStateException(exceptionMessage);
 			}
 
 			sgEdgesEnd.stream()
-					.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-							id -> (Objects.equals(id, END) ? edgeWithSubgraphSourceId.target()
-									: new EdgeValue(subgraphNode.formatId(id)))))
-					.forEach(edges.elements::add);
+				.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
+						id -> (Objects.equals(id, END) ? edgeWithSubgraphSourceId.target()
+								: new EdgeValue(subgraphNode.formatId(id)))))
+				.forEach(edges.elements::add);
 			edges.elements.remove(edgeWithSubgraphSourceId);
 
 			//
 			// Process edges
 			//
 			processedSubGraphEdges.elements.stream()
-					.filter(e -> !Objects.equals(e.sourceId(), START))
-					.filter(e -> !e.anyMatchByTargetId(END))
-					.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-							id -> new EdgeValue(subgraphNode.formatId(id))))
-					.forEach(edges.elements::add);
+				.filter(e -> !Objects.equals(e.sourceId(), START))
+				.filter(e -> !e.anyMatchByTargetId(END))
+				.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
+						id -> new EdgeValue(subgraphNode.formatId(id))))
+				.forEach(edges.elements::add);
 
 			//
 			// Process nodes

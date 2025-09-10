@@ -103,20 +103,14 @@ public class LoopAgent extends FlowAgent {
 
 	@Override
 	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		CompiledGraph compiledGraph = this.getAndCompileGraph();
-		// Initialize outputKey as an empty list to collect loop results
+		if (this.compiledGraph == null) {
+			this.compiledGraph = getAndCompileGraph();
+		}		// Initialize outputKey as an empty list to collect loop results
+
 		return compiledGraph.call(Stream.of(input, Map.of(this.outputKey(), new ArrayList<>()))
 			.map(Map::entrySet)
 			.flatMap(Collection::stream)
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> newValue)));
-	}
-
-	@Override
-	public Flux<NodeOutput> stream(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.fluxStream(input);
 	}
 
 	public static Builder builder() {

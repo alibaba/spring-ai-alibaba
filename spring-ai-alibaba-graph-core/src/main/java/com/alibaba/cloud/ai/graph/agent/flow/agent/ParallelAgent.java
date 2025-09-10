@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
+import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
@@ -65,17 +66,6 @@ public class ParallelAgent extends FlowAgent {
 				builder.compileConfig, builder.subAgents);
 		this.mergeStrategy = builder.mergeStrategy != null ? builder.mergeStrategy : new DefaultMergeStrategy();
 		this.maxConcurrency = builder.maxConcurrency;
-		this.graph = initGraph();
-	}
-
-	@Override
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		return compiledGraph.call(input);
-	}
-
-	@Override
-	public Flux<NodeOutput> stream(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		return this.compiledGraph.fluxStream(input);
 	}
 
 	@Override

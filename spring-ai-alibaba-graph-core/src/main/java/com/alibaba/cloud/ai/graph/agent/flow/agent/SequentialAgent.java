@@ -33,17 +33,6 @@ public class SequentialAgent extends FlowAgent {
 	protected SequentialAgent(SequentialAgentBuilder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory,
 				builder.compileConfig, builder.subAgents);
-		this.graph = initGraph();
-	}
-
-	@Override
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		return compiledGraph.call(input);
-	}
-
-	@Override
-	public Flux<NodeOutput> stream(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		return this.compiledGraph.fluxStream(input);
 	}
 
 	@Override
