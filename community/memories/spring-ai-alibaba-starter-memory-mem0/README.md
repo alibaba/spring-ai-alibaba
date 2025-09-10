@@ -1,14 +1,16 @@
 # Spring AI Alibaba Chat Memory Example
 
-本示例演示如何使用 Chat Memory 聊天记忆功能。
+[中文版本](./README-zh.md)
 
-> 包含此依赖的 Spring AI Alibaba 版本尚未发布，如果需要体验此 Demo，需要本地 install。如果不体验可正常跳过，不影响其他 example 启动。
+This example demonstrates how to use the Chat Memory functionality.
 
-## Spring AI Alibaba Mem0 Memory 实现
+> The Spring AI Alibaba version containing this dependency has not been officially released yet. If you want to experience this demo, you need to install it locally. If not, you can safely skip this without affecting the startup of other examples.
 
-## Example 演示
-> 参考 [Mem0示例项目](https://github.com/springaialibaba/spring-ai-alibaba-examples/spring-ai-alibaba-mem0-example/README.md)。
-> 引用依赖
+## Spring AI Alibaba Mem0 Memory Implementation
+
+## Example Demonstration
+> Refer to [Mem0 example](https://github.com/springaialibaba/spring-ai-alibaba-examples/spring-ai-alibaba-mem0-example/README.md)。
+> Dependency Reference
 ```xml
 <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
