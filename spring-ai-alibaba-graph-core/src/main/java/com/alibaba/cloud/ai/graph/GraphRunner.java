@@ -36,7 +36,6 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -44,7 +43,6 @@ import java.util.stream.Collectors;
 import static com.alibaba.cloud.ai.graph.StateGraph.*;
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
  * A reactive graph execution engine based on Project Reactor. This completely replaces
@@ -70,14 +68,14 @@ public class GraphRunner {
 		this.config = config;
 	}
 
-	public Flux<Data<NodeOutput>> run() {
+	public Flux<GraphResponse<NodeOutput>> run() {
 		return Flux.create(sink -> {
 			try {
 				GeneratorContext context = new GeneratorContext(initialState, config, compiledGraph);
 				processGraphExecution(sink, context);
 			}
 			catch (Exception e) {
-				sink.next(Data.error(e));
+				sink.next(GraphResponse.error(e));
 				sink.complete();
 			}
 		}, FluxSink.OverflowStrategy.BUFFER);
@@ -87,7 +85,7 @@ public class GraphRunner {
 		return Optional.ofNullable(resultValue.get());
 	}
 
-	private void processGraphExecution(FluxSink<Data<NodeOutput>> sink, GeneratorContext context) {
+	private void processGraphExecution(FluxSink<GraphResponse<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			if (context.shouldStop() || context.isMaxIterationsReached()) {
 				handleCompletion(sink, context);
@@ -100,11 +98,11 @@ public class GraphRunner {
 				var interruption = returnFromEmbed.get().value(new TypeRef<InterruptionMetadata>() {
 				});
 				if (interruption.isPresent()) {
-					sink.next(Data.done(interruption.get()));
+					sink.next(GraphResponse.done(interruption.get()));
 					sink.complete();
 					return;
 				}
-				sink.next(Data.done(context.buildCurrentNodeOutput()));
+				sink.next(GraphResponse.done(context.buildCurrentNodeOutput()));
 				sink.complete();
 				return;
 			}
@@ -113,7 +111,7 @@ public class GraphRunner {
 			// possibly needs to be unified.
 			if (context.getCurrentNodeId() != null && config.isInterrupted(context.getCurrentNodeId())) {
 				config.withNodeResumed(context.getCurrentNodeId());
-				sink.next(Data.done(Data.done(context.getCurrentState())));
+				sink.next(GraphResponse.done(GraphResponse.done(context.getCurrentState())));
 				sink.complete();
 				return;
 			}
@@ -151,12 +149,12 @@ public class GraphRunner {
 		catch (Exception e) {
 			context.doListeners(ERROR, e);
 			log.error("Error during graph execution", e);
-			sink.next(Data.error(e));
+			sink.next(GraphResponse.error(e));
 			sink.complete();
 		}
 	}
 
-	private void handleStartNode(FluxSink<Data<NodeOutput>> sink, GeneratorContext context) {
+	private void handleStartNode(FluxSink<GraphResponse<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			context.doListeners(START, null);
 			Command nextCommand = context.getEntryPoint();
@@ -167,31 +165,31 @@ public class GraphRunner {
 			NodeOutput output = context.buildOutput(START, cp);
 
 			context.setCurrentNodeId(context.getNextNodeId());
-			sink.next(Data.of(output));
+			sink.next(GraphResponse.of(output));
 
 			// Continue to next node
 			processGraphExecution(sink, context);
 		}
 		catch (Exception e) {
-			sink.next(Data.error(e));
+			sink.next(GraphResponse.error(e));
 			sink.complete();
 		}
 	}
 
-	private void handleEndNode(FluxSink<Data<NodeOutput>> sink, GeneratorContext context) {
+	private void handleEndNode(FluxSink<GraphResponse<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			context.doListeners(END, null);
 			NodeOutput output = context.buildNodeOutput(END);
-			sink.next(Data.of(output));
+			sink.next(GraphResponse.of(output));
 			handleCompletion(sink, context);
 		}
 		catch (Exception e) {
-			sink.next(Data.error(e));
+			sink.next(GraphResponse.error(e));
 			sink.complete();
 		}
 	}
 
-	private void handleCompletion(FluxSink<Data<NodeOutput>> sink, GeneratorContext context) {
+	private void handleCompletion(FluxSink<GraphResponse<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			if (compiledGraph.compileConfig.releaseThread()
 					&& compiledGraph.compileConfig.checkpointSaver().isPresent()) {
@@ -203,38 +201,38 @@ public class GraphRunner {
 			else {
 				resultValue.set(context.getCurrentState());
 			}
-			sink.next(Data.done(resultValue.get()));
+			sink.next(GraphResponse.done(resultValue.get()));
 			sink.complete();
 		}
 		catch (Exception e) {
-			sink.next(Data.error(e));
+			sink.next(GraphResponse.error(e));
 			sink.complete();
 		}
 	}
 
-	private void handleInterruption(FluxSink<Data<NodeOutput>> sink, GeneratorContext context) {
+	private void handleInterruption(FluxSink<GraphResponse<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			InterruptionMetadata metadata = InterruptionMetadata
 				.builder(context.getCurrentNodeId(), context.cloneState(context.getCurrentState()))
 				.build();
 			resultValue.set(metadata);
-			sink.next(Data.done(metadata));
+			sink.next(GraphResponse.done(metadata));
 			sink.complete();
 		}
 		catch (Exception e) {
-			sink.next(Data.error(e));
+			sink.next(GraphResponse.error(e));
 			sink.complete();
 		}
 	}
 
-	private void executeCurrentNode(FluxSink<Data<NodeOutput>> sink, GeneratorContext context) {
+	private void executeCurrentNode(FluxSink<GraphResponse<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			context.setCurrentNodeId(context.getNextNodeId());
 			String currentNodeId = context.getCurrentNodeId();
 			AsyncNodeActionWithConfig action = context.getNodeAction(currentNodeId);
 
 			if (action == null) {
-				sink.next(Data.error(RunnableErrors.missingNode.exception(currentNodeId)));
+				sink.next(GraphResponse.error(RunnableErrors.missingNode.exception(currentNodeId)));
 				sink.complete();
 				return;
 			}
@@ -245,7 +243,7 @@ public class GraphRunner {
 					.interrupt(currentNodeId, context.cloneState(context.getCurrentState()));
 				if (interruptMetadata.isPresent()) {
 					resultValue.set(interruptMetadata.get());
-					sink.next(Data.done(interruptMetadata.get()));
+					sink.next(GraphResponse.done(interruptMetadata.get()));
 					sink.complete();
 					return;
 				}
@@ -258,18 +256,18 @@ public class GraphRunner {
 			Mono.fromFuture(action.apply(context.getOverallState(), context.config))
 				.subscribe(updateState -> handleActionResult(sink, context, action, updateState), error -> {
 					context.doListeners(NODE_AFTER, null);
-					sink.next(Data.error(error));
+					sink.next(GraphResponse.error(error));
 					sink.complete();
 				});
 
 		}
 		catch (Exception e) {
-			sink.next(Data.error(e));
+			sink.next(GraphResponse.error(e));
 			sink.complete();
 		}
 	}
 
-	private void handleActionResult(FluxSink<Data<NodeOutput>> sink, GeneratorContext context,
+	private void handleActionResult(FluxSink<GraphResponse<NodeOutput>> sink, GeneratorContext context,
 			AsyncNodeActionWithConfig action, Map<String, Object> updateState) {
 		try {
 			context.doListeners(NODE_AFTER, null);
@@ -280,7 +278,7 @@ public class GraphRunner {
 			// }
 
 			// Check for embedded flux stream
-			Optional<Flux<Data<NodeOutput>>> embedFlux = getEmbedFlux(updateState);
+			Optional<Flux<GraphResponse<NodeOutput>>> embedFlux = getEmbedFlux(updateState);
 			if (embedFlux.isPresent()) {
 				handleEmbeddedFlux(sink, context, embedFlux.get(), updateState);
 				return;
@@ -309,19 +307,19 @@ public class GraphRunner {
 			}
 
 			NodeOutput output = context.buildCurrentNodeOutput();
-			sink.next(Data.of(output));
+			sink.next(GraphResponse.of(output));
 
 			// Continue to next node
 			processGraphExecution(sink, context);
 
 		}
 		catch (Exception e) {
-			sink.next(Data.error(e));
+			sink.next(GraphResponse.error(e));
 			sink.complete();
 		}
 	}
 
-	private void handleCommandAction(FluxSink<Data<NodeOutput>> sink, GeneratorContext context,
+	private void handleCommandAction(FluxSink<GraphResponse<NodeOutput>> sink, GeneratorContext context,
 			Map<String, Object> updateState) {
 		try {
 			AsyncCommandAction commandAction = (AsyncCommandAction) updateState.get("command");
@@ -333,26 +331,26 @@ public class GraphRunner {
 					context.setNextNodeId(command.gotoNode());
 
 					NodeOutput output = context.buildCurrentNodeOutput();
-					sink.next(Data.of(output));
+					sink.next(GraphResponse.of(output));
 					processGraphExecution(sink, context);
 				}
 				catch (Exception e) {
-					sink.next(Data.error(e));
+					sink.next(GraphResponse.error(e));
 					sink.complete();
 				}
 			}, error -> {
-				sink.next(Data.error(error));
+				sink.next(GraphResponse.error(error));
 				sink.complete();
 			});
 		}
 		catch (Exception e) {
-			sink.next(Data.error(e));
+			sink.next(GraphResponse.error(e));
 			sink.complete();
 		}
 	}
 
-	private void handleEmbeddedFlux(FluxSink<Data<NodeOutput>> sink, GeneratorContext context,
-			Flux<Data<NodeOutput>> embedFlux, Map<String, Object> partialState) {
+	private void handleEmbeddedFlux(FluxSink<GraphResponse<NodeOutput>> sink, GeneratorContext context,
+			Flux<GraphResponse<NodeOutput>> embedFlux, Map<String, Object> partialState) {
 
 		var result = new AtomicReference<Object>(null);
 
@@ -361,15 +359,15 @@ public class GraphRunner {
 			if (data.getOutput() != null) {
 				var output = data.getOutput().join();
 				output.setSubGraph(true);
-				sink.next(Data.of(output));
+				sink.next(GraphResponse.of(output));
 			}
 			result.set(data);
 		}).doOnError(error -> {
-			sink.next(Data.error(error));
+			sink.next(GraphResponse.error(error));
 			sink.complete();
 		}).doOnComplete(() -> {
 			try {
-				var data = (Data) result.get();
+				var data = (GraphResponse) result.get();
 				var nodeResultValue = data.resultValue;
 
 				if (nodeResultValue instanceof InterruptionMetadata) {
@@ -407,18 +405,18 @@ public class GraphRunner {
 				processGraphExecution(sink, context);
 			}
 			catch (Exception e) {
-				sink.next(Data.error(e));
+				sink.next(GraphResponse.error(e));
 				sink.complete();
 			}
 		}).subscribe();
 	}
 
-	private Optional<Flux<Data<NodeOutput>>> getEmbedFlux(Map<String, Object> partialState) {
+	private Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(Map<String, Object> partialState) {
 		return partialState.entrySet()
 			.stream()
 			.filter(e -> e.getValue() instanceof Flux)
 			.findFirst()
-			.map(e -> (Flux<Data<NodeOutput>>) e.getValue());
+			.map(e -> (Flux<GraphResponse<NodeOutput>>) e.getValue());
 	}
 
 	/**
@@ -436,12 +434,12 @@ public class GraphRunner {
 	}
 
 	@Deprecated
-	private void handleEmbeddedGenerator(FluxSink<Data<NodeOutput>> sink, GeneratorContext context,
+	private void handleEmbeddedGenerator(FluxSink<GraphResponse<NodeOutput>> sink, GeneratorContext context,
 			AsyncGenerator<NodeOutput> generator, Map<String, Object> partialState) {
 
 		generator.stream().peek(output -> {
 			output.setSubGraph(true);
-			sink.next(Data.of(output));
+			sink.next(GraphResponse.of(output));
 		});
 
 		try {
@@ -485,7 +483,7 @@ public class GraphRunner {
 			processGraphExecution(sink, context);
 		}
 		catch (Exception e) {
-			sink.next(Data.error(e));
+			sink.next(GraphResponse.error(e));
 			sink.complete();
 		}
 	}
@@ -734,62 +732,6 @@ public class GraphRunner {
 
 		void setReturnFromEmbedWithValue(Object value) {
 			returnFromEmbed = new ReturnFromEmbed(value);
-		}
-
-	}
-
-	/**
-	 * Represents a data element in the Flux.
-	 *
-	 * @param <E> the type of the data element
-	 */
-	public static class Data<E> {
-
-		final CompletableFuture<E> output;
-
-		final Object resultValue;
-
-		public Data(CompletableFuture<E> data, Object resultValue) {
-			this.output = data;
-			this.resultValue = resultValue;
-		}
-
-		public CompletableFuture<E> getOutput() {
-			return output;
-		}
-
-		public Optional<Object> resultValue() {
-			return resultValue == null ? Optional.empty() : Optional.of(resultValue);
-		}
-
-		public boolean isDone() {
-			return output == null;
-		}
-
-		public boolean isError() {
-			return output != null && output.isCompletedExceptionally();
-		}
-
-		public static <E> Data<E> of(CompletableFuture<E> data) {
-			return new Data<>(data, null);
-		}
-
-		public static <E> Data<E> of(E data) {
-			return new Data<>(completedFuture(data), null);
-		}
-
-		public static <E> Data<E> done() {
-			return new Data<>(null, null);
-		}
-
-		public static <E> Data<E> done(Object resultValue) {
-			return new Data<>(null, resultValue);
-		}
-
-		public static <E> Data<E> error(Throwable exception) {
-			CompletableFuture<E> future = new CompletableFuture<>();
-			future.completeExceptionally(exception);
-			return Data.of(future);
 		}
 
 	}

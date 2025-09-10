@@ -22,7 +22,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import com.alibaba.cloud.ai.graph.*;
-import com.alibaba.cloud.ai.graph.GraphRunner;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
@@ -563,7 +562,7 @@ public class ReactAgent extends BaseAgent {
 			Message message = new UserMessage(input);
 			List<Message> messages = List.of(message);
 
-			Flux<GraphRunner.Data<NodeOutput>> subGraphFlux = childGraph.fluxDataStream(Map.of("messages", messages),
+			Flux<GraphResponse<NodeOutput>> subGraphFlux = childGraph.fluxDataStream(Map.of("messages", messages),
 					RunnableConfig.builder().build());
 
 			return Map.of(outputKeyToParent, subGraphFlux);

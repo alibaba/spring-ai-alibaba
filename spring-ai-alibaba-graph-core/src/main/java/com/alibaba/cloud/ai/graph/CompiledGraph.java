@@ -424,11 +424,11 @@ public class CompiledGraph {
 		return maxIterations;
 	}
 
-	public Flux<GraphRunner.Data<NodeOutput>> fluxDataStream(Map<String, Object> inputs, RunnableConfig config) {
+	public Flux<GraphResponse<NodeOutput>> fluxDataStream(Map<String, Object> inputs, RunnableConfig config) {
 		return fluxDataStream(stateCreate(inputs), config);
 	}
 
-	public Flux<GraphRunner.Data<NodeOutput>> fluxDataStream(OverAllState state, RunnableConfig config) {
+	public Flux<GraphResponse<NodeOutput>> fluxDataStream(OverAllState state, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 		try {
 			GraphRunner runner = new GraphRunner(this, state, config);
