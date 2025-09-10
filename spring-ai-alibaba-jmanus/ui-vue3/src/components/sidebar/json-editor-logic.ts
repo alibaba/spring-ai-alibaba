@@ -32,6 +32,7 @@ export interface ParsedPlanData {
   steps: StepData[]
   terminateColumns: string
   directResponse: boolean
+  selectedToolKeys: string[]
 }
 
 export interface JsonEditorProps {
@@ -66,7 +67,8 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
     title: '',
     steps: [],
     terminateColumns: '',
-    directResponse: false // Always false for dynamic agent planning
+    directResponse: false, // Always false for dynamic agent planning
+    selectedToolKeys: []
   })
 
   /**
@@ -81,7 +83,8 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
           title: '',
           steps: [],
           terminateColumns: '',
-          directResponse: false // Always false for dynamic agent planning
+          directResponse: false, // Always false for dynamic agent planning
+          selectedToolKeys: []
         })
         return
       }
@@ -92,6 +95,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
       parsedData.title = parsed.title || ''
       parsedData.terminateColumns = parsed.terminateColumns || ''
       parsedData.directResponse = false // Always false for dynamic agent planning
+      parsedData.selectedToolKeys = parsed.selectedToolKeys || []
       
       // Parse steps
       parsedData.steps = (parsed.steps || []).map((step: any) => ({
@@ -115,15 +119,16 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
       const result: any = {
         command: parsedData.command,
         title: parsedData.title,
-      steps: parsedData.steps.map(step => ({
-        stepRequirement: step.stepRequirement,
-        agentName: step.agentName,
-        modelName: step.modelName || '', // Convert null to empty string for JSON
-        selectedToolKeys: step.selectedToolKeys,
-        terminateColumns: step.terminateColumns
-      })),
+        steps: parsedData.steps.map(step => ({
+          stepRequirement: step.stepRequirement,
+          agentName: step.agentName,
+          modelName: step.modelName || '', // Convert null to empty string for JSON
+          selectedToolKeys: step.selectedToolKeys,
+          terminateColumns: step.terminateColumns
+        })),
         terminateColumns: parsedData.terminateColumns,
-        directResponse: parsedData.directResponse
+        directResponse: parsedData.directResponse,
+        selectedToolKeys: parsedData.selectedToolKeys
       }
       
       return JSON.stringify(result, null, 2)
