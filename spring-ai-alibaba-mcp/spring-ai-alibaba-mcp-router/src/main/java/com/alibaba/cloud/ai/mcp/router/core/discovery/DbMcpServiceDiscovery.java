@@ -116,31 +116,27 @@ public class DbMcpServiceDiscovery implements McpServiceDiscovery {
 	}
 
 	private void closeResources(ResultSet resultSet, PreparedStatement statement, Connection connection) {
-		try {
-			if (resultSet != null) {
-				resultSet.close();
-			}
-		}
-		catch (SQLException e) {
-			log.error("Failed to close ResultSet", e);
-		}
+		closeQuietly(resultSet, "ResultSet");
+		closeQuietly(statement, "PreparedStatement");
+		closeQuietly(connection, "Connection");
+	}
 
-		try {
-			if (statement != null) {
-				statement.close();
+	private void closeQuietly(AutoCloseable resource, String name) {
+		if (resource != null) {
+			try {
+				// 对于 Connection 需要判断是否已关闭
+				if (resource instanceof Connection conn) {
+					if (!conn.isClosed()) {
+						conn.close();
+					}
+				}
+				else {
+					resource.close();
+				}
 			}
-		}
-		catch (SQLException e) {
-			log.error("Failed to close PreparedStatement", e);
-		}
-
-		try {
-			if (connection != null && !connection.isClosed()) {
-				connection.close();
+			catch (Exception e) {
+				log.error("Failed to close {}", name, e);
 			}
-		}
-		catch (SQLException e) {
-			log.error("Failed to close Connection", e);
 		}
 	}
 
