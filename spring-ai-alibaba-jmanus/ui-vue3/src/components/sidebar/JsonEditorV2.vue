@@ -123,6 +123,31 @@
             
             <div class="step-content">
               
+              <!-- Step Requirement -->
+              <div class="form-row">
+                <label class="form-label">{{ $t('sidebar.stepRequirement') }}</label>
+                <textarea 
+                  v-model="step.stepRequirement"
+                  class="form-textarea auto-resize"
+                  :placeholder="$t('sidebar.stepRequirementPlaceholder')"
+                  rows="4"
+                  @input="autoResizeTextarea($event)"
+                ></textarea>
+              </div>
+              
+               <!-- Terminate Columns -->
+               <div class="form-row">
+                 <label class="form-label">{{ $t('sidebar.terminateColumns') }}</label>
+                 <textarea 
+                   v-model="step.terminateColumns"
+                   class="form-textarea auto-resize"
+                   :placeholder="$t('sidebar.terminateColumnsPlaceholder')"
+                   rows="4"
+                   @input="autoResizeTextarea($event)"
+                 ></textarea>
+               </div>
+
+
               <!-- Model Name -->
               <div class="form-row">
                 <label class="form-label">{{ $t('sidebar.modelName') }}</label>
@@ -137,6 +162,9 @@
                     
                     <!-- Error state -->
                     <option v-else-if="modelsLoadError" disabled value="">{{ $t('sidebar.modelLoadError') }}</option>
+                    
+                    <!-- Placeholder option -->
+                    <option value="" disabled>{{ $t('sidebar.modelNameDescription') }}</option>
                     
                     <!-- Default empty option -->
                     <option value="">{{ $t('sidebar.noModelSelected') }}</option>
@@ -171,67 +199,10 @@
                 </div>
               </div>
               
-              <!-- Selected Tool Keys -->
-              <div class="form-row">
-                <label class="form-label">{{ $t('sidebar.selectedToolKeys') }}</label>
-                <div class="tool-keys-container">
-                  <div class="tool-keys-display">
-                    <div 
-                      v-for="(_, toolIndex) in step.selectedToolKeys" 
-                      :key="toolIndex"
-                      class="tool-key-item"
-                    >
-                      <input 
-                        v-model="step.selectedToolKeys[toolIndex]"
-                        type="text" 
-                        class="form-input tool-key-input"
-                        :placeholder="$t('sidebar.toolKeyPlaceholder')"
-                      />
-                      <button 
-                        @click="removeToolKey(index, toolIndex)"
-                        class="remove-tool-key-btn"
-                        :title="$t('sidebar.removeToolKey')"
-                      >
-                        <Icon icon="carbon:close" width="12" />
-                      </button>
-                    </div>
-                    <div v-if="step.selectedToolKeys.length === 0" class="no-tool-keys">
-                      {{ $t('sidebar.noToolKeys') }}
-                    </div>
-                  </div>
-                  <button 
-                    @click="addToolKey(index)"
-                    class="btn btn-sm btn-add-tool-key"
-                  >
-                    <Icon icon="carbon:add" width="14" />
-                    {{ $t('sidebar.addToolKey') }}
-                  </button>
-                </div>
-              </div>
               
-              <!-- Step Requirement -->
-              <div class="form-row">
-                <label class="form-label">{{ $t('sidebar.stepRequirement') }}</label>
-                <textarea 
-                  v-model="step.stepRequirement"
-                  class="form-textarea auto-resize"
-                  :placeholder="$t('sidebar.stepRequirementPlaceholder')"
-                  rows="4"
-                  @input="autoResizeTextarea($event)"
-                ></textarea>
-              </div>
-              
-              <!-- Terminate Columns -->
-              <div class="form-row">
-                <label class="form-label">{{ $t('sidebar.terminateColumns') }}</label>
-                <input 
-                  v-model="step.terminateColumns"
-                  type="text" 
-                  class="form-input"
-                  :placeholder="$t('sidebar.terminateColumnsPlaceholder')"
-                />
-              </div>
             </div>
+
+            
           </div>
           
           <!-- Empty State -->
@@ -318,6 +289,7 @@ const availableModels = ref<ModelOption[]>([])
 const isLoadingModels = ref(false)
 const modelsLoadError = ref<string>('')
 
+
 // Load available models
 const loadAvailableModels = async () => {
   if (isLoadingModels.value) return
@@ -340,6 +312,7 @@ const loadAvailableModels = async () => {
     isLoadingModels.value = false
   }
 }
+
 
 // Initialize parsedData with default structure
 const initializeParsedData = () => {
@@ -380,19 +353,6 @@ watch(() => parsedData, (newData) => {
   }
 }, { immediate: true, deep: true })
 
-// Tool key management functions
-const addToolKey = (stepIndex: number) => {
-  if (!parsedData.steps[stepIndex].selectedToolKeys) {
-    parsedData.steps[stepIndex].selectedToolKeys = []
-  }
-  parsedData.steps[stepIndex].selectedToolKeys.push('')
-}
-
-const removeToolKey = (stepIndex: number, toolIndex: number) => {
-  if (parsedData.steps[stepIndex].selectedToolKeys) {
-    parsedData.steps[stepIndex].selectedToolKeys.splice(toolIndex, 1)
-  }
-}
 
 
 // Initialize on mount
@@ -555,12 +515,6 @@ const autoResizeTextarea = (event: Event) => {
   flex: 1;
 }
 
-/* Tool Keys Styles */
-.tool-keys-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
 
 .tool-keys-display {
   display: flex;

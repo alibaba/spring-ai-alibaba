@@ -29,6 +29,8 @@ import com.alibaba.cloud.ai.manus.model.model.vo.ModelConfig;
 import com.alibaba.cloud.ai.manus.model.model.vo.ValidationResult;
 import com.alibaba.cloud.ai.manus.model.repository.DynamicModelRepository;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,10 +63,33 @@ public class ModelServiceImpl implements ModelService {
 	@Autowired
 	private JmanusEventPublisher publisher;
 
+	// Cache for third-party API calls with 2-second expiration
+	private final Map<String, CacheEntry<List<AvailableModel>>> apiCache = new ConcurrentHashMap<>();
+	private static final long CACHE_EXPIRY_MS = 2000; // 2 seconds
+
 	@Autowired
 	public ModelServiceImpl(DynamicModelRepository repository, DynamicAgentRepository agentRepository) {
 		this.repository = repository;
 		this.agentRepository = agentRepository;
+	}
+
+	// Cache entry class
+	private static class CacheEntry<T> {
+		private final T data;
+		private final long timestamp;
+
+		public CacheEntry(T data) {
+			this.data = data;
+			this.timestamp = System.currentTimeMillis();
+		}
+
+		public T getData() {
+			return data;
+		}
+
+		public boolean isExpired() {
+			return System.currentTimeMillis() - timestamp > CACHE_EXPIRY_MS;
+		}
 	}
 
 	@Override
@@ -182,7 +207,7 @@ public class ModelServiceImpl implements ModelService {
 
 			// 3. Call third-party API for validation
 			log.info("Starting third-party API validation");
-			List<AvailableModel> models = callThirdPartyApi(baseUrl, apiKey);
+			List<AvailableModel> models = callThirdPartyApiInternal(baseUrl, apiKey);
 
 			result.setValid(true);
 			result.setMessage("Validation successful");
@@ -246,46 +271,6 @@ public class ModelServiceImpl implements ModelService {
 		return apiKey.substring(0, 4) + "****" + apiKey.substring(apiKey.length() - 4);
 	}
 
-	private List<AvailableModel> callThirdPartyApi(String baseUrl, String apiKey) {
-		log.debug("Starting third-party API call - URL: {}", baseUrl);
-
-		RestTemplate restTemplate = new RestTemplate();
-
-		// Set request headers
-		HttpHeaders headers = new HttpHeaders();
-		headers.set("Authorization", "Bearer " + apiKey);
-		headers.set("Content-Type", "application/json");
-
-		log.debug("Setting request headers - Content-Type: application/json, Authorization: Bearer {}",
-				maskApiKey(apiKey));
-
-		// Build request URL
-		String requestUrl = baseUrl + "/v1/models";
-		log.info("Sending HTTP request to: {}", requestUrl);
-
-		try {
-			long startTime = System.currentTimeMillis();
-			// Create HttpEntity to wrap request headers
-			HttpEntity<String> entity = new HttpEntity<>(headers);
-			// Send GET request with HttpEntity containing headers
-			ResponseEntity<Map> response = restTemplate.exchange(requestUrl, HttpMethod.GET, entity, Map.class);
-			long endTime = System.currentTimeMillis();
-
-			log.info("HTTP request completed - Status code: {}, Duration: {}ms", response.getStatusCodeValue(),
-					endTime - startTime);
-
-			// Parse response
-			List<AvailableModel> models = parseModelsResponse(response.getBody());
-			log.info("Successfully parsed response, obtained {} models", models.size());
-
-			return models;
-
-		}
-		catch (Exception e) {
-			log.error("API call failed: {}", e.getMessage(), e);
-			throw new NetworkException("API call failed: " + e.getMessage(), e);
-		}
-	}
 
 	private List<AvailableModel> parseModelsResponse(Map response) {
 		log.debug("Starting to parse API response: {}", response);
@@ -396,6 +381,75 @@ public class ModelServiceImpl implements ModelService {
 				repository.save(model);
 				log.info("Cancel {} model as default", model.getId());
 			}
+		}
+	}
+
+	/**
+	 * Public method to call third-party API with caching
+	 * Cache expires every 2 seconds
+	 */
+	public List<AvailableModel> getAvailableModels(String baseUrl, String apiKey) {
+		String cacheKey = baseUrl + ":" + apiKey;
+		
+		// Check cache first
+		CacheEntry<List<AvailableModel>> cachedEntry = apiCache.get(cacheKey);
+		if (cachedEntry != null && !cachedEntry.isExpired()) {
+			log.debug("Returning cached result for API call: {}", baseUrl);
+			return cachedEntry.getData();
+		}
+
+		log.debug("Cache miss or expired, making new API call to: {}", baseUrl);
+		
+		// Make new API call using the internal method
+		List<AvailableModel> models = callThirdPartyApiInternal(baseUrl, apiKey);
+		
+		// Cache the result
+		apiCache.put(cacheKey, new CacheEntry<>(models));
+		
+		return models;
+	}
+
+	/**
+	 * Internal method that actually makes the API call
+	 */
+	private List<AvailableModel> callThirdPartyApiInternal(String baseUrl, String apiKey) {
+		log.debug("Starting third-party API call - URL: {}", baseUrl);
+
+		RestTemplate restTemplate = new RestTemplate();
+
+		// Set request headers
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Authorization", "Bearer " + apiKey);
+		headers.set("Content-Type", "application/json");
+
+		log.debug("Setting request headers - Content-Type: application/json, Authorization: Bearer {}",
+				maskApiKey(apiKey));
+
+		// Build request URL
+		String requestUrl = baseUrl + "/v1/models";
+		log.info("Sending HTTP request to: {}", requestUrl);
+
+		try {
+			long startTime = System.currentTimeMillis();
+			// Create HttpEntity to wrap request headers
+			HttpEntity<String> entity = new HttpEntity<>(headers);
+			// Send GET request with HttpEntity containing headers
+			ResponseEntity<Map> response = restTemplate.exchange(requestUrl, HttpMethod.GET, entity, Map.class);
+			long endTime = System.currentTimeMillis();
+
+			log.info("HTTP request completed - Status code: {}, Duration: {}ms", response.getStatusCodeValue(),
+					endTime - startTime);
+
+			// Parse response
+			List<AvailableModel> models = parseModelsResponse(response.getBody());
+			log.info("Successfully parsed response, obtained {} models", models.size());
+
+			return models;
+
+		}
+		catch (Exception e) {
+			log.error("API call failed: {}", e.getMessage(), e);
+			throw new NetworkException("API call failed: " + e.getMessage(), e);
 		}
 	}
 

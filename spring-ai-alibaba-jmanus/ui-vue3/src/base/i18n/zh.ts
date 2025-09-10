@@ -863,6 +863,17 @@ const words: I18nType = {
   clearAllTools: '清空所有工具',
   noToolsSelected: '未选择任何工具',
   planTypeError: '计划类型错误',
+  
+  // 模型和工具键
+  modelName: '模型名称',
+  modelNameDescription: '指定模型名字用于处理特定任务（如图片识别等），如不指定则使用默认的模型',
+  noModelSelected: '空',
+  selectedToolKeys: '已选工具键',
+  noToolKeys: '无工具键',
+  addToolKey: '添加工具键',
+  toolKeyPlaceholder: '请输入工具键',
+  removeToolKey: '移除',
+  addRemoveTools: '添加/删除工具',
 
     // 通用错误信息
     loadingFailed: '加载失败',

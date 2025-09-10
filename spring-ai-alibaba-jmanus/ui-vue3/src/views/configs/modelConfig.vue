@@ -110,16 +110,6 @@
           </div>
         </div>
 
-        <div class="form-item">
-          <label>{{ t('config.modelConfig.type') }} <span class="required">*</span></label>
-          <CustomSelect
-            v-model="selectedModel.type"
-            :options="modelTypes.map(type => ({ id: type, name: type }))"
-            :placeholder="t('config.modelConfig.typePlaceholder')"
-            :dropdown-title="t('config.modelConfig.typePlaceholder')"
-            icon="carbon:types"
-          />
-        </div>
 
         <div class="form-item">
           <label>{{ t('config.modelConfig.baseUrl') }} <span class="required">*</span></label>
@@ -172,7 +162,7 @@
         </div>
 
                 <div class="form-item">
-          <label>{{ t('config.modelConfig.modelName') }} <span class="required">*</span></label>
+          <label>兜底模型 <span class="required">*</span></label>
           <GroupedSelect
             v-if="getCurrentAvailableModels().length > 0"
             v-model="selectedModel.modelName"
@@ -306,7 +296,7 @@
           </div>
         </div>
         <div class="form-item">
-          <label>{{ t('config.modelConfig.modelName') }} <span class="required">*</span></label>
+          <label>兜底模型 <span class="required">*</span></label>
           <GroupedSelect
             v-if="newModelAvailableModels.length > 0"
             v-model="newModel.modelName"
@@ -390,6 +380,7 @@
       </template>
     </Modal>
 
+
     <!-- Error toast -->
     <div v-if="error" class="error-toast" @click="error = ''">
       <Icon icon="carbon:error" />
@@ -439,6 +430,7 @@ const newModelAvailableModels = ref<Model[]>([])
 const showSelectedApiKey = ref(false)
 const showNewApiKey = ref(false)
 
+
 const selectedHeadersJson = computed({
   get() {
     if (!selectedModel.value?.headers) return ''
@@ -459,6 +451,8 @@ const newHeadersJson = computed({
       newModel.headers = val.trim() ? JSON.parse(val) : null
     }
 })
+
+
 
 // New Model form data
 const newModel = reactive<Omit<Model, 'id'>>({
@@ -854,6 +848,7 @@ const handleDelete = async () => {
     showMessage(t('config.modelConfig.deleteFailed') + ': ' + err.message, 'error')
   }
 }
+
 
 // Import Model
 const handleImport = () => {
@@ -1467,4 +1462,5 @@ onMounted(() => {
 .description-field::placeholder {
   color: rgba(255, 255, 255, 0.4);
 }
+
 </style>

@@ -39,6 +39,9 @@ public class ModelController {
 	@Autowired
 	private ModelService modelService;
 
+	@Autowired
+	private com.alibaba.cloud.ai.manus.model.repository.DynamicModelRepository dynamicModelRepository;
+
 	@GetMapping
 	public ResponseEntity<List<ModelConfig>> getAllModels() {
 		return ResponseEntity.ok(modelService.getAllModels());
@@ -119,6 +122,52 @@ public class ModelController {
 			response.put("success", false);
 			response.put("message", "Set failed: " + e.getMessage());
 			return ResponseEntity.status(500).body(response);
+		}
+	}
+
+	/**
+	 * Get all available models from third-party vendors
+	 */
+	@GetMapping("/available-models")
+	public ResponseEntity<Map<String, Object>> getAvailableModels() {
+		Map<String, Object> response = new HashMap<>();
+		try {
+			// Get the default model entity directly from database to avoid masked API key
+			List<com.alibaba.cloud.ai.manus.model.entity.DynamicModelEntity> configuredModels = dynamicModelRepository.findAll();
+			if (configuredModels.isEmpty()) {
+				response.put("options", new java.util.ArrayList<>());
+				response.put("total", 0);
+				response.put("error", "No configured models found");
+				return ResponseEntity.ok(response);
+			}
+
+			// Find the default model entity
+			com.alibaba.cloud.ai.manus.model.entity.DynamicModelEntity defaultModel = configuredModels.stream()
+				.filter(com.alibaba.cloud.ai.manus.model.entity.DynamicModelEntity::getIsDefault)
+				.findFirst()
+				.orElse(configuredModels.get(0)); // Fallback to first model if no default found
+
+			List<com.alibaba.cloud.ai.manus.model.model.vo.AvailableModel> availableModels = 
+				((com.alibaba.cloud.ai.manus.model.service.ModelServiceImpl) modelService)
+					.getAvailableModels(defaultModel.getBaseUrl(), defaultModel.getApiKey());
+
+			// Convert to the expected format
+			List<Map<String, Object>> modelOptions = availableModels.stream().map(model -> {
+				Map<String, Object> option = new HashMap<>();
+				option.put("value", model.getModelName());
+				option.put("label", model.getModelName() + " (" + model.getDescription() + ")");
+				return option;
+			}).collect(Collectors.toList());
+
+			response.put("options", modelOptions);
+			response.put("total", modelOptions.size());
+			return ResponseEntity.ok(response);
+		}
+		catch (Exception e) {
+			response.put("options", new java.util.ArrayList<>());
+			response.put("total", 0);
+			response.put("error", "Failed to fetch available models: " + e.getMessage());
+			return ResponseEntity.ok(response);
 		}
 	}
 

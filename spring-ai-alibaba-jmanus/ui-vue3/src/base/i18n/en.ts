@@ -896,6 +896,17 @@ const words: I18nType = {
   clearAllTools: 'Clear All Tools',
   noToolsSelected: 'No tools selected',
   planTypeError: 'Plan Type Error',
+  
+  // Model and Tool Keys
+  modelName: 'Model Name',
+  modelNameDescription: 'Specify model name for handling specific tasks (such as image recognition, etc.). If not specified, the default model will be used.',
+  noModelSelected: 'Empty',
+  selectedToolKeys: 'Selected Tool Keys',
+  noToolKeys: 'No tool keys',
+  addToolKey: 'Add Tool Key',
+  toolKeyPlaceholder: 'Enter tool key',
+  removeToolKey: 'Remove',
+  addRemoveTools: 'Add/Remove Tools',
 
     // Common error messages
     loadingFailed: 'Loading failed',
