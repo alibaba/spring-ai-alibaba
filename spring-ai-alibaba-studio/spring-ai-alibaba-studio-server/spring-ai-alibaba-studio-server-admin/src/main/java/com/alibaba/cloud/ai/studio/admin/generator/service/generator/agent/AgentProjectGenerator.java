@@ -29,9 +29,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 /**
@@ -99,27 +99,20 @@ public class AgentProjectGenerator implements ProjectGenerator {
 	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, Object>> models, Path projectRoot,
 			ProjectDescription projectDescription) {
 		Path fileRoot = createDirectory(projectRoot, projectDescription);
+
 		for (int i = 0; i < templateNames.size(); i++) {
 			String templateName = templateNames.get(i);
-			String template;
+			Map<String, Object> model = models.get(i);
+			Path filePath = fileRoot.resolve(templateName);
+
 			try {
-				template = templateRenderer.render(templateName, models.get(i));
+				String template = templateRenderer.render(templateName, model);
+
+				// 覆盖写文件（自动创建/替换文件）
+				Files.writeString(filePath, template, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 			}
 			catch (IOException e) {
-				throw new RuntimeException("Got error when rendering template" + templateName, e);
-			}
-			Path file;
-			try {
-				file = Files.createFile(fileRoot.resolve(templateName));
-			}
-			catch (IOException e) {
-				throw new RuntimeException("Got error when creating file", e);
-			}
-			try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
-				writer.print(template);
-			}
-			catch (IOException e) {
-				throw new RuntimeException("Got error when writing template " + templateName, e);
+				throw new RuntimeException("Error processing template: " + templateName, e);
 			}
 		}
 	}

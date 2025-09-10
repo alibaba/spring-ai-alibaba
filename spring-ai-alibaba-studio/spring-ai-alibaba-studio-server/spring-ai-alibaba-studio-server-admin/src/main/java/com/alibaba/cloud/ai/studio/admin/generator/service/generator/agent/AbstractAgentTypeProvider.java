@@ -18,6 +18,8 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent;
 import java.util.List;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.studio.admin.generator.utils.CodeGenUtils.*;
+
 /**
  * AgentTypeProvider 的抽象基类，提供通用的校验逻辑和渲染工具
  *
@@ -138,21 +140,21 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 			.append(builderName)
 			.append(".builder()\n")
 			.append(".name(\"")
-			.append(esc(shell.getName()))
+			.append(esc(shell.name()))
 			.append("\")\n")
 			.append(".description(\"")
-			.append(esc(nvl(shell.getDescription())))
+			.append(esc(nvl(shell.description())))
 			.append("\")\n");
 
-		if (shell.getOutputKey() != null) {
-			code.append(".outputKey(\"").append(esc(shell.getOutputKey())).append("\")\n");
+		if (shell.outputKey() != null) {
+			code.append(".outputKey(\"").append(esc(shell.outputKey())).append("\")\n");
 		}
 
 		return code;
 	}
 
 	/**
-	 * 生成状态策略代码
+	 * 生成状态策略代码 todo: 目前渲染的每个子agent都有自己的state注册， 需要确认flowAgent的state是全局统一的还是子agent隔离的
 	 * @param handle Agent handle 配置
 	 * @param defaultMessagesStrategy 当 messages 策略未定义时的默认值（null 表示不添加默认值）
 	 * @return 生成的状态策略代码和是否有 messages 策略的标志
@@ -214,47 +216,6 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 		if (childVarNames != null && !childVarNames.isEmpty()) {
 			code.append(".subAgents(List.of(").append(String.join(", ", childVarNames)).append("))\n");
 		}
-	}
-
-	/**
-	 * null 值转空字符串
-	 */
-	protected static String nvl(String s) {
-		return s == null ? "" : s;
-	}
-
-	/**
-	 * 转义字符串用于代码生成
-	 */
-	protected static String esc(String s) {
-		return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
-	}
-
-	/**
-	 * 对象转字符串
-	 */
-	protected static String str(Object o) {
-		return o == null ? null : String.valueOf(o);
-	}
-
-	/**
-	 * 对象转整数
-	 */
-	protected static Integer toInt(Object v) {
-		if (v instanceof Integer i) {
-			return i;
-		}
-		if (v instanceof Number n) {
-			return n.intValue();
-		}
-		if (v instanceof String s) {
-			try {
-				return Integer.parseInt(s.trim());
-			}
-			catch (Exception ignore) {
-			}
-		}
-		return null;
 	}
 
 }

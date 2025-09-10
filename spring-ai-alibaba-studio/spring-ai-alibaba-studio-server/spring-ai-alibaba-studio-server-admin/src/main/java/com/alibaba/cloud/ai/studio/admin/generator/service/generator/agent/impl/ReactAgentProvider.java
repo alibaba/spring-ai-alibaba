@@ -24,6 +24,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.studio.admin.generator.utils.CodeGenUtils.*;
+
 /**
  * @author yHong
  * @version 1.0
@@ -109,17 +111,17 @@ public class ReactAgentProvider extends AbstractAgentTypeProvider {
 		String var = ctx.nextVar("reactAgent_");
 
 		// instruction 优先使用壳层
-		String instruction = shell.getInstruction() != null && !shell.getInstruction().isBlank()
-				? shell.getInstruction() : str(handle.get("instruction"));
+		String instruction = shell.instruction() != null && !shell.instruction().isBlank() ? shell.instruction()
+				: str(handle.get("instruction"));
 		Integer maxIter = toInt(handle.get("max_iterations"));
 		boolean hasResolver = handle.containsKey("resolver") && str(handle.get("resolver")) != null;
 
 		StringBuilder code = generateBasicBuilderCode("ReactAgent", var, shell);
 
 		// ReactAgent 特有的字段
-		if (shell.getInputKeys() != null && !shell.getInputKeys().isEmpty()) {
+		if (shell.inputKeys() != null && !shell.inputKeys().isEmpty()) {
 			// todo: 目前取第一个作为主输入键， 后续计划将多个inputKey通过占位符注入到instruction中
-			String primaryInputKey = shell.getInputKeys().get(0);
+			String primaryInputKey = shell.inputKeys().get(0);
 			code.append(".inputKey(\"").append(esc(primaryInputKey)).append("\")\n");
 		}
 		code.append(".model(chatModel)\n");
@@ -155,7 +157,6 @@ public class ReactAgentProvider extends AbstractAgentTypeProvider {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	protected void validateSpecific(Map<String, Object> root) {
 		// ReactAgent 必须有 model 配置
 		Map<String, Object> handle = requireHandle(root);

@@ -24,6 +24,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.studio.admin.generator.utils.CodeGenUtils.*;
+
 /**
  * @author yHong
  * @version 1.0
@@ -86,8 +88,8 @@ public class SequentialAgentProvider extends AbstractAgentTypeProvider {
 		StringBuilder code = generateBasicBuilderCode("SequentialAgent", var, shell);
 
 		// SequentialAgent 特有的字段
-		if (shell.getInputKeys() != null && !shell.getInputKeys().isEmpty()) {
-			String primaryInputKey = shell.getInputKeys().get(0);
+		if (shell.inputKeys() != null && !shell.inputKeys().isEmpty()) {
+			String primaryInputKey = shell.inputKeys().get(0);
 			code.append(".inputKey(\"").append(esc(primaryInputKey)).append("\")\n");
 		}
 
