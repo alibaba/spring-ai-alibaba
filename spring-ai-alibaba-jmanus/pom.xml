@@ -15,8 +15,8 @@
         <jsoup-version>1.18.1</jsoup-version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spring-ai.version>1.0.0</spring-ai.version>
-        <spring-boot.version>3.4.5</spring-boot.version>
+        <spring-ai.version>1.0.1</spring-ai.version>
+        <spring-boot.version>3.4.8</spring-boot.version>
         <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
@@ -114,7 +114,7 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
         </dependency>
-        
+
         <!-- MCP SDK -->
         <dependency>
             <groupId>io.modelcontextprotocol.sdk</groupId>
@@ -319,7 +319,7 @@
             <version>2.15.1</version>
         </dependency>
     </dependencies>
-    
+
 
     <build>
         <finalName>jmanus</finalName>

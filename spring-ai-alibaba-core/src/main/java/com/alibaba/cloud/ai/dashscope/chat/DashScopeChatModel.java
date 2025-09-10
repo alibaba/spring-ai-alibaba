@@ -140,7 +140,8 @@ public class DashScopeChatModel implements ChatModel {
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
 
-		this(dashscopeApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry, null);
+		this(dashscopeApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
+				new DefaultToolExecutionEligibilityPredicate());
 	}
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions defaultOptions,
@@ -159,7 +160,7 @@ public class DashScopeChatModel implements ChatModel {
 		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
-		this.toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
+		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 	}
 
 	@Override
