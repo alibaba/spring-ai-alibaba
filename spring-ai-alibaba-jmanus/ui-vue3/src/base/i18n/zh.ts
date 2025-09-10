@@ -687,6 +687,8 @@ const words: I18nType = {
     thinkingAnalyzing: '正在分析任务需求...',
     thinkingExecuting: '正在执行: {title}',
     thinkingResponse: '正在组织语言回复您...',
+    copyResponse: '复制回复',
+    regenerateResponse: '重新生成回复',
     thinkingProcessing: '正在处理您的请求...',
     preparingExecution: '准备执行计划...',
     preparing: '准备执行...',

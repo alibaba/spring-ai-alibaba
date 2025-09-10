@@ -719,6 +719,8 @@ const words: I18nType = {
     thinkingAnalyzing: 'Analyzing task requirements...',
     thinkingExecuting: 'Executing: {title}',
     thinkingResponse: 'Organizing response for you...',
+    copyResponse: 'Copy Response',
+    regenerateResponse: 'Regenerate Response',
     thinkingProcessing: 'Processing your request...',
     preparingExecution: 'Preparing to execute plan...',
     preparing: 'Preparing...',

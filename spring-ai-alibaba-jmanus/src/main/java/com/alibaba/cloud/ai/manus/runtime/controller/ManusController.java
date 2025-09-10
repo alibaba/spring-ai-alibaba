@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanHierarchyReaderService;
 import com.alibaba.cloud.ai.manus.recorder.service.NewRepoPlanExecutionRecorder;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult;
+import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionWrapper;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanInterface;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.manus.runtime.service.PlanIdDispatcher;
@@ -237,15 +238,15 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			String planId = planIdDispatcher.generatePlanId();
 			logger.info("🆕 Generated new planId: {} for tool: {} (planTemplateId: {})", planId, toolName, planTemplateId);
 
-			// Execute the plan template asynchronously using the new unified method
-			CompletableFuture<PlanExecutionResult> future = executePlanTemplate(planTemplateId, rawParam, uploadedFiles, memoryId, true);
+			// Execute the plan template using the new unified method
+			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, rawParam, uploadedFiles, memoryId);
 			
 			// Start the async execution (fire and forget)
-			future.whenComplete((result, throwable) -> {
+			wrapper.getResult().whenComplete((result, throwable) -> {
 				if (throwable != null) {
-					logger.error("Async plan execution failed for planId: {}", planId, throwable);
+					logger.error("Async plan execution failed for planId: {}", wrapper.getRootPlanId(), throwable);
 				} else {
-					logger.info("Async plan execution completed for planId: {}", planId);
+					logger.info("Async plan execution completed for planId: {}", wrapper.getRootPlanId());
 				}
 			});
 
@@ -259,7 +260,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 			// Return task ID and initial status
 			Map<String, Object> response = new HashMap<>();
-			response.put("planId", planId);
+			response.put("planId", wrapper.getRootPlanId());
 			response.put("status", "processing");
 			response.put("message", "Task submitted, processing");
 			response.put("memoryId", memoryId);
@@ -438,9 +439,9 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId, String rawParam,
 			List<Map<String, Object>> uploadedFiles) {
 		try {
-			// Execute the plan template synchronously using the new unified method
-			CompletableFuture<PlanExecutionResult> future = executePlanTemplate(planTemplateId, rawParam, uploadedFiles, null, false);
-			PlanExecutionResult planExecutionResult = future.get();
+			// Execute the plan template using the new unified method
+			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, rawParam, uploadedFiles, null);
+			PlanExecutionResult planExecutionResult = wrapper.getResult().get();
 
 			// Return success with execution result
 			Map<String, Object> response = new HashMap<>();
@@ -459,17 +460,16 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	}
 
 	/**
-	 * Execute a plan template by its ID with support for both sync and async execution
+	 * Execute a plan template by its ID
 	 * 
 	 * @param planTemplateId The ID of the plan template to execute
 	 * @param rawParam       Raw parameters for the execution (can be null)
 	 * @param uploadedFiles  List of uploaded files (can be null)
 	 * @param memoryId       Memory ID for the execution (can be null)
-	 * @param isAsync        Whether to execute asynchronously (true) or synchronously (false)
-	 * @return CompletableFuture<PlanExecutionResult> for async execution, or completed future for sync execution
+	 * @return PlanExecutionWrapper containing both PlanExecutionResult and rootPlanId
 	 */
-	private CompletableFuture<PlanExecutionResult> executePlanTemplate(String planTemplateId, String rawParam,
-			List<Map<String, Object>> uploadedFiles, String memoryId, boolean isAsync) {
+	private PlanExecutionWrapper executePlanTemplate(String planTemplateId, String rawParam,
+			List<Map<String, Object>> uploadedFiles, String memoryId) {
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			logger.error("Plan template ID is null or empty");
 			throw new IllegalArgumentException("Plan template ID cannot be null or empty");
@@ -504,23 +504,14 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByPlan(plan, rootPlanId, null,
 					currentPlanId, null);
 
-			if (isAsync) {
-				// Return the future for async execution
-				return future;
-			} else {
-				// Wait for completion synchronously
-				PlanExecutionResult result = future.get();
-				if (!result.isSuccess()) {
-					throw new RuntimeException("Plan execution failed: " + result.getErrorMessage());
-				}
-				return CompletableFuture.completedFuture(result);
-			}
+			// Return the wrapper containing both the future and rootPlanId
+			return new PlanExecutionWrapper(future, rootPlanId);
 
 		} catch (Exception e) {
 			logger.error("Failed to execute plan template: {}", planTemplateId, e);
 			CompletableFuture<PlanExecutionResult> failedFuture = new CompletableFuture<>();
 			failedFuture.completeExceptionally(new RuntimeException("Plan execution failed: " + e.getMessage(), e));
-			return failedFuture;
+			return new PlanExecutionWrapper(failedFuture, null);
 		}
 	}
 
