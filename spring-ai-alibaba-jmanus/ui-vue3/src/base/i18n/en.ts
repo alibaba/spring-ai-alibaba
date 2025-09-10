@@ -901,11 +901,9 @@ const words: I18nType = {
   modelName: 'Model Name',
   modelNameDescription: 'Specify model name for handling specific tasks (such as image recognition, etc.). If not specified, the default model will be used.',
   noModelSelected: 'Empty',
-  selectedTools: 'Selected Tools',
   noTools: 'No tools',
   addTool: 'Add Tool',
   toolPlaceholder: 'Enter tool',
-  removeTool: 'Remove',
   addRemoveTools: 'Add/Remove Tools',
 
     // Common error messages

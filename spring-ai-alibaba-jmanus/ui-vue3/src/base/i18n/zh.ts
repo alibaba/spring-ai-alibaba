@@ -868,11 +868,9 @@ const words: I18nType = {
   modelName: '模型名称',
   modelNameDescription: '指定模型名字用于处理特定任务（如图片识别等），如不指定则使用默认的模型',
   noModelSelected: '空',
-  selectedTools: '已选工具',
   noTools: '无工具',
   addTool: '添加工具',
   toolPlaceholder: '请输入工具',
-  removeTool: '移除',
   addRemoveTools: '添加/删除工具',
 
     // 通用错误信息
