@@ -21,15 +21,15 @@ import com.alibaba.cloud.ai.mcp.router.core.discovery.FileConfigMcpServiceDiscov
 import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscovery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * @author digitzh
  */
-@Configuration
+@AutoConfiguration
 @EnableConfigurationProperties(McpRouterProperties.class)
 @ConditionalOnExpression("${" + McpRouterProperties.CONFIG_PREFIX + ".enabled:true} == true " + "and '${"
 		+ McpRouterProperties.CONFIG_PREFIX + ".discovery-type}' == 'file'")

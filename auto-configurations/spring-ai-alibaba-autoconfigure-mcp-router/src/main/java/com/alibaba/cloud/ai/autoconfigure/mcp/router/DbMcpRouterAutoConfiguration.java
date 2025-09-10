@@ -22,15 +22,15 @@ import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscovery;
 import com.alibaba.cloud.ai.mcp.router.core.discovery.DbMcpServiceDiscovery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * @author digitzh
  */
-@Configuration
+@AutoConfiguration
 @EnableConfigurationProperties({ McpRouterProperties.class, DbMcpProperties.class })
 @ConditionalOnExpression("$" + "{" + McpRouterProperties.CONFIG_PREFIX + ".enabled:true} == true " + "and '$" + "{"
 		+ McpRouterProperties.CONFIG_PREFIX + ".discovery-type}' == 'database'")
@@ -39,7 +39,7 @@ public class DbMcpRouterAutoConfiguration {
 	private static final Logger log = LoggerFactory.getLogger(DbMcpRouterAutoConfiguration.class);
 
 	@Bean
-	public McpServiceDiscovery mySqlMcpServiceDiscovery(DbMcpProperties dbMcpProperties) {
+	public McpServiceDiscovery dbMcpServiceDiscovery(DbMcpProperties dbMcpProperties) {
 		log.info("Creating DB MCP service discovery with configuration: {}", dbMcpProperties);
 		return new DbMcpServiceDiscovery(dbMcpProperties);
 	}
