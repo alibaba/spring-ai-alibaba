@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.alibaba.cloud.ai.manus.recorder.entity.po.AgentExecutionRecordEntity;
 import com.alibaba.cloud.ai.manus.recorder.entity.po.PlanExecutionRecordEntity;
@@ -56,6 +57,7 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 	 * @param toolcallId Tool call ID that triggered this plan (can be null)
 	 * @return The ID of the created plan execution record, or null if creation failed
 	 */
+	@Transactional
 	public Long recordPlanExecutionStart(String currentPlanId, String title, String userRequset,
 			List<ExecutionStep> executionSteps, String parentPlanId, String rootPlanId, String toolcallId) {
 		try {
