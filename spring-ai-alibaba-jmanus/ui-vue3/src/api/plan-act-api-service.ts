@@ -48,9 +48,9 @@ export class PlanActApiService {
   }
 
   // Execute generated plan using ManusController.executeByToolNameAsync
-  public static async executePlan(planTemplateId: string, rawParam?: string, uploadedFiles?: any[]): Promise<any> {
+  public static async executePlan(planTemplateId: string, rawParam?: string, uploadedFiles?: any[], replacementParams?: Record<string, string>): Promise<any> {
     return LlmCheckService.withLlmCheck(async () => {
-      console.log('[PlanActApiService] executePlan called with:', { planTemplateId, rawParam, uploadedFiles })
+      console.log('[PlanActApiService] executePlan called with:', { planTemplateId, rawParam, uploadedFiles, replacementParams })
       
       // Use planTemplateId as toolName to call executeByToolNameAsync
       const requestBody: Record<string, any> = { 
@@ -60,6 +60,10 @@ export class PlanActApiService {
       if (uploadedFiles && uploadedFiles.length > 0) {
         requestBody.uploadedFiles = uploadedFiles
         console.log('[PlanActApiService] Including uploaded files:', uploadedFiles.length)
+      }
+      if (replacementParams && Object.keys(replacementParams).length > 0) {
+        requestBody.replacementParams = replacementParams
+        console.log('[PlanActApiService] Including replacement params:', replacementParams)
       }
       
       console.log('[PlanActApiService] Making request to:', `/api/executor/executeByToolNameAsync`)

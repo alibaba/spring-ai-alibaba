@@ -186,7 +186,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-  executePlan: []
+  executePlan: [replacementParams?: Record<string, string>]
   publishMcpService: []
   clearParams: []
   updateExecutionParams: [params: string]
@@ -311,7 +311,11 @@ const buttonText = computed(() => {
 
 // Methods
 const handleExecutePlan = () => {
-  emit('executePlan')
+  // Pass replacement parameters if available
+  const replacementParams = parameterRequirements.value.hasParameters && Object.keys(parameterValues.value).length > 0 
+    ? parameterValues.value 
+    : undefined
+  emit('executePlan', replacementParams)
 }
 
 const handlePublishMcpService = () => {

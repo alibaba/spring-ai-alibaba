@@ -355,6 +355,7 @@ export class SidebarStore {
         title,
         planData,
         params: this.executionParams.trim() || undefined,
+        replacementParams: undefined as Record<string, string> | undefined
       }
     } catch (error: any) {
       console.error('Failed to prepare plan execution:', error)

@@ -261,7 +261,7 @@ const loadCoordinatorToolConfig = async () => {
 
 // Emits - Keep some events for communication with external components
 const emit = defineEmits<{
-  planExecutionRequested: [payload: { title: string; planData: any; params?: string | undefined }]
+  planExecutionRequested: [payload: { title: string; planData: any; params?: string | undefined; replacementParams?: Record<string, string> | undefined }]
 }>()
 
 const handleSaveTemplate = async () => {
@@ -343,8 +343,8 @@ const handleRestore = () => {
   }
 }
 
-const handleExecutePlan = async () => {
-  console.log('[Sidebar] handleExecutePlan called')
+const handleExecutePlan = async (replacementParams?: Record<string, string>) => {
+  console.log('[Sidebar] handleExecutePlan called with replacementParams:', replacementParams)
 
   try {
     const planData = sidebarStore.preparePlanExecution()
@@ -354,11 +354,22 @@ const handleExecutePlan = async () => {
       return
     }
 
+    // Add replacement parameters to plan data if provided
+    if (replacementParams && Object.keys(replacementParams).length > 0) {
+      (planData as any).replacementParams = replacementParams
+      console.log('[Sidebar] Added replacement parameters to plan data:', replacementParams)
+    }
+
     console.log('[Sidebar] Triggering plan execution request:', planData)
 
     // Send plan execution event to chat component
     console.log('[Sidebar] Emitting planExecutionRequested event')
-    emit('planExecutionRequested', planData)
+    emit('planExecutionRequested', {
+      title: planData.title,
+      planData: planData.planData,
+      params: planData.params,
+      replacementParams: replacementParams
+    })
 
     console.log('[Sidebar] Event emitted')
   } catch (error: any) {

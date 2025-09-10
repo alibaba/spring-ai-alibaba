@@ -618,6 +618,7 @@ const handlePlanExecutionRequested = async (payload: {
   title: string
   planData: any
   params?: string | undefined
+  replacementParams?: Record<string, string>
 }) => {
   console.log('[DirectView] Plan execution requested:', payload)
 
@@ -674,14 +675,15 @@ const handlePlanExecutionRequested = async (payload: {
     // Get uploaded files from global state
     const uploadedFiles = hasUploadedFiles() ? getUploadedFiles() : undefined
     console.log('[Direct] Executing with uploaded files:', uploadedFiles?.length || 0)
+    console.log('[Direct] Executing with replacement params:', payload.replacementParams)
     
     let response
     if (payload.params?.trim()) {
       console.log('[Direct] Calling executePlan with rawParam:', payload.params.trim())
-      response = await PlanActApiService.executePlan(planTemplateId, payload.params.trim(), uploadedFiles)
+      response = await PlanActApiService.executePlan(planTemplateId, payload.params.trim(), uploadedFiles, payload.replacementParams)
     } else {
       console.log('[Direct] Calling executePlan without rawParam')
-      response = await PlanActApiService.executePlan(planTemplateId, undefined, uploadedFiles)
+      response = await PlanActApiService.executePlan(planTemplateId, undefined, uploadedFiles, payload.replacementParams)
     }
 
     console.log('[Direct] Plan execution API response:', response)

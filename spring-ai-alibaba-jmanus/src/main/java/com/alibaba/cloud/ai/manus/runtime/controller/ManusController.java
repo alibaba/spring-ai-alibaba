@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.manus.exception.PlanException;
 import com.alibaba.cloud.ai.manus.memory.entity.MemoryEntity;
 import com.alibaba.cloud.ai.manus.memory.service.MemoryService;
 import com.alibaba.cloud.ai.manus.planning.service.PlanTemplateService;
+import com.alibaba.cloud.ai.manus.planning.service.IPlanParameterMappingService;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.PlanExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecord;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanHierarchyReaderService;
@@ -88,6 +89,9 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	@Autowired
 	private PlanTemplateService planTemplateService;
+
+	@Autowired
+	private IPlanParameterMappingService parameterMappingService;
 
 	@Autowired
 	public ManusController(ObjectMapper objectMapper) {
@@ -159,7 +163,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	 * Execute plan by tool name synchronously (GET method)
 	 * 
 	 * @param toolName  Tool name
-	 * @param allParams All URL query parameters
 	 * @return Execution result directly
 	 */
 	@GetMapping("/executeByToolNameSync/{toolName}")
@@ -185,9 +188,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 		logger.info("Execute tool '{}' synchronously with plan template ID '{}', parameters: {}", toolName,
 				planTemplateId, allParams);
-		String rawParam = allParams != null ? allParams.get("rawParam") : null;
 		// Execute synchronously and return result directly
-		return executePlanSyncAndBuildResponse(planTemplateId, rawParam, null);
+		return executePlanSyncAndBuildResponse(planTemplateId, null);
 	}
 
 	/**
@@ -226,16 +228,18 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		}
 
 		try {
-			// Get raw parameters
-			String rawParam = (String) request.get("rawParam");
 			String memoryId = (String) request.get("memoryId");
 			
 			// Handle uploaded files if present
 			@SuppressWarnings("unchecked")
 			List<Map<String, Object>> uploadedFiles = (List<Map<String, Object>>) request.get("uploadedFiles");
 
+			// Get replacement parameters for <<>> replacement
+			@SuppressWarnings("unchecked")
+			Map<String, Object> replacementParams = (Map<String, Object>) request.get("replacementParams");
+
 			// Execute the plan template using the new unified method
-			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, rawParam, uploadedFiles, memoryId);
+			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, uploadedFiles, memoryId, replacementParams);
 			
 			// Start the async execution (fire and forget)
 			wrapper.getResult().whenComplete((result, throwable) -> {
@@ -251,7 +255,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 				memoryId = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 			}
 
-			String query = rawParam != null ? rawParam : "Execute plan template: " + planTemplateId;
+			String query =  "Execute plan template: " + planTemplateId;
 			memoryService.saveMemory(new MemoryEntity(memoryId, query));
 
 			// Return task ID and initial status
@@ -302,16 +306,19 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 					.body(Map.of("error", "No plan template ID associated with tool: " + toolName));
 		}
 
-		String rawParam = (String) request.get("rawParam");
-
 		// Handle uploaded files if present
 		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> uploadedFiles = (List<Map<String, Object>>) request.get("uploadedFiles");
 
-		logger.info("Executing tool '{}' synchronously with plan template ID '{}', uploadedFiles: {}",
-				toolName, planTemplateId, uploadedFiles != null ? uploadedFiles.size() : "null");
+		// Get replacement parameters for <<>> replacement
+		@SuppressWarnings("unchecked")
+		Map<String, Object> replacementParams = (Map<String, Object>) request.get("replacementParams");
 
-		return executePlanSyncAndBuildResponse(planTemplateId, rawParam, uploadedFiles);
+		logger.info("Executing tool '{}' synchronously with plan template ID '{}', uploadedFiles: {}, replacementParams: {}",
+				toolName, planTemplateId, uploadedFiles != null ? uploadedFiles.size() : "null", 
+				replacementParams != null ? replacementParams.size() : "null");
+
+		return executePlanSyncAndBuildResponse(planTemplateId, uploadedFiles, replacementParams);
 	}
 
 	/**
@@ -428,15 +435,27 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	 * Execute plan synchronously and build response
 	 * 
 	 * @param planTemplateId The plan template ID to execute
-	 * @param rawParam       Raw parameters for execution (can be null)
 	 * @param uploadedFiles  List of uploaded files (can be null)
 	 * @return ResponseEntity with execution result
 	 */
-	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId, String rawParam,
+	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId, 
 			List<Map<String, Object>> uploadedFiles) {
+		return executePlanSyncAndBuildResponse(planTemplateId, uploadedFiles, null);
+	}
+
+	/**
+	 * Execute plan synchronously and build response with parameter replacement support
+	 * 
+	 * @param planTemplateId The plan template ID to execute
+	 * @param uploadedFiles  List of uploaded files (can be null)
+	 * @param replacementParams Parameters for <<>> replacement (can be null)
+	 * @return ResponseEntity with execution result
+	 */
+	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId, 
+			List<Map<String, Object>> uploadedFiles, Map<String, Object> replacementParams) {
 		try {
 			// Execute the plan template using the new unified method
-			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, rawParam, uploadedFiles, null);
+			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, uploadedFiles, null, replacementParams);
 			PlanExecutionResult planExecutionResult = wrapper.getResult().get();
 
 			// Return success with execution result
@@ -456,16 +475,16 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	}
 
 	/**
-	 * Execute a plan template by its ID
+	 * Execute a plan template by its ID with parameter replacement support
 	 * 
 	 * @param planTemplateId The ID of the plan template to execute
-	 * @param rawParam       Raw parameters for the execution (can be null)
 	 * @param uploadedFiles  List of uploaded files (can be null)
 	 * @param memoryId       Memory ID for the execution (can be null)
+	 * @param replacementParams Parameters for <<>> replacement (can be null)
 	 * @return PlanExecutionWrapper containing both PlanExecutionResult and rootPlanId
 	 */
-	private PlanExecutionWrapper executePlanTemplate(String planTemplateId, String rawParam,
-			List<Map<String, Object>> uploadedFiles, String memoryId) {
+	private PlanExecutionWrapper executePlanTemplate(String planTemplateId,
+			List<Map<String, Object>> uploadedFiles, String memoryId, Map<String, Object> replacementParams) {
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			logger.error("Plan template ID is null or empty");
 			throw new IllegalArgumentException("Plan template ID cannot be null or empty");
@@ -485,6 +504,33 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			String planJson = planTemplateService.getLatestPlanVersion(planTemplateId);
 			if (planJson == null) {
 				throw new RuntimeException("Plan template not found: " + planTemplateId);
+			}
+
+			// Prepare parameters for replacement
+			Map<String, Object> parametersForReplacement = new HashMap<>();
+			if (replacementParams != null) {
+				parametersForReplacement.putAll(replacementParams);
+			}
+			// Add the generated planId to parameters
+			parametersForReplacement.put("planId", rootPlanId);
+
+			// Replace parameter placeholders (<< >>) with actual input parameters
+			if (!parametersForReplacement.isEmpty()) {
+				try {
+					logger.info("Replacing parameter placeholders in plan template with input parameters: {}",
+							parametersForReplacement.keySet());
+					planJson = parameterMappingService.replaceParametersInJson(planJson, parametersForReplacement);
+					logger.debug("Parameter replacement completed successfully");
+				} catch (Exception e) {
+					String errorMsg = "Failed to replace parameters in plan template: " + e.getMessage();
+					logger.error(errorMsg, e);
+					CompletableFuture<PlanExecutionResult> failedFuture = new CompletableFuture<>();
+					failedFuture.completeExceptionally(new RuntimeException(errorMsg, e));
+					return new PlanExecutionWrapper(failedFuture, null);
+				}
+			} else {
+				logger.debug("No parameter replacement needed - replacementParams: {}", 
+						replacementParams != null ? replacementParams.size() : 0);
 			}
 
 			// Parse the plan JSON to create PlanInterface
