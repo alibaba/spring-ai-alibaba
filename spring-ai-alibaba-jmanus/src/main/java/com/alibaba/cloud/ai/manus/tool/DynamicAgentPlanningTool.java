@@ -26,7 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.*;
 
-public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlanningTool.DynamicAgentPlanningInput> implements PlanningToolInterface {
+public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlanningTool.DynamicAgentPlanningInput>
+		implements PlanningToolInterface {
 
 	private static final Logger log = LoggerFactory.getLogger(DynamicAgentPlanningTool.class);
 
@@ -39,15 +40,20 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 	 * Step definition class for dynamic agent planning
 	 */
 	public static class StepDefinition {
+
 		private String stepRequirement;
+
 		private String agentName;
+
 		private String modelName;
+
 		private List<String> selectedToolKeys;
 
 		public StepDefinition() {
 		}
 
-		public StepDefinition(String stepRequirement, String agentName, String modelName, List<String> selectedToolKeys) {
+		public StepDefinition(String stepRequirement, String agentName, String modelName,
+				List<String> selectedToolKeys) {
 			this.stepRequirement = stepRequirement;
 			this.agentName = agentName;
 			this.modelName = modelName;
@@ -85,6 +91,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 		public void setSelectedToolKeys(List<String> selectedToolKeys) {
 			this.selectedToolKeys = selectedToolKeys;
 		}
+
 	}
 
 	/**
@@ -99,7 +106,6 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 		private String terminateColumns;
 
 		private boolean directResponse = false;
-
 
 		public DynamicAgentPlanningInput() {
 		}
@@ -227,12 +233,13 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 	 */
 	private FunctionToolCallback<DynamicAgentPlanningInput, ToolExecuteResult> buildFunctionToolCallback(
 			PlanningToolInterface toolInstance) {
-		return FunctionToolCallback.<DynamicAgentPlanningInput, ToolExecuteResult>builder(name, (DynamicAgentPlanningInput input) -> {
-			if (toolInstance instanceof DynamicAgentPlanningTool) {
-				return ((DynamicAgentPlanningTool) toolInstance).run(input);
-			}
-			throw new UnsupportedOperationException("Tool instance type not supported");
-		})
+		return FunctionToolCallback
+			.<DynamicAgentPlanningInput, ToolExecuteResult>builder(name, (DynamicAgentPlanningInput input) -> {
+				if (toolInstance instanceof DynamicAgentPlanningTool) {
+					return ((DynamicAgentPlanningTool) toolInstance).run(input);
+				}
+				throw new UnsupportedOperationException("Tool instance type not supported");
+			})
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(DynamicAgentPlanningInput.class)
@@ -252,7 +259,7 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			plan.setTitle(title);
 			plan.setDirectResponse(true);
 			plan.setUserRequest(title); // Here title is the user request content
-			
+
 			this.currentPlan = plan;
 			return new ToolExecuteResult("Direct response mode: dynamic agent plan created successfully");
 		}
@@ -298,7 +305,8 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 		}
 
 		this.currentPlan = plan;
-		return new ToolExecuteResult("Dynamic agent plan created successfully\n" + plan.getPlanExecutionStateStringFormat(false));
+		return new ToolExecuteResult(
+				"Dynamic agent plan created successfully\n" + plan.getPlanExecutionStateStringFormat(false));
 	}
 
 	// ToolCallBiFunctionDef interface methods
@@ -356,4 +364,5 @@ public class DynamicAgentPlanningTool extends AbstractBaseTool<DynamicAgentPlann
 			PlanningToolInterface planningToolInterface) {
 		return buildFunctionToolCallback(planningToolInterface);
 	}
+
 }

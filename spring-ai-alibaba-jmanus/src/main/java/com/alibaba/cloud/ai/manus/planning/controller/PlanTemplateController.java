@@ -63,7 +63,6 @@ public class PlanTemplateController {
 	@Autowired
 	private ObjectMapper objectMapper;
 
-
 	@Autowired
 	private IPlanParameterMappingService parameterMappingService;
 
@@ -87,7 +86,7 @@ public class PlanTemplateController {
 		String query = request.get("query");
 		String existingJson = request.get("existingJson"); // Get possible existing JSON
 		String planType = request.get("planType"); // Get plan type
-		
+
 		// Default to simple plan type if not specified
 		if (planType == null || planType.trim().isEmpty()) {
 			planType = "simple";
@@ -176,22 +175,11 @@ public class PlanTemplateController {
 			// Parse JSON to extract planTemplateId and title
 			PlanInterface planData = objectMapper.readValue(planJson, PlanInterface.class);
 
-			String planTemplateId = planData.getRootPlanId();
+			String planTemplateId = planData.getPlanTemplateId();
 			if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
-				planTemplateId = planData.getCurrentPlanId();
-			}
-
-			// Check if planTemplateId is empty or starts with "new-", then generate a new
-			// one
-			if (planTemplateId == null || planTemplateId.trim().isEmpty() || planTemplateId.startsWith("new-")) {
 				String newPlanTemplateId = planIdDispatcher.generatePlanTemplateId();
-				logger.info(
-						"Original planTemplateId '{}' is empty or starts with 'new-', generated new planTemplateId: {}",
-						planTemplateId, newPlanTemplateId);
-
-				// Update the plan object with new ID
-				planData.setCurrentPlanId(newPlanTemplateId);
-				planData.setRootPlanId(newPlanTemplateId);
+				planData.setPlanTemplateId(newPlanTemplateId);
+				planTemplateId = newPlanTemplateId;
 
 				// Re-serialize the updated plan object to JSON
 				planJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(planData);
@@ -211,8 +199,7 @@ public class PlanTemplateController {
 			PlanTemplate template = planTemplateService.getPlanTemplate(planTemplateId);
 			if (template == null) {
 				// If it doesn't exist, create a new plan
-				planTemplateService.savePlanTemplate(planTemplateId, title,
-						title, planJson);
+				planTemplateService.savePlanTemplate(planTemplateId, title, title, planJson);
 				logger.info("New plan created: {}", planTemplateId);
 				return new PlanTemplateService.VersionSaveResult(true, false, "New plan created", 0);
 			}
@@ -223,13 +210,17 @@ public class PlanTemplateController {
 					logger.info("Updated plan template {} with new title and saved new version", planTemplateId);
 					// Get the latest version index after update
 					Integer maxVersionIndex = planTemplateService.getPlanVersions(planTemplateId).size() - 1;
-					return new PlanTemplateService.VersionSaveResult(true, false, "Plan template updated and new version saved", maxVersionIndex);
-				} else {
+					return new PlanTemplateService.VersionSaveResult(true, false,
+							"Plan template updated and new version saved", maxVersionIndex);
+				}
+				else {
 					// Fallback to just saving version if update failed
-					PlanTemplateService.VersionSaveResult result = planTemplateService.saveToVersionHistory(planTemplateId, planJson);
+					PlanTemplateService.VersionSaveResult result = planTemplateService
+						.saveToVersionHistory(planTemplateId, planJson);
 					if (result.isSaved()) {
 						logger.info("New version of plan {} saved", planTemplateId, result.getVersionIndex());
-					} else {
+					}
+					else {
 						logger.info("Plan {} is the same, no new version saved", planTemplateId);
 					}
 					return result;
@@ -258,7 +249,7 @@ public class PlanTemplateController {
 		try {
 			// Parse JSON to get planId
 			PlanInterface planData = objectMapper.readValue(planJson, PlanInterface.class);
-			String planId = planData.getCurrentPlanId();
+			String planId = planData.getPlanTemplateId();
 			if (planId == null) {
 				planId = planData.getRootPlanId();
 			}
@@ -416,6 +407,7 @@ public class PlanTemplateController {
 				.body(Map.of("error", "Failed to get plan template list: " + e.getMessage()));
 		}
 	}
+
 	/**
 	 * Update plan template
 	 * @param request Request containing plan template ID, plan requirements and optional
@@ -428,7 +420,7 @@ public class PlanTemplateController {
 		String query = request.get("query");
 		String existingJson = request.get("existingJson"); // Get possible existing JSON
 		String planType = request.get("planType"); // Get plan type
-		
+
 		// Default to simple plan type if not specified
 		if (planType == null || planType.trim().isEmpty()) {
 			planType = "simple";
@@ -477,7 +469,7 @@ public class PlanTemplateController {
 		try {
 			// Create PlanCreator using PlanningFactory with specified plan type
 			IPlanCreator planCreator = planningFactory.createPlanCreator(planType);
-			
+
 			// Create plan using PlanCreator directly
 			planCreator.createPlanWithoutMemory(context);
 			logger.info("Plan template updated successfully: {}", planId);
@@ -577,14 +569,14 @@ public class PlanTemplateController {
 			if (planJson == null) {
 				return ResponseEntity.notFound().build();
 			}
-			
+
 			List<String> parameters = parameterMappingService.extractParameterPlaceholders(planJson);
-			
+
 			Map<String, Object> response = new HashMap<>();
 			response.put("parameters", parameters);
 			response.put("hasParameters", !parameters.isEmpty());
 			response.put("requirements", parameterMappingService.getParameterRequirements(planJson));
-			
+
 			return ResponseEntity.ok(response);
 		}
 		catch (Exception e) {
@@ -593,4 +585,5 @@ public class PlanTemplateController {
 				.body(Map.of("error", "Failed to get parameter requirements: " + e.getMessage()));
 		}
 	}
+
 }

@@ -313,10 +313,11 @@ public class MapReducePlanningTool
 	 */
 	private ExecutionStep createExecutionStepFromMap(Map<String, Object> stepMap) {
 		String stepRequirement = (String) stepMap.get("stepRequirement");
-		
+
 		// Validate and sanitize stepRequirement to handle Chinese characters properly
 		if (stepRequirement != null) {
-			// Ensure the string is properly encoded and doesn't contain problematic characters
+			// Ensure the string is properly encoded and doesn't contain problematic
+			// characters
 			stepRequirement = sanitizeStepRequirement(stepRequirement);
 		}
 
@@ -325,9 +326,10 @@ public class MapReducePlanningTool
 
 		return executionStep;
 	}
-	
+
 	/**
-	 * Sanitize step requirement string to handle Chinese characters and special characters properly
+	 * Sanitize step requirement string to handle Chinese characters and special
+	 * characters properly
 	 * @param stepRequirement Original step requirement string
 	 * @return Sanitized step requirement string
 	 */
@@ -335,24 +337,25 @@ public class MapReducePlanningTool
 		if (stepRequirement == null) {
 			return null;
 		}
-		
+
 		try {
 			// Ensure proper UTF-8 encoding
 			byte[] bytes = stepRequirement.getBytes("UTF-8");
 			String sanitized = new String(bytes, "UTF-8");
-			
+
 			// Log if we detect Chinese characters for debugging
 			if (containsChineseCharacters(sanitized)) {
 				log.debug("Detected Chinese characters in stepRequirement: {}", sanitized);
 			}
-			
+
 			return sanitized;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.warn("Failed to sanitize stepRequirement, using original: {}", e.getMessage());
 			return stepRequirement;
 		}
 	}
-	
+
 	/**
 	 * Check if string contains Chinese characters
 	 * @param text Input text
@@ -362,12 +365,13 @@ public class MapReducePlanningTool
 		if (text == null) {
 			return false;
 		}
-		
+
 		for (char c : text.toCharArray()) {
 			// Check for Chinese character ranges
 			if ((c >= 0x4E00 && c <= 0x9FFF) || // CJK Unified Ideographs
-				(c >= 0x3400 && c <= 0x4DBF) || // CJK Unified Ideographs Extension A
-				(c >= 0x20000 && c <= 0x2A6DF)) { // CJK Unified Ideographs Extension B
+					(c >= 0x3400 && c <= 0x4DBF) || // CJK Unified Ideographs Extension A
+					(c >= 0x20000 && c <= 0x2A6DF)) { // CJK Unified Ideographs Extension
+														// B
 				return true;
 			}
 		}

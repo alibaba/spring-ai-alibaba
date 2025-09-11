@@ -45,8 +45,7 @@ public class ApiKeyConfigurationListener implements ApplicationListener<Applicat
 			String apiKey = getDynamicApiKey();
 
 			if (apiKey == null || apiKey.trim().isEmpty()) {
-				log.warn(
-						"⚠️ Please remember to set the API key through the web interface at /ui/index.html");
+				log.warn("⚠️ Please remember to set the API key through the web interface at /ui/index.html");
 				log.warn("    The system will not be able to use AI features until an API key is configured.");
 			}
 			else {

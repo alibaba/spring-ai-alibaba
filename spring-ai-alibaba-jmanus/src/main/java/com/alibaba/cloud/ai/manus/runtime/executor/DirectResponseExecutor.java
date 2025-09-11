@@ -48,7 +48,8 @@ public class DirectResponseExecutor extends AbstractPlanExecutor {
 	 * @param manusProperties Manus properties
 	 */
 	public DirectResponseExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
-			AgentService agentService, ILlmService llmService, ManusProperties manusProperties, LevelBasedExecutorPool levelBasedExecutorPool) {
+			AgentService agentService, ILlmService llmService, ManusProperties manusProperties,
+			LevelBasedExecutorPool levelBasedExecutorPool) {
 		super(agents, recorder, agentService, llmService, manusProperties, levelBasedExecutorPool);
 	}
 

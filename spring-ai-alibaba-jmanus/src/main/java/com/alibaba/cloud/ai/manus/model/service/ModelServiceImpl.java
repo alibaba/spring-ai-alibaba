@@ -65,6 +65,7 @@ public class ModelServiceImpl implements ModelService {
 
 	// Cache for third-party API calls with 2-second expiration
 	private final Map<String, CacheEntry<List<AvailableModel>>> apiCache = new ConcurrentHashMap<>();
+
 	private static final long CACHE_EXPIRY_MS = 2000; // 2 seconds
 
 	@Autowired
@@ -75,7 +76,9 @@ public class ModelServiceImpl implements ModelService {
 
 	// Cache entry class
 	private static class CacheEntry<T> {
+
 		private final T data;
+
 		private final long timestamp;
 
 		public CacheEntry(T data) {
@@ -90,6 +93,7 @@ public class ModelServiceImpl implements ModelService {
 		public boolean isExpired() {
 			return System.currentTimeMillis() - timestamp > CACHE_EXPIRY_MS;
 		}
+
 	}
 
 	@Override
@@ -271,7 +275,6 @@ public class ModelServiceImpl implements ModelService {
 		return apiKey.substring(0, 4) + "****" + apiKey.substring(apiKey.length() - 4);
 	}
 
-
 	private List<AvailableModel> parseModelsResponse(Map response) {
 		log.debug("Starting to parse API response: {}", response);
 
@@ -385,12 +388,11 @@ public class ModelServiceImpl implements ModelService {
 	}
 
 	/**
-	 * Public method to call third-party API with caching
-	 * Cache expires every 2 seconds
+	 * Public method to call third-party API with caching Cache expires every 2 seconds
 	 */
 	public List<AvailableModel> getAvailableModels(String baseUrl, String apiKey) {
 		String cacheKey = baseUrl + ":" + apiKey;
-		
+
 		// Check cache first
 		CacheEntry<List<AvailableModel>> cachedEntry = apiCache.get(cacheKey);
 		if (cachedEntry != null && !cachedEntry.isExpired()) {
@@ -399,13 +401,13 @@ public class ModelServiceImpl implements ModelService {
 		}
 
 		log.debug("Cache miss or expired, making new API call to: {}", baseUrl);
-		
+
 		// Make new API call using the internal method
 		List<AvailableModel> models = callThirdPartyApiInternal(baseUrl, apiKey);
-		
+
 		// Cache the result
 		apiCache.put(cacheKey, new CacheEntry<>(models));
-		
+
 		return models;
 	}
 

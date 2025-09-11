@@ -41,8 +41,8 @@
     <div class="preview-content">
       <!-- Step Execution Details -->
       <div v-if="activeTab === 'details'" class="step-details">
-        <!-- Fixed top step basic information -->
-        <div v-if="selectedStep" class="step-info-fixed">
+        <!-- Step basic information -->
+        <div v-if="selectedStep" class="step-info">
           <h3>
             {{
               selectedStep.title ||
@@ -403,6 +403,15 @@ const handleStepSelected = async (stepId: string) => {
 
     selectedStep.value = stepData
     console.log('[RightPanel] Step details updated:', stepData)
+    console.log('[RightPanel] activeTab:', activeTab.value)
+    console.log('[RightPanel] selectedStep.value:', selectedStep.value)
+    console.log('[RightPanel] agentExecution:', selectedStep.value.agentExecution)
+    console.log('[RightPanel] thinkActSteps:', selectedStep.value.agentExecution?.thinkActSteps)
+    console.log('[RightPanel] thinkActSteps length:', selectedStep.value.agentExecution?.thinkActSteps?.length)
+
+    // Force reactivity update
+    await nextTick()
+    console.log('[RightPanel] After nextTick - selectedStep:', selectedStep.value)
 
     // Delay scroll state check to ensure DOM is updated
     setTimeout(() => {
@@ -620,6 +629,8 @@ defineExpose({
   width: 50%;
   display: flex;
   flex-direction: column;
+  height: 100%; /* Ensure it takes full height */
+  overflow: hidden; /* Prevent content from overflowing */
 }
 
 .preview-header {
@@ -648,6 +659,8 @@ defineExpose({
   display: flex;
   flex-direction: column;
   min-height: 0; /* Ensure flex items can shrink */
+  height: 100%; /* Ensure it takes full height */
+  overflow: hidden; /* Prevent content from overflowing */
 }
 
 /* Step details styles */
@@ -657,19 +670,17 @@ defineExpose({
   display: flex;
   flex-direction: column;
   min-height: 0; /* Ensure flex items can shrink */
+  height: 100%; /* Ensure it takes full height */
 }
 
-/* Fixed step basic information at top */
-.step-info-fixed {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: rgba(41, 42, 45, 0.95); /* Semi-transparent background with some transparency */
-  backdrop-filter: blur(10px); /* Background blur effect */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+/* Step basic information */
+.step-info {
   padding: 20px;
   margin: 0 20px;
-  border-radius: 8px 8px 0 0;
+  background: rgba(41, 42, 45, 0.8);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  min-height: 100px; /* Ensure minimum height */
 
   h3 {
     color: #ffffff;
@@ -685,10 +696,11 @@ defineExpose({
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 20px 20px; /* Remove top padding since fixed header already has padding */
+  padding: 0 20px 20px;
   margin: 0 20px 20px;
   background: rgba(255, 255, 255, 0.01);
-  border-radius: 0 0 8px 8px; /* Adjust border radius to match fixed header */
+  border-radius: 8px;
+  min-height: 200px; /* Ensure minimum height */
 
   /* Custom scrollbar styles */
   &::-webkit-scrollbar {

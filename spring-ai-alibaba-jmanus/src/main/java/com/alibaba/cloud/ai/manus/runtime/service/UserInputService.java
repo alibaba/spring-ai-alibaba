@@ -53,7 +53,8 @@ public class UserInputService implements IUserInputService {
 			// structure of FormInputTool
 			FormInputTool.UserFormInput latestFormInput = formInputTool.getLatestUserFormInput();
 			if (latestFormInput != null) {
-				// Use title from form input if available, otherwise use the provided title
+				// Use title from form input if available, otherwise use the provided
+				// title
 				if (latestFormInput.getTitle() != null && !latestFormInput.getTitle().isEmpty()) {
 					waitState.setTitle(latestFormInput.getTitle());
 				}

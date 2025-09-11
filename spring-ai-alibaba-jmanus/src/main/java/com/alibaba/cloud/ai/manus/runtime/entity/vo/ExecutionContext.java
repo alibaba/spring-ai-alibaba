@@ -82,8 +82,6 @@ public class ExecutionContext {
 	 */
 	private String memoryId;
 
-
-
 	/**
 	 * Get plan ID
 	 * @return Unique identifier of the plan

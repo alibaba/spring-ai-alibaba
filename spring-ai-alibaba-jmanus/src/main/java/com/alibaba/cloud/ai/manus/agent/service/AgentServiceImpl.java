@@ -89,7 +89,7 @@ public class AgentServiceImpl implements AgentService {
 	private String namespace;
 
 	@Autowired
-	public AgentServiceImpl(DynamicAgentRepository repository, @Lazy IPlanningFactory planningFactory, 
+	public AgentServiceImpl(DynamicAgentRepository repository, @Lazy IPlanningFactory planningFactory,
 			@Lazy IMcpService mcpService, NamespaceService namespaceService, PlanExecutionRecorder recorder,
 			ManusProperties properties, UserInputService userInputService, PromptService promptService,
 			StreamingResponseHandler streamingResponseHandler, PlanIdDispatcher planIdDispatcher) {
@@ -187,24 +187,26 @@ public class AgentServiceImpl implements AgentService {
 		repository.deleteById(Long.parseLong(id));
 	}
 
-	private DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting, ExecutionStep step, List<String> selectedToolKeys, DynamicModelEntity modelEntity) {
+	private DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting, ExecutionStep step,
+			List<String> selectedToolKeys, DynamicModelEntity modelEntity) {
 
 		// Check if this is a ConfigurableDynaAgent
 		if ("ConfigurableDynaAgent".equals(agentName)) {
 			String name = "ConfigurableDynaAgent";
 			String description = "A configurable dynamic agent";
 			String nextStepPrompt = "Based on the current environment information and prompt to make a next step decision";
-			
+
 			// Use the provided modelEntity directly
 			if (modelEntity != null) {
 				log.info("Using provided model entity for ConfigurableDynaAgent: {}", modelEntity.getModelName());
-			} else {
+			}
+			else {
 				log.info("No model entity provided for ConfigurableDynaAgent, using null model");
 			}
-			
-			return new ConfigurableDynaAgent(llmService, recorder, properties, name, description, nextStepPrompt, 
-				selectedToolKeys, toolCallingManager, initialAgentSetting, userInputService, promptService, 
-				modelEntity, streamingResponseHandler, step, planIdDispatcher);
+
+			return new ConfigurableDynaAgent(llmService, recorder, properties, name, description, nextStepPrompt,
+					selectedToolKeys, toolCallingManager, initialAgentSetting, userInputService, promptService,
+					modelEntity, streamingResponseHandler, step, planIdDispatcher);
 		}
 
 		DynamicAgentEntity entity = repository.findByNamespaceAndAgentName(namespace, agentName);
@@ -338,6 +340,7 @@ public class AgentServiceImpl implements AgentService {
 			entity.setBuiltIn(config.getBuiltIn());
 		}
 	}
+
 	@Override
 	public BaseAgent createDynamicBaseAgent(String name, String planId, String rootPlanId,
 			Map<String, Object> initialAgentSetting, String expectedReturnInfo, ExecutionStep step,

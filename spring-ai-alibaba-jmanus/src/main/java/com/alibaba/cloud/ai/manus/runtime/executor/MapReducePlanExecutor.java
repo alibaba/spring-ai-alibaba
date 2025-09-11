@@ -109,7 +109,7 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 	public MapReducePlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
 			AgentService agentService, ILlmService llmService, ManusProperties manusProperties,
 			ObjectMapper objectMapper, LevelBasedExecutorPool levelBasedExecutorPool) {
-		super(agents, recorder, agentService, llmService, manusProperties,  levelBasedExecutorPool);
+		super(agents, recorder, agentService, llmService, manusProperties, levelBasedExecutorPool);
 		OBJECT_MAPPER = objectMapper;
 
 		// Initialize thread pool with current configuration
@@ -402,7 +402,8 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 
 		for (ExecutionStep originalStep : originalSteps) {
 			ExecutionStep copiedStep = new ExecutionStep();
-			// Preserve the original stepId to maintain consistency with pre-created records
+			// Preserve the original stepId to maintain consistency with pre-created
+			// records
 			copiedStep.setStepId(originalStep.getStepId());
 			copiedStep.setStepIndex(originalStep.getStepIndex());
 			copiedStep.setStepRequirement(originalStep.getStepRequirement());

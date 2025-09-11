@@ -60,9 +60,8 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 
 	private final DynamicModelRepository dynamicModelRepository;
 
-	public PlanExecutorFactory(ILlmService llmService, AgentService agentService, 
-			PlanExecutionRecorder recorder, ManusProperties manusProperties,
-			ObjectMapper objectMapper, LevelBasedExecutorPool levelBasedExecutorPool,
+	public PlanExecutorFactory(ILlmService llmService, AgentService agentService, PlanExecutionRecorder recorder,
+			ManusProperties manusProperties, ObjectMapper objectMapper, LevelBasedExecutorPool levelBasedExecutorPool,
 			DynamicModelRepository dynamicModelRepository) {
 		this.llmService = llmService;
 		this.agentService = agentService;
@@ -90,7 +89,8 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 	private PlanExecutorInterface createDirectResponseExecutor() {
 		log.debug("Creating direct response executor");
 		List<DynamicAgentEntity> agents = agentService.getAllAgents();
-		return new DirectResponseExecutor(agents, recorder, agentService, llmService, manusProperties, levelBasedExecutorPool);
+		return new DirectResponseExecutor(agents, recorder, agentService, llmService, manusProperties,
+				levelBasedExecutorPool);
 	}
 
 	/**
@@ -100,7 +100,8 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 	private PlanExecutorInterface createAdvancedExecutor() {
 		log.debug("Creating advanced MapReduce plan executor");
 		List<DynamicAgentEntity> agents = agentService.getAllAgents();
-		return new MapReducePlanExecutor(agents, recorder, agentService, llmService, manusProperties, objectMapper, levelBasedExecutorPool);
+		return new MapReducePlanExecutor(agents, recorder, agentService, llmService, manusProperties, objectMapper,
+				levelBasedExecutorPool);
 	}
 
 	/**
@@ -110,7 +111,8 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 	private PlanExecutorInterface createDynamicToolExecutor() {
 		log.debug("Creating dynamic agent plan executor");
 		List<DynamicAgentEntity> agents = agentService.getAllAgents();
-		return new DynamicToolPlanExecutor(agents, recorder, agentService, llmService, manusProperties, levelBasedExecutorPool, dynamicModelRepository);
+		return new DynamicToolPlanExecutor(agents, recorder, agentService, llmService, manusProperties,
+				levelBasedExecutorPool, dynamicModelRepository);
 	}
 
 	/**
@@ -131,11 +133,9 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 			return false;
 		}
 		String normalizedType = planType.toLowerCase();
-		return "simple".equals(normalizedType) || "advanced".equals(normalizedType) || 
-			   "direct".equals(normalizedType) || "dynamic_agent".equals(normalizedType);
+		return "simple".equals(normalizedType) || "advanced".equals(normalizedType) || "direct".equals(normalizedType)
+				|| "dynamic_agent".equals(normalizedType);
 	}
-
-
 
 	/**
 	 * Create the appropriate executor based on plan type
@@ -171,6 +171,5 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 			}
 		};
 	}
-
 
 }

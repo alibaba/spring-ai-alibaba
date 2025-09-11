@@ -90,7 +90,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 		this.rootPlanId = rootPlanId;
 	}
 
-
 	@Override
 	public String getTitle() {
 		return title;

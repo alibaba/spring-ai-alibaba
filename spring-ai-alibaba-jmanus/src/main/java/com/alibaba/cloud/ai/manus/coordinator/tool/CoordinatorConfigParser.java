@@ -485,7 +485,8 @@ public class CoordinatorConfigParser {
 						if (c < 32 || c > 126) {
 							// Escape non-ASCII characters as Unicode escape sequences
 							result.append(String.format("\\u%04x", (int) c));
-						} else {
+						}
+						else {
 							result.append(c);
 						}
 					}

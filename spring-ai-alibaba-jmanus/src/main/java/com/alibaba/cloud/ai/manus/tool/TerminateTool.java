@@ -140,7 +140,8 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 			objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 			objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
 			return objectMapper.writeValueAsString(input);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Failed to convert input to JSON format", e);
 			// Fallback to simple string representation
 			return input.toString();

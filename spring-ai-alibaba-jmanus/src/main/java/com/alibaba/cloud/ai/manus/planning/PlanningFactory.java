@@ -181,15 +181,17 @@ public class PlanningFactory implements IPlanningFactory {
 
 	/**
 	 * Create a plan creator based on plan type
-	 * @param planType the type of plan to create ("dynamic_agent" for dynamic agent plans, any other value for standard plans)
+	 * @param planType the type of plan to create ("dynamic_agent" for dynamic agent
+	 * plans, any other value for standard plans)
 	 * @return configured plan creator instance
 	 */
 	public IPlanCreator createPlanCreator(String planType) {
 		if ("dynamic_agent".equals(planType)) {
 			DynamicAgentPlanningTool dynamicAgentPlanningTool = new DynamicAgentPlanningTool();
-			return new DynamicAgentPlanCreator(llmService, dynamicAgentPlanningTool, recorder, promptService, manusProperties,
-					streamingResponseHandler, agentService);
-		} else {
+			return new DynamicAgentPlanCreator(llmService, dynamicAgentPlanningTool, recorder, promptService,
+					manusProperties, streamingResponseHandler, agentService);
+		}
+		else {
 			// Get all dynamic agents from the database for simple plans
 			List<DynamicAgentEntity> agentEntities = agentService.getAllAgents();
 			PlanningToolInterface planningTool = new PlanningTool();

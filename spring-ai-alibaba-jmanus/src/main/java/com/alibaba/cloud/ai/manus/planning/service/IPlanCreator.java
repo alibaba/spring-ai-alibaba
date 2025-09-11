@@ -21,16 +21,19 @@ import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionContext;
  * Interface for plan creation services
  */
 public interface IPlanCreator {
-    
-    /**
-     * Create an execution plan with memory support
-     * @param context execution context, containing the user request and the execution process information
-     */
-    void createPlanWithMemory(ExecutionContext context);
-    
-    /**
-     * Create an execution plan without memory support
-     * @param context execution context, containing the user request and the execution process information
-     */
-    void createPlanWithoutMemory(ExecutionContext context);
+
+	/**
+	 * Create an execution plan with memory support
+	 * @param context execution context, containing the user request and the execution
+	 * process information
+	 */
+	void createPlanWithMemory(ExecutionContext context);
+
+	/**
+	 * Create an execution plan without memory support
+	 * @param context execution context, containing the user request and the execution
+	 * process information
+	 */
+	void createPlanWithoutMemory(ExecutionContext context);
+
 }

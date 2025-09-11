@@ -32,7 +32,6 @@ public class CoordinatorToolVO {
 
 	private String inputSchema;
 
-
 	private String planTemplateId;
 
 	private String httpEndpoint;
@@ -88,7 +87,6 @@ public class CoordinatorToolVO {
 	public void setInputSchema(String inputSchema) {
 		this.inputSchema = inputSchema;
 	}
-
 
 	public String getPlanTemplateId() {
 		return planTemplateId;
@@ -176,7 +174,7 @@ public class CoordinatorToolVO {
 		// Explicitly do not set createTime and updateTime fields
 		return vo;
 	}
- 
+
 	/**
 	 * Convert to Entity
 	 */
@@ -189,7 +187,7 @@ public class CoordinatorToolVO {
 		entity.setPlanTemplateId(this.planTemplateId);
 		entity.setHttpEndpoint(this.httpEndpoint);
 		entity.setMcpEndpoint(this.mcpEndpoint);
-	
+
 		entity.setServiceGroup(this.serviceGroup);
 		entity.setEnableInternalToolcall(this.enableInternalToolcall);
 		entity.setEnableHttpService(this.enableHttpService);
@@ -200,9 +198,9 @@ public class CoordinatorToolVO {
 	@Override
 	public String toString() {
 		return "CoordinatorToolVO{" + "id=" + id + ", toolName='" + toolName + '\'' + ", toolDescription='"
-				+ toolDescription + '\'' + ", planTemplateId='" + planTemplateId + '\'' + ", httpEndpoint='" + httpEndpoint
-				+ '\'' + ", mcpEndpoint='" + mcpEndpoint + '\'' + ", publishStatus='" + publishStatus 
-				+ "', serviceGroup='" + serviceGroup + "', enableInternalToolcall=" + enableInternalToolcall 
+				+ toolDescription + '\'' + ", planTemplateId='" + planTemplateId + '\'' + ", httpEndpoint='"
+				+ httpEndpoint + '\'' + ", mcpEndpoint='" + mcpEndpoint + '\'' + ", publishStatus='" + publishStatus
+				+ "', serviceGroup='" + serviceGroup + "', enableInternalToolcall=" + enableInternalToolcall
 				+ ", enableHttpService=" + enableHttpService + ", enableMcpService=" + enableMcpService + '}';
 	}
 

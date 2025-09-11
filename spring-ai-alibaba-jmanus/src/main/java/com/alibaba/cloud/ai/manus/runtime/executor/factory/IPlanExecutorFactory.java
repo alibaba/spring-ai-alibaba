@@ -38,5 +38,4 @@ public interface IPlanExecutorFactory {
 	 */
 	boolean isPlanTypeSupported(String planType);
 
-
 }

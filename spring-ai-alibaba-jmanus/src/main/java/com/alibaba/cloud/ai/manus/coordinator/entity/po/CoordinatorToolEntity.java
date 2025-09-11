@@ -22,8 +22,7 @@ import java.time.LocalDateTime;
  * Coordinator Tool Entity Class
  */
 @Entity
-@Table(name = "coordinator_tools", 
-       uniqueConstraints = @UniqueConstraint(columnNames = {"toolName", "serviceGroup"}))
+@Table(name = "coordinator_tools", uniqueConstraints = @UniqueConstraint(columnNames = { "toolName", "serviceGroup" }))
 public class CoordinatorToolEntity {
 
 	@Id
@@ -39,7 +38,6 @@ public class CoordinatorToolEntity {
 	@Column(columnDefinition = "VARCHAR(2048)")
 	private String inputSchema;
 
-
 	@Column(nullable = false, length = 50)
 	private String planTemplateId;
 
@@ -51,7 +49,6 @@ public class CoordinatorToolEntity {
 
 	@Column(length = 100)
 	private String serviceGroup;
-
 
 	@Column(nullable = false)
 	private Boolean enableInternalToolcall = true;
@@ -109,7 +106,6 @@ public class CoordinatorToolEntity {
 		this.inputSchema = inputSchema;
 	}
 
-
 	public String getPlanTemplateId() {
 		return planTemplateId;
 	}
@@ -133,7 +129,6 @@ public class CoordinatorToolEntity {
 	public void setMcpEndpoint(String mcpEndpoint) {
 		this.mcpEndpoint = mcpEndpoint;
 	}
-
 
 	public Boolean getEnableInternalToolcall() {
 		return enableInternalToolcall;
@@ -175,7 +170,6 @@ public class CoordinatorToolEntity {
 		this.updateTime = updateTime;
 	}
 
-
 	public String getServiceGroup() {
 		return serviceGroup;
 	}
@@ -183,7 +177,7 @@ public class CoordinatorToolEntity {
 	public void setServiceGroup(String serviceGroup) {
 		this.serviceGroup = serviceGroup;
 	}
-	
+
 	/**
 	 * Automatically set update time when updating
 	 */
@@ -195,11 +189,10 @@ public class CoordinatorToolEntity {
 	@Override
 	public String toString() {
 		return "CoordinatorToolEntity{" + "id=" + id + ", toolName='" + toolName + '\'' + ", toolDescription='"
-				+ toolDescription + '\'' + ", planTemplateId='" + planTemplateId + '\'' + ", httpEndpoint='" + httpEndpoint
-				+ '\'' + ", mcpEndpoint='" + mcpEndpoint + '\'' 
-				+ ", enableInternalToolcall=" + enableInternalToolcall + ", enableHttpService=" + enableHttpService
-				+ ", enableMcpService=" + enableMcpService + ", createTime=" + createTime + ", updateTime="
-				+ updateTime + '}';
+				+ toolDescription + '\'' + ", planTemplateId='" + planTemplateId + '\'' + ", httpEndpoint='"
+				+ httpEndpoint + '\'' + ", mcpEndpoint='" + mcpEndpoint + '\'' + ", enableInternalToolcall="
+				+ enableInternalToolcall + ", enableHttpService=" + enableHttpService + ", enableMcpService="
+				+ enableMcpService + ", createTime=" + createTime + ", updateTime=" + updateTime + '}';
 	}
 
 }

@@ -152,14 +152,9 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 	 * Enum for supported input field types
 	 */
 	public enum InputType {
-		TEXT("text"),
-		NUMBER("number"),
-		EMAIL("email"),
-		PASSWORD("password"),
-		TEXTAREA("textarea"),
-		SELECT("select"),
-		CHECKBOX("checkbox"),
-		RADIO("radio");
+
+		TEXT("text"), NUMBER("number"), EMAIL("email"), PASSWORD("password"), TEXTAREA("textarea"), SELECT("select"),
+		CHECKBOX("checkbox"), RADIO("radio");
 
 		private final String value;
 
@@ -187,6 +182,7 @@ public class FormInputTool extends AbstractBaseTool<FormInputTool.UserFormInput>
 			}
 			return TEXT; // default fallback
 		}
+
 	}
 
 	/**

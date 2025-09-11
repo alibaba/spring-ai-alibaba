@@ -191,4 +191,5 @@ public interface PlanInterface {
 	}
 
 	public String getResult();
+
 }

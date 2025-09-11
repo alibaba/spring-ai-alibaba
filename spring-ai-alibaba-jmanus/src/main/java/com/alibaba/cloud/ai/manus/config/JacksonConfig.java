@@ -36,13 +36,13 @@ public class JacksonConfig {
 	public ObjectMapper objectMapper() {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.registerModule(new JavaTimeModule());
-		
+
 		// Configure UTF-8 support for proper Chinese character handling
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		mapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
 		mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 		mapper.configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL, true);
-		
+
 		logger.info("Created ObjectMapper with JavaTimeModule and UTF-8 support registered");
 		return mapper;
 	}

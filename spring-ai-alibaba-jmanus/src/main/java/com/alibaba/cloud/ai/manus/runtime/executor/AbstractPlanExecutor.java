@@ -41,8 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Abstract base class for plan executors. Contains common logic and basic
- * functionality
+ * Abstract base class for plan executors. Contains common logic and basic functionality
  * for all executor types.
  */
 public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
@@ -78,7 +77,8 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	public static final String EXECUTION_ENV_STRING_KEY = "current_step_env_data";
 
 	public AbstractPlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
-			AgentService agentService, ILlmService llmService, ManusProperties manusProperties, LevelBasedExecutorPool levelBasedExecutorPool) {
+			AgentService agentService, ILlmService llmService, ManusProperties manusProperties,
+			LevelBasedExecutorPool levelBasedExecutorPool) {
 		this.agents = agents;
 		this.recorder = recorder;
 		this.agentService = agentService;
@@ -89,8 +89,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 
 	/**
 	 * General logic for executing a single step.
-	 * 
-	 * @param step    The execution step
+	 * @param step The execution step
 	 * @param context The execution context
 	 * @return The step executor
 	 */
@@ -112,10 +111,12 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 			recorder.recordStepEnd(step, context.getCurrentPlanId());
 
 			return executor;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Error executing step: {}", step.getStepRequirement(), e);
 			step.setResult("Execution failed: " + e.getMessage());
-		} finally {
+		}
+		finally {
 			recorder.recordStepEnd(step, context.getCurrentPlanId());
 		}
 		return null;
@@ -168,7 +169,6 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	protected PlanExecutionRecorder getRecorder() {
 		return recorder;
 	}
-
 
 	/**
 	 * Execute all steps asynchronously and return a CompletableFuture with execution

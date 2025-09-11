@@ -29,7 +29,6 @@ import java.util.List;
  */
 public class PlanExecutor extends AbstractPlanExecutor {
 
-
 	/**
 	 * Constructor for PlanExecutor
 	 * @param agents List of dynamic agent entities
@@ -44,6 +43,5 @@ public class PlanExecutor extends AbstractPlanExecutor {
 		super(agents, recorder, agentService, llmService, manusProperties, levelBasedExecutorPool);
 
 	}
-
 
 }

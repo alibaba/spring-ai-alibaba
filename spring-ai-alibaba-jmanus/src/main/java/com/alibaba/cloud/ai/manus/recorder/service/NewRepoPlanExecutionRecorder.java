@@ -153,7 +153,7 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 			}
 
 			// Extract agent name and request from stepRequirement
-			String extractedAgentName = "Unknown Agent";
+			String extractedAgentName = "Agent";
 			String agentRequest = null;
 
 			if (step.getStepRequirement() != null && !step.getStepRequirement().trim().isEmpty()) {

@@ -106,7 +106,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	/**
 	 * Asynchronous execution of Manus request using PlanningCoordinator
-	 * 
 	 * @param request Request containing user query
 	 * @return Task ID and status
 	 */
@@ -125,7 +124,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 				// Use existing sessionPlanId from file upload
 				planId = sessionPlanId;
 				logger.info("🔄 Using existing sessionPlanId: {}", planId);
-			} else {
+			}
+			else {
 				// Generate new plan ID
 				planId = planIdDispatcher.generatePlanId();
 				logger.info("🆕 Generated new planId: {}", planId);
@@ -150,7 +150,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			response.put("memoryId", memoryId);
 			return ResponseEntity.ok(response);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Failed to start plan execution for planId: {}", planId, e);
 			Map<String, Object> errorResponse = new HashMap<>();
 			errorResponse.put("error", "Failed to start plan execution: " + e.getMessage());
@@ -161,13 +162,11 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	/**
 	 * Execute plan by tool name synchronously (GET method)
-	 * 
-	 * @param toolName  Tool name
+	 * @param toolName Tool name
 	 * @return Execution result directly
 	 */
 	@GetMapping("/executeByToolNameSync/{toolName}")
-	public ResponseEntity<Map<String, Object>> executeByToolNameGetSync(
-			@PathVariable("toolName") String toolName,
+	public ResponseEntity<Map<String, Object>> executeByToolNameGetSync(@PathVariable("toolName") String toolName,
 			@RequestParam(required = false, name = "allParams") Map<String, String> allParams) {
 		if (toolName == null || toolName.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Tool name cannot be empty"));
@@ -183,7 +182,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		String planTemplateId = coordinatorTool.getPlanTemplateId();
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			return ResponseEntity.badRequest()
-					.body(Map.of("error", "No plan template ID associated with tool: " + toolName));
+				.body(Map.of("error", "No plan template ID associated with tool: " + toolName));
 		}
 
 		logger.info("Execute tool '{}' synchronously with plan template ID '{}', parameters: {}", toolName,
@@ -193,9 +192,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	}
 
 	/**
-	 * Execute plan by tool name asynchronously
-	 * If tool is not published, treat toolName as planTemplateId
-	 * 
+	 * Execute plan by tool name asynchronously If tool is not published, treat toolName
+	 * as planTemplateId
 	 * @param request Request containing tool name and parameters
 	 * @return Task ID and status
 	 */
@@ -216,20 +214,20 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			planTemplateId = coordinatorTool.getPlanTemplateId();
 			isPublishedTool = true;
 			logger.info("Found published tool: {} with plan template ID: {}", toolName, planTemplateId);
-		} else {
+		}
+		else {
 			// Tool is not published, treat toolName as planTemplateId
 			planTemplateId = toolName;
 			logger.info("Tool not published, using toolName as planTemplateId: {}", planTemplateId);
 		}
 
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
-			return ResponseEntity.badRequest()
-					.body(Map.of("error", "No plan template ID found for tool: " + toolName));
+			return ResponseEntity.badRequest().body(Map.of("error", "No plan template ID found for tool: " + toolName));
 		}
 
 		try {
 			String memoryId = (String) request.get("memoryId");
-			
+
 			// Handle uploaded files if present
 			@SuppressWarnings("unchecked")
 			List<Map<String, Object>> uploadedFiles = (List<Map<String, Object>>) request.get("uploadedFiles");
@@ -239,13 +237,15 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			Map<String, Object> replacementParams = (Map<String, Object>) request.get("replacementParams");
 
 			// Execute the plan template using the new unified method
-			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, uploadedFiles, memoryId, replacementParams);
-			
+			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, uploadedFiles, memoryId,
+					replacementParams);
+
 			// Start the async execution (fire and forget)
 			wrapper.getResult().whenComplete((result, throwable) -> {
 				if (throwable != null) {
 					logger.error("Async plan execution failed for planId: {}", wrapper.getRootPlanId(), throwable);
-				} else {
+				}
+				else {
 					logger.info("Async plan execution completed for planId: {}", wrapper.getRootPlanId());
 				}
 			});
@@ -255,7 +255,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 				memoryId = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 			}
 
-			String query =  "Execute plan template: " + planTemplateId;
+			String query = "Execute plan template: " + planTemplateId;
 			memoryService.saveMemory(new MemoryEntity(memoryId, query));
 
 			// Return task ID and initial status
@@ -270,8 +270,10 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 			return ResponseEntity.ok(response);
 
-		} catch (Exception e) {
-			logger.error("Failed to start plan execution for tool: {} with planTemplateId: {}", toolName, planTemplateId, e);
+		}
+		catch (Exception e) {
+			logger.error("Failed to start plan execution for tool: {} with planTemplateId: {}", toolName,
+					planTemplateId, e);
 			Map<String, Object> errorResponse = new HashMap<>();
 			errorResponse.put("error", "Failed to start plan execution: " + e.getMessage());
 			errorResponse.put("toolName", toolName);
@@ -282,7 +284,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	/**
 	 * Execute plan by tool name synchronously (POST method)
-	 * 
 	 * @param request Request containing tool name
 	 * @return Execution result directly
 	 */
@@ -303,7 +304,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		String planTemplateId = coordinatorTool.getPlanTemplateId();
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			return ResponseEntity.badRequest()
-					.body(Map.of("error", "No plan template ID associated with tool: " + toolName));
+				.body(Map.of("error", "No plan template ID associated with tool: " + toolName));
 		}
 
 		// Handle uploaded files if present
@@ -314,19 +315,18 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		@SuppressWarnings("unchecked")
 		Map<String, Object> replacementParams = (Map<String, Object>) request.get("replacementParams");
 
-		logger.info("Executing tool '{}' synchronously with plan template ID '{}', uploadedFiles: {}, replacementParams: {}",
-				toolName, planTemplateId, uploadedFiles != null ? uploadedFiles.size() : "null", 
+		logger.info(
+				"Executing tool '{}' synchronously with plan template ID '{}', uploadedFiles: {}, replacementParams: {}",
+				toolName, planTemplateId, uploadedFiles != null ? uploadedFiles.size() : "null",
 				replacementParams != null ? replacementParams.size() : "null");
 
 		return executePlanSyncAndBuildResponse(planTemplateId, uploadedFiles, replacementParams);
 	}
 
 	/**
-	 * Get execution record overview (without detailed ThinkActRecord information)
-	 * Note:
+	 * Get execution record overview (without detailed ThinkActRecord information) Note:
 	 * This method returns basic execution information and does not include detailed
 	 * ThinkActRecord steps for each agent execution.
-	 * 
 	 * @param planId Plan ID
 	 * @return JSON representation of execution record overview
 	 */
@@ -350,7 +350,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			// class
 			planRecord.setUserInputWaitState(waitState);
 			logger.info("Plan {} is waiting for user input. Merged waitState into details response.", planId);
-		} else {
+		}
+		else {
 			planRecord.setUserInputWaitState(null); // Clear if not waiting
 		}
 
@@ -364,16 +365,16 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			// Use Jackson ObjectMapper to convert object to JSON string
 			String jsonResponse = objectMapper.writeValueAsString(planRecord);
 			return ResponseEntity.ok(jsonResponse);
-		} catch (JsonProcessingException e) {
+		}
+		catch (JsonProcessingException e) {
 			logger.error("Error serializing PlanExecutionRecord to JSON for planId: {}", planId, e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body("Error processing request: " + e.getMessage());
+				.body("Error processing request: " + e.getMessage());
 		}
 	}
 
 	/**
 	 * Delete execution record for specified plan ID
-	 * 
 	 * @param planId Plan ID
 	 * @return Result of delete operation
 	 */
@@ -390,14 +391,10 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		return ResponseEntity.ok(Map.of("message", "Execution record found (no deletion needed)", "planId", planId));
 	}
 
-
-	
 	/**
 	 * Submits user input for a plan that is waiting.
-	 * 
-	 * @param planId   The ID of the plan.
-	 * @param formData The user-submitted form data, expected as Map<String,
-	 *                 String>.
+	 * @param planId The ID of the plan.
+	 * @param formData The user-submitted form data, expected as Map<String, String>.
 	 * @return ResponseEntity indicating success or failure.
 	 */
 	@PostMapping("/submit-input/{planId}")
@@ -409,7 +406,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			boolean success = userInputService.submitUserInputs(planId, formData);
 			if (success) {
 				return ResponseEntity.ok(Map.of("message", "Input submitted successfully", "planId", planId));
-			} else {
+			}
+			else {
 				// This case might mean the plan was no longer waiting, or input was
 				// invalid.
 				// UserInputService should ideally throw specific exceptions for clearer
@@ -417,41 +415,41 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 				logger.warn("Failed to submit user input for plan {}, it might not be waiting or input was invalid.",
 						planId);
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-						.body(Map.of("error", "Failed to submit input. Plan not waiting or input invalid.", "planId",
-								planId));
+					.body(Map.of("error", "Failed to submit input. Plan not waiting or input invalid.", "planId",
+							planId));
 			}
-		} catch (IllegalArgumentException e) {
+		}
+		catch (IllegalArgumentException e) {
 			logger.error("Error submitting user input for plan {}: {}", planId, e.getMessage());
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(Map.of("error", e.getMessage(), "planId", planId));
-		} catch (Exception e) {
+				.body(Map.of("error", e.getMessage(), "planId", planId));
+		}
+		catch (Exception e) {
 			logger.error("Unexpected error submitting user input for plan {}: {}", planId, e.getMessage(), e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(Map.of("error", "An unexpected error occurred.", "planId", planId));
+				.body(Map.of("error", "An unexpected error occurred.", "planId", planId));
 		}
 	}
 
 	/**
 	 * Execute plan synchronously and build response
-	 * 
 	 * @param planTemplateId The plan template ID to execute
-	 * @param uploadedFiles  List of uploaded files (can be null)
+	 * @param uploadedFiles List of uploaded files (can be null)
 	 * @return ResponseEntity with execution result
 	 */
-	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId, 
+	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId,
 			List<Map<String, Object>> uploadedFiles) {
 		return executePlanSyncAndBuildResponse(planTemplateId, uploadedFiles, null);
 	}
 
 	/**
 	 * Execute plan synchronously and build response with parameter replacement support
-	 * 
 	 * @param planTemplateId The plan template ID to execute
-	 * @param uploadedFiles  List of uploaded files (can be null)
+	 * @param uploadedFiles List of uploaded files (can be null)
 	 * @param replacementParams Parameters for <<>> replacement (can be null)
 	 * @return ResponseEntity with execution result
 	 */
-	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId, 
+	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId,
 			List<Map<String, Object>> uploadedFiles, Map<String, Object> replacementParams) {
 		try {
 			// Execute the plan template using the new unified method
@@ -465,7 +463,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 			return ResponseEntity.ok(response);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Failed to execute plan template synchronously: {}", planTemplateId, e);
 			Map<String, Object> errorResponse = new HashMap<>();
 			errorResponse.put("error", "Execution failed: " + e.getMessage());
@@ -476,15 +475,14 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 	/**
 	 * Execute a plan template by its ID with parameter replacement support
-	 * 
 	 * @param planTemplateId The ID of the plan template to execute
-	 * @param uploadedFiles  List of uploaded files (can be null)
-	 * @param memoryId       Memory ID for the execution (can be null)
+	 * @param uploadedFiles List of uploaded files (can be null)
+	 * @param memoryId Memory ID for the execution (can be null)
 	 * @param replacementParams Parameters for <<>> replacement (can be null)
 	 * @return PlanExecutionWrapper containing both PlanExecutionResult and rootPlanId
 	 */
-	private PlanExecutionWrapper executePlanTemplate(String planTemplateId,
-			List<Map<String, Object>> uploadedFiles, String memoryId, Map<String, Object> replacementParams) {
+	private PlanExecutionWrapper executePlanTemplate(String planTemplateId, List<Map<String, Object>> uploadedFiles,
+			String memoryId, Map<String, Object> replacementParams) {
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			logger.error("Plan template ID is null or empty");
 			throw new IllegalArgumentException("Plan template ID cannot be null or empty");
@@ -521,15 +519,17 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 							parametersForReplacement.keySet());
 					planJson = parameterMappingService.replaceParametersInJson(planJson, parametersForReplacement);
 					logger.debug("Parameter replacement completed successfully");
-				} catch (Exception e) {
+				}
+				catch (Exception e) {
 					String errorMsg = "Failed to replace parameters in plan template: " + e.getMessage();
 					logger.error(errorMsg, e);
 					CompletableFuture<PlanExecutionResult> failedFuture = new CompletableFuture<>();
 					failedFuture.completeExceptionally(new RuntimeException(errorMsg, e));
 					return new PlanExecutionWrapper(failedFuture, null);
 				}
-			} else {
-				logger.debug("No parameter replacement needed - replacementParams: {}", 
+			}
+			else {
+				logger.debug("No parameter replacement needed - replacementParams: {}",
 						replacementParams != null ? replacementParams.size() : 0);
 			}
 
@@ -549,7 +549,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			// Return the wrapper containing both the future and rootPlanId
 			return new PlanExecutionWrapper(future, rootPlanId);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Failed to execute plan template: {}", planTemplateId, e);
 			CompletableFuture<PlanExecutionResult> failedFuture = new CompletableFuture<>();
 			failedFuture.completeExceptionally(new RuntimeException("Plan execution failed: " + e.getMessage(), e));
@@ -557,11 +558,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		}
 	}
 
-
 	/**
-	 * Get detailed agent execution record by stepId (includes ThinkActRecord
-	 * details)
-	 * 
+	 * Get detailed agent execution record by stepId (includes ThinkActRecord details)
 	 * @param stepId The step ID to query
 	 * @return Detailed agent execution record with ThinkActRecord details
 	 */
@@ -578,7 +576,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 			logger.info("Successfully retrieved agent execution detail for stepId: {}", stepId);
 			return ResponseEntity.ok(detail);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Error fetching agent execution detail for stepId: {}", stepId, e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}

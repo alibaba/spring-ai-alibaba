@@ -208,41 +208,16 @@
           <h4>{{ t('config.agentConfig.toolConfiguration') }}</h4>
 
           <!-- Assigned Tools -->
-          <div class="assigned-tools">
-            <div class="section-header">
-              <span
-                >{{ t('config.agentConfig.assignedTools') }} ({{
-                  (selectedAgent.availableTools || []).length
-                }})</span
-              >
-              <button
-                class="action-btn small"
-                @click="showToolSelectionModal"
-                v-if="availableTools.length > 0"
-              >
-                <Icon icon="carbon:add" />
-                {{ t('config.agentConfig.addRemoveTools') }}
-              </button>
-            </div>
-
-            <div class="tools-grid">
-              <div
-                v-for="toolId in selectedAgent.availableTools || []"
-                :key="toolId"
-                class="tool-item assigned"
-              >
-                <div class="tool-info">
-                  <span class="tool-name">{{ getToolDisplayName(toolId) }}</span>
-                  <span class="tool-desc">{{ getToolDescription(toolId) }}</span>
-                </div>
-              </div>
-
-              <div v-if="selectedAgent.availableTools.length === 0" class="no-tools">
-                <Icon icon="carbon:tool-box" />
-                <span>{{ t('config.agentConfig.noAssignedTools') }}</span>
-              </div>
-            </div>
-          </div>
+          <AssignedTools
+            :title="t('config.agentConfig.assignedTools')"
+            :selected-tool-ids="selectedAgent.availableTools || []"
+            :available-tools="availableTools"
+            :add-button-text="t('config.agentConfig.addRemoveTools')"
+            :empty-text="t('config.agentConfig.noAssignedTools')"
+            :show-add-button="availableTools.length > 0"
+            @add-tools="showToolSelectionModal"
+            @tools-filtered="handleToolsFiltered"
+          />
         </div>
       </div>
 
@@ -373,6 +348,7 @@ import { storeToRefs } from 'pinia'
 import ConfigPanel from './components/configPanel.vue'
 import Modal from '@/components/modal/index.vue'
 import ToolSelectionModal from '@/components/tool-selection-modal/ToolSelectionModal.vue'
+import AssignedTools from '@/components/shared/AssignedTools.vue'
 import { AgentApiService, type Agent, type Tool } from '@/api/agent-api-service'
 import { type Model, ModelApiService } from '@/api/model-api-service'
 import { usenameSpaceStore } from '@/stores/namespace'
@@ -427,16 +403,10 @@ const newAgent = reactive<Omit<Agent, 'id' | 'availableTools'>>({
 
 // Computed property - removed unused unassignedTools since it's not used in the template
 
-// Get tool display name
+// Helper function for agent card display
 const getToolDisplayName = (toolId: string): string => {
   const tool = availableTools.find(t => t.key === toolId)
   return tool ? tool.name : toolId
-}
-
-// Tool description retrieval
-const getToolDescription = (toolId: string): string => {
-  const tool = availableTools.find(t => t.key === toolId)
-  return tool ? tool.description : ''
 }
 
 // Message Prompt
@@ -563,6 +533,13 @@ const showToolSelectionModal = () => {
 const handleToolSelectionConfirm = (selectedToolIds: string[]) => {
   if (selectedAgent.value) {
     selectedAgent.value.availableTools = [...selectedToolIds]
+  }
+}
+
+// Handle tools filtered event (remove tools that are no longer available)
+const handleToolsFiltered = (filteredTools: string[]) => {
+  if (selectedAgent.value) {
+    selectedAgent.value.availableTools = [...filteredTools]
   }
 }
 
@@ -1052,65 +1029,6 @@ watch(
   }
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-
-  span {
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.8);
-  }
-}
-
-.tools-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.tool-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  transition: all 0.3s ease;
-
-  &.assigned {
-    border-color: rgba(102, 126, 234, 0.3);
-    background: rgba(102, 126, 234, 0.1);
-  }
-}
-
-.tool-info {
-  flex: 1;
-
-  .tool-name {
-    display: block;
-    font-weight: 500;
-    margin-bottom: 4px;
-  }
-
-  .tool-desc {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
-    line-height: 1.3;
-  }
-}
-
-.no-tools {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 40px;
-  color: rgba(255, 255, 255, 0.4);
-  font-style: italic;
-}
 
 .action-btn {
   display: flex;

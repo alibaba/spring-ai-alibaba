@@ -34,15 +34,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Dynamic Agent Plan Executor - Specialized executor for DynamicAgentExecutionPlan
- * with user-selected tools support
+ * Dynamic Agent Plan Executor - Specialized executor for DynamicAgentExecutionPlan with
+ * user-selected tools support
  */
 public class DynamicToolPlanExecutor extends AbstractPlanExecutor {
 
 	private static final Logger logger = LoggerFactory.getLogger(DynamicToolPlanExecutor.class);
 
 	private final DynamicModelRepository dynamicModelRepository;
-
 
 	/**
 	 * Constructor for DynamicAgentPlanExecutor
@@ -54,13 +53,13 @@ public class DynamicToolPlanExecutor extends AbstractPlanExecutor {
 	 * @param levelBasedExecutorPool Level-based executor pool for depth-based execution
 	 * @param dynamicModelRepository Dynamic model repository
 	 */
-	public DynamicToolPlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, 
-			AgentService agentService, ILlmService llmService, ManusProperties manusProperties, 
+	public DynamicToolPlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder,
+			AgentService agentService, ILlmService llmService, ManusProperties manusProperties,
 			LevelBasedExecutorPool levelBasedExecutorPool, DynamicModelRepository dynamicModelRepository) {
 		super(agents, recorder, agentService, llmService, manusProperties, levelBasedExecutorPool);
 		this.dynamicModelRepository = dynamicModelRepository;
 	}
-	
+
 	/**
 	 * Get the executor for the step.
 	 */
@@ -78,11 +77,11 @@ public class DynamicToolPlanExecutor extends AbstractPlanExecutor {
 		initSettings.put(CURRENT_STEP_INDEX_KEY, String.valueOf(stepIndex));
 		initSettings.put(STEP_TEXT_KEY, stepText);
 		initSettings.put(EXTRA_PARAMS_KEY, context.getPlan().getExecutionParams());
-		if("ConfigurableDynaAgent".equals(stepType)) {
+		if ("ConfigurableDynaAgent".equals(stepType)) {
 			String modelName = step.getModelName();
 			List<String> selectedToolKeys = step.getSelectedToolKeys();
 			DynamicModelEntity modelEntity = dynamicModelRepository.findByModelName(modelName);
-			
+
 			BaseAgent executor = agentService.createDynamicBaseAgent("ConfigurableDynaAgent",
 					context.getPlan().getCurrentPlanId(), context.getPlan().getRootPlanId(), initSettings,
 					expectedReturnInfo, step, modelEntity, selectedToolKeys);

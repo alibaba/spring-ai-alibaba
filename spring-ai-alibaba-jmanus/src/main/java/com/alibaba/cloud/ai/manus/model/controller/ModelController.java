@@ -133,7 +133,8 @@ public class ModelController {
 		Map<String, Object> response = new HashMap<>();
 		try {
 			// Get the default model entity directly from database to avoid masked API key
-			List<com.alibaba.cloud.ai.manus.model.entity.DynamicModelEntity> configuredModels = dynamicModelRepository.findAll();
+			List<com.alibaba.cloud.ai.manus.model.entity.DynamicModelEntity> configuredModels = dynamicModelRepository
+				.findAll();
 			if (configuredModels.isEmpty()) {
 				response.put("options", new java.util.ArrayList<>());
 				response.put("total", 0);
@@ -145,11 +146,11 @@ public class ModelController {
 			com.alibaba.cloud.ai.manus.model.entity.DynamicModelEntity defaultModel = configuredModels.stream()
 				.filter(com.alibaba.cloud.ai.manus.model.entity.DynamicModelEntity::getIsDefault)
 				.findFirst()
-				.orElse(configuredModels.get(0)); // Fallback to first model if no default found
+				.orElse(configuredModels.get(0)); // Fallback to first model if no default
+													// found
 
-			List<com.alibaba.cloud.ai.manus.model.model.vo.AvailableModel> availableModels = 
-				((com.alibaba.cloud.ai.manus.model.service.ModelServiceImpl) modelService)
-					.getAvailableModels(defaultModel.getBaseUrl(), defaultModel.getApiKey());
+			List<com.alibaba.cloud.ai.manus.model.model.vo.AvailableModel> availableModels = ((com.alibaba.cloud.ai.manus.model.service.ModelServiceImpl) modelService)
+				.getAvailableModels(defaultModel.getBaseUrl(), defaultModel.getApiKey());
 
 			// Convert to the expected format
 			List<Map<String, Object>> modelOptions = availableModels.stream().map(model -> {

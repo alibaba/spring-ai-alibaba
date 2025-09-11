@@ -17,7 +17,7 @@
 import { reactive, computed, watch, ref } from 'vue'
 // import { useI18n } from 'vue-i18n' // Currently unused
 
-// Types
+// Types - Based on backend ExecutionStep.java
 export interface StepData {
   stepRequirement: string
   agentName: string
@@ -26,12 +26,11 @@ export interface StepData {
   terminateColumns: string
 }
 
+// Types - Based on backend DynamicAgentExecutionPlan.java
 export interface ParsedPlanData {
   title: string
   steps: StepData[]
-  terminateColumns: string
   directResponse: boolean
-  selectedToolKeys: string[]
   planTemplateId?: string
   planType?: string
 }
@@ -43,6 +42,7 @@ export interface JsonEditorProps {
   isGenerating: boolean
   isExecuting: boolean
   hiddenFields?: string[]
+  currentPlanTemplateId?: string
 }
 
 export interface JsonEditorEmits {
@@ -62,40 +62,42 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
   // State
   const showJsonPreview = ref(false)
 
-  // Reactive parsed data
+  // Reactive parsed data - Based on DynamicAgentExecutionPlan structure
   const parsedData = reactive<ParsedPlanData>({
     title: '',
     steps: [],
-    terminateColumns: '',
     directResponse: false, // Always false for dynamic agent planning
-    selectedToolKeys: []
+    planTemplateId: props.currentPlanTemplateId || '',
+    planType: 'dynamic_agent'
   })
 
   /**
    * Parse JSON content into visual data
+   * Maps backend DynamicAgentExecutionPlan structure to frontend ParsedPlanData
    */
   const parseJsonToVisual = (jsonContent: string) => {
     try {
       if (!jsonContent) {
-        // Reset to default
+        // Reset to default - matches DynamicAgentExecutionPlan structure
         Object.assign(parsedData, {
           title: '',
           steps: [],
-          terminateColumns: '',
-          directResponse: false, // Always false for dynamic agent planning
-          selectedToolKeys: []
+          directResponse: false,
+          planTemplateId: props.currentPlanTemplateId || '',
+          planType: 'dynamic_agent'
         })
         return
       }
 
       const parsed = JSON.parse(jsonContent)
       
+      // Map basic fields from DynamicAgentExecutionPlan
       parsedData.title = parsed.title || ''
-      parsedData.terminateColumns = parsed.terminateColumns || ''
       parsedData.directResponse = false // Always false for dynamic agent planning
-      parsedData.selectedToolKeys = parsed.selectedToolKeys || []
+      parsedData.planTemplateId = parsed.planTemplateId || props.currentPlanTemplateId || ''
+      parsedData.planType = parsed.planType || 'dynamic_agent'
       
-      // Parse steps
+      // Parse steps - maps ExecutionStep structure
       parsedData.steps = (parsed.steps || []).map((step: any) => ({
         stepRequirement: step.stepRequirement || '',
         agentName: step.agentName || '',
@@ -111,6 +113,7 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
 
   /**
    * Convert visual data back to JSON
+   * Maps frontend ParsedPlanData to backend DynamicAgentExecutionPlan structure
    */
   const convertVisualToJson = (): string => {
     try {
@@ -123,9 +126,9 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
           selectedToolKeys: step.selectedToolKeys,
           terminateColumns: step.terminateColumns
         })),
-        terminateColumns: parsedData.terminateColumns,
         directResponse: parsedData.directResponse,
-        selectedToolKeys: parsedData.selectedToolKeys
+        planTemplateId: parsedData.planTemplateId,
+        planType: parsedData.planType
       }
       
       return JSON.stringify(result, null, 2)
@@ -149,11 +152,18 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
     emit('update:jsonContent', jsonOutput)
   }, { deep: true })
 
+  // Watch for currentPlanTemplateId changes
+  watch(() => props.currentPlanTemplateId, (newId) => {
+    if (newId) {
+      parsedData.planTemplateId = newId
+    }
+  })
+
   // Step management functions
   const addStep = () => {
     const newStep: StepData = {
       stepRequirement: '',
-      agentName: 'SWEAGENT', // Default agent name
+      agentName: 'ConfigurableDynaAgent', // Default agent name
       modelName: null, // Default to null (no model selected)
       selectedToolKeys: [],
       terminateColumns: ''

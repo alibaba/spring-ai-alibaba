@@ -139,80 +139,138 @@ public class DynamicAgent extends ReActAgent {
 
 	private boolean executeWithRetry(int maxRetries) throws Exception {
 		int attempt = 0;
+		Exception lastException = null;
+		
 		while (attempt < maxRetries) {
 			attempt++;
-			Message systemMessage = getThinkMessage();
-			// Use current env as user message
-			Message currentStepEnvMessage = currentStepEnvMessage();
-			// Record think message
-			List<Message> thinkMessages = Arrays.asList(systemMessage, currentStepEnvMessage);
-			String thinkInput = thinkMessages.toString();
+			try {
+				log.info("Attempt {}/{}: Executing agent thinking process", attempt, maxRetries);
+				
+				Message systemMessage = getThinkMessage();
+				// Use current env as user message
+				Message currentStepEnvMessage = currentStepEnvMessage();
+				// Record think message
+				List<Message> thinkMessages = Arrays.asList(systemMessage, currentStepEnvMessage);
+				String thinkInput = thinkMessages.toString();
 
-			log.debug("Messages prepared for the prompt: {}", thinkMessages);
-			// Build current prompt. System message is the first message
-			List<Message> messages = new ArrayList<>(Collections.singletonList(systemMessage));
-			// Add history message.
-			ChatMemory chatMemory = llmService.getAgentMemory(manusProperties.getMaxMemory());
-			List<Message> historyMem = chatMemory.get(getCurrentPlanId());
-			messages.addAll(historyMem);
-			messages.add(currentStepEnvMessage);
-			String toolcallId = planIdDispatcher.generateToolCallId();
-			// Call the LLM
-			ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
-				.internalToolExecutionEnabled(false)
-				.toolContext(Map.of("toolcallId", toolcallId))
-				// can't support by toocall options :
-				// .parallelToolCalls(manusProperties.getParallelToolCalls())
-				.build();
-			userPrompt = new Prompt(messages, chatOptions);
-			List<ToolCallback> callbacks = getToolCallList();
-			ChatClient chatClient;
-			if (model == null) {
-				chatClient = llmService.getAgentChatClient();
-			}
-			else {
-				chatClient = llmService.getDynamicChatClient(model);
-			}
-			// Use streaming response handler for better user experience and content
-			// merging
-			Flux<ChatResponse> responseFlux = chatClient.prompt(userPrompt)
-				.toolCallbacks(callbacks)
-				.stream()
-				.chatResponse();
-			streamResult = streamingResponseHandler.processStreamingResponse(responseFlux,
-					"Agent " + getName() + " thinking", getCurrentPlanId());
-
-			response = streamResult.getLastResponse();
-
-			// Use merged content from streaming handler
-			List<ToolCall> toolCalls = streamResult.getEffectiveToolCalls();
-			String responseByLLm = streamResult.getEffectiveText();
-
-			log.info(String.format("✨ %s's thoughts: %s", getName(), responseByLLm));
-			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
-
-			if (!toolCalls.isEmpty()) {
-				log.info(String.format("🧰 Tools being prepared: %s",
-						toolCalls.stream().map(ToolCall::name).collect(Collectors.toList())));
-
-				String stepId = super.step.getStepId();
-				String thinkActId = planIdDispatcher.generateThinkActId();
-
-				actToolInfoList = new ArrayList<>();
-				for (ToolCall toolCall : toolCalls) {
-					ActToolParam actToolInfo = new ActToolParam(toolCall.name(), toolCall.arguments(), toolcallId);
-					actToolInfoList.add(actToolInfo);
+				log.debug("Messages prepared for the prompt: {}", thinkMessages);
+				// Build current prompt. System message is the first message
+				List<Message> messages = new ArrayList<>(Collections.singletonList(systemMessage));
+				// Add history message.
+				ChatMemory chatMemory = llmService.getAgentMemory(manusProperties.getMaxMemory());
+				List<Message> historyMem = chatMemory.get(getCurrentPlanId());
+				messages.addAll(historyMem);
+				messages.add(currentStepEnvMessage);
+				String toolcallId = planIdDispatcher.generateToolCallId();
+				// Call the LLM
+				ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder()
+					.internalToolExecutionEnabled(false)
+					.toolContext(Map.of("toolcallId", toolcallId))
+					// can't support by toocall options :
+					// .parallelToolCalls(manusProperties.getParallelToolCalls())
+					.build();
+				userPrompt = new Prompt(messages, chatOptions);
+				List<ToolCallback> callbacks = getToolCallList();
+				ChatClient chatClient;
+				if (model == null) {
+					chatClient = llmService.getAgentChatClient();
 				}
+				else {
+					chatClient = llmService.getDynamicChatClient(model);
+				}
+				// Use streaming response handler for better user experience and content
+				// merging
+				Flux<ChatResponse> responseFlux = chatClient.prompt(userPrompt)
+					.toolCallbacks(callbacks)
+					.stream()
+					.chatResponse();
+				streamResult = streamingResponseHandler.processStreamingResponse(responseFlux,
+						"Agent " + getName() + " thinking", getCurrentPlanId());
 
-				ThinkActRecordParams paramsN = new ThinkActRecordParams(thinkActId, stepId, thinkInput, responseByLLm,
-						null, actToolInfoList);
-				planExecutionRecorder.recordThinkingAndAction(step, paramsN);
+				response = streamResult.getLastResponse();
 
-				return true;
+				// Use merged content from streaming handler
+				List<ToolCall> toolCalls = streamResult.getEffectiveToolCalls();
+				String responseByLLm = streamResult.getEffectiveText();
+
+				log.info(String.format("✨ %s's thoughts: %s", getName(), responseByLLm));
+				log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
+
+				if (!toolCalls.isEmpty()) {
+					log.info(String.format("🧰 Tools being prepared: %s",
+							toolCalls.stream().map(ToolCall::name).collect(Collectors.toList())));
+
+					String stepId = super.step.getStepId();
+					String thinkActId = planIdDispatcher.generateThinkActId();
+
+					actToolInfoList = new ArrayList<>();
+					for (ToolCall toolCall : toolCalls) {
+						ActToolParam actToolInfo = new ActToolParam(toolCall.name(), toolCall.arguments(), toolcallId);
+						actToolInfoList.add(actToolInfo);
+					}
+
+					ThinkActRecordParams paramsN = new ThinkActRecordParams(thinkActId, stepId, thinkInput, responseByLLm,
+							null, actToolInfoList);
+					planExecutionRecorder.recordThinkingAndAction(step, paramsN);
+
+					return true;
+				}
+				log.warn("Attempt {}: No tools selected. Retrying...", attempt);
+				
+			} catch (Exception e) {
+				lastException = e;
+				log.warn("Attempt {} failed: {}", attempt, e.getMessage());
+				
+				// Check if this is a network-related error that should be retried
+				if (isRetryableException(e)) {
+					if (attempt < maxRetries) {
+						long waitTime = calculateBackoffDelay(attempt);
+						log.info("Retrying in {}ms due to retryable error: {}", waitTime, e.getMessage());
+						try {
+							Thread.sleep(waitTime);
+						} catch (InterruptedException ie) {
+							Thread.currentThread().interrupt();
+							throw new Exception("Retry interrupted", ie);
+						}
+						continue;
+					}
+				} else {
+					// Non-retryable error, throw immediately
+					throw e;
+				}
 			}
-			log.warn("Attempt {}: No tools selected. Retrying...", attempt);
+		}
+		
+		// All retries exhausted
+		if (lastException != null) {
+			throw new Exception("All retry attempts failed. Last error: " + lastException.getMessage(), lastException);
 		}
 		return false;
+	}
+	
+	/**
+	 * Check if the exception is retryable (network issues, timeouts, etc.)
+	 */
+	private boolean isRetryableException(Exception e) {
+		String message = e.getMessage();
+		if (message == null) return false;
+		
+		// Check for network-related errors
+		return message.contains("Failed to resolve") ||
+			   message.contains("timeout") ||
+			   message.contains("connection") ||
+			   message.contains("DNS") ||
+			   message.contains("WebClientRequestException") ||
+			   message.contains("DnsNameResolverTimeoutException");
+	}
+	
+	/**
+	 * Calculate exponential backoff delay
+	 */
+	private long calculateBackoffDelay(int attempt) {
+		// Exponential backoff: 2^attempt * 1000ms, max 30 seconds
+		long delay = Math.min(1000L * (1L << (attempt - 1)), 30000L);
+		return delay;
 	}
 
 	@Override

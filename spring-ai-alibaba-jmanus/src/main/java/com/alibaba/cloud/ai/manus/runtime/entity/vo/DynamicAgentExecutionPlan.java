@@ -22,8 +22,8 @@ import com.alibaba.cloud.ai.manus.agent.AgentState;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * Dynamic Agent Execution Plan - Specialized execution plan for DynamicToolsAgent
- * with user-selected tools support
+ * Dynamic Agent Execution Plan - Specialized execution plan for DynamicToolsAgent with
+ * user-selected tools support
  */
 public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
 
@@ -33,7 +33,6 @@ public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
 	 * Plan type for Jackson polymorphic deserialization
 	 */
 	private String planType = "dynamic_agent";
-
 
 	/**
 	 * Default constructor - required for Jackson deserialization
@@ -47,7 +46,6 @@ public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
 		super(currentPlanId, rootPlanId, title);
 		this.steps = new ArrayList<>();
 	}
-
 
 	public String getPlanType() {
 		return planType;
@@ -71,8 +69,6 @@ public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
 	public int getStepCount() {
 		return steps.size();
 	}
-
-
 
 	// Implementation of AbstractExecutionPlan abstract methods
 
@@ -114,12 +110,12 @@ public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
 
-		state.append("- User Original Requirements (This requirement is the user's initial input, information can be referenced, but in the current interaction round only the current step requirements need to be completed!) :\n");
+		state.append(
+				"- User Original Requirements (This requirement is the user's initial input, information can be referenced, but in the current interaction round only the current step requirements need to be completed!) :\n");
 		state.append(title).append("\n");
 		if (getUserRequest() != null && !getUserRequest().isEmpty()) {
 			state.append("").append(getUserRequest()).append("\n\n");
 		}
-
 
 		state.append("\n- Execution Parameters: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
@@ -219,13 +215,9 @@ public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
 
 	@Override
 	public String toString() {
-		return "DynamicAgentExecutionPlan{" +
-				"planType='" + planType + '\'' +
-				", steps=" + steps.size() +
-				", currentPlanId='" + currentPlanId + '\'' +
-				", rootPlanId='" + rootPlanId + '\'' +
-				", title='" + title + '\'' +
-				'}';
+		return "DynamicAgentExecutionPlan{" + "planType='" + planType + '\'' + ", steps=" + steps.size()
+				+ ", currentPlanId='" + currentPlanId + '\'' + ", rootPlanId='" + rootPlanId + '\'' + ", title='"
+				+ title + '\'' + '}';
 	}
 
 }
