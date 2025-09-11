@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.manus.coordinator.controller;
 
 import com.alibaba.cloud.ai.manus.coordinator.entity.vo.CoordinatorToolVO;
 import com.alibaba.cloud.ai.manus.coordinator.entity.po.CoordinatorToolEntity;
+import com.alibaba.cloud.ai.manus.coordinator.exception.CoordinatorToolException;
 import com.alibaba.cloud.ai.manus.subplan.model.po.SubplanToolDef;
 import com.alibaba.cloud.ai.manus.subplan.model.po.SubplanParamDef;
 import com.alibaba.cloud.ai.manus.subplan.service.ISubplanToolService;
@@ -60,23 +61,19 @@ public class CoordinatorToolController {
 
             // Validate required fields
             if (toolVO.getToolName() == null || toolVO.getToolName().trim().isEmpty()) {
-                log.error("Tool name is required but was null or empty");
-                return ResponseEntity.badRequest().build();
+                throw new CoordinatorToolException("VALIDATION_ERROR", "Tool name is required");
             }
             if (toolVO.getToolDescription() == null || toolVO.getToolDescription().trim().isEmpty()) {
-                log.error("Tool description is required but was null or empty");
-                return ResponseEntity.badRequest().build();
+                throw new CoordinatorToolException("VALIDATION_ERROR", "Tool description is required");
             }
             if (toolVO.getPlanTemplateId() == null || toolVO.getPlanTemplateId().trim().isEmpty()) {
-                log.error("Plan template ID is required but was null or empty");
-                return ResponseEntity.badRequest().build();
+                throw new CoordinatorToolException("VALIDATION_ERROR", "Plan template ID is required");
             }
             
             // Validate service enablement and endpoints
             if (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService() && 
                 (toolVO.getMcpEndpoint() == null || toolVO.getMcpEndpoint().trim().isEmpty())) {
-                log.error("MCP endpoint is required when MCP service is enabled");
-                return ResponseEntity.badRequest().build();
+                throw new CoordinatorToolException("VALIDATION_ERROR", "MCP endpoint is required when MCP service is enabled");
             }
             
             // At least one service must be enabled
@@ -84,8 +81,7 @@ public class CoordinatorToolController {
                                       (toolVO.getEnableHttpService() != null && toolVO.getEnableHttpService()) ||
                                       (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService());
             if (!hasEnabledService) {
-                log.error("At least one service must be enabled");
-                return ResponseEntity.badRequest().build();
+                throw new CoordinatorToolException("VALIDATION_ERROR", "At least one service must be enabled");
             }
 
             // Set default values
@@ -123,9 +119,12 @@ public class CoordinatorToolController {
             CoordinatorToolVO resultVO = CoordinatorToolVO.fromEntity(savedEntity);
             return ResponseEntity.ok(resultVO);
 
+        } catch (CoordinatorToolException e) {
+            // Re-throw custom exceptions - they will be handled by @ControllerAdvice
+            throw e;
         } catch (Exception e) {
-            log.error("Error creating coordinator tool: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            log.error("Unexpected error creating coordinator tool: {}", e.getMessage(), e);
+            throw new CoordinatorToolException("INTERNAL_ERROR", "An unexpected error occurred while creating coordinator tool");
         }
     }
 
@@ -154,8 +153,7 @@ public class CoordinatorToolController {
             // Validate service enablement and endpoints
             if (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService() && 
                 (toolVO.getMcpEndpoint() == null || toolVO.getMcpEndpoint().trim().isEmpty())) {
-                log.error("MCP endpoint is required when MCP service is enabled");
-                return ResponseEntity.badRequest().build();
+                throw new CoordinatorToolException("VALIDATION_ERROR", "MCP endpoint is required when MCP service is enabled");
             }
             
             // At least one service must be enabled
@@ -163,8 +161,7 @@ public class CoordinatorToolController {
                                       (toolVO.getEnableHttpService() != null && toolVO.getEnableHttpService()) ||
                                       (toolVO.getEnableMcpService() != null && toolVO.getEnableMcpService());
             if (!hasEnabledService) {
-                log.error("At least one service must be enabled");
-                return ResponseEntity.badRequest().build();
+                throw new CoordinatorToolException("VALIDATION_ERROR", "At least one service must be enabled");
             }
 
             // Check if CoordinatorToolEntity exists
@@ -202,7 +199,9 @@ public class CoordinatorToolController {
 
         } catch (Exception e) {
             log.error("Error updating coordinator tool: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(400)
+                    .header("X-Error-Message", "Error updating coordinator tool: " + e.getMessage())
+                    .build();
         }
     }
 

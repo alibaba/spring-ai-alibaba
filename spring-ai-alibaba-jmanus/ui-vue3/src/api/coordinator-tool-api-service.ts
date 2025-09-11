@@ -199,9 +199,17 @@ export class CoordinatorToolApiService {
       console.log('[CoordinatorToolApiService] 响应状态文本:', response.statusText)
 
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error('[CoordinatorToolApiService] 响应错误内容:', errorText)
-        throw new Error(`Failed to create coordinator tool: ${response.status} - ${errorText}`)
+        let errorMessage = 'Unknown error'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.message || errorData.error || errorMessage
+        } catch {
+          // If JSON parsing fails, try to get text
+          const errorText = await response.text()
+          errorMessage = errorText || errorMessage
+        }
+        console.error('[CoordinatorToolApiService] 响应错误内容:', errorMessage)
+        throw new Error(`Failed to create coordinator tool: ${response.status} - ${errorMessage}`)
       }
 
       const result = await response.json()
@@ -251,9 +259,17 @@ export class CoordinatorToolApiService {
       console.log('[CoordinatorToolApiService] 响应状态文本:', response.statusText)
 
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error('[CoordinatorToolApiService] 响应错误内容:', errorText)
-        throw new Error(`Failed to update coordinator tool: ${response.status} - ${errorText}`)
+        let errorMessage = 'Unknown error'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.message || errorData.error || errorMessage
+        } catch {
+          // If JSON parsing fails, try to get text
+          const errorText = await response.text()
+          errorMessage = errorText || errorMessage
+        }
+        console.error('[CoordinatorToolApiService] 响应错误内容:', errorMessage)
+        throw new Error(`Failed to update coordinator tool: ${response.status} - ${errorMessage}`)
       }
 
       const result = await response.json()
