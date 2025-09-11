@@ -67,7 +67,7 @@ class StreamAgentTest {
 			.model(chatModel)
 			.description("可以写散文文章。")
 			.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
-			.outputKey("messages")
+			.outputKey("prose_article")
 			.build();
 
 		ReactAgent poemWriterAgent = ReactAgent.builder()
@@ -84,48 +84,21 @@ class StreamAgentTest {
 			.state(stateFactory)
 			.description("可以根据用户给定的主题写文章或作诗。")
 			.inputKey("input")
-			.outputKey("messages")
+			.outputKey("topic")
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent))
 			.build();
 
 		try {
-			Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 			Flux<NodeOutput> result = blogAgent.stream(Map.of("input", "帮我写一个100字左右的散文"));
-			processStream(result, sink);
+			result.doOnNext(nodeOutput -> {
+				System.out.println("Node: " + nodeOutput);
+			}).subscribe();
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		// Verify all hooks were executed
-	}
-
-	void processStream(Flux<NodeOutput> flux, Sinks.Many<ServerSentEvent<String>> sink) {
-		flux.doOnNext(output -> {
-			try {
-				System.out.println(output);
-				String nodeName = output.node();
-				String content;
-				if (output instanceof StreamingOutput streamingOutput) {
-					content = JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk()));
-				}
-				else {
-					JSONObject nodeOutput = new JSONObject();
-					nodeOutput.put("data", output.state().data());
-					nodeOutput.put("node", nodeName);
-					content = JSON.toJSONString(nodeOutput);
-				}
-				sink.tryEmitNext(ServerSentEvent.builder(content).build());
-			}
-			catch (Exception e) {
-				sink.tryEmitError(e);
-			}
-		}).doOnComplete(() -> {
-			// 正常完成
-			sink.tryEmitComplete();
-		}).doOnError(error -> {
-			sink.tryEmitError(error);
-		}).subscribe(); // 启动流处理
 	}
 
 }

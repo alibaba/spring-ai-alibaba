@@ -15,25 +15,21 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ParallelAgent executes multiple sub-agents in parallel and merges their results.
@@ -68,6 +64,10 @@ public class ParallelAgent extends FlowAgent {
 		this.maxConcurrency = builder.maxConcurrency;
 	}
 
+	public static ParallelAgentBuilder builder() {
+		return new ParallelAgentBuilder();
+	}
+
 	@Override
 	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		// Add parallel-specific properties to config
@@ -93,8 +93,19 @@ public class ParallelAgent extends FlowAgent {
 		return maxConcurrency;
 	}
 
-	public static ParallelAgentBuilder builder() {
-		return new ParallelAgentBuilder();
+	/**
+	 * Strategy interface for merging parallel execution results.
+	 */
+	public interface MergeStrategy {
+
+		/**
+		 * Merges results from parallel sub-agents.
+		 * @param subAgentResults map of sub-agent output keys to their results
+		 * @param overallState the complete state including all context
+		 * @return the merged result
+		 */
+		Object merge(Map<String, Object> subAgentResults, OverAllState overallState);
+
 	}
 
 	/**
@@ -267,21 +278,6 @@ public class ParallelAgent extends FlowAgent {
 	}
 
 	/**
-	 * Strategy interface for merging parallel execution results.
-	 */
-	public interface MergeStrategy {
-
-		/**
-		 * Merges results from parallel sub-agents.
-		 * @param subAgentResults map of sub-agent output keys to their results
-		 * @param overallState the complete state including all context
-		 * @return the merged result
-		 */
-		Object merge(Map<String, Object> subAgentResults, OverAllState overallState);
-
-	}
-
-	/**
 	 * Default merge strategy that combines all results into a map.
 	 */
 	public static class DefaultMergeStrategy implements MergeStrategy {
@@ -323,9 +319,9 @@ public class ParallelAgent extends FlowAgent {
 		@Override
 		public Object merge(Map<String, Object> subAgentResults, OverAllState overallState) {
 			return subAgentResults.values()
-				.stream()
-				.map(Object::toString)
-				.reduce("", (a, b) -> a.isEmpty() ? b : a + separator + b);
+					.stream()
+					.map(Object::toString)
+					.reduce("", (a, b) -> a.isEmpty() ? b : a + separator + b);
 		}
 
 	}

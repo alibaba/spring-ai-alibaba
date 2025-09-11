@@ -46,7 +46,7 @@ public interface JacksonDeserializer<T> {
 					var type = valueNode.get(TYPE_PROPERTY).asText();
 					// Deserialize to a specific class
 					var ref = typeMapper.getReference(type)
-							.orElseThrow(() -> new IllegalStateException("Type not found: " + type));
+						.orElseThrow(() -> new IllegalStateException("Type not found: " + type));
 					yield objectMapper.treeToValue(valueNode, ref);
 				}
 				yield objectMapper.treeToValue(valueNode, Object.class);

@@ -15,18 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
-import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import reactor.core.publisher.Flux;
-
-import java.util.Map;
-import java.util.Optional;
 
 public class SequentialAgent extends FlowAgent {
 
@@ -35,13 +28,13 @@ public class SequentialAgent extends FlowAgent {
 				builder.compileConfig, builder.subAgents);
 	}
 
+	public static SequentialAgentBuilder builder() {
+		return new SequentialAgentBuilder();
+	}
+
 	@Override
 	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		return FlowGraphBuilder.buildGraph(FlowAgentEnum.SEQUENTIAL.getType(), config);
-	}
-
-	public static SequentialAgentBuilder builder() {
-		return new SequentialAgentBuilder();
 	}
 
 	/**

@@ -25,11 +25,9 @@ import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import io.a2a.spec.AgentCard;
-import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Logger;
 
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;

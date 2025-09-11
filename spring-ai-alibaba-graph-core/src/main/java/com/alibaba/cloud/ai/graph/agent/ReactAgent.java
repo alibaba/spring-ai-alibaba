@@ -26,7 +26,6 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
@@ -47,7 +46,6 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -447,9 +445,11 @@ public class ReactAgent extends BaseAgent {
 				.stream(true)
 				.chatClient(chatClient)
 				.messagesKey(this.inputKey);
-			if (outputKey != null && !outputKey.isEmpty()) {
-				llmNodeBuilder.outputKey(outputKey);
-			}
+			// For graph built from ReactAgent, the only legal key used inside must be
+			// messages.
+			// if (outputKey != null && !outputKey.isEmpty()) {
+			// llmNodeBuilder.outputKey(outputKey);
+			// }
 			if (CollectionUtils.isNotEmpty(tools)) {
 				llmNodeBuilder.toolCallbacks(tools);
 			}

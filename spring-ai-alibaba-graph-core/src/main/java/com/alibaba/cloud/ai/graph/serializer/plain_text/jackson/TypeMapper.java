@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 public class TypeMapper {
 
 	public static String TYPE_PROPERTY = "@type";
+
 	private final Set<Reference<?>> references = new HashSet<>();
 
 	public <T> TypeMapper register(Reference<T> reference) {

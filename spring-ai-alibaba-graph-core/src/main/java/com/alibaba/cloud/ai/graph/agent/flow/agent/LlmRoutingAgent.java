@@ -15,20 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
-import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.model.ChatModel;
-
-import java.util.Map;
-import java.util.Optional;
 
 public class LlmRoutingAgent extends FlowAgent {
 
@@ -40,14 +33,14 @@ public class LlmRoutingAgent extends FlowAgent {
 		this.chatModel = builder.chatModel;
 	}
 
+	public static LlmRoutingAgentBuilder builder() {
+		return new LlmRoutingAgentBuilder();
+	}
+
 	@Override
 	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		config.setChatModel(this.chatModel);
 		return FlowGraphBuilder.buildGraph(FlowAgentEnum.ROUTING.getType(), config);
-	}
-
-	public static LlmRoutingAgentBuilder builder() {
-		return new LlmRoutingAgentBuilder();
 	}
 
 	/**

@@ -46,10 +46,10 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 		static void registerTo(SimpleModule module) {
 			module.addDeserializer(ToolResponseMessage.class, tool)
-					.addDeserializer(SystemMessage.class, system)
-					.addDeserializer(UserMessage.class, user)
-					.addDeserializer(AssistantMessage.class, ai)
-					.addDeserializer(Document.class, document);
+				.addDeserializer(SystemMessage.class, system)
+				.addDeserializer(UserMessage.class, user)
+				.addDeserializer(AssistantMessage.class, ai)
+				.addDeserializer(Document.class, document);
 		}
 
 	}
@@ -68,10 +68,10 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 		static void registerTo(SimpleModule module) {
 			module.addSerializer(ToolResponseMessage.class, tool)
-					.addSerializer(SystemMessage.class, system)
-					.addSerializer(UserMessage.class, user)
-					.addSerializer(AssistantMessage.class, ai)
-					.addSerializer(Document.class, document);
+				.addSerializer(SystemMessage.class, system)
+				.addSerializer(UserMessage.class, user)
+				.addSerializer(AssistantMessage.class, ai)
+				.addSerializer(Document.class, document);
 
 		}
 

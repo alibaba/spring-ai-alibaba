@@ -72,7 +72,7 @@ class LlmRoutingAgentTest {
 			.model(chatModel)
 			.description("可以写散文文章。")
 			.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
-			.outputKey("messages")
+			.outputKey("prose_article")
 			.build();
 
 		ReactAgent poemWriterAgent = ReactAgent.builder()
@@ -80,7 +80,7 @@ class LlmRoutingAgentTest {
 			.model(chatModel)
 			.description("可以写现代诗。")
 			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问，调用工具进行回答。")
-			.outputKey("messages")
+			.outputKey("poem_article")
 			.tools(List.of(createToolCallback()))
 			.build();
 
@@ -97,8 +97,10 @@ class LlmRoutingAgentTest {
 		try {
 			Optional<OverAllState> result = blogAgent.invoke(Map.of("input", "帮我写一个100字左右的现代诗"));
 			blogAgent.invoke(Map.of("input", "帮我写一个100字左右的现代诗"));
-			blogAgent.invoke(Map.of("input", "帮我写一个100字左右的现代诗"));
+			Optional<OverAllState> result3 = blogAgent.invoke(Map.of("input", "帮我写一个100字左右的现代诗"));
 			System.out.println(result.get());
+			System.out.println("------------------");
+			System.out.println(result3.get());
 		}
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();

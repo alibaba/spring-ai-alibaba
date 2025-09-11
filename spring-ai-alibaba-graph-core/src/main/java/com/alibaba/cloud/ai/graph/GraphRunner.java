@@ -26,11 +26,17 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
+
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 
 import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -50,6 +56,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
 import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -202,8 +209,8 @@ public class GraphRunner {
 			if (compiledGraph.compileConfig.releaseThread()
 					&& compiledGraph.compileConfig.checkpointSaver().isPresent()) {
 				BaseCheckpointSaver.Tag tag = compiledGraph.compileConfig.checkpointSaver()
-					.get()
-					.release(context.config);
+						.get()
+						.release(context.config);
 				resultValue.set(tag);
 			}
 			else {
@@ -221,8 +228,8 @@ public class GraphRunner {
 	private void handleInterruption(FluxSink<GraphResponse<NodeOutput>> sink, GeneratorContext context) {
 		try {
 			InterruptionMetadata metadata = InterruptionMetadata
-				.builder(context.getCurrentNodeId(), context.cloneState(context.getCurrentState()))
-				.build();
+					.builder(context.getCurrentNodeId(), context.cloneState(context.getCurrentState()))
+					.build();
 			resultValue.set(metadata);
 			sink.next(GraphResponse.done(metadata));
 			sink.complete();
@@ -248,7 +255,7 @@ public class GraphRunner {
 			// Check for interruptable action
 			if (action instanceof InterruptableAction) {
 				Optional<InterruptionMetadata> interruptMetadata = ((InterruptableAction) action)
-					.interrupt(currentNodeId, context.cloneState(context.getCurrentState()));
+						.interrupt(currentNodeId, context.cloneState(context.getCurrentState()));
 				if (interruptMetadata.isPresent()) {
 					resultValue.set(interruptMetadata.get());
 					sink.next(GraphResponse.done(interruptMetadata.get()));
@@ -262,11 +269,11 @@ public class GraphRunner {
 
 			// Convert CompletableFuture to Mono for reactive processing
 			Mono.fromFuture(action.apply(context.getOverallState(), context.config))
-				.subscribe(updateState -> handleActionResult(sink, context, action, updateState), error -> {
-					context.doListeners(NODE_AFTER, null);
-					sink.next(GraphResponse.error(error));
-					sink.complete();
-				});
+					.subscribe(updateState -> handleActionResult(sink, context, action, updateState), error -> {
+						context.doListeners(NODE_AFTER, null);
+						sink.next(GraphResponse.error(error));
+						sink.complete();
+					});
 
 		}
 		catch (Exception e) {
@@ -286,7 +293,7 @@ public class GraphRunner {
 			// }
 
 			// Check for embedded flux stream
-			Optional<Flux<GraphResponse<NodeOutput>>> embedFlux = getEmbedFlux(updateState);
+			Optional<Flux<GraphResponse<NodeOutput>>> embedFlux = getEmbedFlux(context, updateState);
 			if (embedFlux.isPresent()) {
 				handleEmbeddedFlux(sink, context, embedFlux.get(), updateState);
 				return;
@@ -388,9 +395,9 @@ public class GraphRunner {
 					if (nodeResultValue instanceof Map<?, ?>) {
 						// Remove Flux from partial state
 						Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
-							.stream()
-							.filter(e -> !(e.getValue() instanceof Flux))
-							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+								.stream()
+								.filter(e -> !(e.getValue() instanceof Flux))
+								.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 						// Apply partial state update first
 						Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
@@ -419,12 +426,87 @@ public class GraphRunner {
 		}).subscribe();
 	}
 
-	private Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(Map<String, Object> partialState) {
-		return partialState.entrySet()
-			.stream()
-			.filter(e -> e.getValue() instanceof Flux)
-			.findFirst()
-			.map(e -> (Flux<GraphResponse<NodeOutput>>) e.getValue());
+	private Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(GeneratorContext context,
+			Map<String, Object> partialState) {
+		return partialState.entrySet().stream().filter(e -> e.getValue() instanceof Flux<?>).findFirst().map(e -> {
+			var chatFlux = (Flux<?>) e.getValue();
+			var lastChatResponseRef = new AtomicReference<ChatResponse>(null);
+			var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
+
+			// Handle different element types in the flux
+			return chatFlux.map(element -> {
+				if (element instanceof ChatResponse response) {
+					ChatResponse lastResponse = lastChatResponseRef.get();
+					if (lastResponse == null) {
+						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
+								.of(new StreamingOutput(response, context.getCurrentNodeId(), context.getOverallState()));
+						lastChatResponseRef.set(response);
+						lastGraphResponseRef.set(lastGraphResponse);
+						return lastGraphResponse;
+					}
+
+					final var currentMessage = response.getResult().getOutput();
+
+					if (currentMessage.hasToolCalls()) {
+						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
+								.of(new StreamingOutput(response, context.getCurrentNodeId(), context.getOverallState()));
+						lastGraphResponseRef.set(lastGraphResponse);
+						return lastGraphResponse;
+					}
+
+					final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
+							"lastResponse text cannot be null");
+
+					final var currentMessageText = currentMessage.getText();
+
+					var newMessage = new AssistantMessage(
+							currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText,
+							currentMessage.getMetadata(), currentMessage.getToolCalls(), currentMessage.getMedia());
+
+					var newGeneration = new Generation(newMessage, response.getResult().getMetadata());
+
+					ChatResponse newResponse = new ChatResponse(List.of(newGeneration), response.getMetadata());
+					lastChatResponseRef.set(newResponse);
+					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
+							.of(new StreamingOutput(newResponse, context.getCurrentNodeId(), context.getOverallState()));
+					lastGraphResponseRef.set(lastGraphResponse);
+					return lastGraphResponse;
+				}
+				else if (element instanceof GraphResponse) {
+					GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
+					lastGraphResponseRef.set(graphResponse);
+					return graphResponse;
+				}
+				else {
+					// Handle unexpected types by creating an error response
+					String errorMsg = "Unsupported flux element type: "
+							+ (element != null ? element.getClass().getSimpleName() : "null");
+					return GraphResponse.<NodeOutput>error(new IllegalArgumentException(errorMsg));
+				}
+			}).concatWith(Mono.defer(() -> {
+				if (lastChatResponseRef.get() == null) {
+					GraphResponse<?> lastGraphResponse = lastGraphResponseRef.get();
+					if (lastGraphResponse != null && lastGraphResponse.resultValue().isPresent()) {
+						Object result = lastGraphResponse.resultValue().get();
+						if (result instanceof Map resultMap) {
+							if (!resultMap.containsKey(e.getKey()) && resultMap.containsKey("messages")) {
+								List<Object> messages = (List<Object>)resultMap.get("messages");
+								resultMap.put(e.getKey(), ((AssistantMessage)messages.get(messages.size() - 1)).getText());
+							}
+						}
+						return Mono.just(lastGraphResponseRef.get());
+					}
+					return Mono.empty();
+				}
+				else {
+					return Mono.fromCallable(() -> {
+						Map<String, Object> completionResult = Map.of(e.getKey(),
+								lastChatResponseRef.get().getResult().getOutput());
+						return GraphResponse.done(completionResult);
+					});
+				}
+			}));
+		});
 	}
 
 	/**
@@ -435,10 +517,10 @@ public class GraphRunner {
 	@Deprecated
 	private Optional<AsyncGenerator<NodeOutput>> getEmbedGenerator(Map<String, Object> partialState) {
 		return partialState.entrySet()
-			.stream()
-			.filter(e -> e.getValue() instanceof AsyncGenerator)
-			.findFirst()
-			.map(generatorEntry -> (AsyncGenerator<NodeOutput>) generatorEntry.getValue());
+				.stream()
+				.filter(e -> e.getValue() instanceof AsyncGenerator)
+				.findFirst()
+				.map(generatorEntry -> (AsyncGenerator<NodeOutput>) generatorEntry.getValue());
 	}
 
 	@Deprecated
@@ -465,9 +547,9 @@ public class GraphRunner {
 					if (nodeResultValue instanceof Map<?, ?>) {
 						// Remove Flux from partial state
 						Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
-							.stream()
-							.filter(e -> !(e.getValue() instanceof Flux))
-							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+								.stream()
+								.filter(e -> !(e.getValue() instanceof Flux))
+								.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 						// Apply partial state update first
 						Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
@@ -536,18 +618,18 @@ public class GraphRunner {
 			log.trace("RESUME REQUEST");
 
 			var saver = compiledGraph.compileConfig.checkpointSaver()
-				.orElseThrow(() -> new IllegalStateException("Resume request without a configured checkpoint saver!"));
+					.orElseThrow(() -> new IllegalStateException("Resume request without a configured checkpoint saver!"));
 			var checkpoint = saver.get(config)
-				.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
+					.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
 
 			var startCheckpointNextNodeAction = compiledGraph.getNodeAction(checkpoint.getNextNodeId());
 			if (startCheckpointNextNodeAction instanceof SubCompiledGraphNodeAction action) {
 				// RESUME FORM SUBGRAPH DETECTED
 				this.config = RunnableConfig.builder(config)
-					.checkPointId(null) // Reset checkpoint id
-					.addMetadata(action.resumeSubGraphId(), true) // add metadata for
-					// sub graph
-					.build();
+						.checkPointId(null) // Reset checkpoint id
+						.addMetadata(action.resumeSubGraphId(), true) // add metadata for
+						// sub graph
+						.build();
 			}
 			else {
 				// Reset checkpoint id
@@ -651,10 +733,10 @@ public class GraphRunner {
 		public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
 			if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
 				var cp = Checkpoint.builder()
-					.nodeId(nodeId)
-					.state(cloneState(currentState))
-					.nextNodeId(nextNodeId)
-					.build();
+						.nodeId(nodeId)
+						.state(cloneState(currentState))
+						.nextNodeId(nextNodeId)
+						.build();
 				compiledGraph.compileConfig.checkpointSaver().get().put(config, cp);
 				return Optional.of(cp);
 			}

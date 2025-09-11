@@ -23,9 +23,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.alibaba.cloud.ai.graph.GraphResponse;
-import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -79,13 +79,13 @@ public interface FluxConverter {
 			return this;
 		}
 
-		public Flux<GraphResponse<? extends NodeOutput>> build(Flux<ChatResponse> flux) {
+		public Flux<GraphResponse<StreamingOutput>> build(Flux<ChatResponse> flux) {
 			return buildInternal(flux,
 					chatResponse -> new StreamingOutput(chatResponse.getResult().getOutput().getText(), startingNode,
 							startingState));
 		}
 
-		private Flux<GraphResponse<? extends NodeOutput>> buildInternal(Flux<ChatResponse> flux,
+		private Flux<GraphResponse<StreamingOutput>> buildInternal(Flux<ChatResponse> flux,
 				Function<ChatResponse, StreamingOutput> outputMapper) {
 			Objects.requireNonNull(flux, "flux cannot be null");
 			Objects.requireNonNull(mapResult, "mapResult cannot be null");
@@ -122,9 +122,12 @@ public interface FluxConverter {
 
 			return flux.filter(response -> response.getResult() != null && response.getResult().getOutput() != null)
 				.doOnNext(mergeMessage)
-				.doOnComplete(() -> mapResult.apply(result.get()))
 				.map(next -> GraphResponse
-					.of(new StreamingOutput(next.getResult().getOutput().getText(), startingNode, startingState)));
+					.of(new StreamingOutput(next.getResult().getOutput().getText(), startingNode, startingState)))
+				.concatWith(Mono.fromCallable(() -> {
+					Map<String, Object> completionResult = mapResult.apply(result.get());
+					return GraphResponse.done(completionResult);
+				}));
 		}
 
 	}

@@ -506,7 +506,7 @@ public class CompiledGraph {
 	 * @return an Optional containing the final state
 	 */
 	public Optional<OverAllState> call(Map<String, Object> inputs, RunnableConfig config) {
-		return Optional.ofNullable(fluxStream(inputs, config).last().map(NodeOutput::state).block()); // 阻塞等待结果
+		return Optional.ofNullable(fluxStream(inputs, config).last().map(NodeOutput::state).block());
 	}
 
 	/**

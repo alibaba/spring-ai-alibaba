@@ -46,22 +46,6 @@ public class GraphResponse<E> {
 		this.metadata = new HashMap<>(metadata);
 	}
 
-	public CompletableFuture<E> getOutput() {
-		return output;
-	}
-
-	public Optional<Object> resultValue() {
-		return resultValue == null ? Optional.empty() : Optional.of(resultValue);
-	}
-
-	public boolean isDone() {
-		return output == null;
-	}
-
-	public boolean isError() {
-		return output != null && output.isCompletedExceptionally();
-	}
-
 	public static <E> GraphResponse<E> of(CompletableFuture<E> data) {
 		return new GraphResponse<>(data, null);
 	}
@@ -90,10 +74,6 @@ public class GraphResponse<E> {
 		return new GraphResponse<>(null, resultValue, metadata);
 	}
 
-	public static <E> GraphResponse<E> done(Map<String, Object> metadata) {
-		return new GraphResponse<>(null, null, metadata);
-	}
-
 	public static <E> GraphResponse<E> error(Throwable exception) {
 		CompletableFuture<E> future = new CompletableFuture<>();
 		future.completeExceptionally(exception);
@@ -104,6 +84,22 @@ public class GraphResponse<E> {
 		CompletableFuture<E> future = new CompletableFuture<>();
 		future.completeExceptionally(exception);
 		return GraphResponse.of(future, metadata);
+	}
+
+	public CompletableFuture<E> getOutput() {
+		return output;
+	}
+
+	public Optional<Object> resultValue() {
+		return resultValue == null ? Optional.empty() : Optional.of(resultValue);
+	}
+
+	public boolean isDone() {
+		return output == null;
+	}
+
+	public boolean isError() {
+		return output != null && output.isCompletedExceptionally();
 	}
 
 	/**
