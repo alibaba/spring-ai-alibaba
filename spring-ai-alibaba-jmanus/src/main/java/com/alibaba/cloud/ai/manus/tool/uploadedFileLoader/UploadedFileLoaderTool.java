@@ -114,7 +114,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 				   PNG, JPG, GIF, SVG → Direct AI model analysis (no intermediate tools)
 
 				Automatically analyzes uploaded files and provides intelligent processing strategy recommendations.
-				For large files or complex processing, recommends using inner_storage_content_tool.
+				For large files or complex processing, recommends using extract_relevant_content.
 				""";
 	}
 
@@ -578,21 +578,21 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 		// Size-based recommendations with file type consideration
 		if (fileSize > LARGE_FILE_THRESHOLD) {
-			// Check if file type is supported by inner_storage_content_tool
+			// Check if file type is supported by extract_relevant_content
 			if (isTextFile(extension)) {
 				advice.append(
-						"🚨 LARGE TEXT FILE (>50MB) - MUST USE inner_storage_content_tool for MapReduce processing; ");
+						"🚨 LARGE TEXT FILE (>50MB) - MUST USE extract_relevant_content for MapReduce processing; ");
 				advice.append("✅ This file type is supported by MapReduce processing; ");
 			}
 			else {
 				advice.append(
-						"🚨 LARGE BINARY FILE (>50MB) - inner_storage_content_tool CANNOT process this file type; ");
+						"🚨 LARGE BINARY FILE (>50MB) - extract_relevant_content CANNOT process this file type; ");
 				advice.append("❌ Use specialized tools instead; ");
 			}
 		}
 		else if (fileSize > MEDIUM_FILE_THRESHOLD) {
 			if (isTextFile(extension)) {
-				advice.append("Medium text file (>5MB), can use inner_storage_content_tool or specialized tools; ");
+				advice.append("Medium text file (>5MB), can use extract_relevant_content or specialized tools; ");
 			}
 			else {
 				advice.append("Medium binary file (>5MB), use specialized tools; ");
@@ -607,7 +607,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			advice.append("🚫 DO NOT use any tools - Send directly to AI model for visual analysis");
 		}
 		else if (isTextFile(extension)) {
-			// Text files can use inner_storage_content_tool or specialized tools
+			// Text files can use extract_relevant_content or specialized tools
 			switch (extension) {
 				case ".pdf" -> advice.append("Use doc_loader → AI analysis");
 				case ".csv", ".xlsx", ".xls" -> advice.append("Use table_processor → AI analysis");
@@ -686,20 +686,20 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 		if (!largeTextFiles.isEmpty()) {
 			recommendations.append("🚨 **LARGE TEXT FILES DETECTED**: ");
 			recommendations.append(String.format("%d files >50MB\n", largeTextFiles.size()));
-			recommendations.append("✅ **RECOMMENDED**: Use inner_storage_content_tool for MapReduce processing\n");
+			recommendations.append("✅ **RECOMMENDED**: Use extract_relevant_content for MapReduce processing\n");
 		}
 
 		if (!largeBinaryFiles.isEmpty()) {
 			recommendations.append("🚨 **LARGE BINARY FILES DETECTED**: ");
 			recommendations.append(String.format("%d files >50MB\n", largeBinaryFiles.size()));
-			recommendations.append("❌ **WARNING**: inner_storage_content_tool cannot process binary files\n");
+			recommendations.append("❌ **WARNING**: extract_relevant_content cannot process binary files\n");
 			recommendations.append("🔧 **RECOMMENDED**: Use specialized tools for each file type\n");
 		}
 
 		if (!mediumFiles.isEmpty()) {
 			recommendations.append("📁 **MEDIUM FILES**: ");
 			recommendations.append(String.format("%d files 5-50MB\n", mediumFiles.size()));
-			recommendations.append("⚡ Can use regular tools or inner_storage_content_tool for text files\n");
+			recommendations.append("⚡ Can use regular tools or extract_relevant_content for text files\n");
 		}
 
 		if (!smallFiles.isEmpty()) {
@@ -742,14 +742,14 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 
 		// Provide specific guidance based on file types
 		if (!largeTextFiles.isEmpty() && largeBinaryFiles.isEmpty()) {
-			recommendations.append("🚀 **BEST OPTION**: Use inner_storage_content_tool for all large files\n");
+			recommendations.append("🚀 **BEST OPTION**: Use extract_relevant_content for all large files\n");
 		}
 		else if (!largeBinaryFiles.isEmpty()) {
 			recommendations.append(
-					"🔧 **MIXED APPROACH**: Use inner_storage_content_tool for text files + specialized tools for binary files\n");
+					"🔧 **MIXED APPROACH**: Use extract_relevant_content for text files + specialized tools for binary files\n");
 		}
 		else if (totalSize > 100 * 1024 * 1024) { // 100MB total
-			recommendations.append("🚀 **RECOMMENDED**: Use inner_storage_content_tool for complex processing\n");
+			recommendations.append("🚀 **RECOMMENDED**: Use extract_relevant_content for complex processing\n");
 			recommendations.append("📝 **Alternative**: Use individual tools for each file type\n");
 		}
 		else {
@@ -761,7 +761,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 		recommendations.append("   📊 Excel/CSV → table_processor (absolute path required)\n");
 		recommendations.append("   📝 Text files → text_file_operator (absolute path required)\n");
 		recommendations.append("   🖼️ Image files → 🚫 NO TOOLS - Direct AI analysis\n");
-		recommendations.append("   📄 Large text files → inner_storage_content_tool (MapReduce processing)\n");
+		recommendations.append("   📄 Large text files → extract_relevant_content (MapReduce processing)\n");
 
 		recommendations.append(
 				"\n⚠️ **Important**: This tool provides analysis and recommendations. Use recommended tools for actual processing.\n");

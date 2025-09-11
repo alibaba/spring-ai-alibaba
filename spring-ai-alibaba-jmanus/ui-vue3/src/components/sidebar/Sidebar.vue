@@ -134,8 +134,25 @@
             @update-plan-type="handleUpdatePlanType"
           />
 
-          <!-- Section 2: JSON Editor V2 -->
+          <!-- Section 2: JSON Editor (Conditional based on plan type) -->
+          <!-- Use JsonEditorV2 for dynamic_agent type -->
           <JsonEditorV2
+            v-if="sidebarStore.planType === 'dynamic_agent'"
+            :json-content="sidebarStore.jsonContent"
+            :can-rollback="sidebarStore.canRollback"
+            :can-restore="sidebarStore.canRestore"
+            :is-generating="sidebarStore.isGenerating"
+            :is-executing="sidebarStore.isExecuting"
+            :current-plan-template-id="sidebarStore.currentPlanTemplateId || ''"
+            @rollback="handleRollback"
+            @restore="handleRestore"
+            @save="handleSaveTemplate"
+            @update:json-content="(value: string) => sidebarStore.jsonContent = value"
+          />
+          
+          <!-- Use JsonEditor for simple or other types -->
+          <JsonEditor
+            v-else
             :json-content="sidebarStore.jsonContent"
             :can-rollback="sidebarStore.canRollback"
             :can-restore="sidebarStore.canRestore"
@@ -195,6 +212,7 @@ import { sidebarStore } from '@/stores/sidebar'
 import PublishMcpServiceModal from '@/components/publish-mcp-service-modal/PublishMcpServiceModal.vue'
 import type { CoordinatorToolVO, CoordinatorToolConfig } from '@/api/coordinator-tool-api-service'
 import { CoordinatorToolApiService } from '@/api/coordinator-tool-api-service'
+import JsonEditor from './JsonEditor.vue'
 import JsonEditorV2 from './JsonEditorV2.vue'
 import ExecutionController from './ExecutionController.vue'
 import PlanGenerator from './PlanGenerator.vue'

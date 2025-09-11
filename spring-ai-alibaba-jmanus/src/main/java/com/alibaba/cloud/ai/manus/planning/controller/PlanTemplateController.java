@@ -387,6 +387,9 @@ public class PlanTemplateController {
 			List<Map<String, Object>> templateList = new ArrayList<>();
 			for (PlanTemplate template : templates) {
 				Map<String, Object> templateData = new HashMap<>();
+				if(template.isInternalToolcall()) {
+					continue;
+				}
 				templateData.put("id", template.getPlanTemplateId());
 				templateData.put("title", template.getTitle());
 				templateData.put("description", template.getUserRequest());

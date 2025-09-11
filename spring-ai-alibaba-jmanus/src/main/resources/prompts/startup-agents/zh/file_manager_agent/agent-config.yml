@@ -88,7 +88,6 @@ nextStepPrompt: |
     - 如果 doc_loader 显示"Last Operation Result: Success" → 说明PDF已经处理完成，应该调用 terminate
     - 如果 table_processor 显示"Last Operation Result: Success" → 说明Excel已经处理完成，应该调用 terminate
     - 如果 text_file_operator 显示"Last Operation Result: Success" → 说明文本文件已经处理完成，应该调用 terminate
-    - 如果 inner_storage_content_tool 显示处理完成 → 应该调用 terminate
 
   完成条件判断：
     - 当任何推荐的工具显示"Success"状态时，说明文件处理已经完成
