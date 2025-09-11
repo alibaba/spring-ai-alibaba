@@ -73,8 +73,8 @@ public class DashScopeAiStreamFunctionCallingHelper {
 				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(), null), usage);
 			}
 			else {
-				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(currentChoice0), null),
-						usage);
+				List<Choice> choices = currentChoice0 == null ? List.of() : List.of(currentChoice0);
+				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, choices, null), usage);
 			}
 		}
 
@@ -86,6 +86,9 @@ public class DashScopeAiStreamFunctionCallingHelper {
 	private Choice merge(Choice previous, Choice current) {
 		if (previous == null) {
 			return current;
+		}
+		if (current == null) {
+			return null;
 		}
 
 		ChatCompletionFinishReason finishReason = (current.finishReason() != null ? current.finishReason()

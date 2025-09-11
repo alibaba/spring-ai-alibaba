@@ -1,19 +1,21 @@
-# Spring AI Alibaba MongoDB Memory 模块
+# Spring AI Alibaba MongoDB Memory Module
 
-## 简介
+[中文版本](./README-zh.md)
 
-Spring AI Alibaba MongoDB Memory 模块是Spring AI Alibaba项目的核心组件之一，专门提供基于MongoDB的存储解决方案。为AI应用提供快速、可靠的对话历史和上下文数据存储服务，使AI系统能够"记住"之前的交互，从而提供更连贯、更个性化的用户体验。
+## Introduction
 
-## 主要特性
+The Spring AI Alibaba MongoDB Memory module is a core component of the Spring AI Alibaba project, specifically designed to provide a MongoDB-based storage solution. It delivers fast and reliable storage services for conversational history and contextual data in AI applications, enabling AI systems to remember previous interactions and thereby deliver more coherent and personalized user experiences.
 
-- **MongoDB存储**：利用MongoDB的高速读写能力，实现对话历史和上下文数据的快速存取
-- **与Spring生态无缝集成**：完美兼容Spring框架和Spring Boot应用
+## Core Features
 
-## 快速开始
+- **MongoDB Storage**：Leverages MongoDB's high-speed read/write capabilities to enable rapid storage of conversational history and contextual data.
+- **Seamless Integration with Spring Ecosystem**: Provides full compatibility with the Spring Framework and Spring Boot applications for effortless adoption.
 
-### Maven依赖
+## Get Started
 
-将以下依赖添加到你的项目中：
+### Maven Dependency
+
+Add the following dependency to your project:
 
 ```xml
 <dependency>
@@ -29,9 +31,9 @@ Spring AI Alibaba MongoDB Memory 模块是Spring AI Alibaba项目的核心组件
 </dependency>
 ```
 
-### 基本配置
+### Basic Configuration
 
-在`application.properties`或`application.yml`中添加MongoDB配置：
+Add the following MongoDB configuration to your `application.properties` or `application.yml`:
 
 ```yaml
 spring:
@@ -42,7 +44,7 @@ spring:
         port: 27017
 ```
 
-### 示例代码
+### Sample Code
 
 ```java
 import org.springframework.ai.chat.client.ChatClient;
@@ -63,12 +65,12 @@ public class ChatController {
     private ChatClient chatClient;
 
     /**
-     * 流式聊天接口（基于 MongoDB 存储对话历史）
+     * Stream-based chat interface (with conversation history stored in MongoDB).
      *
-     * @param prompt 用户输入的问题或提示
-     * @param chatId 对话 ID，用于标识当前会话
-     * @param response HttpServletResponse 对象，用于设置响应编码
-     * @return 返回流式响应内容（Flux<String>），逐步输出 AI 回答
+     * @param prompt User's input question or prompt.
+     * @param chatId Conversation ID used to identify the current session.
+     * @param response HttpServletResponse object for setting response encoding.
+     * @return Streamed response content (Flux<String>), gradually output AI responses
      */
     @GetMapping("/mongodb")
     public Flux<String> mongodbChat(
@@ -76,24 +78,24 @@ public class ChatController {
             @RequestParam("chatId") String chatId,
             HttpServletResponse response) {
 
-        // 设置响应字符编码为 UTF-8，确保中文等字符正确显示
+        // Sets the response character encoding to UTF-8 to ensure proper display of Chinese and other Unicode characters
         response.setCharacterEncoding("UTF-8");
 
-        // 构建带消息窗口的记忆组件，最多保留最近 10 条消息
+        // Constructs a message window-based chat memory component retaining up to 10 recent messages
         ChatMemory chatMemory = MessageWindowChatMemory.builder()
                 .chatMemoryRepository(mongoDBChatMemoryRepository)
                 .maxMessages(10)
                 .build();
 
-        // 发起 AI 模型调用，并启用记忆功能
+        // Initiates AI model invocation with memory capabilities enabled
         return chatClient.prompt(prompt)
                 .advisors(new MessageChatMemoryAdvisor(chatMemory))
                 .advisors(a -> a
                         .param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
                         .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100)
                 )
-                .stream()     // 使用流式响应
-                .content();   // 获取内容流
+                .stream()     // Enables streaming response
+                .content();   // Retrieves the content stream
     }
 }
 ```

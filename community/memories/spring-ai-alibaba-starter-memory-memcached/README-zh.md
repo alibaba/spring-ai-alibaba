@@ -1,21 +1,21 @@
-# Spring AI Alibaba Memcached Memory Module
+# Spring AI Alibaba Memcached Memory 模块
 
-[中文版本](./README-zh.md)
+[English](./README.md)
 
-## Introduction
+## 简介
 
-The Spring AI Alibaba Memcached Memory module is a core component of the Spring AI Alibaba project, specifically designed to provide a Memcached-based storage solution. It delivers fast and reliable storage services for conversational history and contextual data in AI applications, enabling AI systems to remember previous interactions and thereby deliver more coherent and personalized user experiences.
+Spring AI Alibaba Memcached Memory 模块是Spring AI Alibaba项目的核心组件之一，专门提供基于Memcached的存储解决方案。为AI应用提供快速、可靠的对话历史和上下文数据存储服务，使AI系统能够"记住"之前的交互，从而提供更连贯、更个性化的用户体验。
 
-## Core Features
+## 主要特性
 
-- **Memcached Storage**：Leverages Memcached's high-speed read/write capabilities to enable rapid storage of conversational history and contextual data.
-- **Seamless Integration with Spring Ecosystem**: Provides full compatibility with the Spring Framework and Spring Boot applications for effortless adoption.
+- **Memcached存储**：利用Memcached的高速读写能力，实现对话历史和上下文数据的快速存取
+- **与Spring生态无缝集成**：完美兼容Spring框架和Spring Boot应用
 
-## Get Started
+## 快速开始
 
-### Maven Dependency
+### Maven依赖
 
-Add the following dependency to your project:
+将以下依赖添加到你的项目中：
 
 ```xml
 <dependency>
@@ -31,9 +31,9 @@ Add the following dependency to your project:
 </dependency>
 ```
 
-### Basic Configuration
+### 基本配置
 
-Add the following memcached configuration to your `application.properties` or `application.yml`:
+在`application.properties`或`application.yml`中添加memcached配置：
 
 ```yaml
 spring:
@@ -44,7 +44,7 @@ spring:
         port: 11211
 ```
 
-### Sample Code
+### 示例代码
 
 ```java
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,10 +63,10 @@ public class ChatController {
     public String memcachedChat(
             HttpServletResponse response) {
 
-        // Sets response character encoding to UTF-8 to ensure proper display of Chinese and other Unicode characters
+        // 设置响应字符编码为 UTF-8，确保中文等字符正确显示
         response.setCharacterEncoding("UTF-8");
 
-        // Constructs a message window-based chat memory component retaining up to 10 recent messages
+        // 构建带消息窗口的记忆组件，最多保留最近 10 条消息
         ChatMemory chatMemory = MessageWindowChatMemory.builder()
                 .chatMemoryRepository(memcachedChatMemoryRepository)
                 .maxMessages(1)
@@ -74,7 +74,7 @@ public class ChatController {
         ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(
                         new SimpleLoggerAdvisor(), MessageChatMemoryAdvisor.builder(chatMemory).conversationId("memcachedId").build())
                 .build();
-        // Initiates AI model invocation with memory capabilities enabled
+        // 发起 AI 模型调用，并启用记忆功能
         return chatClient.prompt().user("你好")
                 .call().chatResponse().getResult().getOutput().getText();
     }

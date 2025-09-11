@@ -25,10 +25,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Mem0 过滤器转换器
+ * Mem0 Filter Converter
  *
- * 将 Spring AI 的 Filter.Expression 转换为 Mem0 API 支持的 Map 格式 参考:
- * https://docs.mem0.ai/api-reference/memory/v2-search-memories
+ * Converts Spring AI's Filter.Expression into a Map format supported by the Mem0 API.
+ * Reference: https://docs.mem0.ai/api-reference/memory/v2-search-memories
  */
 public class Mem0FilterExpressionConverter extends AbstractFilterExpressionConverter {
 
@@ -135,15 +135,15 @@ public class Mem0FilterExpressionConverter extends AbstractFilterExpressionConve
 
 	@Override
 	protected void doExpression(Filter.Expression expression, StringBuilder context) {
-		// 可选：实现字符串表达式转换
+		// Optional: Implement string expression conversion
 	}
 
 	@Override
 	protected void doKey(Filter.Key filterKey, StringBuilder context) {
-		// 可选：实现key转字符串
+		// Optional: Implement key-to-string conversion
 	}
 
-	// 便捷方法 - 创建表达式
+	// Convenience method - Create expression
 	public static Filter.Expression eq(String field, Object value) {
 		return new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key(field), new Filter.Value(value));
 	}
@@ -189,7 +189,8 @@ public class Mem0FilterExpressionConverter extends AbstractFilterExpressionConve
 	}
 
 	/**
-	 * 创建 icontains 过滤器（Mem0 特有） 注意：这不是 Spring AI 的标准操作符，需要直接构建 Mem0 格式
+	 * Creates an icontains filter (Mem0 specific) Note: This is not a standard Spring AI
+	 * operator and requires direct construction of the Mem0 format
 	 */
 	public static Map<String, Object> icontains(String field, String value) {
 		Map<String, Object> result = new HashMap<>();
@@ -200,7 +201,7 @@ public class Mem0FilterExpressionConverter extends AbstractFilterExpressionConve
 	}
 
 	/**
-	 * 创建通配符过滤器
+	 * Creates a wildcard filter
 	 */
 	public static Map<String, Object> wildcard(String field) {
 		Map<String, Object> result = new HashMap<>();
@@ -209,7 +210,7 @@ public class Mem0FilterExpressionConverter extends AbstractFilterExpressionConve
 	}
 
 	/**
-	 * 创建通配符表达式（使用 Spring AI 的 EQ 操作符）
+	 * Creates a wildcard expression (using Spring AI's EQ operator)
 	 */
 	public static Filter.Expression wildcardExpression(String field) {
 		return new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key(field), new Filter.Value("*"));
