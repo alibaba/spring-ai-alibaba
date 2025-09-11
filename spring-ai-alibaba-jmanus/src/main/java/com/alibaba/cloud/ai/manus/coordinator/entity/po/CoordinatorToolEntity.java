@@ -22,7 +22,8 @@ import java.time.LocalDateTime;
  * Coordinator Tool Entity Class
  */
 @Entity
-@Table(name = "coordinator_tools")
+@Table(name = "coordinator_tools", 
+       uniqueConstraints = @UniqueConstraint(columnNames = {"toolName", "serviceGroup"}))
 public class CoordinatorToolEntity {
 
 	@Id
