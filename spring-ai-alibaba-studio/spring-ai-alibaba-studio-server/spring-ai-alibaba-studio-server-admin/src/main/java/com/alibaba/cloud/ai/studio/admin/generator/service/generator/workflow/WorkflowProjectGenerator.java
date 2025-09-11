@@ -284,7 +284,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 						List.of("com.alibaba.cloud.ai.graph.node.VariableAggregatorNode",
 								"java.util.stream.Collectors")),
 				Map.entry(NodeType.ASSIGNER, List.of("com.alibaba.cloud.ai.graph.node.AssignerNode")),
-				Map.entry(NodeType.ITERATION, List.of("com.alibaba.cloud.ai.graph.node.IterationNode")),
+				Map.entry(NodeType.ITERATION, List.of("java.util.ArrayList", "java.util.Arrays")),
 				Map.entry(NodeType.END, List.of("java.util.stream.Stream", "java.util.stream.Collectors",
 						"org.springframework.ai.chat.prompt.PromptTemplate")));
 

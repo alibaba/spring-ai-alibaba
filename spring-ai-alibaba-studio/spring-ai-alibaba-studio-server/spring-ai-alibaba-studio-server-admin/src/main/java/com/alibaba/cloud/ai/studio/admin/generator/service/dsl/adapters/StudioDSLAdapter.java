@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Workflow;
+import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.IterationNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractDSLAdapter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.NodeDataConverter;
@@ -52,6 +53,7 @@ import java.util.stream.Stream;
  * @author vlsmb
  * @since 2025/8/27
  */
+// TODO: 与DifyDSLAdapter合并一些重复代码
 @Component
 public class StudioDSLAdapter extends AbstractDSLAdapter {
 
@@ -158,22 +160,6 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 		Map<String, String> varNames = nodes.stream()
 			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
 		Map<String, Node> nodeIdMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
-		// 将Edge里的source和target都转换成varName
-		// 将Iteration节点起始改为iteration_start，并将Iteration节点结束改为iteration_end
-		edges.forEach(edge -> {
-			if (NodeType.ITERATION.equals(nodeIdMap.get(edge.getSource()).getType())) {
-				edge.setSource(varNames.getOrDefault(edge.getSource(), edge.getSource()) + "_start");
-			}
-			else {
-				edge.setSource(varNames.getOrDefault(edge.getSource(), edge.getSource()));
-			}
-			if (NodeType.ITERATION.equals(nodeIdMap.get(edge.getTarget()).getType())) {
-				edge.setTarget(varNames.getOrDefault(edge.getTarget(), edge.getTarget()) + "_end");
-			}
-			else {
-				edge.setTarget(varNames.getOrDefault(edge.getTarget(), edge.getTarget()));
-			}
-		});
 
 		// 根据parnetId进行分组，为了给迭代节点的起始节点传递迭代数据
 		Map<String, List<Node>> groupByParentId = nodes.stream()
@@ -182,10 +168,27 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 		groupByParentId.forEach((parentId, subNodes) -> {
 			subNodes.forEach(node -> {
-				if (NodeType.ITERATION_START.equals(node.getType()) || NodeType.ITERATION_END.equals(node.getType())) {
-					node.setData(nodeIdMap.get(parentId).getData());
+				if (NodeType.ITERATION_START.equals(node.getType())) {
+					IterationNodeData nodeData = new IterationNodeData(
+							(IterationNodeData) nodeIdMap.get(parentId).getData());
+					nodeData.setVarName(nodeIdMap.get(parentId).getData().getVarName() + "_start");
+					varNames.put(node.getId(), nodeData.getVarName());
+					node.setData(nodeData);
+				}
+				else if (NodeType.ITERATION_END.equals(node.getType())) {
+					IterationNodeData nodeData = new IterationNodeData(
+							(IterationNodeData) nodeIdMap.get(parentId).getData());
+					nodeData.setVarName(nodeIdMap.get(parentId).getData().getVarName() + "_end");
+					varNames.put(node.getId(), nodeData.getVarName());
+					node.setData(nodeData);
 				}
 			});
+		});
+
+		// 将Edge里的source和target都转换成varName
+		edges.forEach(edge -> {
+			edge.setSource(varNames.getOrDefault(edge.getSource(), edge.getSource()));
+			edge.setTarget(varNames.getOrDefault(edge.getTarget(), edge.getTarget()));
 		});
 
 		graph.setNodes(nodes);

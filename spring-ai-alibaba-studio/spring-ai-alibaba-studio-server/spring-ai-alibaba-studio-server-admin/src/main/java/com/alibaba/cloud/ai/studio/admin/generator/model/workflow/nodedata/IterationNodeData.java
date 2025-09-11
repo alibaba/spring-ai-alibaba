@@ -43,7 +43,7 @@ public class IterationNodeData extends NodeData {
 	// Dify的迭代索引从0开始，而Studio的从1开始，故需要设置这个值
 	private int indexOffset = 0;
 
-	// itemKey和outputKey在Dify中固定，但在Studio中用户可以自定义
+	// itemKey和outputKey的后缀在Dify中固定，但在Studio中用户可以自定义
 	private String itemKey = "item";
 
 	private String outputKey = "output";
@@ -53,6 +53,21 @@ public class IterationNodeData extends NodeData {
 
 	// 迭代结果元素的Selector
 	private VariableSelector resultSelector;
+
+	public IterationNodeData(IterationNodeData other) {
+		parallelCount = other.parallelCount;
+		maxIterationCount = other.maxIterationCount;
+		indexOffset = other.indexOffset;
+		itemKey = other.itemKey;
+		outputKey = other.outputKey;
+		inputSelector = other.inputSelector;
+		resultSelector = other.resultSelector;
+		setVarName(other.getVarName());
+	}
+
+	public IterationNodeData() {
+		super();
+	}
 
 	public int getParallelCount() {
 		return parallelCount;

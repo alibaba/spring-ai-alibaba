@@ -22,7 +22,9 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
+import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.IterationNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
@@ -129,10 +131,19 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 		return switch (dialectType) {
 			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
 				nodeData.setInputs(List.of(nodeData.getInputSelector(), nodeData.getResultSelector()));
+
+				nodeData.setOutputs(Stream
+					.of(IterationNodeData.getDefaultOutputSchemas(),
+							List.of(new Variable(nodeData.getItemKey(), VariableType.OBJECT),
+									new Variable(nodeData.getOutputKey(), VariableType.ARRAY_OBJECT)))
+					.flatMap(List::stream)
+					.toList());
 			}).andThen(super.postProcessConsumer(dialectType)).andThen((nodeData, idToVarName) -> {
 				nodeData.setInputSelector(nodeData.getInputs().get(0));
 				nodeData.setResultSelector(nodeData.getInputs().get(1));
 				nodeData.setInputs(null);
+				nodeData.setItemKey(nodeData.getVarName() + "_" + nodeData.getItemKey());
+				nodeData.setOutputKey(nodeData.getVarName() + "_" + nodeData.getOutputKey());
 			});
 			default -> super.postProcessConsumer(dialectType);
 		};
