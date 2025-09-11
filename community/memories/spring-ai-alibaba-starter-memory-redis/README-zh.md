@@ -1,21 +1,21 @@
-# Spring AI Alibaba Redis Memory Module
+# Spring AI Alibaba Redis Memory 模块
 
-[中文版本](./README-zh.md)
+[English](./README.md)
 
-## Introduction
+## 简介
 
-The Spring AI Alibaba Redis Memory module is a core component of the Spring AI Alibaba project, specifically designed to provide a Redis-based high-performance in-memory storage solution. Leveraging Redis' high-speed caching and persistence capabilities, this module delivers fast and reliable storage services for conversational history and contextual data in AI applications. It enables AI systems to remember previous interactions, thereby facilitating more coherent and personalized user experiences.
+Spring AI Alibaba Redis Memory 模块是Spring AI Alibaba项目的核心组件之一，专门提供基于Redis的高性能内存存储解决方案。该模块利用Redis的高速缓存和持久化特性，为AI应用提供快速、可靠的对话历史和上下文数据存储服务，使AI系统能够"记住"之前的交互，从而提供更连贯、更个性化的用户体验。
 
-## Core Features
+## 主要特性
 
-- **High-Performance Redis Storage**：Leverages Redis's high-speed read/write capabilities to enable rapid storage and retrieval of conversational history and contextual data.
-- **Seamless Integration with Spring Ecosystem**: Provides full compatibility with the Spring Framework and Spring Boot applications for effortless adoption.
+- **高性能Redis存储**：利用Redis的高速读写能力，实现对话历史和上下文数据的快速存取
+- **与Spring生态无缝集成**：完美兼容Spring框架和Spring Boot应用
 
-## Get Started
+## 快速开始
 
-### Maven Dependency
+### Maven依赖
 
-Add the following dependency to your project:
+将以下依赖添加到你的项目中：
 
 ```xml
 <dependency>
@@ -31,9 +31,9 @@ Add the following dependency to your project:
 </dependency>
 ```
 
-### Basic Configuration - Stand-alone
+### 基本配置-单机
 
-Add the following Redis configuration to your `application.properties` or `application.yml`:
+在`application.properties`或`application.yml`中添加Redis配置：
 
 ```yaml
 spring:
@@ -48,9 +48,9 @@ spring:
         port: 6379
 ```
 
-### Basic Configuration - Cluster
+### 基本配置-集群
 
-Add the following Redis configuration to your `application.properties` or `application.yml`:
+在`application.properties`或`application.yml`中添加Redis配置：
 
 ```yaml
 spring:
@@ -65,9 +65,9 @@ spring:
           nodes: localhost:6379,localhost:6380,localhost:6381
 ```
 
-### Switching Redis Client Implementation
+### 切换redis client客户端
 
-Add the following Redis configuration to your `application.properties`or `application.yml`:
+在`application.properties`或`application.yml`中添加Redis配置：
 
 ```yaml
 spring:
@@ -82,9 +82,9 @@ spring:
           nodes: localhost:6379,localhost:6380,localhost:6381
 ```
 
-### SSL Configuration
+### 配置SSL
 ```yaml
-# Basic spring.ssl configuration (supports either PEM or JKS). Refer to standard Spring SSL configuration for details.
+# 基础spring.ssl配置(可选pem或jks配置)，参考spring.ssl原始配置
 spring:
   ssl:
     bundle:
@@ -109,7 +109,7 @@ spring:
           bundle: myPemBundle
 ```
 
-### Complete Configuration - Stand-alone
+### 完全配置-单机
 ```yaml
 spring:
   ai:
@@ -126,7 +126,7 @@ spring:
         timeout: 2000
 ```
 
-### Complete Configuration - Cluster
+### 完全配置-集群
 ```yaml
 spring:
   ai:
@@ -143,7 +143,7 @@ spring:
           nodes: localhost:6379,localhost:6380,localhost:6381
 ```
 
-### (Optional) Overriding Default JedisRedisChatMemoryRepository with JedisPoolConfig
+### (可选)使用JedisPoolConfig覆盖默认的JedisRedisChatMemoryRepository
 
 ```java
 @Configuration
@@ -195,7 +195,7 @@ public class CustomJedisRedisChatMemoryAutoConfiguration extends RedisChatMemory
 }
 ```
 
-### (Optional) Overriding Default LettuceRedisChatMemoryRepository with GenericObjectPoolConfig
+### (可选)使用GenericObjectPoolConfig覆盖默认的LettuceRedisChatMemoryRepository
 
 ```java
 import com.alibaba.cloud.ai.autoconfigure.memory.redis.*;
@@ -256,7 +256,7 @@ public class CustomLettuceRedisChatMemoryAutoConfiguration extends RedisChatMemo
 }
 ```
 
-### (Optional) Overriding Default RedissonRedisChatMemoryRepository with Config
+### (可选)使用Config覆盖默认的RedissonRedisChatMemoryRepository
 
 ```java
 import com.alibaba.cloud.ai.autoconfigure.memory.redis.*;
@@ -317,7 +317,7 @@ public class CustomRedissonRedisChatMemoryAutoConfiguration extends RedisChatMem
 }
 ```
 
-### Sample Code
+### 示例代码
 
 ```java
 import com.alibaba.cloud.ai.memory.redis.BaseRedisChatMemoryRepository;
@@ -340,12 +340,12 @@ public class ChatController {
     private ChatClient chatClient;
 
     /**
-     * Stream-based chat interface (with conversation history stored in Redis).
+     * 流式聊天接口（基于 Redis 存储对话历史）
      *
-     * @param prompt User's input question or prompt.
-     * @param chatId Conversation ID used to identify the current session.
-     * @param response HttpServletResponse object for setting response encoding.
-     * @return Streamed response content (Flux<String>), gradually output AI responses
+     * @param prompt 用户输入的问题或提示
+     * @param chatId 对话 ID，用于标识当前会话
+     * @param response HttpServletResponse 对象，用于设置响应编码
+     * @return 返回流式响应内容（Flux<String>），逐步输出 AI 回答
      */
     @GetMapping("/redis")
     public Flux<String> redisChat(
@@ -353,21 +353,21 @@ public class ChatController {
             @RequestParam("chatId") String chatId,
             HttpServletResponse response) {
 
-        // Sets the response character encoding to UTF-8 to ensure proper display of Chinese and other Unicode characters
+        // 设置响应字符编码为 UTF-8，确保中文等字符正确显示
         response.setCharacterEncoding("UTF-8");
 
-        // Constructs a message window-based chat memory component retaining up to 10 recent messages
+        // 构建带消息窗口的记忆组件，最多保留最近 10 条消息
         ChatMemory chatMemory = MessageWindowChatMemory.builder()
                 .chatMemoryRepository(baseRedisChatMemoryRepository)
                 .maxMessages(10)
                 .build();
 
-        // Initiates AI model invocation with memory capabilities enabled
+        // 发起 AI 模型调用，并启用记忆功能
         return chatClient.prompt(prompt)
                 .advisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
-                .stream()     // Enables streaming response
-                .content();   // Retrieves the content stream
+                .stream()     // 使用流式响应
+                .content();   // 获取内容流
     }
 }
 ```

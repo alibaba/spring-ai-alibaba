@@ -37,9 +37,10 @@ import java.time.Duration;
 import java.util.*;
 
 /**
- * Mem0 API 客户端实现
+ * Mem0 API Client Implementation
  *
- * 直接调用 Mem0 REST API 接口 参考文档: http://localhost:8888/docs
+ * Directly calls the Mem0 REST API interface. Reference documentation:
+ * http://localhost:8888/docs
  */
 public class Mem0ServiceClient {
 
@@ -53,7 +54,7 @@ public class Mem0ServiceClient {
 
 	private final ResourceLoader resourceLoader;
 
-	// Mem0 API 端点
+	// Mem0 API endpoint
 	private static final String CONFIGURE_ENDPOINT = "/configure";
 
 	private static final String MEMORIES_ENDPOINT = "/memories";
@@ -63,19 +64,19 @@ public class Mem0ServiceClient {
 	private static final String RESET_ENDPOINT = "/reset";
 
 	/**
-	 * 构造函数
+	 * Constructor
 	 */
 	public Mem0ServiceClient(Mem0ChatMemoryProperties config, ResourceLoader resourceLoader) {
 		this.config = config;
 		this.resourceLoader = resourceLoader;
 		this.objectMapper = new ObjectMapper();
-		// json key序列化为_风格
+		// JSON key serialization using snake_case
 		this.objectMapper.setPropertyNamingStrategy(com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE);
-		// 忽略空值和空集合
+		// Ignore null values and empty collections
 		this.objectMapper.registerModule(new JavaTimeModule())
 			.setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY);
 
-		// 创建 WebClient 连接到 Mem0 API
+		// Create WebClient to connect to Mem0 API
 		this.webClient = WebClient.builder()
 			.baseUrl(config.getClient().getBaseUrl())
 			.defaultHeader("Content-Type", "application/json")
@@ -83,7 +84,7 @@ public class Mem0ServiceClient {
 	}
 
 	/**
-	 * 配置 Mem0
+	 * Configures Mem0
 	 */
 	public void configure(Mem0ChatMemoryProperties.Server config) {
 		try {
@@ -124,11 +125,11 @@ public class Mem0ServiceClient {
 	}
 
 	/**
-	 * 添加记忆
+	 * Add memory
 	 */
 	public void addMemory(Mem0ServerRequest.MemoryCreate memoryCreate) {
 		try {
-			// 添加调试信息
+			// Add debugging information
 			String requestJson = objectMapper.writeValueAsString(memoryCreate);
 
 			String response = webClient.post()
@@ -160,7 +161,7 @@ public class Mem0ServiceClient {
 	}
 
 	/**
-	 * 获取所有记忆
+	 * Get all memory
 	 */
 	public Mem0ServerResp getAllMemories(String userId, String runId, String agentId) {
 		try {
@@ -181,7 +182,7 @@ public class Mem0ServiceClient {
 				.block();
 
 			if (response != null) {
-				// Mem0 服务返回 {"results":[],"relations":[]} 格式
+				// Mem0 service returns data in the format {"results":[],"relations":[]}
 				return objectMapper.readValue(response, new TypeReference<Mem0ServerResp>() {
 				});
 			}
@@ -195,7 +196,7 @@ public class Mem0ServiceClient {
 	}
 
 	/**
-	 * 获取单个记忆
+	 * Get single memory
 	 */
 	public Mem0ServerResp getMemory(String memoryId) {
 		try {
@@ -222,16 +223,17 @@ public class Mem0ServiceClient {
 	}
 
 	/**
-	 * 搜索记忆
+	 * Search memory
 	 */
 	public Mem0ServerResp searchMemories(Mem0ServerRequest.SearchRequest searchRequest) {
 		try {
-			// SEARCH_ENDPOINT 要求query必须有值，所以做了一个回退机制
+			// The SEARCH_ENDPOINT requires the query field to have a value, so a fallback
+			// mechanism is implemented
 			if (!StringUtils.hasText(searchRequest.getQuery())) {
 				return getAllMemories(searchRequest.getUserId(), searchRequest.getRunId(), searchRequest.getAgentId());
 			}
 
-			// 添加调试日志
+			// Add debug logging
 			String requestJson = objectMapper.writeValueAsString(searchRequest);
 			logger.info("Sending search request to Mem0: {}", requestJson);
 
@@ -247,7 +249,8 @@ public class Mem0ServiceClient {
 
 			if (response != null) {
 				logger.info("Received response from Mem0: " + response);
-				// Mem0 服务返回 {"results":[],"relations":[]} 格式
+				// The Mem0 service returns data in the format
+				// {"results":[],"relations":[]}
 				return objectMapper.readValue(response, new TypeReference<Mem0ServerResp>() {
 				});
 
@@ -262,7 +265,7 @@ public class Mem0ServiceClient {
 	}
 
 	/**
-	 * 更新记忆
+	 * Update memory
 	 */
 	public Map<String, Object> updateMemory(String memoryId, Map<String, Object> updatedMemory) {
 		try {
@@ -291,7 +294,7 @@ public class Mem0ServiceClient {
 	}
 
 	/**
-	 * 获取记忆历史
+	 * Get memory history
 	 */
 	public List<Map<String, Object>> getMemoryHistory(String memoryId) {
 		try {
@@ -303,12 +306,12 @@ public class Mem0ServiceClient {
 				.block();
 
 			if (response != null) {
-				// 尝试解析为对象，然后提取数组
+				// Attempt to parse as an object and then extract the array
 				Map<String, Object> responseMap = objectMapper.readValue(response,
 						new TypeReference<Map<String, Object>>() {
 						});
 
-				// 检查是否有 data 字段包含数组
+				// Check if there is a "data" field containing an array
 				if (responseMap.containsKey("data")) {
 					Object data = responseMap.get("data");
 					if (data instanceof List) {
@@ -319,7 +322,7 @@ public class Mem0ServiceClient {
 					}
 				}
 
-				// 如果没有 data 字段，尝试直接解析为数组
+				// If there is no "data" field, attempt to parse directly as an array
 				try {
 					List<Map<String, Object>> history = objectMapper.readValue(response,
 							new TypeReference<List<Map<String, Object>>>() {
@@ -331,7 +334,7 @@ public class Mem0ServiceClient {
 					logger.error("Failed to parse history response as array, trying as object: {}", e.getMessage());
 				}
 
-				// 如果都失败了，返回空列表
+				// If all attempts fail, return an empty list.
 				logger.warn("Could not parse memory history from response: {}", response);
 				return new ArrayList<>();
 			}
@@ -345,7 +348,7 @@ public class Mem0ServiceClient {
 	}
 
 	/**
-	 * 删除单个记忆
+	 * Delete single memory
 	 */
 	public void deleteMemory(String memoryId) {
 		try {
@@ -365,7 +368,7 @@ public class Mem0ServiceClient {
 	}
 
 	/**
-	 * 删除所有记忆
+	 * Delete all memory
 	 */
 	public void deleteAllMemories(String userId, String runId, String agentId) {
 		try {
@@ -393,7 +396,7 @@ public class Mem0ServiceClient {
 	}
 
 	/**
-	 * 重置所有记忆
+	 * Reset all memory
 	 */
 	public void resetAllMemories() {
 		try {
@@ -418,7 +421,7 @@ public class Mem0ServiceClient {
 			if (!resource.exists()) {
 				throw new IllegalArgumentException("Prompt resource not found: " + classPath);
 			}
-			// 读取文件内容为字符串
+			// Read file content as a string
 			return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 		}
 		return null;

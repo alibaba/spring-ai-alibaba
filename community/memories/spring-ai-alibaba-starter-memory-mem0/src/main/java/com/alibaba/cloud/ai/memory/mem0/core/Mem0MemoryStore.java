@@ -126,7 +126,7 @@ public class Mem0MemoryStore implements InitializingBean, VectorStore {
 					});
 				}
 				catch (Exception e) {
-					// 如果转换失败，使用空Map
+					// If conversion fails, use an empty Map.
 					filtersMap = new HashMap<>();
 				}
 				search.setFilters(filtersMap);
