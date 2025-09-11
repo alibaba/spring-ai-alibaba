@@ -13,34 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.studio.admin.generator.model;
+package com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent;
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public enum AppModeEnum {
+/**
+ * @author yHong
+ * @version 1.0
+ * @since 2025/8/28 17:54
+ */
+public class RenderContext {
 
-	WORKFLOW("workflow"), AGENT("agent");
+	private final AtomicInteger seq = new AtomicInteger(0);
 
-	private String value;
-
-	AppModeEnum(String value) {
-		this.value = value;
-	}
-
-	public String getValue() {
-		return value;
-	}
-
-	public void setValue(String value) {
-		this.value = value;
-	}
-
-	public static AppModeEnum of(String val) {
-		return Arrays.stream(AppModeEnum.values())
-			.filter(appMode -> Objects.equals(appMode.value, val))
-			.findFirst()
-			.orElse(null);
+	public String nextVar(String base) {
+		return base + seq.incrementAndGet();
 	}
 
 }

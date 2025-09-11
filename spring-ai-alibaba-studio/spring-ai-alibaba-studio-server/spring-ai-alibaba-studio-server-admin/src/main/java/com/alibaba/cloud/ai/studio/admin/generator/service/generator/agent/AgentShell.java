@@ -13,34 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.studio.admin.generator.model;
+package com.alibaba.cloud.ai.studio.admin.generator.service.generator.agent;
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.List;
 
-public enum AppModeEnum {
+/**
+ * @author yHong
+ * @version 1.0
+ * @since 2025/8/28 17:53
+ */
+public record AgentShell(String type, String name, String description, String instruction, List<String> inputKeys,
+		String outputKey) {
 
-	WORKFLOW("workflow"), AGENT("agent");
-
-	private String value;
-
-	AppModeEnum(String value) {
-		this.value = value;
+	public static AgentShell of(String type, String name, String description, String instruction,
+			List<String> inputKeys, String outputKey) {
+		return new AgentShell(type, name, description, instruction, inputKeys, outputKey);
 	}
-
-	public String getValue() {
-		return value;
-	}
-
-	public void setValue(String value) {
-		this.value = value;
-	}
-
-	public static AppModeEnum of(String val) {
-		return Arrays.stream(AppModeEnum.values())
-			.filter(appMode -> Objects.equals(appMode.value, val))
-			.findFirst()
-			.orElse(null);
-	}
-
 }
