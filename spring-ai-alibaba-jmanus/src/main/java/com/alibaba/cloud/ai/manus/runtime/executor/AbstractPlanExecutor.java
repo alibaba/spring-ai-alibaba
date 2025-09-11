@@ -128,7 +128,7 @@ public abstract class AbstractPlanExecutor implements PlanExecutorInterface {
 	protected String getStepFromStepReq(String stepRequirement) {
 		Matcher matcher = pattern.matcher(stepRequirement);
 		if (matcher.find()) {
-			return matcher.group(1).trim().toLowerCase();
+			return matcher.group(1).trim().toUpperCase();
 		}
 		return "DEFAULT_AGENT";
 	}
