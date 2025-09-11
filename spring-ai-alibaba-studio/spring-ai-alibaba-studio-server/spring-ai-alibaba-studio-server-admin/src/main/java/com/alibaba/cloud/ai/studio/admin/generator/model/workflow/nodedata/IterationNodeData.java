@@ -36,6 +36,9 @@ public class IterationNodeData extends NodeData {
 		);
 	}
 
+	// NodeData的来源节点名称
+	private final String sourceVarName;
+
 	private int parallelCount = 1;
 
 	private int maxIterationCount = Integer.MAX_VALUE;
@@ -62,11 +65,17 @@ public class IterationNodeData extends NodeData {
 		outputKey = other.outputKey;
 		inputSelector = other.inputSelector;
 		resultSelector = other.resultSelector;
+		sourceVarName = other.getVarName();
 		setVarName(other.getVarName());
 	}
 
 	public IterationNodeData() {
 		super();
+		sourceVarName = null;
+	}
+
+	public String getSourceVarName() {
+		return sourceVarName;
 	}
 
 	public int getParallelCount() {

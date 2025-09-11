@@ -70,9 +70,10 @@ public class IterationNodeSection implements NodeSection<IterationNodeData> {
 					    createIterationStartAction("%s", "%s", "%s", "%s", "%s", %d)
 					));
 
-					""", node.getId(), nodeData.getVarName() + "_start", nodeData.getResultSelector().getNameInCode(),
-					nodeData.getVarName() + "_state", nodeData.getItemKey(), nodeData.getVarName() + "_index",
-					nodeData.getVarName() + "_isFinished", nodeData.getIndexOffset());
+					""", node.getId(), varName, nodeData.getInputSelector().getNameInCode(),
+					nodeData.getSourceVarName() + "_state", nodeData.getItemKey(),
+					nodeData.getSourceVarName() + "_index", nodeData.getSourceVarName() + "_isFinished",
+					nodeData.getIndexOffset());
 		}
 
 		// TODO: 添加辅助节点以支持迭代起始节点并行
@@ -88,8 +89,9 @@ public class IterationNodeSection implements NodeSection<IterationNodeData> {
 					                }
 					        ), Map.of("end", "%s", "iteration", "%s"));
 
-					""", nodeData.getVarName(), nodeData.getVarName() + "_start", nodeData.getVarName() + "_isFinished",
-					nodeData.getVarName() + "_end", edge.getTarget());
+					""", nodeData.getSourceVarName(), nodeData.getSourceVarName() + "_start",
+					nodeData.getSourceVarName() + "_isFinished", nodeData.getSourceVarName() + "_end",
+					edge.getTarget());
 		}
 
 		@Override
@@ -154,7 +156,7 @@ public class IterationNodeSection implements NodeSection<IterationNodeData> {
 					    createIterationEndAction("%s", "%s", "%s")
 					));
 
-					""", nodeData.getVarName(), nodeData.getVarName() + "_end", nodeData.getVarName() + "_isFinished",
+					""", nodeData.getSourceVarName(), varName, nodeData.getSourceVarName() + "_isFinished",
 					nodeData.getResultSelector().getNameInCode(), nodeData.getOutputKey());
 		}
 
@@ -171,8 +173,9 @@ public class IterationNodeSection implements NodeSection<IterationNodeData> {
 					                }
 					        ), Map.of("finish", "%s", "start", "%s"));
 
-					""", nodeData.getVarName(), nodeData.getVarName() + "_end", nodeData.getVarName() + "_isFinished",
-					edge.getTarget(), nodeData.getVarName() + "_start");
+					""", nodeData.getSourceVarName(), nodeData.getVarName(),
+					nodeData.getSourceVarName() + "_isFinished", edge.getTarget(),
+					nodeData.getSourceVarName() + "_start");
 		}
 
 		@Override

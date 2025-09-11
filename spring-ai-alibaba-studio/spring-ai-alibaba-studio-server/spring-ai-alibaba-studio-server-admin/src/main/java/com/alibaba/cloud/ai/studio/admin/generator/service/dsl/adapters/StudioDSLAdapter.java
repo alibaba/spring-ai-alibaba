@@ -191,6 +191,17 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 			edge.setTarget(varNames.getOrDefault(edge.getTarget(), edge.getTarget()));
 		});
 
+		// 将Iteration节点起始改为iteration_start，并将Iteration节点结束改为iteration_end
+		Map<String, Node> nodeVarMap = nodes.stream().collect(Collectors.toMap(n -> n.getData().getVarName(), n -> n));
+		edges.forEach(edge -> {
+			if (NodeType.ITERATION.equals(nodeVarMap.get(edge.getSource()).getType())) {
+				edge.setSource(edge.getSource() + "_end");
+			}
+			if (NodeType.ITERATION.equals(nodeVarMap.get(edge.getTarget()).getType())) {
+				edge.setTarget(edge.getTarget() + "_start");
+			}
+		});
+
 		graph.setNodes(nodes);
 		graph.setEdges(edges);
 		return graph;

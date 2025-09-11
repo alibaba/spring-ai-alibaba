@@ -190,7 +190,6 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		Map<String, String> varNames = nodes.stream()
 			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
 		Map<String, Node> nodeIdMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
-		Map<String, Node> nodeVarMap = nodes.stream().collect(Collectors.toMap(n -> n.getData().getVarName(), n -> n));
 
 		// 根据parnetId进行分组，为了给迭代节点的起始节点传递迭代数据
 		Map<String, List<Node>> groupByParentId = nodes.stream()
@@ -236,6 +235,17 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		edges.forEach(edge -> {
 			edge.setSource(varNames.getOrDefault(edge.getSource(), edge.getSource()));
 			edge.setTarget(varNames.getOrDefault(edge.getTarget(), edge.getTarget()));
+		});
+
+		// 将Iteration节点起始改为iteration_start，并将Iteration节点结束改为iteration_end
+		Map<String, Node> nodeVarMap = nodes.stream().collect(Collectors.toMap(n -> n.getData().getVarName(), n -> n));
+		edges.forEach(edge -> {
+			if (NodeType.ITERATION.equals(nodeVarMap.get(edge.getSource()).getType())) {
+				edge.setSource(edge.getSource() + "_end");
+			}
+			if (NodeType.ITERATION.equals(nodeVarMap.get(edge.getTarget()).getType())) {
+				edge.setTarget(edge.getTarget() + "_start");
+			}
 		});
 
 		graph.setNodes(nodes);
