@@ -41,25 +41,35 @@
             <input
               v-model="parameterValues[param]"
               class="parameter-input"
+              :class="{ 'error': parameterErrors[param] }"
               :placeholder="`Enter value for ${param}`"
               @input="updateParameterValue(param, ($event.target as HTMLInputElement).value)"
               required
             />
+            <div v-if="parameterErrors[param]" class="parameter-error">
+              {{ parameterErrors[param] }}
+            </div>
           </div>
+        </div>
+        
+        <!-- Validation status message -->
+        <div v-if="parameterRequirements.hasParameters && !canExecute && !props.isExecuting && !props.isGenerating" class="validation-message">
+          <Icon icon="carbon:warning" width="14" />
+          {{ t('sidebar.fillAllRequiredParameters') }}
         </div>
         
       </div>
       <button
         class="btn btn-primary execute-btn"
         @click="handleExecutePlan"
-        :disabled="isExecuting || isGenerating"
+        :disabled="!canExecute"
       >
         <Icon
-          :icon="isExecuting ? 'carbon:circle-dash' : 'carbon:play'"
+          :icon="props.isExecuting ? 'carbon:circle-dash' : 'carbon:play'"
           width="16"
-          :class="{ spinning: isExecuting }"
+          :class="{ spinning: props.isExecuting }"
         />
-        {{ isExecuting ? t('sidebar.executing') : t('sidebar.executePlan') }}
+        {{ props.isExecuting ? t('sidebar.executing') : t('sidebar.executePlan') }}
       </button>
       <button
         class="btn publish-mcp-btn"
@@ -202,6 +212,8 @@ const parameterRequirements = ref<ParameterRequirements>({
 const parameterValues = ref<Record<string, string>>({})
 const isLoadingParameters = ref(false)
 const activeTab = ref('get-sync')
+const parameterErrors = ref<Record<string, string>>({})
+const isValidationError = ref(false)
 
 // API tabs configuration
 const apiTabs = ref([
@@ -309,8 +321,29 @@ const buttonText = computed(() => {
   return isAnyServiceEnabled.value ? t('sidebar.updateServiceStatus') : t('sidebar.publishMcpService')
 })
 
+const canExecute = computed(() => {
+  if (props.isExecuting || props.isGenerating) {
+    return false
+  }
+  
+  if (parameterRequirements.value.hasParameters) {
+    // Check if all required parameters are filled
+    return parameterRequirements.value.parameters.every(param => 
+      parameterValues.value[param]?.trim()
+    )
+  }
+  
+  return true
+})
+
 // Methods
 const handleExecutePlan = () => {
+  // Validate parameters before execution
+  if (!validateParameters()) {
+    console.log('[ExecutionController] Parameter validation failed:', parameterErrors.value)
+    return
+  }
+  
   // Pass replacement parameters if available
   const replacementParams = parameterRequirements.value.hasParameters && Object.keys(parameterValues.value).length > 0 
     ? parameterValues.value 
@@ -368,7 +401,34 @@ const loadParameterRequirements = async () => {
 // Update parameter value and sync with execution params
 const updateParameterValue = (paramName: string, value: string) => {
   parameterValues.value[paramName] = value
+  // Clear error for this parameter when user starts typing
+  if (parameterErrors.value[paramName]) {
+    delete parameterErrors.value[paramName]
+  }
   updateExecutionParamsFromParameters()
+}
+
+// Validate all parameters
+const validateParameters = (): boolean => {
+  parameterErrors.value = {}
+  isValidationError.value = false
+  
+  if (!parameterRequirements.value.hasParameters) {
+    return true
+  }
+  
+  let hasErrors = false
+  
+  parameterRequirements.value.parameters.forEach(param => {
+    const value = parameterValues.value[param]?.trim()
+    if (!value) {
+      parameterErrors.value[param] = `${param} is required`
+      hasErrors = true
+    }
+  })
+  
+  isValidationError.value = hasErrors
+  return !hasErrors
 }
 
 // Update execution params from parameter values
@@ -496,7 +556,34 @@ defineExpose({
       &::placeholder {
         color: rgba(255, 255, 255, 0.4);
       }
+
+      &.error {
+        border-color: #ff6b6b;
+        box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2);
+      }
     }
+
+    .parameter-error {
+      color: #ff6b6b;
+      font-size: 11px;
+      margin-top: 4px;
+      display: block;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    }
+  }
+
+  .validation-message {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #ffa726;
+    font-size: 14px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 167, 38, 0.1);
+    border: 1px solid rgba(255, 167, 38, 0.3);
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   }
 
 }

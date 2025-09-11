@@ -785,6 +785,7 @@ const words: I18nType = {
     parameterRequirementsHelp: '你可以在模版编辑器的 "任务要求" 栏目里面通过<<参数名>>的方式植入可变参数（可以是多个），当选择保存以后，就可以在后面的发布服务中使用这些可变参数了',
     clearAllParams: '清空所有参数',
     noParametersRequired: '此计划模板不需要任何参数',
+    fillAllRequiredParameters: '请填写所有必需的参数',
     apiUrl: 'HTTP GET URL',
     statusApiUrl: '状态查询 API',
     executing: '执行中...',

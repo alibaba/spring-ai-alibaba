@@ -817,6 +817,7 @@ const words: I18nType = {
     parameterRequirementsHelp: 'You can embed variable parameters in the "task requirements section" using <<parameter_name>> format. After saving, these variable parameters can be used in the subsequent service publishing.',
     clearAllParams: 'Clear All Parameters',
     noParametersRequired: 'This plan template does not require any parameters',
+    fillAllRequiredParameters: 'Please fill in all required parameters',
     apiUrl: 'HTTP GET URL',
     statusApiUrl: 'Status Query API',
     executing: 'Executing...',
