@@ -32,7 +32,7 @@ public enum NodeType {
 
 	LLM("llm", "llm", "LLM"),
 
-	CODE("code", "code", "UNSUPPORTED"),
+	CODE("code", "code", "Script"),
 
 	RETRIEVER("retriever", "knowledge-retrieval", "Retrieval"),
 
