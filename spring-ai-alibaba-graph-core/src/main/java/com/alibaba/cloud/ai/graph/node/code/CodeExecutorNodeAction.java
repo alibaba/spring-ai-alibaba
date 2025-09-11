@@ -17,9 +17,10 @@ package com.alibaba.cloud.ai.graph.node.code;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -27,6 +28,8 @@ import com.alibaba.cloud.ai.graph.node.code.entity.CodeBlock;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionResult;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeLanguage;
+import com.alibaba.cloud.ai.graph.node.code.entity.CodeParam;
+import com.alibaba.cloud.ai.graph.node.code.entity.CodeStyle;
 import com.alibaba.cloud.ai.graph.node.code.entity.RunnerAndPreload;
 import com.alibaba.cloud.ai.graph.node.code.javascript.NodeJsTemplateTransformer;
 import com.alibaba.cloud.ai.graph.node.code.python3.Python3TemplateTransformer;
@@ -47,9 +50,11 @@ public class CodeExecutorNodeAction implements NodeAction {
 
 	private final CodeExecutionConfig codeExecutionConfig;
 
-	private Map<String, Object> params;
+	private final List<CodeParam> params;
 
 	private final String outputKey;
+
+	private final CodeStyle style;
 
 	private static final Map<CodeLanguage, TemplateTransformer> CODE_TEMPLATE_TRANSFORMERS = Map.of(
 			CodeLanguage.PYTHON3, new Python3TemplateTransformer(), CodeLanguage.PYTHON,
@@ -61,24 +66,25 @@ public class CodeExecutorNodeAction implements NodeAction {
 			CodeLanguage.PYTHON3.getValue(), CodeLanguage.PYTHON, CodeLanguage.PYTHON.getValue(), CodeLanguage.JAVA,
 			CodeLanguage.JAVA.getValue());
 
-	public CodeExecutorNodeAction(CodeExecutor codeExecutor, String codeLanguage, String code,
-			CodeExecutionConfig config, Map<String, Object> params, String outputKey) {
+	public CodeExecutorNodeAction(CodeExecutor codeExecutor, String codeLanguage, String code, CodeStyle style,
+			CodeExecutionConfig config, List<CodeParam> params, String outputKey) {
 		this.codeExecutor = codeExecutor;
 		this.codeLanguage = codeLanguage;
+		this.style = style;
 		this.code = code;
 		this.codeExecutionConfig = config;
 		this.params = params;
 		this.outputKey = outputKey;
 	}
 
-	private Map<String, Object> executeWorkflowCodeTemplate(CodeLanguage language, String code, List<Object> inputs)
-			throws Exception {
+	private Map<String, Object> executeWorkflowCodeTemplate(CodeLanguage language, String code,
+			Map<String, Object> inputs) throws Exception {
 		TemplateTransformer templateTransformer = CODE_TEMPLATE_TRANSFORMERS.get(language);
 		if (templateTransformer == null) {
 			throw new RuntimeException("Unsupported language: " + language);
 		}
 
-		RunnerAndPreload runnerAndPreload = templateTransformer.transformCaller(code, inputs);
+		RunnerAndPreload runnerAndPreload = templateTransformer.transformCaller(code, inputs, style);
 		String response = executeCode(language, runnerAndPreload.preloadScript(), runnerAndPreload.runnerScript());
 
 		return templateTransformer.transformResponse(response);
@@ -100,12 +106,12 @@ public class CodeExecutorNodeAction implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		List<Object> inputs = new ArrayList<>(10);
-		if (params != null && !params.isEmpty()) {
-			for (String key : params.keySet()) {
-				inputs.add(state.data().get((String) params.get(key)));
-			}
-		}
+		Map<String, Object> inputs = Optional.ofNullable(params)
+			.orElse(List.of())
+			.stream()
+			.collect(Collectors.toUnmodifiableMap(CodeParam::argName, param -> Optional.ofNullable(param.value())
+				.or(() -> StringUtils.hasText(param.stateKey()) ? state.value(param.stateKey()) : Optional.empty())
+				.orElseThrow(() -> new IllegalStateException("param has no value and legal key!"))));
 		Map<String, Object> resultObjectMap = executeWorkflowCodeTemplate(CodeLanguage.fromValue(codeLanguage), code,
 				inputs);
 		Map<String, Object> updatedState = new HashMap<>();
@@ -127,13 +133,16 @@ public class CodeExecutorNodeAction implements NodeAction {
 
 		private String code;
 
+		private CodeStyle style;
+
 		private CodeExecutionConfig config;
 
-		private Map<String, Object> params;
+		private List<CodeParam> params;
 
 		private String outputKey;
 
 		public Builder() {
+			style = CodeStyle.EXPLICIT_PARAMETERS;
 		}
 
 		public Builder codeExecutor(CodeExecutor codeExecutor) {
@@ -151,13 +160,18 @@ public class CodeExecutorNodeAction implements NodeAction {
 			return this;
 		}
 
+		public Builder codeStyle(CodeStyle style) {
+			this.style = style;
+			return this;
+		}
+
 		public Builder config(CodeExecutionConfig config) {
 			this.config = config;
 			return this;
 		}
 
-		public Builder params(Map<String, String> params) {
-			this.params = new LinkedHashMap<>(params);
+		public Builder params(List<CodeParam> params) {
+			this.params = List.copyOf(params);
 			return this;
 		}
 
@@ -167,7 +181,7 @@ public class CodeExecutorNodeAction implements NodeAction {
 		}
 
 		public CodeExecutorNodeAction build() {
-			return new CodeExecutorNodeAction(codeExecutor, codeLanguage, code, config, params, outputKey);
+			return new CodeExecutorNodeAction(codeExecutor, codeLanguage, code, style, config, params, outputKey);
 		}
 
 	}
