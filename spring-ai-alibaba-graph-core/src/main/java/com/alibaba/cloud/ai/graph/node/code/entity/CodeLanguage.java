@@ -21,7 +21,8 @@ package com.alibaba.cloud.ai.graph.node.code.entity;
  */
 public enum CodeLanguage {
 
-	PYTHON3("python3"), PYTHON("python"), JINJA2("jinja2"), JAVASCRIPT("javascript"), JAVA("java");
+	PYTHON3("python3"), PYTHON("python"), JINJA2("jinja2"), JAVASCRIPT("javascript"), JAVA("java"), GROOVY("groovy"),
+	NASHORN("nashorn");
 
 	private final String value;
 
