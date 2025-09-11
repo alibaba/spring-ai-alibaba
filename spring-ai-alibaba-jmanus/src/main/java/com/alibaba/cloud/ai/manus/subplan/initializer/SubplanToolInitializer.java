@@ -82,7 +82,7 @@ public class SubplanToolInitializer {
 
 			if (planTemplateService.getPlanTemplate(templateId) == null) {
 				String title = extractTitleFromTemplate(templateContent);
-				planTemplateService.savePlanTemplate(templateId, title, title, templateContent);
+				planTemplateService.savePlanTemplate(templateId, title, title, templateContent,true);
 				logger.info("Created plan template: {} with title: {}", templateId, title);
 			}
 			else {
@@ -91,7 +91,7 @@ public class SubplanToolInitializer {
 				if (latestVersion == null
 						|| !planTemplateService.isJsonContentEquivalent(latestVersion, templateContent)) {
 					String title = extractTitleFromTemplate(templateContent);
-					boolean updated = planTemplateService.updatePlanTemplate(templateId, title, templateContent);
+					boolean updated = planTemplateService.updatePlanTemplate(templateId, title, templateContent, true);
 					if (updated) {
 						logger.info("Updated plan template: {} with title: {} (content changed)", templateId, title);
 					}

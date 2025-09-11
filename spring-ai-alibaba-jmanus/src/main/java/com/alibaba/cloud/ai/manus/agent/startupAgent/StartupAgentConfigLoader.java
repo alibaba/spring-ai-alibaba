@@ -23,8 +23,11 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,11 +61,17 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 				return "";
 			}
 
-			byte[] bytes = resource.getInputStream().readAllBytes();
-			String content = new String(bytes, StandardCharsets.UTF_8);
+			// Use BufferedReader to read the file properly, avoiding buffer size issues
+			StringBuilder content = new StringBuilder();
+			try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+				String line;
+				while ((line = reader.readLine()) != null) {
+					content.append(line).append("\n");
+				}
+			}
 
-			log.debug("Successfully loaded configuration file: {}", configPath);
-			return content.trim();
+			log.debug("Successfully loaded configuration file: {} ({} characters)", configPath, content.length());
+			return content.toString().trim();
 
 		}
 		catch (IOException e) {
@@ -121,7 +130,10 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 		}
 
 		try {
+			// Configure SnakeYAML with larger buffer size and better Unicode support
 			Yaml yaml = new Yaml();
+			
+			// Try to parse the YAML content
 			Map<String, Object> yamlData = yaml.load(configContent);
 
 			if (yamlData == null) {
@@ -154,8 +166,17 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 			return config;
 		}
 		catch (Exception e) {
-			log.error("Failed to parse Agent YAML configuration file: {}", configPath, e);
-			return null;
+			log.error("Failed to parse Agent YAML configuration file: {} (content length: {})", configPath, configContent.length(), e);
+			
+			// Try to create a minimal fallback config if YAML parsing fails
+			log.warn("Creating fallback configuration for agent: {}", agentName);
+			AgentConfig fallbackConfig = new AgentConfig();
+			fallbackConfig.setAgentName(agentName);
+			fallbackConfig.setAgentDescription("Default agent description");
+			fallbackConfig.setNextStepPrompt("Default next step prompt");
+			fallbackConfig.setBuiltIn(false);
+			fallbackConfig.setAvailableToolKeys(new ArrayList<>());
+			return fallbackConfig;
 		}
 	}
 

@@ -172,15 +172,12 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			return ResponseEntity.badRequest().body(Map.of("error", "Tool name cannot be empty"));
 		}
 
-		// Find the coordinator tool by tool name
-		CoordinatorToolEntity coordinatorTool = coordinatorToolRepository.findByToolName(toolName);
-		if (coordinatorTool == null) {
+		// Get plan template ID from coordinator tool
+		String planTemplateId = getPlanTemplateIdFromTool(toolName);
+		if (planTemplateId == null) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Tool not found with name: " + toolName));
 		}
-
-		// Get the plan template ID from the coordinator tool
-		String planTemplateId = coordinatorTool.getPlanTemplateId();
-		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
+		if (planTemplateId.trim().isEmpty()) {
 			return ResponseEntity.badRequest()
 				.body(Map.of("error", "No plan template ID associated with tool: " + toolName));
 		}
@@ -205,14 +202,11 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		}
 
 		String planTemplateId = null;
-		boolean isPublishedTool = false;
 
 		// First, try to find the coordinator tool by tool name
-		CoordinatorToolEntity coordinatorTool = coordinatorToolRepository.findByToolName(toolName);
-		if (coordinatorTool != null) {
+		planTemplateId = getPlanTemplateIdFromTool(toolName);
+		if (planTemplateId != null) {
 			// Tool is published, get plan template ID from coordinator tool
-			planTemplateId = coordinatorTool.getPlanTemplateId();
-			isPublishedTool = true;
 			logger.info("Found published tool: {} with plan template ID: {}", toolName, planTemplateId);
 		}
 		else {
@@ -266,7 +260,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			response.put("memoryId", memoryId);
 			response.put("toolName", toolName);
 			response.put("planTemplateId", planTemplateId);
-			response.put("isPublishedTool", isPublishedTool);
 
 			return ResponseEntity.ok(response);
 
@@ -294,15 +287,12 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			return ResponseEntity.badRequest().body(Map.of("error", "Tool name cannot be empty"));
 		}
 
-		// Find the coordinator tool by tool name
-		CoordinatorToolEntity coordinatorTool = coordinatorToolRepository.findByToolName(toolName);
-		if (coordinatorTool == null) {
+		// Get plan template ID from coordinator tool
+		String planTemplateId = getPlanTemplateIdFromTool(toolName);
+		if (planTemplateId == null) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Tool not found with name: " + toolName));
 		}
-
-		// Get the plan template ID from the coordinator tool
-		String planTemplateId = coordinatorTool.getPlanTemplateId();
-		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
+		if (planTemplateId.trim().isEmpty()) {
 			return ResponseEntity.badRequest()
 				.body(Map.of("error", "No plan template ID associated with tool: " + toolName));
 		}
@@ -581,6 +571,23 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			logger.error("Error fetching agent execution detail for stepId: {}", stepId, e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
+	}
+
+	/**
+	 * Get plan template ID from coordinator tool by tool name
+	 * @param toolName The tool name to look up
+	 * @return Plan template ID if found, null if tool not found
+	 */
+	private String getPlanTemplateIdFromTool(String toolName) {
+		CoordinatorToolEntity coordinatorTool = coordinatorToolRepository.findByToolName(toolName);
+		if (coordinatorTool == null) {
+			return null;
+		}
+		Boolean isHttpEnabled = coordinatorTool.getEnableHttpService();
+		if(!isHttpEnabled) {
+			return null;
+		}
+		return coordinatorTool.getPlanTemplateId();
 	}
 
 	@Override

@@ -30,8 +30,9 @@ public interface IPlanTemplateService {
 	 * @param title Title
 	 * @param userRequest User request
 	 * @param planJson Plan JSON
+	 * @param isInternalToolcall Whether is internal toolcall
 	 */
-	void savePlanTemplate(String planTemplateId, String title, String userRequest, String planJson);
+	void savePlanTemplate(String planTemplateId, String title, String userRequest, String planJson, boolean isInternalToolcall);
 
 	/**
 	 * Update plan template
@@ -40,7 +41,7 @@ public interface IPlanTemplateService {
 	 * @param planJson Plan JSON
 	 * @return Whether update was successful
 	 */
-	boolean updatePlanTemplate(String planTemplateId, String title, String planJson);
+	boolean updatePlanTemplate(String planTemplateId, String title, String planJson, boolean isInternalToolcall);
 
 	/**
 	 * Save to version history

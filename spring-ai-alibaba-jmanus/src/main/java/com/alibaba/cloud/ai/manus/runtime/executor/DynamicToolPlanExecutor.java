@@ -60,6 +60,14 @@ public class DynamicToolPlanExecutor extends AbstractPlanExecutor {
 		this.dynamicModelRepository = dynamicModelRepository;
 	}
 
+	protected String getStepFromStepReq(String stepRequirement) {
+		String stepType = super.getStepFromStepReq(stepRequirement);
+		if("DEFAULT_AGENT".equals(stepType)) {
+			return "ConfigurableDynaAgent";
+		}
+		return stepType;
+	}
+
 	/**
 	 * Get the executor for the step.
 	 */
@@ -87,7 +95,9 @@ public class DynamicToolPlanExecutor extends AbstractPlanExecutor {
 					expectedReturnInfo, step, modelEntity, selectedToolKeys);
 			return executor;
 		}
-		return null;
+		else{
+			return super.getExecutorForStep(context, step);
+		}
 	}
 
 }

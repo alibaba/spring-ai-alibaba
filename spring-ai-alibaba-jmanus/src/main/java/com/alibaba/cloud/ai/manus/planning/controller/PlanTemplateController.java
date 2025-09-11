@@ -199,13 +199,13 @@ public class PlanTemplateController {
 			PlanTemplate template = planTemplateService.getPlanTemplate(planTemplateId);
 			if (template == null) {
 				// If it doesn't exist, create a new plan
-				planTemplateService.savePlanTemplate(planTemplateId, title, title, planJson);
+				planTemplateService.savePlanTemplate(planTemplateId, title, title, planJson,false);
 				logger.info("New plan created: {}", planTemplateId);
 				return new PlanTemplateService.VersionSaveResult(true, false, "New plan created", 0);
 			}
 			else {
 				// If it exists, update the template with new title and save a new version
-				boolean updated = planTemplateService.updatePlanTemplate(planTemplateId, title, planJson);
+				boolean updated = planTemplateService.updatePlanTemplate(planTemplateId, title, planJson,false);
 				if (updated) {
 					logger.info("Updated plan template {} with new title and saved new version", planTemplateId);
 					// Get the latest version index after update

@@ -68,9 +68,10 @@ public class PlanTemplateService implements IPlanTemplateService {
 	 * @param planJson Plan JSON data
 	 */
 	@Transactional
-	public void savePlanTemplate(String planTemplateId, String title, String userRequest, String planJson) {
+	public void savePlanTemplate(String planTemplateId, String title, String userRequest, String planJson
+		, boolean isInternalToolcall) {
 		// Save basic plan template information
-		PlanTemplate template = new PlanTemplate(planTemplateId, title, userRequest);
+		PlanTemplate template = new PlanTemplate(planTemplateId, title, userRequest, isInternalToolcall);
 		planTemplateRepository.save(template);
 
 		// Save the first version
@@ -87,13 +88,14 @@ public class PlanTemplateService implements IPlanTemplateService {
 	 * @return Whether the update was successful
 	 */
 	@Transactional
-	public boolean updatePlanTemplate(String planTemplateId, String title, String planJson) {
+	public boolean updatePlanTemplate(String planTemplateId, String title, String planJson, boolean isInternalToolcall) {
 		Optional<PlanTemplate> templateOpt = planTemplateRepository.findByPlanTemplateId(planTemplateId);
 		if (templateOpt.isPresent()) {
 			PlanTemplate template = templateOpt.get();
 			if (title != null && !title.isEmpty()) {
 				template.setTitle(title);
 			}
+			template.setInternalToolcall(isInternalToolcall);
 			template.setUpdateTime(LocalDateTime.now());
 			planTemplateRepository.save(template);
 

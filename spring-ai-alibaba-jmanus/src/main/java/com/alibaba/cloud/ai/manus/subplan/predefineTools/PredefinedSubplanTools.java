@@ -53,7 +53,7 @@ public class PredefinedSubplanTools {
 		tool.setPlanTemplateId("extract_relevant_content_template");
 		tool.setEndpoint("/api/subplan/extract-content");
 		tool.setServiceGroup("data-processing");
-
+		
 		// Define tool parameters
 		List<SubplanParamDef> parameters = new ArrayList<>();
 

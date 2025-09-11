@@ -617,10 +617,32 @@ onUnmounted(() => {
   cleanup()
 })
 
+/**
+ * Update displayed plan progress
+ * This method is called when a plan is updated to refresh the display
+ * @param rootPlanId - The root plan ID to update
+ */
+const updateDisplayedPlanProgress = (rootPlanId: string) => {
+  console.log('[RightPanel] updateDisplayedPlanProgress called with rootPlanId:', rootPlanId)
+  
+  // Update the last executed plan ID for file browser
+  if (rootPlanId) {
+    lastExecutedPlanId.value = rootPlanId
+    hasExecutedAnyPlan.value = true
+    
+    // Persist to localStorage
+    localStorage.setItem('jmanus-last-plan-id', rootPlanId)
+    localStorage.setItem('jmanus-has-executed-plan', 'true')
+    
+    console.log('[RightPanel] Plan progress updated:', rootPlanId)
+  }
+}
+
 // Expose methods to parent component - only keep necessary interfaces
 defineExpose({
   handleStepSelected,
   refreshCurrentStep,
+  updateDisplayedPlanProgress,
 })
 </script>
 

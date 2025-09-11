@@ -52,16 +52,20 @@ public class PlanTemplate {
 	@Column(name = "update_time", nullable = false)
 	private LocalDateTime updateTime;
 
+	@Column(name = "is_internal_toolcall", nullable = false)
+	private boolean isInternalToolcall = false;
+
 	// Constructor
 	public PlanTemplate() {
 	}
 
-	public PlanTemplate(String planTemplateId, String title, String userRequest) {
+	public PlanTemplate(String planTemplateId, String title, String userRequest, boolean isInternalToolcall) {
 		this.planTemplateId = planTemplateId;
 		this.title = title;
 		this.userRequest = userRequest;
 		this.createTime = LocalDateTime.now();
 		this.updateTime = LocalDateTime.now();
+		this.isInternalToolcall = isInternalToolcall;
 	}
 
 	// Getters and setters
@@ -111,6 +115,14 @@ public class PlanTemplate {
 
 	public void setUpdateTime(LocalDateTime updateTime) {
 		this.updateTime = updateTime;
+	}
+
+	public boolean isInternalToolcall() {
+		return isInternalToolcall;
+	}
+
+	public void setInternalToolcall(boolean isInternalToolcall) {
+		this.isInternalToolcall = isInternalToolcall;
 	}
 
 }
