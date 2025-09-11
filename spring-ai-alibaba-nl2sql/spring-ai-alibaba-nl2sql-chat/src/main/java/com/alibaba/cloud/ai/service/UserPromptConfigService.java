@@ -110,12 +110,10 @@ public class UserPromptConfigService {
 	 * @return 配置列表
 	 */
 	public List<UserPromptConfig> getActiveConfigsByType(String promptType) {
-		return userPromptConfigMapper.selectList(
-			Wrappers.<UserPromptConfig>lambdaQuery()
-				.eq(UserPromptConfig::getPromptType, promptType)
-				.eq(UserPromptConfig::getEnabled, true)
-				.orderByDesc(UserPromptConfig::getUpdateTime)
-		);
+		return userPromptConfigMapper.selectList(Wrappers.<UserPromptConfig>lambdaQuery()
+			.eq(UserPromptConfig::getPromptType, promptType)
+			.eq(UserPromptConfig::getEnabled, true)
+			.orderByDesc(UserPromptConfig::getUpdateTime));
 	}
 
 	/**
