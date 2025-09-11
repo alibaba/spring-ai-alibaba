@@ -31,6 +31,7 @@
             :class="{ 'error': !formData.serviceName || !formData.serviceName.trim() }"
             required
           />
+          <div class="field-description">{{ t('mcpService.toolNameDescription') }}</div>
         </div>
       </div>
 
@@ -46,6 +47,7 @@
             rows="4"
             required
           />
+          <div class="field-description">{{ t('mcpService.toolDescriptionDescription') }}</div>
         </div>
       </div>
 
@@ -60,6 +62,7 @@
             :class="{ 'error': !formData.serviceGroup || !formData.serviceGroup.trim() }"
             required
           />
+          <div class="field-description">{{ t('mcpService.serviceGroupDescription') }}</div>
         </div>
       </div>
 
@@ -890,6 +893,15 @@ defineExpose({
 
 .required {
   color: #ff6b6b;
+}
+
+/* 字段说明样式 */
+.field-description {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 4px;
+  line-height: 1.4;
+  font-style: italic;
 }
 
 .form-item input,

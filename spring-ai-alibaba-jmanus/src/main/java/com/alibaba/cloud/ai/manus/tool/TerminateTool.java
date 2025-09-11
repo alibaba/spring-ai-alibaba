@@ -16,10 +16,11 @@
 package com.alibaba.cloud.ai.manus.tool;
 
 import com.alibaba.cloud.ai.manus.tool.code.ToolExecuteResult;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 
 public class TerminateTool extends AbstractBaseTool<Map<String, Object>> implements TerminableTool {
@@ -133,45 +134,17 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 	}
 
 	private String formatStructuredData(Map<String, Object> input) {
-		StringBuilder sb = new StringBuilder();
-
-		// Handle new format with message and fileList
-		if (input.containsKey("message")) {
-			sb.append("Message: ").append(input.get("message")).append("\n");
+		// Convert input to JSON format
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+			objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+			return objectMapper.writeValueAsString(input);
+		} catch (Exception e) {
+			log.error("Failed to convert input to JSON format", e);
+			// Fallback to simple string representation
+			return input.toString();
 		}
-
-		if (input.containsKey("fileList")) {
-			@SuppressWarnings("unchecked")
-			List<Map<String, String>> fileList = (List<Map<String, String>>) input.get("fileList");
-			sb.append("Files:\n");
-			for (Map<String, String> file : fileList) {
-				sb.append("  - Name: ")
-					.append(file.get("fileName"))
-					.append("\n    Description: ")
-					.append(file.get("fileDescription"))
-					.append("\n");
-			}
-		}
-
-		if (input.containsKey("folderList")) {
-			@SuppressWarnings("unchecked")
-			List<Map<String, String>> folderList = (List<Map<String, String>>) input.get("folderList");
-			sb.append("Folders:\n");
-			for (Map<String, String> folder : folderList) {
-				sb.append("  - Name: ")
-					.append(folder.get("folderName"))
-					.append("\n    Description: ")
-					.append(folder.get("folderDescription"))
-					.append("\n");
-			}
-		}
-
-		// If no recognized keys, just output the whole map
-		if (!input.containsKey("message") && !input.containsKey("fileList") && !input.containsKey("folderList")) {
-			sb.append(input.toString());
-		}
-
-		return sb.toString();
 	}
 
 	@Override

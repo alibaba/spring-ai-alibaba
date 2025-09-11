@@ -228,12 +228,14 @@ public class PlanningCoordinator {
 			if (context.isNeedSummary() && result.isSuccess()) {
 				log.debug("Generating summary for plan: {}", context.getCurrentPlanId());
 				planFinalizer.generateSummary(context);
+				result.setFinalResult(context.getResultSummary());
 			}
 
 			// Check if this is a direct response plan
 			if (context.getPlan() != null && context.getPlan().isDirectResponse()) {
 				log.debug("Generating direct response for plan: {}", context.getCurrentPlanId());
 				planFinalizer.generateDirectResponse(context);
+				result.setFinalResult(context.getResultSummary());
 			}
 
 			log.debug("Post-execution processing completed for plan: {}", context.getCurrentPlanId());

@@ -231,7 +231,7 @@ public abstract class BaseAgent {
 					state = stepResult.getState();
 				}
 
-				results.add("Round " + currentStep + ": " + stepResult.getResult());
+				results.add(stepResult.getResult());
 			}
 
 			if (currentStep >= maxSteps) {

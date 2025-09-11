@@ -230,30 +230,6 @@ Response: {
 }`
   },
   {
-    id: 'get-async',
-    label: 'GET + Async',
-    method: 'GET',
-    endpoint: '/api/executor/executeByToolNameAsync/{toolName}',
-    description: 'Asynchronous GET request - returns task ID, check status separately',
-    example: `GET /api/executor/executeByToolNameAsync/my-tool?allParams={"rawParam":"test"}
-Response: {
-  "planId": "plan-123",
-  "status": "processing",
-  "message": "Task submitted, processing"
-}
-
-# Check execution status and get detailed results:
-GET /api/executor/details/{planId}
-Response: {
-  "currentPlanId": "plan-123",
-  "title": "Plan Title",
-  "status": "completed",
-  "summary": "Execution completed successfully",
-  "agentExecutionSequence": [...],
-  "userInputWaitState": null
-}`
-  },
-  {
     id: 'post-sync',
     label: 'POST + Sync',
     method: 'POST',
@@ -264,7 +240,9 @@ Content-Type: application/json
 
 {
   "toolName": "my-tool",
-  "rawParam": "test",
+  "replacementParams": {
+    "rawParam": "test"
+  },
   "uploadedFiles": []
 }
 
@@ -284,7 +262,9 @@ Content-Type: application/json
 
 {
   "toolName": "my-tool",
-  "rawParam": "test",
+  "replacementParams": {
+    "rawParam": "test"
+  },
   "uploadedFiles": []
 }
 
