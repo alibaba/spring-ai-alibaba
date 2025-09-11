@@ -36,7 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * 单元测试 for Mem0MemoryStore
+ * Unit tests for Mem0MemoryStore
  *
  * @author Morain Miao
  * @since 1.0.0
@@ -87,7 +87,7 @@ class Mem0MemoryStoreTest {
 		// Given
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("role", "user");
-		// 缺少必要的metadata
+		// Missing required metadata.
 
 		Document document = new Document("test content", metadata);
 		List<Document> documents = List.of(document);
@@ -179,7 +179,7 @@ class Mem0MemoryStoreTest {
 		// When
 		memoryStore.afterPropertiesSet();
 
-		// Then - 不应该抛出异常
+		// Then - No exception should be thrown.
 		assertThat(memoryStore).isNotNull();
 	}
 

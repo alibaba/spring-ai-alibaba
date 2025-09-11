@@ -55,7 +55,13 @@ frontend/
 在启动 Web 前端服务之前，请确保以下环境已准备就绪。
 - [Node.js](https://nodejs.org) >= v20
 
-首先，根目录下安装依赖项：
+首先，在根目录下安装依赖项：
+
+```bash
+npm install rimraf copyfiles --save-dev
+```
+
+然后安装所有项目依赖：
 
 ```bash
 npm run re-install
@@ -64,8 +70,15 @@ npm run re-install
 然后，配置环境变量。在当前目录中创建一个名为`.env`的文件，并从`.env.example`复制内容。根据您的需求修改这些环境变量的值：
 
 ```bash
-cd
-cp ./packages/main/.env.example ./packages/main/.env
+cd packages/main
+```
+在 macOS/Linux 中:
+```bash
+cp .env.example .env
+```
+在 Windows (PowerShell) 中:
+```bash
+Copy-Item .env.example .env
 ```
 
 ```
