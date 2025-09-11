@@ -42,6 +42,7 @@ public class CodeNodeSection implements NodeSection<CodeNodeData> {
 				        .codeExecutor(codeExecutor)
 				        .codeLanguage("%s")
 				        .code(%s)
+				        .codeStyle(%s)
 				        .config(codeExecutionConfig)
 				        .params(%s)
 				        .outputKey("%s")
@@ -51,8 +52,9 @@ public class CodeNodeSection implements NodeSection<CodeNodeData> {
 				));
 
 				""", node.getId(), varName, nodeData.getCodeLanguage(), ObjectToCodeUtil.toCode(nodeData.getCode()),
-				ObjectToCodeUtil.toCode(nodeData.getInputParams()), nodeData.getOutputKey(), varName, varName,
-				nodeData.getOutputKey(), varName, nodeData.getMaxRetryCount(), nodeData.getRetryIntervalMs(),
+				ObjectToCodeUtil.toCode(nodeData.getCodeStyle()), ObjectToCodeUtil.toCode(nodeData.getInputParams()),
+				nodeData.getOutputKey(), varName, varName, nodeData.getOutputKey(), varName,
+				nodeData.getMaxRetryCount(), nodeData.getRetryIntervalMs(),
 				ObjectToCodeUtil.toCode(nodeData.getDefaultValue()));
 	}
 

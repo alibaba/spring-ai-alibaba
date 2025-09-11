@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.CodeNodeData;
@@ -138,7 +139,82 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 
 			@Override
 			public CodeNodeData parse(Map<String, Object> data) throws JsonProcessingException {
-				return null;
+				CodeNodeData nodeData = new CodeNodeData();
+
+				// 获取基本信息
+				String code = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param", "script_content");
+				String lang = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param", "script_type");
+				Boolean isRetry = Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, Boolean.class, "config", "node_param", "retry_config",
+							"retry_enabled"))
+					.orElse(false);
+				int maxRetryCount = isRetry ? Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, Integer.class, "config", "node_param", "retry_config",
+							"max_retries"))
+					.orElse(1) : 1;
+				int retryIntervalMs = isRetry ? Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, Integer.class, "config", "node_param", "retry_config",
+							"retry_interval"))
+					.orElse(1000) : 1000;
+
+				List<Variable> outputParams = Optional
+					.ofNullable(MapReadUtil.safeCastToListWithMap(
+							MapReadUtil.getMapDeepValue(data, List.class, "config", "output_params")))
+					.orElse(List.of())
+					.stream()
+					.filter(map -> map.containsKey("key"))
+					.map(map -> new Variable(map.get("key").toString(), VariableType.OBJECT))
+					.toList();
+				List<CodeNodeData.CodeParam> inputParams = Optional
+					.ofNullable(MapReadUtil
+						.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "input_params")))
+					.orElse(List.of())
+					.stream()
+					.filter(map -> map.containsKey("key") && map.containsKey("value") && map.containsKey("value_from"))
+					.map(map -> {
+						String key = map.get("key").toString();
+						Object value = map.get("value");
+						String valueFrom = map.get("value_from").toString();
+						if ("input".equalsIgnoreCase(valueFrom)) {
+							return CodeNodeData.CodeParam.withValue(key, value);
+						}
+						else {
+							// 先以Value的形式存储selector，在post阶段转换为正确的stateKey
+							VariableSelector selector = this.varTemplateToSelector(DSLDialectType.STUDIO,
+									value.toString());
+							List<String> list = List.of(selector.getNamespace(), selector.getName());
+							return new CodeNodeData.CodeParam(key, list, value.toString());
+						}
+					})
+					.toList();
+
+				// 设置基本信息
+				nodeData.setCodeStyle(CodeNodeData.CodeStyle.GLOBAL_DICTIONARY);
+				nodeData.setCode(code);
+				nodeData.setCodeLanguage(lang);
+				nodeData.setMaxRetryCount(maxRetryCount);
+				nodeData.setRetryIntervalMs(retryIntervalMs);
+				nodeData.setInputParams(inputParams);
+				nodeData.setOutputs(outputParams);
+
+				// 设置错误策略
+				String errorStrategy = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param",
+						"try_catch_config", "strategy");
+				if (errorStrategy != null) {
+					// 暂仅支持默认值
+					List<Map<String, Object>> defaultValueList = MapReadUtil
+						.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "node_param",
+								"try_catch_config", "default_values"));
+					if (defaultValueList != null) {
+						Map<String, Object> defaultValue = defaultValueList.stream()
+							.filter(map -> map.containsKey("key") && map.containsKey("value"))
+							.collect(Collectors.toUnmodifiableMap(map -> map.get("key").toString(),
+									map -> map.get("value"), (a, b) -> b));
+						nodeData.setDefaultValue(defaultValue);
+					}
+				}
+
+				return nodeData;
 			}
 
 			@Override
@@ -180,7 +256,7 @@ public class CodeNodeDataConverter extends AbstractNodeDataConverter<CodeNodeDat
 					@SuppressWarnings("unchecked")
 					List<String> selector = (List<String>) param.value();
 					return CodeNodeData.CodeParam.withKey(param.argName(),
-							idToVarName.get(selector.get(0)) + "_" + selector.get(1));
+							idToVarName.getOrDefault(selector.get(0), selector.get(0)) + "_" + selector.get(1));
 				}).toList());
 			}).andThen(super.postProcessConsumer(dialectType));
 			default -> super.postProcessConsumer(dialectType);
