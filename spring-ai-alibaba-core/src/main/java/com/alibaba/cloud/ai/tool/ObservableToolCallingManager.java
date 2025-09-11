@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -250,38 +249,37 @@ public class ObservableToolCallingManager implements ToolCallingManager {
 	/**
 	 * We have to assume that tool calls is ordered in streaming mode.
 	 */
-	private static AssistantMessage mergeToolCalls(AssistantMessage assistantMessage) {
-		ArrayList<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
-		Iterator<ToolCall> iterator = assistantMessage.getToolCalls().iterator();
-		AtomicReference<StringBuilder> argumentsContentRef = new AtomicReference<>(new StringBuilder());
-		String id = null;
-		String type = null;
-		String name = null;
-		while (iterator.hasNext()) {
-			ToolCall toolCallChunk = iterator.next();
-			if (StringUtils.hasText(toolCallChunk.id()) && StringUtils.hasText(toolCallChunk.name())) {
-				if (StringUtils.hasText(id) && StringUtils.hasText(name)) {
-					// save previous one
-					toolCalls.add(new AssistantMessage.ToolCall(id, type, name, argumentsContentRef.get().toString()));
-					argumentsContentRef.set(new StringBuilder());
-				}
-				id = toolCallChunk.id();
-				type = toolCallChunk.type();
-				name = toolCallChunk.name();
-			}
-			if (StringUtils.hasText(toolCallChunk.arguments())) {
-				argumentsContentRef.get().append(toolCallChunk.arguments());
-			}
-		}
+        static AssistantMessage mergeToolCalls(AssistantMessage assistantMessage) {
+                List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
+                Iterator<ToolCall> iterator = assistantMessage.getToolCalls().iterator();
+                StringBuilder argumentsContent = new StringBuilder();
+                String id = null;
+                String type = null;
+                String name = null;
+                while (iterator.hasNext()) {
+                        ToolCall toolCallChunk = iterator.next();
+                        if (StringUtils.hasText(toolCallChunk.id()) && StringUtils.hasText(toolCallChunk.name())) {
+                                if (StringUtils.hasText(id) && StringUtils.hasText(name)) {
+                                        // save previous one
+                                        toolCalls.add(new AssistantMessage.ToolCall(id, type, name, argumentsContent.toString()));
+                                        argumentsContent.setLength(0);
+                                }
+                                id = toolCallChunk.id();
+                                type = toolCallChunk.type();
+                                name = toolCallChunk.name();
+                        }
+                        if (StringUtils.hasText(toolCallChunk.arguments())) {
+                                argumentsContent.append(toolCallChunk.arguments());
+                        }
+                }
 
-		if (StringUtils.hasText(id) && StringUtils.hasText(name)) {
-			// save last one
-			toolCalls.add(new AssistantMessage.ToolCall(id, type, name, argumentsContentRef.get().toString()));
-			argumentsContentRef.set(new StringBuilder());
-		}
-		return new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(), toolCalls,
-				assistantMessage.getMedia());
-	}
+                if (StringUtils.hasText(id) && StringUtils.hasText(name)) {
+                        // save last one
+                        toolCalls.add(new AssistantMessage.ToolCall(id, type, name, argumentsContent.toString()));
+                }
+                return new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(), toolCalls,
+                                assistantMessage.getMedia());
+        }
 
 	private List<Message> buildConversationHistoryAfterToolExecution(List<Message> previousMessages,
 			AssistantMessage assistantMessage, ToolResponseMessage toolResponseMessage) {
