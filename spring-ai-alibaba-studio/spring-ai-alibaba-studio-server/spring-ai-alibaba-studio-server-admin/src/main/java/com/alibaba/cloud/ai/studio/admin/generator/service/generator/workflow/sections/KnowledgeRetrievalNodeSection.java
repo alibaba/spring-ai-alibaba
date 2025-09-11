@@ -22,8 +22,25 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.Knowl
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
+import com.alibaba.cloud.ai.studio.core.config.StudioProperties;
+import com.alibaba.cloud.ai.studio.core.rag.DocumentService;
+import com.alibaba.cloud.ai.studio.runtime.domain.PagingList;
+import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.Document;
+import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.DocumentQuery;
+import com.alibaba.cloud.ai.studio.runtime.enums.DocumentType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
+
+// TODO: 支持其他格式的文档，如PDF、ZIP等
+// TODO: 解析并应用RerankModel、EmbeddingModel配置
+// TODO: 支持从OSS获取资源文件，或者在生成项目中从OSS获取资源文件
 @Component
 public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetrievalNodeData> {
 
@@ -32,99 +49,143 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 		return NodeType.RETRIEVER.equals(nodeType);
 	}
 
+	// 用于获取Studio存储的文档
+	private final DocumentService studioDocumentService;
+
+	private final String studioStoragePath;
+
+	public KnowledgeRetrievalNodeSection(DocumentService studioDocumentService, StudioProperties properties) {
+		this.studioDocumentService = studioDocumentService;
+		this.studioStoragePath = properties.getStoragePath();
+	}
+
 	@Override
 	public String render(Node node, String varName) {
-		KnowledgeRetrievalNodeData d = (KnowledgeRetrievalNodeData) node.getData();
-		String id = node.getId();
-		StringBuilder sb = new StringBuilder();
+		KnowledgeRetrievalNodeData nodeData = (KnowledgeRetrievalNodeData) node.getData();
 
-		sb.append(String.format("// —— KnowledgeRetrievalNode [%s] ——%n", id));
-		sb.append(String.format("KnowledgeRetrievalNode %s = KnowledgeRetrievalNode.builder()%n", varName));
+		if (DSLDialectType.STUDIO.equals(nodeData.getDialectType())) {
+			// 根据knowledgeBaseIds获取对应的资源文件
+			List<ResourceFile> resourceFiles = Optional.ofNullable(nodeData.getKnowledgeBaseIds())
+				.orElse(List.of())
+				.stream()
+				.map(kbId -> {
+					PagingList<Document> getSize = this.studioDocumentService.listDocuments(kbId, new DocumentQuery());
+					Long total = getSize.getTotal();
+					DocumentQuery query = new DocumentQuery();
+					query.setSize(total.intValue());
+					PagingList<Document> pagingList = this.studioDocumentService.listDocuments(kbId, query);
+					return pagingList.getRecords();
+				})
+				.flatMap(List::stream)
+				.filter(Document::getEnabled)
+				.filter(d -> StringUtils.hasText(d.getPath()))
+				.map(document -> {
+					// 文件类型
+					String contentType = document.getMetadata().getContentType();
+					// 存储形式
+					DocumentType documentType = document.getType();
+					// 存储路径
+					String path = switch (documentType) {
+						case FILE -> {
+							{
+								Path p = Path.of(studioStoragePath);
+								Path resolvedPath = p.resolve(document.getPath()).normalize();
 
-		sb.append(String.format(".inputKey(\"%s\")%n", d.getInputKey()));
+								// 安全检查：确保解析后的路径仍在允许的目录范围内
+								if (!resolvedPath.startsWith(p.normalize())) {
+									throw new SecurityException("非法路径访问尝试: " + document.getPath());
+								}
 
-		if (d.getUserPrompt() != null) {
-			sb.append(String.format(".userPrompt(\"%s\")%n", escape(d.getUserPrompt())));
-		}
-		if (d.getTopKKey() != null) {
-			sb.append(String.format(".topKKey(\"%s\")%n", escape(d.getTopKKey())));
-		}
-		if (d.getTopK() != null) {
-			sb.append(String.format(".topK(%d)%n", d.getTopK()));
-		}
-		if (d.getSimilarityThresholdKey() != null) {
-			sb.append(String.format(".similarityThresholdKey(\"%s\")%n", escape(d.getSimilarityThresholdKey())));
-		}
-		if (d.getSimilarityThreshold() != null) {
-			sb.append(String.format(".similarityThreshold(%s)%n", d.getSimilarityThreshold()));
-		}
-		if (d.getFilterExpressionKey() != null) {
-			sb.append(String.format(".filterExpressionKey(\"%s\")%n", escape(d.getFilterExpressionKey())));
-		}
-		if (d.getFilterExpression() != null) {
-			sb.append(String.format(".filterExpression(%s)%n", d.getFilterExpression().toString()));
-		}
-		if (d.getEnableRankerKey() != null) {
-			sb.append(String.format(".enableRankerKey(\"%s\")%n", escape(d.getEnableRankerKey())));
-		}
-		if (d.getEnableRanker() != null) {
-			sb.append(String.format(".enableRanker(%b)%n", d.getEnableRanker()));
-		}
-		if (d.getRerankModelKey() != null) {
-			sb.append(String.format(".rerankModelKey(\"%s\")%n", escape(d.getRerankModelKey())));
-		}
-		if (d.getRerankModel() != null) {
-			sb.append(String.format(".rerankModel(%s)%n", d.getRerankModel()));
-		}
-		if (d.getRerankOptionsKey() != null) {
-			sb.append(String.format(".rerankOptionsKey(\"%s\")%n", escape(d.getRerankOptionsKey())));
-		}
-		if (d.getRerankOptions() != null) {
-			sb.append(String.format(".rerankOptions(%s)%n", d.getRerankOptions()));
-		}
-		if (d.getVectorStoreKey() != null) {
-			sb.append(String.format(".vectorStoreKey(\"%s\")%n", escape(d.getVectorStoreKey())));
+								yield resolvedPath.toAbsolutePath().toString();
+							}
+						}
+						case URL -> {
+							// 对URL路径进行基本验证
+							String urlPath = document.getPath();
+							if (urlPath == null || urlPath.trim().isEmpty()) {
+								throw new IllegalArgumentException("URL路径不能为空");
+							}
+							yield urlPath;
+						}
+						default ->
+							throw new UnsupportedOperationException("unsupported document type: " + documentType);
+					};
+					String fileName = document.getName();
+					// 构造文件记录
+					return new ResourceFile(fileName, switch (documentType) {
+						case FILE -> ResourceFile.Type.CLASS_PATH;
+						case URL -> ResourceFile.Type.URL;
+						default ->
+							throw new UnsupportedOperationException("unsupported document type: " + documentType);
+					}, () -> {
+						try {
+							return Files.newInputStream(Path.of(path));
+						}
+						catch (IOException e) {
+							throw new RuntimeException(e);
+						}
+					});
+				})
+				.toList();
+			nodeData.setResourceFiles(resourceFiles);
 		}
 
-		if (d.getRetrievalMode() != null) {
-			sb.append(String.format(".retrievalMode(\"%s\")%n", escape(d.getRetrievalMode())));
-		}
-		if (d.getEmbeddingModelName() != null) {
-			sb.append(String.format(".embeddingModelName(\"%s\")%n", escape(d.getEmbeddingModelName())));
-		}
-		if (d.getEmbeddingProviderName() != null) {
-			sb.append(String.format(".embeddingProviderName(\"%s\")%n", escape(d.getEmbeddingProviderName())));
-		}
-		if (d.getVectorWeight() != null) {
-			sb.append(String.format(".vectorWeight(%s)%n", d.getVectorWeight()));
-		}
-		if (d.getOutputKey() != null) {
-			sb.append(String.format(".outputKey(\"%s\")%n", escape(d.getOutputKey())));
-		}
-		sb.append(".vectorStore(vectorStore)\n");
-
-		sb.append(".isKeyFirst(false).build();\n");
-
-		// 辅助节点代码
-		String assistNodeCode = String.format("wrapperRetrievalNodeAction(%s, \"%s\")", varName, d.getOutputKey());
-
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
-				assistNodeCode));
-		return sb.toString();
+		return String.format("""
+				// —— KnowledgeRetrievalNode [%s] ——%n
+				KnowledgeRetrievalNode %s = KnowledgeRetrievalNode.builder()
+				    .topK(%s)
+				    .similarityThreshold(%s)
+				    .inputKey(%s)
+				    .outputKey(%s)
+				    .vectorStore(createVectorStore(%s))
+				    .build();
+				stateGraph.addNode("%s", AsyncNodeAction.node_async(wrapperRetrievalNodeAction(%s, "%s")));
+				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getTopK()),
+				ObjectToCodeUtil.toCode(nodeData.getThreshold()), ObjectToCodeUtil.toCode(nodeData.getInputKey()),
+				ObjectToCodeUtil.toCode(nodeData.getOutputKey()),
+				ObjectToCodeUtil.toCode(DSLDialectType.STUDIO.equals(nodeData.getDialectType())
+						? nodeData.getResourceFiles() : List.of("please_config_your_own_resource_files")),
+				varName, varName, nodeData.getOutputKey());
 	}
 
 	@Override
 	public String assistMethodCode(DSLDialectType dialectType) {
-		return switch (dialectType) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("""
+				@Autowired
+				private ResourceLoader resourceLoader;
+
+				@Autowired
+				private EmbeddingModel embeddingModel;
+
+				""");
+		if (!DSLDialectType.STUDIO.equals(dialectType)) {
+			sb.append(
+					"// todo: Please manually modify the parameter values passed to this method to point to the correct resource paths");
+			sb.append(String.format("%n"));
+		}
+		sb.append("""
+				private VectorStore createVectorStore(List<String> paths) {
+				    List<Resource> resources = Optional.ofNullable(paths).orElse(List.of())
+				            .stream().map(resourceLoader::getResource).toList();
+				    List<Document> documents = resources.stream().map(TextReader::new).map(TextReader::read)
+				            .flatMap(List::stream).toList();
+				    List<Document> chunks = new TokenTextSplitter().transform(documents);
+				    SimpleVectorStore vectorStore = SimpleVectorStore.builder(embeddingModel).build();
+				    vectorStore.write(chunks);
+				    return vectorStore;
+				}
+				""");
+		sb.append(switch (dialectType) {
 			case DIFY ->
 				"""
 						 private NodeAction wrapperRetrievalNodeAction(NodeAction nodeAction, String key) {
-						     return (state) -> {
-						         // 将结果转换为Dify工作流中需要的变量
+						     return state -> {
+						         // Convert the result to the variable format required by the Dify workflow
 						         Map<String, Object> result = nodeAction.apply(state);
 						         Object object = result.get(key);
 						         if(object instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Document) {
-						             // 返回值为Array[Object]（用List<Map>）
+						             // Return value is Array[Object] (using List<Map>)
 						             List<Document> documentList = (List<Document>) list;
 						             List<Map<String, Object>> mapList = documentList.stream().map(document ->
 						                             Map.of("content", document.getFormattedContent(), "title", document.getId(), "url", "", "icon", "", "metadata", document.getMetadata()))
@@ -136,8 +197,40 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 						     };
 						 }
 						""";
+			case STUDIO ->
+				"""
+						   private NodeAction wrapperRetrievalNodeAction(NodeAction nodeAction, String key) {
+						       return state -> {
+						           // Convert the result to the variable format required by the workflow
+						           Map<String, Object> result = nodeAction.apply(state);
+						           Object object = result.get(key);
+						           if (object instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Document) {
+						               // Return value is Array[Object] (using List<Map>)
+						               List<Document> documentList = (List<Document>) list;
+						               List<Map<String, Object>> mapList = documentList.stream()
+						                   .map(document -> Map.<String, Object>of("doc_id", document.getId(), "doc_name",
+						                           Optional.ofNullable(document.getText()).orElse("unknown"), "title", document.getId(),
+						                           "text", document.getFormattedContent(), "score",
+						                           Optional.ofNullable(document.getScore()).orElse(0.0), "page_number", 0, "chunk_id",
+						                           document.getId()))
+						                   .toList();
+						               return Map.of(key, mapList);
+						           }
+						           else {
+						               return Map.of(key, List.of());
+						           }
+						       };
+						   }
+						""";
 			default -> "";
-		};
+		});
+		return sb.toString();
+	}
+
+	@Override
+	public List<ResourceFile> resourceFiles(DSLDialectType dialectType, KnowledgeRetrievalNodeData nodeData) {
+		return Optional.ofNullable(nodeData.getResourceFiles())
+			.orElse(NodeSection.super.resourceFiles(dialectType, nodeData));
 	}
 
 }

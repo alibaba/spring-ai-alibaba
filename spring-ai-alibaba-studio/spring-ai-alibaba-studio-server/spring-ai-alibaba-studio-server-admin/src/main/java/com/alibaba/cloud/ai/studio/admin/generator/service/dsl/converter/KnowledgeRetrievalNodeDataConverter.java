@@ -16,29 +16,26 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankOptions;
-import com.alibaba.cloud.ai.model.RerankModel;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.KnowledgeRetrievalNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.springframework.ai.vectorstore.filter.Filter;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.stereotype.Component;
 
 @Component
 public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConverter<KnowledgeRetrievalNodeData> {
-
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	@Override
 	public Boolean supportNodeType(NodeType nodeType) {
@@ -60,155 +57,83 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 				return DSLDialectType.DIFY.equals(dialect);
 			}
 
-			@SuppressWarnings("unchecked")
 			@Override
 			public KnowledgeRetrievalNodeData parse(Map<String, Object> data) {
-				KnowledgeRetrievalNodeData nd = new KnowledgeRetrievalNodeData();
-				// selector
-				if (data.get("variable_selector") != null) {
-					List<String> sel = (List<String>) data.get("variable_selector");
-					if (sel.size() == 2) {
-						nd.setInputs(List.of(new VariableSelector(sel.get(0), sel.get(1))));
-					}
+				KnowledgeRetrievalNodeData nodeData = new KnowledgeRetrievalNodeData();
+				nodeData.setDialectType(DSLDialectType.DIFY);
+				// 获取必要信息
+				Integer topK = MapReadUtil.getMapDeepValue(data, Integer.class, "multiple_retrieval_config", "top_k");
+				Double threshold = MapReadUtil.getMapDeepValue(data, Double.class, "multiple_retrieval_config",
+						"score_threshold");
+				List<String> knowledgeBaseIds = MapReadUtil
+					.safeCastToList(MapReadUtil.getMapDeepValue(data, List.class, "dataset_ids"), String.class);
+				List<String> inputParams = MapReadUtil.safeCastToList(
+						MapReadUtil.getMapDeepValue(data, List.class, "query_variable_selector"), String.class);
+				if (inputParams != null && inputParams.size() >= 2) {
+					nodeData.setInputs(List.of(new VariableSelector(inputParams.get(0), inputParams.get(1))));
 				}
-				else if (data.get("query_variable_selector") != null) {
-					List<String> sel = (List<String>) data.get("query_variable_selector");
-					if (sel.size() == 2) {
-						nd.setInputs(List.of(new VariableSelector(sel.get(0), sel.get(1))));
-					}
-				}
-				// dataset_ids
-				if (data.get("dataset_ids") != null) {
-					List<String> ds = (List<String>) data.get("dataset_ids");
-					nd.setVectorStoreKey(ds.size() == 1 ? ds.get(0) : ds.toString());
-				}
-				// multiple_retrieval_config
-				Map<String, Object> mrc = (Map<String, Object>) data.get("multiple_retrieval_config");
-				if (mrc != null) {
-					if (mrc.get("top_k") != null)
-						nd.setTopK(((Number) mrc.get("top_k")).intValue());
-					if (mrc.get("reranking_enable") != null)
-						nd.setEnableRanker((Boolean) mrc.get("reranking_enable"));
-					if (mrc.get("reranking_mode") != null)
-						nd.setRerankModelKey(String.valueOf(mrc.get("reranking_mode")));
-					if (mrc.get("weights") instanceof Map) {
-						Map<String, Object> weights = (Map<String, Object>) mrc.get("weights");
-						if (weights.get("vector_setting") instanceof Map) {
-							Map<String, Object> vs = (Map<String, Object>) weights.get("vector_setting");
-							if (vs.get("embedding_model_name") != null)
-								nd.setEmbeddingModelName((String) vs.get("embedding_model_name"));
-							if (vs.get("embedding_provider_name") != null)
-								nd.setEmbeddingProviderName((String) vs.get("embedding_provider_name"));
-							if (vs.get("vector_weight") != null)
-								nd.setVectorWeight(((Number) vs.get("vector_weight")).doubleValue());
-						}
-					}
-				}
-				// retrieval_mode
-				if (data.get("retrieval_mode") != null) {
-					nd.setRetrievalMode(String.valueOf(data.get("retrieval_mode")));
+				else {
+					nodeData.setInputs(List.of(new VariableSelector("sys", "query")));
 				}
 
-				nd.setUserPrompt((String) data.get("user_prompt"));
-				// topKKey & topK
-				nd.setTopKKey((String) data.get("top_k_key"));
-				if (data.get("top_k") != null) {
-					nd.setTopK(((Number) data.get("top_k")).intValue());
-				}
-				// similarityThresholdKey & similarityThreshold
-				nd.setSimilarityThresholdKey((String) data.get("similarity_threshold_key"));
-				if (data.get("similarity_threshold") != null) {
-					nd.setSimilarityThreshold(((Number) data.get("similarity_threshold")).doubleValue());
-				}
-				// filterExpressionKey & filterExpression
-				nd.setFilterExpressionKey((String) data.get("filter_expression_key"));
-				if (data.get("filter_expression") != null) {
-					nd.setFilterExpression(
-							objectMapper.convertValue(data.get("filter_expression"), Filter.Expression.class));
-				}
-				// enableRankerKey & enableRanker
-				nd.setEnableRankerKey((String) data.get("enable_ranker_key"));
-				if (data.get("enable_ranker") != null) {
-					nd.setEnableRanker((Boolean) data.get("enable_ranker"));
-				}
-				// rerankModelKey & rerankModel
-				nd.setRerankModelKey((String) data.get("rerank_model_key"));
-				if (data.get("rerank_model") != null) {
-					nd.setRerankModel(objectMapper.convertValue(data.get("rerank_model"), RerankModel.class));
-				}
-				// rerankOptionsKey & rerankOptions
-				nd.setRerankOptionsKey((String) data.get("rerank_options_key"));
-				if (data.get("rerank_options") != null) {
-					nd.setRerankOptions(
-							objectMapper.convertValue(data.get("rerank_options"), DashScopeRerankOptions.class));
-				}
-				// vectorStoreKey & vectorStore
-				nd.setVectorStoreKey((String) data.get("vector_store_key"));
-				return nd;
+				// 设置信息
+				nodeData.setTopK(topK);
+				nodeData.setThreshold(threshold);
+				nodeData.setKnowledgeBaseIds(knowledgeBaseIds);
+				return nodeData;
 			}
 
 			@Override
 			public Map<String, Object> dump(KnowledgeRetrievalNodeData nd) {
-				Map<String, Object> m = new LinkedHashMap<>();
-				// variable_selector
-				if (nd.getInputs() != null && !nd.getInputs().isEmpty()) {
-					VariableSelector vs = nd.getInputs().get(0);
-					m.put("variable_selector", List.of(vs.getNamespace(), vs.getName()));
+				throw new UnsupportedOperationException();
+			}
+		}), STUDIO(new DialectConverter<>() {
+			@Override
+			public Boolean supportDialect(DSLDialectType dialectType) {
+				return DSLDialectType.STUDIO.equals(dialectType);
+			}
+
+			private static final Pattern VAR_TEMPLATE_PATTERN = Pattern.compile("\\$\\{(\\w+)\\.(\\w+)}");
+
+			@Override
+			public KnowledgeRetrievalNodeData parse(Map<String, Object> data) throws JsonProcessingException {
+				KnowledgeRetrievalNodeData nodeData = new KnowledgeRetrievalNodeData();
+				nodeData.setDialectType(DSLDialectType.STUDIO);
+				// 获取必要信息
+				Integer topK = MapReadUtil.getMapDeepValue(data, Integer.class, "config", "node_param", "top_k");
+				Double threshold = MapReadUtil.getMapDeepValue(data, Double.class, "config", "node_param",
+						"similarity_threshold");
+				List<String> knowledgeBaseIds = MapReadUtil.safeCastToList(
+						MapReadUtil.getMapDeepValue(data, List.class, "config", "node_param", "knowledge_base_ids"),
+						String.class);
+				List<Map<String, Object>> inputParams = MapReadUtil
+					.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, String.class, "config", "input_params"));
+				// Studio DSL 此值是一个模板值
+				String inputKey;
+				if (inputParams != null && !inputParams.isEmpty()) {
+					inputKey = inputParams.get(0).get("value").toString();
 				}
-				// user_prompt_key & user_prompt
-				if (nd.getUserPromptKey() != null) {
-					m.put("user_prompt_key", nd.getUserPromptKey());
+				else {
+					inputKey = "${sys.query}";
 				}
-				if (nd.getUserPrompt() != null) {
-					m.put("user_prompt", nd.getUserPrompt());
+				Matcher matcher = VAR_TEMPLATE_PATTERN.matcher(inputKey);
+				if (matcher.find()) {
+					nodeData.setInputs(List.of(new VariableSelector(matcher.group(1), matcher.group(2))));
 				}
-				// top_k_key & top_k
-				if (nd.getTopKKey() != null) {
-					m.put("top_k_key", nd.getTopKKey());
+				else {
+					nodeData.setInputs(List.of(new VariableSelector("sys", "query")));
 				}
-				if (nd.getTopK() != null) {
-					m.put("top_k", nd.getTopK());
-				}
-				// similarity_threshold_key & similarity_threshold
-				if (nd.getSimilarityThresholdKey() != null) {
-					m.put("similarity_threshold_key", nd.getSimilarityThresholdKey());
-				}
-				if (nd.getSimilarityThreshold() != null) {
-					m.put("similarity_threshold", nd.getSimilarityThreshold());
-				}
-				// filter_expression_key & filter_expression
-				if (nd.getFilterExpressionKey() != null) {
-					m.put("filter_expression_key", nd.getFilterExpressionKey());
-				}
-				if (nd.getFilterExpression() != null) {
-					m.put("filter_expression", nd.getFilterExpression());
-				}
-				// enable_ranker_key & enable_ranker
-				if (nd.getEnableRankerKey() != null) {
-					m.put("enable_ranker_key", nd.getEnableRankerKey());
-				}
-				if (nd.getEnableRanker() != null) {
-					m.put("enable_ranker", nd.getEnableRanker());
-				}
-				// rerank_model_key & rerank_model
-				if (nd.getRerankModelKey() != null) {
-					m.put("rerank_model_key", nd.getRerankModelKey());
-				}
-				if (nd.getRerankModel() != null) {
-					m.put("rerank_model", nd.getRerankModel());
-				}
-				// rerank_options_key & rerank_options
-				if (nd.getRerankOptionsKey() != null) {
-					m.put("rerank_options_key", nd.getRerankOptionsKey());
-				}
-				if (nd.getRerankOptions() != null) {
-					m.put("rerank_options", nd.getRerankOptions());
-				}
-				// vector_store_key
-				if (nd.getVectorStoreKey() != null) {
-					m.put("vector_store_key", nd.getVectorStoreKey());
-				}
-				return m;
+
+				// 设置信息
+				nodeData.setTopK(topK);
+				nodeData.setThreshold(threshold);
+				nodeData.setKnowledgeBaseIds(knowledgeBaseIds);
+				return nodeData;
+			}
+
+			@Override
+			public Map<String, Object> dump(KnowledgeRetrievalNodeData nodeData) {
+				throw new UnsupportedOperationException();
 			}
 		}), CUSTOM(defaultCustomDialectConverter(KnowledgeRetrievalNodeData.class));
 
@@ -226,19 +151,21 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 
 	@Override
 	public String generateVarName(int count) {
-		return "knowledgeRetrievalNode" + count;
+		return "retrievalNode" + count;
 	}
 
 	@Override
 	public BiConsumer<KnowledgeRetrievalNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
-				nodeData.setOutputKey(
-						nodeData.getVarName() + "_" + KnowledgeRetrievalNodeData.getDefaultOutputSchema().getName());
-				nodeData.setOutputs(List.of(KnowledgeRetrievalNodeData.getDefaultOutputSchema()));
-			}).andThen(super.postProcessConsumer(dialectType)).andThen((nodeData, idToVarName) -> {
-				nodeData.setInputKey(nodeData.getInputs().get(0).getNameInCode());
-			});
+			case DIFY, STUDIO -> this.emptyProcessConsumer().andThen((nodeData, idToVarName) ->
+				// 设置输出
+				nodeData.setOutputs(KnowledgeRetrievalNodeData.getDefaultOutputSchemas(dialectType)))
+				.andThen(super.postProcessConsumer(dialectType))
+				.andThen((nodeData, idToVarName) -> {
+					// 获取最终的输入输出Key名
+					nodeData.setOutputKey(nodeData.getOutputs().get(0).getName());
+					nodeData.setInputKey(nodeData.getInputs().get(0).getNameInCode());
+				});
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}

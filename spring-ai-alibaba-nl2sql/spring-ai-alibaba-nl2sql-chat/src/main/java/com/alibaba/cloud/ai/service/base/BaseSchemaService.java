@@ -136,7 +136,7 @@ public abstract class BaseSchemaService {
 	 * Get all table documents by keywords - supports agent isolation
 	 */
 	public List<Document> getTableDocuments(String query, String agentId) {
-		if (agentId != null) {
+		if (agentId != null && !agentId.trim().isEmpty()) {
 			return vectorStoreService.getDocumentsForAgent(agentId, query, "table");
 		}
 		else {

@@ -13,11 +13,11 @@
     "build:subtree": "npm run clear",
     "build:subtree:java": "npm run build:subtree && npm install && npm run build:flow && BACK_END=java npm run build:app",
     "build:subtree:python": "npm run build:subtree && npm install && npm run build:flow && BACK_END=python npm run build:app",
-    "clear": "rm -rf node_modules && rm -rf packages/spark-flow/node_modules && rm -rf packages/main/node_modules && rm -rf packages/main/src/.umi",
+    "clear": "rimraf node_modules packages/spark-flow/node_modules packages/main/node_modules packages/main/src/.umi",
     "lint": "umi lint {packages/main/src,packages/spark-flow/src}/**/*.{ts,tsx,less} --fix",
     "prepare": "husky install",
     "re-install": "npm run clear && npm install && npm run build:flow",
-    "re-install:flow": "npm run build:flow && rm -rf packages/main/node_modules && npm install"
+    "re-install:flow": "npm run build:flow && rimraf packages/main/node_modules && npm install"
   },
   "lint-staged": {
     "*.{jsx,ts,tsx,css,less}": [
@@ -47,6 +47,8 @@
   "devDependencies": {
     "@umijs/lint": "^4.4.11",
     "babel-jest": "^29.6.1",
+    "copyfiles": "^2.4.1",
+    "cross-env": "^10.0.0",
     "eslint": "^8",
     "husky": "^9.1.7",
     "jest": "^29.6.2",
@@ -56,6 +58,7 @@
     "prettier": "^3.0.0",
     "prettier-plugin-organize-imports": "^4.1.0",
     "prettier-plugin-packagejson": "^2.5.14",
+    "rimraf": "^6.0.1",
     "stylelint": "^14.16.1",
     "umi": "^4.4.11"
   }
