@@ -156,8 +156,7 @@ public class PlanExecutorFactory implements IPlanExecutorFactory {
 
 		String planType = plan.getPlanType();
 		if (planType == null || planType.trim().isEmpty()) {
-			log.warn("Plan type is null or empty, defaulting to simple executor for plan: {}", plan.getCurrentPlanId());
-			planType = "simple";
+			throw new IllegalArgumentException("Plan type is null or empty");
 		}
 
 		log.info("Creating executor for plan type: {} (planId: {})", planType, plan.getCurrentPlanId());

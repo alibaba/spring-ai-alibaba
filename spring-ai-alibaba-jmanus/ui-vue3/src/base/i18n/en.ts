@@ -1111,6 +1111,8 @@ const words: I18nType = {
     subStep: 'Sub Step',
     subPlanId: 'Sub Plan ID',
     title: 'Title',
+    planTemplateId: 'Plan Template ID',
+    planTemplateIdPlaceholder: 'Plan template identifier',
     stepNumber: 'Step {number}',
     status: {
       label: 'Status',

@@ -488,7 +488,7 @@ const handleEscKey = (e: KeyboardEvent) => {
       cancelDelete()
     } else if (showCreateOptions.value) {
       cancelCreateOptions()
-    } else if (modelValue.value) {
+    } else if (props.modelValue) {
       emit('update:modelValue', false)
     }
   }

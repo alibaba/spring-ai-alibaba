@@ -28,6 +28,8 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 
 	protected String rootPlanId;
 
+	protected String planTemplateId;
+
 	/**
 	 * Plan title
 	 */
@@ -88,13 +90,6 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 		this.rootPlanId = rootPlanId;
 	}
 
-	public void setPlanId(String planId) {
-		this.rootPlanId = planId;
-	}
-
-	public String getPlanId() {
-		return rootPlanId;
-	}
 
 	@Override
 	public String getTitle() {
@@ -210,6 +205,14 @@ public abstract class AbstractExecutionPlan implements PlanInterface {
 	@Override
 	public void setDirectResponse(boolean directResponse) {
 		this.directResponse = directResponse;
+	}
+
+	public String getPlanTemplateId() {
+		return planTemplateId;
+	}
+
+	public void setPlanTemplateId(String planTemplateId) {
+		this.planTemplateId = planTemplateId;
 	}
 
 	/**

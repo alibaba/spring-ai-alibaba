@@ -49,7 +49,6 @@ public class DynamicAgentExecutionPlan extends AbstractExecutionPlan {
 	}
 
 
-	@JsonIgnore
 	public String getPlanType() {
 		return planType;
 	}

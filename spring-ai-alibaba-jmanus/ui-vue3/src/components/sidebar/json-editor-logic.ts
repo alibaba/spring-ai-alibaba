@@ -32,6 +32,8 @@ export interface ParsedPlanData {
   terminateColumns: string
   directResponse: boolean
   selectedToolKeys: string[]
+  planTemplateId?: string
+  planType?: string
 }
 
 export interface JsonEditorProps {

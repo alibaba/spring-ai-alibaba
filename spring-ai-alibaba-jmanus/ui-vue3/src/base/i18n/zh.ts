@@ -1076,6 +1076,8 @@ const words: I18nType = {
     subStep: '子步骤',
     subPlanId: '子计划ID',
     title: '标题',
+    planTemplateId: '计划模板ID',
+    planTemplateIdPlaceholder: '计划模板标识符',
     stepNumber: '步骤 {number}',
     status: {
       label: '状态',

@@ -141,6 +141,7 @@
             :can-restore="sidebarStore.canRestore"
             :is-generating="sidebarStore.isGenerating"
             :is-executing="sidebarStore.isExecuting"
+            :current-plan-template-id="sidebarStore.currentPlanTemplateId || ''"
             @rollback="handleRollback"
             @restore="handleRestore"
             @save="handleSaveTemplate"

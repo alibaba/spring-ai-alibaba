@@ -68,6 +68,18 @@
             :placeholder="$t('sidebar.titlePlaceholder')"
           />
         </div>
+        
+        <!-- Plan Template ID (Read-only) -->
+        <div class="form-row">
+          <label class="form-label">{{ $t('sidebar.planTemplateId') }}</label>
+          <input 
+            :value="currentPlanTemplateId" 
+            type="text" 
+            class="form-input readonly-input"
+            readonly
+            :placeholder="$t('sidebar.planTemplateIdPlaceholder')"
+          />
+        </div>
       </div>
 
 
@@ -296,7 +308,8 @@ import { ConfigApiService, type ModelOption } from '@/api/config-api-service'
 
 // Props
 const props = withDefaults(defineProps<JsonEditorProps>(), {
-  hiddenFields: () => []
+  hiddenFields: () => [],
+  currentPlanTemplateId: ''
 })
 
 // Emits
@@ -575,6 +588,20 @@ const autoResizeTextarea = (event: Event) => {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.readonly-input {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: not-allowed;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+}
+
+.readonly-input:focus {
+  border-color: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
 }
 
 .form-textarea {

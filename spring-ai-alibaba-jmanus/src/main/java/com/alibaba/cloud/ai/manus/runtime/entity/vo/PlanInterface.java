@@ -163,9 +163,9 @@ public interface PlanInterface {
 	 */
 	String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress);
 
-	public void setPlanId(String planId);
+	public void setPlanTemplateId(String planTemplateId);
 
-	public String getPlanId();
+	public String getPlanTemplateId();
 
 	/**
 	 * Whether it's direct feedback mode. When true, skip complex plan execution and use

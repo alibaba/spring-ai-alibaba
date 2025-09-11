@@ -46,7 +46,6 @@ public class ExecutionPlan extends AbstractExecutionPlan {
 		this.steps = new ArrayList<>();
 	}
 
-	@JsonIgnore
 	public String getPlanType() {
 		return planType;
 	}

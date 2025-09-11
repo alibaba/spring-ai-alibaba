@@ -217,16 +217,23 @@ public class PlanTemplateController {
 				return new PlanTemplateService.VersionSaveResult(true, false, "New plan created", 0);
 			}
 			else {
-				// If it exists, save a new version
-				PlanTemplateService.VersionSaveResult result = planTemplateService.saveToVersionHistory(planTemplateId,
-						planJson);
-				if (result.isSaved()) {
-					logger.info("New version of plan {} saved", planTemplateId, result.getVersionIndex());
+				// If it exists, update the template with new title and save a new version
+				boolean updated = planTemplateService.updatePlanTemplate(planTemplateId, title, planJson);
+				if (updated) {
+					logger.info("Updated plan template {} with new title and saved new version", planTemplateId);
+					// Get the latest version index after update
+					Integer maxVersionIndex = planTemplateService.getPlanVersions(planTemplateId).size() - 1;
+					return new PlanTemplateService.VersionSaveResult(true, false, "Plan template updated and new version saved", maxVersionIndex);
+				} else {
+					// Fallback to just saving version if update failed
+					PlanTemplateService.VersionSaveResult result = planTemplateService.saveToVersionHistory(planTemplateId, planJson);
+					if (result.isSaved()) {
+						logger.info("New version of plan {} saved", planTemplateId, result.getVersionIndex());
+					} else {
+						logger.info("Plan {} is the same, no new version saved", planTemplateId);
+					}
+					return result;
 				}
-				else {
-					logger.info("Plan {} is the same, no new version saved", planTemplateId);
-				}
-				return result;
 			}
 		}
 		catch (Exception e) {
