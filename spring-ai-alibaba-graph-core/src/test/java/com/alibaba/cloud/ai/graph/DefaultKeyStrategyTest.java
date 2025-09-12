@@ -15,11 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import org.junit.jupiter.api.Test;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,9 +36,9 @@ public class DefaultKeyStrategyTest {
 	public void testDefaultKeyStrategyIsReplace() {
 		// Create state without any explicit key strategies
 		OverAllState state = OverAllStateBuilder.builder()
-			.putData("key1", "original_value1")
-			.putData("key2", "original_value2")
-			.build();
+				.putData("key1", "original_value1")
+				.putData("key2", "original_value2")
+				.build();
 
 		// Update with new values - should use REPLACE strategy by default
 		Map<String, Object> updates = new HashMap<>();
@@ -57,11 +57,11 @@ public class DefaultKeyStrategyTest {
 	public void testExplicitStrategyOverridesDefault() {
 		// Create state with explicit APPEND strategy for one key
 		OverAllState state = OverAllStateBuilder.builder()
-			.putData("append_key", "original")
-			.putData("replace_key", "original")
-			.withKeyStrategy("append_key", KeyStrategy.APPEND)
-			// No explicit strategy for replace_key - should use default REPLACE
-			.build();
+				.putData("append_key", "original")
+				.putData("replace_key", "original")
+				.withKeyStrategy("append_key", KeyStrategy.APPEND)
+				// No explicit strategy for replace_key - should use default REPLACE
+				.build();
 
 		// Update both keys
 		Map<String, Object> updates = new HashMap<>();
@@ -74,7 +74,7 @@ public class DefaultKeyStrategyTest {
 		// APPEND strategy creates a list when oldValue is not already a List
 		assertEquals(List.of("_appended"), state.data().get("append_key")); // APPEND used
 		assertEquals("replaced", state.data().get("replace_key")); // REPLACE used
-																	// (default)
+		// (default)
 	}
 
 	@Test

@@ -28,15 +28,6 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +38,16 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -63,25 +64,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 public class StateGraphStreamTest {
 
 	/**
-	 * API key for authentication with DashScope services
-	 */
-	private String API_KEY;
-
-	/**
 	 * Logger instance for tracking test execution and debugging information
 	 */
 	private static final Logger log = LoggerFactory.getLogger(StateGraphStreamTest.class);
-
 	/**
 	 * Test constant for specifying the Qwen Turbo model in tests
 	 */
 	private static final String TEST_MODEL = "qwen-turbo";
-
 	/**
 	 * Environment variable name containing the DashScope API key
 	 */
 	private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
-
+	/**
+	 * API key for authentication with DashScope services
+	 */
+	private String API_KEY;
 	/**
 	 * DashScope API client instance for integration testing
 	 */
@@ -96,96 +93,6 @@ public class StateGraphStreamTest {
 	 * Chat model instance configured with test-specific settings
 	 */
 	private DashScopeChatModel chatModel;
-
-	/**
-	 * Sets up test environment before each test method execution. Initializes API
-	 * credentials and creates configured instances of test dependencies.
-	 */
-	@BeforeEach
-	public void setUp() {
-		API_KEY = System.getenv(API_KEY_ENV); // 替换为你的API密钥
-		Assumptions.assumeTrue(API_KEY != null && !API_KEY.trim().isEmpty(),
-				"Skipping tests because " + API_KEY_ENV + " environment variable is not set");
-		// Create real API client with API key from environment
-		realApi = DashScopeApi.builder().apiKey(API_KEY).build();
-		// Create chat model with default options
-		options = DashScopeChatOptions.builder().withModel(TEST_MODEL).build();
-		chatModel = DashScopeChatModel.builder().dashScopeApi(realApi).defaultOptions(options).build();
-	}
-
-	/**
-	 * Creates a basic test node with logging functionality.
-	 * @param id Unique identifier for the node
-	 * @return AsyncNodeAction that logs its execution and returns a simple message
-	 */
-	private AsyncNodeAction makeNode(String id) {
-		return node_async(state -> {
-			log.info("call node {}", id);
-			return Map.of("messages", id);
-		});
-	}
-
-	/**
-	 * Tests basic generator result retrieval from the state graph. Verifies that the
-	 * stream processing correctly handles terminal states and results.
-	 */
-	@Test
-	public void testGetResultFromGenerator() throws Exception {
-		var workflow = new StateGraph(() -> {
-			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-			keyStrategyMap.put("messages", new AppendStrategy());
-			return keyStrategyMap;
-		}).addEdge(START, "agent_1").addNode("agent_1", makeNode("agent_1")).addEdge("agent_1", END);
-
-		var app = workflow.compile();
-
-		// Use Flux streaming approach - simplified version
-		app.fluxStream(Map.of())
-			.doOnNext(output -> System.out.println(output))
-			.reduce((first, second) -> second) // Get the last state as result
-			.subscribe(lastState -> System.out.println(lastState),
-					error -> System.err.println("Stream error: " + error),
-					() -> System.out.println("Stream completed"));
-	}
-
-	/**
-	 * Tests streaming functionality with basic node actions. Validates that the system
-	 * can handle sequential node execution with streaming outputs.
-	 */
-	@Test
-	public void testBasicNodeActionStream() throws Exception {
-		StateGraph stateGraph = new StateGraph(() -> {
-			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-			keyStrategyMap.put("messages", new AppendStrategy());
-			keyStrategyMap.put("count", (oldValue, newValue) -> oldValue == null ? newValue : 1);
-			return keyStrategyMap;
-		}).addNode("collectInput", node_async(s -> {
-
-			String input = s.value("input", "");
-			return Map.of("messages", "Received: " + input, "count", 1);
-		})).addNode("processData", node_async(s -> {
-
-			final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
-			AtomicInteger timeOff = new AtomicInteger(1);
-			final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
-					(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
-			return Map.of("messages", it);
-		})).addNode("generateResponse", node_async(s -> {
-
-			int count = s.value("count", 0);
-			return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
-		}))
-			.addEdge(START, "collectInput")
-			.addEdge("collectInput", "processData")
-			.addEdge("processData", "generateResponse")
-			.addEdge("generateResponse", END);
-
-		CompiledGraph compiledGraph = stateGraph.compile();
-		// 初始化输入
-		compiledGraph.fluxStream(Map.of("input", "hoho~~")).subscribe(output -> {
-			System.out.println("Node output: " + output);
-		});
-	}
 
 	/**
 	 * Creates a CompletableFuture containing a StreamingOutput with delayed execution.
@@ -204,41 +111,6 @@ public class StateGraphStreamTest {
 				throw new RuntimeException(e);
 			}
 			return new StreamingOutput(index, node, overAllState);
-		});
-	}
-
-	/**
-	 * Tests streaming functionality using an AsyncGeneratorQueue implementation. Verifies
-	 * that queue-based streaming works correctly with the state graph architecture.
-	 */
-	@Test
-	public void testNodeActionStreamForAsyncGeneratorQueue() throws Exception {
-		StateGraph stateGraph = new StateGraph(() -> {
-			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-			keyStrategyMap.put("messages", new AppendStrategy());
-			keyStrategyMap.put("count", (oldValue, newValue) -> oldValue == null ? newValue : 1);
-			return keyStrategyMap;
-		}).addNode("collectInput", node_async(s -> {
-
-			String input = s.value("input", "");
-			return Map.of("messages", "Received: " + input, "count", 1);
-		})).addNode("processData", node_async(s -> {
-			Flux<StreamingOutput> it = getStreamingOutputWithResult(s);
-			return Map.of("messages", it);
-		})).addNode("generateResponse", node_async(s -> {
-
-			int count = s.value("count", 0);
-			return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
-		}))
-			.addEdge(START, "collectInput")
-			.addEdge("collectInput", "processData")
-			.addEdge("processData", "generateResponse")
-			.addEdge("generateResponse", END);
-
-		CompiledGraph compiledGraph = stateGraph.compile();
-		// 初始化输入
-		compiledGraph.fluxStream(Map.of("input", "hoho~~")).subscribe(output -> {
-			System.out.println("Node output: " + output);
 		});
 	}
 
@@ -302,60 +174,6 @@ public class StateGraphStreamTest {
 	}
 
 	/**
-	 * Integration test for model node action streaming. Verifies end-to-end streaming
-	 * functionality with actual LLM integration.
-	 */
-	@Test
-	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
-	public void testToModelNodeActionStream() throws Exception {
-		StateGraph stateGraph = new StateGraph(() -> {
-			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-			keyStrategyMap.put("messages", new AppendStrategy());
-			keyStrategyMap.put("llm_result", new AppendStrategy());
-			return keyStrategyMap;
-		}).addNode("llmNode", node_async(new LLmNodeAction(chatModel)))
-			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
-			.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
-			.addEdge(START, "llmNode")
-			.addEdge("llmNode", "toolNode")
-			.addEdge("toolNode", "result")
-			.addEdge("result", END);
-
-		CompiledGraph compile = stateGraph.compile();
-		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小���章"))
-			.subscribe(nodeOutput -> System.out.println("Node output: " + nodeOutput));
-	}
-
-	/**
-	 * Integration test for model node action with conditional edge routing. Verifies that
-	 * streaming works correctly with dynamic path selection based on content.
-	 */
-	@Test
-	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
-	public void testToModelNodeActionAndConditionEdgeStream() throws Exception {
-		StateGraph stateGraph = new StateGraph(() -> {
-			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-			keyStrategyMap.put("messages", new AppendStrategy());
-			keyStrategyMap.put("llm_result", new AppendStrategy());
-			return keyStrategyMap;
-		}).addNode("llmNode", node_async(new LLmNodeAction(chatModel)))
-			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
-			.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
-			.addEdge(START, "llmNode")
-			.addConditionalEdges("llmNode", getAsyncEdgeAction(),
-					EdgeMappings.builder().to("toolNode", "toolNode").to("result", "result").toEND().build())
-			.addEdge("toolNode", "result")
-			.addEdge("result", END);
-
-		CompiledGraph compile = stateGraph.compile();
-		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章")).subscribe(output -> {
-			System.out.println("Node output: " + output);
-		});
-	}
-
-	/**
 	 * Creates an asynchronous edge action for conditional routing decisions.
 	 * @return AsyncEdgeAction that determines the next node based on message content
 	 */
@@ -378,6 +196,185 @@ public class StateGraphStreamTest {
 	}
 
 	/**
+	 * Sets up test environment before each test method execution. Initializes API
+	 * credentials and creates configured instances of test dependencies.
+	 */
+	@BeforeEach
+	public void setUp() {
+		API_KEY = System.getenv(API_KEY_ENV); // 替换为你的API密钥
+		Assumptions.assumeTrue(API_KEY != null && !API_KEY.trim().isEmpty(),
+				"Skipping tests because " + API_KEY_ENV + " environment variable is not set");
+		// Create real API client with API key from environment
+		realApi = DashScopeApi.builder().apiKey(API_KEY).build();
+		// Create chat model with default options
+		options = DashScopeChatOptions.builder().withModel(TEST_MODEL).build();
+		chatModel = DashScopeChatModel.builder().dashScopeApi(realApi).defaultOptions(options).build();
+	}
+
+	/**
+	 * Creates a basic test node with logging functionality.
+	 * @param id Unique identifier for the node
+	 * @return AsyncNodeAction that logs its execution and returns a simple message
+	 */
+	private AsyncNodeAction makeNode(String id) {
+		return node_async(state -> {
+			log.info("call node {}", id);
+			return Map.of("messages", id);
+		});
+	}
+
+	/**
+	 * Tests basic generator result retrieval from the state graph. Verifies that the
+	 * stream processing correctly handles terminal states and results.
+	 */
+	@Test
+	public void testGetResultFromGenerator() throws Exception {
+		var workflow = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			return keyStrategyMap;
+		}).addEdge(START, "agent_1").addNode("agent_1", makeNode("agent_1")).addEdge("agent_1", END);
+
+		var app = workflow.compile();
+
+		// Use Flux streaming approach - simplified version
+		app.fluxStream(Map.of())
+				.doOnNext(output -> System.out.println(output))
+				.reduce((first, second) -> second) // Get the last state as result
+				.subscribe(lastState -> System.out.println(lastState),
+						error -> System.err.println("Stream error: " + error),
+						() -> System.out.println("Stream completed"));
+	}
+
+	/**
+	 * Tests streaming functionality with basic node actions. Validates that the system
+	 * can handle sequential node execution with streaming outputs.
+	 */
+	@Test
+	public void testBasicNodeActionStream() throws Exception {
+		StateGraph stateGraph = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			keyStrategyMap.put("count", (oldValue, newValue) -> oldValue == null ? newValue : 1);
+			return keyStrategyMap;
+		}).addNode("collectInput", node_async(s -> {
+
+					String input = s.value("input", "");
+					return Map.of("messages", "Received: " + input, "count", 1);
+				})).addNode("processData", node_async(s -> {
+
+					final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
+					AtomicInteger timeOff = new AtomicInteger(1);
+					final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
+							(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
+					return Map.of("messages", it);
+				})).addNode("generateResponse", node_async(s -> {
+
+					int count = s.value("count", 0);
+					return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
+				}))
+				.addEdge(START, "collectInput")
+				.addEdge("collectInput", "processData")
+				.addEdge("processData", "generateResponse")
+				.addEdge("generateResponse", END);
+
+		CompiledGraph compiledGraph = stateGraph.compile();
+		// 初始化输入
+		compiledGraph.fluxStream(Map.of("input", "hoho~~")).subscribe(output -> {
+			System.out.println("Node output: " + output);
+		});
+	}
+
+	/**
+	 * Tests streaming functionality using an AsyncGeneratorQueue implementation. Verifies
+	 * that queue-based streaming works correctly with the state graph architecture.
+	 */
+	@Test
+	public void testNodeActionStreamForAsyncGeneratorQueue() throws Exception {
+		StateGraph stateGraph = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			keyStrategyMap.put("count", (oldValue, newValue) -> oldValue == null ? newValue : 1);
+			return keyStrategyMap;
+		}).addNode("collectInput", node_async(s -> {
+
+					String input = s.value("input", "");
+					return Map.of("messages", "Received: " + input, "count", 1);
+				})).addNode("processData", node_async(s -> {
+					Flux<StreamingOutput> it = getStreamingOutputWithResult(s);
+					return Map.of("messages", it);
+				})).addNode("generateResponse", node_async(s -> {
+
+					int count = s.value("count", 0);
+					return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
+				}))
+				.addEdge(START, "collectInput")
+				.addEdge("collectInput", "processData")
+				.addEdge("processData", "generateResponse")
+				.addEdge("generateResponse", END);
+
+		CompiledGraph compiledGraph = stateGraph.compile();
+		// 初始化输入
+		compiledGraph.fluxStream(Map.of("input", "hoho~~")).subscribe(output -> {
+			System.out.println("Node output: " + output);
+		});
+	}
+
+	/**
+	 * Integration test for model node action streaming. Verifies end-to-end streaming
+	 * functionality with actual LLM integration.
+	 */
+	@Test
+	@Tag("integration")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	public void testToModelNodeActionStream() throws Exception {
+		StateGraph stateGraph = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			keyStrategyMap.put("llm_result", new AppendStrategy());
+			return keyStrategyMap;
+		}).addNode("llmNode", node_async(new LLmNodeAction(chatModel)))
+				.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
+				.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
+				.addEdge(START, "llmNode")
+				.addEdge("llmNode", "toolNode")
+				.addEdge("toolNode", "result")
+				.addEdge("result", END);
+
+		CompiledGraph compile = stateGraph.compile();
+		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小���章"))
+				.subscribe(nodeOutput -> System.out.println("Node output: " + nodeOutput));
+	}
+
+	/**
+	 * Integration test for model node action with conditional edge routing. Verifies that
+	 * streaming works correctly with dynamic path selection based on content.
+	 */
+	@Test
+	@Tag("integration")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	public void testToModelNodeActionAndConditionEdgeStream() throws Exception {
+		StateGraph stateGraph = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			keyStrategyMap.put("llm_result", new AppendStrategy());
+			return keyStrategyMap;
+		}).addNode("llmNode", node_async(new LLmNodeAction(chatModel)))
+				.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
+				.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
+				.addEdge(START, "llmNode")
+				.addConditionalEdges("llmNode", getAsyncEdgeAction(),
+						EdgeMappings.builder().to("toolNode", "toolNode").to("result", "result").toEND().build())
+				.addEdge("toolNode", "result")
+				.addEdge("result", END);
+
+		CompiledGraph compile = stateGraph.compile();
+		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章")).subscribe(output -> {
+			System.out.println("Node output: " + output);
+		});
+	}
+
+	/**
 	 * Tests comprehensive streaming output processing pipeline. Validates that streaming
 	 * outputs are properly handled and aggregated through the graph.
 	 */
@@ -389,37 +386,37 @@ public class StateGraphStreamTest {
 			keyStrategyMap.put("count", (oldValue, newValue) -> oldValue == null ? newValue : 1);
 			return keyStrategyMap;
 		}).addNode("collectInput", node_async(s -> {
-			// 处理输入
-			String input = s.value("input", "");
-			return Map.of("messages", "Received: " + input, "count", 1);
-		})).addNode("processData", node_async(s -> {
-			// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
-			final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
-			AtomicInteger timeOff = new AtomicInteger(1);
-			final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
-					(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
-			return Map.of("messages", it);
-		})).addNode("generateResponse", node_async(s -> {
-			// 生成最终响应
-			int count = s.value("count", 0);
-			return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
-		}))
-			.addEdge(START, "collectInput")
-			.addEdge("collectInput", "processData")
-			.addEdge("processData", "generateResponse")
-			.addEdge("generateResponse", END);
+					// 处理输入
+					String input = s.value("input", "");
+					return Map.of("messages", "Received: " + input, "count", 1);
+				})).addNode("processData", node_async(s -> {
+					// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
+					final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
+					AtomicInteger timeOff = new AtomicInteger(1);
+					final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
+							(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
+					return Map.of("messages", it);
+				})).addNode("generateResponse", node_async(s -> {
+					// 生成最终响应
+					int count = s.value("count", 0);
+					return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
+				}))
+				.addEdge(START, "collectInput")
+				.addEdge("collectInput", "processData")
+				.addEdge("processData", "generateResponse")
+				.addEdge("generateResponse", END);
 
 		CompiledGraph app = stateGraph.compile();
 
 		// Use Flux streaming approach for collecting states - simplified version
 		app.fluxStream(Map.of("input", "test"))
-			.filter(s -> !(s instanceof StreamingOutput))
-			.map(NodeOutput::state)
-			.collectList()
-			.subscribe(states -> {
-				assertFalse(states.isEmpty(), "least one content");
-				assertEquals(4, states.size(), "should be four content");
-			}, error -> System.err.println("Stream error: " + error));
+				.filter(s -> !(s instanceof StreamingOutput))
+				.map(NodeOutput::state)
+				.collectList()
+				.subscribe(states -> {
+					assertFalse(states.isEmpty(), "least one content");
+					assertEquals(4, states.size(), "should be four content");
+				}, error -> System.err.println("Stream error: " + error));
 	}
 
 	@Test
@@ -433,24 +430,24 @@ public class StateGraphStreamTest {
 			keyStrategyMap.put("input", new ReplaceStrategy());
 			return keyStrategyMap;
 		}).addNode("llmNode", node_async(new LLmNodeAction(chatModel, "llmNode")))
-			.addNode("llmNode2", node_async(new LLmNodeAction(chatModel, "llmNode2")))
-			.addNode("result", node_async((t) -> Map.of("llm_result", "llm_result")))
-			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
-			.addEdge(START, "llmNode")
-			.addEdge(START, "llmNode2")
-			.addEdge(START, "result")
-			.addEdge("llmNode", "toolNode")
-			.addEdge("llmNode2", "toolNode")
-			.addEdge("toolNode", END);
+				.addNode("llmNode2", node_async(new LLmNodeAction(chatModel, "llmNode2")))
+				.addNode("result", node_async((t) -> Map.of("llm_result", "llm_result")))
+				.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
+				.addEdge(START, "llmNode")
+				.addEdge(START, "llmNode2")
+				.addEdge(START, "result")
+				.addEdge("llmNode", "toolNode")
+				.addEdge("llmNode2", "toolNode")
+				.addEdge("toolNode", END);
 
 		CompiledGraph compile = stateGraph.compile();
 
 		compile
-			.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"),
-					RunnableConfig.builder().addParallelNodeExecutor(START, ForkJoinPool.commonPool()).build())
-			.subscribe(output -> {
-				System.out.println("Node output: " + output);
-			});
+				.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"),
+						RunnableConfig.builder().addParallelNodeExecutor(START, ForkJoinPool.commonPool()).build())
+				.subscribe(output -> {
+					System.out.println("Node output: " + output);
+				});
 	}
 
 }

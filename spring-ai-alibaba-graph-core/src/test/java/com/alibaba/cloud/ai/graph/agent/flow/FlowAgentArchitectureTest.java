@@ -23,20 +23,22 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategyRegistry;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategy;
+import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategyRegistry;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.SequentialGraphBuildingStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import java.util.HashMap;
 import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -73,13 +75,13 @@ class FlowAgentArchitectureTest {
 
 		// Test that SequentialAgent uses the unified builder pattern
 		SequentialAgent agent = SequentialAgent.builder()
-			.name("sequentialWorkflow")
-			.description("A sequential workflow")
-			.outputKey("final_result")
-			.inputKey("initial_data")
-			.subAgents(List.of(subAgent))
-			.state(() -> createDefaultStrategies())
-			.build();
+				.name("sequentialWorkflow")
+				.description("A sequential workflow")
+				.outputKey("final_result")
+				.inputKey("initial_data")
+				.subAgents(List.of(subAgent))
+				.state(() -> createDefaultStrategies())
+				.build();
 
 		// Verify agent properties
 		assertNotNull(agent);
@@ -99,14 +101,14 @@ class FlowAgentArchitectureTest {
 		// Test that LlmRoutingAgent uses the unified builder pattern with LLM-specific
 		// features
 		LlmRoutingAgent agent = LlmRoutingAgent.builder()
-			.name("intelligentRouter")
-			.description("Routes tasks intelligently")
-			.outputKey("routed_result")
-			.inputKey("task_description")
-			.subAgents(List.of(agent1, agent2))
-			.model(chatModel) // LLM-specific configuration
-			.state(() -> createDefaultStrategies())
-			.build();
+				.name("intelligentRouter")
+				.description("Routes tasks intelligently")
+				.outputKey("routed_result")
+				.inputKey("task_description")
+				.subAgents(List.of(agent1, agent2))
+				.model(chatModel) // LLM-specific configuration
+				.state(() -> createDefaultStrategies())
+				.build();
 
 		// Verify agent properties
 		assertNotNull(agent);
@@ -127,15 +129,15 @@ class FlowAgentArchitectureTest {
 		// Test that ParallelAgent uses the unified builder pattern with parallel-specific
 		// features
 		ParallelAgent agent = ParallelAgent.builder()
-			.name("dataProcessingPipeline")
-			.description("Processes data in parallel")
-			.outputKey("processing_result")
-			.inputKey("raw_data")
-			.subAgents(List.of(agent1, agent2, agent3))
-			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
-			.maxConcurrency(3)
-			.state(() -> createDefaultStrategies())
-			.build();
+				.name("dataProcessingPipeline")
+				.description("Processes data in parallel")
+				.outputKey("processing_result")
+				.inputKey("raw_data")
+				.subAgents(List.of(agent1, agent2, agent3))
+				.mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
+				.maxConcurrency(3)
+				.state(() -> createDefaultStrategies())
+				.build();
 
 		// Verify agent properties
 		assertNotNull(agent);
@@ -157,20 +159,20 @@ class FlowAgentArchitectureTest {
 
 		assertThrows(IllegalArgumentException.class, () -> {
 			LlmRoutingAgent.builder()
-				.name("router")
-				.outputKey("output")
-				.subAgents(List.of(createMockReactAgent("agent", "output")))
-				.build(); // Missing ChatModel
+					.name("router")
+					.outputKey("output")
+					.subAgents(List.of(createMockReactAgent("agent", "output")))
+					.build(); // Missing ChatModel
 		});
 
 		assertThrows(IllegalArgumentException.class, () -> {
 			ParallelAgent.builder()
-				.name("parallel")
-				.outputKey("output")
-				.subAgents(List.of(createMockReactAgent("agent", "output"))) // Need at
-																				// least 2
-																				// agents
-				.build();
+					.name("parallel")
+					.outputKey("output")
+					.subAgents(List.of(createMockReactAgent("agent", "output"))) // Need at
+					// least 2
+					// agents
+					.build();
 		});
 	}
 
@@ -200,10 +202,10 @@ class FlowAgentArchitectureTest {
 	void testFlowGraphConfigCustomProperties() {
 		// Test that FlowGraphConfig supports custom properties for extensibility
 		FlowGraphBuilder.FlowGraphConfig config = FlowGraphBuilder.FlowGraphConfig.builder()
-			.name("testConfig")
-			.customProperty("maxRetries", 3)
-			.customProperty("timeout", 5000L)
-			.customProperty("enableDebug", true);
+				.name("testConfig")
+				.customProperty("maxRetries", 3)
+				.customProperty("timeout", 5000L)
+				.customProperty("enableDebug", true);
 
 		assertEquals(3, config.getCustomProperty("maxRetries"));
 		assertEquals(5000L, config.getCustomProperty("timeout"));
@@ -252,13 +254,13 @@ class FlowAgentArchitectureTest {
 
 	private ReactAgent createMockReactAgent(String name, String outputKey) throws Exception {
 		return ReactAgent.builder()
-			.name(name)
-			.description("Mock agent: " + name)
-			.outputKey(outputKey)
-			.chatClient(chatClient)
-			.state(() -> createDefaultStrategies())
-			.resolver(resolver)
-			.build();
+				.name(name)
+				.description("Mock agent: " + name)
+				.outputKey(outputKey)
+				.chatClient(chatClient)
+				.state(() -> createDefaultStrategies())
+				.resolver(resolver)
+				.build();
 	}
 
 	private HashMap<String, KeyStrategy> createDefaultStrategies() {

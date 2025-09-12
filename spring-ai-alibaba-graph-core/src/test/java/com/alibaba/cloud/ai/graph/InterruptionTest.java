@@ -20,10 +20,11 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
-import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+
+import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -41,55 +42,55 @@ public class InterruptionTest {
 	public void interruptAfterEdgeEvaluation() throws Exception {
 		var saver = new MemorySaver();
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().defaultStrategy(KeyStrategy.REPLACE)
-			.addStrategy("messages")
-			.build();
+				.addStrategy("messages")
+				.build();
 		var workflow = new StateGraph(keyStrategyFactory).addNode("A", _nodeAction("A"))
-			.addNode("B", _nodeAction("B"))
-			.addNode("C", _nodeAction("C"))
-			.addNode("D", _nodeAction("D"))
-			.addConditionalEdges("B", edge_async(state -> {
-				var message = state.value("messages").orElse(END);
-				return message.equals("B") ? "D" : message.toString();
-			}), EdgeMappings.builder().to("A").to("C").to("D").toEND().build())
-			.addEdge(START, "A")
-			.addEdge("A", "B")
-			.addEdge("C", END)
-			.addEdge("D", END)
-			.compile(CompileConfig.builder()
-				.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
-				.interruptAfter("B")
-				.build());
+				.addNode("B", _nodeAction("B"))
+				.addNode("C", _nodeAction("C"))
+				.addNode("D", _nodeAction("D"))
+				.addConditionalEdges("B", edge_async(state -> {
+					var message = state.value("messages").orElse(END);
+					return message.equals("B") ? "D" : message.toString();
+				}), EdgeMappings.builder().to("A").to("C").to("D").toEND().build())
+				.addEdge(START, "A")
+				.addEdge("A", "B")
+				.addEdge("C", END)
+				.addEdge("D", END)
+				.compile(CompileConfig.builder()
+						.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
+						.interruptAfter("B")
+						.build());
 
 		var runnableConfig = RunnableConfig.builder().build();
 
 		var results = workflow.fluxStream(Map.of(), runnableConfig)
-			.doOnNext(System.out::println)
-			.map(NodeOutput::node)
-			.collectList()
-			.block();
+				.doOnNext(System.out::println)
+				.map(NodeOutput::node)
+				.collectList()
+				.block();
 
 		assertIterableEquals(List.of(START, "A", "B"), results);
 
 		results = workflow.fluxStream(null, runnableConfig)
-			.doOnNext(System.out::println)
-			.map(NodeOutput::node)
-			.collectList()
-			.block();
+				.doOnNext(System.out::println)
+				.map(NodeOutput::node)
+				.collectList()
+				.block();
 		assertIterableEquals(List.of("D", END), results);
 
 		var snapshotForNodeB = workflow.getStateHistory(runnableConfig)
-			.stream()
-			.filter(s -> s.node().equals("B"))
-			.findFirst()
-			.orElseThrow();
+				.stream()
+				.filter(s -> s.node().equals("B"))
+				.findFirst()
+				.orElseThrow();
 
 		runnableConfig = workflow.updateState(snapshotForNodeB.config(), Map.of("messages", "C"));
 
 		results = workflow.fluxStream(null, runnableConfig)
-			.doOnNext(System.out::println)
-			.map(NodeOutput::node)
-			.collectList()
-			.block();
+				.doOnNext(System.out::println)
+				.map(NodeOutput::node)
+				.collectList()
+				.block();
 		assertIterableEquals(List.of("D", END), results);
 	}
 
@@ -98,38 +99,38 @@ public class InterruptionTest {
 
 		var saver = new MemorySaver();
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().defaultStrategy(KeyStrategy.REPLACE)
-			.addStrategy("messages")
-			.build();
+				.addStrategy("messages")
+				.build();
 		var workflow = new StateGraph(keyStrategyFactory).addNode("A", _nodeAction("A"))
-			.addNode("B", _nodeAction("B"))
-			.addNode("C", _nodeAction("C"))
-			.addConditionalEdges("B", edge_async(state -> state.value("messages").orElse(END).toString()),
-					EdgeMappings.builder().to("A").to("C").toEND().build())
-			.addEdge(START, "A")
-			.addEdge("A", "B")
-			.addEdge("C", END)
-			.compile(CompileConfig.builder()
-				.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
-				.interruptAfter("B")
-				.interruptBeforeEdge(true)
-				.build());
+				.addNode("B", _nodeAction("B"))
+				.addNode("C", _nodeAction("C"))
+				.addConditionalEdges("B", edge_async(state -> state.value("messages").orElse(END).toString()),
+						EdgeMappings.builder().to("A").to("C").toEND().build())
+				.addEdge(START, "A")
+				.addEdge("A", "B")
+				.addEdge("C", END)
+				.compile(CompileConfig.builder()
+						.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
+						.interruptAfter("B")
+						.interruptBeforeEdge(true)
+						.build());
 
 		var runnableConfig = RunnableConfig.builder().build();
 
 		var results = workflow.fluxStream(Map.of(), runnableConfig)
-			.doOnNext(System.out::println)
-			.map(NodeOutput::node)
-			.collectList()
-			.block();
+				.doOnNext(System.out::println)
+				.map(NodeOutput::node)
+				.collectList()
+				.block();
 
 		assertIterableEquals(List.of(START, "A", "B"), results);
 
 		runnableConfig = workflow.updateState(runnableConfig, Map.of("messages", "C"));
 		results = workflow.fluxStream(null, runnableConfig)
-			.doOnNext(System.out::println)
-			.map(NodeOutput::node)
-			.collectList()
-			.block();
+				.doOnNext(System.out::println)
+				.map(NodeOutput::node)
+				.collectList()
+				.block();
 		assertIterableEquals(List.of("C", END), results);
 	}
 

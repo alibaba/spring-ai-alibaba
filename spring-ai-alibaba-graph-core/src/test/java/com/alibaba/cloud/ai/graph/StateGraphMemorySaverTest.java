@@ -25,8 +25,6 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.VersionedMemorySaver;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -35,6 +33,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -103,17 +104,17 @@ public class StateGraphMemorySaverTest {
 		};
 
 		var workflow = new StateGraph(keyStrategyFactory).addNode("agent_1", node_async(agent_1))
-			.addEdge(START, "agent_1")
-			.addEdge("agent_1", END);
+				.addEdge(START, "agent_1")
+				.addEdge("agent_1", END);
 
 		var saver = new MemorySaver();
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), saver)
-				.type(SaverEnum.MEMORY.getValue())
-				.build())
-			.build();
+				.saverConfig(SaverConfig.builder()
+						.register(SaverEnum.MEMORY.getValue(), saver)
+						.type(SaverEnum.MEMORY.getValue())
+						.build())
+				.build();
 
 		var runnableConfig = RunnableConfig.builder().build();
 		var app = workflow.compile(compileConfig);
@@ -189,17 +190,17 @@ public class StateGraphMemorySaverTest {
 		};
 
 		var workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-			.addNode("agent_1", node_async(agent_1))
-			.addConditionalEdges("agent_1", edge_async(shouldContinue), Map.of("next", "agent_1", "exit", END));
+				.addNode("agent_1", node_async(agent_1))
+				.addConditionalEdges("agent_1", edge_async(shouldContinue), Map.of("next", "agent_1", "exit", END));
 
 		var saver = new VersionedMemorySaver();
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), saver)
-				.type(SaverEnum.MEMORY.getValue())
-				.build())
-			.build();
+				.saverConfig(SaverConfig.builder()
+						.register(SaverEnum.MEMORY.getValue(), saver)
+						.type(SaverEnum.MEMORY.getValue())
+						.build())
+				.build();
 
 		var app = workflow.compile(compileConfig);
 
@@ -262,19 +263,19 @@ public class StateGraphMemorySaverTest {
 	public void testViewAndUpdatePastGraphState() throws Exception {
 
 		var workflow = new StateGraph(keyStrategyFactory).addNode("agent", node_async(agent_whether))
-			.addNode("tools", node_async(tool_whether))
-			.addEdge(START, "agent")
-			.addConditionalEdges("agent", edge_async(shouldContinue_whether), Map.of("tools", "tools", END, END))
-			.addEdge("tools", "agent");
+				.addNode("tools", node_async(tool_whether))
+				.addEdge(START, "agent")
+				.addConditionalEdges("agent", edge_async(shouldContinue_whether), Map.of("tools", "tools", END, END))
+				.addEdge("tools", "agent");
 
 		var saver = new MemorySaver();
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), saver)
-				.type(SaverEnum.MEMORY.getValue())
-				.build())
-			.build();
+				.saverConfig(SaverConfig.builder()
+						.register(SaverEnum.MEMORY.getValue(), saver)
+						.type(SaverEnum.MEMORY.getValue())
+						.build())
+				.build();
 
 		var app = workflow.compile(compileConfig);
 
@@ -319,8 +320,8 @@ public class StateGraphMemorySaverTest {
 		assertEquals("whether in Naples is sunny", messages.get(messages.size() - 1));
 
 		Optional<StateSnapshot> firstSnapshot = stateHistory.stream().reduce((first, second) -> second); // take
-																											// the
-																											// last
+		// the
+		// last
 		assertTrue(firstSnapshot.isPresent());
 		assertTrue(firstSnapshot.get().state().value("messages").isPresent());
 		assertEquals("whether in Naples?", ((List<String>) firstSnapshot.get().state().value("messages").get()).get(0));
@@ -345,17 +346,17 @@ public class StateGraphMemorySaverTest {
 	public void testPauseAndUpdatePastGraphState() throws Exception {
 
 		var workflow = new StateGraph(keyStrategyFactory).addNode("agent", node_async(agent_whether))
-			.addNode("tools", node_async(tool_whether))
-			.addEdge(START, "agent")
-			.addConditionalEdges("agent", edge_async(shouldContinue_whether), Map.of("tools", "tools", END, END))
-			.addEdge("tools", "agent");
+				.addNode("tools", node_async(tool_whether))
+				.addEdge(START, "agent")
+				.addConditionalEdges("agent", edge_async(shouldContinue_whether), Map.of("tools", "tools", END, END))
+				.addEdge("tools", "agent");
 
 		var saver = new MemorySaver();
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
-			.interruptBefore("tools")
-			.build();
+				.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
+				.interruptBefore("tools")
+				.build();
 
 		var app = workflow.compile(compileConfig);
 
@@ -364,9 +365,9 @@ public class StateGraphMemorySaverTest {
 		log.info("FIRST CALL WITH INTERRUPT BEFORE 'tools'");
 		Map<String, Object> inputs = Map.of("messages", "whether in Naples?");
 		var results = app.stream(inputs, runnableConfig)
-			.stream()
-			.peek(n -> log.info("{}", n))
-			.collect(Collectors.toList());
+				.stream()
+				.peek(n -> log.info("{}", n))
+				.collect(Collectors.toList());
 		assertNotNull(results);
 		assertEquals(2, results.size());
 		assertEquals(START, results.get(0).node());

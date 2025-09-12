@@ -16,12 +16,15 @@
 package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TemplateTransformNodeTest {
 
@@ -43,8 +46,8 @@ class TemplateTransformNodeTest {
 	void testMultipleVariablesInTemplate() {
 		// Given: A template with multiple variables
 		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template("{{greeting}} {{name}}, today is {{day}}")
-			.build();
+				.template("{{greeting}} {{name}}, today is {{day}}")
+				.build();
 
 		OverAllState state = new OverAllState(Map.of("greeting", "Hello", "name", "Alice", "day", "Monday"));
 
@@ -59,8 +62,8 @@ class TemplateTransformNodeTest {
 	void testMissingVariablesKeptAsPlaceholders() {
 		// Given: A template with missing variables
 		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template("Hello {{name}}, your score is {{score}}")
-			.build();
+				.template("Hello {{name}}, your score is {{score}}")
+				.build();
 
 		OverAllState state = new OverAllState(Map.of("name", "Bob"));
 
@@ -106,9 +109,9 @@ class TemplateTransformNodeTest {
 	void testTemplateWithoutVariables() {
 		// Given: A template without any variables
 		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template("This is a static text")
-			.outputKey("output")
-			.build();
+				.template("This is a static text")
+				.outputKey("output")
+				.build();
 
 		OverAllState state = new OverAllState(Map.of("irrelevant", "data"));
 
@@ -179,8 +182,8 @@ class TemplateTransformNodeTest {
 	void testComplexNestedVariables() {
 		// Given: Template with nested-like patterns
 		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template("{{outer}} contains {{inner}} and {{nested}}")
-			.build();
+				.template("{{outer}} contains {{inner}} and {{nested}}")
+				.build();
 
 		OverAllState state = new OverAllState(Map.of("outer", "Container", "inner", "item1", "nested", "item2"));
 

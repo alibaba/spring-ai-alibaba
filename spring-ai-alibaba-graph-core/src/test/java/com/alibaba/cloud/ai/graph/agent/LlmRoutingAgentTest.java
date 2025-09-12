@@ -15,11 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
@@ -27,20 +22,37 @@ import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class LlmRoutingAgentTest {
 
 	private ChatModel chatModel;
+
+	public static ToolCallback createToolCallback() {
+		return FunctionToolCallback.builder("poem", new PoemTool())
+				.description("用来写诗的工具")
+				.inputType(String.class)
+				.build();
+	}
 
 	@BeforeEach
 	void setUp() {
@@ -49,13 +61,6 @@ class LlmRoutingAgentTest {
 
 		// Create DashScope ChatModel instance
 		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
-	}
-
-	public static ToolCallback createToolCallback() {
-		return FunctionToolCallback.builder("poem", new PoemTool())
-			.description("用来写诗的工具")
-			.inputType(String.class)
-			.build();
 	}
 
 	@Test
@@ -70,31 +75,31 @@ class LlmRoutingAgentTest {
 		};
 
 		ReactAgent proseWriterAgent = ReactAgent.builder()
-			.name("prose_writer_agent")
-			.model(chatModel)
-			.description("可以写散文文章。")
-			.instruction("你是一个���名的作家，擅长写散文。请根据用户的提问进行回答。")
-			.outputKey("prose_article")
-			.build();
+				.name("prose_writer_agent")
+				.model(chatModel)
+				.description("可以写散文文章。")
+				.instruction("你是一个���名的作家，擅长写散文。请根据用户的提问进行回答。")
+				.outputKey("prose_article")
+				.build();
 
 		ReactAgent poemWriterAgent = ReactAgent.builder()
-			.name("poem_writer_agent")
-			.model(chatModel)
-			.description("可以写现代诗。")
-			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问，调用工具进行回���。")
-			.outputKey("poem_article")
-			.tools(List.of(createToolCallback()))
-			.build();
+				.name("poem_writer_agent")
+				.model(chatModel)
+				.description("可以写现代诗。")
+				.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问，调用工具进行回���。")
+				.outputKey("poem_article")
+				.tools(List.of(createToolCallback()))
+				.build();
 
 		LlmRoutingAgent blogAgent = LlmRoutingAgent.builder()
-			.name("blog_agent")
-			.model(chatModel)
-			.state(stateFactory)
-			.description("可以根据用户给定的主题写文章或作诗。")
-			.inputKey("input")
-			.outputKey("topic")
-			.subAgents(List.of(proseWriterAgent, poemWriterAgent))
-			.build();
+				.name("blog_agent")
+				.model(chatModel)
+				.state(stateFactory)
+				.description("可以根据用户给定的主题写文章或作诗。")
+				.inputKey("input")
+				.outputKey("topic")
+				.subAgents(List.of(proseWriterAgent, poemWriterAgent))
+				.build();
 
 		try {
 			Optional<OverAllState> result = blogAgent.invoke(Map.of("input", "帮我写一个100字左右的现代诗"));

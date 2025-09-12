@@ -15,22 +15,33 @@
  */
 package com.alibaba.cloud.ai.graph.store;
 
-import com.alibaba.cloud.ai.graph.*;
-
+import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.alibaba.cloud.ai.graph.store.stores.*;
+import com.alibaba.cloud.ai.graph.store.stores.DatabaseStore;
+import com.alibaba.cloud.ai.graph.store.stores.FileSystemStore;
+import com.alibaba.cloud.ai.graph.store.stores.MemoryStore;
+import com.alibaba.cloud.ai.graph.store.stores.MongoStore;
+import com.alibaba.cloud.ai.graph.store.stores.RedisStore;
+
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.nio.file.Path;
-import java.util.*;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for Store functionality with actual StateGraph execution.
@@ -95,8 +106,8 @@ public class GraphStoreIntegrationTest {
 		assertThat(prefsItem).isPresent();
 		assertThat(prefsItem.get().getValue().get("theme")).isEqualTo("light");
 		assertThat(prefsItem.get().getValue().get("language")).isEqualTo("zh-CN"); // Should
-																					// preserve
-																					// existing
+		// preserve
+		// existing
 		assertThat(prefsItem.get().getValue().get("notifications")).isEqualTo(true);
 	}
 
@@ -143,12 +154,13 @@ public class GraphStoreIntegrationTest {
 		@SuppressWarnings("unchecked")
 		List<Object> rawResults = (List<Object>) result.get().value("searchResults", Collections.emptyList());
 		List<StoreItem> searchResults = rawResults.stream()
-			.filter(StoreItem.class::isInstance)
-			.map(StoreItem.class::cast)
-			.toList();
+				.filter(StoreItem.class::isInstance)
+				.map(StoreItem.class::cast)
+				.toList();
 		assertThat(searchResults).isNotEmpty();
 		assertThat(searchResults)
-			.anyMatch(item -> item.getValue().containsKey("theme") || item.getKey().toLowerCase().contains("theme"));
+				.anyMatch(item -> item.getValue().containsKey("theme") || item.getKey().toLowerCase()
+						.contains("theme"));
 	}
 
 	private void testUserSessionWorkflow(Store store, String storeType) throws Exception {
@@ -174,56 +186,56 @@ public class GraphStoreIntegrationTest {
 		StateGraph workflow = new StateGraph(
 				() -> Map.of("userId", new ReplaceStrategy(), "userName", new ReplaceStrategy(), "action",
 						new ReplaceStrategy(), "status", new ReplaceStrategy(), "storeType", new ReplaceStrategy()))
-			.addNode("authenticate", node_async(state -> {
-				String userId = state.value("userId", "");
-				String userName = state.value("userName", "");
+				.addNode("authenticate", node_async(state -> {
+					String userId = state.value("userId", "");
+					String userName = state.value("userName", "");
 
-				// Log authentication in store
-				Store sessionStore = state.getStore();
-				if (sessionStore != null) {
-					sessionStore.putItem(StoreItem.of(List.of("auth", "sessions"), userId, Map.of("userName", userName,
-							"loginTime", System.currentTimeMillis(), "status", "authenticated")));
-				}
+					// Log authentication in store
+					Store sessionStore = state.getStore();
+					if (sessionStore != null) {
+						sessionStore.putItem(StoreItem.of(List.of("auth", "sessions"), userId, Map.of("userName", userName,
+								"loginTime", System.currentTimeMillis(), "status", "authenticated")));
+					}
 
-				return Map.of("authenticated", true, "currentUser", userName);
-			}))
-			.addNode("processRequest", node_async(state -> {
-				String userId = state.value("userId", "");
-				String action = state.value("action", "");
+					return Map.of("authenticated", true, "currentUser", userName);
+				}))
+				.addNode("processRequest", node_async(state -> {
+					String userId = state.value("userId", "");
+					String action = state.value("action", "");
 
-				return Map.of("requestProcessed", true);
-			}))
-			.addNode("saveSession", node_async(state -> {
-				String userId = state.value("userId", "");
-				String userName = state.value("userName", "");
-				Store sessionStore = state.getStore();
+					return Map.of("requestProcessed", true);
+				}))
+				.addNode("saveSession", node_async(state -> {
+					String userId = state.value("userId", "");
+					String userName = state.value("userName", "");
+					Store sessionStore = state.getStore();
 
-				if (sessionStore != null) {
-					// Save current session
-					sessionStore.putItem(StoreItem.of(List.of("sessions", userId), "current",
-							Map.of("userName", userName, "sessionId", "session_" + System.nanoTime(), "completedAt",
-									System.currentTimeMillis(), "status", "active")));
-				}
+					if (sessionStore != null) {
+						// Save current session
+						sessionStore.putItem(StoreItem.of(List.of("sessions", userId), "current",
+								Map.of("userName", userName, "sessionId", "session_" + System.nanoTime(), "completedAt",
+										System.currentTimeMillis(), "status", "active")));
+					}
 
-				// Determine store type for verification
-				String storeType = "Unknown";
-				if (sessionStore instanceof MemoryStore)
-					storeType = "Memory";
-				else if (sessionStore instanceof FileSystemStore)
-					storeType = "FileSystem";
-				else if (sessionStore instanceof DatabaseStore)
-					storeType = "Database";
-				else if (sessionStore instanceof RedisStore)
-					storeType = "Redis";
-				else if (sessionStore instanceof MongoStore)
-					storeType = "MongoDB";
+					// Determine store type for verification
+					String storeType = "Unknown";
+					if (sessionStore instanceof MemoryStore)
+						storeType = "Memory";
+					else if (sessionStore instanceof FileSystemStore)
+						storeType = "FileSystem";
+					else if (sessionStore instanceof DatabaseStore)
+						storeType = "Database";
+					else if (sessionStore instanceof RedisStore)
+						storeType = "Redis";
+					else if (sessionStore instanceof MongoStore)
+						storeType = "MongoDB";
 
-				return Map.of("status", "session_complete", "storeType", storeType);
-			}))
-			.addEdge(START, "authenticate")
-			.addEdge("authenticate", "processRequest")
-			.addEdge("processRequest", "saveSession")
-			.addEdge("saveSession", END);
+					return Map.of("status", "session_complete", "storeType", storeType);
+				}))
+				.addEdge(START, "authenticate")
+				.addEdge("authenticate", "processRequest")
+				.addEdge("processRequest", "saveSession")
+				.addEdge("saveSession", END);
 
 		return workflow.compile(config).call(input);
 	}
@@ -235,34 +247,34 @@ public class GraphStoreIntegrationTest {
 		StateGraph workflow = new StateGraph(
 				() -> Map.of("userId", new ReplaceStrategy(), "userName", new ReplaceStrategy(), "preferredLanguage",
 						new ReplaceStrategy(), "theme", new ReplaceStrategy(), "status", new ReplaceStrategy()))
-			.addNode("createProfile", node_async(state -> {
-				String userId = state.value("userId", "");
-				String userName = state.value("userName", "");
-				Store profileStore = state.getStore();
+				.addNode("createProfile", node_async(state -> {
+					String userId = state.value("userId", "");
+					String userName = state.value("userName", "");
+					Store profileStore = state.getStore();
 
-				if (profileStore != null) {
-					profileStore.putItem(StoreItem.of(List.of("users", userId), "profile", Map.of("name", userName,
-							"userId", userId, "createdAt", System.currentTimeMillis(), "status", "active")));
-				}
+					if (profileStore != null) {
+						profileStore.putItem(StoreItem.of(List.of("users", userId), "profile", Map.of("name", userName,
+								"userId", userId, "createdAt", System.currentTimeMillis(), "status", "active")));
+					}
 
-				return Map.of("profileCreated", true);
-			}))
-			.addNode("setPreferences", node_async(state -> {
-				String userId = state.value("userId", "");
-				String language = state.value("preferredLanguage", "en");
-				String theme = state.value("theme", "light");
-				Store prefStore = state.getStore();
+					return Map.of("profileCreated", true);
+				}))
+				.addNode("setPreferences", node_async(state -> {
+					String userId = state.value("userId", "");
+					String language = state.value("preferredLanguage", "en");
+					String theme = state.value("theme", "light");
+					Store prefStore = state.getStore();
 
-				if (prefStore != null) {
-					prefStore.putItem(StoreItem.of(List.of("users", userId), "preferences",
-							Map.of("language", language, "theme", theme, "updatedAt", System.currentTimeMillis())));
-				}
+					if (prefStore != null) {
+						prefStore.putItem(StoreItem.of(List.of("users", userId), "preferences",
+								Map.of("language", language, "theme", theme, "updatedAt", System.currentTimeMillis())));
+					}
 
-				return Map.of("status", "profile_created");
-			}))
-			.addEdge(START, "createProfile")
-			.addEdge("createProfile", "setPreferences")
-			.addEdge("setPreferences", END);
+					return Map.of("status", "profile_created");
+				}))
+				.addEdge(START, "createProfile")
+				.addEdge("createProfile", "setPreferences")
+				.addEdge("setPreferences", END);
 
 		return workflow.compile(config).call(input);
 	}
@@ -274,46 +286,46 @@ public class GraphStoreIntegrationTest {
 		StateGraph workflow = new StateGraph(() -> Map.of("userId", new ReplaceStrategy(), "theme",
 				new ReplaceStrategy(), "notifications", new ReplaceStrategy(), "currentPreferences",
 				new ReplaceStrategy(), "status", new ReplaceStrategy()))
-			.addNode("loadExistingPrefs", node_async(state -> {
-				String userId = state.value("userId", "");
-				Store prefStore = state.getStore();
+				.addNode("loadExistingPrefs", node_async(state -> {
+					String userId = state.value("userId", "");
+					Store prefStore = state.getStore();
 
-				Map<String, Object> currentPrefs = new HashMap<>();
-				if (prefStore != null) {
-					Optional<StoreItem> existing = prefStore.getItem(List.of("users", userId), "preferences");
-					if (existing.isPresent()) {
-						currentPrefs = new HashMap<>(existing.get().getValue());
+					Map<String, Object> currentPrefs = new HashMap<>();
+					if (prefStore != null) {
+						Optional<StoreItem> existing = prefStore.getItem(List.of("users", userId), "preferences");
+						if (existing.isPresent()) {
+							currentPrefs = new HashMap<>(existing.get().getValue());
+						}
 					}
-				}
 
-				return Map.of("currentPreferences", currentPrefs);
-			}))
-			.addNode("updatePrefs", node_async(state -> {
-				String userId = state.value("userId", "");
-				@SuppressWarnings("unchecked")
-				Map<String, Object> currentPrefs = (Map<String, Object>) state.value("currentPreferences",
-						new HashMap<String, Object>());
-				Store prefStore = state.getStore();
+					return Map.of("currentPreferences", currentPrefs);
+				}))
+				.addNode("updatePrefs", node_async(state -> {
+					String userId = state.value("userId", "");
+					@SuppressWarnings("unchecked")
+					Map<String, Object> currentPrefs = (Map<String, Object>) state.value("currentPreferences",
+							new HashMap<String, Object>());
+					Store prefStore = state.getStore();
 
-				// Merge new preferences with existing ones
-				Map<String, Object> updatedPrefs = new HashMap<>(currentPrefs);
-				if (state.data().containsKey("theme")) {
-					updatedPrefs.put("theme", state.value("theme").orElse(null));
-				}
-				if (state.data().containsKey("notifications")) {
-					updatedPrefs.put("notifications", state.value("notifications").orElse(null));
-				}
-				updatedPrefs.put("updatedAt", System.currentTimeMillis());
+					// Merge new preferences with existing ones
+					Map<String, Object> updatedPrefs = new HashMap<>(currentPrefs);
+					if (state.data().containsKey("theme")) {
+						updatedPrefs.put("theme", state.value("theme").orElse(null));
+					}
+					if (state.data().containsKey("notifications")) {
+						updatedPrefs.put("notifications", state.value("notifications").orElse(null));
+					}
+					updatedPrefs.put("updatedAt", System.currentTimeMillis());
 
-				if (prefStore != null) {
-					prefStore.putItem(StoreItem.of(List.of("users", userId), "preferences", updatedPrefs));
-				}
+					if (prefStore != null) {
+						prefStore.putItem(StoreItem.of(List.of("users", userId), "preferences", updatedPrefs));
+					}
 
-				return Map.of("status", "preferences_updated");
-			}))
-			.addEdge(START, "loadExistingPrefs")
-			.addEdge("loadExistingPrefs", "updatePrefs")
-			.addEdge("updatePrefs", END);
+					return Map.of("status", "preferences_updated");
+				}))
+				.addEdge(START, "loadExistingPrefs")
+				.addEdge("loadExistingPrefs", "updatePrefs")
+				.addEdge("updatePrefs", END);
 
 		return workflow.compile(config).call(input);
 	}
@@ -323,52 +335,52 @@ public class GraphStoreIntegrationTest {
 
 		StateGraph workflow = new StateGraph(() -> Map.of("taskId", new ReplaceStrategy(), "data",
 				new ReplaceStrategy(), "status", new ReplaceStrategy()))
-			.addNode("storeRawData", node_async(state -> {
-				String taskId = state.value("taskId", "");
-				String data = state.value("data", "");
-				Store dataStore = state.getStore();
+				.addNode("storeRawData", node_async(state -> {
+					String taskId = state.value("taskId", "");
+					String data = state.value("data", "");
+					Store dataStore = state.getStore();
 
-				if (dataStore != null) {
-					dataStore.putItem(StoreItem.of(List.of("tasks", taskId), "raw_data",
-							Map.of("data", data, "timestamp", System.currentTimeMillis())));
-				}
+					if (dataStore != null) {
+						dataStore.putItem(StoreItem.of(List.of("tasks", taskId), "raw_data",
+								Map.of("data", data, "timestamp", System.currentTimeMillis())));
+					}
 
-				return Map.of("rawDataStored", true);
-			}))
-			.addNode("processData", node_async(state -> {
-				String taskId = state.value("taskId", "");
-				String data = state.value("data", "");
-				Store dataStore = state.getStore();
+					return Map.of("rawDataStored", true);
+				}))
+				.addNode("processData", node_async(state -> {
+					String taskId = state.value("taskId", "");
+					String data = state.value("data", "");
+					Store dataStore = state.getStore();
 
-				// Simulate data processing
-				String processedData = "processed: " + data;
+					// Simulate data processing
+					String processedData = "processed: " + data;
 
-				if (dataStore != null) {
-					dataStore.putItem(StoreItem.of(List.of("tasks", taskId), "processed_data",
-							Map.of("data", processedData, "timestamp", System.currentTimeMillis())));
-				}
+					if (dataStore != null) {
+						dataStore.putItem(StoreItem.of(List.of("tasks", taskId), "processed_data",
+								Map.of("data", processedData, "timestamp", System.currentTimeMillis())));
+					}
 
-				return Map.of("processedData", processedData);
-			}))
-			.addNode("generateResult", node_async(state -> {
-				String taskId = state.value("taskId", "");
-				String processedData = state.value("processedData", "");
-				Store dataStore = state.getStore();
+					return Map.of("processedData", processedData);
+				}))
+				.addNode("generateResult", node_async(state -> {
+					String taskId = state.value("taskId", "");
+					String processedData = state.value("processedData", "");
+					Store dataStore = state.getStore();
 
-				// Generate final result
-				String result = "result for: " + processedData;
+					// Generate final result
+					String result = "result for: " + processedData;
 
-				if (dataStore != null) {
-					dataStore.putItem(StoreItem.of(List.of("tasks", taskId), "final_result",
-							Map.of("result", result, "timestamp", System.currentTimeMillis())));
-				}
+					if (dataStore != null) {
+						dataStore.putItem(StoreItem.of(List.of("tasks", taskId), "final_result",
+								Map.of("result", result, "timestamp", System.currentTimeMillis())));
+					}
 
-				return Map.of("status", "processing_complete", "result", result);
-			}))
-			.addEdge(START, "storeRawData")
-			.addEdge("storeRawData", "processData")
-			.addEdge("processData", "generateResult")
-			.addEdge("generateResult", END);
+					return Map.of("status", "processing_complete", "result", result);
+				}))
+				.addEdge(START, "storeRawData")
+				.addEdge("storeRawData", "processData")
+				.addEdge("processData", "generateResult")
+				.addEdge("generateResult", END);
 
 		return workflow.compile(config).call(input);
 	}
@@ -378,37 +390,37 @@ public class GraphStoreIntegrationTest {
 
 		StateGraph workflow = new StateGraph(() -> Map.of("query", new ReplaceStrategy(), "operation",
 				new ReplaceStrategy(), "searchResults", new ReplaceStrategy()))
-			.addNode("searchData", node_async(state -> {
-				String query = state.value("query", "");
-				Store searchStore = state.getStore();
+				.addNode("searchData", node_async(state -> {
+					String query = state.value("query", "");
+					Store searchStore = state.getStore();
 
-				List<StoreItem> searchResults = new ArrayList<>();
-				if (searchStore != null) {
-					StoreSearchRequest searchRequest = StoreSearchRequest.builder().query(query).limit(10).build();
+					List<StoreItem> searchResults = new ArrayList<>();
+					if (searchStore != null) {
+						StoreSearchRequest searchRequest = StoreSearchRequest.builder().query(query).limit(10).build();
 
-					StoreSearchResult result = searchStore.searchItems(searchRequest);
-					searchResults = result.getItems();
-				}
+						StoreSearchResult result = searchStore.searchItems(searchRequest);
+						searchResults = result.getItems();
+					}
 
-				return Map.of("searchResults", searchResults, "searchQuery", query);
-			}))
-			.addNode("processResults", node_async(state -> {
-				@SuppressWarnings("unchecked")
-				List<StoreItem> searchResults = state.value("searchResults", List.class)
-					.map(list -> (List<StoreItem>) list)
-					.orElse(Collections.emptyList());
-				String query = state.value("searchQuery", "");
+					return Map.of("searchResults", searchResults, "searchQuery", query);
+				}))
+				.addNode("processResults", node_async(state -> {
+					@SuppressWarnings("unchecked")
+					List<StoreItem> searchResults = state.value("searchResults", List.class)
+							.map(list -> (List<StoreItem>) list)
+							.orElse(Collections.emptyList());
+					String query = state.value("searchQuery", "");
 
-				Map<String, Object> processedResults = Map
-					.of("totalResults", searchResults.size(), "query", query, "resultSummary", searchResults.stream()
-						.map(item -> Map.of("namespace", String.join("/", item.getNamespace()), "key", item.getKey()))
-						.toList());
+					Map<String, Object> processedResults = Map
+							.of("totalResults", searchResults.size(), "query", query, "resultSummary", searchResults.stream()
+									.map(item -> Map.of("namespace", String.join("/", item.getNamespace()), "key", item.getKey()))
+									.toList());
 
-				return Map.of("processedResults", processedResults);
-			}))
-			.addEdge(START, "searchData")
-			.addEdge("searchData", "processResults")
-			.addEdge("processResults", END);
+					return Map.of("processedResults", processedResults);
+				}))
+				.addEdge(START, "searchData")
+				.addEdge("searchData", "processResults")
+				.addEdge("processResults", END);
 
 		return workflow.compile(config).call(input);
 	}

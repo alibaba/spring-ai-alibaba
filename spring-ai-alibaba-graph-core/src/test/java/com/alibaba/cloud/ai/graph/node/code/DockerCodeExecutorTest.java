@@ -18,16 +18,21 @@ package com.alibaba.cloud.ai.graph.node.code;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeBlock;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionResult;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DockerCodeExecutorTest {
+
+	private static boolean isCI() {
+		return "true".equalsIgnoreCase(System.getProperty("CI", System.getenv("CI")));
+	}
 
 	@EnabledIf(value = "isCI", disabledReason = "this test is designed to run only in the GitHub CI environment.")
 	@Test
@@ -45,19 +50,15 @@ class DockerCodeExecutorTest {
 		// 3. 构造执行配置
 		Path workDir = Files.createTempDirectory("docker-code-exec-test");
 		CodeExecutionConfig config = new CodeExecutionConfig().setDocker("python:3.10")
-			.setWorkDir(workDir.toAbsolutePath().toString())
-			.setContainerName("docker-code-exec-test")
-			.setTimeout(60);
+				.setWorkDir(workDir.toAbsolutePath().toString())
+				.setContainerName("docker-code-exec-test")
+				.setTimeout(60);
 
 		// 4. 执行
 		CodeExecutionResult result = executor.executeCodeBlocks(List.of(codeBlock), config);
 
 		// 5. 断言
 		assertEquals(0, result.exitCode(), "Exit code should be 0");
-	}
-
-	private static boolean isCI() {
-		return "true".equalsIgnoreCase(System.getProperty("CI", System.getenv("CI")));
 	}
 
 }

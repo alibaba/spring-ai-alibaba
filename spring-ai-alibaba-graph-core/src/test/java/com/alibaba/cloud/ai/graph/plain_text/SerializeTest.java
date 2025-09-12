@@ -22,10 +22,6 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSeri
 import com.alibaba.cloud.ai.graph.serializer.std.NullableObjectSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
 
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -36,6 +32,10 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.listOf;
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.mapOf;
@@ -68,17 +68,6 @@ public class SerializeTest {
 			ObjectInputStream ois = new ObjectInputStream(stream);
 			return stateSerializer.read(ois);
 		}
-	}
-
-	// Test class containing a nullable field for serialization tests
-	static class ValueWithNull {
-
-		private final String name;
-
-		public ValueWithNull(String name) {
-			this.name = name;
-		}
-
 	}
 
 	// Test case to verify serialization of a complete OverAllState with various data
@@ -134,33 +123,13 @@ public class SerializeTest {
 
 	}
 
-	// Non-serializable test class to simulate unsupported types during serialization
-	public static class NonSerializableElement {
-
-		String value;
-
-		public NonSerializableElement() {
-			this.value = "default";
-		}
-
-		public NonSerializableElement(String value) {
-			this.value = value;
-		}
-
-		@Override
-		public String toString() {
-			return "NonSerializableElement{" + "value='" + value + '\'' + '}';
-		}
-
-	}
-
 	// Test to ensure that non-serializable elements cause appropriate exceptions
 	@Test
 	public void partiallySerializeStateTest() throws Exception {
 
 		// Create OverAllState with a non-serializable element
 		OverAllState state = stateSerializer
-			.stateOf(mapOf("a", "b", "f", new NonSerializableElement("I'M NOT SERIALIZABLE"), "c", "d"));
+				.stateOf(mapOf("a", "b", "f", new NonSerializableElement("I'M NOT SERIALIZABLE"), "c", "d"));
 
 		// Expect NotSerializableException when attempting to serialize
 		assertThrows(NotSerializableException.class, () -> {
@@ -189,7 +158,7 @@ public class SerializeTest {
 
 		// Create OverAllState with custom serialized type included
 		OverAllState state = stateSerializer
-			.stateOf(mapOf("a", "b", "x", new NonSerializableElement("I'M NOT SERIALIZABLE"), "f", "H", "c", "d"));
+				.stateOf(mapOf("a", "b", "x", new NonSerializableElement("I'M NOT SERIALIZABLE"), "f", "H", "c", "d"));
 
 		System.out.println(state);
 
@@ -205,19 +174,6 @@ public class SerializeTest {
 
 		System.out.println(deserializedData.get("x").getClass());
 		System.out.println(deserializedData);
-	}
-
-	// Jackson-based StateSerializer for testing JSON serialization capabilities
-	static class JacksonSerializer extends JacksonStateSerializer {
-
-		public JacksonSerializer() {
-			super(OverAllState::new);
-		}
-
-		ObjectMapper getObjectMapper() {
-			return objectMapper;
-		}
-
 	}
 
 	// Test NodeOutput serialization using Jackson JSON library
@@ -239,6 +195,50 @@ public class SerializeTest {
 		json = mapper.writeValueAsString(output);
 
 		assertEquals("{\"end\":false,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":false}", json);
+	}
+
+	// Test class containing a nullable field for serialization tests
+	static class ValueWithNull {
+
+		private final String name;
+
+		public ValueWithNull(String name) {
+			this.name = name;
+		}
+
+	}
+
+	// Non-serializable test class to simulate unsupported types during serialization
+	public static class NonSerializableElement {
+
+		String value;
+
+		public NonSerializableElement() {
+			this.value = "default";
+		}
+
+		public NonSerializableElement(String value) {
+			this.value = value;
+		}
+
+		@Override
+		public String toString() {
+			return "NonSerializableElement{" + "value='" + value + '\'' + '}';
+		}
+
+	}
+
+	// Jackson-based StateSerializer for testing JSON serialization capabilities
+	static class JacksonSerializer extends JacksonStateSerializer {
+
+		public JacksonSerializer() {
+			super(OverAllState::new);
+		}
+
+		ObjectMapper getObjectMapper() {
+			return objectMapper;
+		}
+
 	}
 
 }

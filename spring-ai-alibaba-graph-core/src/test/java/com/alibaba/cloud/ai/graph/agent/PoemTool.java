@@ -15,10 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import java.util.function.BiFunction;
-
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
+
+import java.util.function.BiFunction;
 
 public class PoemTool implements BiFunction<String, ToolContext, String> {
 

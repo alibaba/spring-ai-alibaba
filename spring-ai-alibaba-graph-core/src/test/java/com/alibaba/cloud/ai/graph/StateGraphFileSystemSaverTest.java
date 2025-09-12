@@ -21,9 +21,6 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.nio.file.Paths;
 import java.util.List;
@@ -31,13 +28,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit test for simple App.
@@ -52,32 +59,32 @@ public class StateGraphFileSystemSaverTest {
 	public void testCheckpointSaverResubmit() throws Exception {
 		int expectedSteps = 5;
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("steps")
-			.addStrategy("messages", KeyStrategy.APPEND)
-			.build();
+				.addStrategy("messages", KeyStrategy.APPEND)
+				.build();
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-			.addNode("agent_1", node_async(state -> {
-				int defaultSteps = (int) state.value("steps").orElse(0);
-				int steps = defaultSteps + 1;
-				log.info("agent_1: step: {}", steps);
-				return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
-			}))
-			.addConditionalEdges("agent_1", edge_async(state -> {
-				int steps = (int) state.data().get("steps");
-				if (steps >= expectedSteps) {
-					return "exit";
-				}
-				return "next";
-			}), Map.of("next", "agent_1", "exit", END));
+				.addNode("agent_1", node_async(state -> {
+					int defaultSteps = (int) state.value("steps").orElse(0);
+					int steps = defaultSteps + 1;
+					log.info("agent_1: step: {}", steps);
+					return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
+				}))
+				.addConditionalEdges("agent_1", edge_async(state -> {
+					int steps = (int) state.data().get("steps");
+					if (steps >= expectedSteps) {
+						return "exit";
+					}
+					return "next";
+				}), Map.of("next", "agent_1", "exit", END));
 
 		var saver = new FileSystemSaver(Paths.get(rootPath, "testCheckpointSaverResubmit"),
 				workflow.getStateSerializer());
 
 		CompileConfig compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder()
-				.type(SaverEnum.FILE.getValue())
-				.register(SaverEnum.FILE.getValue(), saver)
-				.build())
-			.build();
+				.saverConfig(SaverConfig.builder()
+						.type(SaverEnum.FILE.getValue())
+						.register(SaverEnum.FILE.getValue(), saver)
+						.build())
+				.build();
 
 		CompiledGraph app = workflow.compile(compileConfig);
 
@@ -149,32 +156,32 @@ public class StateGraphFileSystemSaverTest {
 	public void testCheckpointSaverWithManualRelease() throws Exception {
 		int expectedSteps = 5;
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("steps")
-			.addStrategy("messages", KeyStrategy.APPEND)
-			.build();
+				.addStrategy("messages", KeyStrategy.APPEND)
+				.build();
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-			.addNode("agent_1", node_async(state -> {
-				int defaultSteps = (int) state.value("steps").orElse(0);
-				int steps = defaultSteps + 1;
-				log.info("agent_1: step: {}", steps);
-				return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
-			}))
-			.addConditionalEdges("agent_1", edge_async(state -> {
-				int steps = (int) state.data().get("steps");
-				if (steps >= expectedSteps) {
-					return "exit";
-				}
-				return "next";
-			}), Map.of("next", "agent_1", "exit", END));
+				.addNode("agent_1", node_async(state -> {
+					int defaultSteps = (int) state.value("steps").orElse(0);
+					int steps = defaultSteps + 1;
+					log.info("agent_1: step: {}", steps);
+					return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
+				}))
+				.addConditionalEdges("agent_1", edge_async(state -> {
+					int steps = (int) state.data().get("steps");
+					if (steps >= expectedSteps) {
+						return "exit";
+					}
+					return "next";
+				}), Map.of("next", "agent_1", "exit", END));
 
 		var saver = new FileSystemSaver(Paths.get(rootPath, "testCheckpointSaverWithManualRelease"),
 				workflow.getStateSerializer());
 
 		CompileConfig compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder()
-				.type(SaverEnum.FILE.getValue())
-				.register(SaverEnum.FILE.getValue(), saver)
-				.build())
-			.build();
+				.saverConfig(SaverConfig.builder()
+						.type(SaverEnum.FILE.getValue())
+						.register(SaverEnum.FILE.getValue(), saver)
+						.build())
+				.build();
 
 		CompiledGraph app = workflow.compile(compileConfig);
 
@@ -247,33 +254,33 @@ public class StateGraphFileSystemSaverTest {
 	public void testCheckpointSaverWithAutoRelease() throws Exception {
 		int expectedSteps = 5;
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("steps")
-			.addStrategy("messages", KeyStrategy.APPEND)
-			.build();
+				.addStrategy("messages", KeyStrategy.APPEND)
+				.build();
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-			.addNode("agent_1", node_async(state -> {
-				int defaultSteps = (int) state.value("steps").orElse(0);
-				int steps = defaultSteps + 1;
-				log.info("agent_1: step: {}", steps);
-				return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
-			}))
-			.addConditionalEdges("agent_1", edge_async(state -> {
-				int steps = (int) state.data().get("steps");
-				if (steps >= expectedSteps) {
-					return "exit";
-				}
-				return "next";
-			}), Map.of("next", "agent_1", "exit", END));
+				.addNode("agent_1", node_async(state -> {
+					int defaultSteps = (int) state.value("steps").orElse(0);
+					int steps = defaultSteps + 1;
+					log.info("agent_1: step: {}", steps);
+					return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
+				}))
+				.addConditionalEdges("agent_1", edge_async(state -> {
+					int steps = (int) state.data().get("steps");
+					if (steps >= expectedSteps) {
+						return "exit";
+					}
+					return "next";
+				}), Map.of("next", "agent_1", "exit", END));
 
 		var saver = new FileSystemSaver(Paths.get(rootPath, "testCheckpointSaverWithAutoRelease"),
 				workflow.getStateSerializer());
 
 		CompileConfig compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder()
-				.type(SaverEnum.FILE.getValue())
-				.register(SaverEnum.FILE.getValue(), saver)
-				.build())
-			.releaseThread(true)
-			.build();
+				.saverConfig(SaverConfig.builder()
+						.type(SaverEnum.FILE.getValue())
+						.register(SaverEnum.FILE.getValue(), saver)
+						.build())
+				.releaseThread(true)
+				.build();
 
 		var app = workflow.compile(compileConfig);
 

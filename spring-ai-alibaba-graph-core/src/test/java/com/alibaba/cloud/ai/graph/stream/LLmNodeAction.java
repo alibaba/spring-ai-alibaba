@@ -18,12 +18,14 @@ package com.alibaba.cloud.ai.graph.stream;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import reactor.core.publisher.Flux;
 
 import java.util.Map;
+
+import reactor.core.publisher.Flux;
 
 public class LLmNodeAction implements NodeAction {
 

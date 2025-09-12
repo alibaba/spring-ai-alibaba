@@ -15,21 +15,25 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class ReactAgentTest {
@@ -50,7 +54,7 @@ class ReactAgentTest {
 		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).build();
 		try {
 			Optional<OverAllState> result = agent
-				.invoke(Map.of("messages", List.of(new UserMessage("帮我写一篇100字左右散文。"))));
+					.invoke(Map.of("messages", List.of(new UserMessage("帮我写一篇100字左右散文。"))));
 			Optional<OverAllState> result2 = agent.invoke(Map.of("messages", List.of(new UserMessage("帮我写一首现代诗歌。"))));
 
 			// 验证第一个结果不为空

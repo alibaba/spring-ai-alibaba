@@ -15,23 +15,25 @@
  */
 package com.alibaba.cloud.ai.graph.scheduling;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatModel;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -72,7 +74,7 @@ public class ScheduledAgentTaskTest {
 		// Counter for tracking executions
 		final AtomicInteger executionCount = new AtomicInteger(0);
 		final CountDownLatch executionLatch = new CountDownLatch(2); // Wait for at least
-																		// 1 execution
+		// 1 execution
 
 		// Create lifecycle listener
 		ScheduleLifecycleListener listener = new ScheduleLifecycleListener() {
@@ -83,10 +85,10 @@ public class ScheduledAgentTaskTest {
 					System.out.println("Cron execution #" + count + " " + event + " at " + System.currentTimeMillis());
 					if (data instanceof OverAllState) {
 						String textContent = ((OverAllState) data).value("output")
-							.filter(AssistantMessage.class::isInstance)
-							.map(AssistantMessage.class::cast)
-							.map(AssistantMessage::getText)
-							.orElse("No content available");
+								.filter(AssistantMessage.class::isInstance)
+								.map(AssistantMessage.class::cast)
+								.map(AssistantMessage::getText)
+								.orElse("No content available");
 						System.out.println("output:" + textContent);
 					}
 					System.out.println((2 - executionLatch.getCount())
@@ -107,21 +109,21 @@ public class ScheduledAgentTaskTest {
 		try {
 			// Create ReactAgent
 			ReactAgent agent = ReactAgent.builder()
-				.name("cron_scheduled_agent")
-				.model(chatModel)
-				.instruction("You are a cron test agent. respond briefly.")
-				.outputKey("output")
-				.build();
+					.name("cron_scheduled_agent")
+					.model(chatModel)
+					.instruction("You are a cron test agent. respond briefly.")
+					.outputKey("output")
+					.build();
 
 			long startTime = System.currentTimeMillis();
 			System.out.println("Cron test started at: " + startTime);
 
 			// Schedule with cron expression - every 5 seconds
 			ScheduleConfig config = ScheduleConfig.builder()
-				.cronExpression("*/15 * * * * ?") // Every 5 seconds
-				.inputs(Map.of("messages", List.of(new UserMessage("Is '0 */1 * * * ?' a right expression?"))))
-				.addListener(listener)
-				.build();
+					.cronExpression("*/15 * * * * ?") // Every 5 seconds
+					.inputs(Map.of("messages", List.of(new UserMessage("Is '0 */1 * * * ?' a right expression?"))))
+					.addListener(listener)
+					.build();
 
 			// Schedule the agent
 			ScheduledAgentTask task = agent.schedule(config);

@@ -19,12 +19,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.fastjson.JSON;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
@@ -42,13 +37,20 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.alibaba.fastjson.JSON;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -110,13 +112,13 @@ class ReactAgentHookTest {
 		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder().finishReason("stop").build();
 		Generation generation = new Generation(assistantMessage, generationMetadata);
 		ChatResponseMetadata responseMetadata = ChatResponseMetadata.builder()
-			.id("test-id")
-			.usage(new DefaultUsage(10, 20, 30))
-			.build();
+				.id("test-id")
+				.usage(new DefaultUsage(10, 20, 30))
+				.build();
 		ChatResponse response = ChatResponse.builder()
-			.generations(List.of(generation))
-			.metadata(responseMetadata)
-			.build();
+				.generations(List.of(generation))
+				.metadata(responseMetadata)
+				.build();
 		when(responseSpec.chatResponse()).thenReturn(response);
 	}
 
@@ -127,33 +129,34 @@ class ReactAgentHookTest {
 	public void testReactAgentWithPreLlmHook() throws Exception {
 		ToolCallback toolCallback = ToolCallbacks.from(new WeatherTool())[0];
 		ReactAgent agent = ReactAgent.builder()
-			.name("weather_agent")
-			.model(chatModel)
-			.tools(List.of(toolCallback))
-			.inputKey("llm_input_messages")
-			.preLlmHook(state -> {
-				if (!state.value("messages").isPresent()) {
-					return Map.of();
-				}
-				List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
-
-				// 消息裁剪功能
-				if (messages.size() > 20) {
-					List<Message> userMessages = messages.stream().filter(msg -> msg instanceof UserMessage).toList();
-					List<Message> last20Messages = messages.subList(messages.size() - 20, messages.size());
-					List<Message> resultMessages = new ArrayList<>(last20Messages);
-					for (Message userMsg : userMessages) {
-						if (!resultMessages.contains(userMsg)) {
-							resultMessages.add(userMsg);
-						}
+				.name("weather_agent")
+				.model(chatModel)
+				.tools(List.of(toolCallback))
+				.inputKey("llm_input_messages")
+				.preLlmHook(state -> {
+					if (!state.value("messages").isPresent()) {
+						return Map.of();
 					}
-					messages = resultMessages;
-				}
+					List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
 
-				state.updateState(Map.of("llm_input_messages", messages));
-				return Map.of();
-			})
-			.build();
+					// 消息裁剪功能
+					if (messages.size() > 20) {
+						List<Message> userMessages = messages.stream().filter(msg -> msg instanceof UserMessage)
+								.toList();
+						List<Message> last20Messages = messages.subList(messages.size() - 20, messages.size());
+						List<Message> resultMessages = new ArrayList<>(last20Messages);
+						for (Message userMsg : userMessages) {
+							if (!resultMessages.contains(userMsg)) {
+								resultMessages.add(userMsg);
+							}
+						}
+						messages = resultMessages;
+					}
+
+					state.updateState(Map.of("llm_input_messages", messages));
+					return Map.of();
+				})
+				.build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 
@@ -176,20 +179,20 @@ class ReactAgentHookTest {
 		AtomicBoolean isSecondCall = new AtomicBoolean(false);
 
 		ReactAgent agent = ReactAgent.builder()
-			.name("dataAgent")
-			.model(chatModel)
-			.inputKey("llm_input_messages")
-			.tools(List.of(toolCallback))
-			.postLlmHook(state -> {
+				.name("dataAgent")
+				.model(chatModel)
+				.inputKey("llm_input_messages")
+				.tools(List.of(toolCallback))
+				.postLlmHook(state -> {
 
-				return Map.of();
-			})
-			.postToolHook(state -> {
-				List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-				state.updateState(Map.of("llm_input_messages", messages));
-				return Map.of();
-			})
-			.build();
+					return Map.of();
+				})
+				.postToolHook(state -> {
+					List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
+					state.updateState(Map.of("llm_input_messages", messages));
+					return Map.of();
+				})
+				.build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 		// 创建包含时间查询的提示词
@@ -209,58 +212,58 @@ class ReactAgentHookTest {
 		ToolCallback toolCallback = ToolCallbacks.from(new WeatherTool())[0];
 
 		ReactAgent agent = ReactAgent.builder()
-			.name("dataAgent")
-			.model(chatModel)
-			.tools(List.of(toolCallback))
-			.inputKey("llm_input_messages")
-			.preToolHook(state -> {
-				// 在preToolHook中获取最新的时间戳 传给toolCall保证时效性
-				long currentTimestamp = System.currentTimeMillis();
-				String formattedTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-					.format(new java.util.Date(currentTimestamp));
+				.name("dataAgent")
+				.model(chatModel)
+				.tools(List.of(toolCallback))
+				.inputKey("llm_input_messages")
+				.preToolHook(state -> {
+					// 在preToolHook中获取最新的时间戳 传给toolCall保证时效性
+					long currentTimestamp = System.currentTimeMillis();
+					String formattedTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+							.format(new java.util.Date(currentTimestamp));
 
-				List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-				if (!messages.isEmpty()) {
-					Message lastMessage = messages.get(messages.size() - 1);
-					if (lastMessage instanceof AssistantMessage) {
-						AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
-						if (assistantMessage.hasToolCalls()) {
-							// 更新ToolCall参数，把时间换成当前系统最新时间
-							for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-								if ("weather_tool".equals(toolCall.name())) {
-									String originalArgs = toolCall.arguments();
-									Map<String, Object> updatedArgs = JSON.parseObject(originalArgs);
-									updatedArgs.put("currentTimestamp", formattedTime);
-									// 创建新的ToolCall，替换参数
-									AssistantMessage.ToolCall updatedToolCall = new AssistantMessage.ToolCall(
-											toolCall.id(), toolCall.type(), toolCall.name(),
-											JSON.toJSONString(updatedArgs));
+					List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
+					if (!messages.isEmpty()) {
+						Message lastMessage = messages.get(messages.size() - 1);
+						if (lastMessage instanceof AssistantMessage) {
+							AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
+							if (assistantMessage.hasToolCalls()) {
+								// 更新ToolCall参数，把时间换成当前系统最新时间
+								for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+									if ("weather_tool".equals(toolCall.name())) {
+										String originalArgs = toolCall.arguments();
+										Map<String, Object> updatedArgs = JSON.parseObject(originalArgs);
+										updatedArgs.put("currentTimestamp", formattedTime);
+										// 创建新的ToolCall，替换参数
+										AssistantMessage.ToolCall updatedToolCall = new AssistantMessage.ToolCall(
+												toolCall.id(), toolCall.type(), toolCall.name(),
+												JSON.toJSONString(updatedArgs));
 
-									// 更新消息中的ToolCall
-									List<AssistantMessage.ToolCall> updatedToolCalls = new ArrayList<>();
-									for (AssistantMessage.ToolCall tc : assistantMessage.getToolCalls()) {
-										if (tc.id().equals(toolCall.id())) {
-											updatedToolCalls.add(updatedToolCall);
+										// 更新消息中的ToolCall
+										List<AssistantMessage.ToolCall> updatedToolCalls = new ArrayList<>();
+										for (AssistantMessage.ToolCall tc : assistantMessage.getToolCalls()) {
+											if (tc.id().equals(toolCall.id())) {
+												updatedToolCalls.add(updatedToolCall);
+											}
+											else {
+												updatedToolCalls.add(tc);
+											}
 										}
-										else {
-											updatedToolCalls.add(tc);
-										}
+										AssistantMessage updatedAssistantMessage = new AssistantMessage(
+												assistantMessage.getText(), assistantMessage.getMetadata(),
+												updatedToolCalls, Collections.emptyList());
+										List<Message> updatedMessages = new ArrayList<>(messages);
+										updatedMessages.set(updatedMessages.size() - 1, updatedAssistantMessage);
+										state.updateState(Map.of("llm_input_messages", updatedMessages));
+										break;
 									}
-									AssistantMessage updatedAssistantMessage = new AssistantMessage(
-											assistantMessage.getText(), assistantMessage.getMetadata(),
-											updatedToolCalls, Collections.emptyList());
-									List<Message> updatedMessages = new ArrayList<>(messages);
-									updatedMessages.set(updatedMessages.size() - 1, updatedAssistantMessage);
-									state.updateState(Map.of("llm_input_messages", updatedMessages));
-									break;
 								}
 							}
 						}
 					}
-				}
-				return Map.of();
-			})
-			.build();
+					return Map.of();
+				})
+				.build();
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 		List<Message> messages = List.of(new UserMessage("查询北京天气"));

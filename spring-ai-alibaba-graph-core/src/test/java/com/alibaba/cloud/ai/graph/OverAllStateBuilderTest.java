@@ -16,10 +16,11 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,10 +47,10 @@ class OverAllStateBuilderTest {
 
 		// Act
 		OverAllState state = OverAllStateBuilder.builder()
-			.withData(data)
-			.withKeyStrategy("input", new ReplaceStrategy())
-			.setResume(true)
-			.build();
+				.withData(data)
+				.withKeyStrategy("input", new ReplaceStrategy())
+				.setResume(true)
+				.build();
 
 		// Assert
 		assertThat(state).isNotNull();

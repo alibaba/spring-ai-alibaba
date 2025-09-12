@@ -20,11 +20,12 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
-import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -32,6 +33,11 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_a
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StateGraphRepresentationTest {
+
+	private KeyStrategyFactory keyStrategyFactory = () -> {
+		HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+		return new HashMap<>();
+	};
 
 	// Dummy node action that returns an empty map as result
 	CompletableFuture<Map<String, Object>> dummyNodeAction(OverAllState state) {
@@ -43,11 +49,6 @@ public class StateGraphRepresentationTest {
 		return CompletableFuture.completedFuture("");
 	}
 
-	private KeyStrategyFactory keyStrategyFactory = () -> {
-		HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-		return new HashMap<>();
-	};
-
 	/**
 	 * Test a simple graph structure with three nodes and sequential edges. Verifies the
 	 * PlantUML representation of the graph structure.
@@ -56,12 +57,12 @@ public class StateGraphRepresentationTest {
 	public void testSimpleGraph() throws Exception {
 
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addNode("agent_3", this::dummyNodeAction)
-			.addNode("agent_1", this::dummyNodeAction)
-			.addNode("agent_2", this::dummyNodeAction)
-			.addEdge(START, "agent_1")
-			.addEdge("agent_2", END)
-			.addEdge("agent_1", "agent_3")
-			.addEdge("agent_3", "agent_2");
+				.addNode("agent_1", this::dummyNodeAction)
+				.addNode("agent_2", this::dummyNodeAction)
+				.addEdge(START, "agent_1")
+				.addEdge("agent_2", END)
+				.addEdge("agent_1", "agent_3")
+				.addEdge("agent_3", "agent_2");
 
 		CompiledGraph app = workflow.compile();
 
@@ -76,7 +77,7 @@ public class StateGraphRepresentationTest {
 				skinparam hexagonStereotypeFontSize 12
 				title "Graph Diagram"
 				footer
-
+				
 				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__
@@ -100,11 +101,11 @@ public class StateGraphRepresentationTest {
 	public void testCorrectionProcessGraph() throws Exception {
 
 		var workflow = new StateGraph(keyStrategyFactory).addNode("evaluate_result", this::dummyNodeAction)
-			.addNode("agent_review", this::dummyNodeAction)
-			.addEdge("agent_review", "evaluate_result")
-			.addConditionalEdges("evaluate_result", this::dummyCondition,
-					EdgeMappings.builder().toEND("OK").toEND("UNKNOWN").to("agent_review", "ERROR").build())
-			.addEdge(START, "evaluate_result");
+				.addNode("agent_review", this::dummyNodeAction)
+				.addEdge("agent_review", "evaluate_result")
+				.addConditionalEdges("evaluate_result", this::dummyCondition,
+						EdgeMappings.builder().toEND("OK").toEND("UNKNOWN").to("agent_review", "ERROR").build())
+				.addEdge(START, "evaluate_result");
 
 		var result = workflow.getGraph(GraphRepresentation.Type.PLANTUML, "Correction process");
 
@@ -118,7 +119,7 @@ public class StateGraphRepresentationTest {
 				skinparam hexagonStereotypeFontSize 12
 				title "Correction process"
 				footer
-
+				
 				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__
@@ -136,7 +137,7 @@ public class StateGraphRepresentationTest {
 				"condition1" .down.> "agent_review": "ERROR"
 				'"evaluate_result" .down.> "agent_review": "ERROR"
 				@enduml
-				 """, result.content());
+				""", result.content());
 	}
 
 	/**
@@ -146,11 +147,11 @@ public class StateGraphRepresentationTest {
 	@Test
 	public void GenerateAgentExecutorGraph() throws Exception {
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addNode("agent", this::dummyNodeAction)
-			.addNode("action", this::dummyNodeAction)
-			.addEdge(START, "agent")
-			.addConditionalEdges("agent", this::dummyCondition,
-					EdgeMappings.builder().to("action", "continue").toEND("end").build())
-			.addEdge("action", "agent");
+				.addNode("action", this::dummyNodeAction)
+				.addEdge(START, "agent")
+				.addConditionalEdges("agent", this::dummyCondition,
+						EdgeMappings.builder().to("action", "continue").toEND("end").build())
+				.addEdge("action", "agent");
 
 		CompiledGraph app = workflow.compile();
 
@@ -165,7 +166,7 @@ public class StateGraphRepresentationTest {
 				skinparam hexagonStereotypeFontSize 12
 				title "Graph Diagram"
 				footer
-
+				
 				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__
@@ -191,18 +192,18 @@ public class StateGraphRepresentationTest {
 	@Test
 	public void GenerateImageToDiagramGraph() throws Exception {
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addNode("agent_describer", this::dummyNodeAction)
-			.addNode("agent_sequence_plantuml", this::dummyNodeAction)
-			.addNode("agent_generic_plantuml", this::dummyNodeAction)
-			.addConditionalEdges("agent_describer", this::dummyCondition,
-					EdgeMappings.builder()
-						.to("agent_generic_plantuml", "generic")
-						.to("agent_sequence_plantuml", "sequence")
-						.build())
-			.addNode("evaluate_result", this::dummyNodeAction)
-			.addEdge("agent_sequence_plantuml", "evaluate_result")
-			.addEdge("agent_generic_plantuml", "evaluate_result")
-			.addEdge(START, "agent_describer")
-			.addEdge("evaluate_result", END);
+				.addNode("agent_sequence_plantuml", this::dummyNodeAction)
+				.addNode("agent_generic_plantuml", this::dummyNodeAction)
+				.addConditionalEdges("agent_describer", this::dummyCondition,
+						EdgeMappings.builder()
+								.to("agent_generic_plantuml", "generic")
+								.to("agent_sequence_plantuml", "sequence")
+								.build())
+				.addNode("evaluate_result", this::dummyNodeAction)
+				.addEdge("agent_sequence_plantuml", "evaluate_result")
+				.addEdge("agent_generic_plantuml", "evaluate_result")
+				.addEdge(START, "agent_describer")
+				.addEdge("evaluate_result", END);
 
 		CompiledGraph app = workflow.compile();
 
@@ -217,7 +218,7 @@ public class StateGraphRepresentationTest {
 				skinparam hexagonStereotypeFontSize 12
 				title "Graph Diagram"
 				footer
-
+				
 				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__
@@ -263,7 +264,7 @@ public class StateGraphRepresentationTest {
 				\tagent_sequence_plantuml:::agent_sequence_plantuml --> evaluate_result:::evaluate_result
 				\tagent_generic_plantuml:::agent_generic_plantuml --> evaluate_result:::evaluate_result
 				\tevaluate_result:::evaluate_result --> __END__:::__END__
-
+				
 				\tclassDef __START__ fill:black,stroke-width:1px,font-size:xx-small;
 				\tclassDef __END__ fill:black,stroke-width:1px,font-size:xx-small;
 				""", result.content());
@@ -286,20 +287,20 @@ public class StateGraphRepresentationTest {
 	void testWithParallelBranch() throws Exception {
 
 		var workflow = new StateGraph(keyStrategyFactory).addNode("A", makeNode("A"))
-			.addNode("A1", makeNode("A1"))
-			.addNode("A2", makeNode("A2"))
-			.addNode("A3", makeNode("A3"))
-			.addNode("B", makeNode("B"))
-			.addNode("C", makeNode("C"))
-			.addEdge("A", "A1")
-			.addEdge("A", "A2")
-			.addEdge("A", "A3")
-			.addEdge("A1", "B")
-			.addEdge("A2", "B")
-			.addEdge("A3", "B")
-			.addEdge("B", "C")
-			.addEdge(START, "A")
-			.addEdge("C", END);
+				.addNode("A1", makeNode("A1"))
+				.addNode("A2", makeNode("A2"))
+				.addNode("A3", makeNode("A3"))
+				.addNode("B", makeNode("B"))
+				.addNode("C", makeNode("C"))
+				.addEdge("A", "A1")
+				.addEdge("A", "A2")
+				.addEdge("A", "A3")
+				.addEdge("A1", "B")
+				.addEdge("A2", "B")
+				.addEdge("A3", "B")
+				.addEdge("B", "C")
+				.addEdge(START, "A")
+				.addEdge("C", END);
 
 		var result = workflow.getGraph(GraphRepresentation.Type.PLANTUML, "testWithParallelBranch");
 
@@ -311,7 +312,7 @@ public class StateGraphRepresentationTest {
 				skinparam hexagonStereotypeFontSize 12
 				title "testWithParallelBranch"
 				footer
-
+				
 				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__
@@ -358,7 +359,7 @@ public class StateGraphRepresentationTest {
 					A3:::A3 --> B:::B
 					B:::B --> C:::C
 					C:::C --> __END__:::__END__
-
+				
 					classDef __START__ fill:black,stroke-width:1px,font-size:xx-small;
 					classDef __END__ fill:black,stroke-width:1px,font-size:xx-small;
 				""", result.content());
@@ -376,18 +377,18 @@ public class StateGraphRepresentationTest {
 			objectObjectHashMap.put("messages", new AppendStrategy());
 			return objectObjectHashMap;
 		}).addNode("A1", makeNode("A1"))
-			.addNode("A2", makeNode("A2"))
-			.addNode("A3", makeNode("A3"))
-			.addNode("B", makeNode("B"))
-			.addNode("C", makeNode("C"))
-			.addEdge("A1", "B")
-			.addEdge("A2", "B")
-			.addEdge("A3", "B")
-			.addEdge("B", "C")
-			.addEdge(START, "A1")
-			.addEdge(START, "A2")
-			.addEdge(START, "A3")
-			.addEdge("C", END);
+				.addNode("A2", makeNode("A2"))
+				.addNode("A3", makeNode("A3"))
+				.addNode("B", makeNode("B"))
+				.addNode("C", makeNode("C"))
+				.addEdge("A1", "B")
+				.addEdge("A2", "B")
+				.addEdge("A3", "B")
+				.addEdge("B", "C")
+				.addEdge(START, "A1")
+				.addEdge(START, "A2")
+				.addEdge(START, "A3")
+				.addEdge("C", END);
 
 		var result = workflow.compile().getGraph(GraphRepresentation.Type.PLANTUML, "testWithParallelBranchOnStart");
 
@@ -399,7 +400,7 @@ public class StateGraphRepresentationTest {
 				skinparam hexagonStereotypeFontSize 12
 				title "testWithParallelBranchOnStart"
 				footer
-
+				
 				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__
@@ -442,7 +443,7 @@ public class StateGraphRepresentationTest {
 					A3:::A3 --> B:::B
 					B:::B --> C:::C
 					C:::C --> __END__:::__END__
-
+				
 					classDef __START__ fill:black,stroke-width:1px,font-size:xx-small;
 					classDef __END__ fill:black,stroke-width:1px,font-size:xx-small;
 				""", result.content());
@@ -453,28 +454,28 @@ public class StateGraphRepresentationTest {
 		var mockedAction = AsyncNodeAction.node_async((ignored) -> Map.of());
 
 		var subSubGraph = new StateGraph().addNode("foo1", mockedAction)
-			.addNode("foo2", mockedAction)
-			.addNode("foo3", mockedAction)
-			.addEdge(StateGraph.START, "foo1")
-			.addEdge("foo1", "foo2")
-			.addEdge("foo2", "foo3")
-			.addEdge("foo3", StateGraph.END);
+				.addNode("foo2", mockedAction)
+				.addNode("foo3", mockedAction)
+				.addEdge(StateGraph.START, "foo1")
+				.addEdge("foo1", "foo2")
+				.addEdge("foo2", "foo3")
+				.addEdge("foo3", StateGraph.END);
 
 		var subGraph = new StateGraph().addNode("bar1", mockedAction)
-			.addNode("subGraph2", subSubGraph.compile())
-			.addNode("bar2", mockedAction)
-			.addEdge(StateGraph.START, "bar1")
-			.addEdge("bar1", "subGraph2")
-			.addEdge("subGraph2", "bar2")
-			.addEdge("bar2", StateGraph.END);
+				.addNode("subGraph2", subSubGraph.compile())
+				.addNode("bar2", mockedAction)
+				.addEdge(StateGraph.START, "bar1")
+				.addEdge("bar1", "subGraph2")
+				.addEdge("subGraph2", "bar2")
+				.addEdge("bar2", StateGraph.END);
 
 		var stateGraph = new StateGraph().addNode("main1", mockedAction)
-			.addNode("subgraph1", subGraph.compile())
-			.addNode("main2", mockedAction)
-			.addEdge(StateGraph.START, "main1")
-			.addEdge("main1", "subgraph1")
-			.addEdge("subgraph1", "main2")
-			.addEdge("main2", StateGraph.END);
+				.addNode("subgraph1", subGraph.compile())
+				.addNode("main2", mockedAction)
+				.addEdge(StateGraph.START, "main1")
+				.addEdge("main1", "subgraph1")
+				.addEdge("subgraph1", "main2")
+				.addEdge("main2", StateGraph.END);
 
 		var mermaid = stateGraph.getGraph(GraphRepresentation.Type.MERMAID, "Example graph", false);
 
@@ -489,7 +490,7 @@ public class StateGraphRepresentationTest {
 				skinparam hexagonStereotypeFontSize 12
 				title "Example graph"
 				footer
-
+				
 				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__

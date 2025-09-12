@@ -15,21 +15,21 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.*;
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.action.CommandAction;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
-import com.alibaba.cloud.ai.graph.state.*;
+import com.alibaba.cloud.ai.graph.state.AppenderChannel;
+import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
-import org.junit.jupiter.api.NamedExecutable;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +41,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.NamedExecutable;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -64,6 +69,46 @@ public class StateGraphTest {
 	 */
 	public static <T> List<Entry<String, T>> sortMap(Map<String, T> map) {
 		return map.entrySet().stream().sorted(Entry.comparingByKey()).collect(Collectors.toList());
+	}
+
+	/**
+	 * Removes an element from the list based on the provided RemoveIdentifier.
+	 */
+	private static void removeFromList(List<Object> result, AppenderChannel.RemoveIdentifier<Object> removeIdentifier) {
+		for (int i = 0; i < result.size(); i++) {
+			if (removeIdentifier.compareTo(result.get(i), i) == 0) {
+				result.remove(i);
+				break;
+			}
+		}
+	}
+
+	/**
+	 * Evaluates removal operations on a list based on RemoveIdentifiers in newValues.
+	 */
+	private static AppenderChannel.RemoveData<Object> evaluateRemoval(List<Object> oldValues, List<?> newValues) {
+
+		final var result = new AppenderChannel.RemoveData<>(oldValues, newValues);
+
+		newValues.stream().filter(value -> value instanceof AppenderChannel.RemoveIdentifier<?>).forEach(value -> {
+			result.newValues().remove(value);
+			var removeIdentifier = (AppenderChannel.RemoveIdentifier<Object>) value;
+			removeFromList(result.oldValues(), removeIdentifier);
+		});
+		return result;
+
+	}
+
+	/**
+	 * Creates an OverAllState instance with predefined strategies for testing purposes.
+	 */
+	private static KeyStrategyFactory createKeyStrategyFactory() {
+		return () -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("steps", (o, o2) -> o2);
+			keyStrategyMap.put("messages", new AppendStrategy());
+			return keyStrategyMap;
+		};
 	}
 
 	/**
@@ -143,26 +188,26 @@ public class StateGraphTest {
 	@Test
 	void testWithAppender() throws Exception {
 		StateGraph workflow = new StateGraph(createKeyStrategyFactory()).addNode("agent_1", node_async(state -> {
-			System.out.println("agent_1");
-			return Map.of("messages", "message1");
-		})).addNode("agent_2", node_async(state -> {
-			System.out.println("agent_2");
-			return Map.of("messages", new String[] { "message2" });
-		})).addNode("agent_3", node_async(state -> {
-			System.out.println("agent_3");
-			List<String> messages = Optional.ofNullable(state.value("messages").get())
-				.filter(List.class::isInstance)
-				.map(List.class::cast)
-				.orElse(new ArrayList<>());
+					System.out.println("agent_1");
+					return Map.of("messages", "message1");
+				})).addNode("agent_2", node_async(state -> {
+					System.out.println("agent_2");
+					return Map.of("messages", new String[] {"message2"});
+				})).addNode("agent_3", node_async(state -> {
+					System.out.println("agent_3");
+					List<String> messages = Optional.ofNullable(state.value("messages").get())
+							.filter(List.class::isInstance)
+							.map(List.class::cast)
+							.orElse(new ArrayList<>());
 
-			int steps = messages.size() + 1;
+					int steps = messages.size() + 1;
 
-			return Map.of("messages", "message3", "steps", steps);
-		}))
-			.addEdge("agent_1", "agent_2")
-			.addEdge("agent_2", "agent_3")
-			.addEdge(StateGraph.START, "agent_1")
-			.addEdge("agent_3", StateGraph.END);
+					return Map.of("messages", "message3", "steps", steps);
+				}))
+				.addEdge("agent_1", "agent_2")
+				.addEdge("agent_2", "agent_3")
+				.addEdge(StateGraph.START, "agent_1")
+				.addEdge("agent_3", StateGraph.END);
 
 		CompiledGraph app = workflow.compile();
 
@@ -172,34 +217,6 @@ public class StateGraphTest {
 		System.out.println(result.get().data());
 		List<String> listResult = (List<String>) result.get().value("messages").get();
 		assertIterableEquals(List.of("message1", "message2", "message3"), listResult);
-
-	}
-
-	/**
-	 * Removes an element from the list based on the provided RemoveIdentifier.
-	 */
-	private static void removeFromList(List<Object> result, AppenderChannel.RemoveIdentifier<Object> removeIdentifier) {
-		for (int i = 0; i < result.size(); i++) {
-			if (removeIdentifier.compareTo(result.get(i), i) == 0) {
-				result.remove(i);
-				break;
-			}
-		}
-	}
-
-	/**
-	 * Evaluates removal operations on a list based on RemoveIdentifiers in newValues.
-	 */
-	private static AppenderChannel.RemoveData<Object> evaluateRemoval(List<Object> oldValues, List<?> newValues) {
-
-		final var result = new AppenderChannel.RemoveData<>(oldValues, newValues);
-
-		newValues.stream().filter(value -> value instanceof AppenderChannel.RemoveIdentifier<?>).forEach(value -> {
-			result.newValues().remove(value);
-			var removeIdentifier = (AppenderChannel.RemoveIdentifier<Object>) value;
-			removeFromList(result.oldValues(), removeIdentifier);
-		});
-		return result;
 
 	}
 
@@ -246,25 +263,25 @@ public class StateGraphTest {
 	@Test
 	void testWithAppenderOneRemove() throws Exception {
 		StateGraph workflow = new StateGraph(createKeyStrategyFactory()).addNode("agent_1", node_async(state -> {
-			log.info("agent_1");
-			return Map.of("messages", "message1");
-		})).addNode("agent_2", node_async(state -> {
-			log.info("agent_2");
-			return Map.of("messages", new String[] { "message2" });
-		})).addNode("agent_3", node_async(state -> {
-			System.out.println("agent_3");
-			List<String> messages = Optional.ofNullable(state.value("messages").get())
-				.filter(List.class::isInstance)
-				.map(List.class::cast)
-				.orElse(new ArrayList<>());
+					log.info("agent_1");
+					return Map.of("messages", "message1");
+				})).addNode("agent_2", node_async(state -> {
+					log.info("agent_2");
+					return Map.of("messages", new String[] {"message2"});
+				})).addNode("agent_3", node_async(state -> {
+					System.out.println("agent_3");
+					List<String> messages = Optional.ofNullable(state.value("messages").get())
+							.filter(List.class::isInstance)
+							.map(List.class::cast)
+							.orElse(new ArrayList<>());
 
-			int steps = messages.size() + 1;
-			return Map.of("messages", RemoveByHash.of("message2"), "steps", steps);
-		}))
-			.addEdge("agent_1", "agent_2")
-			.addEdge("agent_2", "agent_3")
-			.addEdge(START, "agent_1")
-			.addEdge("agent_3", END);
+					int steps = messages.size() + 1;
+					return Map.of("messages", RemoveByHash.of("message2"), "steps", steps);
+				}))
+				.addEdge("agent_1", "agent_2")
+				.addEdge("agent_2", "agent_3")
+				.addEdge(START, "agent_1")
+				.addEdge("agent_3", END);
 
 		CompiledGraph app = workflow.compile();
 
@@ -285,25 +302,25 @@ public class StateGraphTest {
 	@Test
 	void testWithAppenderOneAppendOneRemove() throws Exception {
 		StateGraph workflow = new StateGraph(createKeyStrategyFactory())
-			.addNode("agent_1", node_async(state -> Map.of("messages", "message1")))
-			.addNode("agent_2", node_async(state -> Map.of("messages", new String[] { "message2" })))
-			.addNode("agent_3",
-					node_async(state -> Map.of("messages", List.of("message3", RemoveByHash.of("message2")))))
-			.addNode("agent_4", node_async(state -> {
-				System.out.println("agent_3");
-				List messages = Optional.of(state.value("messages").get())
-					.filter(List.class::isInstance)
-					.map(List.class::cast)
-					.orElse(new ArrayList<>());
+				.addNode("agent_1", node_async(state -> Map.of("messages", "message1")))
+				.addNode("agent_2", node_async(state -> Map.of("messages", new String[] {"message2"})))
+				.addNode("agent_3",
+						node_async(state -> Map.of("messages", List.of("message3", RemoveByHash.of("message2")))))
+				.addNode("agent_4", node_async(state -> {
+					System.out.println("agent_3");
+					List messages = Optional.of(state.value("messages").get())
+							.filter(List.class::isInstance)
+							.map(List.class::cast)
+							.orElse(new ArrayList<>());
 
-				int steps = messages.size() + 1;
-				return Map.of("messages", List.of("message4"), "steps", steps);
-			}))
-			.addEdge("agent_1", "agent_2")
-			.addEdge("agent_2", "agent_3")
-			.addEdge("agent_3", "agent_4")
-			.addEdge(START, "agent_1")
-			.addEdge("agent_4", END);
+					int steps = messages.size() + 1;
+					return Map.of("messages", List.of("message4"), "steps", steps);
+				}))
+				.addEdge("agent_1", "agent_2")
+				.addEdge("agent_2", "agent_3")
+				.addEdge("agent_3", "agent_4")
+				.addEdge(START, "agent_1")
+				.addEdge("agent_4", END);
 
 		CompiledGraph app = workflow.compile();
 
@@ -320,18 +337,6 @@ public class StateGraphTest {
 	}
 
 	/**
-	 * Creates an OverAllState instance with predefined strategies for testing purposes.
-	 */
-	private static KeyStrategyFactory createKeyStrategyFactory() {
-		return () -> {
-			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-			keyStrategyMap.put("steps", (o, o2) -> o2);
-			keyStrategyMap.put("messages", new AppendStrategy());
-			return keyStrategyMap;
-		};
-	}
-
-	/**
 	 * Tests subgraph functionality where one graph is embedded within another.
 	 */
 	@Test
@@ -344,12 +349,12 @@ public class StateGraphTest {
 		var childStep3 = node_async((OverAllState state) -> Map.of("messages", "child:step3"));
 
 		var workflowChild = new StateGraph().addNode("child:step_1", childStep1)
-			.addNode("child:step_2", childStep2)
-			.addNode("child:step_3", childStep3)
-			.addEdge(START, "child:step_1")
-			.addEdge("child:step_1", "child:step_2")
-			.addEdge("child:step_2", "child:step_3")
-			.addEdge("child:step_3", END);
+				.addNode("child:step_2", childStep2)
+				.addNode("child:step_3", childStep3)
+				.addEdge(START, "child:step_1")
+				.addEdge("child:step_1", "child:step_2")
+				.addEdge("child:step_2", "child:step_3")
+				.addEdge("child:step_3", END);
 
 		var step1 = node_async((OverAllState state) -> Map.of("messages", "step1"));
 
@@ -358,23 +363,23 @@ public class StateGraphTest {
 		var step3 = node_async((OverAllState state) -> Map.of("messages", "step3"));
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("step_1", step1)
-			.addNode("step_2", step2)
-			.addNode("step_3", step3)
-			.addNode("subgraph", workflowChild)
-			.addEdge(START, "step_1")
-			.addEdge("step_1", "step_2")
-			.addEdge("step_2", "subgraph")
-			.addEdge("subgraph", "step_3")
-			.addEdge("step_3", END)
-			.compile();
+				.addNode("step_2", step2)
+				.addNode("step_3", step3)
+				.addNode("subgraph", workflowChild)
+				.addEdge(START, "step_1")
+				.addEdge("step_1", "step_2")
+				.addEdge("step_2", "subgraph")
+				.addEdge("subgraph", "step_3")
+				.addEdge("step_3", END)
+				.compile();
 
 		// 使用实时流式处理，收集最后一个状态
 		final OverAllState[] finalState = new OverAllState[1];
 		workflowParent.fluxStream(Map.of())
-			.doOnNext(System.out::println) // 实时输出每个节点执行结果
-			.map(NodeOutput::state)
-			.doOnNext(state -> finalState[0] = state) // 保存最后的状态
-			.blockLast(); // 只等待流完成，不阻塞中间过程
+				.doOnNext(System.out::println) // 实时输出每个节点执行结果
+				.map(NodeOutput::state)
+				.doOnNext(state -> finalState[0] = state) // 保存最后的状态
+				.blockLast(); // 只等待流完成，不阻塞中间过程
 
 		assertTrue(finalState[0] != null);
 		assertIterableEquals(List.of("step1", "step2", "child:step1", "child:step2", "child:step3", "step3"),
@@ -415,20 +420,20 @@ public class StateGraphTest {
 	@Test
 	void testWithParallelBranch() throws Exception {
 		var workflow = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
-			.addNode("A1", makeNode("A1"))
-			.addNode("A2", makeNode("A2"))
-			.addNode("A3", makeNode("A3"))
-			.addNode("B", makeNode("B"))
-			.addNode("C", makeNode("C"))
-			.addEdge("A", "A1")
-			.addEdge("A", "A2")
-			.addEdge("A", "A3")
-			.addEdge("A1", "B")
-			.addEdge("A2", "B")
-			.addEdge("A3", "B")
-			.addEdge("B", "C")
-			.addEdge(START, "A")
-			.addEdge("C", END);
+				.addNode("A1", makeNode("A1"))
+				.addNode("A2", makeNode("A2"))
+				.addNode("A3", makeNode("A3"))
+				.addNode("B", makeNode("B"))
+				.addNode("C", makeNode("C"))
+				.addEdge("A", "A1")
+				.addEdge("A", "A2")
+				.addEdge("A", "A3")
+				.addEdge("A1", "B")
+				.addEdge("A2", "B")
+				.addEdge("A3", "B")
+				.addEdge("B", "C")
+				.addEdge(START, "A")
+				.addEdge("C", END);
 
 		var app = workflow.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
 			@Override
@@ -444,11 +449,11 @@ public class StateGraphTest {
 
 		final OverAllState[] finalState = new OverAllState[1];
 		app.fluxStream(Map.of(),
-				RunnableConfig.builder().addParallelNodeExecutor("A", ForkJoinPool.commonPool()).build())
-			.doOnNext(output -> System.out.println(output))
-			.map(NodeOutput::state)
-			.doOnNext(state -> finalState[0] = state)
-			.blockLast();
+						RunnableConfig.builder().addParallelNodeExecutor("A", ForkJoinPool.commonPool()).build())
+				.doOnNext(output -> System.out.println(output))
+				.map(NodeOutput::state)
+				.doOnNext(state -> finalState[0] = state)
+				.blockLast();
 
 		assertTrue(finalState[0] != null);
 		List<String> messages = (List<String>) finalState[0].value("messages").get();
@@ -468,30 +473,30 @@ public class StateGraphTest {
 		assertEquals(6, messages.size(), "Should have 6 messages: A, A1, A2, A3, B, C");
 
 		workflow = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
-			.addNode("A1", makeNode("A1"))
-			.addNode("A2", makeNode("A2"))
-			.addNode("A3", makeNode("A3"))
-			.addNode("B", makeNode("B"))
-			.addNode("C", makeNode("C"))
-			.addEdge("A1", "B")
-			.addEdge("A2", "B")
-			.addEdge("A3", "B")
-			.addEdge("B", "C")
-			.addEdge(START, "A1")
-			.addEdge(START, "A2")
-			.addEdge(START, "A3")
-			.addEdge("C", END);
+				.addNode("A1", makeNode("A1"))
+				.addNode("A2", makeNode("A2"))
+				.addNode("A3", makeNode("A3"))
+				.addNode("B", makeNode("B"))
+				.addNode("C", makeNode("C"))
+				.addEdge("A1", "B")
+				.addEdge("A2", "B")
+				.addEdge("A3", "B")
+				.addEdge("B", "C")
+				.addEdge(START, "A1")
+				.addEdge(START, "A2")
+				.addEdge(START, "A3")
+				.addEdge("C", END);
 
 		app = workflow.compile();
 
 		// 第二个测试也使用实时流式处理
 		final OverAllState[] finalState2 = new OverAllState[1];
 		app.fluxStream(Map.of(),
-				RunnableConfig.builder().addParallelNodeExecutor(START, Executors.newSingleThreadExecutor()).build())
-			.doOnNext(output -> System.out.println(output)) // 实时输出每个节点执行结果
-			.map(NodeOutput::state)
-			.doOnNext(state -> finalState2[0] = state) // 保存最后的状态
-			.blockLast(); // 只等待流完成，不阻塞中间过程
+						RunnableConfig.builder().addParallelNodeExecutor(START, Executors.newSingleThreadExecutor()).build())
+				.doOnNext(output -> System.out.println(output)) // 实时输出每个节点执行结果
+				.map(NodeOutput::state)
+				.doOnNext(state -> finalState2[0] = state) // 保存最后的状态
+				.blockLast(); // 只等待流完成，不阻塞中间过程
 
 		assertTrue(finalState2[0] != null);
 		List<String> messages2 = (List<String>) finalState2[0].value("messages").get();
@@ -516,15 +521,15 @@ public class StateGraphTest {
 	@Test
 	void testWithParallelBranchWithStream() throws GraphStateException {
 		var workflow = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
-			.addNode("A1", makeNodeForStream("A1"))
-			.addNode("A2", makeNodeForStream("A2"))
-			.addNode("C", makeNode("C"))
-			.addEdge("A", "A1")
-			.addEdge("A", "A2")
-			.addEdge("A1", "C")
-			.addEdge("A2", "C")
-			.addEdge(START, "A")
-			.addEdge("C", END);
+				.addNode("A1", makeNodeForStream("A1"))
+				.addNode("A2", makeNodeForStream("A2"))
+				.addNode("C", makeNode("C"))
+				.addEdge("A", "A1")
+				.addEdge("A", "A2")
+				.addEdge("A1", "C")
+				.addEdge("A2", "C")
+				.addEdge(START, "A")
+				.addEdge("C", END);
 		var app = workflow.compile();
 
 		app.fluxStream(Map.of()).subscribe(output -> {
@@ -539,21 +544,21 @@ public class StateGraphTest {
 				config) -> completedFuture(new Command("C2", Map.of("messages", "B", "next_node", "C2")));
 
 		var graph = new StateGraph().addNode("A", makeNode("A"))
-			.addNode("B", commandAction, EdgeMappings.builder().toEND().to("C1").to("C2").build())
-			.addNode("C1", makeNode("C1"))
-			.addNode("C2", makeNode("C2"))
-			.addEdge(START, "A")
-			.addEdge("A", "B")
-			.addEdge("C1", END)
-			.addEdge("C2", END)
-			.compile();
+				.addNode("B", commandAction, EdgeMappings.builder().toEND().to("C1").to("C2").build())
+				.addNode("C1", makeNode("C1"))
+				.addNode("C2", makeNode("C2"))
+				.addEdge(START, "A")
+				.addEdge("A", "B")
+				.addEdge("C1", END)
+				.addEdge("C2", END)
+				.compile();
 
 		// 使用实时流式处理，收集所有步骤用于测试验证
 		final List<NodeOutput> allSteps = new ArrayList<>();
 		graph.fluxStream(Map.of())
-			.doOnNext(System.out::println) // 实时输出每个节点执行结果
-			.doOnNext(allSteps::add) // 收集所有步骤
-			.blockLast(); // 只等待流完成，不阻塞中间过程
+				.doOnNext(System.out::println) // 实时输出每个节点执行结果
+				.doOnNext(allSteps::add) // 收集所有步骤
+				.blockLast(); // 只等待流完成，不阻塞中间过程
 
 		assertEquals(5, allSteps.size());
 		assertEquals("B", allSteps.get(2).node());
@@ -564,20 +569,20 @@ public class StateGraphTest {
 	@Test
 	public void testRunnableInterrupt() throws Exception {
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("prop1", (o, o2) -> o2)
-			.build();
+				.build();
 
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-			.addEdge("agent_1", "agent_2")
-			.addNode("agent_1", AsyncNodeActionWithConfig.node_async((state, config) -> {
-				log.info("agent_1\n{}", state);
-				config.markNodeAsInterrupted("agent_1");
-				return Map.of("prop1", "test");
-			}))
-			.addNode("agent_2", AsyncNodeActionWithConfig.node_async((state, config) -> {
-				log.info("agent_2\n{}", state);
-				return Map.of("prop1", "test_2");
-			}))
-			.addEdge("agent_2", END);
+				.addEdge("agent_1", "agent_2")
+				.addNode("agent_1", AsyncNodeActionWithConfig.node_async((state, config) -> {
+					log.info("agent_1\n{}", state);
+					config.markNodeAsInterrupted("agent_1");
+					return Map.of("prop1", "test");
+				}))
+				.addNode("agent_2", AsyncNodeActionWithConfig.node_async((state, config) -> {
+					log.info("agent_2\n{}", state);
+					return Map.of("prop1", "test_2");
+				}))
+				.addEdge("agent_2", END);
 
 		CompiledGraph app = workflow.compile();
 		RunnableConfig runnableConfig = new RunnableConfig.Builder().threadId("thread1").build();
@@ -588,10 +593,10 @@ public class StateGraphTest {
 		// resume - 使用实时流式处理
 		final OverAllState[] resumeState = new OverAllState[1];
 		app.fluxStream(null, runnableConfig)
-			.doOnNext(output -> System.out.println("Resume: " + output)) // 实时输出恢复过程
-			.map(NodeOutput::state)
-			.doOnNext(state -> resumeState[0] = state) // 保存最后的状态
-			.blockLast(); // 只等待流完成，不阻塞中间过程
+				.doOnNext(output -> System.out.println("Resume: " + output)) // 实时输出恢复过程
+				.map(NodeOutput::state)
+				.doOnNext(state -> resumeState[0] = state) // 保存最后的状态
+				.blockLast(); // 只等待流完成，不阻塞中间过程
 
 		assertTrue(resumeState[0] != null);
 		System.out.println("final result = " + Optional.of(resumeState[0]));
@@ -604,59 +609,59 @@ public class StateGraphTest {
 	@Test
 	void testWithParallelBranchWithErrors() throws Exception {
 		var onlyOneTarget = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
-			.addNode("A1", makeNode("A1"))
-			.addNode("A2", makeNode("A2"))
-			.addNode("A3", makeNode("A3"))
-			.addNode("B", makeNode("B"))
-			.addNode("C", makeNode("C"))
-			.addEdge("A", "A1")
-			.addEdge("A", "A2")
-			.addEdge("A", "A3")
-			.addEdge("A1", "B")
-			.addEdge("A2", "B")
-			.addEdge("A3", "C")
-			.addEdge("B", "C")
-			.addEdge(START, "A")
-			.addEdge("C", END);
+				.addNode("A1", makeNode("A1"))
+				.addNode("A2", makeNode("A2"))
+				.addNode("A3", makeNode("A3"))
+				.addNode("B", makeNode("B"))
+				.addNode("C", makeNode("C"))
+				.addEdge("A", "A1")
+				.addEdge("A", "A2")
+				.addEdge("A", "A3")
+				.addEdge("A1", "B")
+				.addEdge("A2", "B")
+				.addEdge("A3", "C")
+				.addEdge("B", "C")
+				.addEdge(START, "A")
+				.addEdge("C", END);
 
 		var exception = assertThrows(GraphStateException.class, onlyOneTarget::compile);
 		assertEquals("parallel node [A] must have only one target, but [B, C] have been found!",
 				exception.getMessage());
 
 		var noConditionalEdge = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
-			.addNode("A1", makeNode("A1"))
-			.addNode("A2", makeNode("A2"))
-			.addNode("A3", makeNode("A3"))
-			.addNode("B", makeNode("B"))
-			.addNode("C", makeNode("C"))
-			.addEdge("A", "A1")
-			.addEdge("A", "A3")
-			.addEdge("A1", "B")
-			.addEdge("A2", "B")
-			.addEdge("A3", "B")
-			.addEdge("B", "C")
-			.addEdge(START, "A")
-			.addEdge("C", END);
+				.addNode("A1", makeNode("A1"))
+				.addNode("A2", makeNode("A2"))
+				.addNode("A3", makeNode("A3"))
+				.addNode("B", makeNode("B"))
+				.addNode("C", makeNode("C"))
+				.addEdge("A", "A1")
+				.addEdge("A", "A3")
+				.addEdge("A1", "B")
+				.addEdge("A2", "B")
+				.addEdge("A3", "B")
+				.addEdge("B", "C")
+				.addEdge(START, "A")
+				.addEdge("C", END);
 
 		exception = assertThrows(GraphStateException.class,
 				() -> noConditionalEdge.addConditionalEdges("A", edge_async(state -> "next"), Map.of("next", "A2")));
 		assertEquals("conditional edge from 'A' already exist!", exception.getMessage());
 
 		var noConditionalEdgeOnBranch = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
-			.addNode("A1", makeNode("A1"))
-			.addNode("A2", makeNode("A2"))
-			.addNode("A3", makeNode("A3"))
-			.addNode("B", makeNode("B"))
-			.addNode("C", makeNode("C"))
-			.addEdge("A", "A1")
-			.addEdge("A", "A2")
-			.addEdge("A", "A3")
-			.addEdge("A1", "B")
-			.addEdge("A2", "B")
-			.addConditionalEdges("A3", edge_async(state -> "next"), Map.of("next", "B"))
-			.addEdge("B", "C")
-			.addEdge(START, "A")
-			.addEdge("C", END);
+				.addNode("A1", makeNode("A1"))
+				.addNode("A2", makeNode("A2"))
+				.addNode("A3", makeNode("A3"))
+				.addNode("B", makeNode("B"))
+				.addNode("C", makeNode("C"))
+				.addEdge("A", "A1")
+				.addEdge("A", "A2")
+				.addEdge("A", "A3")
+				.addEdge("A1", "B")
+				.addEdge("A2", "B")
+				.addConditionalEdges("A3", edge_async(state -> "next"), Map.of("next", "B"))
+				.addEdge("B", "C")
+				.addEdge(START, "A")
+				.addEdge("C", END);
 
 		exception = assertThrows(GraphStateException.class, noConditionalEdgeOnBranch::compile);
 		assertEquals(
@@ -664,21 +669,21 @@ public class StateGraphTest {
 				exception.getMessage());
 
 		var noDuplicateTarget = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
-			.addNode("A1", makeNode("A1"))
-			.addNode("A2", makeNode("A2"))
-			.addNode("A3", makeNode("A3"))
-			.addNode("B", makeNode("B"))
-			.addNode("C", makeNode("C"))
-			.addEdge("A", "A1")
-			.addEdge("A", "A2")
-			.addEdge("A", "A3")
-			.addEdge("A", "A2")
-			.addEdge("A1", "B")
-			.addEdge("A2", "B")
-			.addEdge("A3", "B")
-			.addEdge("B", "C")
-			.addEdge(START, "A")
-			.addEdge("C", END);
+				.addNode("A1", makeNode("A1"))
+				.addNode("A2", makeNode("A2"))
+				.addNode("A3", makeNode("A3"))
+				.addNode("B", makeNode("B"))
+				.addNode("C", makeNode("C"))
+				.addEdge("A", "A1")
+				.addEdge("A", "A2")
+				.addEdge("A", "A3")
+				.addEdge("A", "A2")
+				.addEdge("A1", "B")
+				.addEdge("A2", "B")
+				.addEdge("A3", "B")
+				.addEdge("B", "C")
+				.addEdge(START, "A")
+				.addEdge("C", END);
 
 		exception = assertThrows(GraphStateException.class, noDuplicateTarget::compile);
 		assertEquals("edge [A] has duplicate targets [A2]!", exception.getMessage());
@@ -697,11 +702,11 @@ public class StateGraphTest {
 		};
 		PlainTextStateSerializer plainTextStateSerializer = new StateGraph.JacksonSerializer();
 		StateGraph workflow = new StateGraph(keyStrategyFactory, plainTextStateSerializer).addEdge(START, "agent_1")
-			.addNode("agent_1", node_async(state -> {
-				log.info("agent_1\n{}", state);
-				return Map.of("prop1", "test");
-			}))
-			.addEdge("agent_1", END);
+				.addNode("agent_1", node_async(state -> {
+					log.info("agent_1\n{}", state);
+					return Map.of("prop1", "test");
+				}))
+				.addEdge("agent_1", END);
 
 		CompiledGraph app = workflow.compile();
 
@@ -719,11 +724,11 @@ public class StateGraphTest {
 	@Test
 	public void testCreateStateGraph() throws Exception {
 		StateGraph workflow = new StateGraph(createKeyStrategyFactory()).addEdge(START, "agent_1")
-			.addNode("agent_1", node_async(state -> {
-				log.info("agent_1\n{}", state);
-				return Map.of("prop1", "test");
-			}))
-			.addEdge("agent_1", END);
+				.addNode("agent_1", node_async(state -> {
+					log.info("agent_1\n{}", state);
+					return Map.of("prop1", "test");
+				}))
+				.addEdge("agent_1", END);
 
 		CompiledGraph app = workflow.compile();
 
@@ -775,27 +780,27 @@ public class StateGraphTest {
 		})).addEdge("agent_1", END);
 
 		CompiledGraph app = workflow
-			.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
-				@Override
-				public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
-					log.info("listener1 ,node = {},state = {}", nodeId, state);
-				}
+				.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+					@Override
+					public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
+						log.info("listener1 ,node = {},state = {}", nodeId, state);
+					}
 
-				@Override
-				public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
-					log.info("listener1 ,node = {},state = {}", nodeId, state);
-				}
-			}).withLifecycleListener(new GraphLifecycleListener() {
-				@Override
-				public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
-					log.info("listener2 ,node = {},state = {}", nodeId, state);
-				}
+					@Override
+					public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
+						log.info("listener1 ,node = {},state = {}", nodeId, state);
+					}
+				}).withLifecycleListener(new GraphLifecycleListener() {
+					@Override
+					public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
+						log.info("listener2 ,node = {},state = {}", nodeId, state);
+					}
 
-				@Override
-				public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
-					log.info("listener2 ,node = {},state = {}", nodeId, state);
-				}
-			}).build());
+					@Override
+					public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
+						log.info("listener2 ,node = {},state = {}", nodeId, state);
+					}
+				}).build());
 
 		app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 	}
@@ -818,17 +823,17 @@ public class StateGraphTest {
 		})).addEdge("agent_1", END);
 
 		CompiledGraph app = workflow
-			.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
-				@Override
-				public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
-					log.info("node = {},state = {}", nodeId, state);
-				}
+				.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+					@Override
+					public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
+						log.info("node = {},state = {}", nodeId, state);
+					}
 
-				@Override
-				public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
-					log.info("node = {},state = {}", nodeId, state);
-				}
-			}).build());
+					@Override
+					public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
+						log.info("node = {},state = {}", nodeId, state);
+					}
+				}).build());
 
 		app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 	}
@@ -852,22 +857,22 @@ public class StateGraphTest {
 		})).addEdge("agent_1", END);
 
 		CompiledGraph app = workflow
-			.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
-				@Override
-				public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
-					log.info("node = {},state = {}", nodeId, state);
-				}
+				.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+					@Override
+					public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
+						log.info("node = {},state = {}", nodeId, state);
+					}
 
-				@Override
-				public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
-					log.info("node = {},state = {}", nodeId, state);
-				}
+					@Override
+					public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
+						log.info("node = {},state = {}", nodeId, state);
+					}
 
-				@Override
-				public void onError(String nodeId, Map<String, Object> state, Throwable ex, RunnableConfig config) {
-					log.error("node = {},state = {}", nodeId, state, ex);
-				}
-			}).build());
+					@Override
+					public void onError(String nodeId, Map<String, Object> state, Throwable ex, RunnableConfig config) {
+						log.error("node = {},state = {}", nodeId, state, ex);
+					}
+				}).build());
 
 		assertThrows(ArithmeticException.class,
 				(NamedExecutable) () -> app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1")));
@@ -878,28 +883,28 @@ public class StateGraphTest {
 		StateGraph workflow = new StateGraph(
 				() -> Map.of("prop1", new ReplaceStrategy(), "input", new ReplaceStrategy()))
 
-			.addNode("agent_1", node_async(state -> {
-				log.info("agent_1\n{}", state);
+				.addNode("agent_1", node_async(state -> {
+					log.info("agent_1\n{}", state);
 
-				return Map.of("prop1", "agent_1");
-			}))
-			.addNode("agent_2", node_async(state -> {
-				log.info("agent_2\n{}", state);
+					return Map.of("prop1", "agent_1");
+				}))
+				.addNode("agent_2", node_async(state -> {
+					log.info("agent_2\n{}", state);
 
-				return Map.of("prop1", "agent_2");
-			}))
-			.addNode("agent_3", node_async(state -> {
-				log.info("agent_3\n{}", state);
-				assertEquals("command content", state.value("prop1", String.class).get());
-				return Map.of("prop1", "agent_3");
-			}))
-			.addConditionalEdges("agent_2",
-					AsyncCommandAction
-						.node_async((state, config) -> new Command("agent_2", Map.of("prop1", "command content"))),
-					Map.of("agent_2", "agent_3"))
-			.addEdge(START, "agent_1")
-			.addEdge("agent_3", END)
-			.addEdge("agent_1", "agent_2");
+					return Map.of("prop1", "agent_2");
+				}))
+				.addNode("agent_3", node_async(state -> {
+					log.info("agent_3\n{}", state);
+					assertEquals("command content", state.value("prop1", String.class).get());
+					return Map.of("prop1", "agent_3");
+				}))
+				.addConditionalEdges("agent_2",
+						AsyncCommandAction
+								.node_async((state, config) -> new Command("agent_2", Map.of("prop1", "command content"))),
+						Map.of("agent_2", "agent_3"))
+				.addEdge(START, "agent_1")
+				.addEdge("agent_3", END)
+				.addEdge("agent_1", "agent_2");
 		CompiledGraph compile = workflow.compile();
 		compile.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 	}
@@ -938,28 +943,28 @@ public class StateGraphTest {
 	@Test
 	public void testParallelInterrupt() throws GraphStateException {
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("prop1", (o, o2) -> o2)
-			.build();
+				.build();
 
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-			.addEdge(START, "agent_2")
-			.addEdge("agent_2", "agent_3")
-			.addEdge("agent_1", "agent_3")
-			.addNode("agent_1", AsyncNodeActionWithConfig.node_async((state, config) -> {
-				log.info("agent_1\n{}", state);
-				return Map.of("prop1", "test");
-			}))
-			.addNode("agent_2", AsyncNodeActionWithConfig.node_async((state, config) -> {
-				log.info("agent_2\n{}", state);
-				return Map.of("prop1", "test_2");
-			}))
-			.addNode("agent_3", AsyncNodeActionWithConfig.node_async((state, config) -> {
-				log.info("agent_3\n{}", state);
-				return Map.of("prop1", "test_3");
-			}))
-			.addEdge("agent_3", END);
+				.addEdge(START, "agent_2")
+				.addEdge("agent_2", "agent_3")
+				.addEdge("agent_1", "agent_3")
+				.addNode("agent_1", AsyncNodeActionWithConfig.node_async((state, config) -> {
+					log.info("agent_1\n{}", state);
+					return Map.of("prop1", "test");
+				}))
+				.addNode("agent_2", AsyncNodeActionWithConfig.node_async((state, config) -> {
+					log.info("agent_2\n{}", state);
+					return Map.of("prop1", "test_2");
+				}))
+				.addNode("agent_3", AsyncNodeActionWithConfig.node_async((state, config) -> {
+					log.info("agent_3\n{}", state);
+					return Map.of("prop1", "test_3");
+				}))
+				.addEdge("agent_3", END);
 
 		CompiledGraph app = workflow
-			.compile(CompileConfig.builder().interruptBefore("agent_2").interruptBeforeEdge(true).build());
+				.compile(CompileConfig.builder().interruptBefore("agent_2").interruptBeforeEdge(true).build());
 		RunnableConfig runnableConfig = new RunnableConfig.Builder().threadId("thread1").build();
 		Optional<OverAllState> result = app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"), runnableConfig);
 		System.out.println("result = " + result);

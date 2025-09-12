@@ -15,17 +15,17 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import java.util.Map;
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.Optional;
-
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class KeyStrategyFactoryBuilderTest {
 
@@ -34,14 +34,14 @@ class KeyStrategyFactoryBuilderTest {
 	@Test
 	void buildTest() throws Exception {
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().defaultStrategy(KeyStrategy.REPLACE)
-			.addStrategy("prop1")
-			.build();
+				.addStrategy("prop1")
+				.build();
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-			.addNode("agent_1", node_async(state -> {
-				log.info("agent_1\n{}", state);
-				return Map.of("prop1", "test");
-			}))
-			.addEdge("agent_1", END);
+				.addNode("agent_1", node_async(state -> {
+					log.info("agent_1\n{}", state);
+					return Map.of("prop1", "test");
+				}))
+				.addEdge("agent_1", END);
 
 		CompiledGraph app = workflow.compile();
 

@@ -20,12 +20,13 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver;
 import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
 
-import org.junit.jupiter.api.Test;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@link FileSystemSaver#deleteFile(RunnableConfig)}.

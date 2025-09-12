@@ -22,19 +22,23 @@ import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankOptions;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.model.RerankModel;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class KnowledgeRetrievalNodeTest {
@@ -42,12 +46,12 @@ public class KnowledgeRetrievalNodeTest {
 	private static final Logger logger = LoggerFactory.getLogger(KnowledgeRetrievalNode.class);
 
 	List<Document> documents = List.of(new Document(
-			"产品说明书:产品名称：智能机器人\n" + "产品描述：智能机器人是一个智能设备，能够自动完成各种任务。\n" + "功能：\n" + "1. 自动导航：机器人能够自动导航到指定位置。\n"
-					+ "2. 自动抓取：机器人能够自动抓取物品。\n" + "3. 自动放置：机器人能够自动放置物品。\n",
-			Map.of("type", "instruction", // 文档类型
-					"year", "2023", // 年份
-					"month", "06" // 月份
-			)),
+					"产品说明书:产品名称：智能机器人\n" + "产品描述：智能机器人是一个智能设备，能够自动完成各种任务。\n" + "功能：\n" + "1. 自动导航：机器人能够自动导航到指定位置。\n"
+							+ "2. 自动抓取：机器人能够自动抓取物品。\n" + "3. 自动放置：机器人能够自动放置物品。\n",
+					Map.of("type", "instruction", // 文档类型
+							"year", "2023", // 年份
+							"month", "06" // 月份
+					)),
 			new Document(
 					"产品说明书:产品名称：智能家居控制器\n" + "产品描述：智能家居控制器是一款集成化设备，可远程控制多种智能家电。\n" + "功能：\n"
 							+ "1. 远程控制：通过手机APP远程控制家电开关和调节。\n" + "2. 定时任务：设置家电定时开启或关闭。\n" + "3. 场景模式：支持多种场景模式一键切换。\n"
@@ -91,14 +95,14 @@ public class KnowledgeRetrievalNodeTest {
 
 	KnowledgeRetrievalNode.Builder initNodeBuilder() {
 		return KnowledgeRetrievalNode.builder()
-			.userPromptKey("user_prompt")
-			.topKKey("top_k")
-			.similarityThresholdKey("similarity_threshold")
-			.filterExpressionKey("filter_expression")
-			.enableRankerKey("enable_ranker")
-			.rerankModelKey("rerank_model")
-			.rerankOptionsKey("rerank_options")
-			.vectorStoreKey("vector_store");
+				.userPromptKey("user_prompt")
+				.topKKey("top_k")
+				.similarityThresholdKey("similarity_threshold")
+				.filterExpressionKey("filter_expression")
+				.enableRankerKey("enable_ranker")
+				.rerankModelKey("rerank_model")
+				.rerankOptionsKey("rerank_options")
+				.vectorStoreKey("vector_store");
 	}
 
 	@Test
