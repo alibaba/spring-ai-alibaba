@@ -60,7 +60,7 @@ public class TemplateUtil {
 		return systemMessage;
 	}
 
-	public static Message getOptQuryMessage(OverAllState state) throws IOException {
+	public static Message getOptQueryMessage(OverAllState state) throws IOException {
 		List<String> queries = StateUtil.getOptimizeQueries(state);
 		assert queries != null && !queries.isEmpty();
 		String originalQuery = StateUtil.getQuery(state);

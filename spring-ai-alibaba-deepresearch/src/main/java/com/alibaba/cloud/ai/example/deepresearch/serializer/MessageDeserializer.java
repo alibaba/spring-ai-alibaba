@@ -69,7 +69,7 @@ public class MessageDeserializer extends JsonDeserializer<Message> {
 	}
 
 	@Override
-	public Message deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+	public Message deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
 		JsonNode node = p.getCodec().readTree(p);
 
 		logger.debug("Deserializing message: {}", node);
