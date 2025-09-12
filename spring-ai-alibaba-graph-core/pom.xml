@@ -258,6 +258,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-openai</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
     </dependencies>
 
     <reporting>
