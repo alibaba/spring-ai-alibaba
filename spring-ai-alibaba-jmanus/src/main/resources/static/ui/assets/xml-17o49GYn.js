@@ -1,4 +1,4 @@
-import{m as r}from"./index-D4VgOZRn.js";import"./index-BFaTisPL.js";import"./_plugin-vue_export-helper-Cv-04SGt.js";import"./useMessage-Cjhf-Z2z.js";import"./index-BsIQBGWd.js";/*!-----------------------------------------------------------------------------
+import{m as r}from"./index-BNnPEy9-.js";import"./index-BVaHmPR6.js";import"./_plugin-vue_export-helper-C8HcJMy5.js";import"./useMessage-DchMXc7f.js";import"./LanguageSwitcher-DF5DimfZ.js";/*!-----------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Version: 0.45.0(5e5af013f8d295555a7210df0d5f2cea0bf5dd56)
  * Released under the MIT license
