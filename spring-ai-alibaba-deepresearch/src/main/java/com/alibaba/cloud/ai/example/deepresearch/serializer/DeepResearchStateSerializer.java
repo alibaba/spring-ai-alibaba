@@ -92,7 +92,8 @@ public class DeepResearchStateSerializer extends PlainTextStateSerializer {
 		byte[] jsonBytes = new byte[length];
 		in.readFully(jsonBytes);
 		String json = new String(jsonBytes, StandardCharsets.UTF_8);
-		return objectMapper.readValue(json, new TypeReference<Map<String, Object>>(){});
+		return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
+		});
 	}
 
 }
