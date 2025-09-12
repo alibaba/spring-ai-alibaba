@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "build:css": "tailwindcss -i ./tailwind.css -o ./dist/index.css --minify",
-    "build:copy": "cp ./tailwind.css ./dist/tailwind.css",
+  "build:copy": "copyfiles ./tailwind.css ./dist/tailwind.css",
     "build:replace": "node -e \"const fs=require('fs'); const content=fs.readFileSync('./dist/index.js','utf8'); fs.writeFileSync('./dist/index.js', content.replace('../tailwind.css', './index.css'));\"",
     "build": "father build && npm run build:css && npm run build:copy && npm run build:replace",
     "build:watch": "father dev",

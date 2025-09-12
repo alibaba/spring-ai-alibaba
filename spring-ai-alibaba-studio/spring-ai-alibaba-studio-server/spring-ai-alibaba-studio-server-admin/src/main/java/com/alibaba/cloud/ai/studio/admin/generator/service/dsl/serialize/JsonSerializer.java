@@ -19,8 +19,8 @@ import java.util.Map;
 
 import com.alibaba.cloud.ai.studio.admin.generator.exception.SerializationException;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.Serializer;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -38,8 +38,13 @@ public class JsonSerializer implements Serializer {
 
 	@Override
 	public Map<String, Object> load(String s) {
-		return objectMapper.convertValue(s, new TypeReference<>() {
-		});
+		try {
+			Map<?, ?> value = objectMapper.readValue(s, Map.class);
+			return MapReadUtil.safeCastToMapWithStringKey(value);
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override

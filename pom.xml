@@ -51,6 +51,7 @@
         <!-- Spring AI Alibaba Modules -->
         <module>spring-ai-alibaba-bom</module>
         <module>spring-ai-alibaba-mcp</module>
+        <module>spring-ai-alibaba-a2a</module>
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-prompt</module>
         <module>spring-ai-alibaba-graph-core</module>
@@ -153,6 +154,7 @@
         <module>community/memories/spring-ai-alibaba-starter-memory-mongodb</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-tablestore</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-memcached</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-mem0</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
@@ -174,6 +176,9 @@
         <!-- Spring AI Alibaba Graph Observation -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-graph-observation</module>
 
+        <!-- Sprint AI Alibaba A2A Server -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-server</module>
+
         <!-- Spring AI Alibaba Spring Boot Starters -->
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
@@ -184,6 +189,8 @@
 
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>
+
     </modules>
 
     <scm>
@@ -213,8 +220,8 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Spring version -->
-        <spring-ai.version>1.0.0</spring-ai.version>
-        <spring-boot.version>3.4.5</spring-boot.version>
+        <spring-ai.version>1.0.1</spring-ai.version>
+        <spring-boot.version>3.4.8</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
         <!-- DashScope SDK Version -->
@@ -241,7 +248,7 @@
         <commons-exec.version>1.3</commons-exec.version>
         <commons-collections4.version>4.4</commons-collections4.version>
 
-        <docker-java>3.3.3</docker-java>
+        <docker-java.version>3.5.3</docker-java.version>
 
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
 
@@ -338,7 +345,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
+            <dependency>
+                <groupId>com.github.docker-java</groupId>
+                <artifactId>docker-java-bom</artifactId>
+                <version>${docker-java.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

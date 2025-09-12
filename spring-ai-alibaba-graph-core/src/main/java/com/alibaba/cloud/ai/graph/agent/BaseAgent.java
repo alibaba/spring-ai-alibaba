@@ -18,8 +18,10 @@ package com.alibaba.cloud.ai.graph.agent;
 import java.util.Map;
 import java.util.Optional;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
@@ -117,6 +119,9 @@ public abstract class BaseAgent {
 	 * @return a ScheduledAgentTask instance for managing the scheduled task
 	 */
 	public abstract ScheduledAgentTask schedule(ScheduleConfig scheduleConfig)
+			throws GraphStateException, GraphRunnerException;
+
+	public abstract AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
 			throws GraphStateException, GraphRunnerException;
 
 }

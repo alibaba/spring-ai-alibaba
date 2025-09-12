@@ -28,7 +28,6 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeCondition;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
-import com.alibaba.cloud.ai.graph.internal.node.CommandNode;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
 import com.alibaba.cloud.ai.graph.internal.node.SubStateGraphNode;
@@ -400,27 +399,16 @@ public class StateGraph {
 	 * @throws GraphStateException if there are errors related to the graph state
 	 */
 	void validateGraph() throws GraphStateException {
+		for (var node : nodes.elements) {
+			node.validate();
+		}
+
 		var edgeStart = edges.edgeBySourceId(START).orElseThrow(Errors.missingEntryPoint::exception);
 
 		edgeStart.validate(nodes);
 
-		validateNode(nodes);
-
 		for (Edge edge : edges.elements) {
 			edge.validate(nodes);
-		}
-	}
-
-	private void validateNode(Nodes nodes) throws GraphStateException {
-		List<CommandNode> commandNodeList = nodes.elements.stream().filter(node -> {
-			return node instanceof CommandNode commandNode;
-		}).map(node -> (CommandNode) node).toList();
-		for (CommandNode commandNode : commandNodeList) {
-			for (String key : commandNode.getMappings().keySet()) {
-				if (!nodes.anyMatchById(key)) {
-					throw Errors.missingNodeInEdgeMapping.exception(commandNode.id(), key);
-				}
-			}
 		}
 	}
 

@@ -57,7 +57,8 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 	private void configureObjectMapper(ObjectMapper mapper) {
 		mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
-		// Create a secure polymorphic type validator with blacklist for dangerous classes
+		// Create a secure polymorphic type validator with blacklist for dangerous
+		// classes
 		PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
 			// Allow most types by default, but deny dangerous ones
 			.allowIfBaseType(Object.class)
@@ -106,6 +107,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		// Register custom modules first (higher priority)
 		registerSpringAIMessageModule(mapper);
 		registerCollectionModule(mapper);
+		registerDocumentModule(mapper);
 		registerFallbackModule(mapper);
 
 		// Set custom deserialization problem handler as final fallback
@@ -124,9 +126,12 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			Class<?> userMessageClass = Class.forName("org.springframework.ai.chat.messages.UserMessage");
 			Class<?> assistantMessageClass = Class.forName("org.springframework.ai.chat.messages.AssistantMessage");
 			Class<?> systemMessageClass = Class.forName("org.springframework.ai.chat.messages.SystemMessage");
+			Class<?> toolResponseMessageClass = Class
+				.forName("org.springframework.ai.chat.messages.ToolResponseMessage");
 
 			// Create unified deserializer for all Spring AI Message classes
 			SpringAIMessageDeserializer messageDeserializer = new SpringAIMessageDeserializer();
+			SpringAIToolResponseMessageDeserializer toolResponseDeserializer = new SpringAIToolResponseMessageDeserializer();
 
 			// Register custom deserializers for each message type
 			@SuppressWarnings("unchecked")
@@ -135,10 +140,13 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			Class<Object> assistantClass = (Class<Object>) assistantMessageClass;
 			@SuppressWarnings("unchecked")
 			Class<Object> systemClass = (Class<Object>) systemMessageClass;
+			@SuppressWarnings("unchecked")
+			Class<Object> toolResponseClass = (Class<Object>) toolResponseMessageClass;
 
 			springAIModule.addDeserializer(userClass, messageDeserializer);
 			springAIModule.addDeserializer(assistantClass, messageDeserializer);
 			springAIModule.addDeserializer(systemClass, messageDeserializer);
+			springAIModule.addDeserializer(toolResponseClass, toolResponseDeserializer);
 
 		}
 		catch (ClassNotFoundException e) {
@@ -178,6 +186,31 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		}
 
 		mapper.registerModule(collectionModule);
+	}
+
+	/**
+	 * Register custom serialization/deserialization support for Spring AI Document types
+	 */
+	private void registerDocumentModule(ObjectMapper mapper) {
+		SimpleModule documentModule = new SimpleModule("SpringAIDocumentModule");
+
+		try {
+			Class<?> documentClass = Class.forName("org.springframework.ai.document.Document");
+
+			// Create unified deserializer for Document class
+			SpringAIDocumentDeserializer documentDeserializer = new SpringAIDocumentDeserializer();
+
+			@SuppressWarnings("unchecked")
+			Class<Object> docClass = (Class<Object>) documentClass;
+
+			documentModule.addDeserializer(docClass, documentDeserializer);
+
+		}
+		catch (ClassNotFoundException e) {
+			// Spring AI Document class not available, skip registration
+		}
+
+		mapper.registerModule(documentModule);
 	}
 
 	/**
@@ -342,6 +375,176 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 				return simpleName.substring(0, simpleName.length() - 7).toUpperCase();
 			}
 			return simpleName.toUpperCase();
+		}
+
+	}
+
+	/**
+	 * Custom deserializer for Spring AI ToolResponseMessage
+	 */
+	public static class SpringAIToolResponseMessageDeserializer
+			extends com.fasterxml.jackson.databind.JsonDeserializer<Object> {
+
+		@Override
+		public Object deserialize(com.fasterxml.jackson.core.JsonParser p,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+			try {
+				com.fasterxml.jackson.databind.JsonNode node = p.getCodec().readTree(p);
+
+				// Extract tool responses - support multiple field names
+				java.util.List<Object> toolResponses = extractToolResponses(node, ctxt);
+
+				// Extract metadata - support multiple field names
+				java.util.Map<String, Object> metadata = extractMetadata(node, ctxt);
+
+				// Create ToolResponseMessage using reflection
+				return createToolResponseMessage(toolResponses, metadata);
+
+			}
+			catch (Exception e) {
+				throw new com.fasterxml.jackson.databind.JsonMappingException(p,
+						"Cannot deserialize Spring AI ToolResponseMessage", e);
+			}
+		}
+
+		/**
+		 * Extract tool responses from JsonNode
+		 */
+		private java.util.List<Object> extractToolResponses(com.fasterxml.jackson.databind.JsonNode node,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+			java.util.List<Object> toolResponses = new java.util.ArrayList<>();
+
+			// Try different field names for tool responses
+			com.fasterxml.jackson.databind.JsonNode responsesNode = node.get("toolResponses");
+			if (responsesNode == null) {
+				responsesNode = node.get("responses");
+			}
+			if (responsesNode == null) {
+				responsesNode = node.get("toolResponse");
+			}
+
+			if (responsesNode != null && responsesNode.isArray()) {
+				for (com.fasterxml.jackson.databind.JsonNode responseNode : responsesNode) {
+					// Try to deserialize as ToolResponse object
+					try {
+						Class<?> toolResponseClass = Class
+							.forName("org.springframework.ai.chat.messages.ToolResponseMessage$ToolResponse");
+						Object toolResponse = ctxt.readTreeAsValue(responseNode, toolResponseClass);
+						toolResponses.add(toolResponse);
+					}
+					catch (Exception e) {
+						// Fallback: create a simple object representation
+						if (responseNode.isObject()) {
+							java.util.Map<String, Object> responseMap = new java.util.HashMap<>();
+							responseNode.fields().forEachRemaining(entry -> {
+								responseMap.put(entry.getKey(), convertJsonNodeToValue(entry.getValue()));
+							});
+							toolResponses.add(responseMap);
+						}
+					}
+				}
+			}
+
+			return toolResponses;
+		}
+
+		/**
+		 * Extract metadata from JsonNode
+		 */
+		private java.util.Map<String, Object> extractMetadata(com.fasterxml.jackson.databind.JsonNode node,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) {
+			java.util.Map<String, Object> metadata = new java.util.HashMap<>();
+
+			// Try different field names for metadata
+			com.fasterxml.jackson.databind.JsonNode metadataNode = node.get("metadata");
+			if (metadataNode == null) {
+				metadataNode = node.get("properties");
+			}
+
+			if (metadataNode != null && metadataNode.isObject()) {
+				metadataNode.fields().forEachRemaining(entry -> {
+					metadata.put(entry.getKey(), convertJsonNodeToValue(entry.getValue()));
+				});
+			}
+
+			return metadata;
+		}
+
+		/**
+		 * Create ToolResponseMessage using reflection
+		 */
+		private Object createToolResponseMessage(java.util.List<Object> toolResponses,
+				java.util.Map<String, Object> metadata) {
+			try {
+				Class<?> toolResponseMessageClass = Class
+					.forName("org.springframework.ai.chat.messages.ToolResponseMessage");
+
+				// Try different constructors
+				try {
+					// Constructor with tool responses and metadata
+					return toolResponseMessageClass.getConstructor(java.util.List.class, java.util.Map.class)
+						.newInstance(toolResponses, metadata);
+				}
+				catch (Exception e) {
+					try {
+						// Constructor with just tool responses
+						return toolResponseMessageClass.getConstructor(java.util.List.class).newInstance(toolResponses);
+					}
+					catch (Exception e2) {
+						// Fallback: try to find any constructor that takes a list
+						for (java.lang.reflect.Constructor<?> constructor : toolResponseMessageClass
+							.getConstructors()) {
+							Class<?>[] paramTypes = constructor.getParameterTypes();
+							if (paramTypes.length == 1 && java.util.List.class.isAssignableFrom(paramTypes[0])) {
+								return constructor.newInstance(toolResponses);
+							}
+							else if (paramTypes.length == 2 && java.util.List.class.isAssignableFrom(paramTypes[0])
+									&& java.util.Map.class.isAssignableFrom(paramTypes[1])) {
+								return constructor.newInstance(toolResponses, metadata);
+							}
+						}
+						throw new RuntimeException("No suitable constructor found for ToolResponseMessage");
+					}
+				}
+			}
+			catch (Exception e) {
+				throw new RuntimeException("Failed to create ToolResponseMessage instance", e);
+			}
+		}
+
+		/**
+		 * Convert JsonNode to appropriate value
+		 */
+		private Object convertJsonNodeToValue(com.fasterxml.jackson.databind.JsonNode node) {
+			if (node == null || node.isNull()) {
+				return null;
+			}
+			else if (node.isTextual()) {
+				return node.asText();
+			}
+			else if (node.isNumber()) {
+				return node.numberValue();
+			}
+			else if (node.isBoolean()) {
+				return node.asBoolean();
+			}
+			else if (node.isArray()) {
+				java.util.List<Object> list = new java.util.ArrayList<>();
+				for (com.fasterxml.jackson.databind.JsonNode element : node) {
+					list.add(convertJsonNodeToValue(element));
+				}
+				return list;
+			}
+			else if (node.isObject()) {
+				java.util.Map<String, Object> map = new java.util.HashMap<>();
+				node.fields().forEachRemaining(entry -> {
+					map.put(entry.getKey(), convertJsonNodeToValue(entry.getValue()));
+				});
+				return map;
+			}
+			else {
+				return node.asText();
+			}
 		}
 
 	}
@@ -574,6 +777,176 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 		/**
 		 * Converts JsonNode to HashMap/ArrayList/primitive structure
+		 */
+		private Object convertToHashMapStructure(com.fasterxml.jackson.databind.JsonNode node) {
+			if (node == null || node.isNull()) {
+				return null;
+			}
+			else if (node.isObject()) {
+				java.util.Map<String, Object> map = new java.util.HashMap<>();
+				node.fields().forEachRemaining(entry -> {
+					map.put(entry.getKey(), convertToHashMapStructure(entry.getValue()));
+				});
+				return map;
+			}
+			else if (node.isArray()) {
+				java.util.List<Object> list = new java.util.ArrayList<>();
+				for (com.fasterxml.jackson.databind.JsonNode element : node) {
+					list.add(convertToHashMapStructure(element));
+				}
+				return list;
+			}
+			else if (node.isTextual()) {
+				return node.asText();
+			}
+			else if (node.isNumber()) {
+				return node.numberValue();
+			}
+			else if (node.isBoolean()) {
+				return node.asBoolean();
+			}
+			else {
+				return node.asText();
+			}
+		}
+
+	}
+
+	/**
+	 * Custom deserializer for Spring AI Document type
+	 */
+	public static class SpringAIDocumentDeserializer extends com.fasterxml.jackson.databind.JsonDeserializer<Object> {
+
+		@Override
+		public Object deserialize(com.fasterxml.jackson.core.JsonParser p,
+				com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+			try {
+				// Parse the JSON node from the input stream
+				com.fasterxml.jackson.databind.JsonNode node = p.getCodec().readTree(p);
+
+				// Extract document content and metadata from JSON
+				String content = extractContent(node);
+				java.util.Map<String, Object> metadata = extractMetadata(node);
+				String id = extractId(node);
+
+				// Load Document class using reflection to avoid hard dependency
+				Class<?> documentClass = Class.forName("org.springframework.ai.document.Document");
+
+				// Try constructor with id, content and metadata (most complete
+				// constructor)
+				try {
+					return documentClass.getConstructor(String.class, String.class, java.util.Map.class)
+						.newInstance(id, content, metadata);
+				}
+				catch (Exception e) {
+					// Fallback: try constructor with content and metadata
+					try {
+						return documentClass.getConstructor(String.class, java.util.Map.class)
+							.newInstance(content, metadata);
+					}
+					catch (Exception ex) {
+						// Final fallback: content-only constructor
+						return documentClass.getConstructor(String.class).newInstance(content != null ? content : "");
+					}
+				}
+
+			}
+			catch (Exception e) {
+				// Throw explicit exception instead of creating empty object to maintain
+				// data integrity
+				throw new com.fasterxml.jackson.databind.JsonMappingException(p,
+						"Failed to deserialize Spring AI Document: " + e.getMessage(), e);
+			}
+		}
+
+		/**
+		 * Extract document ID from JsonNode - supports multiple field names
+		 */
+		private String extractId(com.fasterxml.jackson.databind.JsonNode node) {
+			// Try different field names for document ID
+			return java.util.Optional.ofNullable(node.get("id"))
+				.map(com.fasterxml.jackson.databind.JsonNode::asText)
+				.orElseGet(() -> java.util.Optional.ofNullable(node.get("docId"))
+					.map(com.fasterxml.jackson.databind.JsonNode::asText)
+					.orElseGet(() -> java.util.Optional.ofNullable(node.get("documentId"))
+						.map(com.fasterxml.jackson.databind.JsonNode::asText)
+						.orElse(null))); // Return null if no ID found
+		}
+
+		/**
+		 * Extract content from JsonNode - supports multiple field names
+		 */
+		private String extractContent(com.fasterxml.jackson.databind.JsonNode node) {
+			// Try different field names for content, similar to
+			// SpringAIMessageDeserializer
+			return java.util.Optional.ofNullable(node.get("content")).map(contentNode -> {
+				// Handle null values properly - return empty string instead of "null"
+				if (contentNode.isNull()) {
+					return "";
+				}
+				return contentNode.asText();
+			}).orElseGet(() -> java.util.Optional.ofNullable(node.get("text")).map(textNode -> {
+				if (textNode.isNull()) {
+					return "";
+				}
+				return textNode.asText();
+			}).orElseGet(() -> java.util.Optional.ofNullable(node.get("pageContent")).map(pageContentNode -> {
+				if (pageContentNode.isNull()) {
+					return "";
+				}
+				return pageContentNode.asText();
+			}).orElseGet(() -> {
+				// If node is plain text, use it directly
+				if (node.isTextual()) {
+					return node.asText();
+				}
+				return ""; // Fallback to empty string for content
+			})));
+		}
+
+		/**
+		 * Extract metadata from JsonNode - handles nested object structure
+		 * @param node The JSON node containing metadata
+		 */
+		private java.util.Map<String, Object> extractMetadata(com.fasterxml.jackson.databind.JsonNode node) {
+			java.util.Map<String, Object> metadata = new java.util.HashMap<>();
+
+			// Extract metadata object if present
+			com.fasterxml.jackson.databind.JsonNode metadataNode = node.get("metadata");
+			if (metadataNode != null && metadataNode.isObject()) {
+				// Iterate through all metadata fields and convert to appropriate Java
+				// types
+				metadataNode.fields().forEachRemaining(entry -> {
+					com.fasterxml.jackson.databind.JsonNode value = entry.getValue();
+					if (value.isTextual()) {
+						metadata.put(entry.getKey(), value.asText());
+					}
+					else if (value.isNumber()) {
+						metadata.put(entry.getKey(), value.numberValue());
+					}
+					else if (value.isBoolean()) {
+						metadata.put(entry.getKey(), value.asBoolean());
+					}
+					else if (value.isNull()) {
+						metadata.put(entry.getKey(), null);
+					}
+					else if (value.isObject() || value.isArray()) {
+						// For complex objects, use recursive conversion to HashMap
+						// structure
+						metadata.put(entry.getKey(), convertToHashMapStructure(value));
+					}
+					else {
+						metadata.put(entry.getKey(), value.toString());
+					}
+				});
+			}
+
+			return metadata;
+		}
+
+		/**
+		 * Converts JsonNode to HashMap/ArrayList/primitive structure (same as
+		 * FallbackObjectDeserializer)
 		 */
 		private Object convertToHashMapStructure(com.fasterxml.jackson.databind.JsonNode node) {
 			if (node == null || node.isNull()) {

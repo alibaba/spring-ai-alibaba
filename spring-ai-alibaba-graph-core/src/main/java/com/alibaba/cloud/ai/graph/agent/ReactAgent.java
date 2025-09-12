@@ -21,12 +21,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import com.alibaba.cloud.ai.graph.CompileConfig;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
@@ -116,6 +112,15 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	@Override
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
+			throws GraphStateException, GraphRunnerException {
+		if (this.compiledGraph == null) {
+			this.compiledGraph = getAndCompileGraph();
+		}
+		return this.compiledGraph.stream(input);
+	}
+
+	@Override
 	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
 		CompiledGraph compiledGraph = getAndCompileGraph();
 		return compiledGraph.schedule(scheduleConfig);
@@ -162,7 +167,7 @@ public class ReactAgent extends BaseAgent {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return node_async(new SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
+		return node_async(new SubGraphStreamingNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
 	}
 
 	private StateGraph initGraph() throws GraphStateException {
@@ -473,7 +478,10 @@ public class ReactAgent extends BaseAgent {
 				chatClient = clientBuilder.build();
 			}
 
-			LlmNode.Builder llmNodeBuilder = LlmNode.builder().chatClient(chatClient).messagesKey(this.inputKey);
+			LlmNode.Builder llmNodeBuilder = LlmNode.builder()
+				.stream(true)
+				.chatClient(chatClient)
+				.messagesKey(this.inputKey);
 			if (outputKey != null && !outputKey.isEmpty()) {
 				llmNodeBuilder.outputKey(outputKey);
 			}
@@ -530,6 +538,77 @@ public class ReactAgent extends BaseAgent {
 
 			// update parent state
 			return Map.of(outputKeyToParent, reactResult);
+		}
+
+	}
+
+	public static class SubGraphStreamingNodeAdapter implements NodeAction {
+
+		private String inputKeyFromParent;
+
+		private String outputKeyToParent;
+
+		private CompiledGraph childGraph;
+
+		public SubGraphStreamingNodeAdapter(String inputKeyFromParent, String outputKeyToParent,
+				CompiledGraph childGraph) {
+			this.inputKeyFromParent = inputKeyFromParent;
+			this.outputKeyToParent = outputKeyToParent;
+			this.childGraph = childGraph;
+		}
+
+		@Override
+		public Map<String, Object> apply(OverAllState parentState) throws Exception {
+			String input = (String) parentState.value(inputKeyFromParent).orElseThrow();
+			Message message = new UserMessage(input);
+			List<Message> messages = List.of(message);
+
+			AsyncGenerator<NodeOutput> child = childGraph.stream(Map.of("messages", messages));
+
+			AsyncGenerator<NodeOutput> wrapped = new AsyncGenerator<NodeOutput>() {
+				private volatile Map<String, Object> lastStateData;
+
+				@Override
+				public Data<NodeOutput> next() {
+					Data<NodeOutput> data = child.next();
+					if (data.isDone()) {
+						String result = extractAssistantText(lastStateData);
+						return Data.done(Map.of(outputKeyToParent, result));
+					}
+					if (data.isError()) {
+						return data;
+					}
+					return Data.of(data.getData().thenApply(n -> {
+						try {
+							lastStateData = n.state().data();
+						}
+						catch (Exception ignored) {
+						}
+						return n;
+					}));
+				}
+			};
+
+			return Map.of(outputKeyToParent, wrapped);
+		}
+
+		private String extractAssistantText(Map<String, Object> stateData) {
+			if (stateData == null) {
+				return "";
+			}
+			Object msgs = stateData.get("messages");
+			if (!(msgs instanceof List)) {
+				return "";
+			}
+			List<?> list = (List<?>) msgs;
+			if (list.isEmpty()) {
+				return "";
+			}
+			Object last = list.get(list.size() - 1);
+			if (last instanceof AssistantMessage assistant) {
+				return assistant.getText();
+			}
+			return "";
 		}
 
 	}

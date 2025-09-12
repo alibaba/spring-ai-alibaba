@@ -16,6 +16,7 @@
  */
 
 import { type MessageInfo } from 'ant-design-x-vue'
+import type { UploadedFile } from './upload'
 
 /**
  * 消息状态类型定义
@@ -45,4 +46,5 @@ export interface MsgType<Message> {
   history: { [key: string]: MessageInfo<string>[] }
   htmlReport: { [key: string]: string[] }
   report: { [key: string]: any[] }
+  uploadedFiles: { [key: string]: UploadedFile[] },
 }

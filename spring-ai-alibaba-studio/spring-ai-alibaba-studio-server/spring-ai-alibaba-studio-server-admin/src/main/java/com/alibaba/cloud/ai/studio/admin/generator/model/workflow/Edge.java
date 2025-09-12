@@ -31,8 +31,6 @@ public class Edge {
 
 	private Map<String, Object> data;
 
-	private Integer zIndex = 0;
-
 	public String getId() {
 		return id;
 	}
@@ -84,15 +82,6 @@ public class Edge {
 
 	public Edge setData(Map<String, Object> data) {
 		this.data = data;
-		return this;
-	}
-
-	public Integer getzIndex() {
-		return zIndex;
-	}
-
-	public Edge setzIndex(Integer zIndex) {
-		this.zIndex = zIndex;
 		return this;
 	}
 

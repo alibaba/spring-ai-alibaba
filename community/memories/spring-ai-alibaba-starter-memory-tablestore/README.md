@@ -1,22 +1,24 @@
-# Spring AI Alibaba Tablestore Memory 模块
+# Spring AI Alibaba Tablestore Memory Module
 
-## 简介
+[中文版本](./README-zh.md)
 
-Spring AI Alibaba Tablestore Memory 模块是 Spring AI Alibaba 项目的核心组件之一，
-专门提供基于 Tablestore 的存储解决方案。该模块利用 Tablestore 的高性能宽表、全文检索和分布式特性，为 AI 应用提供快速、可靠的对话历史和上下文数据存储服务，使 AI 系统能够"记住"之前的交互，从而提供更连贯、更个性化的用户体验。
+## Introduction
 
-## 主要特性
+The Spring AI Alibaba Tablestore Memory Module is a core component of the Spring AI Alibaba project,
+specifically designed to provide a Tablestore-based storage solution. Leveraging Tablestore's high-performance wide-column storage, full-text search capabilities, and distributed architecture, this module delivers fast and reliable storage services for conversational history and contextual data in AI applications. It enables AI systems to remember previous interactions, thereby facilitating more coherent and personalized user experiences.
 
-- **Tablestore 存储**：利用 Tablestore 的高性能和分布式特性，实现对话历史和上下文数据的快速存取
-- **与 Spring 生态无缝集成**：完美兼容 Spring 框架和 Spring Boot 应用
-- **成熟业务验证**: 通义 App、夸克等业务均通过 Tablestore 实现 Memory 能力
-- **更完善的 Memory 接口设计和使用文档**: 可以查看 Github [alibabacloud-tablestore-for-agent-memory](https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory) 查看更丰富的 Memory 能力和使用文档。
+## Core Features
 
-## 快速开始
+- **Tablestore Storage**：Leverages Tablestore's high performance and distributed architecture to enable rapid storage and retrieval of conversational history and contextual data.
+- **Seamless Integration with Spring Ecosystem**: Provides full compatibility with the Spring Framework and Spring Boot applications for effortless adoption.
+- **Proven in Production**: Tongyi App, Quark, and other major services have successfully implemented Memory capabilities using Tablestore.
+- **Comprehensive Memory Interface Design and Documentation**: Explore richer Memory features and detailed usage documentation on GitHub at [alibabacloud-tablestore-for-agent-memory](https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory) .
 
-### Maven 依赖
+## Get Started
 
-将以下依赖添加到你的项目中：
+### Maven Dependency
+
+Add the following dependency to your project:
 
 ```xml
 <dependency>
@@ -27,19 +29,20 @@ Spring AI Alibaba Tablestore Memory 模块是 Spring AI Alibaba 项目的核心�
 ```
 
 
-### 基础配置
-仅需配置 Tablestore 客户端即可。
+### Basic Configuration
+
+Only Tablestore client configuration is required.
 
 ```java
 
 void init() {
-    // 构建 Tablestore java 客户端
+    // Constructs the Tablestore Java client
     String endPoint = System.getenv("tablestore_end_point");
     String instanceName = System.getenv("tablestore_instance_name");
     String accessKeyId = System.getenv("tablestore_access_key_id");
     String accessKeySecret = System.getenv("tablestore_access_key_secret");
     SyncClient client = new SyncClient(endPoint, accessKeyId, accessKeySecret, instanceName);
-    // 初始化 TablestoreChatMemoryRepository
+    // Initializes the TablestoreChatMemoryRepository
     TablestoreChatMemoryRepository chatMemoryRepository = new TablestoreChatMemoryRepository(client);
 }
 
@@ -50,16 +53,16 @@ void init() {
 ```java
 
 void init() {
-    // 构建 Tablestore java 客户端
+    // Constructs the Tablestore Java client
     String endPoint = System.getenv("tablestore_end_point");
     String instanceName = System.getenv("tablestore_instance_name");
     String accessKeyId = System.getenv("tablestore_access_key_id");
     String accessKeySecret = System.getenv("tablestore_access_key_secret");
     SyncClient client = new SyncClient(endPoint, accessKeyId, accessKeySecret, instanceName);
-    // 通过 store 初始化 TablestoreChatMemoryRepository. 
-    MemoryStoreImpl store = xxx; // store 初始化参考 https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/java/examples/src/main/java/com/aliyun/openservices/tablestore/agent/memory/MemoryStoreInitExample.java
+    // Initializes TablestoreChatMemoryRepository via store 
+    MemoryStoreImpl store = xxx; // For store initialization, refer to https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/java/examples/src/main/java/com/aliyun/openservices/tablestore/agent/memory/MemoryStoreInitExample.java
     TablestoreChatMemoryRepository chatMemoryRepository = new TablestoreChatMemoryRepository(store);
 }
 
-// 底层依赖的 MemoryStore 使用可参考 https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory
+// For implementation details of the underlying MemoryStore, refer to: https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory
 ```

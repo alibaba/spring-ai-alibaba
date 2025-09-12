@@ -67,7 +67,7 @@ The community has developed a [Playground](https://github.com/springaialibaba/sp
 You can [deploy the Playground example locally](https://github.com/springaialibaba/spring-ai-alibaba-examples) and access the experience through your browser, or copy the source code and tweak it to your own business needs to build your own set of AI apps more quickly.
 For more examples, please refer to our official example repository: [https://github.com/springaialibaba/spring-ai-alibaba-examples](https://github.com/springaialibaba/spring-ai-alibaba-examples)
 
-## Spring AI Alibaba Graph Multi-gent Framework
+## Spring AI Alibaba Graph Multi-agent Framework
 
 Spring AI Alibaba Graph enables developers to implement workflow and multi-agent application orchestration. Its core design is mainly from LangGraph, and we have added a rich set of prebuilt Nodes and simplified the Graph State definition, allowing developers to better integrate with low-code platforms and write popular multi-agent pattern applications.
 
