@@ -43,50 +43,6 @@ public class SerializerMapper {
 		}
 	};
 
-	static class Key {
-
-		private final String _className;
-
-		private final Class<?> _clazz;
-
-		public static Key of(Class<?> clazz) {
-			return new Key(clazz);
-		}
-
-		public static Key of(String className) {
-			return new Key(className);
-		}
-
-		private Key(Class<?> clazz) {
-			_className = clazz.getName();
-			_clazz = clazz;
-		}
-
-		private Key(String className) {
-			_className = className;
-			_clazz = null;
-		}
-
-		String getTypeName() {
-			return _className;
-		}
-
-		Class<?> getType() {
-			return _clazz;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			return Objects.equals(o, _className);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(_className);
-		}
-
-	}
-
 	private final Map<Key, Serializer<?>> _serializers = new HashMap<>();
 
 	public SerializerMapper register(Class<?> clazz, Serializer<?> serializer) {
@@ -161,6 +117,50 @@ public class SerializerMapper {
 	public String toString() {
 		List<String> typeNames = _serializers.keySet().stream().map(Key::getTypeName).collect(Collectors.toList());
 		return format("SerializerMapper: \n%s", String.join("\n", typeNames));
+
+	}
+
+	static class Key {
+
+		private final String _className;
+
+		private final Class<?> _clazz;
+
+		private Key(Class<?> clazz) {
+			_className = clazz.getName();
+			_clazz = clazz;
+		}
+
+		private Key(String className) {
+			_className = className;
+			_clazz = null;
+		}
+
+		public static Key of(Class<?> clazz) {
+			return new Key(clazz);
+		}
+
+		public static Key of(String className) {
+			return new Key(className);
+		}
+
+		String getTypeName() {
+			return _className;
+		}
+
+		Class<?> getType() {
+			return _clazz;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			return Objects.equals(o, _className);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(_className);
+		}
 
 	}
 

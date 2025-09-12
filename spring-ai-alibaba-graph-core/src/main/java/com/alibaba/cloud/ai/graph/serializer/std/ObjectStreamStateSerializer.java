@@ -33,6 +33,30 @@ public class ObjectStreamStateSerializer extends StateSerializer {
 
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ObjectStreamStateSerializer.class);
 
+	private final SerializerMapper mapper = new SerializerMapper();
+
+	private final MapSerializer mapSerializer = new MapSerializer();
+
+	public ObjectStreamStateSerializer(AgentStateFactory<OverAllState> stateFactory) {
+		super(stateFactory);
+		mapper.register(Collection.class, new ListSerializer());
+		mapper.register(Map.class, new MapSerializer());
+	}
+
+	public SerializerMapper mapper() {
+		return mapper;
+	}
+
+	@Override
+	public final void writeData(Map<String, Object> data, ObjectOutput out) throws IOException {
+		mapSerializer.write(data, mapper.objectOutputWithMapper(out));
+	}
+
+	@Override
+	public final Map<String, Object> readData(ObjectInput in) throws IOException, ClassNotFoundException {
+		return mapSerializer.read(mapper.objectInputWithMapper(in));
+	}
+
 	static class ListSerializer implements NullableObjectSerializer<List<Object>> {
 
 		@Override
@@ -112,30 +136,6 @@ public class ObjectStreamStateSerializer extends StateSerializer {
 			return result;
 		}
 
-	}
-
-	private final SerializerMapper mapper = new SerializerMapper();
-
-	private final MapSerializer mapSerializer = new MapSerializer();
-
-	public ObjectStreamStateSerializer(AgentStateFactory<OverAllState> stateFactory) {
-		super(stateFactory);
-		mapper.register(Collection.class, new ListSerializer());
-		mapper.register(Map.class, new MapSerializer());
-	}
-
-	public SerializerMapper mapper() {
-		return mapper;
-	}
-
-	@Override
-	public final void writeData(Map<String, Object> data, ObjectOutput out) throws IOException {
-		mapSerializer.write(data, mapper.objectOutputWithMapper(out));
-	}
-
-	@Override
-	public final Map<String, Object> readData(ObjectInput in) throws IOException, ClassNotFoundException {
-		return mapSerializer.read(mapper.objectInputWithMapper(in));
 	}
 
 }

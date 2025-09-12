@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.store;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.store.stores.DatabaseStore;
 import com.alibaba.cloud.ai.graph.store.stores.FileSystemStore;
@@ -388,7 +389,7 @@ public class GraphStoreIntegrationTest {
 		CompileConfig config = CompileConfig.builder().store(store).build();
 
 		StateGraph workflow = new StateGraph(() -> Map.of("query", new ReplaceStrategy(), "operation",
-				new ReplaceStrategy(), "searchResults", new ReplaceStrategy()))
+				new ReplaceStrategy(), "searchResults", new ReplaceStrategy()), new SpringAIStateSerializer())
 			.addNode("searchData", node_async(state -> {
 				String query = state.value("query", "");
 				Store searchStore = state.getStore();
