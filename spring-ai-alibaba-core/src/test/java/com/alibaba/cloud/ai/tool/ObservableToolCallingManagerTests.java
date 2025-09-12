@@ -26,27 +26,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ObservableToolCallingManagerTests {
 
-    @Test
-    void mergeToolCallsShouldCombineStreamingChunks() {
-        List<ToolCall> chunks = List.of(
-                new ToolCall("1", "function", "weather", ""),
-                new ToolCall(null, null, null, "{\"location\":\""),
-                new ToolCall(null, null, null, "Paris\"}"),
-                new ToolCall("2", "function", "time", ""),
-                new ToolCall(null, null, null, "{}")
-        );
-        AssistantMessage message = new AssistantMessage("", Map.of(), chunks);
+	@Test
+	void mergeToolCallsShouldCombineStreamingChunks() {
+		List<ToolCall> chunks = List.of(new ToolCall("1", "function", "weather", ""),
+				new ToolCall(null, null, null, "{\"location\":\""), new ToolCall(null, null, null, "Paris\"}"),
+				new ToolCall("2", "function", "time", ""), new ToolCall(null, null, null, "{}"));
+		AssistantMessage message = new AssistantMessage("", Map.of(), chunks);
 
-        AssistantMessage merged = ObservableToolCallingManager.mergeToolCalls(message);
+		AssistantMessage merged = ObservableToolCallingManager.mergeToolCalls(message);
 
-        assertThat(merged.getToolCalls()).hasSize(2);
-        ToolCall first = merged.getToolCalls().get(0);
-        assertThat(first.id()).isEqualTo("1");
-        assertThat(first.name()).isEqualTo("weather");
-        assertThat(first.arguments()).isEqualTo("{\"location\":\"Paris\"}");
-        ToolCall second = merged.getToolCalls().get(1);
-        assertThat(second.id()).isEqualTo("2");
-        assertThat(second.name()).isEqualTo("time");
-        assertThat(second.arguments()).isEqualTo("{}");
-    }
+		assertThat(merged.getToolCalls()).hasSize(2);
+		ToolCall first = merged.getToolCalls().get(0);
+		assertThat(first.id()).isEqualTo("1");
+		assertThat(first.name()).isEqualTo("weather");
+		assertThat(first.arguments()).isEqualTo("{\"location\":\"Paris\"}");
+		ToolCall second = merged.getToolCalls().get(1);
+		assertThat(second.id()).isEqualTo("2");
+		assertThat(second.name()).isEqualTo("time");
+		assertThat(second.arguments()).isEqualTo("{}");
+	}
+
 }
