@@ -219,7 +219,7 @@ useI18n()
 const formInputsStore = reactive<Record<number, string | string[]>>({})
 const genericInput = ref(props.genericInput || '')
 const isInitialized = ref(false)
-const initializationTimeout = ref<number | null>(null)
+const initializationTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
 // Initialize form inputs based on type
 const initializeFormInputs = () => {
