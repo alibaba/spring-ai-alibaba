@@ -44,7 +44,7 @@
       <!-- List Tab Content -->
       <div v-if="sidebarStore.currentTab === 'list'" class="tab-content">
         <div class="new-task-section">
-          <button class="new-task-btn" @click="sidebarStore.createNewTemplate()">
+          <button class="new-task-btn" @click="sidebarStore.createNewTemplate(sidebarStore.planType)">
             <Icon icon="carbon:add" width="16" />
             {{ $t('sidebar.newPlan') }}
             <span class="shortcut">⌘ K</span>

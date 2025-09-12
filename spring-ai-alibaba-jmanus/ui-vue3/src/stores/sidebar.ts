@@ -36,8 +36,8 @@ export class SidebarStore {
 
   // Configuration related state
   jsonContent = ''
+  planType = ''
   generatorPrompt = ''
-  planType = 'dynamic_agent'
   executionParams = ''
   isGenerating = false
   isExecuting = false
@@ -155,6 +155,11 @@ export class SidebarStore {
           if (parsed.params) {
             this.executionParams = parsed.params
           }
+          // Update planType based on the loaded template's JSON content
+          if (parsed.planType) {
+            this.planType = parsed.planType
+            console.log(`[SidebarStore] Updated planType to: ${this.planType}`)
+          }
         } catch {
           console.warn('Unable to parse JSON content to get prompt information')
         }
@@ -162,6 +167,7 @@ export class SidebarStore {
         this.jsonContent = ''
         this.generatorPrompt = ''
         this.executionParams = ''
+        this.planType = 'dynamic_agent'
       }
     } catch (error: any) {
       console.error('Failed to load template data:', error)
@@ -169,7 +175,7 @@ export class SidebarStore {
     }
   }
 
-  createNewTemplate() {
+  createNewTemplate(planType: string) {
     const emptyTemplate: PlanTemplate = {
       id: `new-${Date.now()}`,
       title: i18n.global.t('sidebar.newTemplateName'),
@@ -185,6 +191,8 @@ export class SidebarStore {
     this.planVersions = []
     this.currentVersionIndex = -1
     this.currentTab = 'config'
+    // Reset to default planType for new templates
+    this.planType = planType
     console.log('[SidebarStore] Created new empty plan template, switching to config tab')
   }
 

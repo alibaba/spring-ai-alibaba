@@ -361,11 +361,12 @@ export class PlanExecutionManager {
       const details = await this.getPlanDetails(this.state.activePlanId)
 
       if (!details) {
-        console.warn('[PlanExecutionManager] No details received from API')
+        console.warn('[PlanExecutionManager] No details received from API - this might be a temporary network issue')
         return
       }
 
-      if(details.status && details.status === 'failed'){
+      // Only handle actual plan execution failures, not network errors
+      if(details.status && details.status === 'failed' && details.message && !details.message.includes('Failed to get detailed information')){
         this.handlePlanError(details)
         return;
       }

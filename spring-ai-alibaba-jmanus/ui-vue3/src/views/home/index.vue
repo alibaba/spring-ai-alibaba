@@ -143,7 +143,7 @@ import { sidebarStore } from '@/stores/sidebar'
 
 const saveJsonPlanToTemplate = async (jsonPlan: any) => {
   try {
-    sidebarStore.createNewTemplate();
+    sidebarStore.createNewTemplate(jsonPlan.planType);
     sidebarStore.jsonContent = JSON.stringify(jsonPlan);
     const saveResult = await sidebarStore.saveTemplate();
     if (saveResult?.duplicate) {
