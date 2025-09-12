@@ -401,10 +401,9 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		List<ExecutionStep> copiedSteps = new ArrayList<>();
 
 		for (ExecutionStep originalStep : originalSteps) {
-			ExecutionStep copiedStep = new ExecutionStep();
+			ExecutionStep copiedStep = new ExecutionStep(originalStep.getStepId());
 			// Preserve the original stepId to maintain consistency with pre-created
 			// records
-			copiedStep.setStepId(originalStep.getStepId());
 			copiedStep.setStepIndex(originalStep.getStepIndex());
 			copiedStep.setStepRequirement(originalStep.getStepRequirement());
 			copiedStep.setTerminateColumns(originalStep.getTerminateColumns());

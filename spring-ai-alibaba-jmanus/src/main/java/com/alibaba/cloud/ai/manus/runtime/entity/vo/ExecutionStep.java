@@ -39,6 +39,10 @@ public class ExecutionStep {
 		this.stepId = "step-" + UUID.randomUUID().toString();
 	}
 
+	public ExecutionStep(String stepId) {
+		this.stepId = stepId;
+	}
+
 	@JsonIgnore
 	private Integer stepIndex;
 
