@@ -126,22 +126,6 @@ public class LoopAgent extends FlowAgent {
 	 */
 	public enum LoopMode {
 
-		/**
-		 * <b>Count mode</b>: Execute a fixed number of loops
-		 * <p>
-		 * Execution steps:
-		 * <ol>
-		 * <li>Get input data from inputKey (optional)</li>
-		 * <li>Track the current loop count</li>
-		 * <li>Increment the count by 1 for each loop until reaching the preset loopCount
-		 * value</li>
-		 * <li>Set loopStartFlag to false when the loop ends</li>
-		 * </ol>
-		 * </p>
-		 * <p>
-		 * Applicable scenario: Scenarios requiring a fixed number of operations
-		 * </p>
-		 */
 		COUNT(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get input for passing to the iterator body
@@ -169,22 +153,6 @@ public class LoopAgent extends FlowAgent {
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of(agentName + "__loop_count", new ReplaceStrategy()))),
 
-		/**
-		 * <b>Condition mode</b>: Continue looping based on a condition, similar to a
-		 * do-while structure, but when the condition is true, terminate the loop
-		 * <p>
-		 * Working principle:
-		 * <ol>
-		 * <li>Execute the first loop directly (unconditionally)</li>
-		 * <li>Subsequent loops check if the previous output meets the loopCondition</li>
-		 * <li>Exit the loop if the condition is met, otherwise continue executing</li>
-		 * </ol>
-		 * </p>
-		 * <p>
-		 * Applicable scenario: Scenarios where the decision to continue looping needs to
-		 * be made dynamically based on execution results
-		 * </p>
-		 */
 		CONDITION(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get input for passing to the iterator body
@@ -209,24 +177,6 @@ public class LoopAgent extends FlowAgent {
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of())),
 
-		/**
-		 * <b>Iterable mode</b>: Iterate over each element in an Iterable object
-		 * <p>
-		 * Working principle:
-		 * <ol>
-		 * <li>Get the Iterable object from inputKey</li>
-		 * <li>Convert to List and limit the maximum number of elements
-		 * (ITERABLE_ELEMENT_COUNT)</li>
-		 * <li>Track the current index</li>
-		 * <li>Extract each element sequentially as input to the loop body</li>
-		 * <li>Exit the loop after iterating through all elements</li>
-		 * </ol>
-		 * </p>
-		 * <p>
-		 * Applicable scenario: Scenarios requiring iteration over each element in a
-		 * collection or list
-		 * </p>
-		 */
 		ITERABLE(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get the elements to be iterated over. If they don't exist, it means it's
@@ -275,22 +225,6 @@ public class LoopAgent extends FlowAgent {
 				Map.of(agentName + "__iterableElement", new ReplaceStrategy(), agentName + "__iterableIndex",
 						new ReplaceStrategy()))),
 
-		/**
-		 * <b>Array mode</b>: Iterate over each element in an array
-		 * <p>
-		 * Working principle:
-		 * <ol>
-		 * <li>Get the array object from inputKey</li>
-		 * <li>Track the current index</li>
-		 * <li>Use reflection to get each element in the array sequentially</li>
-		 * <li>Exit the loop after iterating through all elements</li>
-		 * </ol>
-		 * </p>
-		 * <p>
-		 * Applicable scenario: Scenarios requiring iteration over each element in a Java
-		 * array
-		 * </p>
-		 */
 		ARRAY(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get the input array
@@ -317,22 +251,6 @@ public class LoopAgent extends FlowAgent {
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of(agentName + "__arrayIndex", new ReplaceStrategy()))),
 
-		/**
-		 * <b>JSON array mode</b>: Parse a JSON array and iterate over its elements
-		 * <p>
-		 * Working principle:
-		 * <ol>
-		 * <li>Get the JSON string from inputKey</li>
-		 * <li>Parse it into a List object</li>
-		 * <li>Track the current index</li>
-		 * <li>Extract each element sequentially as input to the loop body</li>
-		 * <li>Exit the loop after iterating through all elements</li>
-		 * </ol>
-		 * </p>
-		 * <p>
-		 * Applicable scenario: Scenarios requiring processing of JSON format array data
-		 * </p>
-		 */
 		JSON_ARRAY(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			String listKey = agentName + "__list";
