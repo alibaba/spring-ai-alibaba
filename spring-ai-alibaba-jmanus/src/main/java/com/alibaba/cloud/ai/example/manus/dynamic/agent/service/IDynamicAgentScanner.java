@@ -23,6 +23,6 @@ public interface IDynamicAgentScanner {
 	/**
 	 * Scan And Save Agents
 	 */
-	void scanAndSaveAgents();
+	void scanAndSaveAgents(String language);
 
 }
