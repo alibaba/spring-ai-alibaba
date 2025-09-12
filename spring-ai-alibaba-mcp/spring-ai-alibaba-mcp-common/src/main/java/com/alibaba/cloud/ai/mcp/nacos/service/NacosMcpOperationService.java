@@ -25,6 +25,7 @@ import com.alibaba.nacos.api.ai.model.mcp.McpServerBasicInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServiceRef;
 import com.alibaba.nacos.api.ai.model.mcp.McpToolSpecification;
+import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.Instance;
@@ -54,6 +55,8 @@ public class NacosMcpOperationService {
 
 	private final NamingService namingService;
 
+	private final ConfigService configService;
+
 	private final String namespace;
 
 	private final Map<String, List<NacosMcpSubscriber>> subscribers;
@@ -61,6 +64,7 @@ public class NacosMcpOperationService {
 	public NacosMcpOperationService(Properties nacosProperties) throws NacosException {
 		this.aiMaintainerService = AiMaintainerFactory.createAiMaintainerService(nacosProperties);
 		this.namingService = NacosFactory.createNamingService(nacosProperties);
+		this.configService = NacosFactory.createConfigService(nacosProperties);
 		this.namespace = nacosProperties.getProperty(PropertyKeyConst.NAMESPACE, "public");
 		this.subscribers = new ConcurrentHashMap<>();
 		ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1, r -> {
@@ -71,6 +75,10 @@ public class NacosMcpOperationService {
 		});
 
 		executorService.scheduleWithFixedDelay(this::getServerChange, 30, 30, TimeUnit.SECONDS);
+	}
+
+	public ConfigService getConfigService() {
+		return configService;
 	}
 
 	private void getServerChange() {
