@@ -55,7 +55,14 @@ frontend/
 Before starting the web frontend service, please ensure the following environment is ready:
 - [Node.js](https://nodejs.org) >= v20
 
-First, install dependencies in the root directory:
+
+First, install the required dependencies in the root directory:
+
+```bash
+npm install rimraf copyfiles cross-env --save-dev
+```
+
+Then, install all project dependencies:
 
 ```bash
 npm run re-install
@@ -65,8 +72,16 @@ Then, configure environment variables. Create a file named `.env` in the current
 
 ```bash
 cd packages/main
+```
+On macOS/Linux:
+```bash
 cp .env.example .env
 ```
+On Windows (PowerShell):
+```bash
+Copy-Item .env.example .env
+```
+
 
 ```
 # Web server URL

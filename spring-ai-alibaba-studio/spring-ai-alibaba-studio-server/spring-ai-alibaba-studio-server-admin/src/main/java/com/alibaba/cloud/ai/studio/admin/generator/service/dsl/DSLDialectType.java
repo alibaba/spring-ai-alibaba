@@ -24,7 +24,9 @@ public enum DSLDialectType {
 
 	STUDIO("studio", ".json"),
 
-	CUSTOM("custom", ".yml");
+	CUSTOM("custom", ".yml"),
+
+	SAA_AGENT("saa-agent", ".yaml");
 
 	private final String value;
 
