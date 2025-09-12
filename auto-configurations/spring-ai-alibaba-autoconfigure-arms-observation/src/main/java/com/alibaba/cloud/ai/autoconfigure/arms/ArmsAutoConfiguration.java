@@ -15,26 +15,37 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.arms;
 
+import com.alibaba.cloud.ai.observation.client.prompt.PromptMetadataAwareChatClientObservationConvention;
+import com.alibaba.cloud.ai.observation.model.ChatModelInputObservationHandler;
+import com.alibaba.cloud.ai.observation.model.ChatModelOutputObservationHandler;
+import com.alibaba.cloud.ai.observation.model.PromptMetadataAwareChatModelObservationConvention;
 import com.alibaba.cloud.ai.tool.ObservableToolCallingManager;
 import io.micrometer.observation.ObservationRegistry;
+import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
+/**
+ * @author Lumian
+ */
 @AutoConfiguration
 @ConditionalOnClass(ChatModel.class)
+@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
 @EnableConfigurationProperties(ArmsCommonProperties.class)
 public class ArmsAutoConfiguration {
 
 	@Bean
-	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
+	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "tool.enabled", havingValue = "true")
 	ToolCallingManager toolCallingManager(ToolCallbackResolver toolCallbackResolver,
 			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor,
 			ObjectProvider<ObservationRegistry> observationRegistry) {
@@ -43,6 +54,34 @@ public class ArmsAutoConfiguration {
 			.toolCallbackResolver(toolCallbackResolver)
 			.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor)
 			.build();
+	}
+
+	@Bean
+	ChatClientObservationConvention chatClientObservationConvention() {
+		return new PromptMetadataAwareChatClientObservationConvention();
+	}
+
+	@Bean
+	ChatModelObservationConvention chatModelObservationConvention() {
+		return new PromptMetadataAwareChatModelObservationConvention();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(value = { ChatModelInputObservationHandler.class },
+			name = { "chatModelInputObservationHandler" })
+	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "model.capture-input",
+			havingValue = "true")
+	ChatModelInputObservationHandler armsChatModelInputObservationHandler(ArmsCommonProperties properties) {
+		return new ChatModelInputObservationHandler(properties.getModel().getMessageMode());
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(value = { ChatModelOutputObservationHandler.class },
+			name = { "chatModelOutputObservationHandler" })
+	@ConditionalOnProperty(prefix = ArmsCommonProperties.CONFIG_PREFIX, name = "model.capture-output",
+			havingValue = "true")
+	ChatModelOutputObservationHandler armsChatModelOutputObservationHandler(ArmsCommonProperties properties) {
+		return new ChatModelOutputObservationHandler(properties.getModel().getMessageMode());
 	}
 
 }
