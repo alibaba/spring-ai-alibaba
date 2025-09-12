@@ -38,12 +38,10 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		super(stateFactory);
 		this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper cannot be null");
 
-		// 配置ObjectMapper以保持数字类型精确性
 		this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_INTEGER_FOR_INTS,
 				false);
 		this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS,
 				false);
-		// 使用JsonParser的数字处理策略来保持原始类型
 		this.objectMapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION, true);
 
 		var module = new SimpleModule();

@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSeri
 import com.alibaba.cloud.ai.graph.serializer.std.NullableObjectSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
 
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
@@ -227,14 +228,17 @@ public class SerializeTest {
 
 		NodeOutput output = NodeOutput.of("node", null);
 		output.setSubGraph(true);
-		String json = serializer.getObjectMapper().writeValueAsString(output);
+		ObjectMapper mapper = serializer.getObjectMapper();
+		mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 
-		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":true,\"start\":false,\"end\":false}", json);
+		String json = mapper.writeValueAsString(output);
+
+		assertEquals("{\"end\":false,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":true}", json);
 
 		output.setSubGraph(false);
-		json = serializer.getObjectMapper().writeValueAsString(output);
+		json = mapper.writeValueAsString(output);
 
-		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":false,\"start\":false,\"end\":false}", json);
+		assertEquals("{\"end\":false,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":false}", json);
 	}
 
 }
