@@ -46,11 +46,9 @@ export class CommonApiService {
     } catch (error: any) {
       // Log error but don't throw exception
       console.error('[CommonApiService] Failed to get plan details:', error)
-      return {
-        currentPlanId: planId,
-        status: 'failed',
-        message: error instanceof Error ? error.message : 'Failed to save, please retry'
-      }
+      // Don't return failed status for network errors - let polling continue
+      // Only return null to indicate no data available
+      return null
     }
   }
 

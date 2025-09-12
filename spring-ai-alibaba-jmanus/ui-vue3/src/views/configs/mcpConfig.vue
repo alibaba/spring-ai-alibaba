@@ -338,11 +338,11 @@ const getServerConfigValue = (server: McpServer, field: 'command' | 'url' | 'arg
       case 'command':
         return extendedServer.command || ''
       case 'url':
-        return extendedServer.url || ''
+        return extendedServer.url ?? ''
       case 'args':
-        return extendedServer.args || ''
+        return extendedServer.args ?? ''
       case 'env':
-        return extendedServer.env || ''
+        return extendedServer.env ?? ''
       default:
         return ''
     }
@@ -380,7 +380,7 @@ const handleJsonSave = () => {
 
     showJsonModal.value = false
     showMessage(t('config.mcpConfig.jsonConfigSaved'), 'success')
-  } catch (error) {
+  } catch {
     showMessage(t('config.mcpConfig.jsonFormatError'), 'error')
   }
 }
@@ -452,7 +452,7 @@ const handleSave = async () => {
 
     if (configForm.connectionType === 'STUDIO') {
       requestData.command = configForm.command
-      if (configForm.args?.trim()) {
+      if (configForm.args.trim()) {
         try {
           // Convert multi-line string to array
           const argsArray = configForm.args.split('\n').filter(arg => arg.trim())
@@ -467,7 +467,7 @@ const handleSave = async () => {
           return
         }
       }
-      if (configForm.env?.trim()) {
+      if (configForm.env.trim()) {
         try {
           // Convert multi-line key:value to object
           const envLines = configForm.env.split('\n').filter(line => line.trim())
@@ -554,7 +554,7 @@ const validateJson = () => {
       validationErrors.value = []
     } else {
       isJsonValid.value = false
-      validationErrors.value = validationResult.errors || []
+      validationErrors.value = validationResult.errors ?? []
       if (validationResult.errors && validationResult.errors.length > 0) {
         showMessage(validationResult.errors.join('\n'), 'error')
       }
@@ -688,7 +688,7 @@ const formatJson = () => {
 
     jsonEditorContent.value = formatted
     validateJson()
-  } catch (error) {
+  } catch {
     showMessage(t('config.mcpConfig.invalidJson'), 'error')
   }
 }
@@ -898,7 +898,7 @@ const exportAllConfigs = async () => {
 // Handle JSON validation result changes
 const handleJsonValidationChange = (result: JsonValidationResult) => {
   isJsonValid.value = result.isValid
-  validationErrors.value = result.errors || []
+  validationErrors.value = result.errors ?? []
 }
 
 // Handle JSON import
@@ -922,7 +922,7 @@ const handleJsonImport = async () => {
         showMessage(result.message || t('config.mcpConfig.importFailed'), 'error')
       }
     } else {
-      showMessage(validationResult.errors?.join('\n') || t('config.mcpConfig.importInvalidJson'), 'error')
+      showMessage(validationResult.errors?.join('\n') ?? t('config.mcpConfig.importInvalidJson'), 'error')
     }
   } catch (error) {
     showMessage(t('config.mcpConfig.importFailed'), 'error')

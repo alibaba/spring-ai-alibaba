@@ -4,7 +4,7 @@ agentDescription: A professional JSX/Vue component generation agent capable of a
 builtIn: false
 availableToolKeys:
   - jsx_generator_operator
-  - inner_storage_content_tool
+  - extract_relevant_content
   - text_file_operator
   - terminate
 
@@ -158,4 +158,4 @@ nextStepPrompt: |
   - Use meaningful component names and file paths
   - Functions in methods field should use complete JavaScript syntax
 
-  To extract content from existing text or documents, please use text_file_operator or inner_storage_content_tool.
+  To extract content from existing text or documents, please use text_file_operator or extract_relevant_content.

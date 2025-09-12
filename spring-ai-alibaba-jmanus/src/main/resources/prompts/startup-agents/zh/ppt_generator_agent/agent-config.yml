@@ -4,7 +4,7 @@ agentDescription: 一个专业的PowerPoint演示文稿生成代理，能够自�
 builtIn: false  # PPT生成 agent 可以删除
 availableToolKeys:
   - ppt_generator_operator
-  - inner_storage_content_tool
+  - extract_relevant_content
   - text_file_operator
   - terminate
 
@@ -31,7 +31,7 @@ nextStepPrompt: |
     - 文本内容
   - 套用模板创建PPT
 
-  如需从已有文本或文档中提取内容，请使用 text_file_operator 或 inner_storage_content_tool。
+  如需从已有文本或文档中提取内容，请使用 text_file_operator 或 extract_relevant_content.
 
   注意：
   - 生成的PPT文件将自动保存在extensions/pptGenerator/目录下

@@ -275,9 +275,6 @@
         <poi.version>5.4.0</poi.version>
 
         <mcp.version>0.10.0</mcp.version>
-
-        <a2a-sdk.version>0.2.5</a2a-sdk.version>
-
         <opentelemetry.version>1.38.0</opentelemetry.version>
 
         <!-- CheckStyle Plugin -->

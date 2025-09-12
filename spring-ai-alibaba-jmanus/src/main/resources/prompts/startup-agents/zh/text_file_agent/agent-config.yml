@@ -5,7 +5,7 @@ builtIn: false  # 文本文件 agent 可以删除
 availableToolKeys:
   - text_file_operator
   - terminate
-  - inner_storage_content_tool
+  - extract_relevant_content
   - file_merge_tool
 
 # 下一步提示配置

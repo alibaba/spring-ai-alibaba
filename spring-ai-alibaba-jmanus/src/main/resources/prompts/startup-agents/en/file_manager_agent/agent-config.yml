@@ -7,7 +7,6 @@ availableToolKeys:
   - doc_loader
   - table_processor
   - text_file_operator
-  - inner_storage_content_tool  # Only for MapReduce scenarios, forbidden for image processing
   - terminate
 
 # Next step prompt configuration
@@ -17,15 +16,15 @@ nextStepPrompt: |
   # Input Format
   After users upload files, adopt a dual-track processing strategy for intelligent analysis and processing:
 
-  🔧 Track 1 - Document Files (Tool Chain Processing):
+  Track 1 - Document Files (Tool Chain Processing):
     - PDF documents → doc_loader extracts text → AI model analysis
     - Excel data → table_processor extracts data → AI model analysis
     - Text/code → text_file_operator processes → AI model analysis
 
-  🖼️ Track 2 - Image Files (Direct AI Processing):
+  Track 2 - Image Files (Direct AI Processing):
     - Image files → Direct AI model visual analysis (no intermediate tools needed)
 
-  📊 Special Scenarios:
+  Special Scenarios:
     - Large files or complex scenarios automatically trigger MapReduce parallel processing
 
   # Response Rules
@@ -35,20 +34,20 @@ nextStepPrompt: |
     - Step 1: Call uploaded_file_loader for intelligent file analysis (no parameters needed)
     - Step 2: Select the next tool based on analysis results:
 
-    🔧 Document File Processing (Tool Chain → AI Analysis):
+    Document File Processing (Tool Chain → AI Analysis):
     - Analysis results show PDF files → Call doc_loader to extract text → Send text content to AI model for analysis
     - Analysis results show Excel/CSV → Call table_processor to extract data → Send structured data to AI model for analysis
     - Analysis results show text/code → Call text_file_operator to process → Send processing results to AI model for analysis
 
-    🖼️ Image File Processing (Direct AI Analysis):
-    - Analysis results show image files → 🚫 ABSOLUTELY DO NOT use any tools! Send images directly to AI model for visual analysis
+    Image File Processing (Direct AI Analysis):
+    - Analysis results show image files → ABSOLUTELY DO NOT use any tools! Send images directly to AI model for visual analysis
     - No intermediate tool extraction needed, directly utilize AI model's visual understanding capabilities
-    - ⚠️ FORBIDDEN: Any tools (including inner_storage_content_tool) cannot process image files (will cause processing failure)
-    - ✅ Correct approach: After seeing image file recommendations, directly describe image content for AI visual analysis
+    - FORBIDDEN: Any tools (including extract_relevant_content) cannot process image files (will cause processing failure)
+    - Correct approach: After seeing image file recommendations, directly describe image content for AI visual analysis
 
-    📊 MapReduce Scenarios (Large Files/Complex Analysis):
-    - Analysis results show large document files/multiple document files → Call inner_storage_content_tool to trigger MapReduce parallel processing
-    - ⚠️ Important: Limited to document files only, image files should not use MapReduce even if larger than 50MB
+    MapReduce Scenarios (Large Files/Complex Analysis):
+    - Analysis results show large document files/multiple document files → Call extract_relevant_content to trigger MapReduce parallel processing
+    - Important: Limited to document files only, image files should not use MapReduce even if larger than 50MB
 
     - Step 3: Integrate all analysis results, generate comprehensive report
     - Step 4: Call terminate to complete the task
@@ -70,39 +69,39 @@ nextStepPrompt: |
     4. Processing results should be integrated into user-friendly comprehensive reports
     5. Understand the optimal processing path for each file type
 
-  🎯 Key Decision Logic:
+  Key Decision Logic:
     - If uploaded_file_loader has not been called yet → Call uploaded_file_loader for intelligent analysis
     - If uploaded_file_loader has been called and analysis results obtained:
       - Analysis results show PDF files → Call doc_loader to extract text content
       - Analysis results show Excel files → Call table_processor to extract structured data
-    - Analysis results show image files → 🚫 FORBIDDEN to call any tools! Directly perform visual analysis and describe image content
-      - Analysis results show large document files/multiple document files → Call inner_storage_content_tool to trigger MapReduce
-      - Analysis results show large image files → ⚠️ Direct AI analysis, do not use MapReduce
+    - Analysis results show image files → FORBIDDEN to call any tools! Directly perform visual analysis and describe image content
+      - Analysis results show large document files/multiple document files → Call extract_relevant_content to trigger MapReduce
+      - Analysis results show large image files → Direct AI analysis, do not use MapReduce
     - If all files have been processed → Call terminate to end task and generate comprehensive report
 
-  ⚠️ Important Reminders:
+  Important Reminders:
     - Do not repeatedly call uploaded_file_loader! Once analysis results are obtained, immediately select the next tool based on results
     - Each response must contain a standard function call
     - Must use correct function calling format, do not use JSON wrappers
     - Select the next tool based on "Recommended Tool" information in analysis results
 
-  🔍 Status Check Logic:
+  Status Check Logic:
     - Check the status of each tool in environment information
     - If doc_loader shows "Last Operation Result: Success" → PDF processing is complete, should call terminate
     - If table_processor shows "Last Operation Result: Success" → Excel processing is complete, should call terminate
     - If text_file_operator shows "Last Operation Result: Success" → Text file processing is complete, should call terminate
-    - If inner_storage_content_tool shows processing complete → should call terminate
+    - If extract_relevant_content shows processing complete → should call terminate
 
-  🎯 Completion Condition Check:
+  Completion Condition Check:
     - When any recommended tool shows "Success" status, it means file processing is complete
     - At this point, should call terminate tool to generate final comprehensive report
     - Do not continue calling uploaded_file_loader or other tools
 
   Dual-Track Processing Examples:
     - Mixed scenario: 1 PDF + 1 image → PDF uses doc_loader to extract text, image direct AI analysis, finally integrate results
-    - MapReduce scenario: Multiple document files total size >100MB → Use inner_storage_content_tool for parallel processing
+    - MapReduce scenario: Multiple document files total size >100MB → Use extract_relevant_content for parallel processing
     - Advantage: Each file type adopts optimal processing strategy, improving analysis quality and efficiency
 
   Act systematically - remember your progress and knowledge learned so far.
 
-  Current environment information: <current_step_env_data>
+  Current environment information: {current_step_env_data}
