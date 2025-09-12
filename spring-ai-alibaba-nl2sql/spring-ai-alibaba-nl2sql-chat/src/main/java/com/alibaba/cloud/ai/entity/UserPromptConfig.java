@@ -165,6 +165,14 @@ public class UserPromptConfig {
 		this.creator = creator;
 	}
 
+	public String getOptimizationPrompt() {
+		return this.systemPrompt;
+	}
+
+	public void setOptimizationPrompt(String optimizationPrompt) {
+		this.systemPrompt = optimizationPrompt;
+	}
+
 	@Override
 	public String toString() {
 		return "UserPromptConfig{" + "id='" + id + '\'' + ", name='" + name + '\'' + ", promptType='" + promptType
