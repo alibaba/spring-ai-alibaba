@@ -28,9 +28,9 @@ public class TemplateTransformNodeIntegrationTest {
 
 		System.out.println("=== Demo 1: Basic Template Transformation ===");
 		TemplateTransformNode basicNode = TemplateTransformNode.builder()
-				.template("Hello {{name}}, welcome to {{platform}}!")
-				.outputKey("greeting")
-				.build();
+			.template("Hello {{name}}, welcome to {{platform}}!")
+			.outputKey("greeting")
+			.build();
 
 		OverAllState state1 = new OverAllState(Map.of("name", "Alice", "platform", "Spring AI Alibaba"));
 
@@ -41,8 +41,8 @@ public class TemplateTransformNodeIntegrationTest {
 
 		System.out.println("=== Demo 2: Missing Variables ===");
 		TemplateTransformNode missingVarNode = TemplateTransformNode.builder()
-				.template("Available: {{found}}, Missing: {{missing}}")
-				.build();
+			.template("Available: {{found}}, Missing: {{missing}}")
+			.build();
 
 		OverAllState state2 = new OverAllState(Map.of("found", "value"));
 		Map<String, Object> result2 = missingVarNode.apply(state2);
@@ -52,9 +52,9 @@ public class TemplateTransformNodeIntegrationTest {
 
 		System.out.println("=== Demo 3: Complex Template ===");
 		TemplateTransformNode complexNode = TemplateTransformNode.builder()
-				.template("User {{user.name}} ({{user.email}}) has {{user.score}} points")
-				.outputKey("user_summary")
-				.build();
+			.template("User {{user.name}} ({{user.email}}) has {{user.score}} points")
+			.outputKey("user_summary")
+			.build();
 
 		OverAllState state3 = new OverAllState(
 				Map.of("user.name", "John Doe", "user.email", "john@example.com", "user.score", 1500));

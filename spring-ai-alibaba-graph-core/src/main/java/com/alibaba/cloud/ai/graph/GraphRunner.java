@@ -168,8 +168,7 @@ public class GraphRunner {
 
 			context.setCurrentNodeId(context.getNextNodeId());
 			// 合并输出和后续流程，保持顺序，processGraphExecution用Flux.defer包裹
-			return Flux.just(GraphResponse.of(output))
-					.concatWith(Flux.defer(() -> processGraphExecution(context)));
+			return Flux.just(GraphResponse.of(output)).concatWith(Flux.defer(() -> processGraphExecution(context)));
 		}
 		catch (Exception e) {
 			return Flux.just(GraphResponse.error(e));
@@ -180,8 +179,7 @@ public class GraphRunner {
 		try {
 			context.doListeners(END, null);
 			NodeOutput output = context.buildNodeOutput(END);
-			return Flux.just(GraphResponse.of(output))
-					.concatWith(Flux.defer(() -> handleCompletion(context)));
+			return Flux.just(GraphResponse.of(output)).concatWith(Flux.defer(() -> handleCompletion(context)));
 		}
 		catch (Exception e) {
 			return Flux.just(GraphResponse.error(e));
@@ -193,8 +191,8 @@ public class GraphRunner {
 			if (compiledGraph.compileConfig.releaseThread()
 					&& compiledGraph.compileConfig.checkpointSaver().isPresent()) {
 				BaseCheckpointSaver.Tag tag = compiledGraph.compileConfig.checkpointSaver()
-						.get()
-						.release(context.config);
+					.get()
+					.release(context.config);
 				resultValue.set(tag);
 			}
 			else {
@@ -210,8 +208,8 @@ public class GraphRunner {
 	private Flux<GraphResponse<NodeOutput>> handleInterruption(GeneratorContext context) {
 		try {
 			InterruptionMetadata metadata = InterruptionMetadata
-					.builder(context.getCurrentNodeId(), context.cloneState(context.getCurrentState()))
-					.build();
+				.builder(context.getCurrentNodeId(), context.cloneState(context.getCurrentState()))
+				.build();
 			resultValue.set(metadata);
 			return Flux.just(GraphResponse.done(metadata));
 		}
@@ -233,7 +231,7 @@ public class GraphRunner {
 			// Check for interruptable action
 			if (action instanceof InterruptableAction) {
 				Optional<InterruptionMetadata> interruptMetadata = ((InterruptableAction) action)
-						.interrupt(currentNodeId, context.cloneState(context.getCurrentState()));
+					.interrupt(currentNodeId, context.cloneState(context.getCurrentState()));
 				if (interruptMetadata.isPresent()) {
 					resultValue.set(interruptMetadata.get());
 					return Flux.just(GraphResponse.done(interruptMetadata.get()));
@@ -247,11 +245,11 @@ public class GraphRunner {
 			CompletableFuture<Map<String, Object>> future = action.apply(context.getOverallState(), context.config);
 
 			return Mono.fromFuture(future)
-					.flatMapMany(updateState -> handleActionResult(context, updateState))
-					.onErrorResume(error -> {
-						context.doListeners(NODE_AFTER, null);
-						return Flux.just(GraphResponse.error(error));
-					});
+				.flatMapMany(updateState -> handleActionResult(context, updateState))
+				.onErrorResume(error -> {
+					context.doListeners(NODE_AFTER, null);
+					return Flux.just(GraphResponse.error(error));
+				});
 
 		}
 		catch (Exception e) {
@@ -292,8 +290,7 @@ public class GraphRunner {
 			}
 
 			NodeOutput output = context.buildCurrentNodeOutput();
-			return Flux.just(GraphResponse.of(output))
-					.concatWith(Flux.defer(() -> processGraphExecution(context)));
+			return Flux.just(GraphResponse.of(output)).concatWith(Flux.defer(() -> processGraphExecution(context)));
 		}
 		catch (Exception e) {
 			return Flux.just(GraphResponse.error(e));
@@ -305,22 +302,22 @@ public class GraphRunner {
 
 		AtomicReference<GraphResponse<NodeOutput>> lastData = new AtomicReference<>();
 
-		Flux<GraphResponse<NodeOutput>> processedFlux = embedFlux
-				.map(data -> {
-					if (data.getOutput() != null) {
-						var output = data.getOutput().join();
-						output.setSubGraph(true);
-						GraphResponse<NodeOutput> newData = GraphResponse.of(output);
-						lastData.set(newData);
-						return newData;
-					}
-					lastData.set(data);
-					return data;
-				});
+		Flux<GraphResponse<NodeOutput>> processedFlux = embedFlux.map(data -> {
+			if (data.getOutput() != null) {
+				var output = data.getOutput().join();
+				output.setSubGraph(true);
+				GraphResponse<NodeOutput> newData = GraphResponse.of(output);
+				lastData.set(newData);
+				return newData;
+			}
+			lastData.set(data);
+			return data;
+		});
 
 		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
 			var data = lastData.get();
-			if (data == null) return;
+			if (data == null)
+				return;
 			var nodeResultValue = data.resultValue;
 
 			if (nodeResultValue instanceof InterruptionMetadata) {
@@ -331,20 +328,14 @@ public class GraphRunner {
 			if (nodeResultValue != null) {
 				if (nodeResultValue instanceof Map<?, ?>) {
 					Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
-							.stream()
-							.filter(e -> !(e.getValue() instanceof Flux))
-							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+						.stream()
+						.filter(e -> !(e.getValue() instanceof Flux))
+						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-					Map<String, Object> intermediateState = OverAllState.updateState(
-							context.getCurrentState(),
-							partialStateWithoutFlux,
-							context.getKeyStrategyMap()
-					);
-					var currentState = OverAllState.updateState(
-							intermediateState,
-							(Map<String, Object>) nodeResultValue,
-							context.getKeyStrategyMap()
-					);
+					Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
+							partialStateWithoutFlux, context.getKeyStrategyMap());
+					var currentState = OverAllState.updateState(intermediateState,
+							(Map<String, Object>) nodeResultValue, context.getKeyStrategyMap());
 					context.updateCurrentState(currentState);
 					context.getOverallState().updateState(currentState);
 				}
@@ -363,9 +354,7 @@ public class GraphRunner {
 			}
 		});
 
-		return processedFlux.concatWith(
-				updateContextMono.thenMany(Flux.defer(() -> processGraphExecution(context)))
-		);
+		return processedFlux.concatWith(updateContextMono.thenMany(Flux.defer(() -> processGraphExecution(context))));
 	}
 
 	private Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(GeneratorContext context,
@@ -381,7 +370,7 @@ public class GraphRunner {
 					ChatResponse lastResponse = lastChatResponseRef.get();
 					if (lastResponse == null) {
 						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-								.of(new StreamingOutput(response, context.getCurrentNodeId(), context.getOverallState()));
+							.of(new StreamingOutput(response, context.getCurrentNodeId(), context.getOverallState()));
 						lastChatResponseRef.set(response);
 						lastGraphResponseRef.set(lastGraphResponse);
 						return lastGraphResponse;
@@ -391,7 +380,7 @@ public class GraphRunner {
 
 					if (currentMessage.hasToolCalls()) {
 						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-								.of(new StreamingOutput(response, context.getCurrentNodeId(), context.getOverallState()));
+							.of(new StreamingOutput(response, context.getCurrentNodeId(), context.getOverallState()));
 						lastGraphResponseRef.set(lastGraphResponse);
 						return lastGraphResponse;
 					}
@@ -410,8 +399,8 @@ public class GraphRunner {
 					ChatResponse newResponse = new ChatResponse(List.of(newGeneration), response.getMetadata());
 					lastChatResponseRef.set(newResponse);
 					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-							.of(new StreamingOutput(newResponse.getResult().getOutput()
-									.getText(), context.getCurrentNodeId(), context.getOverallState()));
+						.of(new StreamingOutput(newResponse.getResult().getOutput().getText(),
+								context.getCurrentNodeId(), context.getOverallState()));
 					lastGraphResponseRef.set(lastGraphResponse);
 					return lastGraphResponse;
 				}
@@ -464,10 +453,10 @@ public class GraphRunner {
 	@Deprecated
 	private Optional<AsyncGenerator<NodeOutput>> getEmbedGenerator(Map<String, Object> partialState) {
 		return partialState.entrySet()
-				.stream()
-				.filter(e -> e.getValue() instanceof AsyncGenerator)
-				.findFirst()
-				.map(generatorEntry -> (AsyncGenerator<NodeOutput>) generatorEntry.getValue());
+			.stream()
+			.filter(e -> e.getValue() instanceof AsyncGenerator)
+			.findFirst()
+			.map(generatorEntry -> (AsyncGenerator<NodeOutput>) generatorEntry.getValue());
 	}
 
 	@Deprecated
@@ -475,65 +464,64 @@ public class GraphRunner {
 			AsyncGenerator<NodeOutput> generator, Map<String, Object> partialState) {
 
 		return Flux.<GraphResponse<NodeOutput>>create(sink -> {
-					try {
-						generator.stream().peek(output -> {
-							if (output != null) {
-								output.setSubGraph(true);
-								sink.next(GraphResponse.of(output));
-							}
-						});
+			try {
+				generator.stream().peek(output -> {
+					if (output != null) {
+						output.setSubGraph(true);
+						sink.next(GraphResponse.of(output));
+					}
+				});
 
-						var iteratorResult = AsyncGenerator.resultValue(generator);
+				var iteratorResult = AsyncGenerator.resultValue(generator);
 
-						if (iteratorResult.isPresent()) {
-							var nodeResultValue = iteratorResult.get();
+				if (iteratorResult.isPresent()) {
+					var nodeResultValue = iteratorResult.get();
 
-							if (nodeResultValue instanceof InterruptionMetadata) {
-								context.setReturnFromEmbedWithValue(nodeResultValue);
-								sink.complete();
-								return;
-							}
-
-							if (nodeResultValue != null) {
-								if (nodeResultValue instanceof Map<?, ?>) {
-									// Remove Flux from partial state
-									Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
-											.stream()
-											.filter(e -> !(e.getValue() instanceof Flux))
-											.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-									// Apply partial state update first
-									Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
-											partialStateWithoutFlux, context.getKeyStrategyMap());
-									var currentState = OverAllState.updateState(intermediateState,
-											(Map<String, Object>) nodeResultValue, context.getKeyStrategyMap());
-									context.updateCurrentState(currentState);
-									context.getOverallState().updateState(currentState);
-								}
-								else {
-									throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
-								}
-							}
-						}
+					if (nodeResultValue instanceof InterruptionMetadata) {
+						context.setReturnFromEmbedWithValue(nodeResultValue);
 						sink.complete();
+						return;
 					}
-					catch (Exception e) {
-						sink.error(e);
-					}
-				})
-				.concatWith(Flux.defer(() -> {
-					try {
-						// After embedded flux completes, continue with main flow
-						Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
-						context.setNextNodeId(nextCommand.gotoNode());
-						context.updateCurrentState(nextCommand.update());
 
-						return processGraphExecution(context);
+					if (nodeResultValue != null) {
+						if (nodeResultValue instanceof Map<?, ?>) {
+							// Remove Flux from partial state
+							Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
+								.stream()
+								.filter(e -> !(e.getValue() instanceof Flux))
+								.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+							// Apply partial state update first
+							Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
+									partialStateWithoutFlux, context.getKeyStrategyMap());
+							var currentState = OverAllState.updateState(intermediateState,
+									(Map<String, Object>) nodeResultValue, context.getKeyStrategyMap());
+							context.updateCurrentState(currentState);
+							context.getOverallState().updateState(currentState);
+						}
+						else {
+							throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
+						}
 					}
-					catch (Exception e) {
-						return Flux.just(GraphResponse.error(e));
-					}
-				}));
+				}
+				sink.complete();
+			}
+			catch (Exception e) {
+				sink.error(e);
+			}
+		}).concatWith(Flux.defer(() -> {
+			try {
+				// After embedded flux completes, continue with main flow
+				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
+				context.setNextNodeId(nextCommand.gotoNode());
+				context.updateCurrentState(nextCommand.update());
+
+				return processGraphExecution(context);
+			}
+			catch (Exception e) {
+				return Flux.just(GraphResponse.error(e));
+			}
+		}));
 	}
 
 	/**
@@ -576,18 +564,18 @@ public class GraphRunner {
 			log.trace("RESUME REQUEST");
 
 			var saver = compiledGraph.compileConfig.checkpointSaver()
-					.orElseThrow(() -> new IllegalStateException("Resume request without a configured checkpoint saver!"));
+				.orElseThrow(() -> new IllegalStateException("Resume request without a configured checkpoint saver!"));
 			var checkpoint = saver.get(config)
-					.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
+				.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
 
 			var startCheckpointNextNodeAction = compiledGraph.getNodeAction(checkpoint.getNextNodeId());
 			if (startCheckpointNextNodeAction instanceof SubCompiledGraphNodeAction action) {
 				// RESUME FORM SUBGRAPH DETECTED
 				this.config = RunnableConfig.builder(config)
-						.checkPointId(null) // Reset checkpoint id
-						.addMetadata(action.resumeSubGraphId(), true) // add metadata for
-						// sub graph
-						.build();
+					.checkPointId(null) // Reset checkpoint id
+					.addMetadata(action.resumeSubGraphId(), true) // add metadata for
+					// sub graph
+					.build();
 			}
 			else {
 				// Reset checkpoint id
@@ -691,10 +679,10 @@ public class GraphRunner {
 		public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
 			if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
 				var cp = Checkpoint.builder()
-						.nodeId(nodeId)
-						.state(cloneState(currentState))
-						.nextNodeId(nextNodeId)
-						.build();
+					.nodeId(nodeId)
+					.state(cloneState(currentState))
+					.nextNodeId(nextNodeId)
+					.build();
 				compiledGraph.compileConfig.checkpointSaver().get().put(config, cp);
 				return Optional.of(cp);
 			}

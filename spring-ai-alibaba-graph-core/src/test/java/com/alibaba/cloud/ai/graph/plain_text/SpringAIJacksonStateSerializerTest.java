@@ -156,11 +156,11 @@ class SpringAIJacksonStateSerializerTest {
 		metadata.put("author", "John Doe");
 
 		Document original = Document.builder()
-				.id("doc_123")
-				.text("This is a test document content.")
-				.metadata(metadata)
-				.score(0.95)
-				.build();
+			.id("doc_123")
+			.text("This is a test document content.")
+			.metadata(metadata)
+			.score(0.95)
+			.build();
 
 		// 直接序列化和反序列化Document对象
 		Document deserialized = serializeAndDeserialize(original);
@@ -177,10 +177,10 @@ class SpringAIJacksonStateSerializerTest {
 	void testDocumentWithoutOptionalFields() throws Exception {
 		// 测试没有可选字段的 Document
 		Document original = Document.builder()
-				.id("minimal_doc")
-				.text("Minimal document")
-				.metadata(new HashMap<>())
-				.build();
+			.id("minimal_doc")
+			.text("Minimal document")
+			.metadata(new HashMap<>())
+			.build();
 
 		// 直接序列化和反序列化Document对象
 		Document deserialized = serializeAndDeserialize(original);
@@ -197,18 +197,18 @@ class SpringAIJacksonStateSerializerTest {
 	void testMultipleMessagesSerialization() throws Exception {
 		// 测试多种消息类型的混合序列化
 		SystemMessage systemMessage = SystemMessage.builder()
-				.text("You are a helpful assistant")
-				.metadata(Map.of("role", "system"))
-				.build();
+			.text("You are a helpful assistant")
+			.metadata(Map.of("role", "system"))
+			.build();
 
 		UserMessage userMessage = UserMessage.builder().text("Hello!").metadata(Map.of("user_id", "123")).build();
 
 		Document document = Document.builder()
-				.id("doc_001")
-				.text("Sample document")
-				.metadata(Map.of("type", "text"))
-				.score(0.8)
-				.build();
+			.id("doc_001")
+			.text("Sample document")
+			.metadata(Map.of("type", "text"))
+			.score(0.8)
+			.build();
 
 		// 创建包含多种类型的状态数据
 		Map<String, Object> data = new HashMap<>();

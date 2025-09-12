@@ -34,14 +34,14 @@ class KeyStrategyFactoryBuilderTest {
 	@Test
 	void buildTest() throws Exception {
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().defaultStrategy(KeyStrategy.REPLACE)
-				.addStrategy("prop1")
-				.build();
+			.addStrategy("prop1")
+			.build();
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-				.addNode("agent_1", node_async(state -> {
-					log.info("agent_1\n{}", state);
-					return Map.of("prop1", "test");
-				}))
-				.addEdge("agent_1", END);
+			.addNode("agent_1", node_async(state -> {
+				log.info("agent_1\n{}", state);
+				return Map.of("prop1", "test");
+			}))
+			.addEdge("agent_1", END);
 
 		CompiledGraph app = workflow.compile();
 

@@ -36,9 +36,9 @@ public class DefaultKeyStrategyTest {
 	public void testDefaultKeyStrategyIsReplace() {
 		// Create state without any explicit key strategies
 		OverAllState state = OverAllStateBuilder.builder()
-				.putData("key1", "original_value1")
-				.putData("key2", "original_value2")
-				.build();
+			.putData("key1", "original_value1")
+			.putData("key2", "original_value2")
+			.build();
 
 		// Update with new values - should use REPLACE strategy by default
 		Map<String, Object> updates = new HashMap<>();
@@ -57,11 +57,11 @@ public class DefaultKeyStrategyTest {
 	public void testExplicitStrategyOverridesDefault() {
 		// Create state with explicit APPEND strategy for one key
 		OverAllState state = OverAllStateBuilder.builder()
-				.putData("append_key", "original")
-				.putData("replace_key", "original")
-				.withKeyStrategy("append_key", KeyStrategy.APPEND)
-				// No explicit strategy for replace_key - should use default REPLACE
-				.build();
+			.putData("append_key", "original")
+			.putData("replace_key", "original")
+			.withKeyStrategy("append_key", KeyStrategy.APPEND)
+			// No explicit strategy for replace_key - should use default REPLACE
+			.build();
 
 		// Update both keys
 		Map<String, Object> updates = new HashMap<>();

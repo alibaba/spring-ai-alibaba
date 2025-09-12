@@ -67,18 +67,22 @@ public class StateGraphStreamTest {
 	 * Logger instance for tracking test execution and debugging information
 	 */
 	private static final Logger log = LoggerFactory.getLogger(StateGraphStreamTest.class);
+
 	/**
 	 * Test constant for specifying the Qwen Turbo model in tests
 	 */
 	private static final String TEST_MODEL = "qwen-turbo";
+
 	/**
 	 * Environment variable name containing the DashScope API key
 	 */
 	private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
+
 	/**
 	 * API key for authentication with DashScope services
 	 */
 	private String API_KEY;
+
 	/**
 	 * DashScope API client instance for integration testing
 	 */
@@ -239,11 +243,11 @@ public class StateGraphStreamTest {
 
 		// Use Flux streaming approach - simplified version
 		app.fluxStream(Map.of())
-				.doOnNext(output -> System.out.println(output))
-				.reduce((first, second) -> second) // Get the last state as result
-				.subscribe(lastState -> System.out.println(lastState),
-						error -> System.err.println("Stream error: " + error),
-						() -> System.out.println("Stream completed"));
+			.doOnNext(output -> System.out.println(output))
+			.reduce((first, second) -> second) // Get the last state as result
+			.subscribe(lastState -> System.out.println(lastState),
+					error -> System.err.println("Stream error: " + error),
+					() -> System.out.println("Stream completed"));
 	}
 
 	/**
@@ -259,24 +263,24 @@ public class StateGraphStreamTest {
 			return keyStrategyMap;
 		}).addNode("collectInput", node_async(s -> {
 
-					String input = s.value("input", "");
-					return Map.of("messages", "Received: " + input, "count", 1);
-				})).addNode("processData", node_async(s -> {
+			String input = s.value("input", "");
+			return Map.of("messages", "Received: " + input, "count", 1);
+		})).addNode("processData", node_async(s -> {
 
-					final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
-					AtomicInteger timeOff = new AtomicInteger(1);
-					final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
-							(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
-					return Map.of("messages", it);
-				})).addNode("generateResponse", node_async(s -> {
+			final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
+			AtomicInteger timeOff = new AtomicInteger(1);
+			final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
+					(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
+			return Map.of("messages", it);
+		})).addNode("generateResponse", node_async(s -> {
 
-					int count = s.value("count", 0);
-					return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
-				}))
-				.addEdge(START, "collectInput")
-				.addEdge("collectInput", "processData")
-				.addEdge("processData", "generateResponse")
-				.addEdge("generateResponse", END);
+			int count = s.value("count", 0);
+			return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
+		}))
+			.addEdge(START, "collectInput")
+			.addEdge("collectInput", "processData")
+			.addEdge("processData", "generateResponse")
+			.addEdge("generateResponse", END);
 
 		CompiledGraph compiledGraph = stateGraph.compile();
 		// 初始化输入
@@ -298,20 +302,20 @@ public class StateGraphStreamTest {
 			return keyStrategyMap;
 		}).addNode("collectInput", node_async(s -> {
 
-					String input = s.value("input", "");
-					return Map.of("messages", "Received: " + input, "count", 1);
-				})).addNode("processData", node_async(s -> {
-					Flux<StreamingOutput> it = getStreamingOutputWithResult(s);
-					return Map.of("messages", it);
-				})).addNode("generateResponse", node_async(s -> {
+			String input = s.value("input", "");
+			return Map.of("messages", "Received: " + input, "count", 1);
+		})).addNode("processData", node_async(s -> {
+			Flux<StreamingOutput> it = getStreamingOutputWithResult(s);
+			return Map.of("messages", it);
+		})).addNode("generateResponse", node_async(s -> {
 
-					int count = s.value("count", 0);
-					return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
-				}))
-				.addEdge(START, "collectInput")
-				.addEdge("collectInput", "processData")
-				.addEdge("processData", "generateResponse")
-				.addEdge("generateResponse", END);
+			int count = s.value("count", 0);
+			return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
+		}))
+			.addEdge(START, "collectInput")
+			.addEdge("collectInput", "processData")
+			.addEdge("processData", "generateResponse")
+			.addEdge("generateResponse", END);
 
 		CompiledGraph compiledGraph = stateGraph.compile();
 		// 初始化输入
@@ -334,16 +338,16 @@ public class StateGraphStreamTest {
 			keyStrategyMap.put("llm_result", new AppendStrategy());
 			return keyStrategyMap;
 		}).addNode("llmNode", node_async(new LLmNodeAction(chatModel)))
-				.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
-				.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
-				.addEdge(START, "llmNode")
-				.addEdge("llmNode", "toolNode")
-				.addEdge("toolNode", "result")
-				.addEdge("result", END);
+			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
+			.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
+			.addEdge(START, "llmNode")
+			.addEdge("llmNode", "toolNode")
+			.addEdge("toolNode", "result")
+			.addEdge("result", END);
 
 		CompiledGraph compile = stateGraph.compile();
 		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小���章"))
-				.subscribe(nodeOutput -> System.out.println("Node output: " + nodeOutput));
+			.subscribe(nodeOutput -> System.out.println("Node output: " + nodeOutput));
 	}
 
 	/**
@@ -360,13 +364,13 @@ public class StateGraphStreamTest {
 			keyStrategyMap.put("llm_result", new AppendStrategy());
 			return keyStrategyMap;
 		}).addNode("llmNode", node_async(new LLmNodeAction(chatModel)))
-				.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
-				.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
-				.addEdge(START, "llmNode")
-				.addConditionalEdges("llmNode", getAsyncEdgeAction(),
-						EdgeMappings.builder().to("toolNode", "toolNode").to("result", "result").toEND().build())
-				.addEdge("toolNode", "result")
-				.addEdge("result", END);
+			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
+			.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
+			.addEdge(START, "llmNode")
+			.addConditionalEdges("llmNode", getAsyncEdgeAction(),
+					EdgeMappings.builder().to("toolNode", "toolNode").to("result", "result").toEND().build())
+			.addEdge("toolNode", "result")
+			.addEdge("result", END);
 
 		CompiledGraph compile = stateGraph.compile();
 		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章")).subscribe(output -> {
@@ -386,37 +390,37 @@ public class StateGraphStreamTest {
 			keyStrategyMap.put("count", (oldValue, newValue) -> oldValue == null ? newValue : 1);
 			return keyStrategyMap;
 		}).addNode("collectInput", node_async(s -> {
-					// 处理输入
-					String input = s.value("input", "");
-					return Map.of("messages", "Received: " + input, "count", 1);
-				})).addNode("processData", node_async(s -> {
-					// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
-					final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
-					AtomicInteger timeOff = new AtomicInteger(1);
-					final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
-							(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
-					return Map.of("messages", it);
-				})).addNode("generateResponse", node_async(s -> {
-					// 生成最终响应
-					int count = s.value("count", 0);
-					return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
-				}))
-				.addEdge(START, "collectInput")
-				.addEdge("collectInput", "processData")
-				.addEdge("processData", "generateResponse")
-				.addEdge("generateResponse", END);
+			// 处理输入
+			String input = s.value("input", "");
+			return Map.of("messages", "Received: " + input, "count", 1);
+		})).addNode("processData", node_async(s -> {
+			// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
+			final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
+			AtomicInteger timeOff = new AtomicInteger(1);
+			final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
+					(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
+			return Map.of("messages", it);
+		})).addNode("generateResponse", node_async(s -> {
+			// 生成最终响应
+			int count = s.value("count", 0);
+			return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
+		}))
+			.addEdge(START, "collectInput")
+			.addEdge("collectInput", "processData")
+			.addEdge("processData", "generateResponse")
+			.addEdge("generateResponse", END);
 
 		CompiledGraph app = stateGraph.compile();
 
 		// Use Flux streaming approach for collecting states - simplified version
 		app.fluxStream(Map.of("input", "test"))
-				.filter(s -> !(s instanceof StreamingOutput))
-				.map(NodeOutput::state)
-				.collectList()
-				.subscribe(states -> {
-					assertFalse(states.isEmpty(), "least one content");
-					assertEquals(4, states.size(), "should be four content");
-				}, error -> System.err.println("Stream error: " + error));
+			.filter(s -> !(s instanceof StreamingOutput))
+			.map(NodeOutput::state)
+			.collectList()
+			.subscribe(states -> {
+				assertFalse(states.isEmpty(), "least one content");
+				assertEquals(4, states.size(), "should be four content");
+			}, error -> System.err.println("Stream error: " + error));
 	}
 
 	@Test
@@ -430,24 +434,24 @@ public class StateGraphStreamTest {
 			keyStrategyMap.put("input", new ReplaceStrategy());
 			return keyStrategyMap;
 		}).addNode("llmNode", node_async(new LLmNodeAction(chatModel, "llmNode")))
-				.addNode("llmNode2", node_async(new LLmNodeAction(chatModel, "llmNode2")))
-				.addNode("result", node_async((t) -> Map.of("llm_result", "llm_result")))
-				.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
-				.addEdge(START, "llmNode")
-				.addEdge(START, "llmNode2")
-				.addEdge(START, "result")
-				.addEdge("llmNode", "toolNode")
-				.addEdge("llmNode2", "toolNode")
-				.addEdge("toolNode", END);
+			.addNode("llmNode2", node_async(new LLmNodeAction(chatModel, "llmNode2")))
+			.addNode("result", node_async((t) -> Map.of("llm_result", "llm_result")))
+			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
+			.addEdge(START, "llmNode")
+			.addEdge(START, "llmNode2")
+			.addEdge(START, "result")
+			.addEdge("llmNode", "toolNode")
+			.addEdge("llmNode2", "toolNode")
+			.addEdge("toolNode", END);
 
 		CompiledGraph compile = stateGraph.compile();
 
 		compile
-				.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"),
-						RunnableConfig.builder().addParallelNodeExecutor(START, ForkJoinPool.commonPool()).build())
-				.subscribe(output -> {
-					System.out.println("Node output: " + output);
-				});
+			.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"),
+					RunnableConfig.builder().addParallelNodeExecutor(START, ForkJoinPool.commonPool()).build())
+			.subscribe(output -> {
+				System.out.println("Node output: " + output);
+			});
 	}
 
 }

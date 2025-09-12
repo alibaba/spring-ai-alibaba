@@ -43,10 +43,10 @@ public class AssignerNodeTest {
 		state.updateState(Map.of("a", "hello", "b", "world", "c", 123));
 
 		AssignerNode node = AssignerNode.builder()
-				.addItem("x", "a", AssignerNode.WriteMode.OVER_WRITE)
-				.addItem("y", "b", AssignerNode.WriteMode.OVER_WRITE)
-				.addItem("z", "c", AssignerNode.WriteMode.OVER_WRITE)
-				.build();
+			.addItem("x", "a", AssignerNode.WriteMode.OVER_WRITE)
+			.addItem("y", "b", AssignerNode.WriteMode.OVER_WRITE)
+			.addItem("z", "c", AssignerNode.WriteMode.OVER_WRITE)
+			.build();
 
 		Map<String, Object> result = node.apply(state);
 		assertEquals("hello", result.get("x"));
@@ -65,9 +65,9 @@ public class AssignerNodeTest {
 				Map.of("a", "foo", "b", "bar", "x", new ArrayList<>(List.of("hello")), "y", new ArrayList<>()));
 
 		AssignerNode node = AssignerNode.builder()
-				.addItem("x", "a", AssignerNode.WriteMode.APPEND)
-				.addItem("y", "b", AssignerNode.WriteMode.APPEND)
-				.build();
+			.addItem("x", "a", AssignerNode.WriteMode.APPEND)
+			.addItem("y", "b", AssignerNode.WriteMode.APPEND)
+			.build();
 
 		Map<String, Object> result = node.apply(state);
 		List<?> xList = (List<?>) result.get("x");
@@ -86,10 +86,10 @@ public class AssignerNodeTest {
 		state.updateState(Map.of("x", "something", "y", new ArrayList<>(List.of(1, 2, 3)), "z", 42));
 
 		AssignerNode node = AssignerNode.builder()
-				.addItem("x", null, AssignerNode.WriteMode.CLEAR)
-				.addItem("y", null, AssignerNode.WriteMode.CLEAR)
-				.addItem("z", null, AssignerNode.WriteMode.CLEAR)
-				.build();
+			.addItem("x", null, AssignerNode.WriteMode.CLEAR)
+			.addItem("y", null, AssignerNode.WriteMode.CLEAR)
+			.addItem("z", null, AssignerNode.WriteMode.CLEAR)
+			.build();
 
 		Map<String, Object> result = node.apply(state);
 		assertEquals("", result.get("x"));
@@ -110,10 +110,10 @@ public class AssignerNodeTest {
 				"to be cleared", "c", 999));
 
 		AssignerNode node = AssignerNode.builder()
-				.addItem("a", "input1", AssignerNode.WriteMode.APPEND)
-				.addItem("b", null, AssignerNode.WriteMode.CLEAR)
-				.addItem("c", "input3", AssignerNode.WriteMode.OVER_WRITE)
-				.build();
+			.addItem("a", "input1", AssignerNode.WriteMode.APPEND)
+			.addItem("b", null, AssignerNode.WriteMode.CLEAR)
+			.addItem("c", "input3", AssignerNode.WriteMode.OVER_WRITE)
+			.build();
 
 		Map<String, Object> result = node.apply(state);
 		assertEquals(List.of("a0", "A"), result.get("a"));

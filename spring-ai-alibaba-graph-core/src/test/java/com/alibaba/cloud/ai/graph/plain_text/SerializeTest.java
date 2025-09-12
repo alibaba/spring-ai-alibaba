@@ -129,7 +129,7 @@ public class SerializeTest {
 
 		// Create OverAllState with a non-serializable element
 		OverAllState state = stateSerializer
-				.stateOf(mapOf("a", "b", "f", new NonSerializableElement("I'M NOT SERIALIZABLE"), "c", "d"));
+			.stateOf(mapOf("a", "b", "f", new NonSerializableElement("I'M NOT SERIALIZABLE"), "c", "d"));
 
 		// Expect NotSerializableException when attempting to serialize
 		assertThrows(NotSerializableException.class, () -> {
@@ -158,7 +158,7 @@ public class SerializeTest {
 
 		// Create OverAllState with custom serialized type included
 		OverAllState state = stateSerializer
-				.stateOf(mapOf("a", "b", "x", new NonSerializableElement("I'M NOT SERIALIZABLE"), "f", "H", "c", "d"));
+			.stateOf(mapOf("a", "b", "x", new NonSerializableElement("I'M NOT SERIALIZABLE"), "f", "H", "c", "d"));
 
 		System.out.println(state);
 

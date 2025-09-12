@@ -85,10 +85,10 @@ public class ScheduledAgentTaskTest {
 					System.out.println("Cron execution #" + count + " " + event + " at " + System.currentTimeMillis());
 					if (data instanceof OverAllState) {
 						String textContent = ((OverAllState) data).value("output")
-								.filter(AssistantMessage.class::isInstance)
-								.map(AssistantMessage.class::cast)
-								.map(AssistantMessage::getText)
-								.orElse("No content available");
+							.filter(AssistantMessage.class::isInstance)
+							.map(AssistantMessage.class::cast)
+							.map(AssistantMessage::getText)
+							.orElse("No content available");
 						System.out.println("output:" + textContent);
 					}
 					System.out.println((2 - executionLatch.getCount())
@@ -109,21 +109,21 @@ public class ScheduledAgentTaskTest {
 		try {
 			// Create ReactAgent
 			ReactAgent agent = ReactAgent.builder()
-					.name("cron_scheduled_agent")
-					.model(chatModel)
-					.instruction("You are a cron test agent. respond briefly.")
-					.outputKey("output")
-					.build();
+				.name("cron_scheduled_agent")
+				.model(chatModel)
+				.instruction("You are a cron test agent. respond briefly.")
+				.outputKey("output")
+				.build();
 
 			long startTime = System.currentTimeMillis();
 			System.out.println("Cron test started at: " + startTime);
 
 			// Schedule with cron expression - every 5 seconds
 			ScheduleConfig config = ScheduleConfig.builder()
-					.cronExpression("*/15 * * * * ?") // Every 5 seconds
-					.inputs(Map.of("messages", List.of(new UserMessage("Is '0 */1 * * * ?' a right expression?"))))
-					.addListener(listener)
-					.build();
+				.cronExpression("*/15 * * * * ?") // Every 5 seconds
+				.inputs(Map.of("messages", List.of(new UserMessage("Is '0 */1 * * * ?' a right expression?"))))
+				.addListener(listener)
+				.build();
 
 			// Schedule the agent
 			ScheduledAgentTask task = agent.schedule(config);

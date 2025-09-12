@@ -53,7 +53,7 @@ class RedisSaverTest {
 	@Container
 	private static final GenericContainer<?> redisContainer = new GenericContainer<>(
 			DockerImageName.parse("valkey/valkey:8.1.2"))
-			.withExposedPorts(6379); // #gitleaks:allow
+		.withExposedPorts(6379); // #gitleaks:allow
 	static RedissonClient redisson;
 	static RedisSaver redisSaver;
 
@@ -63,7 +63,7 @@ class RedisSaverTest {
 		// 本地单机 Redis，测试环境需保证 6379 端口可用
 		Config config = new Config();
 		config.useSingleServer()
-				.setAddress("redis://" + redisContainer.getHost() + ":" + redisContainer.getMappedPort(6379));
+			.setAddress("redis://" + redisContainer.getHost() + ":" + redisContainer.getMappedPort(6379));
 		redisson = Redisson.create(config);
 		redisSaver = new RedisSaver(redisson);
 	}
@@ -82,17 +82,17 @@ class RedisSaverTest {
 
 		// 构造 checkpoint
 		Checkpoint cp1 = Checkpoint.builder()
-				.id("cp1")
-				.state(java.util.Map.of("data", "data1"))
-				.nodeId("node1")
-				.nextNodeId("node2")
-				.build();
+			.id("cp1")
+			.state(java.util.Map.of("data", "data1"))
+			.nodeId("node1")
+			.nextNodeId("node2")
+			.build();
 		Checkpoint cp2 = Checkpoint.builder()
-				.id("cp2")
-				.state(java.util.Map.of("data", "data2"))
-				.nodeId("node1")
-				.nextNodeId("node2")
-				.build();
+			.id("cp2")
+			.state(java.util.Map.of("data", "data2"))
+			.nodeId("node1")
+			.nextNodeId("node2")
+			.build();
 
 		// put 第一个
 		redisSaver.put(config, cp1);
@@ -122,20 +122,20 @@ class RedisSaverTest {
 		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
 
 		Checkpoint cp1 = Checkpoint.builder()
-				.id("cp1")
-				.state(java.util.Map.of("data", "data1"))
-				.nodeId("node1")
-				.nextNodeId("node2")
-				.build();
+			.id("cp1")
+			.state(java.util.Map.of("data", "data1"))
+			.nodeId("node1")
+			.nextNodeId("node2")
+			.build();
 		redisSaver.put(config, cp1);
 
 		// 替换 cp1
 		Checkpoint cp1New = Checkpoint.builder()
-				.id("cp1")
-				.state(java.util.Map.of("data", "data1-new"))
-				.nodeId("node1")
-				.nextNodeId("node2")
-				.build();
+			.id("cp1")
+			.state(java.util.Map.of("data", "data1-new"))
+			.nodeId("node1")
+			.nextNodeId("node2")
+			.build();
 		RunnableConfig configWithId = RunnableConfig.builder(config).checkPointId("cp1").build();
 		redisSaver.put(configWithId, cp1New);
 
@@ -151,18 +151,18 @@ class RedisSaverTest {
 
 		redisSaver.put(config,
 				Checkpoint.builder()
-						.id("cp1")
-						.state(java.util.Map.of("data", "data1"))
-						.nodeId("node1")
-						.nextNodeId("node2")
-						.build());
+					.id("cp1")
+					.state(java.util.Map.of("data", "data1"))
+					.nodeId("node1")
+					.nextNodeId("node2")
+					.build());
 		redisSaver.put(config,
 				Checkpoint.builder()
-						.id("cp2")
-						.state(java.util.Map.of("data", "data2"))
-						.nodeId("node1")
-						.nextNodeId("node2")
-						.build());
+					.id("cp2")
+					.state(java.util.Map.of("data", "data2"))
+					.nodeId("node1")
+					.nextNodeId("node2")
+					.build());
 
 		boolean cleared = redisSaver.clear(config);
 		assertTrue(cleared);

@@ -67,29 +67,29 @@ class SequentialAgentTest {
 		};
 
 		ReactAgent writerAgent = ReactAgent.builder()
-				.name("writer_agent")
-				.model(chatModel)
-				.description("可以写文章。")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
-				.outputKey("article")
-				.build();
+			.name("writer_agent")
+			.model(chatModel)
+			.description("可以写文章。")
+			.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+			.outputKey("article")
+			.build();
 
 		ReactAgent reviewerAgent = ReactAgent.builder()
-				.name("reviewer_agent")
-				.model(chatModel)
-				.description("可以对文章进行评论和修改。")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
-				.outputKey("reviewed_article")
-				.build();
+			.name("reviewer_agent")
+			.model(chatModel)
+			.description("可以对文章进行评论和修改。")
+			.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
+			.outputKey("reviewed_article")
+			.build();
 
 		SequentialAgent blogAgent = SequentialAgent.builder()
-				.name("blog_agent")
-				.state(stateFactory)
-				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改。")
-				.inputKey("input")
-				.outputKey("reviewed_article")
-				.subAgents(List.of(writerAgent, reviewerAgent))
-				.build();
+			.name("blog_agent")
+			.state(stateFactory)
+			.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改。")
+			.inputKey("input")
+			.outputKey("reviewed_article")
+			.subAgents(List.of(writerAgent, reviewerAgent))
+			.build();
 
 		try {
 			Optional<OverAllState> result = blogAgent.invoke(Map.of("input", "帮我写一个100字左右的散文"));
@@ -110,8 +110,8 @@ class SequentialAgentTest {
 			assertFalse(article.trim().isEmpty(), "Article content should not be empty");
 
 			// 验证评审后的文章存在
-			assertTrue(state.value("reviewed_article")
-					.isPresent(), "Reviewed article should be present after reviewer agent");
+			assertTrue(state.value("reviewed_article").isPresent(),
+					"Reviewed article should be present after reviewer agent");
 			String reviewedArticle = (String) state.value("reviewed_article").get();
 			assertNotNull(reviewedArticle, "Reviewed article content should not be null");
 			assertFalse(reviewedArticle.trim().isEmpty(), "Reviewed article content should not be empty");

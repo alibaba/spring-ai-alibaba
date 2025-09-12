@@ -47,10 +47,10 @@ class OverAllStateBuilderTest {
 
 		// Act
 		OverAllState state = OverAllStateBuilder.builder()
-				.withData(data)
-				.withKeyStrategy("input", new ReplaceStrategy())
-				.setResume(true)
-				.build();
+			.withData(data)
+			.withKeyStrategy("input", new ReplaceStrategy())
+			.setResume(true)
+			.build();
 
 		// Assert
 		assertThat(state).isNotNull();

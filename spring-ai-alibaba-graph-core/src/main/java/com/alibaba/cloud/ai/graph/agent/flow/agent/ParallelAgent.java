@@ -319,9 +319,9 @@ public class ParallelAgent extends FlowAgent {
 		@Override
 		public Object merge(Map<String, Object> subAgentResults, OverAllState overallState) {
 			return subAgentResults.values()
-					.stream()
-					.map(Object::toString)
-					.reduce("", (a, b) -> a.isEmpty() ? b : a + separator + b);
+				.stream()
+				.map(Object::toString)
+				.reduce("", (a, b) -> a.isEmpty() ? b : a + separator + b);
 		}
 
 	}

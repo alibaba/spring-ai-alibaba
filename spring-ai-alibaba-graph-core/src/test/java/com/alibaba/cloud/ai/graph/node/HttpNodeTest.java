@@ -74,15 +74,15 @@ public class HttpNodeTest {
 	@Test
 	void testHttpGetSuccess() throws Exception {
 		mockWebServer.enqueue(new MockResponse().setBody("{\"message\":\"success\"}")
-				.setHeader(HttpHeaders.CONTENT_TYPE, "application/json"));
+			.setHeader(HttpHeaders.CONTENT_TYPE, "application/json"));
 
 		String url = mockWebServer.url("/test").toString();
 		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.GET)
-				.url(url)
-				.body(new HttpRequestNodeBody())
-				.build();
+			.webClient(webClient)
+			.method(HttpMethod.GET)
+			.url(url)
+			.body(new HttpRequestNodeBody())
+			.build();
 
 		OverAllState state = new OverAllState();
 		Map<String, Object> result = node.apply(state);
@@ -103,12 +103,12 @@ public class HttpNodeTest {
 
 		String url = baseUrl + "${pathVar}";
 		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.GET)
-				.url(url)
-				.header("X-Header", "${headerVal}")
-				.queryParam("param", "${queryVal}")
-				.build();
+			.webClient(webClient)
+			.method(HttpMethod.GET)
+			.url(url)
+			.header("X-Header", "${headerVal}")
+			.queryParam("param", "${queryVal}")
+			.build();
 
 		OverAllState state = new OverAllState(
 				Map.of("pathVar", "users", "headerVal", "test-header", "queryVal", "test-query"));
@@ -128,11 +128,11 @@ public class HttpNodeTest {
 
 		String url = mockWebServer.url("/echo").toString();
 		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.POST)
-				.url(url)
-				.body(HttpRequestNodeBody.from("Hello ${name}"))
-				.build();
+			.webClient(webClient)
+			.method(HttpMethod.POST)
+			.url(url)
+			.body(HttpRequestNodeBody.from("Hello ${name}"))
+			.build();
 
 		OverAllState state = new OverAllState(Map.of("name", "Alice"));
 		node.apply(state);
@@ -174,8 +174,7 @@ public class HttpNodeTest {
 	@Test
 	void testPlainTextResponse() throws Exception {
 		mockWebServer
-				.enqueue(new MockResponse().setBody("plain response")
-						.setHeader(HttpHeaders.CONTENT_TYPE, "text/plain"));
+			.enqueue(new MockResponse().setBody("plain response").setHeader(HttpHeaders.CONTENT_TYPE, "text/plain"));
 
 		String url = mockWebServer.url("/plain").toString();
 		HttpNode node = HttpNode.builder().webClient(webClient).method(HttpMethod.GET).url(url).build();
@@ -190,16 +189,16 @@ public class HttpNodeTest {
 	@Test
 	void testNon2xxResponse() throws Exception {
 		mockWebServer.enqueue(new MockResponse().setResponseCode(404)
-				.setBody("{\"error\":\"Not Found\"}")
-				.setHeader(HttpHeaders.CONTENT_TYPE, "application/json"));
+			.setBody("{\"error\":\"Not Found\"}")
+			.setHeader(HttpHeaders.CONTENT_TYPE, "application/json"));
 
 		String url = mockWebServer.url("/notfound").toString();
 		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.GET)
-				.url(url)
-				.retryConfig(new RetryConfig(0, 0, false))
-				.build();
+			.webClient(webClient)
+			.method(HttpMethod.GET)
+			.url(url)
+			.retryConfig(new RetryConfig(0, 0, false))
+			.build();
 
 		Map<String, Object> result = node.apply(new OverAllState());
 		Map<String, Object> messages = (Map<String, Object>) result.get("messages");
@@ -215,9 +214,9 @@ public class HttpNodeTest {
 		assertNotNull(is, "测试资源 test.png 未找到，请将文件放在 src/test/resources/ 根目录下");
 		byte[] fileBytes = is.readAllBytes();
 		MockResponse mockResponse = new MockResponse().setResponseCode(200)
-				.addHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"test.png\"")
-				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
-				.setBody(new okio.Buffer().write(fileBytes));
+			.addHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"test.png\"")
+			.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
+			.setBody(new okio.Buffer().write(fileBytes));
 		mockWebServer.enqueue(mockResponse);
 
 		String url = mockWebServer.url("/test.png").toString();
@@ -247,11 +246,11 @@ public class HttpNodeTest {
 		AuthConfig authConfig = AuthConfig.basic("user", "pass");
 
 		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.GET)
-				.url(url)
-				.auth(authConfig)
-				.build();
+			.webClient(webClient)
+			.method(HttpMethod.GET)
+			.url(url)
+			.auth(authConfig)
+			.build();
 
 		node.apply(new OverAllState());
 
@@ -269,11 +268,11 @@ public class HttpNodeTest {
 
 		String url = mockWebServer.url("/retry-fail").toString();
 		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.GET)
-				.url(url)
-				.retryConfig(new RetryConfig(3, 1000, true))
-				.build();
+			.webClient(webClient)
+			.method(HttpMethod.GET)
+			.url(url)
+			.retryConfig(new RetryConfig(3, 1000, true))
+			.build();
 
 		Map<String, Object> result = assertDoesNotThrow(() -> node.apply(new OverAllState()));
 		Map<String, Object> messages = (Map<String, Object>) result.get("messages");
@@ -285,8 +284,8 @@ public class HttpNodeTest {
 	@Test
 	void testJsonBodyAndVariableReplace() throws Exception {
 		mockWebServer.enqueue(new MockResponse().setResponseCode(200)
-				.setBody("OK")
-				.setHeader(HttpHeaders.CONTENT_TYPE, "text/plain"));
+			.setBody("OK")
+			.setHeader(HttpHeaders.CONTENT_TYPE, "text/plain"));
 		OverAllState state = new OverAllState();
 		state.registerKeyAndStrategy("key1", new ReplaceStrategy());
 		state.registerKeyAndStrategy("key2", new ReplaceStrategy());
@@ -321,13 +320,13 @@ public class HttpNodeTest {
 				+ "\"key2out\": \"${key2}\", " + "\"key3out\": \"${key3}\"" + "}" + "}";
 
 		HttpNode node = HttpNode.builder()
-				.url(mockWebServer.url("/mock").toString())
-				.method(HttpMethod.POST)
-				.header("Content-Type", "application/json")
-				.body(HttpRequestNodeBody.fromJson(myJson))
-				.retryConfig(new RetryConfig(3, 100, true))
-				.outputKey("http_node_output")
-				.build();
+			.url(mockWebServer.url("/mock").toString())
+			.method(HttpMethod.POST)
+			.header("Content-Type", "application/json")
+			.body(HttpRequestNodeBody.fromJson(myJson))
+			.retryConfig(new RetryConfig(3, 100, true))
+			.outputKey("http_node_output")
+			.build();
 
 		Map<String, Object> result = assertDoesNotThrow(() -> node.apply(state));
 		Map<String, Object> messages = (Map<String, Object>) result.get("messages");

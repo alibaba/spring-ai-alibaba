@@ -152,8 +152,8 @@ public class StoreIntegrationTest {
 
 		// Test search by namespace prefix
 		StoreSearchRequest engineeringRequest = StoreSearchRequest.builder()
-				.namespace(List.of("company", "engineering"))
-				.build();
+			.namespace(List.of("company", "engineering"))
+			.build();
 		StoreSearchResult engineeringResult = store.searchItems(engineeringRequest);
 		assertThat(engineeringResult.getItems()).hasSize(3); // engineering + backend +
 		// frontend
@@ -186,8 +186,8 @@ public class StoreIntegrationTest {
 
 		// Test list with prefix filter
 		NamespaceListRequest engineeringNamespaces = NamespaceListRequest.builder()
-				.namespace(List.of("company", "engineering"))
-				.build();
+			.namespace(List.of("company", "engineering"))
+			.build();
 		List<String> engineeringNs = store.listNamespaces(engineeringNamespaces);
 		assertThat(engineeringNs).contains("company/engineering", "company/engineering/backend",
 				"company/engineering/frontend");

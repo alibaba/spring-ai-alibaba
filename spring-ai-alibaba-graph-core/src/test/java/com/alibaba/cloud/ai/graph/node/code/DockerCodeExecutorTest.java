@@ -50,9 +50,9 @@ class DockerCodeExecutorTest {
 		// 3. 构造执行配置
 		Path workDir = Files.createTempDirectory("docker-code-exec-test");
 		CodeExecutionConfig config = new CodeExecutionConfig().setDocker("python:3.10")
-				.setWorkDir(workDir.toAbsolutePath().toString())
-				.setContainerName("docker-code-exec-test")
-				.setTimeout(60);
+			.setWorkDir(workDir.toAbsolutePath().toString())
+			.setContainerName("docker-code-exec-test")
+			.setTimeout(60);
 
 		// 4. 执行
 		CodeExecutionResult result = executor.executeCodeBlocks(List.of(codeBlock), config);

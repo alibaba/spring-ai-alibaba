@@ -44,19 +44,33 @@ import reactor.core.publisher.Flux;
 public class LlmNode implements NodeAction {
 
 	public static final String LLM_RESPONSE_KEY = "llm_response";
+
 	private static final ObjectMapper objectMapper = new ObjectMapper();
+
 	private String systemPrompt;
+
 	private String userPrompt;
+
 	private Map<String, Object> params = new HashMap<>();
+
 	private List<Message> messages = new ArrayList<>();
+
 	private List<Advisor> advisors = new ArrayList<>();
+
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+
 	private String systemPromptKey;
+
 	private String userPromptKey;
+
 	private String paramsKey;
+
 	private String messagesKey;
+
 	private String outputKey;
+
 	private ChatClient chatClient;
+
 	private Boolean stream = Boolean.FALSE;
 
 	public LlmNode() {

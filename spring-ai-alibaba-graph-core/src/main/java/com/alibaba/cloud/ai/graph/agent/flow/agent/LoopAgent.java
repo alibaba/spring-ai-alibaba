@@ -83,7 +83,9 @@ import java.util.stream.StreamSupport;
 public class LoopAgent extends FlowAgent {
 
 	public static final String LOOP_CONFIG_KEY = "loopConfig";
+
 	public static final int ITERABLE_ELEMENT_COUNT = 10000;
+
 	private final LoopConfig loopConfig;
 
 	/**
@@ -114,9 +116,9 @@ public class LoopAgent extends FlowAgent {
 		} // Initialize outputKey as an empty list to collect loop results
 
 		return compiledGraph.call(Stream.of(input, Map.of(this.outputKey(), new ArrayList<>()))
-				.map(Map::entrySet)
-				.flatMap(Collection::stream)
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> newValue)));
+			.map(Map::entrySet)
+			.flatMap(Collection::stream)
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> newValue)));
 	}
 
 	/**
@@ -158,9 +160,9 @@ public class LoopAgent extends FlowAgent {
 
 			// Update the current iteration count and return
 			return input
-					.map(o -> Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true,
-							LoopMode.iteratorItemKey(agentName), o))
-					.orElseGet(() -> Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true));
+				.map(o -> Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true,
+						LoopMode.iteratorItemKey(agentName), o))
+				.orElseGet(() -> Map.of(countKey, loopCount + 1, LoopMode.loopStartFlagKey(agentName), true));
 		}), loopConfig -> (state -> {
 			// Put the result into outputKey
 			Optional<Object> value = state.value(iteratorResultKey(loopConfig.agentName()));
@@ -190,7 +192,7 @@ public class LoopAgent extends FlowAgent {
 			// Check if it's the first loop, if so, allow it to proceed directly
 			if (state.value(loopStartFlagKey(agentName)).isEmpty()) {
 				return input.map(o -> Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), o))
-						.orElseGet(() -> Map.of(loopStartFlagKey(agentName), true));
+					.orElseGet(() -> Map.of(loopStartFlagKey(agentName), true));
 			}
 
 			// Get current iteration result
@@ -200,7 +202,7 @@ public class LoopAgent extends FlowAgent {
 			}
 			// Continue retrying
 			return input.map(o -> Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), o))
-					.orElseGet(() -> Map.of(loopStartFlagKey(agentName), true));
+				.orElseGet(() -> Map.of(loopStartFlagKey(agentName), true));
 		}), loopConfig -> (state -> {
 			// Put the result into outputKey
 			Optional<Object> value = state.value(iteratorResultKey(loopConfig.agentName()));
@@ -245,8 +247,8 @@ public class LoopAgent extends FlowAgent {
 				}
 				// Convert Iterable to List and limit the maximum number of elements
 				iteratorElement = StreamSupport.stream(iterable.spliterator(), false)
-						.limit(ITERABLE_ELEMENT_COUNT)
-						.toList();
+					.limit(ITERABLE_ELEMENT_COUNT)
+					.toList();
 			}
 			else {
 				iteratorElement = (List<?>) iteratorObj.get();
@@ -392,10 +394,10 @@ public class LoopAgent extends FlowAgent {
 
 		private static KeyStrategyFactory combineKeyStrategy(String agentName, Map<String, KeyStrategy> strategyMap) {
 			return new KeyStrategyFactoryBuilder().addStrategies(strategyMap)
-					.addStrategy(loopStartFlagKey(agentName), new ReplaceStrategy())
-					.addStrategy(iteratorItemKey(agentName), new ReplaceStrategy())
-					.addStrategy(iteratorResultKey(agentName), new ReplaceStrategy())
-					.build();
+				.addStrategy(loopStartFlagKey(agentName), new ReplaceStrategy())
+				.addStrategy(iteratorItemKey(agentName), new ReplaceStrategy())
+				.addStrategy(iteratorResultKey(agentName), new ReplaceStrategy())
+				.build();
 		}
 
 		public static String loopStartFlagKey(String agentName) {
@@ -437,7 +439,7 @@ public class LoopAgent extends FlowAgent {
 	 * condition is checked for continuation on each loop iteration.
 	 */
 	public record LoopConfig(String agentName, String inputKey, String outputKey, LoopMode loopMode, Integer loopCount,
-							 Predicate<Object> loopCondition) {
+			Predicate<Object> loopCondition) {
 		/**
 		 * Validate the validity of the loop configuration
 		 * @throws IllegalArgumentException Thrown when the configuration is invalid

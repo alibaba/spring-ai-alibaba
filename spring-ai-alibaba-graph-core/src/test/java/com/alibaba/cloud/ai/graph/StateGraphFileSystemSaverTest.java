@@ -59,32 +59,32 @@ public class StateGraphFileSystemSaverTest {
 	public void testCheckpointSaverResubmit() throws Exception {
 		int expectedSteps = 5;
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("steps")
-				.addStrategy("messages", KeyStrategy.APPEND)
-				.build();
+			.addStrategy("messages", KeyStrategy.APPEND)
+			.build();
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-				.addNode("agent_1", node_async(state -> {
-					int defaultSteps = (int) state.value("steps").orElse(0);
-					int steps = defaultSteps + 1;
-					log.info("agent_1: step: {}", steps);
-					return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
-				}))
-				.addConditionalEdges("agent_1", edge_async(state -> {
-					int steps = (int) state.data().get("steps");
-					if (steps >= expectedSteps) {
-						return "exit";
-					}
-					return "next";
-				}), Map.of("next", "agent_1", "exit", END));
+			.addNode("agent_1", node_async(state -> {
+				int defaultSteps = (int) state.value("steps").orElse(0);
+				int steps = defaultSteps + 1;
+				log.info("agent_1: step: {}", steps);
+				return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
+			}))
+			.addConditionalEdges("agent_1", edge_async(state -> {
+				int steps = (int) state.data().get("steps");
+				if (steps >= expectedSteps) {
+					return "exit";
+				}
+				return "next";
+			}), Map.of("next", "agent_1", "exit", END));
 
 		var saver = new FileSystemSaver(Paths.get(rootPath, "testCheckpointSaverResubmit"),
 				workflow.getStateSerializer());
 
 		CompileConfig compileConfig = CompileConfig.builder()
-				.saverConfig(SaverConfig.builder()
-						.type(SaverEnum.FILE.getValue())
-						.register(SaverEnum.FILE.getValue(), saver)
-						.build())
-				.build();
+			.saverConfig(SaverConfig.builder()
+				.type(SaverEnum.FILE.getValue())
+				.register(SaverEnum.FILE.getValue(), saver)
+				.build())
+			.build();
 
 		CompiledGraph app = workflow.compile(compileConfig);
 
@@ -156,32 +156,32 @@ public class StateGraphFileSystemSaverTest {
 	public void testCheckpointSaverWithManualRelease() throws Exception {
 		int expectedSteps = 5;
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("steps")
-				.addStrategy("messages", KeyStrategy.APPEND)
-				.build();
+			.addStrategy("messages", KeyStrategy.APPEND)
+			.build();
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-				.addNode("agent_1", node_async(state -> {
-					int defaultSteps = (int) state.value("steps").orElse(0);
-					int steps = defaultSteps + 1;
-					log.info("agent_1: step: {}", steps);
-					return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
-				}))
-				.addConditionalEdges("agent_1", edge_async(state -> {
-					int steps = (int) state.data().get("steps");
-					if (steps >= expectedSteps) {
-						return "exit";
-					}
-					return "next";
-				}), Map.of("next", "agent_1", "exit", END));
+			.addNode("agent_1", node_async(state -> {
+				int defaultSteps = (int) state.value("steps").orElse(0);
+				int steps = defaultSteps + 1;
+				log.info("agent_1: step: {}", steps);
+				return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
+			}))
+			.addConditionalEdges("agent_1", edge_async(state -> {
+				int steps = (int) state.data().get("steps");
+				if (steps >= expectedSteps) {
+					return "exit";
+				}
+				return "next";
+			}), Map.of("next", "agent_1", "exit", END));
 
 		var saver = new FileSystemSaver(Paths.get(rootPath, "testCheckpointSaverWithManualRelease"),
 				workflow.getStateSerializer());
 
 		CompileConfig compileConfig = CompileConfig.builder()
-				.saverConfig(SaverConfig.builder()
-						.type(SaverEnum.FILE.getValue())
-						.register(SaverEnum.FILE.getValue(), saver)
-						.build())
-				.build();
+			.saverConfig(SaverConfig.builder()
+				.type(SaverEnum.FILE.getValue())
+				.register(SaverEnum.FILE.getValue(), saver)
+				.build())
+			.build();
 
 		CompiledGraph app = workflow.compile(compileConfig);
 
@@ -254,33 +254,33 @@ public class StateGraphFileSystemSaverTest {
 	public void testCheckpointSaverWithAutoRelease() throws Exception {
 		int expectedSteps = 5;
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().addStrategy("steps")
-				.addStrategy("messages", KeyStrategy.APPEND)
-				.build();
+			.addStrategy("messages", KeyStrategy.APPEND)
+			.build();
 		StateGraph workflow = new StateGraph(keyStrategyFactory).addEdge(START, "agent_1")
-				.addNode("agent_1", node_async(state -> {
-					int defaultSteps = (int) state.value("steps").orElse(0);
-					int steps = defaultSteps + 1;
-					log.info("agent_1: step: {}", steps);
-					return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
-				}))
-				.addConditionalEdges("agent_1", edge_async(state -> {
-					int steps = (int) state.data().get("steps");
-					if (steps >= expectedSteps) {
-						return "exit";
-					}
-					return "next";
-				}), Map.of("next", "agent_1", "exit", END));
+			.addNode("agent_1", node_async(state -> {
+				int defaultSteps = (int) state.value("steps").orElse(0);
+				int steps = defaultSteps + 1;
+				log.info("agent_1: step: {}", steps);
+				return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
+			}))
+			.addConditionalEdges("agent_1", edge_async(state -> {
+				int steps = (int) state.data().get("steps");
+				if (steps >= expectedSteps) {
+					return "exit";
+				}
+				return "next";
+			}), Map.of("next", "agent_1", "exit", END));
 
 		var saver = new FileSystemSaver(Paths.get(rootPath, "testCheckpointSaverWithAutoRelease"),
 				workflow.getStateSerializer());
 
 		CompileConfig compileConfig = CompileConfig.builder()
-				.saverConfig(SaverConfig.builder()
-						.type(SaverEnum.FILE.getValue())
-						.register(SaverEnum.FILE.getValue(), saver)
-						.build())
-				.releaseThread(true)
-				.build();
+			.saverConfig(SaverConfig.builder()
+				.type(SaverEnum.FILE.getValue())
+				.register(SaverEnum.FILE.getValue(), saver)
+				.build())
+			.releaseThread(true)
+			.build();
 
 		var app = workflow.compile(compileConfig);
 

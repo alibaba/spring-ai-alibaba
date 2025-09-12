@@ -41,6 +41,7 @@ public class CodeActionTest {
 
 	@TempDir
 	Path tempDir;
+
 	private CodeExecutionConfig config;
 
 	@BeforeEach
@@ -61,12 +62,12 @@ public class CodeActionTest {
 		params.put("key1", "arg1");
 		params.put("key2", "arg2");
 		NodeAction codeNode = CodeExecutorNodeAction.builder()
-				.codeExecutor(new LocalCommandlineCodeExecutor())
-				.code(code)
-				.codeLanguage("python")
-				.config(config)
-				.params(params)
-				.build();
+			.codeExecutor(new LocalCommandlineCodeExecutor())
+			.code(code)
+			.codeLanguage("python")
+			.config(config)
+			.params(params)
+			.build();
 		Map<String, Object> initData = new HashMap<>(16);
 		initData.put("arg1", "1");
 		initData.put("arg2", "2");
@@ -83,18 +84,18 @@ public class CodeActionTest {
 					// Process input parameters
 					String text = (String) inputs[0];
 					Integer count = (Integer) inputs[1];
-				
+
 					// Execute business logic
 					StringBuilder result = new StringBuilder();
 					for (int i = 0; i < count; i++) {
 						result.append(text).append(" ");
 					}
-				
+
 					Map<String, Object> response = new HashMap<>();
 					response.put("repeated_text", result.toString().trim());
 					response.put("length", result.length());
 					response.put("count", count);
-				
+
 					return response;
 				}
 				""";
@@ -105,13 +106,13 @@ public class CodeActionTest {
 		params.put("count", "count");
 		// Create code execution node action
 		NodeAction codeNode = CodeExecutorNodeAction.builder()
-				.codeExecutor(new LocalCommandlineCodeExecutor())
-				.code(javaCode)
-				.codeLanguage("java")
-				.config(config)
-				.params(params)
-				.outputKey("codeNode1_output")
-				.build();
+			.codeExecutor(new LocalCommandlineCodeExecutor())
+			.code(javaCode)
+			.codeLanguage("java")
+			.config(config)
+			.params(params)
+			.outputKey("codeNode1_output")
+			.build();
 
 		// Prepare input data
 		Map<String, Object> initData = new LinkedHashMap<>();

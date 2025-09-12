@@ -76,40 +76,39 @@ class ParallelAgentIntegrationTest {
 
 		// Create specialized sub-agents with unique output keys and specific instructions
 		ReactAgent proseWriterAgent = ReactAgent.builder()
-				.name("prose_writer_agent")
-				.model(chatModel)
-				.description("专门写散文的AI助手")
-				.instruction("你是一个知名的散文作家，擅长写优美的散文。用户会给你一个主题，你只需要创作一篇100字左右的散文，不要写诗或做总结。请专注于散文创作，确保内容优美、意境深远。")
-				.outputKey("prose_result")
-				.build();
+			.name("prose_writer_agent")
+			.model(chatModel)
+			.description("专门写散文的AI助手")
+			.instruction("你是一个知名的散文作家，擅长写优美的散文。用户会给你一个主题，你只需要创作一篇100字左右的散文，不要写诗或做总结。请专注于散文创作，确保内容优美、意境深远。")
+			.outputKey("prose_result")
+			.build();
 
 		ReactAgent poemWriterAgent = ReactAgent.builder()
-				.name("poem_writer_agent")
-				.model(chatModel)
-				.description("专门写现代诗的AI助手")
-				.instruction("你是一个知名的现代诗人，擅长写现代诗。用户会给你一个主题，你只需要创作一首现代诗，不要写散文或做总结。请专注于诗歌创作，确保语言精炼、意象丰富。")
-				.outputKey("poem_result")
-				.build();
+			.name("poem_writer_agent")
+			.model(chatModel)
+			.description("专门写现代诗的AI助手")
+			.instruction("你是一个知名的现代诗人，擅长写现代诗。用户会给你一个主题，你只需要创作一首现代诗，不要写散文或做总结。请专注于诗歌创作，确保语言精炼、意象丰富。")
+			.outputKey("poem_result")
+			.build();
 
 		ReactAgent summaryAgent = ReactAgent.builder()
-				.name("summary_agent")
-				.model(chatModel)
-				.description("专门做内容总结的AI助手")
-				.instruction("你是一个专业的内容分析师，擅长对主题进行总结和提炼。用户会给你一个主题，你只需要对这个主题进行简要总结，不要写散文或诗歌。请专注于总结分析，确保观点清晰、概括准确。")
-				.outputKey("summary_result")
-				.build();
+			.name("summary_agent")
+			.model(chatModel)
+			.description("专门做内容总结的AI助手")
+			.instruction("你是一个专业的内容分析师，擅长对主题进行总结和提炼。用户会给你一个主题，你只需要对这个主题进行简要总结，不要写散文或诗歌。请专注于总结分析，确保观点清晰、概括准确。")
+			.outputKey("summary_result")
+			.build();
 
 		// Create ParallelAgent that will execute all sub-agents in parallel
 		ParallelAgent parallelAgent = ParallelAgent.builder()
-				.name("parallel_creative_agent")
-				.description("并行执行多个创作任务，包括写散文、写诗和做总结")
-				.inputKey("input")
-				.outputKey("merged_results")
-				.state(stateFactory)
-				.subAgents(List.of(proseWriterAgent, poemWriterAgent, summaryAgent))
-				.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // ✅ 添加合并策略
-				.build();
-
+			.name("parallel_creative_agent")
+			.description("并行执行多个创作任务，包括写散文、写诗和做总结")
+			.inputKey("input")
+			.outputKey("merged_results")
+			.state(stateFactory)
+			.subAgents(List.of(proseWriterAgent, poemWriterAgent, summaryAgent))
+			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // ✅ 添加合并策略
+			.build();
 
 		// Execute the parallel workflow
 		try {
@@ -271,30 +270,30 @@ class ParallelAgentIntegrationTest {
 
 		// Create two agents with the same output key
 		ReactAgent agent1 = ReactAgent.builder()
-				.name("agent1")
-				.model(chatModel)
-				.description("第一个测试Agent")
-				.instruction("测试助手1")
-				.outputKey("duplicate_key") // Same output key as agent2
-				.build();
+			.name("agent1")
+			.model(chatModel)
+			.description("第一个测试Agent")
+			.instruction("测试助手1")
+			.outputKey("duplicate_key") // Same output key as agent2
+			.build();
 
 		ReactAgent agent2 = ReactAgent.builder()
-				.name("agent2")
-				.model(chatModel)
-				.description("第二个测试Agent")
-				.instruction("测试助手2")
-				.outputKey("duplicate_key") // Same output key as agent1
-				.build();
+			.name("agent2")
+			.model(chatModel)
+			.description("第二个测试Agent")
+			.instruction("测试助手2")
+			.outputKey("duplicate_key") // Same output key as agent1
+			.build();
 
 		// Test that building ParallelAgent with duplicate output keys throws exception
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 			ParallelAgent.builder()
-					.name("duplicate_key_test")
-					.description("测试重复outputKey的验证")
-					.inputKey("input")
-					.outputKey("output")
-					.subAgents(List.of(agent1, agent2))
-					.build();
+				.name("duplicate_key_test")
+				.description("测试重复outputKey的验证")
+				.inputKey("input")
+				.outputKey("output")
+				.subAgents(List.of(agent1, agent2))
+				.build();
 		}, "Should throw exception when sub-agents have duplicate output keys");
 
 		// Verify the error message contains the duplicate key information
@@ -310,38 +309,38 @@ class ParallelAgentIntegrationTest {
 		// Test ParallelAgent with different merge strategies
 
 		ReactAgent agent1 = ReactAgent.builder()
-				.name("agent1")
-				.model(chatModel)
-				.description("第一个测试Agent")
-				.instruction("请返回数字1")
-				.outputKey("result1")
-				.build();
+			.name("agent1")
+			.model(chatModel)
+			.description("第一个测试Agent")
+			.instruction("请返回数字1")
+			.outputKey("result1")
+			.build();
 
 		ReactAgent agent2 = ReactAgent.builder()
-				.name("agent2")
-				.model(chatModel)
-				.description("第二个测试Agent")
-				.instruction("请返回数字2")
-				.outputKey("result2")
-				.build();
+			.name("agent2")
+			.model(chatModel)
+			.description("第二个测试Agent")
+			.instruction("请返回数字2")
+			.outputKey("result2")
+			.build();
 
 		// Test with ListMergeStrategy
 		ParallelAgent listMergeAgent = ParallelAgent.builder()
-				.name("list_merge_test")
-				.description("测试列表合并策略")
-				.inputKey("input")
-				.outputKey("merged_list")
-				.state(() -> {
-					HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-					keyStrategyHashMap.put("input", new ReplaceStrategy());
-					keyStrategyHashMap.put("merged_list", new ReplaceStrategy());
-					keyStrategyHashMap.put("result1", new ReplaceStrategy());
-					keyStrategyHashMap.put("result2", new ReplaceStrategy());
-					return keyStrategyHashMap;
-				})
-				.mergeStrategy(new ParallelAgent.ListMergeStrategy())
-				.subAgents(List.of(agent1, agent2))
-				.build();
+			.name("list_merge_test")
+			.description("测试列表合并策略")
+			.inputKey("input")
+			.outputKey("merged_list")
+			.state(() -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("input", new ReplaceStrategy());
+				keyStrategyHashMap.put("merged_list", new ReplaceStrategy());
+				keyStrategyHashMap.put("result1", new ReplaceStrategy());
+				keyStrategyHashMap.put("result2", new ReplaceStrategy());
+				return keyStrategyHashMap;
+			})
+			.mergeStrategy(new ParallelAgent.ListMergeStrategy())
+			.subAgents(List.of(agent1, agent2))
+			.build();
 
 		Optional<OverAllState> result = listMergeAgent.invoke(Map.of("input", "test"));
 		assertTrue(result.isPresent());
@@ -360,31 +359,31 @@ class ParallelAgentIntegrationTest {
 		List<BaseAgent> agents = new java.util.ArrayList<>();
 		for (int i = 0; i < 5; i++) {
 			agents.add(ReactAgent.builder()
-					.name("worker_" + i)
-					.model(chatModel)
-					.description("Worker agent " + i)
-					.instruction("请返回工作结果 " + i)
-					.outputKey("result_" + i)
-					.build());
+				.name("worker_" + i)
+				.model(chatModel)
+				.description("Worker agent " + i)
+				.instruction("请返回工作结果 " + i)
+				.outputKey("result_" + i)
+				.build());
 		}
 
 		ParallelAgent concurrencyAgent = ParallelAgent.builder()
-				.name("concurrency_test")
-				.description("测试并发控制")
-				.inputKey("input")
-				.outputKey("concurrency_results")
-				.state(() -> {
-					HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-					keyStrategyHashMap.put("input", new ReplaceStrategy());
-					keyStrategyHashMap.put("concurrency_results", new ReplaceStrategy());
-					for (int i = 0; i < 5; i++) {
-						keyStrategyHashMap.put("result_" + i, new ReplaceStrategy());
-					}
-					return keyStrategyHashMap;
-				})
-				.maxConcurrency(3) // 限制最大并发数为3
-				.subAgents(agents)
-				.build();
+			.name("concurrency_test")
+			.description("测试并发控制")
+			.inputKey("input")
+			.outputKey("concurrency_results")
+			.state(() -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("input", new ReplaceStrategy());
+				keyStrategyHashMap.put("concurrency_results", new ReplaceStrategy());
+				for (int i = 0; i < 5; i++) {
+					keyStrategyHashMap.put("result_" + i, new ReplaceStrategy());
+				}
+				return keyStrategyHashMap;
+			})
+			.maxConcurrency(3) // 限制最大并发数为3
+			.subAgents(agents)
+			.build();
 
 		Optional<OverAllState> result = concurrencyAgent.invoke(Map.of("input", "test concurrency"));
 		assertTrue(result.isPresent());

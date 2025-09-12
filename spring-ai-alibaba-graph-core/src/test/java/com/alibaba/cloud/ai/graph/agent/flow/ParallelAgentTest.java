@@ -108,46 +108,46 @@ class ParallelAgentTest {
 
 		// Create sub-agents for parallel execution
 		ReactAgent agent1 = ReactAgent.builder()
-				.name("dataAnalyzer")
-				.description("Analyzes data")
-				.outputKey("analysis_result")
-				.chatClient(chatClient)
-				.state(() -> {
-					HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-					keyStrategyHashMap.put("messages", new AppendStrategy());
-					return keyStrategyHashMap;
-				})
-				.resolver(toolCallbackResolver)
-				.build();
+			.name("dataAnalyzer")
+			.description("Analyzes data")
+			.outputKey("analysis_result")
+			.chatClient(chatClient)
+			.state(() -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				return keyStrategyHashMap;
+			})
+			.resolver(toolCallbackResolver)
+			.build();
 
 		ReactAgent agent2 = ReactAgent.builder()
-				.name("dataValidator")
-				.description("Validates data")
-				.outputKey("validation_result")
-				.chatClient(chatClient)
-				.state(() -> {
-					HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-					keyStrategyHashMap.put("messages", new AppendStrategy());
-					return keyStrategyHashMap;
-				})
-				.resolver(toolCallbackResolver)
-				.build();
+			.name("dataValidator")
+			.description("Validates data")
+			.outputKey("validation_result")
+			.chatClient(chatClient)
+			.state(() -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				return keyStrategyHashMap;
+			})
+			.resolver(toolCallbackResolver)
+			.build();
 
 		// Test fluent interface with ParallelAgent
 		ParallelAgent parallelAgent = ParallelAgent.builder()
-				.name("parallelProcessor")
-				.description("Processes data in parallel")
-				.outputKey("parallel_result")
-				.inputKey("input_data")
-				.subAgents(List.of(agent1, agent2))
-				.mergeStrategy(new ParallelAgent.ListMergeStrategy())
-				.maxConcurrency(5)
-				.state(() -> {
-					HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-					keyStrategyHashMap.put("parallel_state", new AppendStrategy());
-					return keyStrategyHashMap;
-				})
-				.build();
+			.name("parallelProcessor")
+			.description("Processes data in parallel")
+			.outputKey("parallel_result")
+			.inputKey("input_data")
+			.subAgents(List.of(agent1, agent2))
+			.mergeStrategy(new ParallelAgent.ListMergeStrategy())
+			.maxConcurrency(5)
+			.state(() -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("parallel_state", new AppendStrategy());
+				return keyStrategyHashMap;
+			})
+			.build();
 
 		assertNotNull(parallelAgent);
 		assertEquals("parallelProcessor", parallelAgent.name());
@@ -164,9 +164,9 @@ class ParallelAgentTest {
 		// Test validation - requires at least 2 sub-agents
 		Exception exception = assertThrows(IllegalArgumentException.class, () -> {
 			ParallelAgent.builder()
-					.name("testAgent")
-					.subAgents(List.of()) // Empty list
-					.build();
+				.name("testAgent")
+				.subAgents(List.of()) // Empty list
+				.build();
 		});
 		assertTrue(exception.getMessage().contains("at least 2 sub-agents"));
 
@@ -244,17 +244,17 @@ class ParallelAgentTest {
 
 	private ReactAgent createMockAgent(String name, String outputKey) throws Exception {
 		return ReactAgent.builder()
-				.name(name)
-				.description("Mock agent")
-				.outputKey(outputKey)
-				.chatClient(chatClient)
-				.state(() -> {
-					HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-					keyStrategyHashMap.put("messages", new AppendStrategy());
-					return keyStrategyHashMap;
-				})
-				.resolver(toolCallbackResolver)
-				.build();
+			.name(name)
+			.description("Mock agent")
+			.outputKey(outputKey)
+			.chatClient(chatClient)
+			.state(() -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				return keyStrategyHashMap;
+			})
+			.resolver(toolCallbackResolver)
+			.build();
 	}
 
 	/**
@@ -264,59 +264,59 @@ class ParallelAgentTest {
 	private ParallelAgent createDataProcessingParallelAgent() throws Exception {
 		// Create sub-agents for different aspects of data processing
 		ReactAgent dataAnalyzer = ReactAgent.builder()
-				.name("dataAnalyzer")
-				.description("Analyzes data patterns and trends")
-				.outputKey("analysis_result")
-				.chatClient(chatClient)
-				.state(() -> {
-					HashMap<String, KeyStrategy> strategies = new HashMap<>();
-					strategies.put("messages", new AppendStrategy());
-					return strategies;
-				})
-				.resolver(toolCallbackResolver)
-				.build();
+			.name("dataAnalyzer")
+			.description("Analyzes data patterns and trends")
+			.outputKey("analysis_result")
+			.chatClient(chatClient)
+			.state(() -> {
+				HashMap<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("messages", new AppendStrategy());
+				return strategies;
+			})
+			.resolver(toolCallbackResolver)
+			.build();
 
 		ReactAgent dataValidator = ReactAgent.builder()
-				.name("dataValidator")
-				.description("Validates data quality and integrity")
-				.outputKey("validation_result")
-				.chatClient(chatClient)
-				.state(() -> {
-					HashMap<String, KeyStrategy> strategies = new HashMap<>();
-					strategies.put("messages", new AppendStrategy());
-					return strategies;
-				})
-				.resolver(toolCallbackResolver)
-				.build();
+			.name("dataValidator")
+			.description("Validates data quality and integrity")
+			.outputKey("validation_result")
+			.chatClient(chatClient)
+			.state(() -> {
+				HashMap<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("messages", new AppendStrategy());
+				return strategies;
+			})
+			.resolver(toolCallbackResolver)
+			.build();
 
 		ReactAgent dataCleaner = ReactAgent.builder()
-				.name("dataCleaner")
-				.description("Cleans and preprocesses data")
-				.outputKey("cleaning_result")
-				.chatClient(chatClient)
-				.state(() -> {
-					HashMap<String, KeyStrategy> strategies = new HashMap<>();
-					strategies.put("messages", new AppendStrategy());
-					return strategies;
-				})
-				.resolver(toolCallbackResolver)
-				.build();
+			.name("dataCleaner")
+			.description("Cleans and preprocesses data")
+			.outputKey("cleaning_result")
+			.chatClient(chatClient)
+			.state(() -> {
+				HashMap<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("messages", new AppendStrategy());
+				return strategies;
+			})
+			.resolver(toolCallbackResolver)
+			.build();
 
 		// Create ParallelAgent using the improved builder with default merge strategy
 		return ParallelAgent.builder()
-				.name("dataProcessingPipeline")
-				.description("Processes data through multiple parallel operations")
-				.outputKey("processing_result")
-				.inputKey("raw_data")
-				.subAgents(List.of(dataAnalyzer, dataValidator, dataCleaner))
-				.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // Returns Map
-				.maxConcurrency(3) // Limit to 3 concurrent operations
-				.state(() -> {
-					HashMap<String, KeyStrategy> strategies = new HashMap<>();
-					strategies.put("processing_state", new AppendStrategy());
-					return strategies;
-				})
-				.build();
+			.name("dataProcessingPipeline")
+			.description("Processes data through multiple parallel operations")
+			.outputKey("processing_result")
+			.inputKey("raw_data")
+			.subAgents(List.of(dataAnalyzer, dataValidator, dataCleaner))
+			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // Returns Map
+			.maxConcurrency(3) // Limit to 3 concurrent operations
+			.state(() -> {
+				HashMap<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("processing_state", new AppendStrategy());
+				return strategies;
+			})
+			.build();
 	}
 
 	/**
@@ -326,59 +326,59 @@ class ParallelAgentTest {
 	private ParallelAgent createReportGenerationParallelAgent() throws Exception {
 		// Create sub-agents for different report sections
 		ReactAgent summaryGenerator = ReactAgent.builder()
-				.name("summaryGenerator")
-				.description("Generates executive summary")
-				.outputKey("summary_section")
-				.chatClient(chatClient)
-				.state(() -> {
-					HashMap<String, KeyStrategy> strategies = new HashMap<>();
-					strategies.put("messages", new AppendStrategy());
-					return strategies;
-				})
-				.resolver(toolCallbackResolver)
-				.build();
+			.name("summaryGenerator")
+			.description("Generates executive summary")
+			.outputKey("summary_section")
+			.chatClient(chatClient)
+			.state(() -> {
+				HashMap<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("messages", new AppendStrategy());
+				return strategies;
+			})
+			.resolver(toolCallbackResolver)
+			.build();
 
 		ReactAgent detailsGenerator = ReactAgent.builder()
-				.name("detailsGenerator")
-				.description("Generates detailed analysis")
-				.outputKey("details_section")
-				.chatClient(chatClient)
-				.state(() -> {
-					HashMap<String, KeyStrategy> strategies = new HashMap<>();
-					strategies.put("messages", new AppendStrategy());
-					return strategies;
-				})
-				.resolver(toolCallbackResolver)
-				.build();
+			.name("detailsGenerator")
+			.description("Generates detailed analysis")
+			.outputKey("details_section")
+			.chatClient(chatClient)
+			.state(() -> {
+				HashMap<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("messages", new AppendStrategy());
+				return strategies;
+			})
+			.resolver(toolCallbackResolver)
+			.build();
 
 		ReactAgent chartsGenerator = ReactAgent.builder()
-				.name("chartsGenerator")
-				.description("Generates charts and visualizations")
-				.outputKey("charts_section")
-				.chatClient(chatClient)
-				.state(() -> {
-					HashMap<String, KeyStrategy> strategies = new HashMap<>();
-					strategies.put("messages", new AppendStrategy());
-					return strategies;
-				})
-				.resolver(toolCallbackResolver)
-				.build();
+			.name("chartsGenerator")
+			.description("Generates charts and visualizations")
+			.outputKey("charts_section")
+			.chatClient(chatClient)
+			.state(() -> {
+				HashMap<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("messages", new AppendStrategy());
+				return strategies;
+			})
+			.resolver(toolCallbackResolver)
+			.build();
 
 		// Create ParallelAgent using list merge strategy
 		return ParallelAgent.builder()
-				.name("reportGenerator")
-				.description("Generates comprehensive reports in parallel")
-				.outputKey("complete_report")
-				.inputKey("report_data")
-				.subAgents(List.of(summaryGenerator, detailsGenerator, chartsGenerator))
-				.mergeStrategy(new ParallelAgent.ListMergeStrategy()) // Returns List
-				.maxConcurrency(5)
-				.state(() -> {
-					HashMap<String, KeyStrategy> strategies = new HashMap<>();
-					strategies.put("report_state", new AppendStrategy());
-					return strategies;
-				})
-				.build();
+			.name("reportGenerator")
+			.description("Generates comprehensive reports in parallel")
+			.outputKey("complete_report")
+			.inputKey("report_data")
+			.subAgents(List.of(summaryGenerator, detailsGenerator, chartsGenerator))
+			.mergeStrategy(new ParallelAgent.ListMergeStrategy()) // Returns List
+			.maxConcurrency(5)
+			.state(() -> {
+				HashMap<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("report_state", new AppendStrategy());
+				return strategies;
+			})
+			.build();
 	}
 
 	/**
@@ -388,61 +388,61 @@ class ParallelAgentTest {
 	private ParallelAgent createContentCreationParallelAgent() throws Exception {
 		// Create sub-agents for different content sections
 		ReactAgent introWriter = ReactAgent.builder()
-				.name("introWriter")
-				.description("Writes introduction content")
-				.outputKey("intro_content")
-				.chatClient(chatClient)
-				.state(() -> {
-					HashMap<String, KeyStrategy> strategies = new HashMap<>();
-					strategies.put("messages", new AppendStrategy());
-					return strategies;
-				})
-				.resolver(toolCallbackResolver)
-				.build();
+			.name("introWriter")
+			.description("Writes introduction content")
+			.outputKey("intro_content")
+			.chatClient(chatClient)
+			.state(() -> {
+				HashMap<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("messages", new AppendStrategy());
+				return strategies;
+			})
+			.resolver(toolCallbackResolver)
+			.build();
 
 		ReactAgent bodyWriter = ReactAgent.builder()
-				.name("bodyWriter")
-				.description("Writes main body content")
-				.outputKey("body_content")
-				.chatClient(chatClient)
-				.state(() -> {
-					HashMap<String, KeyStrategy> strategies = new HashMap<>();
-					strategies.put("messages", new AppendStrategy());
-					return strategies;
-				})
-				.resolver(toolCallbackResolver)
-				.build();
+			.name("bodyWriter")
+			.description("Writes main body content")
+			.outputKey("body_content")
+			.chatClient(chatClient)
+			.state(() -> {
+				HashMap<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("messages", new AppendStrategy());
+				return strategies;
+			})
+			.resolver(toolCallbackResolver)
+			.build();
 
 		ReactAgent conclusionWriter = ReactAgent.builder()
-				.name("conclusionWriter")
-				.description("Writes conclusion content")
-				.outputKey("conclusion_content")
-				.chatClient(chatClient)
-				.state(() -> {
-					HashMap<String, KeyStrategy> strategies = new HashMap<>();
-					strategies.put("messages", new AppendStrategy());
-					return strategies;
-				})
-				.resolver(toolCallbackResolver)
-				.build();
+			.name("conclusionWriter")
+			.description("Writes conclusion content")
+			.outputKey("conclusion_content")
+			.chatClient(chatClient)
+			.state(() -> {
+				HashMap<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("messages", new AppendStrategy());
+				return strategies;
+			})
+			.resolver(toolCallbackResolver)
+			.build();
 
 		// Create ParallelAgent using concatenation merge strategy
 		return ParallelAgent.builder()
-				.name("contentCreator")
-				.description("Creates content through parallel writing")
-				.outputKey("final_content")
-				.inputKey("content_requirements")
-				.subAgents(List.of(introWriter, bodyWriter, conclusionWriter))
-				.mergeStrategy(new ParallelAgent.ConcatenationMergeStrategy("\n\n")) // Join
-				// with
-				// double
-				// newline
-				.state(() -> {
-					HashMap<String, KeyStrategy> strategies = new HashMap<>();
-					strategies.put("content_state", new AppendStrategy());
-					return strategies;
-				})
-				.build();
+			.name("contentCreator")
+			.description("Creates content through parallel writing")
+			.outputKey("final_content")
+			.inputKey("content_requirements")
+			.subAgents(List.of(introWriter, bodyWriter, conclusionWriter))
+			.mergeStrategy(new ParallelAgent.ConcatenationMergeStrategy("\n\n")) // Join
+			// with
+			// double
+			// newline
+			.state(() -> {
+				HashMap<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("content_state", new AppendStrategy());
+				return strategies;
+			})
+			.build();
 	}
 
 }

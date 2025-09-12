@@ -54,7 +54,7 @@ class ReactAgentTest {
 		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).build();
 		try {
 			Optional<OverAllState> result = agent
-					.invoke(Map.of("messages", List.of(new UserMessage("帮我写一篇100字左右散文。"))));
+				.invoke(Map.of("messages", List.of(new UserMessage("帮我写一篇100字左右散文。"))));
 			Optional<OverAllState> result2 = agent.invoke(Map.of("messages", List.of(new UserMessage("帮我写一首现代诗歌。"))));
 
 			// 验证第一个结果不为空
@@ -85,4 +85,5 @@ class ReactAgentTest {
 			fail("ReactAgent execution failed: " + e.getMessage());
 		}
 	}
+
 }
