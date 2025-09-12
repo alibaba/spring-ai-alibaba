@@ -29,31 +29,6 @@
     <div class="section-header">
       <Icon icon="carbon:code" width="16" />
       <span>{{ $t('sidebar.jsonTemplate') }}</span>
-      <div class="section-actions">
-        <button
-          class="btn btn-sm"
-          @click="handleRollback"
-          :disabled="!(canRollback ?? false)"
-          :title="$t('sidebar.rollback')"
-        >
-          <Icon icon="carbon:undo" width="14" />
-        </button>
-        <button
-          class="btn btn-sm"
-          @click="handleRestore"
-          :disabled="!(canRestore ?? false)"
-          :title="$t('sidebar.restore')"
-        >
-          <Icon icon="carbon:redo" width="14" />
-        </button>
-        <button
-          class="btn btn-primary btn-sm"
-          @click="handleSave"
-          :disabled="isGenerating || isExecuting"
-        >
-          <Icon icon="carbon:save" width="14" />
-        </button>
-      </div>
     </div>
     <!-- Visual JSON Editor -->
     <div class="visual-editor">
@@ -209,6 +184,32 @@
           <Icon icon="carbon:code" width="14" />
           {{ showJsonPreview ? $t('sidebar.hideJson') : $t('sidebar.showJson') }}
         </button>
+        <div class="section-actions">
+          <button
+            class="btn btn-sm"
+            @click="handleRollback"
+            :disabled="!(canRollback ?? false)"
+            :title="$t('sidebar.rollback')"
+          >
+            <Icon icon="carbon:undo" width="14" />
+          </button>
+          <button
+            class="btn btn-sm"
+            @click="handleRestore"
+            :disabled="!(canRestore ?? false)"
+            :title="$t('sidebar.restore')"
+          >
+            <Icon icon="carbon:redo" width="14" />
+          </button>
+          <button
+            class="btn btn-primary"
+            @click="handleSave"
+            :disabled="isGenerating || isExecuting"
+          >
+            <Icon icon="carbon:save" width="14" />
+            保存
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -528,7 +529,9 @@ const autoResizeTextarea = (event: Event) => {
 }
 
 .editor-footer {
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
