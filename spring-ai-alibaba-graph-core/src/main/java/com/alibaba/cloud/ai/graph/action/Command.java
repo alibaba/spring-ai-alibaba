@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Represents the outcome of a {@link CommandAction} within a LangGraph4j graph. A
+ * Represents the outcome of a {@link CommandAction} within a graph. A
  * {@code Command} encapsulates instructions for the graph's next step, including an
  * optional target node to transition to and a map of updates to be applied to the
  * {@link OverAllState}.
