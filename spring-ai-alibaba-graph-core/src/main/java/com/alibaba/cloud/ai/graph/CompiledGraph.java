@@ -389,7 +389,7 @@ public class CompiledGraph {
 	/**
 	 * Package-private access to edges for ReactiveNodeGenerator
 	 */
-	public com.alibaba.cloud.ai.graph.internal.edge.EdgeValue getEdge(String nodeId) {
+	public EdgeValue getEdge(String nodeId) {
 		return edges.get(nodeId);
 	}
 
