@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -31,6 +32,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 public class DeepResearchStateSerializer extends PlainTextStateSerializer {
 
@@ -73,8 +75,8 @@ public class DeepResearchStateSerializer extends PlainTextStateSerializer {
 	}
 
 	@Override
-	public void write(OverAllState object, ObjectOutput out) throws IOException {
-		String json = objectMapper.writeValueAsString(object);
+	public void writeData(Map<String, Object> data, ObjectOutput out) throws IOException {
+		String json = objectMapper.writeValueAsString(data);
 
 		// 这边修改的原因在于，序列化长度限制的问题，当数据量过大时，可能会导致序列化失败。修改`DeepResearchStateSerializer`使用字节数组方式避免UTF长度限制
 		byte[] jsonBytes = json.getBytes(StandardCharsets.UTF_8);
@@ -83,14 +85,14 @@ public class DeepResearchStateSerializer extends PlainTextStateSerializer {
 	}
 
 	@Override
-	public OverAllState read(ObjectInput in) throws IOException {
+	public Map<String, Object> readData(ObjectInput in) throws IOException {
 
 		// 这边修改的原因在于，序列化长度限制的问题，当数据量过大时，可能会导致序列化失败。修改`DeepResearchStateSerializer`使用字节数组方式避免UTF长度限制
 		int length = in.readInt();
 		byte[] jsonBytes = new byte[length];
 		in.readFully(jsonBytes);
 		String json = new String(jsonBytes, StandardCharsets.UTF_8);
-		return objectMapper.readValue(json, OverAllState.class);
+		return objectMapper.readValue(json, new TypeReference<Map<String, Object>>(){});
 	}
 
 }
