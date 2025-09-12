@@ -568,10 +568,10 @@ const handleValidateConfig = async () => {
     })
 
     if (result.valid) {
-      showMessage(t('config.modelConfig.validationSuccess') + ` - ${t('config.modelConfig.getModelsCount', { count: result.availableModels?.length || 0 })}`, 'success')
+      showMessage(t('config.modelConfig.validationSuccess') + ` - ${t('config.modelConfig.getModelsCount', { count: result.availableModels?.length ?? 0 })}`, 'success')
       // Save independent available model list for currently selected model
-      if (selectedModel.value?.id) {
-        modelAvailableModels.value.set(selectedModel.value.id, result.availableModels || [])
+      if (selectedModel.value.id) {
+        modelAvailableModels.value.set(selectedModel.value.id, result.availableModels ?? [])
       }
       // If available models exist, auto-select first one and fill description
       if (result.availableModels && result.availableModels.length > 0) {
@@ -619,7 +619,7 @@ const getCurrentAvailableModels = (): Model[] => {
   if (!selectedModel.value?.id) {
     return []
   }
-  return modelAvailableModels.value.get(selectedModel.value.id) || []
+  return modelAvailableModels.value.get(selectedModel.value.id) ?? []
 }
 
 // Handle model selection
@@ -649,9 +649,9 @@ const handleNewModelValidateConfig = async () => {
     })
 
     if (result.valid) {
-      showMessage(t('config.modelConfig.validationSuccess') + ` - ${t('config.modelConfig.getModelsCount', { count: result.availableModels?.length || 0 })}`, 'success')
+      showMessage(t('config.modelConfig.validationSuccess') + ` - ${t('config.modelConfig.getModelsCount', { count: result.availableModels?.length ?? 0 })}`, 'success')
       // Save available model list
-      newModelAvailableModels.value = result.availableModels || []
+      newModelAvailableModels.value = result.availableModels ?? []
       // If available models exist, auto-select first one and fill description
       if (result.availableModels && result.availableModels.length > 0) {
         newModel.modelName = result.availableModels[0].modelName
@@ -766,7 +766,7 @@ const handleSave = async () => {
       }
 
       // Validation successful, update available model list
-      modelAvailableModels.value.set(selectedModel.value.id, validationResult.availableModels || [])
+      modelAvailableModels.value.set(selectedModel.value.id, validationResult.availableModels ?? [])
     } catch (err: any) {
       showMessage(t('config.modelConfig.validationFailedCannotSave') + ': ' + err.message, 'error')
       return

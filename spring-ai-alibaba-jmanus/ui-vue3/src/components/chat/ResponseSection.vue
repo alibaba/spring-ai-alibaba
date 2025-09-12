@@ -33,7 +33,7 @@
         v-if="userInputWaitState?.waiting"
         :user-input-wait-state="userInputWaitState"
         :plan-id="planId"
-        :generic-input="genericInput"
+        :generic-input="genericInput ?? ''"
         @user-input-submitted="handleUserInputSubmitted"
       />
       

@@ -375,7 +375,7 @@ watch(
   () => taskStore.taskToInput,
   (newTaskToInput) => {
     console.log('[Direct] Watch taskStore.taskToInput triggered, newTaskToInput:', newTaskToInput)
-    if (newTaskToInput && newTaskToInput.trim()) {
+    if (newTaskToInput?.trim()) {
       console.log('[Direct] Setting input value from taskToInput:', newTaskToInput)
       nextTick(() => {
         if (inputRef.value && typeof inputRef.value.setInputValue === 'function') {
@@ -618,7 +618,7 @@ const handlePlanExecutionRequested = async (payload: {
   title: string
   planData: any
   params?: string | undefined
-  replacementParams?: Record<string, string>
+  replacementParams?: Record<string, string> | undefined
 }) => {
   console.log('[DirectView] Plan execution requested:', payload)
 
@@ -674,7 +674,7 @@ const handlePlanExecutionRequested = async (payload: {
     
     // Get uploaded files from global state
     const uploadedFiles = hasUploadedFiles() ? getUploadedFiles() : undefined
-    console.log('[Direct] Executing with uploaded files:', uploadedFiles?.length || 0)
+    console.log('[Direct] Executing with uploaded files:', uploadedFiles?.length ?? 0)
     console.log('[Direct] Executing with replacement params:', payload.replacementParams)
     
     let response

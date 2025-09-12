@@ -19,7 +19,7 @@ import type { PlanExecutionRecord, AgentExecutionRecord } from '@/types/plan-exe
 
 // Local interface to handle readonly compatibility issues
 export interface CompatiblePlanExecutionRecord extends Omit<PlanExecutionRecord, 'agentExecutionSequence'> {
-  agentExecutionSequence?: AgentExecutionRecord[] | undefined
+  agentExecutionSequence?: AgentExecutionRecord[]
 }
 
 // Message interface

@@ -22,7 +22,7 @@
         <div class="sub-plan-details">
           <div class="sub-plan-title">
             {{ subPlan.title || $t('chat.subPlan') }} #{{ subPlanIndex + 1 }}
-            <span v-if="nestingLevel > 0" class="nesting-level">(L{{ nestingLevel + 1 }})</span>
+            <span v-if="(nestingLevel ?? 0) > 0" class="nesting-level">(L{{ (nestingLevel ?? 0) + 1 }})</span>
           </div>
           <div class="sub-plan-id">{{ subPlan.currentPlanId }}</div>
         </div>
@@ -102,7 +102,7 @@
               </div>
               <div class="think-act-steps-preview">
                 <div
-                  v-for="(step, stepIndex) in agent.thinkActSteps.slice(0, maxVisibleSteps)"
+                  v-for="(step, stepIndex) in agent.thinkActSteps.slice(0, maxVisibleSteps ?? 2)"
                   :key="step.id || stepIndex"
                   class="think-act-step-preview"
                   @click.stop="handleThinkActStepClick(agentIndex, stepIndex, agent)"
@@ -111,9 +111,9 @@
                   <span class="step-description">{{ step.actionDescription || $t('chat.thinking') }}</span>
                   <Icon icon="carbon:arrow-right" class="step-arrow" />
                 </div>
-                <div v-if="agent.thinkActSteps.length > maxVisibleSteps" class="more-steps">
+                <div v-if="agent.thinkActSteps.length > (maxVisibleSteps ?? 2)" class="more-steps">
                   <span class="more-steps-text">
-                    {{ $t('chat.andMoreSteps', { count: agent.thinkActSteps.length - maxVisibleSteps }) }}
+                    {{ $t('chat.andMoreSteps', { count: agent.thinkActSteps.length - (maxVisibleSteps ?? 2) }) }}
                   </span>
                 </div>
               </div>
@@ -131,9 +131,9 @@
                   :key="nestedStep.id || nestedStepIndex"
                   :sub-plan="nestedStep.subPlanExecutionRecord!"
                   :sub-plan-index="nestedStepIndex"
-                  :nesting-level="nestingLevel + 1"
-                  :max-nesting-depth="maxNestingDepth"
-                  :max-visible-steps="maxVisibleSteps"
+                  :nesting-level="(nestingLevel ?? 0) + 1"
+                  :max-nesting-depth="maxNestingDepth ?? 3"
+                  :max-visible-steps="maxVisibleSteps ?? 2"
                   @sub-plan-selected="handleNestedSubPlanSelected"
                   @step-selected="handleNestedStepSelected"
                 />
@@ -152,9 +152,9 @@
                   :key="directSubPlan.currentPlanId || directIndex"
                   :sub-plan="directSubPlan"
                   :sub-plan-index="directIndex"
-                  :nesting-level="nestingLevel + 1"
-                  :max-nesting-depth="maxNestingDepth"
-                  :max-visible-steps="maxVisibleSteps"
+                  :nesting-level="(nestingLevel ?? 0) + 1"
+                  :max-nesting-depth="maxNestingDepth ?? 3"
+                  :max-visible-steps="maxVisibleSteps ?? 2"
                   @sub-plan-selected="handleNestedSubPlanSelected"
                   @step-selected="handleNestedStepSelected"
                 />
