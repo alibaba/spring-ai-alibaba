@@ -23,6 +23,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
  * @author vlsmb
  * @since 2025/7/23
@@ -44,6 +46,11 @@ public class EmptyNodeSection implements NodeSection<EmptyNodeData> {
 			.append(varName)
 			.append("\", AsyncNodeAction.node_async((OverAllState state) -> Map.of()));\n\n");
 		return sb.toString();
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of();
 	}
 
 }

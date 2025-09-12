@@ -90,4 +90,10 @@ public class EndNodeSection implements NodeSection<EndNodeData> {
 		return sb.toString();
 	}
 
+	@Override
+	public List<String> getImports() {
+		return List.of("java.util.stream.Stream", "java.util.stream.Collectors",
+				"org.springframework.ai.chat.prompt.PromptTemplate");
+	}
+
 }

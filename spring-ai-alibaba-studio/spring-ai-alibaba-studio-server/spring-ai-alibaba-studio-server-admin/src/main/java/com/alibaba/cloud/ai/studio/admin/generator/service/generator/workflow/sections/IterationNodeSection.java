@@ -51,6 +51,11 @@ public class IterationNodeSection implements NodeSection<IterationNodeData> {
 		return "";
 	}
 
+	@Override
+	public List<String> getImports() {
+		return List.of("java.util.ArrayList", "java.util.Arrays");
+	}
+
 	// 规定迭代节点的start为iterationVarName_start，end为iterationVarName_end
 
 	@Component
@@ -137,6 +142,11 @@ public class IterationNodeSection implements NodeSection<IterationNodeData> {
 					""";
 		}
 
+		@Override
+		public List<String> getImports() {
+			return List.of("java.util.ArrayList", "java.util.Arrays");
+		}
+
 	}
 
 	@Component
@@ -193,6 +203,11 @@ public class IterationNodeSection implements NodeSection<IterationNodeData> {
 					     };
 					 }
 					""";
+		}
+
+		@Override
+		public List<String> getImports() {
+			return List.of("java.util.ArrayList", "java.util.Arrays");
 		}
 
 	}

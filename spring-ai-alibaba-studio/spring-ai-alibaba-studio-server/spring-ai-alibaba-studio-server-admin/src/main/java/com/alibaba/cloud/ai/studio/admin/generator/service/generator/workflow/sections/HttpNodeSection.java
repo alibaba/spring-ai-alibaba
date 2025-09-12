@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.sections;
 
+import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.node.HttpNode;
@@ -124,6 +125,11 @@ public class HttpNodeSection implements NodeSection<HttpNodeData> {
 					""";
 			default -> "";
 		};
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.HttpNode", "org.springframework.http.HttpMethod");
 	}
 
 }

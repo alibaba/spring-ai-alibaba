@@ -25,6 +25,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 // TODO：支持异常分支、支持DashScope平台以外其他模型、Dify的结构化输出
 @Component
 public class LLMNodeSection implements NodeSection<LLMNodeData> {
@@ -146,6 +148,17 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 						: "Map.of(outputKeyPrefix + \"output\", content, outputKeyPrefix + \"reasoning_content\", content)",
 				dialectType.equals(DSLDialectType.DIFY) ? "Map.of(outputKeyPrefix + \"text\", defaultOutput)"
 						: "Map.of(outputKeyPrefix + \"output\", defaultOutput, outputKeyPrefix + \"reasoning_content\", defaultOutput)");
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("org.springframework.ai.chat.messages.Message",
+				"org.springframework.ai.chat.messages.AssistantMessage",
+				"org.springframework.ai.chat.messages.MessageType",
+				"org.springframework.ai.chat.messages.SystemMessage",
+				"org.springframework.ai.chat.messages.UserMessage",
+				"com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions",
+				"org.springframework.beans.factory.annotation.Autowired", "java.util.Optional");
 	}
 
 }

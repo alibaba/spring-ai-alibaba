@@ -53,4 +53,9 @@ public class StartNodeSection implements NodeSection<StartNodeData> {
 		return sb.toString();
 	}
 
+	@Override
+	public List<String> getImports() {
+		return List.of();
+	}
+
 }

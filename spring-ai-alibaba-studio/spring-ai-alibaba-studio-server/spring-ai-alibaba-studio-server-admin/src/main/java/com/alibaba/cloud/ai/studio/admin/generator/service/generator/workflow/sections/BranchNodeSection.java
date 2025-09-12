@@ -156,4 +156,9 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 		return Optional.ofNullable(variableSelector.getNameInCode()).orElse("unknown");
 	}
 
+	@Override
+	public List<String> getImports() {
+		return List.of("static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async");
+	}
+
 }

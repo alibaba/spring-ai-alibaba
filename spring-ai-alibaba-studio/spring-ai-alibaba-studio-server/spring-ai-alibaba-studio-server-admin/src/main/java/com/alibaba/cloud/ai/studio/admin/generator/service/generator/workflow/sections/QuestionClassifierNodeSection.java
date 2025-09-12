@@ -128,4 +128,10 @@ public class QuestionClassifierNodeSection implements NodeSection<QuestionClassi
 		return sb.toString();
 	}
 
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.QuestionClassifierNode",
+				"static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async");
+	}
+
 }

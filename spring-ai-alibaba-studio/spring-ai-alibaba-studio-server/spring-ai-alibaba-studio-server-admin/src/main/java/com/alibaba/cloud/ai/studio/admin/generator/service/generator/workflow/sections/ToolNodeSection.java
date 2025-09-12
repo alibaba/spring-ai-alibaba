@@ -82,4 +82,10 @@ public class ToolNodeSection implements NodeSection<ToolNodeData> {
 		return sb.toString();
 	}
 
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.ToolNode", "java.util.function.Function",
+				"org.springframework.ai.tool.function.FunctionToolCallback");
+	}
+
 }

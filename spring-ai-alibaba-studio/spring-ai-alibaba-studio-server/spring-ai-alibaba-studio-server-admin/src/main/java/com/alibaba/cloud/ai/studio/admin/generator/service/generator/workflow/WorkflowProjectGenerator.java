@@ -225,72 +225,12 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return sb.toString();
 	}
 
-	// TODO: 将这部份逻辑放到NodeSection中，每一个节点提供要导入的类
 	private String renderImportSection(Workflow workflow) {
-		// construct a list of node types
-		Map<NodeType, List<String>> nodeTypeToClass = Map.ofEntries(
-				Map.entry(NodeType.ANSWER, List.of("com.alibaba.cloud.ai.graph.node.AnswerNode")),
-				Map.entry(NodeType.MIDDLE_OUTPUT,
-						List.of("java.util.stream.Collectors", "org.springframework.ai.chat.prompt.PromptTemplate")),
-				Map.entry(NodeType.CODE,
-						List.of("com.alibaba.cloud.ai.graph.node.code.CodeExecutorNodeAction",
-								"com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig",
-								"com.alibaba.cloud.ai.graph.node.code.CodeExecutor",
-								"com.alibaba.cloud.ai.graph.node.code.LocalCommandlineCodeExecutor",
-								"java.io.IOException", "java.nio.file.Files", "java.nio.file.Path",
-								"java.util.stream.Collectors", "com.alibaba.cloud.ai.graph.node.code.entity.CodeParam",
-								"com.alibaba.cloud.ai.graph.node.code.entity.CodeStyle")),
-				Map.entry(NodeType.AGENT,
-						List.of("com.alibaba.cloud.ai.graph.node.AgentNode",
-								"org.springframework.ai.tool.ToolCallback")),
-				Map.entry(NodeType.LLM,
-						List.of("org.springframework.ai.chat.messages.Message",
-								"org.springframework.ai.chat.messages.AssistantMessage",
-								"org.springframework.ai.chat.messages.MessageType",
-								"org.springframework.ai.chat.messages.SystemMessage",
-								"org.springframework.ai.chat.messages.UserMessage",
-								"com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions",
-								"org.springframework.beans.factory.annotation.Autowired", "java.util.Optional")),
-				Map.entry(NodeType.BRANCH,
-						List.of("com.alibaba.cloud.ai.graph.node.BranchNode",
-								"static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async")),
-				Map.entry(NodeType.DOC_EXTRACTOR, List.of("com.alibaba.cloud.ai.graph.node.DocumentExtractorNode")),
-				Map.entry(NodeType.HTTP,
-						List.of("com.alibaba.cloud.ai.graph.node.HttpNode", "org.springframework.http.HttpMethod")),
-				Map.entry(NodeType.LIST_OPERATOR,
-						List.of("com.alibaba.cloud.ai.graph.node.ListOperatorNode", "java.util.Comparator")),
-				Map.entry(NodeType.QUESTION_CLASSIFIER,
-						List.of("com.alibaba.cloud.ai.graph.node.QuestionClassifierNode",
-								"static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async")),
-				Map.entry(NodeType.PARAMETER_PARSING,
-						List.of("com.alibaba.cloud.ai.graph.node.ParameterParsingNode", "java.util.stream.Collectors")),
-				Map.entry(NodeType.TEMPLATE_TRANSFORM,
-						List.of("com.alibaba.cloud.ai.graph.node.TemplateTransformNode")),
-				Map.entry(NodeType.TOOL,
-						List.of("com.alibaba.cloud.ai.graph.node.ToolNode", "java.util.function.Function",
-								"org.springframework.ai.tool.function.FunctionToolCallback")),
-				Map.entry(NodeType.RETRIEVER, List.of("com.alibaba.cloud.ai.graph.node.KnowledgeRetrievalNode",
-						"org.springframework.ai.embedding.EmbeddingModel", "org.springframework.ai.reader.TextReader",
-						"org.springframework.ai.transformer.splitter.TokenTextSplitter",
-						"org.springframework.ai.vectorstore.SimpleVectorStore",
-						"org.springframework.ai.vectorstore.VectorStore",
-						"org.springframework.beans.factory.annotation.Value", "org.springframework.core.io.Resource",
-						"org.springframework.ai.document.Document",
-						"org.springframework.beans.factory.annotation.Autowired",
-						"org.springframework.core.io.ResourceLoader", "java.util.Optional")),
-				Map.entry(NodeType.AGGREGATOR,
-						List.of("com.alibaba.cloud.ai.graph.node.VariableAggregatorNode",
-								"java.util.stream.Collectors")),
-				Map.entry(NodeType.ASSIGNER, List.of("com.alibaba.cloud.ai.graph.node.AssignerNode")),
-				Map.entry(NodeType.ITERATION, List.of("java.util.ArrayList", "java.util.Arrays")),
-				Map.entry(NodeType.END, List.of("java.util.stream.Stream", "java.util.stream.Collectors",
-						"org.springframework.ai.chat.prompt.PromptTemplate")));
-
+		// construct a set of node types
 		Set<NodeType> uniqueTypes = workflow.getGraph()
 			.getNodes()
 			.stream()
 			.map(Node::getType)
-			.filter(nodeTypeToClass::containsKey)
 			.collect(Collectors.toSet());
 
 		if (uniqueTypes.isEmpty()) {
@@ -299,7 +239,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 		StringBuilder sb = new StringBuilder();
 		uniqueTypes.stream()
-			.map(nodeTypeToClass::get)
+			.map(nodeSectionMap::get)
+			.map(NodeSection::getImports)
 			.flatMap(List::stream)
 			.distinct()
 			.forEach(className -> sb.append("import ").append(className).append(";\n"));

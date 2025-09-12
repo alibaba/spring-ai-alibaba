@@ -24,6 +24,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class MiddleOutputSection implements NodeSection<MiddleOutputNodeData> {
 
@@ -65,6 +67,11 @@ public class MiddleOutputSection implements NodeSection<MiddleOutputNodeData> {
 						""";
 			default -> NodeSection.super.assistMethodCode(dialectType);
 		};
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("java.util.stream.Collectors", "org.springframework.ai.chat.prompt.PromptTemplate");
 	}
 
 }

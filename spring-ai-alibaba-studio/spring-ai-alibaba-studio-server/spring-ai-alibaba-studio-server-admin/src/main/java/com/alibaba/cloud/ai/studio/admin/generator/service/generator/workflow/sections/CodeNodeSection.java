@@ -24,6 +24,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 // TODO: 支持异常分支
 @Component
 public class CodeNodeSection implements NodeSection<CodeNodeData> {
@@ -109,6 +111,17 @@ public class CodeNodeSection implements NodeSection<CodeNodeData> {
 						""";
 			default -> "";
 		};
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.code.CodeExecutorNodeAction",
+				"com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig",
+				"com.alibaba.cloud.ai.graph.node.code.CodeExecutor",
+				"com.alibaba.cloud.ai.graph.node.code.LocalCommandlineCodeExecutor", "java.io.IOException",
+				"java.nio.file.Files", "java.nio.file.Path", "java.util.stream.Collectors",
+				"com.alibaba.cloud.ai.graph.node.code.entity.CodeParam",
+				"com.alibaba.cloud.ai.graph.node.code.entity.CodeStyle");
 	}
 
 }

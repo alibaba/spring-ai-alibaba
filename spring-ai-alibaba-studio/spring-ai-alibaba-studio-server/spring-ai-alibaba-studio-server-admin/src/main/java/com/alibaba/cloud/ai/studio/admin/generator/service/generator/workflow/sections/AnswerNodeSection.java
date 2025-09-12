@@ -23,6 +23,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class AnswerNodeSection implements NodeSection<AnswerNodeData> {
 
@@ -57,6 +59,11 @@ public class AnswerNodeSection implements NodeSection<AnswerNodeData> {
 		sb.append(String.format("stateGraph.addEdge(\"%s\", END);%n", varName));
 
 		return sb.toString();
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.AnswerNode");
 	}
 
 }

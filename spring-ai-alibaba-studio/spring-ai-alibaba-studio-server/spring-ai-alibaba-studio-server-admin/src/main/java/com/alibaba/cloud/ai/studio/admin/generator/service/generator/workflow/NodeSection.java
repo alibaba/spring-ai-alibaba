@@ -38,6 +38,12 @@ public interface NodeSection<T extends NodeData> {
 
 	String render(Node node, String varName);
 
+	/**
+	 * 返回当前节点需要导入的类列表
+	 * @return 类列表
+	 */
+	List<String> getImports();
+
 	default String escape(String input) {
 		if (input == null) {
 			return "";
