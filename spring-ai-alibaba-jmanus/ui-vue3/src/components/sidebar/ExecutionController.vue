@@ -368,6 +368,10 @@ const loadParameterRequirements = async () => {
     updateExecutionParamsFromParameters()
   } catch (error) {
     console.error('Failed to load parameter requirements:', error)
+    // Don't show error for 404 - template might not be ready yet
+    if (error instanceof Error && !error.message.includes('404')) {
+      console.warn('Parameter requirements not available yet, will retry later')
+    }
     parameterRequirements.value = {
       parameters: [],
       hasParameters: false,
@@ -424,8 +428,18 @@ const updateExecutionParamsFromParameters = () => {
 
 
 // Watch for changes in plan template ID
-watch(() => props.currentPlanTemplateId, () => {
-  loadParameterRequirements()
+watch(() => props.currentPlanTemplateId, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    // If this is a new template ID (not from initial load), retry loading parameters
+    if (oldId && newId.startsWith('planTemplate-')) {
+      // Retry loading parameters with a delay for new templates
+      setTimeout(() => {
+        loadParameterRequirements()
+      }, 1000)
+    } else {
+      loadParameterRequirements()
+    }
+  }
 })
 
 // Watch for changes in execution params (for backward compatibility)

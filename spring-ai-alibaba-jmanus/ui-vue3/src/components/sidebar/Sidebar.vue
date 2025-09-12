@@ -194,7 +194,7 @@
   </div>
 
   <!-- 发布MCP服务模态框 -->
-  <PublishMcpServiceModal
+  <PublishServiceModal
     ref="publishMcpModalRef"
     v-model="showPublishMcpModal"
     :plan-template-id="sidebarStore.currentPlanTemplateId || ''"
@@ -209,7 +209,7 @@ import { onMounted, ref, computed, onUnmounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { sidebarStore } from '@/stores/sidebar'
-import PublishMcpServiceModal from '@/components/publish-mcp-service-modal/PublishMcpServiceModal.vue'
+import PublishServiceModal from '@/components/publish-service-modal/PublishServiceModal.vue'
 import type { CoordinatorToolVO, CoordinatorToolConfig } from '@/api/coordinator-tool-api-service'
 import { CoordinatorToolApiService } from '@/api/coordinator-tool-api-service'
 import JsonEditor from './JsonEditor.vue'
@@ -241,7 +241,7 @@ const currentToolInfo = ref<CoordinatorToolVO>({
   enableInternalToolcall: false,
   serviceGroup: ''
 })
-const publishMcpModalRef = ref<InstanceType<typeof PublishMcpServiceModal> | null>(null)
+const publishMcpModalRef = ref<InstanceType<typeof PublishServiceModal> | null>(null)
 
 
 
@@ -303,7 +303,10 @@ const handleSaveTemplate = async () => {
 }
 
 // 刷新参数要求的方法
-const refreshParameterRequirements = () => {
+const refreshParameterRequirements = async () => {
+  // Add a small delay to ensure the backend has processed the new template
+  await new Promise(resolve => setTimeout(resolve, 500))
+  
   // 通过 ref 获取 ExecutionController 组件并调用其刷新方法
   if (executionControllerRef.value) {
     executionControllerRef.value.loadParameterRequirements()

@@ -36,7 +36,7 @@ export class SidebarStore {
 
   // Configuration related state
   jsonContent = ''
-  planType = ''
+  planType = 'dynamic_agent'
   generatorPrompt = ''
   executionParams = ''
   isGenerating = false

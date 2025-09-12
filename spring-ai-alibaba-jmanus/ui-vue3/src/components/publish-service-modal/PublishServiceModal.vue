@@ -427,6 +427,10 @@ const loadParameterRequirements = async () => {
     }
   } catch (error) {
     console.error('[PublishModal] Failed to load parameter requirements:', error)
+    // Don't show error for 404 - template might not be ready yet
+    if (error instanceof Error && !error.message.includes('404')) {
+      console.warn('[PublishModal] Parameter requirements not available yet, will retry later')
+    }
     parameterRequirements.value = {
       parameters: [],
       hasParameters: false,
@@ -826,8 +830,18 @@ watch(() => props.modelValue, watchModal)
 
 
 // Watch for planTemplateId changes
-watch(() => props.planTemplateId, () => {
-  loadParameterRequirements()
+watch(() => props.planTemplateId, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    // If this is a new template ID (not from initial load), retry loading parameters
+    if (oldId && newId.startsWith('planTemplate-')) {
+      // Retry loading parameters with a delay for new templates
+      setTimeout(() => {
+        loadParameterRequirements()
+      }, 1000)
+    } else {
+      loadParameterRequirements()
+    }
+  }
 })
 
 // Initialize when component mounts
