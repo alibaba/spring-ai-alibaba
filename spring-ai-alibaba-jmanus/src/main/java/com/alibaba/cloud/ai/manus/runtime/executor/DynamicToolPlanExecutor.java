@@ -62,7 +62,7 @@ public class DynamicToolPlanExecutor extends AbstractPlanExecutor {
 
 	protected String getStepFromStepReq(String stepRequirement) {
 		String stepType = super.getStepFromStepReq(stepRequirement);
-		if("DEFAULT_AGENT".equals(stepType)) {
+		if ("DEFAULT_AGENT".equals(stepType)) {
 			return "ConfigurableDynaAgent";
 		}
 		return stepType;
@@ -95,7 +95,7 @@ public class DynamicToolPlanExecutor extends AbstractPlanExecutor {
 					expectedReturnInfo, step, modelEntity, selectedToolKeys);
 			return executor;
 		}
-		else{
+		else {
 			return super.getExecutorForStep(context, step);
 		}
 	}

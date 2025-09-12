@@ -585,8 +585,8 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 				advice.append("✅ This file type is supported by MapReduce processing; ");
 			}
 			else {
-				advice.append(
-						"🚨 LARGE BINARY FILE (>50MB) - extract_relevant_content CANNOT process this file type; ");
+				advice
+					.append("🚨 LARGE BINARY FILE (>50MB) - extract_relevant_content CANNOT process this file type; ");
 				advice.append("❌ Use specialized tools instead; ");
 			}
 		}

@@ -73,13 +73,13 @@ public class ConfigurableDynaAgent extends DynamicAgent {
 				streamingResponseHandler, step, planIdDispatcher);
 		this.availableToolKeys = availableToolKeys != null ? new ArrayList<>(availableToolKeys) : new ArrayList<>();
 		boolean hasTerminateTool = false;
-		for(String toolKey : availableToolKeys) {
-			if(toolKey.equals(com.alibaba.cloud.ai.manus.tool.TerminateTool.name)) {
+		for (String toolKey : availableToolKeys) {
+			if (toolKey.equals(com.alibaba.cloud.ai.manus.tool.TerminateTool.name)) {
 				hasTerminateTool = true;
 				break;
 			}
 		}
-		if(!hasTerminateTool) {
+		if (!hasTerminateTool) {
 			availableToolKeys.add(com.alibaba.cloud.ai.manus.tool.TerminateTool.name);
 		}
 	}

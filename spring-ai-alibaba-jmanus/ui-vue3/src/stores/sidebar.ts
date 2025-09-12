@@ -46,6 +46,17 @@ export class SidebarStore {
   planVersions: string[] = []
   currentVersionIndex = -1
 
+  // Available tools state
+  availableTools: Array<{
+    key: string
+    name: string
+    description: string
+    enabled: boolean
+    serviceGroup?: string
+  }> = []
+  isLoadingTools = false
+  toolsLoadError = ''
+
   constructor() {
     // 确保属性正确初始化
     this.planVersions = []
@@ -381,6 +392,37 @@ export class SidebarStore {
 
   finishPlanExecution() {
     this.isExecuting = false
+  }
+
+  // Load available tools from backend
+  async loadAvailableTools() {
+    if (this.isLoadingTools) {
+      return // Avoid duplicate requests
+    }
+
+    this.isLoadingTools = true
+    this.toolsLoadError = ''
+
+    try {
+      console.log('[SidebarStore] Loading available tools...')
+      const response = await fetch('/api/agents/tools')
+      
+      if (response.ok) {
+        const tools = await response.json()
+        console.log('[SidebarStore] Loaded available tools:', tools)
+        this.availableTools = tools
+      } else {
+        console.error('[SidebarStore] Failed to load tools:', response.statusText)
+        this.toolsLoadError = `Failed to load tools: ${response.statusText}`
+        this.availableTools = []
+      }
+    } catch (error) {
+      console.error('[SidebarStore] Error loading tools:', error)
+      this.toolsLoadError = error instanceof Error ? error.message : 'Unknown error'
+      this.availableTools = []
+    } finally {
+      this.isLoadingTools = false
+    }
   }
 }
 

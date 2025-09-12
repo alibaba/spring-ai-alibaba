@@ -30,7 +30,7 @@ public class ExecutionStep {
 	/**
 	 * Unique identifier for this execution step
 	 */
-	private String stepId;
+	private final String stepId;
 
 	/**
 	 * Default constructor that generates a unique step ID
@@ -74,12 +74,9 @@ public class ExecutionStep {
 		this.result = result;
 	}
 
+	@JsonIgnore
 	public String getStepId() {
 		return stepId;
-	}
-
-	public void setStepId(String stepId) {
-		this.stepId = stepId;
 	}
 
 	public String getTerminateColumns() {

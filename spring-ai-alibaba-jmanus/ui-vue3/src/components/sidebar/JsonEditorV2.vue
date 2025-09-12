@@ -191,7 +191,7 @@
                 <AssignedTools
                   :title="$t('sidebar.selectedTools')"
                   :selected-tool-ids="step.selectedToolKeys"
-                  :available-tools="availableTools"
+                  :available-tools="sidebarStore.availableTools"
                   :add-button-text="$t('sidebar.addRemoveTools')"
                   :empty-text="$t('sidebar.noTools')"
                   :use-grid-layout="true"
@@ -273,7 +273,7 @@
     <!-- Tool Selection Modal -->
     <ToolSelectionModal
       v-model="showToolModal"
-      :tools="availableTools"
+      :tools="sidebarStore.availableTools"
       :selected-tool-ids="currentStepIndex >= 0 ? parsedData.steps[currentStepIndex]?.selectedToolKeys || [] : []"
       @confirm="handleToolSelectionConfirm"
     />
@@ -287,6 +287,7 @@ import { ref, watch, onMounted } from 'vue'
 import ToolSelectionModal from '@/components/tool-selection-modal/ToolSelectionModal.vue'
 import AssignedTools from '@/components/shared/AssignedTools.vue'
 import { ConfigApiService, type ModelOption } from '@/api/config-api-service'
+import { sidebarStore } from '@/stores/sidebar'
 
 // Props
 const props = withDefaults(defineProps<JsonEditorProps>(), {
@@ -325,8 +326,7 @@ const availableModels = ref<ModelOption[]>([])
 const isLoadingModels = ref(false)
 const modelsLoadError = ref<string>('')
 
-// Tool selection state
-const availableTools = ref<{key: string, name: string, description: string, enabled: boolean, serviceGroup?: string}[]>([])
+// Tool selection state - use sidebar store's availableTools
 const showToolModal = ref(false)
 const currentStepIndex = ref<number>(-1)
 
@@ -354,30 +354,13 @@ const loadAvailableModels = async () => {
   }
 }
 
-// Load available tools
-const loadAvailableTools = async () => {
-  try {
-    const response = await fetch('/api/agents/tools')
-    if (response.ok) {
-      const tools = await response.json()
-      availableTools.value = tools
-    } else {
-      console.error('Failed to load tools:', response.statusText)
-      availableTools.value = []
-    }
-  } catch (error) {
-    console.error('Failed to load tools:', error)
-    availableTools.value = []
-  }
-}
+// Available tools are now loaded from sidebar store
 
 // Tool selection functions
 const showToolSelectionModal = (stepIndex: number) => {
   currentStepIndex.value = stepIndex
   showToolModal.value = true
-  if (availableTools.value.length === 0) {
-    loadAvailableTools()
-  }
+  console.log('[JsonEditorV2] Available tools from store:', sidebarStore.availableTools)
 }
 
 const handleToolSelectionConfirm = (selectedToolIds: string[]) => {

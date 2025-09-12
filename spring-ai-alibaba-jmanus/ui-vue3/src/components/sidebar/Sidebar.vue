@@ -597,6 +597,7 @@ watch(() => sidebarStore.currentPlanTemplateId, (newPlanTemplateId) => {
 onMounted(() => {
   sidebarStore.loadPlanTemplateList()
   loadCoordinatorToolConfig()
+  sidebarStore.loadAvailableTools() // Load available tools on sidebar mount
 
   // Restore sidebar width from localStorage
   const savedWidth = localStorage.getItem('sidebarWidth')

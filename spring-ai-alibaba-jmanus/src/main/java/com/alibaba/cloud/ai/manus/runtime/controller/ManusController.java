@@ -584,7 +584,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			return null;
 		}
 		Boolean isHttpEnabled = coordinatorTool.getEnableHttpService();
-		if(!isHttpEnabled) {
+		if (!isHttpEnabled) {
 			return null;
 		}
 		return coordinatorTool.getPlanTemplateId();

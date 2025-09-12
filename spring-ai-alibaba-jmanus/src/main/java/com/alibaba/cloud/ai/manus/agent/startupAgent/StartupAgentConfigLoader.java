@@ -63,7 +63,8 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 
 			// Use BufferedReader to read the file properly, avoiding buffer size issues
 			StringBuilder content = new StringBuilder();
-			try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+			try (BufferedReader reader = new BufferedReader(
+					new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
 				String line;
 				while ((line = reader.readLine()) != null) {
 					content.append(line).append("\n");
@@ -132,7 +133,7 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 		try {
 			// Configure SnakeYAML with larger buffer size and better Unicode support
 			Yaml yaml = new Yaml();
-			
+
 			// Try to parse the YAML content
 			Map<String, Object> yamlData = yaml.load(configContent);
 
@@ -166,8 +167,9 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 			return config;
 		}
 		catch (Exception e) {
-			log.error("Failed to parse Agent YAML configuration file: {} (content length: {})", configPath, configContent.length(), e);
-			
+			log.error("Failed to parse Agent YAML configuration file: {} (content length: {})", configPath,
+					configContent.length(), e);
+
 			// Try to create a minimal fallback config if YAML parsing fails
 			log.warn("Creating fallback configuration for agent: {}", agentName);
 			AgentConfig fallbackConfig = new AgentConfig();

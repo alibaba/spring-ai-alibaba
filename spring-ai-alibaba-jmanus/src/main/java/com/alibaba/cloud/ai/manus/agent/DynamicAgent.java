@@ -140,12 +140,12 @@ public class DynamicAgent extends ReActAgent {
 	private boolean executeWithRetry(int maxRetries) throws Exception {
 		int attempt = 0;
 		Exception lastException = null;
-		
+
 		while (attempt < maxRetries) {
 			attempt++;
 			try {
 				log.info("Attempt {}/{}: Executing agent thinking process", attempt, maxRetries);
-				
+
 				Message systemMessage = getThinkMessage();
 				// Use current env as user message
 				Message currentStepEnvMessage = currentStepEnvMessage();
@@ -209,17 +209,18 @@ public class DynamicAgent extends ReActAgent {
 						actToolInfoList.add(actToolInfo);
 					}
 
-					ThinkActRecordParams paramsN = new ThinkActRecordParams(thinkActId, stepId, thinkInput, responseByLLm,
-							null, actToolInfoList);
+					ThinkActRecordParams paramsN = new ThinkActRecordParams(thinkActId, stepId, thinkInput,
+							responseByLLm, null, actToolInfoList);
 					planExecutionRecorder.recordThinkingAndAction(step, paramsN);
 					return true;
 				}
 				log.warn("Attempt {}: No tools selected. Retrying...", attempt);
-				
-			} catch (Exception e) {
+
+			}
+			catch (Exception e) {
 				lastException = e;
 				log.warn("Attempt {} failed: {}", attempt, e.getMessage());
-				
+
 				// Check if this is a network-related error that should be retried
 				if (isRetryableException(e)) {
 					if (attempt < maxRetries) {
@@ -227,42 +228,42 @@ public class DynamicAgent extends ReActAgent {
 						log.info("Retrying in {}ms due to retryable error: {}", waitTime, e.getMessage());
 						try {
 							Thread.sleep(waitTime);
-						} catch (InterruptedException ie) {
+						}
+						catch (InterruptedException ie) {
 							Thread.currentThread().interrupt();
 							throw new Exception("Retry interrupted", ie);
 						}
 						continue;
 					}
-				} else {
+				}
+				else {
 					// Non-retryable error, throw immediately
 					throw e;
 				}
 			}
 		}
-		
+
 		// All retries exhausted
 		if (lastException != null) {
 			throw new Exception("All retry attempts failed. Last error: " + lastException.getMessage(), lastException);
 		}
 		return false;
 	}
-	
+
 	/**
 	 * Check if the exception is retryable (network issues, timeouts, etc.)
 	 */
 	private boolean isRetryableException(Exception e) {
 		String message = e.getMessage();
-		if (message == null) return false;
-		
+		if (message == null)
+			return false;
+
 		// Check for network-related errors
-		return message.contains("Failed to resolve") ||
-			   message.contains("timeout") ||
-			   message.contains("connection") ||
-			   message.contains("DNS") ||
-			   message.contains("WebClientRequestException") ||
-			   message.contains("DnsNameResolverTimeoutException");
+		return message.contains("Failed to resolve") || message.contains("timeout") || message.contains("connection")
+				|| message.contains("DNS") || message.contains("WebClientRequestException")
+				|| message.contains("DnsNameResolverTimeoutException");
 	}
-	
+
 	/**
 	 * Calculate exponential backoff delay
 	 */

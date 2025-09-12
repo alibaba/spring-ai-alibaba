@@ -143,25 +143,31 @@ public class CoordinatorToolServiceImpl implements ICoordinatorToolService {
 					savedEntity.getId());
 
 			// Also update SubplanToolDef for backward compatibility
-			// Mapping Strategy: coordinator_tools.planTemplateId <-> subplan_tool_def.planTemplateId (unique)
-			// This ensures data consistency between the two tables when updating coordinator tools
-			Optional<SubplanToolDef> existingToolOpt = subplanToolService.getSubplanToolByTemplate(toolVO.getPlanTemplateId());
+			// Mapping Strategy: coordinator_tools.planTemplateId <->
+			// subplan_tool_def.planTemplateId (unique)
+			// This ensures data consistency between the two tables when updating
+			// coordinator tools
+			Optional<SubplanToolDef> existingToolOpt = subplanToolService
+				.getSubplanToolByTemplate(toolVO.getPlanTemplateId());
 			if (existingToolOpt.isPresent()) {
 				// Update existing SubplanToolDef with all fields from CoordinatorToolVO
 				SubplanToolDef existingTool = existingToolOpt.get();
 				SubplanToolDef updatedToolDef = createSubplanToolDefFromVO(toolVO);
-				updatedToolDef.setId(existingTool.getId()); // Preserve the existing SubplanToolDef ID
-				
+				updatedToolDef.setId(existingTool.getId()); // Preserve the existing
+															// SubplanToolDef ID
+
 				// Update the SubplanToolDef
 				subplanToolService.updateSubplanTool(updatedToolDef);
-				log.info("Successfully updated subplan tool: {} with ID: {} for planTemplateId: {}", 
+				log.info("Successfully updated subplan tool: {} with ID: {} for planTemplateId: {}",
 						updatedToolDef.getToolName(), updatedToolDef.getId(), toolVO.getPlanTemplateId());
-			} else {
-				log.warn("No existing SubplanToolDef found for planTemplateId: {}, creating new one", toolVO.getPlanTemplateId());
+			}
+			else {
+				log.warn("No existing SubplanToolDef found for planTemplateId: {}, creating new one",
+						toolVO.getPlanTemplateId());
 				// If no existing SubplanToolDef found, create a new one
 				SubplanToolDef newToolDef = createSubplanToolDefFromVO(toolVO);
 				subplanToolService.registerSubplanTool(newToolDef);
-				log.info("Successfully created new subplan tool: {} with ID: {} for planTemplateId: {}", 
+				log.info("Successfully created new subplan tool: {} with ID: {} for planTemplateId: {}",
 						newToolDef.getToolName(), newToolDef.getId(), toolVO.getPlanTemplateId());
 			}
 
@@ -191,22 +197,26 @@ public class CoordinatorToolServiceImpl implements ICoordinatorToolService {
 						() -> new CoordinatorToolException("NOT_FOUND", "Coordinator tool not found with ID: " + id));
 
 			// Delete from SubplanToolDef first (for backward compatibility)
-			// Mapping Strategy: coordinator_tools.planTemplateId <-> subplan_tool_def.planTemplateId (unique)
-			// This ensures data consistency between the two tables when deleting coordinator tools
+			// Mapping Strategy: coordinator_tools.planTemplateId <->
+			// subplan_tool_def.planTemplateId (unique)
+			// This ensures data consistency between the two tables when deleting
+			// coordinator tools
 			try {
-				Optional<SubplanToolDef> existingToolOpt = subplanToolService.getSubplanToolByTemplate(existingEntity.getPlanTemplateId());
+				Optional<SubplanToolDef> existingToolOpt = subplanToolService
+					.getSubplanToolByTemplate(existingEntity.getPlanTemplateId());
 				if (existingToolOpt.isPresent()) {
 					// Delete the matching SubplanToolDef entry for this planTemplateId
 					SubplanToolDef tool = existingToolOpt.get();
 					subplanToolService.deleteSubplanTool(tool.getId());
-					log.info("Successfully deleted subplan tool: {} with ID: {} for planTemplateId: {}", 
+					log.info("Successfully deleted subplan tool: {} with ID: {} for planTemplateId: {}",
 							tool.getToolName(), tool.getId(), existingEntity.getPlanTemplateId());
-				} else {
+				}
+				else {
 					log.warn("No SubplanToolDef found for planTemplateId: {}", existingEntity.getPlanTemplateId());
 				}
 			}
 			catch (Exception e) {
-				log.warn("Failed to delete subplan tool for planTemplateId: {}, continuing with entity deletion: {}", 
+				log.warn("Failed to delete subplan tool for planTemplateId: {}, continuing with entity deletion: {}",
 						existingEntity.getPlanTemplateId(), e.getMessage());
 			}
 

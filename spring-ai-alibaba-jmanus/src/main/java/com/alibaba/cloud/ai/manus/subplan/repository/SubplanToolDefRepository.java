@@ -86,7 +86,6 @@ public interface SubplanToolDefRepository extends JpaRepository<SubplanToolDef, 
 	@Query("SELECT DISTINCT s FROM SubplanToolDef s LEFT JOIN FETCH s.inputSchema")
 	List<SubplanToolDef> findAllWithParameters();
 
-
 	/**
 	 * Count subplan tools by endpoint
 	 * @param endpoint the endpoint
