@@ -252,6 +252,14 @@ export class SidebarStore {
         this.selectedTemplate.id,
         content
       )
+      
+      // Update the selected template ID with the real planId returned from backend
+      if (saveResult?.planId && this.selectedTemplate.id.startsWith('new-')) {
+        console.log('[SidebarStore] Updating template ID from', this.selectedTemplate.id, 'to', saveResult.planId)
+        this.selectedTemplate.id = saveResult.planId
+        this.currentPlanTemplateId = saveResult.planId
+      }
+      
       if (this.currentVersionIndex < this.planVersions.length - 1) {
         this.planVersions = this.planVersions.slice(0, this.currentVersionIndex + 1)
       }
@@ -340,7 +348,6 @@ export class SidebarStore {
       } catch {
         planData = {
           planTemplateId: this.selectedTemplate.id,
-          planId: this.selectedTemplate.id,
           title: this.selectedTemplate.title ?? i18n.global.t('sidebar.defaultExecutionPlanTitle'),
           steps: [
             { stepRequirement: '[BROWSER_AGENT] Visit Baidu to search for Alibaba\'s latest stock price' },

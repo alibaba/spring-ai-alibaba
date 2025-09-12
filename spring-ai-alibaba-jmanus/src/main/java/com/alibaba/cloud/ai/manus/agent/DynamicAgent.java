@@ -212,7 +212,6 @@ public class DynamicAgent extends ReActAgent {
 					ThinkActRecordParams paramsN = new ThinkActRecordParams(thinkActId, stepId, thinkInput, responseByLLm,
 							null, actToolInfoList);
 					planExecutionRecorder.recordThinkingAndAction(step, paramsN);
-
 					return true;
 				}
 				log.warn("Attempt {}: No tools selected. Retrying...", attempt);

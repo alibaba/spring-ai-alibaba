@@ -24,6 +24,8 @@ export interface StepData {
   modelName: string | null
   selectedToolKeys: string[]
   terminateColumns: string
+  agentType?: string
+  stepContent: string
 }
 
 // Types - Based on backend DynamicAgentExecutionPlan.java
@@ -42,7 +44,7 @@ export interface JsonEditorProps {
   isGenerating: boolean
   isExecuting: boolean
   hiddenFields?: string[]
-  currentPlanTemplateId?: string
+  currentPlanTemplateId: string
 }
 
 export interface JsonEditorEmits {
@@ -166,7 +168,9 @@ export function useJsonEditor(props: JsonEditorProps, emit: JsonEditorEmits) {
       agentName: 'ConfigurableDynaAgent', // Default agent name
       modelName: null, // Default to null (no model selected)
       selectedToolKeys: [],
-      terminateColumns: ''
+      terminateColumns: '',
+      agentType: '',
+      stepContent: ''
     }
     parsedData.steps.push(newStep)
   }
