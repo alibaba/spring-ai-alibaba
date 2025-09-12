@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.s
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,10 +26,12 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.BranchNodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
 import org.springframework.stereotype.Component;
 
+// TODO: 对于Dify的条件渲染，将CaseID格式化为比较易懂的格式
 @Component
 public class BranchNodeSection implements NodeSection<BranchNodeData> {
 
@@ -51,9 +54,8 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 	}
 
 	@Override
-	public String renderConditionalEdges(BranchNodeData branchNodeData, Map<String, Node> nodeMap,
-			Map.Entry<String, List<Edge>> entry, Map<String, String> varNames) {
-		String srcVar = varNames.get(entry.getKey());
+	public String renderEdges(BranchNodeData branchNodeData, List<Edge> edges) {
+		String srcVar = branchNodeData.getVarName();
 		StringBuilder sb = new StringBuilder();
 		List<Case> cases = branchNodeData.getCases();
 
@@ -63,25 +65,13 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 			String logicalOperator = " " + c.getLogicalOperator().getValue() + " ";
 			List<String> expressions = c.getConditions().stream().map(condition -> {
 				String constValue = condition.getValue();
-				if (condition.getVarType().equalsIgnoreCase("String")) {
+				if (condition.getVarType().equalsIgnoreCase("String")
+						|| condition.getVarType().equalsIgnoreCase("file")) {
 					constValue = "\"" + constValue + "\"";
 				}
-				String objType = switch (condition.getVarType()) {
-					case "string", "String" -> "String.class";
-					case "list", "List", "Array", "array" -> "List.class";
-					default ->
-						condition.getComparisonOperator().getSupportedClassList().get(0).getName().concat(".class");
-				};
-				String objName = "unknown";
-				try {
-					if (nodeMap.containsKey(condition.getVariableSelector().getNamespace())) {
-						Node inputNode = nodeMap.get(condition.getVariableSelector().getNamespace());
-						objName = inputNode.getData().getOutputs().get(0).getName();
-					}
-				}
-				catch (Exception ignore) {
-				}
-				objName = String.format("state.value(\"%s\", %s).orElseThrow()", objName, objType);
+
+				// 根据变量类型生成安全的访问代码
+				String objName = generateSafeVariableAccess(condition);
 				return condition.getComparisonOperator().convert(objName, constValue);
 			}).toList();
 			conditionsBuffer.append("if(");
@@ -95,12 +85,11 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 		conditionsBuffer.append("return \"false\";");
 
 		// 构建Map
-		Map<String, String> edgeCaseMap = entry.getValue()
-			.stream()
+		Map<String, String> edgeCaseMap = edges.stream()
 			.collect(Collectors.toMap(Edge::getSourceHandle, Edge::getTarget));
 		String edgeCaseMapStr = "Map.of(" + edgeCaseMap.entrySet()
 			.stream()
-			.flatMap(e -> Stream.of(e.getKey(), varNames.getOrDefault(e.getValue(), "unknown")))
+			.flatMap(e -> Stream.of(e.getKey(), e.getValue()))
 			.map(v -> String.format("\"%s\"", v))
 			.collect(Collectors.joining(", ")) + ")";
 
@@ -114,6 +103,62 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 			.append(");\n");
 
 		return sb.toString();
+	}
+
+	private String generateSafeVariableAccess(Case.Condition condition) {
+		String varType = condition.getVarType();
+		String variablePath = buildVariablePath(condition);
+
+		switch (varType.toLowerCase()) {
+			case "file":
+				// 支持从 VariableSelector 中获取属性路径
+				VariableSelector selector = condition.getVariableSelector();
+				boolean accessExtension = selector != null
+						&& (selector.getLabel() != null && selector.getLabel().contains("extension")
+								|| selector.getName() != null && selector.getName().contains("extension"));
+
+				if (accessExtension) {
+					// 如果是访问扩展名属性，直接访问扩展名字段
+					return String.format("state.value(\"%s\", String.class).orElse(\"\")", variablePath);
+				}
+				else {
+					// 从文件对象中提取扩展名
+					return String.format(
+							"state.value(\"%s\", java.io.File.class).map(file -> { " + "String name = file.getName(); "
+									+ "int dotIndex = name.lastIndexOf('.'); "
+									+ "return dotIndex > 0 ? name.substring(dotIndex) : \"\"; " + "}).orElse(\"\")",
+							variablePath);
+				}
+			case "string":
+				return String.format("state.value(\"%s\", String.class).orElse(\"\")", variablePath);
+			case "number":
+				return String.format("state.value(\"%s\", Number.class).orElse(0)", variablePath);
+			case "boolean":
+				return String.format("state.value(\"%s\", Boolean.class).orElse(false)", variablePath);
+			case "list":
+			case "array":
+				return String.format(
+						"state.value(\"%s\", java.util.List.class).orElse(java.util.Collections.emptyList())",
+						variablePath);
+			case "object":
+				return String.format("state.value(\"%s\", Object.class).orElse(null)", variablePath);
+			default:
+				// 使用默认的类型
+				return String.format("state.value(\"%s\", Object.class).orElse(null)", variablePath);
+		}
+	}
+
+	private String buildVariablePath(Case.Condition condition) {
+		VariableSelector variableSelector = condition.getVariableSelector();
+		if (variableSelector == null) {
+			return "unknown";
+		}
+		return Optional.ofNullable(variableSelector.getNameInCode()).orElse("unknown");
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async");
 	}
 
 }

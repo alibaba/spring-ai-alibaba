@@ -303,7 +303,7 @@ public class PromptHelper {
 		result.append("## 优化要求\n");
 
 		for (UserPromptConfig config : optimizationConfigs) {
-			String optimizationContent = renderOptimizationPrompt(config.getSystemPrompt(), params);
+			String optimizationContent = renderOptimizationPrompt(config.getOptimizationPrompt(), params);
 			if (!optimizationContent.trim().isEmpty()) {
 				result.append("- ").append(optimizationContent).append("\n");
 			}
