@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.manus.subplan.model.po.SubplanToolDef;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Service interface for managing subplan tools
@@ -35,11 +36,11 @@ public interface ISubplanToolService {
 	List<SubplanToolDef> getAllSubplanTools();
 
 	/**
-	 * Get subplan tools by plan template ID
+	 * Get subplan tool by plan template ID (unique)
 	 * @param planTemplateId the plan template ID
-	 * @return List of subplan tools for the specified template
+	 * @return Optional containing the subplan tool if found
 	 */
-	List<SubplanToolDef> getSubplanToolsByTemplate(String planTemplateId);
+	Optional<SubplanToolDef> getSubplanToolByTemplate(String planTemplateId);
 
 	/**
 	 * Get subplan tools by endpoint

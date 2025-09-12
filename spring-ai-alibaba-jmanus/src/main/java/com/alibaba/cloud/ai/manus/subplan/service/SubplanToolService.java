@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Service implementation for managing subplan tools
@@ -74,9 +75,9 @@ public class SubplanToolService implements ISubplanToolService {
 	}
 
 	@Override
-	public List<SubplanToolDef> getSubplanToolsByTemplate(String planTemplateId) {
-		logger.debug("Fetching subplan tools for template: {}", planTemplateId);
-		return subplanToolDefRepository.findByPlanTemplateId(planTemplateId);
+	public Optional<SubplanToolDef> getSubplanToolByTemplate(String planTemplateId) {
+		logger.debug("Fetching subplan tool for template: {}", planTemplateId);
+		return subplanToolDefRepository.findOneByPlanTemplateId(planTemplateId);
 	}
 
 	@Override

@@ -46,11 +46,11 @@ public interface SubplanToolDefRepository extends JpaRepository<SubplanToolDef, 
 	Optional<SubplanToolDef> findByToolName(String toolName);
 
 	/**
-	 * Find subplan tools by plan template ID
+	 * Find subplan tool by plan template ID (unique)
 	 * @param planTemplateId the plan template ID
-	 * @return List of subplan tools associated with the plan template
+	 * @return Optional containing the subplan tool if found
 	 */
-	List<SubplanToolDef> findByPlanTemplateId(String planTemplateId);
+	Optional<SubplanToolDef> findOneByPlanTemplateId(String planTemplateId);
 
 	/**
 	 * Find subplan tools by endpoint
@@ -86,13 +86,6 @@ public interface SubplanToolDefRepository extends JpaRepository<SubplanToolDef, 
 	@Query("SELECT DISTINCT s FROM SubplanToolDef s LEFT JOIN FETCH s.inputSchema")
 	List<SubplanToolDef> findAllWithParameters();
 
-	/**
-	 * Custom query to find subplan tools by plan template ID with parameters loaded
-	 * @param planTemplateId the plan template ID
-	 * @return List of subplan tools with parameters for the specified plan template
-	 */
-	@Query("SELECT DISTINCT s FROM SubplanToolDef s LEFT JOIN FETCH s.inputSchema WHERE s.planTemplateId = :planTemplateId")
-	List<SubplanToolDef> findByPlanTemplateIdWithParameters(@Param("planTemplateId") String planTemplateId);
 
 	/**
 	 * Count subplan tools by endpoint

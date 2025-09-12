@@ -27,7 +27,7 @@ public class SubplanToolDef {
 	@OneToMany(mappedBy = "toolDef", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
 	private List<SubplanParamDef> inputSchema = new ArrayList<>();
 
-	@Column(name = "plan_template_id", nullable = false, length = 255)
+	@Column(name = "plan_template_id", nullable = false, unique = true, length = 255)
 	private String planTemplateId;
 
 	@Column(name = "endpoint", nullable = false, length = 255)
