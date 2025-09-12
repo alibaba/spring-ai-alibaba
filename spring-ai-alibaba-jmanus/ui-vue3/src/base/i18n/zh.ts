@@ -837,6 +837,7 @@ const words: I18nType = {
   tasks: '任务列表',
     subtask: '子任务',
     agent: '智能体',
+    selectAgent: '选择智能体',
   stepRequirement: '任务需求',
   stepRequirementPlaceholder: '请输入任务的具体需求和描述...',
   terminateColumns: '任务输出要求描述',

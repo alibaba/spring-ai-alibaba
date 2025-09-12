@@ -870,6 +870,7 @@ const words: I18nType = {
   tasks: '任务列表',
     subtask: 'Subtask',
     agent: 'Agent',
+    selectAgent: 'Select Agent',
   stepRequirement: 'Task Requirement',
   stepRequirementPlaceholder: 'Please enter the specific requirements and description for this task...',
   terminateColumns: 'Task Output Requirements Description',
