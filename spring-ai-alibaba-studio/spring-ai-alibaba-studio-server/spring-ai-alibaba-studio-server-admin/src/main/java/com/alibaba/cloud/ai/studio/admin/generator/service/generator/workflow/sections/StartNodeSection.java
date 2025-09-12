@@ -15,12 +15,15 @@
  */
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.sections;
 
+import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.StartNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class StartNodeSection implements NodeSection<StartNodeData> {
@@ -34,6 +37,25 @@ public class StartNodeSection implements NodeSection<StartNodeData> {
 	@Override
 	public String render(Node node, String varName) {
 		return "";
+	}
+
+	@Override
+	public String renderEdges(StartNodeData nodeData, List<Edge> edges) {
+		// 开始节点的Source应为StateGraph.START
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("// Edges For [START]%n"));
+		if (edges.isEmpty()) {
+			return "";
+		}
+		sb.append(String.format("stateGraph%n"));
+		edges.forEach(edge -> sb.append(String.format(".addEdge(START, \"%s\")%n", edge.getTarget())));
+		sb.append(String.format(";%n%n"));
+		return sb.toString();
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of();
 	}
 
 }

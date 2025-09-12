@@ -28,10 +28,7 @@ public class GraphBuilder {
     {{assistMethodCode}}
 
     @Bean
-    public CompiledGraph buildGraph(
-        ChatModel chatModel
-        {{#hasCode}}, CodeExecutionConfig codeExecutionConfig, CodeExecutor codeExecutor{{/hasCode}}
-        ) throws Exception {
+    public CompiledGraph buildGraph(ChatModel chatModel) throws Exception {
         ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
 
         // new stateGraph
@@ -43,23 +40,4 @@ public class GraphBuilder {
         return stateGraph.compile();
     }
 
-    {{#hasCode}}
-        @Bean
-    	public Path tempDir() throws IOException {
-    	    // todo： set your work dir
-    		Path tempDir = Files.createTempDirectory("code-execution-workdir-");
-    		tempDir.toFile().deleteOnExit();
-    		return tempDir;
-    	}
-
-    	@Bean
-    	public CodeExecutionConfig codeExecutionConfig(Path tempDir) {
-    		return new CodeExecutionConfig().setWorkDir(tempDir.toString());
-    	}
-
-    	@Bean
-    	public CodeExecutor codeGenerator() {
-    		return new LocalCommandlineCodeExecutor();
-    	}
-    {{/hasCode}}
 }

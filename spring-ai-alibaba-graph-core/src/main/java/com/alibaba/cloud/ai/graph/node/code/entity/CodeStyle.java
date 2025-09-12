@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata;
-
-import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
+package com.alibaba.cloud.ai.graph.node.code.entity;
 
 /**
- * DSL中一些节点对于SAA无实际作用，但必须定义的节点
- *
  * @author vlsmb
- * @since 2025/7/22
+ * @since 2025/9/11
  */
-public class EmptyNodeData extends NodeData {
+public enum CodeStyle {
+
+	/**
+	 * 参数直接作为函数形参的风格 示例: def main(x: int, y: int) -> dict:
+	 */
+	EXPLICIT_PARAMETERS,
+
+	/**
+	 * 参数通过全局字典访问的风格 示例: def main(): x = params['x']
+	 */
+	GLOBAL_DICTIONARY
 
 }

@@ -168,4 +168,9 @@ public class VariableAggregatorNodeSection implements NodeSection<VariableAggreg
 		};
 	}
 
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.VariableAggregatorNode", "java.util.stream.Collectors");
+	}
+
 }

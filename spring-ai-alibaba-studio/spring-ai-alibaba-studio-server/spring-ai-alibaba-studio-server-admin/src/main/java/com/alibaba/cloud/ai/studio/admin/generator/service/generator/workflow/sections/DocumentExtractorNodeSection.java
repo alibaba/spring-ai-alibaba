@@ -60,4 +60,9 @@ public class DocumentExtractorNodeSection implements NodeSection<DocumentExtract
 		return sb.toString();
 	}
 
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.DocumentExtractorNode");
+	}
+
 }

@@ -90,4 +90,9 @@ public class MCPNodeSection implements NodeSection<MCPNodeData> {
 		return sb.toString();
 	}
 
+	@Override
+	public List<String> getImports() {
+		return List.of();
+	}
+
 }
