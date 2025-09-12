@@ -86,7 +86,42 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 
 			@Override
 			public IterationNodeData parse(Map<String, Object> data) throws JsonProcessingException {
-				throw new UnsupportedOperationException();
+				IterationNodeData nodeData = new IterationNodeData();
+
+				// 获取必要信息
+				int parallelCount = Optional
+					.ofNullable(
+							MapReadUtil.getMapDeepValue(data, Integer.class, "config", "node_param", "concurrent_size"))
+					.orElse(1);
+				int maxIterationCount = Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, Integer.class, "config", "node_param", "batch_size"))
+					.orElse(1);
+				int indexOffset = 1;
+
+				List<Map<String, Object>> inputParamsList = Optional
+					.ofNullable(MapReadUtil
+						.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "input_params")))
+					.orElse(List.of());
+				List<Map<String, Object>> outputParamsList = Optional
+					.ofNullable(MapReadUtil.safeCastToListWithMap(
+							MapReadUtil.getMapDeepValue(data, List.class, "config", "output_params")))
+					.orElse(List.of());
+				String itemKey = Optional.ofNullable(inputParamsList.get(0).get("key").toString()).orElse("item");
+				String outputKey = Optional.ofNullable(outputParamsList.get(0).get("key").toString()).orElse("output");
+				VariableSelector inputSelector = this.varTemplateToSelector(DSLDialectType.STUDIO,
+						inputParamsList.get(0).get("value").toString());
+				VariableSelector resultSelector = this.varTemplateToSelector(DSLDialectType.STUDIO,
+						outputParamsList.get(0).get("value").toString());
+
+				// 设置必要信息
+				nodeData.setParallelCount(parallelCount);
+				nodeData.setMaxIterationCount(maxIterationCount);
+				nodeData.setIndexOffset(indexOffset);
+				nodeData.setItemKey(itemKey);
+				nodeData.setOutputKey(outputKey);
+				nodeData.setInputSelector(inputSelector);
+				nodeData.setResultSelector(resultSelector);
+				return nodeData;
 			}
 
 			@Override
@@ -129,7 +164,7 @@ public class IterationNodeDataConverter extends AbstractNodeDataConverter<Iterat
 	@Override
 	public BiConsumer<IterationNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+			case DIFY, STUDIO -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
 				nodeData.setInputs(List.of(nodeData.getInputSelector(), nodeData.getResultSelector()));
 
 				nodeData.setOutputs(Stream

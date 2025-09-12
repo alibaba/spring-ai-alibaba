@@ -38,7 +38,6 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Workflow;
-import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.CodeNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLAdapter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.GraphProjectDescription;
@@ -73,8 +72,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 	private final String GRAPH_RUN_TEMPLATE_NAME = "GraphRunController.java";
 
 	private final String PACKAGE_NAME = "packageName";
-
-	private final String HAS_CODE = "hasCode";
 
 	private final List<DSLAdapter> dslAdapters;
 
@@ -118,8 +115,6 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		Map<String, String> varNames = nodes.stream()
 			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
 
-		boolean hasCode = nodes.stream().map(Node::getData).anyMatch(nd -> nd instanceof CodeNodeData);
-
 		String assistMethodCode = renderAssistMethodCode(nodes, projectDescription.getDslDialectType());
 		String stateSectionStr = renderStateSections(
 				Stream.of(workflow.getWorkflowVars(), workflow.getEnvVars()).flatMap(List::stream).toList());
@@ -129,7 +124,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		Map<String, Object> graphBuilderModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
 				GRAPH_BUILDER_STATE_SECTION, stateSectionStr, GRAPH_BUILDER_NODE_SECTION, nodeSectionStr,
 				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr, GRAPH_BUILDER_IMPORT_SECTION, renderImportSection(workflow),
-				HAS_CODE, hasCode, GRAPH_BUILDER_ASSIST_METHOD_CODE, assistMethodCode);
+				GRAPH_BUILDER_ASSIST_METHOD_CODE, assistMethodCode);
 		Map<String, Object> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
 		renderAndWriteTemplates(List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
 				List.of(graphBuilderModel, graphRunControllerModel), projectRoot, projectDescription);

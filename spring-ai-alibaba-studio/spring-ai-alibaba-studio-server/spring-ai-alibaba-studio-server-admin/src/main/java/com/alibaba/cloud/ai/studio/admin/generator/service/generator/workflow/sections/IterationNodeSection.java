@@ -31,7 +31,7 @@ import java.util.List;
  * @author vlsmb
  * @since 2025/7/23
  */
-// TODO: 支持并行模式、错误处理，支持Studio的默认输入值
+// TODO: 支持并行模式、错误处理，支持Studio的默认输入值，支持Studio的多输入/多输出
 @Component
 public class IterationNodeSection implements NodeSection<IterationNodeData> {
 

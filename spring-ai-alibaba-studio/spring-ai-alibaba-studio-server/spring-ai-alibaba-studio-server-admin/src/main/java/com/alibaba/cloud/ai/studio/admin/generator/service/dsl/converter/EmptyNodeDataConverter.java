@@ -37,10 +37,10 @@ public class EmptyNodeDataConverter extends AbstractNodeDataConverter<EmptyNodeD
 
 	public enum EmptyNodeDialectConverter {
 
-		DIFY(new DialectConverter<>() {
+		ALL(new DialectConverter<>() {
 			@Override
 			public Boolean supportDialect(DSLDialectType dialectType) {
-				return dialectType.equals(DSLDialectType.DIFY);
+				return true;
 			}
 
 			@Override
@@ -50,9 +50,9 @@ public class EmptyNodeDataConverter extends AbstractNodeDataConverter<EmptyNodeD
 
 			@Override
 			public Map<String, Object> dump(EmptyNodeData nodeData) {
-				return Map.of();
+				throw new UnsupportedOperationException();
 			}
-		}), CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(EmptyNodeData.class));
+		});
 
 		private final DialectConverter<EmptyNodeData> dialectConverter;
 

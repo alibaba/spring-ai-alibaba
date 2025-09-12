@@ -58,7 +58,7 @@ public enum NodeType {
 
 	TEMPLATE_TRANSFORM("template-transform", "template-transform", "UNSUPPORTED"),
 
-	ITERATION("iteration", "iteration", "UNSUPPORTED"),
+	ITERATION("iteration", "iteration", "Parallel"),
 
 	EMPTY("empty", "UNSUPPORTED", "UNSUPPORTED"),
 
