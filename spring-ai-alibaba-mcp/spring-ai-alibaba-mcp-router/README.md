@@ -98,6 +98,91 @@
 - 使用 OpenMeteo 免费 API
 - 提供天气预报和空气质量查询功能
 
+### 9. OAuth 验证服务配置 (security)
+
+MCP Router 支持通过 OAuth 2.0 为外部服务调用提供透明的身份验证。该功能完全可选，不影响核心功能。
+
+#### 启用 OAuth 验证
+
+在 `application.yml` 中添加以下配置：
+
+```
+spring:
+  ai:
+    alibaba:
+      mcp:
+        gateway:
+          oauth:
+            enabled: true
+            provider:
+              client-id: your-client-id
+              client-secret: your-client-secret
+              token-uri: https://your-oauth-server.com/oauth/token
+              grant-type: client_credentials
+              scope: read,write
+            token-cache:
+              enabled: true 
+              max-size: 1000
+              refresh-before-expiry: PT5M
+            retry:
+              max-attempts: 3
+              backoff: PT1S
+```
+
+#### 配置参数说明
+
+- `enabled`: 是否启用 OAuth 认证
+- `provider.client-id`: OAuth 客户端 ID
+- `provider.client-secret`: OAuth 客户端密钥
+- `provider.token-uri`: 获取访问令牌的端点 URL
+- `provider.grant-type`: OAuth 授权类型（默认为 client_credentials）
+- `provider.scope`: 请求的权限范围
+- `provider.redirect-uri`: 回调地址
+- `token-cache.enabled`: 是否启用 Token 缓存
+- `token-cache.max-size`: 缓存最大大小
+- `token-cache.refresh-before-expiry`: Token 过期前刷新时间
+- `retry.max-attempts`: 最大重试次数
+- `retry.backoff`: 重试间隔
+
+#### 支持的授权类型
+
+- `client_credentials`: 客户端凭证模式（推荐用于服务间通信）
+- `authorization_code`: 授权码模式
+- `password`: 密码模式
+- `refresh_token`: 刷新令牌模式
+
+## 使用示例
+
+以使用 GitHub OAuth 作为认证服务器进行 OAuth 认证为例
+- 1. 创建 github oauth 应用（https://github.com/settings/applications）
+- 2. 在应用界面获取 client-id,client-secret
+- 3. 填写 provider.token-uri 配置，可以参考 https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authenticating-to-the-rest-api-with-an-oauth-app
+```yaml
+spring:
+  ai:
+    alibaba:
+      mcp:
+        gateway:
+          oauth:
+            enabled: true
+            provider:
+              client-id: ${GITHUB_OAUTH_CLIENT_ID:your-github-client-id}
+              client-secret: ${GITHUB_OAUTH_CLIENT_SECRET:your-github-client-secret}
+              token-uri: https://github.com/login/oauth/access_token
+              authorization-uri: https://github.com/login/oauth/authorize
+              user-info-uri: https://api.github.com/user
+              grant-type: authorization_code
+              redirect-uri: ${GITHUB_REDIRECT_URI:http://127.0.0.1:8080/callback} # 根据自己的回调地址配置
+              scope: user:email
+            token-cache:
+              enabled: true
+              max-size: 1000
+              refresh-before-expiry: PT5M
+            retry:
+              max-attempts: 3
+              backoff: PT1S
+```
+以上是根据 Gihub oauth 应用进行的配置，同时 provider 部分的配置也支持自定义 oauth 配置，需要让 oauth 服务器暴露对应的 url 进行填写。
 ## 快速开始
 
 ### 1. 添加依赖
@@ -133,34 +218,6 @@ spring:
         router:
           enabled: true
           service-names: ["echo-server", "weather-server"]
-```
-
-### 3. 使用示例
-
-```java
-@Autowired
-private McpRouterService mcpRouterService;
-
-// 搜索 MCP Server
-String result = mcpRouterService.searchMcpServer(
-    "数据库查询工具",
-    "sql,database,query",
-    5
-);
-
-// 添加 MCP Server
-String result = mcpRouterService.addMcpServer(
-    "my-mcp-server",
-    "提供数据库查询功能的 MCP Server",
-    "database,sql,query"
-);
-
-// 使用工具
-String result = mcpRouterService.useTool(
-    "my-mcp-server",
-    "execute_sql",
-    "{\"query\": \"SELECT * FROM users\"}"
-);
 ```
 
 ## API 接口
