@@ -858,7 +858,7 @@ const words: I18nType = {
     
     // Plan Type Selection
     planType: '计划类型',
-    simplePlan: '简单计划',
+    simplePlan: '简单计划（逐步会废弃，请慎用）',
     advancedPlan: '高级计划（MapReduce）',
     dynamicAgentPlan: '动态智能体计划',
     

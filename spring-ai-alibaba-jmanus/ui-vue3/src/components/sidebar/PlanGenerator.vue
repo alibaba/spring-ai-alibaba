@@ -29,38 +29,50 @@
         </select>
       </div>
       
-      <textarea
-        v-model="generatorPrompt"
-        class="prompt-input"
-        :placeholder="t('sidebar.generatorPlaceholder')"
-        rows="3"
-      ></textarea>
-      <div class="generator-actions">
-        <button
-          class="btn btn-primary btn-sm"
-          @click="handleGeneratePlan"
-          :disabled="isGenerating || !generatorPrompt.trim()"
-        >
-          <Icon
-            :icon="isGenerating ? 'carbon:circle-dash' : 'carbon:generate'"
-            width="14"
-            :class="{ spinning: isGenerating }"
-          />
-          {{ isGenerating ? t('sidebar.generating') : t('sidebar.generatePlan') }}
-        </button>
-        <button
-          class="btn btn-secondary btn-sm"
-          @click="handleUpdatePlan"
-          :disabled="
-            isGenerating ||
-            !generatorPrompt.trim() ||
-            !jsonContent.trim()
-          "
-        >
-          <Icon icon="carbon:edit" width="14" />
-          {{ t('sidebar.updatePlan') }}
-        </button>
+      <!-- Dynamic Agent Plan - Show readonly instruction textarea -->
+      <div v-if="selectedPlanType === 'dynamic_agent'" class="dynamic-agent-instruction">
+        <textarea
+          readonly
+          class="instruction-textarea"
+          rows="2"
+        >使用动态智能体计划，只需要直接输入指令，不需要再走生成流程。请直接在动态智能体计划里面构建你的计划。</textarea>
       </div>
+      
+      <!-- Simple Plan - Show editable prompt and actions -->
+      <template v-else>
+        <textarea
+          v-model="generatorPrompt"
+          class="prompt-input"
+          :placeholder="t('sidebar.generatorPlaceholder')"
+          rows="3"
+        ></textarea>
+        <div class="generator-actions">
+          <button
+            class="btn btn-primary btn-sm"
+            @click="handleGeneratePlan"
+            :disabled="isGenerating || !generatorPrompt.trim()"
+          >
+            <Icon
+              :icon="isGenerating ? 'carbon:circle-dash' : 'carbon:generate'"
+              width="14"
+              :class="{ spinning: isGenerating }"
+            />
+            {{ isGenerating ? t('sidebar.generating') : t('sidebar.generatePlan') }}
+          </button>
+          <button
+            class="btn btn-secondary btn-sm"
+            @click="handleUpdatePlan"
+            :disabled="
+              isGenerating ||
+              !generatorPrompt.trim() ||
+              !jsonContent.trim()
+            "
+          >
+            <Icon icon="carbon:edit" width="14" />
+            {{ t('sidebar.updatePlan') }}
+          </button>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -208,6 +220,27 @@ defineExpose({
 
   &::placeholder {
     color: rgba(255, 255, 255, 0.4);
+  }
+}
+
+.dynamic-agent-instruction {
+  .instruction-textarea {
+    width: 100%;
+    background: rgba(102, 126, 234, 0.1);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    font-family: inherit;
+    padding: 12px;
+    resize: none;
+    cursor: default;
+    line-height: 1.5;
+
+    &:focus {
+      outline: none;
+      border-color: rgba(102, 126, 234, 0.5);
+    }
   }
 }
 
