@@ -34,6 +34,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.model.ChatModel;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class SequentialAgentTest {
 
@@ -86,10 +88,37 @@ class SequentialAgentTest {
 
 		try {
 			Optional<OverAllState> result = blogAgent.invoke(Map.of("input", "帮我写一个100字左右的散文"));
+
+			// 验证结果不为空
+			assertTrue(result.isPresent(), "Result should be present");
+
+			OverAllState state = result.get();
+
+			// 验证输入被正确设置
+			assertTrue(state.value("input").isPresent(), "Input should be present in state");
+			assertEquals("帮我写一个100字左右的散文", state.value("input").get(), "Input should match the request");
+
+			// 验证文章被创建
+			assertTrue(state.value("article").isPresent(), "Article should be present after writer agent");
+			String article = (String) state.value("article").get();
+			assertNotNull(article, "Article content should not be null");
+			assertFalse(article.trim().isEmpty(), "Article content should not be empty");
+
+			// 验证评审后的文章存在
+			assertTrue(state.value("reviewed_article").isPresent(), "Reviewed article should be present after reviewer agent");
+			String reviewedArticle = (String) state.value("reviewed_article").get();
+			assertNotNull(reviewedArticle, "Reviewed article content should not be null");
+			assertFalse(reviewedArticle.trim().isEmpty(), "Reviewed article content should not be empty");
+
+			// 验证评审后的文章应该包含西湖相关内容（根据评审员的指令）
+			assertTrue(reviewedArticle.contains("西湖") || reviewedArticle.toLowerCase().contains("west lake"),
+				"Reviewed article should contain West Lake description as per reviewer instructions");
+
 			System.out.println(result.get());
 		}
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();
+			fail("SequentialAgent execution failed: " + e.getMessage());
 		}
 
 		// Verify all hooks were executed

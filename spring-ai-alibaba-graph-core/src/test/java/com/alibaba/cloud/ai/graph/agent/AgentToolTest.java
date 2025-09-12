@@ -29,6 +29,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class AgentToolTest {
 
@@ -70,10 +72,24 @@ class AgentToolTest {
 		try {
 			Optional<OverAllState> result = blogAgent
 				.invoke(Map.of("messages", List.of(new UserMessage("帮我写一个100字左右的散文"))));
+
+			// 验证结果不为空
+			assertTrue(result.isPresent(), "Result should be present");
+
+			OverAllState state = result.get();
+
+			// 验证消息不为空
+			assertTrue(state.value("messages").isPresent(), "Messages should be present in state");
+
+			// 验证输出内容不为空
+			Object messages = state.value("messages").get();
+			assertNotNull(messages, "Messages should not be null");
+
 			System.out.println(result.get());
 		}
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();
+			fail("Agent tool execution failed: " + e.getMessage());
 		}
 
 		// Verify all hooks were executed

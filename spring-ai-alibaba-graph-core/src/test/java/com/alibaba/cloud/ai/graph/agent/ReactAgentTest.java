@@ -29,6 +29,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class ReactAgentTest {
 
@@ -51,11 +53,32 @@ class ReactAgentTest {
 				.invoke(Map.of("messages", List.of(new UserMessage("帮我写一篇100字左右散文。"))));
 			Optional<OverAllState> result2 = agent.invoke(Map.of("messages", List.of(new UserMessage("帮我写一首现代诗歌。"))));
 
+			// 验证第一个结果不为空
+			assertTrue(result.isPresent(), "First result should be present");
+			OverAllState state1 = result.get();
+
+			// 验证消息存在
+			assertTrue(state1.value("messages").isPresent(), "Messages should be present in first result");
+			Object messages1 = state1.value("messages").get();
+			assertNotNull(messages1, "Messages should not be null in first result");
+
+			// 验证第二个结果不为空
+			assertTrue(result2.isPresent(), "Second result should be present");
+			OverAllState state2 = result2.get();
+
+			// 验证消息存在
+			assertTrue(state2.value("messages").isPresent(), "Messages should be present in second result");
+			Object messages2 = state2.value("messages").get();
+			assertNotNull(messages2, "Messages should not be null in second result");
+
+			// 验证两个结果不同（因为输入不同）
+			assertNotEquals(messages1, messages2, "Results should be different for different inputs");
+
 			System.out.println(result.get());
 		}
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();
+			fail("ReactAgent execution failed: " + e.getMessage());
 		}
 	}
-
 }
