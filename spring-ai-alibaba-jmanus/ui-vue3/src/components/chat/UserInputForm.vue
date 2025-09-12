@@ -95,7 +95,7 @@
               :required="isRequired(input.required)"
               v-model="formInputsStore[inputIndex]"
               class="form-input form-textarea"
-              rows="3"
+              rows="4"
             ></textarea>
 
             <select
@@ -374,13 +374,12 @@ onUnmounted(() => {
   
   .user-input-form {
     .form-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      display: flex;
+      flex-direction: column;
       gap: 16px;
       margin-bottom: 16px;
       
       @media (max-width: 768px) {
-        grid-template-columns: 1fr;
         gap: 12px;
       }
     }
