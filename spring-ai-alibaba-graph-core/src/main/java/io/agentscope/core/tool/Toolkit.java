@@ -29,7 +29,7 @@ public class Toolkit {
 
 	}
 
-	protected ToolCallbackProvider toolCallbackProvider() {
+	public ToolCallbackProvider toolCallbackProvider() {
 		return new ToolCallbackProvider() {
 			@Override
 			public ToolCallback[] getToolCallbacks() {

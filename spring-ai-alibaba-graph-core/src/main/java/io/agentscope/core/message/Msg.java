@@ -33,6 +33,18 @@ public class Msg {
 		return new Builder();
 	}
 
+	public String getName() {
+		return name;
+	}
+
+	public MsgRole getRole() {
+		return role;
+	}
+
+	public ContentBlock getContent() {
+		return content;
+	}
+
 	public static class Builder {
 
 		private String name;

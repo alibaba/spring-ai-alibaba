@@ -23,6 +23,10 @@ public class TextBlock extends ContentBlock {
 		this.text = text;
 	}
 
+	public String getText() {
+		return text;
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
