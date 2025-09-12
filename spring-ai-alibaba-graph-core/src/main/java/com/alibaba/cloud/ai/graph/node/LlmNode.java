@@ -173,12 +173,12 @@ public class LlmNode implements NodeAction {
 
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec() {
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-				.options(ToolCallingChatOptions.builder()
-						.toolCallbacks(toolCallbacks)
-						.internalToolExecutionEnabled(false)
-						.build())
-				.messages(messages)
-				.advisors(advisors);
+			.options(ToolCallingChatOptions.builder()
+				.toolCallbacks(toolCallbacks)
+				.internalToolExecutionEnabled(false)
+				.build())
+			.messages(messages)
+			.advisors(advisors);
 
 		if (StringUtils.hasLength(systemPrompt)) {
 			if (!params.isEmpty()) {
@@ -290,13 +290,13 @@ public class LlmNode implements NodeAction {
 		String role = roleObj != null ? roleObj.toString().toLowerCase() : "user";
 
 		switch (role) {
-		case "system":
-			return new SystemMessage(content);
-		case "assistant":
-			return new AssistantMessage(content);
-		case "user":
-		default:
-			return new UserMessage(content);
+			case "system":
+				return new SystemMessage(content);
+			case "assistant":
+				return new AssistantMessage(content);
+			case "user":
+			default:
+				return new UserMessage(content);
 		}
 	}
 
