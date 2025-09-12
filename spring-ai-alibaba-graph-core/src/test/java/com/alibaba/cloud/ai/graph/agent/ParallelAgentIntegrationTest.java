@@ -105,6 +105,8 @@ class ParallelAgentIntegrationTest {
 			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // ✅ 添加合并策略
 			.build();
 
+
+
 		// Execute the parallel workflow
 		try {
 			String userRequest = "以'西湖'为主题";

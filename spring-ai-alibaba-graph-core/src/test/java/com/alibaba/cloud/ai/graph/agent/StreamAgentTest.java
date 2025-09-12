@@ -92,7 +92,8 @@ class StreamAgentTest {
 			Flux<NodeOutput> result = blogAgent.stream(Map.of("input", "帮我写一个100字左右的散文"));
 			result.doOnNext(nodeOutput -> {
 				System.out.println("Node: " + nodeOutput);
-			}).subscribe();
+			}).then().block();
+			System.out.println("Waiting for the streaming to complete...");
 		}
 		catch (Exception e) {
 			e.printStackTrace();

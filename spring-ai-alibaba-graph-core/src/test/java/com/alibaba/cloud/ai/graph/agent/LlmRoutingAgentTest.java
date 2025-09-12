@@ -49,7 +49,7 @@ class LlmRoutingAgentTest {
 		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
 	}
 
-	public ToolCallback createToolCallback() {
+	public static ToolCallback createToolCallback() {
 		return FunctionToolCallback.builder("poem", new PoemTool())
 			.description("用来写诗的工具")
 			.inputType(String.class)
