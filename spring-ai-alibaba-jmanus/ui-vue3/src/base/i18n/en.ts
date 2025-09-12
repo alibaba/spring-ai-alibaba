@@ -710,6 +710,7 @@ const words: I18nType = {
       completed: 'Completed',
       pending: 'Pending',
       failed: 'Failed',
+      inProgress: 'In Progress',
     },
     userInput: {
       message: 'Please enter the required information:',

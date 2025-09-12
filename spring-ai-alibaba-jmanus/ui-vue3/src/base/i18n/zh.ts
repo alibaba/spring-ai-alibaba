@@ -678,6 +678,7 @@ const words: I18nType = {
       completed: '已完成',
       pending: '待执行',
       failed: '失败',
+      inProgress: '进行中',
     },
     userInput: {
       message: '请输入所需信息:',
