@@ -25,12 +25,17 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Utility class for date and time operations.
  *
  * @since 1.0.0.3
  */
 public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
+
+	private static final Logger logger = LoggerFactory.getLogger(DateUtils.class);
 
 	// Date format patterns
 	public static final String DATE_JFP_STR = "yyyyMM";
@@ -208,15 +213,13 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
 	 */
 	public static Date parseDateString(String time) {
 		SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH);
-		Date d = new Date();
 		try {
-			d = sdf.parse(time);
+			return sdf.parse(time);
 		}
 		catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.warn("Failed to parse date string: {}", time, e);
+			return null;
 		}
-		return d;
 	}
 
 	/**
