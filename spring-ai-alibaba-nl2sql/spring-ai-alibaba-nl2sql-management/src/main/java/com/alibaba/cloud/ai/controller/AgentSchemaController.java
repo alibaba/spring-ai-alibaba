@@ -259,7 +259,9 @@ public class AgentSchemaController {
 			log.info("Agent {} chat request: {}", agentId, query);
 
 			// Directly call streamSearch method of Nl2sqlForGraphController
-			return nl2sqlForGraphController.streamSearch(query.trim(), String.valueOf(agentId), response);
+			// 生成一个threadId用于图执行
+			String threadId = String.valueOf(System.currentTimeMillis());
+			return nl2sqlForGraphController.streamSearch(query.trim(), String.valueOf(agentId), threadId, response);
 
 		}
 		catch (Exception e) {

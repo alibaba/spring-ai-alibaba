@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.alibaba.cloud.ai.constant.Constant.IS_ONLY_NL2SQL;
+import static com.alibaba.cloud.ai.constant.Constant.HUMAN_REVIEW_ENABLED;
 import static com.alibaba.cloud.ai.constant.Constant.ONLY_NL2SQL_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
@@ -106,7 +107,13 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 					"Validation failed: The plan is not a valid JSON structure. Error: " + e.getMessage());
 		}
 
-		// 2. Execute the Plan if validation passes
+		// 2. If开启人工复核，则在执行前暂停，跳转到human_feedback节点
+		Boolean humanReviewEnabled = state.value(HUMAN_REVIEW_ENABLED, false);
+		if (Boolean.TRUE.equals(humanReviewEnabled)) {
+			logger.info("Human review enabled: routing to human_feedback node");
+			return Map.of(PLAN_VALIDATION_STATUS, true, PLAN_NEXT_NODE, "human_feedback");
+		}
+
 		Plan plan = getPlan(state);
 		Integer currentStep = getCurrentStepNumber(state);
 		List<ExecutionStep> executionPlan = plan.getExecutionPlan();
@@ -137,6 +144,10 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 	 */
 	private Map<String, Object> determineNextNode(String toolToUse) {
 		if (SUPPORTED_NODES.contains(toolToUse)) {
+			logger.info("Determined next execution node: {}", toolToUse);
+			return Map.of(PLAN_NEXT_NODE, toolToUse, PLAN_VALIDATION_STATUS, true);
+		}
+		else if ("human_feedback".equals(toolToUse)) {
 			logger.info("Determined next execution node: {}", toolToUse);
 			return Map.of(PLAN_NEXT_NODE, toolToUse, PLAN_VALIDATION_STATUS, true);
 		}

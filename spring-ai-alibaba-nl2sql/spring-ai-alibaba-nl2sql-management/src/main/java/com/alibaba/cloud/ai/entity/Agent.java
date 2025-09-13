@@ -45,7 +45,11 @@ public class Agent {
 
 	private LocalDateTime updateTime;
 
+	// Whether human review is enabled for this agent
+	private Integer humanReviewEnabled; // 0/1 for JDBC compatibility
+
 	public Agent() {
+		this.humanReviewEnabled = 0; // 默认禁用人工复核
 	}
 
 	public Agent(String name, String description, String avatar, String status, String prompt, String category,
@@ -60,6 +64,7 @@ public class Agent {
 		this.tags = tags;
 		this.createTime = LocalDateTime.now();
 		this.updateTime = LocalDateTime.now();
+		this.humanReviewEnabled = 0; // 默认禁用人工复核
 	}
 
 	// Getters and Setters
@@ -149,6 +154,14 @@ public class Agent {
 
 	public void setUpdateTime(LocalDateTime updateTime) {
 		this.updateTime = updateTime;
+	}
+
+	public Integer getHumanReviewEnabled() {
+		return humanReviewEnabled;
+	}
+
+	public void setHumanReviewEnabled(Integer humanReviewEnabled) {
+		this.humanReviewEnabled = humanReviewEnabled;
 	}
 
 	@Override

@@ -42,7 +42,12 @@ public class PlanExecutorDispatcher implements EdgeAction {
 
 		if (validationPassed) {
 			logger.info("Plan validation passed. Proceeding to next step.");
-			return state.value(PLAN_NEXT_NODE, END);
+			String nextNode = state.value(PLAN_NEXT_NODE, END);
+			// 如果返回的是"END"，直接返回END常量
+			if ("END".equals(nextNode)) {
+				return END;
+			}
+			return nextNode;
 		}
 		else {
 			// Plan validation failed, check repair count and decide whether to retry or

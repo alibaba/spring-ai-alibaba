@@ -155,6 +155,8 @@ public class Nl2sqlConfiguration {
 			// NL2SQL相关
 			keyStrategyHashMap.put(IS_ONLY_NL2SQL, new ReplaceStrategy());
 			keyStrategyHashMap.put(ONLY_NL2SQL_OUTPUT, new ReplaceStrategy());
+			// Human Review keys
+			keyStrategyHashMap.put(HUMAN_REVIEW_ENABLED, new ReplaceStrategy());
 			// Final result
 			keyStrategyHashMap.put(RESULT, new ReplaceStrategy());
 			return keyStrategyHashMap;
@@ -176,7 +178,8 @@ public class Nl2sqlConfiguration {
 			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(codePoolExecutor)))
 			.addNode(PYTHON_ANALYZE_NODE, node_async(new PythonAnalyzeNode(chatClientBuilder)))
 			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder, promptConfigService)))
-			.addNode(SEMANTIC_CONSISTENCY_NODE, node_async(new SemanticConsistencyNode(nl2SqlService)));
+			.addNode(SEMANTIC_CONSISTENCY_NODE, node_async(new SemanticConsistencyNode(nl2SqlService)))
+			.addNode("human_feedback", node_async(new HumanFeedbackNode()));
 
 		stateGraph.addEdge(START, QUERY_REWRITE_NODE)
 			.addConditionalEdges(QUERY_REWRITE_NODE, edge_async(new QueryRewriteDispatcher()),
@@ -203,6 +206,16 @@ public class Nl2sqlConfiguration {
 					// If validation passes, proceed to the correct execution node
 					SQL_EXECUTE_NODE, SQL_EXECUTE_NODE, PYTHON_GENERATE_NODE, PYTHON_GENERATE_NODE,
 					REPORT_GENERATOR_NODE, REPORT_GENERATOR_NODE,
+					// If human review is enabled, go to human_feedback node
+					"human_feedback", "human_feedback",
+					// If max repair attempts are reached, end the process
+					END, END))
+			// Human feedback node routing
+			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()), Map.of(
+					// If plan is rejected, go back to PlannerNode
+					PLANNER_NODE, PLANNER_NODE,
+					// If plan is approved, continue with execution
+					PLAN_EXECUTOR_NODE, PLAN_EXECUTOR_NODE,
 					// If max repair attempts are reached, end the process
 					END, END))
 			.addEdge(REPORT_GENERATOR_NODE, END)
