@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.studio.core.observability.controller;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
@@ -15,37 +30,58 @@ import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
+/**
+ * REST Controller for Node Streaming Operations
+ * 
+ * <p>This controller provides streaming endpoints for real-time node execution monitoring.
+ * It offers different levels of detail in the streaming output, from basic raw node outputs
+ * to enhanced outputs with comprehensive execution metadata.</p>
+ * 
+ * <p>All endpoints return Server-Sent Events (SSE) streams for real-time monitoring
+ * capabilities. These streams provide live updates as nodes execute within the graph.</p>
+ * 
+ * @author Spring AI Alibaba Team
+ * @since 1.0.0
+ * @see CurrentGraphService
+ * @see EnhancedNodeOutput
+ */
 @RestController
 @RequestMapping("/observability/v1/node")
-@Tag(name = "Observability", description = "APIs for system observability, including streamNodeOutput")
+@Tag(name = "Node Streaming", description = "Real-time streaming APIs for node execution monitoring")
 public class StreamNodeController {
 
     private final CurrentGraphService currentGraphProxy;
 
-    StreamNodeController(CurrentGraphService currentGraphProxy){
-        this.currentGraphProxy=currentGraphProxy;
+    public StreamNodeController(CurrentGraphService currentGraphProxy) {
+        this.currentGraphProxy = currentGraphProxy;
     }
     
     @GetMapping(path = "/stream_snapshots", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "获取节点流式快照", description = "获取每个节点完成后的状态快照，只包含业务数据")
+    @Operation(summary = "Stream Node State Snapshots", 
+               description = "获取节点流式快照 - Streams state snapshots after each node completes, containing only business data")
     public Flux<Map<String, Object>> writeStreamSnapshots(
-            @Parameter(description = "输入文本", example = "今天我去了西湖，天气特别好，感觉特别开心")
+            @Parameter(description = "Input text to process / 输入文本", 
+                      example = "今天我去了西湖，天气特别好，感觉特别开心")
             @RequestParam("text") String inputText) {
         return currentGraphProxy.writeStreamSnapshots(inputText);
     }
     
     @GetMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "获取基础流式输出", description = "获取每个节点的原始输出（NodeOutput格式）")
+    @Operation(summary = "Stream Basic Node Outputs", 
+               description = "获取基础流式输出 - Streams raw node outputs in NodeOutput format")
     public Flux<NodeOutput> writeStream(
-            @Parameter(description = "输入文本", example = "今天我去了西湖，天气特别好，感觉特别开心")
+            @Parameter(description = "Input text to process / 输入文本", 
+                      example = "今天我去了西湖，天气特别好，感觉特别开心")
             @RequestParam("text") String inputText) {
         return currentGraphProxy.writeStream(inputText);
     }
     
     @GetMapping(path = "/stream_enhanced", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "获取增强流式输出", description = "获取包含完整节点信息的流式输出，包括节点名称、ID、执行状态、时间戳等")
+    @Operation(summary = "Stream Enhanced Node Outputs", 
+               description = "获取增强流式输出 - Streams comprehensive node information including execution status, timing, and metadata")
     public Flux<EnhancedNodeOutput> writeStreamEnhanced(
-            @Parameter(description = "输入文本", example = "今天我去了西湖，天气特别好，感觉特别开心")
+            @Parameter(description = "Input text to process / 输入文本", 
+                      example = "今天我去了西湖，天气特别好，感觉特别开心")
             @RequestParam("text") String inputText) {
         return currentGraphProxy.writeStreamEnhanced(inputText);
     }
