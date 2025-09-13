@@ -45,8 +45,17 @@ public class BaseDefaultConfiguration {
 
 	private final DbConfig dbConfig;
 
-	private BaseDefaultConfiguration(@Qualifier("mysqlAccessor") Accessor accessor, DbConfig dbConfig) {
-		this.dbAccessor = accessor;
+	private BaseDefaultConfiguration(DbConfig dbConfig, @Qualifier("mysqlAccessor") Accessor mysqlDbAccessor,
+			@Qualifier("h2Accessor") Accessor h2DbAccessor, @Qualifier("postgreAccessor") Accessor postgreDbAccessor) {
+		if (dbConfig.getDialectType().equals("h2")) {
+			dbAccessor = h2DbAccessor;
+		}
+		else if (dbConfig.getDialectType().equals("postgre")) {
+			dbAccessor = postgreDbAccessor;
+		}
+		else {
+			dbAccessor = mysqlDbAccessor;
+		}
 		this.dbConfig = dbConfig;
 	}
 
@@ -68,6 +77,12 @@ public class BaseDefaultConfiguration {
 
 		logger.info("Creating default BaseSchemaService implementation");
 		return new SimpleSchemaService(dbConfig, gson, vectorStoreService);
+	}
+
+	@Bean("dbAccessor")
+	@ConditionalOnMissingBean(name = "dbAccessor")
+	public Accessor dbAccessor() {
+		return dbAccessor;
 	}
 
 }

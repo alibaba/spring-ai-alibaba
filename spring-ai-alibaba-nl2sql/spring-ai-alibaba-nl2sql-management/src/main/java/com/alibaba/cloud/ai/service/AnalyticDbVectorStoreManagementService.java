@@ -74,7 +74,7 @@ public class AnalyticDbVectorStoreManagementService implements VectorStoreManage
 	private VectorStore vectorStore;
 
 	@Autowired
-	@Qualifier("mysqlAccessor")
+	@Qualifier("dbAccessor")
 	private Accessor dbAccessor;
 
 	@Autowired

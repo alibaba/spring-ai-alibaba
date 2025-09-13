@@ -153,6 +153,10 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 			dbConfig.setConnectionType("jdbc");
 			dbConfig.setDialectType("postgresql");
 		}
+		else if ("h2".equalsIgnoreCase(datasource.getType())) {
+			dbConfig.setConnectionType("jdbc");
+			dbConfig.setDialectType("h2");
+		}
 		else {
 			throw new RuntimeException("不支持的数据库类型: " + datasource.getType());
 		}
@@ -181,6 +185,7 @@ public class SqlExecuteNode extends AbstractPlanBasedNode {
 		// Execute business logic first - actual SQL execution
 		DbQueryParameter dbQueryParameter = new DbQueryParameter();
 		dbQueryParameter.setSql(sqlQuery);
+		dbQueryParameter.setSchema(dbConfig.getSchema());
 
 		try {
 			// Execute SQL query and get results immediately
