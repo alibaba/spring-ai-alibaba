@@ -267,6 +267,13 @@
                   </select>
                 </div>
                 <div class="form-group">
+                  <label>启用计划人工复核</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" v-model="agent.humanReviewEnabled">
+                    <span style="color:#666;">开启后，Planner 计划会在执行前等待人工复核</span>
+                  </div>
+                </div>
+                <div class="form-group">
                   <label>创建时间</label>
                   <div class="form-control readonly-field">{{ formatDateTime(agent.createTime) }}</div>
                 </div>
@@ -1421,7 +1428,8 @@ export default {
       prompt: '',
       category: '',
       adminId: '',
-      tags: ''
+      tags: '',
+      humanReviewEnabled: false
     })
     
     // 消息提示
@@ -1565,7 +1573,8 @@ export default {
           status: agent.status,
           prompt: agent.prompt,
           category: agent.category,
-          tags: agent.tags
+          tags: agent.tags,
+          humanReviewEnabled: agent.humanReviewEnabled ? 1 : 0
         })
         showMessage('更新成功', 'success')
       } catch (error) {
@@ -1590,7 +1599,8 @@ export default {
           prompt: response.prompt || '',
           category: response.category || '',
           adminId: response.adminId || '',
-          tags: response.tags || ''
+          tags: response.tags || '',
+          humanReviewEnabled: (response.humanReviewEnabled ?? 0) === 1
         })
         console.log('智能体详情加载成功:', agent)
       } catch (error) {

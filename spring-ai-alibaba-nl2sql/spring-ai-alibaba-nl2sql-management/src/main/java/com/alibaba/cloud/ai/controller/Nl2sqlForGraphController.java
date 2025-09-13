@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.alibaba.cloud.ai.service.simple.SimpleVectorStoreService;
 import com.alibaba.cloud.ai.service.DatasourceService;
 import com.alibaba.cloud.ai.entity.Datasource;
+import com.alibaba.cloud.ai.service.AgentService;
 import com.alibaba.fastjson.JSON;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -37,6 +38,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -51,6 +54,9 @@ import java.util.concurrent.CompletableFuture;
 import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.RESULT;
+import static com.alibaba.cloud.ai.constant.Constant.HUMAN_REVIEW_ENABLED;
+import static com.alibaba.cloud.ai.constant.Constant.HUMAN_REVIEW_PLAN;
+import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_ERROR;
 
 /**
  * @author zhangshenghang
@@ -67,13 +73,17 @@ public class Nl2sqlForGraphController {
 
 	private final DatasourceService datasourceService;
 
+	private final AgentService agentService;
+
 	public Nl2sqlForGraphController(@Qualifier("nl2sqlGraph") StateGraph stateGraph,
-			SimpleVectorStoreService simpleVectorStoreService, DatasourceService datasourceService)
+			SimpleVectorStoreService simpleVectorStoreService, DatasourceService datasourceService,
+			AgentService agentService)
 			throws GraphStateException {
 		this.compiledGraph = stateGraph.compile();
 		this.compiledGraph.setMaxIterations(100);
 		this.simpleVectorStoreService = simpleVectorStoreService;
 		this.datasourceService = datasourceService;
+		this.agentService = agentService;
 	}
 
 	@GetMapping("/search")
@@ -88,10 +98,75 @@ public class Nl2sqlForGraphController {
 			.setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
 		simpleVectorStoreService.schema(schemaInitRequest);
 
+		boolean humanReviewEnabled = false;
+		try {
+			var agent = agentService.findById(Long.valueOf(agentId));
+			humanReviewEnabled = agent != null && agent.getHumanReviewEnabled() != null
+					&& agent.getHumanReviewEnabled() == 1;
+		} catch (Exception ignore) {
+		}
+
 		Optional<OverAllState> invoke = compiledGraph
-			.invoke(Map.of(INPUT_KEY, query, Constant.AGENT_ID, dataSetId, AGENT_ID, agentId));
+			.invoke(Map.of(INPUT_KEY, query, Constant.AGENT_ID, dataSetId, AGENT_ID, agentId, HUMAN_REVIEW_ENABLED, humanReviewEnabled));
 		OverAllState overAllState = invoke.get();
-		return overAllState.value(RESULT).get().toString();
+		if (humanReviewEnabled) {
+			var planOpt = overAllState.value(HUMAN_REVIEW_PLAN);
+			if (planOpt.isPresent()) {
+				return planOpt.get().toString();
+			}
+		}
+		return overAllState.value(RESULT).map(Object::toString).orElse("");
+	}
+
+	/**
+	 * 预览 Planner 生成的执行计划，供人工复核
+	 */
+	@GetMapping("/plan/preview")
+	public String planPreview(@RequestParam String query, @RequestParam String agentId) throws Exception {
+		DbConfig dbConfig = getDbConfigForAgent(Integer.valueOf(agentId));
+		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
+		schemaInitRequest.setDbConfig(dbConfig);
+		schemaInitRequest
+			.setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
+		simpleVectorStoreService.schema(schemaInitRequest);
+
+		Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query, HUMAN_REVIEW_ENABLED, true,
+				Constant.AGENT_ID, agentId));
+		OverAllState state = invoke.get();
+		return state.value(HUMAN_REVIEW_PLAN).map(Object::toString).orElse("");
+	}
+
+	/**
+	 * 提交人工反馈并继续执行
+	 * decision: APPROVE / REJECT
+	 * suggestion: 当 REJECT 时的修改意见
+	 */
+	@PostMapping("/plan/feedback")
+	public String planFeedback(@RequestBody Map<String, String> body) throws Exception {
+		String query = body.getOrDefault("query", "");
+		String agentId = body.getOrDefault("agentId", "");
+		String decision = body.getOrDefault("decision", "APPROVE");
+		String suggestion = body.get("suggestion");
+		DbConfig dbConfig = getDbConfigForAgent(Integer.valueOf(agentId));
+		SchemaInitRequest schemaInitRequest = new SchemaInitRequest();
+		schemaInitRequest.setDbConfig(dbConfig);
+		schemaInitRequest
+			.setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
+		simpleVectorStoreService.schema(schemaInitRequest);
+
+		if ("REJECT".equalsIgnoreCase(decision)) {
+			Optional<OverAllState> invoke = compiledGraph
+				.invoke(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId, PLAN_VALIDATION_ERROR,
+						suggestion != null ? suggestion
+								: "User rejected the plan. Please revise according to suggestions."));
+			OverAllState state = invoke.get();
+			return state.value(RESULT).map(Object::toString).orElse("");
+		}
+		else {
+			Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId));
+			OverAllState state = invoke.get();
+			return state.value(RESULT).map(Object::toString).orElse("");
+		}
 	}
 
 	@GetMapping("/init")
@@ -172,10 +247,19 @@ public class Nl2sqlForGraphController {
 
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 
+		boolean humanReviewEnabled = false;
+		try {
+			var agent = agentService.findById(Long.valueOf(agentId));
+			humanReviewEnabled = agent != null && agent.getHumanReviewEnabled() != null
+					&& agent.getHumanReviewEnabled() == 1;
+		} catch (Exception ignore) {
+		}
+
 		// Use streaming processing and pass agentId to the state
 		AsyncGenerator<NodeOutput> generator = compiledGraph
-			.stream(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId));
+			.stream(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId, HUMAN_REVIEW_ENABLED, humanReviewEnabled));
 
+		boolean finalHumanReviewEnabled = humanReviewEnabled;
 		CompletableFuture.runAsync(() -> {
 			try {
 				generator.forEachAsync(output -> {
@@ -196,6 +280,10 @@ public class Nl2sqlForGraphController {
 										"ReceFenerator: mapResult called, finalResultived null or empty chunk from streaming output");
 							}
 						}
+						else if (output instanceof NodeOutput) {
+							NodeOutput nodeOutput = (NodeOutput) output;
+							logger.debug("Non-streaming output received: {}", output);
+						}
 						else {
 							logger.debug("Non-streaming output received: {}", output);
 						}
@@ -205,6 +293,37 @@ public class Nl2sqlForGraphController {
 						// Do not throw exceptions; continue processing the next output
 					}
 				}).thenAccept(v -> {
+					// 检查最终状态是否包含人工复核计划
+					try {
+						// 重新执行图以获取最终状态
+						Optional<OverAllState> finalState = compiledGraph
+							.invoke(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId, HUMAN_REVIEW_ENABLED, finalHumanReviewEnabled));
+						
+						if (finalState.isPresent()) {
+							OverAllState state = finalState.get();
+							var planOpt = state.value(HUMAN_REVIEW_PLAN);
+							if (planOpt.isPresent()) {
+								String plan = planOpt.get().toString();
+								if (plan != null && !plan.trim().isEmpty()) {
+									logger.info("Sending human review plan to frontend");
+									// 发送人工复核计划到前端
+									Map<String, Object> humanReviewData = Map.of(
+										"type", "plan_generation",
+										"data", plan
+									);
+									ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(humanReviewData))
+										.build();
+									sink.tryEmitNext(event);
+									// 发送完成后立即关闭流，等待前端反馈
+									sink.tryEmitComplete();
+									return;
+								}
+							}
+						}
+					} catch (Exception e) {
+						logger.error("Error checking final state for human review: ", e);
+					}
+					
 					// Send completion event
 					logger.info("Stream processing completed successfully");
 					sink.tryEmitNext(ServerSentEvent.builder("complete").event("complete").build());

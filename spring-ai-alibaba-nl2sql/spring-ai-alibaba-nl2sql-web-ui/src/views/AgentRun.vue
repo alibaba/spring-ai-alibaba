@@ -312,6 +312,31 @@
 
     <!-- 移动端遮罩层 -->
     <div v-if="showReportPreview" class="mobile-preview-overlay" @click="closeReportPreview"></div>
+
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+      <label style="display:flex; align-items:center; gap:6px; font-size: 13px;">
+        <input type="checkbox" v-model="humanReviewEnabled" />
+        启用计划人工复核
+      </label>
+    </div>
+
+    <div v-if="showHumanReviewModal" class="modal-mask">
+      <div class="modal-wrapper">
+        <div class="modal-container">
+          <div class="modal-header">
+            <h3>计划预览</h3>
+          </div>
+          <div class="modal-body" style="max-height: 360px; overflow: auto; white-space: pre-wrap;">
+            {{ humanReviewPlan }}
+          </div>
+          <div class="modal-footer" style="display:flex; gap:8px;">
+            <textarea v-model="humanReviewSuggestion" placeholder="如不合理，请填写修改建议" style="width:100%; height:80px;"></textarea>
+            <button class="btn" @click="approvePlan(currentUserMessage)">通过</button>
+            <button class="btn btn-danger" @click="rejectPlan(currentUserMessage)">不合理</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -380,6 +405,9 @@ export default {
           const data = await response.json()
           agent.value.name = data.name || 'NL2SQL 智能助手'
           agent.value.description = data.description || '自然语言转SQL查询助手，帮助您快速生成和执行数据库查询'
+          if (typeof data.humanReviewEnabled !== 'undefined') {
+            humanReviewEnabled.value = !!data.humanReviewEnabled
+          }
         } else {
           // 使用默认值
           agent.value.name = 'NL2SQL 智能助手'
@@ -587,6 +615,7 @@ export default {
       isLoading.value = true
       
       try {
+        // 启动流式处理
         const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(message)}&agentId=${agent.value.id}`)
         
         const agentMessageIndex = currentMessages.value.length
@@ -691,6 +720,30 @@ export default {
                 
                 if (actualType === 'sql' && typeof processedData === 'string') {
                     processedData = processedData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim()
+                }
+
+                // 检查是否是人工复核计划
+                console.log('检查人工复核:', {
+                    actualType,
+                    humanReviewEnabled: humanReviewEnabled.value,
+                    hasThoughtProcess: typeof processedData === 'string' && processedData.includes('thought_process'),
+                    hasExecutionPlan: typeof processedData === 'string' && processedData.includes('execution_plan'),
+                    processedDataLength: typeof processedData === 'string' ? processedData.length : 0
+                })
+                
+                if (actualType === 'plan_generation' && humanReviewEnabled.value) {
+                    // 检查是否包含计划结构（包含 thought_process 或 execution_plan）
+                    if (typeof processedData === 'string' && (processedData.includes('thought_process') || processedData.includes('execution_plan'))) {
+                        console.log('触发人工复核模态框')
+                        // 暂停流式处理，显示人工复核模态框
+                        eventSource.close()
+                        isLoading.value = false
+                        
+                        currentUserMessage.value = message
+                        humanReviewPlan.value = processedData
+                        showHumanReviewModal.value = true
+                        return
+                    }
                 }
 
                 // 增加状态判断，如果当前节点的type与上一个type不同，则说明应该另外起一个Content
@@ -2569,6 +2622,91 @@ export default {
       document.removeEventListener('click', handleClickOutside)
     })
     
+    const humanReviewEnabled = ref(false)
+    const humanReviewPlan = ref('')
+    const showHumanReviewModal = ref(false)
+    const humanReviewSuggestion = ref('')
+    const currentUserMessage = ref('')
+
+    const tryHumanReview = async (queryText) => {
+      if (!humanReviewEnabled.value) return false
+      try {
+        const resp = await fetch(`/nl2sql/plan/preview?query=${encodeURIComponent(queryText)}&agentId=${agent.value.id}`)
+        const text = await resp.text()
+        if (text && text.trim().length > 0) {
+          currentUserMessage.value = queryText
+          humanReviewPlan.value = text
+          showHumanReviewModal.value = true
+          return true
+        }
+      } catch (e) {
+        console.error('plan preview failed', e)
+      }
+      return false
+    }
+
+    const approvePlan = async (queryText) => {
+      showHumanReviewModal.value = false
+      try {
+        const resp = await fetch(`/nl2sql/plan/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryText, agentId: String(agent.value.id), decision: 'APPROVE' }) })
+        const result = await resp.text()
+        
+        // 添加助手回复到聊天界面
+        const assistantMessage = {
+          id: Date.now(),
+          role: 'assistant',
+          type: 'result',
+          content: result,
+          timestamp: new Date()
+        }
+        currentMessages.value.push(assistantMessage)
+        
+        // 保存助手消息到数据库
+        await saveMessage({
+          sessionId: currentSessionId.value,
+          role: 'assistant',
+          content: result,
+          messageType: 'result'
+        })
+        
+        await nextTick()
+        scrollToBottom()
+      } catch (e) {
+        console.error('approve plan failed', e)
+      }
+    }
+
+    const rejectPlan = async (queryText) => {
+      showHumanReviewModal.value = false
+      try {
+        const resp = await fetch(`/nl2sql/plan/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryText, agentId: String(agent.value.id), decision: 'REJECT', suggestion: humanReviewSuggestion.value || '' }) })
+        const result = await resp.text()
+        
+        // 添加助手回复到聊天界面
+        const assistantMessage = {
+          id: Date.now(),
+          role: 'assistant',
+          type: 'result',
+          content: result,
+          timestamp: new Date()
+        }
+        currentMessages.value.push(assistantMessage)
+        
+        // 保存助手消息到数据库
+        await saveMessage({
+          sessionId: currentSessionId.value,
+          role: 'assistant',
+          content: result,
+          messageType: 'result'
+        })
+        
+        await nextTick()
+        scrollToBottom()
+      } catch (e) {
+        console.error('reject plan failed', e)
+      }
+    }
+    
     return {
       // 数据
       agent,
@@ -2628,7 +2766,15 @@ export default {
       openReportPreviewFromContent,
       closeReportPreview,
       refreshReportPreview,
-      exportCurrentPreviewReport
+      exportCurrentPreviewReport,
+      humanReviewEnabled,
+      humanReviewPlan,
+      showHumanReviewModal,
+      humanReviewSuggestion,
+      currentUserMessage,
+      tryHumanReview,
+      approvePlan,
+      rejectPlan
     }
   }
 }
@@ -4557,4 +4703,95 @@ export default {
 .messages-container::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
 }
+
+/* 人工复核模态框样式 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-wrapper {
+  position: relative;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90%;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.modal-body {
+  padding: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-family: monospace;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #eee;
+  background: #f8f9fa;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.modal-footer textarea {
+  flex: 1;
+  min-height: 80px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.modal-footer .btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.modal-footer .btn:not(.btn-danger) {
+  background: #007bff;
+  color: white;
+}
+
+.modal-footer .btn.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.modal-footer .btn:hover {
+  opacity: 0.9;
+}
+
 </style>

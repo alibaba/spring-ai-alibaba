@@ -71,6 +71,10 @@ import static com.alibaba.cloud.ai.constant.Constant.KEYWORD_EXTRACT_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.KEYWORD_EXTRACT_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.NL2SQL_GRAPH_NAME;
 import static com.alibaba.cloud.ai.constant.Constant.ONLY_NL2SQL_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.HUMAN_REVIEW_ENABLED;
+import static com.alibaba.cloud.ai.constant.Constant.HUMAN_REVIEW_DECISION;
+import static com.alibaba.cloud.ai.constant.Constant.HUMAN_REVIEW_SUGGESTION;
+import static com.alibaba.cloud.ai.constant.Constant.HUMAN_REVIEW_PLAN;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
@@ -217,6 +221,11 @@ public class Nl2sqlConfiguration {
 			// NL2SQL相关
 			keyStrategyHashMap.put(IS_ONLY_NL2SQL, new ReplaceStrategy());
 			keyStrategyHashMap.put(ONLY_NL2SQL_OUTPUT, new ReplaceStrategy());
+			// Human Review keys
+			keyStrategyHashMap.put(HUMAN_REVIEW_ENABLED, new ReplaceStrategy());
+			keyStrategyHashMap.put(HUMAN_REVIEW_DECISION, new ReplaceStrategy());
+			keyStrategyHashMap.put(HUMAN_REVIEW_SUGGESTION, new ReplaceStrategy());
+			keyStrategyHashMap.put(HUMAN_REVIEW_PLAN, new ReplaceStrategy());
 			// Final result
 			keyStrategyHashMap.put(RESULT, new ReplaceStrategy());
 			return keyStrategyHashMap;
