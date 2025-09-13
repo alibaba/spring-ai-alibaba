@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
 
-        private static final Logger logger = LoggerFactory.getLogger(DateUtils.class);
+	private static final Logger logger = LoggerFactory.getLogger(DateUtils.class);
 
 	// Date format patterns
 	public static final String DATE_JFP_STR = "yyyyMM";
@@ -211,16 +211,16 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
 	/**
 	 * Parse date string in EEE MMM dd HH:mm:ss zzz yyyy format
 	 */
-        public static Date parseDateString(String time) {
-                SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH);
-                try {
-                        return sdf.parse(time);
-                }
-                catch (ParseException e) {
-                        logger.warn("Failed to parse date string: {}", time, e);
-                        return null;
-                }
-        }
+	public static Date parseDateString(String time) {
+		SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH);
+		try {
+			return sdf.parse(time);
+		}
+		catch (ParseException e) {
+			logger.warn("Failed to parse date string: {}", time, e);
+			return null;
+		}
+	}
 
 	/**
 	 * Calculate days between now and given date
