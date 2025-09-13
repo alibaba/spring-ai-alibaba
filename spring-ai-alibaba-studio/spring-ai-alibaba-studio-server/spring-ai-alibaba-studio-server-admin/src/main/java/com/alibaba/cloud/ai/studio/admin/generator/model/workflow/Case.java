@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.studio.admin.generator.model.workflow;
 import java.util.List;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 
 public class Case {
 
@@ -56,28 +57,51 @@ public class Case {
 
 	public static class Condition {
 
-		private String value;
-
-		private String varType;
+		private VariableType varType;
 
 		private ComparisonOperatorType comparisonOperator;
 
-		private VariableSelector variableSelector;
+		private VariableSelector targetSelector;
 
+		private String referenceValue;
+
+		private VariableSelector referenceSelector;
+
+		// 参考值可能来自stateKey，也有可能直接是常量值
 		public String getValue() {
-			return value;
+			if (referenceValue != null) {
+				return referenceValue;
+			}
+			else if (referenceSelector != null) {
+				return String.format("((%s) state.value(\"%s\").orElse(null))", varType.value(),
+						referenceSelector.getNameInCode());
+			}
+			throw new IllegalStateException("referenceValue or referenceSelector must be set");
 		}
 
-		public Condition setValue(String value) {
-			this.value = value;
+		public String getReferenceValue() {
+			return referenceValue;
+		}
+
+		public Condition setReferenceValue(String referenceValue) {
+			this.referenceValue = referenceValue;
 			return this;
 		}
 
-		public String getVarType() {
+		public VariableSelector getReferenceSelector() {
+			return referenceSelector;
+		}
+
+		public Condition setReferenceSelector(VariableSelector referenceSelector) {
+			this.referenceSelector = referenceSelector;
+			return this;
+		}
+
+		public VariableType getVarType() {
 			return varType;
 		}
 
-		public Condition setVarType(String varType) {
+		public Condition setVarType(VariableType varType) {
 			this.varType = varType;
 			return this;
 		}
@@ -91,12 +115,12 @@ public class Case {
 			return this;
 		}
 
-		public VariableSelector getVariableSelector() {
-			return variableSelector;
+		public VariableSelector getTargetSelector() {
+			return targetSelector;
 		}
 
-		public Condition setVariableSelector(VariableSelector variableSelector) {
-			this.variableSelector = variableSelector;
+		public Condition setTargetSelector(VariableSelector targetSelector) {
+			this.targetSelector = targetSelector;
 			return this;
 		}
 

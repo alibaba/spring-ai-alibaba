@@ -26,12 +26,7 @@ public class BranchNodeData extends NodeData {
 
 	private List<Case> cases;
 
-	public BranchNodeData() {
-	}
-
-	public BranchNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
-		super(inputs, outputs);
-	}
+	private String defaultCase;
 
 	public List<Case> getCases() {
 		return cases;
@@ -39,6 +34,15 @@ public class BranchNodeData extends NodeData {
 
 	public BranchNodeData setCases(List<Case> cases) {
 		this.cases = cases;
+		return this;
+	}
+
+	public String getDefaultCase() {
+		return defaultCase;
+	}
+
+	public BranchNodeData setDefaultCase(String defaultCase) {
+		this.defaultCase = defaultCase;
 		return this;
 	}
 

@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -76,39 +75,25 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 							String difyVarType = (String) conditionMap.get("varType");
 							VariableType variableType = VariableType.fromDifyValue(difyVarType)
 								.orElse(VariableType.OBJECT);
-							return new Case.Condition().setValue((String) conditionMap.get("value"))
-								.setVarType(variableType.value())
-								.setComparisonOperator(ComparisonOperatorType
-									.fromDifyValue((String) conditionMap.get("comparison_operator")))
-								.setVariableSelector(new VariableSelector(selectors.get(0), selectors.get(1)));
+							return new Case.Condition().setReferenceValue((String) conditionMap.get("value"))
+								.setVarType(variableType)
+								.setComparisonOperator(ComparisonOperatorType.fromDslValue(DSLDialectType.DIFY,
+										(String) conditionMap.get("comparison_operator"), variableType))
+								.setTargetSelector(new VariableSelector(selectors.get(0), selectors.get(1)));
 						}).collect(Collectors.toList());
 						cases.add(new Case().setId((String) caseData.get("id"))
 							.setLogicalOperator(
-									LogicalOperatorType.fromDifyValue((String) caseData.get("logical_operator")))
+									LogicalOperatorType.fromValue((String) caseData.get("logical_operator")))
 							.setConditions(conditions));
 					}
 				}
 
-				return new BranchNodeData(List.of(), List.of()).setCases(cases);
+				return new BranchNodeData().setCases(cases).setDefaultCase("false");
 			}
 
 			@Override
 			public Map<String, Object> dump(BranchNodeData nodeData) {
-				Map<String, Object> data = new HashMap<>();
-				List<Map<String, Object>> caseMaps = nodeData.getCases().stream().map(c -> {
-					List<Map<String, Object>> conditions = c.getConditions()
-						.stream()
-						.map(condition -> Map.of("comparison_operator",
-								condition.getComparisonOperator().getDifyValue(), "value", condition.getValue(),
-								"varType", condition.getVarType(), "variable_selector",
-								List.of(condition.getVariableSelector().getNamespace(),
-										condition.getVariableSelector().getName())))
-						.toList();
-					return Map.of("id", c.getId(), "case_id", c.getId(), "conditions", conditions, "logical_operator",
-							c.getLogicalOperator().getDifyValue());
-				}).toList();
-				data.put("cases", caseMaps);
-				return data;
+				throw new UnsupportedOperationException();
 			}
 		}),
 
@@ -139,13 +124,19 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 	@Override
 	public BiConsumer<BranchNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
+			case DIFY, STUDIO -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
 				// 处理条件里的VariableSelector
 				nodeData.getCases().forEach(c -> {
 					c.getConditions().forEach(condition -> {
-						VariableSelector selector = condition.getVariableSelector();
+						VariableSelector selector = condition.getTargetSelector();
 						selector.setNameInCode(idToVarName.getOrDefault(selector.getNamespace(), "unknown") + "_"
 								+ selector.getName());
+						VariableSelector referenceSelector = condition.getReferenceSelector();
+						if (referenceSelector != null) {
+							referenceSelector
+								.setNameInCode(idToVarName.getOrDefault(referenceSelector.getNamespace(), "unknown")
+										+ "_" + referenceSelector.getName());
+						}
 					});
 				});
 			});

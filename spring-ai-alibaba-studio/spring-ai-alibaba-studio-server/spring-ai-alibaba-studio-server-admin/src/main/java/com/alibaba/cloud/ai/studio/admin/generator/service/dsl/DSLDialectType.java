@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.dsl;
 import java.util.Arrays;
 import java.util.Optional;
 
+// TODO: 移动到model包中
 public enum DSLDialectType {
 
 	DIFY("dify", ".yml"),

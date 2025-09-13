@@ -16,73 +16,132 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.model.workflow;
 
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
+
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public enum ComparisonOperatorType {
 
-	CONTAINS("contains", "contains", List.of(String.class, List.class),
-			(objName, constVal) -> String.format("(%s.contains(%s))", objName, constVal)),
-	NOT_CONTAINS("not_contains", "not contains", List.of(String.class, List.class),
-			(objName, constVal) -> String.format("!(%s.contains(%s))", objName, constVal)),
-	START_WITH("start_with", "start with", List.of(String.class),
-			(objName, constVal) -> String.format("(%s.startsWith(%s))", objName, constVal)),
-	END_WITH("end_with", "end with", List.of(String.class),
-			(objName, constVal) -> String.format("(%s.endsWith(%s))", objName, constVal)),
-	IS("is", "is", List.of(String.class, List.class),
-			(objName, constVal) -> String.format("(%s.equals(%s))", objName, constVal)),
-	IS_NOT("is_not", "is not", List.of(String.class, List.class),
-			(objName, constVal) -> String.format("!(%s.equals(%s))", objName, constVal)),
-	EMPTY("empty", "empty", List.of(String.class, List.class),
-			(objName, constVal) -> String.format("(%s.isEmpty())", objName)),
-	NOT_EMPTY("not empty", "not empty", List.of(String.class, List.class),
-			(objName, constVal) -> String.format("!(%s.isEmpty())", objName)),
-	IN("in", "in", List.of(String.class, List.class),
-			(objName, constVal) -> String.format("(%s.contains(%s))", constVal, objName)),
-	NOT_IN("not_in", "not in", List.of(String.class, List.class),
-			(objName, constVal) -> String.format("!(%s.contains(%s))", constVal, objName)),
-	ALL_OF("all_of", "all of", List.of(List.class),
+	CONTAINS("contains", type -> switch (type) {
+		case DIFY -> "contains";
+		default -> "unknown";
+	}, List.of(VariableType.STRING, VariableType.ARRAY, VariableType.ARRAY_OBJECT, VariableType.ARRAY_STRING,
+			VariableType.ARRAY_NUMBER), (objName, constVal) -> String.format("(%s.contains(%s))", objName, constVal)),
+	NOT_CONTAINS("not_contains", type -> switch (type) {
+		case DIFY -> "not contains";
+		default -> "unknown";
+	}, List.of(VariableType.STRING, VariableType.ARRAY, VariableType.ARRAY_OBJECT, VariableType.ARRAY_STRING,
+			VariableType.ARRAY_NUMBER), (objName, constVal) -> String.format("!(%s.contains(%s))", objName, constVal)),
+	START_WITH("start_with", type -> switch (type) {
+		case DIFY -> "start with";
+		default -> "unknown";
+	}, List.of(VariableType.STRING), (objName, constVal) -> String.format("(%s.startsWith(%s))", objName, constVal)),
+	END_WITH("end_with", type -> switch (type) {
+		case DIFY -> "end with";
+		default -> "unknown";
+	}, List.of(VariableType.STRING), (objName, constVal) -> String.format("(%s.endsWith(%s))", objName, constVal)),
+	IS("is", type -> switch (type) {
+		case DIFY -> "is";
+		default -> "unknown";
+	}, List.of(VariableType.STRING, VariableType.ARRAY, VariableType.ARRAY_OBJECT, VariableType.ARRAY_STRING,
+			VariableType.ARRAY_NUMBER), (objName, constVal) -> String.format("(%s.equals(%s))", objName, constVal)),
+	IS_NOT("is_not", type -> switch (type) {
+		case DIFY -> "is not";
+		default -> "unknown";
+	}, List.of(VariableType.STRING, VariableType.ARRAY, VariableType.ARRAY_OBJECT, VariableType.ARRAY_STRING,
+			VariableType.ARRAY_NUMBER), (objName, constVal) -> String.format("!(%s.equals(%s))", objName, constVal)),
+	EMPTY("empty", type -> switch (type) {
+		case DIFY -> "empty";
+		default -> "unknown";
+	}, List.of(VariableType.STRING, VariableType.ARRAY, VariableType.ARRAY_OBJECT, VariableType.ARRAY_STRING,
+			VariableType.ARRAY_NUMBER), (objName, constVal) -> String.format("(%s.isEmpty())", objName)),
+	NOT_EMPTY("not_empty", type -> switch (type) {
+		case DIFY -> "not empty";
+		default -> "unknown";
+	}, List.of(VariableType.STRING, VariableType.ARRAY, VariableType.ARRAY_OBJECT, VariableType.ARRAY_STRING,
+			VariableType.ARRAY_NUMBER), (objName, constVal) -> String.format("!(%s.isEmpty())", objName)),
+	IN("in", type -> switch (type) {
+		case DIFY -> "in";
+		default -> "unknown";
+	}, List.of(VariableType.STRING, VariableType.ARRAY, VariableType.ARRAY_OBJECT, VariableType.ARRAY_STRING,
+			VariableType.ARRAY_NUMBER), (objName, constVal) -> String.format("(%s.contains(%s))", constVal, objName)),
+	NOT_IN("not_in", type -> switch (type) {
+		case DIFY -> "not in";
+		default -> "unknown";
+	}, List.of(VariableType.STRING, VariableType.ARRAY, VariableType.ARRAY_OBJECT, VariableType.ARRAY_STRING,
+			VariableType.ARRAY_NUMBER), (objName, constVal) -> String.format("!(%s.contains(%s))", constVal, objName)),
+	ALL_OF("all_of", type -> switch (type) {
+		case DIFY -> "all of";
+		default -> "unknown";
+	}, List.of(VariableType.ARRAY, VariableType.ARRAY_OBJECT, VariableType.ARRAY_STRING, VariableType.ARRAY_NUMBER),
 			(objName, constVal) -> String.format("(%s.containsAll(%s))", objName, constVal)),
-	EQUAL("equal", "=", List.of(Number.class),
+	EQUAL("equal", type -> switch (type) {
+		case DIFY -> "=";
+		default -> "unknown";
+	}, List.of(VariableType.NUMBER),
 			(objName, constVal) -> String.format("(%s.doubleValue() == %s)", objName, constVal)),
-	NOT_EQUAL("not_equal", "≠", List.of(Number.class),
+	NOT_EQUAL("not_equal", type -> switch (type) {
+		case DIFY -> "≠";
+		default -> "unknown";
+	}, List.of(VariableType.NUMBER),
 			(objName, constVal) -> String.format("(%s.doubleValue() != %s)", objName, constVal)),
-	GREATER_THAN("greater_than", ">", List.of(Number.class),
+	GREATER_THAN("greater_than", type -> switch (type) {
+		case DIFY -> ">";
+		default -> "unknown";
+	}, List.of(VariableType.NUMBER),
 			(objName, constVal) -> String.format("(%s.doubleValue() > %s)", objName, constVal)),
-	LESS_THAN("less_than", "<", List.of(Number.class),
+	LESS_THAN("less_than", type -> switch (type) {
+		case DIFY -> "<";
+		default -> "unknown";
+	}, List.of(VariableType.NUMBER),
 			(objName, constVal) -> String.format("(%s.doubleValue() < %s)", objName, constVal)),
-	NOT_LESS_THAN("not_less_than", "≥", List.of(Number.class),
+	NOT_LESS_THAN("not_less_than", type -> switch (type) {
+		case DIFY -> "≥";
+		default -> "unknown";
+	}, List.of(VariableType.NUMBER),
 			(objName, constVal) -> String.format("(%s.doubleValue() >= %s)", objName, constVal)),
-	NOT_GREATER_THAN("not_greater_than", "≤", List.of(Number.class),
+	NOT_GREATER_THAN("not_greater_than", type -> switch (type) {
+		case DIFY -> "≤";
+		default -> "unknown";
+	}, List.of(VariableType.NUMBER),
 			(objName, constVal) -> String.format("(%s.doubleValue() <= %s)", objName, constVal)),
-	NULL("null", "null", List.of(String.class, List.class, Number.class, Object.class),
-			(objName, constVal) -> String.format("(%s == null)", objName)),
-	NOT_NULL("not_null", "not null", List.of(String.class, List.class, Number.class, Object.class),
-			(objName, constVal) -> String.format("(%s != null)", objName)),;
+	NULL("null", type -> switch (type) {
+		case DIFY -> "null";
+		default -> "unknown";
+	}, List.of(VariableType.values()), (objName, constVal) -> String.format("(%s == null)", objName)),
+	NOT_NULL("not_null", type -> switch (type) {
+		case DIFY -> "not null";
+		default -> "unknown";
+	}, List.of(VariableType.values()), (objName, constVal) -> String.format("(%s != null)", objName));
 
 	private final String value;
 
-	private final String difyValue;
+	private final Function<DSLDialectType, String> dslValueFunc;
 
-	private final List<Class<?>> supportedClassList;
+	private final List<VariableType> supportedTypes;
 
 	private final BiFunction<String, String, String> toJavaExpression;
 
-	ComparisonOperatorType(String value, String difyValue, List<Class<?>> supportedClassList,
-			BiFunction<String, String, String> toJavaExpression) {
+	ComparisonOperatorType(String value, Function<DSLDialectType, String> dslValueFunc,
+			List<VariableType> supportedTypes, BiFunction<String, String, String> toJavaExpression) {
 		this.value = value;
-		this.difyValue = difyValue;
-		this.supportedClassList = supportedClassList;
+		this.dslValueFunc = dslValueFunc;
+		this.supportedTypes = supportedTypes;
 		this.toJavaExpression = toJavaExpression;
 	}
 
-	public static ComparisonOperatorType fromDifyValue(String DifyValue) {
+	public static ComparisonOperatorType fromDslValue(DSLDialectType dialectType, String dslValue,
+			VariableType variableType) {
 		for (ComparisonOperatorType comparisonOperatorType : ComparisonOperatorType.values()) {
-			if (comparisonOperatorType.difyValue.equals(DifyValue)) {
+			if (comparisonOperatorType.dslValueFunc.apply(dialectType).equals(dslValue)
+					&& comparisonOperatorType.supportedTypes.contains(variableType)) {
 				return comparisonOperatorType;
 			}
 		}
-		throw new IllegalArgumentException("Not support difyValue:" + DifyValue);
+		throw new IllegalArgumentException("Not support dslValue:" + dslValue);
 	}
 
 	public String convert(String objName, String constValue) {
@@ -93,20 +152,8 @@ public enum ComparisonOperatorType {
 		return value;
 	}
 
-	public String getDifyValue() {
-		return difyValue;
-	}
-
-	public List<Class<?>> getSupportedClassList() {
-		return supportedClassList;
-	}
-
-	public BiFunction<String, String, String> getToJavaExpression() {
-		return toJavaExpression;
-	}
-
-	public boolean isSupported(Class<?> clazz) {
-		return this.supportedClassList.contains(clazz);
+	public String getDslValue(DSLDialectType dialectType) {
+		return dslValueFunc.apply(dialectType);
 	}
 
 }

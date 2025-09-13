@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.studio.admin.generator.model.workflow;
 import java.util.Arrays;
 import java.util.Optional;
 
+// TODO: 将枚举类的DSL Value字段改为Function<DSLDialectType, String>
 public enum NodeType {
 
 	START("start", "start", "Start"),

@@ -31,6 +31,8 @@ public enum VariableType {
 	// TODO：定义文件类型对象，以实现工作流直接使用文件
 	FILE("File", Object.class, "file", "File"),
 
+	ARRAY("Array", Object.class, "array", "Array"),
+
 	ARRAY_STRING("String[]", String[].class, "array[string]", "String[]"),
 
 	ARRAY_NUMBER("Number[]", Number[].class, "array[number]", "Number[]"),
