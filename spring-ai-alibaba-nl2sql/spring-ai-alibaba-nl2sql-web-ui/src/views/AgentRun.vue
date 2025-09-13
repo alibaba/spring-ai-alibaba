@@ -323,7 +323,7 @@
               <div class="agent-response-title">
                 <i class="bi bi-diagram-3"></i> 当前计划
               </div>
-              <div class="agent-response-content">{{ formatHumanReviewPlan(humanReviewPlan) }}</div>
+              <div class="agent-response-content" v-html="formatHumanReviewPlan(humanReviewPlan)"></div>
             </div>
           <div class="modal-footer" style="display:flex; gap:8px;">
             <textarea v-model="humanReviewSuggestion" placeholder="如不合理，请填写修改建议" style="width:100%; height:80px;"></textarea>
@@ -345,10 +345,12 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import python from 'highlight.js/lib/languages/python';
 import sql from 'highlight.js/lib/languages/sql'
+import json from 'highlight.js/lib/languages/json'
 
 // 注册语言
 hljs.registerLanguage('python', python);
 hljs.registerLanguage('sql', sql);
+hljs.registerLanguage('json', json);
 
 export default {
   name: 'AgentRun',
@@ -2637,16 +2639,30 @@ export default {
     // 格式化人工复核计划显示
     const formatHumanReviewPlan = (plan) => {
       if (!plan) return ''
-      
+
+      // 创建code元素
+      const codeElement = document.createElement('code');
+      codeElement.className = 'language-json';
+
       try {
         plan = plan.replace("```json", "").replace("```", "");
         // 尝试解析JSON
         const parsed = JSON.parse(plan)
-        return JSON.stringify(parsed, null, 2)
+        codeElement.textContent = JSON.stringify(parsed, null, 2);
       } catch (e) {
         // 如果不是JSON，直接返回原始内容
-        return plan
+        codeElement.textContent = plan;
       }
+
+      // 高亮代码
+      hljs.highlightElement(codeElement);
+
+      // 创建pre元素并包装code元素
+      const preElement = document.createElement('pre');
+      preElement.appendChild(codeElement);
+
+      return preElement.outerHTML;
+
     }
 
     const approvePlan = async () => {

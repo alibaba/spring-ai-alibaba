@@ -994,8 +994,10 @@ public class CompiledGraph {
 				if (shouldInterruptAfter(context.currentNodeId(), context.nextNodeId())) {
 					// 在中断前保存 checkpoint
 					try {
-						addCheckpoint(config, context.currentNodeId(), currentState, context.nextNodeId(), overAllState);
-					} catch (Exception e) {
+						addCheckpoint(config, context.currentNodeId(), currentState, context.nextNodeId(),
+								overAllState);
+					}
+					catch (Exception e) {
 						log.warn("Failed to save checkpoint before interrupt: {}", e.getMessage());
 					}
 					return Data
@@ -1005,8 +1007,10 @@ public class CompiledGraph {
 				if (shouldInterruptBefore(context.nextNodeId(), context.currentNodeId())) {
 					// 在中断前保存 checkpoint
 					try {
-						addCheckpoint(config, context.currentNodeId(), currentState, context.nextNodeId(), overAllState);
-					} catch (Exception e) {
+						addCheckpoint(config, context.currentNodeId(), currentState, context.nextNodeId(),
+								overAllState);
+					}
+					catch (Exception e) {
 						log.warn("Failed to save checkpoint before interrupt: {}", e.getMessage());
 					}
 					return Data
