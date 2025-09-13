@@ -36,10 +36,10 @@ public class BusinessKnowledge {
 	@TableField("synonyms")
 	private String synonyms; // Synonyms, comma-separated
 
-	@TableField("default_recall")
+	@TableField("is_recall")
 	private Boolean defaultRecall; // Default recall
 
-	@TableField("dataset_id")
+	@TableField("data_set_id")
 	private String datasetId; // Associated dataset ID
 
 	@TableField("agent_id")
