@@ -38,7 +38,6 @@ import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_NEXT_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_REPAIR_COUNT;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_ERROR;
-import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_STATUS;
 import static com.alibaba.cloud.ai.constant.Constant.PYTHON_GENERATE_NODE;
 import static com.alibaba.cloud.ai.constant.Constant.REPORT_GENERATOR_NODE;
@@ -112,10 +111,7 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 		Boolean humanReviewEnabled = state.value(HUMAN_REVIEW_ENABLED, false);
 		if (Boolean.TRUE.equals(humanReviewEnabled)) {
 			logger.info("Human review enabled: routing to human_feedback node");
-			return Map.of(
-					PLAN_VALIDATION_STATUS, true,
-					PLAN_NEXT_NODE, "human_feedback"
-			);
+			return Map.of(PLAN_VALIDATION_STATUS, true, PLAN_NEXT_NODE, "human_feedback");
 		}
 
 		Plan plan = getPlan(state);

@@ -18,13 +18,8 @@ package com.alibaba.cloud.ai.dto;
 
 /**
  * Human feedback request DTO.
- * 
+ *
  * @author zhangshenghang
  */
-public record FeedbackRequest(
-		String sessionId,
-		String threadId,
-		boolean feedBack,
-		String feedBackContent
-) {
+public record FeedbackRequest(String sessionId, String threadId, boolean feedBack, String feedBackContent) {
 }

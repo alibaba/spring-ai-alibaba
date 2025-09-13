@@ -71,11 +71,8 @@ public class Nl2sqlForGraphController {
 
 	public Nl2sqlForGraphController(@Qualifier("nl2sqlGraph") StateGraph stateGraph,
 			SimpleVectorStoreService simpleVectorStoreService, DatasourceService datasourceService,
-			AgentService agentService)
-			throws GraphStateException {
-		this.compiledGraph = stateGraph.compile(CompileConfig.builder()
-			.interruptBefore("human_feedback")
-			.build());
+			AgentService agentService) throws GraphStateException {
+		this.compiledGraph = stateGraph.compile(CompileConfig.builder().interruptBefore("human_feedback").build());
 		this.compiledGraph.setMaxIterations(100);
 		this.simpleVectorStoreService = simpleVectorStoreService;
 		this.datasourceService = datasourceService;
@@ -99,17 +96,17 @@ public class Nl2sqlForGraphController {
 			var agent = agentService.findById(Long.valueOf(agentId));
 			humanReviewEnabled = agent != null && agent.getHumanReviewEnabled() != null
 					&& agent.getHumanReviewEnabled() == 1;
-		} catch (Exception ignore) {
+		}
+		catch (Exception ignore) {
 		}
 
-		Optional<OverAllState> invoke = compiledGraph
-			.invoke(Map.of(INPUT_KEY, query, Constant.AGENT_ID, dataSetId, AGENT_ID, agentId, HUMAN_REVIEW_ENABLED, humanReviewEnabled));
+		Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query, Constant.AGENT_ID, dataSetId,
+				AGENT_ID, agentId, HUMAN_REVIEW_ENABLED, humanReviewEnabled));
 		OverAllState overAllState = invoke.get();
 		// 注意：在新的人类反馈实现中，计划内容通过流式处理发送给前端
 		// 这里不再需要单独获取计划内容
 		return overAllState.value(RESULT).map(Object::toString).orElse("");
 	}
-
 
 	@GetMapping("/init")
 	public void init(@RequestParam(required = false, defaultValue = "1") Integer agentId) throws Exception {
@@ -194,23 +191,24 @@ public class Nl2sqlForGraphController {
 			var agent = agentService.findById(Long.valueOf(agentId));
 			humanReviewEnabled = agent != null && agent.getHumanReviewEnabled() != null
 					&& agent.getHumanReviewEnabled() == 1;
-		} catch (Exception ignore) {
+		}
+		catch (Exception ignore) {
 		}
 
 		// Use streaming processing and pass agentId to the state
 		// 如果没有提供threadId，生成一个
 		String finalThreadId = threadId != null ? threadId : String.valueOf(System.currentTimeMillis());
 		logger.info("Using threadId: {}", finalThreadId);
-		
-		AsyncGenerator<NodeOutput> generator = compiledGraph
-			.stream(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId, HUMAN_REVIEW_ENABLED, humanReviewEnabled),
+
+		AsyncGenerator<NodeOutput> generator = compiledGraph.stream(
+				Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId, HUMAN_REVIEW_ENABLED, humanReviewEnabled),
 				RunnableConfig.builder().threadId(finalThreadId).build());
 
 		boolean finalHumanReviewEnabled = humanReviewEnabled;
 		// 用于缓存人工复核计划的变量
 		final StringBuilder humanReviewPlanBuilder = new StringBuilder();
-		final boolean[] humanReviewDetected = {false};
-		
+		final boolean[] humanReviewDetected = { false };
+
 		CompletableFuture.runAsync(() -> {
 			try {
 				generator.forEachAsync(output -> {
@@ -221,51 +219,55 @@ public class Nl2sqlForGraphController {
 							String chunk = streamingOutput.chunk();
 							if (chunk != null && !chunk.trim().isEmpty()) {
 								logger.debug("Emitting chunk: {}", chunk);
-								
+
 								// 如果启用了人工复核，累积所有内容
 								if (finalHumanReviewEnabled) {
 									humanReviewPlanBuilder.append(chunk);
-									
+
 									// 检查是否包含完整的计划结构
 									String accumulatedContent = humanReviewPlanBuilder.toString();
-									logger.debug("Accumulated content length: {}, contains thought_process: {}, contains execution_plan: {}", 
-											accumulatedContent.length(), 
-											accumulatedContent.contains("thought_process"),
+									logger.debug(
+											"Accumulated content length: {}, contains thought_process: {}, contains execution_plan: {}",
+											accumulatedContent.length(), accumulatedContent.contains("thought_process"),
 											accumulatedContent.contains("execution_plan"));
-									
-									if ((accumulatedContent.contains("thought_process") && accumulatedContent.contains("execution_plan")) 
-										&& accumulatedContent.contains("}") && accumulatedContent.contains("]")) {
+
+									if ((accumulatedContent.contains("thought_process")
+											&& accumulatedContent.contains("execution_plan"))
+											&& accumulatedContent.contains("}") && accumulatedContent.contains("]")) {
 										// 检查JSON是否完整（简单检查）
-										if (accumulatedContent.trim().endsWith("}") || accumulatedContent.trim().endsWith("]")) {
+										if (accumulatedContent.trim().endsWith("}")
+												|| accumulatedContent.trim().endsWith("]")) {
 											if (!humanReviewDetected[0]) {
 												humanReviewDetected[0] = true;
 												logger.info("Detected complete human review plan in streaming output");
 												logger.info("Plan content length: {}", accumulatedContent.length());
-												
+
 												// 注意：由于图被中断，我们无法直接保存状态
 												// 人类反馈将通过简单的响应处理，而不是恢复图执行
-												
+
 												// 发送完整的人工复核计划并结束流
 												logger.info("Sending complete human review plan");
-												Map<String, Object> humanReviewData = Map.of(
-													"type", "human_feedback",
-													"data", accumulatedContent
-												);
-												ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(humanReviewData))
+												Map<String, Object> humanReviewData = Map.of("type", "human_feedback",
+														"data", accumulatedContent);
+												ServerSentEvent<String> event = ServerSentEvent
+													.builder(JSON.toJSONString(humanReviewData))
 													.build();
 												sink.tryEmitNext(event);
 												sink.tryEmitComplete();
 												return;
 											}
-										} else {
-											logger.debug("JSON not complete yet, ends with: {}", 
-													accumulatedContent.trim().substring(Math.max(0, accumulatedContent.trim().length() - 10)));
 										}
-									} else {
+										else {
+											logger
+												.debug("JSON not complete yet, ends with: {}", accumulatedContent.trim()
+													.substring(Math.max(0, accumulatedContent.trim().length() - 10)));
+										}
+									}
+									else {
 										logger.debug("Plan structure not complete yet");
 									}
 								}
-								
+
 								// Ensure that the chunk is valid JSON
 								ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(chunk))
 									.build();
@@ -279,45 +281,50 @@ public class Nl2sqlForGraphController {
 						else if (output instanceof NodeOutput) {
 							NodeOutput nodeOutput = (NodeOutput) output;
 							logger.debug("Non-streaming output received: {}", output);
-							
+
 							// 检查是否是human_feedback节点
 							if (finalHumanReviewEnabled && !humanReviewDetected[0]) {
 								// 检查节点名称或状态，如果是human_feedback节点，发送计划内容
 								logger.info("Checking if this is human_feedback node output");
-								
+
 								// 尝试从累积的内容中提取计划
 								String accumulatedContent = humanReviewPlanBuilder.toString();
-								logger.info("Accumulated content length: {}, contains thought_process: {}, contains execution_plan: {}", 
-										accumulatedContent.length(), 
-										accumulatedContent.contains("thought_process"),
+								logger.info(
+										"Accumulated content length: {}, contains thought_process: {}, contains execution_plan: {}",
+										accumulatedContent.length(), accumulatedContent.contains("thought_process"),
 										accumulatedContent.contains("execution_plan"));
-								
+
 								// 从累积的流式内容中提取实际的计划内容
 								String extractedPlanContent = extractPlanFromStreamingContent(accumulatedContent);
-								logger.info("Extracted plan content length: {}, contains thought_process: {}, contains execution_plan: {}", 
-										extractedPlanContent.length(), 
-										extractedPlanContent.contains("thought_process"),
+								logger.info(
+										"Extracted plan content length: {}, contains thought_process: {}, contains execution_plan: {}",
+										extractedPlanContent.length(), extractedPlanContent.contains("thought_process"),
 										extractedPlanContent.contains("execution_plan"));
-								
-								if (extractedPlanContent.contains("thought_process") && extractedPlanContent.contains("execution_plan")) {
+
+								if (extractedPlanContent.contains("thought_process")
+										&& extractedPlanContent.contains("execution_plan")) {
 									humanReviewDetected[0] = true;
 									logger.info("Found plan content in extracted content, sending human feedback");
-									
-									Map<String, Object> humanReviewData = Map.of(
-										"type", "human_feedback",
-										"data", extractedPlanContent
-									);
-									ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(humanReviewData))
+
+									Map<String, Object> humanReviewData = Map.of("type", "human_feedback", "data",
+											extractedPlanContent);
+									ServerSentEvent<String> event = ServerSentEvent
+										.builder(JSON.toJSONString(humanReviewData))
 										.build();
 									sink.tryEmitNext(event);
 									sink.tryEmitComplete();
 									return;
-								} else {
-									logger.info("Plan content not found in extracted content, content preview: {}", 
-											extractedPlanContent.length() > 200 ? extractedPlanContent.substring(0, 200) + "..." : extractedPlanContent);
 								}
-							} else {
-								logger.info("Human feedback check skipped: enabled={}, detected={}", finalHumanReviewEnabled, humanReviewDetected[0]);
+								else {
+									logger.info("Plan content not found in extracted content, content preview: {}",
+											extractedPlanContent.length() > 200
+													? extractedPlanContent.substring(0, 200) + "..."
+													: extractedPlanContent);
+								}
+							}
+							else {
+								logger.info("Human feedback check skipped: enabled={}, detected={}",
+										finalHumanReviewEnabled, humanReviewDetected[0]);
 							}
 						}
 						else {
@@ -364,7 +371,7 @@ public class Nl2sqlForGraphController {
 			// 使用正则表达式提取所有JSON对象
 			java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\{[^}]*\\}");
 			java.util.regex.Matcher matcher = pattern.matcher(streamingContent);
-			
+
 			StringBuilder planBuilder = new StringBuilder();
 			while (matcher.find()) {
 				String jsonChunk = matcher.group();
@@ -375,16 +382,18 @@ public class Nl2sqlForGraphController {
 					if (data != null && !data.trim().isEmpty()) {
 						planBuilder.append(data);
 					}
-				} catch (Exception e) {
+				}
+				catch (Exception e) {
 					// 忽略解析错误的JSON块
 					logger.debug("Failed to parse JSON chunk: {}", jsonChunk);
 				}
 			}
-			
+
 			String extractedContent = planBuilder.toString();
 			logger.debug("Extracted content from streaming: {}", extractedContent.length());
 			return extractedContent;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Error extracting plan from streaming content: ", e);
 			return streamingContent; // 如果提取失败，返回原始内容
 		}
@@ -394,14 +403,10 @@ public class Nl2sqlForGraphController {
 	 * Handle human feedback for plan review.
 	 */
 	@GetMapping(value = "/human-feedback", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-	public Flux<ServerSentEvent<String>> handleHumanFeedback(
-			@RequestParam String sessionId,
-			@RequestParam String threadId,
-			@RequestParam boolean feedBack,
-			@RequestParam(required = false, defaultValue = "") String feedBackContent)
-			throws GraphStateException {
-		logger.info("Handling human feedback: sessionId={}, threadId={}, feedBack={}", 
-				sessionId, threadId, feedBack);
+	public Flux<ServerSentEvent<String>> handleHumanFeedback(@RequestParam String sessionId,
+			@RequestParam String threadId, @RequestParam boolean feedBack,
+			@RequestParam(required = false, defaultValue = "") String feedBackContent) throws GraphStateException {
+		logger.info("Handling human feedback: sessionId={}, threadId={}, feedBack={}", sessionId, threadId, feedBack);
 
 		// Create a unicast sink to emit ServerSentEvents
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
@@ -409,25 +414,23 @@ public class Nl2sqlForGraphController {
 		CompletableFuture.runAsync(() -> {
 			try {
 				// 获取图状态快照
-				StateSnapshot stateSnapshot = compiledGraph.getState(
-					RunnableConfig.builder().threadId(threadId).build());
+				StateSnapshot stateSnapshot = compiledGraph
+					.getState(RunnableConfig.builder().threadId(threadId).build());
 				OverAllState state = stateSnapshot.state();
 
 				// 设置恢复标志和人类反馈数据
 				state.withResume();
-				Map<String, Object> feedbackData = Map.of(
-					"feed_back", feedBack,
-					"feed_back_content", feedBackContent != null ? feedBackContent : ""
-				);
+				Map<String, Object> feedbackData = Map.of("feed_back", feedBack, "feed_back_content",
+						feedBackContent != null ? feedBackContent : "");
 				state.withHumanFeedback(new OverAllState.HumanFeedback(feedbackData, "human_feedback"));
 
 				if (feedBack) {
 					logger.info("Plan approved, resuming graph execution...");
 					sink.tryEmitNext(ServerSentEvent.builder("计划已通过，继续执行...").build());
-					
+
 					// 恢复图的执行，从当前状态继续
 					AsyncGenerator<NodeOutput> resultFuture = compiledGraph.streamFromInitialNode(state,
-						RunnableConfig.builder().threadId(threadId).build());
+							RunnableConfig.builder().threadId(threadId).build());
 
 					resultFuture.forEachAsync(output -> {
 						try {
@@ -440,7 +443,8 @@ public class Nl2sqlForGraphController {
 									sink.tryEmitNext(event);
 								}
 							}
-						} catch (Exception e) {
+						}
+						catch (Exception e) {
 							logger.error("Error processing human feedback output: ", e);
 						}
 					}).thenAccept(v -> {
@@ -453,13 +457,15 @@ public class Nl2sqlForGraphController {
 						sink.tryEmitComplete();
 						return null;
 					});
-				} else {
+				}
+				else {
 					logger.info("Plan rejected, feedback: {}", feedBackContent);
 					sink.tryEmitNext(ServerSentEvent.builder("计划已拒绝，需要重新生成。反馈内容：" + feedBackContent).build());
 					sink.tryEmitNext(ServerSentEvent.builder("complete").event("complete").build());
 					sink.tryEmitComplete();
 				}
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				logger.error("Error handling human feedback: ", e);
 				sink.tryEmitError(e);
 			}
