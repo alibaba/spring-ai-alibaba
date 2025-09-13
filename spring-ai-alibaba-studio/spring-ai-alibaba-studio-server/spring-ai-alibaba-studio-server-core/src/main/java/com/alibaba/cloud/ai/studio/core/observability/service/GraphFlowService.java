@@ -21,10 +21,13 @@ public interface GraphFlowService {
     SAAGraphFlowInfoDTO convertToDTO(SAAGraphFlow flow);
 
     /**
+     * Finds a single graph flow by its unique identifier.
      * 根据 flowId 查找单个图形流程。
      *
-     * @param flowId 流程的唯一标识符
-     * @return 对应的 {@link SAAGraphFlowInfoDTO}，如果不存在则返回 null
+     * @param flowId The unique identifier of the flow to search for
+     *               流程的唯一标识符
+     * @return The corresponding {@link SAAGraphFlowInfoDTO}, or null if not found
+     *         对应的 {@link SAAGraphFlowInfoDTO}，如果不存在则返回 null
      */
     SAAGraphFlowInfoDTO findFlowById(String flowId);
 

@@ -16,7 +16,16 @@
 package com.alibaba.cloud.ai.studio.core.observability.exception;
 
 /**
+ * Exception thrown when a requested graph flow is not found in the system.
  * 当请求的图形流程不存在时抛出的异常。
+ * 
+ * <p>This exception is typically thrown when trying to access a graph flow
+ * by its ID, but no such flow exists in the registry. It includes the
+ * flow ID that was requested for better error reporting and debugging.</p>
+ * 
+ * @author Spring AI Alibaba Team
+ * @since 1.0.0
+ * @see com.alibaba.cloud.ai.studio.core.observability.config.SAAGraphFlowRegistry
  */
 public class GraphFlowNotFoundException extends RuntimeException {
 

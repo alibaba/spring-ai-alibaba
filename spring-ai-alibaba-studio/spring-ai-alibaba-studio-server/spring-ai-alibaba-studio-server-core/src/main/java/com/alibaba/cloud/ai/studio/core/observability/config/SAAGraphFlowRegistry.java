@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.studio.core.observability.config;
 
 import com.alibaba.cloud.ai.studio.core.observability.model.SAAGraphFlow;
@@ -10,22 +25,59 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * Registry service for managing Spring AI Alibaba Graph Flows
+ * 
+ * <p>This service acts as a central registry for all graph flows in the system.
+ * It automatically discovers and registers graph flow beans from the Spring
+ * application context during initialization, providing efficient lookup and
+ * management capabilities.</p>
+ * 
+ * <p>The registry uses a thread-safe concurrent map to store flows, indexed by
+ * their unique flow IDs for fast retrieval. It supports various query operations
+ * including finding flows by owner ID and checking existence.</p>
+ * 
+ * <h2>Key Features:</h2>
+ * <ul>
+ *   <li>Automatic discovery of graph flow beans</li>
+ *   <li>Thread-safe concurrent access</li>
+ *   <li>Efficient lookup by flow ID and owner ID</li>
+ *   <li>Duplicate flow ID detection</li>
+ *   <li>Complete flow lifecycle management</li>
+ * </ul>
+ * 
+ * @author Spring AI Alibaba Team
+ * @since 1.0.0
+ * @see SAAGraphFlow
+ */
 @Service
 public class SAAGraphFlowRegistry {
 
 	private final ApplicationContext applicationContext;
 
-	// flowId 为键
+	// Thread-safe registry with flowId as key
+	// 以 flowId 为键的线程安全注册表
 	private final Map<String, SAAGraphFlow> flowRegistry = new ConcurrentHashMap<>();
 
 	public SAAGraphFlowRegistry(ApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
 	}
 
+	/**
+	 * Initializes the registry by discovering and registering all SAAGraphFlow beans
+	 * from the Spring application context.
+	 * 
+	 * <p>This method is automatically called after dependency injection is complete.
+	 * It scans for all SAAGraphFlow beans and registers them in the internal registry
+	 * map, ensuring no duplicate flow IDs exist.</p>
+	 * 
+	 * @throws IllegalStateException if duplicate flow IDs are detected
+	 */
 	@PostConstruct
 	public void init() {
 		Collection<SAAGraphFlow> flows = applicationContext.getBeansOfType(SAAGraphFlow.class).values();
 
+		// Register all discovered flows in our internal map
 		// 将它们注册到我们的 Map 中
 		flows.forEach(flow -> {
 			if (flowRegistry.containsKey(flow.graphId())) {
@@ -38,9 +90,13 @@ public class SAAGraphFlowRegistry {
 	}
 
 	/**
+	 * Finds and returns all flows owned by a specific user.
 	 * 根据 ownerID 查询并返回该用户拥有的所有流程。
-	 * @param ownerID 用户的唯一标识符
-	 * @return 该用户拥有的 SAAGraphFlow 列表
+	 * 
+	 * @param ownerID The unique identifier of the owner
+	 *                用户的唯一标识符
+	 * @return List of SAAGraphFlow objects owned by the specified user, or empty list if none found
+	 *         该用户拥有的 SAAGraphFlow 列表
 	 */
 	public List<SAAGraphFlow> findByOwnerID(String ownerID) {
 		if (ownerID == null || ownerID.isBlank()) {
@@ -54,9 +110,13 @@ public class SAAGraphFlowRegistry {
 	}
 
 	/**
+	 * Finds and returns a specific flow by its unique identifier.
 	 * 根据 flowId 查询并返回指定的流程。
-	 * @param flowId 流程的唯一标识符
-	 * @return 匹配的 SAAGraphFlow，如果不存在则返回 null
+	 * 
+	 * @param flowId The unique identifier of the flow to search for
+	 *               流程的唯一标识符
+	 * @return The matching SAAGraphFlow, or null if not found
+	 *         匹配的 SAAGraphFlow，如果不存在则返回 null
 	 */
 	public SAAGraphFlow findById(String flowId) {
 		if (flowId == null || flowId.isBlank()) {
@@ -66,9 +126,13 @@ public class SAAGraphFlowRegistry {
 	}
 
 	/**
+	 * Checks if a flow with the specified ID exists in the registry.
 	 * 检查指定的 flowId 是否存在。
-	 * @param flowId 流程的唯一标识符
-	 * @return 如果存在返回 true，否则返回 false
+	 * 
+	 * @param flowId The unique identifier of the flow to check
+	 *               流程的唯一标识符
+	 * @return true if the flow exists, false otherwise
+	 *         如果存在返回 true，否则返回 false
 	 */
 	public boolean existsById(String flowId) {
 		if (flowId == null || flowId.isBlank()) {
@@ -78,7 +142,11 @@ public class SAAGraphFlowRegistry {
 	}
 
 	/**
+	 * Returns all registered flows in the system.
 	 * 提供一个方法来获取所有流程
+	 * 
+	 * @return An immutable list of all registered SAAGraphFlow objects
+	 *         所有已注册的 SAAGraphFlow 对象的不可变列表
 	 */
 	public List<SAAGraphFlow> findAll() {
 		return List.copyOf(flowRegistry.values());
