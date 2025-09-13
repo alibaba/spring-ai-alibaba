@@ -36,6 +36,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
  * @param <E> the type of elements. The generator will emit {@link CompletableFuture
  * CompletableFutures&lt;E&gt;} elements
  */
+@Deprecated
 public interface AsyncGenerator<E> extends Iterable<E>, AsyncGeneratorOperators<E> {
 
 	interface HasResultValue {
@@ -409,8 +410,38 @@ public interface AsyncGenerator<E> extends Iterable<E>, AsyncGeneratorOperators<
 		return collect(collection.iterator(), consumer);
 	}
 
+	/**
+	 * Creates an AsyncGenerator from a Project Reactor Flux. This method provides
+	 * backward compatibility for converting reactive streams to the AsyncGenerator
+	 * interface.
+	 * @param <E> the type of elements in the Flux
+	 * @param flux the Flux to convert
+	 * @return an AsyncGenerator that wraps the Flux
+	 */
+	static <E> AsyncGenerator<E> fromFlux(reactor.core.publisher.Flux<E> flux) {
+		Objects.requireNonNull(flux, "flux cannot be null");
+
+		// Convert Flux to Iterator using blocking approach for simplicity
+		// This maintains compatibility with the existing AsyncGenerator pattern
+		final Iterator<E> iterator = flux.toIterable().iterator();
+
+		return () -> {
+			if (!iterator.hasNext()) {
+				return Data.done();
+			}
+			try {
+				E element = iterator.next();
+				return Data.of(element);
+			}
+			catch (Exception e) {
+				return Data.error(e);
+			}
+		};
+	}
+
 }
 
+@Deprecated
 class InternalIterator<E> implements Iterator<E>, AsyncGenerator.HasResultValue {
 
 	private final AsyncGenerator<E> delegate;

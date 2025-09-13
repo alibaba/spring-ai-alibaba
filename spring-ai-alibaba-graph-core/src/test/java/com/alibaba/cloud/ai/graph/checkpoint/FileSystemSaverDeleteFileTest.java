@@ -15,16 +15,18 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver;
-import com.alibaba.cloud.ai.graph.serializer.AgentState;
-import com.alibaba.cloud.ai.graph.serializer.ObjectStreamStateSerializer;
-import org.junit.jupiter.api.Test;
+import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@link FileSystemSaver#deleteFile(RunnableConfig)}.
@@ -34,7 +36,7 @@ public class FileSystemSaverDeleteFileTest {
 	@Test
 	public void deleteFileShouldRemoveExistingCheckpoint() throws Exception {
 		Path root = Files.createTempDirectory("checkpoint");
-		FileSystemSaver saver = new FileSystemSaver(root, new ObjectStreamStateSerializer<>(AgentState::new));
+		FileSystemSaver saver = new FileSystemSaver(root, new ObjectStreamStateSerializer(OverAllState::new));
 		RunnableConfig config = RunnableConfig.builder().threadId("t1").build();
 
 		Path checkpointFile = root.resolve("thread-t1.saver");

@@ -15,9 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
-import java.util.Map;
-
 import com.alibaba.cloud.ai.graph.OverAllState;
+
+import java.util.Map;
 
 /**
  * Integration test/demo for TemplateTransformNode

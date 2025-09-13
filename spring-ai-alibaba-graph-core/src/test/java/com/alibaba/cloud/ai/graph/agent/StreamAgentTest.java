@@ -21,25 +21,18 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.http.codec.ServerSentEvent;
-import reactor.core.publisher.Sinks;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class StreamAgentTest {
@@ -71,7 +64,7 @@ class StreamAgentTest {
 			.model(chatModel)
 			.description("可以写散文文章。")
 			.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
-			.outputKey("messages")
+			.outputKey("prose_article")
 			.build();
 
 		ReactAgent poemWriterAgent = ReactAgent.builder()
@@ -88,51 +81,22 @@ class StreamAgentTest {
 			.state(stateFactory)
 			.description("可以根据用户给定的主题写文章或作诗。")
 			.inputKey("input")
-			.outputKey("messages")
+			.outputKey("topic")
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent))
 			.build();
 
 		try {
-			Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
-			AsyncGenerator<NodeOutput> result = blogAgent.stream(Map.of("input", "帮我写一个100字左右的散文"));
-			processStream(result, sink).get();
+			Flux<NodeOutput> result = blogAgent.stream(Map.of("input", "帮我写一个100字左右的散文"));
+			result.doOnNext(nodeOutput -> {
+				System.out.println("Node: " + nodeOutput);
+			}).then().block();
+			System.out.println("Waiting for the streaming to complete...");
 		}
-		catch (CompletionException e) {
+		catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		// Verify all hooks were executed
-	}
-
-	CompletableFuture<Void> processStream(AsyncGenerator<NodeOutput> generator,
-			Sinks.Many<ServerSentEvent<String>> sink) {
-		ExecutorService executor = Executors.newSingleThreadExecutor();
-		return generator.forEachAsync(output -> {
-			try {
-				System.out.println(output);
-				String nodeName = output.node();
-				String content;
-				if (output instanceof StreamingOutput streamingOutput) {
-					content = JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk()));
-				}
-				else {
-					JSONObject nodeOutput = new JSONObject();
-					nodeOutput.put("data", output.state().data());
-					nodeOutput.put("node", nodeName);
-					content = JSON.toJSONString(nodeOutput);
-				}
-				sink.tryEmitNext(ServerSentEvent.builder(content).build());
-			}
-			catch (Exception e) {
-				throw new CompletionException(e);
-			}
-		}).thenAccept(v -> {
-			// 正常完成
-			sink.tryEmitComplete();
-		}).exceptionally(e -> {
-			sink.tryEmitError(e);
-			return null;
-		});
 	}
 
 }

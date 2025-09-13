@@ -15,10 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph.store.stores;
 
-import com.alibaba.cloud.ai.graph.store.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import com.alibaba.cloud.ai.graph.store.NamespaceListRequest;
+import com.alibaba.cloud.ai.graph.store.StoreItem;
+import com.alibaba.cloud.ai.graph.store.StoreSearchRequest;
+import com.alibaba.cloud.ai.graph.store.StoreSearchResult;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,6 +26,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;

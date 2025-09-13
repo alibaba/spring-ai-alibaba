@@ -15,11 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import org.junit.jupiter.api.Test;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -74,7 +74,7 @@ public class DefaultKeyStrategyTest {
 		// APPEND strategy creates a list when oldValue is not already a List
 		assertEquals(List.of("_appended"), state.data().get("append_key")); // APPEND used
 		assertEquals("replaced", state.data().get("replace_key")); // REPLACE used
-																	// (default)
+		// (default)
 	}
 
 	@Test

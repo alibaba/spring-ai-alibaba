@@ -34,6 +34,7 @@ import java.util.function.Supplier;
  *
  * @param <T> The type of elements produced by this generator.
  */
+@Deprecated
 public class GeneratorSubscriber<T> implements Flow.Subscriber<T>, AsyncGenerator<T> {
 
 	private final AsyncGeneratorQueue.Generator<T> delegate;

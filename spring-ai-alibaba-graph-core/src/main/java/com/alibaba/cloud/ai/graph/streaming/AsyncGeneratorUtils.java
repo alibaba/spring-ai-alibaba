@@ -32,6 +32,7 @@ import java.util.HashMap;
 /**
  * Utility class for handling asynchronous generator merging and output processing
  */
+@Deprecated
 public class AsyncGeneratorUtils {
 
 	private static final Logger log = LoggerFactory.getLogger(AsyncGeneratorUtils.class);

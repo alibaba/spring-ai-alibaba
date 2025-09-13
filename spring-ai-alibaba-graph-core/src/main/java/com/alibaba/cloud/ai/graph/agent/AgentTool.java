@@ -20,7 +20,6 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import org.springframework.ai.chat.messages.Message;
@@ -44,7 +43,7 @@ public class AgentTool implements BiFunction<String, ToolContext, String> {
 		OverAllState state = (OverAllState) toolContext.getContext().get("state");
 		String toolResult = "";
 		try {
-			Optional<OverAllState> resultState = agent.getAndCompileGraph().invoke(state.data());
+			Optional<OverAllState> resultState = agent.getAndCompileGraph().call(state.data());
 			Optional<List> messages = resultState.flatMap(overAllState -> overAllState.value("messages", List.class));
 			if (messages.isPresent()) {
 				@SuppressWarnings("unchecked")
@@ -54,7 +53,7 @@ public class AgentTool implements BiFunction<String, ToolContext, String> {
 				toolResult = toolResponseMessage.getText();
 			}
 		}
-		catch (GraphRunnerException | GraphStateException e) {
+		catch (GraphStateException e) {
 			throw new RuntimeException(e);
 		}
 		return toolResult;

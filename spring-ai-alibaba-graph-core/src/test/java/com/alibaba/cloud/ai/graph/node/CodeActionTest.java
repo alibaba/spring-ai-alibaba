@@ -22,14 +22,15 @@ import com.alibaba.cloud.ai.graph.node.code.entity.CodeParam;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeStyle;
 import com.alibaba.cloud.ai.graph.node.code.LocalCommandlineCodeExecutor;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -40,10 +41,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 public class CodeActionTest {
 
-	private CodeExecutionConfig config;
-
 	@TempDir
 	Path tempDir;
+
+	private CodeExecutionConfig config;
 
 	@BeforeEach
 	void setUp() {

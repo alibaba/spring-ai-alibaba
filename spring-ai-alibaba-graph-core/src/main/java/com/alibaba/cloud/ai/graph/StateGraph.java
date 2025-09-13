@@ -33,7 +33,8 @@ import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
 import com.alibaba.cloud.ai.graph.internal.node.SubStateGraphNode;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -103,12 +104,12 @@ public class StateGraph {
 	/**
 	 * Serializer for the state.
 	 */
-	private final PlainTextStateSerializer stateSerializer;
+	private final StateSerializer stateSerializer;
 
 	/**
 	 * Jackson-based serializer for state.
 	 */
-	static class JacksonSerializer extends JacksonStateSerializer {
+	static class JacksonSerializer extends SpringAIJacksonStateSerializer {
 
 		/**
 		 * Instantiates a new Jackson serializer.
@@ -146,13 +147,32 @@ public class StateGraph {
 	}
 
 	/**
-	 * Constructs a StateGraph with the given key strategy factory and name.
-	 * @param keyStrategyFactory the factory for providing key strategies
+	 * Constructs a StateGraph with the specified name, key strategy factory, and SpringAI
+	 * state serializer.
 	 * @param name the name of the graph
+	 * @param keyStrategyFactory the factory for providing key strategies
+	 * @param stateSerializer the SpringAI state serializer to use
 	 */
-	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory) {
-		this.keyStrategyFactory = keyStrategyFactory;
+	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory, SpringAIStateSerializer stateSerializer) {
 		this.name = name;
+		this.keyStrategyFactory = keyStrategyFactory;
+		this.stateSerializer = stateSerializer;
+	}
+
+	/**
+	 * Constructs a StateGraph with the specified key strategy factory and SpringAI state
+	 * serializer.
+	 * @param keyStrategyFactory the factory for providing key strategies
+	 * @param stateSerializer the SpringAI state serializer to use
+	 */
+	public StateGraph(KeyStrategyFactory keyStrategyFactory, SpringAIStateSerializer stateSerializer) {
+		this.keyStrategyFactory = keyStrategyFactory;
+		this.stateSerializer = stateSerializer;
+	}
+
+	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory) {
+		this.name = name;
+		this.keyStrategyFactory = keyStrategyFactory;
 		this.stateSerializer = new JacksonSerializer();
 	}
 
@@ -186,7 +206,7 @@ public class StateGraph {
 	 * Gets the state serializer used by this graph.
 	 * @return the state serializer
 	 */
-	public StateSerializer<OverAllState> getStateSerializer() {
+	public StateSerializer getStateSerializer() {
 		return stateSerializer;
 	}
 

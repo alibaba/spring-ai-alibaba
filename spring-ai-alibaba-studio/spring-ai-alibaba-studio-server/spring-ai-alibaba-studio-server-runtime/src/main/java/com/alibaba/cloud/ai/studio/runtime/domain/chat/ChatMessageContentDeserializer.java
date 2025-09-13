@@ -35,7 +35,7 @@ public class ChatMessageContentDeserializer extends JsonDeserializer<Object> {
 	 * Deserializes JSON content into appropriate object type.
 	 * @param p JSON parser
 	 * @param ctxt Deserialization context
-	 * @return Deserialized object (List<MultimodalContent>, String, or JsonNode)
+	 * @return Deserialized object (List MultimodalContent, String, or JsonNode)
 	 * @throws IOException if deserialization fails
 	 */
 	@Override

@@ -16,10 +16,10 @@
 
 /**
  * Defines the core interfaces and classes for actions that constitute the building blocks
- * of a LangGraph4j graph. Actions in this context represent the executable logic
- * associated with graph nodes and the conditional logic that determines transitions along
- * graph edges. They operate on an {@link com.alibaba.cloud.ai.graph.OverAllState} and can
- * optionally interact with a {@link com.alibaba.cloud.ai.graph.RunnableConfig}.
+ * of a graph. Actions in this context represent the executable logic associated with
+ * graph nodes and the conditional logic that determines transitions along graph edges.
+ * They operate on an {@link com.alibaba.cloud.ai.graph.OverAllState} and can optionally
+ * interact with a {@link com.alibaba.cloud.ai.graph.RunnableConfig}.
  *
  * <p>
  * This package provides a clear separation between synchronous and asynchronous
@@ -59,7 +59,7 @@
  *
  * <p>
  * Implementations of these interfaces are fundamental to defining the behavior and flow
- * of control within a stateful agent graph constructed using LangGraph4j.
+ * of control within a stateful agent graph constructed using Graph.
  * </p>
  *
  */

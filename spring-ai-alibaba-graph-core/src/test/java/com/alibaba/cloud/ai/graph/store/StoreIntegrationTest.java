@@ -15,17 +15,22 @@
  */
 package com.alibaba.cloud.ai.graph.store;
 
-import com.alibaba.cloud.ai.graph.store.stores.*;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import com.alibaba.cloud.ai.graph.store.stores.DatabaseStore;
+import com.alibaba.cloud.ai.graph.store.stores.FileSystemStore;
+import com.alibaba.cloud.ai.graph.store.stores.MemoryStore;
+import com.alibaba.cloud.ai.graph.store.stores.MongoStore;
+import com.alibaba.cloud.ai.graph.store.stores.RedisStore;
 
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -151,7 +156,7 @@ public class StoreIntegrationTest {
 			.build();
 		StoreSearchResult engineeringResult = store.searchItems(engineeringRequest);
 		assertThat(engineeringResult.getItems()).hasSize(3); // engineering + backend +
-																// frontend
+		// frontend
 
 		// Test search by query
 		StoreSearchRequest queryRequest = StoreSearchRequest.builder().query("Java").build();

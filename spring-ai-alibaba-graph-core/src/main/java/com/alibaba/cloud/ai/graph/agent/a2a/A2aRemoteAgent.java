@@ -19,7 +19,6 @@ import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
@@ -29,7 +28,6 @@ import io.a2a.spec.AgentCard;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Logger;
 
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
@@ -37,8 +35,6 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 public class A2aRemoteAgent extends BaseAgent {
 
 	private final AgentCard agentCard;
-
-	private final StateGraph graph;
 
 	private CompiledGraph compiledGraph;
 
@@ -63,10 +59,10 @@ public class A2aRemoteAgent extends BaseAgent {
 		this.inputKey = builder.inputKey;
 		this.streaming = builder.streaming;
 		this.a2aNode = a2aNode;
-		this.graph = initGraph();
 	}
 
-	private StateGraph initGraph() throws GraphStateException {
+	@Override
+	protected StateGraph initGraph() throws GraphStateException {
 		if (keyStrategyFactory == null) {
 			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
@@ -88,27 +84,8 @@ public class A2aRemoteAgent extends BaseAgent {
 	}
 
 	@Override
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.invoke(input);
-	}
-
-	@Override
 	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException, GraphRunnerException {
 		throw new UnsupportedOperationException("A2aRemoteAgent has not support schedule.");
-	}
-
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
-			throws GraphStateException, GraphRunnerException {
-		if (!streaming) {
-			logger.warning("Streaming is not enabled for this agent.");
-		}
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.stream(input);
 	}
 
 	public StateGraph getStateGraph() {
@@ -247,7 +224,7 @@ public class A2aRemoteAgent extends BaseAgent {
 						"Input key '" + inputKeyFromParent + "' not found in state: " + parentState));
 
 			// invoke child graph with input
-			OverAllState childState = childGraph.invoke(Map.of("input", inputValue)).get();
+			OverAllState childState = childGraph.call(Map.of("input", inputValue)).get();
 
 			// extract output from child graph
 			Object outputValue = childState.value(outputKeyToParent)

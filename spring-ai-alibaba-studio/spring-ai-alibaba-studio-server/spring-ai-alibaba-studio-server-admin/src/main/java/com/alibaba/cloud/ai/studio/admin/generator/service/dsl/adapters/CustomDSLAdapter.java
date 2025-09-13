@@ -41,7 +41,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
- * CustomDSLAdapter converts spring ai alibaba DSL to {@link App} and vice versa.
+ * CustomDSLAdapter converts spring ai alibaba DSL to App and vice versa.
  */
 @Component
 public class CustomDSLAdapter extends AbstractDSLAdapter {
