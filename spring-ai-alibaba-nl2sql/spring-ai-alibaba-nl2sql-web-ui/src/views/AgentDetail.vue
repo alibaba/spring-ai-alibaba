@@ -267,19 +267,24 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>启用计划人工复核</label>
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <input type="checkbox" class="form-checkbox" v-model="agent.humanReviewEnabled">
-                    <span style="color:#666;">开启后，Planner 计划会在执行前等待人工复核</span>
-                  </div>
-                </div>
-                <div class="form-group">
                   <label>创建时间</label>
                   <div class="form-control readonly-field">{{ formatDateTime(agent.createTime) }}</div>
                 </div>
                 <div class="form-group">
                   <label>更新时间</label>
                   <div class="form-control readonly-field">{{ formatDateTime(agent.updateTime) }}</div>
+                </div>
+                <div class="form-group">
+                  <div class="checkbox-group">
+                    <input
+                        type="checkbox"
+                        id="humanReviewCheckBox"
+                        v-model="agent.humanReviewEnabled"
+                        class="form-checkbox"
+                    >
+                    <label class="checkbox-label" for="humanReviewCheckBox">启用计划人工复核</label>
+                  </div>
+                  <small class="form-text">开启后，Planner 计划会在执行前等待人工复核</small>
                 </div>
                 <div class="form-actions">
                   <button class="btn btn-primary" @click="updateAgent">保存</button>

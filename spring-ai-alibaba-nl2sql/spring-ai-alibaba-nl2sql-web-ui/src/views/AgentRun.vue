@@ -319,9 +319,12 @@
           <div class="modal-header">
             <h3>计划人工复核</h3>
           </div>
-          <div class="modal-body" style="max-height: 400px; overflow: auto; white-space: pre-wrap; font-family: monospace; background: #f5f5f5; padding: 12px; border-radius: 4px;">
-            {{ formatHumanReviewPlan(humanReviewPlan) }}
-          </div>
+            <div class="agent-response-block" style="display: block !important; width: 100% !important;">
+              <div class="agent-response-title">
+                <i class="bi bi-diagram-3"></i> 当前计划
+              </div>
+              <div class="agent-response-content">{{ formatHumanReviewPlan(humanReviewPlan) }}</div>
+            </div>
           <div class="modal-footer" style="display:flex; gap:8px;">
             <textarea v-model="humanReviewSuggestion" placeholder="如不合理，请填写修改建议" style="width:100%; height:80px;"></textarea>
             <button class="btn" @click="approvePlan">通过</button>
@@ -697,7 +700,7 @@ export default {
 
             currentUserMessage.value = ""
             // 从状态中获取计划内容
-            humanReviewPlan.value = processedData || '等待计划生成...'
+            humanReviewPlan.value = streamState.contentByIndex[streamState.contentByIndex.length - 1] || processedData || '等待计划生成...'
             showHumanReviewModal.value = true
             return
           }
@@ -2636,6 +2639,7 @@ export default {
       if (!plan) return ''
       
       try {
+        plan = plan.replace("```json", "").replace("```", "");
         // 尝试解析JSON
         const parsed = JSON.parse(plan)
         return JSON.stringify(parsed, null, 2)
@@ -2643,23 +2647,6 @@ export default {
         // 如果不是JSON，直接返回原始内容
         return plan
       }
-    }
-
-    const tryHumanReview = async (queryText) => {
-      if (!humanReviewEnabled.value) return false
-      try {
-        const resp = await fetch(`/nl2sql/plan/preview?query=${encodeURIComponent(queryText)}&agentId=${agent.value.id}`)
-        const text = await resp.text()
-        if (text && text.trim().length > 0) {
-          currentUserMessage.value = queryText
-          humanReviewPlan.value = text
-          showHumanReviewModal.value = true
-          return true
-        }
-      } catch (e) {
-        console.error('plan preview failed', e)
-      }
-      return false
     }
 
     const approvePlan = async () => {
@@ -2765,7 +2752,6 @@ export default {
       humanReviewSuggestion,
       currentUserMessage,
       formatHumanReviewPlan,
-      tryHumanReview,
       approvePlan,
       rejectPlan
     }
