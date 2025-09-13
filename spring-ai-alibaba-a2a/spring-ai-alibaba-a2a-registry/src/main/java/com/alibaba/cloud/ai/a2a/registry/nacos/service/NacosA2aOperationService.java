@@ -16,12 +16,15 @@
 
 package com.alibaba.cloud.ai.a2a.registry.nacos.service;
 
+import com.alibaba.cloud.ai.a2a.A2aServerProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.utils.AgentCardConverterUtil;
+import com.alibaba.nacos.api.ai.A2aService;
+import com.alibaba.nacos.api.ai.constant.AiConstants;
 import com.alibaba.nacos.api.ai.model.a2a.AgentCard;
+import com.alibaba.nacos.api.ai.model.a2a.AgentEndpoint;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.exception.runtime.NacosRuntimeException;
-import com.alibaba.nacos.maintainer.client.ai.A2aMaintainerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,23 +37,23 @@ public class NacosA2aOperationService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NacosA2aOperationService.class);
 
-	private final A2aMaintainerService a2aMaintainerService;
+	private final A2aService a2aService;
 
 	private final NacosA2aProperties nacosA2aProperties;
 
-	public NacosA2aOperationService(A2aMaintainerService a2aMaintainerService, NacosA2aProperties nacosA2aProperties) {
-		this.a2aMaintainerService = a2aMaintainerService;
+	private final A2aServerProperties a2aServerProperties;
+
+	public NacosA2aOperationService(A2aService a2aService, NacosA2aProperties nacosA2aProperties, A2aServerProperties a2aServerProperties) {
+		this.a2aService = a2aService;
 		this.nacosA2aProperties = nacosA2aProperties;
+		this.a2aServerProperties = a2aServerProperties;
 	}
 
 	public void registerAgent(io.a2a.spec.AgentCard agentCard) {
 		AgentCard nacosAgentCard = AgentCardConverterUtil.convertToNacosAgentCard(agentCard);
 		try {
-			LOGGER.info("Register agent card {} to Nacos namespace {}. ", agentCard.name(),
-					nacosA2aProperties.getNamespace());
-			a2aMaintainerService.registerAgent(nacosAgentCard, nacosA2aProperties.getNamespace());
-			LOGGER.info("Register agent card {} to Nacos namespace {} successfully. ", agentCard.name(),
-					nacosA2aProperties.getNamespace());
+			tryReleaseAgentCard(nacosAgentCard);
+			registerEndpoint(nacosAgentCard);
 		}
 		catch (NacosException e) {
 			LOGGER.error("Register agent card {} to Nacos failed,", agentCard.name(), e);
@@ -58,4 +61,22 @@ public class NacosA2aOperationService {
 		}
 	}
 
+	private void tryReleaseAgentCard(AgentCard agentCard) throws NacosException {
+		LOGGER.info("Register agent card {} to Nacos namespace {}. ", agentCard.getName(),
+				nacosA2aProperties.getNamespace());
+		a2aService.releaseAgentCard(agentCard, AiConstants.A2a.A2A_ENDPOINT_TYPE_SERVICE);
+		LOGGER.info("Register agent card {} to Nacos namespace {} successfully. ", agentCard.getName(),
+				nacosA2aProperties.getNamespace());
+	}
+
+
+	private void registerEndpoint(AgentCard agentCard) throws NacosException {
+		AgentEndpoint endpoint = new AgentEndpoint();
+		endpoint.setVersion(agentCard.getVersion());
+		endpoint.setPath(a2aServerProperties.getMessageUrl());
+		endpoint.setTransport(agentCard.getPreferredTransport());
+		endpoint.setAddress(a2aServerProperties.getAddress());
+		endpoint.setPort(a2aServerProperties.getPort());
+		a2aService.registerAgentEndpoint(agentCard.getName(), endpoint);
+	}
 }

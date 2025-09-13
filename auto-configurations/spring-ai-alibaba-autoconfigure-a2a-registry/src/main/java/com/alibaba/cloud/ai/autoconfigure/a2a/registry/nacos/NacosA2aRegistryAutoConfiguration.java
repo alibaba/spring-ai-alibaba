@@ -16,14 +16,15 @@
 
 package com.alibaba.cloud.ai.autoconfigure.a2a.registry.nacos;
 
+import com.alibaba.cloud.ai.a2a.A2aServerProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosAgentRegistry;
 import com.alibaba.cloud.ai.a2a.registry.nacos.service.NacosA2aOperationService;
 import com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aAgentCardAutoConfiguration;
 import com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aServerRegistryAutoConfiguration;
+import com.alibaba.nacos.api.ai.A2aService;
+import com.alibaba.nacos.api.ai.AiFactory;
 import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.maintainer.client.ai.A2aMaintainerService;
-import com.alibaba.nacos.maintainer.client.ai.AiMaintainerFactory;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -35,20 +36,20 @@ import org.springframework.context.annotation.Bean;
  *
  * @author xiweng.yy
  */
-@AutoConfiguration(after = A2aAgentCardAutoConfiguration.class, before = { A2aServerRegistryAutoConfiguration.class })
-@EnableConfigurationProperties({ NacosA2aProperties.class })
+@AutoConfiguration(after = A2aAgentCardAutoConfiguration.class, before = {A2aServerRegistryAutoConfiguration.class})
+@EnableConfigurationProperties({NacosA2aProperties.class})
 public class NacosA2aRegistryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public A2aMaintainerService a2aMaintainerService(NacosA2aProperties nacosA2aProperties) throws NacosException {
-		return AiMaintainerFactory.createAiMaintainerService(nacosA2aProperties.getNacosProperties());
+	public A2aService a2aService(NacosA2aProperties nacosA2aProperties) throws NacosException {
+		return AiFactory.createAiService(nacosA2aProperties.getNacosProperties());
 	}
 
 	@Bean
-	public NacosA2aOperationService nacosA2aOperationService(A2aMaintainerService a2aMaintainerService,
-			NacosA2aProperties nacosA2aProperties) {
-		return new NacosA2aOperationService(a2aMaintainerService, nacosA2aProperties);
+	public NacosA2aOperationService nacosA2aOperationService(A2aService a2aService,
+			NacosA2aProperties nacosA2aProperties, A2aServerProperties a2aServerProperties) {
+		return new NacosA2aOperationService(a2aService, nacosA2aProperties, a2aServerProperties);
 	}
 
 	@Bean
