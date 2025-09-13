@@ -78,9 +78,10 @@
             </div>
           </div>
           <div class="config-content">
-            <p class="config-description">{{ config.description }}</p>
+            <p class="config-description">{{ config.description || '暂无描述' }}</p>
             <div class="optimization-prompt">
-              {{ config.optimizationPrompt }}
+              <div class="prompt-label">优化提示词内容：</div>
+              {{ config.systemPrompt || config.optimizationPrompt }}
             </div>
           </div>
         </div>
@@ -88,7 +89,7 @@
     </div>
 
     <!-- 添加/编辑配置对话框 -->
-    <div v-if="showAddConfigDialog || editingConfig" class="dialog-overlay" @click="closeDialog">
+    <div v-if="showAddConfigDialog" class="dialog-overlay" @click="closeDialog">
       <div class="dialog-content" @click.stop>
         <div class="dialog-header">
           <h3>{{ editingConfig ? '编辑优化配置' : '添加优化配置' }}</h3>
@@ -160,7 +161,8 @@ export default {
       formData: {
         name: '',
         description: '',
-        optimizationPrompt: ''
+        optimizationPrompt: '',
+        systemPrompt: ''
       },
       loading: false,
       message: {
@@ -191,9 +193,23 @@ export default {
     },
 
     async saveConfig() {
+      // 表单验证
+      if (!this.formData.name.trim()) {
+        this.showMessage('请输入配置名称', 'error')
+        return
+      }
+      if (!this.formData.optimizationPrompt.trim()) {
+        this.showMessage('请输入优化提示词内容', 'error')
+        return
+      }
+
       try {
+        // 构建提交数据：前端optimizationPrompt映射为后端需要的字段
         const configData = {
-          ...this.formData,
+          name: this.formData.name,
+          description: this.formData.description,
+          // 提交时：前端的optimizationPrompt传给后端
+          optimizationPrompt: this.formData.optimizationPrompt,
           promptType: this.promptType,
           enabled: true,
           creator: 'user'
@@ -271,10 +287,13 @@ export default {
 
     editConfig(config) {
       this.editingConfig = config
+      this.showAddConfigDialog = true
       this.formData = {
-        name: config.name,
-        description: config.description,
-        optimizationPrompt: config.optimizationPrompt
+        name: config.name || '',
+        description: config.description || '',
+        // 显示时：后端返回的是systemPrompt，映射到前端的optimizationPrompt字段
+        optimizationPrompt: config.systemPrompt || '',
+        systemPrompt: config.systemPrompt || ''
       }
     },
 
@@ -284,7 +303,8 @@ export default {
       this.formData = {
         name: '',
         description: '',
-        optimizationPrompt: ''
+        optimizationPrompt: '',
+        systemPrompt: ''
       }
     },
 
@@ -437,9 +457,7 @@ export default {
   color: #999;
 }
 
-.config-list {
-  space-y: 12px;
-}
+/* 配置项之间的间距由 config-item 的 margin-bottom 控制 */
 
 .config-item {
   border: 1px solid #e8e8e8;
