@@ -32,9 +32,6 @@ import java.util.Set;
 
 import static com.alibaba.cloud.ai.constant.Constant.IS_ONLY_NL2SQL;
 import static com.alibaba.cloud.ai.constant.Constant.HUMAN_REVIEW_ENABLED;
-import static com.alibaba.cloud.ai.constant.Constant.HUMAN_REVIEW_DECISION;
-import static com.alibaba.cloud.ai.constant.Constant.HUMAN_REVIEW_SUGGESTION;
-import static com.alibaba.cloud.ai.constant.Constant.HUMAN_REVIEW_PLAN;
 import static com.alibaba.cloud.ai.constant.Constant.ONLY_NL2SQL_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
@@ -111,33 +108,14 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 					"Validation failed: The plan is not a valid JSON structure. Error: " + e.getMessage());
 		}
 
-		// 2. If开启人工复核，则在执行前暂停，等待前端决策
+		// 2. If开启人工复核，则在执行前暂停，跳转到human_feedback节点
 		Boolean humanReviewEnabled = state.value(HUMAN_REVIEW_ENABLED, false);
 		if (Boolean.TRUE.equals(humanReviewEnabled)) {
-			String rawPlan = StateUtils.getStringValue(state, PLANNER_NODE_OUTPUT);
-			// 将当前计划回传前端预览，并等待 HUMAN_REVIEW_DECISION 注入到 state
-			String decision = StateUtils.getStringValue(state, HUMAN_REVIEW_DECISION, null);
-			if (decision == null) {
-				logger.info("Human review enabled: pausing before execution and exposing plan to UI");
-				return Map.of(
-						PLAN_VALIDATION_STATUS, true,
-						PLAN_NEXT_NODE, StateGraph.END,
-						HUMAN_REVIEW_PLAN, rawPlan
-				);
-			}
-			if ("REJECT".equalsIgnoreCase(decision)) {
-				// 将用户建议写入 PLAN_VALIDATION_ERROR 让 PlannerNode 走修复分支
-				String suggestion = StateUtils.getStringValue(state, HUMAN_REVIEW_SUGGESTION, "User rejected the plan. Please revise according to suggestions.");
-				int repairCount = StateUtils.getObjectValue(state, PLAN_REPAIR_COUNT, Integer.class, 0);
-				logger.warn("Human review rejected the plan, routing back to PlannerNode with suggestion");
-				return Map.of(
-						PLAN_VALIDATION_STATUS, false,
-						PLAN_VALIDATION_ERROR, suggestion,
-						PLAN_REPAIR_COUNT, repairCount + 1,
-						PLAN_NEXT_NODE, PLANNER_NODE
-				);
-			}
-			// APPROVE: 继续正常流程
+			logger.info("Human review enabled: routing to human_feedback node");
+			return Map.of(
+					PLAN_VALIDATION_STATUS, true,
+					PLAN_NEXT_NODE, "human_feedback"
+			);
 		}
 
 		Plan plan = getPlan(state);
@@ -170,6 +148,10 @@ public class PlanExecutorNode extends AbstractPlanBasedNode {
 	 */
 	private Map<String, Object> determineNextNode(String toolToUse) {
 		if (SUPPORTED_NODES.contains(toolToUse)) {
+			logger.info("Determined next execution node: {}", toolToUse);
+			return Map.of(PLAN_NEXT_NODE, toolToUse, PLAN_VALIDATION_STATUS, true);
+		}
+		else if ("human_feedback".equals(toolToUse)) {
 			logger.info("Determined next execution node: {}", toolToUse);
 			return Map.of(PLAN_NEXT_NODE, toolToUse, PLAN_VALIDATION_STATUS, true);
 		}

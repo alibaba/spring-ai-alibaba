@@ -324,10 +324,10 @@
       <div class="modal-wrapper">
         <div class="modal-container">
           <div class="modal-header">
-            <h3>计划预览</h3>
+            <h3>计划人工复核</h3>
           </div>
-          <div class="modal-body" style="max-height: 360px; overflow: auto; white-space: pre-wrap;">
-            {{ humanReviewPlan }}
+          <div class="modal-body" style="max-height: 400px; overflow: auto; white-space: pre-wrap; font-family: monospace; background: #f5f5f5; padding: 12px; border-radius: 4px;">
+            {{ formatHumanReviewPlan(humanReviewPlan) }}
           </div>
           <div class="modal-footer" style="display:flex; gap:8px;">
             <textarea v-model="humanReviewSuggestion" placeholder="如不合理，请填写修改建议" style="width:100%; height:80px;"></textarea>
@@ -616,6 +616,8 @@ export default {
       
       try {
         // 启动流式处理
+        // 生成线程ID
+        currentThreadId.value = Date.now().toString()
         const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(message)}&agentId=${agent.value.id}`)
         
         const agentMessageIndex = currentMessages.value.length
@@ -678,6 +680,7 @@ export default {
         }
 
         eventSource.onmessage = (event) => {
+            console.log('收到SSE事件:', event.data)
             let chunk
             let actualType
             let actualData
@@ -693,6 +696,8 @@ export default {
 
                 actualType = chunk['type']
                 actualData = chunk['data']
+                
+                console.log('解析后的数据:', { actualType, actualData: typeof actualData === 'string' ? actualData.substring(0, 100) + '...' : actualData })
 
                 if (actualType === 'explanation' && typeof actualData === 'string') {
                     try {
@@ -722,28 +727,25 @@ export default {
                     processedData = processedData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim()
                 }
 
-                // 检查是否是人工复核计划
-                console.log('检查人工复核:', {
+                // 检查是否是人工复核节点
+                console.log('检查人工复核条件:', {
                     actualType,
                     humanReviewEnabled: humanReviewEnabled.value,
-                    hasThoughtProcess: typeof processedData === 'string' && processedData.includes('thought_process'),
-                    hasExecutionPlan: typeof processedData === 'string' && processedData.includes('execution_plan'),
                     processedDataLength: typeof processedData === 'string' ? processedData.length : 0
                 })
                 
-                if (actualType === 'plan_generation' && humanReviewEnabled.value) {
-                    // 检查是否包含计划结构（包含 thought_process 或 execution_plan）
-                    if (typeof processedData === 'string' && (processedData.includes('thought_process') || processedData.includes('execution_plan'))) {
-                        console.log('触发人工复核模态框')
-                        // 暂停流式处理，显示人工复核模态框
-                        eventSource.close()
-                        isLoading.value = false
-                        
-                        currentUserMessage.value = message
-                        humanReviewPlan.value = processedData
-                        showHumanReviewModal.value = true
-                        return
-                    }
+                if (actualType === 'human_feedback' && humanReviewEnabled.value) {
+                    console.log('检测到人工复核节点，显示模态框')
+                    
+                    // 暂停流式处理，显示人工复核模态框
+                    eventSource.close()
+                    isLoading.value = false
+                    
+                    currentUserMessage.value = message
+                    // 从状态中获取计划内容
+                    humanReviewPlan.value = processedData || '等待计划生成...'
+                    showHumanReviewModal.value = true
+                    return
                 }
 
                 // 增加状态判断，如果当前节点的type与上一个type不同，则说明应该另外起一个Content
@@ -2627,6 +2629,21 @@ export default {
     const showHumanReviewModal = ref(false)
     const humanReviewSuggestion = ref('')
     const currentUserMessage = ref('')
+    const currentThreadId = ref('')
+
+    // 格式化人工复核计划显示
+    const formatHumanReviewPlan = (plan) => {
+      if (!plan) return ''
+      
+      try {
+        // 尝试解析JSON
+        const parsed = JSON.parse(plan)
+        return JSON.stringify(parsed, null, 2)
+      } catch (e) {
+        // 如果不是JSON，直接返回原始内容
+        return plan
+      }
+    }
 
     const tryHumanReview = async (queryText) => {
       if (!humanReviewEnabled.value) return false
@@ -2648,29 +2665,47 @@ export default {
     const approvePlan = async (queryText) => {
       showHumanReviewModal.value = false
       try {
-        const resp = await fetch(`/nl2sql/plan/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryText, agentId: String(agent.value.id), decision: 'APPROVE' }) })
-        const result = await resp.text()
-        
-        // 添加助手回复到聊天界面
-        const assistantMessage = {
-          id: Date.now(),
-          role: 'assistant',
-          type: 'result',
-          content: result,
-          timestamp: new Date()
-        }
-        currentMessages.value.push(assistantMessage)
-        
-        // 保存助手消息到数据库
-        await saveMessage({
+        // 使用新的人类反馈API
+        const feedbackRequest = {
           sessionId: currentSessionId.value,
-          role: 'assistant',
-          content: result,
-          messageType: 'result'
+          threadId: currentThreadId.value,
+          feedBack: true,
+          feedBackContent: ''
+        }
+        
+        // 使用 EventSource 处理流式响应
+        const eventSource = new EventSource(`/nl2sql/human-feedback?${new URLSearchParams({
+          sessionId: currentSessionId.value,
+          threadId: currentThreadId.value,
+          feedBack: 'true',
+          feedBackContent: ''
+        })}`)
+        
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data)
+            if (data.type && data.data) {
+              // 更新最后一条助手消息
+              const lastMessage = currentMessages.value[currentMessages.value.length - 1]
+              if (lastMessage && lastMessage.role === 'assistant') {
+                lastMessage.content += data.data
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing human feedback response:', e)
+          }
+        }
+        
+        eventSource.addEventListener('complete', () => {
+          eventSource.close()
+          nextTick(() => scrollToBottom())
         })
         
-        await nextTick()
-        scrollToBottom()
+        eventSource.onerror = (error) => {
+          console.error('Human feedback stream error:', error)
+          eventSource.close()
+        }
+        
       } catch (e) {
         console.error('approve plan failed', e)
       }
@@ -2679,29 +2714,39 @@ export default {
     const rejectPlan = async (queryText) => {
       showHumanReviewModal.value = false
       try {
-        const resp = await fetch(`/nl2sql/plan/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryText, agentId: String(agent.value.id), decision: 'REJECT', suggestion: humanReviewSuggestion.value || '' }) })
-        const result = await resp.text()
-        
-        // 添加助手回复到聊天界面
-        const assistantMessage = {
-          id: Date.now(),
-          role: 'assistant',
-          type: 'result',
-          content: result,
-          timestamp: new Date()
-        }
-        currentMessages.value.push(assistantMessage)
-        
-        // 保存助手消息到数据库
-        await saveMessage({
+        // 使用 EventSource 处理流式响应
+        const eventSource = new EventSource(`/nl2sql/human-feedback?${new URLSearchParams({
           sessionId: currentSessionId.value,
-          role: 'assistant',
-          content: result,
-          messageType: 'result'
+          threadId: currentThreadId.value,
+          feedBack: 'false',
+          feedBackContent: humanReviewSuggestion.value || '用户拒绝了计划，请重新生成'
+        })}`)
+        
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data)
+            if (data.type && data.data) {
+              // 更新最后一条助手消息
+              const lastMessage = currentMessages.value[currentMessages.value.length - 1]
+              if (lastMessage && lastMessage.role === 'assistant') {
+                lastMessage.content += data.data
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing human feedback response:', e)
+          }
+        }
+        
+        eventSource.addEventListener('complete', () => {
+          eventSource.close()
+          nextTick(() => scrollToBottom())
         })
         
-        await nextTick()
-        scrollToBottom()
+        eventSource.onerror = (error) => {
+          console.error('Human feedback stream error:', error)
+          eventSource.close()
+        }
+        
       } catch (e) {
         console.error('reject plan failed', e)
       }
@@ -2772,6 +2817,7 @@ export default {
       showHumanReviewModal,
       humanReviewSuggestion,
       currentUserMessage,
+      formatHumanReviewPlan,
       tryHumanReview,
       approvePlan,
       rejectPlan

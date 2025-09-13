@@ -138,10 +138,4 @@ public class Constant {
 	// 人类复核相关
 	public static final String HUMAN_REVIEW_ENABLED = "HUMAN_REVIEW_ENABLED";
 
-	public static final String HUMAN_REVIEW_DECISION = "HUMAN_REVIEW_DECISION"; // APPROVE / REJECT
-
-	public static final String HUMAN_REVIEW_SUGGESTION = "HUMAN_REVIEW_SUGGESTION";
-
-	public static final String HUMAN_REVIEW_PLAN = "HUMAN_REVIEW_PLAN";
-
 }
