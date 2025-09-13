@@ -992,11 +992,23 @@ public class CompiledGraph {
 
 				// check on previous node
 				if (shouldInterruptAfter(context.currentNodeId(), context.nextNodeId())) {
+					// 在中断前保存 checkpoint
+					try {
+						addCheckpoint(config, context.currentNodeId(), currentState, context.nextNodeId(), overAllState);
+					} catch (Exception e) {
+						log.warn("Failed to save checkpoint before interrupt: {}", e.getMessage());
+					}
 					return Data
 						.done(InterruptionMetadata.builder(context.currentNodeId(), cloneState(currentState)).build());
 				}
 
 				if (shouldInterruptBefore(context.nextNodeId(), context.currentNodeId())) {
+					// 在中断前保存 checkpoint
+					try {
+						addCheckpoint(config, context.currentNodeId(), currentState, context.nextNodeId(), overAllState);
+					} catch (Exception e) {
+						log.warn("Failed to save checkpoint before interrupt: {}", e.getMessage());
+					}
 					return Data
 						.done(InterruptionMetadata.builder(context.currentNodeId(), cloneState(currentState)).build());
 				}

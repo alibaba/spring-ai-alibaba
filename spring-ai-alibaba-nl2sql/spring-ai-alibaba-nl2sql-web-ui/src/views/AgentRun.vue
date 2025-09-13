@@ -618,7 +618,7 @@ export default {
         // 启动流式处理
         // 生成线程ID
         currentThreadId.value = Date.now().toString()
-        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(message)}&agentId=${agent.value.id}`)
+        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(message)}&agentId=${agent.value.id}&threadId=${currentThreadId.value}`)
         
         const agentMessageIndex = currentMessages.value.length
         currentMessages.value.push({ 

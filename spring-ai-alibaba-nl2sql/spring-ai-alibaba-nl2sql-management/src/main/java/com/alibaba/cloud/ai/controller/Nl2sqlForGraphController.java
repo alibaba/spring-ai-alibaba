@@ -176,7 +176,7 @@ public class Nl2sqlForGraphController {
 
 	@GetMapping(value = "/stream/search", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> streamSearch(@RequestParam String query, @RequestParam String agentId,
-			HttpServletResponse response) throws Exception {
+			@RequestParam(required = false) String threadId, HttpServletResponse response) throws Exception {
 		// Set SSE-related HTTP headers
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("text/event-stream");
@@ -198,8 +198,13 @@ public class Nl2sqlForGraphController {
 		}
 
 		// Use streaming processing and pass agentId to the state
+		// 如果没有提供threadId，生成一个
+		String finalThreadId = threadId != null ? threadId : String.valueOf(System.currentTimeMillis());
+		logger.info("Using threadId: {}", finalThreadId);
+		
 		AsyncGenerator<NodeOutput> generator = compiledGraph
-			.stream(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId, HUMAN_REVIEW_ENABLED, humanReviewEnabled));
+			.stream(Map.of(INPUT_KEY, query, Constant.AGENT_ID, agentId, HUMAN_REVIEW_ENABLED, humanReviewEnabled),
+				RunnableConfig.builder().threadId(finalThreadId).build());
 
 		boolean finalHumanReviewEnabled = humanReviewEnabled;
 		// 用于缓存人工复核计划的变量
@@ -408,7 +413,8 @@ public class Nl2sqlForGraphController {
 					RunnableConfig.builder().threadId(threadId).build());
 				OverAllState state = stateSnapshot.state();
 
-				// 设置人类反馈数据
+				// 设置恢复标志和人类反馈数据
+				state.withResume();
 				Map<String, Object> feedbackData = Map.of(
 					"feed_back", feedBack,
 					"feed_back_content", feedBackContent != null ? feedBackContent : ""
@@ -419,7 +425,7 @@ public class Nl2sqlForGraphController {
 					logger.info("Plan approved, resuming graph execution...");
 					sink.tryEmitNext(ServerSentEvent.builder("计划已通过，继续执行...").build());
 					
-					// 恢复图的执行
+					// 恢复图的执行，从当前状态继续
 					AsyncGenerator<NodeOutput> resultFuture = compiledGraph.streamFromInitialNode(state,
 						RunnableConfig.builder().threadId(threadId).build());
 
