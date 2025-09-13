@@ -269,7 +269,7 @@
                 <div class="form-group">
                   <label>启用计划人工复核</label>
                   <div style="display:flex;align-items:center;gap:8px;">
-                    <input type="checkbox" v-model="agent.humanReviewEnabled">
+                    <input type="checkbox" class="form-checkbox" v-model="agent.humanReviewEnabled">
                     <span style="color:#666;">开启后，Planner 计划会在执行前等待人工复核</span>
                   </div>
                 </div>
