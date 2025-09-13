@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.a2a.A2aServerProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosAgentRegistry;
 import com.alibaba.cloud.ai.a2a.registry.nacos.service.NacosA2aOperationService;
-import com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aAgentCardAutoConfiguration;
+import com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aServerAgentCardAutoConfiguration;
 import com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aServerRegistryAutoConfiguration;
 import com.alibaba.nacos.api.ai.A2aService;
 import com.alibaba.nacos.api.ai.AiFactory;
@@ -36,7 +36,7 @@ import org.springframework.context.annotation.Bean;
  *
  * @author xiweng.yy
  */
-@AutoConfiguration(after = A2aAgentCardAutoConfiguration.class, before = {A2aServerRegistryAutoConfiguration.class})
+@AutoConfiguration(after = A2aServerAgentCardAutoConfiguration.class, before = {A2aServerRegistryAutoConfiguration.class})
 @EnableConfigurationProperties({NacosA2aProperties.class})
 public class NacosA2aRegistryAutoConfiguration {
 

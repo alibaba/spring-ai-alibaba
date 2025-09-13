@@ -192,6 +192,8 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-registry</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-client</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-client</module>
 
     </modules>
 

@@ -24,22 +24,13 @@ import io.a2a.spec.AgentInterface;
 import io.a2a.spec.AgentProvider;
 import io.a2a.spec.AgentSkill;
 import io.a2a.spec.SecurityScheme;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * A2a agent card properties.
+ * A2a server agent card properties.
  *
  * @author xiweng.yy
  */
-@ConfigurationProperties(prefix = A2aAgentCardProperties.CONFIG_PREFIX)
 public class A2aAgentCardProperties {
-
-	private static final Logger log = LoggerFactory.getLogger(A2aServerProperties.class);
-
-	public static final String CONFIG_PREFIX = "spring.ai.alibaba.a2a.agent";
 
 	private String name;
 
