@@ -43,6 +43,10 @@ public class Constant {
 
 	public static final String TABLE_RELATION_OUTPUT = "TABLE_RELATION_OUTPUT";
 
+	public static final String TABLE_RELATION_EXCEPTION_OUTPUT = "TABLE_RELATION_EXCEPTION_OUTPUT";
+
+	public static final String TABLE_RELATION_RETRY_COUNT = "TABLE_RELATION_RETRY_COUNT";
+
 	public static final String BUSINESS_KNOWLEDGE = "BUSINESS_KNOWLEDGE";
 
 	public static final String SEMANTIC_MODEL = "SEMANTIC_MODEL";

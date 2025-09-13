@@ -23,6 +23,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
  * @author vlsmb
  * @since 2025/7/23
@@ -32,19 +34,23 @@ public class EmptyNodeSection implements NodeSection<EmptyNodeData> {
 
 	@Override
 	public boolean support(NodeType nodeType) {
-		return nodeType.equals(NodeType.DIFY_ITERATION_START);
+		return nodeType.equals(NodeType.EMPTY);
 	}
 
 	@Override
 	public String render(Node node, String varName) {
-		EmptyNodeData data = (EmptyNodeData) node.getData();
 		StringBuilder sb = new StringBuilder();
-		String id = data.getId();
+		String id = node.getId();
 		sb.append("// —— Empty Node [").append(id).append("] ——\n");
 		sb.append("stateGraph.addNode(\"")
 			.append(varName)
 			.append("\", AsyncNodeAction.node_async((OverAllState state) -> Map.of()));\n\n");
 		return sb.toString();
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of();
 	}
 
 }

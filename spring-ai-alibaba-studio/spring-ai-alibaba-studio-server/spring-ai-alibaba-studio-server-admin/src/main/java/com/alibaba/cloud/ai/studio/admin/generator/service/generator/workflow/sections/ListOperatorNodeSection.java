@@ -23,6 +23,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class ListOperatorNodeSection implements NodeSection<ListOperatorNodeData> {
 
@@ -105,6 +107,11 @@ public class ListOperatorNodeSection implements NodeSection<ListOperatorNodeData
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
 
 		return sb.toString();
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.ListOperatorNode", "java.util.Comparator");
 	}
 
 }

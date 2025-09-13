@@ -21,6 +21,9 @@ public class Node implements RunnableModel {
 
 	private String id;
 
+	// 如果在循环节点里，则有父节点ID
+	private String parentId;
+
 	private NodeType type;
 
 	private String title;
@@ -51,6 +54,15 @@ public class Node implements RunnableModel {
 
 	public Node setId(String id) {
 		this.id = id;
+		return this;
+	}
+
+	public String getParentId() {
+		return parentId;
+	}
+
+	public Node setParentId(String parentId) {
+		this.parentId = parentId;
 		return this;
 	}
 

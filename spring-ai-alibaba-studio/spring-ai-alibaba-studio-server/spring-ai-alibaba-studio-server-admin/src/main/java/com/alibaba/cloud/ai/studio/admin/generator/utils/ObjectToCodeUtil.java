@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,6 +30,8 @@ import java.util.stream.Stream;
  * @since 2025/9/5
  */
 public final class ObjectToCodeUtil {
+
+	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	private ObjectToCodeUtil() {
 
@@ -52,7 +56,18 @@ public final class ObjectToCodeUtil {
 			return "null";
 		}
 		else if (object instanceof String) {
-			return "\"" + object + "\"";
+			try {
+				// 尝试使用Jackson打印字符串，以便转义特殊字符，如果失败则进行简单处理
+				return objectMapper.writeValueAsString(object.toString());
+			}
+			catch (Exception e) {
+				return "\"" + object.toString()
+					.replace("\"", "\\")
+					.replace("\n", "\\n")
+					.replace("\r", "\\r")
+					.replace("\t", "\\t")
+					.replace("\b", "\\b") + "\"";
+			}
 		}
 		else if (object instanceof List<?>) {
 			return listToCode((List<?>) object);
