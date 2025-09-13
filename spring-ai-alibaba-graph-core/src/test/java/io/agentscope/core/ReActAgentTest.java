@@ -67,7 +67,6 @@ class ReActAgentTest {
 			.model(model)
 			.toolkit(toolkit)
 			.memory(memory)
-			.parallelToolCalls(false)
 			.maxIters(3)
 			.build();
 	}
@@ -135,7 +134,6 @@ class ReActAgentTest {
 			.model(model)
 			.toolkit(toolkit)
 			.memory(memory)
-			.parallelToolCalls(true)
 			.maxIters(5)
 			.build();
 

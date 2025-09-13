@@ -61,31 +61,33 @@ public class ReActAgent {
 
 	private final Memory memory;
 
-	private final boolean parallelToolCalls;
-
 	private final int maxIters;
 
 	private final ChatMemoryAdapter chatMemoryAdapter;
 
 	private final ChatClient chatClient;
 
-	public ReActAgent(String name, String sysPrompt, Model model, Toolkit toolkit, Memory memory,
-			boolean parallelToolCalls, int maxIters) {
+	public ReActAgent(String name, String sysPrompt, Model model, Toolkit toolkit, Memory memory, int maxIters) {
 		this.name = name;
 		this.sysPrompt = sysPrompt;
 		this.model = model;
 		this.toolkit = toolkit;
 		this.memory = memory;
-		this.parallelToolCalls = parallelToolCalls;
 		this.maxIters = maxIters;
 		this.chatMemoryAdapter = new ChatMemoryAdapter(memory);
 
-		// Create ChatClient with MessageChatMemoryAdvisor
+		// Create ChatClient with MessageChatMemoryAdvisor and tool configuration
 		MessageChatMemoryAdvisor memoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemoryAdapter).build();
-		this.chatClient = ChatClient.builder(model.chatModel())
+		ChatClient.Builder clientBuilder = ChatClient.builder(model.chatModel())
 			.defaultSystem(sysPrompt)
-			.defaultAdvisors(memoryAdvisor)
-			.build();
+			.defaultAdvisors(memoryAdvisor);
+
+		// Configure tools if toolkit is provided
+		if (toolkit != null) {
+			clientBuilder.defaultToolCallbacks(toolkit.toolCallbackProvider().getToolCallbacks());
+		}
+
+		this.chatClient = clientBuilder.build();
 	}
 
 	public Flux<Msg> stream(Msg msg) {
@@ -123,6 +125,7 @@ public class ReActAgent {
 		String userInput = buildUserInput(inputMessages);
 
 		// Use ChatClient with MessageChatMemoryAdvisor for streaming
+		// parallelToolCalls is configured in the model's defaultOptions
 		return chatClient.prompt()
 			.user(userInput)
 			.stream()
@@ -139,8 +142,8 @@ public class ReActAgent {
 		String userInput = buildUserInput(inputMessages);
 
 		// Use ChatClient with MessageChatMemoryAdvisor
+		// parallelToolCalls is configured in the model's defaultOptions
 		String response = chatClient.prompt().user(userInput).call().content();
-
 		return new AssistantMessage(response);
 	}
 
@@ -233,8 +236,6 @@ public class ReActAgent {
 
 		private Memory memory;
 
-		private boolean parallelToolCalls;
-
 		private int maxIters;
 
 		private Builder() {
@@ -265,18 +266,13 @@ public class ReActAgent {
 			return this;
 		}
 
-		public Builder parallelToolCalls(boolean parallelToolCalls) {
-			this.parallelToolCalls = parallelToolCalls;
-			return this;
-		}
-
 		public Builder maxIters(int maxIters) {
 			this.maxIters = maxIters;
 			return this;
 		}
 
 		public ReActAgent build() {
-			return new ReActAgent(name, sysPrompt, model, toolkit, memory, parallelToolCalls, maxIters);
+			return new ReActAgent(name, sysPrompt, model, toolkit, memory, maxIters);
 		}
 
 	}
