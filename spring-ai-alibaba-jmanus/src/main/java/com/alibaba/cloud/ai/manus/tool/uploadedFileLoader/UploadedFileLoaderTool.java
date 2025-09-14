@@ -146,7 +146,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 			return "Uploaded Files State: No plan ID available";
 		}
 
-		// 检查 rootPlanId 是否有效
+		// Check if rootPlanId is valid
 		if (rootPlanId == null || rootPlanId.trim().isEmpty()) {
 			log.warn("getCurrentToolStateString called with null or empty rootPlanId");
 			return "Uploaded Files State: Invalid root plan ID";
@@ -231,7 +231,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 	 * Smart analyze all uploaded files and provide processing recommendations
 	 */
 	private ToolExecuteResult smartAnalyzeAllFiles() {
-		// 检查 rootPlanId 是否有效
+		// Check if rootPlanId is valid
 		if (rootPlanId == null || rootPlanId.trim().isEmpty()) {
 			log.warn("smartAnalyzeAllFiles called with null or empty rootPlanId");
 			return new ToolExecuteResult("Error: Invalid root plan ID");
@@ -786,7 +786,7 @@ public class UploadedFileLoaderTool extends AbstractBaseTool<UploadedFileLoaderT
 		}
 
 		try {
-			// 修复：使用更合理的方式获取根目录
+			// Fix: Use a more reasonable way to get the root directory
 			Path innerStorageRoot = directoryManager.getInnerStorageRoot();
 			if (innerStorageRoot == null || !Files.exists(innerStorageRoot)) {
 				log.debug("Inner storage root directory not found or doesn't exist");

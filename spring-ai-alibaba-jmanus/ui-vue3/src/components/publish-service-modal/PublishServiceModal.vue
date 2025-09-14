@@ -66,7 +66,7 @@
         </div>
       </div>
 
-      <!-- 参数配置 -->
+      <!-- Parameter Configuration -->
       <div class="form-section">
         <div class="section-title">{{ t('mcpService.parameterConfig') }}</div>
         
@@ -111,10 +111,10 @@
         </div>
       </div>
 
-      <!-- 服务发布选项 -->
+      <!-- Service Publishing Options -->
       <div class="form-section">
         <div class="service-publish-options">
-          <!-- Internal Toolcall发布选项 -->
+          <!-- Internal Toolcall Publishing Option -->
           <div class="internal-toolcall-publish-option">
             <label class="checkbox-label">
               <input
@@ -129,7 +129,7 @@
             </div>
           </div>
           
-          <!-- HTTP POST服务发布选项 -->
+          <!-- HTTP POST Service Publishing Option -->
           <div class="http-publish-option">
             <label class="checkbox-label">
               <input
@@ -145,7 +145,7 @@
             
           </div>
           
-          <!-- MCP服务发布选项 -->
+          <!-- MCP Service Publishing Option -->
           <div class="mcp-publish-option">
             <label class="checkbox-label">
               <input
@@ -159,7 +159,7 @@
               {{ t('mcpService.publishAsMcpServiceDescription') }}
             </div>
             
-            <!-- Endpoint配置 - 仅在MCP服务发布选项选中时显示 -->
+            <!-- Endpoint Configuration - Only shown when MCP service publishing option is selected -->
             <div v-if="publishAsMcpService" class="form-section">
               <div class="form-item">
                 <label>{{ t('mcpService.endpointRequired') }}</label>
@@ -183,7 +183,7 @@
                             @blur="handleEndpointBlur"
                           />
                         </div>
-                        <button class="select-arrow-btn" @click="toggleDropdown" title="展开选项">
+                        <button class="select-arrow-btn" @click="toggleDropdown" title="Expand Options">
                           <Icon
                             :icon="isDropdownOpen ? 'carbon:chevron-up' : 'carbon:chevron-down'"
                             width="14"
@@ -192,7 +192,7 @@
                         </button>
                       </div>
 
-                      <!-- 下拉选项 - 使用绝对定位，不占用文档流 -->
+                      <!-- Dropdown Options - Using absolute positioning, not occupying document flow -->
                       <div v-if="isDropdownOpen" class="select-dropdown" :class="{ 'dropdown-top': dropdownPosition === 'top' }">
                         <div class="dropdown-header">
                           <span>{{ t('mcpService.selectEndpoint') }}</span>
@@ -212,7 +212,7 @@
                             <Icon v-if="formData.endpoint === endpoint" icon="carbon:checkmark" width="14" class="check-icon" />
                           </button>
                         </div>
-                        <!-- 手工输入区域 -->
+                        <!-- Manual Input Area -->
                         <div class="manual-input-section">
                           <div class="manual-input-container">
                             <input
@@ -235,7 +235,7 @@
                 </div>
               </div>
 
-              <!-- MCP Streamable URL配置 -->
+              <!-- MCP Streamable URL Configuration -->
               <div v-if="endpointUrl" class="form-item url-item">
                 <label>{{ t('mcpService.mcpStreamableUrl') }}</label>
                 <div class="url-container">
@@ -254,7 +254,7 @@
 
     <template #footer>
       <div class="button-container">
-        <!-- 删除按钮 - 只在已保存时显示 -->
+        <!-- Delete Button - Only shown when saved -->
         <button 
           v-if="isSaved && currentTool?.id" 
           class="action-btn danger" 
@@ -266,7 +266,7 @@
           {{ deleting ? t('mcpService.deleting') : t('mcpService.delete') }}
         </button>
         
-        <!-- 发布为服务按钮 - 始终显示 -->
+        <!-- Publish as Service Button - Always shown -->
         <button class="action-btn primary" @click="handlePublish" :disabled="publishing">
           <Icon icon="carbon:loading" v-if="publishing" class="loading-icon" />
           <Icon icon="carbon:cloud-upload" v-else />
@@ -277,13 +277,13 @@
     </template>
   </Modal>
 
-  <!-- 错误提示 -->
+  <!-- Error Toast -->
   <div v-if="error" class="error-toast" @click="error = ''">
     <Icon icon="carbon:error" />
     {{ error }}
   </div>
 
-  <!-- 成功提示 -->
+  <!-- Success Toast -->
   <div v-if="success" class="success-toast" @click="success = ''">
     <Icon icon="carbon:checkmark" />
     {{ success }}
@@ -333,19 +333,19 @@ const publishing = ref(false)
 const deleting = ref(false)
 const availableEndpoints = ref<string[]>([])
 
-// 新增的响应式数据
+// New reactive data
 const endpointUrl = ref('')
 const isDropdownOpen = ref(false)
 const dropdownPosition = ref('bottom')
 const manualEndpointInput = ref('')
 
-// 当前工具数据，用于判断是创建还是更新
+// Current tool data, used to determine whether to create or update
 const currentTool = ref<CoordinatorToolVO | null>(null)
 
-// 发布状态
+// Publishing status
 const isSaved = ref(false)
 
-// 服务发布选项
+// Service publishing options
 const publishAsMcpService = ref(false)
 const publishAsHttpService = ref(false)
 const publishAsInternalToolcall = ref(true) // Default to true
@@ -371,19 +371,19 @@ const formData = reactive({
   parameters: [] as Array<{ name: string; description: string }>
 })
 
-// 计算模态框标题
+// Calculate modal title
 const modalTitle = computed(() => {
   const isUpdate = currentTool.value && currentTool.value.id
   return isUpdate ? t('mcpService.updateService') : t('mcpService.createService')
 })
 
-// 初始化表单数据
+// Initialize form data
 const initializeFormData = () => {
-  formData.serviceName = '' // 当没有实体时显示为空
+  formData.serviceName = '' // Show empty when no entity
   formData.userRequest = props.planDescription || ''
   formData.endpoint = ''
   formData.serviceGroup = ''
-  // 只有在没有从计划模板加载参数时才重置参数
+  // Only reset parameters when not loaded from plan template
   if (!parameterRequirements.value.hasParameters) {
     formData.parameters = []
   }
@@ -392,12 +392,12 @@ const initializeFormData = () => {
   isSaved.value = false
 }
 
-// 加载可用的endpoints
+// Load available endpoints
 const loadEndpoints = async () => {
   try {
     availableEndpoints.value = await CoordinatorToolApiService.getAllEndpoints()
   } catch (err: any) {
-    console.error('加载endpoints失败:', err)
+    console.error('Failed to load endpoints:', err)
     showMessage(t('mcpService.loadEndpointsFailed') + ': ' + err.message, 'error')
   }
 }
@@ -441,7 +441,7 @@ const loadParameterRequirements = async () => {
   }
 }
 
-// 下拉框相关方法
+    // Dropdown related methods
 const toggleDropdown = () => {
   if (!isDropdownOpen.value) {
     // Calculate position before showing dropdown
@@ -487,7 +487,7 @@ const addManualEndpoint = () => {
 }
 
 const handleManualInputBlur = () => {
-  // 延迟处理，确保点击事件能够正常触发
+      // Delay processing to ensure click events can trigger normally
   setTimeout(() => {
     if (manualEndpointInput.value.trim()) {
       addManualEndpoint()
@@ -495,25 +495,25 @@ const handleManualInputBlur = () => {
   }, 200)
 }
 
-// 处理下拉框输入
+// Handle dropdown input
 const handleEndpointInput = () => {
-  // 当用户在输入框中输入时，如果输入的是一个已有的endpoint，则直接选中
+  // When user inputs in the input box, if it's an existing endpoint, select it directly
   if (availableEndpoints.value.includes(formData.endpoint)) {
     selectEndpoint(formData.endpoint)
   }
 }
 
-// 处理下拉框回车
+// Handle dropdown enter key
 const handleEndpointEnter = () => {
-  // 当用户在输入框中按回车时，如果输入的是一个已有的endpoint，则直接选中
+  // When user presses enter in input box, if it's an existing endpoint, select it directly
   if (availableEndpoints.value.includes(formData.endpoint)) {
     selectEndpoint(formData.endpoint)
   }
 }
 
-// 处理下拉框失焦
+// Handle dropdown blur
 const handleEndpointBlur = () => {
-  // 当输入框失去焦点时，如果输入的是一个已有的endpoint，则直接选中
+  // When input box loses focus, if it's an existing endpoint, select it directly
   if (availableEndpoints.value.includes(formData.endpoint)) {
     selectEndpoint(formData.endpoint)
   }
@@ -521,7 +521,7 @@ const handleEndpointBlur = () => {
 
 
 
-// 复制endpointUrl
+// Copy endpointUrl
 const copyEndpointUrl = async () => {
   if (!endpointUrl.value) return
   
@@ -529,12 +529,12 @@ const copyEndpointUrl = async () => {
     await navigator.clipboard.writeText(endpointUrl.value)
     showMessage(t('common.copy') + ' ' + t('common.success'), 'success')
   } catch (err) {
-    console.error('复制失败:', err)
+    console.error('Copy failed:', err)
     showMessage(t('common.copy') + ' ' + t('common.error'), 'error')
   }
 }
 
-// 显示消息
+// Show message
 const showMessage = (msg: string, type: 'success' | 'error' | 'info') => {
   if (type === 'success') {
     success.value = msg
@@ -549,48 +549,48 @@ const showMessage = (msg: string, type: 'success' | 'error' | 'info') => {
   }
 }
 
-// 验证表单
+// Validate form
 const validateForm = (): boolean => {
-  // 验证工具名称
+  // Validate tool name
   if (!formData.serviceName || !formData.serviceName.trim()) {
     showMessage(t('mcpService.toolNameRequiredError'), 'error')
     return false
   }
   
-  // 验证工具描述
+  // Validate tool description
   if (!formData.userRequest || !formData.userRequest.trim()) {
     showMessage(t('mcpService.toolDescriptionRequiredError'), 'error')
     return false
   }
   
-  // 验证服务分组
+  // Validate service group
   if (!formData.serviceGroup || !formData.serviceGroup.trim()) {
     showMessage(t('mcpService.serviceGroupRequiredError'), 'error')
     return false
   }
   
-  // 验证MCP服务端点
+  // Validate MCP service endpoint
   if (publishAsMcpService.value && (!formData.endpoint || !formData.endpoint.trim())) {
     showMessage(t('mcpService.endpointRequiredError'), 'error')
     return false
   }
   
   
-  // 确保至少选择一种服务
+  // Ensure at least one service is selected
   if (!publishAsInternalToolcall.value && !publishAsHttpService.value && !publishAsMcpService.value) {
-    showMessage('请至少选择一种服务类型', 'error')
+    showMessage('Please select at least one service type', 'error')
     return false
   }
   
-  // 验证参数名称和描述
+  // Validate parameter names and descriptions
   for (let i = 0; i < formData.parameters.length; i++) {
     const param = formData.parameters[i]
     if (param.name && !param.description.trim()) {
-      showMessage(`参数"${param.name}"的描述不能为空`, 'error')
+      showMessage(`Parameter "${param.name}" description cannot be empty`, 'error')
       return false
     }
     if (param.description && !param.name.trim()) {
-      showMessage(`参数描述"${param.description}"对应的名称不能为空`, 'error')
+      showMessage(`Parameter description "${param.description}" corresponding name cannot be empty`, 'error')
       return false
     }
   }
@@ -599,40 +599,40 @@ const validateForm = (): boolean => {
 }
 
 
-// 处理发布
+// Handle publishing
 const handlePublish = async () => {
-  console.log('[PublishModal] 开始处理发布请求')
-  console.log('[PublishModal] 表单数据:', formData)
-  console.log('[PublishModal] 当前工具:', currentTool.value)
-  console.log('[PublishModal] 发布为MCP服务:', publishAsMcpService.value)
-  console.log('[PublishModal] 发布为HTTP服务:', publishAsHttpService.value)
+  console.log('[PublishModal] Starting to handle publish request')
+  console.log('[PublishModal] Form data:', formData)
+  console.log('[PublishModal] Current tool:', currentTool.value)
+  console.log('[PublishModal] Publish as MCP service:', publishAsMcpService.value)
+  console.log('[PublishModal] Publish as HTTP service:', publishAsHttpService.value)
   
   if (!validateForm()) {
-    console.log('[PublishModal] 表单验证失败')
+    console.log('[PublishModal] Form validation failed')
     return
   }
 
   publishing.value = true
   try {
-    // 1. 如果没有当前工具数据，先获取或创建
+    // 1. If no current tool data, get or create first
     if (!currentTool.value) {
-      console.log('[PublishModal] 没有当前工具数据，先获取或创建')
+      console.log('[PublishModal] No current tool data, getting or creating first')
       currentTool.value = await CoordinatorToolApiService.getOrNewCoordinatorToolsByTemplate(props.planTemplateId)
     }
 
-    // 2. 更新工具信息
-    console.log('[PublishModal] 更新工具信息')
+    // 2. Update tool information
+    console.log('[PublishModal] Updating tool information')
     currentTool.value.toolName = formData.serviceName.trim()
     currentTool.value.toolDescription = formData.userRequest.trim()
     currentTool.value.serviceGroup = formData.serviceGroup.trim()
-    currentTool.value.planTemplateId = props.planTemplateId // 确保planTemplateId被设置
+    currentTool.value.planTemplateId = props.planTemplateId // Ensure planTemplateId is set
 
-    // 设置服务启用状态和对应的endpoint
+    // Set service enabled status and corresponding endpoint
     currentTool.value.enableInternalToolcall = publishAsInternalToolcall.value
     currentTool.value.enableHttpService = publishAsHttpService.value
     currentTool.value.enableMcpService = publishAsMcpService.value
     
-    // 设置对应的endpoint - 现在支持多种服务同时启用
+    // Set corresponding endpoint - now supports multiple services enabled simultaneously
     if (publishAsMcpService.value) {
       currentTool.value.mcpEndpoint = formData.endpoint.trim()
     } else {
@@ -640,7 +640,7 @@ const handlePublish = async () => {
     }
     
 
-    // 3. 更新inputSchema
+    // 3. Update inputSchema
     const inputSchema = formData.parameters
       .filter(param => param.name.trim() && param.description.trim())
       .map(param => ({
@@ -650,50 +650,50 @@ const handlePublish = async () => {
       }))
     
     currentTool.value.inputSchema = JSON.stringify(inputSchema)
-    console.log('[PublishModal] 更新后的工具信息:', currentTool.value)
+    console.log('[PublishModal] Updated tool information:', currentTool.value)
 
-    // 4. 保存工具
+    // 4. Save tool
     if (currentTool.value.id) {
-      console.log('[PublishModal] 更新现有工具，ID:', currentTool.value.id)
+      console.log('[PublishModal] Updating existing tool, ID:', currentTool.value.id)
       await CoordinatorToolApiService.updateCoordinatorTool(currentTool.value.id, currentTool.value)
     } else {
-      console.log('[PublishModal] 创建新工具')
+      console.log('[PublishModal] Creating new tool')
       const savedTool = await CoordinatorToolApiService.createCoordinatorTool(currentTool.value)
-      currentTool.value = savedTool // 更新当前工具，包含新生成的ID
+      currentTool.value = savedTool // Update current tool, including newly generated ID
     }
 
-    // 5. 根据发布类型进行相应的发布操作
+    // 5. Perform corresponding publishing operations based on publish type
     const enabledServices = []
-    if (publishAsInternalToolcall.value) enabledServices.push('内部方法调用')
-    if (publishAsHttpService.value) enabledServices.push('HTTP服务')
-    if (publishAsMcpService.value) enabledServices.push('MCP服务')
+    if (publishAsInternalToolcall.value) enabledServices.push('Internal Method Call')
+    if (publishAsHttpService.value) enabledServices.push('HTTP Service')
+    if (publishAsMcpService.value) enabledServices.push('MCP Service')
     
     if (enabledServices.length > 0) {
-      console.log('[PublishModal] 步骤5: 发布服务，ID:', currentTool.value.id, '启用服务:', enabledServices.join(', '))
+      console.log('[PublishModal] Step 5: Publishing service, ID:', currentTool.value.id, 'Enabled services:', enabledServices.join(', '))
       
-      // 构建服务URL信息
+      // Build service URL information
       const serviceUrls = []
       if (publishAsMcpService.value && currentTool.value.mcpEndpoint) {
         const baseUrl = window.location.origin
         serviceUrls.push(`MCP: ${baseUrl}/mcp${currentTool.value.mcpEndpoint}`)
       }
       if (publishAsInternalToolcall.value) {
-        serviceUrls.push(`内部调用: ${formData.serviceName}`)
+        serviceUrls.push(`Internal Call: ${formData.serviceName}`)
       }
       
       endpointUrl.value = serviceUrls.join('\n')
       
-      console.log('[PublishModal] 服务发布成功，服务URLs:', endpointUrl.value)
+      console.log('[PublishModal] Service published successfully, service URLs:', endpointUrl.value)
       showMessage(t('mcpService.publishSuccess'), 'success')
       emit('published', currentTool.value)
     } else {
-      // 只是保存，不发布为任何服务
-      console.log('[PublishModal] 仅保存工具，不发布为任何服务')
+      // Just save, don't publish as any service
+      console.log('[PublishModal] Only saving tool, not publishing as any service')
       showMessage(t('mcpService.saveSuccess'), 'success')
       emit('published', currentTool.value)
     }
   } catch (err: any) {
-    console.error('[PublishModal] 发布服务失败:', err)
+    console.error('[PublishModal] Failed to publish service:', err)
     showMessage(t('mcpService.publishFailed') + ': ' + err.message, 'error')
   } finally {
     publishing.value = false
@@ -704,7 +704,7 @@ const handlePublish = async () => {
 const handleDelete = async () => {
   if (deleting.value) return
   
-  // 确认删除
+  // Confirm deletion
   if (!confirm(t('mcpService.deleteConfirmMessage'))) {
     return
   }
@@ -716,25 +716,25 @@ const handleDelete = async () => {
   
   deleting.value = true
   try {
-    console.log('[PublishModal] 开始删除MCP服务，ID:', currentTool.value.id)
+    console.log('[PublishModal] Starting to delete MCP service, ID:', currentTool.value.id)
     
-    // 调用删除API
+    // Call delete API
     const result = await CoordinatorToolApiService.deleteCoordinatorTool(currentTool.value.id)
     
     if (result.success) {
-      console.log('[PublishModal] 删除成功')
+      console.log('[PublishModal] Deleted successfully')
       showMessage(t('mcpService.deleteSuccess'), 'success')
       
-      // 关闭模态框
+      // Close modal
       showModal.value = false
       
-      // 通知父组件删除成功
+      // Notify parent component of successful deletion
       emit('published', null)
     } else {
       throw new Error(result.message)
     }
   } catch (error: any) {
-    console.error('[PublishModal] 删除MCP服务失败:', error)
+    console.error('[PublishModal] Failed to delete MCP service:', error)
     showMessage(t('mcpService.deleteFailed') + ': ' + error.message, 'error')
   } finally {
     deleting.value = false
@@ -744,7 +744,7 @@ const handleDelete = async () => {
 // Watch modal display state
 const watchModal = async () => {
   if (showModal.value) {
-    console.log('[PublishModal] 模态框打开，开始初始化数据')
+    console.log('[PublishModal] Modal opened, starting to initialize data')
     initializeFormData()
     await loadEndpoints()
     await loadCoordinatorToolData()
@@ -759,35 +759,35 @@ const loadCoordinatorToolData = async () => {
   }
   
   try {
-    console.log('[PublishModal] 开始加载协调器工具数据，planTemplateId:', props.planTemplateId)
+    console.log('[PublishModal] Starting to load coordinator tool data, planTemplateId:', props.planTemplateId)
     const tool = await CoordinatorToolApiService.getOrNewCoordinatorToolsByTemplate(props.planTemplateId)
-    console.log('[PublishModal] 获取协调器工具数据结果:', tool)
+    console.log('[PublishModal] Get coordinator tool data result:', tool)
     
-    // 保存当前工具数据
+    // Save current tool data
     currentTool.value = tool
     
-    // 只有已存在的工具（有ID）才设置为已保存
+    // Only existing tools (with ID) are set as saved
     isSaved.value = !!(tool.id)
     
-    // 构建服务URL信息
+    // Build service URL information
     const serviceUrls = []
     if (tool.enableMcpService && tool.mcpEndpoint) {
       const baseUrl = window.location.origin
       serviceUrls.push(`MCP: ${baseUrl}/mcp${tool.mcpEndpoint}`)
     }
     if (tool.enableInternalToolcall) {
-      serviceUrls.push(`内部调用: ${tool.toolName}`)
+      serviceUrls.push(`Internal Call: ${tool.toolName}`)
     }
     
     endpointUrl.value = serviceUrls.join('\n')
     
-    console.log('[PublishModal] 加载工具数据 - endpointUrl:', endpointUrl.value)
-    // 填充表单数据
+    console.log('[PublishModal] Load tool data - endpointUrl:', endpointUrl.value)
+    // Fill form data
     formData.serviceName = tool.toolName || ''
     formData.userRequest = tool.toolDescription || props.planDescription || ''
     formData.serviceGroup = tool.serviceGroup || ''
     
-    // 根据服务类型设置表单数据
+    // Set form data based on service type
     publishAsMcpService.value = tool.enableMcpService || false
     publishAsHttpService.value = tool.enableHttpService || false
     publishAsInternalToolcall.value = tool.enableInternalToolcall || false
@@ -796,28 +796,28 @@ const loadCoordinatorToolData = async () => {
       formData.endpoint = tool.mcpEndpoint || ''
     }
     
-    // 解析inputSchema为参数
+    // Parse inputSchema as parameters
     try {
       if (tool.inputSchema) {
         const parameters = JSON.parse(tool.inputSchema)
         if (Array.isArray(parameters) && parameters.length > 0) {
-          // 只有当inputSchema中有参数时才覆盖，否则保持从计划模板加载的参数
+          // Only override when inputSchema has parameters, otherwise keep parameters loaded from plan template
           formData.parameters = parameters.map(param => ({
             name: param.name || '',
             description: param.description || ''
           }))
-          console.log('[PublishModal] 从inputSchema加载参数:', formData.parameters)
+          console.log('[PublishModal] Load parameters from inputSchema:', formData.parameters)
         } else {
-          console.log('[PublishModal] inputSchema为空，保持现有参数:', formData.parameters)
+          console.log('[PublishModal] inputSchema is empty, keeping existing parameters:', formData.parameters)
         }
       }
     } catch (e) {
       console.warn('[PublishModal] ' + t('mcpService.parseInputSchemaFailed') + ':', e)
-      // 解析失败时不清空参数，保持现有参数
-      console.log('[PublishModal] 解析失败，保持现有参数:', formData.parameters)
+      // Don't clear parameters when parsing fails, keep existing parameters
+      console.log('[PublishModal] Parsing failed, keeping existing parameters:', formData.parameters)
     }
     
-    console.log('[PublishModal] 表单数据已填充:', formData)
+    console.log('[PublishModal] Form data filled:', formData)
   } catch (err: any) {
     console.error('[PublishModal] ' + t('mcpService.loadToolDataFailed') + ':', err)
     showMessage(t('mcpService.loadToolDataFailed') + ': ' + err.message, 'error')
@@ -847,7 +847,7 @@ watch(() => props.planTemplateId, (newId, oldId) => {
 // Initialize when component mounts
 onMounted(async () => {
   if (showModal.value) {
-    console.log('[PublishModal] 组件挂载时初始化')
+    console.log('[PublishModal] Initialize when component mounted')
     initializeFormData()
     await loadEndpoints()
     await loadCoordinatorToolData()
@@ -862,24 +862,24 @@ defineExpose({
 </script>
 
 <style scoped>
-/* 宽模态框样式 */
+/* Wide modal styles */
 :deep(.wide-modal .modal-container) {
   width: 90%;
-  max-width: 900px !important; /* 调整宽度为900px */
+  max-width: 900px !important; /* Adjust width to 900px */
 }
 
-/* 表单布局优化 - 参考新建Model模态框的样式 */
+/* Form layout optimization - reference new Model modal styles */
 .modal-form {
   display: flex;
   flex-direction: column;
-  gap: 16px; /* 调整为16px，与新建Model模态框一致 */
+  gap: 16px; /* Adjust to 16px, consistent with new Model modal */
   width: 100%;
 }
 
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: 8px; /* 调整为8px，优化标题与输入框间距 */
+  gap: 8px; /* Adjust to 8px, optimize title and input spacing */
   width: 100%;
 }
 
@@ -895,21 +895,21 @@ defineExpose({
 .form-item {
   display: flex;
   flex-direction: column;
-  gap: 8px; /* 调整为8px，优化标题与输入框间距 */
+  gap: 8px; /* Adjust to 8px, optimize title and input spacing */
 }
 
 .form-item label {
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
   font-size: 14px;
-  margin: 0; /* 移除默认margin */
+  margin: 0; /* Remove default margin */
 }
 
 .required {
   color: #ff6b6b;
 }
 
-/* 字段说明样式 */
+/* Field description styles */
 .field-description {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.6);
@@ -930,11 +930,11 @@ defineExpose({
   transition: all 0.3s ease;
   font-family: inherit;
   box-sizing: border-box;
-  min-height: 48px; /* 确保最小高度一致 */
+  min-height: 48px; /* Ensure consistent minimum height */
 }
 
 .form-item input {
-  height: 48px; /* 单行输入框固定高度 */
+  height: 48px; /* Single line input fixed height */
 }
 
 .form-item input:focus,
@@ -969,7 +969,7 @@ defineExpose({
   border-radius: 4px;
 }
 
-/* 参数表格自适应 */
+/* Parameter table responsive */
 .parameter-table {
   margin-bottom: 16px;
   width: 100%;
@@ -1025,9 +1025,9 @@ defineExpose({
 }
 
 
-/* 删除按钮和添加按钮样式已移除 */
+/* Delete and add button styles removed */
 
-/* Endpoint组件自适应 - 支持手动输入 */
+/* Endpoint component responsive - supports manual input */
 .custom-dropdown {
   position: relative;
   width: 100%;
@@ -1047,7 +1047,7 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   box-sizing: border-box;
-  height: 48px; /* 确保与其他输入框高度一致 */
+  height: 48px; /* Ensure consistent height with other inputs */
 }
 
 .dropdown-input input {
@@ -1057,7 +1057,7 @@ defineExpose({
   color: #fff;
   font-size: 14px;
   width: 100%;
-  cursor: text; /* 允许文本输入 */
+  cursor: text; /* Allow text input */
   height: 100%;
   padding: 0;
 }
@@ -1147,7 +1147,7 @@ defineExpose({
   margin-right: 4px;
 }
 
-/* 按钮容器 - 参考截图的样式 */
+/* Button container - reference screenshot styles */
 .button-container {
   display: flex;
   gap: 12px;
@@ -1155,8 +1155,8 @@ defineExpose({
   margin-top: 0;
   align-items: center;
   padding: 16px 0;
-  min-height: 52px; /* 确保容器有固定高度，防止抖动 */
-  position: relative; /* 为绝对定位的子元素提供参考 */
+  min-height: 52px; /* Ensure container has fixed height, prevent jitter */
+  position: relative; /* Provide reference for absolutely positioned child elements */
 }
 
 .action-btn {
@@ -1210,7 +1210,7 @@ defineExpose({
   cursor: not-allowed;
 }
 
-/* 只读输入框样式 */
+/* Read-only input styles */
 .readonly-input {
   background: rgba(255, 255, 255, 0.03) !important;
   color: rgba(255, 255, 255, 0.7) !important;
@@ -1222,7 +1222,7 @@ defineExpose({
   color: rgba(255, 255, 255, 0.4) !important;
 }
 
-/* Endpoint容器布局 */
+/* Endpoint container layout */
 .endpoint-container {
   display: flex;
   flex-direction: column;
@@ -1237,11 +1237,11 @@ defineExpose({
   width: 100%;
 }
 
-/* 自定义下拉框样式 - 参考截图三 */
+/* Custom dropdown styles - reference screenshot three */
 .custom-select {
   position: relative;
   display: inline-block;
-  width: 100%; /* 调整为100%以适应新的布局 */
+  width: 100%; /* Adjust to 100% to fit new layout */
   flex-shrink: 0;
 }
 
@@ -1351,10 +1351,10 @@ defineExpose({
   border: 1px solid rgba(102, 126, 234, 0.3);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  width: 280px; /* 与select-btn宽度保持一致 */
+  width: 280px; /* Keep consistent with select-btn width */
   max-height: 280px;
   overflow: hidden;
-  /* 确保不占用文档流 */
+  /* Ensure not occupying document flow */
   pointer-events: auto;
 }
 
@@ -1447,7 +1447,7 @@ defineExpose({
   opacity: 0.8;
 }
 
-/* 手工输入区域样式 */
+/* Manual input area styles */
 .manual-input-section {
   padding: 14px 18px;
   border-top: 1px solid rgba(102, 126, 234, 0.2);
@@ -1501,7 +1501,7 @@ defineExpose({
   border-color: rgba(102, 126, 234, 0.5);
 }
 
-/* 服务发布选项样式 */
+/* Service publishing option styles */
 .service-publish-options {
   display: flex;
   flex-direction: column;
@@ -1520,7 +1520,7 @@ defineExpose({
   border-radius: 8px;
 }
 
-/* .http-publish-option, .mcp-publish-option, .internal-toolcall-publish-option 现在使用相同的样式 */
+/* .http-publish-option, .mcp-publish-option, .internal-toolcall-publish-option now use the same styles */
 
 .checkbox-label {
   display: flex;
@@ -1550,7 +1550,7 @@ defineExpose({
   margin-left: 24px;
 }
 
-/* HTTP服务选项现在与MCP服务使用相同的样式，无需特殊处理 */
+/* HTTP service options now use the same styles as MCP service, no special handling needed */
 
 
 .endpoint-description {
@@ -1560,7 +1560,7 @@ defineExpose({
   margin-bottom: 8px;
 }
 
-/* 两列布局样式 */
+/* Two-column layout styles */
 .endpoint-url-row {
   display: flex;
   gap: 16px;
@@ -1572,11 +1572,11 @@ defineExpose({
 }
 
 .endpoint-url-row.single-item .endpoint-item {
-  flex: 0 0 50%; /* 即使单独显示也保持50%宽度 */
+  flex: 0 0 50%; /* Maintain 50% width even when displayed alone */
 }
 
 .endpoint-item {
-  flex: 0 0 50%; /* 固定宽度为50%，不自适应 */
+  flex: 0 0 50%; /* Fixed width 50%, not responsive */
   min-width: 0;
 }
 
@@ -1585,7 +1585,7 @@ defineExpose({
   min-width: 0;
 }
 
-/* URL显示样式 */
+/* URL display styles */
 .url-container {
   width: 100%;
 }
@@ -1657,7 +1657,7 @@ defineExpose({
 
 
 
-/* 旧的保存按钮样式已移除 */
+/* Old save button styles removed */
 
 
 
@@ -1678,13 +1678,13 @@ defineExpose({
   }
 }
 
-/* 必填字段样式 */
+/* Required field styles */
 .required {
   color: #ff4d4f;
   margin-left: 4px;
 }
 
-/* 错误状态样式 */
+/* Error state styles */
 .form-item input.error,
 .form-item textarea.error {
   border-color: #ff4d4f;
@@ -1697,7 +1697,7 @@ defineExpose({
   box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
 }
 
-/* 提示消息 */
+/* Tooltip messages */
 .error-toast,
 .success-toast {
   position: fixed;
@@ -1710,7 +1710,7 @@ defineExpose({
   border-radius: 8px;
   color: #fff;
   cursor: pointer;
-  z-index: 10000; /* 确保在模态框之上 */
+  z-index: 10000; /* Ensure above modal */
   animation: slideIn 0.3s ease;
 }
 

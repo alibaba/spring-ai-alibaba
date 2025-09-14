@@ -58,7 +58,7 @@ export class SidebarStore {
   toolsLoadError = ''
 
   constructor() {
-    // 确保属性正确初始化
+    // Ensure properties are properly initialized
     this.planVersions = []
     this.currentVersionIndex = -1
   }

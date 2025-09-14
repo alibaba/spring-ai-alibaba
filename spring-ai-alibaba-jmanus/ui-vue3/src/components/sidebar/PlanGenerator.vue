@@ -35,7 +35,7 @@
           readonly
           class="instruction-textarea"
           rows="2"
-        >使用动态智能体计划，只需要直接输入指令，不需要再走生成流程。请直接在动态智能体计划里面构建你的计划。</textarea>
+        >Use dynamic agent planning, just input instructions directly without going through the generation process. Please build your plan directly in the dynamic agent planning section.</textarea>
       </div>
       
       <!-- Simple Plan - Show editable prompt and actions -->

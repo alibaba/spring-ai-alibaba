@@ -171,7 +171,7 @@ public class PlanHierarchyReaderService {
 
 		// Set basic properties
 		vo.setId(entity.getId());
-		vo.setCurrentPlanId(entity.getCurrentPlanId()); // 使用setter设置currentPlanId
+		vo.setCurrentPlanId(entity.getCurrentPlanId()); // Use setter to set currentPlanId
 		vo.setTitle(entity.getTitle());
 		vo.setUserRequest(entity.getUserRequest());
 		vo.setStartTime(entity.getStartTime());

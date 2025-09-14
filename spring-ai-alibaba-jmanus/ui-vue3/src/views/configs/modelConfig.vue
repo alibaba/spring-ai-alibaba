@@ -162,7 +162,7 @@
         </div>
 
                 <div class="form-item">
-          <label>兜底模型 <span class="required">*</span></label>
+          <label>Fallback Model <span class="required">*</span></label>
           <GroupedSelect
             v-if="getCurrentAvailableModels().length > 0"
             v-model="selectedModel.modelName"
@@ -296,7 +296,7 @@
           </div>
         </div>
         <div class="form-item">
-          <label>兜底模型 <span class="required">*</span></label>
+          <label>Fallback Model <span class="required">*</span></label>
           <GroupedSelect
             v-if="newModelAvailableModels.length > 0"
             v-model="newModel.modelName"

@@ -45,19 +45,19 @@ export function useMessageFormatting() {
     
     // Less than 1 minute
     if (diff < 60000) {
-      return '刚刚'
+      return 'Just now'
     }
     
     // Less than 1 hour
     if (diff < 3600000) {
       const minutes = Math.floor(diff / 60000)
-      return `${minutes}分钟前`
+      return `${minutes} minutes ago`
     }
     
     // Less than 1 day
     if (diff < 86400000) {
       const hours = Math.floor(diff / 3600000)
-      return `${hours}小时前`
+      return `${hours} hours ago`
     }
     
     // More than 1 day
@@ -127,9 +127,9 @@ export function useMessageFormatting() {
    * Get message status text
    */
   const getMessageStatus = (message: ChatMessage): string => {
-    if (message.error) return '发送失败'
-    if (message.isStreaming) return '正在输入...'
-    if (message.type === 'assistant' && !message.content && !message.thinking) return '等待响应'
+    if (message.error) return 'Send failed'
+    if (message.isStreaming) return 'Typing...'
+    if (message.type === 'assistant' && !message.content && !message.thinking) return 'Waiting for response'
     return ''
   }
 

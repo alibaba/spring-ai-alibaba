@@ -161,7 +161,7 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 		}
 
 		try {
-			// 验证并规范化目标文件夹路径
+			// Validate and normalize target folder path
 			String normalizedTargetFolder = validateAndNormalizeTargetFolder(targetFolder);
 			if (normalizedTargetFolder == null) {
 				return new ToolExecuteResult(
@@ -171,7 +171,7 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 			Path planDir = directoryManager.getRootPlanDirectory(rootPlanId);
 			Path targetDir = planDir.resolve(normalizedTargetFolder);
 
-			// 安全检查：确保目标目录在计划目录内
+			// Security check: ensure target directory is within plan directory
 			if (!isTargetPathAllowed(planDir, targetDir)) {
 				return new ToolExecuteResult("Error: Target folder is outside the allowed plan directory scope.");
 			}
@@ -264,9 +264,9 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 	}
 
 	/**
-	 * 验证并规范化目标文件夹路径
-	 * @param targetFolder 原始目标文件夹路径
-	 * @return 规范化后的相对路径，如果无效则返回null
+	 * Validate and normalize target folder path
+	 * @param targetFolder original target folder path
+	 * @return normalized relative path, or null if invalid
 	 */
 	private String validateAndNormalizeTargetFolder(String targetFolder) {
 		if (targetFolder == null || targetFolder.trim().isEmpty()) {
@@ -275,16 +275,16 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 
 		String trimmed = targetFolder.trim();
 
-		// 检查是否为绝对路径
+		// Check if it's an absolute path
 		if (trimmed.startsWith("/") || trimmed.matches("^[A-Za-z]:.*")) {
 			log.warn("Absolute path detected and rejected: {}", trimmed);
 			return null;
 		}
 
-		// 规范化路径，移除多余的路径分隔符和相对路径组件
+		// Normalize path, remove redundant path separators and relative path components
 		Path normalized = Paths.get(trimmed).normalize();
 
-		// 检查是否包含向上级目录的引用
+		// Check if it contains upward directory references
 		if (normalized.toString().contains("..")) {
 			log.warn("Path traversal detected and rejected: {}", trimmed);
 			return null;
@@ -294,11 +294,11 @@ public class FileMergeTool extends AbstractBaseTool<FileMergeTool.FileMergeInput
 	}
 
 	/**
-	 * 验证目标路径是否在允许的范围内
+	 * Validate if target path is within allowed scope
 	 */
 	private boolean isTargetPathAllowed(Path planDir, Path targetDir) {
 		try {
-			// 确保目标目录在计划目录内
+			// Ensure target directory is within plan directory
 			Path normalizedPlanDir = planDir.toAbsolutePath().normalize();
 			Path normalizedTargetDir = targetDir.toAbsolutePath().normalize();
 

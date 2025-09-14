@@ -84,18 +84,18 @@
       <!-- Internal Call wrapper - only show when enableInternalToolcall is true -->
       <div v-if="toolInfo?.enableInternalToolcall" class="call-example-wrapper">
         <div class="call-example-header">
-          <h4 class="call-example-title">内部调用</h4>
-          <p class="call-example-description">你已经将这个plan-act 发布为内部方法，可以在agent配置的添加工具中，找到这个工具的方法并添加和使用。</p>
+          <h4 class="call-example-title">Internal Call</h4>
+          <p class="call-example-description">You have published this plan-act as an internal method. You can find this tool's method in the agent configuration's add tools section and add and use it.</p>
         </div>
         <div class="internal-call-wrapper">
           <div class="call-info">
-            <div class="call-method">内部方法调用</div>
-            <div class="call-endpoint">工具名称: {{ toolInfo?.toolName || currentPlanTemplateId }}</div>
-            <div v-if="toolInfo?.serviceGroup" class="call-endpoint">服务组: {{ toolInfo.serviceGroup }}</div>
-            <div class="call-description">在agent配置中添加此工具后，可以直接在agent中调用此方法</div>
+            <div class="call-method">Internal Method Call</div>
+            <div class="call-endpoint">Tool Name: {{ toolInfo?.toolName || currentPlanTemplateId }}</div>
+            <div v-if="toolInfo?.serviceGroup" class="call-endpoint">Service Group: {{ toolInfo.serviceGroup }}</div>
+            <div class="call-description">After adding this tool in agent configuration, you can directly call this method in the agent</div>
             <div class="call-example">
-              <strong>使用方式:</strong>
-              <pre class="example-code">在agent配置的"添加工具"部分，搜索并添加此工具，然后在agent中直接调用</pre>
+              <strong>Usage:</strong>
+              <pre class="example-code">In the agent configuration's "Add Tools" section, search and add this tool, then call it directly in the agent</pre>
             </div>
           </div>
         </div>
@@ -104,8 +104,8 @@
       <!-- HTTP API URLs wrapper with tabs - only show when enableHttpService is true -->
       <div v-if="toolInfo?.enableHttpService" class="call-example-wrapper">
         <div class="call-example-header">
-          <h4 class="call-example-title">HTTP 调用示例</h4>
-          <p class="call-example-description">你已经将这个plan-act发布为http服务，可以按照下面的例子进行调用。</p>
+          <h4 class="call-example-title">HTTP Call Example</h4>
+          <p class="call-example-description">You have published this plan-act as an HTTP service. You can call it according to the example below.</p>
         </div>
         <div class="http-api-urls-wrapper">
           <div class="tab-container">
@@ -139,17 +139,17 @@
       <!-- MCP Call wrapper - only show when enableMcpService is true -->
       <div v-if="toolInfo?.enableMcpService" class="call-example-wrapper">
         <div class="call-example-header">
-          <h4 class="call-example-title">MCP 调用</h4>
-          <p class="call-example-description">你已经将这个plan-act 发布为mcp服务，可以通过 mcp streamable 或sse方式使用。</p>
+          <h4 class="call-example-title">MCP Call</h4>
+          <p class="call-example-description">You have published this plan-act as an MCP service. You can use it through MCP streamable or SSE methods.</p>
         </div>
         <div class="mcp-call-wrapper">
           <div class="call-info">
-            <div class="call-method">MCP 服务调用</div>
+            <div class="call-method">MCP Service Call</div>
             <div class="call-endpoint">MCP Endpoint: /mcp/execute</div>
-            <div class="call-description">通过MCP协议进行流式或SSE方式调用</div>
+            <div class="call-description">Call through MCP protocol using streaming or SSE methods</div>
             <div class="call-example">
-              <strong>使用方式:</strong>
-              <pre class="example-code">通过MCP客户端连接到此服务，使用streamable或SSE方式进行调用</pre>
+              <strong>Usage:</strong>
+              <pre class="example-code">Connect to this service through MCP client, using streamable or SSE methods for calling</pre>
             </div>
           </div>
         </div>

@@ -21,7 +21,7 @@
           <div class="modal-header">
             <div class="header-content">
               <h3>{{ title }}</h3>
-              <!-- 状态图标 -->
+              <!-- Status Icon -->
               <div v-if="statusIcon" class="status-icon" :class="statusIconClass" :title="statusIconTitle">
                 <Icon :icon="statusIcon" width="16" />
               </div>

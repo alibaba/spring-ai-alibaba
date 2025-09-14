@@ -193,7 +193,7 @@
     </div>
   </div>
 
-  <!-- 发布MCP服务模态框 -->
+  <!-- Publish MCP Service Modal -->
   <PublishServiceModal
     ref="publishMcpModalRef"
     v-model="showPublishMcpModal"
@@ -245,25 +245,25 @@ const publishMcpModalRef = ref<InstanceType<typeof PublishServiceModal> | null>(
 
 
 
-// CoordinatorTool配置
+// CoordinatorTool configuration
 const coordinatorToolConfig = ref<CoordinatorToolConfig>({
   enabled: true,
   success: true
 })
 
-// 计算属性：是否显示发布MCP服务按钮
+// Computed property: whether to show publish MCP service button
 const showPublishButton = computed(() => {
   return coordinatorToolConfig.value.enabled
 })
 
-// 加载CoordinatorTool配置
+// Load CoordinatorTool configuration
 const loadCoordinatorToolConfig = async () => {
   try {
     const config = await CoordinatorToolApiService.getCoordinatorToolConfig()
     coordinatorToolConfig.value = config
   } catch (error) {
-    console.error('加载CoordinatorTool配置失败:', error)
-    // 使用默认配置
+    console.error('Failed to load CoordinatorTool configuration:', error)
+    // Use default configuration
     coordinatorToolConfig.value = {
       enabled: true,
       success: false,
@@ -291,7 +291,7 @@ const handleSaveTemplate = async () => {
       toast.success(t('sidebar.saveCompleted', { message: saveResult.message, versionCount: saveResult.versionCount }))
     } else if (saveResult?.saved) {
       toast.success(t('sidebar.saveSuccess', { message: saveResult.message, versionCount: saveResult.versionCount }))
-      // 保存成功后刷新参数要求
+      // Refresh parameter requirements after successful save
       refreshParameterRequirements()
     } else if (saveResult?.message) {
       toast.success(t('sidebar.saveStatus', { message: saveResult.message }))
@@ -302,17 +302,17 @@ const handleSaveTemplate = async () => {
   }
 }
 
-// 刷新参数要求的方法
+// Method to refresh parameter requirements
 const refreshParameterRequirements = async () => {
   // Add a small delay to ensure the backend has processed the new template
   await new Promise(resolve => setTimeout(resolve, 500))
   
-  // 通过 ref 获取 ExecutionController 组件并调用其刷新方法
+  // Get ExecutionController component through ref and call its refresh method
   if (executionControllerRef.value) {
     executionControllerRef.value.loadParameterRequirements()
   }
   
-  // 刷新 PublishMcpServiceModal 中的参数要求
+  // Refresh parameter requirements in PublishMcpServiceModal
   if (publishMcpModalRef.value) {
     publishMcpModalRef.value.loadParameterRequirements()
   }
@@ -402,28 +402,28 @@ const handleExecutePlan = async (replacementParams?: Record<string, string>) => 
   }
 }
 
-// 发布MCP服务相关状态
+// MCP service publishing related state
 const showPublishMcpModal = ref(false)
 
 const handlePublishMcpService = () => {
-  console.log('[Sidebar] 发布MCP服务按钮被点击')
+  console.log('[Sidebar] Publish MCP service button clicked')
   console.log('[Sidebar] currentPlanTemplateId:', sidebarStore.currentPlanTemplateId)
   
   if (!sidebarStore.currentPlanTemplateId) {
-    console.log('[Sidebar] 没有选择计划模板，显示警告')
+    console.log('[Sidebar] No plan template selected, showing warning')
     toast.error(t('mcpService.selectPlanTemplateFirst'))
     return
   }
   
-  console.log('[Sidebar] 打开发布MCP服务模态框')
+  console.log('[Sidebar] Opening publish MCP service modal')
   showPublishMcpModal.value = true
 }
 
 const handleMcpServicePublished = (tool: CoordinatorToolVO | null) => {
   if (tool === null) {
-    console.log('MCP服务删除成功')
+    console.log('MCP service deleted successfully')
     toast.success(t('mcpService.deleteSuccess'))
-    // 重置工具信息
+    // Reset tool information
     currentToolInfo.value = {
       toolName: '',
       toolDescription: '',
@@ -435,9 +435,9 @@ const handleMcpServicePublished = (tool: CoordinatorToolVO | null) => {
       serviceGroup: ''
     }
   } else {
-    console.log('MCP服务发布成功:', tool)
+    console.log('MCP service published successfully:', tool)
     toast.success(t('mcpService.publishSuccess'))
-    // 更新工具信息
+    // Update tool information
     currentToolInfo.value = {
       ...tool,
       toolName: tool.toolName || '',

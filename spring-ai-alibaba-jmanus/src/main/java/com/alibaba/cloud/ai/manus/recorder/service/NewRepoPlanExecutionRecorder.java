@@ -744,7 +744,7 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 	 */
 	private void createPlanRelationship(String currentPlanId, String parentPlanId, String rootPlanId,
 			String toolcallId) {
-		// 1. 必须有rootId和currentId
+		// 1. Must have rootId and currentId
 		if (currentPlanId == null || currentPlanId.trim().isEmpty()) {
 			String errorMsg = "currentPlanId is null or empty, cannot create plan relationship";
 			logger.error(errorMsg);
@@ -757,7 +757,7 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 			throw new IllegalArgumentException(errorMsg);
 		}
 
-		// 2. 如果parentId不为空，则必须有toolcallId
+		// 2. If parentId is not empty, must have toolcallId
 		if (parentPlanId != null && !parentPlanId.trim().isEmpty()) {
 			if (toolcallId == null || toolcallId.trim().isEmpty()) {
 				String errorMsg = String.format(
@@ -768,7 +768,7 @@ public class NewRepoPlanExecutionRecorder implements PlanExecutionRecorder {
 			}
 		}
 
-		// 3. 如果parentId不为空，那么rootId和currentId不能一样
+		// 3. If parentId is not empty, rootId and currentId cannot be the same
 		if (parentPlanId != null && !parentPlanId.trim().isEmpty()) {
 			if (rootPlanId.equals(currentPlanId)) {
 				String errorMsg = String.format(

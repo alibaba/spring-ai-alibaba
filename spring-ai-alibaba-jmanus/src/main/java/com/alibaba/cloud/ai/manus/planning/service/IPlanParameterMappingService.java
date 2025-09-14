@@ -7,24 +7,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 计划参数映射服务接口 提供处理计划模板中参数占位符的功能
+ * Plan parameter mapping service interface providing functionality for handling parameter placeholders in plan templates
  */
 public interface IPlanParameterMappingService {
 
 	/**
-	 * 验证计划模板中的参数占位符是否都能在原始参数中找到 如果验证失败，抛出详细的异常信息
-	 * @param planJson 计划模板的JSON字符串
-	 * @param rawParams 原始参数字典
-	 * @return 验证结果，包含缺失的参数列表
-	 * @throws ParameterValidationException 当参数验证失败时抛出
+	 * Validate whether all parameter placeholders in plan template can be found in raw parameters. Throws detailed exception information if validation fails
+	 * @param planJson plan template JSON string
+	 * @param rawParams raw parameters dictionary
+	 * @return validation result containing list of missing parameters
+	 * @throws ParameterValidationException thrown when parameter validation fails
 	 */
 	ParameterValidationResult validateParameters(String planJson, Map<String, Object> rawParams)
 			throws ParameterValidationException;
 
 	/**
-	 * 提取计划模板中所有的参数占位符
-	 * @param planJson 计划模板的JSON字符串
-	 * @return 参数占位符列表
+	 * Extract all parameter placeholders from plan template
+	 * @param planJson plan template JSON string
+	 * @return parameter placeholder list
 	 */
 	List<String> extractParameterPlaceholders(String planJson);
 
@@ -39,27 +39,27 @@ public interface IPlanParameterMappingService {
 	String replaceParametersInJson(String planJson, Map<String, Object> rawParams) throws ParameterValidationException;
 
 	/**
-	 * 在参数替换之前验证参数完整性 如果验证失败，抛出详细的异常信息
-	 * @param planJson 计划模板JSON
-	 * @param rawParams 原始参数
-	 * @throws ParameterValidationException 当参数验证失败时抛出
+	 * Validate parameter completeness before parameter replacement. Throws detailed exception information if validation fails
+	 * @param planJson plan template JSON
+	 * @param rawParams raw parameters
+	 * @throws ParameterValidationException thrown when parameter validation fails
 	 */
 	void validateParametersBeforeReplacement(String planJson, Map<String, Object> rawParams)
 			throws ParameterValidationException;
 
 	/**
-	 * 安全地替换参数，如果验证失败则抛出异常
-	 * @param planJson 计划模板JSON
-	 * @param rawParams 原始参数
-	 * @return 替换后的计划模板
-	 * @throws ParameterValidationException 当参数验证失败时抛出
+	 * Safely replace parameters, throws exception if validation fails
+	 * @param planJson plan template JSON
+	 * @param rawParams raw parameters
+	 * @return replaced plan template
+	 * @throws ParameterValidationException thrown when parameter validation fails
 	 */
 	String replaceParametersSafely(String planJson, Map<String, Object> rawParams) throws ParameterValidationException;
 
 	/**
-	 * 获取计划模板的参数要求信息 帮助用户了解需要提供哪些参数
-	 * @param planJson 计划模板JSON
-	 * @return 参数要求信息
+	 * Get parameter requirements information for plan template to help users understand what parameters need to be provided
+	 * @param planJson plan template JSON
+	 * @return parameter requirements information
 	 */
 	String getParameterRequirements(String planJson);
 

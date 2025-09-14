@@ -11,17 +11,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 计划参数映射服务实现类 提供处理计划模板中参数占位符的具体实现
+ * Plan parameter mapping service implementation class providing specific implementation for handling parameter placeholders in plan templates
  */
 @Service
 public class PlanParameterMappingService implements IPlanParameterMappingService {
 
 	private static final Logger logger = LoggerFactory.getLogger(PlanParameterMappingService.class);
 
-	// 参数占位符的正则表达式模式：匹配 <<参数名>> 格式，支持所有Unicode字符
+	// Parameter placeholder regex pattern: matches <<parameter_name>> format, supports all Unicode characters
 	private static final Pattern PARAMETER_PATTERN = Pattern.compile("<<([^<>]+)>>");
 
-	// 参数占位符的前缀和后缀
+	// Parameter placeholder prefix and suffix
 	private static final String PLACEHOLDER_PREFIX = "<<";
 
 	private static final String PLACEHOLDER_SUFFIX = ">>";
@@ -32,14 +32,14 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 
 		if (planJson == null || rawParams == null) {
 			result.setValid(false);
-			result.setMessage("计划模板或原始参数为空");
+			result.setMessage("Plan template or raw parameters are null");
 			return result;
 		}
 
 		List<String> missingParams = new ArrayList<>();
 		List<String> foundParams = new ArrayList<>();
 
-		// 查找所有参数占位符
+		// Find all parameter placeholders
 		Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
 
 		while (matcher.find()) {
@@ -47,11 +47,11 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 
 			if (rawParams.containsKey(paramName)) {
 				foundParams.add(paramName);
-				logger.debug("参数验证通过: {}", paramName);
+				logger.debug("Parameter validation passed: {}", paramName);
 			}
 			else {
 				missingParams.add(paramName);
-				logger.warn("参数验证失败: {} 未在原始参数中找到", paramName);
+				logger.warn("Parameter validation failed: {} not found in raw parameters", paramName);
 			}
 		}
 
@@ -60,13 +60,13 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 		result.setValid(missingParams.isEmpty());
 
 		if (missingParams.isEmpty()) {
-			result.setMessage("所有参数验证通过，共找到 " + foundParams.size() + " 个参数");
+			result.setMessage("All parameter validation passed, found " + foundParams.size() + " parameters");
 		}
 		else {
-			result.setMessage("缺少以下参数: " + String.join(", ", missingParams) + "，共找到 " + foundParams.size() + " 个参数");
+			result.setMessage("Missing parameters: " + String.join(", ", missingParams) + ", found " + foundParams.size() + " parameters");
 		}
 
-		logger.info("参数验证结果: {}", result.getMessage());
+		logger.info("Parameter validation result: {}", result.getMessage());
 
 		// Throw exception if parameters are missing or incompatible
 		if (!missingParams.isEmpty()) {
@@ -78,26 +78,26 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 	}
 
 	/**
-	 * 在参数替换之前验证参数完整性 如果验证失败，抛出详细的异常信息
-	 * @param planJson 计划模板JSON
-	 * @param rawParams 原始参数
-	 * @throws ParameterValidationException 当参数验证失败时抛出
+	 * Validate parameter completeness before parameter replacement. Throws detailed exception information if validation fails
+	 * @param planJson plan template JSON
+	 * @param rawParams raw parameters
+	 * @throws ParameterValidationException thrown when parameter validation fails
 	 */
 	public void validateParametersBeforeReplacement(String planJson, Map<String, Object> rawParams) {
 		ParameterValidationResult result = validateParameters(planJson, rawParams);
 		if (!result.isValid()) {
 			// This will throw an exception since validateParameters now throws on failure
 			// But we keep this method for explicit validation before replacement
-			throw new ParameterValidationException("参数验证失败，无法进行参数替换");
+			throw new ParameterValidationException("Parameter validation failed, cannot perform parameter replacement");
 		}
 	}
 
 	/**
-	 * 安全地替换参数，如果验证失败则抛出异常
-	 * @param planJson 计划模板JSON
-	 * @param rawParams 原始参数
-	 * @return 替换后的计划模板
-	 * @throws ParameterValidationException 当参数验证失败时抛出
+	 * Safely replace parameters, throws exception if validation fails
+	 * @param planJson plan template JSON
+	 * @param rawParams raw parameters
+	 * @return replaced plan template
+	 * @throws ParameterValidationException thrown when parameter validation fails
 	 */
 	public String replaceParametersSafely(String planJson, Map<String, Object> rawParams) {
 		// First validate parameters
@@ -116,22 +116,22 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 
 		Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
 		while (matcher.find()) {
-			placeholders.add(matcher.group(1)); // 只返回参数名，不包含 <<>>
+			placeholders.add(matcher.group(1)); // Only return parameter name, not including <<>>
 		}
 
-		logger.debug("提取到 {} 个参数占位符: {}", placeholders.size(), placeholders);
+		logger.debug("Extracted {} parameter placeholders: {}", placeholders.size(), placeholders);
 		return placeholders;
 	}
 
 	/**
-	 * 获取参数占位符的正则表达式模式 用于外部测试或调试
+	 * Get parameter placeholder regex pattern for external testing or debugging
 	 */
 	public static Pattern getParameterPattern() {
 		return PARAMETER_PATTERN;
 	}
 
 	/**
-	 * 获取参数占位符的前缀和后缀
+	 * Get parameter placeholder prefix and suffix
 	 */
 	public static String getPlaceholderPrefix() {
 		return PLACEHOLDER_PREFIX;
@@ -200,7 +200,7 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 	}
 
 	/**
-	 * 检查参数名是否有效 参数名只能包含字母、数字和下划线
+	 * Check if parameter name is valid. Parameter names can only contain letters, numbers and underscores
 	 */
 	public static boolean isValidParameterName(String paramName) {
 		if (paramName == null || paramName.trim().isEmpty()) {
@@ -210,72 +210,72 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 	}
 
 	/**
-	 * 安全地构建参数占位符
+	 * Safely build parameter placeholder
 	 */
 	public static String buildPlaceholder(String paramName) {
 		if (!isValidParameterName(paramName)) {
-			throw new IllegalArgumentException("无效的参数名: " + paramName);
+			throw new IllegalArgumentException("Invalid parameter name: " + paramName);
 		}
 		return PLACEHOLDER_PREFIX + paramName + PLACEHOLDER_SUFFIX;
 	}
 
 	/**
-	 * 获取计划模板的参数要求信息 帮助用户了解需要提供哪些参数
-	 * @param planJson 计划模板JSON
-	 * @return 参数要求信息
+	 * Get parameter requirements information for plan template to help users understand what parameters need to be provided
+	 * @param planJson plan template JSON
+	 * @return parameter requirements information
 	 */
 	public String getParameterRequirements(String planJson) {
 		if (planJson == null) {
-			return "计划模板为空，无法获取参数要求";
+			return "Plan template is null, cannot get parameter requirements";
 		}
 
 		List<String> placeholders = extractParameterPlaceholders(planJson);
 		if (placeholders.isEmpty()) {
-			return "✅ 此计划模板不需要任何参数";
+			return "✅ This plan template does not require any parameters";
 		}
 
 		StringBuilder requirements = new StringBuilder();
-		requirements.append("📋 此计划模板需要以下参数：\n\n");
+		requirements.append("📋 This plan template requires the following parameters:\n\n");
 
 		for (int i = 0; i < placeholders.size(); i++) {
 			String param = placeholders.get(i);
 			requirements.append(String.format("%d. <<%s>>\n", i + 1, param));
 		}
 
-		requirements.append("\n💡 参数格式说明：\n");
-		requirements.append("   • 参数名只能包含字母、数字和下划线\n");
-		requirements.append("   • 参数名不能以数字开头\n");
-		requirements.append("   • 参数名区分大小写\n");
-		requirements.append("   • 所有参数都是必需的\n");
+		requirements.append("\n💡 Parameter format description:\n");
+		requirements.append("   • Parameter names can only contain letters, numbers and underscores\n");
+		requirements.append("   • Parameter names cannot start with numbers\n");
+		requirements.append("   • Parameter names are case-sensitive\n");
+		requirements.append("   • All parameters are required\n");
 
 		return requirements.toString();
 	}
 
 	private String buildDetailedErrorMessage(List<String> missingParams, List<String> foundParams, String planJson) {
 		StringBuilder errorMessage = new StringBuilder();
-		errorMessage.append("❌ 参数验证失败！计划模板中存在以下参数占位符，但原始参数中未提供或提供不匹配的值：\n\n");
+		errorMessage.append("❌ Parameter validation failed! The plan template contains the following parameter placeholders, but the raw parameters did not provide or provided mismatched values:\n\n");
 
 		// List missing parameters with examples
-		errorMessage.append("🔍 缺失的参数：\n");
+		errorMessage.append("🔍 Missing parameters:\n");
 		for (String missingParam : missingParams) {
 			errorMessage.append("   • <<").append(missingParam).append(">>\n");
 		}
 
 		// List found parameters
 		if (!foundParams.isEmpty()) {
-			errorMessage.append("\n✅ 已找到的参数：\n");
+			errorMessage.append("\n✅ Found parameters:\n");
 			for (String foundParam : foundParams) {
 				errorMessage.append("   • <<").append(foundParam).append(">>\n");
 			}
 		}
 
-		errorMessage.append("\n💡 解决方案：\n");
-		errorMessage.append("   1. 检查参数名称拼写是否正确\n");
-		errorMessage.append("   2. 确保所有必需的参数都已提供\n");
-		errorMessage.append("   3. 参数名称区分大小写\n");
-		errorMessage.append("   4. 参数名只能包含字母、数字和下划线，且不能以数字开头\n\n");
+		errorMessage.append("\n💡 Solutions:\n");
+		errorMessage.append("   1. Check if parameter name spelling is correct\n");
+		errorMessage.append("   2. Ensure all required parameters are provided\n");
+		errorMessage.append("   3. Parameter names are case-sensitive\n");
+		errorMessage.append("   4. Parameter names can only contain letters, numbers and underscores, and cannot start with numbers\n\n");
 
-		errorMessage.append("📋 计划模板内容：\n");
+		errorMessage.append("📋 Plan template content:\n");
 		errorMessage.append(planJson);
 
 		return errorMessage.toString();

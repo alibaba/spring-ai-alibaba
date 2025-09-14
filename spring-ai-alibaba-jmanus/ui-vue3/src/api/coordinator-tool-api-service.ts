@@ -40,7 +40,7 @@ export class CoordinatorToolApiService {
   private static readonly BASE_URL = '/api/coordinator-tools'
 
   /**
-   * 获取CoordinatorTool配置信息
+   * Get CoordinatorTool configuration information
    */
   public static async getCoordinatorToolConfig(): Promise<CoordinatorToolConfig> {
     try {
@@ -57,8 +57,8 @@ export class CoordinatorToolApiService {
 
       return await response.json()
     } catch (error: any) {
-      console.error('获取CoordinatorTool配置失败:', error)
-      // 返回默认配置
+          console.error('Failed to get CoordinatorTool configuration:', error)
+          // Return default configuration
       return {
         enabled: true,
         success: false,
@@ -68,7 +68,7 @@ export class CoordinatorToolApiService {
   }
 
   /**
-   * 获取所有endpoint列表
+   * Get all endpoint list
    */
   public static async getAllEndpoints(): Promise<string[]> {
     try {
@@ -85,17 +85,17 @@ export class CoordinatorToolApiService {
 
       return await response.json()
     } catch (error: any) {
-      console.error('获取endpoints失败:', error)
-      throw new Error('获取endpoints失败: ' + error.message)
+      console.error('Failed to get endpoints:', error)
+      throw new Error('Failed to get endpoints: ' + error.message)
     }
   }
 
   /**
-   * 根据计划模板ID获取协调器工具（仅获取已存在的）
+   * Get coordinator tool by plan template ID (only get existing ones)
    */
   public static async getCoordinatorToolsByTemplate(planTemplateId: string): Promise<CoordinatorToolVO | null> {
-    console.log('[CoordinatorToolApiService] 开始获取协调器工具，planTemplateId:', planTemplateId)
-    console.log('[CoordinatorToolApiService] 请求URL:', `${this.BASE_URL}/get-get-or-new-by-template/${planTemplateId}`)
+        console.log('[CoordinatorToolApiService] Starting to get coordinator tool, planTemplateId:', planTemplateId)
+    console.log('[CoordinatorToolApiService] Request URL:', `${this.BASE_URL}/get-get-or-new-by-template/${planTemplateId}`)
     
     try {
       const response = await fetch(`${this.BASE_URL}/get-or-new-by-template/${planTemplateId}`, {
@@ -105,8 +105,8 @@ export class CoordinatorToolApiService {
         }
       })
 
-      console.log('[CoordinatorToolApiService] 响应状态:', response.status)
-      console.log('[CoordinatorToolApiService] 响应状态文本:', response.statusText)
+      console.log('[CoordinatorToolApiService] Response status:', response.status)
+      console.log('[CoordinatorToolApiService] Response status text:', response.statusText)
 
       if (response.status === 404) {
         console.log('[CoordinatorToolApiService] 404')
@@ -115,25 +115,25 @@ export class CoordinatorToolApiService {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('[CoordinatorToolApiService] 响应错误内容:', errorText)
+        console.error('[CoordinatorToolApiService] Response error content:', errorText)
         throw new Error(`Failed to get coordinator tools: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
-      console.log('[CoordinatorToolApiService] 获取协调器工具成功，结果:', result)
+      console.log('[CoordinatorToolApiService] Successfully got coordinator tool, result:', result)
       return result
     } catch (error: any) {
-      console.error('[CoordinatorToolApiService] 获取协调器工具失败:', error)
-      throw new Error('获取协调器工具失败: ' + error.message)
+      console.error('[CoordinatorToolApiService] Failed to get coordinator tool:', error)
+      throw new Error('Failed to get coordinator tool: ' + error.message)
     }
   }
 
   /**
-   * 根据计划模板ID获取或创建协调器工具
+   * Get or create coordinator tool by plan template ID
    */
   public static async getOrNewCoordinatorToolsByTemplate(planTemplateId: string): Promise<CoordinatorToolVO> {
-    console.log('[CoordinatorToolApiService] 开始获取或创建协调器工具，planTemplateId:', planTemplateId)
-    console.log('[CoordinatorToolApiService] 请求URL:', `${this.BASE_URL}/get-or-new-by-template/${planTemplateId}`)
+    console.log('[CoordinatorToolApiService] Starting to get or create coordinator tool, planTemplateId:', planTemplateId)
+    console.log('[CoordinatorToolApiService] Request URL:', `${this.BASE_URL}/get-or-new-by-template/${planTemplateId}`)
     
     try {
       const response = await fetch(`${this.BASE_URL}/get-or-new-by-template/${planTemplateId}`, {
@@ -143,33 +143,33 @@ export class CoordinatorToolApiService {
         }
       })
 
-      console.log('[CoordinatorToolApiService] 响应状态:', response.status)
-      console.log('[CoordinatorToolApiService] 响应状态文本:', response.statusText)
+      console.log('[CoordinatorToolApiService] Response status:', response.status)
+      console.log('[CoordinatorToolApiService] Response status text:', response.statusText)
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('[CoordinatorToolApiService] 响应错误内容:', errorText)
+        console.error('[CoordinatorToolApiService] Response error content:', errorText)
         throw new Error(`Failed to get coordinator tools: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
-      console.log('[CoordinatorToolApiService] 获取协调器工具成功，结果:', result)
+      console.log('[CoordinatorToolApiService] Successfully got coordinator tool, result:', result)
       return result
     } catch (error: any) {
-      console.error('[CoordinatorToolApiService] 获取协调器工具失败:', error)
-      throw new Error('获取协调器工具失败: ' + error.message)
+      console.error('[CoordinatorToolApiService] Failed to get coordinator tool:', error)
+      throw new Error('Failed to get coordinator tool: ' + error.message)
     }
   }
 
   /**
-   * 创建协调器工具
+   * Create coordinator tool
    */
   public static async createCoordinatorTool(tool: CoordinatorToolVO): Promise<CoordinatorToolVO> {
-    console.log('[CoordinatorToolApiService] 开始创建协调器工具')
-    console.log('[CoordinatorToolApiService] 原始数据:', JSON.stringify(tool, null, 2))
-    console.log('[CoordinatorToolApiService] 请求URL:', `${this.BASE_URL}`)
+    console.log('[CoordinatorToolApiService] Starting to create coordinator tool')
+    console.log('[CoordinatorToolApiService] Original data:', JSON.stringify(tool, null, 2))
+    console.log('[CoordinatorToolApiService] Request URL:', `${this.BASE_URL}`)
     
-    // 只发送必要的字段，不包含createTime和updateTime
+    // Only send necessary fields, excluding createTime and updateTime
     const requestData = {
       id: tool.id,
       toolName: tool.toolName,
@@ -184,7 +184,7 @@ export class CoordinatorToolApiService {
       enableMcpService: tool.enableMcpService,
     }
     
-    console.log('[CoordinatorToolApiService] 清理后的发送数据:', JSON.stringify(requestData, null, 2))
+    console.log('[CoordinatorToolApiService] Cleaned sending data:', JSON.stringify(requestData, null, 2))
     
     try {
       const response = await fetch(`${this.BASE_URL}`, {
@@ -195,8 +195,8 @@ export class CoordinatorToolApiService {
         body: JSON.stringify(requestData)
       })
 
-      console.log('[CoordinatorToolApiService] 响应状态:', response.status)
-      console.log('[CoordinatorToolApiService] 响应状态文本:', response.statusText)
+      console.log('[CoordinatorToolApiService] Response status:', response.status)
+      console.log('[CoordinatorToolApiService] Response status text:', response.statusText)
 
       if (!response.ok) {
         let errorMessage = 'Unknown error'
@@ -208,28 +208,28 @@ export class CoordinatorToolApiService {
           const errorText = await response.text()
           errorMessage = errorText || errorMessage
         }
-        console.error('[CoordinatorToolApiService] 响应错误内容:', errorMessage)
+        console.error('[CoordinatorToolApiService] Response error content:', errorMessage)
         throw new Error(`Failed to create coordinator tool: ${response.status} - ${errorMessage}`)
       }
 
       const result = await response.json()
-      console.log('[CoordinatorToolApiService] 创建成功，结果:', result)
+      console.log('[CoordinatorToolApiService] Created successfully, result:', result)
       return result
     } catch (error: any) {
-      console.error('[CoordinatorToolApiService] 创建协调器工具失败:', error)
-      throw new Error('创建协调器工具失败: ' + error.message)
+      console.error('[CoordinatorToolApiService] Failed to create coordinator tool:', error)
+      throw new Error('Failed to create coordinator tool: ' + error.message)
     }
   }
 
   /**
-   * 更新协调器工具
+   * Update coordinator tool
    */
   public static async updateCoordinatorTool(id: number, tool: CoordinatorToolVO): Promise<CoordinatorToolVO> {
-    console.log('[CoordinatorToolApiService] 开始更新协调器工具，ID:', id)
-    console.log('[CoordinatorToolApiService] 发送的数据:', tool)
-    console.log('[CoordinatorToolApiService] 请求URL:', `${this.BASE_URL}/${id}`)
+    console.log('[CoordinatorToolApiService] Starting to update coordinator tool, ID:', id)
+    console.log('[CoordinatorToolApiService] Sending data:', tool)
+    console.log('[CoordinatorToolApiService] Request URL:', `${this.BASE_URL}/${id}`)
     
-    // 只发送必要的字段，不包含createTime和updateTime
+    // Only send necessary fields, excluding createTime and updateTime
     const requestData = {
       id: tool.id,
       toolName: tool.toolName,
@@ -244,7 +244,7 @@ export class CoordinatorToolApiService {
       enableMcpService: tool.enableMcpService,
     }
     
-    console.log('[CoordinatorToolApiService] 清理后的发送数据:', requestData)
+    console.log('[CoordinatorToolApiService] Cleaned sending data:', requestData)
     
     try {
       const response = await fetch(`${this.BASE_URL}/${id}`, {
@@ -255,8 +255,8 @@ export class CoordinatorToolApiService {
         body: JSON.stringify(requestData)
       })
 
-      console.log('[CoordinatorToolApiService] 响应状态:', response.status)
-      console.log('[CoordinatorToolApiService] 响应状态文本:', response.statusText)
+      console.log('[CoordinatorToolApiService] Response status:', response.status)
+      console.log('[CoordinatorToolApiService] Response status text:', response.statusText)
 
       if (!response.ok) {
         let errorMessage = 'Unknown error'
@@ -268,26 +268,26 @@ export class CoordinatorToolApiService {
           const errorText = await response.text()
           errorMessage = errorText || errorMessage
         }
-        console.error('[CoordinatorToolApiService] 响应错误内容:', errorMessage)
+        console.error('[CoordinatorToolApiService] Response error content:', errorMessage)
         throw new Error(`Failed to update coordinator tool: ${response.status} - ${errorMessage}`)
       }
 
       const result = await response.json()
-      console.log('[CoordinatorToolApiService] 更新成功，结果:', result)
+      console.log('[CoordinatorToolApiService] Updated successfully, result:', result)
       return result
     } catch (error: any) {
-      console.error('[CoordinatorToolApiService] 更新协调器工具失败:', error)
-      throw new Error('更新协调器工具失败: ' + error.message)
+      console.error('[CoordinatorToolApiService] Failed to update coordinator tool:', error)
+      throw new Error('Failed to update coordinator tool: ' + error.message)
     }
   }
 
 
   /**
-   * 删除协调器工具
+   * Delete coordinator tool
    */
   public static async deleteCoordinatorTool(id: number): Promise<{ success: boolean; message: string }> {
-    console.log('[CoordinatorToolApiService] 开始删除协调器工具，ID:', id)
-    console.log('[CoordinatorToolApiService] 请求URL:', `${this.BASE_URL}/${id}`)
+    console.log('[CoordinatorToolApiService] Starting to delete coordinator tool, ID:', id)
+    console.log('[CoordinatorToolApiService] Request URL:', `${this.BASE_URL}/${id}`)
     
     try {
       const response = await fetch(`${this.BASE_URL}/${id}`, {
@@ -297,21 +297,21 @@ export class CoordinatorToolApiService {
         }
       })
 
-      console.log('[CoordinatorToolApiService] 响应状态:', response.status)
-      console.log('[CoordinatorToolApiService] 响应状态文本:', response.statusText)
+      console.log('[CoordinatorToolApiService] Response status:', response.status)
+      console.log('[CoordinatorToolApiService] Response status text:', response.statusText)
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('[CoordinatorToolApiService] 响应错误内容:', errorText)
+        console.error('[CoordinatorToolApiService] Response error content:', errorText)
         throw new Error(`Failed to delete coordinator tool: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
-      console.log('[CoordinatorToolApiService] 删除成功，结果:', result)
+      console.log('[CoordinatorToolApiService] Deleted successfully, result:', result)
       return result
     } catch (error: any) {
-      console.error('[CoordinatorToolApiService] 删除协调器工具失败:', error)
-      throw new Error('删除协调器工具失败: ' + error.message)
+      console.error('[CoordinatorToolApiService] Failed to delete coordinator tool:', error)
+      throw new Error('Failed to delete coordinator tool: ' + error.message)
     }
   }
 } 

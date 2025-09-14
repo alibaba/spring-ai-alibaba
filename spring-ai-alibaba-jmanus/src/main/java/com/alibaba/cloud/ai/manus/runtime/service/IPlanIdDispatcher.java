@@ -20,8 +20,9 @@ package com.alibaba.cloud.ai.manus.runtime.service;
  */
 public interface IPlanIdDispatcher {
 
-	// runtime 需要增加新的服务，用来持久化一个运行时状态，
-	// 研究一下 他这个 对话service，总感觉跟原来的交互合不到一起。最终看看要不要持久化一些东西，以及持久化什么东西，可以支持stop
+	// TODO: runtime needs to add new service for persisting runtime state
+	// TODO: research the conversation service, it doesn't seem to integrate well with the original interaction
+	// TODO: determine what needs to be persisted and what to persist to support stop functionality
 
 	/**
 	 * Check if ID is a plan template ID

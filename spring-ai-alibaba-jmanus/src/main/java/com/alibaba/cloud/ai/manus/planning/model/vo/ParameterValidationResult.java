@@ -3,32 +3,32 @@ package com.alibaba.cloud.ai.manus.planning.model.vo;
 import java.util.List;
 
 /**
- * 参数验证结果类 用于存储参数验证的结果信息
+ * Parameter validation result class for storing parameter validation result information
  */
 public class ParameterValidationResult {
 
 	/**
-	 * 验证是否通过
+	 * Whether validation passed
 	 */
 	private boolean valid;
 
 	/**
-	 * 缺失的参数列表
+	 * List of missing parameters
 	 */
 	private List<String> missingParameters;
 
 	/**
-	 * 找到的参数列表
+	 * List of found parameters
 	 */
 	private List<String> foundParameters;
 
 	/**
-	 * 验证结果消息
+	 * Validation result message
 	 */
 	private String message;
 
 	/**
-	 * 默认构造函数
+	 * Default constructor
 	 */
 	public ParameterValidationResult() {
 		this.valid = false;
@@ -38,7 +38,7 @@ public class ParameterValidationResult {
 	}
 
 	/**
-	 * 带参数的构造函数
+	 * Constructor with parameters
 	 */
 	public ParameterValidationResult(boolean valid, List<String> missingParameters, List<String> foundParameters,
 			String message) {
@@ -82,7 +82,7 @@ public class ParameterValidationResult {
 	}
 
 	/**
-	 * 添加缺失的参数
+	 * Add missing parameter
 	 */
 	public void addMissingParameter(String parameter) {
 		if (this.missingParameters == null) {
@@ -92,7 +92,7 @@ public class ParameterValidationResult {
 	}
 
 	/**
-	 * 添加找到的参数
+	 * Add found parameter
 	 */
 	public void addFoundParameter(String parameter) {
 		if (this.foundParameters == null) {
@@ -102,21 +102,21 @@ public class ParameterValidationResult {
 	}
 
 	/**
-	 * 检查是否有关键参数缺失
+	 * Check if there are critical missing parameters
 	 */
 	public boolean hasCriticalMissingParameters() {
 		return missingParameters != null && !missingParameters.isEmpty();
 	}
 
 	/**
-	 * 获取缺失参数的数量
+	 * Get count of missing parameters
 	 */
 	public int getMissingParameterCount() {
 		return missingParameters != null ? missingParameters.size() : 0;
 	}
 
 	/**
-	 * 获取找到参数的数量
+	 * Get count of found parameters
 	 */
 	public int getFoundParameterCount() {
 		return foundParameters != null ? foundParameters.size() : 0;

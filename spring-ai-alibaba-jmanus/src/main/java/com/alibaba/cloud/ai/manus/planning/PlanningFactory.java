@@ -305,7 +305,7 @@ public class PlanningFactory implements IPlanningFactory {
 			}
 		}
 
-		// 添加子计划工具注册
+		// Add subplan tool registration
 		if (subplanToolService != null) {
 			try {
 				Map<String, PlanningFactory.ToolCallBackContext> subplanToolCallbacks = subplanToolService

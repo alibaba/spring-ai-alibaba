@@ -207,7 +207,7 @@
             :disabled="isGenerating || isExecuting"
           >
             <Icon icon="carbon:save" width="14" />
-            保存
+                Save
           </button>
         </div>
       </div>

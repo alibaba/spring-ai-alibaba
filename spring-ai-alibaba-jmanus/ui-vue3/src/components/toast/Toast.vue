@@ -31,14 +31,14 @@
         >
           <div class="toast-header">
             <Icon :icon="icon" class="toast-icon" />
-            <span class="toast-title">{{ type === 'success' ? '成功' : '错误' }}</span>
+            <span class="toast-title">{{ type === 'success' ? 'Success' : 'Error' }}</span>
           </div>
           <div class="toast-content">
             <span>{{ message }}</span>
           </div>
           <div class="toast-actions">
             <button class="toast-btn toast-btn--primary" @click="hide">
-              确认
+              Confirm
             </button>
           </div>
         </div>
