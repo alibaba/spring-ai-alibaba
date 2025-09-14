@@ -44,40 +44,6 @@ spring:
       exclude:
         - org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration
 
-# MCP 工具配置
-mcp:
-  tools:
-    # 是否启用自动发现
-    auto-discover: true
-    
-    # 要扫描的包路径
-    packages:
-      - "com.alibaba.cloud.ai.example.manus.tool"
-      - "com.alibaba.cloud.ai.example.manus.tool.database"
-      - "com.alibaba.cloud.ai.example.manus.inhouse.tool.calculator"
-      - "com.alibaba.cloud.ai.example.manus.inhouse.tool.echo"
-      - "com.alibaba.cloud.ai.example.manus.inhouse.tool.ping"
-    
-    # 要排除的包路径
-    excluded:
-      - "com.alibaba.cloud.ai.example.manus.tool.internal"
-      - "com.alibaba.cloud.ai.example.manus.tool.test"
-    
-    # 是否启用调试日志
-    debug: false
-
-# CoordinatorTool 配置
-coordinator:
-  tool:
-    # 是否启用CoordinatorTool功能
-    enabled: true
-    # 轮询配置
-    polling:
-      # 最大轮询次数
-      max-attempts: 60
-      # 轮询间隔（毫秒）
-      poll-interval: 10000
-
 # 日志配置
 logging:
   file:
