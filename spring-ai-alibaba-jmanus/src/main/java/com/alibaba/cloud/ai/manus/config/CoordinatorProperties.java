@@ -19,19 +19,19 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * Coordinator 配置属性
+ * Coordinator configuration properties
  */
 @Component
 @ConfigurationProperties(prefix = "coordinator.tool")
 public class CoordinatorProperties {
 
 	/**
-	 * 是否启用CoordinatorTool功能
+	 * Whether to enable CoordinatorTool functionality
 	 */
 	private boolean enabled = true;
 
 	/**
-	 * 轮询配置
+	 * Polling configuration
 	 */
 	private Polling polling = new Polling();
 
@@ -52,17 +52,17 @@ public class CoordinatorProperties {
 	}
 
 	/**
-	 * 轮询配置内部类
+	 * Polling configuration inner class
 	 */
 	public static class Polling {
 
 		/**
-		 * 最大轮询次数
+		 * Maximum number of polling attempts
 		 */
 		private int maxAttempts = 60;
 
 		/**
-		 * 轮询间隔（毫秒）
+		 * Polling interval in milliseconds
 		 */
 		private long pollInterval = 10000;
 
