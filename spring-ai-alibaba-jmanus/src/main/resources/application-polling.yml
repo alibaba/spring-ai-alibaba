@@ -15,4 +15,4 @@ manus:
       # 指数退避基础延迟（毫秒）
       base-backoff-delay: 1000
       # 最大退避延迟（毫秒）
-      max-backoff-delay: 10000 
+      max-backoff-delay: 10000
