@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.memory.mem0.core;
 
-import com.alibaba.cloud.ai.memory.mem0.config.Mem0ChatMemoryProperties;
 import com.alibaba.cloud.ai.memory.mem0.model.Mem0ServerRequest;
 import com.alibaba.cloud.ai.memory.mem0.model.Mem0ServerResp;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -50,7 +49,9 @@ public class Mem0ServiceClient {
 
 	private final ObjectMapper objectMapper;
 
-	private final Mem0ChatMemoryProperties config;
+	private final Mem0Client mem0Client;
+
+	private final Mem0Server mem0Server;
 
 	private final ResourceLoader resourceLoader;
 
@@ -66,8 +67,9 @@ public class Mem0ServiceClient {
 	/**
 	 * Constructor
 	 */
-	public Mem0ServiceClient(Mem0ChatMemoryProperties config, ResourceLoader resourceLoader) {
-		this.config = config;
+	public Mem0ServiceClient(Mem0Client mem0Client, Mem0Server mem0Server, ResourceLoader resourceLoader) {
+		this.mem0Client = mem0Client;
+		this.mem0Server = mem0Server;
 		this.resourceLoader = resourceLoader;
 		this.objectMapper = new ObjectMapper();
 		// JSON key serialization using snake_case
@@ -78,7 +80,7 @@ public class Mem0ServiceClient {
 
 		// Create WebClient to connect to Mem0 API
 		this.webClient = WebClient.builder()
-			.baseUrl(config.getClient().getBaseUrl())
+			.baseUrl(mem0Client.getBaseUrl())
 			.defaultHeader("Content-Type", "application/json")
 			.build();
 	}
@@ -86,26 +88,29 @@ public class Mem0ServiceClient {
 	/**
 	 * Configures Mem0
 	 */
-	public void configure(Mem0ChatMemoryProperties.Server config) {
+	public void configure(Mem0Server mem0server) {
 		try {
-			if (Objects.nonNull(config.getProject())) {
-				config.getProject().setCustomInstructions(this.loadPrompt(config.getProject().getCustomInstructions()));
-				config.getProject().setCustomCategories(this.loadPrompt(config.getProject().getCustomCategories()));
+			if (Objects.nonNull(mem0server.getProject())) {
+				mem0server.getProject()
+					.setCustomInstructions(this.loadPrompt(mem0server.getProject().getCustomInstructions()));
+				mem0server.getProject()
+					.setCustomCategories(this.loadPrompt(mem0server.getProject().getCustomCategories()));
 			}
-			if (Objects.nonNull(config.getVectorStore())) {
-				config.getGraphStore().setCustomPrompt(this.loadPrompt(config.getGraphStore().getCustomPrompt()));
+			if (Objects.nonNull(mem0server.getVectorStore())) {
+				mem0server.getGraphStore()
+					.setCustomPrompt(this.loadPrompt(mem0server.getGraphStore().getCustomPrompt()));
 			}
-			config.setCustomFactExtractionPrompt(this.loadPrompt(config.getCustomFactExtractionPrompt()));
-			config.setCustomUpdateMemoryPrompt(this.loadPrompt(config.getCustomUpdateMemoryPrompt()));
+			mem0server.setCustomFactExtractionPrompt(this.loadPrompt(mem0server.getCustomFactExtractionPrompt()));
+			mem0server.setCustomUpdateMemoryPrompt(this.loadPrompt(mem0server.getCustomUpdateMemoryPrompt()));
 
-			String requestJson = objectMapper.writeValueAsString(config);
+			String requestJson = objectMapper.writeValueAsString(mem0server);
 			String response = webClient.post()
 				.uri(CONFIGURE_ENDPOINT)
 				.contentType(MediaType.APPLICATION_JSON)
 				.body(BodyInserters.fromValue(requestJson))
 				.retrieve()
 				.bodyToMono(String.class)
-				.timeout(Duration.ofSeconds(this.config.getClient().getTimeoutSeconds()))
+				.timeout(Duration.ofSeconds(this.mem0Client.getTimeoutSeconds()))
 				.block();
 			if (StringUtils.hasText(response) && response.contains("successfully")) {
 				logger.info("Mem0 configuration updated successfully");
@@ -138,8 +143,8 @@ public class Mem0ServiceClient {
 				.body(BodyInserters.fromValue(requestJson))
 				.retrieve()
 				.bodyToMono(String.class)
-				.timeout(Duration.ofSeconds(config.getClient().getTimeoutSeconds()))
-				.retry(config.getClient().getMaxRetryAttempts())
+				.timeout(Duration.ofSeconds(this.mem0Client.getTimeoutSeconds()))
+				.retry(this.mem0Client.getMaxRetryAttempts())
 				.block();
 
 			if (response != null) {
@@ -177,8 +182,8 @@ public class Mem0ServiceClient {
 			})
 				.retrieve()
 				.bodyToMono(String.class)
-				.timeout(Duration.ofSeconds(config.getClient().getTimeoutSeconds()))
-				.retry(config.getClient().getMaxRetryAttempts())
+				.timeout(Duration.ofSeconds(this.mem0Client.getTimeoutSeconds()))
+				.retry(this.mem0Client.getMaxRetryAttempts())
 				.block();
 
 			if (response != null) {
@@ -204,8 +209,8 @@ public class Mem0ServiceClient {
 				.uri(MEMORIES_ENDPOINT + "/{memoryId}", memoryId)
 				.retrieve()
 				.bodyToMono(String.class)
-				.timeout(Duration.ofSeconds(config.getClient().getTimeoutSeconds()))
-				.retry(config.getClient().getMaxRetryAttempts())
+				.timeout(Duration.ofSeconds(this.mem0Client.getTimeoutSeconds()))
+				.retry(this.mem0Client.getMaxRetryAttempts())
 				.block();
 
 			if (response != null) {
@@ -243,8 +248,8 @@ public class Mem0ServiceClient {
 				.body(BodyInserters.fromValue(requestJson))
 				.retrieve()
 				.bodyToMono(String.class)
-				.timeout(Duration.ofSeconds(config.getClient().getTimeoutSeconds()))
-				.retry(config.getClient().getMaxRetryAttempts())
+				.timeout(Duration.ofSeconds(this.mem0Client.getTimeoutSeconds()))
+				.retry(this.mem0Client.getMaxRetryAttempts())
 				.block();
 
 			if (response != null) {
@@ -274,8 +279,8 @@ public class Mem0ServiceClient {
 				.bodyValue(updatedMemory)
 				.retrieve()
 				.bodyToMono(String.class)
-				.timeout(Duration.ofSeconds(config.getClient().getTimeoutSeconds()))
-				.retry(config.getClient().getMaxRetryAttempts())
+				.timeout(Duration.ofSeconds(this.mem0Client.getTimeoutSeconds()))
+				.retry(this.mem0Client.getMaxRetryAttempts())
 				.block();
 
 			if (response != null) {
@@ -302,7 +307,7 @@ public class Mem0ServiceClient {
 				.uri(MEMORIES_ENDPOINT + "/{memoryId}/history", memoryId)
 				.retrieve()
 				.bodyToMono(String.class)
-				.timeout(Duration.ofSeconds(config.getClient().getTimeoutSeconds()))
+				.timeout(Duration.ofSeconds(this.mem0Client.getTimeoutSeconds()))
 				.block();
 
 			if (response != null) {
@@ -356,7 +361,7 @@ public class Mem0ServiceClient {
 				.uri(MEMORIES_ENDPOINT + "/{memoryId}", memoryId)
 				.retrieve()
 				.bodyToMono(String.class)
-				.timeout(Duration.ofSeconds(config.getClient().getTimeoutSeconds()))
+				.timeout(Duration.ofSeconds(this.mem0Client.getTimeoutSeconds()))
 				.block();
 
 			logger.info("Successfully deleted memory: {}", memoryId);
@@ -384,7 +389,7 @@ public class Mem0ServiceClient {
 			})
 				.retrieve()
 				.bodyToMono(String.class)
-				.timeout(Duration.ofSeconds(config.getClient().getTimeoutSeconds()))
+				.timeout(Duration.ofSeconds(this.mem0Client.getTimeoutSeconds()))
 				.block();
 
 			logger.info("Successfully deleted all memories");
@@ -404,7 +409,7 @@ public class Mem0ServiceClient {
 				.uri(RESET_ENDPOINT)
 				.retrieve()
 				.bodyToMono(String.class)
-				.timeout(Duration.ofSeconds(config.getClient().getTimeoutSeconds()))
+				.timeout(Duration.ofSeconds(this.mem0Client.getTimeoutSeconds()))
 				.block();
 
 			logger.info("Successfully reset all memories");

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.memory.mem0.config;
+package com.alibaba.cloud.ai.autoconfigure.memory;
 
 import com.alibaba.cloud.ai.memory.mem0.core.Mem0MemoryStore;
 import com.alibaba.cloud.ai.memory.mem0.core.Mem0ServiceClient;
@@ -37,7 +37,8 @@ public class Mem0ChatMemoryAutoConfiguration {
 
 	@Bean
 	public Mem0ServiceClient mem0ServiceClient(Mem0ChatMemoryProperties properties, ResourceLoader resourceLoader) {
-		Mem0ServiceClient mem0ServiceClient = new Mem0ServiceClient(properties, resourceLoader);
+		Mem0ServiceClient mem0ServiceClient = new Mem0ServiceClient(properties.getClient(), properties.getServer(),
+				resourceLoader);
 		logger.info("Initialized Mem0Service Client.success!");
 		// Pass the client configuration items to the Server to initialize the Mem0
 		// instance
