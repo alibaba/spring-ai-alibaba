@@ -30,28 +30,28 @@ public class SemanticModel {
 	@TableField("agent_id")
 	private Long agentId; // Agent ID
 
-	@TableField("original_field_name")
+	@TableField("origin_name")
 	private String originalFieldName; // Original field name
 
-	@TableField("agent_field_name")
+	@TableField("field_name")
 	private String agentFieldName; // Agent field name
 
-	@TableField("field_synonyms")
+	@TableField("synonyms")
 	private String fieldSynonyms; // Field name synonyms, comma-separated
 
-	@TableField("field_description")
+	@TableField("description")
 	private String fieldDescription; // Field description
 
-	@TableField("field_type")
+	@TableField("type")
 	private String fieldType; // Field type
 
-	@TableField("original_description")
+	@TableField("origin_description")
 	private String originalDescription; // Original field description
 
-	@TableField("default_recall")
+	@TableField("is_recall")
 	private Boolean defaultRecall; // Default recall
 
-	@TableField("enabled")
+	@TableField("status")
 	private Boolean enabled; // Whether enabled
 
 	@TableField(value = "created_time", fill = FieldFill.INSERT)

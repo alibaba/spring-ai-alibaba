@@ -131,8 +131,9 @@ public class LLMNodeData extends NodeData {
 
 		@Override
 		public String toString() {
-			return String.format("new MessageTemplate(\"%s\", %s, MessageType.%s)", this.template(),
-					ObjectToCodeUtil.toCode(this.keys()), this.type().getValue().toUpperCase());
+			return String.format("new MessageTemplate(%s, %s, MessageType.%s)",
+					ObjectToCodeUtil.toCode(this.template()), ObjectToCodeUtil.toCode(this.keys()),
+					this.type().getValue().toUpperCase());
 		}
 	}
 

@@ -20,8 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -206,8 +204,6 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 		return "LLMNode" + count;
 	}
 
-	private static final Pattern VAR_TEMPLATE_PATTERN = Pattern.compile("\\{(\\w+)}");
-
 	@Override
 	public BiConsumer<LLMNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
@@ -222,8 +218,7 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 					.stream()
 					.map(template -> {
 						String newText = this.convertVarTemplate(dialectType, template.template(), idToVarName);
-						Matcher matcher = VAR_TEMPLATE_PATTERN.matcher(newText);
-						List<String> keys = matcher.results().map(m -> m.group(1)).toList();
+						List<String> keys = this.getVarTemplateKeys(newText);
 						return new LLMNodeData.MessageTemplate(newText, keys, template.type());
 					})
 					.toList();

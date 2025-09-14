@@ -82,4 +82,9 @@ public class HumanNodeSection implements NodeSection<HumanNodeData> {
 		return sb.toString();
 	}
 
+	@Override
+	public List<String> getImports() {
+		return List.of();
+	}
+
 }
