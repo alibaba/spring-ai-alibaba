@@ -319,12 +319,14 @@
           <div class="modal-header">
             <h3>计划人工复核</h3>
           </div>
+          <div class="modal-body">
             <div class="agent-response-block" style="display: block !important; width: 100% !important;">
               <div class="agent-response-title">
                 <i class="bi bi-diagram-3"></i> 当前计划
               </div>
               <div class="agent-response-content" v-html="formatHumanReviewPlan(humanReviewPlan)"></div>
             </div>
+          </div>
           <div class="modal-footer" style="display:flex; gap:8px;">
             <textarea v-model="humanReviewSuggestion" placeholder="如不合理，请填写修改建议" style="width:100%; height:80px;"></textarea>
             <button class="btn" @click="approvePlan">通过</button>
