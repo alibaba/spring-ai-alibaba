@@ -29,12 +29,12 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/// **
-// * Unit tests for Mem0ServiceClient
-// *
-// * @author Morain Miao
-// * @since 1.0.0
-// */
+/**
+ * Unit tests for Mem0ServiceClientTest
+ *
+ * @author Morain Miao
+ * @since 1.0.0
+ */
 @ExtendWith(MockitoExtension.class)
 class Mem0ServiceClientTest {
 
@@ -122,7 +122,7 @@ class Mem0ServiceClientTest {
 	@Test
 	void testMemoryCreateBuilder() {
 		// Given
-		Mem0ServerRequest.Message message = new Mem0ServerRequest.Message("user", "test / content");
+		Mem0ServerRequest.Message message = new Mem0ServerRequest.Message("user", "test content");
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key", "value");
 
