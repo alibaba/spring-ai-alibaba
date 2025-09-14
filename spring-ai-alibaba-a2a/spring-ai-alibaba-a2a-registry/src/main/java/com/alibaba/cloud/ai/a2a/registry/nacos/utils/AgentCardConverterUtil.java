@@ -39,23 +39,49 @@ public class AgentCardConverterUtil {
 			return null;
 		}
 
-		return new io.a2a.spec.AgentCard.Builder().name(agentCard.getName())
+		return new io.a2a.spec.AgentCard.Builder()
+				.protocolVersion(agentCard.getProtocolVersion())
+				.name(agentCard.getName())
 				.description(agentCard.getDescription())
-				.url(agentCard.getUrl())
 				.version(agentCard.getVersion())
 				.iconUrl(agentCard.getIconUrl())
-				.documentationUrl(agentCard.getDocumentationUrl())
 				.capabilities(convertToA2aAgentCapabilities(agentCard.getCapabilities()))
+				.skills(convertToA2aAgentSkills(agentCard.getSkills()))
+				.url(agentCard.getUrl())
+				.preferredTransport(agentCard.getPreferredTransport())
+				.additionalInterfaces(convertToA2aAgentInterfaces(agentCard.getAdditionalInterfaces()))
+				.provider(convertToA2aAgentProvider(agentCard.getProvider()))
+				.documentationUrl(agentCard.getDocumentationUrl())
+				.securitySchemes(convertToA2aAgentSecuritySchemes(agentCard.getSecuritySchemes()))
+				.security(agentCard.getSecurity())
 				.defaultInputModes(agentCard.getDefaultInputModes())
 				.defaultOutputModes(agentCard.getDefaultOutputModes())
-				.skills(convertToA2aAgentSkills(agentCard.getSkills()))
-				.protocolVersion(agentCard.getProtocolVersion())
 				.supportsAuthenticatedExtendedCard(agentCard.getSupportsAuthenticatedExtendedCard())
 				.build();
 	}
 
+	private static Map<String, io.a2a.spec.SecurityScheme> convertToA2aAgentSecuritySchemes(Map<String, SecurityScheme> securitySchemes) {
+		String securitySchemesJson = JacksonUtils.toJson(securitySchemes);
+		return JacksonUtils.toObj(securitySchemesJson, new TypeReference<>() {});
+	}
 
-	public static io.a2a.spec.AgentCapabilities convertToA2aAgentCapabilities(
+	private static io.a2a.spec.AgentProvider convertToA2aAgentProvider(AgentProvider provider) {
+		return new io.a2a.spec.AgentProvider(provider.getOrganization(), provider.getUrl());
+	}
+
+	private static List<io.a2a.spec.AgentInterface> convertToA2aAgentInterfaces(
+			List<AgentInterface> nacosInterfaces) {
+		if (nacosInterfaces == null) {
+			return List.of();
+		}
+		return nacosInterfaces.stream().map(AgentCardConverterUtil::transferAgentInterface).collect(Collectors.toList());
+	}
+
+	private static io.a2a.spec.AgentInterface transferAgentInterface(AgentInterface agentInterface) {
+		return new io.a2a.spec.AgentInterface(agentInterface.getTransport(), agentInterface.getUrl());
+	}
+
+	private static io.a2a.spec.AgentCapabilities convertToA2aAgentCapabilities(
 			com.alibaba.nacos.api.ai.model.a2a.AgentCapabilities nacosCapabilities) {
 		if (nacosCapabilities == null) {
 			return null;
@@ -67,7 +93,7 @@ public class AgentCardConverterUtil {
 				.build();
 	}
 
-	public static List<io.a2a.spec.AgentSkill> convertToA2aAgentSkills(List<AgentSkill> nacosSkills) {
+	private static List<io.a2a.spec.AgentSkill> convertToA2aAgentSkills(List<AgentSkill> nacosSkills) {
 		if (nacosSkills == null) {
 			return null;
 		}
@@ -75,7 +101,7 @@ public class AgentCardConverterUtil {
 		return nacosSkills.stream().map(AgentCardConverterUtil::transferAgentSkill).collect(Collectors.toList());
 	}
 
-	public static io.a2a.spec.AgentSkill transferAgentSkill(AgentSkill nacosSkill) {
+	private static io.a2a.spec.AgentSkill transferAgentSkill(AgentSkill nacosSkill) {
 		return new io.a2a.spec.AgentSkill.Builder().id(nacosSkill.getId())
 				.tags(nacosSkill.getTags())
 				.examples(nacosSkill.getExamples())

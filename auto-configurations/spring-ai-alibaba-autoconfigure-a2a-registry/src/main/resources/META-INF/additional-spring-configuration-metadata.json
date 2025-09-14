@@ -56,6 +56,18 @@
       "description": "Nacos server endpoint.",
       "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties",
       "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.registry.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable nacos auto registry agent card to nacos.",
+      "defaultValue": "true"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.discovery.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable nacos auto discovery agent card from nacos.",
+      "defaultValue": "true"
     }
   ],
   "hints": []

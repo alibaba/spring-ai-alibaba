@@ -16,33 +16,28 @@
 
 package com.alibaba.cloud.ai.autoconfigure.a2a.registry.nacos;
 
-import com.alibaba.cloud.ai.a2a.A2aServerProperties;
+import com.alibaba.cloud.ai.a2a.registry.nacos.discovery.NacosAgentCardProvider;
 import com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties;
-import com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosAgentRegistry;
-import com.alibaba.cloud.ai.a2a.registry.nacos.service.NacosA2aOperationService;
-import com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aServerAgentCardAutoConfiguration;
-import com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aServerRegistryAutoConfiguration;
+import com.alibaba.cloud.ai.autoconfigure.a2a.client.A2aClientAgentCardProviderAutoConfiguration;
 import com.alibaba.nacos.api.ai.A2aService;
 import com.alibaba.nacos.api.ai.AiFactory;
 import com.alibaba.nacos.api.exception.NacosException;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /**
- * The AutoConfiguration for A2A Nacos registry.
+ * The AutoConfiguration for A2A Nacos discovery.
  *
  * @author xiweng.yy
  */
-@ConditionalOnClass({A2aServerAgentCardAutoConfiguration.class, A2aServerRegistryAutoConfiguration.class})
-@AutoConfiguration(after = A2aServerAgentCardAutoConfiguration.class, before = {A2aServerRegistryAutoConfiguration.class})
+@AutoConfiguration(before = {A2aClientAgentCardProviderAutoConfiguration.class})
 @EnableConfigurationProperties({NacosA2aProperties.class})
-@ConditionalOnProperty(prefix = NacosA2aProperties.PREFIX, value = "registry.enabled", havingValue = "true", matchIfMissing = true)
-public class NacosA2aRegistryAutoConfiguration {
+@ConditionalOnProperty(prefix = NacosA2aProperties.PREFIX, value = "discovery.enabled", havingValue = "true", matchIfMissing = true)
+public class NacosA2aDiscoveryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -51,15 +46,7 @@ public class NacosA2aRegistryAutoConfiguration {
 	}
 
 	@Bean
-	public NacosA2aOperationService nacosA2aOperationService(A2aService a2aService,
-			NacosA2aProperties nacosA2aProperties, A2aServerProperties a2aServerProperties) {
-		return new NacosA2aOperationService(a2aService, nacosA2aProperties, a2aServerProperties);
+	public NacosAgentCardProvider nacosAgentCardProvider(A2aService a2aService) throws Exception {
+		return new NacosAgentCardProvider(a2aService);
 	}
-
-	@Bean
-	public NacosAgentRegistry nacosAgentRegistry(NacosA2aOperationService nacosA2aOperationService,
-			NacosA2aProperties nacosA2aProperties) {
-		return new NacosAgentRegistry(nacosA2aOperationService, nacosA2aProperties);
-	}
-
 }

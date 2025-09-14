@@ -201,7 +201,11 @@ public class A2aRemoteAgent extends BaseAgent {
 				if (null == agentCardProvider) {
 					throw new IllegalArgumentException("AgentCard or AgentCardProvider must be provided");
 				}
-				agentCard = agentCardProvider.getAgentCard();
+				if (agentCardProvider.supportGetAgentCardByName()) {
+					agentCard = agentCardProvider.getAgentCard(name);
+				} else {
+					agentCard = agentCardProvider.getAgentCard();
+				}
 			}
 
 			this.streaming = agentCard.capabilities().streaming();

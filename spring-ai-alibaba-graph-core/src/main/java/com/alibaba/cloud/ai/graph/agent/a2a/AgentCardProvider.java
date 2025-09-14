@@ -31,4 +31,25 @@ public interface AgentCardProvider {
 	 * @return agent card
 	 */
 	AgentCard getAgentCard();
+
+	/**
+	 * Get agent card by agent name.
+	 *
+	 * <p>Should throw {@link UnsupportedOperationException} when {@link #supportGetAgentCardByName()} return false</p>
+	 *
+	 * @param agentName agent name
+	 * @return agent card
+	 */
+	default AgentCard getAgentCard(String agentName) {
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Whether support get agent card by agent name.
+	 *
+	 * @return true if support
+	 */
+	default boolean supportGetAgentCardByName() {
+		return false;
+	}
 }
