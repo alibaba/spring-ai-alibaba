@@ -243,4 +243,5 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 			log.debug("Error stopping observation: {}", e.getMessage(), e);
 		}
 	}
+
 }
