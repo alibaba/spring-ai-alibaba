@@ -224,10 +224,10 @@ public class H2JdbcDdl extends AbstractJdbcDdl {
 
 	@Override
 	public List<String> sampleColumn(Connection connection, String schema, String table, String column) {
-		String sql = "SELECT \n" + "    `%s`\n" + "FROM \n" + "    `%s`\n" + "LIMIT 99;";
+		String sql = "SELECT \n" + "    `%s`\n" + "FROM \n" + "    `%s`.`%s`\n" + "LIMIT 99;";
 		List<String> sampleInfo = Lists.newArrayList();
 		try {
-			sql = String.format(sql, column, table);
+			sql = String.format(sql, column, schema, table);
 			String[][] resultArr = SqlExecutor.executeSqlAndReturnArr(connection, null, sql);
 			if (resultArr.length <= 1) {
 				return Lists.newArrayList();
