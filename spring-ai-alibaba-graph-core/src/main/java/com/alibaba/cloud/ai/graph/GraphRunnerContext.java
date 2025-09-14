@@ -19,11 +19,10 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
+import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
-
-import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,24 +33,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.StateGraph.*;
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 
 /**
- * Context class to manage the state during graph execution
+ * Context class to manage the state during graph execution.
  */
-class GraphRunnerContext {
+public class GraphRunnerContext {
 
 	public static final String INTERRUPT_AFTER = "__INTERRUPTED__";
 
-	private static final Logger log = LoggerFactory.getLogger(GraphRunner.class);
+	private static final Logger log = LoggerFactory.getLogger(GraphRunnerContext.class);
 
+	// Core execution state
 	final CompiledGraph compiledGraph;
 
 	final AtomicInteger iteration = new AtomicInteger(0);
 
+	// Execution context
 	OverAllState overallState;
 
 	RunnableConfig config;
@@ -79,7 +79,11 @@ class GraphRunnerContext {
 		}
 	}
 
-	private void initializeFromResume(OverAllState initialState, RunnableConfig config) {
+	// ================================================================================================================
+	// Initialization Methods
+	// ================================================================================================================
+
+	private void initializeFromResume(OverAllState initialState, RunnableConfig config) throws Exception {
 		log.trace("RESUME REQUEST");
 
 		var saver = compiledGraph.compileConfig.checkpointSaver()
@@ -101,32 +105,33 @@ class GraphRunnerContext {
 			this.config = config.withCheckPointId(null);
 		}
 
-		this.currentState = checkpoint.getState();
-		this.currentNodeId = null;
-		this.nextNodeId = checkpoint.getNextNodeId();
-		this.overallState = initialState.input(this.currentState);
-		this.resumeFrom = checkpoint.getNodeId();
+		setCurrentState(checkpoint.getState());
+		setCurrentNodeId(null);
+		setNextNodeId(checkpoint.getNextNodeId());
+		setOverallState(initialState.input(getCurrentState()));
+		setResumeFrom(checkpoint.getNodeId());
 
 		log.trace("RESUME FROM {}", checkpoint.getNodeId());
 	}
 
-	private void initializeFromStart(OverAllState initialState, RunnableConfig config) {
+	private void initializeFromStart(OverAllState initialState, RunnableConfig config) throws Exception {
 		log.trace("START");
 
-		Map<String, Object> inputs = initialState.data();
-		if (!CollectionUtils.isEmpty(inputs)) {
-			// Simple validation without accessing protected method
-			log.debug("Initializing with inputs: {}", inputs.keySet());
-		}
+		org.springframework.util.CollectionUtils.isEmpty(initialState.data()); // Simple
+																				// validation
 
 		// Use CompiledGraph's getInitialState method
-		this.currentState = compiledGraph.getInitialState(inputs != null ? inputs : new HashMap<>(), config);
-		this.overallState = initialState.input(currentState);
-		this.currentNodeId = START;
-		this.nextNodeId = null;
+		Map<String, Object> inputs = initialState.data();
+		setCurrentState(compiledGraph.getInitialState(inputs != null ? inputs : new HashMap<>(), config));
+		setOverallState(initialState.input(getCurrentState()));
+		setCurrentNodeId(START);
+		setNextNodeId(null);
 	}
 
-	// Helper methods
+	// ================================================================================================================
+	// Execution Control Methods
+	// ================================================================================================================
+
 	public boolean shouldStop() {
 		return nextNodeId == null && currentNodeId == null;
 	}
@@ -144,7 +149,8 @@ class GraphRunnerContext {
 	}
 
 	public boolean shouldInterrupt() {
-		return shouldInterruptBefore(nextNodeId, currentNodeId) || shouldInterruptAfter(currentNodeId, nextNodeId);
+		return shouldInterruptBefore(getNextNodeId(), getCurrentNodeId())
+				|| shouldInterruptAfter(getCurrentNodeId(), getNextNodeId());
 	}
 
 	private boolean shouldInterruptBefore(String nodeId, String previousNodeId) {
@@ -160,21 +166,24 @@ class GraphRunnerContext {
 				|| compiledGraph.compileConfig.interruptsAfter().contains(nodeId);
 	}
 
+	// ================================================================================================================
+	// Node Action Methods
+	// ================================================================================================================
+
 	public AsyncNodeActionWithConfig getNodeAction(String nodeId) {
 		return compiledGraph.getNodeAction(nodeId);
 	}
 
 	public Command getEntryPoint() throws Exception {
 		var entryPoint = compiledGraph.getEdge(START);
-		return nextNodeId(entryPoint, currentState, "entryPoint");
+		return nextNodeId(entryPoint, getCurrentState(), "entryPoint");
 	}
 
 	public Command nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
 		return nextNodeId(compiledGraph.getEdge(nodeId), state, nodeId);
 	}
 
-	private Command nextNodeId(com.alibaba.cloud.ai.graph.internal.edge.EdgeValue route, Map<String, Object> state,
-			String nodeId) throws Exception {
+	private Command nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId) throws Exception {
 		if (route == null) {
 			throw RunnableErrors.missingEdge.exception(nodeId);
 		}
@@ -182,27 +191,39 @@ class GraphRunnerContext {
 			return new Command(route.id(), state);
 		}
 		if (route.value() != null) {
-			var command = route.value().action().apply(this.overallState, config).get();
+			var command = route.value().action().apply(getOverallState(), getConfig()).get();
 			var newRoute = command.gotoNode();
 			String result = route.value().mappings().get(newRoute);
 			if (result == null) {
 				throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
 			}
 			var updatedState = OverAllState.updateState(state, command.update(), getKeyStrategyMap());
-			this.overallState.updateState(command.update());
+			getOverallState().updateState(command.update());
 			return new Command(result, updatedState);
 		}
 		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 	}
 
+	// ================================================================================================================
+	// Checkpoint Methods
+	// ================================================================================================================
+
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
 		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
-			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(currentState)).nextNodeId(nextNodeId).build();
+			var cp = Checkpoint.builder()
+				.nodeId(nodeId)
+				.state(cloneState(getCurrentState()))
+				.nextNodeId(nextNodeId)
+				.build();
 			compiledGraph.compileConfig.checkpointSaver().get().put(config, cp);
 			return Optional.of(cp);
 		}
 		return Optional.empty();
 	}
+
+	// ================================================================================================================
+	// Output Building Methods
+	// ================================================================================================================
 
 	public NodeOutput buildOutput(String nodeId, Optional<Checkpoint> checkpoint) throws Exception {
 		if (checkpoint.isPresent() && config.streamMode() == CompiledGraph.StreamMode.SNAPSHOTS) {
@@ -218,19 +239,56 @@ class GraphRunnerContext {
 	}
 
 	public NodeOutput buildNodeOutput(String nodeId) throws Exception {
-		return NodeOutput.of(nodeId, cloneState(currentState));
+		return NodeOutput.of(nodeId, cloneState(getCurrentState()));
 	}
 
 	public OverAllState cloneState(Map<String, Object> data) throws Exception {
 		return compiledGraph.cloneState(data);
 	}
 
+	// ================================================================================================================
+	// Lifecycle Methods
+	// ================================================================================================================
+
 	public void doListeners(String scene, Exception e) {
-		// TODO: Implementation for lifecycle listeners would go here
-		log.debug("Listener event: {} with exception: {}", scene, e != null ? e.getMessage() : "none");
+		for (GraphLifecycleListener listener : compiledGraph.compileConfig.lifecycleListeners()) {
+			try {
+				switch (scene) {
+					case START:
+						listener.onStart(getCurrentNodeId(), getCurrentState(), config);
+						break;
+					case END:
+						listener.onComplete(getCurrentNodeId(), getCurrentState(), config);
+						break;
+					case NODE_BEFORE:
+						listener.onStart(getCurrentNodeId(), getCurrentState(), config);
+						break;
+					case NODE_AFTER:
+						listener.onComplete(getCurrentNodeId(), getCurrentState(), config);
+						break;
+					case ERROR:
+						listener.onError(getCurrentNodeId(), getCurrentState(), e, config);
+						break;
+				}
+			}
+			catch (Exception ex) {
+				log.error("Error in listener", ex);
+			}
+		}
 	}
 
-	// Getters and setters
+	// ================================================================================================================
+	// State Management Methods
+	// ================================================================================================================
+
+	public void updateCurrentState(Map<String, Object> state) {
+		this.currentState = OverAllState.updateState(this.currentState, state, getKeyStrategyMap());
+	}
+
+	// ================================================================================================================
+	// Getter and Setter Methods
+	// ================================================================================================================
+
 	public String getCurrentNodeId() {
 		return currentNodeId;
 	}
@@ -251,7 +309,7 @@ class GraphRunnerContext {
 		return currentState;
 	}
 
-	public void updateCurrentState(Map<String, Object> state) {
+	public void setCurrentState(Map<String, Object> state) {
 		this.currentState = state;
 	}
 
@@ -259,28 +317,52 @@ class GraphRunnerContext {
 		return overallState;
 	}
 
+	public void setOverallState(OverAllState state) {
+		this.overallState = state;
+	}
+
 	public Map<String, KeyStrategy> getKeyStrategyMap() {
 		return compiledGraph.getKeyStrategyMap();
 	}
 
-	Optional<String> getResumeFromAndReset() {
+	public CompiledGraph getCompiledGraph() {
+		return compiledGraph;
+	}
+
+	public RunnableConfig getConfig() {
+		return config;
+	}
+
+	public void setConfig(RunnableConfig config) {
+		this.config = config;
+	}
+
+	public String getResumeFrom() {
+		return resumeFrom;
+	}
+
+	public void setResumeFrom(String resumeFrom) {
+		this.resumeFrom = resumeFrom;
+	}
+
+	public Optional<String> getResumeFromAndReset() {
 		final var result = ofNullable(resumeFrom);
 		resumeFrom = null;
 		return result;
 	}
 
-	Optional<ReturnFromEmbed> getReturnFromEmbedAndReset() {
+	public Optional<ReturnFromEmbed> getReturnFromEmbedAndReset() {
 		var result = ofNullable(returnFromEmbed);
 		returnFromEmbed = null;
 		return result;
 	}
 
-	void setReturnFromEmbedWithValue(Object value) {
+	public void setReturnFromEmbedWithValue(Object value) {
 		returnFromEmbed = new ReturnFromEmbed(value);
 	}
 
-	record ReturnFromEmbed(Object value) {
-		<T> Optional<T> value(TypeRef<T> ref) {
+	public record ReturnFromEmbed(Object value) {
+		public <T> Optional<T> value(TypeRef<T> ref) {
 			return ofNullable(value).flatMap(ref::cast);
 		}
 	}

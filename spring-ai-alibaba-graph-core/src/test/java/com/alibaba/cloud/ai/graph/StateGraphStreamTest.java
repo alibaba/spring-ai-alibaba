@@ -452,6 +452,7 @@ public class StateGraphStreamTest {
 			.subscribe(output -> {
 				System.out.println("Node output: " + output);
 			});
+		Thread.sleep(5000);
 	}
 
 }
