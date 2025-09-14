@@ -31,7 +31,7 @@ import static com.alibaba.cloud.ai.constant.Constant.*;
 /**
  * Human feedback node for plan review and modification.
  *
- * @author zhangshenghang
+ * @author Makoto
  */
 public class HumanFeedbackNode implements NodeAction {
 
@@ -39,70 +39,47 @@ public class HumanFeedbackNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("Human feedback node is running.");
-
+		logger.info("Processing human feedback");
 		Map<String, Object> updated = new HashMap<>();
 
 		// 检查最大修复次数
 		int repairCount = StateUtils.getObjectValue(state, PLAN_REPAIR_COUNT, Integer.class, 0);
-		int maxRepairAttempts = 3; // 最大修复次数
-
-		if (repairCount >= maxRepairAttempts) {
-			logger.info("Maximum repair attempts exceeded, repairCount: {}, maxRepairAttempts: {}", repairCount,
-					maxRepairAttempts);
+		if (repairCount >= 3) {
+			logger.warn("Max repair attempts (3) exceeded, ending process");
 			updated.put("human_next_node", "END");
 			return updated;
 		}
 
-		// 获取计划内容并输出给前端
-		String planContent = StateUtils.getStringValue(state, PLANNER_NODE_OUTPUT, "");
-		if (StringUtils.hasLength(planContent)) {
-			logger.info("Human feedback node: plan content available for review");
-			// 这里可以添加计划内容的输出，让前端能够获取到
-		}
-
-		// 获取人类反馈数据
+		// 等待用户反馈
 		OverAllState.HumanFeedback humanFeedback = state.humanFeedback();
 		if (humanFeedback == null) {
-			logger.info("Human feedback not available yet, waiting for user input");
-			// 如果还没有人类反馈数据，返回等待状态
 			updated.put("human_next_node", "WAIT_FOR_FEEDBACK");
 			return updated;
 		}
 
+		// 处理反馈结果
 		Map<String, Object> feedbackData = humanFeedback.data();
-		boolean feedback = (boolean) feedbackData.getOrDefault("feed_back", true);
+		boolean approved = (boolean) feedbackData.getOrDefault("feed_back", true);
 
-		if (!feedback) {
-			// 用户拒绝了计划，需要重新生成
-			logger.info("Human feedback: plan rejected, routing back to planner");
+		if (approved) {
+			logger.info("Plan approved → execution");
+			updated.put("human_next_node", PLAN_EXECUTOR_NODE);
+			updated.put(HUMAN_REVIEW_ENABLED, false);
+		} else {
+			logger.info("Plan rejected → regeneration (attempt {})", repairCount + 1);
 			updated.put("human_next_node", PLANNER_NODE);
-
-			// 增加修复次数
 			updated.put(PLAN_REPAIR_COUNT, repairCount + 1);
-
-			// 获取用户建议
+			updated.put(PLAN_CURRENT_STEP, 1);
+			updated.put(HUMAN_REVIEW_ENABLED, true);
+			
+			// 保存用户反馈内容
 			String feedbackContent = feedbackData.getOrDefault("feed_back_content", "").toString();
-			if (StringUtils.hasLength(feedbackContent)) {
-				updated.put(PLAN_VALIDATION_ERROR, feedbackContent);
-				logger.info("Human feedback content: {}", feedbackContent);
-			}
-			else {
-				updated.put(PLAN_VALIDATION_ERROR, "User rejected the plan. Please revise according to suggestions.");
-			}
-
-			// 清除恢复标志，让PlannerNode重新生成计划
+			updated.put(PLAN_VALIDATION_ERROR, StringUtils.hasLength(feedbackContent) 
+				? feedbackContent 
+				: "Plan rejected by user");
 			state.withoutResume();
 		}
-		else {
-			// 用户通过了计划，继续执行
-			logger.info("Human feedback: plan approved, continuing execution");
-			updated.put("human_next_node", "PLAN_EXECUTOR_NODE");
-			// 清除人工复核标志，避免再次进入人工复核循环
-			updated.put(HUMAN_REVIEW_ENABLED, false);
-		}
 
-		logger.info("Human feedback node -> {} node", updated.get("human_next_node"));
 		return updated;
 	}
 
