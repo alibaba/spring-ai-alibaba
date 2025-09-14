@@ -41,7 +41,7 @@ public enum NodeType {
 
 	HUMAN("human", "unsupported", "UNSUPPORTED"),
 
-	BRANCH("branch", "if-else", "UNSUPPORTED"),
+	BRANCH("branch", "if-else", "Judge"),
 
 	DOC_EXTRACTOR("document-extractor", "document-extractor", "UNSUPPORTED"),
 

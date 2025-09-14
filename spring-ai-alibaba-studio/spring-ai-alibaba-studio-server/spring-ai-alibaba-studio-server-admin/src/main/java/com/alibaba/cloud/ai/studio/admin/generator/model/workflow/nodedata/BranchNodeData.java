@@ -17,8 +17,6 @@ package com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata;
 
 import java.util.List;
 
-import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
-import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Case;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 

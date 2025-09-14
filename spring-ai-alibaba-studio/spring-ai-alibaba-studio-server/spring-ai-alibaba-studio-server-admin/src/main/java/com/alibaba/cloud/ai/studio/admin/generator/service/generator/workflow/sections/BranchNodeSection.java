@@ -134,30 +134,30 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 
 				if (accessExtension) {
 					// 如果是访问扩展名属性，直接访问扩展名字段
-					return String.format("state.value(\"%s\", String.class).orElse(\"\")", variablePath);
+					return String.format("state.value(\"%s\", String.class).orElse(null)", variablePath);
 				}
 				else {
 					// 从文件对象中提取扩展名
 					return String.format(
 							"state.value(\"%s\", java.io.File.class).map(file -> { " + "String name = file.getName(); "
 									+ "int dotIndex = name.lastIndexOf('.'); "
-									+ "return dotIndex > 0 ? name.substring(dotIndex) : \"\"; " + "}).orElse(\"\")",
+									+ "return dotIndex > 0 ? name.substring(dotIndex) : \"\"; " + "}).orElse(null)",
 							variablePath);
 				}
+				// 默认返回null，避免isNull判断恒为false
 			case STRING:
-				return String.format("state.value(\"%s\", String.class).orElse(\"\")", variablePath);
+				return String.format("state.value(\"%s\", String.class).orElse(null)", variablePath);
 			case NUMBER:
-				return String.format("state.value(\"%s\", Number.class).orElse(0)", variablePath);
+				return String.format("state.value(\"%s\", Number.class).orElse(null)", variablePath);
 			case BOOLEAN:
-				return String.format("state.value(\"%s\", Boolean.class).orElse(false)", variablePath);
+				return String.format("state.value(\"%s\", Boolean.class).orElse(null)", variablePath);
 			case ARRAY_FILE:
 			case ARRAY_NUMBER:
 			case ARRAY_STRING:
 			case ARRAY_OBJECT:
+			case ARRAY_BOOLEAN:
 			case ARRAY:
-				return String.format(
-						"state.value(\"%s\", java.util.List.class).orElse(java.util.Collections.emptyList())",
-						variablePath);
+				return String.format("state.value(\"%s\", List.class).orElse(null)", variablePath);
 			case OBJECT:
 				return String.format("state.value(\"%s\", Object.class).orElse(null)", variablePath);
 			default:

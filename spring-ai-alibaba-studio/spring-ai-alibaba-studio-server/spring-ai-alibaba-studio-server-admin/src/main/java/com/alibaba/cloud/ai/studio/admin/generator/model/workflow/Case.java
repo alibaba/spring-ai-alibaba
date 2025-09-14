@@ -57,26 +57,36 @@ public class Case {
 
 	public static class Condition {
 
+		// 左值数据类型
 		private VariableType varType;
+
+		// 右值数据类型
+		private VariableType referenceType;
 
 		private ComparisonOperatorType comparisonOperator;
 
+		// 左值
 		private VariableSelector targetSelector;
 
+		// 右值
 		private String referenceValue;
 
 		private VariableSelector referenceSelector;
 
-		// 参考值可能来自stateKey，也有可能直接是常量值
+		// 参考值可能来自stateKey，也有可能直接是常量值，也有可能没有参考值
 		public String getValue() {
 			if (referenceValue != null) {
 				return referenceValue;
 			}
 			else if (referenceSelector != null) {
-				return String.format("((%s) state.value(\"%s\").orElse(null))", varType.value(),
+				if (VariableType.NUMBER.equals(referenceType)) {
+					return String.format("((%s) state.value(\"%s\").orElse(null)).doubleValue()", referenceType.value(),
+							referenceSelector.getNameInCode());
+				}
+				return String.format("((%s) state.value(\"%s\").orElse(null))", referenceType.value(),
 						referenceSelector.getNameInCode());
 			}
-			throw new IllegalStateException("referenceValue or referenceSelector must be set");
+			return null;
 		}
 
 		public String getReferenceValue() {
@@ -103,6 +113,15 @@ public class Case {
 
 		public Condition setVarType(VariableType varType) {
 			this.varType = varType;
+			return this;
+		}
+
+		public VariableType getReferenceType() {
+			return referenceType;
+		}
+
+		public Condition setReferenceType(VariableType referenceType) {
+			this.referenceType = referenceType;
 			return this;
 		}
 
