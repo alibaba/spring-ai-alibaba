@@ -65,18 +65,18 @@ public class HumanFeedbackNode implements NodeAction {
 			logger.info("Plan approved → execution");
 			updated.put("human_next_node", PLAN_EXECUTOR_NODE);
 			updated.put(HUMAN_REVIEW_ENABLED, false);
-		} else {
+		}
+		else {
 			logger.info("Plan rejected → regeneration (attempt {})", repairCount + 1);
 			updated.put("human_next_node", PLANNER_NODE);
 			updated.put(PLAN_REPAIR_COUNT, repairCount + 1);
 			updated.put(PLAN_CURRENT_STEP, 1);
 			updated.put(HUMAN_REVIEW_ENABLED, true);
-			
+
 			// 保存用户反馈内容
 			String feedbackContent = feedbackData.getOrDefault("feed_back_content", "").toString();
-			updated.put(PLAN_VALIDATION_ERROR, StringUtils.hasLength(feedbackContent) 
-				? feedbackContent 
-				: "Plan rejected by user");
+			updated.put(PLAN_VALIDATION_ERROR,
+					StringUtils.hasLength(feedbackContent) ? feedbackContent : "Plan rejected by user");
 			state.withoutResume();
 		}
 

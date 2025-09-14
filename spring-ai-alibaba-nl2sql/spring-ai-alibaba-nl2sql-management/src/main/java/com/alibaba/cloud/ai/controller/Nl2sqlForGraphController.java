@@ -309,8 +309,9 @@ public class Nl2sqlForGraphController {
 													? extractedPlanContent.substring(0, 200) + "..."
 													: extractedPlanContent);
 								}
-							} else {
-								logger.debug("Human feedback check skipped: enabled={}, detected={}", 
+							}
+							else {
+								logger.debug("Human feedback check skipped: enabled={}, detected={}",
 										finalHumanReviewEnabled, humanReviewDetected[0]);
 							}
 						}
@@ -394,7 +395,7 @@ public class Nl2sqlForGraphController {
 	public Flux<ServerSentEvent<String>> handleHumanFeedback(@RequestParam String sessionId,
 			@RequestParam String threadId, @RequestParam boolean feedBack,
 			@RequestParam(required = false, defaultValue = "") String feedBackContent) throws GraphStateException {
-		logger.info("Processing feedback: {} ({})", feedBack ? "approved" : "rejected", 
+		logger.info("Processing feedback: {} ({})", feedBack ? "approved" : "rejected",
 				feedBack ? "continue" : feedBackContent);
 
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
@@ -414,7 +415,8 @@ public class Nl2sqlForGraphController {
 					// 计划通过，继续执行
 					sink.tryEmitNext(ServerSentEvent.builder("执行中...").build());
 					executeApprovedPlan(state, threadId, sink);
-				} else {
+				}
+				else {
 					// 计划拒绝，重新生成
 					sink.tryEmitNext(ServerSentEvent.builder("重新生成中...").build());
 					executeRejectedPlan(state, threadId, sink);
@@ -459,7 +461,8 @@ public class Nl2sqlForGraphController {
 				sink.tryEmitComplete();
 				return null;
 			});
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Error starting approved plan execution: ", e);
 			sink.tryEmitNext(ServerSentEvent.builder("error: " + e.getMessage()).event("error").build());
 			sink.tryEmitComplete();
@@ -488,12 +491,17 @@ public class Nl2sqlForGraphController {
 						// 检测人工审核节点输出
 						if (streamingOutput.node() != null && streamingOutput.node().equals("human_feedback")
 								&& !rejectedHumanReviewDetected[0]) {
-							
-							String extractedPlanContent = extractPlanFromStreamingContent(rejectedPlanBuilder.toString());
-							if (extractedPlanContent.contains("thought_process") && extractedPlanContent.contains("execution_plan")) {
+
+							String extractedPlanContent = extractPlanFromStreamingContent(
+									rejectedPlanBuilder.toString());
+							if (extractedPlanContent.contains("thought_process")
+									&& extractedPlanContent.contains("execution_plan")) {
 								rejectedHumanReviewDetected[0] = true;
-								Map<String, Object> humanReviewData = Map.of("type", "human_feedback", "data", extractedPlanContent);
-								ServerSentEvent<String> reviewEvent = ServerSentEvent.builder(JSON.toJSONString(humanReviewData)).build();
+								Map<String, Object> humanReviewData = Map.of("type", "human_feedback", "data",
+										extractedPlanContent);
+								ServerSentEvent<String> reviewEvent = ServerSentEvent
+									.builder(JSON.toJSONString(humanReviewData))
+									.build();
 								sink.tryEmitNext(reviewEvent);
 								sink.tryEmitComplete();
 								return;
@@ -508,16 +516,20 @@ public class Nl2sqlForGraphController {
 				// 如果流式处理未检测到审核，检查最终状态
 				if (!rejectedHumanReviewDetected[0]) {
 					try {
-						StateSnapshot finalStateSnapshot = compiledGraph.getState(RunnableConfig.builder().threadId(threadId).build());
+						StateSnapshot finalStateSnapshot = compiledGraph
+							.getState(RunnableConfig.builder().threadId(threadId).build());
 						if (finalStateSnapshot != null) {
 							OverAllState finalState = finalStateSnapshot.state();
 							Optional<String> plannerOutputOpt = finalState.value(PLANNER_NODE_OUTPUT);
 							if (plannerOutputOpt.isPresent()) {
 								String currentPlanContent = plannerOutputOpt.get();
-								if (currentPlanContent != null && currentPlanContent.contains("thought_process") 
+								if (currentPlanContent != null && currentPlanContent.contains("thought_process")
 										&& currentPlanContent.contains("execution_plan")) {
-									Map<String, Object> humanReviewData = Map.of("type", "human_feedback", "data", currentPlanContent);
-									ServerSentEvent<String> reviewEvent = ServerSentEvent.builder(JSON.toJSONString(humanReviewData)).build();
+									Map<String, Object> humanReviewData = Map.of("type", "human_feedback", "data",
+											currentPlanContent);
+									ServerSentEvent<String> reviewEvent = ServerSentEvent
+										.builder(JSON.toJSONString(humanReviewData))
+										.build();
 									sink.tryEmitNext(reviewEvent);
 									sink.tryEmitComplete();
 									return;
@@ -529,7 +541,7 @@ public class Nl2sqlForGraphController {
 						logger.error("Error checking final state: ", e);
 					}
 				}
-				
+
 				sink.tryEmitNext(ServerSentEvent.builder("complete").event("complete").build());
 				sink.tryEmitComplete();
 			}).exceptionally(e -> {
@@ -538,7 +550,8 @@ public class Nl2sqlForGraphController {
 				sink.tryEmitComplete();
 				return null;
 			});
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Error starting rejected plan execution: ", e);
 			sink.tryEmitNext(ServerSentEvent.builder("error: " + e.getMessage()).event("error").build());
 			sink.tryEmitComplete();

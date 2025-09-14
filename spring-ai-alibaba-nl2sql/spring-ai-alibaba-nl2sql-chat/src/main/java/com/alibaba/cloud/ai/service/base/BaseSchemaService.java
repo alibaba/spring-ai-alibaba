@@ -276,19 +276,20 @@ public abstract class BaseSchemaService {
 			TableDTO dto = new TableDTO();
 			dto.setName((String) meta.get("name"));
 			dto.setDescription((String) meta.get("description"));
-		if (meta.containsKey("primaryKey")) {
-			Object primaryKeyObj = meta.get("primaryKey");
-			if (primaryKeyObj instanceof List) {
-				@SuppressWarnings("unchecked")
-				List<String> primaryKeys = (List<String>) primaryKeyObj;
-				dto.setPrimaryKeys(primaryKeys);
-			} else if (primaryKeyObj instanceof String) {
-				String primaryKey = (String) primaryKeyObj;
-				if (StringUtils.isNotBlank(primaryKey)) {
-					dto.setPrimaryKeys(List.of(primaryKey));
+			if (meta.containsKey("primaryKey")) {
+				Object primaryKeyObj = meta.get("primaryKey");
+				if (primaryKeyObj instanceof List) {
+					@SuppressWarnings("unchecked")
+					List<String> primaryKeys = (List<String>) primaryKeyObj;
+					dto.setPrimaryKeys(primaryKeys);
+				}
+				else if (primaryKeyObj instanceof String) {
+					String primaryKey = (String) primaryKeyObj;
+					if (StringUtils.isNotBlank(primaryKey)) {
+						dto.setPrimaryKeys(List.of(primaryKey));
+					}
 				}
 			}
-		}
 			tableList.add(dto);
 		}
 		return tableList;

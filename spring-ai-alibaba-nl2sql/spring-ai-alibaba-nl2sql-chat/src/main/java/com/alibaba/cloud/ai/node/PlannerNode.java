@@ -57,12 +57,13 @@ public class PlannerNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		String input = (String) state.value(INPUT_KEY).orElseThrow();
 		Boolean onlyNl2sql = state.value(IS_ONLY_NL2SQL, false);
-		
+
 		// 检查是否为修复模式
 		String validationError = StateUtils.getStringValue(state, PLAN_VALIDATION_ERROR, null);
 		if (validationError != null) {
 			logger.info("Regenerating plan with user feedback: {}", validationError);
-		} else {
+		}
+		else {
 			logger.info("Generating initial plan");
 		}
 
@@ -74,24 +75,20 @@ public class PlannerNode implements NodeAction {
 
 		// 构建用户提示
 		String userPrompt = buildUserPrompt(input, validationError, state);
-		
+
 		// 构建模板参数
-		Map<String, Object> params = Map.of(
-			"user_question", userPrompt,
-			"schema", schemaStr,
-			"business_knowledge", businessKnowledge,
-			"semantic_model", semanticModel,
-			"plan_validation_error", formatValidationError(validationError)
-		);
+		Map<String, Object> params = Map.of("user_question", userPrompt, "schema", schemaStr, "business_knowledge",
+				businessKnowledge, "semantic_model", semanticModel, "plan_validation_error",
+				formatValidationError(validationError));
 
 		// 生成计划
-		String plannerPrompt = (onlyNl2sql ? PromptConstant.getPlannerNl2sqlOnlyTemplate() 
-				: PromptConstant.getPlannerPromptTemplate()).render(params);
-		
+		String plannerPrompt = (onlyNl2sql ? PromptConstant.getPlannerNl2sqlOnlyTemplate()
+				: PromptConstant.getPlannerPromptTemplate())
+			.render(params);
+
 		Flux<ChatResponse> chatResponseFlux = chatClient.prompt().user(plannerPrompt).stream().chatResponse();
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(
-			this.getClass(), state, v -> Map.of(PLANNER_NODE_OUTPUT, v), 
-			chatResponseFlux, StreamResponseType.PLAN_GENERATION);
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
+				v -> Map.of(PLANNER_NODE_OUTPUT, v), chatResponseFlux, StreamResponseType.PLAN_GENERATION);
 
 		return Map.of(PLANNER_NODE_OUTPUT, generator);
 	}
@@ -100,20 +97,18 @@ public class PlannerNode implements NodeAction {
 		if (validationError == null) {
 			return input;
 		}
-		
+
 		String previousPlan = StateUtils.getStringValue(state, PLANNER_NODE_OUTPUT, "");
 		return String.format(
-			"IMPORTANT: User rejected previous plan with feedback: \"%s\"\n\n" +
-			"Original question: %s\n\n" +
-			"Previous rejected plan:\n%s\n\n" +
-			"CRITICAL: Generate new plan incorporating user feedback (\"%s\")",
-			validationError, input, previousPlan, validationError);
+				"IMPORTANT: User rejected previous plan with feedback: \"%s\"\n\n" + "Original question: %s\n\n"
+						+ "Previous rejected plan:\n%s\n\n"
+						+ "CRITICAL: Generate new plan incorporating user feedback (\"%s\")",
+				validationError, input, previousPlan, validationError);
 	}
 
 	private String formatValidationError(String validationError) {
-		return validationError != null ? 
-			String.format("**USER FEEDBACK (CRITICAL)**: %s\n\n**Must incorporate this feedback.**", validationError) : 
-			"";
+		return validationError != null ? String
+			.format("**USER FEEDBACK (CRITICAL)**: %s\n\n**Must incorporate this feedback.**", validationError) : "";
 	}
 
 }
