@@ -15,7 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.*;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
@@ -25,34 +26,34 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
-import com.alibaba.cloud.ai.graph.internal.node.CommandNode;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
-import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
-import com.alibaba.cloud.ai.graph.utils.TryFunction;
-import com.alibaba.cloud.ai.graph.utils.TypeRef;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.Edges;
+import static com.alibaba.cloud.ai.graph.StateGraph.Nodes;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
-import static java.util.Optional.ofNullable;
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -62,28 +63,17 @@ public class CompiledGraph {
 
 	private static final Logger log = LoggerFactory.getLogger(CompiledGraph.class);
 
-	/**
-	 * The enum Stream mode.
-	 */
-	public enum StreamMode {
-
-		/**
-		 * Values stream mode.
-		 */
-		VALUES,
-		/**
-		 * Snapshots stream mode.
-		 */
-		SNAPSHOTS
-
-	}
+	private static String INTERRUPT_AFTER = "__INTERRUPTED__";
 
 	/**
 	 * The State graph.
 	 */
 	public final StateGraph stateGraph;
 
-	private final Map<String, KeyStrategy> keyStrategyMap;
+	/**
+	 * The Compile config.
+	 */
+	public final CompileConfig compileConfig;
 
 	/**
 	 * The Nodes.
@@ -95,16 +85,11 @@ public class CompiledGraph {
 	 */
 	final Map<String, EdgeValue> edges = new LinkedHashMap<>();
 
+	private final Map<String, KeyStrategy> keyStrategyMap;
+
 	private final ProcessedNodesEdgesAndConfig processedData;
 
 	private int maxIterations = 25;
-
-	/**
-	 * The Compile config.
-	 */
-	public final CompileConfig compileConfig;
-
-	private static String INTERRUPT_AFTER = "__INTERRUPTED__";
 
 	/**
 	 * Constructs a CompiledGraph with the given StateGraph.
@@ -170,6 +155,8 @@ public class CompiledGraph {
 					.collect(Collectors.toSet());
 
 				if (parallelNodeTargets.size() > 1) {
+
+					// find the first defer node
 
 					var conditionalEdges = parallelNodeEdges.stream()
 						.filter(ee -> ee.target().value() != null)
@@ -282,18 +269,6 @@ public class CompiledGraph {
 		return updateState(config, values, null);
 	}
 
-	/**
-	 * Sets the maximum number of iterations for the graph execution.
-	 * @param maxIterations the maximum number of iterations
-	 * @throws IllegalArgumentException if maxIterations is less than or equal to 0
-	 */
-	public void setMaxIterations(int maxIterations) {
-		if (maxIterations <= 0) {
-			throw new IllegalArgumentException("maxIterations must be > 0!");
-		}
-		this.maxIterations = maxIterations;
-	}
-
 	private Command nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, RunnableConfig config)
 			throws Exception {
 
@@ -348,7 +323,7 @@ public class CompiledGraph {
 
 	private boolean shouldInterruptAfter(String nodeId, String previousNodeId) {
 		if (nodeId == null || Objects.equals(nodeId, previousNodeId)) { // FIX RESUME
-																		// ERROR
+			// ERROR
 			return false;
 		}
 		return (compileConfig.interruptBeforeEdge() && Objects.equals(nodeId, INTERRUPT_AFTER))
@@ -376,7 +351,7 @@ public class CompiledGraph {
 	 * @param config the config
 	 * @return the initial state
 	 */
-	Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
+	public Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
 
 		return compileConfig.checkpointSaver()
 			.flatMap(saver -> saver.get(config))
@@ -400,85 +375,179 @@ public class CompiledGraph {
 	 * @param data the data
 	 * @return the over all state
 	 */
-	OverAllState cloneState(Map<String, Object> data) throws IOException, ClassNotFoundException {
+	public OverAllState cloneState(Map<String, Object> data) throws IOException, ClassNotFoundException {
 		return new OverAllState(stateGraph.getStateSerializer().cloneObject(data).data());
 	}
 
 	/**
-	 * Creates an AsyncGenerator stream of NodeOutput based on the provided inputs.
+	 * Package-private access to nodes for ReactiveNodeGenerator
+	 */
+	public AsyncNodeActionWithConfig getNodeAction(String nodeId) {
+		return nodes.get(nodeId);
+	}
+
+	/**
+	 * Package-private access to edges for ReactiveNodeGenerator
+	 */
+	public EdgeValue getEdge(String nodeId) {
+		return edges.get(nodeId);
+	}
+
+	/**
+	 * Package-private access to keyStrategyMap for ReactiveNodeGenerator
+	 */
+	public Map<String, KeyStrategy> getKeyStrategyMap() {
+		return keyStrategyMap;
+	}
+
+	/**
+	 * Package-private access to maxIterations for ReactiveNodeGenerator
+	 */
+	public int getMaxIterations() {
+		return maxIterations;
+	}
+
+	/**
+	 * Sets the maximum number of iterations for the graph execution.
+	 * @param maxIterations the maximum number of iterations
+	 * @throws IllegalArgumentException if maxIterations is less than or equal to 0
+	 */
+	public void setMaxIterations(int maxIterations) {
+		if (maxIterations <= 0) {
+			throw new IllegalArgumentException("maxIterations must be > 0!");
+		}
+		this.maxIterations = maxIterations;
+	}
+
+	public Flux<GraphResponse<NodeOutput>> fluxDataStream(Map<String, Object> inputs, RunnableConfig config) {
+		return fluxDataStream(stateCreate(inputs), config);
+	}
+
+	public Flux<GraphResponse<NodeOutput>> fluxDataStream(OverAllState state, RunnableConfig config) {
+		Objects.requireNonNull(config, "config cannot be null");
+		try {
+			GraphRunner runner = new GraphRunner(this, state, config);
+			return runner.run();
+		}
+		catch (Exception e) {
+			return Flux.error(e);
+		}
+	}
+
+	/**
+	 * Creates a Flux stream of NodeOutput based on the provided inputs. This is the
+	 * modern reactive approach using Project Reactor.
 	 * @param inputs the input map
 	 * @param config the invoke configuration
-	 * @return an AsyncGenerator stream of NodeOutput
+	 * @return a Flux stream of NodeOutput
 	 */
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config)
-			throws GraphRunnerException {
-		Objects.requireNonNull(config, "config cannot be null");
-		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(stateCreate(inputs), config);
-
-		return new AsyncGenerator.WithEmbed<>(generator);
+	public Flux<NodeOutput> fluxStream(Map<String, Object> inputs, RunnableConfig config) {
+		return fluxStreamFromInitialNode(stateCreate(inputs), config);
 	}
 
 	/**
-	 * Stream async generator.
-	 * @param overAllState the over all state
-	 * @param config the config
-	 * @return the async generator
+	 * Creates a Flux stream from an initial state.
+	 * @param overAllState the initial state
+	 * @param config the configuration
+	 * @return a Flux stream of NodeOutput
 	 */
-	public AsyncGenerator<NodeOutput> streamFromInitialNode(OverAllState overAllState, RunnableConfig config)
-			throws GraphRunnerException {
+	public Flux<NodeOutput> fluxStreamFromInitialNode(OverAllState overAllState, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
-		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(overAllState, config);
-
-		return new AsyncGenerator.WithEmbed<>(generator);
+		try {
+			GraphRunner runner = new GraphRunner(this, overAllState, config);
+			return runner.run().flatMap(data -> {
+				if (data.isDone()) {
+					// TODO, collect data.resultValue if necessary.
+					return Flux.empty();
+				}
+				if (data.isError()) {
+					return Mono.fromFuture(data.getOutput()).onErrorMap(throwable -> throwable).flux();
+				}
+				return Mono.fromFuture(data.getOutput()).flux();
+			});
+		}
+		catch (Exception e) {
+			return Flux.error(e);
+		}
 	}
 
 	/**
-	 * Creates an AsyncGenerator stream of NodeOutput based on the provided inputs.
+	 * Creates a Flux stream of NodeOutput based on the provided inputs.
 	 * @param inputs the input map
-	 * @return an AsyncGenerator stream of NodeOutput
+	 * @return a Flux stream of NodeOutput
 	 */
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs) throws GraphRunnerException {
-		return this.streamFromInitialNode(stateCreate(inputs), RunnableConfig.builder().build());
+	public Flux<NodeOutput> fluxStream(Map<String, Object> inputs) {
+		return fluxStream(inputs, RunnableConfig.builder().build());
 	}
 
 	/**
-	 * Stream async generator.
-	 * @return the async generator
+	 * Creates a Flux stream with empty inputs.
+	 * @return a Flux stream of NodeOutput
 	 */
-	public AsyncGenerator<NodeOutput> stream() throws GraphRunnerException {
-		return this.stream(Map.of(), RunnableConfig.builder().build());
+	public Flux<NodeOutput> fluxStream() {
+		return fluxStream(Map.of());
 	}
 
 	/**
-	 * Invokes the graph execution with the provided inputs and returns the final state.
+	 * Creates a Flux stream for snapshots based on the provided inputs.
 	 * @param inputs the input map
 	 * @param config the invoke configuration
-	 * @return an Optional containing the final state if present, otherwise an empty
-	 * Optional
+	 * @return a Flux stream of NodeOutput containing snapshots
 	 */
-	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config)
-			throws GraphRunnerException {
-		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
+	public Flux<NodeOutput> fluxStreamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
+		Objects.requireNonNull(config, "config cannot be null");
+		return fluxStream(inputs, config.withStreamMode(StreamMode.SNAPSHOTS));
 	}
 
 	/**
-	 * Invoke optional.
-	 * @param overAllState the over all state
-	 * @param config the config
-	 * @return the optional
-	 */
-	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) throws GraphRunnerException {
-		return streamFromInitialNode(overAllState, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
-	}
-
-	/**
-	 * Invokes the graph execution with the provided inputs and returns the final state.
+	 * Calls the graph execution and returns the final state.
 	 * @param inputs the input map
-	 * @return an Optional containing the final state if present, otherwise an empty
-	 * Optional
+	 * @param config the invoke configuration
+	 * @return an Optional containing the final state
 	 */
-	public Optional<OverAllState> invoke(Map<String, Object> inputs) throws GraphRunnerException {
-		return this.invoke(stateCreate(inputs), RunnableConfig.builder().build());
+	public Optional<OverAllState> call(Map<String, Object> inputs, RunnableConfig config) {
+		return Optional.ofNullable(fluxStream(inputs, config).last().map(NodeOutput::state).block());
+	}
+
+	/**
+	 * Calls the graph execution from initial state and returns the final state.
+	 * @param overAllState the initial state
+	 * @param config the configuration
+	 * @return an Optional containing the final state
+	 */
+	public Optional<OverAllState> call(OverAllState overAllState, RunnableConfig config) {
+		return Optional
+			.ofNullable(fluxStreamFromInitialNode(overAllState, config).last().map(NodeOutput::state).block()); // 阻塞等待结果
+	}
+
+	/**
+	 * Calls the graph execution and returns the final state.
+	 * @param inputs the input map
+	 * @return an Optional containing the final state
+	 */
+	public Optional<OverAllState> call(Map<String, Object> inputs) {
+		return call(inputs, RunnableConfig.builder().build());
+	}
+
+	/**
+	 * Resumes graph execution reactively.
+	 * @param feedback the human feedback
+	 * @param config the configuration
+	 * @return an Optional containing the final state
+	 */
+	public Optional<OverAllState> resume(OverAllState.HumanFeedback feedback, RunnableConfig config) {
+		try {
+			StateSnapshot stateSnapshot = this.getState(config);
+			OverAllState resumeState = stateCreate(stateSnapshot.state().data());
+			resumeState.withResume();
+			resumeState.withHumanFeedback(feedback);
+
+			return Optional
+				.ofNullable(fluxStreamFromInitialNode(resumeState, config).last().map(NodeOutput::state).block()); // 阻塞等待结果
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Resume execution failed", e);
+		}
 	}
 
 	/**
@@ -501,35 +570,12 @@ public class CompiledGraph {
 	}
 
 	/**
-	 * Experimental API
-	 * @param feedback the feedback
-	 * @param config the config
-	 * @return the optional
+	 * Get the last StateSnapshot of the given RunnableConfig.
+	 * @param config - the RunnableConfig
+	 * @return the last StateSnapshot of the given RunnableConfig if any
 	 */
-	public Optional<OverAllState> resume(OverAllState.HumanFeedback feedback, RunnableConfig config)
-			throws GraphRunnerException {
-		StateSnapshot stateSnapshot = this.getState(config);
-		OverAllState resumeState = stateCreate(stateSnapshot.state().data());
-		resumeState.withResume();
-		resumeState.withHumanFeedback(feedback);
-
-		return this.invoke(resumeState, config);
-	}
-
-	/**
-	 * Creates an AsyncGenerator stream of NodeOutput based on the provided inputs.
-	 * @param inputs the input map
-	 * @param config the invoke configuration
-	 * @return an AsyncGenerator stream of NodeOutput
-	 */
-	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config)
-			throws GraphRunnerException {
-		Objects.requireNonNull(config, "config cannot be null");
-
-		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(stateCreate(inputs),
-				config.withStreamMode(StreamMode.SNAPSHOTS));
-
-		return new AsyncGenerator.WithEmbed<>(generator);
+	Optional<StateSnapshot> lastStateOf(RunnableConfig config) {
+		return getStateHistory(config).stream().findFirst();
 	}
 
 	/**
@@ -545,15 +591,6 @@ public class CompiledGraph {
 				printConditionalEdges);
 
 		return new GraphRepresentation(type, content);
-	}
-
-	/**
-	 * Get the last StateSnapshot of the given RunnableConfig.
-	 * @param config - the RunnableConfig
-	 * @return the last StateSnapshot of the given RunnableConfig if any
-	 */
-	Optional<StateSnapshot> lastStateOf(RunnableConfig config) {
-		return getStateHistory(config).stream().findFirst();
 	}
 
 	/**
@@ -579,469 +616,162 @@ public class CompiledGraph {
 	}
 
 	/**
-	 * Async Generator for streaming outputs.
-	 *
-	 * @param <Output> the type of the output
+	 * Creates an AsyncGenerator stream of NodeOutput based on the provided inputs.
+	 * @deprecated Use {@link #fluxStream(Map, RunnableConfig)} which returns Flux instead
+	 * @param inputs the input map
+	 * @param config the invoke configuration
+	 * @return an AsyncGenerator stream of NodeOutput
 	 */
-	public class AsyncNodeGenerator<Output extends NodeOutput> implements AsyncGenerator<Output> {
+	@Deprecated(since = "1.0.4", forRemoval = true)
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config)
+			throws GraphRunnerException {
+		Objects.requireNonNull(config, "config cannot be null");
+		// Convert Flux to AsyncGenerator for backward compatibility
+		Flux<NodeOutput> flux = fluxStream(inputs, config);
+		return AsyncGenerator.fromFlux(flux);
+	}
 
-		static class Context {
+	// ========================================
+	// DEPRECATED METHODS FROM CompiledGraph2
+	// ========================================
 
-			record ReturnFromEmbed(Object value) {
-				<T> Optional<T> value(TypeRef<T> ref) {
-					return ofNullable(value).flatMap(ref::cast);
-				}
+	/**
+	 * Stream async generator from initial node.
+	 * @deprecated Use {@link #fluxStreamFromInitialNode(OverAllState, RunnableConfig)}
+	 * which returns Flux instead
+	 * @param overAllState the over all state
+	 * @param config the config
+	 * @return the async generator
+	 */
+	@Deprecated(since = "1.0.4", forRemoval = true)
+	public AsyncGenerator<NodeOutput> streamFromInitialNode(OverAllState overAllState, RunnableConfig config)
+			throws GraphRunnerException {
+		Objects.requireNonNull(config, "config cannot be null");
+		// Convert Flux to AsyncGenerator for backward compatibility
+		Flux<NodeOutput> flux = fluxStreamFromInitialNode(overAllState, config);
+		return AsyncGenerator.fromFlux(flux);
+	}
 
-			}
+	/**
+	 * Creates an AsyncGenerator stream of NodeOutput based on the provided inputs.
+	 * @deprecated Use {@link #fluxStream(Map)} which returns Flux instead
+	 * @param inputs the input map
+	 * @return an AsyncGenerator stream of NodeOutput
+	 */
+	@Deprecated(since = "1.0.4", forRemoval = true)
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs) throws GraphRunnerException {
+		// Convert Flux to AsyncGenerator for backward compatibility
+		Flux<NodeOutput> flux = fluxStream(inputs);
+		return AsyncGenerator.fromFlux(flux);
+	}
 
-			private String currentNodeId;
+	/**
+	 * Stream async generator with empty inputs.
+	 * @deprecated Use {@link #fluxStream()} which returns Flux instead
+	 * @return the async generator
+	 */
+	@Deprecated(since = "1.0.4", forRemoval = true)
+	public AsyncGenerator<NodeOutput> stream() throws GraphRunnerException {
+		// Convert Flux to AsyncGenerator for backward compatibility
+		Flux<NodeOutput> flux = fluxStream();
+		return AsyncGenerator.fromFlux(flux);
+	}
 
-			private String nextNodeId;
-
-			private String resumeFrom;
-
-			private ReturnFromEmbed returnFromEmbed;
-
-			Context() {
-				currentNodeId = START;
-				nextNodeId = null;
-				resumeFrom = null;
-				returnFromEmbed = null;
-			}
-
-			Context(Checkpoint cp) {
-				currentNodeId = null;
-				nextNodeId = cp.getNextNodeId();
-				resumeFrom = cp.getNodeId();
-			}
-
-			void reset() {
-				currentNodeId = null;
-				nextNodeId = null;
-				resumeFrom = null;
-				returnFromEmbed = null;
-			}
-
-			String nextNodeId() {
-				return nextNodeId;
-			}
-
-			void setNextNodeId(String value) {
-				nextNodeId = value;
-			}
-
-			String currentNodeId() {
-				return currentNodeId;
-			}
-
-			void setCurrentNodeId(String value) {
-				currentNodeId = value;
-			}
-
-			Optional<String> getResumeFromAndReset() {
-				final var result = ofNullable(resumeFrom);
-				resumeFrom = null;
-				return result;
-			}
-
-			Optional<ReturnFromEmbed> getReturnFromEmbedAndReset() {
-				var result = ofNullable(returnFromEmbed);
-				returnFromEmbed = null;
-				return result;
-			}
-
-			void setReturnFromEmbedWithValue(Object value) {
-				returnFromEmbed = new ReturnFromEmbed(value);
-			}
-
+	/**
+	 * Invokes the graph execution with the provided inputs and returns the final state.
+	 * @deprecated Use {@link #call(Map, RunnableConfig)} which returns
+	 * Optional&lt;OverAllState&gt; instead
+	 * @param inputs the input map
+	 * @param config the invoke configuration
+	 * @return an Optional containing the final state if present, otherwise an empty
+	 * Optional
+	 */
+	@Deprecated(since = "1.0.4", forRemoval = true)
+	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config)
+			throws GraphRunnerException {
+		try {
+			return call(inputs, config);
 		}
+		catch (Exception e) {
+			if (e instanceof GraphRunnerException) {
+				throw e;
+			}
+			throw new GraphRunnerException("Invoke execution failed", e);
+		}
+	}
 
-		final Context context;
+	/**
+	 * Invoke with initial state.
+	 * @deprecated Use {@link #call(OverAllState, RunnableConfig)} which returns
+	 * Optional&lt;OverAllState&gt; instead
+	 * @param overAllState the over all state
+	 * @param config the config
+	 * @return the optional
+	 */
+	@Deprecated(since = "1.0.4", forRemoval = true)
+	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) throws GraphRunnerException {
+		try {
+			return call(overAllState, config);
+		}
+		catch (Exception e) {
+			if (e instanceof GraphRunnerException) {
+				throw e;
+			}
+			throw new GraphRunnerException("Invoke execution failed", e);
+		}
+	}
 
-		int iteration = 0;
+	/**
+	 * Invokes the graph execution with the provided inputs and returns the final state.
+	 * @deprecated Use {@link #call(Map)} which returns Optional&lt;OverAllState&gt;
+	 * instead
+	 * @param inputs the input map
+	 * @return an Optional containing the final state if present, otherwise an empty
+	 * Optional
+	 */
+	@Deprecated(since = "1.0.4", forRemoval = true)
+	public Optional<OverAllState> invoke(Map<String, Object> inputs) throws GraphRunnerException {
+		try {
+			return call(inputs);
+		}
+		catch (Exception e) {
+			if (e instanceof GraphRunnerException) {
+				throw e;
+			}
+			throw new GraphRunnerException("Invoke execution failed", e);
+		}
+	}
 
-		final RunnableConfig config;
+	/**
+	 * Creates an AsyncGenerator stream for snapshots based on the provided inputs.
+	 * @deprecated Use {@link #fluxStreamSnapshots(Map, RunnableConfig)} which returns
+	 * Flux instead
+	 * @param inputs the input map
+	 * @param config the invoke configuration
+	 * @return an AsyncGenerator stream of NodeOutput
+	 */
+	@Deprecated(since = "1.0.4", forRemoval = true)
+	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config)
+			throws GraphRunnerException {
+		Objects.requireNonNull(config, "config cannot be null");
+		// Convert Flux to AsyncGenerator for backward compatibility
+		Flux<NodeOutput> flux = fluxStreamSnapshots(inputs, config);
+		return AsyncGenerator.fromFlux(flux);
+	}
 
-		volatile boolean returnFromEmbed = false;
-
-		Map<String, Object> currentState;
+	/**
+	 * The enum Stream mode.
+	 */
+	public enum StreamMode {
 
 		/**
-		 * The Over all state.
+		 * Values stream mode.
 		 */
-		OverAllState overAllState;
-
+		VALUES,
 		/**
-		 * Instantiates a new Async node generator.
-		 * @param overAllState the over all state
-		 * @param config the config
+		 * Snapshots stream mode.
 		 */
-		protected AsyncNodeGenerator(OverAllState overAllState, RunnableConfig config) throws GraphRunnerException {
-
-			if (overAllState.isResume()) {
-
-				log.trace("RESUME REQUEST");
-
-				var saver = compileConfig.checkpointSaver()
-					.orElseThrow(
-							() -> (new IllegalStateException("Resume request without a configured checkpoint saver!")));
-				var startCheckpoint = saver.get(config)
-					.orElseThrow(() -> (new IllegalStateException("Resume request without a valid checkpoint!")));
-
-				var startCheckpointNextNodeAction = nodes.get(startCheckpoint.getNextNodeId());
-				if (startCheckpointNextNodeAction instanceof SubCompiledGraphNodeAction action) {
-
-					// RESUME FORM SUBGRAPH DETECTED
-
-					this.config = RunnableConfig.builder(config)
-						.checkPointId(null) // Reset checkpoint id
-						.addMetadata(action.resumeSubGraphId(), true) // add metadata for
-																		// sub graph
-						.build();
-				}
-				else {
-					// Reset checkpoint id
-					this.config = config.withCheckPointId(null);
-
-				}
-
-				this.currentState = startCheckpoint.getState();
-				this.context = new Context(startCheckpoint);
-				this.overAllState = overAllState.input(this.currentState);
-				log.trace("RESUME FROM {}", startCheckpoint.getNodeId());
-
-				// this.nextNodeId = startCheckpoint.getNextNodeId();
-				// this.currentNodeId = null;
-				// log.trace("RESUME FROM {}", startCheckpoint.getNodeId());
-			}
-			else {
-
-				log.trace("START");
-				Map<String, Object> inputs = overAllState.data();
-				boolean verify = overAllState.keyVerify();
-				if (!CollectionUtils.isEmpty(inputs) && !verify) {
-					throw RunnableErrors.initializationError.exception(Arrays.toString(inputs.keySet().toArray()));
-				}
-				// patch for backward support of AppendableValue
-				this.currentState = getInitialState(inputs, config);
-				this.overAllState = overAllState.input(currentState);
-				this.context = new Context();
-				// this.nextNodeId = null;
-				// this.currentNodeId = START;
-				this.config = config;
-			}
-		}
-
-		private Optional<BaseCheckpointSaver.Tag> releaseThread() throws Exception {
-			if (compileConfig.releaseThread() && compileConfig.checkpointSaver().isPresent()) {
-				return Optional.of(compileConfig.checkpointSaver().get().release(config));
-			}
-			return Optional.empty();
-		}
-
-		/**
-		 * Build node output output.
-		 * @param nodeId the node id
-		 * @return the output
-		 */
-		@SuppressWarnings("unchecked")
-		protected Output buildNodeOutput(String nodeId) throws Exception {
-			return (Output) NodeOutput.of(nodeId, cloneState(currentState));
-		}
-
-		/**
-		 * Clone state over all state.
-		 * @param data the data
-		 * @return the over all state
-		 */
-		OverAllState cloneState(Map<String, Object> data) throws IOException, ClassNotFoundException {
-			return new OverAllState(stateGraph.getStateSerializer().cloneObject(data).data(), keyStrategyMap,
-					overAllState.isResume(), overAllState.getStore());
-		}
-
-		/**
-		 * Build state snapshot output.
-		 * @param checkpoint the checkpoint
-		 * @return the output
-		 */
-		@SuppressWarnings("unchecked")
-		protected Output buildStateSnapshot(Checkpoint checkpoint) {
-			return (Output) StateSnapshot.of(keyStrategyMap, checkpoint, config,
-					stateGraph.getStateSerializer().stateFactory());
-		}
-
-		/**
-		 * Gets embed generator from partial state.
-		 * @param partialState the partial state containing generator instances
-		 * @return an Optional containing Data with the generator if found, empty
-		 * otherwise
-		 */
-		private Optional<Data<Output>> getEmbedGenerator(Map<String, Object> partialState) {
-			return partialState.entrySet()
-				.stream()
-				.filter(e -> e.getValue() instanceof AsyncGenerator)
-				.findFirst()
-				.map(generatorEntry -> {
-					final var generator = (AsyncGenerator<Output>) generatorEntry.getValue();
-					return Data.composeWith(generator.map(n -> {
-						n.setSubGraph(true);
-						return n;
-					}), data -> {
-
-						if (data instanceof InterruptionMetadata) {
-							context.setReturnFromEmbedWithValue(data);
-							return;
-						}
-
-						if (data != null) {
-
-							if (data instanceof Map<?, ?>) {
-								// FIX #102
-								// Assume that the whatever used appender channel doesn't
-								// accept duplicates
-								// FIX #104: remove generator
-								var partialStateWithoutGenerator = partialState.entrySet()
-									.stream()
-									.filter(e -> !Objects.equals(e.getKey(), generatorEntry.getKey()))
-									.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-								var intermediateState = OverAllState.updateState(currentState,
-										partialStateWithoutGenerator, keyStrategyMap);
-
-								currentState = OverAllState.updateState(intermediateState, (Map<String, Object>) data,
-										keyStrategyMap);
-								this.overAllState.updateState(currentState);
-							}
-							else {
-								throw new IllegalArgumentException("Embedded generator must return a Map");
-							}
-						}
-
-						var nextNodeCommand = nextNodeId(context.currentNodeId(), currentState, config);
-						context.setNextNodeId(nextNodeCommand.gotoNode());
-						// nextNodeId = nextNodeCommand.gotoNode();
-						currentState = nextNodeCommand.update();
-
-						returnFromEmbed = true;
-					});
-				});
-		}
-
-		private CompletableFuture<Data<Output>> evaluateAction(AsyncNodeActionWithConfig action,
-				OverAllState withState) {
-			try {
-				doListeners(NODE_BEFORE, null);
-				return action.apply(withState, config).thenApply(TryFunction.Try(updateState -> {
-					try {
-						if (action instanceof CommandNode.AsyncCommandNodeActionWithConfig) {
-							AsyncCommandAction commandAction = (AsyncCommandAction) updateState.get("command");
-							Command command = commandAction.apply(withState, config).join();
-
-							this.currentState = OverAllState.updateState(currentState, command.update(),
-									keyStrategyMap);
-							this.overAllState.updateState(command.update());
-							context.setNextNodeId(command.gotoNode());
-							return Data.of(getNodeOutput());
-						}
-
-						Optional<Data<Output>> embed = getEmbedGenerator(updateState);
-						if (embed.isPresent()) {
-							return embed.get();
-						}
-
-						this.currentState = OverAllState.updateState(currentState, updateState, keyStrategyMap);
-						this.overAllState.updateState(updateState);
-						if (compileConfig.interruptBeforeEdge()
-								&& compileConfig.interruptsAfter().contains(context.currentNodeId())) {
-							// nextNodeId = INTERRUPT_AFTER;
-							context.setNextNodeId(INTERRUPT_AFTER);
-						}
-						else {
-							var nextNodeCommand = nextNodeId(context.currentNodeId(), currentState, config);
-							// nextNodeId = nextNodeCommand.gotoNode();
-							context.setNextNodeId(nextNodeCommand.gotoNode());
-							currentState = nextNodeCommand.update();
-
-						}
-
-						return Data.of(getNodeOutput());
-					}
-					catch (Exception e) {
-						throw new CompletionException(e);
-					}
-				})).whenComplete((outputData, throwable) -> doListeners(NODE_AFTER, null));
-			}
-			catch (Exception e) {
-				return failedFuture(e);
-			}
-
-		}
-
-		/**
-		 * Determines the next node ID based on the current node ID and state.
-		 * @param nodeId the current node ID
-		 * @param state the current state
-		 * @return the next node command
-		 * @throws Exception if there is an error determining the next node ID
-		 */
-		private Command nextNodeId(String nodeId, Map<String, Object> state, RunnableConfig config) throws Exception {
-			return nextNodeId(edges.get(nodeId), state, nodeId, config);
-
-		}
-
-		private Command nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, RunnableConfig config)
-				throws Exception {
-
-			if (route == null) {
-				throw RunnableErrors.missingEdge.exception(nodeId);
-			}
-			if (route.id() != null) {
-				return new Command(route.id(), state);
-			}
-			if (route.value() != null) {
-
-				var command = route.value().action().apply(this.overAllState, config).get();
-
-				var newRoute = command.gotoNode();
-
-				String result = route.value().mappings().get(newRoute);
-				if (result == null) {
-					throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
-				}
-
-				var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
-				this.overAllState.updateState(command.update());
-				return new Command(result, currentState);
-			}
-			throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
-		}
-
-		private CompletableFuture<Output> getNodeOutput() throws Exception {
-			Optional<Checkpoint> cp = addCheckpoint(config, context.currentNodeId(), currentState, context.nextNodeId(),
-					this.overAllState);
-			return completedFuture((cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
-					? buildStateSnapshot(cp.get()) : buildNodeOutput(context.currentNodeId()));
-		}
-
-		@Override
-		public Data<Output> next() {
-			try {
-				// GUARD: CHECK MAX ITERATION REACHED
-				if (++iteration > maxIterations) {
-					// log.warn( "Maximum number of iterations ({}) reached!",
-					// maxIterations);
-					return Data.error(new IllegalStateException(
-							format("Maximum number of iterations (%d) reached!", maxIterations)));
-				}
-
-				// GUARD: CHECK IF IT IS END
-				if (context.nextNodeId() == null && context.currentNodeId() == null) {
-					return releaseThread().map(Data::<Output>done).orElseGet(() -> Data.done(currentState));
-				}
-
-				final var returnFromEmbed = context.getReturnFromEmbedAndReset();
-
-				// IS IT A RESUME FROM EMBED ?
-				if (returnFromEmbed.isPresent()) {
-
-					var interruption = returnFromEmbed.get().value(new TypeRef<InterruptionMetadata>() {
-					});
-
-					if (interruption.isPresent()) {
-						return Data.done(interruption.get());
-					}
-
-					return Data.of(getNodeOutput());
-				}
-
-				if (context.currentNodeId() != null && config.isInterrupted(context.currentNodeId())) {
-					config.withNodeResumed(context.currentNodeId());
-					return Data.done(currentState);
-				}
-
-				if (START.equals(context.currentNodeId())) {
-					doListeners(START, null);
-					var nextNodeCommand = getEntryPoint(currentState, config);
-					context.setNextNodeId(nextNodeCommand.gotoNode());
-					currentState = nextNodeCommand.update();
-
-					var cp = addCheckpoint(config, START, currentState, context.nextNodeId(), overAllState);
-
-					var output = (cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
-							? buildStateSnapshot(cp.get()) : buildNodeOutput(context.currentNodeId());
-
-					context.setCurrentNodeId(context.nextNodeId());
-					// currentNodeId = nextNodeId;
-
-					return Data.of(output);
-				}
-
-				if (END.equals(context.nextNodeId())) {
-					context.reset();
-					doListeners(END, null);
-					// nextNodeId = null;
-					// currentNodeId = null;
-					return Data.of(buildNodeOutput(END));
-				}
-
-				final var resumeFrom = context.getResumeFromAndReset();
-				if (resumeFrom.isPresent()) {
-
-					if (compileConfig.interruptBeforeEdge() && Objects.equals(context.nextNodeId(), INTERRUPT_AFTER)) {
-						var nextNodeCommand = nextNodeId(resumeFrom.get(), currentState, config);
-						// nextNodeId = nextNodeCommand.gotoNode();
-						context.setNextNodeId(nextNodeCommand.gotoNode());
-
-						currentState = nextNodeCommand.update();
-						context.setCurrentNodeId(null);
-
-					}
-
-				}
-
-				// check on previous node
-				if (shouldInterruptAfter(context.currentNodeId(), context.nextNodeId())) {
-					return Data
-						.done(InterruptionMetadata.builder(context.currentNodeId(), cloneState(currentState)).build());
-				}
-
-				if (shouldInterruptBefore(context.nextNodeId(), context.currentNodeId())) {
-					return Data
-						.done(InterruptionMetadata.builder(context.currentNodeId(), cloneState(currentState)).build());
-				}
-
-				context.setCurrentNodeId(context.nextNodeId());
-				// currentNodeId = nextNodeId;
-
-				var action = nodes.get(context.currentNodeId());
-
-				if (action == null)
-					throw RunnableErrors.missingNode.exception(context.currentNodeId());
-
-				if (action instanceof InterruptableAction) {
-					@SuppressWarnings("unchecked")
-					final var interruption = (InterruptableAction) action;
-					final var interruptMetadata = interruption.interrupt(context.currentNodeId(),
-							cloneState(currentState));
-					if (interruptMetadata.isPresent()) {
-						return Data.done(interruptMetadata.get());
-					}
-				}
-
-				return evaluateAction(action, this.overAllState).get();
-			}
-			catch (Exception e) {
-				doListeners(ERROR, e);
-				log.error(e.getMessage(), e);
-				return Data.error(e);
-			}
-		}
-
-		private void doListeners(String scene, Exception e) {
-			Deque<GraphLifecycleListener> listeners = new LinkedBlockingDeque<>(compileConfig.lifecycleListeners());
-			LifeListenerUtil.processListenersLIFO(this.context.currentNodeId(), listeners, this.currentState,
-					this.config, scene, e);
-		}
+		SNAPSHOTS
 
 	}
 
@@ -1170,19 +900,6 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 			// Process nodes
 			//
 			processedSubGraphNodes.elements.stream().map(n -> {
-				if (n instanceof CommandNode commandNode) {
-					Map<String, String> mappings = commandNode.getMappings();
-					HashMap<String, String> newMappings = new HashMap<>();
-					mappings.forEach((key, value) -> {
-						newMappings.put(key, subgraphNode.formatId(value));
-					});
-					return new CommandNode(subgraphNode.formatId(n.id()),
-							AsyncCommandAction.node_async((state, config1) -> {
-								Command command = commandNode.getAction().apply(state, config1).join();
-								String NewGoToNode = subgraphNode.formatId(command.gotoNode());
-								return new Command(NewGoToNode, command.update());
-							}), newMappings);
-				}
 				return n.withIdUpdated(subgraphNode::formatId);
 			}).forEach(nodes.elements::add);
 		}

@@ -26,13 +26,15 @@ public enum NodeType {
 
 	ANSWER("answer", "answer", "UNSUPPORTED"),
 
+	MIDDLE_OUTPUT("middle-output", "UNSUPPORTED", "Output"),
+
 	AGENT("agent", "agent", "UNSUPPORTED"),
 
-	LLM("llm", "llm", "UNSUPPORTED"),
+	LLM("llm", "llm", "LLM"),
 
-	CODE("code", "code", "UNSUPPORTED"),
+	CODE("code", "code", "Script"),
 
-	RETRIEVER("retriever", "knowledge-retrieval", "UNSUPPORTED"),
+	RETRIEVER("retriever", "knowledge-retrieval", "Retrieval"),
 
 	AGGREGATOR("aggregator", "variable-aggregator", "UNSUPPORTED"),
 
@@ -56,9 +58,13 @@ public enum NodeType {
 
 	TEMPLATE_TRANSFORM("template-transform", "template-transform", "UNSUPPORTED"),
 
-	ITERATION("iteration", "iteration", "UNSUPPORTED"),
+	ITERATION("iteration", "iteration", "Parallel"),
 
-	DIFY_ITERATION_START("__empty__", "iteration-start", "UNSUPPORTED"),
+	EMPTY("empty", "UNSUPPORTED", "UNSUPPORTED"),
+
+	ITERATION_START("iteration-start", "iteration-start", "ParallelStart"),
+
+	ITERATION_END("iteration-end", "iteration-end", "ParallelEnd"),
 
 	ASSIGNER("assigner", "assigner", "UNSUPPORTED");
 

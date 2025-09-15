@@ -17,8 +17,8 @@ package com.alibaba.cloud.ai.graph.internal.node;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
-import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
+import reactor.core.publisher.Flux;
+import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,9 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -46,7 +49,12 @@ public class ParallelNode extends Node {
 		@SuppressWarnings("unchecked")
 		private CompletableFuture<Map<String, Object>> evalNodeActionSync(AsyncNodeActionWithConfig action,
 				OverAllState state, RunnableConfig config) {
-			return action.apply(state, config);
+			LifeListenerUtil.processListenersLIFO(nodeId, new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()),
+					state.data(), config, NODE_BEFORE, null);
+			return action.apply(state, config)
+				.whenComplete((stringObjectMap, throwable) -> LifeListenerUtil.processListenersLIFO(nodeId,
+						new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()), state.data(), config, NODE_AFTER,
+						throwable));
 		}
 
 		private CompletableFuture<Map<String, Object>> evalNodeActionAsync(AsyncNodeActionWithConfig action,
@@ -81,39 +89,37 @@ public class ParallelNode extends Node {
 					.map(CompletableFuture::join)
 					.collect(Collectors.toList());
 
-				// Check if any result contains streaming output
-				boolean hasGenerator = results.stream()
+				// Check if any result contains streaming output (Flux)
+				boolean hasFlux = results.stream()
 					.flatMap(map -> map.values().stream())
-					.anyMatch(value -> value instanceof AsyncGenerator);
+					.anyMatch(value -> value instanceof Flux);
 
-				if (hasGenerator) {
-					// If there is any streaming output, create a new AsyncGenerator to
-					// wrap all streaming outputs
-					List<AsyncGenerator<NodeOutput>> generators = new ArrayList<>();
+				if (hasFlux) {
+					// If there is any streaming output, merge all Flux streams
+					List<Flux<Object>> fluxList = new ArrayList<>();
 					Map<String, Object> mergedState = new HashMap<>();
 					mergedState.putAll(state.data());
+
 					for (Map<String, Object> result : results) {
-						Map<String, Object> nonGeneratorEntries = result.entrySet()
+						// Process non-Flux entries
+						Map<String, Object> nonFluxEntries = result.entrySet()
 							.stream()
-							.filter(e -> !(e.getValue() instanceof AsyncGenerator))
+							.filter(e -> !(e.getValue() instanceof Flux))
 							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-						mergedState = OverAllState.updateState(mergedState, nonGeneratorEntries, channels);
+						mergedState = OverAllState.updateState(mergedState, nonFluxEntries, channels);
 
-						// Collect all streaming outputs
+						// Collect all Flux streams
 						result.entrySet()
 							.stream()
-							.filter(e -> e.getValue() instanceof AsyncGenerator)
-							.forEach(e -> generators.add((AsyncGenerator<NodeOutput>) e.getValue()));
+							.filter(e -> e.getValue() instanceof Flux)
+							.forEach(e -> fluxList.add((Flux<Object>) e.getValue()));
 					}
 
-					// If there are streaming outputs, merge them into one streaming
-					// output
-					if (!generators.isEmpty()) {
-						// Create a merged AsyncGenerator
-						AsyncGenerator<NodeOutput> mergedGenerator = AsyncGeneratorUtils
-							.createMergedGenerator(generators, state.keyStrategies());
-						mergedState.put("__merged_stream__", mergedGenerator);
+					// If there are Flux streams, merge them into one
+					if (!fluxList.isEmpty()) {
+						Flux<Object> mergedFlux = Flux.merge(fluxList);
+						mergedState.put("__merged_stream__", mergedFlux);
 					}
 
 					return mergedState;

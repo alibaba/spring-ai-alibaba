@@ -26,18 +26,4 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
  */
 public class EmptyNodeData extends NodeData {
 
-	private String id;
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public EmptyNodeData(String id) {
-		this.id = id;
-	}
-
 }

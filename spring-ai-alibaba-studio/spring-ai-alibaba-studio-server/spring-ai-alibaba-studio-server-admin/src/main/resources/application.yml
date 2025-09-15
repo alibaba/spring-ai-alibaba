@@ -12,13 +12,14 @@ spring:
     alibaba:
       studio:
         login-method: third_party
-        upload-method: oss
-        oss:
-          endpoint: oss-ap-southeast-1.aliyuncs.com
-          internal-endpoint: oss-ap-southeast-1.aliyuncs.com
-          access-key-id: ${OSS_ACCESS_KEY_ID}
-          access-key-secret: ${OSS_ACCESS_KEY_SECRET}
-          bucket: agentscope-java-preview
+        upload-method: file       # file or oss
+#        storage-path:
+#        oss:
+#          endpoint: oss-ap-southeast-1.aliyuncs.com
+#          internal-endpoint: oss-ap-southeast-1.aliyuncs.com
+#          access-key-id: ${OSS_ACCESS_KEY_ID}
+#          access-key-secret: ${OSS_ACCESS_KEY_SECRET}
+#          bucket: agentscope-java-preview
 
   servlet:
     multipart:

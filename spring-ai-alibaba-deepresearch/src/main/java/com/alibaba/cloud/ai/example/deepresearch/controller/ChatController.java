@@ -16,6 +16,9 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.alibaba.cloud.ai.example.deepresearch.config.DeepResearchProperties;
 import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
 import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
@@ -32,7 +35,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -41,19 +44,21 @@ import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author yingzi
@@ -76,7 +81,9 @@ public class ChatController {
 	public ChatController(@Qualifier("deepResearch") StateGraph stateGraph, SearchBeanUtil searchBeanUtil,
 			ObjectProvider<ObservationRegistry> observationRegistry, DeepResearchProperties deepResearchProperties)
 			throws GraphStateException {
-		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+		SaverConfig saverConfig = SaverConfig.builder()
+			.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+			.build();
 		this.compiledGraph = stateGraph.compile(CompileConfig.builder()
 			.saverConfig(saverConfig)
 			.interruptBefore("human_feedback")

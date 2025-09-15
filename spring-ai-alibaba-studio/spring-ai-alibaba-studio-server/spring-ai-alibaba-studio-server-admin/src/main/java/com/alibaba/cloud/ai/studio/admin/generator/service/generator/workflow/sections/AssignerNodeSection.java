@@ -22,6 +22,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class AssignerNodeSection implements NodeSection<AssignerNodeData> {
 
@@ -50,6 +52,11 @@ public class AssignerNodeSection implements NodeSection<AssignerNodeData> {
 		sb.append(".build();\n");
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
 		return sb.toString();
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.AssignerNode");
 	}
 
 }

@@ -38,8 +38,7 @@ import static com.alibaba.cloud.ai.memory.mem0.advisor.Mem0ChatMemoryAdvisor.*;
 
 /**
  * @author miaoyumeng
- * @date 2025/06/24 14:28
- * @description TODO
+ * @since 2025/06/24 14:28
  */
 public class Mem0MemoryStore implements InitializingBean, VectorStore {
 
@@ -126,7 +125,7 @@ public class Mem0MemoryStore implements InitializingBean, VectorStore {
 					});
 				}
 				catch (Exception e) {
-					// 如果转换失败，使用空Map
+					// If conversion fails, use an empty Map.
 					filtersMap = new HashMap<>();
 				}
 				search.setFilters(filtersMap);

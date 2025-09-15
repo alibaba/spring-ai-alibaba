@@ -23,6 +23,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.No
 
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class TemplateTransformNodeSection implements NodeSection<TemplateTransformNodeData> {
 
@@ -58,6 +60,11 @@ public class TemplateTransformNodeSection implements NodeSection<TemplateTransfo
 			.append("));\n\n");
 
 		return sb.toString();
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.TemplateTransformNode");
 	}
 
 }

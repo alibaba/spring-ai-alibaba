@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -133,6 +134,23 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 	@Override
 	public Stream<Variable> extractWorkflowVars(BranchNodeData data) {
 		return Stream.empty();
+	}
+
+	@Override
+	public BiConsumer<BranchNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
+				// 处理条件里的VariableSelector
+				nodeData.getCases().forEach(c -> {
+					c.getConditions().forEach(condition -> {
+						VariableSelector selector = condition.getVariableSelector();
+						selector.setNameInCode(idToVarName.getOrDefault(selector.getNamespace(), "unknown") + "_"
+								+ selector.getName());
+					});
+				});
+			});
+			default -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

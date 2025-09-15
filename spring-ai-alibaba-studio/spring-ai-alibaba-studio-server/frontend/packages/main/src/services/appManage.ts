@@ -32,6 +32,10 @@ export interface IGetAppListParams {
  * @returns Promise containing application list data
  */
 export const getAppList = (params: IGetAppListParams) => {
+  // 修复status为空字符串的bug
+  if (params.status === null || params.status === '') {
+    params.status = undefined;
+  }
   return request({
     url: '/console/v1/apps',
     method: 'GET',

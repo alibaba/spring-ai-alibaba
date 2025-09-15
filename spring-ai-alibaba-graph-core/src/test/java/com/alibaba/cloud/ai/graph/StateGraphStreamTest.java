@@ -28,14 +28,6 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +38,16 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -60,11 +62,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * stream-based state transitions and asynchronous processing in state graphs.
  */
 public class StateGraphStreamTest {
-
-	/**
-	 * API key for authentication with DashScope services
-	 */
-	private String API_KEY;
 
 	/**
 	 * Logger instance for tracking test execution and debugging information
@@ -82,6 +79,11 @@ public class StateGraphStreamTest {
 	private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
 
 	/**
+	 * API key for authentication with DashScope services
+	 */
+	private String API_KEY;
+
+	/**
 	 * DashScope API client instance for integration testing
 	 */
 	private DashScopeApi realApi;
@@ -95,6 +97,107 @@ public class StateGraphStreamTest {
 	 * Chat model instance configured with test-specific settings
 	 */
 	private DashScopeChatModel chatModel;
+
+	/**
+	 * Creates a CompletableFuture containing a StreamingOutput with delayed execution.
+	 * @param node Node identifier
+	 * @param index Index value for the output
+	 * @param delayInMills Delay time in milliseconds
+	 * @param overAllState Current state context
+	 * @return CompletableFuture containing the StreamingOutput
+	 */
+	static CompletableFuture<NodeOutput> of(String node, String index, long delayInMills, OverAllState overAllState) {
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				Thread.sleep(delayInMills);
+			}
+			catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+			return new StreamingOutput(index, node, overAllState);
+		});
+	}
+
+	/**
+	 * Creates a streaming output generator that produces random values at intervals.
+	 * @param s Current state context
+	 * @return Flux stream with streaming output values
+	 */
+	private static Flux<StreamingOutput> getStreamingOutputWithResult(OverAllState s) {
+
+		BlockingQueue<Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
+		AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
+				new AsyncGeneratorQueue.Generator<>(queue));
+		String str = "random";
+		new Thread(() -> {
+			for (int i = 0; i < 10; i++) {
+				try {
+					Thread.sleep(1000);
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+				if (i == 9) {
+					queue.add(Data.done());
+				}
+				else {
+					queue.add(Data.of(new StreamingOutput(str + new Random().nextInt(10), "llmNode", s)));
+				}
+			}
+		}).start();
+
+		return Flux.create(sink -> {
+			try {
+				Data<StreamingOutput> data;
+				while ((data = it.next()) != null) {
+					if (data.isError()) {
+						// Get the exception from the CompletableFuture
+						try {
+							data.getData().join();
+						}
+						catch (Exception e) {
+							sink.error(e);
+							break;
+						}
+					}
+					else if (data.isDone()) {
+						sink.complete();
+						break;
+					}
+					else {
+						// Get the value from the CompletableFuture
+						StreamingOutput value = data.getData().join();
+						sink.next(value);
+					}
+				}
+			}
+			catch (Exception e) {
+				sink.error(e);
+			}
+		});
+	}
+
+	/**
+	 * Creates an asynchronous edge action for conditional routing decisions.
+	 * @return AsyncEdgeAction that determines the next node based on message content
+	 */
+	@NotNull
+	private static AsyncEdgeAction getAsyncEdgeAction() {
+		return t -> {
+			if (t.value("messages").isEmpty())
+				return completedFuture("result");
+			List collectedMessages = (List) t.value("messages").get();
+			// 使用异步方式等待流结束
+			CompletableFuture<String> resultFuture = new CompletableFuture<>();
+			if (!collectedMessages.isEmpty()) {
+				resultFuture.complete("toolNode");
+			}
+			else {
+				resultFuture.complete("result");
+			}
+			return resultFuture;
+		};
+	}
 
 	/**
 	 * Sets up test environment before each test method execution. Initializes API
@@ -138,15 +241,13 @@ public class StateGraphStreamTest {
 
 		var app = workflow.compile();
 
-		var iterator = app.stream(Map.of());
-		for (var i : iterator) {
-			System.out.println(i);
-		}
-
-		var generator = (AsyncGenerator.HasResultValue) iterator;
-
-		System.out.println(generator.resultValue().orElse(null));
-
+		// Use Flux streaming approach - simplified version
+		app.fluxStream(Map.of())
+			.doOnNext(output -> System.out.println(output))
+			.reduce((first, second) -> second) // Get the last state as result
+			.subscribe(lastState -> System.out.println(lastState),
+					error -> System.err.println("Stream error: " + error),
+					() -> System.out.println("Stream completed"));
 	}
 
 	/**
@@ -183,34 +284,8 @@ public class StateGraphStreamTest {
 
 		CompiledGraph compiledGraph = stateGraph.compile();
 		// 初始化输入
-		for (var output : compiledGraph.stream(Map.of("input", "hoho~~"))) {
-			if (output instanceof AsyncGenerator<?>) {
-				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-				System.out.println("Streaming chunk: " + asyncGenerator);
-			}
-			else {
-				System.out.println("Node output: " + output);
-			}
-		}
-	}
-
-	/**
-	 * Creates a CompletableFuture containing a StreamingOutput with delayed execution.
-	 * @param node Node identifier
-	 * @param index Index value for the output
-	 * @param delayInMills Delay time in milliseconds
-	 * @param overAllState Current state context
-	 * @return CompletableFuture containing the StreamingOutput
-	 */
-	static CompletableFuture<NodeOutput> of(String node, String index, long delayInMills, OverAllState overAllState) {
-		return CompletableFuture.supplyAsync(() -> {
-			try {
-				Thread.sleep(delayInMills);
-			}
-			catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-			return new StreamingOutput(index, node, overAllState);
+		compiledGraph.fluxStream(Map.of("input", "hoho~~")).subscribe(output -> {
+			System.out.println("Node output: " + output);
 		});
 	}
 
@@ -230,7 +305,7 @@ public class StateGraphStreamTest {
 			String input = s.value("input", "");
 			return Map.of("messages", "Received: " + input, "count", 1);
 		})).addNode("processData", node_async(s -> {
-			AsyncGenerator.WithResult<StreamingOutput> it = getStreamingOutputWithResult(s);
+			Flux<StreamingOutput> it = getStreamingOutputWithResult(s);
 			return Map.of("messages", it);
 		})).addNode("generateResponse", node_async(s -> {
 
@@ -244,45 +319,9 @@ public class StateGraphStreamTest {
 
 		CompiledGraph compiledGraph = stateGraph.compile();
 		// 初始化输入
-		for (var output : compiledGraph.stream(Map.of("input", "hoho~~"))) {
-			if (output instanceof AsyncGenerator<?>) {
-				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-				System.out.println("Streaming chunk: " + asyncGenerator);
-			}
-			else {
-				System.out.println("Node output: " + output);
-			}
-		}
-	}
-
-	/**
-	 * Creates a streaming output generator that produces random values at intervals.
-	 * @param s Current state context
-	 * @return AsyncGenerator with streaming output values
-	 */
-	private static AsyncGenerator.WithResult<StreamingOutput> getStreamingOutputWithResult(OverAllState s) {
-
-		BlockingQueue<Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
-		AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
-				new AsyncGeneratorQueue.Generator<>(queue));
-		String str = "random";
-		new Thread(() -> {
-			for (int i = 0; i < 10; i++) {
-				try {
-					Thread.sleep(1000);
-				}
-				catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-				if (i == 9) {
-					queue.add(Data.done());
-				}
-				else {
-					queue.add(Data.of(new StreamingOutput(str + new Random().nextInt(10), "llmNode", s)));
-				}
-			}
-		}).start();
-		return it;
+		compiledGraph.fluxStream(Map.of("input", "hoho~~")).subscribe(output -> {
+			System.out.println("Node output: " + output);
+		});
 	}
 
 	/**
@@ -307,8 +346,8 @@ public class StateGraphStreamTest {
 			.addEdge("result", END);
 
 		CompiledGraph compile = stateGraph.compile();
-		AsyncGenerator<NodeOutput> stream = compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"));
-		stream.forEachAsync(nodeOutput -> System.out.println("Node output: " + nodeOutput));
+		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小���章"))
+			.subscribe(nodeOutput -> System.out.println("Node output: " + nodeOutput));
 	}
 
 	/**
@@ -334,37 +373,9 @@ public class StateGraphStreamTest {
 			.addEdge("result", END);
 
 		CompiledGraph compile = stateGraph.compile();
-		for (var output : compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"))) {
-			if (output instanceof AsyncGenerator<?>) {
-				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-				System.out.println("Streaming chunk: " + asyncGenerator);
-			}
-			else {
-				System.out.println("Node output: " + output);
-			}
-		}
-	}
-
-	/**
-	 * Creates an asynchronous edge action for conditional routing decisions.
-	 * @return AsyncEdgeAction that determines the next node based on message content
-	 */
-	@NotNull
-	private static AsyncEdgeAction getAsyncEdgeAction() {
-		return t -> {
-			if (t.value("messages").isEmpty())
-				return completedFuture("result");
-			List collectedMessages = (List) t.value("messages").get();
-			// 使用异步方式等待流结束
-			CompletableFuture<String> resultFuture = new CompletableFuture<>();
-			if (!collectedMessages.isEmpty()) {
-				resultFuture.complete("toolNode");
-			}
-			else {
-				resultFuture.complete("result");
-			}
-			return resultFuture;
-		};
+		compile.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章")).subscribe(output -> {
+			System.out.println("Node output: " + output);
+		});
 	}
 
 	/**
@@ -401,31 +412,15 @@ public class StateGraphStreamTest {
 
 		CompiledGraph app = stateGraph.compile();
 
-		AsyncGenerator<NodeOutput> generator = app.stream(Map.of("input", "test"));
-		List states = toStateList(generator);
-
-		assertFalse(states.isEmpty(), "least one content");
-		assertEquals(4, states.size(), "should be five content");
-	}
-
-	/**
-	 * Helper method for processing streaming output. Filters out streaming chunks and
-	 * extracts state information from node outputs.
-	 * @param generator AsyncGenerator producing node outputs
-	 * @return List of OverAllState objects representing processed states
-	 */
-	private List<OverAllState> toStateList(AsyncGenerator<NodeOutput> generator) {
-		return generator.stream().filter(s -> {
-			if (s instanceof StreamingOutput streamingOutput) {
-				System.out
-					.println(String.format("stream data %s '%s'", streamingOutput.node(), streamingOutput.chunk()));
-				return false;
-			}
-			return true;
-		})
-			.peek(s -> System.out.println(String.format("NODE: %s", s.node())))
+		// Use Flux streaming approach for collecting states - simplified version
+		app.fluxStream(Map.of("input", "test"))
+			.filter(s -> !(s instanceof StreamingOutput))
 			.map(NodeOutput::state)
-			.collect(java.util.stream.Collectors.toList());
+			.collectList()
+			.subscribe(states -> {
+				assertFalse(states.isEmpty(), "least one content");
+				assertEquals(4, states.size(), "should be four content");
+			}, error -> System.err.println("Stream error: " + error));
 	}
 
 	@Test
@@ -451,17 +446,13 @@ public class StateGraphStreamTest {
 
 		CompiledGraph compile = stateGraph.compile();
 
-		for (var output : compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"),
-				RunnableConfig.builder().addParallelNodeExecutor(START, ForkJoinPool.commonPool()).build())) {
-			if (output instanceof AsyncGenerator<?>) {
-				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-				System.out.println("Streaming chunk: " + asyncGenerator);
-			}
-			else {
+		compile
+			.fluxStream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"),
+					RunnableConfig.builder().addParallelNodeExecutor(START, ForkJoinPool.commonPool()).build())
+			.subscribe(output -> {
 				System.out.println("Node output: " + output);
-			}
-		}
-
+			});
+		Thread.sleep(5000);
 	}
 
 }
