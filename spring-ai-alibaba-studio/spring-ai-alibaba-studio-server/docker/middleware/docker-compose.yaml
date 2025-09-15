@@ -1,39 +1,39 @@
 services:
-  mysql:
-    container_name: mysql
-    restart: always
-    image: mysql:8.0.35
-    user: "${UID}:${GID}"
-    env_file:
-      - ./.env
-      - ./mysql.env
-    volumes:
-      - ${MIDDLEWARE_HOME:-.}/mysql/data:/var/lib/mysql
-      - ${MIDDLEWARE_HOME:-.}/mysql/log:/var/log
-      - ${MIDDLEWARE_HOME:-.}/conf/mysql:/etc/mysql/conf.d
-      - ${MIDDLEWARE_HOME:-.}/init/mysql:/docker-entrypoint-initdb.d/
-    ports:
-      - "3306:3306"
-    healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
-      interval: 5s
-      timeout: 10s
-      retries: 10
-
-  redis:
-    restart: always
-    image: redis:7.2.5
-    container_name: redis
-    user: "${UID}:${GID}"
-    env_file:
-      - ./.env
-    ports:
-      - "6379:6379"
-    volumes:
-      - ${MIDDLEWARE_HOME:-.}/redis/data:/data
-    command: redis-server
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+#  mysql:
+#    container_name: mysql
+#    restart: always
+#    image: mysql:8.0.35
+#    user: "${UID}:${GID}"
+#    env_file:
+#      - ./.env
+#      - ./mysql.env
+#    volumes:
+#      - ${MIDDLEWARE_HOME:-.}/mysql/data:/var/lib/mysql
+#      - ${MIDDLEWARE_HOME:-.}/mysql/log:/var/log
+#      - ${MIDDLEWARE_HOME:-.}/conf/mysql:/etc/mysql/conf.d
+#      - ${MIDDLEWARE_HOME:-.}/init/mysql:/docker-entrypoint-initdb.d/
+#    ports:
+#      - "3306:3306"
+#    healthcheck:
+#      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+#      interval: 5s
+#      timeout: 10s
+#      retries: 10
+#
+#  redis:
+#    restart: always
+#    image: redis:7.2.5
+#    container_name: redis
+#    user: "${UID}:${GID}"
+#    env_file:
+#      - ./.env
+#    ports:
+#      - "6379:6379"
+#    volumes:
+#      - ${MIDDLEWARE_HOME:-.}/redis/data:/data
+#    command: redis-server
+#    healthcheck:
+#      test: [ "CMD", "redis-cli", "ping" ]
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
@@ -137,28 +137,28 @@ services:
       - "18080:18080"
       - "18081:18081"
     command: sh mqproxy -pc /home/rocketmq/conf/rmq-proxy.json
-  nacos:
-    image: nacos/nacos-server:latest
-    container_name: nacos-standalone-derby
-    user: "${UID}:${GID}"
-    profiles:
-      - nacos
-    env_file:
-      - ./.env
-    environment:
-      - MODE=standalone
-      - NACOS_AUTH_TOKEN=SecretKey012345678901234567890123456789012345678901234567890123456789
-      - NACOS_AUTH_IDENTITY_KEY=serveridentity
-      - NACOS_AUTH_IDENTITY_VALUE=security
-    ports:
-      - "8080:8080"
-      - "8848:8848"
-      - "9848:9848"
-    restart: always
-    volumes:
-      - ./volumes/tacos:/home/nacos/data
-    networks:
-      - nacos-network
+#  nacos:
+#    image: nacos/nacos-server:latest
+#    container_name: nacos-standalone-derby
+#    user: "${UID}:${GID}"
+#    profiles:
+#      - nacos
+#    env_file:
+#      - ./.env
+#    environment:
+#      - MODE=standalone
+#      - NACOS_AUTH_TOKEN=SecretKey012345678901234567890123456789012345678901234567890123456789
+#      - NACOS_AUTH_IDENTITY_KEY=serveridentity
+#      - NACOS_AUTH_IDENTITY_VALUE=security
+#    ports:
+#      - "8080:8080"
+#      - "8848:8848"
+#      - "9848:9848"
+#    restart: always
+#    volumes:
+#      - ./volumes/tacos:/home/nacos/data
+#    networks:
+#      - nacos-network
   init-topic:
     image: apache/rocketmq:5.3.2
     container_name: rmq-init-topic
@@ -193,5 +193,5 @@ networks:
     driver: bridge
   rocketmq:
     driver: bridge
-  nacos-network:
-    driver: bridge
+#  nacos-network:
+#    driver: bridge
