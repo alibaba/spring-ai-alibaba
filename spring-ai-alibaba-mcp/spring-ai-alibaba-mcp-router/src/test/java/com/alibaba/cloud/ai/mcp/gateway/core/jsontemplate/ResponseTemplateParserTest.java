@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
 class ResponseTemplateParserTest {
 
 	@Test
