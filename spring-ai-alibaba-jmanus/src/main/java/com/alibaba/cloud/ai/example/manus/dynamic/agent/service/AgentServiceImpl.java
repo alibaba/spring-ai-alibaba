@@ -20,7 +20,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.IMcpService;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
+import com.alibaba.cloud.ai.example.manus.dynamic.namespace.namespace.vo.NamespaceConfig;
+import com.alibaba.cloud.ai.example.manus.dynamic.namespace.service.NamespaceService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,45 +39,53 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.model.Tool;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.IPlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
 
 @Service
 public class AgentServiceImpl implements AgentService {
 
-	private static final String DEFAULT_AGENT_NAME = "DEFAULT_AGENT";
-
 	private static final Logger log = LoggerFactory.getLogger(AgentServiceImpl.class);
 
-	private final DynamicAgentLoader dynamicAgentLoader;
+	private final IDynamicAgentLoader dynamicAgentLoader;
 
 	private final DynamicAgentRepository repository;
 
-	private final PlanningFactory planningFactory;
+	private final IPlanningFactory planningFactory;
 
-	private final McpService mcpService;
+	private final IMcpService mcpService;
+
+	private final NamespaceService namespaceService;
 
 	@Autowired
 	@Lazy
-	private LlmService llmService;
+	private ILlmService llmService;
 
 	@Autowired
 	@Lazy
 	private ToolCallingManager toolCallingManager;
 
 	@Autowired
-	public AgentServiceImpl(@Lazy DynamicAgentLoader dynamicAgentLoader, DynamicAgentRepository repository,
-			@Lazy PlanningFactory planningFactory, @Lazy McpService mcpService) {
+	public AgentServiceImpl(@Lazy IDynamicAgentLoader dynamicAgentLoader, DynamicAgentRepository repository,
+			@Lazy IPlanningFactory planningFactory, @Lazy IMcpService mcpService, NamespaceService namespaceService) {
 		this.dynamicAgentLoader = dynamicAgentLoader;
 		this.repository = repository;
 		this.planningFactory = planningFactory;
 		this.mcpService = mcpService;
+		this.namespaceService = namespaceService;
 	}
 
 	@Override
-	public List<AgentConfig> getAllAgents() {
-		return repository.findAll().stream().map(this::mapToAgentConfig).collect(Collectors.toList());
+	public List<AgentConfig> getAllAgentsByNamespace(String namespace) {
+		List<DynamicAgentEntity> entities;
+		if (namespace == null || namespace.trim().isEmpty()) {
+			// If namespace is null or empty, use default namespace
+			namespace = "default";
+			log.info("Namespace not specified, using default namespace: {}", namespace);
+		}
+		entities = repository.findAllByNamespace(namespace);
+		return entities.stream().map(this::mapToAgentConfig).collect(Collectors.toList());
 	}
 
 	@Override
@@ -86,10 +98,18 @@ public class AgentServiceImpl implements AgentService {
 	@Override
 	public AgentConfig createAgent(AgentConfig config) {
 		try {
-			// 检查是否已存在同名Agent
+			// Set default namespace if namespace is null or empty
+			if (config.getNamespace() == null || config.getNamespace().trim().isEmpty()) {
+				String defaultNamespace = getDefaultNamespace();
+				config.setNamespace(defaultNamespace);
+				log.info("Namespace not specified for Agent: {}, using default namespace: {}", config.getName(),
+						defaultNamespace);
+			}
+
+			// Check if an Agent with the same name already exists
 			DynamicAgentEntity existingAgent = repository.findByAgentName(config.getName());
 			if (existingAgent != null) {
-				log.info("发现同名Agent: {}，更新Agent", config.getName());
+				log.info("Found Agent with same name: {}, updating Agent", config.getName());
 				config.setId(existingAgent.getId().toString());
 				return updateAgent(config);
 			}
@@ -98,16 +118,18 @@ public class AgentServiceImpl implements AgentService {
 			entity = mergePrompts(entity, config.getName());
 			updateEntityFromConfig(entity, config);
 			entity = repository.save(entity);
-			log.info("成功创建新Agent: {}", config.getName());
+			log.info("Successfully created new Agent: {}", config.getName());
 			return mapToAgentConfig(entity);
 		}
 		catch (Exception e) {
-			log.warn("创建Agent过程中发生异常: {}，错误信息: {}", config.getName(), e.getMessage());
-			// 如果是唯一性约束违反异常，尝试返回已存在的Agent
+			log.warn("Exception occurred during Agent creation: {}, error message: {}", config.getName(),
+					e.getMessage());
+			// If it's a uniqueness constraint violation exception, try returning the
+			// existing Agent
 			if (e.getMessage() != null && e.getMessage().contains("Unique")) {
 				DynamicAgentEntity existingAgent = repository.findByAgentName(config.getName());
 				if (existingAgent != null) {
-					log.info("返回已存在的Agent: {}", config.getName());
+					log.info("Return existing Agent: {}", config.getName());
 					return mapToAgentConfig(existingAgent);
 				}
 			}
@@ -129,20 +151,21 @@ public class AgentServiceImpl implements AgentService {
 		DynamicAgentEntity entity = repository.findById(Long.parseLong(id))
 			.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + id));
 
-		if (DEFAULT_AGENT_NAME.equals(entity.getAgentName())) {
-			throw new IllegalArgumentException("不能删除默认 Agent");
+		// Protect built-in agents from deletion
+		if (Boolean.TRUE.equals(entity.getBuiltIn())) {
+			throw new IllegalArgumentException("Cannot delete built-in Agent: " + entity.getAgentName());
 		}
 
 		repository.deleteById(Long.parseLong(id));
 	}
 
-	@Override
 	public List<Tool> getAvailableTools() {
 
 		String uuid = UUID.randomUUID().toString();
-
+		String expectedReturnInfo = "dummyColumn1, dummyColumn2";
 		try {
-			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid);
+			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid, uuid,
+					expectedReturnInfo);
 			return toolcallContext.entrySet().stream().map(entry -> {
 				Tool tool = new Tool();
 				tool.setKey(entry.getKey());
@@ -169,44 +192,102 @@ public class AgentServiceImpl implements AgentService {
 		config.setNextStepPrompt(entity.getNextStepPrompt());
 		config.setAvailableTools(entity.getAvailableToolKeys());
 		config.setClassName(entity.getClassName());
+		config.setNamespace(entity.getNamespace());
+		config.setBuiltIn(entity.getBuiltIn());
+		DynamicModelEntity model = entity.getModel();
+		config.setModel(model == null ? null : model.mapToModelConfig());
 		return config;
 	}
 
+	/**
+	 * Get default namespace code when no namespace is specified. Uses the first available
+	 * namespace from getAllNamespaces(), or "default" if no namespaces exist.
+	 * @return default namespace code
+	 */
+	private String getDefaultNamespace() {
+		try {
+			List<NamespaceConfig> namespaces = namespaceService.getAllNamespaces();
+			if (!namespaces.isEmpty()) {
+				// Find the namespace with code "default" first
+				for (NamespaceConfig namespace : namespaces) {
+					if ("default".equals(namespace.getCode())) {
+						log.debug("Found default namespace with code: {}", namespace.getCode());
+						return namespace.getCode();
+					}
+				}
+				// If no "default" code namespace found, use the first one
+				String firstNamespaceCode = namespaces.get(0).getCode();
+				log.debug("Using first namespace as default: {}", firstNamespaceCode);
+				return firstNamespaceCode;
+			}
+			else {
+				// If no namespaces exist, return "default"
+				log.warn("No namespaces found, using fallback default namespace code: default");
+				return "default";
+			}
+		}
+		catch (Exception e) {
+			log.error("Error getting default namespace, using fallback: {}", e.getMessage());
+			return "default";
+		}
+	}
+
 	private void updateEntityFromConfig(DynamicAgentEntity entity, AgentConfig config) {
+		// Set default namespace if namespace is null or empty
+		if (config.getNamespace() == null || config.getNamespace().trim().isEmpty()) {
+			String defaultNamespace = getDefaultNamespace();
+			config.setNamespace(defaultNamespace);
+			log.info("Namespace not specified for Agent: {}, using default namespace: {}", config.getName(),
+					defaultNamespace);
+		}
+
 		entity.setAgentName(config.getName());
 		entity.setAgentDescription(config.getDescription());
 		String nextStepPrompt = config.getNextStepPrompt();
 		entity = mergePrompts(entity, config.getName());
 		entity.setNextStepPrompt(nextStepPrompt);
 
-		// 1. 创建新集合，保证唯一性和顺序
+		// 1. Create new collection to ensure uniqueness and order
 		java.util.Set<String> toolSet = new java.util.LinkedHashSet<>();
 		List<String> availableTools = config.getAvailableTools();
 		if (availableTools != null) {
 			toolSet.addAll(availableTools);
 		}
-		// 2. 添加 TerminateTool（如不存在）
+		// 2. Add TerminateTool (if not exists)
 		if (!toolSet.contains(com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name)) {
-			log.info("为Agent[{}]添加必要的工具: {}", config.getName(),
+			log.info("Adding necessary tool for Agent[{}]: {}", config.getName(),
 					com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name);
 			toolSet.add(com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name);
 		}
-		// 3. 转为 List 并设置
+		// 3. Convert to List and set
 		entity.setAvailableToolKeys(new java.util.ArrayList<>(toolSet));
 		entity.setClassName(config.getName());
+		ModelConfig model = config.getModel();
+		if (model != null) {
+			entity.setModel(new DynamicModelEntity(model.getId()));
+		}
+
+		// 4. Set the user-selected namespace
+		entity.setNamespace(config.getNamespace());
+
+		// 5. Set builtIn if provided (only allow setting to false for existing built-in
+		// agents)
+		if (config.getBuiltIn() != null) {
+			entity.setBuiltIn(config.getBuiltIn());
+		}
 	}
 
 	private DynamicAgentEntity mergePrompts(DynamicAgentEntity entity, String agentName) {
-		// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
+		// The SystemPrompt property here is deprecated, use nextStepPrompt directly
 		if (StringUtils.isNotBlank(entity.getSystemPrompt())) {
 			String systemPrompt = entity.getSystemPrompt();
 			String nextPrompt = entity.getNextStepPrompt();
-			// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
+			// The SystemPrompt property here is deprecated, use nextStepPrompt directly
 			if (nextPrompt != null && !nextPrompt.trim().isEmpty()) {
 				nextPrompt = systemPrompt + "\n" + nextPrompt;
 			}
 			log.warn(
-					"Agent[{}]的SystemPrompt不为空， 但属性已经废弃，只保留nextPrompt， 本次将agent 的内容合并，如需要该内容在prompt生效，请直接更新界面的唯一的那个prompt , 当前制定的值: {}",
+					"Agent[{}] SystemPrompt is not empty, but the property is deprecated, only keep nextPrompt. This time merge the agent content. If you need this content to take effect in prompt, please directly update the unique prompt in the interface. Current specified value: {}",
 					agentName, nextPrompt);
 			entity.setSystemPrompt(" ");
 		}
@@ -214,34 +295,32 @@ public class AgentServiceImpl implements AgentService {
 	}
 
 	@Override
-	public BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting) {
+	public BaseAgent createDynamicBaseAgent(String name, String planId, String rootPlanId,
+			Map<String, Object> initialAgentSetting, String expectedReturnInfo) {
 
-		log.info("创建新的BaseAgent: {}, planId: {}", name, planId);
+		log.info("Create new BaseAgent: {}, planId: {}", name, planId);
 
 		try {
-			// 通过dynamicAgentLoader加载已存在的Agent
+			// Load existing Agent through dynamicAgentLoader
 			DynamicAgent agent = dynamicAgentLoader.loadAgent(name, initialAgentSetting);
 
-			// 设置planId
-			agent.setPlanId(planId);
-			// 设置工具回调映射
-			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId);
+			// Set planId
+			agent.setCurrentPlanId(planId);
+			agent.setRootPlanId(rootPlanId);
+			// Set tool callback mapping
+			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId, rootPlanId,
+					expectedReturnInfo);
 			agent.setToolCallbackProvider(new ToolCallbackProvider() {
 
 				@Override
 				public Map<String, ToolCallBackContext> getToolCallBackContext() {
 					return toolCallbackMap;
 				}
-
 			});
-
-			log.info("成功加载BaseAgent: {}, 可用工具数量: {}", name, agent.getToolCallList().size());
-
 			return agent;
 		}
 		catch (Exception e) {
-			log.error("加载BaseAgent过程中发生异常: {}, 错误信息: {}", name, e.getMessage(), e);
-			throw new RuntimeException("加载BaseAgent失败: " + e.getMessage(), e);
+			throw new RuntimeException("Failed to create dynamic base agent: " + name, e);
 		}
 	}
 

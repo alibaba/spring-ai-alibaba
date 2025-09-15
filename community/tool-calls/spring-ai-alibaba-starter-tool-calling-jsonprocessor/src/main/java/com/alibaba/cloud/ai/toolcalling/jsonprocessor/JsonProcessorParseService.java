@@ -51,7 +51,7 @@ public class JsonProcessorParseService implements Function<JsonProcessorParseSer
 	}
 
 	@JsonClassDescription("JsonProcessorParseService request")
-	record JsonParseRequest(@JsonProperty("content") String content, @JsonProperty("value") String field) {
+	public record JsonParseRequest(@JsonProperty("content") String content, @JsonProperty("value") String field) {
 	}
 
 }

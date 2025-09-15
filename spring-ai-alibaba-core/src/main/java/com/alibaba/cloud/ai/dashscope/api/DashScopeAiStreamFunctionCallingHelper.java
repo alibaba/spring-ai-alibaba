@@ -15,9 +15,6 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
@@ -28,9 +25,11 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.Too
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
-
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Helper class to support Streaming function calling. It can merge the streamed
@@ -71,28 +70,34 @@ public class DashScopeAiStreamFunctionCallingHelper {
 		// compatibility of incremental_output false for streaming function call
 		if (!incrementalOutput && isStreamingToolFunctionCall(current)) {
 			if (!isStreamingToolFunctionCallFinish(current)) {
-				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of()), usage);
+				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(), null), usage);
 			}
 			else {
-				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(currentChoice0)), usage);
+				List<Choice> choices = currentChoice0 == null ? List.of() : List.of(currentChoice0);
+				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, choices, null), usage);
 			}
 		}
 
 		Choice choice = merge(previousChoice0, currentChoice0);
 		List<Choice> chunkChoices = choice == null ? List.of() : List.of(choice);
-		return new ChatCompletionChunk(id, new ChatCompletionOutput(null, chunkChoices), usage);
+		return new ChatCompletionChunk(id, new ChatCompletionOutput(null, chunkChoices, null), usage);
 	}
 
 	private Choice merge(Choice previous, Choice current) {
 		if (previous == null) {
 			return current;
 		}
+		if (current == null) {
+			return null;
+		}
 
 		ChatCompletionFinishReason finishReason = (current.finishReason() != null ? current.finishReason()
 				: previous.finishReason());
-
 		ChatCompletionMessage message = merge(previous.message(), current.message());
-		return new Choice(finishReason, message);
+		DashScopeApi.ChatCompletionLogprobs logprobs = (current.logprobs() != null ? current.logprobs()
+				: previous.logprobs());
+
+		return new Choice(finishReason, message, logprobs);
 	}
 
 	private ChatCompletionMessage merge(ChatCompletionMessage previous, ChatCompletionMessage current) {
@@ -167,14 +172,8 @@ public class DashScopeAiStreamFunctionCallingHelper {
 	 * @return true if the ChatCompletionChunk is a streaming tool function call.
 	 */
 	public boolean isStreamingToolFunctionCall(ChatCompletionChunk chatCompletion) {
-
-		if (chatCompletion == null || chatCompletion.output() == null
-				|| CollectionUtils.isEmpty(chatCompletion.output().choices())) {
-			return false;
-		}
-
-		var choice = chatCompletion.output().choices().get(0);
-		if (choice == null || choice.message() == null) {
+		var choice = checkChatCompletionChunk(chatCompletion);
+		if (choice == null) {
 			return false;
 		}
 		return !CollectionUtils.isEmpty(choice.message().toolCalls());
@@ -186,13 +185,8 @@ public class DashScopeAiStreamFunctionCallingHelper {
 	 * the last one.
 	 */
 	public boolean isStreamingToolFunctionCallFinish(ChatCompletionChunk chatCompletion) {
-
-		if (chatCompletion == null || CollectionUtils.isEmpty(chatCompletion.output().choices())) {
-			return false;
-		}
-
-		var choice = chatCompletion.output().choices().get(0);
-		if (choice == null || choice.message() == null) {
+		var choice = checkChatCompletionChunk(chatCompletion);
+		if (choice == null) {
 			return false;
 		}
 		return choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
@@ -205,6 +199,19 @@ public class DashScopeAiStreamFunctionCallingHelper {
 	 */
 	public ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
 		return new ChatCompletion(chunk.requestId(), chunk.output(), chunk.usage());
+	}
+
+	private Choice checkChatCompletionChunk(ChatCompletionChunk chatCompletion) {
+		if (chatCompletion == null || chatCompletion.output() == null
+				|| CollectionUtils.isEmpty(chatCompletion.output().choices())) {
+			return null;
+		}
+
+		var choice = chatCompletion.output().choices().get(0);
+		if (choice == null || choice.message() == null) {
+			return null;
+		}
+		return choice;
 	}
 
 }

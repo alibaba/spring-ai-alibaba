@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:mysql://your-mysql-host:3306/openmanus_db?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: your_mysql_username
+    password: your_mysql_password
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+  ai:
+    memory:
+      mysql:
+        enabled: true

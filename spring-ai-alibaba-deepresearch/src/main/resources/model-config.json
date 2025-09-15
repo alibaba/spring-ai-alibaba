@@ -1,0 +1,19 @@
+{
+  "models": [
+    {"name": "research","modelName": "qwen-max-2025-01-25"},
+    {"name": "background","modelName": "qwen-turbo-2025-04-28"},
+    {"name": "rewriteAndMultiQuery","modelName": "qwen-turbo-2025-04-28"},
+    {"name": "coder","modelName": "qwen3-coder-plus"},
+    {"name": "coordinator","modelName": "qwen-max-0919"},
+    {"name": "planner","modelName": "qwen-turbo-2025-04-28"},
+    {"name": "reporter","modelName": "qwen-max-2025-01-25"},
+    {"name": "interaction","modelName": "qwen3-coder-plus"},
+    {"name": "infoCheck","modelName": "qwen-turbo-2025-04-28"},
+    {"name": "reflection","modelName": "qwen-max-2025-01-25"},
+    {"name": "rag","modelName": "qwen-max-2025-01-25"},
+    {"name": "academicResearch","modelName": "qwen-max-2025-01-25"},
+    {"name": "lifestyleTravel","modelName": "qwen-max-2025-01-25"},
+    {"name": "encyclopedia","modelName": "qwen-max-2025-01-25"},
+    {"name": "dataAnalysis","modelName": "qwen-max-2025-01-25"}
+  ]
+}

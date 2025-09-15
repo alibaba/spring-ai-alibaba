@@ -51,9 +51,10 @@
         <!-- Spring AI Alibaba Modules -->
         <module>spring-ai-alibaba-bom</module>
         <module>spring-ai-alibaba-mcp</module>
+        <module>spring-ai-alibaba-a2a</module>
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-prompt</module>
-        <module>spring-ai-alibaba-graph</module>
+        <module>spring-ai-alibaba-graph-core</module>
         <module>spring-ai-alibaba-nl2sql</module>
         <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-jmanus</module>
@@ -62,13 +63,17 @@
         <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-aliyunaisearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidutranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidumap</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-bravesearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-dingtalk</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-sensitivefilter</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-amap</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-googlescholar</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-weather</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-wikipedia</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-larksuite</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-microsofttranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-jinacrawler</module>
@@ -82,10 +87,22 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-yuque</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-kuaidi100</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-googletranslate</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-googletrends</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-alitranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tavilysearch</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-searches</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-worldbankdata</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tencentmap</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tushare</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-ollamasearchmodel</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-minio</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-memcached</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-metaso</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-openalex</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-opentripmap</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tripadvisor</module>
 
         <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
@@ -110,6 +127,7 @@
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-bilibili</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-youtube</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-elasticsearch</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-archive</module>
 
         <!-- Spring AI Alibaba Document Parsers -->
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-apache-pdfbox</module>
@@ -127,11 +145,16 @@
         <module>community/vector-stores/spring-ai-alibaba-starter-analyticdb-store</module>
         <module>community/vector-stores/spring-ai-alibaba-starter-opensearch-store</module>
         <module>community/vector-stores/spring-ai-alibaba-starter-oceanbase-store</module>
+        <module>community/vector-stores/spring-ai-alibaba-starter-tablestore-store</module>
 
         <!-- Spring AI Alibaba Chat Memory Support -->
         <module>community/memories/spring-ai-alibaba-starter-memory-redis</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-jdbc</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-elasticsearch</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-mongodb</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-tablestore</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-memcached</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-mem0</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
@@ -142,26 +165,32 @@
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
 
         <!-- Spring AI Alibaba MCP -->
-        <!-- Nacos2 version -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-client</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-server</module>
         <!-- Nacos3 version -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-client</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-server</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-registry</module>
+
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-router</module>
 
         <!-- Spring AI Alibaba Nacos Prompt Template -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
+
+        <!-- Spring AI Alibaba Graph Observation -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-graph-observation</module>
+
+        <!-- Sprint AI Alibaba A2A Server -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-server</module>
 
         <!-- Spring AI Alibaba Spring Boot Starters -->
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-prompt</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-client</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-server</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-registry</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-router</module>
+
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>
+
     </modules>
 
     <scm>
@@ -181,7 +210,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0.3-SNAPSHOT</revision>
+        <revision>1.0.0.4-SNAPSHOT</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -191,8 +220,8 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Spring version -->
-        <spring-ai.version>1.0.0</spring-ai.version>
-        <spring-boot.version>3.4.5</spring-boot.version>
+        <spring-ai.version>1.0.1</spring-ai.version>
+        <spring-boot.version>3.4.8</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
         <!-- DashScope SDK Version -->
@@ -200,7 +229,7 @@
 
         <!-- Nacos -->
         <nacos2.version>2.5.1</nacos2.version>
-        <nacos3.version>3.0.1</nacos3.version>
+        <nacos3.version>3.0.2</nacos3.version>
         <nacos-client-mse-extension.version>1.0.4</nacos-client-mse-extension.version>
         <spring-alibaba-nacos-config.version>2023.0.1.3</spring-alibaba-nacos-config.version>
 
@@ -219,7 +248,7 @@
         <commons-exec.version>1.3</commons-exec.version>
         <commons-collections4.version>4.4</commons-collections4.version>
 
-        <docker-java>3.3.3</docker-java>
+        <docker-java.version>3.5.3</docker-java.version>
 
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
 
@@ -227,9 +256,29 @@
 
         <jedis.version>5.2.0</jedis.version>
 
+        <redisson.version>3.42.0</redisson.version>
+
         <mysql.version>8.0.32</mysql.version>
 
+        <postgresql.version>42.4.4</postgresql.version>
+
+        <commons-collections.version>3.2.2</commons-collections.version>
+
+        <commons-io.version>2.14.0</commons-io.version>
+
+        <commons-lang3.version>3.9</commons-lang3.version>
+
+        <webdrivermanager.version>6.1.0</webdrivermanager.version>
+
+        <httpclient5.version>5.4.3</httpclient5.version>
+
+        <poi.version>5.4.0</poi.version>
+
         <mcp.version>0.10.0</mcp.version>
+
+        <a2a-sdk.version>0.2.5</a2a-sdk.version>
+
+        <opentelemetry.version>1.38.0</opentelemetry.version>
 
         <!-- CheckStyle Plugin -->
         <disable.checks>false</disable.checks>
@@ -263,6 +312,9 @@
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
+        <spotless.version>2.44.5</spotless.version>
+
+        <central.publishing.maven.version>0.7.0</central.publishing.maven.version>
     </properties>
 
     <dependencyManagement>
@@ -296,7 +348,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
+            <dependency>
+                <groupId>com.github.docker-java</groupId>
+                <artifactId>docker-java-bom</artifactId>
+                <version>${docker-java.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -341,6 +399,25 @@
                         </goals>
                         <phase>validate</phase>
                         <inherited>true</inherited>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless.version}</version>
+                <configuration>
+                    <java>
+                        <removeUnusedImports></removeUnusedImports>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>spotless-apply</id>
+                        <goals>
+                            <goal>apply</goal>
+                        </goals>
+                        <phase>process-sources</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -428,6 +505,9 @@
 
                     <!-- Output test execution times in the logs -->
                     <redirectTestOutputToFile>false</redirectTestOutputToFile>
+
+                    <!-- Ignore missing test patterns -->
+                    <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
                 </configuration>
             </plugin>
             <plugin>
@@ -527,18 +607,7 @@
         <profile>
             <id>release</id>
 
-            <distributionManagement>
-                <repository>
-                    <id>sonatype-nexus-staging</id>
-                    <name>Nexus Release Repository</name>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-                <snapshotRepository>
-                    <id>sonatype-nexus-snapshots</id>
-                    <name>Sonatype Nexus Snapshots</name>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-                </snapshotRepository>
-            </distributionManagement>
+            <distributionManagement></distributionManagement>
             <build>
                 <plugins>
                     <plugin>
@@ -596,6 +665,15 @@
                                 <phase>clean</phase>
                             </execution>
                         </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${central.publishing.maven.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

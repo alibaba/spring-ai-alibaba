@@ -17,6 +17,7 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
+import checker from 'vite-plugin-checker'
 
 export default defineConfig({
   base: '/ui',
@@ -24,8 +25,8 @@ export default defineConfig({
     outDir: './ui',
   },
   server: {
-    open: true, // 启动时自动打开浏览器
-    host: true, // 允许外部访问
+    open: true, // Automatically open browser on startup
+    host: true, // Allow external access
     proxy: {
       '/api': {
         target: 'http://localhost:18080',
@@ -33,7 +34,20 @@ export default defineConfig({
       },
     },
   },
-  plugins: [vue(), vueJsx()],
+  plugins: [
+    vue(), 
+    vueJsx(),
+    checker({
+      // Enable TypeScript checking in development
+      typescript: true,
+      // Temporarily disable Vue template type checking due to @volar/typescript compatibility issue
+      // vueTsc: true,
+      // Enable ESLint checking
+      eslint: {
+        lintCommand: 'eslint "./src/**/*.{ts,tsx,vue}"'
+      }
+    })
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

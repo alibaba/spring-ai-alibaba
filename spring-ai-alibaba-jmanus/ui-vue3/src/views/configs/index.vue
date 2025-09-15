@@ -15,56 +15,126 @@
 -->
 <template>
   <div class="config-container">
-    <!-- 顶部标题栏 -->
+    <!-- Top title bar -->
     <div class="config-header">
-      <!-- <h1>配置中心</h1> -->
+      <!-- <h1>Configuration Center</h1> -->
       <div class="header-actions">
-        <button class="action-btn" @click="$router.push('/')">
-          <Icon icon="carbon:arrow-left" />
-          返回主页
-        </button>
+        <div class="header-actions-left">
+          <button class="action-btn" @click="$router.push('/')">
+            <Icon icon="carbon:arrow-left" />
+            {{ $t('backHome') }}
+          </button>
+          <LanguageSwitcher />
+        </div>
+        <div class="header-actions-right">
+          <NamespaceSwitch />
+        </div>
       </div>
     </div>
 
-    <!-- 主体内容区域 -->
+    <!-- Main content area -->
     <div class="config-content">
-      <!-- 左侧导航 -->
+      <!-- Left navigation -->
       <nav class="config-nav">
-        <div
-          v-for="(item, index) in categories"
-          :key="index"
-          class="nav-item"
-          :class="{ active: activeCategory === item.key }"
-          @click="activeCategory = item.key"
-        >
-          <Icon :icon="item.icon" width="20" />
-          <span>{{ item.label }}</span>
-        </div>
+        <template v-for="(item, index) in categories">
+          <div
+            v-if="!item.disabled"
+            :key="index"
+            class="nav-item"
+            :class="{ active: activeCategory === item.key }"
+            @click="handleNavClick(item.key)"
+          >
+            <Icon :icon="item.icon" width="20" />
+            <span>{{ item.label }}</span>
+          </div>
+        </template>
       </nav>
 
-      <!-- 右侧配置详情 -->
+      <!-- Right configuration details -->
       <div class="config-details">
-        <BasicConfig v-if="activeCategory === 'basic'" />
-        <AgentConfig v-if="activeCategory === 'agent'" />
-        <McpConfig v-if="activeCategory === 'mcp'" />
+        <component :is="activeComponent" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 import BasicConfig from './basicConfig.vue'
 import AgentConfig from './agentConfig.vue'
+import ModelConfig from './modelConfig.vue'
 import McpConfig from './mcpConfig.vue'
+import DynamicPromptConfig from './dynamicPromptConfig.vue'
+import LanguageSwitcher from '@/components/language-switcher/index.vue'
+import NamespaceConfig from './namespaceConfig.vue'
+import NamespaceSwitch from './components/namespaceSwitch.vue'
 
-const activeCategory = ref('basic')
-const categories = [
-  { key: 'basic', label: '基础配置', icon: 'carbon:settings' },
-  { key: 'agent', label: 'Agent配置', icon: 'carbon:bot' },
-  { key: 'mcp', label: 'Tools/MCP配置', icon: 'carbon:tool-box' },
-]
+interface CategoryMap {
+  [key: string]: any
+  basic: typeof BasicConfig
+  agent: typeof AgentConfig
+  model: typeof ModelConfig
+  mcp: typeof McpConfig
+  prompt: typeof DynamicPromptConfig
+  namespace: typeof NamespaceConfig
+}
+
+const { t } = useI18n()
+
+const route = useRoute()
+const router = useRouter()
+
+const activeCategory = ref(route.params.category || 'basic')
+
+const categoryMap: CategoryMap = {
+  basic: BasicConfig,
+  agent: AgentConfig,
+  model: ModelConfig,
+  mcp: McpConfig,
+  prompt: DynamicPromptConfig,
+  namespace: NamespaceConfig,
+}
+
+const activeComponent = computed(() => {
+  const categoryKey = activeCategory.value as string
+  return categoryMap[categoryKey] || BasicConfig
+})
+
+const categories = computed(() => [
+  { key: 'basic', label: t('config.categories.basic'), icon: 'carbon:settings' },
+  { key: 'agent', label: t('config.categories.agent'), icon: 'carbon:bot' },
+  { key: 'model', label: t('config.categories.model'), icon: 'carbon:build-image' },
+  { key: 'mcp', label: t('config.categories.mcp'), icon: 'carbon:tool-box' },
+  { key: 'prompt', label: t('config.categories.prompt'), icon: 'carbon:repo-artifact' },
+  {
+    key: 'namespace',
+    label: t('config.categories.namespace'),
+    disabled: false,
+    icon: 'carbon:batch-job',
+  },
+])
+
+watch(
+  () => route.params.category,
+  newCategory => {
+    if (newCategory) {
+      activeCategory.value = newCategory as string
+    }
+  }
+)
+const handleNavClick = (categoryKey: string) => {
+  router.push({
+    name: route.name as string,
+    params: {
+      ...route.params,
+      category: categoryKey,
+    },
+    query: route.query,
+  })
+}
 </script>
 
 <style scoped>
@@ -82,6 +152,18 @@ const categories = [
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.header-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .config-header h1 {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-clip: text;
@@ -97,7 +179,7 @@ const categories = [
 }
 
 .config-nav {
-  width: 240px;
+  width: 242px;
   padding: 20px;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -124,7 +206,7 @@ const categories = [
 
 .config-details {
   flex: 1;
-  padding: 30px;
+  padding: 24px 30px;
   overflow-y: auto;
 }
 

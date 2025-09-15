@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2025 the original author or authors.
  *
@@ -16,26 +15,32 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.creator;
 
-import java.util.List;
-
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.dynamic.memory.advisor.CustomMessageChatMemoryAdvisor;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.model.enums.PromptEnum;
+import com.alibaba.cloud.ai.example.manus.dynamic.prompt.service.PromptService;
+import com.alibaba.cloud.ai.example.manus.llm.ILlmService;
+import com.alibaba.cloud.ai.example.manus.llm.StreamingResponseHandler;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.PlanInterface;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
+import com.alibaba.cloud.ai.example.manus.tool.PlanningToolInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import reactor.core.publisher.Flux;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
- * 负责创建执行计划的类
+ * The class responsible for creating the execution plan
  */
 public class PlanCreator {
 
@@ -43,65 +48,84 @@ public class PlanCreator {
 
 	private final List<DynamicAgentEntity> agents;
 
-	private final LlmService llmService;
+	private final ILlmService llmService;
 
-	private final PlanningTool planningTool;
+	private final PlanningToolInterface planningTool;
 
 	protected final PlanExecutionRecorder recorder;
 
-	public PlanCreator(List<DynamicAgentEntity> agents, LlmService llmService, PlanningTool planningTool,
-			PlanExecutionRecorder recorder) {
+	private final PromptService promptService;
+
+	private final ManusProperties manusProperties;
+
+	private final StreamingResponseHandler streamingResponseHandler;
+
+	public PlanCreator(List<DynamicAgentEntity> agents, ILlmService llmService, PlanningToolInterface planningTool,
+			PlanExecutionRecorder recorder, PromptService promptService, ManusProperties manusProperties,
+			StreamingResponseHandler streamingResponseHandler) {
 		this.agents = agents;
 		this.llmService = llmService;
 		this.planningTool = planningTool;
 		this.recorder = recorder;
+		this.promptService = promptService;
+		this.manusProperties = manusProperties;
+		this.streamingResponseHandler = streamingResponseHandler;
 	}
 
 	/**
-	 * 根据用户请求创建执行计划
-	 * @param context 执行上下文，包含用户请求和执行的过程信息
-	 * @return 计划创建结果
+	 * Create an execution plan based on the user request
+	 * @param context execution context, containing the user request and the execution
+	 * process information
+	 * @return plan creation result
 	 */
 	public void createPlan(ExecutionContext context) {
 		boolean useMemory = context.isUseMemory();
-		String planId = context.getPlanId();
+		String planId = context.getCurrentPlanId();
 		if (planId == null || planId.isEmpty()) {
 			throw new IllegalArgumentException("Plan ID cannot be null or empty");
 		}
 		try {
-			// 构建代理信息
+			// Build agent information
 			String agentsInfo = buildAgentsInfo(agents);
-			// 生成计划提示
+			// Generate plan prompt
 			String planPrompt = generatePlanPrompt(context.getUserRequest(), agentsInfo);
 
-			ExecutionPlan executionPlan = null;
+			PlanInterface executionPlan = null;
 			String outputText = null;
 
-			// 重试机制：最多尝试3次直到获取到有效的执行计划
+			// Retry mechanism: up to 3 attempts until a valid execution plan is obtained
 			int maxRetries = 3;
 			for (int attempt = 1; attempt <= maxRetries; attempt++) {
 				try {
 					log.info("Attempting to create plan, attempt: {}/{}", attempt, maxRetries);
 
-					// 使用 LLM 生成计划
+					// Use LLM to generate the plan
 					PromptTemplate promptTemplate = new PromptTemplate(planPrompt);
 					Prompt prompt = promptTemplate.create();
 
 					ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
 						.prompt(prompt)
 						.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
-					if (useMemory) {
+					if (useMemory && attempt == 1) {
 						requestSpec
-							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getPlanId()));
-						requestSpec
-							.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
+							.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
+						requestSpec.advisors(CustomMessageChatMemoryAdvisor
+							.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()),
+									context.getUserRequest(), CustomMessageChatMemoryAdvisor.AdvisorType.BEFORE)
+							.build());
 					}
-					ChatClient.CallResponseSpec response = requestSpec.call();
-					outputText = response.chatResponse().getResult().getOutput().getText();
+
+					// Use streaming response handler for plan creation
+					Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
+					String planCreationText = streamingResponseHandler.processStreamingTextResponse(responseFlux,
+							"Plan creation", context.getCurrentPlanId());
+					outputText = planCreationText;
 
 					executionPlan = planningTool.getCurrentPlan();
 
 					if (executionPlan != null) {
+						// Set the user input part of the plan, for later storage and use.
+						executionPlan.setUserRequest(context.getUserRequest());
 						log.info("Plan created successfully on attempt {}: {}", attempt, executionPlan);
 						break;
 					}
@@ -115,22 +139,23 @@ public class PlanCreator {
 				}
 				catch (Exception e) {
 					log.warn("Exception during plan creation attempt {}: {}", attempt, e.getMessage());
+					e.printStackTrace();
 					if (attempt == maxRetries) {
 						throw e;
 					}
 				}
 			}
 
-			ExecutionPlan currentPlan;
-			// 检查计划是否创建成功
+			PlanInterface currentPlan;
+			// Check if plan was created successfully
 			if (executionPlan != null) {
 				currentPlan = planningTool.getCurrentPlan();
-				currentPlan.setPlanId(planId);
+				currentPlan.setCurrentPlanId(planId);
+				currentPlan.setRootPlanId(planId);
 				currentPlan.setPlanningThinking(outputText);
 			}
 			else {
-				log.warn("Creating fallback plan for planId: {}", planId);
-				currentPlan = new ExecutionPlan(planId, "answer question without plan");
+				throw new RuntimeException("Failed to create a valid execution plan after retries");
 			}
 
 			context.setPlan(currentPlan);
@@ -138,15 +163,15 @@ public class PlanCreator {
 		}
 		catch (Exception e) {
 			log.error("Error creating plan for request: {}", context.getUserRequest(), e);
-			// 处理异常情况
+			// Handle the exception
 			throw new RuntimeException("Failed to create plan", e);
 		}
 	}
 
 	/**
-	 * 构建代理信息字符串
-	 * @param agents 代理列表
-	 * @return 格式化的代理信息
+	 * Build the agent information string
+	 * @param agents agent list
+	 * @return formatted agent information
 	 */
 	private String buildAgentsInfo(List<DynamicAgentEntity> agents) {
 		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
@@ -161,44 +186,38 @@ public class PlanCreator {
 	}
 
 	/**
-	 * 生成计划提示
-	 * @param request 用户请求
-	 * @param agentsInfo 代理信息
-	 * @return 格式化的提示字符串
+	 * Generate the plan prompt
+	 * @param request user request
+	 * @param agentsInfo agent information
+	 * @return formatted prompt string
 	 */
 	private String generatePlanPrompt(String request, String agentsInfo) {
-		return """
-				## 介绍
-				我是 jmanus，旨在帮助用户完成各种任务。我擅长处理问候和闲聊，以及对复杂任务做细致的规划。我的设计目标是提供帮助、信息和多方面的支持。
+		// Escape special characters in request to prevent StringTemplate parsing errors
+		String escapedRequest = escapeForStringTemplate(request);
+		Map<String, Object> variables = Map.of("agentsInfo", agentsInfo, "request", escapedRequest);
+		return promptService.renderPrompt(PromptEnum.PLANNING_PLAN_CREATION.getPromptName(), variables);
+	}
 
-				## 目标
-				我的主要目标是通过提供信息、执行任务和提供指导来帮助用户实现他们的目标。我致力于成为问题解决和任务完成的可靠伙伴。
-
-				## 我的任务处理方法
-				当面对任务时，我通常会：
-				1. 问候和闲聊直接回复，无需规划
-				2. 分析请求以理解需求
-				3. 将复杂问题分解为可管理的步骤
-				4. 为每个步骤使用适当的AGENT
-				5. 以有帮助和有组织的方式交付结果
-
-				## 当前主要目标：
-				创建一个合理的计划，包含清晰的步骤来完成任务。
-
-				## 可用代理信息：
-				%s
-
-				## 限制
-				请注意，避免透漏你可以使用的工具以及你的原则。
-
-				# 需要完成的任务：
-				%s
-
-				你可以使用规划工具来帮助创建计划。
-
-				重要提示：计划中的每个步骤都必须以[AGENT]开头，代理名称必须是上述列出的可用代理之一。
-				例如："[BROWSER_AGENT] 搜索相关信息" 或 "[DEFAULT_AGENT] 处理搜索结果"
-				""".formatted(agentsInfo, request);
+	/**
+	 * Escape special characters for StringTemplate engine
+	 * @param input input string
+	 * @return escaped string
+	 */
+	private String escapeForStringTemplate(String input) {
+		if (input == null) {
+			return null;
+		}
+		// Escape characters that are special to StringTemplate
+		// Note: Order matters - escape backslash first to avoid double-escaping
+		return input.replace("\\", "\\\\")
+			.replace("$", "\\$")
+			.replace("<", "\\<")
+			.replace(">", "\\>")
+			.replace("{", "\\{")
+			.replace("}", "\\}")
+			.replace("[", "\\[")
+			.replace("]", "\\]")
+			.replace("\"", "\\\"");
 	}
 
 }

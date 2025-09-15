@@ -63,6 +63,10 @@ After completing development in your local BOE environment, it's strongly recomm
 
 To reduce unnecessary code style issues, Spring AI Alibaba provides a local Checkstyle check feature. You can run `mvn checkstyle:check` in the project's root directory to verify if your code style complies with the standards.
 
+### Remove Unused Imports
+
+To ensure code cleanliness, please remove any unused imports in your Java files. You can do this by using the `mvn spotless:apply` command, which will automatically remove unused imports from your code.
+
 ### Commit the Latest Code
 
 After completing your coding, you need to format and verify your commit messages according to the PR specification in `[lint-pr-title.yml](.github/workflows/lint-pr-title.yml)` to ensure they comply with the guidelines.

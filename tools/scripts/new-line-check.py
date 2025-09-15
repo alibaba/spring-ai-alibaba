@@ -25,7 +25,11 @@ ignore_dirs = [
     ".vscode",
     "target",
     "static",
-    "static_legacy"
+    "static_legacy",
+    "frontend",
+    ".husky",
+    "docs",
+    "docker"
 ]
 
 # A list of ignored suffix files
@@ -34,7 +38,9 @@ ignore_suffix = [
     ".webp", ".pdf", ".word", ".docx", ".doc", ".ppt",
     ".xlsx", ".xls", ".exe", "chromedriver", ".pptx", ".jar",
     ".wav", ".bib", ".cmd", "mvnw", ".bin", ".pcm", ".flac", ".ttf",
-    ".mp4", ".PPT", ".jif"
+    ".mp4", ".PPT", ".jif", ".zip", ".tar", ".gz", ".rar", ".7z",
+    ".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".tbz2", ".txz",
+    ".txt"
 ]
 
 # Check if the incoming file ends with a blank line

@@ -17,12 +17,18 @@ package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigType;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigStatus;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
- * VO对象，用于McpConfig的前端展示
+ * VO object for frontend display of McpConfig
  */
 public class McpConfigVO {
 
@@ -34,25 +40,96 @@ public class McpConfigVO {
 
 	private String connectionConfig;
 
-	private List<String> toolNames; // 添加工具名称列表，用于前端展示
+	private List<String> toolNames; // Add tool name list for frontend display
 
+	private final ObjectMapper objectMapper;
+
+	// New field-based properties
+	private String command;
+
+	private String url;
+
+	private List<String> args;
+
+	private Map<String, String> env;
+
+	private McpConfigStatus status;
+
+	/**
+	 * Default constructor for Jackson deserialization
+	 */
 	public McpConfigVO() {
+		this.objectMapper = new ObjectMapper();
+		this.toolNames = new ArrayList<>();
 	}
 
-	public McpConfigVO(McpConfigEntity entity) {
+	public McpConfigVO(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+		this.toolNames = new ArrayList<>();
+	}
+
+	public McpConfigVO(McpConfigEntity entity, ObjectMapper objectMapper) {
 		this.id = entity.getId();
 		this.mcpServerName = entity.getMcpServerName();
 		this.connectionType = entity.getConnectionType();
 		this.connectionConfig = entity.getConnectionConfig();
-		this.toolNames = new ArrayList<>(); // 初始化为空列表，实际使用时可能需要从其他地方获取
+		this.status = entity.getStatus();
+		this.objectMapper = objectMapper;
+		this.toolNames = new ArrayList<>(); // Initialize as empty list, may need to get
+											// from other places in actual use
+
+		// Parse connectionConfig to field-based properties
+		parseConnectionConfig();
 	}
 
-	// 将VO列表转换为实体列表的静态方法
-	public static List<McpConfigVO> fromEntities(List<McpConfigEntity> entities) {
+	/**
+	 * Parse connectionConfig JSON to field-based properties
+	 */
+	private void parseConnectionConfig() {
+		if (connectionConfig == null || connectionConfig.trim().isEmpty()) {
+			return;
+		}
+
+		try {
+
+			objectMapper.registerModule(new JavaTimeModule());
+			JsonNode configNode = objectMapper.readTree(connectionConfig);
+
+			// Parse command
+			if (configNode.has("command")) {
+				this.command = configNode.get("command").asText();
+			}
+
+			// Parse url
+			if (configNode.has("url")) {
+				this.url = configNode.get("url").asText();
+			}
+
+			// Parse args
+			if (configNode.has("args")) {
+				this.args = objectMapper.readValue(configNode.get("args").toString(),
+						objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+			}
+
+			// Parse env
+			if (configNode.has("env")) {
+				this.env = objectMapper.readValue(configNode.get("env").toString(),
+						objectMapper.getTypeFactory().constructMapType(Map.class, String.class, String.class));
+			}
+
+		}
+		catch (JsonProcessingException e) {
+			// If parsing fails, keep fields empty
+			System.err.println("Failed to parse connectionConfig: " + e.getMessage());
+		}
+	}
+
+	// Static method to convert VO list to entity list, add ObjectMapper parameter
+	public static List<McpConfigVO> fromEntities(List<McpConfigEntity> entities, ObjectMapper objectMapper) {
 		List<McpConfigVO> vos = new ArrayList<>();
 		if (entities != null) {
 			for (McpConfigEntity entity : entities) {
-				vos.add(new McpConfigVO(entity));
+				vos.add(new McpConfigVO(entity, objectMapper));
 			}
 		}
 		return vos;
@@ -99,10 +176,53 @@ public class McpConfigVO {
 		this.toolNames = toolNames;
 	}
 
+	// Getter and setter for new fields
+	public String getCommand() {
+		return command;
+	}
+
+	public void setCommand(String command) {
+		this.command = command;
+	}
+
+	public String getUrl() {
+		return url;
+	}
+
+	public void setUrl(String url) {
+		this.url = url;
+	}
+
+	public List<String> getArgs() {
+		return args;
+	}
+
+	public void setArgs(List<String> args) {
+		this.args = args;
+	}
+
+	public Map<String, String> getEnv() {
+		return env;
+	}
+
+	public void setEnv(Map<String, String> env) {
+		this.env = env;
+	}
+
+	public McpConfigStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(McpConfigStatus status) {
+		this.status = status;
+	}
+
 	@Override
 	public String toString() {
 		return "McpConfigVO{" + "id=" + id + ", mcpServerName='" + mcpServerName + '\'' + ", connectionType="
-				+ connectionType + ", connectionConfig='" + connectionConfig + '\'' + ", toolNames=" + toolNames + '}';
+				+ connectionType + ", connectionConfig='" + connectionConfig + '\'' + ", toolNames=" + toolNames
+				+ ", command='" + command + '\'' + ", url='" + url + '\'' + ", args='" + args + '\'' + ", env='" + env
+				+ '\'' + ", status=" + status + '}';
 	}
 
 }

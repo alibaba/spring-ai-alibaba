@@ -1,4 +1,4 @@
-<!-- 
+<!--
  * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,7 @@
 -->
 <template>
   <div class="home-page">
-    <!-- 简化的 Hello World 主页 -->
+    <!-- Simplified Hello World Home Page -->
     <div class="welcome-container">
       <!-- Background effects -->
       <div class="background-effects">
@@ -23,15 +23,18 @@
         <div class="gradient-orb orb-2"></div>
         <div class="gradient-orb orb-3"></div>
       </div>
-      
+
       <!-- Header -->
       <header class="header">
+        <div class="header-top">
+          <LanguageSwitcher />
+        </div>
         <div class="logo-container">
           <div class="logo">
-            <img src="/Java-AI.svg" alt="JTaskPoilot" class="java-logo" />
-            <h1>JTaskPoilot</h1>
+            <img src="/Java-AI.svg" alt="JManus" class="java-logo" />
+            <h1>JManus</h1>
           </div>
-          <span class="tagline">Java AI 智能体</span>
+          <span class="tagline">{{ $t('home.tagline') }}</span>
         </div>
       </header>
 
@@ -40,36 +43,37 @@
         <div class="conversation-container">
           <!-- Welcome section -->
           <div class="welcome-section">
-            <h2 class="welcome-title">欢迎使用 JTaskPoilot！</h2>
-            <p class="welcome-subtitle">您的 Java AI 智能助手，帮助您构建和完成各种任务。</p>
+            <h2 class="welcome-title">{{ $t('home.welcomeTitle') }}</h2>
+            <p class="welcome-subtitle">{{ $t('home.welcomeSubtitle') }}</p>
+            <button class="direct-button" @click="goToDirectPage">{{ $t('home.directButton') }}</button>
           </div>
 
           <!-- Input section -->
           <div class="input-section">
             <div class="input-container">
               <textarea
-                v-model="userInput"
-                ref="textareaRef"
-                class="main-input"
-                placeholder="描述您想构建或完成的内容..."
-                @keydown="handleKeydown"
-                @input="adjustTextareaHeight"
+                  v-model="userInput"
+                  ref="textareaRef"
+                  class="main-input"
+                  :placeholder="$t('home.inputPlaceholder')"
+                  @keydown="handleKeydown"
+                  @input="adjustTextareaHeight"
               ></textarea>
               <button class="send-button" :disabled="!userInput.trim()" @click="handleSend">
                 <Icon icon="carbon:send-alt" />
               </button>
             </div>
           </div>
-
-          <!-- Example prompts -->
+          <!-- All examples and plans -->
           <div class="examples-section">
             <div class="examples-grid">
-              <BlurCard
-                v-for="example in examples"
-                :key="example.title"
-                :content="example"
-                @clickCard="selectExample"
-              />
+              <div v-for="item in allCards" :key="item.title" class="card-with-type">
+                <BlurCard
+                    :content="item"
+                    @clickCard="handleCardClick(item)"
+                />
+                <span class="card-type">{{ item.type }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -79,10 +83,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import BlurCard from '@/components/blurCard/index.vue'
+import LanguageSwitcher from '@/components/language-switcher/index.vue'
 import { useTaskStore } from '@/stores/task'
 
 const router = useRouter()
@@ -90,36 +96,68 @@ const taskStore = useTaskStore()
 const userInput = ref('')
 const textareaRef = ref<HTMLTextAreaElement>()
 
-const examples = [
-  {
-    title: '查询股价',
-    description: '获取今天阿里巴巴的最新股价（Agent可以使用浏览器工具）',
-    icon: 'carbon:chart-line-data',
-    prompt: '用浏览器基于百度，查询今天阿里巴巴的股价，并返回最新股价',
-  },
-  {
-    title: '生成一个中篇小说',
-    description: '帮我生成一个中篇小说（Agent可以生成更长的内容）',
-    icon: 'carbon:book',
-    prompt: '请帮我写一个关于机器人取代人类的小说。20000字。 使用TEXT_FILE_AGENT ，先生成提纲，然后，完善和丰满整个提纲的内容为一篇通顺的小说，最后再全局通顺一下语法',
-  },
-  {
-    title: '查询天气',
-    description: '获取北京今天的天气情况（Agent可以使用MCP工具服务）',
-    icon: 'carbon:partly-cloudy',
-    prompt: '用浏览器，基于百度，查询北京今天的天气',
-  },
-]
+const { t } = useI18n()
+
+const goToDirectPage = () => {
+  const chatId = Date.now().toString()
+  router.push({
+    name: 'direct',
+    params: { id: chatId },
+  }).then(() => {
+    console.log('[Home] jump to direct page' + t('common.success'))
+  }).catch((error) => {
+    console.error('[Home] jump to direct page' + t('common.error'), error)
+  })
+}
+
+const examples = computed(() => [
+  { title: t('home.examples.stockPrice.title'), type: 'message', description: t('home.examples.stockPrice.description'), icon: 'carbon:chart-line-data', prompt: t('home.examples.stockPrice.prompt') },
+  { title: t('home.examples.weather.title'), type: 'message', description: t('home.examples.weather.description'), icon: 'carbon:partly-cloudy', prompt: t('home.examples.weather.prompt') }
+])
+const plans = computed(() => [
+  { title: t('home.examples.queryplan.title'), type: 'plan-act', description: t('home.examples.queryplan.description'), icon: 'carbon:plan', prompt: t('home.examples.queryplan.prompt'), planJson: { planType: 'simple', title: t('home.examples.queryplan.planTitle'), steps: [{ stepRequirement: t('home.examples.queryplan.step1'), terminateColumns: t('home.examples.queryplan.step1Output') }, { stepRequirement: t('home.examples.queryplan.step2'), terminateColumns: t('home.examples.queryplan.step2Output') }], planId: 'planTemplate-1749200517403' } },
+  { title: t('home.examples.ainovel.title'), type: 'plan-act', description: t('home.examples.ainovel.description'), icon: 'carbon:document-tasks', prompt: t('home.examples.ainovel.prompt'), planJson: { planType: 'simple', title: t('home.examples.ainovel.planTitle'), steps: [{ stepRequirement: t('home.examples.ainovel.step1'), terminateColumns: t('home.examples.ainovel.step1Output') }, { stepRequirement: t('home.examples.ainovel.step2'), terminateColumns: t('home.examples.ainovel.step2Output') }], planId: 'planTemplate-1753622676988' } },
+  { title: t('home.examples.formInputDemo.title'), type: 'plan-act', description: t('home.examples.formInputDemo.description'), icon: 'carbon:watson', prompt: t('home.examples.formInputDemo.prompt'), planJson: { planType: 'simple', title: t('home.examples.formInputDemo.planTitle'), steps: [{ stepRequirement: t('home.examples.formInputDemo.step1'), terminateColumns: t('home.examples.formInputDemo.step1Output') }, { stepRequirement: t('home.examples.formInputDemo.step2'), terminateColumns: t('home.examples.formInputDemo.step2Output') }, { stepRequirement: t('home.examples.formInputDemo.step3'), terminateColumns: t('home.examples.formInputDemo.step3Output') }], planId: 'planTemplate-forminput-demo-2025' } }
+])
+const allCards = computed(() => [...examples.value,  ...plans.value])
+
+const handleCardClick = (item: any) => {
+  if (item.type === 'message') {
+    selectExample(item)
+  } else if (item.type === 'plan-act') {
+    selectPlan(item)
+  }
+}
 
 onMounted(() => {
   console.log('[Home] onMounted called')
   console.log('[Home] taskStore:', taskStore)
   console.log('[Home] examples:', examples)
-  
-  // 标记已访问过 home 页面
+
+  // Mark that the home page has been visited
   taskStore.markHomeVisited()
   console.log('[Home] Home visited marked')
 })
+
+import { sidebarStore } from '@/stores/sidebar'
+
+const saveJsonPlanToTemplate = async (jsonPlan: any) => {
+  try {
+    sidebarStore.createNewTemplate();
+    sidebarStore.jsonContent = JSON.stringify(jsonPlan);
+    const saveResult = await sidebarStore.saveTemplate();
+    if (saveResult?.duplicate) {
+      console.log('[Sidebar] ' + t('sidebar.saveCompleted', { message: saveResult.message, versionCount: saveResult.versionCount }));
+    } else if (saveResult?.saved) {
+      console.log('[Sidebar] ' + t('sidebar.saveSuccess', { message: saveResult.message, versionCount: saveResult.versionCount }));
+    } else if (saveResult?.message) {
+      console.log('[Sidebar] ' + t('sidebar.saveStatus', { message: saveResult.message }));
+    }
+  } catch (error: any) {
+    console.error('[Sidebar] Failed to save the plan to the template library:', error);
+    alert(error.message || t('sidebar.saveFailed'));
+  }
+}
 
 const adjustTextareaHeight = () => {
   nextTick(() => {
@@ -148,15 +186,15 @@ const handleSend = () => {
 
   const taskContent = userInput.value.trim()
   console.log('[Home] Setting task to store:', taskContent)
-  
-  // 使用 store 传递任务数据
+
+  // Use the store to pass task data
   taskStore.setTask(taskContent)
   console.log('[Home] Task set to store, current task:', taskStore.currentTask)
-  
-  // 导航到 direct 页面
+
+  // Navigate to direct page
   const chatId = Date.now().toString()
   console.log('[Home] Navigating to direct page with chatId:', chatId)
-  
+
   router.push({
     name: 'direct',
     params: { id: chatId },
@@ -170,15 +208,15 @@ const handleSend = () => {
 const selectExample = (example: any) => {
   console.log('[Home] selectExample called with example:', example)
   console.log('[Home] Example prompt:', example.prompt)
-  
-  // 直接使用示例的 prompt 发送任务
+
+  // Send the task directly using the example's prompt
   taskStore.setTask(example.prompt)
   console.log('[Home] Task set to store from example, current task:', taskStore.currentTask)
-  
-  // 导航到 direct 页面
+
+  // Navigate to direct page
   const chatId = Date.now().toString()
   console.log('[Home] Navigating to direct page with chatId:', chatId)
-  
+
   router.push({
     name: 'direct',
     params: { id: chatId },
@@ -188,6 +226,64 @@ const selectExample = (example: any) => {
     console.error('[Home] Navigation error (from example):', error)
   })
 }
+
+const selectPlan = async (plan: any) => {
+  console.log('[Home] selectPlan called with plan:', plan)
+
+  try {
+    // 1. First, save the plan to the template library
+    await saveJsonPlanToTemplate(plan.planJson)
+    console.log('[Home] Plan saved to templates')
+
+    // 2. Navigate to the direct page
+    const chatId = Date.now().toString()
+    await router.push({
+      name: 'direct',
+      params: { id: chatId },
+    })
+
+    // 3. Navigate to the direct page after loading
+    nextTick(async () => {
+      // Ensure the page is fully loaded
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      // Toggle the sidebar
+      if (sidebarStore.isCollapsed) {
+        await sidebarStore.toggleSidebar()
+        console.log('[Sidebar] Sidebar toggled')
+      } else {
+        console.log('[Sidebar] Sidebar is already open')
+      }
+
+      // Load the template list
+      await sidebarStore.loadPlanTemplateList()
+      console.log('[Sidebar] Template list loaded')
+
+      // Find and select the template
+      const template = sidebarStore.planTemplateList.find(t => t.id === plan.planJson.planId)
+      if (!template) {
+        console.error('[Sidebar] Template not found')
+        return
+      }
+
+      await sidebarStore.selectTemplate(template)
+      console.log('[Sidebar] Template selected:', template.title)
+
+      // Call the execute logic directly
+      const executeBtn = document.querySelector('.execute-btn') as HTMLButtonElement
+      if (!executeBtn.disabled) {
+        console.log('[Sidebar] Triggering execute button click')
+        executeBtn.click()
+      } else {
+        console.error('[Sidebar] Execute button not found or disabled')
+      }
+    })
+  } catch (error) {
+    console.error('[Home] Error in selectPlan:', error)
+  }
+}
+
+
 </script>
 
 <style lang="less" scoped>
@@ -195,6 +291,7 @@ const selectExample = (example: any) => {
   width: 100%;
   height: 100vh;
   position: relative;
+  overflow-y: auto;
 }
 
 .welcome-container {
@@ -202,7 +299,6 @@ const selectExample = (example: any) => {
   height: 100vh;
   background: #0a0a0a;
   position: relative;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -270,8 +366,16 @@ const selectExample = (example: any) => {
 
 .header {
   position: relative;
-  z-index: 1;
+  z-index: 1000;
   padding: 32px 32px 0;
+}
+
+.header-top {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1001;
 }
 
 .logo-container {
@@ -409,11 +513,43 @@ const selectExample = (example: any) => {
 }
 
 .examples-section {
+  margin-bottom: 48px;
+
   .examples-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px;
+
+    .card-with-type {
+      width: 100%;
+      min-width: 300px;
+
+      &:hover {
+        .card-type {
+          transform: translateY(-1px);
+          box-shadow: 0 8px 25px rgba(130, 151, 246, 0.4);
+        }
+      }
+
+    }
   }
+}
+
+.card-with-type {
+  position: relative;
+}
+
+.card-type {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 1;
 }
 
 // .example-card {
@@ -506,5 +642,22 @@ const selectExample = (example: any) => {
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+}
+
+.direct-button {
+  margin-top: 20px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.direct-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 </style>

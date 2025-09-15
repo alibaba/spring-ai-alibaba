@@ -15,97 +15,111 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.fasterxml.jackson.databind.JsonSerializable;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 智能体执行记录类，用于跟踪和记录BaseAgent执行过程的详细信息。
+ * Agent execution record class for tracking and recording detailed information about
+ * BaseAgent execution process.
  *
- * 数据结构分为三个主要部分：
+ * Data structure is divided into three main parts:
  *
- * 1. 基本信息 (Basic Info) - id: 记录的唯一标识 - conversationId: 对话唯一标识 - agentName: 智能体名称 -
- * agentDescription: 智能体描述 - startTime: 执行开始时间 - endTime: 执行结束时间
+ * 1. Basic Info - id: unique identifier of the record - conversationId: conversation
+ * unique identifier - agentName: agent name - agentDescription: agent description -
+ * startTime: execution start time - endTime: execution end time
  *
- * 2. 执行过程数据 (Execution Data) - maxSteps: 最大执行步骤数 - currentStep: 当前执行步骤 - status:
- * 执行状态（IDLE, RUNNING, FINISHED） - thinkActSteps: 思考-行动步骤记录列表，每个元素是ThinkActRecord对象 -
- * agentRequest: 输入提示模板
+ * 2. Execution Data - maxSteps: maximum execution steps - currentStep: current execution
+ * step - status: execution status (IDLE, RUNNING, FINISHED) - thinkActSteps: think-act
+ * step record list, each element is a ThinkActRecord object - agentRequest: input prompt
+ * template
  *
- * 3. 执行结果 (Execution Result) - isCompleted: 是否完成 - isStuck: 是否卡住 - result: 执行结果 -
- * errorMessage: 错误信息（如有）
+ * 3. Execution Result - isCompleted: whether completed - isStuck: whether stuck - result:
+ * execution result - errorMessage: error message (if any)
  *
  * @see BaseAgent
  * @see ThinkActRecord
  * @see JsonSerializable
  */
+
 public class AgentExecutionRecord {
 
-	// 记录的唯一标识符
+	// Unique identifier of the record
 	private Long id;
 
-	// 此记录所属的对话ID
+	// Conversation ID this record belongs to
 	private String conversationId;
 
-	// 创建此记录的智能体名称
+	// Name of the agent that created this record
 	private String agentName;
 
-	// 智能体的描述信息
+	// Description information of the agent
 	private String agentDescription;
 
-	// 执行开始的时间戳
+	// Timestamp when execution started
+	@JsonSerialize(using = LocalDateTimeSerializer.class)
+	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime startTime;
 
-	// 执行结束的时间戳
+	// Timestamp when execution ended
+	@JsonSerialize(using = LocalDateTimeSerializer.class)
+	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime endTime;
 
-	// 最大允许的步骤数
+	// Maximum allowed number of steps
 	private int maxSteps;
 
-	// 当前执行的步骤编号
+	// Current execution step number
 	private int currentStep;
 
-	// 执行状态（IDLE, RUNNING, FINISHED）
-	private String status;
+	// Execution status (IDLE, RUNNING, FINISHED)
+	private ExecutionStatus status;
 
-	// 是否执行完成
-	private boolean isCompleted;
-
-	// 是否卡住
-	private boolean isStuck;
-
-	// 思考-行动步骤的记录列表，作为子步骤存在
+	// Record list of think-act steps, existing as sub-steps
 	private List<ThinkActRecord> thinkActSteps;
 
-	// 用于智能体执行的请求内容
+	// Request content for agent execution
 	private String agentRequest;
 
-	// 执行结果
+	// Execution result
 	private String result;
 
-	// 如果执行遇到问题的错误消息
+	// Error message if execution encounters problems
 	private String errorMessage;
 
-	// 默认构造函数
+	// Actual calling model
+	private String modelName;
+
+	// Default constructor
 	public AgentExecutionRecord() {
 		this.thinkActSteps = new ArrayList<>();
+		// Ensure ID is generated during initialization
+		this.id = generateId();
 	}
 
-	// 带参数的构造函数
+	// Constructor with parameters
 	public AgentExecutionRecord(String conversationId, String agentName, String agentDescription) {
 		this.conversationId = conversationId;
 		this.agentName = agentName;
 		this.agentDescription = agentDescription;
 		this.startTime = LocalDateTime.now();
-		this.status = "IDLE";
-		this.isCompleted = false;
-		this.isStuck = false;
+		this.status = ExecutionStatus.IDLE; // Use enum value
 		this.currentStep = 0;
 		this.thinkActSteps = new ArrayList<>();
+		// Ensure ID is generated during initialization
+		this.id = generateId();
 	}
 
 	/**
-	 * 添加一个ThinkActRecord作为执行步骤
-	 * @param record ThinkActRecord实例
+	 * Add a ThinkActRecord as execution step
+	 * @param record ThinkActRecord instance
 	 */
 	public void addThinkActStep(ThinkActRecord record) {
 		if (this.thinkActSteps == null) {
@@ -115,9 +129,27 @@ public class AgentExecutionRecord {
 		this.currentStep = this.thinkActSteps.size();
 	}
 
+	/**
+	 * Generate unique ID if not already set
+	 * @return Generated or existing ID
+	 */
+	private Long generateId() {
+		if (this.id == null) {
+			// Use combination of timestamp and random number to generate ID
+			long timestamp = System.currentTimeMillis();
+			int random = (int) (Math.random() * 1000000);
+			this.id = timestamp * 1000 + random;
+		}
+		return this.id;
+	}
+
 	// Getters and setters
 
 	public Long getId() {
+		// Ensure ID is generated when accessing
+		if (this.id == null) {
+			this.id = generateId();
+		}
 		return id;
 	}
 
@@ -173,28 +205,12 @@ public class AgentExecutionRecord {
 		this.currentStep = currentStep;
 	}
 
-	public String getStatus() {
+	public ExecutionStatus getStatus() {
 		return status;
 	}
 
-	public void setStatus(String status) {
+	public void setStatus(ExecutionStatus status) {
 		this.status = status;
-	}
-
-	public boolean isCompleted() {
-		return isCompleted;
-	}
-
-	public void setCompleted(boolean completed) {
-		isCompleted = completed;
-	}
-
-	public boolean isStuck() {
-		return isStuck;
-	}
-
-	public void setStuck(boolean stuck) {
-		isStuck = stuck;
 	}
 
 	public List<ThinkActRecord> getThinkActSteps() {
@@ -230,22 +246,30 @@ public class AgentExecutionRecord {
 		this.errorMessage = errorMessage;
 	}
 
+	public String getModelName() {
+		return modelName;
+	}
+
+	public void setModelName(String modelName) {
+		this.modelName = modelName;
+	}
+
 	@Override
 	public String toString() {
 		return "AgentExecutionRecord{" + "id='" + id + '\'' + ", conversationId='" + conversationId + '\''
 				+ ", agentName='" + agentName + '\'' + ", status='" + status + '\'' + ", currentStep=" + currentStep
-				+ ", maxSteps=" + maxSteps + ", isCompleted=" + isCompleted + ", isStuck=" + isStuck + ", stepsCount="
-				+ (thinkActSteps != null ? thinkActSteps.size() : 0) + '}';
+				+ ", maxSteps=" + maxSteps + ", stepsCount=" + (thinkActSteps != null ? thinkActSteps.size() : 0) + '}';
 	}
 
 	/**
-	 * 保存记录到持久化存储 空实现，由具体的存储实现来覆盖 同时会递归保存所有ThinkActRecord
-	 * @return 保存后的记录ID
+	 * Save record to persistent storage. Empty implementation, to be overridden by
+	 * specific storage implementations. Also recursively saves all ThinkActRecords
+	 * @return Record ID after saving
 	 */
 	public Long save() {
-		// 如果ID为空，生成一个随机ID
+		// If ID is null, generate a random ID
 		if (this.id == null) {
-			// 使用时间戳和随机数组合生成ID
+			// Use combination of timestamp and random number to generate ID
 			long timestamp = System.currentTimeMillis();
 			int random = (int) (Math.random() * 1000000);
 			this.id = timestamp * 1000 + random;
@@ -258,6 +282,14 @@ public class AgentExecutionRecord {
 			}
 		}
 		return this.id;
+	}
+
+	public String getConversationId() {
+		return conversationId;
+	}
+
+	public void setConversationId(String conversationId) {
+		this.conversationId = conversationId;
 	}
 
 }

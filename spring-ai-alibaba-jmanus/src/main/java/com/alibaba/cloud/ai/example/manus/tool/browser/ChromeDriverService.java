@@ -23,12 +23,16 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
+import com.alibaba.cloud.ai.example.manus.config.IManusProperties;
+import com.alibaba.cloud.ai.example.manus.tool.innerStorage.SmartContentSavingService;
+import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Page;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -39,7 +43,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Primary
-public class ChromeDriverService {
+public class ChromeDriverService implements IChromeDriverService {
 
 	private static final Logger log = LoggerFactory.getLogger(ChromeDriverService.class);
 
@@ -49,29 +53,35 @@ public class ChromeDriverService {
 
 	private ManusProperties manusProperties;
 
-	// Initialize ObjectMapper instance
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private SmartContentSavingService innerStorageService;
+
+	private UnifiedDirectoryManager unifiedDirectoryManager;
+
+	private final ObjectMapper objectMapper;
+
+	@Autowired(required = false)
+	private SpringBootPlaywrightInitializer playwrightInitializer;
 
 	/**
-	 * 共享目录 用来存cookies
+	 * Shared directory for storing cookies
 	 */
 	/**
-	 * 共享目录 用来存cookies
+	 * Shared directory for storing cookies
 	 */
 	private String sharedDir;
 
 	/**
-	 * 获取当前共享目录
+	 * Get current shared directory
 	 */
 	public String getSharedDir() {
 		return sharedDir;
 	}
 
 	/**
-	 * 保存所有driver中的cookies到全局共享目录（cookies.json）
+	 * Save all cookies from drivers to global shared directory (cookies.json)
 	 */
 	public void saveCookiesToSharedDir() {
-		// 取第一个可用 driver
+		// Get the first available driver
 		DriverWrapper driver = drivers.values().stream().findFirst().orElse(null);
 		if (driver == null) {
 			log.warn("No driver found for saving cookies");
@@ -91,7 +101,7 @@ public class ChromeDriverService {
 	}
 
 	/**
-	 * 从全局共享目录加载cookies到所有driver
+	 * Load cookies from global shared directory to all drivers
 	 */
 	public void loadCookiesFromSharedDir() {
 		String cookieFile = sharedDir + "/cookies.json";
@@ -115,9 +125,22 @@ public class ChromeDriverService {
 		}
 	}
 
-	public ChromeDriverService(ManusProperties manusProperties) {
+	public ChromeDriverService(ManusProperties manusProperties, SmartContentSavingService innerStorageService,
+			UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper) {
 		this.manusProperties = manusProperties;
-		this.sharedDir = CodeUtils.getSharedDirectory(manusProperties.getBaseDir(), "playwright");
+		this.innerStorageService = innerStorageService;
+		this.unifiedDirectoryManager = unifiedDirectoryManager;
+		this.objectMapper = objectMapper;
+		// Use UnifiedDirectoryManager to get the shared directory for playwright
+		try {
+			java.nio.file.Path playwrightDir = unifiedDirectoryManager.getWorkingDirectory().resolve("playwright");
+			unifiedDirectoryManager.ensureDirectoryExists(playwrightDir);
+			this.sharedDir = playwrightDir.toString();
+		}
+		catch (java.io.IOException e) {
+			log.error("Failed to create playwright directory", e);
+			this.sharedDir = unifiedDirectoryManager.getWorkingDirectory().resolve("playwright").toString();
+		}
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			log.info("JVM shutting down - cleaning up Playwright processes");
 			cleanupAllPlaywrightProcesses();
@@ -179,34 +202,70 @@ public class ChromeDriverService {
 	}
 
 	private DriverWrapper createNewDriver() {
+		log.info("Creating new browser driver");
+		return createDriverInstance();
+	}
+
+	/**
+	 * Create browser driver instance
+	 */
+	private DriverWrapper createDriverInstance() {
+		// Set system properties for Playwright configuration
+		System.setProperty("playwright.browsers.path", System.getProperty("user.home") + "/.cache/ms-playwright");
+
+		// Set custom driver temp directory to avoid classpath issues
+		System.setProperty("playwright.driver.tmpdir", System.getProperty("java.io.tmpdir"));
+
+		// Skip browser download if browsers are already installed
+		System.setProperty("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1");
+
+		// Try to create Playwright instance using Spring Boot initializer
 		Playwright playwright = null;
 		try {
-
-			if (playwright == null) {
+			if (playwrightInitializer != null && playwrightInitializer.canInitialize()) {
+				log.info("Using SpringBootPlaywrightInitializer");
+				playwright = playwrightInitializer.createPlaywright();
+			}
+			else {
+				log.info("Using standard Playwright initialization");
 				playwright = Playwright.create();
 			}
+
+			// Get browser type
+			BrowserType browserType = getBrowserTypeFromEnv(playwright);
+			log.info("Using browser type: {}", browserType.name());
+
 			BrowserType.LaunchOptions options = new BrowserType.LaunchOptions();
 
-			// 基础配置
+			// Basic configuration
 			options.setArgs(Arrays.asList("--remote-allow-origins=*", "--disable-blink-features=AutomationControlled",
 					"--disable-infobars", "--disable-notifications", "--disable-dev-shm-usage",
-					"--lang=zh-CN,zh,en-US,en", "--user-agent=" + getRandomUserAgent(), "--window-size=1920,1080" // 默认窗口大小
-			));
+					"--lang=zh-CN,zh,en-US,en", "--user-agent=" + getRandomUserAgent(), "--window-size=1920,1080"));
 
-			// 根据配置决定是否使用 headless 模式
+			// Decide whether to use headless mode based on configuration
 			if (manusProperties.getBrowserHeadless()) {
-				log.info("启用 Playwright headless 模式");
+				log.info("Enable Playwright headless mode");
 				options.setHeadless(true);
 			}
 			else {
-				log.info("启用 Playwright 非 headless 模式");
+				log.info("Enable Playwright non-headless mode");
 				options.setHeadless(false);
 			}
 
-			Browser browser = playwright.chromium().launch(options);
-			log.info("Created new Playwright Browser instance with anti-detection");
-			// Pass the sharedDir to the DriverWrapper constructor
-			return new DriverWrapper(playwright, browser, browser.newPage(), this.sharedDir);
+			Browser browser = browserType.launch(options);
+			log.info("Created new Playwright Browser instance");
+
+			// Create new page and configure timeout
+			Page page = browser.newPage();
+
+			// Set default timeout based on configuration
+			Integer timeout = manusProperties.getBrowserRequestTimeout();
+			if (timeout != null && timeout > 0) {
+				log.info("Setting browser page timeout to {} seconds", timeout);
+				page.setDefaultTimeout(timeout * 1000); // Convert to milliseconds
+			}
+
+			return new DriverWrapper(playwright, browser, page, this.sharedDir, objectMapper);
 		}
 		catch (Exception e) {
 			if (playwright != null) {
@@ -217,8 +276,27 @@ public class ChromeDriverService {
 					log.warn("Failed to close failed Playwright instance", ex);
 				}
 			}
-			log.error("Failed to create Playwright Browser instance", e);
 			throw new RuntimeException("Failed to initialize Playwright Browser", e);
+		}
+	}
+
+	/**
+	 * Get browser type, supports environment variable configuration
+	 */
+	private BrowserType getBrowserTypeFromEnv(Playwright playwright) {
+		String browserName = System.getenv("BROWSER");
+		if (browserName == null) {
+			browserName = "chromium";
+		}
+
+		switch (browserName.toLowerCase()) {
+			case "webkit":
+				return playwright.webkit();
+			case "firefox":
+				return playwright.firefox();
+			case "chromium":
+			default:
+				return playwright.chromium();
 		}
 	}
 
@@ -236,12 +314,20 @@ public class ChromeDriverService {
 		cleanupAllPlaywrightProcesses();
 	}
 
-	public void setManusProperties(ManusProperties manusProperties) {
-		this.manusProperties = manusProperties;
+	public void setManusProperties(IManusProperties manusProperties) {
+		this.manusProperties = (ManusProperties) manusProperties;
 	}
 
-	public ManusProperties getManusProperties() {
+	public IManusProperties getManusProperties() {
 		return manusProperties;
+	}
+
+	public SmartContentSavingService getInnerStorageService() {
+		return innerStorageService;
+	}
+
+	public UnifiedDirectoryManager getUnifiedDirectoryManager() {
+		return unifiedDirectoryManager;
 	}
 
 }

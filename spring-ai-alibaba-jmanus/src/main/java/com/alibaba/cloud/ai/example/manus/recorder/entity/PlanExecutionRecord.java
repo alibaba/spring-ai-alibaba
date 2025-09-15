@@ -16,57 +16,76 @@
 
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState; // Added import
 
 /**
- * 规划执行记录类，用于跟踪和记录PlanningFlow执行过程的详细信息。
+ * Plan execution record class for tracking and recording detailed information about
+ * PlanningFlow execution process.
  *
- * 数据结构分为四个主要部分：
+ * Data structure is divided into four main parts:
  *
- * 1. 基本信息 (Basic Info) - id: 记录的唯一标识 - planId: 计划的唯一标识 - title: 计划标题 - startTime: 执行开始时间
- * - endTime: 执行结束时间 - userRequest: 用户的原始请求
+ * 1. Basic Info - id: Unique identifier of the record - planId: Unique identifier of the
+ * plan - title: Plan title - startTime: Execution start time - endTime: Execution end
+ * time - userRequest: User's original request
  *
- * 2. 计划结构 (Plan Structure) - steps: 计划步骤列表 - stepStatuses: 步骤状态列表 - stepNotes: 步骤备注列表 -
- * stepAgents: 与每个步骤关联的智能体
+ * 2. Plan Structure - steps: Plan step list - stepStatuses: Step status list - stepNotes:
+ * Step notes list - stepAgents: Smart agents associated with each step
  *
- * 3. 执行过程数据 (Execution Data) - currentStepIndex: 当前执行的步骤索引 - agentExecutionRecords:
- * 每个智能体执行的记录 - executorKeys: 执行者键列表 - resultState: 共享结果状态
+ * 3. Execution Data - currentStepIndex: Current step index being executed -
+ * agentExecutionRecords: Records of execution for each smart agent - executorKeys: List
+ * of executor keys - resultState: Shared result status
  *
- * 4. 执行结果 (Execution Result) - completed: 是否完成 - progress: 执行进度（百分比） - summary: 执行总结
+ * 4. Execution Result - completed: Whether completed - progress: Execution progress
+ * (percentage) - summary: Execution summary
  */
 public class PlanExecutionRecord {
 
-	// 记录的唯一标识符
+	// Unique identifier for the record
 	private Long id;
 
-	// 计划的唯一标识符
-	private String planId;
+	// Unique identifier for the plan
+	private String currentPlanId;
 
-	// 计划标题
+	// Parent plan ID for sub-plans (null for main plans)
+	private String rootPlanId;
+
+	// Think-act record ID that triggered this sub-plan (null for main plans)
+	private Long thinkActRecordId;
+
+	// Plan title
 	private String title;
 
-	// 用户的原始请求
+	// User's original request
 	private String userRequest;
 
-	// 执行开始的时间戳
+	// Timestamp when execution started
+	@JsonSerialize(using = LocalDateTimeSerializer.class)
+	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime startTime;
 
-	// 执行结束的时间戳
+	// Timestamp when execution ended
+	@JsonSerialize(using = LocalDateTimeSerializer.class)
+	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime endTime;
 
-	// 计划的步骤列表
+	// List of plan steps
 	private List<String> steps;
 
-	// 当前执行的步骤索引
+	// Current step index being executed
 	private Integer currentStepIndex;
 
-	// 是否完成
+	// Whether completed
 	private boolean completed;
 
-	// 执行总结
+	// Execution summary
 	private String summary;
 
 	// List to maintain the sequence of agent executions
@@ -74,6 +93,9 @@ public class PlanExecutionRecord {
 
 	// Field to store user input wait state
 	private UserInputWaitState userInputWaitState;
+
+	// Actual calling model
+	private String modelName;
 
 	/**
 	 * Default constructor for Jackson and other frameworks.
@@ -88,41 +110,45 @@ public class PlanExecutionRecord {
 		// default constructor
 		this.completed = false;
 		this.agentExecutionSequence = new ArrayList<>();
+		// Ensure ID is generated during initialization
+		this.id = generateId();
 	}
 
 	/**
-	 * 构造函数，用于创建一个新的执行记录
+	 * Constructor for creating a new execution record
 	 * @param planId The unique identifier for the plan.
 	 */
-	public PlanExecutionRecord(String planId) {
-		this.planId = planId;
+	public PlanExecutionRecord(String currentPlanId, String rootPlanId) {
+		this.currentPlanId = currentPlanId;
+		this.rootPlanId = rootPlanId;
 		this.steps = new ArrayList<>();
 		this.startTime = LocalDateTime.now();
 		this.completed = false;
 		this.agentExecutionSequence = new ArrayList<>();
+		// Ensure ID is generated during initialization
+		this.id = generateId();
 	}
 
 	/**
-	 * 添加一个执行步骤
-	 * @param step 步骤描述
-	 * @param agentName 执行智能体名称
+	 * Add an execution step
+	 * @param step Step description
+	 * @param agentName Executing agent name
 	 */
 	public void addStep(String step, String agentName) {
 		this.steps.add(step);
 	}
 
 	/**
-	 * 添加智能体执行记录
-	 * @param agentName 智能体名称
-	 * @param record 执行记录
+	 * Add agent execution record
+	 * @param record Execution record
 	 */
 	public void addAgentExecutionRecord(AgentExecutionRecord record) {
 		this.agentExecutionSequence.add(record);
 	}
 
 	/**
-	 * 获取按执行顺序排列的智能体执行记录列表
-	 * @return 执行记录列表
+	 * Get agent execution records sorted by execution order
+	 * @return List of execution records
 	 */
 	public List<AgentExecutionRecord> getAgentExecutionSequence() {
 		return agentExecutionSequence;
@@ -133,7 +159,7 @@ public class PlanExecutionRecord {
 	}
 
 	/**
-	 * 完成执行，设置结束时间
+	 * Complete execution and set end time
 	 */
 	public void complete(String summary) {
 		this.endTime = LocalDateTime.now();
@@ -142,13 +168,28 @@ public class PlanExecutionRecord {
 	}
 
 	/**
-	 * 保存记录到持久化存储 空实现，由具体的存储实现来覆盖 同时会递归保存所有AgentExecutionRecord
-	 * @return 保存后的记录ID
+	 * Generate unique ID if not already set
+	 * @return Generated or existing ID
+	 */
+	private Long generateId() {
+		if (this.id == null) {
+			// Use combination of timestamp and random number to generate ID
+			long timestamp = System.currentTimeMillis();
+			int random = (int) (Math.random() * 1000000);
+			this.id = timestamp * 1000 + random;
+		}
+		return this.id;
+	}
+
+	/**
+	 * Save record to persistent storage. Empty implementation, to be overridden by
+	 * specific storage implementations. Also recursively saves all AgentExecutionRecord
+	 * @return Record ID after saving
 	 */
 	public Long save() {
-		// 如果ID为空，生成一个随机ID
+		// If ID is empty, generate a random ID
 		if (this.id == null) {
-			// 使用时间戳和随机数组合生成ID
+			// Use combination of timestamp and random number to generate ID
 			long timestamp = System.currentTimeMillis();
 			int random = (int) (Math.random() * 1000000);
 			this.id = timestamp * 1000 + random;
@@ -166,6 +207,10 @@ public class PlanExecutionRecord {
 	// Getters and Setters
 
 	public Long getId() {
+		// Ensure ID is generated when accessing
+		if (this.id == null) {
+			this.id = generateId();
+		}
 		return id;
 	}
 
@@ -173,12 +218,28 @@ public class PlanExecutionRecord {
 		this.id = id;
 	}
 
-	public String getPlanId() {
-		return planId;
+	public String getCurrentPlanId() {
+		return currentPlanId;
 	}
 
-	public void setPlanId(String planId) {
-		this.planId = planId;
+	public void setCurrentPlanId(String planId) {
+		this.currentPlanId = planId;
+	}
+
+	public String getRootPlanId() {
+		return rootPlanId;
+	}
+
+	public void setRootPlanId(String rootPlanId) {
+		this.rootPlanId = rootPlanId;
+	}
+
+	public Long getThinkActRecordId() {
+		return thinkActRecordId;
+	}
+
+	public void setThinkActRecordId(Long thinkActRecordId) {
+		this.thinkActRecordId = thinkActRecordId;
 	}
 
 	public String getTitle() {
@@ -253,16 +314,24 @@ public class PlanExecutionRecord {
 		this.summary = summary;
 	}
 
+	public String getModelName() {
+		return modelName;
+	}
+
+	public void setModelName(String modelName) {
+		this.modelName = modelName;
+	}
+
 	/**
-	 * 返回此记录的字符串表示形式，包含关键字段信息
-	 * @return 包含记录关键信息的字符串
+	 * Return string representation of this record, containing key field information
+	 * @return String containing key information of the record
 	 */
 	@Override
 	public String toString() {
 		return String.format(
-				"PlanExecutionRecord{id=%d, planId='%s', title='%s', steps=%d, currentStep=%d/%d, completed=%b}", id,
-				planId, title, steps.size(), currentStepIndex != null ? currentStepIndex + 1 : 0, steps.size(),
-				completed);
+				"PlanExecutionRecord{id=%d, planId='%s',planId='%s', title='%s', steps=%d, currentStep=%d/%d, completed=%b}",
+				id, currentPlanId, rootPlanId, title, steps.size(), currentStepIndex != null ? currentStepIndex + 1 : 0,
+				steps.size(), completed);
 	}
 
 }

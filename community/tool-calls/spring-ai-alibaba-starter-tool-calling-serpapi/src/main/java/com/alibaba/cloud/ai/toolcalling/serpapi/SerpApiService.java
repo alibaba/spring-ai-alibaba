@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.toolcalling.serpapi;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
+import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -39,7 +40,7 @@ import java.util.function.Function;
  * @author 北极星
  * @author sixiyida
  */
-public class SerpApiService implements Function<SerpApiService.Request, SerpApiService.Response> {
+public class SerpApiService implements SearchService, Function<SerpApiService.Request, SerpApiService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(SerpApiService.class);
 
@@ -55,8 +56,13 @@ public class SerpApiService implements Function<SerpApiService.Request, SerpApiS
 		this.webClientTool = webClientTool;
 	}
 
+	@Override
+	public SearchService.Response query(String query) {
+		return this.apply(new Request(query));
+	}
+
 	/**
-	 * 使用serpai API 搜索数据
+	 * Use serpapi API to search data
 	 * @param request the function argument
 	 * @return responseMono
 	 */
@@ -105,14 +111,29 @@ public class SerpApiService implements Function<SerpApiService.Request, SerpApiS
 			for (Map<String, Object> result : organicResults) {
 				String title = (String) result.get("title");
 				String link = (String) result.get("link");
+				String snippet = (String) result.get("snippet");
+
+				// Extract icon
+				String icon = null;
+				Object aboutThisResultObj = result.get("about_this_result");
+				if (aboutThisResultObj instanceof Map) {
+					Map<String, Object> aboutThisResult = (Map<String, Object>) aboutThisResultObj;
+					Object sourceObj = aboutThisResult.get("source");
+					if (sourceObj instanceof Map) {
+						Map<String, Object> source = (Map<String, Object>) sourceObj;
+						icon = (String) source.get("icon");
+					}
+				}
 
 				try {
 					Document document = Jsoup.connect(link).userAgent(SerpApiProperties.USER_AGENT_VALUE).get();
 					String textContent = document.body().text();
-					resultList.add(new SearchResult(title, textContent));
+					resultList.add(new SearchResult(title, textContent, link, icon));
 				}
 				catch (Exception e) {
 					logger.error("Failed to parse SERP API search link {}, caused by: {}", link, e.getMessage());
+					// use snippet instead of textContent
+					resultList.add(new SearchResult(title, snippet, link, icon));
 				}
 			}
 		}
@@ -126,14 +147,27 @@ public class SerpApiService implements Function<SerpApiService.Request, SerpApiS
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonClassDescription("serpapi search request")
 	public record Request(@JsonProperty(required = true,
-			value = "query") @JsonPropertyDescription("The query " + "keyword e.g. Alibaba") String query) {
+			value = "query") @JsonPropertyDescription("The query " + "keyword e.g. Alibaba") String query)
+			implements
+				SearchService.Request {
+		@Override
+		public String getQuery() {
+			return this.query();
+		}
 	}
 
 	@JsonClassDescription("serpapi search response")
-	public record Response(List<SearchResult> results) {
+	public record Response(List<SearchResult> results) implements SearchService.Response {
+		@Override
+		public SearchService.SearchResult getSearchResult() {
+			return new SearchService.SearchResult(this.results()
+				.stream()
+				.map(item -> new SearchService.SearchContent(item.title(), item.text(), item.url(), item.icon()))
+				.toList());
+		}
 	}
 
-	public record SearchResult(String title, String text) {
+	public record SearchResult(String title, String text, String url, String icon) {
 	}
 
 }

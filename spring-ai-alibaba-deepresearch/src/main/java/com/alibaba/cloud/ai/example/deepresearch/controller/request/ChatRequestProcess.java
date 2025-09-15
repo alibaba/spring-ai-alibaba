@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.controller.request;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
+import com.alibaba.cloud.ai.example.deepresearch.util.SearchBeanUtil;
 import org.springframework.util.StringUtils;
 
 import java.util.Collections;
@@ -32,30 +33,51 @@ public class ChatRequestProcess {
 	/**
 	 * Creates a default ChatRequest instance or set some default value for an instance.
 	 */
-	public static ChatRequest getDefaultChatRequest(ChatRequest chatRequest) {
+	public static ChatRequest getDefaultChatRequest(ChatRequest chatRequest, SearchBeanUtil searchBeanUtil) {
 		if (chatRequest == null) {
-			return new ChatRequest("__default__", 1, 3, true, null, true, Collections.emptyMap(), "草莓蛋糕怎么做呀。");
+			return new ChatRequest("__default__", "", 1, 3, true, null, true, Collections.emptyMap(), "草莓蛋糕怎么做呀。",
+					searchBeanUtil.getFirstAvailableSearch().orElse(null), true, 3, false);
 		}
 		else {
-			return new ChatRequest(StringUtils.hasText(chatRequest.threadId()) ? chatRequest.threadId() : "__default__",
+			return new ChatRequest(
+					StringUtils.hasText(chatRequest.sessionId()) ? chatRequest.sessionId() : "__default__",
+					chatRequest.threadId(),
 					chatRequest.maxPlanIterations() == null ? 1 : chatRequest.maxPlanIterations(),
 					chatRequest.maxStepNum() == null ? 3 : chatRequest.maxStepNum(),
 					chatRequest.autoAcceptPlan() == null || chatRequest.autoAcceptPlan(),
 					chatRequest.interruptFeedback(),
-					chatRequest.enableBackgroundInvestigation() == null || chatRequest.enableBackgroundInvestigation(),
+					chatRequest.enableDeepResearch() == null || chatRequest.enableDeepResearch(),
 					chatRequest.mcpSettings() == null ? Collections.emptyMap() : chatRequest.mcpSettings(),
-					StringUtils.hasText(chatRequest.query()) ? chatRequest.query() : "草莓蛋糕怎么做呀");
+					StringUtils.hasText(chatRequest.query()) ? chatRequest.query() : "草莓蛋糕怎么做呀",
+					chatRequest.searchEngine() == null ? searchBeanUtil.getFirstAvailableSearch().orElse(null)
+							: chatRequest.searchEngine(),
+					chatRequest.enableSearchFilter() != null ? chatRequest.enableSearchFilter() : true,
+					chatRequest.optimizeQueryNum() == null ? 3 : chatRequest.optimizeQueryNum(),
+					chatRequest.isUploadFile() != null && chatRequest.isUploadFile());
 		}
+	}
+
+	public static ChatRequest updateThreadId(ChatRequest chatRequest, String threadId) {
+		return new ChatRequest(chatRequest.sessionId(), threadId, chatRequest.maxPlanIterations(),
+				chatRequest.maxStepNum(), chatRequest.autoAcceptPlan(), chatRequest.interruptFeedback(),
+				chatRequest.enableDeepResearch(), chatRequest.mcpSettings(), chatRequest.query(),
+				chatRequest.searchEngine(), chatRequest.enableSearchFilter(), chatRequest.optimizeQueryNum(),
+				chatRequest.isUploadFile());
 	}
 
 	public static void initializeObjectMap(ChatRequest chatRequest, Map<String, Object> objectMap) {
 		objectMap.put("thread_id", chatRequest.threadId());
-		objectMap.put("enable_background_investigation", chatRequest.enableBackgroundInvestigation());
+		objectMap.put("enable_deepresearch", chatRequest.enableDeepResearch());
 		objectMap.put("auto_accepted_plan", chatRequest.autoAcceptPlan());
 		objectMap.put("query", chatRequest.query());
 		objectMap.put("max_step_num", chatRequest.maxStepNum());
 		objectMap.put("max_plan_iterations", chatRequest.maxPlanIterations());
 		objectMap.put("mcp_settings", chatRequest.mcpSettings());
+		objectMap.put("search_engine", chatRequest.searchEngine());
+		objectMap.put("enable_search_filter", chatRequest.enableSearchFilter());
+		objectMap.put("optimize_query_num", chatRequest.optimizeQueryNum());
+		objectMap.put("session_id", chatRequest.sessionId());
+		objectMap.put("user_upload_file", chatRequest.isUploadFile() != null && chatRequest.isUploadFile());
 	}
 
 }

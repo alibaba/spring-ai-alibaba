@@ -1,0 +1,23 @@
+{
+  "name": "spring-ai-alibaba-nl2sql-web-ui",
+  "version": "1.0.0",
+  "description": "Spring AI Alibaba NL2SQL Web UI based on Vue 3",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.0",
+    "axios": "^1.6.0",
+    "highlight.js": "^11.9.0",
+    "marked": "^11.0.0",
+    "bootstrap-icons": "^1.11.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "vite": "^5.0.0"
+  }
+}

@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.model.model.vo.ModelConfig;
+
 import java.util.List;
 
 public class AgentConfig {
@@ -32,6 +34,14 @@ public class AgentConfig {
 	private List<String> availableTools;
 
 	private String className;
+
+	private ModelConfig model;
+
+	private String namespace;
+
+	private Boolean builtIn = false;
+
+	private Boolean isBuiltIn = false;
 
 	// Getters and Setters
 	public String getId() {
@@ -88,6 +98,38 @@ public class AgentConfig {
 
 	public void setClassName(String className) {
 		this.className = className;
+	}
+
+	public ModelConfig getModel() {
+		return model;
+	}
+
+	public void setModel(ModelConfig model) {
+		this.model = model;
+	}
+
+	public String getNamespace() {
+		return namespace;
+	}
+
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
+	}
+
+	public Boolean getBuiltIn() {
+		return builtIn;
+	}
+
+	public void setBuiltIn(Boolean builtIn) {
+		this.builtIn = builtIn;
+	}
+
+	public Boolean getIsBuiltIn() {
+		return isBuiltIn;
+	}
+
+	public void setIsBuiltIn(Boolean isBuiltIn) {
+		this.isBuiltIn = isBuiltIn;
 	}
 
 }

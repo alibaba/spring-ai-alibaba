@@ -1,4 +1,4 @@
-<!-- 
+<!--
  * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,85 +14,92 @@
  * limitations under the License.
 -->
 <template>
-  <div class="sidebar-wrapper" :class="{ 'sidebar-wrapper-collapsed': isCollapsed }">
+  <div class="sidebar-wrapper" :class="{ 'sidebar-wrapper-collapsed': sidebarStore.isCollapsed }" :style="{ width: sidebarWidth + '%' }">
     <div class="sidebar-content">
       <div class="sidebar-content-header">
-        <div class="sidebar-content-title">计划模板</div>
+        <div class="sidebar-content-title">{{ $t('sidebar.title') }}</div>
       </div>
-      
+
       <!-- Tab Switcher -->
       <div class="tab-switcher">
-        <button 
-          class="tab-button" 
-          :class="{ active: currentTab === 'list' }"
-          @click="currentTab = 'list'"
+        <button
+          class="tab-button"
+          :class="{ active: sidebarStore.currentTab === 'list' }"
+          @click="sidebarStore.switchToTab('list')"
         >
           <Icon icon="carbon:list" width="16" />
-          模板列表
+          {{ $t('sidebar.templateList') }}
         </button>
-        <button 
-          class="tab-button" 
-          :class="{ active: currentTab === 'config' }"
-          @click="currentTab = 'config'"
-          :disabled="!selectedTemplate"
+        <button
+          class="tab-button"
+          :class="{ active: sidebarStore.currentTab === 'config' }"
+          @click="sidebarStore.switchToTab('config')"
+          :disabled="!sidebarStore.selectedTemplate"
         >
           <Icon icon="carbon:settings" width="16" />
-          配置
+          {{ $t('sidebar.configuration') }}
         </button>
       </div>
 
       <!-- List Tab Content -->
-      <div v-if="currentTab === 'list'" class="tab-content">
+      <div v-if="sidebarStore.currentTab === 'list'" class="tab-content">
         <div class="new-task-section">
-          <button class="new-task-btn" @click="handleNewTaskButtonClick">
+          <button class="new-task-btn" @click="sidebarStore.createNewTemplate()">
             <Icon icon="carbon:add" width="16" />
-            新建计划
+            {{ $t('sidebar.newPlan') }}
             <span class="shortcut">⌘ K</span>
           </button>
         </div>
 
         <div class="sidebar-content-list">
           <!-- Loading state -->
-          <div v-if="isLoading" class="loading-state">
+          <div v-if="sidebarStore.isLoading" class="loading-state">
             <Icon icon="carbon:circle-dash" width="20" class="spinning" />
-            <span>加载中...</span>
+            <span>{{ $t('sidebar.loading') }}</span>
           </div>
-          
+
           <!-- Error state -->
-          <div v-else-if="errorMessage" class="error-state">
+          <div v-else-if="sidebarStore.errorMessage" class="error-state">
             <Icon icon="carbon:warning" width="20" />
-            <span>{{ errorMessage }}</span>
-            <button @click="loadPlanTemplateList" class="retry-btn">重试</button>
+            <span>{{ sidebarStore.errorMessage }}</span>
+            <button @click="sidebarStore.loadPlanTemplateList" class="retry-btn">{{ $t('sidebar.retry') }}</button>
           </div>
-          
+
           <!-- Empty state -->
-          <div v-else-if="planTemplateList.length === 0" class="empty-state">
+          <div v-else-if="sidebarStore.planTemplateList.length === 0" class="empty-state">
             <Icon icon="carbon:document" width="32" />
-            <span>没有可用的计划模板</span>
+            <span>{{ $t('sidebar.noTemplates') }}</span>
           </div>
-          
+
           <!-- Plan template list -->
-          <div 
+          <div
             v-else
-            v-for="template in sortedTemplates" 
+            v-for="template in sidebarStore.sortedTemplates"
             :key="template.id"
             class="sidebar-content-list-item"
-            :class="{ 'sidebar-content-list-item-active': template.id === currentPlanTemplateId }"
-            @click="handlePlanTemplateClick(template)"
+            :class="{
+              'sidebar-content-list-item-active':
+                template.id === sidebarStore.currentPlanTemplateId,
+            }"
+            @click="sidebarStore.selectTemplate(template)"
           >
             <div class="task-icon">
               <Icon icon="carbon:document" width="20" />
             </div>
             <div class="task-details">
-              <div class="task-title">{{ template.title || '未命名计划' }}</div>
-              <div class="task-preview">{{ truncateText(template.description || '无描述', 40) }}</div>
+              <div class="task-title">{{ template.title || $t('sidebar.unnamedPlan') }}</div>
+              <div class="task-preview">
+                {{ truncateText(template.description || $t('sidebar.noDescription'), 40) }}
+              </div>
             </div>
-            <div class="task-time">{{ getRelativeTimeString(new Date(template.updateTime || template.createTime)) }}</div>
+            <div class="task-time">
+              {{ getRelativeTimeString(sidebarStore.parseDateTime(template.updateTime || template.createTime)) }}
+            </div>
             <div class="task-actions">
-              <button 
-                class="delete-task-btn" 
-                title="删除此计划模板"
-                @click.stop="handleDeletePlanTemplate(template)"
+              <button
+                class="delete-task-btn"
+                :title="$t('sidebar.deleteTemplate')"
+                @click.stop="sidebarStore.deleteTemplate(template)"
               >
                 <Icon icon="carbon:close" width="16" />
               </button>
@@ -102,561 +109,245 @@
       </div>
 
       <!-- Config Tab Content -->
-      <div v-else-if="currentTab === 'config'" class="tab-content config-tab">
-        <div v-if="selectedTemplate" class="config-container">
+      <div v-else-if="sidebarStore.currentTab === 'config'" class="tab-content config-tab">
+        <div v-if="sidebarStore.selectedTemplate" class="config-container">
           <!-- Template Info Header -->
           <div class="template-info-header">
             <div class="template-info">
-              <h3>{{ selectedTemplate.title || '未命名计划' }}</h3>
-              <span class="template-id">ID: {{ selectedTemplate.id }}</span>
+              <h3>{{ sidebarStore.selectedTemplate.title || $t('sidebar.unnamedPlan') }}</h3>
+              <span class="template-id">ID: {{ sidebarStore.selectedTemplate.id }}</span>
             </div>
-            <button class="back-to-list-btn" @click="currentTab = 'list'">
+            <button class="back-to-list-btn" @click="sidebarStore.switchToTab('list')">
               <Icon icon="carbon:arrow-left" width="16" />
             </button>
           </div>
 
-          <!-- Section 1: JSON Editor -->
-          <div class="config-section">
-            <div class="section-header">
-              <Icon icon="carbon:code" width="16" />
-              <span>JSON 模板</span>
-              <div class="section-actions">
-                <button 
-                  class="btn btn-sm"
-                  @click="handleRollback"
-                  :disabled="!canRollback"
-                  title="回滚"
-                >
-                  <Icon icon="carbon:undo" width="14" />
-                </button>
-                <button 
-                  class="btn btn-sm"
-                  @click="handleRestore"
-                  :disabled="!canRestore"
-                  title="恢复"
-                >
-                  <Icon icon="carbon:redo" width="14" />
-                </button>
-                <button 
-                  class="btn btn-primary btn-sm"
-                  @click="handleSaveTemplate"
-                  :disabled="isGenerating || isExecuting"
-                >
-                  <Icon icon="carbon:save" width="14" />
-                </button>
-              </div>
-            </div>
-            <textarea
-              v-model="jsonContent"
-              class="json-editor"
-              placeholder="输入 JSON 计划模板..."
-              rows="8"
-            ></textarea>
-          </div>
-
-          <!-- Section 2: Plan Generator -->
+          <!-- Section 1: Plan Generator -->
           <div class="config-section">
             <div class="section-header">
               <Icon icon="carbon:generate" width="16" />
-              <span>计划生成器</span>
+              <span>{{ $t('sidebar.planGenerator') }}</span>
             </div>
             <div class="generator-content">
               <textarea
-                v-model="generatorPrompt"
+                v-model="sidebarStore.generatorPrompt"
                 class="prompt-input"
-                placeholder="描述您想要生成的计划..."
+                :placeholder="$t('sidebar.generatorPlaceholder')"
                 rows="3"
               ></textarea>
               <div class="generator-actions">
-                <button 
+                <button
                   class="btn btn-primary btn-sm"
                   @click="handleGeneratePlan"
-                  :disabled="isGenerating || !generatorPrompt.trim()"
+                  :disabled="sidebarStore.isGenerating || !sidebarStore.generatorPrompt.trim()"
                 >
-                  <Icon 
-                    :icon="isGenerating ? 'carbon:circle-dash' : 'carbon:generate'" 
-                    width="14" 
-                    :class="{ spinning: isGenerating }"
+                  <Icon
+                    :icon="sidebarStore.isGenerating ? 'carbon:circle-dash' : 'carbon:generate'"
+                    width="14"
+                    :class="{ spinning: sidebarStore.isGenerating }"
                   />
-                  {{ isGenerating ? '生成中...' : '生成计划' }}
+                  {{ sidebarStore.isGenerating ? $t('sidebar.generating') : $t('sidebar.generatePlan') }}
                 </button>
-                <button 
+                <button
                   class="btn btn-secondary btn-sm"
                   @click="handleUpdatePlan"
-                  :disabled="isGenerating || !generatorPrompt.trim() || !jsonContent.trim()"
+                  :disabled="
+                    sidebarStore.isGenerating ||
+                    !sidebarStore.generatorPrompt.trim() ||
+                    !sidebarStore.jsonContent.trim()
+                  "
                 >
                   <Icon icon="carbon:edit" width="14" />
-                  更新计划
+                  {{ $t('sidebar.updatePlan') }}
                 </button>
               </div>
             </div>
           </div>
 
+          <!-- Section 2: JSON Editor -->
+          <JsonEditor
+            :json-content="sidebarStore.jsonContent"
+            :can-rollback="sidebarStore.canRollback"
+            :can-restore="sidebarStore.canRestore"
+            :is-generating="sidebarStore.isGenerating"
+            :is-executing="sidebarStore.isExecuting"
+            @rollback="sidebarStore.rollbackVersion"
+            @restore="sidebarStore.restoreVersion"
+            @save="handleSaveTemplate"
+            @update:json-content="(value: string) => sidebarStore.jsonContent = value"
+          />
+
           <!-- Section 3: Execution Controller -->
           <div class="config-section">
-            <div class="section-header">
-              <Icon icon="carbon:play" width="16" />
-              <span>执行控制器</span>
-            </div>
+              <div class="section-header">
+                <Icon icon="carbon:play" width="16" />
+                <span>{{ $t('sidebar.executionController') }}</span>
+              </div>
             <div class="execution-content">
               <div class="params-input-group">
-                <label>执行参数</label>
+                <label>{{ $t('sidebar.executionParams') }}</label>
+                <div class="params-help-text">
+                  {{ $t('sidebar.executionParamsHelp') }}
+                </div>
                 <div class="params-input-container">
                   <input
-                    v-model="executionParams"
+                    v-model="sidebarStore.executionParams"
                     class="params-input"
-                    placeholder="输入执行参数..."
+                    :placeholder="$t('sidebar.executionParamsPlaceholder')"
                   />
-                  <button 
+                  <button
                     class="clear-params-btn"
-                    @click="executionParams = ''"
-                    title="清空参数"
+                    @click="sidebarStore.clearExecutionParams"
+                    :title="$t('sidebar.clearParams')"
                   >
                     <Icon icon="carbon:close" width="12" />
                   </button>
                 </div>
               </div>
               <div class="api-url-display">
-                <span class="api-url-label">API URL:</span>
-                <code class="api-url">{{ computedApiUrl }}</code>
+                <span class="api-url-label">{{ $t('sidebar.apiUrl') }}:</span>
+                <code class="api-url">{{ sidebarStore.computedApiUrl }}</code>
               </div>
-              <button 
+              <div class="api-url-display">
+                <span class="api-url-label">{{ $t('sidebar.statusApiUrl') }}:</span>
+                <code class="api-url">/api/executor/details/{planId}</code>
+              </div>
+              <button
                 class="btn btn-primary execute-btn"
                 @click="handleExecutePlan"
-                :disabled="isExecuting || isGenerating"
+                :disabled="sidebarStore.isExecuting || sidebarStore.isGenerating"
               >
-                <Icon 
-                  :icon="isExecuting ? 'carbon:circle-dash' : 'carbon:play'" 
-                  width="16" 
-                  :class="{ spinning: isExecuting }"
+                <Icon
+                  :icon="sidebarStore.isExecuting ? 'carbon:circle-dash' : 'carbon:play'"
+                  width="16"
+                  :class="{ spinning: sidebarStore.isExecuting }"
                 />
-                {{ isExecuting ? '执行中...' : '执行计划' }}
+                {{ sidebarStore.isExecuting ? $t('sidebar.executing') : $t('sidebar.executePlan') }}
               </button>
             </div>
           </div>
         </div>
       </div>
     </div>
+    
+    <!-- Sidebar Resizer -->
+    <div
+      class="sidebar-resizer"
+      @mousedown="startResize"
+      @dblclick="resetSidebarWidth"
+      :title="$t('sidebar.resizeHint')"
+    >
+      <div class="resizer-line"></div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { onMounted, ref, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
+import { sidebarStore } from '@/stores/sidebar'
+import JsonEditor from './JsonEditor.vue'
 
-import { PlanActApiService } from '@/api/plan-act-api-service'
-import type { PlanTemplate, PlanTemplateEvents } from '@/types/plan-template'
+const { t } = useI18n()
 
-// Props and Emits
-const emit = defineEmits<PlanTemplateEvents>()
+// Sidebar width management
+const sidebarWidth = ref(80) // Default width percentage
+const isResizing = ref(false)
+const startX = ref(0)
+const startWidth = ref(0)
 
-// Reactive state - List Tab
-const isCollapsed = ref(true) // 默认隐藏侧边栏
-const currentPlanTemplateId = ref<string | null>(null)
-const planTemplateList = ref<PlanTemplate[]>([])
-const isLoading = ref(false)
-const errorMessage = ref<string>('')
+// Use pinia store
+// Use TS object-implemented sidebarStore
+// Use sidebarStore instance directly, no pinia needed
 
-// Reactive state - Tab Management
-const currentTab = ref<'list' | 'config'>('list')
-const selectedTemplate = ref<PlanTemplate | null>(null)
-
-// Reactive state - Config Tab
-const jsonContent = ref('')
-const generatorPrompt = ref('')
-const executionParams = ref('')
-const isGenerating = ref(false)
-const isExecuting = ref(false)
-
-// Version control
-const planVersions = ref<string[]>([])
-const currentVersionIndex = ref(-1)
-
-// Computed properties
-const sortedTemplates = computed(() => {
-  return [...planTemplateList.value].sort((a, b) => {
-    const timeA = new Date(a.updateTime || a.createTime)
-    const timeB = new Date(b.updateTime || b.createTime)
-    return timeB.getTime() - timeA.getTime()
-  })
-})
-
-const canRollback = computed(() => {
-  return planVersions.value.length > 1 && currentVersionIndex.value > 0
-})
-
-const canRestore = computed(() => {
-  return planVersions.value.length > 1 && currentVersionIndex.value < planVersions.value.length - 1
-})
-
-const computedApiUrl = computed(() => {
-  if (!selectedTemplate.value) return ''
-  const baseUrl = `/api/plan-template/executePlanByTemplateId/${selectedTemplate.value.id}`
-  const params = executionParams.value.trim()
-  return params ? `${baseUrl}?${encodeURIComponent(params)}` : baseUrl
-})
-
-// Methods
-const toggleSidebar = () => {
-  isCollapsed.value = !isCollapsed.value
-}
-
-const handleNewTaskButtonClick = () => {
-  // 1) 创建一个空的模板数据
-  const emptyTemplate: PlanTemplate = {
-    id: `new-${Date.now()}`, // 临时ID，用于标识这是新创建的模板
-    title: '新建计划',
-    description: '请使用计划生成器创建新的计划模板',
-    createTime: new Date().toISOString(),
-    updateTime: new Date().toISOString()
-  }
-  
-  // 设置选中的模板为空模板
-  selectedTemplate.value = emptyTemplate
-  currentPlanTemplateId.value = null // 清空当前选择的ID，因为这是新建的
-  
-  // 重置配置标签页的所有状态
-  jsonContent.value = ''
-  generatorPrompt.value = ''
-  executionParams.value = ''
-  planVersions.value = []
-  currentVersionIndex.value = -1
-  
-  // 2) 切换到配置标签页
-  currentTab.value = 'config'
-  
-  // 发送事件
-  emit('jsonContentClear')
-  emit('planParamsChanged', { prompt: '', params: '' })
-  emit('newTaskRequested')
-  
-  console.log('[PlanTemplateSidebar] 创建新的空白计划模板，切换到配置标签页')
-}
-
-const loadPlanTemplateList = async () => {
-  isLoading.value = true
-  errorMessage.value = ''
-  
-  try {
-    console.log('[PlanTemplateSidebar] 开始加载计划模板列表...')
-    const response = await PlanActApiService.getAllPlanTemplates()
-    
-    // 处理 API 返回的数据结构: { count: number, templates: Array }
-    if (response && response.templates && Array.isArray(response.templates)) {
-      planTemplateList.value = response.templates
-      console.log(`[PlanTemplateSidebar] 成功加载 ${response.templates.length} 个计划模板`)
-    } else {
-      planTemplateList.value = []
-      console.warn('[PlanTemplateSidebar] API 返回的数据格式异常，使用空列表', response)
-    }
-  } catch (error: any) {
-    console.error('[PlanTemplateSidebar] 加载计划模板列表失败:', error)
-    planTemplateList.value = []
-    errorMessage.value = `加载失败: ${error.message}`
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const handlePlanTemplateClick = async (template: PlanTemplate) => {
-  // 更新本地状态
-  currentPlanTemplateId.value = template.id
-  selectedTemplate.value = template
-  
-  // 切换到配置标签页
-  currentTab.value = 'config'
-  
-  // 加载模板数据
-  await loadTemplateData(template)
-  
-  console.log(`[PlanTemplateSidebar] 选择了计划模板: ${template.id}`)
-}
-
-const handleDeletePlanTemplate = async (template: PlanTemplate) => {
-  if (!template || !template.id) {
-    console.warn("[PlanTemplateSidebar] handleDeletePlanTemplate: 无效的模板对象或ID")
-    return
-  }
-
-  if (confirm(`确定要删除计划模板 "${template.title || '未命名计划'}" 吗？此操作不可恢复。`)) {
-    try {
-      await PlanActApiService.deletePlanTemplate(template.id)
-      
-      if (currentPlanTemplateId.value === template.id) {
-        // 如果删除的是当前选中的模板，清空选择和相关内容
-        currentPlanTemplateId.value = null
-        emit('jsonContentClear')
-        emit('planParamsChanged', {
-          prompt: '',
-          params: ''
-        })
-      }
-      
-      // 发送删除事件
-      emit('planTemplateDeleted', { templateId: template.id })
-      
-      // 重新加载列表
-      await loadPlanTemplateList()
-      alert('计划模板已删除。')
-
-    } catch (error: any) {
-      console.error('删除计划模板失败:', error)
-      alert('删除计划模板失败: ' + error.message)
-      // 即使出错也刷新列表以确保一致性
-      await loadPlanTemplateList()
-    }
-  }
-}
-
-// Config tab methods
-const loadTemplateData = async (template: PlanTemplate) => {
-  try {
-    // Load versions
-    const versionsResponse = await PlanActApiService.getPlanVersions(template.id)
-    planVersions.value = versionsResponse.versions || []
-    
-    if (planVersions.value.length > 0) {
-      const latestContent = planVersions.value[planVersions.value.length - 1]
-      jsonContent.value = latestContent
-      currentVersionIndex.value = planVersions.value.length - 1
-      
-      // Parse and set prompt from JSON if available
-      try {
-        const parsed = JSON.parse(latestContent)
-        if (parsed.prompt) {
-          generatorPrompt.value = parsed.prompt
-        }
-        if (parsed.params) {
-          executionParams.value = parsed.params
-        }
-      } catch (e) {
-        console.warn('无法解析JSON内容获取提示信息')
-      }
-    } else {
-      jsonContent.value = ''
-      generatorPrompt.value = ''
-      executionParams.value = ''
-    }
-  } catch (error: any) {
-    console.error('加载模板数据失败:', error)
-    alert('加载模板数据失败: ' + error.message)
-  }
-}
-
-const handleRollback = () => {
-  if (canRollback.value) {
-    currentVersionIndex.value--
-    jsonContent.value = planVersions.value[currentVersionIndex.value]
-  }
-}
-
-const handleRestore = () => {
-  if (canRestore.value) {
-    currentVersionIndex.value++
-    jsonContent.value = planVersions.value[currentVersionIndex.value]
-  }
-}
+// Emits - Keep some events for communication with external components
+const emit = defineEmits<{
+  planExecutionRequested: [payload: { title: string; planData: any; params?: string | undefined }]
+}>()
 
 const handleSaveTemplate = async () => {
-  if (!selectedTemplate.value) return
-  
-  const content = jsonContent.value.trim()
-  if (!content) {
-    alert('内容不能为空。')
-    return
-  }
-
   try {
-    // 尝试解析以验证格式
-    JSON.parse(content)
-  } catch (e: any) {
-    alert('格式无效，请修正后再保存。\\n错误: ' + e.message)
-    return
-  }
+    const saveResult = await sidebarStore.saveTemplate()
 
-  try {
-    const saveResult = await PlanActApiService.savePlanTemplate(selectedTemplate.value.id, content)
-    
-    // 根据保存结果显示不同的消息
-    if (saveResult.duplicate) {
-      alert(`保存完成：${saveResult.message}\\n\\n当前版本数：${saveResult.versionCount}`)
-    } else if (saveResult.saved) {
-      // 保存到本地版本历史
-      if (currentVersionIndex.value < planVersions.value.length - 1) {
-        planVersions.value = planVersions.value.slice(0, currentVersionIndex.value + 1)
-      }
-      planVersions.value.push(content)
-      currentVersionIndex.value = planVersions.value.length - 1
-      
-      alert(`保存成功：${saveResult.message}\\n\\n当前版本数：${saveResult.versionCount}`)
-    } else {
-      alert(`保存状态：${saveResult.message}`)
+    if (saveResult?.duplicate) {
+      alert(t('sidebar.saveCompleted', { message: saveResult.message, versionCount: saveResult.versionCount }))
+    } else if (saveResult?.saved) {
+      alert(t('sidebar.saveSuccess', { message: saveResult.message, versionCount: saveResult.versionCount }))
+    } else if (saveResult?.message) {
+      alert(t('sidebar.saveStatus', { message: saveResult.message }))
     }
   } catch (error: any) {
-    console.error('保存计划修改失败:', error)
-    alert('保存计划修改失败: ' + error.message)
+    console.error('Failed to save plan modifications:', error)
+    alert(error.message || t('sidebar.saveFailed'))
   }
 }
 
 const handleGeneratePlan = async () => {
-  if (!generatorPrompt.value.trim()) return
-  
-  isGenerating.value = true
-  
   try {
-    const response = await PlanActApiService.generatePlan(generatorPrompt.value)
-    jsonContent.value = response.planJson || ''
-    
-    // 如果是新建的模板（ID以'new-'开头），使用API返回的planTemplateId更新模板信息
-    if (selectedTemplate.value && selectedTemplate.value.id.startsWith('new-')) {
-      // 解析返回的planJson来获取title等信息
-      let title = '新建计划模板'
-      try {
-        const planData = JSON.parse(response.planJson || '{}')
-        title = planData.title || title
-      } catch (e) {
-        console.warn('无法解析计划JSON获取标题')
-      }
-      
-      // 更新选中的模板信息
-      selectedTemplate.value = {
-        id: response.planTemplateId, // 使用API返回的planTemplateId
-        title: title,
-        description: '通过生成器创建的计划模板',
-        createTime: new Date().toISOString(),
-        updateTime: new Date().toISOString(),
-        planJson: response.planJson
-      }
-      
-      // 更新当前计划模板ID
-      currentPlanTemplateId.value = response.planTemplateId
-      
-      // 重新加载模板列表以显示新创建的模板
-      await loadPlanTemplateList()
-    }
-    
-    // 保存到版本历史
-    if (currentVersionIndex.value < planVersions.value.length - 1) {
-      planVersions.value = planVersions.value.slice(0, currentVersionIndex.value + 1)
-    }
-    planVersions.value.push(jsonContent.value)
-    currentVersionIndex.value = planVersions.value.length - 1
-    
-    alert(`计划生成成功！模板ID: ${selectedTemplate.value?.id || '未知'}`)
+    await sidebarStore.generatePlan()
+    alert(t('sidebar.generateSuccess', { templateId: sidebarStore.selectedTemplate?.id ?? t('sidebar.unknown') }))
   } catch (error: any) {
-    console.error('生成计划失败:', error)
-    alert('生成计划失败: ' + error.message)
-  } finally {
-    isGenerating.value = false
+    console.error('Failed to generate plan:', error)
+    alert(t('sidebar.generateFailed') + ': ' + error.message)
   }
 }
 
 const handleUpdatePlan = async () => {
-  if (!generatorPrompt.value.trim() || !jsonContent.value.trim()) return
-  if (!selectedTemplate.value) return
-  
-  isGenerating.value = true
-  
   try {
-    const response = await PlanActApiService.updatePlanTemplate(
-      selectedTemplate.value.id, 
-      generatorPrompt.value, 
-      jsonContent.value
-    )
-    jsonContent.value = response.planJson || ''
-    
-    // 保存到版本历史
-    if (currentVersionIndex.value < planVersions.value.length - 1) {
-      planVersions.value = planVersions.value.slice(0, currentVersionIndex.value + 1)
-    }
-    planVersions.value.push(jsonContent.value)
-    currentVersionIndex.value = planVersions.value.length - 1
-    
-    alert('计划更新成功！')
+    await sidebarStore.updatePlan()
+    alert(t('sidebar.updateSuccess'))
   } catch (error: any) {
-    console.error('更新计划失败:', error)
-    alert('更新计划失败: ' + error.message)
-  } finally {
-    isGenerating.value = false
+    console.error('Failed to update plan:', error)
+    alert(t('sidebar.updateFailed') + ': ' + error.message)
   }
 }
 
 const handleExecutePlan = async () => {
-  console.log('[Sidebar] handleExecutePlan called, isExecuting:', isExecuting.value, 'selectedTemplate:', selectedTemplate.value?.id)
-  
-  if (!selectedTemplate.value) {
-    console.log('[Sidebar] No selected template, returning')
-    return
-  }
-  
-  if (isExecuting.value) {
-    console.log('[Sidebar] Already executing, ignoring request')
-    return
-  }
-  
-  console.log('[Sidebar] Starting plan execution')
-  isExecuting.value = true
-  
+  console.log('[Sidebar] handleExecutePlan called')
+
   try {
-    // 解析当前模板的JSON内容来获取计划数据
-    let planData
-    try {
-      planData = JSON.parse(jsonContent.value)
-      // 确保planData包含正确的planTemplateId
-      planData.planTemplateId = selectedTemplate.value.id
-    } catch (e) {
-      // 如果解析失败，使用示例数据
-      planData = {
-        "planTemplateId": selectedTemplate.value.id, // 使用真实的模板ID
-        "planId": selectedTemplate.value.id, // 兼容性
-        "title": selectedTemplate.value.title || "执行计划",
-        "steps": [
-          {"stepRequirement": "[BROWSER_AGENT] 访问百度搜索阿里巴巴的最新股价" },
-          {"stepRequirement": "[DEFAULT_AGENT] 提取和整理搜索结果中的股价信息" },
-          {"stepRequirement": "[TEXT_FILE_AGENT] 创建一个文本文件记录查询结果" },
-          {"stepRequirement": "[DEFAULT_AGENT] 向用户报告查询结果" }
-        ]
-      }
+    const planData = sidebarStore.preparePlanExecution()
+
+    if (!planData) {
+      console.log('[Sidebar] No plan data available, returning')
+      return
     }
 
-    // 使用模板标题或计划标题作为用户输入
-    const title = selectedTemplate.value.title || planData.title || '执行计划'
-    
-    console.log('[Sidebar] 触发计划执行请求:', { title, planData, planTemplateId: selectedTemplate.value.id })
-    
-    // 发送计划执行事件给聊天组件
+    console.log('[Sidebar] Triggering plan execution request:', planData)
+
+    // Send plan execution event to chat component
     console.log('[Sidebar] Emitting planExecutionRequested event')
-    emit('planExecutionRequested', { 
-      title, 
-      planData, 
-      params: executionParams.value.trim() || undefined 
-    })
-    
-    console.log('[Sidebar] Event emitted, closing sidebar')
-    // 关闭sidebar
-    isCollapsed.value = true
-    
+    emit('planExecutionRequested', planData)
+
+    console.log('[Sidebar] Event emitted')
   } catch (error: any) {
-    console.error('执行计划出错:', error)
-    alert('执行计划失败: ' + error.message)
+    console.error('Error executing plan:', error)
+    alert(t('sidebar.executeFailed') + ': ' + error.message)
   } finally {
-    isExecuting.value = false
+    sidebarStore.finishPlanExecution()
   }
 }
 
-// 工具函数
+// Utility functions
 const getRelativeTimeString = (date: Date): string => {
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date received:', date)
+    return t('time.unknown')
+  }
+
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffMinutes = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMinutes < 1) return '刚刚'
-  if (diffMinutes < 60) return `${diffMinutes}分钟前`
-  if (diffHours < 24) return `${diffHours}小时前`
-  if (diffDays < 30) return `${diffDays}天前`
-  
+  if (diffMinutes < 1) return t('time.now')
+  if (diffMinutes < 60) return t('time.minuteAgo', { count: diffMinutes })
+  if (diffHours < 24) return t('time.hourAgo', { count: diffHours })
+  if (diffDays < 30) return t('time.dayAgo', { count: diffDays })
+
   return date.toLocaleDateString('zh-CN')
 }
 
@@ -665,47 +356,106 @@ const truncateText = (text: string, maxLength: number): string => {
   return text.substring(0, maxLength) + '...'
 }
 
+// Sidebar resize methods
+const startResize = (e: MouseEvent) => {
+  isResizing.value = true
+  startX.value = e.clientX
+  startWidth.value = sidebarWidth.value
+
+  document.addEventListener('mousemove', handleMouseMove)
+  document.addEventListener('mouseup', handleMouseUp)
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+
+  e.preventDefault()
+}
+
+const handleMouseMove = (e: MouseEvent) => {
+  if (!isResizing.value) return
+
+  const containerWidth = window.innerWidth
+  const deltaX = e.clientX - startX.value
+  const deltaPercent = (deltaX / containerWidth) * 100
+
+  let newWidth = startWidth.value + deltaPercent
+
+  // Limit sidebar width between 15% and 100%
+  newWidth = Math.max(15, Math.min(100, newWidth))
+
+  sidebarWidth.value = newWidth
+}
+
+const handleMouseUp = () => {
+  isResizing.value = false
+  document.removeEventListener('mousemove', handleMouseMove)
+  document.removeEventListener('mouseup', handleMouseUp)
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+
+  // Save to localStorage
+  localStorage.setItem('sidebarWidth', sidebarWidth.value.toString())
+}
+
+const resetSidebarWidth = () => {
+  sidebarWidth.value = 80
+  localStorage.setItem('sidebarWidth', '80')
+}
+
 // Lifecycle
 onMounted(() => {
-  loadPlanTemplateList()
+  sidebarStore.loadPlanTemplateList()
+  
+  // Restore sidebar width from localStorage
+  const savedWidth = localStorage.getItem('sidebarWidth')
+  if (savedWidth) {
+    sidebarWidth.value = parseFloat(savedWidth)
+  }
 })
 
-// 暴露方法供父组件调用
+onUnmounted(() => {
+  // Clean up event listeners
+  document.removeEventListener('mousemove', handleMouseMove)
+  document.removeEventListener('mouseup', handleMouseUp)
+})
+
+// Expose methods for parent component to call
 defineExpose({
-  loadPlanTemplateList,
-  toggleSidebar,
-  currentPlanTemplateId: currentPlanTemplateId
+  loadPlanTemplateList: sidebarStore.loadPlanTemplateList,
+  toggleSidebar: sidebarStore.toggleSidebar,
+  currentPlanTemplateId: sidebarStore.currentPlanTemplateId,
 })
 </script>
 
 <style scoped>
 .sidebar-wrapper {
   position: relative;
-  width: 500px;
   height: 100vh;
   background: rgba(255, 255, 255, 0.05);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease-in-out;
+  transition: width 0.1s ease;
   overflow: hidden;
+  display: flex;
 }
 .sidebar-wrapper-collapsed {
-  width: 0;
   border-right: none;
-  
-  .sidebar-content {
+  width: 0 !important;
+  /* transform: translateX(-100%); */
+
+  .sidebar-content,
+  .sidebar-resizer {
     opacity: 0;
     pointer-events: none;
-    transform: translateX(-100%);
   }
 }
 
-.sidebar-content {
-  height: 100%;
-  width: 100%;
-  padding: 12px 0 12px 12px;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.3s ease-in-out;
+  .sidebar-content {
+    height: 100%;
+    width: 100%;
+    padding: 12px 0 12px 12px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease-in-out;
+    flex: 1;
 
   .sidebar-content-header {
     display: flex;
@@ -881,6 +631,17 @@ defineExpose({
           }
         }
 
+        .json-editor {
+            min-height: 200px;
+            font-size: 11px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            tab-size: 2;
+            font-variant-ligatures: none;
+        }
+
         .generator-content {
           display: flex;
           flex-direction: column;
@@ -936,6 +697,17 @@ defineExpose({
                   color: #ff6b6b;
                 }
               }
+            }
+
+            .params-help-text {
+              margin-bottom: 6px;
+              font-size: 11px;
+              color: rgba(255, 255, 255, 0.6);
+              line-height: 1.4;
+              padding: 6px 8px;
+              background: rgba(102, 126, 234, 0.1);
+              border: 1px solid rgba(102, 126, 234, 0.2);
+              border-radius: 4px;
             }
           }
 
@@ -1195,5 +967,40 @@ defineExpose({
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Sidebar Resizer Styles */
+.sidebar-resizer {
+  width: 6px;
+  height: 100vh;
+  background: #1a1a1a;
+  cursor: col-resize;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #2a2a2a;
+
+    .resizer-line {
+      background: #4a90e2;
+      width: 2px;
+    }
+  }
+
+  &:active {
+    background: #3a3a3a;
+  }
+}
+
+.resizer-line {
+  width: 1px;
+  height: 40px;
+  background: #3a3a3a;
+  border-radius: 1px;
+  transition: all 0.2s ease;
 }
 </style>

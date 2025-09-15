@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,16 +36,10 @@ public class ResearchTeamNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(ResearchTeamNode.class);
 
-	private static final long TIME_SLEEP = 20000;
-
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		if (state.value("research_team_next_node").isPresent()) {
-			Thread.sleep(TIME_SLEEP);
-		}
-
 		logger.info("research_team node is running.");
-		String nextStep = "reporter";
+		String nextStep = "professional_kb_decision";
 		Map<String, Object> updated = new HashMap<>();
 
 		Plan curPlan = StateUtil.getPlan(state);
@@ -64,7 +57,11 @@ public class ResearchTeamNode implements NodeAction {
 			return false;
 		}
 
-		return plan.getSteps().stream().allMatch(step -> StringUtils.hasLength(step.getExecutionRes()));
+		return plan.getSteps()
+			.stream()
+			.allMatch(step -> step.getExecutionStatus() != null
+					&& (step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX)
+							|| step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_ERROR_PREFIX)));
 	}
 
 }

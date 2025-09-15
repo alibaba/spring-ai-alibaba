@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.ParallelEnum;
+import com.alibaba.cloud.ai.example.deepresearch.model.enums.ParallelEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.dto.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.config.DeepResearchProperties;
@@ -62,14 +62,14 @@ public class ParallelExecutorNode implements NodeAction {
 				case PROCESSING:
 					if (areAllResearchStepsCompleted(curPlan)) {
 						step.setExecutionStatus(assignRole(stepType, currCoder));
-						currCoder = (currCoder + 1) % parallelNodeCount.get(ParallelEnum.RESEARCHER.getValue());
+						currCoder = (currCoder + 1) % parallelNodeCount.get(ParallelEnum.CODER.getValue());
 					}
 					logger.info("Waiting for remaining research steps executed");
 					break;
 
 				case RESEARCH:
 					step.setExecutionStatus(assignRole(stepType, currResearcher));
-					currResearcher = (currResearcher + 1) % parallelNodeCount.get(ParallelEnum.CODER.getValue());
+					currResearcher = (currResearcher + 1) % parallelNodeCount.get(ParallelEnum.RESEARCHER.getValue());
 					break;
 
 				// 处理其他可能的StepType
@@ -94,7 +94,8 @@ public class ParallelExecutorNode implements NodeAction {
 		return plan.getSteps()
 			.stream()
 			.filter(step -> step.getStepType() == Plan.StepType.RESEARCH)
-			.allMatch(step -> step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX));
+			.allMatch(step -> step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_COMPLETED_PREFIX)
+					|| step.getExecutionStatus().startsWith(StateUtil.EXECUTION_STATUS_ERROR_PREFIX));
 	}
 
 }

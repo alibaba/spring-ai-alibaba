@@ -15,19 +15,36 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * 内部服务器配置类
+ * Internal server configuration class
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class McpServerConfig {
+
+	private final ObjectMapper objectMapper;
+
+	/**
+	 * Default constructor for Jackson deserialization
+	 */
+	public McpServerConfig() {
+		this.env = new HashMap<>();
+		this.objectMapper = new ObjectMapper();
+	}
+
+	public McpServerConfig(ObjectMapper objectMapper) {
+		this.env = new HashMap<>();
+		this.objectMapper = objectMapper;
+	}
 
 	private String url;
 
@@ -40,9 +57,8 @@ public class McpServerConfig {
 	@JsonProperty("env")
 	private Map<String, String> env;
 
-	public McpServerConfig() {
-		this.env = new HashMap<>();
-	}
+	@JsonProperty("status")
+	private McpConfigStatus status = McpConfigStatus.ENABLE; // Default to enabled status
 
 	public String getUrl() {
 		return url;
@@ -76,32 +92,85 @@ public class McpServerConfig {
 		this.env = env;
 	}
 
+	public McpConfigStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(McpConfigStatus status) {
+		this.status = status;
+	}
+
 	/**
-	 * 将ServerConfig转换为JSON字符串
-	 * @return 转换后的JSON字符串
+	 * Get connection type. Logic: 1. If has command field → STUDIO 2. If URL suffix is
+	 * sse → SSE 3. Other cases → STREAMING
+	 * @return Connection type
+	 */
+	public McpConfigType getConnectionType() {
+		// 1. Check if has command field
+		if (command != null && !command.isEmpty()) {
+			return McpConfigType.STUDIO;
+		}
+
+		// 2. Check if URL suffix is sse
+		if (url != null && !url.isEmpty() && isSSEUrl(url)) {
+			return McpConfigType.SSE;
+		}
+
+		// 3. Other cases default to STREAMING
+		return McpConfigType.STREAMING;
+	}
+
+	/**
+	 * Determine if URL is SSE connection
+	 * @param url Server URL
+	 * @return Whether it's SSE URL
+	 */
+	private boolean isSSEUrl(String url) {
+		if (url == null || url.isEmpty()) {
+			return false;
+		}
+
+		try {
+			java.net.URL parsedUrl = new java.net.URL(url);
+			String path = parsedUrl.getPath();
+
+			// Check if path contains sse
+			boolean pathContainsSse = path != null && path.toLowerCase().contains("sse");
+
+			return pathContainsSse;
+		}
+		catch (java.net.MalformedURLException e) {
+			// Return false if URL format is invalid
+			return false;
+		}
+	}
+
+	/**
+	 * Convert ServerConfig to JSON string
+	 * @return Converted JSON string
 	 */
 	public String toJson() {
 		try {
-			return new ObjectMapper().writeValueAsString(this);
+			return objectMapper.writeValueAsString(this);
 		}
 		catch (Exception e) {
-			// 如果序列化失败，则手动构建简化版JSON
+			// If serialization fails, manually build a simplified JSON
 			StringBuilder sb = new StringBuilder();
 			sb.append("{");
 
-			// 添加URL（如果存在）
+			// Add URL (if it exists)
 			if (url != null && !url.isEmpty()) {
 				sb.append("\"url\":\"").append(url).append("\"");
 			}
 
-			// 添加命令（如果存在）
+			// Add command (if it exists)
 			if (command != null && !command.isEmpty()) {
 				if (sb.length() > 1)
 					sb.append(",");
 				sb.append("\"command\":\"").append(command).append("\"");
 			}
 
-			// 添加参数（如果存在）
+			// Add parameters (if they exist)
 			if (args != null && !args.isEmpty()) {
 				if (sb.length() > 1)
 					sb.append(",");
@@ -116,7 +185,7 @@ public class McpServerConfig {
 				sb.append("]");
 			}
 
-			// 添加环境变量（如果存在）
+			// Add environment variables (if they exist)
 			if (env != null && !env.isEmpty()) {
 				if (sb.length() > 1)
 					sb.append(",");
@@ -130,6 +199,11 @@ public class McpServerConfig {
 				}
 				sb.append("}");
 			}
+
+			// Add status (always include)
+			if (sb.length() > 1)
+				sb.append(",");
+			sb.append("\"status\":\"").append(status.name()).append("\"");
 
 			sb.append("}");
 			return sb.toString();

@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -35,15 +36,23 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 
 @RestController
 @RequestMapping("/api/agents")
-@CrossOrigin(origins = "*") // 添加跨域支持
+@CrossOrigin(origins = "*") // Add cross-origin support
 public class AgentController {
 
 	@Autowired
 	private AgentService agentService;
 
+	@Value("${namespace.value}")
+	private String namespace;
+
 	@GetMapping
 	public ResponseEntity<List<AgentConfig>> getAllAgents() {
-		return ResponseEntity.ok(agentService.getAllAgents());
+		return ResponseEntity.ok(agentService.getAllAgentsByNamespace(namespace));
+	}
+
+	@GetMapping("/namespace/{namespace}")
+	public ResponseEntity<List<AgentConfig>> getAgentsByNamespace(@PathVariable("namespace") String namespace) {
+		return ResponseEntity.ok(agentService.getAllAgentsByNamespace(namespace));
 	}
 
 	@GetMapping("/{id}")

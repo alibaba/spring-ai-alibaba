@@ -16,7 +16,10 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller.graph;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.enums.NodeNameEnum;
+import com.alibaba.cloud.ai.example.deepresearch.model.enums.StreamNodePrefixEnum;
 import com.alibaba.cloud.ai.example.deepresearch.model.req.ChatRequest;
+import com.alibaba.cloud.ai.example.deepresearch.model.req.GraphId;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -25,17 +28,27 @@ import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.http.codec.ServerSentEvent;
 import reactor.core.publisher.Sinks;
 
+import java.io.Serializable;
 import java.util.Map;
-import java.util.concurrent.CompletionException;
+import java.util.Objects;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.Optional;
+import java.util.concurrent.Future;
 
 /**
  * @author yingzi
@@ -44,17 +57,35 @@ import java.util.concurrent.Executors;
 
 public class GraphProcess {
 
+	private final ConcurrentHashMap<String, Integer> sessionCountMap = new ConcurrentHashMap<>();
+
+	private final ConcurrentHashMap<GraphId, Future<?>> graphTaskFutureMap = new ConcurrentHashMap<>();
+
 	private static final Logger logger = LoggerFactory.getLogger(GraphProcess.class);
 
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+	// 任务被中断时发送给前端的信息
+	public static final String TASK_STOPPED_MESSAGE_TEMPLATE = "{\"nodeName\": \"__END__\",\"graphId\": %s, \"displayTitle\": \"结束\", \"content\": { \"reason\": \"%s\"}} ";
+
+	// 线程数需要大于2
 	private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
-	private CompiledGraph compiledGraph;
+	private final CompiledGraph compiledGraph;
 
 	public GraphProcess(CompiledGraph compiledGraph) {
 		this.compiledGraph = compiledGraph;
 	}
 
-	public void handleHumanFeedback(ChatRequest chatRequest, Map<String, Object> objectMap,
+	public GraphId createNewGraphId(String sessionId) {
+		if (StringUtils.isEmpty(sessionId)) {
+			throw new IllegalArgumentException("Session Id is empty");
+		}
+		int count = sessionCountMap.merge(sessionId, 1, Integer::sum);
+		return new GraphId(sessionId, String.format("%s-%d", sessionId, count));
+	}
+
+	public void handleHumanFeedback(GraphId graphId, ChatRequest chatRequest, Map<String, Object> objectMap,
 			RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) throws GraphRunnerException {
 		objectMap.put("feed_back", chatRequest.interruptFeedback());
 		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
@@ -62,41 +93,172 @@ public class GraphProcess {
 		state.withResume();
 		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
 		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.streamFromInitialNode(state, runnableConfig);
-		processStream(resultFuture, sink);
+		processStream(graphId, resultFuture, sink);
 	}
 
-	public void processStream(AsyncGenerator<NodeOutput> generator, Sinks.Many<ServerSentEvent<String>> sink) {
-		executor.submit(() -> {
-			generator.forEachAsync(output -> {
+	private String safeObjectToJson(Object object) {
+		try {
+			return OBJECT_MAPPER.writeValueAsString(object);
+		}
+		catch (JsonProcessingException e) {
+			logger.error("JSON processing error: {}", e.getMessage());
+			return "{}";
+		}
+	}
+
+	public void processStream(GraphId graphId, AsyncGenerator<NodeOutput> generator,
+			Sinks.Many<ServerSentEvent<String>> sink) {
+		final String graphIdStr = this.safeObjectToJson(graphId);
+		// 创建一个任务，且遇见中断时停止图的运行
+		Future<?> future = executor.submit(() -> {
+			AsyncGenerator.Data<NodeOutput> next;
+
+			while (true) {
+				NodeOutput output;
+				// 另外发起一个线程，用于迭代generator
+				Future<AsyncGenerator.Data<NodeOutput>> nextFuture = executor.submit(generator::next);
 				try {
-					// logger.info("output = {}", output);
-					String nodeName = output.node();
-					String content;
-					if (output instanceof StreamingOutput streamingOutput) {
-						content = JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk()));
-						logger.info("Streaming output from node {}: {}", nodeName, streamingOutput.chunk());
+					next = nextFuture.get();
+					if (next.isDone()) {
+						break;
 					}
-					else {
-						JSONObject nodeOutput = new JSONObject();
-						nodeOutput.put("data", output.state().data());
-						nodeOutput.put("node", nodeName);
-						content = JSON.toJSONString(nodeOutput);
-					}
+					// 获取NodeOutput
+					output = next.getData().get();
+				}
+				catch (CancellationException | ExecutionException e) {
+					logger.error("Error in stream processing", e);
+					sink.tryEmitNext(
+							ServerSentEvent.builder(String.format(TASK_STOPPED_MESSAGE_TEMPLATE, graphIdStr, "服务异常"))
+								.build());
+					sink.tryEmitError(e);
+					return;
+				}
+				catch (InterruptedException e) {
+					logger.info("Stopped by user.");
+					sink.tryEmitNext(
+							ServerSentEvent.builder(String.format(TASK_STOPPED_MESSAGE_TEMPLATE, graphIdStr, "用户终止"))
+								.build());
+					sink.tryEmitComplete();
+					return;
+				}
+
+				String nodeName = output.node();
+				String content;
+				if (output instanceof StreamingOutput streamingOutput) {
+					logger.debug("Streaming output from node {}: {}, {}", nodeName,
+
+							streamingOutput.chatResponse().getResult().getOutput().getText(), graphId);
+
+					content = buildLLMNodeContent(nodeName, graphId, streamingOutput, output);
+				}
+				else {
+					logger.debug("Normal output from node {}: {}", nodeName, output.state().value("messages"));
+					content = buildNormalNodeContent(graphId, nodeName, output);
+				}
+				if (StringUtils.isNotEmpty(content)) {
 					sink.tryEmitNext(ServerSentEvent.builder(content).build());
 				}
-				catch (Exception e) {
-					logger.error("Error processing output", e);
-					throw new CompletionException(e);
+
+				// 检测任务是否被中断
+				if (Thread.currentThread().isInterrupted()) {
+					logger.info("Stopped by user at node: {}", nodeName);
+					sink.tryEmitNext(
+							ServerSentEvent.builder(String.format(TASK_STOPPED_MESSAGE_TEMPLATE, graphIdStr, "用户终止"))
+								.build());
+					sink.tryEmitComplete();
+					return;
 				}
-			}).thenAccept(v -> {
-				// 正常完成
-				sink.tryEmitComplete();
-			}).exceptionally(e -> {
-				logger.error("Error in stream processing", e);
-				sink.tryEmitError(e);
-				return null;
-			});
+			}
+
+			// 任务正常完成
+			logger.info("Stream processing completed.");
+			sink.tryEmitComplete();
+			// 从任务Map中移出
+			graphTaskFutureMap.remove(graphId);
 		});
+		// 存放到Map中
+		Future<?> oldFuture = graphTaskFutureMap.put(graphId, future);
+		Optional.ofNullable(oldFuture).ifPresent((f) -> {
+			if (!f.isDone()) {
+				logger.warn("A task with the same GraphId {} is still running!", graphId);
+			}
+		});
+	}
+
+	/**
+	 * 终止运行中的图
+	 * @param graphId graphId
+	 * @return 是否成功
+	 */
+	public boolean stopGraph(GraphId graphId) {
+		Future<?> future = this.graphTaskFutureMap.remove(graphId);
+		if (future == null) {
+			return false;
+		}
+		if (future.isDone()) {
+			return true;
+		}
+		return future.cancel(true);
+	}
+
+	private String buildLLMNodeContent(String nodeName, GraphId graphId, StreamingOutput streamingOutput,
+			NodeOutput output) {
+		StreamNodePrefixEnum prefixEnum = StreamNodePrefixEnum.match(nodeName);
+		if (prefixEnum == null) {
+			return "";
+		}
+		String stepTitle = (String) output.state().value(nodeName + "_step_title").orElse("");
+		String finishReason = Optional.ofNullable(streamingOutput.chatResponse())
+			.map(ChatResponse::getResult)
+			.map(Generation::getMetadata)
+			.map(ChatGenerationMetadata::getFinishReason)
+			.orElse("");
+		Map<String, Serializable> response = Map.of(nodeName,
+				streamingOutput.chatResponse().getResult().getOutput().getText(), "step_title", stepTitle, "visible",
+				prefixEnum.isVisible(), "finishReason", finishReason, "graphId", graphId);
+
+		return this.safeObjectToJson(response);
+	}
+
+	private record NodeResponse(String nodeName, GraphId graphId, String displayTitle, Object content,
+			Object siteInformation) {
+	}
+
+	private String buildNormalNodeContent(GraphId graphId, String nodeName, NodeOutput output) {
+		NodeNameEnum nodeEnum = NodeNameEnum.fromNodeName(nodeName);
+		if (nodeEnum == null) {
+			return "";
+		}
+		Object content;
+		// 不同节点给前端的内容不一样
+		content = switch (nodeEnum) {
+			case START -> {
+				String query = output.state().data().get("query").toString();
+				yield Map.of("query", query);
+			}
+			case COORDINATOR -> output.state().data().get("deep_research");
+			case REWRITE_MULTI_QUERY, HUMAN_FEEDBACK, END -> output.state().data();
+			case PLANNER -> output.state().data().get("planner_content");
+			case RESEARCH_TEAM -> {
+				String researchTeamContent = (String) output.state().data().get("research_team_content");
+				yield StringUtils.equals(researchTeamContent, NodeNameEnum.REPORTER.nodeName());
+			}
+			case REPORTER -> output.state().data().get("final_report");
+			default -> "";
+		};
+		Object site_information = output.state().value("site_information").orElse("");
+		String displayTitle = nodeEnum.displayTitle();
+		if (StringUtils.isEmpty(displayTitle)
+				|| (Objects.equals(content, "") && Objects.equals(site_information, ""))) {
+			return "";
+		}
+		NodeResponse response = new NodeResponse(nodeName, graphId, displayTitle, content, site_information);
+		try {
+			return OBJECT_MAPPER.writeValueAsString(response);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException("Failed to serialize NodeResponse", e);
+		}
 	}
 
 }

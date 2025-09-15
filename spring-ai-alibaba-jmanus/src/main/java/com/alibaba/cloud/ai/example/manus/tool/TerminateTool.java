@@ -16,70 +16,84 @@
 package com.alibaba.cloud.ai.example.manus.tool;
 
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.tool.metadata.ToolMetadata;
+import java.util.List;
+import java.util.Map;
 
-public class TerminateTool implements ToolCallBiFunctionDef {
+public class TerminateTool extends AbstractBaseTool<Map<String, Object>> implements TerminableTool {
 
 	private static final Logger log = LoggerFactory.getLogger(TerminateTool.class);
 
-	private static String PARAMETERS = """
-			{
-			  "type" : "object",
-			  "properties" : {
-			    "message" : {
-			      "type" : "string",
-			      "description" : "终结当前步骤的信息，你需要在这个终结信息里尽可能多的包含所有相关的事实和数据，详细描述执行结果和状态，包含所有收集到的相关事实和数据，关键发现和观察。这个终结信息将作为当前步骤的最终输出，并且应该足够全面，以便为后续步骤或其他代理提供完整的上下文与关键事实。无需输出浏览器可交互元素索引，因为索引会根据页面的变化而变化。"
-			    }
-			  },
-			  "required" : [ "message" ]
-			}
-			""";
-
 	public static final String name = "terminate";
 
-	private static final String description = """
-
-			Terminate the current execution step with a comprehensive summary message.
-			This message will be passed as the final output of the current step and should include:
-
-			- Detailed execution results and status
-			- All relevant facts and data collected
-			- Key findings and observations
-			- Important insights and conclusions
-			- Any actionable recommendations
-
-			The summary should be thorough enough to provide complete context for subsequent steps or other agents.
-
-			""";
-
-	public static OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
-		return new OpenAiApi.FunctionTool(function);
-	}
-
-	public static FunctionToolCallback getFunctionToolCallback(String planId) {
-		return FunctionToolCallback.builder(name, new TerminateTool(planId))
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
-			.build();
-	}
-
-	private String planId;
+	private final String expectedReturnInfo;
 
 	private String lastTerminationMessage = "";
 
 	private boolean isTerminated = false;
 
 	private String terminationTimestamp = "";
+
+	private static String getDescriptions(String expectedReturnInfo) {
+		// Simple description to avoid generating overly long content
+		return "Terminate the current execution step with structured data. "
+				+ "Provide data in JSON format with 'message' field and optional 'fileList' array containing file information.";
+	}
+
+	private static String generateParametersJson(String expectedReturnInfo) {
+		String template = """
+				{
+				  "type": "object",
+				  "properties": {
+				    "message": {
+				      "type": "string",
+				      "description": "Comprehensive termination message that should include all relevant facts, viewpoints, details, and conclusions from the execution step. This message should provide a complete summary of what was accomplished, any important observations, key findings, and final outcomes. The message must explicitly mention and describe the data corresponding to the expected return information: %s"
+				    },
+				    "fileList": {
+				      "type": "array",
+				      "items": {
+				        "type": "object",
+				        "properties": {
+				          "fileName": {
+				            "type": "string",
+				            "description": "Name of the file"
+				          },
+				          "fileDescription": {
+				            "type": "string",
+				            "description": "Detailed description of what the file contains. This should include a comprehensive summary of all content generated during this agent execution cycle. Every file created during this execution must be listed here with complete and accurate information about its contents."
+				          }
+				        },
+				        "required": ["fileName", "fileDescription"]
+				      },
+				      "description": "Complete list of all files generated during this agent execution cycle. Every file created must be included with its name and a detailed description of its contents. This is mandatory for full transparency and auditing purposes."
+				    },
+				    "folderList": {
+				      "type": "array",
+				      "items": {
+				        "type": "object",
+				        "properties": {
+				          "folderName": {
+				            "type": "string",
+				            "description": "Name of the folder"
+				          },
+				          "folderDescription": {
+				            "type": "string",
+				            "description": "Detailed description of what the folder contains. This should include a comprehensive summary of all content within this folder generated during this agent execution cycle."
+				          }
+				        },
+				        "required": ["folderName", "folderDescription"]
+				      },
+				      "description": "Complete list of all folders generated during this agent execution cycle. Every folder created must be included with its name and a detailed description of its contents."
+				    }
+				  },
+				  "required": ["message"]
+				}
+				""";
+
+		return String.format(template, expectedReturnInfo != null ? expectedReturnInfo : "N/A");
+	}
 
 	@Override
 	public String getCurrentToolStateString() {
@@ -89,28 +103,75 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 				- Last Termination: %s
 				- Termination Message: %s
 				- Timestamp: %s
+				- Plan ID: %s
+				- Expected Return Info: %s
 				""", isTerminated ? "🛑 Terminated" : "⚡ Active",
 				isTerminated ? "Process was terminated" : "No termination recorded",
 				lastTerminationMessage.isEmpty() ? "N/A" : lastTerminationMessage,
-				terminationTimestamp.isEmpty() ? "N/A" : terminationTimestamp);
+				terminationTimestamp.isEmpty() ? "N/A" : terminationTimestamp,
+				currentPlanId != null ? currentPlanId : "N/A", expectedReturnInfo != null ? expectedReturnInfo : "N/A");
 	}
 
-	public TerminateTool(String planId) {
-		this.planId = planId;
-	}
-
-	public ToolExecuteResult run(String toolInput) {
-		log.info("Terminate toolInput: {}", toolInput);
-		this.lastTerminationMessage = toolInput;
-		this.isTerminated = true;
-		this.terminationTimestamp = java.time.LocalDateTime.now().toString();
-
-		return new ToolExecuteResult(toolInput);
+	public TerminateTool(String planId, String expectedReturnInfo) {
+		this.currentPlanId = planId;
+		// If expectedReturnInfo is null or empty, use "message" as default
+		this.expectedReturnInfo = (expectedReturnInfo == null || expectedReturnInfo.isEmpty()) ? "message"
+				: expectedReturnInfo;
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		return run(s);
+	public ToolExecuteResult run(Map<String, Object> input) {
+		log.info("Terminate with input: {}", input);
+
+		// Extract message from the structured data
+		String message = formatStructuredData(input);
+		this.lastTerminationMessage = message;
+		this.isTerminated = true;
+		this.terminationTimestamp = java.time.LocalDateTime.now().toString();
+
+		return new ToolExecuteResult(message);
+	}
+
+	private String formatStructuredData(Map<String, Object> input) {
+		StringBuilder sb = new StringBuilder();
+
+		// Handle new format with message and fileList
+		if (input.containsKey("message")) {
+			sb.append("Message: ").append(input.get("message")).append("\n");
+		}
+
+		if (input.containsKey("fileList")) {
+			@SuppressWarnings("unchecked")
+			List<Map<String, String>> fileList = (List<Map<String, String>>) input.get("fileList");
+			sb.append("Files:\n");
+			for (Map<String, String> file : fileList) {
+				sb.append("  - Name: ")
+					.append(file.get("fileName"))
+					.append("\n    Description: ")
+					.append(file.get("fileDescription"))
+					.append("\n");
+			}
+		}
+
+		if (input.containsKey("folderList")) {
+			@SuppressWarnings("unchecked")
+			List<Map<String, String>> folderList = (List<Map<String, String>>) input.get("folderList");
+			sb.append("Folders:\n");
+			for (Map<String, String> folder : folderList) {
+				sb.append("  - Name: ")
+					.append(folder.get("folderName"))
+					.append("\n    Description: ")
+					.append(folder.get("folderDescription"))
+					.append("\n");
+			}
+		}
+
+		// If no recognized keys, just output the whole map
+		if (!input.containsKey("message") && !input.containsKey("fileList") && !input.containsKey("folderList")) {
+			sb.append(input.toString());
+		}
+
+		return sb.toString();
 	}
 
 	@Override
@@ -120,27 +181,24 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 
 	@Override
 	public String getDescription() {
-		return description;
+		return getDescriptions(this.expectedReturnInfo);
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return generateParametersJson(this.expectedReturnInfo);
 	}
 
 	@Override
-	public Class<?> getInputType() {
-		return String.class;
+	public Class<Map<String, Object>> getInputType() {
+		@SuppressWarnings("unchecked")
+		Class<Map<String, Object>> clazz = (Class<Map<String, Object>>) (Class<?>) Map.class;
+		return clazz;
 	}
 
 	@Override
 	public boolean isReturnDirect() {
 		return true;
-	}
-
-	@Override
-	public void setPlanId(String planId) {
-		this.planId = planId;
 	}
 
 	@Override
@@ -151,6 +209,14 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 	@Override
 	public String getServiceGroup() {
 		return "default-service-group";
+	}
+
+	// ==================== TerminableTool interface implementation ====================
+
+	@Override
+	public boolean canTerminate() {
+		// TerminateTool can always be terminated as its purpose is to terminate execution
+		return true;
 	}
 
 }

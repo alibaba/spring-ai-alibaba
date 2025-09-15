@@ -57,7 +57,7 @@ public class RagVectorStoreConfiguration {
 			matchIfMissing = true)
 	static class SimpleVectorStoreConfiguration {
 
-		@Bean
+		@Bean(name = { "simpleVectorStore", "ragVectorStore" })
 		public VectorStore simpleVectorStore(EmbeddingModel embeddingModel, RagProperties ragProperties) {
 			logger.info("Initializing SimpleVectorStore.");
 			var simpleVectorStore = SimpleVectorStore.builder(embeddingModel).build();
@@ -96,7 +96,7 @@ public class RagVectorStoreConfiguration {
 				.build();
 		}
 
-		@Bean
+		@Bean(name = { "ragElasticsearchVectorStore", "ragVectorStore" })
 		public VectorStore elasticsearchVectorStore(RestClient elasticsearchRestClient, EmbeddingModel embeddingModel,
 				RagProperties ragProperties) {
 			RagProperties.Elasticsearch esProps = ragProperties.getElasticsearch();

@@ -64,9 +64,7 @@ public class DashScopeDocumentCloudReader implements DocumentReader {
 	@Override
 	public List<Document> get() {
 		String fileMD5;
-		FileInputStream fileInputStream;
-		try {
-			fileInputStream = new FileInputStream(file);
+		try (FileInputStream fileInputStream = new FileInputStream(file)) {
 			fileMD5 = DigestUtils.md5Hex(fileInputStream);
 			DashScopeApi.UploadRequest uploadRequest = new DashScopeApi.UploadRequest(readerConfig.getCategoryId(),
 					file.getName(), file.length(), fileMD5);

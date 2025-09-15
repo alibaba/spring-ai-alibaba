@@ -1,0 +1,19 @@
+# DatabaseTool MySQL datasource configuration
+# This file is used by DataSourceService (database_tool prefix)
+database_use:
+  datasource:
+    amanus:
+      type: mysql
+      enable: true
+      url: jdbc:mysql://127.0.0.1:3306/amanus?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      username: root
+      password:
+    # H2 配置示例
+    testdb:
+      type: h2
+      enable: true
+      url: jdbc:h2:file:./h2-data/testdb;MODE=MYSQL;DATABASE_TO_LOWER=TRUE
+      driver-class-name: org.h2.Driver
+      username: sa
+      password: $FSD#@!@#!#$!12341234

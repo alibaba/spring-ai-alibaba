@@ -1,0 +1,45 @@
+# OpenTelemetry Observation configuration for Langfuse integration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      enabled: false
+      # health status check with detailed messages
+      # show-details: always
+  tracing:
+    sampling:
+      # trace information with every request
+      probability: 1.0
+  observations:
+    annotations:
+      enabled: true
+
+# OpenTelemetry configuration
+otel:
+  service:
+    name: spring-ai-alibaba-deepresearch-langfuse
+  resource:
+    attributes:
+      deployment.environment: development
+  # configure exporter
+  traces:
+    exporter: otlp
+    sampler: always_on
+  metrics:
+    exporter: otlp
+  # logs exportation inhibited for langfuse currently cannot support
+  logs:
+    exporter: none
+  exporter:
+    otlp:
+      # OpenTelemetry exporter endpoint configuration. For details, refer to the official Langfuse documentation: https://langfuse.com/docs/opentelemetry/get-started
+      endpoint: "https://us.cloud.langfuse.com/api/public/otel" # 🇺🇸 US data region
+      # endpoint: "https://cloud.langfuse.com/api/public/otel" # 🇪🇺 EU data region
+      # endpoint: "http://localhost:3000/api/public/otel" # 🏠 Local deployment (>= v3.22.0)
+      headers:
+        # Replace `YOUR_BASE64_ENCODED_CREDENTIALS` with your Base64-encoded `public_key:secret_key`.
+        Authorization: "Basic ${YOUR_BASE64_ENCODED_CREDENTIALS}"
+      protocol: http/protobuf

@@ -16,13 +16,28 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
+import com.alibaba.cloud.ai.example.deepresearch.model.SessionHistory;
+import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SessionContextService;
+import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SearchPlatformSelectionService;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.SmartAgentUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.ToolCallingSearchService;
+import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SmartAgentSelectionHelperService;
+import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.QuestionClassifierService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,72 +54,90 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationNode.class);
 
-	private final TavilySearchService tavilySearchService;
+	private final InfoCheckService infoCheckService;
 
-	private final Integer MAX_RETRY_COUNT = 3;
+	private final SearchInfoService searchInfoService;
 
-	private final Long RETRY_DELAY_MS = 500L;
+	private final SmartAgentSelectionHelperService smartAgentSelectionHelper;
 
-	private final JinaCrawlerService jinaCrawlerService;
+	private final SessionContextService sessionContextService;
 
-	public BackgroundInvestigationNode(TavilySearchService tavilySearchService, JinaCrawlerService jinaCrawlerService) {
-		this.tavilySearchService = tavilySearchService;
-		this.jinaCrawlerService = jinaCrawlerService;
+	private final ChatClient backgroundAgent;
+
+	public BackgroundInvestigationNode(JinaCrawlerService jinaCrawlerService, InfoCheckService infoCheckService,
+			SearchFilterService searchFilterService, QuestionClassifierService questionClassifierService,
+			SearchPlatformSelectionService platformSelectionService, SmartAgentProperties smartAgentProperties,
+			ChatClient backgroundAgent, SessionContextService sessionContextService,
+			ToolCallingSearchService toolCallingSearchService) {
+		this.searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService,
+				toolCallingSearchService);
+		this.infoCheckService = infoCheckService;
+		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties, null,
+				questionClassifierService, platformSelectionService);
+		this.backgroundAgent = backgroundAgent;
+		this.sessionContextService = sessionContextService;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("background investigation node is running.");
-		String query = StateUtil.getQuery(state);
-
-		List<Map<String, String>> results = new ArrayList<>();
-
-		// Retry logic
-		for (int i = 0; i < MAX_RETRY_COUNT; i++) {
-			try {
-				TavilySearchService.Response response = tavilySearchService
-					.apply(TavilySearchService.Request.simpleQuery(query));
-
-				if (response != null && response.results() != null && !response.results().isEmpty()) {
-					results = response.results().stream().map(info -> {
-						Map<String, String> result = new HashMap<>();
-						result.put("title", info.title());
-						if (jinaCrawlerService == null) {
-							result.put("content", info.content());
-						}
-						else {
-							try {
-								logger.info("Get detail info of a url using Jina Crawler...");
-								result.put("content",
-										jinaCrawlerService.apply(new JinaCrawlerService.Request(info.url())).content());
-							}
-							catch (Exception e) {
-								logger.error("Jina Crawler Service Error", e);
-								result.put("content", info.content());
-							}
-						}
-						return result;
-					}).collect(Collectors.toList());
-					break;
-				}
-
-			}
-			catch (Exception e) {
-				logger.warn("搜索尝试 {} 失败: {}", i + 1, e.getMessage());
-			}
-			Thread.sleep(RETRY_DELAY_MS);
-		}
 
 		Map<String, Object> resultMap = new HashMap<>();
-		if (!results.isEmpty()) {
-			String prompt = "background investigation results of user query:\n" + results + "\n";
-			resultMap.put("background_investigation_results", prompt);
-			logger.info("✅ 搜索结果: {} 条", results.size());
-		}
-		else {
-			logger.warn("⚠️ 搜索失败");
+		List<List<Map<String, String>>> resultsList = new ArrayList<>();
+		List<String> queries = StateUtil.getOptimizeQueries(state);
+		assert queries != null && !queries.isEmpty();
+
+		for (String query : queries) {
+			// 使用统一的智能搜索选择方法
+			SmartAgentUtil.SearchSelectionResult searchSelection = smartAgentSelectionHelper
+				.intelligentSearchSelection(state, query);
+			List<Map<String, String>> results;
+
+			// 使用支持工具调用的搜索方法
+			results = searchInfoService.searchInfo(StateUtil.isSearchFilter(state), searchSelection.getSearchEnum(),
+					query, searchSelection.getSearchPlatform());
+			resultMap.put("site_information", results);
+			resultsList.add(results);
 		}
 
+		List<String> backgroundResults = new ArrayList<>();
+		assert resultsList.size() != queries.size();
+
+		for (int i = 0; i < resultsList.size(); i++) {
+			List<Map<String, String>> searchResults = resultsList.get(i);
+
+			String query = queries.get(i);
+
+			Message messages = new UserMessage(
+					"搜索问题:" + query + "\n" + "以下是搜索结果：\n\n" + searchResults.stream().map(r -> {
+						return String.format("标题: %s\n权重: %s\n内容: %s\n", r.get("title"), r.get("weight"),
+								r.get("content"));
+					}).collect(Collectors.joining("\n\n")));
+
+			String sessionId = state.value("session_id", String.class).orElse("__default__");
+			List<SessionHistory> reports = sessionContextService.getRecentReports(sessionId);
+			Message lastReportMessage;
+			if (reports != null && !reports.isEmpty()) {
+				lastReportMessage = new AssistantMessage("这是用户前几次使用DeepResearch的报告：\r\n"
+						+ reports.stream().map(SessionHistory::toString).collect(Collectors.joining("\r\n\r\n")));
+			}
+			else {
+				lastReportMessage = new AssistantMessage("这是用户的第一次询问，因此没有上下文。");
+			}
+
+			String content = backgroundAgent.prompt().messages(lastReportMessage, messages).call().content();
+
+			backgroundResults.add(content);
+
+			logger.info("背景调查报告生成已完成: {}", backgroundResults.size());
+		}
+		resultMap.put("background_investigation_results", backgroundResults);
+
+		String nextStep = "planner";
+		if (!StateUtil.isDeepresearch(state)) {
+			nextStep = "reporter";
+		}
+		resultMap.put("background_investigation_next_node", nextStep);
 		return resultMap;
 	}
 

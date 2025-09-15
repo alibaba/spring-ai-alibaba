@@ -23,6 +23,7 @@ import java.util.function.Function;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
+import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -39,7 +40,8 @@ import org.springframework.util.CollectionUtils;
 /**
  * @author KrakenZJC
  **/
-public class BaiduSearchService implements Function<BaiduSearchService.Request, BaiduSearchService.Response> {
+public class BaiduSearchService
+		implements SearchService, Function<BaiduSearchService.Request, BaiduSearchService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(BaiduSearchService.class);
 
@@ -51,6 +53,11 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 			WebClientTool webClientTool) {
 		this.webClientTool = webClientTool;
 		this.properties = properties;
+	}
+
+	@Override
+	public SearchService.Response query(String query) {
+		return this.apply(new Request(query, null));
 	}
 
 	@Override
@@ -99,6 +106,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 				String title = "";
 				String abstractText = "";
 				String sourceUrl = div.attr("mu");
+				String iconUrl = "";
 
 				try {
 					if (div.hasClass("xpath-log") || div.hasClass("result-op")) {
@@ -146,7 +154,8 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 					continue;
 				}
 
-				listData.add(new SearchResult(title, abstractText, sourceUrl));
+				listData.add(new SearchResult(title, abstractText, sourceUrl, iconUrl));
+
 			}
 
 			return listData;
@@ -162,19 +171,31 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 	public record Request(
 			@JsonProperty(required = true, value = "query") @JsonPropertyDescription("The search query") String query,
 			@JsonProperty(required = false,
-					value = "limit") @JsonPropertyDescription("Maximum number of results to return") Integer limit) {
-
+					value = "limit") @JsonPropertyDescription("Maximum number of results to return") Integer limit)
+			implements
+				SearchService.Request {
+		@Override
+		public String getQuery() {
+			return this.query();
+		}
 	}
 
 	/**
 	 * Baidu search Function response.
 	 */
 	@JsonClassDescription("Baidu search API response")
-	public record Response(List<SearchResult> results) {
-
+	public record Response(List<SearchResult> results) implements SearchService.Response {
+		@Override
+		public SearchService.SearchResult getSearchResult() {
+			return new SearchService.SearchResult(this.results()
+				.stream()
+				.map(item -> new SearchService.SearchContent(item.title(), item.abstractText(), item.sourceUrl(),
+						item.icon()))
+				.toList());
+		}
 	}
 
-	public record SearchResult(String title, String abstractText, String sourceUrl) {
+	public record SearchResult(String title, String abstractText, String sourceUrl, String icon) {
 
 	}
 

@@ -15,106 +15,89 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.bash;
 
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
+import com.alibaba.cloud.ai.example.manus.tool.AbstractBaseTool;
+
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.alibaba.cloud.ai.example.manus.tool.filesystem.UnifiedDirectoryManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.function.FunctionToolCallback;
+public class Bash extends AbstractBaseTool<Bash.BashInput> {
 
-public class Bash implements ToolCallBiFunctionDef {
+	private final ObjectMapper objectMapper;
 
 	private static final Logger log = LoggerFactory.getLogger(Bash.class);
 
-	private ManusProperties manusProperties;
+	/**
+	 * Internal input class for defining Bash tool input parameters
+	 */
+	public static class BashInput {
+
+		private String command;
+
+		public BashInput() {
+		}
+
+		public BashInput(String command) {
+			this.command = command;
+		}
+
+		public String getCommand() {
+			return command;
+		}
+
+		public void setCommand(String command) {
+			this.command = command;
+		}
+
+	}
 
 	/**
-	 * bash执行工作目录
+	 * Unified directory manager for directory operations
 	 */
-	private String workingDirectoryPath;
+	private final UnifiedDirectoryManager unifiedDirectoryManager;
 
-	// 添加操作系统信息
+	// Add operating system information
 	private static final String osName = System.getProperty("os.name");
-
-	private static String PARAMETERS = """
-			{
-				"type": "object",
-				"properties": {
-					"command": {
-						"type": "string",
-						"description": "The bash command to execute. Can be empty to view additional logs when previous exit code is `-1`. Can be `ctrl+c` to interrupt the currently running process."
-					}
-				},
-				"required": ["command"]
-			}
-			""";
 
 	private final String name = "bash";
 
-	private final String description = String.format(
-			"""
-					在终端中执行bash命令（当前操作系统：%s）。
-						* 长时间运行的命令：对于可能无限期运行的命令，应该在后台运行并将输出重定向到文件，例如：command = `python3 app.py > server.log 2>&1 &`。
-						* 交互式命令：如果bash命令返回退出码`-1`，这意味着进程尚未完成。助手必须发送第二个带有空`command`的终端调用（这将检索任何其他日志），或者可以发送额外的文本（将`command`设置为文本）到运行进程的STDIN，或者可以发送command=`ctrl+c`中断进程。
-						* 超时处理：如果命令执行结果显示"Command timed out. Sending SIGINT to the process"，助手应尝试在后台重新运行该命令。
-
-					""",
-			osName);
-
-	public OpenAiApi.FunctionTool getToolDefinition() {
-		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
-		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
-		return functionTool;
-	}
-
-	public FunctionToolCallback getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, new Bash(manusProperties))
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
-	}
-
-	public Bash(ManusProperties manusProperties) {
-		this.manusProperties = manusProperties;
-		String baseDir = manusProperties.getBaseDir();
-		this.workingDirectoryPath = CodeUtils.getWorkingDirectory(baseDir);
+	public Bash(UnifiedDirectoryManager unifiedDirectoryManager, ObjectMapper objectMapper) {
+		this.unifiedDirectoryManager = unifiedDirectoryManager;
+		this.objectMapper = objectMapper;
 	}
 
 	private String lastCommand = "";
 
 	private String lastResult = "";
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
-
-	public ToolExecuteResult run(String toolInput) throws JsonProcessingException {
-		log.info("Bash toolInput:{}", toolInput);
+	@Override
+	public ToolExecuteResult run(BashInput input) {
+		String command = input.getCommand();
+		log.info("Bash command: {}", command);
 		log.info("Current operating system: {}", osName);
-		Map<String, Object> toolInputMap = objectMapper.readValue(toolInput, new TypeReference<Map<String, Object>>() {
-		});
-		String command = (String) toolInputMap.get("command");
 		this.lastCommand = command;
 
 		List<String> commandList = new ArrayList<>();
 		commandList.add(command);
 
-		// 使用ShellExecutorFactory创建对应操作系统的执行器
-		ShellCommandExecutor executor = ShellExecutorFactory.createExecutor();
-		log.info("Using shell executor for OS: {}", osName);
-		List<String> result = executor.execute(commandList, workingDirectoryPath);
-		this.lastResult = String.join("\n", result);
-		return new ToolExecuteResult(objectMapper.writeValueAsString(result));
+		try {
+			// Use ShellExecutorFactory to create executor for corresponding operating
+			// system
+			ShellCommandExecutor executor = ShellExecutorFactory.createExecutor();
+			log.info("Using shell executor for OS: {}", osName);
+			List<String> result = executor.execute(commandList, unifiedDirectoryManager.getWorkingDirectoryPath());
+			this.lastResult = String.join("\n", result);
+			return new ToolExecuteResult(objectMapper.writeValueAsString(result));
+		}
+		catch (Exception e) {
+			log.error("Error executing bash command", e);
+			return new ToolExecuteResult("Error executing command: " + e.getMessage());
+		}
 	}
 
 	@Override
@@ -124,33 +107,35 @@ public class Bash implements ToolCallBiFunctionDef {
 
 	@Override
 	public String getDescription() {
-		return description;
+		return String.format(
+				"""
+						Execute bash commands in terminal (current OS: %s).
+						* Long-running commands: For commands that may run indefinitely, they should be run in background with output redirected to file, e.g.: command = `python3 app.py > server.log 2>&1 &`.
+						* Interactive commands: If bash command returns exit code `-1`, this means the process is not yet complete. Assistant must send a second terminal call with empty `command` (this will retrieve any additional logs), or can send additional text (set `command` to text) to the running process's STDIN, or can send command=`ctrl+c` to interrupt the process.
+						* Timeout handling: If command execution result shows "Command timed out. Sending SIGINT to the process", assistant should try to re-run the command in background.
+						""",
+				osName);
 	}
 
 	@Override
 	public String getParameters() {
-		return PARAMETERS;
+		return """
+				{
+				    "type": "object",
+				    "properties": {
+				        "command": {
+				            "type": "string",
+				            "description": "The bash command to execute. Can be empty to view additional logs when previous exit code is `-1`. Can be `ctrl+c` to interrupt the currently running process."
+				        }
+				    },
+				    "required": ["command"]
+				}
+				""";
 	}
 
 	@Override
-	public Class<?> getInputType() {
-		return String.class;
-	}
-
-	@Override
-	public boolean isReturnDirect() {
-		return false;
-	}
-
-	@Override
-	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		try {
-			return run(s);
-		}
-		catch (JsonProcessingException e) {
-			log.error("Error processing JSON", e);
-			return new ToolExecuteResult("Error processing JSON: " + e.getMessage());
-		}
+	public Class<BashInput> getInputType() {
+		return BashInput.class;
 	}
 
 	@Override
@@ -171,19 +156,14 @@ public class Bash implements ToolCallBiFunctionDef {
 				            - Last Operation Result:
 				%s
 
-				            """, workingDirectoryPath, lastCommand.isEmpty() ? "No command executed yet" : lastCommand,
+				            """, unifiedDirectoryManager.getWorkingDirectoryPath(),
+				lastCommand.isEmpty() ? "No command executed yet" : lastCommand,
 				lastResult.isEmpty() ? "No result yet" : lastResult);
 	}
 
 	@Override
 	public void cleanup(String planId) {
 		log.info("Cleaned up resources for plan: {}", planId);
-	}
-
-	// Implement the setPlanId method to satisfy the interface
-	@Override
-	public void setPlanId(String planId) {
-		// No operation needed as planId is no longer used
 	}
 
 }

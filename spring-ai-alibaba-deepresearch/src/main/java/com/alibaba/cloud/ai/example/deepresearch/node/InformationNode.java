@@ -51,22 +51,14 @@ public class InformationNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) {
 		String result = state.value("planner_content", "");
 		logger.info("planner_content: {}", result);
-		assert Strings.isBlank(result);
+		assert Strings.isNotBlank(result);
 
-		String nextStep = "reporter";
-		Map<String, Object> updated = new HashMap<>();
 		Plan curPlan = null;
+		String nextStep = "research_team";
+		Map<String, Object> updated = new HashMap<>();
 		try {
 			curPlan = converter.convert(result);
 			logger.info("反序列成功，convert: {}", curPlan);
-			// 2.1 反序列化成功，上下文充足，跳转reporter节点
-			if (curPlan.isHasEnoughContext()) {
-				logger.info("Information has enough context.");
-				updated.put("current_plan", curPlan);
-				updated.put("information_next_node", nextStep);
-				logger.info("information node -> {} node", nextStep);
-				return updated;
-			}
 		}
 		catch (Exception e) {
 			// 2.2 反序列化失败，尝试重新生成计划

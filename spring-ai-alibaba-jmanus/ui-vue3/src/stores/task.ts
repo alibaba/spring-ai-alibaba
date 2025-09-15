@@ -25,9 +25,10 @@ export interface TaskPayload {
 
 export const useTaskStore = defineStore('task', () => {
   const currentTask = ref<TaskPayload | null>(null)
+  const taskToInput = ref<string>('')
   const hasVisitedHome = ref(false)
 
-  // 设置新任务
+  // Set new task
   const setTask = (prompt: string) => {
     console.log('[TaskStore] setTask called with prompt:', prompt)
     const newTask = {
@@ -39,7 +40,22 @@ export const useTaskStore = defineStore('task', () => {
     console.log('[TaskStore] Task set, currentTask.value:', currentTask.value)
   }
 
-  // 标记任务为已处理
+  // Set task to input (for pre-filling input without executing)
+  const setTaskToInput = (prompt: string) => {
+    console.log('[TaskStore] setTaskToInput called with prompt:', prompt)
+    taskToInput.value = prompt
+    console.log('[TaskStore] Task to input set:', taskToInput.value)
+  }
+
+  // Get and clear task to input
+  const getAndClearTaskToInput = () => {
+    const task = taskToInput.value
+    taskToInput.value = ''
+    console.log('[TaskStore] getAndClearTaskToInput returning:', task)
+    return task
+  }
+
+  // Mark task as processed
   const markTaskAsProcessed = () => {
     console.log('[TaskStore] markTaskAsProcessed called, current task:', currentTask.value)
     if (currentTask.value) {
@@ -50,47 +66,59 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  // 清空任务
+  // Clear task
   const clearTask = () => {
     currentTask.value = null
   }
 
-  // 检查是否有未处理的任务
+  // Check if there are unprocessed tasks
   const hasUnprocessedTask = () => {
     const result = currentTask.value && !currentTask.value.processed
     console.log('[TaskStore] hasUnprocessedTask check - currentTask:', currentTask.value, 'result:', result)
     return result
   }
 
-  // 设置已访问过 home 页面
+  // Set that home page has been visited
   const markHomeVisited = () => {
     hasVisitedHome.value = true
-    // 保存到 localStorage
+    // Save to localStorage
     localStorage.setItem('hasVisitedHome', 'true')
   }
 
-  // 检查是否访问过 home 页面
+  // Check if home page has been visited
   const checkHomeVisited = () => {
     const stored = localStorage.getItem('hasVisitedHome')
     hasVisitedHome.value = stored === 'true'
     return hasVisitedHome.value
   }
 
-  // 重置访问状态（用于调试或重置）
+  // Reset visit status (for debugging or reset)
   const resetHomeVisited = () => {
     hasVisitedHome.value = false
     localStorage.removeItem('hasVisitedHome')
   }
 
+  // Emit plan execution requested event
+  const emitPlanExecutionRequested = (payload: { title: string; planData: any; params?: string }) => {
+    console.log('[TaskStore] emitPlanExecutionRequested called with payload:', payload)
+
+    // User is on direct page, send event directly
+    window.dispatchEvent(new CustomEvent('plan-execution-requested', { detail: payload }))
+  }
+
   return {
     currentTask,
+    taskToInput,
     hasVisitedHome,
     setTask,
+    setTaskToInput,
+    getAndClearTaskToInput,
     markTaskAsProcessed,
     clearTask,
     hasUnprocessedTask,
     markHomeVisited,
     checkHomeVisited,
-    resetHomeVisited
+    resetHomeVisited,
+    emitPlanExecutionRequested
   }
 })

@@ -18,29 +18,31 @@ package com.alibaba.cloud.ai.example.manus.tool.browser;
 import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * 管理页面中所有交互式元素的集合类，提供全局索引访问能力
+ * A class that manages a collection of interactive elements on a page, providing global
+ * index access.
  */
 public class InteractiveElementRegistry {
 
 	private static final Logger log = LoggerFactory.getLogger(InteractiveElementRegistry.class);
 
 	/**
-	 * 用于选择交互式元素的JavaScript代码
+	 * JavaScript code for selecting interactive elements
 	 */
 	private static final String EXTRACT_INTERACTIVE_ELEMENTS_JS = """
 			((index) => {
-
 			const TMP = []
 			const ID = {"count": index}
 			const COMPUTED_STYLES = new WeakMap();
@@ -61,6 +63,10 @@ public class InteractiveElementRegistry {
 				"fieldset",   // Form fieldsets (can be interactive with legend)
 				"legend",     // Fieldset legends
 			]);
+
+			const turndownService = new TurndownService({
+			    headingStyle: 'atx',
+			});
 
 			extract(document.body)
 			return parseElement()
@@ -87,7 +93,7 @@ public class InteractiveElementRegistry {
 					jManusId = CURRENT_TIMESTAMP + "-" + index;
 					element.setAttribute("jmanus-id", jManusId)
 				}
-				const text = element.innerText
+				const text = turndownService.turndown(element.outerHTML)
 				const outerHtml = element.outerHTML
 				const xpath = getXPathTree(element)
 				RES.push({tagName, text, outerHtml, index, xpath, jManusId})
@@ -406,31 +412,67 @@ public class InteractiveElementRegistry {
 			}
 			})""";
 
-	// 移除了静态初始化块，直接使用字符串常量
+	// Removed the static initialization block, directly using string constants
+
+	private static final String CONVERSE_FRAME_TO_MARKDOWN_JS = """
+			    (() => {
+			        var documentClone = window.document.cloneNode(true);
+			        const reader = new Readability(documentClone);
+			        const article = reader.parse();
+			        const html = article.content;
+			        const turndownService = new TurndownService({
+			            headingStyle: 'atx',
+			        });
+			        return turndownService.turndown(html);
+			    })
+			""";
+
+	private static String READABILITY_JS;
+
+	private static String TURNDOWNSERVICE_JS;
+
+	static {
+		ClassPathResource readabilityResource = new ClassPathResource("tool/Readability.js");
+		try (InputStream is = readabilityResource.getInputStream()) {
+			byte[] bytes = new byte[is.available()];
+			is.read(bytes);
+			READABILITY_JS = new String(bytes);
+		}
+		catch (IOException e) {
+		}
+		ClassPathResource turndownResource = new ClassPathResource("tool/turndown.js");
+		try (InputStream is = turndownResource.getInputStream()) {
+			byte[] bytes = new byte[is.available()];
+			is.read(bytes);
+			TURNDOWNSERVICE_JS = new String(bytes);
+		}
+		catch (IOException e) {
+		}
+	}
 
 	/**
-	 * 存储所有交互元素的列表，按全局索引顺序排列
+	 * A list of all interactive elements, sorted by global index
 	 */
-	private final List<InteractiveElement> interactiveElements = new ArrayList<>();
+	private final List<InteractiveElement> interactiveElements = new CopyOnWriteArrayList<>();
 
 	/**
-	 * 缓存索引到元素的快速查找
+	 * A quick lookup from index to element
 	 */
-	private final Map<Integer, InteractiveElement> indexToElementMap = new HashMap<>();
+	private final Map<Integer, InteractiveElement> indexToElementMap = new ConcurrentHashMap<>();
 
 	/**
-	 * 刷新指定页面的所有交互元素
-	 * @param page 要处理的页面
+	 * Refresh all interactive elements on the specified page
+	 * @param page The page to process
 	 */
 	public void refresh(Page page) {
 		clearCache();
 		waitForPageLoad(page);
 		processPageElements(page);
-		log.info("已加载 {} 个交互式元素", interactiveElements.size());
+		log.info("Loaded {} interactive elements", interactiveElements.size());
 	}
 
 	/**
-	 * 清空当前缓存
+	 * Clear the current cache
 	 */
 	private void clearCache() {
 		interactiveElements.clear();
@@ -438,21 +480,21 @@ public class InteractiveElementRegistry {
 	}
 
 	/**
-	 * 等待页面完全加载
-	 * @param page Page实例
+	 * Wait for the page to fully load
+	 * @param page Page instance
 	 */
 	private void waitForPageLoad(Page page) {
 		try {
 			page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-			log.info("页面已加载完成");
+			log.info("Page loaded");
 		}
 		catch (Exception e) {
-			log.warn("等待页面加载时出错: {}", e.getMessage());
+			log.warn("Error waiting for page load: {}", e.getMessage());
 		}
 	}
 
 	/**
-	 * 处理单个iframe中的交互元素
+	 * Process interactive elements in a single iframe
 	 * @param page current browser page
 	 */
 	@SuppressWarnings("unchecked")
@@ -460,11 +502,14 @@ public class InteractiveElementRegistry {
 		try {
 			int index = 0;
 			for (Frame frame : page.frames()) {
+				frame.evaluate(READABILITY_JS);
+				frame.evaluate(TURNDOWNSERVICE_JS);
+				String frameText = (String) frame.evaluate(CONVERSE_FRAME_TO_MARKDOWN_JS);
 				List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) frame
 					.evaluate(EXTRACT_INTERACTIVE_ELEMENTS_JS, index);
 				for (Map<String, Object> elementMap : elementMapList) {
 					Integer globalIndex = (Integer) elementMap.get("index");
-					InteractiveElement element = new InteractiveElement(globalIndex, frame, elementMap);
+					InteractiveElement element = new InteractiveElement(globalIndex, frame, elementMap, frameText);
 					interactiveElements.add(element);
 					indexToElementMap.put(globalIndex, element);
 				}
@@ -473,39 +518,39 @@ public class InteractiveElementRegistry {
 
 		}
 		catch (Exception e) {
-			log.warn("处理page元素时出错: {}", e.getMessage());
+			log.warn("Error processing page elements: {}", e.getMessage());
 		}
 	}
 
 	/**
-	 * 获取所有交互元素列表
-	 * @return 交互元素列表
+	 * Get all interactive elements list
+	 * @return Interactive elements list
 	 */
 	public List<InteractiveElement> getAllElements(Page page) {
 		refresh(page);
-		return new ArrayList<>(interactiveElements);
+		return new CopyOnWriteArrayList<>(interactiveElements);
 	}
 
 	/**
-	 * 根据全局索引获取交互元素
-	 * @param index 全局索引
-	 * @return 对应的交互元素，如果不存在则返回空
+	 * Get interactive element by global index
+	 * @param index Global index
+	 * @return The corresponding interactive element, or empty if not found
 	 */
 	public Optional<InteractiveElement> getElementById(int index) {
 		return Optional.ofNullable(indexToElementMap.get(index));
 	}
 
 	/**
-	 * 获取当前注册的元素数量
-	 * @return 元素数量
+	 * Get the number of currently registered elements
+	 * @return Number of elements
 	 */
 	public int size() {
 		return interactiveElements.size();
 	}
 
 	/**
-	 * 生成所有元素的详细信息文本
-	 * @return 格式化的元素信息字符串
+	 * Generate detailed information text for all elements
+	 * @return Formatted element information string
 	 */
 	public String generateElementsInfoText(Page page) {
 		StringBuilder result = new StringBuilder();
@@ -516,37 +561,37 @@ public class InteractiveElementRegistry {
 	}
 
 	/**
-	 * 操作特定索引的元素
-	 * @param index 元素的全局索引
-	 * @param action 要执行的操作，例如点击、填写等
-	 * @return 操作是否成功
+	 * Perform an action on a specific index element
+	 * @param index The global index of the element
+	 * @param action The action to perform, such as click, fill, etc.
+	 * @return Whether the action was successful
 	 */
 	public boolean performAction(int index, ElementAction action) {
 		Optional<InteractiveElement> elementOpt = getElementById(index);
 		if (elementOpt.isPresent()) {
 			InteractiveElement element = elementOpt.get();
 			try {
-				// 执行指定动作
+				// Execute the specified action
 				action.execute(element);
 				return true;
 			}
 			catch (Exception e) {
-				log.error("执行元素动作时出错: {}", e.getMessage());
+				log.error("Error performing element action: {}", e.getMessage());
 				return false;
 			}
 		}
-		log.warn("未找到索引为 {} 的元素", index);
+		log.warn("Element with index {} not found", index);
 		return false;
 	}
 
 	/**
-	 * 元素操作接口
+	 * Element action interface
 	 */
 	public interface ElementAction {
 
 		/**
-		 * 在元素上执行操作
-		 * @param element 要操作的元素
+		 * Execute an action on an element
+		 * @param element The element to operate on
 		 */
 		void execute(InteractiveElement element);
 

@@ -15,12 +15,6 @@
  */
 package com.alibaba.cloud.ai.dashscope.chat;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
@@ -36,15 +30,12 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequestPara
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.FunctionTool;
 import com.alibaba.cloud.ai.dashscope.chat.observation.DashScopeChatModelObservationConvention;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
+import com.alibaba.cloud.ai.tool.observation.inner.ToolCallReactiveContextHolder;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -77,7 +68,20 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * {@link ChatModel} implementation for {@literal Alibaba DashScope} backed by
@@ -133,6 +137,14 @@ public class DashScopeChatModel implements ChatModel {
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions defaultOptions,
+			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
+
+		this(dashscopeApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
+				new DefaultToolExecutionEligibilityPredicate());
+	}
+
+	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
 			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 
@@ -178,7 +190,7 @@ public class DashScopeChatModel implements ChatModel {
 			.observe(() -> {
 
 				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-					.execute(ctx -> dashscopeApi.chatCompletionEntity(request));
+					.execute(ctx -> dashscopeApi.chatCompletionEntity(request, getAdditionalHttpHeaders(prompt)));
 
 				var completionResponse = completionEntity.getBody();
 
@@ -224,7 +236,7 @@ public class DashScopeChatModel implements ChatModel {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
 			Flux<ChatCompletionChunk> completionChunks = this.retryTemplate
-				.execute(ctx -> this.dashscopeApi.chatCompletionStream(request));
+				.execute(ctx -> this.dashscopeApi.chatCompletionStream(request, getAdditionalHttpHeaders(prompt)));
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
@@ -250,22 +262,25 @@ public class DashScopeChatModel implements ChatModel {
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 					if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
-						return Flux.defer(
-								() -> {
-									var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-									if (toolExecutionResult.returnDirect()) {
-										// Return tool execution result directly to the client.
-										return Flux.just(ChatResponse.builder().from(response)
-												.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-												.build());
-									} else {
-										// Send the tool execution result back to the model.
-										return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-												response);
-									}
-								}
-						).subscribeOn(Schedulers.boundedElastic());
-
+						return Flux.deferContextual((ctx) -> {
+							ToolExecutionResult toolExecutionResult;
+							try {
+								ToolCallReactiveContextHolder.setContext(ctx);
+								toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+							} finally {
+								ToolCallReactiveContextHolder.clearContext();
+							}
+							if (toolExecutionResult.returnDirect()) {
+								// Return tool execution result directly to the client.
+								return Flux.just(ChatResponse.builder().from(response)
+										.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+										.build());
+							} else {
+								// Send the tool execution result back to the model.
+								return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+										response);
+							}
+						}).subscribeOn(Schedulers.boundedElastic());
 					}
 					else {
 						return Flux.just(response);
@@ -301,6 +316,9 @@ public class DashScopeChatModel implements ChatModel {
 			return new ChatResponse(List.of());
 		}
 
+		// Dashscope searchInfos
+		DashScopeApi.SearchInfo searchInfo = chatCompletion.output().searchInfo();
+
 		ConcurrentHashMap<String, String> finalRoleMap = roleMap == null ? new ConcurrentHashMap<>() : roleMap;
 
 		List<Generation> generations = choices.stream().map(choice -> {
@@ -314,7 +332,9 @@ public class DashScopeChatModel implements ChatModel {
 					"id", chatCompletion.requestId(),
 					"role", finalRoleMap.getOrDefault(chatCompletion.requestId(), ""),
 					"finishReason", finishReasonToMetadataValue(choice.finishReason()),
-					"reasoningContent", StringUtils.hasText(choice.message().reasoningContent()) ? choice.message().reasoningContent() : "");
+					"reasoningContent", StringUtils.hasText(choice.message().reasoningContent()) ? choice.message().reasoningContent() : "",
+					"search_info", Objects.isNull(searchInfo) ? "" : searchInfo
+			);
 			// @formatter:on
 			return buildGeneration(choice, metadata, request);
 		}).toList();
@@ -337,9 +357,17 @@ public class DashScopeChatModel implements ChatModel {
 	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata,
 			ChatCompletionRequest request) {
 		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
-				: choice.message()
-					.toolCalls()
-					.stream()
+				: choice.message().toolCalls().stream().filter(toolCall -> {
+					if (toolCall.function() == null) {
+						logger.warn("Filtering out toolCall with null function: {}", toolCall);
+						return false;
+					}
+					if (toolCall.function().name() == null) {
+						logger.warn("Filtering out toolCall with null function name: {}", toolCall);
+						return false;
+					}
+					return true;
+				})
 					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
@@ -357,8 +385,15 @@ public class DashScopeChatModel implements ChatModel {
 	 * @return the ChatCompletion
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
+
+		// check chunk
+		if (Objects.isNull(chunk) || Objects.isNull(chunk.output())) {
+			throw new RuntimeException("LLM response chunk is null.");
+		}
+
 		return new ChatCompletion(chunk.requestId(),
-				new ChatCompletionOutput(chunk.output().text(), chunk.output().choices()), chunk.usage());
+				new ChatCompletionOutput(chunk.output().text(), chunk.output().choices(), chunk.output().searchInfo()),
+				chunk.usage());
 	}
 
 	private ChatResponseMetadata from(ChatCompletion result, Usage usage) {
@@ -388,6 +423,14 @@ public class DashScopeChatModel implements ChatModel {
 		// Define request options by merging runtime options and default options
 		DashScopeChatOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
 				DashScopeChatOptions.class);
+
+		// copy http headers options.
+		if (runtimeOptions != null && !CollectionUtils.isEmpty(runtimeOptions.getHttpHeaders())) {
+			requestOptions.setHttpHeaders(runtimeOptions.getHttpHeaders());
+		}
+		else {
+			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
+		}
 
 		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
 		// Jackson, used by ModelOptionsUtils.
@@ -477,6 +520,16 @@ public class DashScopeChatModel implements ChatModel {
 				toDashScopeRequestParameter(requestOptions, stream), stream, multiModel);
 	}
 
+	private MultiValueMap<String, String> getAdditionalHttpHeaders(Prompt prompt) {
+
+		Map<String, String> headers = new HashMap<>(this.defaultOptions.getHttpHeaders());
+		if (prompt.getOptions() != null && prompt.getOptions() instanceof DashScopeChatOptions chatOptions) {
+			headers.putAll(chatOptions.getHttpHeaders());
+		}
+		return CollectionUtils.toMultiValueMap(
+				headers.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> List.of(e.getValue()))));
+	}
+
 	private List<MediaContent> convertMediaContent(UserMessage message) {
 		MessageFormat format = MessageFormat.IMAGE;
 		if (message.getMetadata().get(DashScopeApiConstants.MESSAGE_FORMAT) instanceof MessageFormat messageFormat) {
@@ -485,25 +538,35 @@ public class DashScopeChatModel implements ChatModel {
 
 		List<MediaContent> contentList = new ArrayList<>();
 		if (format == MessageFormat.VIDEO) {
-			MediaContent mediaContent = new MediaContent(message.getText());
-			contentList.add(mediaContent);
-
 			List<String> mediaList = message.getMedia()
 				.stream()
 				.map(media -> this.fromMediaData(media.getMimeType(), media.getData()))
 				.toList();
 
 			contentList.add(new MediaContent("video", null, null, mediaList));
-		}
-		else {
+
 			MediaContent mediaContent = new MediaContent(message.getText());
 			contentList.add(mediaContent);
+		}
+		else if (format == MessageFormat.AUDIO) {
+			contentList.addAll(message.getMedia()
+				.stream()
+				.map(media -> new MediaContent("audio", null, null, null,
+						this.fromMediaData(media.getMimeType(), media.getData())))
+				.toList());
 
+			MediaContent mediaContent = new MediaContent(message.getText());
+			contentList.add(mediaContent);
+		}
+		else {
 			contentList.addAll(message.getMedia()
 				.stream()
 				.map(media -> new MediaContent("image", null, this.fromMediaData(media.getMimeType(), media.getData()),
 						null))
 				.toList());
+
+			MediaContent mediaContent = new MediaContent(message.getText());
+			contentList.add(mediaContent);
 		}
 
 		return contentList;
@@ -539,12 +602,14 @@ public class DashScopeChatModel implements ChatModel {
 			return new ChatCompletionRequestParameter();
 		}
 
+		// todo: sync modify by {@link ChatCompletionRequestParameter} new params.
 		Boolean incrementalOutput = stream && options.getIncrementalOutput();
 		return new ChatCompletionRequestParameter("message", options.getSeed(), options.getMaxTokens(),
 				options.getTopP(), options.getTopK(), options.getRepetitionPenalty(), options.getPresencePenalty(),
 				options.getTemperature(), options.getStop(), options.getEnableSearch(), options.getResponseFormat(),
 				incrementalOutput, options.getTools(), options.getToolChoice(), stream,
-				options.getVlHighResolutionImages(), options.getEnableThinking());
+				options.getVlHighResolutionImages(), options.getEnableThinking(), options.getSearchOptions(),
+				options.getParallelToolCalls(), null, null, null, null, null, null);
 	}
 
 	/**

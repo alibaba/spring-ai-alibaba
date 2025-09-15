@@ -57,6 +57,10 @@ Spring AI Alibaba 作为 Spring AI 的实现之一，在代码规范方面直接
 
 为了减少一些不必要的代码风格问题，Spring AI Alibaba 提供了本地 Checkstyle 检查功能。可以在项目根目录下执行 `mvn checkstyle:check` 命令来检查代码风格是否符合规范。
 
+### 删除未使用的导入
+
+为了确保代码的整洁，请删除 Java 文件中未使用的导入。可以通过执行 `mvn spotless:apply` 命令来自动删除未使用的导入。
+
 ### 提交最新代码
 
 在编码完成之后，需要基于 pr 规范`[lint-pr-title.yml](.github/workflows/lint-pr-title.yml)`对提交信息进行 format & check，确保提交信息符合规范。

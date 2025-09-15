@@ -17,23 +17,26 @@
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
+import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.AgentPromptTemplateUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
-import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
+import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -46,14 +49,29 @@ public class AgentsConfiguration {
 	@Value("classpath:prompts/coder.md")
 	private Resource coderPrompt;
 
-	private final ApplicationContext context;
+	@Value("classpath:prompts/background.md")
+	private Resource backgroundPrompt;
+
+	@Value("classpath:prompts/buildInteractiveHtmlPrompt.md")
+	private Resource interactionPrompt;
+
+	@Value("classpath:prompts/reflection.md")
+	private Resource reflectionPrompt;
+
+	@Value("classpath:prompts/reporter.md")
+	private Resource reporterPrompt;
+
+	@Value("classpath:prompts/rag.md")
+	private Resource ragPrompt;
+
+	@Autowired
+	private ApplicationContext context;
 
 	@Autowired(required = false)
-	private Map<String, AsyncMcpToolCallbackProvider> node2AsyncMcpToolCallbackProvider;
+	private Map<String, AsyncMcpToolCallbackProvider> agent2AsyncMcpToolCallbackProvider;
 
-	public AgentsConfiguration(ApplicationContext context) {
-		this.context = context;
-	}
+	@Autowired(required = false)
+	private Map<String, SyncMcpToolCallbackProvider> agent2SyncMcpToolCallbackProvider;
 
 	/**
 	 * Return the tool name array that have corresponding beans.
@@ -63,16 +81,50 @@ public class AgentsConfiguration {
 	}
 
 	/**
-	 * 获取指定代理的MCP工具回调
+	 * 获取指定代理的MCP工具回调, 这边我把mcp创建的部分改为在结点处进行动态创建和加载，所以会返回空数组
 	 */
 	private ToolCallback[] getMcpToolCallbacks(String agentName) {
-		if (node2AsyncMcpToolCallbackProvider != null) {
-			AsyncMcpToolCallbackProvider provider = node2AsyncMcpToolCallbackProvider.get(agentName);
-			if (provider != null) {
-				return provider.getToolCallbacks();
+		if (CollectionUtils.isEmpty(agent2SyncMcpToolCallbackProvider)
+				&& CollectionUtils.isEmpty(agent2AsyncMcpToolCallbackProvider)) {
+			return new ToolCallback[0];
+		}
+
+		if (!CollectionUtils.isEmpty(agent2SyncMcpToolCallbackProvider)) {
+			SyncMcpToolCallbackProvider toolCallbackProvider = agent2SyncMcpToolCallbackProvider.get(agentName);
+			if (toolCallbackProvider != null) {
+				return toolCallbackProvider.getToolCallbacks();
 			}
 		}
+
+		if (!CollectionUtils.isEmpty(agent2AsyncMcpToolCallbackProvider)) {
+			AsyncMcpToolCallbackProvider toolCallbackProvider = agent2AsyncMcpToolCallbackProvider.get(agentName);
+			if (toolCallbackProvider != null) {
+				return toolCallbackProvider.getToolCallbacks();
+			}
+		}
+
+		// 如果没有找到有效的工具回调提供者，返回空数组
 		return new ToolCallback[0];
+	}
+
+	/**
+	 * 提取MutiAgent配置
+	 */
+	private ChatClient.Builder configureAgentBuilder(ChatClient.Builder builder, String agentName,
+			AgentType agentType) {
+		return builder.defaultSystem(AgentPromptTemplateUtil.buildCompletePrompt(agentType))
+			.defaultToolCallbacks(getMcpToolCallbacks(agentName));
+	}
+
+	/**
+	 * Create Background Agent ChatClient Bean
+	 * @param backgroundChatClientBuilder ChatClientBuilder
+	 * @return ChatClient
+	 */
+	@Bean
+	public ChatClient backgroundAgent(ChatClient.Builder backgroundChatClientBuilder) {
+		var builder = backgroundChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(backgroundPrompt));
+		return builder.build();
 	}
 
 	/**
@@ -82,13 +134,15 @@ public class AgentsConfiguration {
 	 * @return ChatClient
 	 */
 	@Bean
-	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) throws IOException {
+	public ChatClient researchAgent(ChatClient.Builder researchChatClientBuilder) {
 		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("researchAgent");
 
-		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset()))
-			.defaultToolNames(this.getAvailableTools(TavilySearchConstants.TOOL_NAME, JinaCrawlerConstants.TOOL_NAME))
-			.defaultToolCallbacks(mcpCallbacks)
-			.build();
+		var builder = researchChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(researcherPrompt));
+		var toolArray = this.getAvailableTools(JinaCrawlerConstants.TOOL_NAME);
+		if (toolArray.length > 0) {
+			builder = builder.defaultToolNames(toolArray);
+		}
+		return builder.defaultToolCallbacks(mcpCallbacks).build();
 	}
 
 	/**
@@ -98,11 +152,10 @@ public class AgentsConfiguration {
 	 * @return ChatClient
 	 */
 	@Bean
-	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder, PythonCoderProperties coderProperties)
-			throws IOException {
+	public ChatClient coderAgent(ChatClient.Builder coderChatClientBuilder, PythonCoderProperties coderProperties) {
 		ToolCallback[] mcpCallbacks = getMcpToolCallbacks("coderAgent");
 
-		return chatClientBuilder.defaultSystem(coderPrompt.getContentAsString(Charset.defaultCharset()))
+		return coderChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(coderPrompt))
 			.defaultTools(new PythonReplTool(coderProperties))
 			.defaultToolCallbacks(mcpCallbacks)
 			.build();
@@ -126,7 +179,66 @@ public class AgentsConfiguration {
 
 	@Bean
 	public ChatClient reporterAgent(ChatClient.Builder reporterChatClientBuilder) {
-		return reporterChatClientBuilder.build();
+		return reporterChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(reporterPrompt)).build();
+	}
+
+	@Bean
+	public ChatClient interactionAgent(ChatClient.Builder interactionChatClientBuilder) {
+		return interactionChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(interactionPrompt)).build();
+	}
+
+	@Bean
+	public ChatClient rewriteAndMultiQueryAgent(ChatClient.Builder rewriteAndMultiQueryChatClientBuilder) {
+		return rewriteAndMultiQueryChatClientBuilder.build();
+	}
+
+	@Bean
+	public ChatClient infoCheckAgent(ChatClient.Builder infoCheckChatClientBuilder) {
+		return infoCheckChatClientBuilder.build();
+	}
+
+	@Bean
+	public ChatClient reflectionAgent(ChatClient.Builder reflectionChatClientBuilder) {
+		return reflectionChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(reflectionPrompt)).build();
+	}
+
+	@Bean
+	@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+			matchIfMissing = false)
+	public ChatClient academicResearchAgent(ChatClient.Builder academicResearchChatClientBuilder) {
+		return configureAgentBuilder(academicResearchChatClientBuilder, "academicResearchAgent",
+				AgentType.ACADEMIC_RESEARCH)
+			.build();
+	}
+
+	@Bean
+	@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+			matchIfMissing = false)
+	public ChatClient lifestyleTravelAgent(ChatClient.Builder lifestyleTravelChatClientBuilder) {
+		return configureAgentBuilder(lifestyleTravelChatClientBuilder, "lifestyleTravelAgent",
+				AgentType.LIFESTYLE_TRAVEL)
+			.build();
+	}
+
+	@Bean
+	@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+			matchIfMissing = false)
+	public ChatClient encyclopediaAgent(ChatClient.Builder encyclopediaChatClientBuilder) {
+		return configureAgentBuilder(encyclopediaChatClientBuilder, "encyclopediaAgent", AgentType.ENCYCLOPEDIA)
+			.build();
+	}
+
+	@Bean
+	@ConditionalOnProperty(name = "spring.ai.alibaba.deepresearch.smart-agents.enabled", havingValue = "true",
+			matchIfMissing = false)
+	public ChatClient dataAnalysisAgent(ChatClient.Builder dataAnalysisChatClientBuilder) {
+		return configureAgentBuilder(dataAnalysisChatClientBuilder, "dataAnalysisAgent", AgentType.DATA_ANALYSIS)
+			.build();
+	}
+
+	@Bean
+	public ChatClient ragAgent(ChatClient.Builder ragChatClientBuilder) {
+		return ragChatClientBuilder.defaultSystem(ResourceUtil.loadResourceAsString(ragPrompt)).build();
 	}
 
 }

@@ -15,14 +15,15 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.web.client.RestClient;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -48,36 +49,52 @@ class DashScopeAudioTranscriptionApiTests {
 		mockRestClient = Mockito.mock(RestClient.class);
 
 		// Initialize DashScopeAudioTranscriptionApi with test API key
-		audioTranscriptionApi = new DashScopeAudioTranscriptionApi("test-api-key");
+		audioTranscriptionApi = DashScopeAudioTranscriptionApi.builder()
+			.apiKey(new SimpleApiKey("test-api-key"))
+			.model("test-model")
+			.build();
 	}
 
 	@Test
 	void testConstructorWithApiKey() {
 		// Test constructor with only API key
-		DashScopeAudioTranscriptionApi api = new DashScopeAudioTranscriptionApi("test-api-key");
+		DashScopeAudioTranscriptionApi api = DashScopeAudioTranscriptionApi.builder()
+			.apiKey(new SimpleApiKey("test-api-key"))
+			.model("test-model")
+			.build();
 		assertNotNull(api, "DashScopeAudioTranscriptionApi should be created with API key");
 	}
 
 	@Test
 	void testConstructorWithApiKeyAndWorkspaceId() {
 		// Test constructor with API key and workspace ID
-		DashScopeAudioTranscriptionApi api = new DashScopeAudioTranscriptionApi("test-api-key", "test-workspace-id");
+		DashScopeAudioTranscriptionApi api = DashScopeAudioTranscriptionApi.builder()
+			.apiKey(new SimpleApiKey("test-api-key"))
+			.model("test-model")
+			.build();
 		assertNotNull(api, "DashScopeAudioTranscriptionApi should be created with API key and workspace ID");
 	}
 
 	@Test
 	void testConstructorWithApiKeyWorkspaceIdAndBaseUrl() {
 		// Test constructor with API key, workspace ID, and base URL
-		DashScopeAudioTranscriptionApi api = new DashScopeAudioTranscriptionApi("test-api-key", "test-workspace-id",
-				"https://test-base-url.com");
+		DashScopeAudioTranscriptionApi api = DashScopeAudioTranscriptionApi.builder()
+			.apiKey(new SimpleApiKey("test-api-key"))
+			.baseUrl("ss://test-websocket-url.com")
+			.model("test-model")
+			.build();
+		;
 		assertNotNull(api, "DashScopeAudioTranscriptionApi should be created with API key, workspace ID, and base URL");
 	}
 
 	@Test
 	void testConstructorWithApiKeyWorkspaceIdBaseUrlAndWebsocketUrl() {
 		// Test constructor with API key, workspace ID, base URL, and websocket URL
-		DashScopeAudioTranscriptionApi api = new DashScopeAudioTranscriptionApi("test-api-key", "test-workspace-id",
-				"https://test-base-url.com", "wss://test-websocket-url.com");
+		DashScopeAudioTranscriptionApi api = DashScopeAudioTranscriptionApi.builder()
+			.apiKey(new SimpleApiKey("test-api-key"))
+			.webSocketUrl("wss://test-websocket-url.com")
+			.model("test-model")
+			.build();
 		assertNotNull(api,
 				"DashScopeAudioTranscriptionApi should be created with API key, workspace ID, base URL, and websocket URL");
 	}

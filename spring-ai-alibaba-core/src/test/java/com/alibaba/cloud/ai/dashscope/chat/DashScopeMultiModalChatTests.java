@@ -46,6 +46,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 
@@ -74,7 +75,11 @@ public class DashScopeMultiModalChatTests {
 
 	private static final String TEST_VIDEO_PROMPT = "这是一组从视频中提取的图片帧，请描述此视频中的内容。";
 
+	private static final String TEST_AUDIO_PROMPT = "这是一个音频文件，请描述此音频中的内容。";
+
 	private static final String TEST_VIDEO_RESPONSE = "视频展示了一系列连续的画面，内容是...";
+
+	private static final String TEST_AUDIO_RESPONSE = "音频中是一个男性的声音，说的是...";
 
 	private DashScopeApi dashScopeApi;
 
@@ -109,13 +114,13 @@ public class DashScopeMultiModalChatTests {
 		// Setup mock response
 		ChatCompletionMessage responseMessage = new ChatCompletionMessage(TEST_RESPONSE,
 				ChatCompletionMessage.Role.ASSISTANT);
-		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage);
-		ChatCompletionOutput output = new ChatCompletionOutput(TEST_RESPONSE, List.of(choice));
-		TokenUsage usage = new TokenUsage(20, 10, 30);
+		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage, null);
+		ChatCompletionOutput output = new ChatCompletionOutput(TEST_RESPONSE, List.of(choice), null);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
 		ChatCompletion chatCompletion = new ChatCompletion(TEST_REQUEST_ID, output, usage);
 		ResponseEntity<ChatCompletion> responseEntity = ResponseEntity.ok(chatCompletion);
 
-		when(dashScopeApi.chatCompletionEntity(any(ChatCompletionRequest.class))).thenReturn(responseEntity);
+		when(dashScopeApi.chatCompletionEntity(any(ChatCompletionRequest.class), any())).thenReturn(responseEntity);
 
 		// Create media list with URL
 		List<Media> mediaList = List.of(new Media(MimeTypeUtils.IMAGE_PNG,
@@ -145,13 +150,13 @@ public class DashScopeMultiModalChatTests {
 		// Setup mock response
 		ChatCompletionMessage responseMessage = new ChatCompletionMessage(TEST_RESPONSE,
 				ChatCompletionMessage.Role.ASSISTANT);
-		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage);
-		ChatCompletionOutput output = new ChatCompletionOutput(TEST_RESPONSE, List.of(choice));
-		TokenUsage usage = new TokenUsage(20, 10, 30);
+		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage, null);
+		ChatCompletionOutput output = new ChatCompletionOutput(TEST_RESPONSE, List.of(choice), null);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
 		ChatCompletion chatCompletion = new ChatCompletion(TEST_REQUEST_ID, output, usage);
 		ResponseEntity<ChatCompletion> responseEntity = ResponseEntity.ok(chatCompletion);
 
-		when(dashScopeApi.chatCompletionEntity(any(ChatCompletionRequest.class))).thenReturn(responseEntity);
+		when(dashScopeApi.chatCompletionEntity(any(ChatCompletionRequest.class), any())).thenReturn(responseEntity);
 
 		// Create user message with resource media
 		UserMessage message = UserMessage.builder()
@@ -180,13 +185,13 @@ public class DashScopeMultiModalChatTests {
 		// Setup mock response
 		ChatCompletionMessage responseMessage = new ChatCompletionMessage(TEST_VIDEO_RESPONSE,
 				ChatCompletionMessage.Role.ASSISTANT);
-		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage);
-		ChatCompletionOutput output = new ChatCompletionOutput(TEST_VIDEO_RESPONSE, List.of(choice));
-		TokenUsage usage = new TokenUsage(20, 10, 30);
+		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage, null);
+		ChatCompletionOutput output = new ChatCompletionOutput(TEST_VIDEO_RESPONSE, List.of(choice), null);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
 		ChatCompletion chatCompletion = new ChatCompletion(TEST_REQUEST_ID, output, usage);
 		ResponseEntity<ChatCompletion> responseEntity = ResponseEntity.ok(chatCompletion);
 
-		when(dashScopeApi.chatCompletionEntity(any(ChatCompletionRequest.class))).thenReturn(responseEntity);
+		when(dashScopeApi.chatCompletionEntity(any(ChatCompletionRequest.class), any())).thenReturn(responseEntity);
 
 		// Create media list with multiple frames (simulating video frames)
 		List<Media> mediaList = new ArrayList<>();
@@ -211,6 +216,45 @@ public class DashScopeMultiModalChatTests {
 	}
 
 	/**
+	 * Test audio processing with multiple frames
+	 */
+	@Test
+	void testAudioWithMultipleFrames() {
+		// Setup mock response
+		ChatCompletionMessage responseMessage = new ChatCompletionMessage(TEST_AUDIO_RESPONSE,
+				ChatCompletionMessage.Role.ASSISTANT);
+		Choice choice = new Choice(ChatCompletionFinishReason.STOP, responseMessage, null);
+		ChatCompletionOutput output = new ChatCompletionOutput(TEST_AUDIO_RESPONSE, List.of(choice), null);
+		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
+		ChatCompletion chatCompletion = new ChatCompletion(TEST_REQUEST_ID, output, usage);
+		ResponseEntity<ChatCompletion> responseEntity = ResponseEntity.ok(chatCompletion);
+
+		when(dashScopeApi.chatCompletionEntity(any(ChatCompletionRequest.class), any())).thenReturn(responseEntity);
+
+		// Create media list with multiple frames (simulating video frames)
+		List<Media> mediaList = new ArrayList<>();
+		for (int i = 0; i < 10; i++) {
+			mediaList.add(new Media(MediaType.parseMediaType("audio/mpeg"),
+					URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/audios/welcome.mp3")));
+		}
+
+		// Create user message with media
+		UserMessage message = UserMessage.builder().text(TEST_AUDIO_PROMPT).media(mediaList).build();
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.AUDIO);
+
+		// Create prompt with options
+		Prompt prompt = new Prompt(message,
+				DashScopeChatOptions.builder().withModel(TEST_MODEL).withMultiModel(true).build());
+
+		// Call the chat model
+		ChatResponse response = chatModel.call(prompt);
+
+		// Verify response
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).isEqualTo(TEST_AUDIO_RESPONSE);
+	}
+
+	/**
 	 * Test streaming response with image input
 	 */
 	@Test
@@ -220,16 +264,18 @@ public class DashScopeMultiModalChatTests {
 		ChatCompletionMessage chunkMessage2 = new ChatCompletionMessage("小女孩和一只狗在户外。",
 				ChatCompletionMessage.Role.ASSISTANT);
 
-		Choice choice1 = new Choice(null, chunkMessage1);
-		Choice choice2 = new Choice(ChatCompletionFinishReason.STOP, chunkMessage2);
+		Choice choice1 = new Choice(null, chunkMessage1, null);
+		Choice choice2 = new Choice(ChatCompletionFinishReason.STOP, chunkMessage2, null);
 
-		ChatCompletionOutput output1 = new ChatCompletionOutput("图片中是一个", List.of(choice1));
-		ChatCompletionOutput output2 = new ChatCompletionOutput("小女孩和一只狗在户外。", List.of(choice2));
+		ChatCompletionOutput output1 = new ChatCompletionOutput("图片中是一个", List.of(choice1), null);
+		ChatCompletionOutput output2 = new ChatCompletionOutput("小女孩和一只狗在户外。", List.of(choice2), null);
 
 		ChatCompletionChunk chunk1 = new ChatCompletionChunk(TEST_REQUEST_ID, output1, null);
-		ChatCompletionChunk chunk2 = new ChatCompletionChunk(TEST_REQUEST_ID, output2, new TokenUsage(10, 5, 15));
+		ChatCompletionChunk chunk2 = new ChatCompletionChunk(TEST_REQUEST_ID, output2,
+				new TokenUsage(10, 5, 15, null, null, null, null, null, null));
 
-		when(dashScopeApi.chatCompletionStream(any(ChatCompletionRequest.class))).thenReturn(Flux.just(chunk1, chunk2));
+		when(dashScopeApi.chatCompletionStream(any(ChatCompletionRequest.class), any()))
+			.thenReturn(Flux.just(chunk1, chunk2));
 
 		// Create user message with resource media
 		UserMessage message = UserMessage.builder()
@@ -366,6 +412,42 @@ public class DashScopeMultiModalChatTests {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 		System.out.println("Video Frames Response: " + response.getResult().getOutput().getText());
+	}
+
+	/**
+	 * Integration test for audio processing with multiple frames This test will only run
+	 * if DASHSCOPE_API_KEY environment variable is set
+	 */
+	@Test
+	@Tag("integration")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = "sk.+")
+	void integrationTestAudioWithMultipleFrames() throws IOException {
+		// Create real API client
+		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+
+		// Create real chat model
+		DashScopeChatModel realChatModel = DashScopeChatModel.builder().dashScopeApi(realApi).build();
+
+		// Create media with multiple frames (simulating audio frames)
+		Media media = new Media(MediaType.parseMediaType("audio/mpeg"),
+				URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/audios/welcome.mp3"));
+
+		// Create user message with media
+		UserMessage message = UserMessage.builder().text(TEST_AUDIO_PROMPT).media(media).build();
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.AUDIO);
+
+		// Create prompt
+		Prompt prompt = new Prompt(message,
+				DashScopeChatOptions.builder().withModel("qwen-audio-turbo-latest").withMultiModel(true).build());
+
+		// Call the chat model
+		ChatResponse response = realChatModel.call(prompt);
+
+		// Verify response
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+		System.out.println("Audio Frames Response: " + response.getResult().getOutput().getText());
 	}
 
 	/**

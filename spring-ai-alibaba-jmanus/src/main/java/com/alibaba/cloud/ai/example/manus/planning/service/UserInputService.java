@@ -19,13 +19,14 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
-public class UserInputService {
+public class UserInputService implements IUserInputService {
 
 	private final ConcurrentHashMap<String, FormInputTool> formInputToolMap = new ConcurrentHashMap<>();
 
@@ -44,17 +45,40 @@ public class UserInputService {
 	public UserInputWaitState createUserInputWaitState(String planId, String message, FormInputTool formInputTool) {
 		UserInputWaitState waitState = new UserInputWaitState(planId, message, true);
 		if (formInputTool != null) {
-			// 假设 FormInputTool 有方法 getFormDescription() 和 getFormInputs() 来获取表单信息
-			// 这需要 FormInputTool 类支持这些方法，或者有其他方式获取这些信息
-			// 此处为示意性代码，具体实现取决于 FormInputTool 的实际结构
+			// Assume FormInputTool has methods getFormDescription() and getFormInputs()
+			// to get form information
+			// This requires FormInputTool class to support these methods, or other ways
+			// to get this information
+			// This is indicative code, specific implementation depends on the actual
+			// structure of FormInputTool
 			FormInputTool.UserFormInput latestFormInput = formInputTool.getLatestUserFormInput();
 			if (latestFormInput != null) {
 				waitState.setFormDescription(latestFormInput.getDescription());
 				if (latestFormInput.getInputs() != null) {
 					List<Map<String, String>> formInputsForState = latestFormInput.getInputs()
 						.stream()
-						.map(inputItem -> Map.of("label", inputItem.getLabel(), "value",
-								inputItem.getValue() != null ? inputItem.getValue() : ""))
+						.map(inputItem -> {
+							Map<String, String> inputMap = new HashMap<>();
+							inputMap.put("label", inputItem.getLabel());
+							inputMap.put("value", inputItem.getValue() != null ? inputItem.getValue() : "");
+							if (inputItem.getName() != null) {
+								inputMap.put("name", inputItem.getName());
+							}
+							if (inputItem.getType() != null) {
+								inputMap.put("type", inputItem.getType());
+							}
+							if (inputItem.getPlaceholder() != null) {
+								inputMap.put("placeholder", inputItem.getPlaceholder());
+							}
+							if (inputItem.getRequired() != null) {
+								inputMap.put("required", inputItem.getRequired().toString());
+							}
+							if (inputItem.getOptions() != null && !inputItem.getOptions().isEmpty()) {
+								inputMap.put("options", String.join(",", inputItem.getOptions()));
+							}
+
+							return inputMap;
+						})
 						.collect(Collectors.toList());
 					waitState.setFormInputs(formInputsForState);
 				}
@@ -66,11 +90,11 @@ public class UserInputService {
 	public UserInputWaitState getWaitState(String planId) {
 		FormInputTool tool = getFormInputTool(planId);
 		if (tool != null && tool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) { // Corrected
-																									// to
-																									// use
-																									// getInputState
-																									// and
-																									// InputState
+			// to
+			// use
+			// getInputState
+			// and
+			// InputState
 			// Assuming a default message or retrieve from tool if available
 			return createUserInputWaitState(planId, "Awaiting user input.", tool);
 		}
@@ -78,16 +102,16 @@ public class UserInputService {
 	}
 
 	public boolean submitUserInputs(String planId, Map<String, String> inputs) { // Changed
-																					// to
-																					// return
-																					// boolean
+		// to
+		// return
+		// boolean
 		FormInputTool formInputTool = getFormInputTool(planId);
 		if (formInputTool != null && formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) { // Corrected
-																														// to
-																														// use
-																														// getInputState
-																														// and
-																														// InputState
+			// to
+			// use
+			// getInputState
+			// and
+			// InputState
 			List<FormInputTool.InputItem> inputItems = inputs.entrySet().stream().map(entry -> {
 				return new FormInputTool.InputItem(entry.getKey(), entry.getValue());
 			}).collect(Collectors.toList());

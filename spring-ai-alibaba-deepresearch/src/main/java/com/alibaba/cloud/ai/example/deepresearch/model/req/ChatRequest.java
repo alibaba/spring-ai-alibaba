@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.model.req;
 
+import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
@@ -28,9 +29,14 @@ import java.util.Map;
 public record ChatRequest(
 
 		/**
-		 * 线程 ID，用于标识当前对话的唯一性。 默认值为 "__default__"，表示使用默认线程。
+		 * 会话 ID。默认值为 "__default__"，表示使用默认会话。
 		 */
-		@JsonProperty(value = "thread_id", defaultValue = "__default__") String threadId,
+		@JsonProperty(value = "session_id", defaultValue = "__default__") String sessionId,
+
+		/**
+		 * 线程 ID，用于标识当前对话的唯一性。
+		 */
+		@JsonProperty(value = "thread_id", defaultValue = "") String threadId,
 		/**
 		 * 最大计划迭代次数，用于控制处理请求的最大步骤数。 默认值为 1，表示至少执行一次完整流程。
 		 */
@@ -50,12 +56,31 @@ public record ChatRequest(
 		/**
 		 * 是否启用背景调查，用于控制是否启用背景调查 默认值为 true，表示启用背景调查
 		 */
-		@JsonProperty(value = "enable_background_investigation",
-				defaultValue = "true") Boolean enableBackgroundInvestigation,
+		@JsonProperty(value = "enable_deepresearch", defaultValue = "true") Boolean enableDeepResearch,
 		/**
 		 * MCP 设置
 		 */
 		@JsonProperty(value = "mcp_settings") Map<String, Object> mcpSettings,
 
-		@JsonProperty(value = "query", defaultValue = "草莓蛋糕怎么做呀") String query) {
+		@JsonProperty(value = "query", defaultValue = "草莓蛋糕怎么做呀") String query,
+
+		/**
+		 * 搜索引擎，默认为Tavily
+		 */
+		@JsonProperty(value = "search_engine", defaultValue = "tavily") SearchEnum searchEngine,
+
+		/**
+		 * 是否开启网站过滤，默认为true
+		 */
+		@JsonProperty(value = "enable_search_filter", defaultValue = "true") Boolean enableSearchFilter,
+
+		/**
+		 * 优化查询条数，默认为3
+		 */
+		@JsonProperty(value = "optimize_query_num", defaultValue = "3") Integer optimizeQueryNum,
+
+		/**
+		 * 用户是否上传文件，默认为false
+		 */
+		@JsonProperty(value = "user_upload_file", defaultValue = "false") Boolean isUploadFile) {
 }

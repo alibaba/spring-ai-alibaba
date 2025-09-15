@@ -15,387 +15,446 @@
  */
 package com.alibaba.cloud.ai.example.manus.llm;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.entity.DynamicModelEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.model.repository.DynamicModelRepository;
+import com.alibaba.cloud.ai.example.manus.event.JmanusListener;
+import com.alibaba.cloud.ai.example.manus.event.ModelChangeEvent;
+import io.micrometer.observation.ObservationRegistry;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-public class LlmService {
-
-	// private static final String PLANNING_SYSTEM_PROMPT = """
-	// # Manus AI Assistant Capabilities
-	// ## Overview
-	// You are an AI assistant designed to help users with a wide range of tasks using
-	// various tools and capabilities. This document provides a more detailed overview of
-	// what you can do while respecting proprietary information boundaries.
-
-	// ## General Capabilities
-
-	// ### Information Processing
-	// - Answering questions on diverse topics using available information
-	// - Conducting research through web searches and data analysis
-	// - Fact-checking and information verification from multiple sources
-	// - Summarizing complex information into digestible formats
-	// - Processing and analyzing structured and unstructured data
-
-	// ### Content Creation
-	// - Writing articles, reports, and documentation
-	// - Drafting emails, messages, and other communications
-	// -Creating and editing code in various programming languages
-	// Generating creative content like stories or descriptions
-	// - Formatting documents according to specific requirements
-
-	// ### Problem Solving
-	// - Breaking down complex problems into manageable steps
-	// - Providing step-by-step solutions to technical challenges
-	// - Troubleshooting errors in code or processes
-	// - Suggesting alternative approaches when initial attempts fail
-	// - Adapting to changing requirements during task execution
-
-	// ### Tools and Interfaces
-	// - Navigating to websites and web applications
-	// - Reading and extracting content from web pages
-	// - Interacting with web elements (clicking, scrolling, form filling)
-	// - Executing JavaScript in browser console for enhanced functionality
-	// - Monitoring web page changes and updates
-	// - Taking screenshots of web content when needed
-
-	// ### File System Operations
-	// - Reading from and writing to files in various formats
-	// - Searching for files based on names, patterns, or content
-	// -Creating and organizing directory structures
-	// -Compressing and archiving files (zip, tar)
-	// - Analyzing file contents and extracting relevant information
-	// - Converting between different file formats
-
-	// ### Shell and Command Line
-	// - Executing shell commands in a Linux environment
-	// Installing and configuring software packages
-	// - Running scripts in various languages
-	// - Managing processes (starting, monitoring, terminating)
-	// - Automating repetitive tasks through shell scripts
-	// Accessing and manipulating system resources
-
-	// ### Communication Tools
-	// - Sending informative messages to users
-	// - Asking questions to clarify requirements
-	// - Providing progress updates during long-running tasks
-	// - Attaching files and resources to messages
-	// - Suggesting next steps or additional actions
-
-	// ### Deployment Capabilities
-	// - Exposing local ports for temporary access to services
-	// - Deploying static websites to public URLs
-	// - Deploying web applications with server-side functionality
-	// - Providing access links to deployed resources
-	// - Monitoring deployed applications
-
-	// ## Programming Languages and Technologies
-
-	// ### Languages I Can work with
-	// - JavaScript/TypeScript
-	// - Python
-	// - HTML /CSS
-	// - Shell scripting (Bash)
-	// - SQL
-	// - PHP
-	// - Ruby
-	// - Java
-	// - C/C++
-	// - Go
-	// - And many others
-
-	// ### Frameworks and Libraries
-	// - React, Vue, Angular for frontend development
-	// - Node. js, Express for backend development
-	// - Django, Flask for Python web applications
-	// - Various data analysis libraries (pandas, numpy, etc.)
-	// - Testing frameworks across different languages
-	// - Database interfaces and ORMs
-
-	// ## Task Approach Methodology
-
-	// ### Understanding Requirements
-	// - Analyzing user requests to identify core needs
-	// - Asking clarifying questions when requirements are ambiguous
-	// - Breaking down complex requests into manageable components
-	// - Identifying potential challenges before beginning work
-
-	// ### Planning and Execution
-	// - Creating structured plans for task completion
-	// - Selecting appropriate tools and approaches for each step
-	// - Executing steps methodically while monitoring progress
-	// - Adapting plans when encountering unexpected challenges
-	// - Providing regular updates on task status
-
-	// ### Quality Assurance
-	// - Verifying results against original requirements
-	// - Testing code and solutions before delivery
-	// - Documenting processes and solutions for future reference
-	// - Seeking feedback to improve outcomes
-
-	// # HoW I Can Help You
-
-	// I'm designed to assist with a wide range of tasks, from simple information
-	// retrieval to complex problem-solving. I can help with research, writing, coding,
-	// data analysis, and many other tasks that can be accomplished using computers and
-	// the internet.
-	// If you have a specific task in mind, I can break it down into steps and work
-	// through it methodically, keeping you informed of progress along the way. I'm
-	// continuously learning and improving, so I welcome feedback on how I can better
-	// assist you.
-
-	// # Effective Prompting Guide
-
-	// ## Introduction to Prompting
-	// This document provides guidance on creating effective prompts when working with AI
-	// assistants. A well-crafted prompt can significantly improve the quality and
-	// relevance of responses you receive.
-
-	// ## Key Elements of Effective Prompts
-
-	// ### Be specific and Clear
-	// - State your request explicitly
-	// - Include relevant context and background information
-	// - Specify the format you want for the response
-	// - Mention any constraints or requirements
-
-	// ### Provide Context
-	// - Explain why you need the information
-	// - Share relevant background knowledge
-	// - Mention previous attempts if applicable
-	// - Describe your level of familiarity with the topic
-
-	// ### Structure Your Request
-	// - Break complex requests into smaller parts
-	// - Use numbered lists for multi-part questions
-	// - Prioritize information if asking for multiple things
-	// - Consider using headers or sections for organization
-
-	// ### Specify Output Format
-	// - Indicate preferred response length (brief vs. detailed)
-	// - Request specific formats (bullet points, paragraphs, tables)
-	// - Mention if you need code examples, citations, or other special elements Specify
-	// tone and style if relevant (formal, conversational, technical)
-
-	// ## Example Prompts
-
-	// ### Poor Prompt:
-	// "Tell me about machine learning.
-
-	// ### Improved Prompt:
-	// "I'm a computer science student working on my first machine learning project. Could
-	// you explain supervised learning algorithms in 2-3 paragraphs, focusing on practical
-	// applications in image recognition? Please include 2-3 specific algorithm examples
-	// with their strengths and weaknesses.
-
-	// ### Poor Prompt:
-	// "Write code for a website.
-
-	// ### Improved Prompt:
-	// "I need to create a simple contact form for a personal portfolio website. Could you
-	// write HTML, CSS, and JavaScript code for a responsive form that collects name,
-	// email, and message fields? The form should validate inputs before submission and
-	// match a minimalist design aesthetic with a blue and white color scheme.
-
-	// # Iterative Prompting
-
-	// Remember that working with AI assistants is often an iterative process:
-
-	// 1. Start with an initial prompt
-	// 2. Review the response
-	// 3. Refine your prompt based on what was helpful or missing
-	// 4. Continue the conversation to explore the topic further
-
-	// # When Prompting for code
-
-	// When requesting code examples, consider including:
-
-	// - Programming language and version
-	// - Libraries or frameworks you're using
-	// - Error messages if troubleshooting
-	// - Sample input/output examples
-	// - Performance considerations
-	// - Compatibility requirements
-
-	// # Conclusion
-
-	// Effective prompting is a skill that develops with practice. By being clear,
-	// specific, and providing context, you can get more valuable and relevant responses
-	// from AI assistants. Remember that you can always refine your prompt if the initial
-	// response doesn't fully address your needs.
-
-	// # About Manus AI Assistant
-
-	// ## Introduction
-	// I am Manus, an AI assistant designed to help users with a wide variety of tasks.
-	// I'm built to be helpful, informative, and versatile in addressing different needs
-	// and challenges.
-	// ## My Purpose
-	// My primary purpose is to assist users in accomplishing their goals by providing
-	// information, executing tasks, and offering guidance. I aim to be a reliable partner
-	// in problem-solving and task completion.
-	// ## How I Approach Tasks
-	// When presented with a task, I typically:
-	// 1. Analyze the request to understand what's being asked
-	// 2. Break down complex problems into manageable steps
-	// 3. Use appropriate tools and methods to address each step
-	// 4. Provide clear communication throughout the process
-	// 5. Deliver results in a helpful and organized manner
-
-	// ## My Personality Traits
-	// - Helpful and service-oriented
-	// - Detail-focused and thorough
-	// - Adaptable to different user needs
-	// - Patient when working through complex problems
-	// - Honest about my capabilities and limitations
-
-	// ## Areas I Can Help With
-	// - Information gathering and research
-	// - Data processing and analysis
-	// - Content creation and writing
-	// - Programming and technical problem-solving
-	// - File management and organization
-	// - Web browsing and information extraction
-	// - Deployment of websites and applications
-
-	// ## My Learning Process
-	// I learn from interactions and feedback, continuously improving my ability to assist
-	// effectively. Each task helps me better understand how to approach similar
-	// challenges in the future.
-
-	// ## Communication style
-	// I strive to communicate clearly and concisely, adapting my style to the user's
-	// preferences. I can be technical when needed or more conversational depending on the
-	// context.
-
-	// ## Values I Uphold
-	// - Accuracy and reliability in information
-	// - Respect for user privacy and data
-	// Ethical use of technology
-	// Transparency about my capabilities
-	// Continuous improvement
-
-	// ## working Together
-	// The most effective collaborations happen when:
-	// - Tasks and expectations are clearly defined
-	// - Feedback is provided to help me adjust my approach
-	// - Complex requests are broken down into specific components
-	// - We build on successful interactions to tackle increasingly complex challenges
-	// """;
-
-	// private static final String FINALIZE_SYSTEM_PROMPT = "You are a planning assistant.
-	// Your task is to summarize the completed plan.";
-
-	// private static final String MANUS_SYSTEM_PROMPT = """
-	// You are OpenManus, an all-capable AI assistant, aimed at solving any task presented
-	// by the user. You have various tools at your disposal that you can call upon to
-	// efficiently complete complex requests. Whether it's programming, information
-	// retrieval, file processing, or web browsing, you can handle it all.
-
-	// You can interact with the computer using PythonExecute, save important content and
-	// information files through FileSaver, open browsers with BrowserUseTool, and
-	// retrieve information using GoogleSearch.
-
-	// PythonExecute: Execute Python code to interact with the computer system, data
-	// processing, automation tasks, etc.
-
-	// FileSaver: Save files locally, such as txt, py, html, etc.
-
-	// BrowserUseTool: Open, browse, and use web browsers.If you open a local HTML file,
-	// you must provide the absolute path to the file.
-
-	// Terminate : Record the result summary of the task , then terminate the task.
-
-	// DocLoader: List all the files in a directory or get the content of a local file at
-	// a specified path. Use this tool when you want to get some related information at a
-	// directory or file asked by the user.
-
-	// Based on user needs, proactively select the most appropriate tool or combination of
-	// tools. For complex tasks, you can break down the problem and use different tools
-	// step by step to solve it. After using each tool, clearly explain the execution
-	// results and suggest the next steps.
-
-	// When you are done with the task, you can finalize the plan by summarizing the steps
-	// taken and the output of each step, call Terminate tool to record the result.
-
-	// """;
+public class LlmService implements ILlmService, JmanusListener<ModelChangeEvent> {
 
 	private static final Logger log = LoggerFactory.getLogger(LlmService.class);
 
-	private final ChatClient agentExecutionClient;
+	private ChatClient agentExecutionClient;
 
-	private final ChatClient planningChatClient;
+	private ChatClient planningChatClient;
 
-	private final ChatClient finalizeChatClient;
+	private ChatClient finalizeChatClient;
 
-	private final ChatMemory conversationMemory = MessageWindowChatMemory.builder().maxMessages(1000).build();
+	private ChatMemory conversationMemory;
 
-	private final ChatMemory agentMemory = MessageWindowChatMemory.builder().maxMessages(1000).build();
+	private ChatMemory agentMemory;
 
-	private final ChatModel chatModel;
+	private Map<Long, ChatClient> clients = new ConcurrentHashMap<>();
 
-	public LlmService(ChatModel chatModel) {
+	/*
+	 * Required for creating custom chatModel
+	 */
+	@Autowired
+	private ObjectProvider<RestClient.Builder> restClientBuilderProvider;
 
-		this.chatModel = chatModel;
-		// 执行和总结规划，用相同的memory
-		this.planningChatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
-			.build();
+	@Autowired
+	private ObjectProvider<WebClient.Builder> webClientBuilderProvider;
 
-		// // 每个agent执行过程中，用独立的memroy
+	@Autowired
+	private ObjectProvider<ObservationRegistry> observationRegistry;
 
-		this.agentExecutionClient = ChatClient.builder(chatModel)
-			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-			.build();
+	@Autowired
+	private ObjectProvider<ChatModelObservationConvention> observationConvention;
 
-		this.finalizeChatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.build();
+	@Autowired
+	private ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate;
 
+	@Autowired(required = false)
+	private ManusProperties manusProperties;
+
+	@Autowired
+	private DynamicModelRepository dynamicModelRepository;
+
+	@Autowired
+	private ChatMemoryRepository chatMemoryRepository;
+
+	@Autowired
+	private LlmTraceRecorder llmTraceRecorder;
+
+	public LlmService() {
 	}
 
+	@PostConstruct
+	public void initializeChatClients() {
+		try {
+			log.info("Checking and init ChatClient instance...");
+
+			DynamicModelEntity defaultModel = dynamicModelRepository.findByIsDefaultTrue();
+			if (defaultModel == null) {
+				List<DynamicModelEntity> availableModels = dynamicModelRepository.findAll();
+				if (!availableModels.isEmpty()) {
+					defaultModel = availableModels.get(0);
+					log.info("Cannot find default model, use the first one: {}", defaultModel.getModelName());
+				}
+			}
+			else {
+				log.info("Find default model: {}", defaultModel.getModelName());
+			}
+
+			if (defaultModel != null) {
+				initializeChatClientsWithModel(defaultModel);
+				log.info("ChatClient init success");
+			}
+			else {
+				log.warn("Cannot find any model，ChatClient will be initialize after model being configured");
+			}
+		}
+		catch (Exception e) {
+			log.error("Init ChatClient failed", e);
+		}
+	}
+
+	private void initializeChatClientsWithModel(DynamicModelEntity model) {
+		OpenAiChatOptions.Builder optionsBuilder = OpenAiChatOptions.builder();
+
+		if (model.getTemperature() != null) {
+			optionsBuilder.temperature(model.getTemperature());
+		}
+
+		if (model.getTopP() != null) {
+			optionsBuilder.topP(model.getTopP());
+		}
+
+		OpenAiChatOptions defaultOptions = optionsBuilder.build();
+
+		if (this.planningChatClient == null) {
+			this.planningChatClient = buildPlanningChatClient(model, defaultOptions);
+			log.debug("Planning ChatClient init finish");
+		}
+
+		// Initialize agentExecutionClient
+		if (this.agentExecutionClient == null) {
+			this.agentExecutionClient = buildAgentExecutionClient(model, defaultOptions);
+			log.debug("Agent Execution Client init finish");
+		}
+
+		// Initialize finalizeChatClient
+		if (this.finalizeChatClient == null) {
+			this.finalizeChatClient = buildFinalizeChatClient(model, defaultOptions);
+			log.debug("Finalize ChatClient init finish");
+		}
+
+		// Ensure dynamic ChatClient is also created
+		buildOrUpdateDynamicChatClient(model);
+	}
+
+	private void tryLazyInitialization() {
+		try {
+			DynamicModelEntity defaultModel = dynamicModelRepository.findByIsDefaultTrue();
+			if (defaultModel == null) {
+				List<DynamicModelEntity> availableModels = dynamicModelRepository.findAll();
+				if (!availableModels.isEmpty()) {
+					defaultModel = availableModels.get(0);
+				}
+			}
+
+			if (defaultModel != null) {
+				log.info("Lazy init ChatClient, using model: {}", defaultModel.getModelName());
+				initializeChatClientsWithModel(defaultModel);
+			}
+		}
+		catch (Exception e) {
+			log.error("Lazy init ChatClient failed", e);
+		}
+	}
+
+	@Override
 	public ChatClient getAgentChatClient() {
+		if (agentExecutionClient == null) {
+			log.warn("Agent ChatClient not initialized...");
+			tryLazyInitialization();
+
+			if (agentExecutionClient == null) {
+				throw new IllegalStateException("Agent ChatClient not initialized, please specify model first");
+			}
+		}
 		return agentExecutionClient;
 	}
 
-	public ChatMemory getAgentMemory() {
+	@Override
+	public ChatClient getDynamicChatClient(DynamicModelEntity model) {
+		Long modelId = model.getId();
+		if (clients.containsKey(modelId)) {
+			return clients.get(modelId);
+		}
+		return buildOrUpdateDynamicChatClient(model);
+	}
+
+	public ChatClient buildOrUpdateDynamicChatClient(DynamicModelEntity model) {
+		Long modelId = model.getId();
+		String host = model.getBaseUrl();
+		String apiKey = model.getApiKey();
+		String modelName = model.getModelName();
+		Map<String, String> headers = model.getHeaders();
+		OpenAiApi openAiApi = OpenAiApi.builder().baseUrl(host).apiKey(apiKey).build();
+
+		OpenAiChatOptions.Builder chatOptionsBuilder = OpenAiChatOptions.builder().model(modelName);
+
+		if (model.getTemperature() != null) {
+			chatOptionsBuilder.temperature(model.getTemperature());
+		}
+
+		if (model.getTopP() != null) {
+			chatOptionsBuilder.topP(model.getTopP());
+		}
+
+		chatOptionsBuilder.internalToolExecutionEnabled(false);
+
+		OpenAiChatOptions chatOptions = chatOptionsBuilder.build();
+		if (headers != null) {
+			chatOptions.setHttpHeaders(headers);
+		}
+		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
+			.openAiApi(openAiApi)
+			.defaultOptions(chatOptions)
+			.build();
+		ChatClient client = ChatClient.builder(openAiChatModel)
+			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.build();
+		clients.put(modelId, client);
+		log.info("Build or update dynamic chat client for model: {}", modelName);
+		return client;
+	}
+
+	@Override
+	public ChatMemory getAgentMemory(Integer maxMessages) {
+		if (agentMemory == null) {
+			agentMemory = MessageWindowChatMemory.builder()
+				// in memory use by agent
+				.chatMemoryRepository(new InMemoryChatMemoryRepository())
+				.maxMessages(maxMessages)
+				.build();
+		}
 		return agentMemory;
 	}
 
-	public void clearAgentMemory(String planId) {
-		this.agentMemory.clear(planId);
+	@Override
+	public void clearAgentMemory(String memoryId) {
+		if (this.agentMemory != null) {
+			this.agentMemory.clear(memoryId);
+		}
 	}
 
+	@Override
 	public ChatClient getPlanningChatClient() {
+		if (planningChatClient == null) {
+			// Try lazy initialization
+			log.warn("Agent ChatClient not initialized...");
+			tryLazyInitialization();
+
+			if (planningChatClient == null) {
+				throw new IllegalStateException("Agent ChatClient not initialized, please specify model first");
+			}
+		}
 		return planningChatClient;
 	}
 
-	public void clearConversationMemory(String planId) {
-		this.conversationMemory.clear(planId);
+	@Override
+	public void clearConversationMemory(String memoryId) {
+		if (this.conversationMemory == null) {
+			// Default to 100 messages if not specified elsewhere
+			this.conversationMemory = MessageWindowChatMemory.builder()
+				.chatMemoryRepository(chatMemoryRepository)
+				.maxMessages(100)
+				.build();
+		}
+		this.conversationMemory.clear(memoryId);
 	}
 
+	@Override
 	public ChatClient getFinalizeChatClient() {
+		if (finalizeChatClient == null) {
+			// Try lazy initialization
+			log.warn("Agent ChatClient not initialized...");
+			tryLazyInitialization();
+
+			if (finalizeChatClient == null) {
+				throw new IllegalStateException("Agent ChatClient not initialized, please specify model first");
+			}
+		}
 		return finalizeChatClient;
 	}
 
-	public ChatModel getChatModel() {
+	@Override
+	public ChatMemory getConversationMemory(Integer maxMessages) {
+		if (conversationMemory == null) {
+			conversationMemory = MessageWindowChatMemory.builder()
+				.chatMemoryRepository(chatMemoryRepository)
+				.maxMessages(maxMessages)
+				.build();
+		}
+		return conversationMemory;
+	}
+
+	@Override
+	public void onEvent(ModelChangeEvent event) {
+		DynamicModelEntity dynamicModelEntity = event.getDynamicModelEntity();
+
+		initializeChatClientsWithModel(dynamicModelEntity);
+
+		if (dynamicModelEntity.getIsDefault()) {
+			log.info("Model updated");
+			this.planningChatClient = null;
+			this.agentExecutionClient = null;
+			this.finalizeChatClient = null;
+			initializeChatClientsWithModel(dynamicModelEntity);
+		}
+	}
+
+	private ChatClient buildPlanningChatClient(DynamicModelEntity dynamicModelEntity,
+			OpenAiChatOptions defaultOptions) {
+		OpenAiChatModel chatModel = openAiChatModel(dynamicModelEntity, defaultOptions);
+		return ChatClient.builder(chatModel)
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.fromOptions(defaultOptions))
+			.build();
+	}
+
+	private ChatClient buildAgentExecutionClient(DynamicModelEntity dynamicModelEntity,
+			OpenAiChatOptions defaultOptions) {
+		defaultOptions.setInternalToolExecutionEnabled(false);
+		OpenAiChatModel chatModel = openAiChatModel(dynamicModelEntity, defaultOptions);
+		return ChatClient.builder(chatModel)
+			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.fromOptions(defaultOptions))
+			.build();
+	}
+
+	private ChatClient buildFinalizeChatClient(DynamicModelEntity dynamicModelEntity,
+			OpenAiChatOptions defaultOptions) {
+		OpenAiChatModel chatModel = openAiChatModel(dynamicModelEntity, defaultOptions);
+		return ChatClient.builder(chatModel)
+			// .defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.build();
+	}
+
+	public OpenAiChatModel openAiChatModel(DynamicModelEntity dynamicModelEntity, OpenAiChatOptions defaultOptions) {
+		defaultOptions.setModel(dynamicModelEntity.getModelName());
+		if (defaultOptions.getTemperature() == null && dynamicModelEntity.getTemperature() != null) {
+			defaultOptions.setTemperature(dynamicModelEntity.getTemperature());
+		}
+		if (defaultOptions.getTopP() == null && dynamicModelEntity.getTopP() != null) {
+			defaultOptions.setTopP(dynamicModelEntity.getTopP());
+		}
+		Map<String, String> headers = dynamicModelEntity.getHeaders();
+		if (headers == null) {
+			headers = new HashMap<>();
+		}
+		headers.put("User-Agent", "JManus/3.0.2-SNAPSHOT");
+		defaultOptions.setHttpHeaders(headers);
+		var openAiApi = openAiApi(restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), dynamicModelEntity);
+		OpenAiChatOptions options = OpenAiChatOptions.fromOptions(defaultOptions);
+		var chatModel = OpenAiChatModel.builder()
+			.openAiApi(openAiApi)
+			.defaultOptions(options)
+			// .toolCallingManager(toolCallingManager)
+			.toolExecutionEligibilityPredicate(
+					openAiToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+			// .retryTemplate(retryTemplate)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
+
+		observationConvention.ifAvailable(chatModel::setObservationConvention);
+
 		return chatModel;
 	}
 
-	public ChatMemory getConversationMemory() {
-		return conversationMemory;
+	@Override
+	public ChatClient getChatClientByModelId(Long modelId) {
+		if (modelId == null) {
+			return getDefaultChatClient();
+		}
+
+		DynamicModelEntity model = dynamicModelRepository.findById(modelId).orElse(null);
+		if (model == null) {
+			return getDefaultChatClient();
+		}
+
+		return getDynamicChatClient(model);
+	}
+
+	@Override
+	public ChatClient getDefaultChatClient() {
+		DynamicModelEntity defaultModel = dynamicModelRepository.findByIsDefaultTrue();
+		if (defaultModel != null) {
+			return getDynamicChatClient(defaultModel);
+		}
+
+		List<DynamicModelEntity> availableModels = dynamicModelRepository.findAll();
+		if (!availableModels.isEmpty()) {
+			return getDynamicChatClient(availableModels.get(0));
+		}
+
+		throw new IllegalStateException("Agent ChatClient not initialized, please specify model first");
+	}
+
+	private OpenAiApi openAiApi(RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			DynamicModelEntity dynamicModelEntity) {
+		Map<String, String> headers = dynamicModelEntity.getHeaders();
+		MultiValueMap<String, String> multiValueMap = new LinkedMultiValueMap<>();
+		if (headers != null) {
+			headers.forEach((key, value) -> multiValueMap.add(key, value));
+		}
+
+		// Clone WebClient.Builder and add timeout configuration
+		WebClient.Builder enhancedWebClientBuilder = webClientBuilder.clone()
+			// Add 5 minutes default timeout setting
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB
+			.filter((request, next) -> next.exchange(request).timeout(Duration.ofMinutes(10)));
+
+		String completionsPath = dynamicModelEntity.getCompletionsPath();
+
+		return new OpenAiApi(dynamicModelEntity.getBaseUrl(), new SimpleApiKey(dynamicModelEntity.getApiKey()),
+				multiValueMap, completionsPath, "/v1/embeddings", restClientBuilder, enhancedWebClientBuilder,
+				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER) {
+			@Override
+			public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest,
+					MultiValueMap<String, String> additionalHttpHeader) {
+				llmTraceRecorder.recordRequest(chatRequest);
+				return super.chatCompletionEntity(chatRequest, additionalHttpHeader);
+			}
+
+			@Override
+			public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
+					MultiValueMap<String, String> additionalHttpHeader) {
+				llmTraceRecorder.recordRequest(chatRequest);
+				return super.chatCompletionStream(chatRequest, additionalHttpHeader);
+			}
+		};
 	}
 
 }

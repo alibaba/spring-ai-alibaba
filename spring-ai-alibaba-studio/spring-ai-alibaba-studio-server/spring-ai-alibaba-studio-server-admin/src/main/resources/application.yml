@@ -1,0 +1,86 @@
+#app:
+#  env: daily
+#  regionId: cn-hangzhou
+server:
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript
+    min-response-size: 2048
+
+spring:
+  ai:
+    alibaba:
+      studio:
+        login-method: third_party
+        upload-method: file       # file or oss
+#        storage-path:
+#        oss:
+#          endpoint: oss-ap-southeast-1.aliyuncs.com
+#          internal-endpoint: oss-ap-southeast-1.aliyuncs.com
+#          access-key-id: ${OSS_ACCESS_KEY_ID}
+#          access-key-secret: ${OSS_ACCESS_KEY_SECRET}
+#          bucket: agentscope-java-preview
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 500MB
+      enabled: true
+  application:
+    name: saa-studio
+  config:
+    import: classpath:initializr.yml
+
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/agentscope?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: agentscope
+    password: agentscope
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      filters: stat,wall,slf4j
+      filter:
+        stat:
+          log-slow-sql: true
+          slow-sql-millis: 1000
+          enabled: true
+        slf4j:
+          enabled: true
+          statement-executable-sql-log-enable: true
+          statement-log-error-enabled: true
+
+  freemarker:
+    cache: false
+    charset: UTF-8
+    suffix: .html
+    enabled: true
+    content-type: text/html
+    template-loader-path: classpath:/templates/
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+
+  elasticsearch:
+    uris: http://localhost:9200
+    connection-timeout: 10000
+
+rocketmq:
+  endpoints: 127.0.0.1:18080
+  document-index-topic: topic_saa_studio_document_index
+  document_index_group: group_saa_studio_document_index
+
+jwt:
+  access-token-expiration: 7200
+  refresh-token-expiration: 2592000
+
+oauth2:
+  github:
+    client-id: ${GITHUB_CLIENT_ID}
+    client-secret: ${GITHUB_CLIENT_SECRET}
+    redirect-uri: http://127.0.0.1:8080/oauth2/callback/github
