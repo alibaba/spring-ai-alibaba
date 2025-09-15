@@ -28,4 +28,13 @@ public class GraphRunnerException extends Exception {
 		super(errorMessage);
 	}
 
+	/**
+	 * Constructs a new GraphRunnerException with the specified error message and cause.
+	 * @param errorMessage the detail message
+	 * @param cause the cause
+	 */
+	public GraphRunnerException(String errorMessage, Throwable cause) {
+		super(errorMessage, cause);
+	}
+
 }
