@@ -129,8 +129,8 @@ public class AgentsConfiguration {
 
 	/**
 	 * Create Research Agent ChatClient Bean
-	 * @param chatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
-	 * ToolCallbackProviders.
+	 * @param researchChatClientBuilder ChatClientBuilder McpAsyncClient and the locally
+	 * configure ToolCallbackProviders.
 	 * @return ChatClient
 	 */
 	@Bean
@@ -147,8 +147,8 @@ public class AgentsConfiguration {
 
 	/**
 	 * Create Coder Agent ChatClient Bean
-	 * @param chatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
-	 * ToolCallbackProviders.
+	 * @param coderChatClientBuilder ChatClientBuilder McpAsyncClient and the locally
+	 * configure ToolCallbackProviders.
 	 * @return ChatClient
 	 */
 	@Bean
