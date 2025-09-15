@@ -59,6 +59,7 @@ public class QuestionClassifierNodeSection implements NodeSection<QuestionClassi
 
 	@Override
 	public String renderEdges(QuestionClassifierNodeData nodeData, List<Edge> edges) {
+		Map<String, String> classIdToName = nodeData.getClassIdToName();
 		// 规定edge的sourceHandle为caseId，前面的转化需要符合这条规则
 		String edgeCode = String.format("""
 				state -> {
@@ -74,11 +75,12 @@ public class QuestionClassifierNodeSection implements NodeSection<QuestionClassi
 							if("%s".equals(result)) {
 							    return "%s";
 							}
-							""", id, id))
+							""", id, classIdToName.getOrDefault(id, id)))
 					.collect(Collectors.joining("\n")));
 
 		Map<String, String> caseToTarget = edges.stream()
-			.collect(Collectors.toUnmodifiableMap(Edge::getSourceHandle, Edge::getTarget));
+			.collect(Collectors.toUnmodifiableMap(
+					e -> classIdToName.getOrDefault(e.getSourceHandle(), e.getSourceHandle()), Edge::getTarget));
 
 		return String.format("""
 				// render QuestionNode [%s]'s edge

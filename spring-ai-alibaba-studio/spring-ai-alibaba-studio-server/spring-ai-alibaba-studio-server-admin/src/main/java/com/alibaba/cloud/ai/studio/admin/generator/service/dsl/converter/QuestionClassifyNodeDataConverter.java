@@ -125,13 +125,11 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 					.filter(map -> map.containsKey("key") && map.containsKey("value"))
 					.map(map -> Map.entry(map.get("key").toString(), map.get("value")))
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b));
-				VariableSelector selector = this.varTemplateToSelector(DSLDialectType.STUDIO,
-						MapReadUtil
-							.safeCastToListWithMap(
-									MapReadUtil.getMapDeepValue(data, List.class, "config", "input_params"))
-							.get(0)
-							.get("value")
-							.toString());
+				VariableSelector selector = this.varTemplateToSelector(DSLDialectType.STUDIO, MapReadUtil
+					.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "input_params"))
+					.get(0)
+					.get("value")
+					.toString());
 				String outputKey = QuestionClassifierNodeData.getDefaultOutputSchema(DSLDialectType.STUDIO).getName();
 				List<QuestionClassifierNodeData.ClassConfig> classes = Optional
 					.ofNullable(MapReadUtil.safeCastToListWithMap(

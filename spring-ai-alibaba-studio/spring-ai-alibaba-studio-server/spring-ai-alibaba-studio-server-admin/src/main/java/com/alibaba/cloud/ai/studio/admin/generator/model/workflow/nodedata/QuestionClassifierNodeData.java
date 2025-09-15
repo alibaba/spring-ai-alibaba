@@ -23,6 +23,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * @author HeYQ
@@ -49,6 +51,8 @@ public class QuestionClassifierNodeData extends NodeData {
 	private List<ClassConfig> classes;
 
 	private String promptTemplate;
+
+	private Map<String, String> classIdToName;
 
 	public record ClassConfig(String id, String classTemplate) {
 
@@ -92,6 +96,7 @@ public class QuestionClassifierNodeData extends NodeData {
 
 	public void setClasses(List<ClassConfig> classes) {
 		this.classes = classes;
+		updateClassIdToName();
 	}
 
 	public String getPromptTemplate() {
@@ -100,6 +105,18 @@ public class QuestionClassifierNodeData extends NodeData {
 
 	public void setPromptTemplate(String promptTemplate) {
 		this.promptTemplate = promptTemplate;
+	}
+
+	public Map<String, String> getClassIdToName() {
+		return classIdToName;
+	}
+
+	private void updateClassIdToName() {
+		AtomicInteger count = new AtomicInteger(1);
+		this.classIdToName = this.getClasses()
+			.stream()
+			.map(QuestionClassifierNodeData.ClassConfig::id)
+			.collect(Collectors.toUnmodifiableMap(id -> id, name -> "case_" + (count.getAndIncrement())));
 	}
 
 }
