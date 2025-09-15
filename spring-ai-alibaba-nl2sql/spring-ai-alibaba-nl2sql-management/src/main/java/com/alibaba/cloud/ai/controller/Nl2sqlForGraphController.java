@@ -101,7 +101,7 @@ public class Nl2sqlForGraphController {
 		}
 
 		Optional<OverAllState> invoke = compiledGraph.call(Map.of(INPUT_KEY, query, Constant.AGENT_ID, dataSetId,
-                AGENT_ID, agentId, HUMAN_REVIEW_ENABLED, humanReviewEnabled));
+				AGENT_ID, agentId, HUMAN_REVIEW_ENABLED, humanReviewEnabled));
 		OverAllState overAllState = invoke.get();
 		// 注意：在新的人类反馈实现中，计划内容通过流式处理发送给前端
 		// 这里不再需要单独获取计划内容
@@ -401,7 +401,8 @@ public class Nl2sqlForGraphController {
 			try {
 				Map<String, Object> feedbackData = Map.of("feed_back", feedBack, "feed_back_content",
 						feedBackContent != null ? feedBackContent : "");
-				OverAllState.HumanFeedback humanFeedback = new OverAllState.HumanFeedback(feedbackData, "human_feedback");
+				OverAllState.HumanFeedback humanFeedback = new OverAllState.HumanFeedback(feedbackData,
+						"human_feedback");
 
 				if (feedBack) {
 					// 计划通过，继续执行
@@ -425,23 +426,28 @@ public class Nl2sqlForGraphController {
 			.doOnComplete(() -> logger.debug("Human feedback stream completed"));
 	}
 
-	private void executeApprovedPlanWithResume(OverAllState.HumanFeedback humanFeedback, String threadId, Sinks.Many<ServerSentEvent<String>> sink) {
+	private void executeApprovedPlanWithResume(OverAllState.HumanFeedback humanFeedback, String threadId,
+			Sinks.Many<ServerSentEvent<String>> sink) {
 		try {
-			Optional<OverAllState> result = compiledGraph.resume(humanFeedback, 
+			Optional<OverAllState> result = compiledGraph.resume(humanFeedback,
 					RunnableConfig.builder().threadId(threadId).build());
-			
+
 			if (result.isPresent()) {
 				OverAllState finalState = result.get();
 				// 处理最终结果
 				Optional<String> resultValue = finalState.value(RESULT);
 				if (resultValue.isPresent()) {
-					ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(resultValue.get())).build();
+					ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(resultValue.get()))
+						.build();
 					sink.tryEmitNext(event);
 				}
 				sink.tryEmitNext(ServerSentEvent.builder("complete").event("complete").build());
 				sink.tryEmitComplete();
-			} else {
-				sink.tryEmitNext(ServerSentEvent.builder("error: No result from approved plan execution").event("error").build());
+			}
+			else {
+				sink.tryEmitNext(ServerSentEvent.builder("error: No result from approved plan execution")
+					.event("error")
+					.build());
 				sink.tryEmitComplete();
 			}
 		}
@@ -452,12 +458,13 @@ public class Nl2sqlForGraphController {
 		}
 	}
 
-	private void executeRejectedPlanWithResume(OverAllState.HumanFeedback humanFeedback, String threadId, Sinks.Many<ServerSentEvent<String>> sink) {
+	private void executeRejectedPlanWithResume(OverAllState.HumanFeedback humanFeedback, String threadId,
+			Sinks.Many<ServerSentEvent<String>> sink) {
 		try {
 			// 使用新的 resume 方法恢复执行
-			Optional<OverAllState> result = compiledGraph.resume(humanFeedback, 
+			Optional<OverAllState> result = compiledGraph.resume(humanFeedback,
 					RunnableConfig.builder().threadId(threadId).build());
-			
+
 			if (result.isPresent()) {
 				OverAllState finalState = result.get();
 				// 检查是否生成了新的计划需要人工审核
@@ -476,17 +483,21 @@ public class Nl2sqlForGraphController {
 						return;
 					}
 				}
-				
+
 				// 如果没有需要审核的计划，处理最终结果
 				Optional<String> resultValue = finalState.value(RESULT);
 				if (resultValue.isPresent()) {
-					ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(resultValue.get())).build();
+					ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(resultValue.get()))
+						.build();
 					sink.tryEmitNext(event);
 				}
 				sink.tryEmitNext(ServerSentEvent.builder("complete").event("complete").build());
 				sink.tryEmitComplete();
-			} else {
-				sink.tryEmitNext(ServerSentEvent.builder("error: No result from rejected plan execution").event("error").build());
+			}
+			else {
+				sink.tryEmitNext(ServerSentEvent.builder("error: No result from rejected plan execution")
+					.event("error")
+					.build());
 				sink.tryEmitComplete();
 			}
 		}
@@ -496,6 +507,5 @@ public class Nl2sqlForGraphController {
 			sink.tryEmitComplete();
 		}
 	}
-
 
 }
