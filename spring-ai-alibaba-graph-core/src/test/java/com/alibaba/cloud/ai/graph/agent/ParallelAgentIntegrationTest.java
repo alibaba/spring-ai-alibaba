@@ -103,7 +103,7 @@ class ParallelAgentIntegrationTest {
 		ParallelAgent parallelAgent = ParallelAgent.builder()
 			.name("parallel_creative_agent")
 			.description("并行执行多个创作任务，包括写散文、写诗和做总结")
-			.inputKey("input")
+			.inputKeys(List.of("input"))
 			.outputKey("merged_results")
 			.state(stateFactory)
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent, summaryAgent))
@@ -201,7 +201,7 @@ class ParallelAgentIntegrationTest {
 	// ParallelAgent dataCollector = ParallelAgent.builder()
 	// .name("DataCollector")
 	// .description("并行收集天气和新闻数据")
-	// .inputKey("input") // 改为input，避免与ReactAgent的messages冲突
+	// .inputKeys("input") // 改为input，避免与ReactAgent的messages冲突
 	// .outputKey("raw_data")
 	// .state(sharedStateFactory)
 	// .subAgents(List.of(fetchWeatherAgent, fetchNewsAgent))
@@ -228,7 +228,7 @@ class ParallelAgentIntegrationTest {
 	// SequentialAgent dailyWorkflow = SequentialAgent.builder()
 	// .name("DailyWorkflow")
 	// .description("收集数据并行执行，然后合成结果")
-	// .inputKey("input") // 改为input，与dataCollector保持一致
+	// .inputKeys("input") // 改为input，与dataCollector保持一致
 	// .outputKey("workflow_output")
 	// .state(sharedStateFactory)
 	// .subAgents(List.of(dataCollector, synthesizer))
@@ -290,7 +290,7 @@ class ParallelAgentIntegrationTest {
 			ParallelAgent.builder()
 				.name("duplicate_key_test")
 				.description("测试重复outputKey的验证")
-				.inputKey("input")
+				.inputKeys("input")
 				.outputKey("output")
 				.subAgents(List.of(agent1, agent2))
 				.build();
@@ -328,7 +328,7 @@ class ParallelAgentIntegrationTest {
 		ParallelAgent listMergeAgent = ParallelAgent.builder()
 			.name("list_merge_test")
 			.description("测试列表合并策略")
-			.inputKey("input")
+			.inputKeys("input")
 			.outputKey("merged_list")
 			.state(() -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
@@ -370,7 +370,7 @@ class ParallelAgentIntegrationTest {
 		ParallelAgent concurrencyAgent = ParallelAgent.builder()
 			.name("concurrency_test")
 			.description("测试并发控制")
-			.inputKey("input")
+			.inputKeys("input")
 			.outputKey("concurrency_results")
 			.state(() -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();

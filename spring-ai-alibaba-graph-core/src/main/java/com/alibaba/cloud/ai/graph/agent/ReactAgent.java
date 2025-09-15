@@ -17,22 +17,18 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
-import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
-import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -46,6 +42,7 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -55,6 +52,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
 
 public class ReactAgent extends BaseAgent {
 
@@ -86,8 +84,6 @@ public class ReactAgent extends BaseAgent {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-	private String inputKey;
-
 	protected ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.outputKey);
 		this.instruction = builder.instruction;
@@ -100,17 +96,52 @@ public class ReactAgent extends BaseAgent {
 		this.postLlmHook = builder.postLlmHook;
 		this.preToolHook = builder.preToolHook;
 		this.postToolHook = builder.postToolHook;
-		this.inputKey = builder.inputKey;
+		this.outputKeyWithStrategy = builder.outputKeyWithStrategy;
 	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	@Override
-	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
-		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.schedule(scheduleConfig);
+	public AssistantMessage invoke(String message) throws GraphStateException, GraphRunnerException {
+		return invokeMessage(message);
+	}
+
+	public AssistantMessage invoke(UserMessage userMessage) throws GraphStateException, GraphRunnerException {
+		return invokeMessage(userMessage);
+	}
+
+	public AssistantMessage invoke(List<Message> messages) throws GraphStateException, GraphRunnerException {
+		return invokeMessage(messages);
+	}
+
+	public Flux<NodeOutput> stream(String message) throws GraphStateException, GraphRunnerException {
+		return stream(Map.of("messages", convertToMessages(message)));
+	}
+
+	public Flux<NodeOutput> stream(UserMessage userMessage) throws GraphStateException, GraphRunnerException {
+		return stream(Map.of("messages", convertToMessages(userMessage)));
+	}
+
+	public Flux<NodeOutput> stream(List<Message> messages) throws GraphStateException, GraphRunnerException {
+		return stream(Map.of("messages", messages));
+	}
+
+	private AssistantMessage invokeMessage(Object message) throws GraphStateException, GraphRunnerException {
+		List<Message> messages;
+		if (message instanceof List) {
+			messages = (List<Message>) message;
+		} else {
+			messages = convertToMessages(message);
+		}
+
+		Optional<OverAllState> state = invoke(Map.of("messages", messages));
+
+		return state.flatMap(s -> s.value("messages"))
+				.map(messageList -> (List<Message>) messageList)
+				.filter(messageList -> !messageList.isEmpty())
+				.map(messageList -> (AssistantMessage) messageList.get(0))
+				.orElse(new AssistantMessage("No response generated"));
 	}
 
 	public StateGraph getStateGraph() {
@@ -121,49 +152,21 @@ public class ReactAgent extends BaseAgent {
 		return compiledGraph;
 	}
 
-	public NodeAction asNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return new SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph);
-	}
-
 	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
 			throws GraphStateException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return node_async(new SubGraphStreamingNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
+		return node_async(new SubAgentGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
 	}
 
 	@Override
 	protected StateGraph initGraph() throws GraphStateException {
-		if (keyStrategyFactory == null) {
-			this.keyStrategyFactory = () -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				if (inputKey != null) {
-					keyStrategyHashMap.put(inputKey, new ReplaceStrategy());
-				}
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				return keyStrategyHashMap;
-			};
-		}
-		else {
-			KeyStrategyFactory originalFactory = this.keyStrategyFactory;
-			this.keyStrategyFactory = () -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>(originalFactory.apply());
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				return keyStrategyHashMap;
-			};
-		}
+		insureMessagesKeyStrategyFactory();
 
 		NodeAction effectivePreLlmHook = this.preLlmHook;
 		if (effectivePreLlmHook == null) {
 			effectivePreLlmHook = state -> {
-				if (state.value("messages").isPresent()) {
-					List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
-					state.updateState(Map.of(this.inputKey, messages));
-				}
 				return Map.of();
 			};
 		}
@@ -210,6 +213,24 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		return graph;
+	}
+
+	private void insureMessagesKeyStrategyFactory() {
+		if (keyStrategyFactory == null) {
+			this.keyStrategyFactory = () -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				return keyStrategyHashMap;
+			};
+		}
+		else {
+			KeyStrategyFactory originalFactory = this.keyStrategyFactory;
+			this.keyStrategyFactory = () -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>(originalFactory.apply());
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				return keyStrategyHashMap;
+			};
+		}
 	}
 
 	private String think(OverAllState state) {
@@ -308,6 +329,8 @@ public class ReactAgent extends BaseAgent {
 
 		private String outputKey;
 
+		private KeyStrategyFactory outputKeyWithStrategy;
+
 		private ChatModel model;
 
 		private ChatOptions chatOptions;
@@ -401,6 +424,11 @@ public class ReactAgent extends BaseAgent {
 			return this;
 		}
 
+		public Builder outputKeyWithStrategy(KeyStrategyFactory outputKeyWithStrategy) {
+			this.outputKeyWithStrategy = outputKeyWithStrategy;
+			return this;
+		}
+
 		public Builder preLlmHook(NodeAction preLlmHook) {
 			this.preLlmHook = preLlmHook;
 			return this;
@@ -418,11 +446,6 @@ public class ReactAgent extends BaseAgent {
 
 		public Builder postToolHook(NodeAction postToolHook) {
 			this.postToolHook = postToolHook;
-			return this;
-		}
-
-		public Builder inputKey(String inputKey) {
-			this.inputKey = inputKey;
 			return this;
 		}
 
@@ -445,11 +468,7 @@ public class ReactAgent extends BaseAgent {
 				.stream(true)
 				.chatClient(chatClient)
 				.messagesKey(this.inputKey);
-			// For graph built from ReactAgent, the only legal key used inside must be
-			// messages.
-			// if (outputKey != null && !outputKey.isEmpty()) {
-			// llmNodeBuilder.outputKey(outputKey);
-			// }
+
 			if (CollectionUtils.isNotEmpty(tools)) {
 				llmNodeBuilder.toolCallbacks(tools);
 			}
@@ -467,71 +486,6 @@ public class ReactAgent extends BaseAgent {
 			}
 
 			return new ReactAgent(llmNode, toolNode, this);
-		}
-
-	}
-
-	public static class SubGraphNodeAdapter implements NodeAction {
-
-		private String inputKeyFromParent;
-
-		private String outputKeyToParent;
-
-		private CompiledGraph childGraph;
-
-		public SubGraphNodeAdapter(String inputKeyFromParent, String outputKeyToParent, CompiledGraph childGraph) {
-			this.inputKeyFromParent = inputKeyFromParent;
-			this.outputKeyToParent = outputKeyToParent;
-			this.childGraph = childGraph;
-		}
-
-		@Override
-		public Map<String, Object> apply(OverAllState parentState) throws Exception {
-
-			// prepare input for child graph
-			String input = (String) parentState.value(inputKeyFromParent).orElseThrow();
-			Message message = new UserMessage(input);
-			List<Message> messages = List.of(message);
-
-			// invoke child graph
-			OverAllState childState = childGraph.call(Map.of("messages", messages)).get();
-
-			// extract output from child graph
-			List<Message> reactMessages = (List<Message>) childState.value("messages").orElseThrow();
-			AssistantMessage assistantMessage = (AssistantMessage) reactMessages.get(reactMessages.size() - 1);
-			String reactResult = assistantMessage.getText();
-
-			// update parent state
-			return Map.of(outputKeyToParent, reactResult);
-		}
-
-	}
-
-	public static class SubGraphStreamingNodeAdapter implements NodeAction {
-
-		private String inputKeyFromParent;
-
-		private String outputKeyToParent;
-
-		private CompiledGraph childGraph;
-
-		public SubGraphStreamingNodeAdapter(String inputKeyFromParent, String outputKeyToParent,
-				CompiledGraph childGraph) {
-			this.inputKeyFromParent = inputKeyFromParent;
-			this.outputKeyToParent = outputKeyToParent;
-			this.childGraph = childGraph;
-		}
-
-		@Override
-		public Map<String, Object> apply(OverAllState parentState) throws Exception {
-			String input = (String) parentState.value(inputKeyFromParent).orElseThrow();
-			Message message = new UserMessage(input);
-			List<Message> messages = List.of(message);
-
-			Flux<GraphResponse<NodeOutput>> subGraphFlux = childGraph.fluxDataStream(Map.of("messages", messages),
-					RunnableConfig.builder().build());
-
-			return Map.of(outputKeyToParent, subGraphFlux);
 		}
 
 	}

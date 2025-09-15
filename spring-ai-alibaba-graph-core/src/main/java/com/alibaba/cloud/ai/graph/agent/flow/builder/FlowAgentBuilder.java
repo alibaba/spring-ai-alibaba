@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.builder;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
@@ -39,7 +41,11 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 
 	public String outputKey;
 
-	public String inputKey;
+	public List<String> inputKeys;
+
+	public KeyStrategyFactory inputKeysWithStrategy;
+
+	public KeyStrategyFactory outputKeyWithStrategy;
 
 	public KeyStrategyFactory keyStrategyFactory;
 
@@ -79,11 +85,41 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 
 	/**
 	 * Sets the input key for the agent.
-	 * @param inputKey the input key
+	 * @param inputKeys the input keys
 	 * @return this builder instance for method chaining
 	 */
-	public B inputKey(String inputKey) {
-		this.inputKey = inputKey;
+	public B inputKeys(List<String> inputKeys) {
+		this.inputKeys = inputKeys;
+		return self();
+	}
+
+	/**
+	 * Sets the input key for the agent.
+	 * @param inputKeys the input keys
+	 * @return this builder instance for method chaining
+	 */
+	public B inputKeys(String... inputKeys) {
+		this.inputKeys = Arrays.asList(inputKeys);
+		return self();
+	}
+
+	/**
+	 * Sets the input keys with strategy factory for the agent.
+	 * @param inputKeysWithStrategy the input keys with strategy factory
+	 * @return this builder instance for method chaining
+	 */
+	public B inputKeysWithStrategy(KeyStrategyFactory inputKeysWithStrategy) {
+		this.inputKeysWithStrategy = inputKeysWithStrategy;
+		return self();
+	}
+
+	/**
+	 * Sets the output key with strategy factory for the agent's result.
+	 * @param outputKeyWithStrategy the output key with strategy factory
+	 * @return this builder instance for method chaining
+	 */
+	public B outputKeyWithStrategy(KeyStrategyFactory outputKeyWithStrategy) {
+		this.outputKeyWithStrategy = outputKeyWithStrategy;
 		return self();
 	}
 

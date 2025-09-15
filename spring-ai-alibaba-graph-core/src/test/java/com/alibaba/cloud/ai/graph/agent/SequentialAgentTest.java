@@ -86,7 +86,7 @@ class SequentialAgentTest {
 			.name("blog_agent")
 			.state(stateFactory)
 			.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改。")
-			.inputKey("input")
+			.inputKeys(List.of("input"))
 			.outputKey("reviewed_article")
 			.subAgents(List.of(writerAgent, reviewerAgent))
 			.build();

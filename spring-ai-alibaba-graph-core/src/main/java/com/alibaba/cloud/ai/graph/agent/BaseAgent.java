@@ -20,6 +20,7 @@ import java.util.Optional;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
@@ -49,6 +50,8 @@ public abstract class BaseAgent {
 
 	/** The output key for the agent's result */
 	protected String outputKey;
+
+	protected KeyStrategyFactory outputKeyWithStrategy;
 
 	protected CompileConfig compileConfig;
 
@@ -100,6 +103,14 @@ public abstract class BaseAgent {
 		return outputKey;
 	}
 
+	/**
+	 * Gets the output key with strategy factory for the agent's result.
+	 * @return the output key with strategy factory.
+	 */
+	public KeyStrategyFactory outputKeyWithStrategy() {
+		return outputKeyWithStrategy;
+	}
+
 	public synchronized CompiledGraph getAndCompileGraph() throws GraphStateException {
 		if (this.graph == null) {
 			this.graph = initGraph();
@@ -147,8 +158,10 @@ public abstract class BaseAgent {
 	 * @param scheduleConfig the schedule configuration
 	 * @return a ScheduledAgentTask instance for managing the scheduled task
 	 */
-	public abstract ScheduledAgentTask schedule(ScheduleConfig scheduleConfig)
-			throws GraphStateException, GraphRunnerException;
+	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.schedule(scheduleConfig);
+	}
 
 	protected abstract StateGraph initGraph() throws GraphStateException;
 

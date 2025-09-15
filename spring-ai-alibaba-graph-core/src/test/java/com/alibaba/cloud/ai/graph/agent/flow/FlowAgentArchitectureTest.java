@@ -78,7 +78,7 @@ class FlowAgentArchitectureTest {
 			.name("sequentialWorkflow")
 			.description("A sequential workflow")
 			.outputKey("final_result")
-			.inputKey("initial_data")
+			.inputKeys("initial_data")
 			.subAgents(List.of(subAgent))
 			.state(() -> createDefaultStrategies())
 			.build();
@@ -88,7 +88,7 @@ class FlowAgentArchitectureTest {
 		assertEquals("sequentialWorkflow", agent.name());
 		assertEquals("A sequential workflow", agent.description());
 		assertEquals("final_result", agent.outputKey());
-		assertEquals("initial_data", agent.inputKey());
+		assertEquals("initial_data", agent.inputKeys());
 		assertEquals(1, agent.subAgents().size());
 	}
 
@@ -104,7 +104,7 @@ class FlowAgentArchitectureTest {
 			.name("intelligentRouter")
 			.description("Routes tasks intelligently")
 			.outputKey("routed_result")
-			.inputKey("task_description")
+			.inputKeys("task_description")
 			.subAgents(List.of(agent1, agent2))
 			.model(chatModel) // LLM-specific configuration
 			.state(() -> createDefaultStrategies())
@@ -115,7 +115,7 @@ class FlowAgentArchitectureTest {
 		assertEquals("intelligentRouter", agent.name());
 		assertEquals("Routes tasks intelligently", agent.description());
 		assertEquals("routed_result", agent.outputKey());
-		assertEquals("task_description", agent.inputKey());
+		assertEquals("task_description", agent.inputKeys());
 		assertEquals(2, agent.subAgents().size());
 	}
 
@@ -132,7 +132,7 @@ class FlowAgentArchitectureTest {
 			.name("dataProcessingPipeline")
 			.description("Processes data in parallel")
 			.outputKey("processing_result")
-			.inputKey("raw_data")
+			.inputKeys("raw_data")
 			.subAgents(List.of(agent1, agent2, agent3))
 			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
 			.maxConcurrency(3)
@@ -144,7 +144,7 @@ class FlowAgentArchitectureTest {
 		assertEquals("dataProcessingPipeline", agent.name());
 		assertEquals("Processes data in parallel", agent.description());
 		assertEquals("processing_result", agent.outputKey());
-		assertEquals("raw_data", agent.inputKey());
+		assertEquals("raw_data", agent.inputKeys());
 		assertEquals(3, agent.subAgents().size());
 		assertEquals(3, agent.maxConcurrency());
 		assertTrue(agent.mergeStrategy() instanceof ParallelAgent.DefaultMergeStrategy);
@@ -239,7 +239,7 @@ class FlowAgentArchitectureTest {
 		assertSame(builder, builder.name("test"));
 		assertSame(builder, builder.description("test description"));
 		assertSame(builder, builder.outputKey("output"));
-		assertSame(builder, builder.inputKey("input"));
+		assertSame(builder, builder.inputKeys("input"));
 		assertSame(builder, builder.maxConcurrency(5));
 		assertSame(builder, builder.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()));
 	}

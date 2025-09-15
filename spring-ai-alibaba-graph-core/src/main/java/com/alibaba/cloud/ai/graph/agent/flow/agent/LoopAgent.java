@@ -93,7 +93,7 @@ public class LoopAgent extends FlowAgent {
 	 * agents. When building the graph, the agents will be connected head-to-tail.
 	 */
 	private LoopAgent(Builder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory,
+		super(builder.name, builder.description, builder.outputKey, builder.inputKeys, builder.keyStrategyFactory,
 				builder.compileConfig, builder.subAgents);
 		this.loopConfig = builder.loopConfig;
 		this.graph = this.initGraph();
@@ -129,7 +129,7 @@ public class LoopAgent extends FlowAgent {
 		COUNT(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get input for passing to the iterator body
-			Optional<?> input = state.value(loopConfig.inputKey());
+			Optional<?> input = state.value(loopConfig.inputKeys());
 
 			// Get current iteration count
 			String countKey = agentName + "__loop_count";
@@ -156,7 +156,7 @@ public class LoopAgent extends FlowAgent {
 		CONDITION(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get input for passing to the iterator body
-			Optional<?> input = state.value(loopConfig.inputKey());
+			Optional<?> input = state.value(loopConfig.inputKeys());
 			// Check if it's the first loop, if so, allow it to proceed directly
 			if (state.value(loopStartFlagKey(agentName)).isEmpty()) {
 				return input.map(o -> Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), o))
@@ -187,7 +187,7 @@ public class LoopAgent extends FlowAgent {
 
 			if (iteratorObj.isEmpty()) {
 				// Get output
-				Optional<?> inputIterable = state.value(loopConfig.inputKey());
+				Optional<?> inputIterable = state.value(loopConfig.inputKeys());
 				if (inputIterable.isEmpty()) {
 					return Map.of(loopStartFlagKey(agentName), false);
 				}
@@ -228,7 +228,7 @@ public class LoopAgent extends FlowAgent {
 		ARRAY(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get the input array
-			Object arrayObj = state.value(loopConfig.inputKey()).orElse(null);
+			Object arrayObj = state.value(loopConfig.inputKeys()).orElse(null);
 			if (arrayObj == null) {
 				return Map.of(loopStartFlagKey(agentName), false);
 			}
@@ -260,7 +260,7 @@ public class LoopAgent extends FlowAgent {
 			Optional<Object> listObj = state.value(listKey);
 			if (listObj.isEmpty()) {
 				// Get the input array
-				String jsonStr = state.value(loopConfig.inputKey()).orElse("[]").toString();
+				String jsonStr = state.value(loopConfig.inputKeys()).orElse("[]").toString();
 				try {
 					list = JsonParser.fromJson(jsonStr, List.class);
 				}
@@ -348,7 +348,7 @@ public class LoopAgent extends FlowAgent {
 	 * Loop configuration class for encapsulating loop-related configuration information
 	 *
 	 * @param agentName The name of the agent
-	 * @param inputKey The input key for the loop, should conform to the requirements of
+	 * @param inputKeys The input key for the loop, should conform to the requirements of
 	 * loopMode. Some modes can have no input.
 	 * @param outputKey The loop output result, which is a List object
 	 * @param loopMode The loop mode that determines how the loop is executed
@@ -356,7 +356,7 @@ public class LoopAgent extends FlowAgent {
 	 * @param loopCondition The loop condition, only valid in CONDITION mode. The
 	 * condition is checked for continuation on each loop iteration.
 	 */
-	public record LoopConfig(String agentName, String inputKey, String outputKey, LoopMode loopMode, Integer loopCount,
+	public record LoopConfig(String agentName, List<String> inputKeys, String outputKey, LoopMode loopMode, Integer loopCount,
 			Predicate<Object> loopCondition) {
 		/**
 		 * Validate the validity of the loop configuration
@@ -431,7 +431,7 @@ public class LoopAgent extends FlowAgent {
 
 		@Override
 		public LoopAgent build() throws GraphStateException {
-			loopConfig = new LoopConfig(name, inputKey, outputKey, loopMode, loopCount, loopCondition);
+			loopConfig = new LoopConfig(name, inputKeys, outputKey, loopMode, loopCount, loopCondition);
 			validate();
 			return new LoopAgent(self());
 		}
