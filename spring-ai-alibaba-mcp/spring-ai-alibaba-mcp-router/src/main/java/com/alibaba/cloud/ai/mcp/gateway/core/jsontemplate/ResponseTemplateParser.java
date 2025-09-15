@@ -16,7 +16,10 @@
 
 package com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.Template;
 import com.jayway.jsonpath.JsonPath;
 import org.springframework.util.StringUtils;
 
@@ -28,9 +31,14 @@ public class ResponseTemplateParser {
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
-	// 支持 {{.}} 或 {{.xxx}} 变量
+	private static final Handlebars handlebars = new Handlebars();
+
+	// 支持 {{.}} 或 {{.xxx}} 或 {{.xxx.yyy}} 等多层级变量
 	private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*\\.([\\w\\$\\[\\]\\.]*)\\s*}}",
 			Pattern.DOTALL);
+
+	// 检测是否包含多层级路径访问（如 {{.xxx.yyy}}）
+	private static final Pattern MULTI_LEVEL_PATTERN = Pattern.compile("\\{\\{\\s*\\.\\w+\\.[\\w\\.]+\\s*}}");
 
 	/**
 	 * 处理响应模板
@@ -55,12 +63,62 @@ public class ResponseTemplateParser {
 			}
 		}
 
-		// 模板变量替换
+		// 检测是否包含多层级路径访问，如果包含则使用 Handlebars 引擎
+		if (MULTI_LEVEL_PATTERN.matcher(responseTemplate).find()) {
+			return parseWithHandlebars(rawResponse, responseTemplate);
+		}
+
+		// 简单模板变量替换（保持原有逻辑以确保向后兼容）
+		return parseWithSimpleTemplate(rawResponse, responseTemplate);
+	}
+
+	/**
+	 * 使用 Handlebars 引擎处理多层级模板 兼容 higress.cn/ai/mcp-server 的模板语法 {{ .xxx.yyy }}
+	 */
+	private static String parseWithHandlebars(String rawResponse, String responseTemplate) {
+		try {
+			// 1. 预处理模板：转换语法以兼容 Handlebars
+			String handlebarsTemplateStr = responseTemplate
+				// 移除点号前缀：{{ .xxx.yyy }} -> {{xxx.yyy}}
+				.replaceAll("\\{\\{\\s*\\.", "{{")
+				// 转换数组访问语法：{{users.[0].name}} -> {{users.0.name}}
+				.replaceAll("\\[([0-9]+)\\]", "$1");
+
+			// 2. 编译模板
+			Template template = handlebars.compileInline(handlebarsTemplateStr);
+
+			// 3. 准备数据上下文：将JSON字符串解析为 Map
+			Map<String, Object> dataContext;
+			boolean isJson = rawResponse.trim().startsWith("{") || rawResponse.trim().startsWith("[");
+			if (isJson) {
+				dataContext = objectMapper.readValue(rawResponse, new TypeReference<Map<String, Object>>() {
+				});
+			}
+			else {
+				// 非JSON数据，创建一个包含原始响应的上下文
+				dataContext = Map.of("_raw", rawResponse);
+			}
+
+			// 4. 应用模板并返回结果
+			return template.apply(dataContext);
+
+		}
+		catch (Exception e) {
+			// Handlebars 处理失败，降级为简单模板处理
+			return parseWithSimpleTemplate(rawResponse, responseTemplate);
+		}
+	}
+
+	/**
+	 * 简单模板变量替换（原有逻辑）
+	 */
+	private static String parseWithSimpleTemplate(String rawResponse, String responseTemplate) {
 		try {
 			Map<String, Object> context = null;
 			boolean isJson = rawResponse.trim().startsWith("{") || rawResponse.trim().startsWith("[");
 			if (isJson) {
-				context = objectMapper.readValue(rawResponse, Map.class);
+				context = objectMapper.readValue(rawResponse, new TypeReference<Map<String, Object>>() {
+				});
 			}
 			StringBuffer sb = new StringBuffer();
 			Matcher matcher = TEMPLATE_PATTERN.matcher(responseTemplate);
