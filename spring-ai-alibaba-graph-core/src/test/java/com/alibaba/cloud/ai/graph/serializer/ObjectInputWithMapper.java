@@ -13,26 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.serializer.std;
+package com.alibaba.cloud.ai.graph.serializer;
 
-import com.alibaba.cloud.ai.graph.serializer.Serializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectInput;
-import java.util.Objects;
 import java.util.Optional;
 
 public class ObjectInputWithMapper implements ObjectInput {
 
-	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ObjectInputWithMapper.class);
+	private static final Logger log = LoggerFactory.getLogger(ObjectInputWithMapper.class);
 
 	private final ObjectInput in;
 
 	private final SerializerMapper mapper;
 
 	public ObjectInputWithMapper(ObjectInput in, SerializerMapper mapper) {
-		this.in = Objects.requireNonNull(in, "in cannot be null");
-		this.mapper = Objects.requireNonNull(mapper, "mapper cannot be null");
+		this.in = in;
+		this.mapper = mapper;
 	}
 
 	@Override
@@ -161,7 +161,7 @@ public class ObjectInputWithMapper implements ObjectInput {
 
 	@Override
 	public String readUTF() throws IOException {
-		return Serializer.readUTF(in);
+		return in.readUTF();
 	}
 
 }

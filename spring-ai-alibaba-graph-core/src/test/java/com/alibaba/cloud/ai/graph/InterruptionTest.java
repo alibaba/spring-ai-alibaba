@@ -20,11 +20,10 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
-
-import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -63,19 +62,19 @@ public class InterruptionTest {
 
 		var runnableConfig = RunnableConfig.builder().build();
 
-		var results = workflow.fluxStream(Map.of(), runnableConfig)
-			.doOnNext(System.out::println)
+		var results = workflow.stream(Map.of(), runnableConfig)
+			.stream()
+			.peek(System.out::println)
 			.map(NodeOutput::node)
-			.collectList()
-			.block();
+			.toList();
 
 		assertIterableEquals(List.of(START, "A", "B"), results);
 
-		results = workflow.fluxStream(null, runnableConfig)
-			.doOnNext(System.out::println)
+		results = workflow.stream(null, runnableConfig)
+			.stream()
+			.peek(System.out::println)
 			.map(NodeOutput::node)
-			.collectList()
-			.block();
+			.toList();
 		assertIterableEquals(List.of("D", END), results);
 
 		var snapshotForNodeB = workflow.getStateHistory(runnableConfig)
@@ -86,11 +85,11 @@ public class InterruptionTest {
 
 		runnableConfig = workflow.updateState(snapshotForNodeB.config(), Map.of("messages", "C"));
 
-		results = workflow.fluxStream(null, runnableConfig)
-			.doOnNext(System.out::println)
+		results = workflow.stream(null, runnableConfig)
+			.stream()
+			.peek(System.out::println)
 			.map(NodeOutput::node)
-			.collectList()
-			.block();
+			.toList();
 		assertIterableEquals(List.of("D", END), results);
 	}
 
@@ -117,20 +116,20 @@ public class InterruptionTest {
 
 		var runnableConfig = RunnableConfig.builder().build();
 
-		var results = workflow.fluxStream(Map.of(), runnableConfig)
-			.doOnNext(System.out::println)
+		var results = workflow.stream(Map.of(), runnableConfig)
+			.stream()
+			.peek(System.out::println)
 			.map(NodeOutput::node)
-			.collectList()
-			.block();
+			.toList();
 
 		assertIterableEquals(List.of(START, "A", "B"), results);
 
 		runnableConfig = workflow.updateState(runnableConfig, Map.of("messages", "C"));
-		results = workflow.fluxStream(null, runnableConfig)
-			.doOnNext(System.out::println)
+		results = workflow.stream(null, runnableConfig)
+			.stream()
+			.peek(System.out::println)
 			.map(NodeOutput::node)
-			.collectList()
-			.block();
+			.toList();
 		assertIterableEquals(List.of("C", END), results);
 	}
 

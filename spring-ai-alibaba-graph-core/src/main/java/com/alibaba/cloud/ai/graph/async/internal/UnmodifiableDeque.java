@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
 
-@Deprecated
 public class UnmodifiableDeque<T> implements Deque<T> {
 
 	private final Deque<T> deque;

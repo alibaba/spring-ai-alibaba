@@ -25,7 +25,6 @@ import java.util.concurrent.Flow;
  *
  * @param <T> the type of items to be published
  */
-@Deprecated
 public class GeneratorPublisher<T> implements Flow.Publisher<T> {
 
 	private final AsyncGenerator<? extends T> delegate;

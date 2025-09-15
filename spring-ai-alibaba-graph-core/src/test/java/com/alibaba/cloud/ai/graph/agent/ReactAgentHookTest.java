@@ -19,7 +19,12 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
-
+import com.alibaba.fastjson.JSON;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
@@ -37,20 +42,13 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.alibaba.fastjson.JSON;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -161,7 +159,7 @@ class ReactAgentHookTest {
 
 		// 创建包含时间查询的提示词
 		List<Message> messages = List.of(new UserMessage("查询北京天气"));
-		Optional<OverAllState> result = graph.call(Map.of("llm_input_messages", messages));
+		Optional<OverAllState> result = graph.invoke(Map.of("llm_input_messages", messages));
 		System.out.println(result.get());
 
 		System.out.println("==testReactAgentWithPreLlmHook==");
@@ -196,7 +194,7 @@ class ReactAgentHookTest {
 		CompiledGraph graph = agent.getAndCompileGraph();
 		// 创建包含时间查询的提示词
 		List<Message> messages = List.of(new UserMessage("查询北京天气"));
-		Optional<OverAllState> result = graph.call(Map.of("messages", messages));
+		Optional<OverAllState> result = graph.invoke(Map.of("messages", messages));
 		System.out.println(result);
 
 		System.out.println("==testReactAgentWithPostLlmHook==");
@@ -266,7 +264,7 @@ class ReactAgentHookTest {
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 		List<Message> messages = List.of(new UserMessage("查询北京天气"));
-		Optional<OverAllState> result = graph.call(Map.of("llm_input_messages", messages));
+		Optional<OverAllState> result = graph.invoke(Map.of("llm_input_messages", messages));
 		System.out.println(result);
 
 		System.out.println("==testReactAgentWithPreToolHook==");

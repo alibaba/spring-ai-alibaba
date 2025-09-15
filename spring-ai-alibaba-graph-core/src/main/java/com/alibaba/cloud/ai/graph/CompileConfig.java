@@ -39,10 +39,6 @@ import static java.util.Optional.ofNullable;
  */
 public class CompileConfig {
 
-	// ================================================================================================================
-	// Configuration Fields
-	// ================================================================================================================
-
 	private SaverConfig saverConfig = new SaverConfig().register(SaverEnum.MEMORY.getValue(), new MemorySaver());
 
 	private Deque<GraphLifecycleListener> lifecycleListeners = new LinkedBlockingDeque<>(25);
@@ -59,10 +55,6 @@ public class CompileConfig {
 	private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 	private Store store;
-
-	// ================================================================================================================
-	// Getter Methods
-	// ================================================================================================================
 
 	/**
 	 * Returns the current state of the thread release flag.
@@ -149,10 +141,6 @@ public class CompileConfig {
 	public void setStore(Store store) {
 		this.store = store;
 	}
-
-	// ================================================================================================================
-	// Builder Methods
-	// ================================================================================================================
 
 	/**
 	 * Returns a new instance of the builder with default configuration settings.
@@ -308,10 +296,6 @@ public class CompileConfig {
 		}
 
 	}
-
-	// ================================================================================================================
-	// Constructors
-	// ================================================================================================================
 
 	/**
 	 * Default constructor used internally to create a new configuration with default

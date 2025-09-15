@@ -235,6 +235,7 @@ public class PromptHelper {
 	 * @param userRequirementsAndPlan user requirements and plan
 	 * @param analysisStepsAndData analysis steps and data
 	 * @param summaryAndRecommendations summary and recommendations
+	 * @param customPrompt user-defined prompt content, use default prompt if null
 	 * @return built prompt
 	 */
 	public static String buildReportGeneratorPromptWithOptimization(String userRequirementsAndPlan,

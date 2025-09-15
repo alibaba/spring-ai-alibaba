@@ -16,15 +16,12 @@
 package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class TemplateTransformNodeTest {
 

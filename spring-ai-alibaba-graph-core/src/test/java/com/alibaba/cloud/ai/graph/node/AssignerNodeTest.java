@@ -17,12 +17,11 @@ package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

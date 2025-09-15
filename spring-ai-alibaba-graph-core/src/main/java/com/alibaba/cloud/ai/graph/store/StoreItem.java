@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.store;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,7 +46,7 @@ import java.util.Objects;
  * @author Spring AI Alibaba
  * @since 1.0.0.3
  */
-public class StoreItem implements Serializable {
+public class StoreItem {
 
 	/**
 	 * The hierarchical namespace path for organizing items. For example: ["users",

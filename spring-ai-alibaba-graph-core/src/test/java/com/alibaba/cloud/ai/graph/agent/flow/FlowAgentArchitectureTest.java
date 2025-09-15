@@ -23,22 +23,20 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategy;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategyRegistry;
+import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategy;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.SequentialGraphBuildingStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import java.util.HashMap;
 import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -170,8 +168,8 @@ class FlowAgentArchitectureTest {
 				.name("parallel")
 				.outputKey("output")
 				.subAgents(List.of(createMockReactAgent("agent", "output"))) // Need at
-				// least 2
-				// agents
+																				// least 2
+																				// agents
 				.build();
 		});
 	}

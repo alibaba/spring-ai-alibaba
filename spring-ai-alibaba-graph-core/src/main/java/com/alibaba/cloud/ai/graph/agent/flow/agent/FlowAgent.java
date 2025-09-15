@@ -33,11 +33,17 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public abstract class FlowAgent extends BaseAgent {
 
+	protected CompileConfig compileConfig;
+
 	protected String inputKey;
 
 	protected KeyStrategyFactory keyStrategyFactory;
 
 	protected List<BaseAgent> subAgents;
+
+	protected StateGraph graph;
+
+	protected CompiledGraph compiledGraph;
 
 	protected FlowAgent(String name, String description, String outputKey, String inputKey,
 			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig, List<BaseAgent> subAgents)
@@ -49,7 +55,6 @@ public abstract class FlowAgent extends BaseAgent {
 		this.subAgents = subAgents;
 	}
 
-	@Override
 	protected StateGraph initGraph() throws GraphStateException {
 		// Use FlowGraphBuilder to construct the graph
 		FlowGraphBuilder.FlowGraphConfig config = FlowGraphBuilder.FlowGraphConfig.builder()
@@ -87,6 +92,16 @@ public abstract class FlowAgent extends BaseAgent {
 	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
 		CompiledGraph compiledGraph = getAndCompileGraph();
 		return compiledGraph.schedule(scheduleConfig);
+	}
+
+	public CompiledGraph getAndCompileGraph() throws GraphStateException {
+		if (this.compileConfig == null) {
+			this.compiledGraph = graph.compile();
+		}
+		else {
+			this.compiledGraph = graph.compile(this.compileConfig);
+		}
+		return this.compiledGraph;
 	}
 
 	public CompileConfig compileConfig() {

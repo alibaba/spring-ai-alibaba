@@ -21,15 +21,11 @@ import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolManager;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.callback.NacosMcpGatewayToolCallback;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import org.springframework.ai.mcp.McpToolUtils;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.ai.tool.ToolCallback;
 
 public class NacosMcpAsyncGatewayToolsProvider implements McpGatewayToolManager {
 
 	private final McpAsyncServer mcpAsyncServer;
-
-	private final Map<String, NacosMcpGatewayToolCallback> toolCallbacks = new HashMap<>();
 
 	public NacosMcpAsyncGatewayToolsProvider(final McpAsyncServer mcpAsyncServer) {
 		this.mcpAsyncServer = mcpAsyncServer;
@@ -43,17 +39,12 @@ public class NacosMcpAsyncGatewayToolsProvider implements McpGatewayToolManager 
 		catch (Exception e) {
 			// Ignore exception
 		}
-		NacosMcpGatewayToolCallback toolCallback = new NacosMcpGatewayToolCallback(toolDefinition);
-		toolCallbacks.put(toolDefinition.name(), toolCallback);
+		ToolCallback toolCallback = new NacosMcpGatewayToolCallback(toolDefinition);
 		mcpAsyncServer.addTool(McpToolUtils.toAsyncToolSpecification(toolCallback)).block();
 	}
 
 	@Override
 	public void removeTool(final String toolName) {
-		NacosMcpGatewayToolCallback toolCallback = toolCallbacks.remove(toolName);
-		if (toolCallback != null) {
-			toolCallback.close();
-		}
 		mcpAsyncServer.removeTool(toolName).block();
 	}
 

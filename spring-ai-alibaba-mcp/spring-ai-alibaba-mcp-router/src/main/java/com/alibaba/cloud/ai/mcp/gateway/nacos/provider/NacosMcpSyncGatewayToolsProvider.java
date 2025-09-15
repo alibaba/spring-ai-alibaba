@@ -21,15 +21,11 @@ import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolManager;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.callback.NacosMcpGatewayToolCallback;
 import io.modelcontextprotocol.server.McpSyncServer;
 import org.springframework.ai.mcp.McpToolUtils;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.ai.tool.ToolCallback;
 
 public class NacosMcpSyncGatewayToolsProvider implements McpGatewayToolManager {
 
 	private final McpSyncServer mcpSyncServer;
-
-	private final Map<String, NacosMcpGatewayToolCallback> toolCallbacks = new HashMap<>();
 
 	public NacosMcpSyncGatewayToolsProvider(final McpSyncServer mcpSyncServer) {
 		this.mcpSyncServer = mcpSyncServer;
@@ -43,17 +39,12 @@ public class NacosMcpSyncGatewayToolsProvider implements McpGatewayToolManager {
 		catch (Exception e) {
 			// Ignore exception
 		}
-		NacosMcpGatewayToolCallback toolCallback = new NacosMcpGatewayToolCallback(toolDefinition);
-		toolCallbacks.put(toolDefinition.name(), toolCallback);
+		ToolCallback toolCallback = new NacosMcpGatewayToolCallback(toolDefinition);
 		mcpSyncServer.addTool(McpToolUtils.toSyncToolSpecification(toolCallback));
 	}
 
 	@Override
 	public void removeTool(final String toolName) {
-		NacosMcpGatewayToolCallback toolCallback = toolCallbacks.remove(toolName);
-		if (toolCallback != null) {
-			toolCallback.close();
-		}
 		mcpSyncServer.removeTool(toolName);
 	}
 

@@ -16,21 +16,16 @@
 
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
-import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactoryBuilder;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-
 import org.springframework.ai.util.json.JsonParser;
-
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Array;
@@ -82,11 +77,11 @@ import java.util.stream.StreamSupport;
  */
 public class LoopAgent extends FlowAgent {
 
+	private final LoopConfig loopConfig;
+
 	public static final String LOOP_CONFIG_KEY = "loopConfig";
 
 	public static final int ITERABLE_ELEMENT_COUNT = 10000;
-
-	private final LoopConfig loopConfig;
 
 	/**
 	 * The sub-agents of LoopAgent constitute the loop body, which can be one or more
@@ -99,10 +94,6 @@ public class LoopAgent extends FlowAgent {
 		this.graph = this.initGraph();
 	}
 
-	public static Builder builder() {
-		return new Builder();
-	}
-
 	@Override
 	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		config.customProperty(LOOP_CONFIG_KEY, this.loopConfig);
@@ -111,14 +102,25 @@ public class LoopAgent extends FlowAgent {
 
 	@Override
 	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		} // Initialize outputKey as an empty list to collect loop results
-
-		return compiledGraph.call(Stream.of(input, Map.of(this.outputKey(), new ArrayList<>()))
+		CompiledGraph compiledGraph = this.getAndCompileGraph();
+		// Initialize outputKey as an empty list to collect loop results
+		return compiledGraph.invoke(Stream.of(input, Map.of(this.outputKey(), new ArrayList<>()))
 			.map(Map::entrySet)
 			.flatMap(Collection::stream)
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> newValue)));
+	}
+
+	@Override
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
+			throws GraphStateException, GraphRunnerException {
+		if (this.compiledGraph == null) {
+			this.compiledGraph = getAndCompileGraph();
+		}
+		return this.compiledGraph.stream(input);
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	/**
@@ -126,6 +128,22 @@ public class LoopAgent extends FlowAgent {
 	 */
 	public enum LoopMode {
 
+		/**
+		 * <b>Count mode</b>: Execute a fixed number of loops
+		 * <p>
+		 * Execution steps:
+		 * <ol>
+		 * <li>Get input data from inputKey (optional)</li>
+		 * <li>Track the current loop count</li>
+		 * <li>Increment the count by 1 for each loop until reaching the preset loopCount
+		 * value</li>
+		 * <li>Set loopStartFlag to false when the loop ends</li>
+		 * </ol>
+		 * </p>
+		 * <p>
+		 * Applicable scenario: Scenarios requiring a fixed number of operations
+		 * </p>
+		 */
 		COUNT(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get input for passing to the iterator body
@@ -153,6 +171,22 @@ public class LoopAgent extends FlowAgent {
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of(agentName + "__loop_count", new ReplaceStrategy()))),
 
+		/**
+		 * <b>Condition mode</b>: Continue looping based on a condition, similar to a
+		 * do-while structure, but when the condition is true, terminate the loop
+		 * <p>
+		 * Working principle:
+		 * <ol>
+		 * <li>Execute the first loop directly (unconditionally)</li>
+		 * <li>Subsequent loops check if the previous output meets the loopCondition</li>
+		 * <li>Exit the loop if the condition is met, otherwise continue executing</li>
+		 * </ol>
+		 * </p>
+		 * <p>
+		 * Applicable scenario: Scenarios where the decision to continue looping needs to
+		 * be made dynamically based on execution results
+		 * </p>
+		 */
 		CONDITION(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get input for passing to the iterator body
@@ -177,6 +211,24 @@ public class LoopAgent extends FlowAgent {
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of())),
 
+		/**
+		 * <b>Iterable mode</b>: Iterate over each element in an Iterable object
+		 * <p>
+		 * Working principle:
+		 * <ol>
+		 * <li>Get the Iterable object from inputKey</li>
+		 * <li>Convert to List and limit the maximum number of elements
+		 * (ITERABLE_ELEMENT_COUNT)</li>
+		 * <li>Track the current index</li>
+		 * <li>Extract each element sequentially as input to the loop body</li>
+		 * <li>Exit the loop after iterating through all elements</li>
+		 * </ol>
+		 * </p>
+		 * <p>
+		 * Applicable scenario: Scenarios requiring iteration over each element in a
+		 * collection or list
+		 * </p>
+		 */
 		ITERABLE(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get the elements to be iterated over. If they don't exist, it means it's
@@ -225,6 +277,22 @@ public class LoopAgent extends FlowAgent {
 				Map.of(agentName + "__iterableElement", new ReplaceStrategy(), agentName + "__iterableIndex",
 						new ReplaceStrategy()))),
 
+		/**
+		 * <b>Array mode</b>: Iterate over each element in an array
+		 * <p>
+		 * Working principle:
+		 * <ol>
+		 * <li>Get the array object from inputKey</li>
+		 * <li>Track the current index</li>
+		 * <li>Use reflection to get each element in the array sequentially</li>
+		 * <li>Exit the loop after iterating through all elements</li>
+		 * </ol>
+		 * </p>
+		 * <p>
+		 * Applicable scenario: Scenarios requiring iteration over each element in a Java
+		 * array
+		 * </p>
+		 */
 		ARRAY(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get the input array
@@ -251,6 +319,22 @@ public class LoopAgent extends FlowAgent {
 			return value.map(o -> Map.of(loopConfig.outputKey(), o)).orElseGet(Map::of);
 		}), (agentName) -> combineKeyStrategy(agentName, Map.of(agentName + "__arrayIndex", new ReplaceStrategy()))),
 
+		/**
+		 * <b>JSON array mode</b>: Parse a JSON array and iterate over its elements
+		 * <p>
+		 * Working principle:
+		 * <ol>
+		 * <li>Get the JSON string from inputKey</li>
+		 * <li>Parse it into a List object</li>
+		 * <li>Track the current index</li>
+		 * <li>Extract each element sequentially as input to the loop body</li>
+		 * <li>Exit the loop after iterating through all elements</li>
+		 * </ol>
+		 * </p>
+		 * <p>
+		 * Applicable scenario: Scenarios requiring processing of JSON format array data
+		 * </p>
+		 */
 		JSON_ARRAY(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			String listKey = agentName + "__list";
@@ -310,6 +394,18 @@ public class LoopAgent extends FlowAgent {
 			this.loopTempKeyStrategyFactoryFunc = loopTempKeyStrategyFactoryFunc;
 		}
 
+		public NodeAction getStartAction(LoopConfig loopConfig) {
+			return startActionFunc.apply(loopConfig);
+		}
+
+		public NodeAction getEndAction(LoopConfig loopConfig) {
+			return endActionFunc.apply(loopConfig);
+		}
+
+		public KeyStrategyFactory getLoopTempKeyStrategyFactory(String agentName) {
+			return loopTempKeyStrategyFactoryFunc.apply(agentName);
+		}
+
 		private static KeyStrategyFactory combineKeyStrategy(String agentName, Map<String, KeyStrategy> strategyMap) {
 			return new KeyStrategyFactoryBuilder().addStrategies(strategyMap)
 				.addStrategy(loopStartFlagKey(agentName), new ReplaceStrategy())
@@ -328,18 +424,6 @@ public class LoopAgent extends FlowAgent {
 
 		public static String iteratorResultKey(String agentName) {
 			return agentName + "__iterator_result";
-		}
-
-		public NodeAction getStartAction(LoopConfig loopConfig) {
-			return startActionFunc.apply(loopConfig);
-		}
-
-		public NodeAction getEndAction(LoopConfig loopConfig) {
-			return endActionFunc.apply(loopConfig);
-		}
-
-		public KeyStrategyFactory getLoopTempKeyStrategyFactory(String agentName) {
-			return loopTempKeyStrategyFactoryFunc.apply(agentName);
 		}
 
 	}

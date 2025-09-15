@@ -17,7 +17,8 @@ package com.alibaba.cloud.ai.graph.internal.node;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import reactor.core.publisher.Flux;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.streaming.AsyncGeneratorUtils;
 import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
 
 import java.util.ArrayList;
@@ -89,37 +90,39 @@ public class ParallelNode extends Node {
 					.map(CompletableFuture::join)
 					.collect(Collectors.toList());
 
-				// Check if any result contains streaming output (Flux)
-				boolean hasFlux = results.stream()
+				// Check if any result contains streaming output
+				boolean hasGenerator = results.stream()
 					.flatMap(map -> map.values().stream())
-					.anyMatch(value -> value instanceof Flux);
+					.anyMatch(value -> value instanceof AsyncGenerator);
 
-				if (hasFlux) {
-					// If there is any streaming output, merge all Flux streams
-					List<Flux<Object>> fluxList = new ArrayList<>();
+				if (hasGenerator) {
+					// If there is any streaming output, create a new AsyncGenerator to
+					// wrap all streaming outputs
+					List<AsyncGenerator<NodeOutput>> generators = new ArrayList<>();
 					Map<String, Object> mergedState = new HashMap<>();
 					mergedState.putAll(state.data());
-
 					for (Map<String, Object> result : results) {
-						// Process non-Flux entries
-						Map<String, Object> nonFluxEntries = result.entrySet()
+						Map<String, Object> nonGeneratorEntries = result.entrySet()
 							.stream()
-							.filter(e -> !(e.getValue() instanceof Flux))
+							.filter(e -> !(e.getValue() instanceof AsyncGenerator))
 							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-						mergedState = OverAllState.updateState(mergedState, nonFluxEntries, channels);
+						mergedState = OverAllState.updateState(mergedState, nonGeneratorEntries, channels);
 
-						// Collect all Flux streams
+						// Collect all streaming outputs
 						result.entrySet()
 							.stream()
-							.filter(e -> e.getValue() instanceof Flux)
-							.forEach(e -> fluxList.add((Flux<Object>) e.getValue()));
+							.filter(e -> e.getValue() instanceof AsyncGenerator)
+							.forEach(e -> generators.add((AsyncGenerator<NodeOutput>) e.getValue()));
 					}
 
-					// If there are Flux streams, merge them into one
-					if (!fluxList.isEmpty()) {
-						Flux<Object> mergedFlux = Flux.merge(fluxList);
-						mergedState.put("__merged_stream__", mergedFlux);
+					// If there are streaming outputs, merge them into one streaming
+					// output
+					if (!generators.isEmpty()) {
+						// Create a merged AsyncGenerator
+						AsyncGenerator<NodeOutput> mergedGenerator = AsyncGeneratorUtils
+							.createMergedGenerator(generators, state.keyStrategies());
+						mergedState.put("__merged_stream__", mergedGenerator);
 					}
 
 					return mergedState;

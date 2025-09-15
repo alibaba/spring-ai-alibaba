@@ -146,7 +146,6 @@ public class ModelDataInitialization implements IModelDataInitialization {
 						defaultLlmConfig.getDefaultDescription() + " - Auto-created from environment variables");
 				dynamicModelEntity.setType(ModelType.GENERAL.name());
 				dynamicModelEntity.setIsDefault(true);
-				dynamicModelEntity.setCompletionsPath(defaultLlmConfig.getDefaultCompletionsPath());
 
 				DynamicModelEntity save = repository.save(dynamicModelEntity);
 				jmanusEventPublisher.publish(new ModelChangeEvent(save));

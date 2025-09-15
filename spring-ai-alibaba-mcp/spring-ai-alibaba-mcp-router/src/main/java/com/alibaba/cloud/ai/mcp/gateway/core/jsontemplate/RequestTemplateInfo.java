@@ -18,9 +18,6 @@ package com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-/**
- * @author Sunrisea
- */
 public class RequestTemplateInfo {
 
 	public String url;
@@ -39,10 +36,8 @@ public class RequestTemplateInfo {
 
 	public JsonNode rawNode;
 
-	public JsonNode argsPosition;
-
 	public RequestTemplateInfo(String url, String method, boolean argsToUrlParam, boolean argsToJsonBody,
-			boolean argsToFormBody, JsonNode headers, JsonNode body, JsonNode argsPosition, JsonNode rawNode) {
+			boolean argsToFormBody, JsonNode headers, JsonNode body, JsonNode rawNode) {
 		this.url = url;
 		this.method = method;
 		this.argsToUrlParam = argsToUrlParam;
@@ -51,7 +46,6 @@ public class RequestTemplateInfo {
 		this.headers = headers;
 		this.body = body;
 		this.rawNode = rawNode;
-		this.argsPosition = argsPosition;
 	}
 
 }

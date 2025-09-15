@@ -13,26 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.serializer.std;
+package com.alibaba.cloud.ai.graph.serializer;
 
-import com.alibaba.cloud.ai.graph.serializer.Serializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectOutput;
 import java.util.Objects;
 import java.util.Optional;
 
-class ObjectOutputWithMapper implements ObjectOutput {
+public class ObjectOutputWithMapper implements ObjectOutput {
 
-	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ObjectOutputWithMapper.class);
+	private static final Logger log = LoggerFactory.getLogger(ObjectOutputWithMapper.class);
 
 	private final ObjectOutput out;
 
 	private final SerializerMapper mapper;
 
 	public ObjectOutputWithMapper(ObjectOutput out, SerializerMapper mapper) {
-		this.out = Objects.requireNonNull(out, "out cannot be null");
-		this.mapper = Objects.requireNonNull(mapper, "mapper cannot be null");
+		this.out = out;
+		this.mapper = mapper;
 	}
 
 	@Override
@@ -129,7 +130,7 @@ class ObjectOutputWithMapper implements ObjectOutput {
 
 	@Override
 	public void writeUTF(String s) throws IOException {
-		Serializer.writeUTF(s, out);
+		out.writeUTF(s);
 	}
 
 }

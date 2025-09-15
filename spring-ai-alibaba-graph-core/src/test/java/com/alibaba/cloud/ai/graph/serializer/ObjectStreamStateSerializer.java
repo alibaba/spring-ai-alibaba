@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.serializer.std;
+package com.alibaba.cloud.ai.graph.serializer;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.serializer.Serializer;
-import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.std.NullableObjectSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -29,33 +29,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ObjectStreamStateSerializer extends StateSerializer {
+public class ObjectStreamStateSerializer<State extends AgentState> extends StateSerializer<State> {
 
-	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ObjectStreamStateSerializer.class);
-
-	private final SerializerMapper mapper = new SerializerMapper();
-
-	private final MapSerializer mapSerializer = new MapSerializer();
-
-	public ObjectStreamStateSerializer(AgentStateFactory<OverAllState> stateFactory) {
-		super(stateFactory);
-		mapper.register(Collection.class, new ListSerializer());
-		mapper.register(Map.class, new MapSerializer());
-	}
-
-	public SerializerMapper mapper() {
-		return mapper;
-	}
-
-	@Override
-	public final void writeData(Map<String, Object> data, ObjectOutput out) throws IOException {
-		mapSerializer.write(data, mapper.objectOutputWithMapper(out));
-	}
-
-	@Override
-	public final Map<String, Object> readData(ObjectInput in) throws IOException, ClassNotFoundException {
-		return mapSerializer.read(mapper.objectInputWithMapper(in));
-	}
+	private static final Logger log = LoggerFactory.getLogger(ObjectStreamStateSerializer.class);
 
 	static class ListSerializer implements NullableObjectSerializer<List<Object>> {
 
@@ -104,7 +80,7 @@ public class ObjectStreamStateSerializer extends StateSerializer {
 
 			for (Map.Entry<String, Object> e : object.entrySet()) {
 				try {
-					Serializer.writeUTF(e.getKey(), out);
+					out.writeUTF(e.getKey());
 
 					writeNullableObject(e.getValue(), out);
 
@@ -126,7 +102,7 @@ public class ObjectStreamStateSerializer extends StateSerializer {
 			int size = in.readInt();
 
 			for (int i = 0; i < size; i++) {
-				String key = Serializer.readUTF(in);
+				String key = in.readUTF();
 
 				Object value = readNullableObject(in).orElse(null);
 
@@ -136,6 +112,30 @@ public class ObjectStreamStateSerializer extends StateSerializer {
 			return result;
 		}
 
+	}
+
+	private final SerializerMapper mapper = new SerializerMapper();
+
+	private final MapSerializer mapSerializer = new MapSerializer();
+
+	public ObjectStreamStateSerializer(AgentStateFactory<State> stateFactory) {
+		super(stateFactory);
+		mapper.register(Collection.class, new ListSerializer());
+		mapper.register(Map.class, new MapSerializer());
+	}
+
+	public SerializerMapper mapper() {
+		return mapper;
+	}
+
+	@Override
+	public void write(State object, ObjectOutput out) throws IOException {
+		mapSerializer.write(object.data(), mapper.objectOutputWithMapper(out));
+	}
+
+	@Override
+	public final State read(ObjectInput in) throws IOException, ClassNotFoundException {
+		return stateFactory().apply(mapSerializer.read(mapper.objectInputWithMapper(in)));
 	}
 
 }

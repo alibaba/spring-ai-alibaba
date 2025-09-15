@@ -30,8 +30,6 @@ public class DefaultLlmConfiguration {
 
 	public static final String DEFAULT_DESCRIPTION = "Alibaba Cloud DashScope Qwen Plus Model";
 
-	public static final String DEFAULT_COMPLETIONS_PATH = "/v1/chat/completions";
-
 	public String getDefaultModelName() {
 		return DEFAULT_MODEL_NAME;
 	}
@@ -42,10 +40,6 @@ public class DefaultLlmConfiguration {
 
 	public String getDefaultDescription() {
 		return DEFAULT_DESCRIPTION;
-	}
-
-	public String getDefaultCompletionsPath() {
-		return DEFAULT_COMPLETIONS_PATH;
 	}
 
 }

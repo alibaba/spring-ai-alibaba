@@ -28,7 +28,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Reader;
 
-public abstract class PlainTextStateSerializer extends StateSerializer {
+public abstract class PlainTextStateSerializer extends StateSerializer<OverAllState> {
 
 	protected PlainTextStateSerializer(AgentStateFactory<OverAllState> stateFactory) {
 		super(stateFactory);

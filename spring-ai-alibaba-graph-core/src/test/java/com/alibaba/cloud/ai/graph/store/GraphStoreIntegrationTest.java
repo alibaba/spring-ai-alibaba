@@ -15,34 +15,22 @@
  */
 package com.alibaba.cloud.ai.graph.store;
 
-import com.alibaba.cloud.ai.graph.CompileConfig;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
+import com.alibaba.cloud.ai.graph.*;
+
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.alibaba.cloud.ai.graph.store.stores.DatabaseStore;
-import com.alibaba.cloud.ai.graph.store.stores.FileSystemStore;
-import com.alibaba.cloud.ai.graph.store.stores.MemoryStore;
-import com.alibaba.cloud.ai.graph.store.stores.MongoStore;
-import com.alibaba.cloud.ai.graph.store.stores.RedisStore;
-
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
+import com.alibaba.cloud.ai.graph.store.stores.*;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Path;
+import java.util.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for Store functionality with actual StateGraph execution.
@@ -107,8 +95,8 @@ public class GraphStoreIntegrationTest {
 		assertThat(prefsItem).isPresent();
 		assertThat(prefsItem.get().getValue().get("theme")).isEqualTo("light");
 		assertThat(prefsItem.get().getValue().get("language")).isEqualTo("zh-CN"); // Should
-		// preserve
-		// existing
+																					// preserve
+																					// existing
 		assertThat(prefsItem.get().getValue().get("notifications")).isEqualTo(true);
 	}
 
@@ -237,7 +225,7 @@ public class GraphStoreIntegrationTest {
 			.addEdge("processRequest", "saveSession")
 			.addEdge("saveSession", END);
 
-		return workflow.compile(config).call(input);
+		return workflow.compile(config).invoke(input);
 	}
 
 	private Optional<OverAllState> runUserProfileCreationGraph(Store store, Map<String, Object> input)
@@ -276,7 +264,7 @@ public class GraphStoreIntegrationTest {
 			.addEdge("createProfile", "setPreferences")
 			.addEdge("setPreferences", END);
 
-		return workflow.compile(config).call(input);
+		return workflow.compile(config).invoke(input);
 	}
 
 	private Optional<OverAllState> runUserPreferencesUpdateGraph(Store store, Map<String, Object> input)
@@ -327,7 +315,7 @@ public class GraphStoreIntegrationTest {
 			.addEdge("loadExistingPrefs", "updatePrefs")
 			.addEdge("updatePrefs", END);
 
-		return workflow.compile(config).call(input);
+		return workflow.compile(config).invoke(input);
 	}
 
 	private Optional<OverAllState> runDataProcessingGraph(Store store, Map<String, Object> input) throws Exception {
@@ -382,14 +370,14 @@ public class GraphStoreIntegrationTest {
 			.addEdge("processData", "generateResult")
 			.addEdge("generateResult", END);
 
-		return workflow.compile(config).call(input);
+		return workflow.compile(config).invoke(input);
 	}
 
 	private Optional<OverAllState> runDataSearchGraph(Store store, Map<String, Object> input) throws Exception {
 		CompileConfig config = CompileConfig.builder().store(store).build();
 
 		StateGraph workflow = new StateGraph(() -> Map.of("query", new ReplaceStrategy(), "operation",
-				new ReplaceStrategy(), "searchResults", new ReplaceStrategy()), new SpringAIStateSerializer())
+				new ReplaceStrategy(), "searchResults", new ReplaceStrategy()))
 			.addNode("searchData", node_async(state -> {
 				String query = state.value("query", "");
 				Store searchStore = state.getStore();
@@ -422,7 +410,7 @@ public class GraphStoreIntegrationTest {
 			.addEdge("searchData", "processResults")
 			.addEdge("processResults", END);
 
-		return workflow.compile(config).call(input);
+		return workflow.compile(config).invoke(input);
 	}
 
 	private void setupHistoricalUserData(Store store) {

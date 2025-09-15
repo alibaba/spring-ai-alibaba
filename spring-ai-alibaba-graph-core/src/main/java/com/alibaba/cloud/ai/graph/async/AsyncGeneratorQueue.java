@@ -26,7 +26,6 @@ import static java.util.concurrent.ForkJoinPool.commonPool;
 /**
  * Represents a queue-based asynchronous generator.
  */
-@Deprecated
 public class AsyncGeneratorQueue {
 
 	/**
