@@ -39,65 +39,77 @@ import org.springframework.util.StringUtils;
  */
 @AutoConfiguration
 @ConditionalOnMissingBean(AgentCard.class)
-@EnableConfigurationProperties({A2aServerProperties.class, A2aServerAgentCardProperties.class})
+@EnableConfigurationProperties({ A2aServerProperties.class, A2aServerAgentCardProperties.class })
 public class A2aServerAgentCardAutoConfiguration {
 
 	private static final String DEFAULT_PROTOCOL = "http://";
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnBean({BaseAgent.class})
-	public AgentCard agentCard(BaseAgent rootAgent, A2aServerProperties a2aServerProperties, A2aServerAgentCardProperties a2AServerAgentCardProperties) {
+	@ConditionalOnBean({ BaseAgent.class })
+	public AgentCard agentCard(BaseAgent rootAgent, A2aServerProperties a2aServerProperties,
+			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
 		return new AgentCard.Builder().name(getName(rootAgent, a2AServerAgentCardProperties))
-				.description(getDescription(rootAgent, a2AServerAgentCardProperties))
-				.defaultInputModes(getDefaultInputModes(rootAgent, a2AServerAgentCardProperties))
-				.defaultOutputModes(getDefaultOutputModes(rootAgent, a2AServerAgentCardProperties))
-				.capabilities(getCapabilities(rootAgent, a2AServerAgentCardProperties))
-				.version(a2aServerProperties.getVersion())
-				.protocolVersion(A2aConstants.DEFAULT_A2A_PROTOCOL_VERSION)
-				.preferredTransport(a2aServerProperties.getType())
-				.url(getUrl(a2aServerProperties, a2AServerAgentCardProperties))
-				.supportsAuthenticatedExtendedCard(a2AServerAgentCardProperties.isSupportsAuthenticatedExtendedCard())
-				.skills(getAgentSkills(rootAgent, a2AServerAgentCardProperties))
-				.provider(a2AServerAgentCardProperties.getProvider())
-				.documentationUrl(a2AServerAgentCardProperties.getDocumentationUrl())
-				.security(a2AServerAgentCardProperties.getSecurity())
-				.securitySchemes(a2AServerAgentCardProperties.getSecuritySchemes())
-				.iconUrl(a2AServerAgentCardProperties.getIconUrl())
-				.additionalInterfaces(getAdditionalInterfaces(a2AServerAgentCardProperties, a2aServerProperties))
-				.build();
+			.description(getDescription(rootAgent, a2AServerAgentCardProperties))
+			.defaultInputModes(getDefaultInputModes(rootAgent, a2AServerAgentCardProperties))
+			.defaultOutputModes(getDefaultOutputModes(rootAgent, a2AServerAgentCardProperties))
+			.capabilities(getCapabilities(rootAgent, a2AServerAgentCardProperties))
+			.version(a2aServerProperties.getVersion())
+			.protocolVersion(A2aConstants.DEFAULT_A2A_PROTOCOL_VERSION)
+			.preferredTransport(a2aServerProperties.getType())
+			.url(getUrl(a2aServerProperties, a2AServerAgentCardProperties))
+			.supportsAuthenticatedExtendedCard(a2AServerAgentCardProperties.isSupportsAuthenticatedExtendedCard())
+			.skills(getAgentSkills(rootAgent, a2AServerAgentCardProperties))
+			.provider(a2AServerAgentCardProperties.getProvider())
+			.documentationUrl(a2AServerAgentCardProperties.getDocumentationUrl())
+			.security(a2AServerAgentCardProperties.getSecurity())
+			.securitySchemes(a2AServerAgentCardProperties.getSecuritySchemes())
+			.iconUrl(a2AServerAgentCardProperties.getIconUrl())
+			.additionalInterfaces(getAdditionalInterfaces(a2AServerAgentCardProperties, a2aServerProperties))
+			.build();
 	}
 
 	private String getName(BaseAgent rootAgent, A2aServerAgentCardProperties a2AServerAgentCardProperties) {
-		return StringUtils.hasLength(a2AServerAgentCardProperties.getName()) ? a2AServerAgentCardProperties.getName() : rootAgent.name();
+		return StringUtils.hasLength(a2AServerAgentCardProperties.getName()) ? a2AServerAgentCardProperties.getName()
+				: rootAgent.name();
 	}
 
 	private String getDescription(BaseAgent rootAgent, A2aServerAgentCardProperties a2AServerAgentCardProperties) {
-		return StringUtils.hasLength(a2AServerAgentCardProperties.getDescription()) ? a2AServerAgentCardProperties.getDescription() : rootAgent.name();
+		return StringUtils.hasLength(a2AServerAgentCardProperties.getDescription())
+				? a2AServerAgentCardProperties.getDescription() : rootAgent.name();
 	}
 
-	private List<String> getDefaultInputModes(BaseAgent rootAgent, A2aServerAgentCardProperties a2AServerAgentCardProperties) {
-		return null != a2AServerAgentCardProperties.getDefaultInputModes() ? a2AServerAgentCardProperties.getDefaultInputModes() : List.of("text/plain");
+	private List<String> getDefaultInputModes(BaseAgent rootAgent,
+			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
+		return null != a2AServerAgentCardProperties.getDefaultInputModes()
+				? a2AServerAgentCardProperties.getDefaultInputModes() : List.of("text/plain");
 	}
 
-	private AgentCapabilities getCapabilities(BaseAgent rootAgent, A2aServerAgentCardProperties a2AServerAgentCardProperties) {
-		return null != a2AServerAgentCardProperties.getCapabilities() ? a2AServerAgentCardProperties.getCapabilities() : new AgentCapabilities.Builder().streaming(true)
-				.build();
+	private AgentCapabilities getCapabilities(BaseAgent rootAgent,
+			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
+		return null != a2AServerAgentCardProperties.getCapabilities() ? a2AServerAgentCardProperties.getCapabilities()
+				: new AgentCapabilities.Builder().streaming(true).build();
 	}
 
-	private List<String> getDefaultOutputModes(BaseAgent rootAgent, A2aServerAgentCardProperties a2AServerAgentCardProperties) {
-		return null != a2AServerAgentCardProperties.getDefaultOutputModes() ? a2AServerAgentCardProperties.getDefaultOutputModes() : List.of("text/plain");
+	private List<String> getDefaultOutputModes(BaseAgent rootAgent,
+			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
+		return null != a2AServerAgentCardProperties.getDefaultOutputModes()
+				? a2AServerAgentCardProperties.getDefaultOutputModes() : List.of("text/plain");
 	}
 
-	private String getUrl(A2aServerProperties a2aServerProperties, A2aServerAgentCardProperties a2AServerAgentCardProperties) {
-		return StringUtils.hasLength(a2AServerAgentCardProperties.getUrl()) ? a2AServerAgentCardProperties.getUrl() : buildUrl(a2aServerProperties);
+	private String getUrl(A2aServerProperties a2aServerProperties,
+			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
+		return StringUtils.hasLength(a2AServerAgentCardProperties.getUrl()) ? a2AServerAgentCardProperties.getUrl()
+				: buildUrl(a2aServerProperties);
 	}
 
-	private List<AgentSkill> getAgentSkills(BaseAgent rootAgent, A2aServerAgentCardProperties a2AServerAgentCardProperties) {
+	private List<AgentSkill> getAgentSkills(BaseAgent rootAgent,
+			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
 		return null != a2AServerAgentCardProperties.getSkills() ? a2AServerAgentCardProperties.getSkills() : List.of();
 	}
 
-	private List<AgentInterface> getAdditionalInterfaces(A2aServerAgentCardProperties a2AServerAgentCardProperties, A2aServerProperties a2aServerProperties) {
+	private List<AgentInterface> getAdditionalInterfaces(A2aServerAgentCardProperties a2AServerAgentCardProperties,
+			A2aServerProperties a2aServerProperties) {
 		if (null != a2AServerAgentCardProperties.getAdditionalInterfaces()) {
 			return a2AServerAgentCardProperties.getAdditionalInterfaces();
 		}

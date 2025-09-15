@@ -43,7 +43,8 @@ public class NacosA2aOperationService {
 
 	private final A2aServerProperties a2aServerProperties;
 
-	public NacosA2aOperationService(A2aService a2aService, NacosA2aProperties nacosA2aProperties, A2aServerProperties a2aServerProperties) {
+	public NacosA2aOperationService(A2aService a2aService, NacosA2aProperties nacosA2aProperties,
+			A2aServerProperties a2aServerProperties) {
 		this.a2aService = a2aService;
 		this.nacosA2aProperties = nacosA2aProperties;
 		this.a2aServerProperties = a2aServerProperties;
@@ -69,7 +70,6 @@ public class NacosA2aOperationService {
 				nacosA2aProperties.getNamespace());
 	}
 
-
 	private void registerEndpoint(AgentCard agentCard) throws NacosException {
 		AgentEndpoint endpoint = new AgentEndpoint();
 		endpoint.setVersion(agentCard.getVersion());
@@ -79,4 +79,5 @@ public class NacosA2aOperationService {
 		endpoint.setPort(a2aServerProperties.getPort());
 		a2aService.registerAgentEndpoint(agentCard.getName(), endpoint);
 	}
+
 }

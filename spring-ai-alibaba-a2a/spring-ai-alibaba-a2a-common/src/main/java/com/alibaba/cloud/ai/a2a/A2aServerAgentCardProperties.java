@@ -32,4 +32,5 @@ public class A2aServerAgentCardProperties extends A2aAgentCardProperties {
 	private static final Logger log = LoggerFactory.getLogger(A2aServerProperties.class);
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.a2a.server.card";
+
 }

@@ -67,4 +67,5 @@ public class A2aClientAgentCardProperties extends A2aAgentCardProperties {
 	public void setWellKnownUrl(String wellKnownUrl) {
 		this.wellKnownUrl = wellKnownUrl;
 	}
+
 }

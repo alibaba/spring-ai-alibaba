@@ -38,10 +38,12 @@ import org.springframework.context.annotation.Bean;
  *
  * @author xiweng.yy
  */
-@ConditionalOnClass({A2aServerAgentCardAutoConfiguration.class, A2aServerRegistryAutoConfiguration.class})
-@AutoConfiguration(after = A2aServerAgentCardAutoConfiguration.class, before = {A2aServerRegistryAutoConfiguration.class})
-@EnableConfigurationProperties({NacosA2aProperties.class})
-@ConditionalOnProperty(prefix = NacosA2aProperties.PREFIX, value = "registry.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnClass({ A2aServerAgentCardAutoConfiguration.class, A2aServerRegistryAutoConfiguration.class })
+@AutoConfiguration(after = A2aServerAgentCardAutoConfiguration.class,
+		before = { A2aServerRegistryAutoConfiguration.class })
+@EnableConfigurationProperties({ NacosA2aProperties.class })
+@ConditionalOnProperty(prefix = NacosA2aProperties.PREFIX, value = "registry.enabled", havingValue = "true",
+		matchIfMissing = true)
 public class NacosA2aRegistryAutoConfiguration {
 
 	@Bean

@@ -203,7 +203,8 @@ public class A2aRemoteAgent extends BaseAgent {
 				}
 				if (agentCardProvider.supportGetAgentCardByName()) {
 					agentCard = agentCardProvider.getAgentCard(name);
-				} else {
+				}
+				else {
 					agentCard = agentCardProvider.getAgentCard();
 				}
 			}

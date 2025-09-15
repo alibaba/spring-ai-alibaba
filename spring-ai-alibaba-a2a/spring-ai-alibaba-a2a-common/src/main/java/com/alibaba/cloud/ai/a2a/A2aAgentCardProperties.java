@@ -171,4 +171,5 @@ public class A2aAgentCardProperties {
 	public void setAdditionalInterfaces(List<AgentInterface> additionalInterfaces) {
 		this.additionalInterfaces = additionalInterfaces;
 	}
+
 }

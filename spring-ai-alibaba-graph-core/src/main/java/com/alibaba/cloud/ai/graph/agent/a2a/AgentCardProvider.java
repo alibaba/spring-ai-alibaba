@@ -27,7 +27,6 @@ public interface AgentCardProvider {
 
 	/**
 	 * Get agent card.
-	 *
 	 * @return agent card
 	 */
 	AgentCard getAgentCard();
@@ -35,8 +34,10 @@ public interface AgentCardProvider {
 	/**
 	 * Get agent card by agent name.
 	 *
-	 * <p>Should throw {@link UnsupportedOperationException} when {@link #supportGetAgentCardByName()} return false</p>
-	 *
+	 * <p>
+	 * Should throw {@link UnsupportedOperationException} when
+	 * {@link #supportGetAgentCardByName()} return false
+	 * </p>
 	 * @param agentName agent name
 	 * @return agent card
 	 */
@@ -46,10 +47,10 @@ public interface AgentCardProvider {
 
 	/**
 	 * Whether support get agent card by agent name.
-	 *
 	 * @return true if support
 	 */
 	default boolean supportGetAgentCardByName() {
 		return false;
 	}
+
 }

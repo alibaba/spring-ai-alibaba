@@ -39,42 +39,44 @@ public class AgentCardConverterUtil {
 			return null;
 		}
 
-		return new io.a2a.spec.AgentCard.Builder()
-				.protocolVersion(agentCard.getProtocolVersion())
-				.name(agentCard.getName())
-				.description(agentCard.getDescription())
-				.version(agentCard.getVersion())
-				.iconUrl(agentCard.getIconUrl())
-				.capabilities(convertToA2aAgentCapabilities(agentCard.getCapabilities()))
-				.skills(convertToA2aAgentSkills(agentCard.getSkills()))
-				.url(agentCard.getUrl())
-				.preferredTransport(agentCard.getPreferredTransport())
-				.additionalInterfaces(convertToA2aAgentInterfaces(agentCard.getAdditionalInterfaces()))
-				.provider(convertToA2aAgentProvider(agentCard.getProvider()))
-				.documentationUrl(agentCard.getDocumentationUrl())
-				.securitySchemes(convertToA2aAgentSecuritySchemes(agentCard.getSecuritySchemes()))
-				.security(agentCard.getSecurity())
-				.defaultInputModes(agentCard.getDefaultInputModes())
-				.defaultOutputModes(agentCard.getDefaultOutputModes())
-				.supportsAuthenticatedExtendedCard(agentCard.getSupportsAuthenticatedExtendedCard())
-				.build();
+		return new io.a2a.spec.AgentCard.Builder().protocolVersion(agentCard.getProtocolVersion())
+			.name(agentCard.getName())
+			.description(agentCard.getDescription())
+			.version(agentCard.getVersion())
+			.iconUrl(agentCard.getIconUrl())
+			.capabilities(convertToA2aAgentCapabilities(agentCard.getCapabilities()))
+			.skills(convertToA2aAgentSkills(agentCard.getSkills()))
+			.url(agentCard.getUrl())
+			.preferredTransport(agentCard.getPreferredTransport())
+			.additionalInterfaces(convertToA2aAgentInterfaces(agentCard.getAdditionalInterfaces()))
+			.provider(convertToA2aAgentProvider(agentCard.getProvider()))
+			.documentationUrl(agentCard.getDocumentationUrl())
+			.securitySchemes(convertToA2aAgentSecuritySchemes(agentCard.getSecuritySchemes()))
+			.security(agentCard.getSecurity())
+			.defaultInputModes(agentCard.getDefaultInputModes())
+			.defaultOutputModes(agentCard.getDefaultOutputModes())
+			.supportsAuthenticatedExtendedCard(agentCard.getSupportsAuthenticatedExtendedCard())
+			.build();
 	}
 
-	private static Map<String, io.a2a.spec.SecurityScheme> convertToA2aAgentSecuritySchemes(Map<String, SecurityScheme> securitySchemes) {
+	private static Map<String, io.a2a.spec.SecurityScheme> convertToA2aAgentSecuritySchemes(
+			Map<String, SecurityScheme> securitySchemes) {
 		String securitySchemesJson = JacksonUtils.toJson(securitySchemes);
-		return JacksonUtils.toObj(securitySchemesJson, new TypeReference<>() {});
+		return JacksonUtils.toObj(securitySchemesJson, new TypeReference<>() {
+		});
 	}
 
 	private static io.a2a.spec.AgentProvider convertToA2aAgentProvider(AgentProvider provider) {
 		return new io.a2a.spec.AgentProvider(provider.getOrganization(), provider.getUrl());
 	}
 
-	private static List<io.a2a.spec.AgentInterface> convertToA2aAgentInterfaces(
-			List<AgentInterface> nacosInterfaces) {
+	private static List<io.a2a.spec.AgentInterface> convertToA2aAgentInterfaces(List<AgentInterface> nacosInterfaces) {
 		if (nacosInterfaces == null) {
 			return List.of();
 		}
-		return nacosInterfaces.stream().map(AgentCardConverterUtil::transferAgentInterface).collect(Collectors.toList());
+		return nacosInterfaces.stream()
+			.map(AgentCardConverterUtil::transferAgentInterface)
+			.collect(Collectors.toList());
 	}
 
 	private static io.a2a.spec.AgentInterface transferAgentInterface(AgentInterface agentInterface) {
@@ -88,9 +90,9 @@ public class AgentCardConverterUtil {
 		}
 
 		return new io.a2a.spec.AgentCapabilities.Builder().streaming(nacosCapabilities.getStreaming())
-				.pushNotifications(nacosCapabilities.getPushNotifications())
-				.stateTransitionHistory(nacosCapabilities.getStateTransitionHistory())
-				.build();
+			.pushNotifications(nacosCapabilities.getPushNotifications())
+			.stateTransitionHistory(nacosCapabilities.getStateTransitionHistory())
+			.build();
 	}
 
 	private static List<io.a2a.spec.AgentSkill> convertToA2aAgentSkills(List<AgentSkill> nacosSkills) {
@@ -103,13 +105,13 @@ public class AgentCardConverterUtil {
 
 	private static io.a2a.spec.AgentSkill transferAgentSkill(AgentSkill nacosSkill) {
 		return new io.a2a.spec.AgentSkill.Builder().id(nacosSkill.getId())
-				.tags(nacosSkill.getTags())
-				.examples(nacosSkill.getExamples())
-				.name(nacosSkill.getName())
-				.description(nacosSkill.getDescription())
-				.inputModes(nacosSkill.getInputModes())
-				.outputModes(nacosSkill.getOutputModes())
-				.build();
+			.tags(nacosSkill.getTags())
+			.examples(nacosSkill.getExamples())
+			.name(nacosSkill.getName())
+			.description(nacosSkill.getDescription())
+			.inputModes(nacosSkill.getInputModes())
+			.outputModes(nacosSkill.getOutputModes())
+			.build();
 	}
 
 	public static AgentCard convertToNacosAgentCard(io.a2a.spec.AgentCard agentCard) {
@@ -134,8 +136,7 @@ public class AgentCardConverterUtil {
 		return card;
 	}
 
-	private static AgentCapabilities convertToNacosAgentCapabilities(
-			io.a2a.spec.AgentCapabilities capabilities) {
+	private static AgentCapabilities convertToNacosAgentCapabilities(io.a2a.spec.AgentCapabilities capabilities) {
 		com.alibaba.nacos.api.ai.model.a2a.AgentCapabilities nacosCapabilities = new com.alibaba.nacos.api.ai.model.a2a.AgentCapabilities();
 		nacosCapabilities.setStreaming(capabilities.streaming());
 		nacosCapabilities.setPushNotifications(capabilities.pushNotifications());
@@ -161,7 +162,9 @@ public class AgentCardConverterUtil {
 		if (agentInterfaces == null) {
 			return List.of();
 		}
-		return agentInterfaces.stream().map(AgentCardConverterUtil::convertToNacosAgentInterface).collect(Collectors.toList());
+		return agentInterfaces.stream()
+			.map(AgentCardConverterUtil::convertToNacosAgentInterface)
+			.collect(Collectors.toList());
 	}
 
 	private static AgentInterface convertToNacosAgentInterface(io.a2a.spec.AgentInterface agentInterface) {
@@ -184,6 +187,8 @@ public class AgentCardConverterUtil {
 			return null;
 		}
 		String originalJson = JacksonUtils.toJson(securitySchemes);
-		return JacksonUtils.toObj(originalJson, new TypeReference<>() {});
+		return JacksonUtils.toObj(originalJson, new TypeReference<>() {
+		});
 	}
+
 }

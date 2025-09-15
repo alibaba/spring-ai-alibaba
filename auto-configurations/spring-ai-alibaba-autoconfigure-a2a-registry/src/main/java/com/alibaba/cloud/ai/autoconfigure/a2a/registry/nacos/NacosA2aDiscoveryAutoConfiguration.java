@@ -34,9 +34,10 @@ import org.springframework.context.annotation.Bean;
  *
  * @author xiweng.yy
  */
-@AutoConfiguration(before = {A2aClientAgentCardProviderAutoConfiguration.class})
-@EnableConfigurationProperties({NacosA2aProperties.class})
-@ConditionalOnProperty(prefix = NacosA2aProperties.PREFIX, value = "discovery.enabled", havingValue = "true", matchIfMissing = true)
+@AutoConfiguration(before = { A2aClientAgentCardProviderAutoConfiguration.class })
+@EnableConfigurationProperties({ NacosA2aProperties.class })
+@ConditionalOnProperty(prefix = NacosA2aProperties.PREFIX, value = "discovery.enabled", havingValue = "true",
+		matchIfMissing = true)
 public class NacosA2aDiscoveryAutoConfiguration {
 
 	@Bean
@@ -49,4 +50,5 @@ public class NacosA2aDiscoveryAutoConfiguration {
 	public NacosAgentCardProvider nacosAgentCardProvider(A2aService a2aService) throws Exception {
 		return new NacosAgentCardProvider(a2aService);
 	}
+
 }

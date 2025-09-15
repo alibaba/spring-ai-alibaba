@@ -24,7 +24,8 @@ import com.alibaba.nacos.api.exception.runtime.NacosRuntimeException;
 import io.a2a.spec.AgentCard;
 
 /**
- * Implementation of {@link AgentCardProvider} for getting agent card from nacos a2a registry.
+ * Implementation of {@link AgentCardProvider} for getting agent card from nacos a2a
+ * registry.
  *
  * @author xiweng.yy
  */
@@ -61,4 +62,5 @@ public class NacosAgentCardProvider implements AgentCardProvider {
 	public boolean supportGetAgentCardByName() {
 		return true;
 	}
+
 }

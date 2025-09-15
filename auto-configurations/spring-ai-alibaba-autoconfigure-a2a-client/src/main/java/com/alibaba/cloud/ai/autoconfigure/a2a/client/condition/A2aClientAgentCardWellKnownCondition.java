@@ -33,7 +33,10 @@ public class A2aClientAgentCardWellKnownCondition extends SpringBootCondition {
 
 	@Override
 	public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
-		String wellKnownUrl = context.getEnvironment().getProperty(A2aClientAgentCardProperties.CONFIG_PREFIX + ".well-known-url", String.class);
-		return StringUtils.hasLength(wellKnownUrl) ? ConditionOutcome.match() : ConditionOutcome.noMatch(A2aClientAgentCardProperties.CONFIG_PREFIX + ".wellKnownUrl not set.");
+		String wellKnownUrl = context.getEnvironment()
+			.getProperty(A2aClientAgentCardProperties.CONFIG_PREFIX + ".well-known-url", String.class);
+		return StringUtils.hasLength(wellKnownUrl) ? ConditionOutcome.match()
+				: ConditionOutcome.noMatch(A2aClientAgentCardProperties.CONFIG_PREFIX + ".wellKnownUrl not set.");
 	}
+
 }

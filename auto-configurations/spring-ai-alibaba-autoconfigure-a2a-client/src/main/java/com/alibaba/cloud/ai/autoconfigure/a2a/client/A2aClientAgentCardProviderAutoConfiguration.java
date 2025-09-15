@@ -35,39 +35,39 @@ import org.springframework.context.annotation.Conditional;
  * @author xiweng.yy
  */
 @AutoConfiguration
-@EnableConfigurationProperties({A2aClientAgentCardProperties.class})
+@EnableConfigurationProperties({ A2aClientAgentCardProperties.class })
 public class A2aClientAgentCardProviderAutoConfiguration {
 
 	@Bean
-	@ConditionalOnClass({AgentCardProvider.class})
+	@ConditionalOnClass({ AgentCardProvider.class })
 	@Conditional(A2aClientAgentCardWellKnownCondition.class)
 	public AgentCardProvider remoteAgentCardProvider(A2aClientAgentCardProperties a2aClientAgentCardProperties) {
 		return RemoteAgentCardProvider.newProvider(a2aClientAgentCardProperties.getWellKnownUrl());
 	}
 
 	@Bean
-	@ConditionalOnClass({AgentCardProvider.class})
+	@ConditionalOnClass({ AgentCardProvider.class })
 	@ConditionalOnProperty(prefix = A2aClientAgentCardProperties.CONFIG_PREFIX, value = "name")
 	public AgentCardProvider localAgentCardProvider(A2aClientAgentCardProperties a2aClientAgentCardProperties) {
-		AgentCard agentCard = new AgentCard.Builder()
-				.name(a2aClientAgentCardProperties.getName())
-				.description(a2aClientAgentCardProperties.getDescription())
-				.url(a2aClientAgentCardProperties.getUrl())
-				.provider(a2aClientAgentCardProperties.getProvider())
-				.documentationUrl(a2aClientAgentCardProperties.getDocumentationUrl())
-				.capabilities(a2aClientAgentCardProperties.getCapabilities())
-				.defaultInputModes(a2aClientAgentCardProperties.getDefaultInputModes())
-				.defaultOutputModes(a2aClientAgentCardProperties.getDefaultOutputModes())
-				.skills(a2aClientAgentCardProperties.getSkills())
-				.supportsAuthenticatedExtendedCard(a2aClientAgentCardProperties.isSupportsAuthenticatedExtendedCard())
-				.securitySchemes(a2aClientAgentCardProperties.getSecuritySchemes())
-				.security(a2aClientAgentCardProperties.getSecurity())
-				.iconUrl(a2aClientAgentCardProperties.getIconUrl())
-				.additionalInterfaces(a2aClientAgentCardProperties.getAdditionalInterfaces())
-				.version(a2aClientAgentCardProperties.getVersion())
-				.protocolVersion(a2aClientAgentCardProperties.getProtocolVersion())
-				.preferredTransport(a2aClientAgentCardProperties.getPreferredTransport())
-				.build();
+		AgentCard agentCard = new AgentCard.Builder().name(a2aClientAgentCardProperties.getName())
+			.description(a2aClientAgentCardProperties.getDescription())
+			.url(a2aClientAgentCardProperties.getUrl())
+			.provider(a2aClientAgentCardProperties.getProvider())
+			.documentationUrl(a2aClientAgentCardProperties.getDocumentationUrl())
+			.capabilities(a2aClientAgentCardProperties.getCapabilities())
+			.defaultInputModes(a2aClientAgentCardProperties.getDefaultInputModes())
+			.defaultOutputModes(a2aClientAgentCardProperties.getDefaultOutputModes())
+			.skills(a2aClientAgentCardProperties.getSkills())
+			.supportsAuthenticatedExtendedCard(a2aClientAgentCardProperties.isSupportsAuthenticatedExtendedCard())
+			.securitySchemes(a2aClientAgentCardProperties.getSecuritySchemes())
+			.security(a2aClientAgentCardProperties.getSecurity())
+			.iconUrl(a2aClientAgentCardProperties.getIconUrl())
+			.additionalInterfaces(a2aClientAgentCardProperties.getAdditionalInterfaces())
+			.version(a2aClientAgentCardProperties.getVersion())
+			.protocolVersion(a2aClientAgentCardProperties.getProtocolVersion())
+			.preferredTransport(a2aClientAgentCardProperties.getPreferredTransport())
+			.build();
 		return () -> agentCard;
 	}
+
 }
