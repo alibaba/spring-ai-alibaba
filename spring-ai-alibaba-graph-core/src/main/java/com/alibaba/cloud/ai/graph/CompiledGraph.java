@@ -764,14 +764,14 @@ public class CompiledGraph {
 	 */
 	public enum StreamMode {
 
-	/**
-	 * Values stream mode.
-	 */
-	VALUES,
-	/**
-	 * Snapshots stream mode.
-	 */
-	SNAPSHOTS
+		/**
+		 * Values stream mode.
+		 */
+		VALUES,
+		/**
+		 * Snapshots stream mode.
+		 */
+		SNAPSHOTS
 
 	}
 
