@@ -39,13 +39,13 @@ public enum NodeType {
 
 	AGGREGATOR("aggregator", "variable-aggregator", "UNSUPPORTED"),
 
-	HUMAN("human", "unsupported", "UNSUPPORTED"),
+	HUMAN("human", "UNSUPPORTED", "UNSUPPORTED"),
 
 	BRANCH("branch", "if-else", "Judge"),
 
 	DOC_EXTRACTOR("document-extractor", "document-extractor", "UNSUPPORTED"),
 
-	QUESTION_CLASSIFIER("question-classifier", "question-classifier", "UNSUPPORTED"),
+	QUESTION_CLASSIFIER("question-classifier", "question-classifier", "Classifier"),
 
 	HTTP("http", "http-request", "UNSUPPORTED"),
 
@@ -55,7 +55,7 @@ public enum NodeType {
 
 	TOOL("tool", "tool", "UNSUPPORTED"),
 
-	MCP("mcp", "unsupported", "UNSUPPORTED"),
+	MCP("mcp", "UNSUPPORTED", "UNSUPPORTED"),
 
 	TEMPLATE_TRANSFORM("template-transform", "template-transform", "UNSUPPORTED"),
 

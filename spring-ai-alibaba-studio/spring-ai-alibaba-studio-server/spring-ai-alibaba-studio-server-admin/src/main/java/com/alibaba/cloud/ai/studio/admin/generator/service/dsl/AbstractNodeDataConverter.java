@@ -81,13 +81,18 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 		 * @return 变量选择器
 		 */
 		default VariableSelector varTemplateToSelector(DSLDialectType dialectType, String template) {
+			if (template == null) {
+				throw new NullPointerException("Template string is null");
+			}
 			Pattern pattern = switch (dialectType) {
 				case DIFY -> DIFY_VAR_TEMPLATE_PATTERN;
 				case STUDIO -> STUDIO_VAR_TEMPLATE_PATTERN;
 				default -> throw new UnsupportedOperationException();
 			};
 			Matcher matcher = pattern.matcher(template);
-			MatchResult result = matcher.results().findFirst().orElseThrow();
+			MatchResult result = matcher.results()
+				.findFirst()
+				.orElseThrow(() -> new IllegalArgumentException("Invalid template string"));
 			return new VariableSelector(result.group(1), result.group(2));
 		}
 
