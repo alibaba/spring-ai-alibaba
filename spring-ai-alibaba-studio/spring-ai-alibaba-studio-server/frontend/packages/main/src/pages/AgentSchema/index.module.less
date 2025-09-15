@@ -1,0 +1,543 @@
+.container {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  height: calc(100vh - 64px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.threeColumnLayout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+}
+
+.leftPanel {
+  width: 300px;
+  flex-shrink: 0;
+  border-right: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.centerPanel {
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid #e5e7eb;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 120px);
+  overflow: hidden;
+}
+
+.rightPanel {
+  width: 400px;
+  flex-shrink: 0;
+  background: #f9fafb;
+}
+
+.savedAgentsCard {
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+
+  .ant-card-head {
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
+    flex-shrink: 0;
+  }
+
+  .ant-card-body {
+    padding: 16px;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+}
+
+.configCard {
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .ant-card-head {
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
+    flex-shrink: 0;
+    padding: 16px 24px;
+  }
+
+  .ant-card-body {
+    padding: 0 !important;
+    flex: 1;
+    overflow: hidden;
+    display: flex !important;
+    flex-direction: column;
+  }
+}
+
+.yamlCard {
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+
+  .ant-card-head {
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
+    flex-shrink: 0;
+  }
+
+  .ant-card-body {
+    padding: 16px;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+}
+
+.agentItem {
+  padding: 12px 16px !important;
+  margin: 4px 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+
+  &:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+  }
+
+  &.selectedAgent {
+    background: #eff6ff;
+    border-color: #3b82f6;
+  }
+}
+
+.agentInfo {
+  width: 100%;
+}
+
+.agentName {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.agentDescription {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.agentType {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+.newAgentButton {
+  margin-top: 8px;
+}
+
+.yamlHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.copyButton {
+  padding: 4px 8px;
+  height: auto;
+  font-size: 12px;
+}
+
+.yamlContent {
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+.tooltipText {
+  margin-left: 4px;
+  cursor: help;
+}
+
+.keyRow {
+  display: flex;
+  gap: 16px;
+
+  .keyItem {
+    flex: 1;
+  }
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .ant-checkbox-wrapper {
+    margin: 0;
+  }
+}
+
+.configActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  margin-top: auto;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.scrollContainer {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+
+  // 自定义滚动条样式 - 更显眼的独立滚动条
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #6c757d;
+    border-radius: 6px;
+    border: 2px solid #f8f9fa;
+    background-clip: padding-box;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #495057;
+    }
+
+    &:active {
+      background: #343a40;
+    }
+  }
+
+  &::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  // Firefox 支持
+  scrollbar-width: thin;
+  scrollbar-color: #6c757d #f8f9fa;
+}
+
+// 独立滚动条容器类
+.independentScrollContainer {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-right: 2px solid #e9ecef;
+  position: relative;
+
+  // 自定义滚动条样式
+  &::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f3f4;
+    border-radius: 6px;
+    margin: 4px 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #5f6368;
+    border-radius: 6px;
+    min-height: 40px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #3c4043;
+    }
+
+    &:active {
+      background: #202124;
+    }
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  // Firefox 支持
+  scrollbar-width: thin;
+  scrollbar-color: #5f6368 #f1f3f4;
+}
+
+// 为表单部分添加滚动条
+.formScrollContainer {
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  margin-right: -8px;
+  border-radius: 8px;
+
+  // 自定义滚动条样式
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #adb5bd;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #6c757d;
+    }
+  }
+
+  // Firefox 支持
+  scrollbar-width: thin;
+  scrollbar-color: #adb5bd #f8f9fa;
+}
+
+.form {
+  margin-bottom: 24px;
+
+  .ant-form-item-label > label {
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .ant-input,
+  .ant-select-selector,
+  .ant-input-number,
+  .ant-input {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: #3b82f6;
+    }
+
+    &:focus,
+    &.ant-input-focused,
+    &.ant-select-focused .ant-select-selector {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  }
+
+  // 限制 TextArea 的最大高度
+  .ant-input {
+    max-height: 200px;
+    resize: vertical;
+  }
+}
+
+// 响应式设计
+@media (max-width: 1200px) {
+  .threeColumnLayout {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .leftPanel,
+  .centerPanel,
+  .rightPanel {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .leftPanel {
+    height: 200px;
+  }
+
+  .rightPanel {
+    height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    height: auto;
+    min-height: calc(100vh - 64px);
+  }
+
+  .keyRow {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .checkboxGroup {
+    flex-direction: column;
+  }
+
+  .configActions {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+// 深色模式支持
+@media (prefers-color-scheme: dark) {
+  .leftPanel,
+  .rightPanel {
+    background: #1f2937;
+  }
+
+  .centerPanel {
+    background: #111827;
+  }
+
+  .savedAgentsCard,
+  .configCard,
+  .yamlCard {
+    .ant-card-head {
+      background: #1f2937;
+      border-bottom-color: #374151;
+    }
+  }
+
+  .agentItem {
+    &:hover {
+      background: #374151;
+    }
+
+    &.selectedAgent {
+      background: #1e40af;
+    }
+  }
+
+  .form {
+    .ant-form-item-label > label {
+      color: #f9fafb;
+    }
+
+    .ant-input,
+    .ant-select-selector,
+    .ant-input-number {
+      background: #374151;
+      border-color: #4b5563;
+      color: #f9fafb;
+
+      &:hover {
+        border-color: #3b82f6;
+      }
+
+      &:focus,
+      &.ant-input-focused,
+      &.ant-select-focused .ant-select-selector {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+    }
+  }
+
+  .configActions {
+    border-top-color: #374151;
+  }
+
+  // 深色模式滚动条样式
+  .scrollContainer {
+    &::-webkit-scrollbar-track {
+      background: #374151;
+      border-color: #4b5563;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #9ca3af;
+      border-color: #374151;
+
+      &:hover {
+        background: #d1d5db;
+      }
+
+      &:active {
+        background: #f3f4f6;
+      }
+    }
+
+    scrollbar-color: #9ca3af #374151;
+  }
+
+  .independentScrollContainer {
+    border-right-color: #374151;
+
+    &::-webkit-scrollbar-track {
+      background: #1f2937;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #9ca3af;
+      border-color: #1f2937;
+
+      &:hover {
+        background: #d1d5db;
+      }
+
+      &:active {
+        background: #f3f4f6;
+      }
+    }
+
+    scrollbar-color: #9ca3af #1f2937;
+  }
+
+  .formScrollContainer {
+    &::-webkit-scrollbar-track {
+      background: #374151;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #6b7280;
+
+      &:hover {
+        background: #9ca3af;
+      }
+
+      &:active {
+        background: #d1d5db;
+      }
+    }
+
+    scrollbar-color: #6b7280 #374151;
+  }
+}
