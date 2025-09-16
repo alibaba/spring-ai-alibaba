@@ -27,14 +27,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Plan parameter mapping service implementation class providing specific implementation for handling parameter placeholders in plan templates
+ * Plan parameter mapping service implementation class providing specific implementation
+ * for handling parameter placeholders in plan templates
  */
 @Service
 public class PlanParameterMappingService implements IPlanParameterMappingService {
 
 	private static final Logger logger = LoggerFactory.getLogger(PlanParameterMappingService.class);
 
-	// Parameter placeholder regex pattern: matches <<parameter_name>> format, supports all Unicode characters
+	// Parameter placeholder regex pattern: matches <<parameter_name>> format, supports
+	// all Unicode characters
 	private static final Pattern PARAMETER_PATTERN = Pattern.compile("<<([^<>]+)>>");
 
 	// Parameter placeholder prefix and suffix
@@ -79,7 +81,8 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 			result.setMessage("All parameter validation passed, found " + foundParams.size() + " parameters");
 		}
 		else {
-			result.setMessage("Missing parameters: " + String.join(", ", missingParams) + ", found " + foundParams.size() + " parameters");
+			result.setMessage("Missing parameters: " + String.join(", ", missingParams) + ", found "
+					+ foundParams.size() + " parameters");
 		}
 
 		logger.info("Parameter validation result: {}", result.getMessage());
@@ -94,7 +97,8 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 	}
 
 	/**
-	 * Validate parameter completeness before parameter replacement. Throws detailed exception information if validation fails
+	 * Validate parameter completeness before parameter replacement. Throws detailed
+	 * exception information if validation fails
 	 * @param planJson plan template JSON
 	 * @param rawParams raw parameters
 	 * @throws ParameterValidationException thrown when parameter validation fails
@@ -132,7 +136,8 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 
 		Matcher matcher = PARAMETER_PATTERN.matcher(planJson);
 		while (matcher.find()) {
-			placeholders.add(matcher.group(1)); // Only return parameter name, not including <<>>
+			placeholders.add(matcher.group(1)); // Only return parameter name, not
+												// including <<>>
 		}
 
 		logger.debug("Extracted {} parameter placeholders: {}", placeholders.size(), placeholders);
@@ -216,7 +221,8 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 	}
 
 	/**
-	 * Check if parameter name is valid. Parameter names can only contain letters, numbers and underscores
+	 * Check if parameter name is valid. Parameter names can only contain letters, numbers
+	 * and underscores
 	 */
 	public static boolean isValidParameterName(String paramName) {
 		if (paramName == null || paramName.trim().isEmpty()) {
@@ -236,7 +242,8 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 	}
 
 	/**
-	 * Get parameter requirements information for plan template to help users understand what parameters need to be provided
+	 * Get parameter requirements information for plan template to help users understand
+	 * what parameters need to be provided
 	 * @param planJson plan template JSON
 	 * @return parameter requirements information
 	 */
@@ -269,7 +276,8 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 
 	private String buildDetailedErrorMessage(List<String> missingParams, List<String> foundParams, String planJson) {
 		StringBuilder errorMessage = new StringBuilder();
-		errorMessage.append("❌ Parameter validation failed! The plan template contains the following parameter placeholders, but the raw parameters did not provide or provided mismatched values:\n\n");
+		errorMessage.append(
+				"❌ Parameter validation failed! The plan template contains the following parameter placeholders, but the raw parameters did not provide or provided mismatched values:\n\n");
 
 		// List missing parameters with examples
 		errorMessage.append("🔍 Missing parameters:\n");
@@ -289,7 +297,8 @@ public class PlanParameterMappingService implements IPlanParameterMappingService
 		errorMessage.append("   1. Check if parameter name spelling is correct\n");
 		errorMessage.append("   2. Ensure all required parameters are provided\n");
 		errorMessage.append("   3. Parameter names are case-sensitive\n");
-		errorMessage.append("   4. Parameter names can only contain letters, numbers and underscores, and cannot start with numbers\n\n");
+		errorMessage.append(
+				"   4. Parameter names can only contain letters, numbers and underscores, and cannot start with numbers\n\n");
 
 		errorMessage.append("📋 Plan template content:\n");
 		errorMessage.append(planJson);

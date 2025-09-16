@@ -21,8 +21,10 @@ package com.alibaba.cloud.ai.manus.runtime.service;
 public interface IPlanIdDispatcher {
 
 	// TODO: runtime needs to add new service for persisting runtime state
-	// TODO: research the conversation service, it doesn't seem to integrate well with the original interaction
-	// TODO: determine what needs to be persisted and what to persist to support stop functionality
+	// TODO: research the conversation service, it doesn't seem to integrate well with the
+	// original interaction
+	// TODO: determine what needs to be persisted and what to persist to support stop
+	// functionality
 
 	/**
 	 * Check if ID is a plan template ID

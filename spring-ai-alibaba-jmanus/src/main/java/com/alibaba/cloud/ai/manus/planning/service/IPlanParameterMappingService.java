@@ -23,12 +23,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Plan parameter mapping service interface providing functionality for handling parameter placeholders in plan templates
+ * Plan parameter mapping service interface providing functionality for handling parameter
+ * placeholders in plan templates
  */
 public interface IPlanParameterMappingService {
 
 	/**
-	 * Validate whether all parameter placeholders in plan template can be found in raw parameters. Throws detailed exception information if validation fails
+	 * Validate whether all parameter placeholders in plan template can be found in raw
+	 * parameters. Throws detailed exception information if validation fails
 	 * @param planJson plan template JSON string
 	 * @param rawParams raw parameters dictionary
 	 * @return validation result containing list of missing parameters
@@ -55,7 +57,8 @@ public interface IPlanParameterMappingService {
 	String replaceParametersInJson(String planJson, Map<String, Object> rawParams) throws ParameterValidationException;
 
 	/**
-	 * Validate parameter completeness before parameter replacement. Throws detailed exception information if validation fails
+	 * Validate parameter completeness before parameter replacement. Throws detailed
+	 * exception information if validation fails
 	 * @param planJson plan template JSON
 	 * @param rawParams raw parameters
 	 * @throws ParameterValidationException thrown when parameter validation fails
@@ -73,7 +76,8 @@ public interface IPlanParameterMappingService {
 	String replaceParametersSafely(String planJson, Map<String, Object> rawParams) throws ParameterValidationException;
 
 	/**
-	 * Get parameter requirements information for plan template to help users understand what parameters need to be provided
+	 * Get parameter requirements information for plan template to help users understand
+	 * what parameters need to be provided
 	 * @param planJson plan template JSON
 	 * @return parameter requirements information
 	 */
