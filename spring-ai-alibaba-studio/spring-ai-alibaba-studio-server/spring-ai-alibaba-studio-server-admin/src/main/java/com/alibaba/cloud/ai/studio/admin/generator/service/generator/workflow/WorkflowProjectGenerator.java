@@ -21,6 +21,7 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,21 +58,30 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private static final Logger log = LoggerFactory.getLogger(WorkflowProjectGenerator.class);
 
-	private final String GRAPH_BUILDER_TEMPLATE_NAME = "GraphBuilder.java";
+	private static final String GRAPH_BUILDER_TEMPLATE_NAME = "GraphBuilder.java";
 
-	private final String GRAPH_BUILDER_STATE_SECTION = "stateSection";
+	private static final String GRAPH_BUILDER_STATE_SECTION = "stateSection";
 
-	private final String GRAPH_BUILDER_NODE_SECTION = "nodeSection";
+	private static final String GRAPH_BUILDER_NODE_SECTION = "nodeSection";
 
-	private final String GRAPH_BUILDER_EDGE_SECTION = "edgeSection";
+	private static final String GRAPH_BUILDER_EDGE_SECTION = "edgeSection";
 
-	private final String GRAPH_BUILDER_IMPORT_SECTION = "importSection";
+	private static final String GRAPH_BUILDER_IMPORT_SECTION = "importSection";
 
-	private final String GRAPH_BUILDER_ASSIST_METHOD_CODE = "assistMethodCode";
+	private static final String GRAPH_BUILDER_ASSIST_METHOD_CODE = "assistMethodCode";
 
-	private final String GRAPH_RUN_TEMPLATE_NAME = "GraphRunController.java";
+	private static final String GRAPH_RUN_TEMPLATE_NAME = "GraphRunController.java";
 
-	private final String PACKAGE_NAME = "packageName";
+	private static final String PACKAGE_NAME = "packageName";
+
+	private static final List<String> GRAPH_COMMON_IMPORTS = List.of("com.alibaba.cloud.ai.graph.CompiledGraph",
+			"com.alibaba.cloud.ai.graph.KeyStrategy", "com.alibaba.cloud.ai.graph.OverAllState",
+			"com.alibaba.cloud.ai.graph.StateGraph", "com.alibaba.cloud.ai.graph.action.AsyncEdgeAction",
+			"com.alibaba.cloud.ai.graph.action.AsyncNodeAction", "com.alibaba.cloud.ai.graph.action.NodeAction",
+			"com.alibaba.cloud.ai.graph.exception.GraphStateException", "org.springframework.ai.chat.client.ChatClient",
+			"org.springframework.ai.chat.model.ChatModel", "org.springframework.context.annotation.Bean",
+			"org.springframework.stereotype.Component", "java.util.HashMap", "java.util.Map", "java.util.List",
+			"static com.alibaba.cloud.ai.graph.StateGraph.END", "static com.alibaba.cloud.ai.graph.StateGraph.START");
 
 	private final List<DSLAdapter> dslAdapters;
 
@@ -237,13 +247,21 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			return "";
 		}
 
-		StringBuilder sb = new StringBuilder();
-		uniqueTypes.stream()
+		List<String> commonImports = uniqueTypes.stream()
 			.map(nodeSectionMap::get)
 			.map(NodeSection::getImports)
 			.flatMap(List::stream)
 			.distinct()
-			.forEach(className -> sb.append("import ").append(className).append(";\n"));
+			.toList();
+		// 按照字典序升序排序，其中static开头的放在后面
+		List<String> allImports = Stream.of(commonImports, GRAPH_COMMON_IMPORTS)
+			.flatMap(List::stream)
+			.distinct()
+			.sorted(Comparator.comparing((String s) -> s.startsWith("static")).thenComparing(String::compareTo))
+			.toList();
+
+		StringBuilder sb = new StringBuilder();
+		allImports.forEach(className -> sb.append("import ").append(className).append(";\n"));
 
 		return sb.toString();
 	}

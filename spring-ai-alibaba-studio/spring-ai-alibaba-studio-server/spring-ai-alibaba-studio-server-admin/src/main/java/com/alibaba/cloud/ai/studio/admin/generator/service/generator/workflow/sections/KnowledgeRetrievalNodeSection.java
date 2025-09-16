@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.studio.runtime.domain.PagingList;
 import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.Document;
 import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.DocumentQuery;
 import com.alibaba.cloud.ai.studio.runtime.enums.DocumentType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -54,9 +55,10 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 
 	private final String studioStoragePath;
 
-	public KnowledgeRetrievalNodeSection(DocumentService studioDocumentService, StudioProperties properties) {
+	public KnowledgeRetrievalNodeSection(@Autowired(required = false) DocumentService studioDocumentService,
+			@Autowired(required = false) StudioProperties properties) {
 		this.studioDocumentService = studioDocumentService;
-		this.studioStoragePath = properties.getStoragePath();
+		this.studioStoragePath = properties != null ? properties.getStoragePath() : null;
 	}
 
 	@Override
@@ -64,6 +66,10 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 		KnowledgeRetrievalNodeData nodeData = (KnowledgeRetrievalNodeData) node.getData();
 
 		if (DSLDialectType.STUDIO.equals(nodeData.getDialectType())) {
+			if (this.studioDocumentService == null || this.studioStoragePath == null) {
+				throw new IllegalArgumentException(
+						"The current mode does not support Studio's knowledge retrieval node code generation. Please start the complete StudioApplication class");
+			}
 			// 根据knowledgeBaseIds获取对应的资源文件
 			List<ResourceFile> resourceFiles = Optional.ofNullable(nodeData.getKnowledgeBaseIds())
 				.orElse(List.of())

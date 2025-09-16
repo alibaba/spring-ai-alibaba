@@ -59,9 +59,8 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 				LLMNodeData nodeData = new LLMNodeData();
 
 				// 获取必要的信息
-				String modeName = MapReadUtil.getMapDeepValue(data, String.class, "model", "name");
-				Map<String, Object> modeParams = MapReadUtil.safeCastToMapWithStringKey(
-						MapReadUtil.getMapDeepValue(data, Map.class, "model", "completion_params"));
+				String modeName = this.exactChatModelName(DSLDialectType.DIFY, data);
+				Map<String, Object> modeParams = this.exactChatModelParam(DSLDialectType.DIFY, data);
 
 				// MessageTemplate的keys字段将在postProcess中确定，所以这里先设置为空
 				List<LLMNodeData.MessageTemplate> messageTemplates = Optional
@@ -113,7 +112,7 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 			}
 		})
 
-		, STUDIO(new DialectConverter<LLMNodeData>() {
+		, STUDIO(new DialectConverter<>() {
 			@Override
 			public Boolean supportDialect(DSLDialectType dialectType) {
 				return DSLDialectType.STUDIO.equals(dialectType);
@@ -124,19 +123,8 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 				LLMNodeData nodeData = new LLMNodeData();
 
 				// 从data中提取必要信息
-				Map<String, Object> modeConfigMap = MapReadUtil.safeCastToMapWithStringKey(
-						MapReadUtil.getMapDeepValue(data, Map.class, "config", "node_param", "model_config"));
-				String modeName = MapReadUtil.getMapDeepValue(modeConfigMap, String.class, "model_id");
-
-				Map<String, Object> modeParams = Optional
-					.ofNullable(MapReadUtil
-						.safeCastToListWithMap(MapReadUtil.getMapDeepValue(modeConfigMap, List.class, "params")))
-					.orElse(List.of())
-					.stream()
-					.filter(map -> Boolean.TRUE.equals(map.get("enable")))
-					.filter(map -> map.containsKey("key") && map.containsKey("value"))
-					.map(map -> Map.entry(map.get("key").toString(), map.get("value")))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b));
+				String modeName = this.exactChatModelName(DSLDialectType.STUDIO, data);
+				Map<String, Object> modeParams = this.exactChatModelParam(DSLDialectType.STUDIO, data);
 
 				String systemPrompt = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param",
 						"sys_prompt_content");

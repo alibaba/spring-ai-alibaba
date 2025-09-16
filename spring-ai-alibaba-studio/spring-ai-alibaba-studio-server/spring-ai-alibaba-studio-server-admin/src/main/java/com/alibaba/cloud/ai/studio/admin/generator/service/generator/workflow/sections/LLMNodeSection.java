@@ -42,7 +42,7 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 		return String.format("""
 				// —— LLMNode [%s] ——
 				stateGraph.addNode("%s", AsyncNodeAction.node_async(
-				    createLLMNodeAction(%s, %s, %s, %s, %s, %s, %s, %s, %s)
+				    createLLMNodeAction(chatModel, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 				));
 
 				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getChatModeName()),
@@ -60,9 +60,6 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 
 		return String.format(
 				"""
-						@Autowired
-						private ChatModel chatModel;
-
 						private record MessageTemplate(String template, List<String> keys, MessageType type) {
 						    public Message render(OverAllState state) {
 						        Map<String, Object> params = keys.stream()
@@ -77,7 +74,8 @@ public class LLMNodeSection implements NodeSection<LLMNodeData> {
 						    }
 						}
 
-						private NodeAction createLLMNodeAction(String chatModelName, Map<String, Number> modeParams,
+						private NodeAction createLLMNodeAction(ChatModel chatModel,
+						        String chatModelName, Map<String, Number> modeParams,
 						        List<MessageTemplate> messageTemplates, String memoryKey, Integer maxRetryCount, Integer retryIntervalMs,
 						        String defaultOutput, String errorNextNode, String outputKeyPrefix) {
 						    // build chatClient with params

@@ -69,9 +69,9 @@ public class Nl2SqlService {
 			agentId = "";
 		}
 		Map<String, Object> stateMap = Map.of(IS_ONLY_NL2SQL, true, INPUT_KEY, naturalQuery, AGENT_ID, agentId);
-		Optional<OverAllState> invoke = this.nl2sqlGraph.invoke(stateMap);
-		OverAllState state = invoke.orElseThrow(() -> {
-			logger.error("Nl2SqlService invoke fail, stateMap: {}", stateMap);
+		Optional<OverAllState> call = this.nl2sqlGraph.call(stateMap);
+		OverAllState state = call.orElseThrow(() -> {
+			logger.error("Nl2SqlService call fail, stateMap: {}", stateMap);
 			return new GraphRunnerException("图运行失败");
 		});
 		return state.value(ONLY_NL2SQL_OUTPUT, "");
@@ -96,14 +96,14 @@ public class Nl2SqlService {
 	 * @return CompletableFuture
 	 * @throws GraphRunnerException 图运行异常
 	 */
-	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer,
-			String naturalQuery, String agentId, RunnableConfig runnableConfig) throws GraphRunnerException {
+	public CompletableFuture<Void> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer, String naturalQuery,
+			String agentId, RunnableConfig runnableConfig) throws GraphRunnerException {
 		Map<String, Object> stateMap = Map.of(IS_ONLY_NL2SQL, true, INPUT_KEY, naturalQuery, AGENT_ID, agentId);
 		Consumer<NodeOutput> consumer = (output) -> {
 			Nl2SqlProcess sqlProcess = this.nodeOutputToNl2sqlProcess(output);
 			nl2SqlProcessConsumer.accept(sqlProcess);
 		};
-		return this.nl2sqlGraph.stream(stateMap, runnableConfig).forEachAsync(consumer);
+		return this.nl2sqlGraph.fluxStream(stateMap, runnableConfig).doOnNext(consumer::accept).then().toFuture();
 	}
 
 	/**
@@ -114,8 +114,8 @@ public class Nl2SqlService {
 	 * @return CompletableFuture
 	 * @throws GraphRunnerException 图运行异常
 	 */
-	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer,
-			String naturalQuery, String agentId) throws GraphRunnerException {
+	public CompletableFuture<Void> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer, String naturalQuery,
+			String agentId) throws GraphRunnerException {
 		return this.nl2sqlWithProcess(nl2SqlProcessConsumer, naturalQuery, agentId, RunnableConfig.builder().build());
 	}
 
@@ -126,8 +126,8 @@ public class Nl2SqlService {
 	 * @return CompletableFuture
 	 * @throws GraphRunnerException 图运行异常
 	 */
-	public CompletableFuture<Object> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer,
-			String naturalQuery) throws GraphRunnerException {
+	public CompletableFuture<Void> nl2sqlWithProcess(Consumer<Nl2SqlProcess> nl2SqlProcessConsumer, String naturalQuery)
+			throws GraphRunnerException {
 		return this.nl2sqlWithProcess(nl2SqlProcessConsumer, naturalQuery, "");
 	}
 

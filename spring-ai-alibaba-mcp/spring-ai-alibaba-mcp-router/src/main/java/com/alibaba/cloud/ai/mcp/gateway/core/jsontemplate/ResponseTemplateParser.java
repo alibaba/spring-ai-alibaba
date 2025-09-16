@@ -16,7 +16,10 @@
 
 package com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.Template;
 import com.jayway.jsonpath.JsonPath;
 import org.springframework.util.StringUtils;
 
@@ -28,39 +31,86 @@ public class ResponseTemplateParser {
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
-	// 支持 {{.}} 或 {{.xxx}} 变量
+	private static final Handlebars handlebars = new Handlebars();
+
+	// Supports {{.}} or {{.xxx}} or {{.xxx.yyy}} multi-level variables
 	private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*\\.([\\w\\$\\[\\]\\.]*)\\s*}}",
 			Pattern.DOTALL);
 
+	// Detects multi-level path access patterns like {{.xxx.yyy}}
+	// This regex is fully covered by unit tests in ResponseTemplateParserTest.java
+	private static final Pattern MULTI_LEVEL_PATTERN = Pattern.compile("\\{\\{\\s*\\.\\w+\\.[\\w\\.]+\\s*}}");
+
 	/**
-	 * 处理响应模板
-	 * @param rawResponse 原始响应（JSON或文本）
-	 * @param responseTemplate 模板字符串（可为jsonPath、模板、null/空）
-	 * @return 处理后的字符串
+	 * Process response template
+	 * @param rawResponse raw response (JSON or text)
+	 * @param responseTemplate template string (can be jsonPath, template, null/empty)
+	 * @return processed string
 	 */
 	public static String parse(String rawResponse, String responseTemplate) {
 		if (!StringUtils.hasText(responseTemplate) || "{{.}}".equals(responseTemplate.trim())) {
-			// 原样输出
+			// Return raw output
 			return rawResponse;
 		}
 
-		// jsonPath 提取
+		// JsonPath extraction
 		if (responseTemplate.trim().startsWith("$.") || responseTemplate.trim().startsWith("$[")) {
 			try {
 				Object result = JsonPath.read(rawResponse, responseTemplate.trim());
 				return result != null ? result.toString() : "";
 			}
 			catch (Exception e) {
-				// jsonPath 失败，降级为模板处理
+				// JsonPath failed, fallback to template processing
 			}
 		}
 
-		// 模板变量替换
+		// Detect multi-level path access
+		if (MULTI_LEVEL_PATTERN.matcher(responseTemplate).find()) {
+			return parseWithHandlebars(rawResponse, responseTemplate);
+		}
+
+		// Simple template variable replacement (maintain backward compatibility)
+		return parseWithSimpleTemplate(rawResponse, responseTemplate);
+	}
+
+	private static String parseWithHandlebars(String rawResponse, String responseTemplate) {
+		try {
+			// 1. Preprocess template: convert syntax to be compatible with Handlebars
+			String handlebarsTemplateStr = responseTemplate
+				// Remove dot prefix: {{ .xxx.yyy }} -> {{xxx.yyy}}
+				.replaceAll("\\{\\{\\s*\\.", "{{")
+				// Convert array access syntax: {{users.[0].name}} -> {{users.0.name}}
+				.replaceAll("\\[([0-9]+)\\]", "$1");
+
+			// 2. Compile template
+			Template template = handlebars.compileInline(handlebarsTemplateStr);
+
+			Map<String, Object> dataContext;
+			boolean isJson = rawResponse.trim().startsWith("{") || rawResponse.trim().startsWith("[");
+			if (isJson) {
+				dataContext = objectMapper.readValue(rawResponse, new TypeReference<Map<String, Object>>() {
+				});
+			}
+			else {
+				// Non-JSON data, create a context containing the raw response
+				dataContext = Map.of("_raw", rawResponse);
+			}
+
+			return template.apply(dataContext);
+
+		}
+		catch (Exception e) {
+			return parseWithSimpleTemplate(rawResponse, responseTemplate);
+		}
+	}
+
+	private static String parseWithSimpleTemplate(String rawResponse, String responseTemplate) {
 		try {
 			Map<String, Object> context = null;
 			boolean isJson = rawResponse.trim().startsWith("{") || rawResponse.trim().startsWith("[");
 			if (isJson) {
-				context = objectMapper.readValue(rawResponse, Map.class);
+				context = objectMapper.readValue(rawResponse, new TypeReference<Map<String, Object>>() {
+				});
 			}
 			StringBuffer sb = new StringBuffer();
 			Matcher matcher = TEMPLATE_PATTERN.matcher(responseTemplate);

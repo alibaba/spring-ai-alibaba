@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS agent (
     tags TEXT COMMENT '标签，逗号分隔',
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    human_review_enabled TINYINT DEFAULT 0 COMMENT '是否启用计划人工复核：0-否，1-是',
     PRIMARY KEY (id),
     INDEX idx_name (name),
     INDEX idx_status (status),

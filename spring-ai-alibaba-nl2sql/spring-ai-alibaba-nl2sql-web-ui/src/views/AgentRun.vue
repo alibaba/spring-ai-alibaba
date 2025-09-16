@@ -312,6 +312,29 @@
 
     <!-- 移动端遮罩层 -->
     <div v-if="showReportPreview" class="mobile-preview-overlay" @click="closeReportPreview"></div>
+
+    <div v-if="showHumanReviewModal" class="modal-mask">
+      <div class="modal-wrapper">
+        <div class="modal-container">
+          <div class="modal-header">
+            <h3>计划人工复核</h3>
+          </div>
+          <div class="modal-body">
+            <div class="agent-response-block" style="display: block !important; width: 100% !important;">
+              <div class="agent-response-title">
+                <i class="bi bi-diagram-3"></i> 当前计划
+              </div>
+              <div class="agent-response-content" v-html="formatHumanReviewPlan(humanReviewPlan)"></div>
+            </div>
+          </div>
+          <div class="modal-footer" style="display:flex; gap:8px;">
+            <textarea v-model="humanReviewSuggestion" placeholder="如不合理，请填写修改建议" style="width:100%; height:80px;"></textarea>
+            <button class="btn" @click="approvePlan">通过</button>
+            <button class="btn btn-danger" @click="rejectPlan">不合理</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -324,10 +347,12 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import python from 'highlight.js/lib/languages/python';
 import sql from 'highlight.js/lib/languages/sql'
+import json from 'highlight.js/lib/languages/json'
 
 // 注册语言
 hljs.registerLanguage('python', python);
 hljs.registerLanguage('sql', sql);
+hljs.registerLanguage('json', json);
 
 export default {
   name: 'AgentRun',
@@ -380,6 +405,9 @@ export default {
           const data = await response.json()
           agent.value.name = data.name || 'NL2SQL 智能助手'
           agent.value.description = data.description || '自然语言转SQL查询助手，帮助您快速生成和执行数据库查询'
+          if (typeof data.humanReviewEnabled !== 'undefined') {
+            humanReviewEnabled.value = !!data.humanReviewEnabled
+          }
         } else {
           // 使用默认值
           agent.value.name = 'NL2SQL 智能助手'
@@ -547,6 +575,223 @@ export default {
         alert('清空历史失败')
       }
     }
+
+    /**
+     * 提取显示消息的公共方法
+     * @param eventSource
+     */
+    const displayEventSourceMessage = (eventSource) => {
+      const agentMessageIndex = currentMessages.value.length
+      currentMessages.value.push({
+        id: Date.now() + 1,
+        role: 'assistant',
+        type: 'streaming',
+        content: '<div class="typing-indicator"><span></span><span></span><span></span></div>',
+        timestamp: new Date()
+      })
+
+      const streamState = {
+        contentByIndex: [],
+        typeByIndex: [],
+        lastType: ""
+      }
+
+      const typeMapping = {
+        'status': { title: '当前状态', icon: 'bi bi-activity' },
+        'rewrite': { title: '需求理解', icon: 'bi bi-pencil-square' },
+        'keyword_extract': { title: '关键词提取', icon: 'bi bi-key' },
+        'plan_generation': { title: '计划生成', icon: 'bi bi-diagram-3' },
+        'schema_recall': { title: 'Schema初步召回', icon: 'bi bi-database-gear' },
+        'schema_deep_recall': { title: 'Schema深度召回', icon: 'bi bi-database-fill-gear' },
+        'sql': { title: '生成的SQL', icon: 'bi bi-code-square' },
+        'execute_sql': { title: '执行SQL', icon: 'bi bi-play-circle' },
+        'python_execute': { title: 'Python执行', icon: 'bi bi-play-circle-fill' },
+        'python_generate': { title: 'Python代码生成', icon: 'bi bi-code-square-fill' },
+        'python_analysis': { title: 'Python分析执行', icon: 'bi bi-code-slash' },
+        'validation': { title: '校验', icon: 'bi bi-check-circle' },
+        'output_report': { title: '输出报告', icon: 'bi bi-file-earmark-text' },
+        'explanation': { title: '解释说明', icon: 'bi bi-info-circle' },
+        'result': { title: '查询结果', icon: 'bi bi-table' },
+        'error': { title: '解析错误', icon: 'bi bi-exclamation-triangle' }
+      }
+
+      const updateDisplay = () => {
+        let fullContent = '<div class="agent-responses-container" style="display: flex; flex-direction: column; width: 100%; gap: 0.75rem;">'
+        for(let i = 0; i < streamState.contentByIndex.length; i++) {
+          const type = streamState.typeByIndex[i];
+          const typeInfo = typeMapping[type] || { title: type, icon: 'bi bi-file-text' }
+          const content = streamState.contentByIndex[i] || ''
+          const formattedSubContent = formatContentByType(type, content)
+          fullContent += `
+<div class="agent-response-block" style="display: block !important; width: 100% !important;">
+  <div class="agent-response-title">
+    <i class="${typeInfo.icon}"></i> ${typeInfo.title}
+  </div>
+  <div class="agent-response-content">${formattedSubContent}</div>
+</div>
+`
+        }
+        fullContent += '</div>'
+        currentMessages.value[agentMessageIndex].content = fullContent
+
+        // 使用 nextTick 确保 DOM 更新后再滚动
+        nextTick(() => {
+          scrollToBottom()
+        })
+      }
+
+      eventSource.onmessage = (event) => {
+        console.log('收到SSE事件:', event.data)
+        let chunk
+        let actualType
+        let actualData
+
+        try {
+          let parsedData = JSON.parse(event.data)
+
+          if (typeof parsedData === 'string') {
+            chunk = JSON.parse(parsedData)
+          } else {
+            chunk = parsedData
+          }
+
+          actualType = chunk['type']
+          actualData = chunk['data']
+
+          console.log('解析后的数据:', { actualType, actualData: typeof actualData === 'string' ? actualData.substring(0, 100) + '...' : actualData })
+
+          if (actualType === 'explanation' && typeof actualData === 'string') {
+            try {
+              const innerChunk = JSON.parse(actualData)
+              if (innerChunk.type && innerChunk.data !== undefined) {
+                actualType = innerChunk.type
+                actualData = innerChunk.data
+              }
+            } catch (e) {
+              // 如果内层解析失败，保持原来的值
+            }
+          }
+
+        } catch (e) {
+          console.error('JSON解析失败:', e, event.data)
+          return
+        }
+
+        if (actualType && actualData !== undefined && actualData !== null) {
+          let processedData = actualData
+
+          if (typeof processedData === 'string') {
+            processedData = processedData.replace(/\\n/g, '\n')
+          }
+
+          if (actualType === 'sql' && typeof processedData === 'string') {
+            processedData = processedData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim()
+          }
+
+          // 检查是否是人工复核节点
+          console.log('检查人工复核条件:', {
+            actualType,
+            humanReviewEnabled: humanReviewEnabled.value,
+            processedDataLength: typeof processedData === 'string' ? processedData.length : 0
+          })
+
+          if (actualType === 'human_feedback' && humanReviewEnabled.value) {
+            console.log('检测到人工复核节点，显示模态框')
+
+            // 暂停流式处理，显示人工复核模态框
+            eventSource.close()
+            isLoading.value = false
+
+            currentUserMessage.value = ""
+            // 从状态中获取计划内容
+            humanReviewPlan.value = streamState.contentByIndex[streamState.contentByIndex.length - 1] || processedData || '等待计划生成...'
+            showHumanReviewModal.value = true
+            return
+          }
+
+          // 增加状态判断，如果当前节点的type与上一个type不同，则说明应该另外起一个Content
+          console.log("lastType: " + streamState.lastType + ", actualType: " + actualType);
+          if (streamState.lastType !== actualType) {
+            streamState.typeByIndex.push(actualType);
+            streamState.contentByIndex.push("");
+            streamState.lastType = actualType;
+          }
+
+          if (processedData) {
+            streamState.contentByIndex[streamState.contentByIndex.length - 1] += processedData;
+          }
+
+          updateDisplay()
+        }
+      }
+
+      eventSource.addEventListener('complete', async () => {
+        console.log('流式输出完成')
+        isLoading.value = false
+        eventSource.close()
+
+        // 更新消息类型为完成状态
+        const assistantMessage = currentMessages.value[agentMessageIndex]
+        if (assistantMessage) {
+          assistantMessage.type = 'completed'
+          console.log('消息更新为完成状态，内容长度:', assistantMessage.content?.length)
+
+          // 触发响应式更新
+          currentMessages.value[agentMessageIndex] = { ...assistantMessage }
+
+          // 保存AI回复消息到数据库
+          if (assistantMessage.content) {
+            const messageToSave = {
+              sessionId: currentSessionId.value,
+              role: 'assistant',
+              content: assistantMessage.content,
+              messageType: 'completed'
+            }
+
+            // 🎯 如果有原始内容或全局保存的内容，保存到metadata中
+            let metadata = {}
+            if (assistantMessage.originalContent) {
+              metadata.originalContent = assistantMessage.originalContent
+              console.log('💾 保存消息时包含原始内容，长度:', assistantMessage.originalContent.length)
+            } else if (window.lastReportContent && window.lastReportContent.includes('```html')) {
+              metadata.originalContent = window.lastReportContent
+              console.log('💾 保存消息时使用全局原始内容，长度:', window.lastReportContent.length)
+            }
+
+            if (Object.keys(metadata).length > 0) {
+              messageToSave.metadata = JSON.stringify(metadata)
+            }
+
+            await saveMessage(messageToSave)
+          }
+        }
+
+        // 确保DOM更新后滚动到底部
+        await nextTick()
+        scrollToBottom()
+      })
+
+      eventSource.onerror = (error) => {
+        console.error('流式连接错误:', error)
+        isLoading.value = false
+
+        if (eventSource.readyState === EventSource.CLOSED) {
+          console.log('EventSource 连接已正常关闭')
+        } else {
+          const errorMessage = {
+            id: Date.now() + 2,
+            role: 'assistant',
+            type: 'error',
+            content: '抱歉，处理您的请求时出现了错误，请稍后重试。',
+            timestamp: new Date()
+          }
+          currentMessages.value.push(errorMessage)
+        }
+
+        eventSource.close()
+        scrollToBottom()
+      }
+    }
     
     const sendMessage = async (messageText = null) => {
       const message = messageText || inputMessage.value.trim()
@@ -587,195 +832,12 @@ export default {
       isLoading.value = true
       
       try {
-        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(message)}&agentId=${agent.value.id}`)
-        
-        const agentMessageIndex = currentMessages.value.length
-        currentMessages.value.push({ 
-          id: Date.now() + 1,
-          role: 'assistant',
-          type: 'streaming',
-          content: '<div class="typing-indicator"><span></span><span></span><span></span></div>', 
-          timestamp: new Date() 
-        })
+        // 启动流式处理
+        // 生成线程ID
+        currentThreadId.value = Date.now().toString()
+        const eventSource = new EventSource(`/nl2sql/stream/search?query=${encodeURIComponent(message)}&agentId=${agent.value.id}&threadId=${currentThreadId.value}`)
 
-        const streamState = {
-            contentByIndex: [],
-            typeByIndex: [],
-            lastType: ""
-        }
-
-        const typeMapping = {
-          'status': { title: '当前状态', icon: 'bi bi-activity' },
-          'rewrite': { title: '需求理解', icon: 'bi bi-pencil-square' },
-          'keyword_extract': { title: '关键词提取', icon: 'bi bi-key' },
-          'plan_generation': { title: '计划生成', icon: 'bi bi-diagram-3' },
-          'schema_recall': { title: 'Schema初步召回', icon: 'bi bi-database-gear' },
-          'schema_deep_recall': { title: 'Schema深度召回', icon: 'bi bi-database-fill-gear' },
-          'sql': { title: '生成的SQL', icon: 'bi bi-code-square' },
-          'execute_sql': { title: '执行SQL', icon: 'bi bi-play-circle' },
-          'python_execute': { title: 'Python执行', icon: 'bi bi-play-circle-fill' },
-          'python_generate': { title: 'Python代码生成', icon: 'bi bi-code-square-fill' },
-          'python_analysis': { title: 'Python分析执行', icon: 'bi bi-code-slash' },
-          'validation': { title: '校验', icon: 'bi bi-check-circle' },
-          'output_report': { title: '输出报告', icon: 'bi bi-file-earmark-text' },
-          'explanation': { title: '解释说明', icon: 'bi bi-info-circle' },
-          'result': { title: '查询结果', icon: 'bi bi-table' },
-          'error': { title: '解析错误', icon: 'bi bi-exclamation-triangle' }
-        }
-
-        const updateDisplay = () => {
-            let fullContent = '<div class="agent-responses-container" style="display: flex; flex-direction: column; width: 100%; gap: 0.75rem;">'
-            for(let i = 0; i < streamState.contentByIndex.length; i++) {
-                const type = streamState.typeByIndex[i];
-                const typeInfo = typeMapping[type] || { title: type, icon: 'bi bi-file-text' }
-                const content = streamState.contentByIndex[i] || ''
-                const formattedSubContent = formatContentByType(type, content)
-                fullContent += `
-<div class="agent-response-block" style="display: block !important; width: 100% !important;">
-  <div class="agent-response-title">
-    <i class="${typeInfo.icon}"></i> ${typeInfo.title}
-  </div>
-  <div class="agent-response-content">${formattedSubContent}</div>
-</div>
-`
-            }
-            fullContent += '</div>'
-            currentMessages.value[agentMessageIndex].content = fullContent
-            
-            // 使用 nextTick 确保 DOM 更新后再滚动
-            nextTick(() => {
-                scrollToBottom()
-            })
-        }
-
-        eventSource.onmessage = (event) => {
-            let chunk
-            let actualType
-            let actualData
-            
-            try {
-                let parsedData = JSON.parse(event.data)
-                
-                if (typeof parsedData === 'string') {
-                    chunk = JSON.parse(parsedData)
-                } else {
-                    chunk = parsedData
-                }
-
-                actualType = chunk['type']
-                actualData = chunk['data']
-
-                if (actualType === 'explanation' && typeof actualData === 'string') {
-                    try {
-                        const innerChunk = JSON.parse(actualData)
-                        if (innerChunk.type && innerChunk.data !== undefined) {
-                            actualType = innerChunk.type
-                            actualData = innerChunk.data
-                        }
-                    } catch (e) {
-                        // 如果内层解析失败，保持原来的值
-                    }
-                }
-
-            } catch (e) {
-                console.error('JSON解析失败:', e, event.data)
-                return
-            }
-
-            if (actualType && actualData !== undefined && actualData !== null) {
-                let processedData = actualData
-                
-                if (typeof processedData === 'string') {
-                    processedData = processedData.replace(/\\n/g, '\n')
-                }
-                
-                if (actualType === 'sql' && typeof processedData === 'string') {
-                    processedData = processedData.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim()
-                }
-
-                // 增加状态判断，如果当前节点的type与上一个type不同，则说明应该另外起一个Content
-                console.log("lastType: " + streamState.lastType + ", actualType: " + actualType);
-                if (streamState.lastType !== actualType) {
-                    streamState.typeByIndex.push(actualType);
-                    streamState.contentByIndex.push("");
-                    streamState.lastType = actualType;
-                }
-                
-                if (processedData) {
-                    streamState.contentByIndex[streamState.contentByIndex.length - 1] += processedData;
-                }
-                
-                updateDisplay()
-            }
-        }
-
-        eventSource.addEventListener('complete', async () => {
-          console.log('流式输出完成')
-          isLoading.value = false
-          eventSource.close()
-
-          // 更新消息类型为完成状态
-          const assistantMessage = currentMessages.value[agentMessageIndex]
-          if (assistantMessage) {
-            assistantMessage.type = 'completed'
-            console.log('消息更新为完成状态，内容长度:', assistantMessage.content?.length)
-
-            // 触发响应式更新
-            currentMessages.value[agentMessageIndex] = { ...assistantMessage }
-
-            // 保存AI回复消息到数据库
-            if (assistantMessage.content) {
-              const messageToSave = {
-                sessionId: currentSessionId.value,
-                role: 'assistant',
-                content: assistantMessage.content,
-                messageType: 'completed'
-              }
-
-              // 🎯 如果有原始内容或全局保存的内容，保存到metadata中
-              let metadata = {}
-              if (assistantMessage.originalContent) {
-                metadata.originalContent = assistantMessage.originalContent
-                console.log('💾 保存消息时包含原始内容，长度:', assistantMessage.originalContent.length)
-              } else if (window.lastReportContent && window.lastReportContent.includes('```html')) {
-                metadata.originalContent = window.lastReportContent
-                console.log('💾 保存消息时使用全局原始内容，长度:', window.lastReportContent.length)
-              }
-
-              if (Object.keys(metadata).length > 0) {
-                messageToSave.metadata = JSON.stringify(metadata)
-              }
-
-              await saveMessage(messageToSave)
-            }
-          }
-
-          // 确保DOM更新后滚动到底部
-          await nextTick()
-          scrollToBottom()
-        })
-
-        eventSource.onerror = (error) => {
-          console.error('流式连接错误:', error)
-          isLoading.value = false
-          
-          if (eventSource.readyState === EventSource.CLOSED) {
-            console.log('EventSource 连接已正常关闭')
-          } else {
-            const errorMessage = {
-              id: Date.now() + 2,
-              role: 'assistant',
-              type: 'error',
-              content: '抱歉，处理您的请求时出现了错误，请稍后重试。',
-              timestamp: new Date()
-            }
-            currentMessages.value.push(errorMessage)
-          }
-          
-          eventSource.close()
-          scrollToBottom()
-        }
-        
+        displayEventSourceMessage(eventSource);
       } catch (error) {
         console.error('发送消息失败:', error)
         isLoading.value = false
@@ -2569,6 +2631,79 @@ export default {
       document.removeEventListener('click', handleClickOutside)
     })
     
+    const humanReviewEnabled = ref(false)
+    const humanReviewPlan = ref('')
+    const showHumanReviewModal = ref(false)
+    const humanReviewSuggestion = ref('')
+    const currentUserMessage = ref('')
+    const currentThreadId = ref('')
+
+    // 格式化人工复核计划显示
+    const formatHumanReviewPlan = (plan) => {
+      if (!plan) return ''
+
+      // 创建code元素
+      const codeElement = document.createElement('code');
+      codeElement.className = 'language-json';
+
+      try {
+        plan = plan.replace("```json", "").replace("```", "");
+        // 尝试解析JSON
+        const parsed = JSON.parse(plan)
+        codeElement.textContent = JSON.stringify(parsed, null, 2);
+      } catch (e) {
+        // 如果不是JSON，直接返回原始内容
+        codeElement.textContent = plan;
+      }
+
+      // 高亮代码
+      hljs.highlightElement(codeElement);
+
+      // 创建pre元素并包装code元素
+      const preElement = document.createElement('pre');
+      preElement.appendChild(codeElement);
+
+      return preElement.outerHTML;
+
+    }
+
+    const approvePlan = async () => {
+      showHumanReviewModal.value = false
+      try {
+
+        // 使用 EventSource 处理流式响应
+        const eventSource = new EventSource(`/nl2sql/human-feedback?${new URLSearchParams({
+          sessionId: currentSessionId.value,
+          threadId: currentThreadId.value,
+          feedBack: true,
+          feedBackContent: ''
+        })}`)
+        
+        displayEventSourceMessage(eventSource);
+        
+      } catch (e) {
+        console.error('approve plan failed', e)
+      }
+    }
+
+    const rejectPlan = async () => {
+      showHumanReviewModal.value = false
+      try {
+        // 使用 EventSource 处理流式响应
+        const eventSource = new EventSource(`/nl2sql/human-feedback?${new URLSearchParams({
+          sessionId: currentSessionId.value,
+          threadId: currentThreadId.value,
+          feedBack: false,
+          feedBackContent: humanReviewSuggestion.value || '用户拒绝了计划，请重新生成'
+        })}`)
+
+        displayEventSourceMessage(eventSource);
+        
+      } catch (e) {
+        console.error('reject plan failed', e)
+      }
+    }
+    
     return {
       // 数据
       agent,
@@ -2628,7 +2763,15 @@ export default {
       openReportPreviewFromContent,
       closeReportPreview,
       refreshReportPreview,
-      exportCurrentPreviewReport
+      exportCurrentPreviewReport,
+      humanReviewEnabled,
+      humanReviewPlan,
+      showHumanReviewModal,
+      humanReviewSuggestion,
+      currentUserMessage,
+      formatHumanReviewPlan,
+      approvePlan,
+      rejectPlan
     }
   }
 }
@@ -4557,4 +4700,95 @@ export default {
 .messages-container::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
 }
+
+/* 人工复核模态框样式 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-wrapper {
+  position: relative;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90%;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.modal-body {
+  padding: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-family: monospace;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #eee;
+  background: #f8f9fa;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.modal-footer textarea {
+  flex: 1;
+  min-height: 80px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.modal-footer .btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.modal-footer .btn:not(.btn-danger) {
+  background: #007bff;
+  color: white;
+}
+
+.modal-footer .btn.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.modal-footer .btn:hover {
+  opacity: 0.9;
+}
+
 </style>
