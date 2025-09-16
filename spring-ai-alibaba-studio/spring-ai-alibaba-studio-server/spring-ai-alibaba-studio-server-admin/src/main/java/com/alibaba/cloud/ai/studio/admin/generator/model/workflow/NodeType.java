@@ -51,7 +51,7 @@ public enum NodeType {
 
 	LIST_OPERATOR("list-operator", "list-operator", "UNSUPPORTED"),
 
-	PARAMETER_PARSING("parameter-parsing", "parameter-extractor", "UNSUPPORTED"),
+	PARAMETER_PARSING("parameter-parsing", "parameter-extractor", "ParameterExtractor"),
 
 	TOOL("tool", "tool", "UNSUPPORTED"),
 
