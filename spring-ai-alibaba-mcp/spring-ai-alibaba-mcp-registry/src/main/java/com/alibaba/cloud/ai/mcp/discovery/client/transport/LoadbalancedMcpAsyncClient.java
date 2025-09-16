@@ -355,7 +355,16 @@ public class LoadbalancedMcpAsyncClient {
 	private McpAsyncClient clientByEndpoint(McpEndpointInfo mcpEndpointInfo, String exportPath) {
 		McpAsyncClient asyncClient;
 
-		String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
+		String protocol = mcpEndpointInfo.getProtocol();
+		if (protocol == null || !"http".equals(protocol) && !"https".equals(protocol)) {
+			if (mcpEndpointInfo.getPort() == 443) {
+				protocol = "https";
+			}
+			else {
+				protocol = "http";
+			}
+		}
+		String baseUrl = protocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
 
 		WebFluxSseClientTransport transport;
