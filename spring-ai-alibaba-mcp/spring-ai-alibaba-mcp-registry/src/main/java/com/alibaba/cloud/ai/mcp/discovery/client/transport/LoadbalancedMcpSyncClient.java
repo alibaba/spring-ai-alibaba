@@ -46,6 +46,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.alibaba.cloud.ai.mcp.discovery.client.utils.NacosMcpClientUtils.checkProtocol;
+
 /**
  * @author yingzi
  * @since 2025/4/29:13:00
@@ -294,15 +296,7 @@ public class LoadbalancedMcpSyncClient {
 
 	private McpSyncClient clientByEndpoint(McpEndpointInfo mcpEndpointInfo, String exportPath) {
 		McpSyncClient syncClient;
-		String protocol = mcpEndpointInfo.getProtocol();
-		if (protocol == null || !"http".equals(protocol) && !"https".equals(protocol)) {
-			if (mcpEndpointInfo.getPort() == 443 || mcpEndpointInfo.getPort() == 8443) {
-				protocol = "https";
-			}
-			else {
-				protocol = "http";
-			}
-		}
+		String protocol = NacosMcpClientUtils.checkProtocol(mcpEndpointInfo);
 		String baseUrl = protocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
 
