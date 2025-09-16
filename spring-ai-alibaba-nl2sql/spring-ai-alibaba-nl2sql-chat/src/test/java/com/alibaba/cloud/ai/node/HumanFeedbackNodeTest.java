@@ -1,3 +1,19 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.alibaba.cloud.ai.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -28,9 +44,7 @@ class HumanFeedbackNodeTest {
 
 	@Test
 	void testApproveFlow() throws Exception {
-		state.withHumanFeedback(new OverAllState.HumanFeedback(Map.of(
-				"feed_back", true
-		), null));
+		state.withHumanFeedback(new OverAllState.HumanFeedback(Map.of("feed_back", true), null));
 
 		Map<String, Object> result = node.apply(state);
 		assertEquals(PLAN_EXECUTOR_NODE, result.get("human_next_node"));
@@ -41,10 +55,8 @@ class HumanFeedbackNodeTest {
 	@Test
 	void testRejectFlowWithContent() throws Exception {
 		state.updateState(Map.of(PLAN_REPAIR_COUNT, 0));
-		state.withHumanFeedback(new OverAllState.HumanFeedback(Map.of(
-				"feed_back", false,
-				"feed_back_content", "需要补充过滤条件"
-		), null));
+		state.withHumanFeedback(
+				new OverAllState.HumanFeedback(Map.of("feed_back", false, "feed_back_content", "需要补充过滤条件"), null));
 
 		Map<String, Object> result = node.apply(state);
 		assertEquals(PLANNER_NODE, result.get("human_next_node"));
@@ -57,9 +69,7 @@ class HumanFeedbackNodeTest {
 	@Test
 	void testRejectFlowWithoutContent() throws Exception {
 		state.updateState(Map.of(PLAN_REPAIR_COUNT, 2));
-		state.withHumanFeedback(new OverAllState.HumanFeedback(Map.of(
-				"feed_back", false
-		), null));
+		state.withHumanFeedback(new OverAllState.HumanFeedback(Map.of("feed_back", false), null));
 
 		Map<String, Object> result = node.apply(state);
 		assertEquals(PLANNER_NODE, result.get("human_next_node"));
@@ -81,4 +91,5 @@ class HumanFeedbackNodeTest {
 		Map<String, Object> result = node.apply(state);
 		assertEquals("END", result.get("human_next_node"));
 	}
+
 }
