@@ -62,28 +62,28 @@ public class SemanticModelPersistenceController {
 
 	// Get data by agentId
 	@GetMapping("/agent/{agentId}")
-	public ResponseEntity<List<SemanticModel>> getFieldsByAgentId(@PathVariable Long agentId) {
+	public ResponseEntity<List<SemanticModel>> getFieldsByAgentId(@PathVariable(value = "agentId") Long agentId) {
 		List<SemanticModel> fields = semanticModelPersistenceService.getFieldByAgentId(agentId);
 		return ResponseEntity.ok(fields);
 	}
 
 	// Search
 	@GetMapping("/search")
-	public ResponseEntity<List<SemanticModel>> searchFields(@RequestParam String content) {
+	public ResponseEntity<List<SemanticModel>> searchFields(@RequestParam(value = "content") String content) {
 		List<SemanticModel> fields = semanticModelPersistenceService.searchFields(content);
 		return ResponseEntity.ok(fields);
 	}
 
 	// Delete by id
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteFieldById(@PathVariable long id) {
+	public ResponseEntity<Void> deleteFieldById(@PathVariable(value = "id") long id) {
 		semanticModelPersistenceService.deleteFieldById(id);
 		return ResponseEntity.ok().build();
 	}
 
 	// Edit update
 	@PutMapping("/{id}")
-	public ResponseEntity<Void> updateField(@PathVariable long id, @RequestBody SemanticModelDTO semanticModelDTO) {
+	public ResponseEntity<Void> updateField(@PathVariable(value = "id") long id, @RequestBody SemanticModelDTO semanticModelDTO) {
 		semanticModelPersistenceService.updateField(semanticModelDTO, id);
 		return ResponseEntity.ok().build();
 	}

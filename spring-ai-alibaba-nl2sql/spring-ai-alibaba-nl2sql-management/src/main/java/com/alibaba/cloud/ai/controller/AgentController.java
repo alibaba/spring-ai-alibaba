@@ -17,6 +17,9 @@ package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.entity.Agent;
 import com.alibaba.cloud.ai.service.AgentService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -26,13 +29,14 @@ import java.util.List;
 /**
  * Agent Management Controller
  */
-@Controller
+@RestController
 @RequestMapping("/api/agent")
 @CrossOrigin(origins = "*")
 public class AgentController {
 
 	private final AgentService agentService;
 
+	@Autowired(required = false)
 	public AgentController(AgentService agentService) {
 		this.agentService = agentService;
 	}
@@ -40,11 +44,10 @@ public class AgentController {
 	/**
 	 * Get agent list
 	 */
-	@GetMapping
-	@ResponseBody
-	public ResponseEntity<List<Agent>> list(@RequestParam(required = false) String status,
-			@RequestParam(required = false) String keyword) {
-		List<Agent> result;
+	@GetMapping("/list")
+	public ResponseEntity<List<Agent>> list(@RequestParam(value = "status",required = false) String status,
+			@RequestParam(value = "keyword", required = false) String keyword) {
+		List<Agent> result = null;
 		if (keyword != null && !keyword.trim().isEmpty()) {
 			result = agentService.search(keyword);
 		}
@@ -61,8 +64,7 @@ public class AgentController {
 	 * Get agent details by ID
 	 */
 	@GetMapping("/{id}")
-	@ResponseBody
-	public ResponseEntity<Agent> get(@PathVariable Long id) {
+	public ResponseEntity<Agent> get(@PathVariable(value = "id") Long id) {
 		Agent agent = agentService.findById(id);
 		if (agent == null) {
 			return ResponseEntity.notFound().build();
@@ -73,8 +75,7 @@ public class AgentController {
 	/**
 	 * Create agent
 	 */
-	@PostMapping
-	@ResponseBody
+	@PostMapping("/create")
 	public ResponseEntity<Agent> create(@RequestBody Agent agent) {
 		// Set default status
 		if (agent.getStatus() == null || agent.getStatus().trim().isEmpty()) {
@@ -88,8 +89,7 @@ public class AgentController {
 	 * Update agent
 	 */
 	@PutMapping("/{id}")
-	@ResponseBody
-	public ResponseEntity<Agent> update(@PathVariable Long id, @RequestBody Agent agent) {
+	public ResponseEntity<Agent> update(@PathVariable(value = "id") Long id, @RequestBody Agent agent) {
 		if (agentService.findById(id) == null) {
 			return ResponseEntity.notFound().build();
 		}
@@ -102,8 +102,7 @@ public class AgentController {
 	 * Delete agent
 	 */
 	@DeleteMapping("/{id}")
-	@ResponseBody
-	public ResponseEntity<Void> delete(@PathVariable Long id) {
+	public ResponseEntity<Void> delete(@PathVariable(value = "id") Long id) {
 		if (agentService.findById(id) == null) {
 			return ResponseEntity.notFound().build();
 		}
@@ -115,8 +114,7 @@ public class AgentController {
 	 * Publish agent
 	 */
 	@PostMapping("/{id}/publish")
-	@ResponseBody
-	public ResponseEntity<Agent> publish(@PathVariable Long id) {
+	public ResponseEntity<Agent> publish(@PathVariable(value = "id") Long id) {
 		Agent agent = agentService.findById(id);
 		if (agent == null) {
 			return ResponseEntity.notFound().build();
@@ -130,8 +128,7 @@ public class AgentController {
 	 * Offline agent
 	 */
 	@PostMapping("/{id}/offline")
-	@ResponseBody
-	public ResponseEntity<Agent> offline(@PathVariable Long id) {
+	public ResponseEntity<Agent> offline(@PathVariable(value = "id") Long id) {
 		Agent agent = agentService.findById(id);
 		if (agent == null) {
 			return ResponseEntity.notFound().build();

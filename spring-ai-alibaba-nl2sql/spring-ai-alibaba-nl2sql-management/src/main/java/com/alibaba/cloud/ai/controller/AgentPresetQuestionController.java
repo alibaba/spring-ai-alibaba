@@ -43,7 +43,7 @@ public class AgentPresetQuestionController {
 	 * Get preset question list of agent
 	 */
 	@GetMapping("/{agentId}/preset-questions")
-	public ResponseEntity<List<AgentPresetQuestion>> getPresetQuestions(@PathVariable Long agentId) {
+	public ResponseEntity<List<AgentPresetQuestion>> getPresetQuestions(@PathVariable(value = "agentId") Long agentId) {
 		try {
 			List<AgentPresetQuestion> questions = presetQuestionService.findByAgentId(agentId);
 			return ResponseEntity.ok(questions);
@@ -58,7 +58,7 @@ public class AgentPresetQuestionController {
 	 * Batch save preset questions of agent
 	 */
 	@PostMapping("/{agentId}/preset-questions")
-	public ResponseEntity<Map<String, String>> savePresetQuestions(@PathVariable Long agentId,
+	public ResponseEntity<Map<String, String>> savePresetQuestions(@PathVariable(value = "agentId") Long agentId,
 			@RequestBody List<Map<String, String>> questionsData) {
 		try {
 			// Convert to entity object
@@ -81,7 +81,7 @@ public class AgentPresetQuestionController {
 	 * Delete preset question
 	 */
 	@DeleteMapping("/{agentId}/preset-questions/{questionId}")
-	public ResponseEntity<Map<String, String>> deletePresetQuestion(@PathVariable Long agentId,
+	public ResponseEntity<Map<String, String>> deletePresetQuestion(@PathVariable(value = "agentId") Long agentId,
 			@PathVariable Long questionId) {
 		try {
 			presetQuestionService.deleteById(questionId);

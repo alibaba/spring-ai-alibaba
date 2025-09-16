@@ -41,7 +41,7 @@ public class AgentService {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
-	@Autowired(required = false)
+	@Autowired
 	private AgentVectorService agentVectorService;
 
 	private static final String SELECT_ALL = """

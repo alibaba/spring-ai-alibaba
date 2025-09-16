@@ -39,8 +39,8 @@ public class SemanticModelController {
 
 	@GetMapping
 	@ResponseBody
-	public ResponseEntity<List<SemanticModel>> list(@RequestParam(required = false) String keyword,
-			@RequestParam(required = false) Long agentId) {
+	public ResponseEntity<List<SemanticModel>> list(@RequestParam(value = "keyword", required = false) String keyword,
+			@RequestParam(value = "agentId", required = false) Long agentId) {
 		List<SemanticModel> result;
 		if (keyword != null && !keyword.trim().isEmpty()) {
 			result = semanticModelService.search(keyword);
@@ -56,7 +56,7 @@ public class SemanticModelController {
 
 	@GetMapping("/{id}")
 	@ResponseBody
-	public ResponseEntity<SemanticModel> get(@PathVariable Long id) {
+	public ResponseEntity<SemanticModel> get(@PathVariable(value = "id") Long id) {
 		SemanticModel model = semanticModelService.findById(id);
 		if (model == null) {
 			return ResponseEntity.notFound().build();
@@ -73,7 +73,7 @@ public class SemanticModelController {
 
 	@PutMapping("/{id}")
 	@ResponseBody
-	public ResponseEntity<SemanticModel> update(@PathVariable Long id, @RequestBody SemanticModel model) {
+	public ResponseEntity<SemanticModel> update(@PathVariable(value = "id") Long id, @RequestBody SemanticModel model) {
 		if (semanticModelService.findById(id) == null) {
 			return ResponseEntity.notFound().build();
 		}
@@ -84,7 +84,7 @@ public class SemanticModelController {
 
 	@DeleteMapping("/{id}")
 	@ResponseBody
-	public ResponseEntity<Void> delete(@PathVariable Long id) {
+	public ResponseEntity<Void> delete(@PathVariable(value = "id") Long id) {
 		if (semanticModelService.findById(id) == null) {
 			return ResponseEntity.notFound().build();
 		}

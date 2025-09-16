@@ -62,8 +62,8 @@ public class Nl2SqlController {
 	 * @return sql结果
 	 */
 	@GetMapping("/nl2sql")
-	public String nl2sql(@RequestParam String query,
-			@RequestParam(required = false, defaultValue = "") String agentId) {
+	public String nl2sql(@RequestParam(value = "query") String query,
+			@RequestParam(value = "agentId", required = false, defaultValue = "") String agentId) {
 		try {
 			return this.nl2SqlService.nl2sql(query, agentId);
 		}
@@ -81,8 +81,8 @@ public class Nl2SqlController {
 	 * @return NL2SQL执行过程
 	 */
 	@GetMapping(value = "/stream/nl2sql", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-	public Flux<ServerSentEvent<Nl2SqlProcess>> nl2sqlWithProcess(@RequestParam String query,
-			@RequestParam(required = false, defaultValue = "") String agentId, HttpServletResponse response) {
+	public Flux<ServerSentEvent<Nl2SqlProcess>> nl2sqlWithProcess(@RequestParam(value = "query") String query,
+			@RequestParam(value = "agentId", required = false, defaultValue = "") String agentId, HttpServletResponse response) {
 		// Set SSE-related HTTP headers
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("text/event-stream");
