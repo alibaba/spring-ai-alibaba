@@ -20,11 +20,12 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
-import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -32,6 +33,11 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_a
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StateGraphRepresentationTest {
+
+	private KeyStrategyFactory keyStrategyFactory = () -> {
+		HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+		return new HashMap<>();
+	};
 
 	// Dummy node action that returns an empty map as result
 	CompletableFuture<Map<String, Object>> dummyNodeAction(OverAllState state) {
@@ -42,11 +48,6 @@ public class StateGraphRepresentationTest {
 	CompletableFuture<String> dummyCondition(OverAllState state) {
 		return CompletableFuture.completedFuture("");
 	}
-
-	private KeyStrategyFactory keyStrategyFactory = () -> {
-		HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-		return new HashMap<>();
-	};
 
 	/**
 	 * Test a simple graph structure with three nodes and sequential edges. Verifies the
@@ -136,7 +137,7 @@ public class StateGraphRepresentationTest {
 				"condition1" .down.> "agent_review": "ERROR"
 				'"evaluate_result" .down.> "agent_review": "ERROR"
 				@enduml
-				 """, result.content());
+				""", result.content());
 	}
 
 	/**
