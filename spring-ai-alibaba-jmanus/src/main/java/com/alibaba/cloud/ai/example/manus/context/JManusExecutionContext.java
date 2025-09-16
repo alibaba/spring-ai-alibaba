@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 
 public class JManusExecutionContext {
 
@@ -59,6 +60,13 @@ public class JManusExecutionContext {
 	private final Map<String, Object> metadata;
 
 	/**
+	 * Reference to the JManus execution context for integration with existing plan
+	 * execution system. This allows access to plan execution history and state
+	 * information.
+	 */
+	private ExecutionContext jmanusExecutionContext;
+
+	/**
 	 * Creates a new JManusExecutionContext for the specified plan.
 	 * @param planId The unique identifier of the execution plan
 	 * @throws IllegalArgumentException if planId is null or empty
@@ -74,6 +82,19 @@ public class JManusExecutionContext {
 		this.metadata = new ConcurrentHashMap<>();
 
 		logger.debug("Created new JManusExecutionContext for plan: {}", planId);
+	}
+
+	/**
+	 * Creates a new JManusExecutionContext with integration to existing JManus execution
+	 * context.
+	 * @param planId The unique identifier of the execution plan
+	 * @param jmanusExecutionContext The existing JManus execution context for integration
+	 * @throws IllegalArgumentException if planId is null or empty
+	 */
+	public JManusExecutionContext(String planId, ExecutionContext jmanusExecutionContext) {
+		this(planId);
+		this.jmanusExecutionContext = jmanusExecutionContext;
+		logger.debug("Created new JManusExecutionContext for plan: {} with JManus integration", planId);
 	}
 
 	/**
@@ -314,6 +335,71 @@ public class JManusExecutionContext {
 	 */
 	public String getPlanId() {
 		return planId;
+	}
+
+	/**
+	 * Sets the JManus execution context for integration with existing plan execution
+	 * system.
+	 * @param jmanusExecutionContext The JManus execution context
+	 */
+	public void setJmanusExecutionContext(ExecutionContext jmanusExecutionContext) {
+		this.jmanusExecutionContext = jmanusExecutionContext;
+	}
+
+	/**
+	 * Gets the JManus execution context for accessing plan execution information.
+	 * @return The JManus execution context, or null if not set
+	 */
+	public ExecutionContext getJmanusExecutionContext() {
+		return jmanusExecutionContext;
+	}
+
+	/**
+	 * Gets the execution history snapshot from the integrated JManus plan system. This
+	 * provides a formatted string representation of all completed and current steps,
+	 * which is useful for LLM context, debugging, and execution summaries.
+	 * @param onlyCompletedAndFirstInProgress If true, only shows completed steps and
+	 * first in-progress step
+	 * @return Formatted execution history string, or empty string if no JManus context is
+	 * available
+	 */
+	public String getExecutionHistorySnapshot(boolean onlyCompletedAndFirstInProgress) {
+		if (jmanusExecutionContext != null && jmanusExecutionContext.getPlan() != null) {
+			try {
+				return jmanusExecutionContext.getPlan()
+					.getPlanExecutionStateStringFormat(onlyCompletedAndFirstInProgress);
+			}
+			catch (Exception e) {
+				logger.warn("Failed to get execution history snapshot for plan: {} - {}", planId, e.getMessage());
+				return "";
+			}
+		}
+		return "";
+	}
+
+	/**
+	 * Gets a combined view of both the structured context data and the execution history.
+	 * This method provides the best of both worlds: structured data access for
+	 * step-to-step communication, and formatted execution history for comprehensive
+	 * context understanding.
+	 * @return A formatted string containing both context data summary and execution
+	 * history
+	 */
+	public String getCombinedContextView() {
+		StringBuilder combined = new StringBuilder();
+
+		// Add structured data summary
+		combined.append("=== Structured Context Data ===\n");
+		combined.append(getStateString(false));
+
+		// Add execution history if available
+		String history = getExecutionHistorySnapshot(false);
+		if (!history.isEmpty()) {
+			combined.append("\n\n=== Execution History ===\n");
+			combined.append(history);
+		}
+
+		return combined.toString();
 	}
 
 	/**

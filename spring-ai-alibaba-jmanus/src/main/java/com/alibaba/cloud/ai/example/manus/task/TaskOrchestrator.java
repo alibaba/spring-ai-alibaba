@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
 @Component
 public class TaskOrchestrator {
 
@@ -57,7 +56,8 @@ public class TaskOrchestrator {
 
 		logger.info("Starting execution of {} tasks for plan: {}", tasks.size(), planId);
 
-		JManusExecutionContext context = new JManusExecutionContext(planId);
+		// Create enhanced JManusExecutionContext with JManus integration
+		JManusExecutionContext context = new JManusExecutionContext(planId, executionContext);
 		ExecutionResult.Builder resultBuilder = new ExecutionResult.Builder(planId);
 
 		LocalDateTime startTime = LocalDateTime.now();

@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.task;
 
-
 public class TaskExecutionException extends Exception {
 
 	private static final long serialVersionUID = 1L;

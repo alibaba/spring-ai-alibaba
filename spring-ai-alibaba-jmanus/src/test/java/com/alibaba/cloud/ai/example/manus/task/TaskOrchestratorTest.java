@@ -16,7 +16,6 @@ import com.alibaba.cloud.ai.example.manus.context.JManusExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import static org.junit.jupiter.api.Assertions.*;
 
-
 @ExtendWith(MockitoExtension.class)
 class TaskOrchestratorTest {
 

@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.example.manus.task;
 
 import com.alibaba.cloud.ai.example.manus.context.JManusExecutionContext;
 
-
 public interface StatefulTask {
 
 	/**

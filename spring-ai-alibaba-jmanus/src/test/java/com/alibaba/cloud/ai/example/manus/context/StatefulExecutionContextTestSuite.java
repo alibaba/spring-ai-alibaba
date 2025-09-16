@@ -3,7 +3,6 @@ package com.alibaba.cloud.ai.example.manus.context;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
-
 public class StatefulExecutionContextTestSuite {
 
 	/**

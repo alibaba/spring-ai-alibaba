@@ -26,7 +26,6 @@ import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
 @DisplayName("JManus Execution Context Tests")
 class JManusExecutionContextTest {
 
