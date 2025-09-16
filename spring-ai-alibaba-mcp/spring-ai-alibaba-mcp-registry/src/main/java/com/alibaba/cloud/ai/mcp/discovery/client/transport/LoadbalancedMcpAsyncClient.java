@@ -58,6 +58,8 @@ public class LoadbalancedMcpAsyncClient {
 
 	private final String serverName;
 
+	private final String version;
+
 	private final NacosMcpOperationService nacosMcpOperationService;
 
 	private final McpClientCommonProperties commonProperties;
@@ -88,21 +90,27 @@ public class LoadbalancedMcpAsyncClient {
 		Assert.notNull(applicationContext, "applicationContext cannot be null");
 
 		this.serverName = serverName;
+		this.version = version;
 		this.nacosMcpOperationService = nacosMcpOperationService;
 		this.applicationContext = applicationContext;
 
 		try {
-			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName, version);
+			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName, this.version);
 			if (this.serverEndpoint == null) {
 				throw new NacosException(NacosException.NOT_FOUND,
-						String.format("Can not find mcp server from nacos: %s", serverName));
+						String.format("[Nacos Mcp Async Client] Can not find mcp server from nacos: %s, version:%s",
+								serverName, version));
 			}
 			if (!StringUtils.equals(serverEndpoint.getProtocol(), AiConstants.Mcp.MCP_PROTOCOL_SSE)) {
-				throw new RuntimeException("mcp server protocol must be sse");
+				throw new RuntimeException(
+						String.format("[Nacos Mcp Async Client] Protocol of mcp server:%s, version :%s must be sse",
+								serverName, version));
 			}
 		}
 		catch (Exception e) {
-			throw new RuntimeException(String.format("Failed to get instances for service: %s", serverName), e);
+			throw new RuntimeException(String.format(
+					"[Nacos Mcp Async Client] Failed to get endpoints for Mcp Server from nacos: %s, version:%s",
+					serverName, version), e);
 		}
 		commonProperties = this.applicationContext.getBean(McpClientCommonProperties.class);
 		mcpAsyncClientConfigurer = this.applicationContext.getBean(McpAsyncClientConfigurer.class);
@@ -129,10 +137,13 @@ public class LoadbalancedMcpAsyncClient {
 		for (McpEndpointInfo mcpEndpointInfo : serverEndpoint.getMcpEndpointInfoList()) {
 			updateByAddEndpoint(mcpEndpointInfo, serverEndpoint.getExportPath());
 		}
+		logger.info("[Nacos Mcp Async Client] McpAsyncClient init, serverName: {}, version: {}, endpoint: {}",
+				serverName, version, serverEndpoint);
 	}
 
 	public void subscribe() {
-		this.nacosMcpOperationService.subscribeNacosMcpServer(this.serverName, mcpServerDetailInfo -> {
+		String serverNameAndVersion = this.serverName + "::" + this.version;
+		this.nacosMcpOperationService.subscribeNacosMcpServer(serverNameAndVersion, mcpServerDetailInfo -> {
 			List<McpEndpointInfo> mcpEndpointInfoList = mcpServerDetailInfo.getBackendEndpoints() == null
 					? new ArrayList<>() : mcpServerDetailInfo.getBackendEndpoints();
 			String exportPath = mcpServerDetailInfo.getRemoteServerConfig().getExportPath();
@@ -145,12 +156,14 @@ public class LoadbalancedMcpAsyncClient {
 			}
 			updateClientList(nacosMcpServerEndpoint);
 		});
+		logger.info("[Nacos Mcp Async Client] Subscribe Mcp Server from nacos, serverName: {}, version: {}", serverName,
+				version);
 	}
 
 	public McpAsyncClient getMcpAsyncClient() {
 		List<McpAsyncClient> asynClients = getMcpAsyncClientList();
 		if (asynClients.isEmpty()) {
-			throw new IllegalStateException("No McpAsyncClient available");
+			throw new IllegalStateException("[Nacos Mcp Async Client] No McpAsyncClient available, name:" + serverName);
 		}
 
 		int currentIndex = index.getAndUpdate(index -> (index + 1) % asynClients.size());
@@ -193,7 +206,8 @@ public class LoadbalancedMcpAsyncClient {
 			McpAsyncClient mcpAsyncClient = iterator.next();
 			mcpAsyncClient.close();
 			iterator.remove();
-			logger.info("Closed and removed McpAsyncClient: {}", mcpAsyncClient.getClientInfo().name());
+			logger.info("[Nacos Mcp Async Client] Closed and removed McpAsyncClient: {}",
+					mcpAsyncClient.getClientInfo().name());
 		}
 	}
 
@@ -204,7 +218,8 @@ public class LoadbalancedMcpAsyncClient {
 			McpAsyncClient mcpAsyncClient = iterator.next();
 			Mono<Void> voidMono = mcpAsyncClient.closeGracefully().doOnSuccess(v -> {
 				iterator.remove();
-				logger.info("Closed and removed McpAsyncClient: {}", mcpAsyncClient.getClientInfo().name());
+				logger.info("[Nacos Mcp Async Client] Closed and removed McpAsyncClient: {}",
+						mcpAsyncClient.getClientInfo().name());
 			});
 			closeMonos.add(voidMono);
 		}
@@ -308,6 +323,9 @@ public class LoadbalancedMcpAsyncClient {
 	private void updateClientList(NacosMcpServerEndpoint newServerEndpoint) {
 		if (!StringUtils.equals(this.serverEndpoint.getExportPath(), newServerEndpoint.getExportPath())
 				|| !StringUtils.equals(this.serverEndpoint.getVersion(), newServerEndpoint.getVersion())) {
+			logger.info(
+					"[Nacos Mcp Async Client] Mcp server {} exportPath or protocol changed, need to update all endpoints: {}",
+					serverName, newServerEndpoint);
 			updateAll(newServerEndpoint);
 		}
 		else {
@@ -323,8 +341,16 @@ public class LoadbalancedMcpAsyncClient {
 					.noneMatch(newEndpoint -> newEndpoint.getAddress().equals(currentEndpoint.getAddress())
 							&& newEndpoint.getPort() == currentEndpoint.getPort()))
 				.toList();
+			if (!addEndpointInfoList.isEmpty()) {
+				logger.info("[Nacos Mcp Async Client] Mcp server {} endpoints changed, endpoints need to add {}",
+						serverName, addEndpointInfoList);
+			}
 			for (McpEndpointInfo addEndpointInfo : addEndpointInfoList) {
 				updateByAddEndpoint(addEndpointInfo, newServerEndpoint.getExportPath());
+			}
+			if (!removeEndpointInfoList.isEmpty()) {
+				logger.info("[Nacos Mcp Async Client] Mcp server {} endpoints changed, endpoints need to remove {}",
+						serverName, removeEndpointInfoList);
 			}
 			for (McpEndpointInfo removeEndpointInfo : removeEndpointInfoList) {
 				updateByRemoveEndpoint(removeEndpointInfo, newServerEndpoint.getExportPath());
@@ -354,8 +380,8 @@ public class LoadbalancedMcpAsyncClient {
 
 	private McpAsyncClient clientByEndpoint(McpEndpointInfo mcpEndpointInfo, String exportPath) {
 		McpAsyncClient asyncClient;
-
-		String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
+		String protocol = NacosMcpClientUtils.checkProtocol(mcpEndpointInfo);
+		String baseUrl = protocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
 
 		WebFluxSseClientTransport transport;

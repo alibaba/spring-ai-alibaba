@@ -15,25 +15,21 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ParallelAgent executes multiple sub-agents in parallel and merges their results.
@@ -66,22 +62,10 @@ public class ParallelAgent extends FlowAgent {
 				builder.compileConfig, builder.subAgents);
 		this.mergeStrategy = builder.mergeStrategy != null ? builder.mergeStrategy : new DefaultMergeStrategy();
 		this.maxConcurrency = builder.maxConcurrency;
-		this.graph = initGraph();
 	}
 
-	@Override
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.invoke(input);
-	}
-
-	@Override
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
-			throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.stream(input);
+	public static ParallelAgentBuilder builder() {
+		return new ParallelAgentBuilder();
 	}
 
 	@Override
@@ -109,8 +93,19 @@ public class ParallelAgent extends FlowAgent {
 		return maxConcurrency;
 	}
 
-	public static ParallelAgentBuilder builder() {
-		return new ParallelAgentBuilder();
+	/**
+	 * Strategy interface for merging parallel execution results.
+	 */
+	public interface MergeStrategy {
+
+		/**
+		 * Merges results from parallel sub-agents.
+		 * @param subAgentResults map of sub-agent output keys to their results
+		 * @param overallState the complete state including all context
+		 * @return the merged result
+		 */
+		Object merge(Map<String, Object> subAgentResults, OverAllState overallState);
+
 	}
 
 	/**
@@ -279,21 +274,6 @@ public class ParallelAgent extends FlowAgent {
 			validate();
 			return new ParallelAgent(this);
 		}
-
-	}
-
-	/**
-	 * Strategy interface for merging parallel execution results.
-	 */
-	public interface MergeStrategy {
-
-		/**
-		 * Merges results from parallel sub-agents.
-		 * @param subAgentResults map of sub-agent output keys to their results
-		 * @param overallState the complete state including all context
-		 * @return the merged result
-		 */
-		Object merge(Map<String, Object> subAgentResults, OverAllState overallState);
 
 	}
 

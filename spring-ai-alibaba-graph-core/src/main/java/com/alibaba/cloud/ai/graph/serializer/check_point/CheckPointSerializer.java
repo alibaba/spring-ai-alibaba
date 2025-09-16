@@ -45,8 +45,8 @@ public class CheckPointSerializer implements NullableObjectSerializer<Checkpoint
 	public Checkpoint read(ObjectInput in) throws IOException, ClassNotFoundException {
 		return Checkpoint.builder()
 			.id(in.readUTF())
-			.nextNodeId(readNullableUTF(in).orElse(null))
 			.nodeId(readNullableUTF(in).orElse(null))
+			.nextNodeId(readNullableUTF(in).orElse(null))
 			.state((OverAllState) stateSerializer.read(in))
 			.build();
 	}

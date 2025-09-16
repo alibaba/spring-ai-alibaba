@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
@@ -26,10 +28,9 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.AssignerNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -57,57 +58,92 @@ public class AssignerNodeDataConverter extends AbstractNodeDataConverter<Assigne
 
 			@Override
 			public AssignerNodeData parse(Map<String, Object> data) {
-				ObjectMapper objectMapper = new ObjectMapper();
-				objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-				objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-
-				List<Map<String, Object>> itemsList = (List<Map<String, Object>>) data.get("items");
-				List<AssignerNodeData.AssignerItem> items = itemsList.stream().map(item -> {
-					AssignerNodeData.AssignerItem ai = new AssignerNodeData.AssignerItem();
-					ai.setInputType((String) item.get("input_type"));
-					ai.setOperation((String) item.get("operation"));
-					Object valueObj = item.get("value");
-					if (valueObj instanceof List<?> valueList && valueList.size() >= 2) {
-						ai.setValue(new VariableSelector(valueList.get(0).toString(), valueList.get(1).toString()));
-					}
-					Object variableObj = item.get("variable_selector");
-					if (variableObj instanceof List<?> variableList && variableList.size() >= 2) {
-						ai.setVariableSelector(
-								new VariableSelector(variableList.get(0).toString(), variableList.get(1).toString()));
-					}
-					ai.setWriteMode((String) item.get("write_mode"));
-					return ai;
-				}).toList();
-
 				AssignerNodeData nodeData = new AssignerNodeData();
-				nodeData.setItems(items);
-				nodeData.setTitle((String) data.get("title"));
-				nodeData.setDesc((String) data.get("desc"));
-				nodeData.setVersion((String) data.get("version"));
+				List<AssignerNodeData.AssignItem> items = Stream
+					.ofNullable(
+							MapReadUtil.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "items")))
+					.flatMap(List::stream)
+					.filter(map -> map.containsKey("operation") && map.containsKey("variable_selector"))
+					.map(map -> {
+						List<String> variableSelectorList = Optional
+							.ofNullable(MapReadUtil.safeCastToList(
+									MapReadUtil.getMapDeepValue(map, List.class, "variable_selector"), String.class))
+							.orElseThrow();
+						VariableSelector variableSelector = new VariableSelector(variableSelectorList.get(0),
+								variableSelectorList.get(1));
 
+						AssignerNodeData.WriteMode writeMode = AssignerNodeData.WriteMode.fromDslValue(
+								DSLDialectType.DIFY, MapReadUtil.getMapDeepValue(map, String.class, "operation"));
+
+						VariableSelector inputSelector = null;
+						String inputConst = null;
+						if (AssignerNodeData.WriteMode.INPUT_CONSTANT.equals(writeMode)) {
+							inputConst = map.get("value").toString();
+						}
+						else if (AssignerNodeData.WriteMode.OVER_WRITE.equals(writeMode)) {
+							List<String> inputSelectorList = Optional
+								.ofNullable(MapReadUtil.safeCastToList(
+										MapReadUtil.getMapDeepValue(map, List.class, "value"), String.class))
+								.orElseThrow();
+							inputSelector = new VariableSelector(inputSelectorList.get(0), inputSelectorList.get(1));
+						}
+
+						return new AssignerNodeData.AssignItem(variableSelector, inputSelector, writeMode, inputConst);
+					})
+					.toList();
+				nodeData.setItems(items);
 				return nodeData;
 			}
 
 			@Override
 			public Map<String, Object> dump(AssignerNodeData nodeData) {
-				Map<String, Object> dataMap = new HashMap<>();
-				dataMap.put("type", "assigner");
-				dataMap.put("title", nodeData.getTitle());
-				dataMap.put("desc", nodeData.getDesc());
-				dataMap.put("version", nodeData.getVersion());
-				List<Map<String, Object>> itemsList = nodeData.getItems()
-					.stream()
-					.map(item -> Map.of("input_type", item.getInputType(), "operation", item.getOperation(), "value",
-							item.getValue(), "variable_selector", item.getVariableSelector(), "write_mode",
-							item.getWriteMode()))
-					.toList();
-				dataMap.put("items", itemsList);
-
-				Map<String, Object> ret = new HashMap<>();
-				ret.put("data", dataMap);
-				return ret;
+				throw new UnsupportedOperationException();
 			}
-		}), CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(AssignerNodeData.class));
+		}), STUDIO(new DialectConverter<>() {
+			@Override
+			public Boolean supportDialect(DSLDialectType dialectType) {
+				return DSLDialectType.STUDIO.equals(dialectType);
+			}
+
+			@Override
+			public AssignerNodeData parse(Map<String, Object> data) throws JsonProcessingException {
+				AssignerNodeData nodeData = new AssignerNodeData();
+				List<AssignerNodeData.AssignItem> items = Stream
+					.ofNullable(MapReadUtil.safeCastToListWithMap(
+							MapReadUtil.getMapDeepValue(data, List.class, "config", "node_param", "inputs")))
+					.flatMap(List::stream)
+					.filter(map -> map.containsKey("left") && map.containsKey("right"))
+					.map(map -> {
+						VariableSelector targetSelector = this.varTemplateToSelector(DSLDialectType.STUDIO,
+								MapReadUtil.getMapDeepValue(map, String.class, "left", "value"));
+
+						AssignerNodeData.WriteMode writeMode = AssignerNodeData.WriteMode.fromDslValue(
+								DSLDialectType.STUDIO,
+								MapReadUtil.getMapDeepValue(map, String.class, "right", "value_from"));
+						VariableSelector inputSelector = null;
+						String inputConst = null;
+						if (AssignerNodeData.WriteMode.INPUT_CONSTANT.equals(writeMode)) {
+							inputConst = MapReadUtil.getMapDeepValue(map, String.class, "right", "value");
+						}
+						else if (AssignerNodeData.WriteMode.OVER_WRITE.equals(writeMode)) {
+							inputSelector = this.varTemplateToSelector(DSLDialectType.STUDIO,
+									MapReadUtil.getMapDeepValue(map, String.class, "right", "value"));
+						}
+
+						return new AssignerNodeData.AssignItem(targetSelector, inputSelector, writeMode, inputConst);
+					})
+					.toList();
+				nodeData.setItems(items);
+				return nodeData;
+			}
+
+			@Override
+			public Map<String, Object> dump(AssignerNodeData nodeData) {
+				throw new UnsupportedOperationException();
+			}
+		})
+
+		, CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(AssignerNodeData.class));
 
 		private final DialectConverter<AssignerNodeData> dialectConverter;
 
@@ -129,14 +165,17 @@ public class AssignerNodeDataConverter extends AbstractNodeDataConverter<Assigne
 	@Override
 	public BiConsumer<AssignerNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
-				// 将赋值的多组变量放进Inputs里，方便格式化格式
-				List<VariableSelector> selectors = nodeData.getItems()
-					.stream()
-					.flatMap(item -> Stream.of(item.getValue(), item.getVariableSelector()))
-					.toList();
-				nodeData.setInputs(selectors);
-			}).andThen(super.postProcessConsumer(dialectType));
+			case DIFY, STUDIO -> super.postProcessConsumer(dialectType).andThen((nodeData, idToVarName) -> {
+				nodeData.getItems().forEach(item -> {
+					Consumer<VariableSelector> consumer = selector -> {
+						selector
+							.setNameInCode(idToVarName.getOrDefault(selector.getNamespace(), selector.getNamespace())
+									+ "_" + selector.getName());
+					};
+					Optional.ofNullable(item.targetSelector()).ifPresent(consumer);
+					Optional.ofNullable(item.inputSelector()).ifPresent(consumer);
+				});
+			});
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}

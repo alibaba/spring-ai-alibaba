@@ -96,9 +96,9 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 				subGraphRunnableConfig = subGraph.updateState(subGraphRunnableConfig, state.data());
 			}
 
-			var generator = subGraph.streamFromInitialNode(state, subGraphRunnableConfig);
+			var fluxStream = subGraph.fluxDataStream(state, subGraphRunnableConfig);
 
-			future.complete(Map.of(format("%s_%s", subGraphId(), UUID.randomUUID()), generator));
+			future.complete(Map.of(format("%s_%s", subGraphId(), UUID.randomUUID()), fluxStream));
 
 		}
 		catch (Exception e) {

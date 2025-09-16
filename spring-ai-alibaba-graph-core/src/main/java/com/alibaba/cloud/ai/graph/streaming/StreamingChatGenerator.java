@@ -39,6 +39,7 @@ import static java.util.Objects.requireNonNull;
  * fluent API to configure and build a streaming generator that processes chat responses
  * and produces output based on the streamed data.
  */
+@Deprecated
 public interface StreamingChatGenerator {
 
 	/**

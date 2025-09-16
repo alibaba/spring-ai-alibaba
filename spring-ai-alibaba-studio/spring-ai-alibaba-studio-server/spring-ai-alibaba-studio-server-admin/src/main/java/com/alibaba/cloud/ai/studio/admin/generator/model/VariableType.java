@@ -16,7 +16,9 @@
 package com.alibaba.cloud.ai.studio.admin.generator.model;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public enum VariableType {
 
@@ -31,13 +33,17 @@ public enum VariableType {
 	// TODO：定义文件类型对象，以实现工作流直接使用文件
 	FILE("File", Object.class, "file", "File"),
 
-	ARRAY_STRING("String[]", String[].class, "array[string]", "String[]"),
+	ARRAY("Array", Object.class, "array", "Array"),
 
-	ARRAY_NUMBER("Number[]", Number[].class, "array[number]", "Number[]"),
+	ARRAY_BOOLEAN("Boolean[]", Boolean[].class, "array[boolean]", "Array<Boolean>"),
 
-	ARRAY_OBJECT("Object[]", Object[].class, "array[object]", "Object[]"),
+	ARRAY_STRING("String[]", String[].class, "array[string]", "Array<String>"),
 
-	ARRAY_FILE("File[]", Object[].class, "file-list", "File[]");
+	ARRAY_NUMBER("Number[]", Number[].class, "array[number]", "Array<Number>"),
+
+	ARRAY_OBJECT("Object[]", Object[].class, "array[object]", "Array<Object>"),
+
+	ARRAY_FILE("File[]", Object[].class, "file-list", "Array<FILE>");
 
 	private final String value;
 
@@ -52,6 +58,22 @@ public enum VariableType {
 		this.clazz = clazz;
 		this.difyValue = difyValue;
 		this.studioValue = studioValue;
+	}
+
+	public static List<VariableType> all() {
+		return List.of(values());
+	}
+
+	public static List<VariableType> arrays() {
+		return List.of(ARRAY_BOOLEAN, ARRAY_STRING, ARRAY_NUMBER, ARRAY_OBJECT, ARRAY_FILE, ARRAY);
+	}
+
+	public static List<VariableType> arraysWithOther(VariableType... other) {
+		return Stream.concat(Stream.of(other), arrays().stream()).toList();
+	}
+
+	public static List<VariableType> except(VariableType... excepted) {
+		return Stream.of(VariableType.values()).filter(type -> !Arrays.asList(excepted).contains(type)).toList();
 	}
 
 	public String value() {
