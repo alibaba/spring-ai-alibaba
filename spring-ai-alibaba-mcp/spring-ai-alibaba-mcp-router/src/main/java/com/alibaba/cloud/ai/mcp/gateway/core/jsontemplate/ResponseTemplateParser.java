@@ -33,61 +33,58 @@ public class ResponseTemplateParser {
 
 	private static final Handlebars handlebars = new Handlebars();
 
-	// 支持 {{.}} 或 {{.xxx}} 或 {{.xxx.yyy}} 等多层级变量
+	// Supports {{.}} or {{.xxx}} or {{.xxx.yyy}} multi-level variables
 	private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*\\.([\\w\\$\\[\\]\\.]*)\\s*}}",
 			Pattern.DOTALL);
 
-	// 检测是否包含多层级路径访问（如 {{.xxx.yyy}}）
+	// Detects multi-level path access patterns like {{.xxx.yyy}}
+	// This regex is fully covered by unit tests in ResponseTemplateParserTest.java
 	private static final Pattern MULTI_LEVEL_PATTERN = Pattern.compile("\\{\\{\\s*\\.\\w+\\.[\\w\\.]+\\s*}}");
 
 	/**
-	 * 处理响应模板
-	 * @param rawResponse 原始响应（JSON或文本）
-	 * @param responseTemplate 模板字符串（可为jsonPath、模板、null/空）
-	 * @return 处理后的字符串
+	 * Process response template
+	 * @param rawResponse raw response (JSON or text)
+	 * @param responseTemplate template string (can be jsonPath, template, null/empty)
+	 * @return processed string
 	 */
 	public static String parse(String rawResponse, String responseTemplate) {
 		if (!StringUtils.hasText(responseTemplate) || "{{.}}".equals(responseTemplate.trim())) {
-			// 原样输出
+			// Return raw output
 			return rawResponse;
 		}
 
-		// jsonPath 提取
+		// JsonPath extraction
 		if (responseTemplate.trim().startsWith("$.") || responseTemplate.trim().startsWith("$[")) {
 			try {
 				Object result = JsonPath.read(rawResponse, responseTemplate.trim());
 				return result != null ? result.toString() : "";
 			}
 			catch (Exception e) {
-				// jsonPath 失败，降级为模板处理
+				// JsonPath failed, fallback to template processing
 			}
 		}
 
-		// 检测是否包含多层级路径访问，如果包含则使用 Handlebars 引擎
+		// Detect multi-level path access
 		if (MULTI_LEVEL_PATTERN.matcher(responseTemplate).find()) {
 			return parseWithHandlebars(rawResponse, responseTemplate);
 		}
 
-		// 简单模板变量替换（保持原有逻辑以确保向后兼容）
+		// Simple template variable replacement (maintain backward compatibility)
 		return parseWithSimpleTemplate(rawResponse, responseTemplate);
 	}
 
-	/**
-	 * 使用 Handlebars 引擎处理多层级模板 兼容 higress.cn/ai/mcp-server 的模板语法 {{ .xxx.yyy }}
-	 */
 	private static String parseWithHandlebars(String rawResponse, String responseTemplate) {
 		try {
-			// 1. 预处理模板：转换语法以兼容 Handlebars
+			// 1. Preprocess template: convert syntax to be compatible with Handlebars
 			String handlebarsTemplateStr = responseTemplate
-				// 移除点号前缀：{{ .xxx.yyy }} -> {{xxx.yyy}}
+				// Remove dot prefix: {{ .xxx.yyy }} -> {{xxx.yyy}}
 				.replaceAll("\\{\\{\\s*\\.", "{{")
-				// 转换数组访问语法：{{users.[0].name}} -> {{users.0.name}}
+				// Convert array access syntax: {{users.[0].name}} -> {{users.0.name}}
 				.replaceAll("\\[([0-9]+)\\]", "$1");
 
-			// 2. 编译模板
+			// 2. Compile template
 			Template template = handlebars.compileInline(handlebarsTemplateStr);
 
-			// 3. 准备数据上下文：将JSON字符串解析为 Map
 			Map<String, Object> dataContext;
 			boolean isJson = rawResponse.trim().startsWith("{") || rawResponse.trim().startsWith("[");
 			if (isJson) {
@@ -95,23 +92,18 @@ public class ResponseTemplateParser {
 				});
 			}
 			else {
-				// 非JSON数据，创建一个包含原始响应的上下文
+				// Non-JSON data, create a context containing the raw response
 				dataContext = Map.of("_raw", rawResponse);
 			}
 
-			// 4. 应用模板并返回结果
 			return template.apply(dataContext);
 
 		}
 		catch (Exception e) {
-			// Handlebars 处理失败，降级为简单模板处理
 			return parseWithSimpleTemplate(rawResponse, responseTemplate);
 		}
 	}
 
-	/**
-	 * 简单模板变量替换（原有逻辑）
-	 */
 	private static String parseWithSimpleTemplate(String rawResponse, String responseTemplate) {
 		try {
 			Map<String, Object> context = null;

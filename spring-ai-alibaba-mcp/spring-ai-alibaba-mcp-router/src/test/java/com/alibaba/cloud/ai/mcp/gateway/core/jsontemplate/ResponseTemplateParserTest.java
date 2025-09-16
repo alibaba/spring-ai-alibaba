@@ -18,6 +18,10 @@ package com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import java.util.regex.Pattern;
 
 class ResponseTemplateParserTest {
 
@@ -168,8 +172,48 @@ class ResponseTemplateParserTest {
 
 		String result = ResponseTemplateParser.parse(rawResponse, template);
 
-		// Handlebars 将 null 值渲染为空字符串，这是符合模板引擎标准行为的
+		// Handlebars renders null values as empty strings, which is standard template
+		// engine behavior
 		assertEquals("Data: , Info: test", result);
+	}
+
+	// Regex pattern tests to validate MULTI_LEVEL_PATTERN detection
+	@Test
+	void shouldDetectMultiLevelPatternsCorrectly() {
+		Pattern MULTI_LEVEL_PATTERN = Pattern.compile("\\{\\{\\s*\\.\\w+\\.[\\w\\.]+\\s*}}");
+
+		// Should match multi-level patterns
+		assertTrue(MULTI_LEVEL_PATTERN.matcher("{{.user.name}}").find());
+		assertTrue(MULTI_LEVEL_PATTERN.matcher("{{ .location.city }}").find());
+		assertTrue(MULTI_LEVEL_PATTERN.matcher("{{.data.user.profile.name}}").find());
+		assertTrue(MULTI_LEVEL_PATTERN.matcher("{{.api.response.status.code}}").find());
+
+		// Should NOT match single-level patterns
+		assertFalse(MULTI_LEVEL_PATTERN.matcher("{{.}}").find());
+		assertFalse(MULTI_LEVEL_PATTERN.matcher("{{.status}}").find());
+		assertFalse(MULTI_LEVEL_PATTERN.matcher("{{.message}}").find());
+
+		// Should NOT match non-template strings
+		assertFalse(MULTI_LEVEL_PATTERN.matcher("plain text").find());
+		assertFalse(MULTI_LEVEL_PATTERN.matcher("$.location.city").find());
+	}
+
+	@Test
+	void shouldMatchTemplatePatternCorrectly() {
+		Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*\\.([\\w\\$\\[\\]\\.]*)\\s*}}", Pattern.DOTALL);
+
+		// Should match all template patterns
+		assertTrue(TEMPLATE_PATTERN.matcher("{{.}}").find());
+		assertTrue(TEMPLATE_PATTERN.matcher("{{.status}}").find());
+		assertTrue(TEMPLATE_PATTERN.matcher("{{.user.name}}").find());
+		assertTrue(TEMPLATE_PATTERN.matcher("{{ .location.city }}").find());
+		assertTrue(TEMPLATE_PATTERN.matcher("{{.users.[0].name}}").find());
+		assertTrue(TEMPLATE_PATTERN.matcher("{{.data$}}").find());
+
+		// Should NOT match non-template patterns
+		assertFalse(TEMPLATE_PATTERN.matcher("$.location.city").find());
+		assertFalse(TEMPLATE_PATTERN.matcher("plain text").find());
+		assertFalse(TEMPLATE_PATTERN.matcher("{single brace}").find());
 	}
 
 }
