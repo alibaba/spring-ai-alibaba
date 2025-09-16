@@ -46,7 +46,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.alibaba.cloud.ai.mcp.discovery.client.utils.NacosMcpClientUtils.checkProtocol;
 
 /**
  * @author yingzi
