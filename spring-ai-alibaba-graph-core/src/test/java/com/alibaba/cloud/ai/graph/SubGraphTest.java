@@ -25,16 +25,17 @@ import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.LogManager;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -60,6 +61,22 @@ public class SubGraphTest {
 	}
 
 	/**
+	 * Get an initialized OverAllState instance with predefined key strategies.
+	 * @return Initialized OverAllState object.
+	 */
+	private static KeyStrategyFactory createKeyStrategyFactory() {
+		return () -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("a", (o, o2) -> o);
+			keyStrategyMap.put("b", (o, o2) -> o2);
+			keyStrategyMap.put("c", (o, o2) -> o2);
+			keyStrategyMap.put("steps", (o, o2) -> o2);
+			keyStrategyMap.put("messages", new AppendStrategy());
+			return keyStrategyMap;
+		};
+	}
+
+	/**
 	 * Create an AsyncNodeAction that returns a map with the given ID as value for
 	 * "messages".
 	 * @param id The identifier for the node action.
@@ -77,27 +94,11 @@ public class SubGraphTest {
 	 * @throws Exception If an error occurs during execution.
 	 */
 	private List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
-		return workflow.stream(input, RunnableConfig.builder().threadId("SubGraphTest").build())
-			.stream()
-			.peek(System.out::println)
+		return workflow.fluxStream(input, RunnableConfig.builder().threadId("SubGraphTest").build())
+			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
-			.toList();
-	}
-
-	/**
-	 * Get an initialized OverAllState instance with predefined key strategies.
-	 * @return Initialized OverAllState object.
-	 */
-	private static KeyStrategyFactory createKeyStrategyFactory() {
-		return () -> {
-			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-			keyStrategyMap.put("a", (o, o2) -> o);
-			keyStrategyMap.put("b", (o, o2) -> o2);
-			keyStrategyMap.put("c", (o, o2) -> o2);
-			keyStrategyMap.put("steps", (o, o2) -> o2);
-			keyStrategyMap.put("messages", new AppendStrategy());
-			return keyStrategyMap;
-		};
+			.collectList()
+			.block();
 	}
 
 	/**

@@ -19,38 +19,21 @@ package com.alibaba.cloud.ai.config;
 import com.alibaba.cloud.ai.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.constant.Constant;
-import com.alibaba.cloud.ai.dispatcher.PlanExecutorDispatcher;
-import com.alibaba.cloud.ai.dispatcher.PythonExecutorDispatcher;
-import com.alibaba.cloud.ai.dispatcher.QueryRewriteDispatcher;
-import com.alibaba.cloud.ai.dispatcher.SQLExecutorDispatcher;
-import com.alibaba.cloud.ai.dispatcher.SemanticConsistenceDispatcher;
-import com.alibaba.cloud.ai.dispatcher.SqlGenerateDispatcher;
+import com.alibaba.cloud.ai.dispatcher.*;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.alibaba.cloud.ai.node.KeywordExtractNode;
-import com.alibaba.cloud.ai.node.PlanExecutorNode;
-import com.alibaba.cloud.ai.node.PlannerNode;
-import com.alibaba.cloud.ai.node.PythonAnalyzeNode;
-import com.alibaba.cloud.ai.node.PythonExecuteNode;
-import com.alibaba.cloud.ai.node.PythonGenerateNode;
-import com.alibaba.cloud.ai.node.QueryRewriteNode;
-import com.alibaba.cloud.ai.node.ReportGeneratorNode;
-import com.alibaba.cloud.ai.node.SchemaRecallNode;
-import com.alibaba.cloud.ai.node.SemanticConsistencyNode;
-import com.alibaba.cloud.ai.node.SqlExecuteNode;
-import com.alibaba.cloud.ai.node.SqlGenerateNode;
-import com.alibaba.cloud.ai.node.TableRelationNode;
+import com.alibaba.cloud.ai.node.*;
 import com.alibaba.cloud.ai.service.DatasourceService;
+import com.alibaba.cloud.ai.service.UserPromptConfigService;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.service.business.BusinessKnowledgeRecallService;
-import com.alibaba.cloud.ai.service.semantic.SemanticModelRecallService;
 import com.alibaba.cloud.ai.service.code.CodePoolExecutorService;
-import com.alibaba.cloud.ai.service.UserPromptConfigService;
+import com.alibaba.cloud.ai.service.semantic.SemanticModelRecallService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -61,54 +44,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
-import static com.alibaba.cloud.ai.constant.Constant.BUSINESS_KNOWLEDGE;
-import static com.alibaba.cloud.ai.constant.Constant.COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.EVIDENCES;
-import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
-import static com.alibaba.cloud.ai.constant.Constant.IS_ONLY_NL2SQL;
-import static com.alibaba.cloud.ai.constant.Constant.KEYWORD_EXTRACT_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.KEYWORD_EXTRACT_NODE_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.NL2SQL_GRAPH_NAME;
-import static com.alibaba.cloud.ai.constant.Constant.ONLY_NL2SQL_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.PLAN_CURRENT_STEP;
-import static com.alibaba.cloud.ai.constant.Constant.PLAN_EXECUTOR_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.PLAN_NEXT_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.PLAN_REPAIR_COUNT;
-import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_ERROR;
-import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_STATUS;
-import static com.alibaba.cloud.ai.constant.Constant.PYTHON_ANALYSIS_NODE_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.PYTHON_ANALYZE_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.PYTHON_EXECUTE_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.PYTHON_EXECUTE_NODE_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.PYTHON_GENERATE_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.PYTHON_GENERATE_NODE_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.PYTHON_IS_SUCCESS;
-import static com.alibaba.cloud.ai.constant.Constant.PYTHON_TRIES_COUNT;
-import static com.alibaba.cloud.ai.constant.Constant.QUERY_REWRITE_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.QUERY_REWRITE_NODE_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.REPORT_GENERATOR_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.RESULT;
-import static com.alibaba.cloud.ai.constant.Constant.SCHEMA_RECALL_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_CONSISTENCY_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_CONSISTENCY_NODE_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_CONSISTENCY_NODE_RECOMMEND_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_MODEL;
-import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE_EXCEPTION_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.SQL_EXECUTE_NODE_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.SQL_GENERATE_COUNT;
-import static com.alibaba.cloud.ai.constant.Constant.SQL_GENERATE_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.SQL_GENERATE_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.SQL_GENERATE_SCHEMA_MISSING_ADVICE;
-import static com.alibaba.cloud.ai.constant.Constant.SQL_RESULT_LIST_MEMORY;
-import static com.alibaba.cloud.ai.constant.Constant.SQL_VALIDATE_EXCEPTION_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.SQL_VALIDATE_NODE_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.TABLE_RELATION_NODE;
-import static com.alibaba.cloud.ai.constant.Constant.TABLE_RELATION_OUTPUT;
+import static com.alibaba.cloud.ai.constant.Constant.*;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
@@ -189,6 +125,8 @@ public class Nl2sqlConfiguration {
 			keyStrategyHashMap.put(SQL_VALIDATE_EXCEPTION_OUTPUT, new ReplaceStrategy());
 			// table relation节点输出
 			keyStrategyHashMap.put(TABLE_RELATION_OUTPUT, new ReplaceStrategy());
+			keyStrategyHashMap.put(TABLE_RELATION_EXCEPTION_OUTPUT, new ReplaceStrategy());
+			keyStrategyHashMap.put(TABLE_RELATION_RETRY_COUNT, new ReplaceStrategy());
 			// sql generate节点输出
 			keyStrategyHashMap.put(SQL_GENERATE_SCHEMA_MISSING_ADVICE, new ReplaceStrategy());
 			keyStrategyHashMap.put(SQL_GENERATE_OUTPUT, new ReplaceStrategy());
@@ -217,6 +155,8 @@ public class Nl2sqlConfiguration {
 			// NL2SQL相关
 			keyStrategyHashMap.put(IS_ONLY_NL2SQL, new ReplaceStrategy());
 			keyStrategyHashMap.put(ONLY_NL2SQL_OUTPUT, new ReplaceStrategy());
+			// Human Review keys
+			keyStrategyHashMap.put(HUMAN_REVIEW_ENABLED, new ReplaceStrategy());
 			// Final result
 			keyStrategyHashMap.put(RESULT, new ReplaceStrategy());
 			return keyStrategyHashMap;
@@ -238,14 +178,18 @@ public class Nl2sqlConfiguration {
 			.addNode(PYTHON_EXECUTE_NODE, node_async(new PythonExecuteNode(codePoolExecutor)))
 			.addNode(PYTHON_ANALYZE_NODE, node_async(new PythonAnalyzeNode(chatClientBuilder)))
 			.addNode(REPORT_GENERATOR_NODE, node_async(new ReportGeneratorNode(chatClientBuilder, promptConfigService)))
-			.addNode(SEMANTIC_CONSISTENCY_NODE, node_async(new SemanticConsistencyNode(nl2SqlService)));
+			.addNode(SEMANTIC_CONSISTENCY_NODE, node_async(new SemanticConsistencyNode(nl2SqlService)))
+			.addNode("human_feedback", node_async(new HumanFeedbackNode()));
 
 		stateGraph.addEdge(START, QUERY_REWRITE_NODE)
 			.addConditionalEdges(QUERY_REWRITE_NODE, edge_async(new QueryRewriteDispatcher()),
 					Map.of(KEYWORD_EXTRACT_NODE, KEYWORD_EXTRACT_NODE, END, END))
 			.addEdge(KEYWORD_EXTRACT_NODE, SCHEMA_RECALL_NODE)
 			.addEdge(SCHEMA_RECALL_NODE, TABLE_RELATION_NODE)
-			.addEdge(TABLE_RELATION_NODE, PLANNER_NODE)
+			.addConditionalEdges(TABLE_RELATION_NODE, edge_async(new TableRelationDispatcher()),
+					Map.of(PLANNER_NODE, PLANNER_NODE, END, END, TABLE_RELATION_NODE, TABLE_RELATION_NODE))// retry
+																											// table
+																											// relation
 			// The edge from PlannerNode now goes to PlanExecutorNode for validation and
 			// execution
 			.addEdge(PLANNER_NODE, PLAN_EXECUTOR_NODE)
@@ -262,6 +206,16 @@ public class Nl2sqlConfiguration {
 					// If validation passes, proceed to the correct execution node
 					SQL_EXECUTE_NODE, SQL_EXECUTE_NODE, PYTHON_GENERATE_NODE, PYTHON_GENERATE_NODE,
 					REPORT_GENERATOR_NODE, REPORT_GENERATOR_NODE,
+					// If human review is enabled, go to human_feedback node
+					"human_feedback", "human_feedback",
+					// If max repair attempts are reached, end the process
+					END, END))
+			// Human feedback node routing
+			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()), Map.of(
+					// If plan is rejected, go back to PlannerNode
+					PLANNER_NODE, PLANNER_NODE,
+					// If plan is approved, continue with execution
+					PLAN_EXECUTOR_NODE, PLAN_EXECUTOR_NODE,
 					// If max repair attempts are reached, end the process
 					END, END))
 			.addEdge(REPORT_GENERATOR_NODE, END)

@@ -246,7 +246,10 @@ public class NacosMcpGatewayToolsWatcher extends AbstractMcpGatewayToolsWatcher 
 			McpToolSpecification toolSpec = mcpServerDetail.getToolSpec();
 			McpServerRemoteServiceConfig remoteServerConfig = mcpServerDetail.getRemoteServerConfig();
 			String protocol = mcpServerDetail.getProtocol();
-
+			if (logger.isDebugEnabled()) {
+				logger.debug("Need to update tools (name {}): {}", mcpName, JacksonUtils.toJson(needToUpdateTools));
+				logger.debug("Need to delete tools (name {}): {}", mcpName, JacksonUtils.toJson(needToUpdateTools));
+			}
 			if (!needToUpdateTools.isEmpty()) {
 				List<McpTool> tools = toolSpec.getTools();
 				Map<String, McpToolMeta> toolsMeta = toolSpec.getToolsMeta();

@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.Agent
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -65,6 +66,11 @@ public class AgentNodeSection implements NodeSection<AgentNodeData> {
 		sb.append(String.format(".build();%n"));
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
 		return sb.toString();
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.AgentNode", "org.springframework.ai.tool.ToolCallback");
 	}
 
 }

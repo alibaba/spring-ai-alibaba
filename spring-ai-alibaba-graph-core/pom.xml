@@ -44,6 +44,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>io.github.a2asdk</groupId>
             <artifactId>a2a-java-reference-server</artifactId>
             <version>${a2a-sdk.version}</version>
@@ -256,6 +261,12 @@
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-openai</artifactId>
+            <scope>provided</scope>
         </dependency>
 
     </dependencies>

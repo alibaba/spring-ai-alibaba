@@ -103,4 +103,9 @@ public class ParameterParsingNodeSection implements NodeSection<ParameterParsing
 		};
 	}
 
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.ParameterParsingNode", "java.util.stream.Collectors");
+	}
+
 }

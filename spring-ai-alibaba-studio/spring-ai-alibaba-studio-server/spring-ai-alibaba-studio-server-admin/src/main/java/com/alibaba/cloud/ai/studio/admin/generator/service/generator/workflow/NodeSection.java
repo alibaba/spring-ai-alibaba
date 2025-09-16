@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow;
 
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
@@ -39,6 +38,12 @@ public interface NodeSection<T extends NodeData> {
 
 	String render(Node node, String varName);
 
+	/**
+	 * 返回当前节点需要导入的类列表
+	 * @return 类列表
+	 */
+	List<String> getImports();
+
 	default String escape(String input) {
 		if (input == null) {
 			return "";
@@ -50,19 +55,23 @@ public interface NodeSection<T extends NodeData> {
 			.replace("\t", "\\t");
 	}
 
-	// todo: 完善条件边的EdgeAction
 	/**
-	 * 生成条件边的SAA代码
-	 * @param nodeData 节点数据
-	 * @param nodeMap nodeId与node的映射
-	 * @param entry 包含当前节点ID与当前节点出发的条件边List
-	 * @param varNames nodeId与nodeVarName的映射
-	 * @return 条件边代码
+	 * 生成stateGraph边的代码。edge列表为从当前节点出发的边。 如果当前节点有条件边，则应重写本方法。本方法默认为无条件的边。
+	 * @param nodeData 当前节点（边起始节点）的数据
+	 * @param edges 边列表，且边的source和handle应格式化为varName
+	 * @return 生成的代码
 	 */
-	default String renderConditionalEdges(T nodeData, Map<String, Node> nodeMap, Map.Entry<String, List<Edge>> entry,
-			Map<String, String> varNames) {
-		System.err.println("Unsupported Conditional Edges!");
-		return "";
+	default String renderEdges(T nodeData, List<Edge> edges) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("// Edges For [%s]%n", nodeData.getVarName()));
+		if (edges.isEmpty()) {
+			return "";
+		}
+		sb.append(String.format("stateGraph%n"));
+		edges.forEach(
+				edge -> sb.append(String.format(".addEdge(\"%s\", \"%s\")%n", edge.getSource(), edge.getTarget())));
+		sb.append(String.format(";%n%n"));
+		return sb.toString();
 	}
 
 	/**

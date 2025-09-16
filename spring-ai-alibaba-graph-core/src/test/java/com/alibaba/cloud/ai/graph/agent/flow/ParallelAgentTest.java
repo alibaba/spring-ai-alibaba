@@ -15,22 +15,27 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow;
 
-import java.util.HashMap;
-import java.util.List;
-
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+
+import java.util.HashMap;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.tool.resolution.ToolCallbackResolver;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for ParallelAgent demonstrating the refactored architecture with different
@@ -429,9 +434,9 @@ class ParallelAgentTest {
 			.inputKey("content_requirements")
 			.subAgents(List.of(introWriter, bodyWriter, conclusionWriter))
 			.mergeStrategy(new ParallelAgent.ConcatenationMergeStrategy("\n\n")) // Join
-																					// with
-																					// double
-																					// newline
+			// with
+			// double
+			// newline
 			.state(() -> {
 				HashMap<String, KeyStrategy> strategies = new HashMap<>();
 				strategies.put("content_state", new AppendStrategy());

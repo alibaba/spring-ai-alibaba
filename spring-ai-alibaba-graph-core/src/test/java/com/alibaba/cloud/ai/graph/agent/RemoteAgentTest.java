@@ -15,26 +15,19 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import java.util.HashMap;
-//import java.util.Map;
-//import java.util.Optional;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
-//import com.alibaba.cloud.ai.graph.OverAllState;
-//import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-//import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
-//import com.alibaba.cloud.ai.graph.NodeOutput;
-//import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+
+import org.springframework.ai.chat.model.ChatModel;
+
+import java.util.HashMap;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-//import com.alibaba.cloud.ai.graph.agent.a2a.RemoteAgentCard;
-
-import org.springframework.ai.chat.model.ChatModel;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class RemoteAgentTest {

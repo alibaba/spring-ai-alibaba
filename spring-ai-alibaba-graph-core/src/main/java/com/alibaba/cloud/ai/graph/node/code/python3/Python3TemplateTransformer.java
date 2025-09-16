@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.node.code.python3;
 
+import com.alibaba.cloud.ai.graph.node.code.entity.CodeStyle;
 import com.alibaba.cloud.ai.graph.node.code.TemplateTransformer;
 
 /**
@@ -24,13 +25,34 @@ import com.alibaba.cloud.ai.graph.node.code.TemplateTransformer;
 public class Python3TemplateTransformer extends TemplateTransformer {
 
 	@Override
-	public String getRunnerScript() {
-		return String.join("\n",
-				new String[] { "# declare main function", CODE_PLACEHOLDER, "import json",
-						"from base64 import b64decode",
-						"inputs_obj = json.loads(b64decode('" + INPUTS_PLACEHOLDER + "').decode('utf-8'))",
-						"output_obj = main(*inputs_obj)", "output_json = json.dumps(output_obj, indent=4)",
-						"result = f'''<<RESULT>>{output_json}<<RESULT>>'''", "print(result)" });
+	public String getRunnerScript(CodeStyle style) {
+		return switch (style) {
+			case EXPLICIT_PARAMETERS -> String.format("""
+					# declare main function
+					%s
+
+					import json
+					from base64 import b64decode
+					inputs_obj = json.loads(b64decode('%s').decode('utf-8'))
+					output_obj = main(**inputs_obj)
+					output_json = json.dumps(output_obj, indent=4)
+					result = f'''%s{output_json}%s'''
+					print(result)
+					""", CODE_PLACEHOLDER, INPUTS_PLACEHOLDER, RESULT_TAG, RESULT_TAG);
+			case GLOBAL_DICTIONARY -> String.format("""
+					import json
+					from base64 import b64decode
+					params = json.loads(b64decode('%s').decode('utf-8'))
+
+					# declare main function
+					%s
+
+					output_obj = main()
+					output_json = json.dumps(output_obj, indent=4)
+					result = f'''%s{output_json}%s'''
+					print(result)
+					""", INPUTS_PLACEHOLDER, CODE_PLACEHOLDER, RESULT_TAG, RESULT_TAG);
+		};
 	}
 
 }
