@@ -41,7 +41,7 @@ public class ParameterParsingNodeSection implements NodeSection<ParameterParsing
 		return String.format("""
 				// -- ParameterParsingNode [%s] --
 				stateGraph.addNode("%s", AsyncNodeAction.node_async(
-				    createParameterParsingAction(chatModel, %s, %s, %s, %s, %s, %s, %s, %s)
+				    createParameterParsingAction(chatModel, %s, %s, %s, %s, %s, %s, %s, %s, "%s")
 				));
 
 				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getChatModeName()),
@@ -49,7 +49,7 @@ public class ParameterParsingNodeSection implements NodeSection<ParameterParsing
 				ObjectToCodeUtil.toCode(nodeData.getInputSelector().getNameInCode()),
 				ObjectToCodeUtil.toCode(nodeData.getParameters()), ObjectToCodeUtil.toCode(nodeData.getSuccessKey()),
 				ObjectToCodeUtil.toCode(nodeData.getDataKey()), ObjectToCodeUtil.toCode(nodeData.getReasonKey()),
-				ObjectToCodeUtil.toCode(nodeData.getInstruction()));
+				ObjectToCodeUtil.toCode(nodeData.getInstruction()), varName);
 	}
 
 	@Override
@@ -61,7 +61,7 @@ public class ParameterParsingNodeSection implements NodeSection<ParameterParsing
 						        ChatModel chatModel,
 						        String chatModelName, Map<String, Number> modeParams,
 						        String inputKey, List<ParameterParsingNode.Param> parameters,
-						        String successKey, String dataKey, String reasonKey, String instruction) {
+						        String successKey, String dataKey, String reasonKey, String instruction, String outputKeyPrefix) {
 						    // build ChatClient
 						    var chatOptionsBuilder = DashScopeChatOptions.builder().withModel(chatModelName);
 						    Optional.ofNullable(modeParams.get("temperature"))
@@ -95,7 +95,12 @@ public class ParameterParsingNodeSection implements NodeSection<ParameterParsing
 						                          }
 						                          Map<String, Object> finalRes = new HashMap<>(res);
 						                          Map<String, Object> data = (Map<String, Object>) finalRes.remove(dataKey);
-						                          finalRes.putAll(data);
+						                          finalRes.putAll(data.entrySet()
+						                                    .stream()
+						                                    .map(e ->
+						                                            Map.entry(outputKeyPrefix + "_" + e.getKey(), e.getValue()))
+						                                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+						                            );
 						                          return finalRes;
 						                      };
 						}
@@ -106,7 +111,9 @@ public class ParameterParsingNodeSection implements NodeSection<ParameterParsing
 
 	@Override
 	public List<String> getImports() {
-		return List.of("com.alibaba.cloud.ai.graph.node.ParameterParsingNode");
+		return List.of("com.alibaba.cloud.ai.graph.node.ParameterParsingNode",
+				"com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions", "java.util.Optional",
+				"java.util.stream.Collectors");
 	}
 
 }

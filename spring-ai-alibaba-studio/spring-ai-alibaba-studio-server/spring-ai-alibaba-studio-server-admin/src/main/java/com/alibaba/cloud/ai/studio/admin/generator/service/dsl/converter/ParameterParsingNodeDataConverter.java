@@ -114,7 +114,7 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 
 				// 获取必要信息
 				VariableSelector selector = this.varTemplateToSelector(DSLDialectType.STUDIO, MapReadUtil
-					.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, String.class, "config", "input_params"))
+					.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "input_params"))
 					.get(0)
 					.get("value")
 					.toString());
@@ -122,7 +122,7 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 				Map<String, Object> modelParams = this.exactChatModelParam(DSLDialectType.STUDIO, data);
 				List<ParameterParsingNodeData.Param> params = Optional
 					.ofNullable(MapReadUtil.safeCastToListWithMap(
-							MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param", "extract_params")))
+							MapReadUtil.getMapDeepValue(data, List.class, "config", "node_param", "extract_params")))
 					.orElse(List.of())
 					.stream()
 					.filter(map -> map.containsKey("key"))
