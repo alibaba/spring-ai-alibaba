@@ -135,7 +135,12 @@ public class AssignerNode implements NodeAction {
 
 	public static class Builder {
 
-		private final List<AssignItem> items = new ArrayList<>();
+		private List<AssignItem> items = new ArrayList<>();
+
+		public Builder setItems(List<AssignItem> items) {
+			this.items = new ArrayList<>(items);
+			return this;
+		}
 
 		public Builder addItem(String targetKey, String inputKey, WriteMode writeMode) {
 			items.add(new AssignItem(targetKey, inputKey, writeMode));

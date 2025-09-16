@@ -67,7 +67,7 @@ public enum NodeType {
 
 	ITERATION_END("iteration-end", "iteration-end", "ParallelEnd"),
 
-	ASSIGNER("assigner", "assigner", "UNSUPPORTED");
+	ASSIGNER("assigner", "assigner", "VariableAssign");
 
 	private final String value;
 
