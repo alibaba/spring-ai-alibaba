@@ -24,6 +24,7 @@ import com.alibaba.nacos.api.ai.AiFactory;
 import com.alibaba.nacos.api.exception.NacosException;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -35,6 +36,7 @@ import org.springframework.context.annotation.Bean;
  * @author xiweng.yy
  */
 @AutoConfiguration(before = { A2aClientAgentCardProviderAutoConfiguration.class })
+@ConditionalOnClass({ A2aClientAgentCardProviderAutoConfiguration.class })
 @EnableConfigurationProperties({ NacosA2aProperties.class })
 @ConditionalOnProperty(prefix = NacosA2aProperties.PREFIX, value = "discovery.enabled", havingValue = "true",
 		matchIfMissing = true)
