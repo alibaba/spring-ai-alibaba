@@ -41,8 +41,9 @@ public class AssignerNodeData extends NodeData {
 		@Override
 		public String toString() {
 			return String.format("new AssignerNode.AssignItem(%s, %s, %s, %s)",
-					ObjectToCodeUtil.toCode(this.targetSelector().getNameInCode()),
-					ObjectToCodeUtil.toCode(this.inputSelector().getNameInCode()),
+					ObjectToCodeUtil
+						.toCode(this.targetSelector() != null ? this.targetSelector().getNameInCode() : null),
+					ObjectToCodeUtil.toCode(this.inputSelector() != null ? this.inputSelector().getNameInCode() : null),
 					ObjectToCodeUtil.toCode(this.writeMode()), ObjectToCodeUtil.toCode(this.inputConst()));
 		}
 	}
