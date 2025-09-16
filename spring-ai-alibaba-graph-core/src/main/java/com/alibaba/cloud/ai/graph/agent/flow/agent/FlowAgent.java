@@ -22,10 +22,12 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.SubAgentGraphNodeAdapter;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 
@@ -54,6 +56,19 @@ public abstract class FlowAgent extends BaseAgent {
 		this.subAgents = subAgents;
 	}
 
+//	protected FlowAgent(String name, String description, String outputKey, List<String> inputKeys,
+//			KeyStrategyFactory inputKeysWithStrategy, KeyStrategyFactory outputKeyWithStrategy,
+//			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig, List<BaseAgent> subAgents)
+//			throws GraphStateException {
+//		super(name, description, outputKey);
+//		this.compileConfig = compileConfig;
+//		this.inputKeys = inputKeys;
+//		this.inputKeysWithStrategy = inputKeysWithStrategy;
+//		this.outputKeyWithStrategy = outputKeyWithStrategy;
+//		this.keyStrategyFactory = keyStrategyFactory;
+//		this.subAgents = subAgents;
+//	}
+
 	@Override
 	protected StateGraph initGraph() throws GraphStateException {
 		// Use FlowGraphBuilder to construct the graph
@@ -79,13 +94,12 @@ public abstract class FlowAgent extends BaseAgent {
 			throws GraphStateException;
 
 	@Override
-	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
+	public AsyncNodeActionWithConfig asAsyncNodeActionWithConfig()
 			throws GraphStateException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return node_async(
-				new SubAgentGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
+		return new SubCompiledGraphNodeAction(name, compileConfig, this.compiledGraph);
 	}
 
 	@Override

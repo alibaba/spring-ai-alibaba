@@ -84,7 +84,7 @@ public class A2aRemoteAgent extends BaseAgent {
 	}
 
 	@Override
-	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException, GraphRunnerException {
+	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
 		throw new UnsupportedOperationException("A2aRemoteAgent has not support schedule.");
 	}
 

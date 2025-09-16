@@ -93,8 +93,9 @@ public class LoopAgent extends FlowAgent {
 	 * agents. When building the graph, the agents will be connected head-to-tail.
 	 */
 	private LoopAgent(Builder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.outputKey, builder.inputKeys, builder.keyStrategyFactory,
-				builder.compileConfig, builder.subAgents);
+		super(builder.name, builder.description, builder.outputKey, builder.inputKeys,
+			  builder.inputKeysWithStrategy, builder.outputKeyWithStrategy,
+				builder.keyStrategyFactory, builder.compileConfig, builder.subAgents);
 		this.loopConfig = builder.loopConfig;
 		this.graph = this.initGraph();
 	}
@@ -129,7 +130,7 @@ public class LoopAgent extends FlowAgent {
 		COUNT(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get input for passing to the iterator body
-			Optional<?> input = state.value(loopConfig.inputKeys());
+			Optional<?> input = state.value(loopConfig.getPrimaryInputKey());
 
 			// Get current iteration count
 			String countKey = agentName + "__loop_count";
@@ -156,7 +157,7 @@ public class LoopAgent extends FlowAgent {
 		CONDITION(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get input for passing to the iterator body
-			Optional<?> input = state.value(loopConfig.inputKeys());
+			Optional<?> input = state.value(loopConfig.getPrimaryInputKey());
 			// Check if it's the first loop, if so, allow it to proceed directly
 			if (state.value(loopStartFlagKey(agentName)).isEmpty()) {
 				return input.map(o -> Map.of(loopStartFlagKey(agentName), true, iteratorItemKey(agentName), o))
@@ -187,7 +188,7 @@ public class LoopAgent extends FlowAgent {
 
 			if (iteratorObj.isEmpty()) {
 				// Get output
-				Optional<?> inputIterable = state.value(loopConfig.inputKeys());
+				Optional<?> inputIterable = state.value(loopConfig.getPrimaryInputKey());
 				if (inputIterable.isEmpty()) {
 					return Map.of(loopStartFlagKey(agentName), false);
 				}
@@ -228,7 +229,7 @@ public class LoopAgent extends FlowAgent {
 		ARRAY(loopConfig -> (state -> {
 			String agentName = loopConfig.agentName();
 			// Get the input array
-			Object arrayObj = state.value(loopConfig.inputKeys()).orElse(null);
+			Object arrayObj = state.value(loopConfig.getPrimaryInputKey()).orElse(null);
 			if (arrayObj == null) {
 				return Map.of(loopStartFlagKey(agentName), false);
 			}
@@ -260,7 +261,7 @@ public class LoopAgent extends FlowAgent {
 			Optional<Object> listObj = state.value(listKey);
 			if (listObj.isEmpty()) {
 				// Get the input array
-				String jsonStr = state.value(loopConfig.inputKeys()).orElse("[]").toString();
+				String jsonStr = state.value(loopConfig.getPrimaryInputKey()).orElse("[]").toString();
 				try {
 					list = JsonParser.fromJson(jsonStr, List.class);
 				}
@@ -348,8 +349,8 @@ public class LoopAgent extends FlowAgent {
 	 * Loop configuration class for encapsulating loop-related configuration information
 	 *
 	 * @param agentName The name of the agent
-	 * @param inputKeys The input key for the loop, should conform to the requirements of
-	 * loopMode. Some modes can have no input.
+	 * @param inputKeys The input keys for the loop, should conform to the requirements of
+	 * loopMode. Some modes can have no input. For LoopAgent, typically uses the first key.
 	 * @param outputKey The loop output result, which is a List object
 	 * @param loopMode The loop mode that determines how the loop is executed
 	 * @param loopCount The number of loops, only valid in COUNT mode
@@ -358,6 +359,15 @@ public class LoopAgent extends FlowAgent {
 	 */
 	public record LoopConfig(String agentName, List<String> inputKeys, String outputKey, LoopMode loopMode, Integer loopCount,
 			Predicate<Object> loopCondition) {
+
+		/**
+		 * Get the primary input key for loop operations.
+		 * @return the first input key if available, null otherwise
+		 */
+		public String getPrimaryInputKey() {
+			return (inputKeys != null && !inputKeys.isEmpty()) ? inputKeys.get(0) : null;
+		}
+
 		/**
 		 * Validate the validity of the loop configuration
 		 * @throws IllegalArgumentException Thrown when the configuration is invalid

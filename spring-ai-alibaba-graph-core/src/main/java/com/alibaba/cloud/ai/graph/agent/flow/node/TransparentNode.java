@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -25,24 +26,21 @@ import org.springframework.util.StringUtils;
 
 public class TransparentNode implements NodeAction {
 
-	private final String inputKey;
+	private final List<String> inputKeys;
 
 	private final String outputKey;
 
-	public TransparentNode(String outputKey, String inputKey) {
-		if (!StringUtils.hasLength(inputKey) || !StringUtils.hasLength(outputKey)) {
-			throw new IllegalArgumentException("inputKey and outputKey must not be null or empty.");
-		}
-		this.inputKey = inputKey;
+	public TransparentNode(String outputKey, List<String> inputKeys) {
+		this.inputKeys = inputKeys;
 		this.outputKey = outputKey;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		Map<String, Object> updatedState = new HashMap<>();
-		Object value = state.value(inputKey)
+		Object value = state.value(inputKeys.get(0))
 			.orElseThrow(
-					() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
+					() -> new IllegalArgumentException("Input key '" + inputKeys.get(0) + "' not found in state: " + state));
 		updatedState.put(this.outputKey, value);
 		return updatedState;
 	}
@@ -55,10 +53,10 @@ public class TransparentNode implements NodeAction {
 
 		private String outputKey;
 
-		private String inputKey;
+		private List<String> inputKeys;
 
 		public TransparentNode build() {
-			return new TransparentNode(outputKey, inputKey);
+			return new TransparentNode(outputKey, inputKeys);
 		}
 
 		public Builder outputKey(String outputKey) {
@@ -66,8 +64,8 @@ public class TransparentNode implements NodeAction {
 			return this;
 		}
 
-		public Builder inputKey(String inputKey) {
-			this.inputKey = inputKey;
+		public Builder inputKey(List<String> inputKeys) {
+			this.inputKeys = inputKeys;
 			return this;
 		}
 

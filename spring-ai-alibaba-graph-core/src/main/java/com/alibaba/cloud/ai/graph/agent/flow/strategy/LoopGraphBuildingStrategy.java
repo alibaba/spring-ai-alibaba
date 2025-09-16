@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -86,7 +87,7 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 		// Expand sub-agent nodes
 		String lastOutput = generateTempInput(config.getSubAgents().get(0));
 		stateGraph.addNode(bodyStartNodeName,
-				node_async(new TransparentNode(lastOutput, LoopAgent.LoopMode.iteratorItemKey(agentName))));
+				node_async(new TransparentNode(lastOutput, List.of(LoopAgent.LoopMode.iteratorItemKey(agentName)))));
 		for (int i = 0; i < config.getSubAgents().size(); i++) {
 			String thisOutput = generateTempOutput(config.getSubAgents().get(i));
 			stateGraph.addNode(generateBodyName(agentName, i),
@@ -94,7 +95,7 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 			lastOutput = thisOutput;
 		}
 		stateGraph.addNode(bodyEndNodeName,
-				node_async(new TransparentNode(LoopAgent.LoopMode.iteratorResultKey(agentName), lastOutput)));
+				node_async(new TransparentNode(LoopAgent.LoopMode.iteratorResultKey(agentName), List.of(lastOutput))));
 
 		stateGraph.addNode(endNodeName, node_async(loopConfig.loopMode().getEndAction(loopConfig)));
 

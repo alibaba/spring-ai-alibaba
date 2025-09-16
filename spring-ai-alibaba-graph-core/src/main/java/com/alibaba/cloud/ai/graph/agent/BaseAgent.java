@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
@@ -112,6 +113,10 @@ public abstract class BaseAgent {
 	}
 
 	public synchronized CompiledGraph getAndCompileGraph() throws GraphStateException {
+		if (compiledGraph != null) {
+			return compiledGraph;
+		}
+
 		if (this.graph == null) {
 			this.graph = initGraph();
 		}
@@ -138,8 +143,16 @@ public abstract class BaseAgent {
 	 * Abstract a complex agent into a simple node in the graph.
 	 * @return the list of sub-agents.
 	 */
-	public abstract AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
-			throws GraphStateException;
+	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
+			throws GraphStateException {
+		return null;
+	}
+
+
+
+	public AsyncNodeActionWithConfig asAsyncNodeActionWithConfig() throws GraphStateException {
+		return null;
+	}
 
 	/**
 	 * Schedule the agent task with trigger.

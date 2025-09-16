@@ -33,25 +33,21 @@ import reactor.core.publisher.Flux;
 
 public class SubAgentGraphNodeAdapter implements NodeAction {
 
-	private List<String> inputKeysFromParent;
+	private String inputKeyFromParent;
 
 	private String outputKeyToParent;
 
-	private String inputKeyToChild;
-
-	// This graph can be ReactAgent graph or Embedded FlowAgent graph.
 	private CompiledGraph childGraph;
 
-	public SubAgentGraphNodeAdapter(List<String> inputKeyFromParent, String outputKeyToParent,
+	public SubAgentGraphNodeAdapter(String inputKeyFromParent, String outputKeyToParent,
 			CompiledGraph childGraph) {
-		this.inputKeysFromParent = inputKeyFromParent;
+		this.inputKeyFromParent = inputKeyFromParent;
 		this.outputKeyToParent = outputKeyToParent;
 		this.childGraph = childGraph;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState parentState) throws Exception {
-		inputKeysFromParent
 		String input = (String) parentState.value(inputKeyFromParent).orElseThrow();
 		Message message = new UserMessage(input);
 		List<Message> messages = List.of(message);

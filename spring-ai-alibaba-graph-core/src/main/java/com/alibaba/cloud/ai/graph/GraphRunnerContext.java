@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.springframework.util.CollectionUtils;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -60,7 +59,7 @@ class GraphRunnerContext {
 
 	String nextNodeId;
 
-	Map<String, Object> currentState;
+	Map<String, Object> currentStateData;
 
 	String resumeFrom;
 
@@ -101,10 +100,10 @@ class GraphRunnerContext {
 			this.config = config.withCheckPointId(null);
 		}
 
-		this.currentState = checkpoint.getState();
+		this.currentStateData = checkpoint.getState();
 		this.currentNodeId = null;
 		this.nextNodeId = checkpoint.getNextNodeId();
-		this.overallState = initialState.input(this.currentState);
+		this.overallState = initialState.input(this.currentStateData);
 		this.resumeFrom = checkpoint.getNodeId();
 
 		log.trace("RESUME FROM {}", checkpoint.getNodeId());
@@ -120,8 +119,8 @@ class GraphRunnerContext {
 		}
 
 		// Use CompiledGraph's getInitialState method
-		this.currentState = compiledGraph.getInitialState(inputs != null ? inputs : new HashMap<>(), config);
-		this.overallState = initialState.input(currentState);
+		this.currentStateData = compiledGraph.getInitialState(inputs, config);
+		this.overallState = compiledGraph.stateGraph.getStateFactory().apply(currentStateData);
 		this.currentNodeId = START;
 		this.nextNodeId = null;
 	}
@@ -166,7 +165,7 @@ class GraphRunnerContext {
 
 	public Command getEntryPoint() throws Exception {
 		var entryPoint = compiledGraph.getEdge(START);
-		return nextNodeId(entryPoint, currentState, "entryPoint");
+		return nextNodeId(entryPoint, currentStateData, "entryPoint");
 	}
 
 	public Command nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
@@ -197,7 +196,7 @@ class GraphRunnerContext {
 
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
 		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
-			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(currentState)).nextNodeId(nextNodeId).build();
+			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(currentStateData)).nextNodeId(nextNodeId).build();
 			compiledGraph.compileConfig.checkpointSaver().get().put(config, cp);
 			return Optional.of(cp);
 		}
@@ -218,7 +217,7 @@ class GraphRunnerContext {
 	}
 
 	public NodeOutput buildNodeOutput(String nodeId) throws Exception {
-		return NodeOutput.of(nodeId, cloneState(currentState));
+		return NodeOutput.of(nodeId, cloneState(currentStateData));
 	}
 
 	public OverAllState cloneState(Map<String, Object> data) throws Exception {
@@ -247,12 +246,12 @@ class GraphRunnerContext {
 		this.nextNodeId = nodeId;
 	}
 
-	public Map<String, Object> getCurrentState() {
-		return currentState;
+	public Map<String, Object> getCurrentStateData() {
+		return currentStateData;
 	}
 
 	public void updateCurrentState(Map<String, Object> state) {
-		this.currentState = state;
+		this.currentStateData = state;
 	}
 
 	public OverAllState getOverallState() {

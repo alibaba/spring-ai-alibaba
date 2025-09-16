@@ -49,7 +49,7 @@ public class ConditionalGraphBuildingStrategy implements FlowGraphBuildingStrate
 
 		// Add root transparent node
 		graph.addNode(rootAgent.name(),
-				node_async(new TransparentNode(rootAgent.outputKey(), ((FlowAgent) rootAgent).inputKey())));
+				node_async(new TransparentNode(rootAgent.outputKey(), ((FlowAgent) rootAgent).inputKeys())));
 
 		// Add starting edge
 		graph.addEdge(START, rootAgent.name());

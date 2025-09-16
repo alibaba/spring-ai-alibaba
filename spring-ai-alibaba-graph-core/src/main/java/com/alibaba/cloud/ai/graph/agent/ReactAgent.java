@@ -466,6 +466,7 @@ public class ReactAgent extends BaseAgent {
 
 			LlmNode.Builder llmNodeBuilder = LlmNode.builder()
 				.stream(true)
+					.systemPromptTemplate(instruction)
 				.chatClient(chatClient)
 				.messagesKey(this.inputKey);
 

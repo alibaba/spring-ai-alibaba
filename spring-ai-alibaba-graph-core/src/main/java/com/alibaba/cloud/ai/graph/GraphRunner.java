@@ -61,19 +61,16 @@ public class GraphRunner {
 
 	private final CompiledGraph compiledGraph;
 
-	private final OverAllState initialState;
-
 	private final RunnableConfig config;
 
 	private final AtomicReference<Object> resultValue = new AtomicReference<>();
 
-	public GraphRunner(CompiledGraph compiledGraph, OverAllState initialState, RunnableConfig config) {
+	public GraphRunner(CompiledGraph compiledGraph, RunnableConfig config) {
 		this.compiledGraph = compiledGraph;
-		this.initialState = initialState;
 		this.config = config;
 	}
 
-	public Flux<GraphResponse<NodeOutput>> run() {
+	public Flux<GraphResponse<NodeOutput>> run(OverAllState initialState) {
 		return Flux.defer(() -> {
 			try {
 				GraphRunnerContext context = new GraphRunnerContext(initialState, config, compiledGraph);
@@ -110,7 +107,7 @@ public class GraphRunner {
 			// possibly needs to be unified.
 			if (context.getCurrentNodeId() != null && config.isInterrupted(context.getCurrentNodeId())) {
 				config.withNodeResumed(context.getCurrentNodeId());
-				return Flux.just(GraphResponse.done(GraphResponse.done(context.getCurrentState())));
+				return Flux.just(GraphResponse.done(GraphResponse.done(context.getCurrentStateData())));
 			}
 
 			if (context.isStartNode()) {
@@ -125,7 +122,7 @@ public class GraphRunner {
 			if (resumeFrom.isPresent()) {
 				if (compiledGraph.compileConfig.interruptBeforeEdge()
 						&& Objects.equals(context.getNextNodeId(), INTERRUPT_AFTER)) {
-					var nextNodeCommand = context.nextNodeId(resumeFrom.get(), context.getCurrentState());
+					var nextNodeCommand = context.nextNodeId(resumeFrom.get(), context.getCurrentStateData());
 					// nextNodeId = nextNodeCommand.gotoNode();
 					context.setNextNodeId(nextNodeCommand.gotoNode());
 					context.updateCurrentState(nextNodeCommand.update());
@@ -187,7 +184,7 @@ public class GraphRunner {
 				resultValue.set(tag);
 			}
 			else {
-				resultValue.set(context.getCurrentState());
+				resultValue.set(context.getCurrentStateData());
 			}
 			return Flux.just(GraphResponse.done(resultValue.get()));
 		}
@@ -199,7 +196,7 @@ public class GraphRunner {
 	private Flux<GraphResponse<NodeOutput>> handleInterruption(GraphRunnerContext context) {
 		try {
 			InterruptionMetadata metadata = InterruptionMetadata
-				.builder(context.getCurrentNodeId(), context.cloneState(context.getCurrentState()))
+				.builder(context.getCurrentNodeId(), context.cloneState(context.getCurrentStateData()))
 				.build();
 			resultValue.set(metadata);
 			return Flux.just(GraphResponse.done(metadata));
@@ -222,7 +219,7 @@ public class GraphRunner {
 			// Check for interruptable action
 			if (action instanceof InterruptableAction) {
 				Optional<InterruptionMetadata> interruptMetadata = ((InterruptableAction) action)
-					.interrupt(currentNodeId, context.cloneState(context.getCurrentState()));
+					.interrupt(currentNodeId, context.cloneState(context.getCurrentStateData()));
 				if (interruptMetadata.isPresent()) {
 					resultValue.set(interruptMetadata.get());
 					return Flux.just(GraphResponse.done(interruptMetadata.get()));
@@ -267,7 +264,7 @@ public class GraphRunner {
 
 			// Regular state update
 			context.updateCurrentState(
-					OverAllState.updateState(context.getCurrentState(), updateState, context.getKeyStrategyMap()));
+					OverAllState.updateState(context.getCurrentStateData(), updateState, context.getKeyStrategyMap()));
 			context.getOverallState().updateState(updateState);
 
 			if (compiledGraph.compileConfig.interruptBeforeEdge()
@@ -275,7 +272,7 @@ public class GraphRunner {
 				context.setNextNodeId(INTERRUPT_AFTER);
 			}
 			else {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
+				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 				context.updateCurrentState(nextCommand.update());
 			}
@@ -323,7 +320,7 @@ public class GraphRunner {
 						.filter(e -> !(e.getValue() instanceof Flux))
 						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-					Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
+					Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentStateData(),
 							partialStateWithoutFlux, context.getKeyStrategyMap());
 					var currentState = OverAllState.updateState(intermediateState,
 							(Map<String, Object>) nodeResultValue, context.getKeyStrategyMap());
@@ -336,9 +333,12 @@ public class GraphRunner {
 			}
 
 			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
+				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 				context.updateCurrentState(nextCommand.update());
+
+				// save checkpoint after embedded flux completes
+				context.buildCurrentNodeOutput();
 			}
 			catch (Exception e) {
 				throw new RuntimeException(e);
@@ -483,7 +483,7 @@ public class GraphRunner {
 								.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 							// Apply partial state update first
-							Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
+							Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentStateData(),
 									partialStateWithoutFlux, context.getKeyStrategyMap());
 							var currentState = OverAllState.updateState(intermediateState,
 									(Map<String, Object>) nodeResultValue, context.getKeyStrategyMap());
@@ -503,7 +503,7 @@ public class GraphRunner {
 		}).concatWith(Flux.defer(() -> {
 			try {
 				// After embedded flux completes, continue with main flow
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
+				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 				context.updateCurrentState(nextCommand.update());
 
