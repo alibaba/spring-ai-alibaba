@@ -83,7 +83,8 @@ public class SemanticModelPersistenceController {
 
 	// Edit update
 	@PutMapping("/{id}")
-	public ResponseEntity<Void> updateField(@PathVariable(value = "id") long id, @RequestBody SemanticModelDTO semanticModelDTO) {
+	public ResponseEntity<Void> updateField(@PathVariable(value = "id") long id,
+			@RequestBody SemanticModelDTO semanticModelDTO) {
 		semanticModelPersistenceService.updateField(semanticModelDTO, id);
 		return ResponseEntity.ok().build();
 	}

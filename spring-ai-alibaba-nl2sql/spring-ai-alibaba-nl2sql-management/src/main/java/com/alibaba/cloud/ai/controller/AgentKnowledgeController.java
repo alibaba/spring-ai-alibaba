@@ -49,8 +49,9 @@ public class AgentKnowledgeController {
 	 */
 	@GetMapping("/agent/{agentId}")
 	public ResponseEntity<Map<String, Object>> getKnowledgeByAgentId(@PathVariable(value = "agentId") Integer agentId,
-			@RequestParam(value = "type",required = false) String type, @RequestParam(value = "status",required = false) String status,
-			@RequestParam(value = "keyword",required = false) String keyword) {
+			@RequestParam(value = "type", required = false) String type,
+			@RequestParam(value = "status", required = false) String status,
+			@RequestParam(value = "keyword", required = false) String keyword) {
 
 		Map<String, Object> response = new HashMap<>();
 

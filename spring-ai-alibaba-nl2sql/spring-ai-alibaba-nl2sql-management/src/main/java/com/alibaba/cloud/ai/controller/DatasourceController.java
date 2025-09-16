@@ -97,7 +97,8 @@ public class DatasourceController {
 	 * Update data source
 	 */
 	@PutMapping("/{id}")
-	public ResponseEntity<Datasource> updateDatasource(@PathVariable(value = "id") Integer id, @RequestBody Datasource datasource) {
+	public ResponseEntity<Datasource> updateDatasource(@PathVariable(value = "id") Integer id,
+			@RequestBody Datasource datasource) {
 		try {
 			Datasource updated = datasourceService.updateDatasource(id, datasource);
 			return ResponseEntity.ok(updated);

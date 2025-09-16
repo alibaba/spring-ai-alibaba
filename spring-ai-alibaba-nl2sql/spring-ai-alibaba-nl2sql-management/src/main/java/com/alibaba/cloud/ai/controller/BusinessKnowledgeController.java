@@ -39,7 +39,8 @@ public class BusinessKnowledgeController {
 
 	@GetMapping
 	@ResponseBody
-	public ResponseEntity<List<BusinessKnowledge>> list(@RequestParam(value = "datasetId", required = false) String datasetId,
+	public ResponseEntity<List<BusinessKnowledge>> list(
+			@RequestParam(value = "datasetId", required = false) String datasetId,
 			@RequestParam(required = false) String keyword) {
 		List<BusinessKnowledge> result;
 		if (keyword != null && !keyword.trim().isEmpty()) {
@@ -73,7 +74,8 @@ public class BusinessKnowledgeController {
 
 	@PutMapping("/{id}")
 	@ResponseBody
-	public ResponseEntity<BusinessKnowledge> update(@PathVariable(value = "id") Long id, @RequestBody BusinessKnowledge knowledge) {
+	public ResponseEntity<BusinessKnowledge> update(@PathVariable(value = "id") Long id,
+			@RequestBody BusinessKnowledge knowledge) {
 		if (businessKnowledgeService.findById(id) == null) {
 			return ResponseEntity.notFound().build();
 		}

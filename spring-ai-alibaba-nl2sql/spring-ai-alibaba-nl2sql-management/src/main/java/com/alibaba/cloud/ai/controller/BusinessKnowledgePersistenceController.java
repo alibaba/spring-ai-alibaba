@@ -94,7 +94,8 @@ public class BusinessKnowledgePersistenceController {
 
 	// Get business knowledge list by agent ID
 	@GetMapping("/agent/{agentId}")
-	public ResponseEntity<List<BusinessKnowledge>> getKnowledgeByAgentId(@PathVariable(value = "agentId") String agentId) {
+	public ResponseEntity<List<BusinessKnowledge>> getKnowledgeByAgentId(
+			@PathVariable(value = "agentId") String agentId) {
 		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.getKnowledgeByAgentId(agentId);
 		return ResponseEntity.ok(knowledge);
 	}
@@ -126,8 +127,8 @@ public class BusinessKnowledgePersistenceController {
 
 	// Search business knowledge within agent scope
 	@GetMapping("/agent/{agentId}/search")
-	public ResponseEntity<List<BusinessKnowledge>> searchKnowledgeInAgent(@PathVariable(value = "agentId") String agentId,
-			@RequestParam(value = "content") String content) {
+	public ResponseEntity<List<BusinessKnowledge>> searchKnowledgeInAgent(
+			@PathVariable(value = "agentId") String agentId, @RequestParam(value = "content") String content) {
 		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.searchKnowledgeInAgent(agentId,
 				content);
 		return ResponseEntity.ok(knowledge);

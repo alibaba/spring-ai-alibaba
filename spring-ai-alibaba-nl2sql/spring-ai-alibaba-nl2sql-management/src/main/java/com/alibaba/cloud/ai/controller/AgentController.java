@@ -45,7 +45,7 @@ public class AgentController {
 	 * Get agent list
 	 */
 	@GetMapping("/list")
-	public ResponseEntity<List<Agent>> list(@RequestParam(value = "status",required = false) String status,
+	public ResponseEntity<List<Agent>> list(@RequestParam(value = "status", required = false) String status,
 			@RequestParam(value = "keyword", required = false) String keyword) {
 		List<Agent> result = null;
 		if (keyword != null && !keyword.trim().isEmpty()) {

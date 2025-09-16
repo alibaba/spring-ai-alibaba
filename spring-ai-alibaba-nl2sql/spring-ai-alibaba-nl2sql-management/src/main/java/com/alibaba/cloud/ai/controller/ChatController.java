@@ -182,7 +182,8 @@ public class ChatController {
 	 * Save message to session
 	 */
 	@PostMapping("/sessions/{sessionId}/messages")
-	public ResponseEntity<ChatMessage> saveMessage(@PathVariable(value = "sessionId") String sessionId, @RequestBody ChatMessage message) {
+	public ResponseEntity<ChatMessage> saveMessage(@PathVariable(value = "sessionId") String sessionId,
+			@RequestBody ChatMessage message) {
 		try {
 			// Set session ID
 			message.setSessionId(sessionId);

@@ -27,11 +27,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/echo")
 public class EchoController {
 
-    /**
-     * 心跳检测
-     */
-    @GetMapping( "ok")
-    public String ok() {
-        return "ok";
-    }
+	/**
+	 * 心跳检测
+	 */
+	@GetMapping("ok")
+	public String ok() {
+		return "ok";
+	}
+
 }
