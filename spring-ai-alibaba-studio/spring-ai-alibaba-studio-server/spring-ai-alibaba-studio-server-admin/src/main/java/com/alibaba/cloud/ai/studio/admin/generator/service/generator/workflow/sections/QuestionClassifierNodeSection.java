@@ -44,7 +44,7 @@ public class QuestionClassifierNodeSection implements NodeSection<QuestionClassi
 		return String.format("""
 				// —— QuestionClassifierNode [%s] ——
 				stateGraph.addNode("%s", AsyncNodeAction.node_async(
-				    createQuestionClassifierAction(%s, %s, "%s", "%s", %s, %s)
+				    createQuestionClassifierAction(chatModel, %s, %s, "%s", "%s", %s, %s)
 				));
 
 				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getChatModeName()),
@@ -94,10 +94,8 @@ public class QuestionClassifierNodeSection implements NodeSection<QuestionClassi
 		return switch (dialectType) {
 			case DIFY, STUDIO ->
 				"""
-						@Autowired
-						private ChatModel chatModelForQuestion;
-
 						private NodeAction createQuestionClassifierAction(
+						        ChatModel chatModel,
 						        String chatModelName, Map<String, Number> modeParams,
 						        String inputKey, String outputKey,
 						        Map<String, String> categories, List<String> instructions) {
@@ -112,7 +110,7 @@ public class QuestionClassifierNodeSection implements NodeSection<QuestionClassi
 						            .ifPresent(val -> chatOptionsBuilder.withMaxToken(val.intValue()));
 						    Optional.ofNullable(modeParams.get("repetition_penalty"))
 						            .ifPresent(val -> chatOptionsBuilder.withRepetitionPenalty(val.doubleValue()));
-						    final ChatClient chatClient = ChatClient.builder(chatModelForQuestion).defaultOptions(chatOptionsBuilder.build()).build();
+						    final ChatClient chatClient = ChatClient.builder(chatModel).defaultOptions(chatOptionsBuilder.build()).build();
 
 						    // build Node
 						    return QuestionClassifierNode.builder()

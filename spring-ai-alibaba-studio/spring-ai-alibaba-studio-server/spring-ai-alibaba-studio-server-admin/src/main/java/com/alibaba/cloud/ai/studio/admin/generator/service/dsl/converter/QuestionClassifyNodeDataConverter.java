@@ -65,9 +65,8 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 				QuestionClassifierNodeData nodeData = new QuestionClassifierNodeData();
 
 				// 获取必要的信息
-				String modeName = MapReadUtil.getMapDeepValue(data, String.class, "model", "name");
-				Map<String, Object> modeParams = MapReadUtil.safeCastToMapWithStringKey(
-						MapReadUtil.getMapDeepValue(data, Map.class, "model", "completion_params"));
+				String modeName = this.exactChatModelName(DSLDialectType.DIFY, data);
+				Map<String, Object> modeParams = this.exactChatModelParam(DSLDialectType.DIFY, data);
 				List<String> inputSelectorList = Optional
 					.ofNullable(MapReadUtil.safeCastToList(
 							MapReadUtil.getMapDeepValue(data, List.class, "query_variable_selector"), String.class))
@@ -113,18 +112,9 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 			public QuestionClassifierNodeData parse(Map<String, Object> data) throws JsonProcessingException {
 				QuestionClassifierNodeData nodeData = new QuestionClassifierNodeData();
 				// 从data中提取必要信息
-				Map<String, Object> modeConfigMap = MapReadUtil.safeCastToMapWithStringKey(
-						MapReadUtil.getMapDeepValue(data, Map.class, "config", "node_param", "model_config"));
-				String modeName = MapReadUtil.getMapDeepValue(modeConfigMap, String.class, "model_id");
-				Map<String, Object> modeParams = Optional
-					.ofNullable(MapReadUtil
-						.safeCastToListWithMap(MapReadUtil.getMapDeepValue(modeConfigMap, List.class, "params")))
-					.orElse(List.of())
-					.stream()
-					.filter(map -> Boolean.TRUE.equals(map.get("enable")))
-					.filter(map -> map.containsKey("key") && map.containsKey("value"))
-					.map(map -> Map.entry(map.get("key").toString(), map.get("value")))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b));
+				String modeName = this.exactChatModelName(DSLDialectType.STUDIO, data);
+				Map<String, Object> modeParams = this.exactChatModelParam(DSLDialectType.STUDIO, data);
+
 				VariableSelector selector = this.varTemplateToSelector(DSLDialectType.STUDIO, MapReadUtil
 					.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "input_params"))
 					.get(0)

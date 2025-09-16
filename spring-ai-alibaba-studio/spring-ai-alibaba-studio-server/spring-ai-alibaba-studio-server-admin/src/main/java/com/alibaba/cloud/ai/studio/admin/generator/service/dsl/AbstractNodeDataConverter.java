@@ -17,14 +17,17 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.dsl;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -94,6 +97,51 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 				.findFirst()
 				.orElseThrow(() -> new IllegalArgumentException("Invalid template string"));
 			return new VariableSelector(result.group(1), result.group(2));
+		}
+
+		/**
+		 * 从data中获取模型名称（LLMNode、ClassifierNode等共同使用）
+		 * @param dialectType dsl语言
+		 * @param data 节点数据
+		 * @return 模型名称
+		 */
+		default String exactChatModelName(DSLDialectType dialectType, Map<String, Object> data) {
+			return switch (dialectType) {
+				case DIFY -> MapReadUtil.getMapDeepValue(data, String.class, "model", "name");
+				case STUDIO -> {
+					Map<String, Object> modeConfigMap = MapReadUtil.safeCastToMapWithStringKey(
+							MapReadUtil.getMapDeepValue(data, Map.class, "config", "node_param", "model_config"));
+					yield MapReadUtil.getMapDeepValue(modeConfigMap, String.class, "model_id");
+				}
+				default -> throw new UnsupportedOperationException();
+			};
+		}
+
+		/**
+		 * 从data中获取模型参数（LLMNode、ClassifierNode等共同使用）
+		 * @param dialectType dsl语言
+		 * @param data 节点数据
+		 * @return 模型参数
+		 */
+		default Map<String, Object> exactChatModelParam(DSLDialectType dialectType, Map<String, Object> data) {
+			return switch (dialectType) {
+				case DIFY -> MapReadUtil.safeCastToMapWithStringKey(
+						MapReadUtil.getMapDeepValue(data, Map.class, "model", "completion_params"));
+				case STUDIO -> {
+					Map<String, Object> modeConfigMap = MapReadUtil.safeCastToMapWithStringKey(
+							MapReadUtil.getMapDeepValue(data, Map.class, "config", "node_param", "model_config"));
+					yield Optional
+						.ofNullable(MapReadUtil
+							.safeCastToListWithMap(MapReadUtil.getMapDeepValue(modeConfigMap, List.class, "params")))
+						.orElse(List.of())
+						.stream()
+						.filter(map -> Boolean.TRUE.equals(map.get("enable")))
+						.filter(map -> map.containsKey("key") && map.containsKey("value"))
+						.map(map -> Map.entry(map.get("key").toString(), map.get("value")))
+						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b));
+				}
+				default -> throw new UnsupportedOperationException();
+			};
 		}
 
 	}

@@ -8,7 +8,7 @@ public class GraphBuilder {
     {{assistMethodCode}}
 
     @Bean
-    public CompiledGraph buildGraph() throws Exception {
+    public CompiledGraph buildGraph(ChatModel chatModel) throws Exception {
         // new stateGraph
         StateGraph stateGraph = new StateGraph({{stateSection}});
         // add nodes
