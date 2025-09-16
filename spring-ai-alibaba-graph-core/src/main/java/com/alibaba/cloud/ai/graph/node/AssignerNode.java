@@ -33,39 +33,25 @@ public class AssignerNode implements NodeAction {
 
 	public enum WriteMode {
 
-		OVER_WRITE, APPEND, CLEAR
+		OVER_WRITE, APPEND, CLEAR, INPUT_CONSTANT
 
 	}
 
 	/**
 	 * description of a single assignment operation
 	 */
-	public static class AssignItem {
-
-		private final String targetKey;
-
-		private final String inputKey;
-
-		private final WriteMode writeMode;
-
+	public record AssignItem(String targetKey, String inputKey, WriteMode writeMode, Object inputValue) {
 		public AssignItem(String targetKey, String inputKey, WriteMode writeMode) {
-			this.targetKey = targetKey;
-			this.inputKey = inputKey;
-			this.writeMode = writeMode;
+			this(targetKey, inputKey, writeMode, null);
 		}
 
-		public String getTargetKey() {
-			return targetKey;
+		public AssignItem(String targetKey, Object inputValue) {
+			this(targetKey, null, WriteMode.INPUT_CONSTANT, inputValue);
 		}
 
-		public String getInputKey() {
-			return inputKey;
+		public AssignItem(String targetKey) {
+			this(targetKey, null, WriteMode.OVER_WRITE);
 		}
-
-		public WriteMode getWriteMode() {
-			return writeMode;
-		}
-
 	}
 
 	private final List<AssignItem> items;
@@ -88,15 +74,12 @@ public class AssignerNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) {
 		Map<String, Object> updates = new HashMap<>();
 		for (AssignItem item : items) {
-			Object value = state.value(item.inputKey).orElse(null);
-			Object targetValue = state.value(item.targetKey).orElse(null);
-			Object result = null;
+			Object value = state.value(item.inputKey()).orElse(null);
+			Object targetValue = state.value(item.targetKey()).orElse(null);
 
-			switch (item.writeMode) {
-				case OVER_WRITE:
-					result = value;
-					break;
-				case APPEND:
+			Object result = switch (item.writeMode()) {
+				case OVER_WRITE -> value;
+				case APPEND -> {
 					if (targetValue instanceof List && value != null) {
 						List<Object> newList = new ArrayList<>((List<?>) targetValue);
 						if (value instanceof Collection<?> col) {
@@ -105,35 +88,41 @@ public class AssignerNode implements NodeAction {
 						else {
 							newList.add(value);
 						}
-						result = newList;
+						yield newList;
 					}
 					else if (value != null) {
 						if (value instanceof Collection<?> col) {
-							result = new ArrayList<>(col);
+							yield new ArrayList<>(col);
 						}
 						else {
-							result = new ArrayList<>(List.of(value));
+							yield new ArrayList<>(List.of(value));
 						}
 					}
-					break;
-				case CLEAR:
+					else {
+						throw new IllegalArgumentException(
+								"Cannot append to non-list value for key: " + item.targetKey());
+					}
+				}
+				case CLEAR -> {
 					if (targetValue instanceof List) {
-						result = new ArrayList<>();
+						yield new ArrayList<>();
 					}
 					else if (targetValue instanceof Map) {
-						result = new HashMap<>();
+						yield new HashMap<>();
 					}
 					else if (targetValue instanceof String) {
-						result = "";
+						yield "";
 					}
 					else if (targetValue instanceof Number) {
-						result = 0;
+						yield 0;
 					}
 					else {
-						result = null;
+						yield null;
 					}
-					break;
-			}
+				}
+				case INPUT_CONSTANT -> item.inputValue();
+				default -> throw new IllegalArgumentException("Invalid write mode: " + item.writeMode());
+			};
 			updates.put(item.targetKey, result);
 		}
 		return updates;
@@ -146,10 +135,25 @@ public class AssignerNode implements NodeAction {
 
 	public static class Builder {
 
-		private final List<AssignItem> items = new ArrayList<>();
+		private List<AssignItem> items = new ArrayList<>();
+
+		public Builder setItems(List<AssignItem> items) {
+			this.items = new ArrayList<>(items);
+			return this;
+		}
 
 		public Builder addItem(String targetKey, String inputKey, WriteMode writeMode) {
 			items.add(new AssignItem(targetKey, inputKey, writeMode));
+			return this;
+		}
+
+		public Builder addConst(String targetKey, Object inputValue) {
+			items.add(new AssignItem(targetKey, inputValue));
+			return this;
+		}
+
+		public Builder addClear(String targetKey) {
+			items.add(new AssignItem(targetKey));
 			return this;
 		}
 

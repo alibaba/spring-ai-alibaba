@@ -16,9 +16,9 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -31,6 +31,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.Param
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -55,44 +57,43 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 	private enum ParameterParsingNodeConverter {
 
 		DIFY(new DialectConverter<>() {
-			@SuppressWarnings("unchecked")
 			@Override
 			public ParameterParsingNodeData parse(Map<String, Object> data) {
-				// 获取指令
-				String instruction = data.getOrDefault("instruction", "unknown").toString();
-				Object query = data.get("query");
-				// 获取输入
-				VariableSelector input;
-				if (query instanceof List<?> queryList && queryList.size() >= 2) {
-					input = new VariableSelector(queryList.get(0).toString(), queryList.get(1).toString());
-				}
-				else {
-					input = new VariableSelector("unknown", "unknown");
-				}
-				// 获取输出参数
-				List<Map<String, Object>> parametersList = (List<Map<String, Object>>) data.getOrDefault("parameters",
-						List.of());
-				return new ParameterParsingNodeData("input", parametersList, instruction, "output", input);
+				ParameterParsingNodeData nodeData = new ParameterParsingNodeData();
+
+				// 获取必要信息
+				List<String> selectorList = MapReadUtil.safeCastToList(data.get("query"), String.class);
+				VariableSelector selector = new VariableSelector(selectorList.get(0), selectorList.get(1));
+				String chatModelName = this.exactChatModelName(DSLDialectType.DIFY, data);
+				Map<String, Object> modelParams = this.exactChatModelParam(DSLDialectType.DIFY, data);
+				List<ParameterParsingNodeData.Param> params = MapReadUtil.safeCastToListWithMap(data.get("parameters"))
+					.stream()
+					.filter(map -> map.containsKey("name"))
+					.map(map -> {
+						String name = map.get("name").toString();
+						String description = map.getOrDefault("description", "").toString();
+						VariableType type = VariableType
+							.fromDifyValue(map.getOrDefault("type", VariableType.OBJECT.difyValue()).toString())
+							.orElse(VariableType.OBJECT);
+						return new ParameterParsingNodeData.Param(name, type, description);
+					})
+					.toList();
+				String instruction = Optional.ofNullable(data.get("instruction")).map(Object::toString).orElse("");
+
+				// 设置信息
+				nodeData.setInputSelector(selector);
+				nodeData.setChatModeName(chatModelName);
+				nodeData.setModeParams(modelParams);
+				nodeData.setParameters(params);
+				nodeData.setInstruction(instruction);
+				nodeData.setSuccessKey("__is_success");
+				nodeData.setReasonKey("__reason");
+				return nodeData;
 			}
 
 			@Override
 			public Map<String, Object> dump(ParameterParsingNodeData nd) {
-				Map<String, Object> m = new LinkedHashMap<>();
-
-				if (nd.getInstruction() != null) {
-					m.put("instruction", nd.getInstruction());
-				}
-
-				if (nd.getParameters() != null) {
-					m.put("parameters", nd.getParameters());
-				}
-
-				if (nd.getInputs() != null && !nd.getInputs().isEmpty()) {
-					VariableSelector selector = nd.getInputs().get(0);
-					m.put("query", List.of(selector.getNamespace(), selector.getName()));
-				}
-
-				return m;
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
@@ -101,7 +102,62 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 			}
 		}),
 
-		CUSTOM(defaultCustomDialectConverter(ParameterParsingNodeData.class));
+		STUDIO(new DialectConverter<>() {
+			@Override
+			public Boolean supportDialect(DSLDialectType dialectType) {
+				return DSLDialectType.STUDIO.equals(dialectType);
+			}
+
+			@Override
+			public ParameterParsingNodeData parse(Map<String, Object> data) throws JsonProcessingException {
+				ParameterParsingNodeData nodeData = new ParameterParsingNodeData();
+
+				// 获取必要信息
+				VariableSelector selector = this.varTemplateToSelector(DSLDialectType.STUDIO, MapReadUtil
+					.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "input_params"))
+					.get(0)
+					.get("value")
+					.toString());
+				String chatModelName = this.exactChatModelName(DSLDialectType.STUDIO, data);
+				Map<String, Object> modelParams = this.exactChatModelParam(DSLDialectType.STUDIO, data);
+				List<ParameterParsingNodeData.Param> params = Optional
+					.ofNullable(MapReadUtil.safeCastToListWithMap(
+							MapReadUtil.getMapDeepValue(data, List.class, "config", "node_param", "extract_params")))
+					.orElse(List.of())
+					.stream()
+					.filter(map -> map.containsKey("key"))
+					.map(map -> {
+						String name = map.get("key").toString();
+						String description = map.getOrDefault("desc", "").toString();
+						VariableType type = VariableType
+							.fromStudioValue(map.getOrDefault("type", VariableType.OBJECT.studioValue()).toString())
+							.orElse(VariableType.OBJECT);
+						return new ParameterParsingNodeData.Param(name, type, description);
+					})
+					.toList();
+				String instruction = Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param", "instruction"))
+					.map(Object::toString)
+					.orElse("");
+
+				// 设置必要信息
+				nodeData.setInputSelector(selector);
+				nodeData.setChatModeName(chatModelName);
+				nodeData.setModeParams(modelParams);
+				nodeData.setParameters(params);
+				nodeData.setInstruction(instruction);
+				nodeData.setSuccessKey("_is_completed");
+				nodeData.setReasonKey("_reason");
+				return nodeData;
+			}
+
+			@Override
+			public Map<String, Object> dump(ParameterParsingNodeData nodeData) {
+				throw new UnsupportedOperationException();
+			}
+		})
+
+		, CUSTOM(defaultCustomDialectConverter(ParameterParsingNodeData.class));
 
 		private final DialectConverter<ParameterParsingNodeData> converter;
 
@@ -123,19 +179,26 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 	@Override
 	public BiConsumer<ParameterParsingNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
-			case DIFY -> emptyProcessConsumer().andThen((nodeData, map) -> {
-				nodeData.setOutputKey(nodeData.getVarName() + "_output");
-				List<Variable> variableList = nodeData.getParameters()
-					.stream()
-					.map(mp -> new Variable(mp.getOrDefault("name", "unknown").toString(),
-							VariableType.fromDifyValue(mp.getOrDefault("type", "string").toString())
-								.orElse(VariableType.OBJECT))
-						.setDescription(mp.getOrDefault("description", "").toString()))
+			case DIFY, STUDIO -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				// 设置输出
+				List<Variable> outputs = Stream
+					.concat(nodeData.getParameters().stream().map(p -> new Variable(p.name(), p.type())),
+							ParameterParsingNodeData.getDefaultOutputSchema(dialectType).stream())
 					.toList();
-				nodeData.setOutputs(variableList);
-			}).andThen(super.postProcessConsumer(dialectType)).andThen((nodeData, varName) -> {
-				nodeData.setInputTextKey(nodeData.getInputs().get(0).getNameInCode());
-			});
+				nodeData.setOutputs(outputs);
+
+				// 设置输入以及key
+				Optional.ofNullable(nodeData.getInputSelector())
+					.ifPresent(selector -> selector
+						.setNameInCode(idToVarName.getOrDefault(selector.getNamespace(), selector.getNamespace()) + "_"
+								+ selector.getName()));
+				nodeData.setSuccessKey(nodeData.getVarName() + "_" + nodeData.getSuccessKey());
+				nodeData.setReasonKey(nodeData.getVarName() + "_" + nodeData.getReasonKey());
+				nodeData.setDataKey(nodeData.getVarName() + "_" + nodeData.getDataKey());
+
+				// 格式化instruction
+				nodeData.setInstruction(this.convertVarTemplate(dialectType, nodeData.getInstruction(), idToVarName));
+			}).andThen(super.postProcessConsumer(dialectType));
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}
