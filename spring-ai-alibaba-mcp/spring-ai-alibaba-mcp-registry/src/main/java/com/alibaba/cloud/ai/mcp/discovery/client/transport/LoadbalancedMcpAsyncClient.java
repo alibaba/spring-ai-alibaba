@@ -357,7 +357,7 @@ public class LoadbalancedMcpAsyncClient {
 
 		String protocol = mcpEndpointInfo.getProtocol();
 		if (protocol == null || !"http".equals(protocol) && !"https".equals(protocol)) {
-			if (mcpEndpointInfo.getPort() == 443) {
+			if (mcpEndpointInfo.getPort() == 443 || mcpEndpointInfo.getPort() == 8443) {
 				protocol = "https";
 			}
 			else {
