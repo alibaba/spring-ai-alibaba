@@ -26,7 +26,6 @@ import com.alibaba.cloud.ai.example.manus.context.JManusExecutionContext;
 import com.alibaba.cloud.ai.example.manus.task.StatefulJManusStep;
 import com.alibaba.cloud.ai.example.manus.task.TaskExecutionException;
 
-
 public class DatabaseQueryStep implements StatefulJManusStep {
 
 	private static final Logger logger = LoggerFactory.getLogger(DatabaseQueryStep.class);

@@ -27,7 +27,6 @@ import com.alibaba.cloud.ai.example.manus.task.StatefulJManusStep;
 import com.alibaba.cloud.ai.example.manus.task.TaskExecutionException;
 import com.alibaba.cloud.ai.example.manus.task.example.DatabaseQueryStep.User;
 
-
 public class LLMSummaryStep implements StatefulJManusStep {
 
 	private static final Logger logger = LoggerFactory.getLogger(LLMSummaryStep.class);

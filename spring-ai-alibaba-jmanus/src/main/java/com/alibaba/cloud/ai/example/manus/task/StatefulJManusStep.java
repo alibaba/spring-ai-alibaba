@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.manus.task;
 import com.alibaba.cloud.ai.example.manus.context.ContextKey;
 import com.alibaba.cloud.ai.example.manus.context.JManusExecutionContext;
 
-
 public interface StatefulJManusStep extends StatefulTask {
 
 	/**
