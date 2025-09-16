@@ -48,6 +48,7 @@ import io.a2a.spec.TaskStatus;
 import io.a2a.spec.TextPart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.StringUtils;
@@ -120,7 +121,7 @@ public class GraphAgentExecutor implements AgentExecutor {
 
 	private void executeStreamTask(Map<String, Object> input, RequestContext context, EventQueue eventQueue)
 			throws GraphStateException, GraphRunnerException {
-		AsyncGenerator<NodeOutput> generator = executeAgent.stream(input);
+		Flux<NodeOutput> generator = executeAgent.stream(input);
 		Task task = context.getTask();
 		if (task == null) {
 			task = newTask(context.getMessage());
@@ -128,7 +129,10 @@ public class GraphAgentExecutor implements AgentExecutor {
 		}
 		TaskUpdater taskUpdater = new TaskUpdater(context, eventQueue);
 		taskUpdater.submit();
-		generator.forEachAsync(new ReactAgentNodeOutputConsumer(taskUpdater)).thenAccept(o -> taskUpdater.complete());
+		generator.subscribe(new ReactAgentNodeOutputConsumer(taskUpdater), throwable -> {
+			LOGGER.error("Agent execution failed", throwable);
+			taskUpdater.fail(A2A.toAgentMessage(throwable.getMessage()));
+		}, taskUpdater::complete);
 		waitTaskCompleted(task);
 	}
 
