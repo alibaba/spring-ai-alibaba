@@ -309,7 +309,8 @@ public class LoadbalancedMcpSyncClient {
 
 	private McpSyncClient clientByEndpoint(McpEndpointInfo mcpEndpointInfo, String exportPath) {
 		McpSyncClient syncClient;
-		String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
+		String protocol = NacosMcpClientUtils.checkProtocol(mcpEndpointInfo);
+		String baseUrl = protocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
 
 		// Using the build method with link tracking

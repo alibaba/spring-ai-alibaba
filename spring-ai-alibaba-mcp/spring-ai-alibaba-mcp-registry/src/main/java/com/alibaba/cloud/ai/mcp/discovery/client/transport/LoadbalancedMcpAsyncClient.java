@@ -380,8 +380,8 @@ public class LoadbalancedMcpAsyncClient {
 
 	private McpAsyncClient clientByEndpoint(McpEndpointInfo mcpEndpointInfo, String exportPath) {
 		McpAsyncClient asyncClient;
-
-		String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
+		String protocol = NacosMcpClientUtils.checkProtocol(mcpEndpointInfo);
+		String baseUrl = protocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
 
 		WebFluxSseClientTransport transport;
