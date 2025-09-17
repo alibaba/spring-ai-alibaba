@@ -56,7 +56,7 @@ public class ChatController {
 	 * Get session list for an agent
 	 */
 	@GetMapping("/agent/{id}/sessions")
-	public ResponseEntity<List<ChatSession>> getAgentSessions(@PathVariable Integer id) {
+	public ResponseEntity<List<ChatSession>> getAgentSessions(@PathVariable(value = "id") Integer id) {
 		List<ChatSession> sessions = chatSessionService.findByAgentId(id);
 		return ResponseEntity.ok(sessions);
 	}
@@ -65,7 +65,7 @@ public class ChatController {
 	 * Create a new session
 	 */
 	@PostMapping("/agent/{id}/sessions")
-	public ResponseEntity<ChatSession> createSession(@PathVariable Integer id,
+	public ResponseEntity<ChatSession> createSession(@PathVariable(value = "id") Integer id,
 			@RequestBody(required = false) Map<String, Object> request) {
 		String title = request != null ? (String) request.get("title") : null;
 		Long userId = request != null ? (Long) request.get("userId") : null;
@@ -78,7 +78,7 @@ public class ChatController {
 	 * Clear all sessions for an agent
 	 */
 	@DeleteMapping("/agent/{id}/sessions")
-	public ResponseEntity<ApiResponse> clearAgentSessions(@PathVariable Integer id) {
+	public ResponseEntity<ApiResponse> clearAgentSessions(@PathVariable(value = "id") Integer id) {
 		chatSessionService.clearSessionsByAgentId(id);
 		return ResponseEntity.ok(ApiResponse.success("会话已清空"));
 	}
@@ -87,7 +87,7 @@ public class ChatController {
 	 * Get message list for a session
 	 */
 	@GetMapping("/sessions/{sessionId}/messages")
-	public ResponseEntity<List<ChatMessage>> getSessionMessages(@PathVariable String sessionId) {
+	public ResponseEntity<List<ChatMessage>> getSessionMessages(@PathVariable(value = "sessionId") String sessionId) {
 		List<ChatMessage> messages = chatMessageService.findBySessionId(sessionId);
 		return ResponseEntity.ok(messages);
 	}
@@ -96,7 +96,7 @@ public class ChatController {
 	 * Agent chat interface
 	 */
 	@PostMapping("/agent/{id}/chat")
-	public ResponseEntity<ChatResponse> chat(@PathVariable Integer id, @RequestBody ChatRequest request) {
+	public ResponseEntity<ChatResponse> chat(@PathVariable(value = "id") Integer id, @RequestBody ChatRequest request) {
 		try {
 			// Verify that the agent exists
 			Agent agent = agentService.findById(id.longValue());
@@ -182,7 +182,8 @@ public class ChatController {
 	 * Save message to session
 	 */
 	@PostMapping("/sessions/{sessionId}/messages")
-	public ResponseEntity<ChatMessage> saveMessage(@PathVariable String sessionId, @RequestBody ChatMessage message) {
+	public ResponseEntity<ChatMessage> saveMessage(@PathVariable(value = "sessionId") String sessionId,
+			@RequestBody ChatMessage message) {
 		try {
 			// Set session ID
 			message.setSessionId(sessionId);
@@ -205,7 +206,7 @@ public class ChatController {
 	 * 置顶/取消置顶会话
 	 */
 	@PutMapping("/sessions/{sessionId}/pin")
-	public ResponseEntity<ApiResponse> pinSession(@PathVariable String sessionId,
+	public ResponseEntity<ApiResponse> pinSession(@PathVariable(value = "sessionId") String sessionId,
 			@RequestBody Map<String, Object> request) {
 		try {
 			Boolean isPinned = (Boolean) request.get("isPinned");
@@ -227,7 +228,7 @@ public class ChatController {
 	 * Rename session
 	 */
 	@PutMapping("/sessions/{sessionId}/rename")
-	public ResponseEntity<ApiResponse> renameSession(@PathVariable String sessionId,
+	public ResponseEntity<ApiResponse> renameSession(@PathVariable(value = "sessionId") String sessionId,
 			@RequestBody Map<String, Object> request) {
 		try {
 			String newTitle = (String) request.get("title");
@@ -248,7 +249,7 @@ public class ChatController {
 	 * Delete a single session
 	 */
 	@DeleteMapping("/sessions/{sessionId}")
-	public ResponseEntity<ApiResponse> deleteSession(@PathVariable String sessionId) {
+	public ResponseEntity<ApiResponse> deleteSession(@PathVariable(value = "sessionId") String sessionId) {
 		try {
 			chatSessionService.deleteSession(sessionId);
 			return ResponseEntity.ok(ApiResponse.success("会话已删除"));

@@ -56,6 +56,8 @@ public class LoadbalancedMcpSyncClient {
 
 	private final String serverName;
 
+	private final String version;
+
 	private final NacosMcpOperationService nacosMcpOperationService;
 
 	private final McpClientCommonProperties commonProperties;
@@ -87,21 +89,27 @@ public class LoadbalancedMcpSyncClient {
 		Assert.notNull(applicationContext, "applicationContext cannot be null");
 
 		this.serverName = serverName;
+		this.version = version;
 		this.nacosMcpOperationService = nacosMcpOperationService;
 		this.applicationContext = applicationContext;
 
 		try {
-			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName, version);
+			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName, this.version);
 			if (this.serverEndpoint == null) {
 				throw new NacosException(NacosException.NOT_FOUND,
-						String.format("Can not find mcp server from nacos: %s", serverName));
+						String.format("[Nacos Mcp Sync Client] Can not find mcp server from nacos: %s, version:%s",
+								serverName, version));
 			}
 			if (!StringUtils.equals(serverEndpoint.getProtocol(), AiConstants.Mcp.MCP_PROTOCOL_SSE)) {
-				throw new Exception("mcp server protocol must be sse");
+				throw new RuntimeException(
+						String.format("[Nacos Mcp Sync Client] Protocol of mcp server:%s, version :%s must be sse",
+								serverName, version));
 			}
 		}
 		catch (Exception e) {
-			throw new RuntimeException(String.format("Failed to get instances for service: %s", serverName));
+			throw new RuntimeException(String.format(
+					"[Nacos Mcp Sync Client] Failed to get endpoints for Mcp Server from nacos: %s, version:%s",
+					serverName, version), e);
 		}
 		commonProperties = this.applicationContext.getBean(McpClientCommonProperties.class);
 		mcpSyncClientConfigurer = this.applicationContext.getBean(McpSyncClientConfigurer.class);
@@ -128,10 +136,13 @@ public class LoadbalancedMcpSyncClient {
 		for (McpEndpointInfo mcpEndpointInfo : serverEndpoint.getMcpEndpointInfoList()) {
 			updateByAddEndpoint(mcpEndpointInfo, serverEndpoint.getExportPath());
 		}
+		logger.info("[Nacos Mcp Sync Client] McpSyncClient init, serverName: {}, version: {}, endpoint: {}", serverName,
+				version, serverEndpoint);
 	}
 
 	public void subscribe() {
-		this.nacosMcpOperationService.subscribeNacosMcpServer(this.serverName, mcpServerDetailInfo -> {
+		String serverNameAndVersion = this.serverName + "::" + this.version;
+		this.nacosMcpOperationService.subscribeNacosMcpServer(serverNameAndVersion, mcpServerDetailInfo -> {
 			List<McpEndpointInfo> mcpEndpointInfoList = mcpServerDetailInfo.getBackendEndpoints() == null
 					? new ArrayList<>() : mcpServerDetailInfo.getBackendEndpoints();
 			String exportPath = mcpServerDetailInfo.getRemoteServerConfig().getExportPath();
@@ -141,12 +152,14 @@ public class LoadbalancedMcpSyncClient {
 					protocol, realVersion);
 			updateClientList(nacosMcpServerEndpoint);
 		});
+		logger.info("[Nacos Mcp Sync Client] Subscribe Mcp Server from nacos, serverName: {}, version: {}", serverName,
+				version);
 	}
 
 	public McpSyncClient getMcpSyncClient() {
 		List<McpSyncClient> syncClients = getMcpSyncClientList();
 		if (syncClients.isEmpty()) {
-			throw new IllegalStateException("No McpAsyncClient available");
+			throw new IllegalStateException("[Nacos Mcp Sync Client] No McpSyncClient available, name :" + serverName);
 		}
 		int currentIndex = index.getAndUpdate(index -> (index + 1) % syncClients.size());
 
@@ -187,7 +200,8 @@ public class LoadbalancedMcpSyncClient {
 			McpSyncClient mcpSyncClient = iterator.next();
 			mcpSyncClient.close();
 			iterator.remove();
-			logger.info("Closed and removed McpSyncClient: {}", mcpSyncClient.getClientInfo().name());
+			logger.info("[Nacos Mcp Sync Client] Closed and removed McpSyncClient: {}",
+					mcpSyncClient.getClientInfo().name());
 		}
 	}
 
@@ -200,7 +214,8 @@ public class LoadbalancedMcpSyncClient {
 			flagList.add(flag);
 			if (flag) {
 				iterator.remove();
-				logger.info("Closed and removed McpSyncClient: {}", mcpSyncClient.getClientInfo().name());
+				logger.info("[Nacos Mcp Sync Client] Closed and removed McpSyncClient: {}",
+						mcpSyncClient.getClientInfo().name());
 			}
 		}
 		return !flagList.stream().allMatch(flag -> flag);
@@ -294,7 +309,8 @@ public class LoadbalancedMcpSyncClient {
 
 	private McpSyncClient clientByEndpoint(McpEndpointInfo mcpEndpointInfo, String exportPath) {
 		McpSyncClient syncClient;
-		String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
+		String protocol = NacosMcpClientUtils.checkProtocol(mcpEndpointInfo);
+		String baseUrl = protocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
 
 		// Using the build method with link tracking
@@ -332,6 +348,9 @@ public class LoadbalancedMcpSyncClient {
 	private void updateClientList(NacosMcpServerEndpoint newServerEndpoint) {
 		if (!StringUtils.equals(this.serverEndpoint.getExportPath(), newServerEndpoint.getExportPath())
 				|| !StringUtils.equals(this.serverEndpoint.getVersion(), newServerEndpoint.getVersion())) {
+			logger.info(
+					"[Nacos Mcp Sync Client] Mcp server {} exportPath or protocol changed, need to update all endpoints: {}",
+					serverName, newServerEndpoint);
 			updateAll(newServerEndpoint);
 		}
 		else {
@@ -347,8 +366,16 @@ public class LoadbalancedMcpSyncClient {
 					.noneMatch(newEndpoint -> newEndpoint.getAddress().equals(currentEndpoint.getAddress())
 							&& newEndpoint.getPort() == currentEndpoint.getPort()))
 				.toList();
+			if (!addEndpointInfoList.isEmpty()) {
+				logger.info("[Nacos Mcp Sync Client] Mcp server {} endpoints changed, endpoints need to add {}",
+						serverName, addEndpointInfoList);
+			}
 			for (McpEndpointInfo addEndpointInfo : addEndpointInfoList) {
 				updateByAddEndpoint(addEndpointInfo, newServerEndpoint.getExportPath());
+			}
+			if (!removeEndpointInfoList.isEmpty()) {
+				logger.info("[Nacos Mcp Sync Client] Mcp server {} endpoints changed, endpoints need to remove {}",
+						serverName, removeEndpointInfoList);
 			}
 			for (McpEndpointInfo removeEndpointInfo : removeEndpointInfoList) {
 				updateByRemoveEndpoint(removeEndpointInfo, newServerEndpoint.getExportPath());

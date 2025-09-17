@@ -318,10 +318,25 @@ export default {
         }
       } catch (error) {
         console.error('加载智能体列表失败:', error)
+        let errorMessage = '加载失败，请重试'
+        
+        // 提供更具体的错误信息
+        if (error.response) {
+          if (error.response.status === 500) {
+            errorMessage = '服务器内部错误，请稍后重试或联系管理员'
+          } else if (error.response.status === 404) {
+            errorMessage = '请求的资源未找到'
+          } else if (error.response.data && error.response.data.message) {
+            errorMessage = error.response.data.message
+          }
+        } else if (error.message) {
+          errorMessage = error.message
+        }
+        
         if (useMockData.value) {
           agents.value = mockAgents
         } else {
-          alert('加载失败，请重试')
+          alert(errorMessage)
         }
       } finally {
         loading.value = false

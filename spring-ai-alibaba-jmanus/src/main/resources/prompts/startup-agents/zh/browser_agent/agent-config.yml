@@ -6,7 +6,7 @@ availableToolKeys:
   - browser_use
   - text_file_operator
   - terminate
-  - inner_storage_content_tool
+  - extract_relevant_content
   - file_merge_tool
 
 # 下一步提示配置
