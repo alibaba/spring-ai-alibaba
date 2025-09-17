@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.alibaba.cloud.ai.service.simple.SimpleNl2SqlService;
 import com.alibaba.cloud.ai.service.simple.SimpleVectorStoreService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,7 +35,7 @@ public class SimpleChatController {
 
 	private final DbConfig dbConfig;
 
-	public SimpleChatController(SimpleNl2SqlService simpleNl2SqlService,
+	public SimpleChatController(@Qualifier("simpleNl2SqlService") SimpleNl2SqlService simpleNl2SqlService,
 			SimpleVectorStoreService simpleVectorStoreService, DbConfig dbConfig) {
 		this.simpleNl2SqlService = simpleNl2SqlService;
 		this.simpleVectorStoreService = simpleVectorStoreService;

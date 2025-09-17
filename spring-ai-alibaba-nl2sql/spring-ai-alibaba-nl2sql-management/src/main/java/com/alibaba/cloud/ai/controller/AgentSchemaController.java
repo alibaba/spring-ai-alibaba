@@ -58,7 +58,7 @@ public class AgentSchemaController {
 	 */
 	@PostMapping("/init")
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> initializeSchema(@PathVariable Long agentId,
+	public ResponseEntity<Map<String, Object>> initializeSchema(@PathVariable(value = "agentId") Long agentId,
 			@RequestBody Map<String, Object> requestData) {
 
 		Map<String, Object> response = new HashMap<>();
@@ -131,7 +131,7 @@ public class AgentSchemaController {
 	 */
 	@GetMapping("/statistics")
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> getVectorStatistics(@PathVariable Long agentId) {
+	public ResponseEntity<Map<String, Object>> getVectorStatistics(@PathVariable(value = "agentId") Long agentId) {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
@@ -155,7 +155,7 @@ public class AgentSchemaController {
 	 */
 	@DeleteMapping("/clear")
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> clearVectorData(@PathVariable Long agentId) {
+	public ResponseEntity<Map<String, Object>> clearVectorData(@PathVariable(value = "agentId") Long agentId) {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
@@ -184,7 +184,7 @@ public class AgentSchemaController {
 	 */
 	@GetMapping("/datasources")
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> getAgentDatasources(@PathVariable Long agentId) {
+	public ResponseEntity<Map<String, Object>> getAgentDatasources(@PathVariable(value = "agentId") Long agentId) {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
@@ -214,7 +214,8 @@ public class AgentSchemaController {
 	 */
 	@GetMapping("/datasources/{datasourceId}/tables")
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> getDatasourceTables(@PathVariable Integer datasourceId) {
+	public ResponseEntity<Map<String, Object>> getDatasourceTables(
+			@PathVariable(value = "datasourceId") Integer datasourceId) {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
@@ -245,7 +246,7 @@ public class AgentSchemaController {
 	 */
 	@PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	@ResponseBody
-	public Flux<ServerSentEvent<String>> agentChat(@PathVariable Long agentId,
+	public Flux<ServerSentEvent<String>> agentChat(@PathVariable(value = "agentId") Long agentId,
 			@RequestBody Map<String, Object> requestData, HttpServletResponse response) {
 
 		try {
