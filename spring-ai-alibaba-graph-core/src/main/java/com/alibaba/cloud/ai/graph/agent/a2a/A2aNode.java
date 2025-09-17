@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.graph.Graph;
 import io.a2a.spec.AgentCard;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -37,6 +36,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -78,22 +78,6 @@ public class A2aNode implements NodeAction {
 			AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state);
 			// Convert AsyncGenerator to Flux using the new toFlux() method
 			Flux<GraphResponse<NodeOutput>> flux = toFlux(generator);
-			flux.doOnNext(res -> {
-				try {
-					System.out.println("a2a server response\n: ");
-					System.out.println(res.getOutput().get());
-				}
-				catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-				catch (ExecutionException e) {
-					throw new RuntimeException(e);
-				}
-			}).doOnComplete(() -> {
-				System.out.println("a2a server done\n");
-			}).doOnError(err -> {
-				err.printStackTrace();
-			}).subscribe();
 			return Map.of(StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages", flux);
 		}
 		else {
@@ -113,40 +97,42 @@ public class A2aNode implements NodeAction {
 	 */
 	private <E> Flux<GraphResponse<E>> toFlux(AsyncGenerator generator) {
 		return Flux.create(sink -> {
-			try {
-				AsyncGenerator.Data<E> data;
-				while (!(data = generator.next()).isDone()) {
-					if (data.isError()) {
-						// Handle error case
-						try {
-							data.getData().join(); // This will throw the exception
+			Schedulers.boundedElastic().schedule(() -> {
+				try {
+					AsyncGenerator.Data<E> data;
+					while (!(data = generator.next()).isDone()) {
+						if (data.isError()) {
+							// Handle error case
+							try {
+								data.getData().join(); // This will throw the exception
+							}
+							catch (Exception e) {
+								sink.error(e);
+								return;
+							}
 						}
-						catch (Exception e) {
-							sink.error(e);
-							return;
+						else {
+							// Emit the element
+							try {
+								E element = data.getData().join();
+								sink.next(GraphResponse.of(element));
+							}
+							catch (Exception e) {
+								sink.error(e);
+								return;
+							}
 						}
 					}
-					else {
-						// Emit the element
-						try {
-							E element = data.getData().join();
-							sink.next(GraphResponse.of(element));
-						}
-						catch (Exception e) {
-							sink.error(e);
-							return;
-						}
+					// 处理最终结果值（如果有的话）
+					if (data.resultValue() != null) {
+						sink.next(GraphResponse.done(data.resultValue()));
 					}
+					sink.complete();
 				}
-				// 处理最终结果值（如果有的话）
-				if (data.resultValue() != null) {
-					sink.next(GraphResponse.done(data.resultValue()));
+				catch (Exception e) {
+					sink.error(e);
 				}
-				sink.complete();
-			}
-			catch (Exception e) {
-				sink.error(e);
-			}
+			});
 		});
 	}
 
