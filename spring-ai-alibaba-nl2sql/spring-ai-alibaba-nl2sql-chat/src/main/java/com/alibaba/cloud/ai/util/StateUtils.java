@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.util;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.document.Document;
 
 import java.util.HashMap;
@@ -30,6 +30,8 @@ import java.util.function.Supplier;
  * @author zhangshenghang
  */
 public class StateUtils {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	/**
 	 * Safely get string type state value
@@ -84,8 +86,7 @@ public class StateUtils {
 
 		// If it's a HashMap but we need a complex object, use JSON conversion
 		if (value instanceof HashMap && !type.equals(HashMap.class)) {
-			String jsonString = JSON.toJSONString(value);
-			return JSON.parseObject(jsonString, type);
+            return OBJECT_MAPPER.convertValue(value, type);
 		}
 
 		return type.cast(value);
