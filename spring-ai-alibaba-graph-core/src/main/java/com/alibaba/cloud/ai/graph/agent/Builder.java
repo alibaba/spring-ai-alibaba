@@ -19,7 +19,6 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 public abstract class Builder {
 
-
 	protected String name;
 
 	protected String description;
