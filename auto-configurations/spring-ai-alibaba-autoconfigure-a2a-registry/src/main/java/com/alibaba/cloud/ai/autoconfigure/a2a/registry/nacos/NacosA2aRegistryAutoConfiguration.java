@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.autoconfigure.a2a.registry.nacos;
 
 import com.alibaba.cloud.ai.a2a.A2aServerProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties;
+import com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosA2aRegistryProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosAgentRegistry;
 import com.alibaba.cloud.ai.a2a.registry.nacos.service.NacosA2aOperationService;
 import com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aServerAgentCardAutoConfiguration;
@@ -41,8 +42,8 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass({ A2aServerAgentCardAutoConfiguration.class, A2aServerRegistryAutoConfiguration.class })
 @AutoConfiguration(after = A2aServerAgentCardAutoConfiguration.class,
 		before = { A2aServerRegistryAutoConfiguration.class })
-@EnableConfigurationProperties({ NacosA2aProperties.class })
-@ConditionalOnProperty(prefix = NacosA2aProperties.PREFIX, value = "registry.enabled", havingValue = "true",
+@EnableConfigurationProperties({ NacosA2aProperties.class, NacosA2aRegistryProperties.class })
+@ConditionalOnProperty(prefix = NacosA2aRegistryProperties.PREFIX, value = ".enabled", havingValue = "true",
 		matchIfMissing = true)
 public class NacosA2aRegistryAutoConfiguration {
 
@@ -54,8 +55,10 @@ public class NacosA2aRegistryAutoConfiguration {
 
 	@Bean
 	public NacosA2aOperationService nacosA2aOperationService(A2aService a2aService,
-			NacosA2aProperties nacosA2aProperties, A2aServerProperties a2aServerProperties) {
-		return new NacosA2aOperationService(a2aService, nacosA2aProperties, a2aServerProperties);
+			NacosA2aProperties nacosA2aProperties, A2aServerProperties a2aServerProperties,
+			NacosA2aRegistryProperties nacosA2aRegistryProperties) {
+		return new NacosA2aOperationService(a2aService, nacosA2aProperties, a2aServerProperties,
+				nacosA2aRegistryProperties);
 	}
 
 	@Bean

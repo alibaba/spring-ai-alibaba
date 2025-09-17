@@ -363,6 +363,12 @@
                 <groupId>io.github.a2asdk</groupId>
                 <artifactId>a2a-java-reference-server</artifactId>
                 <version>${a2a-sdk.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.slf4j</groupId>
+                        <artifactId>slf4j-jboss-logmanager</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.github.a2asdk</groupId>
