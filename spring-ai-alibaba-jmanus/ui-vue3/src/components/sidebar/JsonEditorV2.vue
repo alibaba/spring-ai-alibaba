@@ -120,13 +120,12 @@
                <!-- Terminate Columns -->
                <div class="form-row">
                  <label class="form-label">{{ $t('sidebar.terminateColumns') }}</label>
-                 <textarea 
+                 <input 
                    v-model="step.terminateColumns"
-                   class="form-textarea auto-resize"
+                   type="text"
+                   class="form-input"
                    :placeholder="$t('sidebar.terminateColumnsPlaceholder')"
-                   rows="4"
-                   @input="autoResizeTextarea($event)"
-                 ></textarea>
+                 />
                </div>
 
 

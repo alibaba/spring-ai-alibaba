@@ -875,7 +875,7 @@ const words: I18nType = {
   stepRequirement: 'Task Requirement',
   stepRequirementPlaceholder: 'Please enter the specific requirements and description for this task...',
   terminateColumns: 'Task Output Requirements Description',
-  terminateColumnsPlaceholder: 'Please enter task output requirements description...',
+  terminateColumnsPlaceholder: 'Please specify what specific content you expect as the end of the model to output, e.g., a list containing username, url, description fields.',
     titlePlaceholder: 'Please enter plan title...',
     moveUp: 'Move Up',
     moveDown: 'Move Down',
