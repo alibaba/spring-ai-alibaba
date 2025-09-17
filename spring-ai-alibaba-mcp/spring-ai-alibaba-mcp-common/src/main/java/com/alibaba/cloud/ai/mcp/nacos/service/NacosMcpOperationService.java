@@ -177,8 +177,7 @@ public class NacosMcpOperationService {
 	public String createMcpServer(String mcpName, McpServerBasicInfo serverSpec, McpToolSpecification toolSpec,
 			McpEndpointSpec endpointSpec) throws NacosException {
 		endpointSpec.getData().put("namespaceId", this.namespace);
-		aiMaintainerService.createMcpServer(this.namespace, mcpName, serverSpec, toolSpec, endpointSpec);
-		return true;
+		return aiMaintainerService.createMcpServer(this.namespace, mcpName, serverSpec, toolSpec, endpointSpec);
 	}
 
 	public boolean updateMcpServer(String mcpName, McpServerBasicInfo serverSpec, McpToolSpecification toolSpec,
