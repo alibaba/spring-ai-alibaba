@@ -113,16 +113,15 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 			configPath = CONFIG_BASE_PATH + agentName.toLowerCase() + "/agent-config.yml";
 		}
 
-		String configContent = loadConfigContent(configPath);
-
-		if (configContent.isEmpty()) {
-			log.warn("Agent configuration file does not exist or is empty: {}", configPath);
-			return null;
-		}
-
 		try {
+			ClassPathResource resource = new ClassPathResource(configPath);
+			if (!resource.exists()) {
+				log.warn("Configuration file does not exist: {}", configPath);
+				return null;
+			}
+
 			Yaml yaml = new Yaml();
-			Map<String, Object> yamlData = yaml.load(configContent);
+			Map<String, Object> yamlData = yaml.load(resource.getInputStream());
 
 			if (yamlData == null) {
 				log.warn("YAML configuration file parsing result is empty: {}", configPath);
@@ -163,7 +162,7 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 	 * Scan all available startup agent configuration directories
 	 * @return agent directory name list
 	 */
-	public List<String> scanAvailableAgents() {
+	public List<String> scanAvailableAgents(String language) {
 		try {
 			ClassPathResource baseResource = new ClassPathResource(CONFIG_BASE_PATH);
 			if (!baseResource.exists()) {
@@ -181,6 +180,11 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 
 			// Scan for all agent-config.yml files in subdirectories
 			String pattern = CONFIG_BASE_PATH + "*/agent-config.yml";
+			if (language != null && !language.trim().isEmpty()) {
+				// Multi-language path:
+				// prompts/startup-agents/zh/agent_name/agent-config.yml
+				pattern = CONFIG_BASE_PATH + language + "/*/agent-config.yml";
+			}
 			Resource[] resources = resolver.getResources("classpath:" + pattern);
 
 			for (Resource resource : resources) {
@@ -191,7 +195,7 @@ public class StartupAgentConfigLoader implements IStartupAgentConfigLoader {
 					String[] pathParts = path.split("/");
 					for (int i = 0; i < pathParts.length - 1; i++) {
 						if ("startup-agents".equals(pathParts[i]) && i + 1 < pathParts.length) {
-							String agentDirName = pathParts[i + 1];
+							String agentDirName = pathParts[i + 2];
 							if (!agentList.contains(agentDirName)) {
 								agentList.add(agentDirName);
 								log.debug("Found startup agent: {}", agentDirName);
