@@ -80,8 +80,10 @@ public class Nl2sqlForGraphController {
 	}
 
 	@GetMapping("/search")
-	public String search(@RequestParam String query, @RequestParam String dataSetId, @RequestParam String agentId)
-			throws Exception {
+	public String search(
+			@RequestParam(required = false, defaultValue = "查询每个分类下已经成交且销量最高的商品及其销售总量，每个分类只返回销量最高的商品。") String query,
+			@RequestParam(required = false, defaultValue = "1") String dataSetId,
+			@RequestParam(required = false, defaultValue = "1") String agentId) throws Exception {
 		// Get the data source configuration for an agent for vector initialization
 		DbConfig dbConfig = getDbConfigForAgent(Integer.valueOf(agentId));
 
