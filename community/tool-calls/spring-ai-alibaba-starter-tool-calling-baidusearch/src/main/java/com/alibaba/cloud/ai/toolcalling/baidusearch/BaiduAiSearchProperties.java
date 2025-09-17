@@ -15,21 +15,18 @@
  */
 package com.alibaba.cloud.ai.toolcalling.baidusearch;
 
-import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author vlsmb
  */
-public final class BaiduSearchConstants {
+@ConfigurationProperties(prefix = BaiduSearchConstants.CONFIG_PREFIX_AI)
+public class BaiduAiSearchProperties extends CommonToolCallProperties {
 
-	public static final String CONFIG_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".baidu.search";
-
-	public static final String CONFIG_PREFIX_AI = TOOL_CALLING_CONFIG_PREFIX + ".baidu.search.ai";
-
-	public static final String TOOL_NAME = "baiduSearch";
-
-	public static final String TOOL_NAME_AI = "baiduAiSearch";
-
-	public static final String API_KEY_ENV = "BAIDU_API_KEY";
+	public BaiduAiSearchProperties() {
+		super("https://qianfan.baidubce.com");
+		this.setPropertiesFromEnv(BaiduSearchConstants.API_KEY_ENV, null, null, null);
+	}
 
 }
