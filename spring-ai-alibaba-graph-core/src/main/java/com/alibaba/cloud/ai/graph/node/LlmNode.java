@@ -98,13 +98,13 @@ public class LlmNode implements NodeAction {
 
 		// add streaming support
 		if (Boolean.TRUE.equals(stream)) {
-			Flux<ChatResponse> chatResponseFlux = stream();
+			Flux<ChatResponse> chatResponseFlux = stream(state);
 			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", chatResponseFlux);
 		}
 		else {
 			AssistantMessage responseOutput;
 			try {
-				ChatResponse response = call();
+				ChatResponse response = call(state);
 				responseOutput = response.getResult().getOutput();
 			}
 			catch (Exception e) {
@@ -163,15 +163,15 @@ public class LlmNode implements NodeAction {
 		return promptTemplate.render(params);
 	}
 
-	public Flux<ChatResponse> stream() {
-		return buildChatClientRequestSpec().stream().chatResponse();
+	public Flux<ChatResponse> stream(OverAllState state) {
+		return buildChatClientRequestSpec(state).stream().chatResponse();
 	}
 
-	public ChatResponse call() {
-		return buildChatClientRequestSpec().call().chatResponse();
+	public ChatResponse call(OverAllState state) {
+		return buildChatClientRequestSpec(state).call().chatResponse();
 	}
 
-	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec() {
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(OverAllState state) {
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
 			.options(ToolCallingChatOptions.builder()
 				.toolCallbacks(toolCallbacks)
@@ -183,6 +183,9 @@ public class LlmNode implements NodeAction {
 		if (StringUtils.hasLength(systemPrompt)) {
 			if (!params.isEmpty()) {
 				systemPrompt = renderPromptTemplate(systemPrompt, params);
+			} else {
+				// try render with state
+				systemPrompt = renderPromptTemplate(systemPrompt, state.data());
 			}
 			chatClientRequestSpec.system(systemPrompt);
 		}

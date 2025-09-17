@@ -87,6 +87,7 @@ public interface FlowGraphBuildingStrategy {
 		return () -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
 
+			KeyStrategy defaultStrategy = new ReplaceStrategy();
 			// Process root agent
 			BaseAgent rootAgent = config.getRootAgent();
 			if (rootAgent != null) {
@@ -95,7 +96,7 @@ public interface FlowGraphBuildingStrategy {
 					if (flowAgent.inputKeys() != null) {
 						for (String inputKey : flowAgent.inputKeys()) {
 							if (inputKey != null) {
-								keyStrategyMap.put(inputKey, new AppendStrategy());
+								keyStrategyMap.put(inputKey, defaultStrategy);
 							}
 						}
 					}
@@ -111,7 +112,7 @@ public interface FlowGraphBuildingStrategy {
 
 				// Add root agent's outputKey
 				if (rootAgent.outputKey() != null) {
-					keyStrategyMap.put(rootAgent.outputKey(), new AppendStrategy());
+					keyStrategyMap.put(rootAgent.outputKey(), defaultStrategy);
 				}
 
 				// Merge outputKeyWithStrategy if present
@@ -129,7 +130,7 @@ public interface FlowGraphBuildingStrategy {
 					if (subAgent instanceof ReactAgent) {
 						// ReactAgent: only handle outputKey
 						if (subAgent.outputKey() != null) {
-							keyStrategyMap.put(subAgent.outputKey(), new AppendStrategy());
+							keyStrategyMap.put(subAgent.outputKey(), defaultStrategy);
 						}
 
 						// Merge outputKeyWithStrategy if present
@@ -144,7 +145,7 @@ public interface FlowGraphBuildingStrategy {
 						if (flowAgent.inputKeys() != null) {
 							for (String inputKey : flowAgent.inputKeys()) {
 								if (inputKey != null) {
-									keyStrategyMap.put(inputKey, new AppendStrategy());
+									keyStrategyMap.put(inputKey, defaultStrategy);
 								}
 							}
 						}
@@ -158,7 +159,7 @@ public interface FlowGraphBuildingStrategy {
 						}
 
 						if (flowAgent.outputKey() != null) {
-							keyStrategyMap.put(flowAgent.outputKey(), new AppendStrategy());
+							keyStrategyMap.put(flowAgent.outputKey(), defaultStrategy);
 						}
 
 						// Merge outputKeyWithStrategy if present

@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,29 +34,43 @@ import reactor.core.publisher.Flux;
 
 public class SubAgentGraphNodeAdapter implements NodeAction {
 
-	private String inputKeyFromParent;
+	private boolean includeContents;
 
 	private String outputKeyToParent;
 
 	private CompiledGraph childGraph;
 
-	public SubAgentGraphNodeAdapter(String inputKeyFromParent, String outputKeyToParent,
+	public SubAgentGraphNodeAdapter(boolean includeContents, String outputKeyToParent,
 			CompiledGraph childGraph) {
-		this.inputKeyFromParent = inputKeyFromParent;
+		this.includeContents = includeContents;
 		this.outputKeyToParent = outputKeyToParent;
 		this.childGraph = childGraph;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState parentState) throws Exception {
-		String input = (String) parentState.value(inputKeyFromParent).orElseThrow();
-		Message message = new UserMessage(input);
-		List<Message> messages = List.of(message);
+//		String input= (String) parentState.value(inputKeyFromParent).orElseThrow();
+//		Message message = new UserMessage(input);
+//		List<Message> messages = List.of(message);
 
-		Flux<GraphResponse<NodeOutput>> subGraphFlux = childGraph.fluxDataStream(Map.of("messages", messages),
-				RunnableConfig.builder().build());
+		Flux<GraphResponse<NodeOutput>> subGraphFlux;
+		Object parentMessages = null;
+		if (includeContents) {
+			// by default, includeContents is true, we pass down the messages from the parent state
+			subGraphFlux = childGraph.fluxDataStream(parentState, RunnableConfig.builder().build());
+		} else {
+			Map<String, Object> stateForChild = new HashMap<>(parentState.data());
+			parentMessages = stateForChild.remove("messages");
+			// use the instruction directly, without any user message or parent messages.
+			subGraphFlux = childGraph.fluxDataStream(stateForChild, RunnableConfig.builder().build());
+		}
 
-		return Map.of(outputKeyToParent, subGraphFlux);
+		Map<String, Object> result = new HashMap<>();
+		result.put(outputKeyToParent, subGraphFlux);
+		if (parentMessages != null) {
+			result.put("messages", parentMessages);
+		}
+		return result;
 	}
 
 }

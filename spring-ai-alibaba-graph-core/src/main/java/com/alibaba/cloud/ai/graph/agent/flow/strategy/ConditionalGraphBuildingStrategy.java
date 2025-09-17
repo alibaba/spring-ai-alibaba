@@ -66,7 +66,7 @@ public class ConditionalGraphBuildingStrategy implements FlowGraphBuildingStrate
 			BaseAgent agent = entry.getValue();
 
 			// Add the conditional agent as a node
-			graph.addNode(agent.name(), agent.asAsyncNodeAction(rootAgent.outputKey(), agent.outputKey()));
+			graph.addNode(agent.name(), agent.asAsyncNodeAction(true, agent.outputKey()));
 			conditionRoutingMap.put(condition, agent.name());
 
 			// Connect agent to END

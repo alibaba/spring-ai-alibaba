@@ -78,7 +78,7 @@ public class A2aRemoteAgent extends BaseAgent {
 		return graph;
 	}
 
-	@Override
+//	@Override
 	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) {
 		return node_async(new A2aNode(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
 	}

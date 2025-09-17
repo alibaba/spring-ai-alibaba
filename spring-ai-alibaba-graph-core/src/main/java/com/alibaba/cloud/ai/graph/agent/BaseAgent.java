@@ -20,6 +20,7 @@ import java.util.Optional;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -112,14 +113,25 @@ public abstract class BaseAgent {
 		return outputKeyWithStrategy;
 	}
 
+	public StateGraph getGraph() {
+		if (this.graph == null) {
+			try {
+				this.graph = initGraph();
+			}
+			catch (GraphStateException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return this.graph;
+	}
+
 	public synchronized CompiledGraph getAndCompileGraph() throws GraphStateException {
 		if (compiledGraph != null) {
 			return compiledGraph;
 		}
 
-		if (this.graph == null) {
-			this.graph = initGraph();
-		}
+		StateGraph graph = getGraph();
+
 		if (this.compileConfig == null) {
 			this.compiledGraph = graph.compile();
 		}
@@ -143,12 +155,14 @@ public abstract class BaseAgent {
 	 * Abstract a complex agent into a simple node in the graph.
 	 * @return the list of sub-agents.
 	 */
-	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
+	public AsyncNodeAction asAsyncNodeAction(boolean includeContents, String outputKeyToParent)
 			throws GraphStateException {
 		return null;
 	}
 
-
+	public StateGraph asStateGraph(){
+		return getGraph();
+	}
 
 	public AsyncNodeActionWithConfig asAsyncNodeActionWithConfig() throws GraphStateException {
 		return null;

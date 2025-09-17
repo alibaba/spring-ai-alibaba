@@ -37,12 +37,7 @@ public class TransparentNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		Map<String, Object> updatedState = new HashMap<>();
-		Object value = state.value(inputKeys.get(0))
-			.orElseThrow(
-					() -> new IllegalArgumentException("Input key '" + inputKeys.get(0) + "' not found in state: " + state));
-		updatedState.put(this.outputKey, value);
-		return updatedState;
+		return Map.of();
 	}
 
 	public static Builder builder() {

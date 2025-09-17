@@ -120,9 +120,21 @@ class GraphRunnerContext {
 
 		// Use CompiledGraph's getInitialState method
 		this.currentStateData = compiledGraph.getInitialState(inputs, config);
-		this.overallState = compiledGraph.stateGraph.getStateFactory().apply(currentStateData);
+		// fixme
+		this.overallState = stateCreate(currentStateData, initialState);
 		this.currentNodeId = START;
 		this.nextNodeId = null;
+	}
+
+	// FIXME, duplicated method with CompiledGraph.stateCreate, need to have a unified way of when and how to do OverallState creation.
+	// This temporary fix is to make sure the message provided by user is always the last element in the messages list.
+	private OverAllState stateCreate(Map<String, Object> inputs, OverAllState initialState) {
+		// Creates a new OverAllState instance using key strategies from the graph and provided input data.
+		return OverAllStateBuilder.builder()
+				.withKeyStrategies(initialState.keyStrategies())
+				.withData(inputs)
+				.withStore(initialState.getStore())
+				.build();
 	}
 
 	// Helper methods

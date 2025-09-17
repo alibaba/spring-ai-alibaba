@@ -57,7 +57,7 @@ public class RoutingGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 		Map<String, String> edgeRoutingMap = new HashMap<>();
 		for (BaseAgent subAgent : config.getSubAgents()) {
 			// Add the current sub-agent as a node
-			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(rootAgent.outputKey(), subAgent.outputKey()));
+			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(true, subAgent.outputKey()));
 			edgeRoutingMap.put(subAgent.name(), subAgent.name());
 
 			// Connect sub-agents to END (unless they are FlowAgents with their own

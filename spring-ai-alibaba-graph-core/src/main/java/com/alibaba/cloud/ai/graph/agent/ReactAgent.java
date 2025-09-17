@@ -82,6 +82,8 @@ public class ReactAgent extends BaseAgent {
 
 	private String instruction;
 
+	protected boolean includeContents;
+
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
 	protected ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
@@ -97,6 +99,7 @@ public class ReactAgent extends BaseAgent {
 		this.preToolHook = builder.preToolHook;
 		this.postToolHook = builder.postToolHook;
 		this.outputKeyWithStrategy = builder.outputKeyWithStrategy;
+		this.includeContents = builder.includeContents;
 	}
 
 	public static Builder builder() {
@@ -152,12 +155,12 @@ public class ReactAgent extends BaseAgent {
 		return compiledGraph;
 	}
 
-	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
+	public AsyncNodeAction asAsyncNodeAction(boolean includeContents, String outputKeyToParent)
 			throws GraphStateException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return node_async(new SubAgentGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
+		return node_async(new SubAgentGraphNodeAdapter(includeContents, outputKeyToParent, this.compiledGraph));
 	}
 
 	@Override
@@ -319,6 +322,14 @@ public class ReactAgent extends BaseAgent {
 		this.shouldContinueFunc = shouldContinueFunc;
 	}
 
+	public boolean isIncludeContents() {
+		return includeContents;
+	}
+
+	public void setIncludeContents(boolean includeContents) {
+		this.includeContents = includeContents;
+	}
+
 	public static class Builder {
 
 		private String name;
@@ -356,6 +367,8 @@ public class ReactAgent extends BaseAgent {
 		private NodeAction preToolHook;
 
 		private NodeAction postToolHook;
+
+		private boolean includeContents = true;
 
 		private String inputKey = "messages";
 
@@ -446,6 +459,11 @@ public class ReactAgent extends BaseAgent {
 
 		public Builder postToolHook(NodeAction postToolHook) {
 			this.postToolHook = postToolHook;
+			return this;
+		}
+
+		public Builder includeContents(boolean includeContents) {
+			this.includeContents = includeContents;
 			return this;
 		}
 

@@ -71,7 +71,7 @@ public class ParallelGraphBuildingStrategy implements FlowGraphBuildingStrategy 
 		// Process sub-agents for parallel execution
 		for (BaseAgent subAgent : config.getSubAgents()) {
 			// Add the current sub-agent as a node
-			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(rootAgent.outputKey(), subAgent.outputKey()));
+			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(true, subAgent.outputKey()));
 			// Connect root to each sub-agent (fan-out)
 			graph.addEdge(rootAgent.name(), subAgent.name());
 			// Connect each sub-agent to aggregator (gather)
