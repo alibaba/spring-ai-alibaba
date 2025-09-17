@@ -84,7 +84,15 @@ public class SmartContentSavingService implements ISmartContentSavingService {
 	 */
 	public SmartProcessResult processContent(String planId, String content, String callingMethod) {
 		if (planId == null || content == null) {
-			return new SmartProcessResult(null, content);
+			log.warn("processContent called with null parameters: planId={}, content={}, callingMethod={}", 
+					planId, content, callingMethod);
+			return new SmartProcessResult(null, content != null ? content : "No content available");
+		}
+
+		// Check if content is empty
+		if (content.trim().isEmpty()) {
+			log.warn("processContent called with empty content: planId={}, callingMethod={}", planId, callingMethod);
+			return new SmartProcessResult(null, "No content available");
 		}
 
 		// Check if infinite context is enabled
@@ -95,7 +103,7 @@ public class SmartContentSavingService implements ISmartContentSavingService {
 			// processing
 			log.info("Infinite context disabled for plan {}, returning content directly without smart processing",
 					planId);
-			return new SmartProcessResult(null, content);
+			return new SmartProcessResult(null, content != null && !content.trim().isEmpty() ? content : "");
 		}
 
 		// Use configured threshold from ManusProperties when infinite context is enabled
@@ -108,7 +116,7 @@ public class SmartContentSavingService implements ISmartContentSavingService {
 		if (content.length() <= threshold) {
 			log.info("Content length {} is within threshold {}, returning original content", content.length(),
 					threshold);
-			return new SmartProcessResult(null, content);
+			return new SmartProcessResult(null, content != null && !content.trim().isEmpty() ? content : "");
 		}
 
 		log.info("Content length {} exceeds threshold {}, triggering auto storage", content.length(), threshold);
