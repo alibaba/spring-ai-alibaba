@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.alibaba.cloud.ai.service.simple.SimpleVectorStoreService;
 import com.alibaba.cloud.ai.service.DatasourceService;
@@ -244,8 +245,7 @@ public class Nl2sqlForGraphController {
 												logger.info("Detected complete human review plan in streaming output");
 												logger.info("Plan content length: {}", accumulatedContent.length());
 
-												// 注意：由于图被中断，我们无法直接保存状态
-												// 人类反馈将通过简单的响应处理，而不是恢复图执行
+												
 
 												// 发送完整的人工复核计划并结束流
 												logger.info("Sending complete human review plan");
@@ -431,27 +431,45 @@ public class Nl2sqlForGraphController {
 	private void executeApprovedPlanWithResume(OverAllState.HumanFeedback humanFeedback, String threadId,
 			Sinks.Many<ServerSentEvent<String>> sink) {
 		try {
-			Optional<OverAllState> result = compiledGraph.resume(humanFeedback,
-					RunnableConfig.builder().threadId(threadId).build());
+			// 获取当前状态快照
+			StateSnapshot stateSnapshot = compiledGraph.getState(RunnableConfig.builder().threadId(threadId).build());
+			OverAllState resumeState = stateSnapshot.state();
+			resumeState.withResume();
+			resumeState.withHumanFeedback(humanFeedback);
 
-			if (result.isPresent()) {
-				OverAllState finalState = result.get();
-				// 处理最终结果
-				Optional<String> resultValue = finalState.value(RESULT);
-				if (resultValue.isPresent()) {
-					ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(resultValue.get()))
-						.build();
-					sink.tryEmitNext(event);
+			// 使用Flux流式处理
+			Flux<NodeOutput> flux = compiledGraph.fluxStreamFromInitialNode(resumeState, 
+					RunnableConfig.builder().threadId(threadId).build());
+			
+			flux.subscribe(output -> {
+				try {
+					if (output instanceof StreamingOutput) {
+						StreamingOutput streamingOutput = (StreamingOutput) output;
+						String chunk = streamingOutput.chunk();
+						if (chunk != null && !chunk.trim().isEmpty()) {
+							ServerSentEvent<String> event = ServerSentEvent.builder(chunk).build();
+							sink.tryEmitNext(event);
+						}
+					} else {
+						// 处理最终结果
+						Optional<String> resultValue = output.state().value(RESULT);
+						if (resultValue.isPresent()) {
+							ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(resultValue.get()))
+								.build();
+							sink.tryEmitNext(event);
+						}
+					}
+				} catch (Exception e) {
+					logger.error("Error processing approved plan output: ", e);
 				}
+			}, error -> {
+				logger.error("Error in approved plan stream: ", error);
+				sink.tryEmitNext(ServerSentEvent.builder("error: " + error.getMessage()).event("error").build());
+				sink.tryEmitComplete();
+			}, () -> {
 				sink.tryEmitNext(ServerSentEvent.builder("complete").event("complete").build());
 				sink.tryEmitComplete();
-			}
-			else {
-				sink.tryEmitNext(ServerSentEvent.builder("error: No result from approved plan execution")
-					.event("error")
-					.build());
-				sink.tryEmitComplete();
-			}
+			});
 		}
 		catch (Exception e) {
 			logger.error("Error in approved plan resume execution: ", e);
@@ -463,45 +481,77 @@ public class Nl2sqlForGraphController {
 	private void executeRejectedPlanWithResume(OverAllState.HumanFeedback humanFeedback, String threadId,
 			Sinks.Many<ServerSentEvent<String>> sink) {
 		try {
-			// 使用新的 resume 方法恢复执行
-			Optional<OverAllState> result = compiledGraph.resume(humanFeedback,
+			// 获取当前状态快照
+			StateSnapshot stateSnapshot = compiledGraph.getState(RunnableConfig.builder().threadId(threadId).build());
+			OverAllState resumeState = stateSnapshot.state();
+			resumeState.withResume();
+			resumeState.withHumanFeedback(humanFeedback);
+
+			// 使用Flux流式处理
+			Flux<NodeOutput> flux = compiledGraph.fluxStreamFromInitialNode(resumeState,
 					RunnableConfig.builder().threadId(threadId).build());
 
-			if (result.isPresent()) {
-				OverAllState finalState = result.get();
-				// 检查是否生成了新的计划需要人工审核
-				Optional<String> plannerOutputOpt = finalState.value(PLANNER_NODE_OUTPUT);
-				if (plannerOutputOpt.isPresent()) {
-					String currentPlanContent = plannerOutputOpt.get();
-					if (currentPlanContent != null && currentPlanContent.contains("thought_process")
-							&& currentPlanContent.contains("execution_plan")) {
-						Map<String, Object> humanReviewData = Map.of("type", "human_feedback", "data",
-								currentPlanContent);
-						ServerSentEvent<String> reviewEvent = ServerSentEvent
-							.builder(JSON.toJSONString(humanReviewData))
-							.build();
-						sink.tryEmitNext(reviewEvent);
-						sink.tryEmitComplete();
-						return;
-					}
-				}
+			final StringBuilder planAccumulator = new StringBuilder();
+			final boolean[] humanReviewDetected = { false };
 
-				// 如果没有需要审核的计划，处理最终结果
-				Optional<String> resultValue = finalState.value(RESULT);
-				if (resultValue.isPresent()) {
-					ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(resultValue.get()))
-						.build();
-					sink.tryEmitNext(event);
+			flux.subscribe(output -> {
+				try {
+					if (output instanceof StreamingOutput) {
+						StreamingOutput streamingOutput = (StreamingOutput) output;
+						String chunk = streamingOutput.chunk();
+						if (chunk != null && !chunk.trim().isEmpty()) {
+							// 累积流式内容以检测新的人工审核计划
+							planAccumulator.append(chunk);
+							
+							// 检查是否包含完整的计划结构
+							String accumulatedContent = planAccumulator.toString();
+							if (!humanReviewDetected[0] && 
+								accumulatedContent.contains("thought_process") && 
+								accumulatedContent.contains("execution_plan")) {
+								
+								// 提取完整计划内容
+								String extractedPlanContent = extractPlanFromStreamingContent(accumulatedContent);
+								if (extractedPlanContent.contains("thought_process") && 
+									extractedPlanContent.contains("execution_plan")) {
+									humanReviewDetected[0] = true;
+									Map<String, Object> humanReviewData = Map.of("type", "human_feedback", "data", extractedPlanContent);
+									ServerSentEvent<String> reviewEvent = ServerSentEvent
+										.builder(JSON.toJSONString(humanReviewData))
+										.build();
+									sink.tryEmitNext(reviewEvent);
+									sink.tryEmitComplete();
+									return;
+								}
+							}
+							
+							// 如果不是人工审核内容，正常发送流式数据
+							ServerSentEvent<String> event = ServerSentEvent.builder(chunk).build();
+							sink.tryEmitNext(event);
+						}
+					} else {
+						// 处理最终结果
+						if (!humanReviewDetected[0]) {
+							Optional<String> resultValue = output.state().value(RESULT);
+							if (resultValue.isPresent()) {
+								ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(resultValue.get()))
+									.build();
+								sink.tryEmitNext(event);
+							}
+						}
+					}
+				} catch (Exception e) {
+					logger.error("Error processing rejected plan output: ", e);
 				}
-				sink.tryEmitNext(ServerSentEvent.builder("complete").event("complete").build());
+			}, error -> {
+				logger.error("Error in rejected plan stream: ", error);
+				sink.tryEmitNext(ServerSentEvent.builder("error: " + error.getMessage()).event("error").build());
 				sink.tryEmitComplete();
-			}
-			else {
-				sink.tryEmitNext(ServerSentEvent.builder("error: No result from rejected plan execution")
-					.event("error")
-					.build());
-				sink.tryEmitComplete();
-			}
+			}, () -> {
+				if (!humanReviewDetected[0]) {
+					sink.tryEmitNext(ServerSentEvent.builder("complete").event("complete").build());
+					sink.tryEmitComplete();
+				}
+			});
 		}
 		catch (Exception e) {
 			logger.error("Error in rejected plan resume execution: ", e);
