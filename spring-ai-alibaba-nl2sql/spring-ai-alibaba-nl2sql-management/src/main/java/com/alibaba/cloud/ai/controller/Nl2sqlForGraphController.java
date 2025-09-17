@@ -528,10 +528,31 @@ public class Nl2sqlForGraphController {
 							ServerSentEvent<String> event = ServerSentEvent.builder(chunk).build();
 							sink.tryEmitNext(event);
 						}
-					} else {
+					} else if (output instanceof NodeOutput) {
+						// 检查是否需要人工审核
+						OverAllState currentState = output.state();
+						Boolean humanReviewEnabled = currentState.value(HUMAN_REVIEW_ENABLED, false);
+						if (Boolean.TRUE.equals(humanReviewEnabled)) {
+							Optional<String> plannerOutputOpt = currentState.value(PLANNER_NODE_OUTPUT);
+							if (plannerOutputOpt.isPresent()) {
+								String currentPlanContent = plannerOutputOpt.get();
+								if (currentPlanContent != null && currentPlanContent.contains("thought_process")
+										&& currentPlanContent.contains("execution_plan")) {
+									Map<String, Object> humanReviewData = Map.of("type", "human_feedback", "data",
+											currentPlanContent);
+									ServerSentEvent<String> reviewEvent = ServerSentEvent
+										.builder(JSON.toJSONString(humanReviewData))
+										.build();
+									sink.tryEmitNext(reviewEvent);
+									sink.tryEmitComplete();
+									return;
+								}
+							}
+						}
+						
 						// 处理最终结果
 						if (!humanReviewDetected[0]) {
-							Optional<String> resultValue = output.state().value(RESULT);
+							Optional<String> resultValue = currentState.value(RESULT);
 							if (resultValue.isPresent()) {
 								ServerSentEvent<String> event = ServerSentEvent.builder(JSON.toJSONString(resultValue.get()))
 									.build();
