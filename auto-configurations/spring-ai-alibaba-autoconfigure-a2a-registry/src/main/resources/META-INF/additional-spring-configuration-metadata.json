@@ -5,6 +5,12 @@
       "type": "com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties",
       "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties",
       "description": "Configuration properties for Nacos A2A Registry."
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.registry",
+      "type": "com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosA2aRegistryProperties",
+      "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosA2aRegistryProperties",
+      "description": "Configuration properties for Nacos A2A Registry."
     }
   ],
   "properties": [
@@ -61,6 +67,13 @@
       "name": "spring.ai.alibaba.a2a.nacos.registry.enabled",
       "type": "java.lang.Boolean",
       "description": "Enable nacos auto registry agent card to nacos.",
+      "defaultValue": "true"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.registry.register-as-latest",
+      "type": "java.lang.Boolean",
+      "description": "Register agent card as latest version.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosA2aRegistryProperties",
       "defaultValue": "true"
     },
     {
