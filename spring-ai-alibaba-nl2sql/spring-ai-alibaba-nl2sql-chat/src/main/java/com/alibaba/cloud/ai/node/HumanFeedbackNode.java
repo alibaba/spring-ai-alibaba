@@ -77,6 +77,8 @@ public class HumanFeedbackNode implements NodeAction {
 			String feedbackContent = feedbackData.getOrDefault("feed_back_content", "").toString();
 			updated.put(PLAN_VALIDATION_ERROR,
 					StringUtils.hasLength(feedbackContent) ? feedbackContent : "Plan rejected by user");
+			// 这边清空旧的计划输出
+			updated.put(PLANNER_NODE_OUTPUT, "");
 			state.withoutResume();
 		}
 
