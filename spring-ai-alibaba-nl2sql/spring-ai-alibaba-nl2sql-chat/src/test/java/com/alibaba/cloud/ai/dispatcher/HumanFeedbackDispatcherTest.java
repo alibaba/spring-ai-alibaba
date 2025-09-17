@@ -55,4 +55,11 @@ class HumanFeedbackDispatcherTest {
 		assertEquals(StateGraph.END, next);
 	}
 
+	@Test
+	void testRoutesToPlannerAfterRejection() throws Exception {
+		state.updateState(java.util.Map.of("human_next_node", "PLANNER_NODE"));
+		String next = dispatcher.apply(state);
+		assertEquals("PLANNER_NODE", next);
+	}
+
 }
