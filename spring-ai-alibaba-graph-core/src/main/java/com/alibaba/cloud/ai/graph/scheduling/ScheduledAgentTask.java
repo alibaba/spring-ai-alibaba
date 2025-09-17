@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.scheduling;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 
@@ -117,34 +118,39 @@ public class ScheduledAgentTask {
 	}
 
 	/**
+	 * Execute the graph
+	 * @param runnableConfig
+	 * @param inputs
+	 */
+	public void execute(RunnableConfig runnableConfig, Map<String, Object> inputs) {
+		try {
+			notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_STARTED);
+			OverAllState initialState = createInitialState(inputs);
+			if (runnableConfig == null) {
+				String threadId = String.format("%s-%d", taskId, System.currentTimeMillis());
+				runnableConfig = RunnableConfig.builder().threadId(threadId).build();
+			}
+			Optional<OverAllState> result = graph.call(initialState, runnableConfig);
+			notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_COMPLETED, result.orElse(null));
+		}
+		catch (Exception e) {
+			log.error("Graph execution failed", e);
+			notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_FAILED, e);
+		}
+	}
+
+	/**
 	 * Execute the graph with retry logic
 	 */
 	private void executeGraph() {
 		int attempt = 0;
-		Exception lastException = null;
-
 		while (attempt <= config.getMaxRetries()) {
 			try {
-				notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_STARTED);
-				OverAllState initialState = createInitialState();
-				RunnableConfig runnableConfig = config.getRunnableConfig();
-				if (runnableConfig == null) {
-					String threadId = String.format("%s-%d", taskId, System.currentTimeMillis());
-					runnableConfig = RunnableConfig.builder().threadId(threadId).build();
-				}
-				Optional<OverAllState> result = graph.invoke(initialState, runnableConfig);
-				notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_COMPLETED, result.orElse(null));
-				// 暂时不记忆每一轮执行信息，记忆序列号和反序列化还存在问题
-				/*
-				 * graph.compileConfig.checkpointSaver().ifPresent(saver -> {
-				 * saver.clear(config.getRunnableConfig()); });
-				 */
+				execute(config.getRunnableConfig(), config.getInputs());
 				return;
 			}
 			catch (Exception e) {
-				lastException = e;
 				log.warn("Graph execution failed (attempt {}): {}", attempt + 1, e.getMessage());
-
 				if (attempt < config.getMaxRetries() && config.getRetryPredicate().apply(e)) {
 					attempt++;
 					try {
@@ -160,14 +166,12 @@ public class ScheduledAgentTask {
 				}
 			}
 		}
-
-		notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_FAILED, lastException);
 	}
 
-	private OverAllState createInitialState() {
+	private OverAllState createInitialState(Map<String, Object> inputs) {
 		return OverAllStateBuilder.builder()
 			.withKeyStrategies(graph.stateGraph.getKeyStrategyFactory().apply())
-			.withData(config.getInputs())
+			.withData(inputs)
 			.build();
 	}
 

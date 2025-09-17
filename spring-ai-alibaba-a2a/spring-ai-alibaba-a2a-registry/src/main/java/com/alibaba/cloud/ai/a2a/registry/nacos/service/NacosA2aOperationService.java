@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.a2a.registry.nacos.service;
 
 import com.alibaba.cloud.ai.a2a.A2aServerProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties;
+import com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosA2aRegistryProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.utils.AgentCardConverterUtil;
 import com.alibaba.nacos.api.ai.A2aService;
 import com.alibaba.nacos.api.ai.constant.AiConstants;
@@ -43,11 +44,14 @@ public class NacosA2aOperationService {
 
 	private final A2aServerProperties a2aServerProperties;
 
+	private final NacosA2aRegistryProperties nacosA2aRegistryProperties;
+
 	public NacosA2aOperationService(A2aService a2aService, NacosA2aProperties nacosA2aProperties,
-			A2aServerProperties a2aServerProperties) {
+			A2aServerProperties a2aServerProperties, NacosA2aRegistryProperties nacosA2aRegistryProperties) {
 		this.a2aService = a2aService;
 		this.nacosA2aProperties = nacosA2aProperties;
 		this.a2aServerProperties = a2aServerProperties;
+		this.nacosA2aRegistryProperties = nacosA2aRegistryProperties;
 	}
 
 	public void registerAgent(io.a2a.spec.AgentCard agentCard) {
@@ -65,7 +69,8 @@ public class NacosA2aOperationService {
 	private void tryReleaseAgentCard(AgentCard agentCard) throws NacosException {
 		LOGGER.info("Register agent card {} to Nacos namespace {}. ", agentCard.getName(),
 				nacosA2aProperties.getNamespace());
-		a2aService.releaseAgentCard(agentCard, AiConstants.A2a.A2A_ENDPOINT_TYPE_SERVICE);
+		a2aService.releaseAgentCard(agentCard, AiConstants.A2a.A2A_ENDPOINT_TYPE_SERVICE,
+				nacosA2aRegistryProperties.isRegisterAsLatest());
 		LOGGER.info("Register agent card {} to Nacos namespace {} successfully. ", agentCard.getName(),
 				nacosA2aProperties.getNamespace());
 	}

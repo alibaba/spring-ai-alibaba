@@ -92,4 +92,18 @@ class HumanFeedbackNodeTest {
 		assertEquals("END", result.get("human_next_node"));
 	}
 
+	@Test
+	void testRejectFlowClearsPlanNextNode() throws Exception {
+		state.updateState(Map.of(PLAN_REPAIR_COUNT, 0));
+		state.withHumanFeedback(
+				new OverAllState.HumanFeedback(Map.of("feed_back", false, "feed_back_content", "再次修正"), null));
+
+		Map<String, Object> result = node.apply(state);
+		assertEquals(PLANNER_NODE, result.get("human_next_node"));
+		assertEquals(1, result.get(PLAN_REPAIR_COUNT));
+		assertEquals(1, result.get(PLAN_CURRENT_STEP));
+		assertEquals(true, result.get(HUMAN_REVIEW_ENABLED));
+		assertEquals("", result.getOrDefault(PLAN_NEXT_NODE, ""));
+	}
+
 }
