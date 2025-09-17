@@ -1,5 +1,5 @@
 import type { AxiosResponse } from 'axios'
-import request from '@/utils/request'
+import axios from 'axios'
 
 export interface ModelOption {
   value: string
@@ -17,9 +17,10 @@ export class ConfigApiService {
    */
   public static async getAvailableModels(): Promise<AvailableModelsResponse> {
     try {
-      const response: AxiosResponse<AvailableModelsResponse> = await request({
-        url: '/api/config/available-models',
-        method: 'GET'
+      const response: AxiosResponse<AvailableModelsResponse> = await axios({
+        url: '/api/models/available-models',
+        method: 'GET',
+        baseURL: '' // Override the default /api/v1 baseURL
       })
       return response.data
     } catch (error) {

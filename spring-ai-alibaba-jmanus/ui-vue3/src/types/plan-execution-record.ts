@@ -20,12 +20,34 @@
  * Hierarchy:
  * PlanExecutionRecord (Main)
  *   └── agentExecutionSequence: AgentExecutionRecord[]
- *       └── thinkActSteps: ThinkActRecord[]
- *           └── subPlanExecutionRecord: PlanExecutionRecord (recursive)
+ *       └── subPlanExecutionRecords: PlanExecutionRecord[] (recursive)
  */
 
 /**
- * Maps to Java: com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord
+ * Execution status enum matching Java ExecutionStatus
+ * Maps to Java: com.alibaba.cloud.ai.manus.recorder.entity.vo.ExecutionStatus
+ */
+export type ExecutionStatus = 'IDLE' | 'RUNNING' | 'FINISHED'
+
+/**
+ * Maps to Java: com.alibaba.cloud.ai.manus.recorder.entity.vo.ActToolInfo
+ */
+export interface ActToolInfo {
+  /** Name of the tool */
+  name?: string
+
+  /** Description of the tool */
+  parameters?: string
+
+  /** Result of tool call */
+  result?: string
+
+  /** ID of the tool */
+  id?: string
+}
+
+/**
+ * Maps to Java: com.alibaba.cloud.ai.manus.recorder.entity.ThinkActRecord
  *
  * Records the thinking and action process of an agent in a single execution step.
  */
@@ -63,8 +85,8 @@ export interface ThinkActRecord {
   /** Result of action execution */
   actionResult?: string
 
-  /** Status of this think-act cycle (success, failure, etc.) */
-  status?: string
+  /** Status of this think-act cycle */
+  status?: ExecutionStatus
 
   /** Error message if the cycle encountered problems */
   errorMessage?: string
@@ -83,33 +105,18 @@ export interface ThinkActRecord {
 }
 
 /**
- * Maps to Java: com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord.ActToolInfo
- */
-export interface ActToolInfo {
-
-  /** Name of the tool */
-  name?: string
-
-  /** Description of the tool */
-  parameters?: string
-
-  /** Result of tool call */
-  result?: string
-
-  /** ID of the tool */
-  id?: string
-
-}
-
-/**
- * Maps to Java: com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord
+ * Maps to Java: com.alibaba.cloud.ai.manus.recorder.entity.vo.AgentExecutionRecord
  *
- * Agent execution record class for tracking and recording detailed information about
- * BaseAgent execution process.
+ * Unified agent execution record class for tracking and recording detailed information about
+ * BaseAgent execution process. This class combines the functionality of both Simple and Detail
+ * versions to provide a single, comprehensive record structure.
  */
 export interface AgentExecutionRecord {
   /** Unique identifier of the record */
   id?: number
+
+  /** Step ID this record belongs to */
+  stepId?: string
 
   /** Conversation ID this record belongs to */
   conversationId?: string
@@ -133,11 +140,7 @@ export interface AgentExecutionRecord {
   currentStep?: number
 
   /** Execution status (IDLE, RUNNING, FINISHED) */
-  status?: string
-
-
-  /** Record list of think-act steps, existing as sub-steps */
-  thinkActSteps?: ThinkActRecord[]
+  status?: ExecutionStatus
 
   /** Request content for agent execution */
   agentRequest?: string
@@ -151,55 +154,37 @@ export interface AgentExecutionRecord {
   /** Model name called */
   modelName?: string
 
+  /** List of ThinkActRecord for detailed execution process */
+  thinkActSteps?: ThinkActRecord[]
+
+  /** Sub-plan execution records for this agent */
+  subPlanExecutionRecords?: PlanExecutionRecord[]
 }
 
 /**
- * Maps to Java: com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState
+ * Maps to Java: com.alibaba.cloud.ai.manus.runtime.entity.vo.UserInputWaitState
  *
  * User input wait state for handling user interaction during plan execution.
  */
 export interface UserInputWaitState {
+  /** Plan ID */
+  planId?: string
+
+  /** Title to display to user */
+  title?: string
+
   /** Whether the plan is currently waiting for user input */
   waiting?: boolean
-
-  /** Message to display to user */
-  message?: string
 
   /** Form description */
   formDescription?: string
 
-  /** Form input fields */
-  formInputs?: FormInput[]
-}
-
-export interface FormInput {
-  /** Input field label */
-  label: string
-
-  /** Input field type */
-  type?: 'text' | 'number' | 'email' | 'password' | 'textarea' | 'select' | 'checkbox' | 'radio'
-
-  /** Input field value */
-  value?: string
-
-  /** Whether this field is required */
-  required?: boolean | string
-
-  /** Field placeholder text */
-  placeholder?: string
-
-  /** Field name (for form submission) */
-  name?: string
-
-  /** Options for select, checkbox, or radio fields */
-  options?: string[]
-
-  /** Field validation rules */
-  validation?: Record<string, any>
+  /** Form input fields as map list (matching Java structure) */
+  formInputs?: Array<Record<string, string>>
 }
 
 /**
- * Maps to Java: com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord
+ * Maps to Java: com.alibaba.cloud.ai.manus.recorder.entity.vo.PlanExecutionRecord
  *
  * Plan execution record class for tracking and recording detailed information about
  * PlanningFlow execution process.
@@ -217,11 +202,14 @@ export interface PlanExecutionRecord {
    */
   currentPlanId: string
 
-  /** Parent plan ID for sub-plans (null for main plans) */
+  /** Root plan ID for sub-plans (null for main plans) */
   rootPlanId?: string
 
-  /** Think-act record ID that triggered this sub-plan (null for main plans) */
-  thinkActRecordId?: number
+  /** Parent plan ID for sub-plans (null for root plans) */
+  parentPlanId?: string
+
+  /** Tool call ID that triggered this plan (for sub-plans) */
+  toolCallId?: string
 
   /** Plan title */
   title?: string
@@ -235,8 +223,7 @@ export interface PlanExecutionRecord {
   /** Timestamp when execution ended */
   endTime?: string
 
-  /** List of plan steps */
-  steps?: string[]
+
 
   /** Current step index being executed */
   currentStepIndex?: number
@@ -250,11 +237,18 @@ export interface PlanExecutionRecord {
   /**
    * List to maintain the sequence of agent executions
    * This is the main data source for step-by-step execution details
+   * Uses AgentExecutionRecord (unified version)
    */
   agentExecutionSequence?: AgentExecutionRecord[]
 
   /** Field to store user input wait state */
   userInputWaitState?: UserInputWaitState
+
+  /** Actual calling model */
+  modelName?: string
+
+  /** Parent tool call information that triggered this sub-plan (for sub-plan detail displaying) */
+  parentActToolCall?: ActToolInfo
 
   // Additional computed fields for frontend compatibility
   /** Current execution status */
@@ -288,6 +282,4 @@ export interface PlanExecutionRecord {
 // API response type for getDetails method
 export type PlanExecutionRecordResponse = PlanExecutionRecord | null
 
-// Legacy alias for backward compatibility
-export type PlanDetails = PlanExecutionRecord
-export type PlanDetailsResponse = PlanExecutionRecordResponse
+

@@ -16,12 +16,16 @@
 
 package com.alibaba.cloud.ai.a2a.route;
 
+import java.io.IOException;
 import java.time.Duration;
-import java.util.concurrent.Flow;
+import java.util.function.Consumer;
 
 import com.alibaba.cloud.ai.a2a.server.JsonRpcA2aRequestHandler;
+import io.a2a.spec.JSONRPCResponse;
+import io.a2a.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.function.HandlerFunction;
@@ -96,8 +100,8 @@ public class JsonRpcA2aRouterProvider implements A2aRouterProvider<JsonRpcA2aReq
 			try {
 				String bodyString = request.body(String.class);
 				Object result = a2aRequestHandler.onHandler(bodyString, request.headers());
-				if (result instanceof Flow.Publisher) {
-					return buildSseResponse(result);
+				if (result instanceof Flux<?>) {
+					return buildSseResponse((Flux<?>) result);
 				}
 				else {
 					return buildJsonRpcResponse(result);
@@ -113,12 +117,27 @@ public class JsonRpcA2aRouterProvider implements A2aRouterProvider<JsonRpcA2aReq
 			return ServerResponse.ok().body(result);
 		}
 
-		private ServerResponse buildSseResponse(Object result) {
-			// TODO
-			return ServerResponse.sse((sseBuilder) -> {
+		private ServerResponse buildSseResponse(Flux<?> result) {
+			return ServerResponse.sse(sseBuilder -> {
 				sseBuilder.onComplete(() -> {
+					log.debug("Agent SSE connection completed.");
 				});
 				sseBuilder.onTimeout(() -> {
+					log.debug("Agent SSE connection timeout.");
+				});
+				result.subscribe((Consumer<Object>) o -> {
+					if (o instanceof JSONRPCResponse) {
+						try {
+							String sseBody = Utils.OBJECT_MAPPER.writeValueAsString(o);
+							if (log.isDebugEnabled()) {
+								log.debug("send sse body to agent: {}", sseBody);
+							}
+							sseBuilder.data(sseBody);
+						}
+						catch (IOException e) {
+							sseBuilder.error(e);
+						}
+					}
 				});
 			}, Duration.ZERO);
 		}

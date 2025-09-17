@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.a2a;
 
+import com.alibaba.cloud.ai.a2a.constants.A2aConstants;
 import com.alibaba.cloud.ai.a2a.route.JsonRpcA2aRouterProvider;
 import com.alibaba.cloud.ai.a2a.utils.InetUtils;
 import jakarta.annotation.PostConstruct;
@@ -39,9 +40,7 @@ public class A2aServerProperties implements EnvironmentAware {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.a2a.server";
 
-	public static final String DEFAULT_SERVER_TYPE = "jsonrpc";
-
-	private String type = DEFAULT_SERVER_TYPE;
+	private String type = A2aConstants.AGENT_TRANSPORT_TYPE_JSON_RPC;
 
 	private String agentCardUrl = JsonRpcA2aRouterProvider.DEFAULT_WELL_KNOWN_URL;
 
@@ -50,6 +49,8 @@ public class A2aServerProperties implements EnvironmentAware {
 	private String address;
 
 	private Integer port;
+
+	private String version = A2aConstants.DEFAULT_AGENT_VERSION;
 
 	private Environment environment;
 
@@ -110,6 +111,14 @@ public class A2aServerProperties implements EnvironmentAware {
 
 	public void setPort(Integer port) {
 		this.port = port;
+	}
+
+	public String getVersion() {
+		return version;
+	}
+
+	public void setVersion(String version) {
+		this.version = version;
 	}
 
 	@Override

@@ -49,7 +49,7 @@ import org.springframework.context.annotation.Bean;
  *
  * @author xiweng.yy
  */
-@AutoConfiguration(after = A2aAgentCardAutoConfiguration.class)
+@AutoConfiguration(after = A2aServerAgentCardAutoConfiguration.class)
 @EnableConfigurationProperties({ A2aServerProperties.class })
 @ConditionalOnBean({ AgentCard.class, BaseAgent.class })
 public class A2aServerHandlerAutoConfiguration {
