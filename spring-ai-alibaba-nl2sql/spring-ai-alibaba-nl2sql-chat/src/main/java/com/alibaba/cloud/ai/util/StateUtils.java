@@ -31,7 +31,7 @@ import java.util.function.Supplier;
  */
 public class StateUtils {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	/**
 	 * Safely get string type state value
@@ -86,7 +86,7 @@ public class StateUtils {
 
 		// If it's a HashMap but we need a complex object, use JSON conversion
 		if (value instanceof HashMap && !type.equals(HashMap.class)) {
-            return OBJECT_MAPPER.convertValue(value, type);
+			return OBJECT_MAPPER.convertValue(value, type);
 		}
 
 		return type.cast(value);
