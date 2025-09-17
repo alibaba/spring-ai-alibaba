@@ -134,6 +134,8 @@ public class A2aRemoteAgent extends BaseAgent {
 		// A2aRemoteAgent specific properties
 		private AgentCard agentCard;
 
+		private AgentCardProvider agentCardProvider;
+
 		private String inputKey = "input";
 
 		private KeyStrategyFactory keyStrategyFactory;
@@ -159,6 +161,11 @@ public class A2aRemoteAgent extends BaseAgent {
 
 		public Builder agentCard(AgentCard agentCard) {
 			this.agentCard = agentCard;
+			return this;
+		}
+
+		public Builder agentCardProvider(AgentCardProvider agentCardProvider) {
+			this.agentCardProvider = agentCardProvider;
 			return this;
 		}
 
@@ -191,7 +198,15 @@ public class A2aRemoteAgent extends BaseAgent {
 				throw new IllegalArgumentException("Description must be provided");
 			}
 			if (agentCard == null) {
-				throw new IllegalArgumentException("AgentCard must be provided");
+				if (null == agentCardProvider) {
+					throw new IllegalArgumentException("AgentCard or AgentCardProvider must be provided");
+				}
+				if (agentCardProvider.supportGetAgentCardByName()) {
+					agentCard = agentCardProvider.getAgentCard(name);
+				}
+				else {
+					agentCard = agentCardProvider.getAgentCard();
+				}
 			}
 
 			this.streaming = agentCard.capabilities().streaming();

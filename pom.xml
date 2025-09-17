@@ -178,6 +178,8 @@
 
         <!-- Sprint AI Alibaba A2A Server -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-server</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-client</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-registry</module>
 
         <!-- Spring AI Alibaba Spring Boot Starters -->
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory</module>
@@ -190,6 +192,8 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-client</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-registry</module>
 
     </modules>
 
@@ -229,7 +233,7 @@
 
         <!-- Nacos -->
         <nacos2.version>2.5.1</nacos2.version>
-        <nacos3.version>3.0.3</nacos3.version>
+        <nacos3.version>3.1.0-BETA</nacos3.version>
         <nacos-client-mse-extension.version>1.0.4</nacos-client-mse-extension.version>
         <spring-alibaba-nacos-config.version>2023.0.1.3</spring-alibaba-nacos-config.version>
 
