@@ -27,11 +27,11 @@ public class NacosMcpToolsInjector {
 		return null;
 	}
 
-	public static void registry(LlmNode llmNode, ToolNode toolNode, NacosOptions nacosOptions, String agentId) {
+	public static void registry(LlmNode llmNode, ToolNode toolNode, NacosOptions nacosOptions, String agentName) {
 
 		try {
 			nacosOptions.getNacosConfigService()
-					.addListener(String.format("mcp-servers-%s.json", agentId), "nacos-ai-agent", new AbstractListener() {
+					.addListener("mcp-servers.json", "ai-agent-" + agentName, new AbstractListener() {
 						@Override
 						public void receiveConfigInfo(String configInfo) {
 							McpServersVO mcpServersVO = JSON.parseObject(configInfo, McpServersVO.class);
@@ -50,10 +50,10 @@ public class NacosMcpToolsInjector {
 
 	}
 
-	public static McpServersVO getMcpServersVO(NacosOptions nacosOptions, String agentId) {
+	public static McpServersVO getMcpServersVO(NacosOptions nacosOptions, String agentName) {
 		try {
 			String config = nacosOptions.getNacosConfigService()
-					.getConfig(String.format("mcp-servers-%s.json", agentId), "nacos-ai-agent", 3000L);
+					.getConfig("mcp-servers.json", "ai-agent-" + agentName, 3000L);
 			return JSON.parseObject(config, McpServersVO.class);
 		}
 		catch (NacosException e) {

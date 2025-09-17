@@ -27,7 +27,7 @@ public class NacosPromptInjector {
 	 * load prompt by agent id.
 	 *
 	 * @param nacosConfigService
-	 * @param agentId
+	 * @param AgentVO
 	 * @return
 	 */
 	public static PromptVO loadPromptByAgentId(NacosConfigService nacosConfigService, AgentVO agentVO) {
@@ -80,7 +80,7 @@ public class NacosPromptInjector {
 		try {
 
 			// register agent prompt listener
-			nacosConfigService.addListener(String.format("prompt-%s.json", agentId), "nacos-ai-agent",
+			nacosConfigService.addListener("agent-base.json", "ai-agent-" + agentId,
 					new AbstractListener() {
 
 						String currentPromptKey;

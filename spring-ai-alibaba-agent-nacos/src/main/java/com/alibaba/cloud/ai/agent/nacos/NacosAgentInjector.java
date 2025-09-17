@@ -32,12 +32,12 @@ public class NacosAgentInjector {
 	 * load prompt by agent id.
 	 *
 	 * @param nacosConfigService
-	 * @param agentId
+	 * @param agentName
 	 * @return
 	 */
-	public static AgentVO loadAgentVO(NacosConfigService nacosConfigService, String agentId) {
+	public static AgentVO loadAgentVO(NacosConfigService nacosConfigService, String agentName) {
 		try {
-			String config = nacosConfigService.getConfig(String.format("agent-%s.json", agentId), "nacos-ai-agent",
+			String config = nacosConfigService.getConfig("agent-base.json", "ai-agent-" + agentName,
 					3000L);
 			return JSON.parseObject(config, AgentVO.class);
 		}
@@ -46,10 +46,9 @@ public class NacosAgentInjector {
 		}
 	}
 
-	public static void injectPromptByAgentId(NacosConfigService nacosConfigService, ChatClient chatClient, String agentId) {
+	public static void injectPromptByAgentName(NacosConfigService nacosConfigService, ChatClient chatClient,String agentName,AgentVO agentVO) {
 
 		try {
-			AgentVO agentVO = loadAgentVO(nacosConfigService, agentId);
 			if (agentVO == null) {
 				return;
 			}
@@ -57,7 +56,7 @@ public class NacosAgentInjector {
 			if (promptVO != null) {
 				NacosPromptInjector.replacePrompt(chatClient, promptVO);
 			}
-			NacosPromptInjector.registryPromptByAgentId(chatClient, nacosConfigService, agentId, promptVO);
+			NacosPromptInjector.registryPromptByAgentId(chatClient, nacosConfigService, agentName, promptVO);
 		}
 
 		catch (Exception e) {

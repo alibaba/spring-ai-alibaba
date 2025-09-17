@@ -20,8 +20,8 @@ public class NacosModelInjector {
 
 	public static ModelVO getModelByAgentId(NacosOptions nacosOptions, String agentId) {
 		try {
-			String dataIdT = String.format(nacosOptions.isModelConfigEncrypted() ? "cipher-kms-aes-256-model-%s.json" : "model-%s.json", agentId);
-			String config = nacosOptions.getNacosConfigService().getConfig(dataIdT, "nacos-ai-agent", 3000L);
+			String dataIdT = String.format(nacosOptions.isModelConfigEncrypted() ? "cipher-kms-aes-256-model-%s.json" : "model.json");
+			String config = nacosOptions.getNacosConfigService().getConfig(dataIdT, "ai-agent-" + agentId, 3000L);
 			return JSON.parseObject(config, ModelVO.class);
 		}
 		catch (NacosException e) {
@@ -74,21 +74,22 @@ public class NacosModelInjector {
 			return;
 		}
 		try {
-			String dataIdT = String.format(nacosOptions.isModelConfigEncrypted() ? "cipher-kms-aes-256-model-%s.json" : "model-%s.json", agentId);
+			String dataIdT = String.format(nacosOptions.isModelConfigEncrypted() ? "cipher-kms-aes-256-model.json" : "model.json", agentId);
 
-			nacosOptions.getNacosConfigService().addListener(dataIdT, "nacos-ai-agent", new AbstractListener() {
-				@Override
-				public void receiveConfigInfo(String configInfo) {
-					ModelVO modelVO = JSON.parseObject(configInfo, ModelVO.class);
-					try {
-						ChatModel chatModelNew = initModel(nacosOptions, modelVO);
-						replaceModel(chatClient, chatModelNew);
-					}
-					catch (Exception e) {
-						throw new RuntimeException(e);
-					}
-				}
-			});
+			nacosOptions.getNacosConfigService()
+					.addListener(dataIdT, "ai-agent-" + agentId, new AbstractListener() {
+						@Override
+						public void receiveConfigInfo(String configInfo) {
+							ModelVO modelVO = JSON.parseObject(configInfo, ModelVO.class);
+							try {
+								ChatModel chatModelNew = initModel(nacosOptions, modelVO);
+								replaceModel(chatClient, chatModelNew);
+							}
+							catch (Exception e) {
+								throw new RuntimeException(e);
+							}
+						}
+					});
 		}
 		catch (NacosException e) {
 			throw new RuntimeException(e);

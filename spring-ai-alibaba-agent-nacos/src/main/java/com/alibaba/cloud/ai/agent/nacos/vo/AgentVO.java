@@ -8,4 +8,6 @@ public class AgentVO {
 	String promptKey;
 
 	String description;
+
+	int maxIterations;
 }
