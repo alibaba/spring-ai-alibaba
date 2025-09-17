@@ -137,7 +137,7 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 		// 展开迭代节点内部的Node和Edge
 		nodeMap.forEach(map -> {
 			NodeType type = NodeType.fromStudioValue(MapReadUtil.getMapDeepValue(map, String.class, "type"))
-				.orElseThrow();
+				.orElseThrow(() -> new UnsupportedOperationException("unsupported node type " + map.get("type")));
 			if (NodeType.ITERATION.equals(type)) {
 				List<Map<String, Object>> innerNode = MapReadUtil.safeCastToListWithMap(
 						MapReadUtil.getMapDeepValue(map, List.class, "config", "node_param", "block", "nodes"));

@@ -47,7 +47,7 @@ public enum NodeType {
 
 	QUESTION_CLASSIFIER("question-classifier", "question-classifier", "Classifier"),
 
-	HTTP("http", "http-request", "UNSUPPORTED"),
+	HTTP("http", "http-request", "API"),
 
 	LIST_OPERATOR("list-operator", "list-operator", "UNSUPPORTED"),
 
