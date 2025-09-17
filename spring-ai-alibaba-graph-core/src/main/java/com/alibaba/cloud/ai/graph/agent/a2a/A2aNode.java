@@ -124,7 +124,7 @@ public class A2aNode implements NodeAction {
 							}
 						}
 					}
-					// 处理最终结果值（如果有的话）
+
 					if (data.resultValue() != null) {
 						sink.next(GraphResponse.done(data.resultValue()));
 					}
@@ -202,7 +202,7 @@ public class A2aNode implements NodeAction {
 										if (text != null && !text.isEmpty()) {
 											accumulated.append(text);
 											queue.add(AsyncGenerator.Data
-													.of(new StreamingOutput(text, "a2aNode", state)));
+												.of(new StreamingOutput(text, "a2aNode", state)));
 										}
 									}
 								}
@@ -227,7 +227,7 @@ public class A2aNode implements NodeAction {
 						}
 						catch (Exception ex) {
 							queue.add(AsyncGenerator.Data
-									.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", state)));
+								.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", state)));
 						}
 					}
 				}
@@ -371,14 +371,14 @@ public class A2aNode implements NodeAction {
 
 		// Convert Flux<GraphResponse<NodeOutput>> to Flux<NodeOutput>
 		return graphResponseFlux.filter(graphResponse -> !graphResponse.isDone()) // 过滤掉完成信号
-				.map(graphResponse -> {
-					try {
-						return graphResponse.getOutput().join(); // 提取实际的 NodeOutput
-					}
-					catch (Exception e) {
-						throw new RuntimeException("Error extracting output from GraphResponse", e);
-					}
-				});
+			.map(graphResponse -> {
+				try {
+					return graphResponse.getOutput().join();
+				}
+				catch (Exception e) {
+					throw new RuntimeException("Error extracting output from GraphResponse", e);
+				}
+			});
 	}
 
 	/**
@@ -571,8 +571,8 @@ public class A2aNode implements NodeAction {
 	 */
 	private String buildSendMessageRequest(OverAllState state, String inputKey) {
 		Object textValue = state.value(inputKey)
-				.orElseThrow(
-						() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
+			.orElseThrow(
+					() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
 		String text = String.valueOf(textValue);
 
 		String id = UUID.randomUUID().toString();
@@ -610,8 +610,8 @@ public class A2aNode implements NodeAction {
 	 */
 	private String buildSendStreamingMessageRequest(OverAllState state, String inputKey) {
 		Object textValue = state.value(inputKey)
-				.orElseThrow(
-						() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
+			.orElseThrow(
+					() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
 		String text = String.valueOf(textValue);
 
 		String id = UUID.randomUUID().toString();
