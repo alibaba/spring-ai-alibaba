@@ -70,9 +70,7 @@ public class StateUtils {
 	 * Safely get object type state value with default value
 	 */
 	public static <T> T getObjectValue(OverAllState state, String key, Class<T> type, T defaultValue) {
-		return state.value(key)
-			.map(value -> deserializeIfNeeded(value, type))
-			.orElse(defaultValue);
+		return state.value(key).map(value -> deserializeIfNeeded(value, type)).orElse(defaultValue);
 	}
 
 	/**
@@ -83,13 +81,13 @@ public class StateUtils {
 		if (type.isInstance(value)) {
 			return type.cast(value);
 		}
-		
+
 		// If it's a HashMap but we need a complex object, use JSON conversion
 		if (value instanceof HashMap && !type.equals(HashMap.class)) {
 			String jsonString = JSON.toJSONString(value);
 			return JSON.parseObject(jsonString, type);
 		}
-		
+
 		return type.cast(value);
 	}
 
