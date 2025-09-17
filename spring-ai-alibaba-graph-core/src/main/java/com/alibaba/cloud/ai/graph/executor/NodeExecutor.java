@@ -205,9 +205,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 							List.of(newGeneration), response.getMetadata());
 					lastChatResponseRef.set(newResponse);
 					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-						.of(new StreamingOutput(newResponse.getResult().getOutput().getText(),
-								context.getCurrentNodeId(), context.getOverallState()));
-					lastGraphResponseRef.set(lastGraphResponse);
+						.of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(),
+								context.getOverallState()));
+					// lastGraphResponseRef.set(lastGraphResponse);
 					return lastGraphResponse;
 				}
 				else if (element instanceof GraphResponse) {
