@@ -25,8 +25,6 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.VersionedMemorySaver;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -35,6 +33,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -207,7 +208,7 @@ public class StateGraphMemorySaverTest {
 
 		var runnableConfig = RunnableConfig.builder().threadId("thread_1").build();
 
-		var state = app.invoke(inputs, runnableConfig);
+		var state = app.call(inputs, runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, state.get().value("steps").get());
@@ -232,7 +233,7 @@ public class StateGraphMemorySaverTest {
 		// SUBMIT NEW THREAD 2
 		runnableConfig = RunnableConfig.builder().threadId("thread_2").build();
 
-		state = app.invoke(inputs, runnableConfig);
+		state = app.call(inputs, runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, state.get().value("steps").get());
@@ -246,7 +247,7 @@ public class StateGraphMemorySaverTest {
 		}
 
 		// RE-SUBMIT THREAD 1
-		state = app.invoke(Map.of(), runnableConfig);
+		state = app.call(Map.of(), runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps + 1, state.get().value("steps").get());
@@ -282,7 +283,7 @@ public class StateGraphMemorySaverTest {
 
 		var runnableConfig = RunnableConfig.builder().threadId("thread_1").build();
 
-		var results = app.streamSnapshots(inputs, runnableConfig).stream().collect(Collectors.toList());
+		var results = app.fluxStreamSnapshots(inputs, runnableConfig).collectList().block();
 
 		results.forEach(r -> log.info("{}: Node: {} - {}", r.getClass().getSimpleName(), r.node(),
 				r.state().value("messages").get()));
@@ -309,7 +310,7 @@ public class StateGraphMemorySaverTest {
 			log.info("SNAPSHOT HISTORY:\n{}\n", s);
 		}
 
-		results = app.stream(null, runnableConfig).stream().collect(Collectors.toList());
+		results = app.fluxStream(null, runnableConfig).collectList().block();
 
 		assertNotNull(results);
 		assertFalse(results.isEmpty());
@@ -319,8 +320,8 @@ public class StateGraphMemorySaverTest {
 		assertEquals("whether in Naples is sunny", messages.get(messages.size() - 1));
 
 		Optional<StateSnapshot> firstSnapshot = stateHistory.stream().reduce((first, second) -> second); // take
-																											// the
-																											// last
+		// the
+		// last
 		assertTrue(firstSnapshot.isPresent());
 		assertTrue(firstSnapshot.get().state().value("messages").isPresent());
 		assertEquals("whether in Naples?", ((List<String>) firstSnapshot.get().state().value("messages").get()).get(0));
@@ -328,7 +329,7 @@ public class StateGraphMemorySaverTest {
 		var toReplay = firstSnapshot.get().config();
 
 		toReplay = app.updateState(toReplay, Map.of("messages", "i'm bartolo"));
-		results = app.stream(null, toReplay).stream().collect(Collectors.toList());
+		results = app.fluxStream(null, toReplay).collectList().block();
 
 		assertNotNull(results);
 		assertFalse(results.isEmpty());
@@ -353,10 +354,7 @@ public class StateGraphMemorySaverTest {
 		var saver = new MemorySaver();
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), saver)
-				.type(SaverEnum.MEMORY.getValue())
-				.build())
+			.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
 			.interruptBefore("tools")
 			.build();
 
@@ -374,8 +372,9 @@ public class StateGraphMemorySaverTest {
 		assertEquals(2, results.size());
 		assertEquals(START, results.get(0).node());
 		assertEquals("agent", results.get(1).node());
-		List<String> messages = (List<String>) results.get(0).state().value("messages").get();
-		assertTrue(!messages.isEmpty());
+		List<String> messages = results.get(1).state().value("messages", List.class).get();
+		messages.get(messages.size() - 1);
+		assertTrue(messages.get(messages.size() - 1) != null);
 
 		var state = app.getState(runnableConfig);
 
@@ -390,9 +389,9 @@ public class StateGraphMemorySaverTest {
 		assertEquals("tools", results.get(0).node());
 		assertEquals("agent", results.get(1).node());
 		assertEquals(END, results.get(2).node());
-		messages = (List<String>) results.get(0).state().value("messages").get();
-		assertTrue(!messages.isEmpty());
-		assertEquals("whether in Naples is sunny", messages.get(messages.size() - 1));
+		List<String> messages2 = results.get(2).state().value("messages", List.class).get();
+		assertTrue(messages2.get(messages.size() - 1) != null);
+		assertEquals("whether in Naples is sunny", messages2.get(messages2.size() - 1));
 
 	}
 

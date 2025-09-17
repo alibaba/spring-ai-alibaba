@@ -16,13 +16,18 @@
 
 package com.alibaba.cloud.ai.graph.internal.node;
 
+import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+
+import static java.lang.String.format;
 
 /**
  * Represents an action to perform a subgraph on a given state with a specific
@@ -40,7 +45,15 @@ import java.util.concurrent.CompletableFuture;
  * @see CompiledGraph
  * @see AsyncNodeActionWithConfig
  */
-public record SubCompiledGraphNodeAction(CompiledGraph subGraph) implements AsyncNodeActionWithConfig {
+public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentCompileConfig,
+		CompiledGraph subGraph) implements AsyncNodeActionWithConfig {
+	public String subGraphId() {
+		return format("subgraph_%s", nodeId);
+	}
+
+	public String resumeSubGraphId() {
+		return format("resume_%s", subGraphId());
+	}
 
 	/**
 	 * Executes the given graph with the provided state and configuration.
@@ -53,15 +66,39 @@ public record SubCompiledGraphNodeAction(CompiledGraph subGraph) implements Asyn
 	 */
 	@Override
 	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-		CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
+		final boolean resumeSubgraph = config.metadata(resumeSubGraphId(), new TypeRef<Boolean>() {
+		}).orElse(false);
+
+		RunnableConfig subGraphRunnableConfig = config;
+		var parentSaver = parentCompileConfig.checkpointSaver();
+		var subGraphSaver = subGraph.compileConfig.checkpointSaver();
+
+		if (subGraphSaver.isPresent()) {
+			if (parentSaver.isEmpty()) {
+				return CompletableFuture
+					.failedFuture(new IllegalStateException("Missing CheckpointSaver in parent graph!"));
+			}
+
+			// Check saver are the same instance
+			if (parentSaver.get() == subGraphSaver.get()) {
+				subGraphRunnableConfig = RunnableConfig.builder()
+					.threadId(config.threadId()
+						.map(threadId -> format("%s_%s", threadId, subGraphId()))
+						.orElseGet(this::subGraphId))
+					.build();
+			}
+		}
+
+		final CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
 
 		try {
-			final Map<String, Object> input = (subGraph.compileConfig.checkpointSaver().isPresent()) ? Map.of()
-					: state.data();
+			if (resumeSubgraph) {
+				subGraphRunnableConfig = subGraph.updateState(subGraphRunnableConfig, state.data());
+			}
 
-			var generator = subGraph.stream(input, config);
+			var fluxStream = subGraph.fluxDataStream(state, subGraphRunnableConfig);
 
-			future.complete(Map.of("_subgraph", generator));
+			future.complete(Map.of(format("%s_%s", subGraphId(), UUID.randomUUID()), fluxStream));
 
 		}
 		catch (Exception e) {

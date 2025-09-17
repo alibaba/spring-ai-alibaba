@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.connector.bo;
 
+import java.util.List;
 import java.util.Objects;
 
 public class TableInfoBO extends DdlBaseBO {
@@ -29,19 +30,19 @@ public class TableInfoBO extends DdlBaseBO {
 
 	private String foreignKey;
 
-	private String primaryKey;
+	private List<String> primaryKeys;
 
 	public TableInfoBO() {
 	}
 
 	public TableInfoBO(String schema, String name, String description, String type, String foreignKey,
-			String primaryKey) {
+			List<String> primaryKeys) {
 		this.schema = schema;
 		this.name = name;
 		this.description = description;
 		this.type = type;
 		this.foreignKey = foreignKey;
-		this.primaryKey = primaryKey;
+		this.primaryKeys = primaryKeys;
 	}
 
 	public String getSchema() {
@@ -84,36 +85,38 @@ public class TableInfoBO extends DdlBaseBO {
 		this.foreignKey = foreignKey;
 	}
 
-	public String getPrimaryKey() {
-		return primaryKey;
+	public List<String> getPrimaryKeys() {
+		return primaryKeys;
 	}
 
-	public void setPrimaryKey(String primaryKey) {
-		this.primaryKey = primaryKey;
+	public void setPrimaryKeys(List<String> primaryKeys) {
+		this.primaryKeys = primaryKeys;
 	}
 
 	@Override
 	public String toString() {
 		return "TableInfoBO{" + "schema='" + schema + '\'' + ", name='" + name + '\'' + ", description='" + description
-				+ '\'' + ", type='" + type + '\'' + ", foreignKey='" + foreignKey + '\'' + ", primaryKey='" + primaryKey
-				+ '\'' + '}';
+				+ '\'' + ", type='" + type + '\'' + ", foreignKey='" + foreignKey + '\'' + ", primaryKeys="
+				+ primaryKeys + '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (o == null || getClass() != o.getClass())
+		}
+		if (o == null || getClass() != o.getClass()) {
 			return false;
+		}
 		TableInfoBO that = (TableInfoBO) o;
 		return Objects.equals(schema, that.schema) && Objects.equals(name, that.name)
 				&& Objects.equals(description, that.description) && Objects.equals(type, that.type)
-				&& Objects.equals(foreignKey, that.foreignKey) && Objects.equals(primaryKey, that.primaryKey);
+				&& Objects.equals(foreignKey, that.foreignKey) && Objects.equals(primaryKeys, that.primaryKeys);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(schema, name, description, type, foreignKey, primaryKey);
+		return Objects.hash(schema, name, description, type, foreignKey, primaryKeys);
 	}
 
 	public static TableInfoBOBuilder builder() {
@@ -132,7 +135,7 @@ public class TableInfoBO extends DdlBaseBO {
 
 		private String foreignKey;
 
-		private String primaryKey;
+		private List<String> primaryKeys;
 
 		private TableInfoBOBuilder() {
 		}
@@ -166,8 +169,8 @@ public class TableInfoBO extends DdlBaseBO {
 			return this;
 		}
 
-		public TableInfoBOBuilder primaryKey(String primaryKey) {
-			this.primaryKey = primaryKey;
+		public TableInfoBOBuilder primaryKeys(List<String> primaryKeys) {
+			this.primaryKeys = primaryKeys;
 			return this;
 		}
 
@@ -178,7 +181,7 @@ public class TableInfoBO extends DdlBaseBO {
 			tableInfoBO.setDescription(description);
 			tableInfoBO.setType(type);
 			tableInfoBO.setForeignKey(foreignKey);
-			tableInfoBO.setPrimaryKey(primaryKey);
+			tableInfoBO.setPrimaryKeys(primaryKeys);
 			return tableInfoBO;
 		}
 

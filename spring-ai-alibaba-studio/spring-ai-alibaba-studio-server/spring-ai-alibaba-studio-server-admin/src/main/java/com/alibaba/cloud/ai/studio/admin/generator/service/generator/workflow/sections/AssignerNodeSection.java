@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.sections;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
@@ -20,7 +21,10 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.AssignerNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class AssignerNodeSection implements NodeSection<AssignerNodeData> {
@@ -32,24 +36,20 @@ public class AssignerNodeSection implements NodeSection<AssignerNodeData> {
 
 	@Override
 	public String render(Node node, String varName) {
-		AssignerNodeData data = (AssignerNodeData) node.getData();
-		String id = node.getId();
+		AssignerNodeData nodeData = ((AssignerNodeData) node.getData());
+		return String.format("""
+				// —— AssignerNode [%s] ——
+				AssignerNode %s = AssignerNode.builder()
+				                    .setItems(%s)
+				                    .build();
+				stateGraph.addNode("%s", AsyncNodeAction.node_async(%s));
 
-		StringBuilder sb = new StringBuilder();
-		sb.append(String.format("// —— AssignerNode [%s] ——%n", id));
-		sb.append(String.format("AssignerNode %s = AssignerNode.builder()%n", varName));
-		for (AssignerNodeData.AssignerItem item : data.getItems()) {
-			String targetKey = item.getVariableSelector() != null ? item.getVariableSelector().getNameInCode()
-					: "target";
-			String inputKey = (item.getValue() != null) ? item.getValue().getNameInCode() : null;
-			String writeMode = item.getWriteMode() != null ? item.getWriteMode().toUpperCase().replace("-", "_")
-					: "OVER_WRITE";
-			sb.append(String.format(".addItem(\"%s\", %s, AssignerNode.WriteMode.%s)%n", targetKey,
-					inputKey == null ? "null" : "\"" + inputKey + "\"", writeMode));
-		}
-		sb.append(".build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
-		return sb.toString();
+				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getItems()), varName, varName);
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.AssignerNode");
 	}
 
 }

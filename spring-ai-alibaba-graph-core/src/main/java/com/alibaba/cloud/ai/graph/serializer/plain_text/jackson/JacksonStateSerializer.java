@@ -16,25 +16,32 @@
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 /**
  * Base Implementation of {@link PlainTextStateSerializer} using Jackson library. Need to
  * be extended from specific state implementation
- *
  */
 public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 	protected final ObjectMapper objectMapper;
+
+	protected TypeMapper typeMapper = new TypeMapper();
 
 	protected JacksonStateSerializer(AgentStateFactory<OverAllState> stateFactory) {
 		this(stateFactory, new ObjectMapper());
@@ -44,7 +51,28 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 	protected JacksonStateSerializer(AgentStateFactory<OverAllState> stateFactory, ObjectMapper objectMapper) {
 		super(stateFactory);
-		this.objectMapper = objectMapper;
+		this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper cannot be null");
+
+		this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_INTEGER_FOR_INTS,
+				false);
+		this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS,
+				false);
+		this.objectMapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION, true);
+
+		var module = new SimpleModule();
+		module.addDeserializer(Map.class, new GenericMapDeserializer(typeMapper));
+		module.addDeserializer(List.class, new GenericListDeserializer(typeMapper));
+
+		this.objectMapper.registerModule(module);
+
+	}
+
+	public TypeMapper typeMapper() {
+		return typeMapper;
+	}
+
+	public ObjectMapper objectMapper() {
+		return objectMapper;
 	}
 
 	@Override
@@ -53,20 +81,16 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 	}
 
 	@Override
-	public void write(OverAllState object, ObjectOutput out) throws IOException {
-		String json = objectMapper.writeValueAsString(object);
-		byte[] jsonBytes = json.getBytes(StandardCharsets.UTF_8);
-		out.writeInt(jsonBytes.length);
-		out.write(jsonBytes);
+	public final void writeData(Map<String, Object> data, ObjectOutput out) throws IOException {
+		String json = objectMapper.writeValueAsString(data);
+		Serializer.writeUTF(json, out);
 	}
 
 	@Override
-	public OverAllState read(ObjectInput in) throws IOException, ClassNotFoundException {
-		int length = in.readInt();
-		byte[] jsonBytes = new byte[length];
-		in.readFully(jsonBytes);
-		String json = new String(jsonBytes, StandardCharsets.UTF_8);
-		return objectMapper.readValue(json, getStateType());
+	public final Map<String, Object> readData(ObjectInput in) throws IOException, ClassNotFoundException {
+		String json = Serializer.readUTF(in);
+		return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
+		});
 	}
 
 }

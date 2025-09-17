@@ -16,51 +16,80 @@
 package com.alibaba.cloud.ai.studio.admin.generator.model;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public enum VariableType {
 
-	STRING("String", String.class, "string"),
+	STRING("String", String.class, "string", "String"),
 
-	NUMBER("Number", Number.class, "number"),
+	NUMBER("Number", Number.class, "number", "Number"),
 
-	BOOLEAN("Boolean", Boolean.class, "not supported"),
+	BOOLEAN("Boolean", Boolean.class, "not supported", "Boolean"),
 
-	OBJECT("Object", Object.class, "object"),
+	OBJECT("Object", Object.class, "object", "Object"),
 
-	// FIXME find appropriate type
-	FILE("File", Object.class, "file"),
+	// TODO：定义文件类型对象，以实现工作流直接使用文件
+	FILE("File", Object.class, "file", "File"),
 
-	ARRAY_STRING("String[]", String[].class, "array[string]"),
+	ARRAY("Array", Object.class, "array", "Array"),
 
-	ARRAY_NUMBER("Number[]", Number[].class, "array[number]"),
+	ARRAY_BOOLEAN("Boolean[]", Boolean[].class, "array[boolean]", "Array<Boolean>"),
 
-	ARRAY_OBJECT("Object[]", Object[].class, "array[object]"),
+	ARRAY_STRING("String[]", String[].class, "array[string]", "Array<String>"),
 
-	ARRAY_FILE("File[]", Object[].class, "file-list");
+	ARRAY_NUMBER("Number[]", Number[].class, "array[number]", "Array<Number>"),
 
-	private String value;
+	ARRAY_OBJECT("Object[]", Object[].class, "array[object]", "Array<Object>"),
 
-	private Class clazz;
+	ARRAY_FILE("File[]", Object[].class, "file-list", "Array<FILE>");
 
-	private String difyValue;
+	private final String value;
 
-	VariableType(String value, Class clazz, String difyValue) {
+	private final Class<?> clazz;
+
+	private final String difyValue;
+
+	private final String studioValue;
+
+	VariableType(String value, Class<?> clazz, String difyValue, String studioValue) {
 		this.value = value;
 		this.clazz = clazz;
 		this.difyValue = difyValue;
+		this.studioValue = studioValue;
+	}
+
+	public static List<VariableType> all() {
+		return List.of(values());
+	}
+
+	public static List<VariableType> arrays() {
+		return List.of(ARRAY_BOOLEAN, ARRAY_STRING, ARRAY_NUMBER, ARRAY_OBJECT, ARRAY_FILE, ARRAY);
+	}
+
+	public static List<VariableType> arraysWithOther(VariableType... other) {
+		return Stream.concat(Stream.of(other), arrays().stream()).toList();
+	}
+
+	public static List<VariableType> except(VariableType... excepted) {
+		return Stream.of(VariableType.values()).filter(type -> !Arrays.asList(excepted).contains(type)).toList();
 	}
 
 	public String value() {
 		return value;
 	}
 
-	public Class clazz() {
+	public Class<?> clazz() {
 		return clazz;
 	}
 
 	public String difyValue() {
 		return difyValue;
+	}
+
+	public String studioValue() {
+		return studioValue;
 	}
 
 	public static Optional<VariableType> fromValue(String value) {
@@ -69,6 +98,10 @@ public enum VariableType {
 
 	public static Optional<VariableType> fromDifyValue(String difyValue) {
 		return Arrays.stream(VariableType.values()).filter(type -> type.difyValue.equals(difyValue)).findFirst();
+	}
+
+	public static Optional<VariableType> fromStudioValue(String studioValue) {
+		return Arrays.stream(VariableType.values()).filter(type -> type.studioValue.equals(studioValue)).findFirst();
 	}
 
 }

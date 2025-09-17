@@ -18,57 +18,67 @@ package com.alibaba.cloud.ai.studio.admin.generator.model.workflow;
 import java.util.Arrays;
 import java.util.Optional;
 
+// TODO: 将枚举类的DSL Value字段改为Function<DSLDialectType, String>
 public enum NodeType {
 
-	START("start", "start"),
+	START("start", "start", "Start"),
 
-	END("end", "end"),
+	END("end", "end", "End"),
 
-	ANSWER("answer", "answer"),
+	ANSWER("answer", "answer", "UNSUPPORTED"),
 
-	AGENT("agent", "agent"),
+	MIDDLE_OUTPUT("middle-output", "UNSUPPORTED", "Output"),
 
-	LLM("llm", "llm"),
+	AGENT("agent", "agent", "UNSUPPORTED"),
 
-	CODE("code", "code"),
+	LLM("llm", "llm", "LLM"),
 
-	RETRIEVER("retriever", "knowledge-retrieval"),
+	CODE("code", "code", "Script"),
 
-	AGGREGATOR("aggregator", "variable-aggregator"),
+	RETRIEVER("retriever", "knowledge-retrieval", "Retrieval"),
 
-	HUMAN("human", "unsupported"),
+	AGGREGATOR("aggregator", "variable-aggregator", "UNSUPPORTED"),
 
-	BRANCH("branch", "if-else"),
+	HUMAN("human", "UNSUPPORTED", "UNSUPPORTED"),
 
-	DOC_EXTRACTOR("document-extractor", "document-extractor"),
+	BRANCH("branch", "if-else", "Judge"),
 
-	QUESTION_CLASSIFIER("question-classifier", "question-classifier"),
+	DOC_EXTRACTOR("document-extractor", "document-extractor", "UNSUPPORTED"),
 
-	HTTP("http", "http-request"),
+	QUESTION_CLASSIFIER("question-classifier", "question-classifier", "Classifier"),
 
-	LIST_OPERATOR("list-operator", "list-operator"),
+	HTTP("http", "http-request", "UNSUPPORTED"),
 
-	PARAMETER_PARSING("parameter-parsing", "parameter-extractor"),
+	LIST_OPERATOR("list-operator", "list-operator", "UNSUPPORTED"),
 
-	TOOL("tool", "tool"),
+	PARAMETER_PARSING("parameter-parsing", "parameter-extractor", "ParameterExtractor"),
 
-	MCP("mcp", "unsupported"),
+	TOOL("tool", "tool", "UNSUPPORTED"),
 
-	TEMPLATE_TRANSFORM("template-transform", "template-transform"),
+	MCP("mcp", "UNSUPPORTED", "UNSUPPORTED"),
 
-	ITERATION("iteration", "iteration"),
+	TEMPLATE_TRANSFORM("template-transform", "template-transform", "UNSUPPORTED"),
 
-	DIFY_ITERATION_START("__empty__", "iteration-start"),
+	ITERATION("iteration", "iteration", "Parallel"),
 
-	ASSIGNER("assigner", "assigner");
+	EMPTY("empty", "UNSUPPORTED", "UNSUPPORTED"),
+
+	ITERATION_START("iteration-start", "iteration-start", "ParallelStart"),
+
+	ITERATION_END("iteration-end", "iteration-end", "ParallelEnd"),
+
+	ASSIGNER("assigner", "assigner", "VariableAssign");
 
 	private final String value;
 
 	private final String difyValue;
 
-	NodeType(String value, String difyValue) {
+	private final String studioValue;
+
+	NodeType(String value, String difyValue, String studioValue) {
 		this.value = value;
 		this.difyValue = difyValue;
+		this.studioValue = studioValue;
 	}
 
 	public String value() {
@@ -79,12 +89,22 @@ public enum NodeType {
 		return this.difyValue;
 	}
 
+	public String studioValue() {
+		return this.studioValue;
+	}
+
 	public static Optional<NodeType> fromValue(String value) {
 		return Arrays.stream(NodeType.values()).filter(nodeType -> nodeType.value.equals(value)).findFirst();
 	}
 
 	public static Optional<NodeType> fromDifyValue(String difyValue) {
 		return Arrays.stream(NodeType.values()).filter(nodeType -> nodeType.difyValue.equals(difyValue)).findFirst();
+	}
+
+	public static Optional<NodeType> fromStudioValue(String studioValue) {
+		return Arrays.stream(NodeType.values())
+			.filter(nodeType -> nodeType.studioValue.equals(studioValue))
+			.findFirst();
 	}
 
 }

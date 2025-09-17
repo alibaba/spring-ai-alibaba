@@ -26,7 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * User Prompt Configuration Management Service Provides CRUD functionality for prompt
@@ -41,16 +40,6 @@ public class UserPromptConfigService {
 
 	@Autowired
 	private UserPromptConfigMapper userPromptConfigMapper;
-
-	/**
-	 * 内存存储，用于缓存配置（可选的性能优化）
-	 */
-	private final Map<String, UserPromptConfig> configStorage = new ConcurrentHashMap<>();
-
-	/**
-	 * 根据提示词类型存储启用的配置ID列表（支持多个配置同时启用）
-	 */
-	private final Map<String, List<String>> promptTypeToConfigIds = new ConcurrentHashMap<>();
 
 	/**
 	 * Create or update prompt configuration
@@ -96,12 +85,6 @@ public class UserPromptConfigService {
 			userPromptConfigMapper.insert(config);
 		}
 
-		// 更新缓存
-		configStorage.put(config.getId(), config);
-
-		// 更新类型映射（支持多个配置）
-		updatePromptTypeMapping(config);
-
 		// If the configuration is enabled, disable other configurations of the same type
 		if (Boolean.TRUE.equals(config.getEnabled())) {
 			userPromptConfigMapper.disableAllByPromptType(config.getPromptType());
@@ -127,17 +110,10 @@ public class UserPromptConfigService {
 	 * @return 配置列表
 	 */
 	public List<UserPromptConfig> getActiveConfigsByType(String promptType) {
-		List<String> configIds = promptTypeToConfigIds.get(promptType);
-		if (configIds == null || configIds.isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		return configIds.stream()
-			.map(configStorage::get)
-			.filter(Objects::nonNull)
-			.filter(config -> Boolean.TRUE.equals(config.getEnabled()))
-			.sorted(Comparator.comparing(UserPromptConfig::getUpdateTime).reversed())
-			.toList();
+		return userPromptConfigMapper.selectList(Wrappers.<UserPromptConfig>lambdaQuery()
+			.eq(UserPromptConfig::getPromptType, promptType)
+			.eq(UserPromptConfig::getEnabled, true)
+			.orderByDesc(UserPromptConfig::getUpdateTime));
 	}
 
 	/**
@@ -146,15 +122,7 @@ public class UserPromptConfigService {
 	 * @return configuration object, returns null if not exists
 	 */
 	public UserPromptConfig getActiveConfigByType(String promptType) {
-		// 优先从数据库获取
-		UserPromptConfig dbConfig = userPromptConfigMapper.selectActiveByPromptType(promptType);
-		if (dbConfig != null) {
-			return dbConfig;
-		}
-
-		// 备用：从内存缓存获取
-		List<UserPromptConfig> configs = getActiveConfigsByType(promptType);
-		return configs.isEmpty() ? null : configs.get(0);
+		return userPromptConfigMapper.selectActiveByPromptType(promptType);
 	}
 
 	/**
@@ -186,9 +154,6 @@ public class UserPromptConfigService {
 			// 从数据库删除
 			int deleted = userPromptConfigMapper.deleteById(id);
 			if (deleted > 0) {
-				// 从内存缓存和类型映射中移除该配置
-				configStorage.remove(id);
-				removeFromPromptTypeMapping(config);
 				logger.info("已删除配置：{}", id);
 				return true;
 			}
@@ -210,10 +175,6 @@ public class UserPromptConfigService {
 			// Enable the current configuration
 			int updated = userPromptConfigMapper.enableById(id);
 			if (updated > 0) {
-				// 更新内存缓存
-				config.setEnabled(true);
-				configStorage.put(id, config);
-				updatePromptTypeMapping(config);
 				logger.info("已启用配置：{}", id);
 				return true;
 			}
@@ -229,12 +190,6 @@ public class UserPromptConfigService {
 	public boolean disableConfig(String id) {
 		int updated = userPromptConfigMapper.disableById(id);
 		if (updated > 0) {
-			// 更新内存缓存
-			UserPromptConfig config = configStorage.get(id);
-			if (config != null) {
-				config.setEnabled(false);
-				removeFromPromptTypeMapping(config);
-			}
 			logger.info("已禁用配置：{}", id);
 			return true;
 		}
@@ -242,43 +197,9 @@ public class UserPromptConfigService {
 	}
 
 	/**
-	 * Disable all configurations of specified type
+	 * Get optimization configurations by prompt type
 	 * @param promptType prompt type
-	 */
-	private void updatePromptTypeMapping(UserPromptConfig config) {
-		if (Boolean.TRUE.equals(config.getEnabled())) {
-			promptTypeToConfigIds.computeIfAbsent(config.getPromptType(), k -> new ArrayList<>());
-			List<String> configIds = promptTypeToConfigIds.get(config.getPromptType());
-			if (!configIds.contains(config.getId())) {
-				configIds.add(config.getId());
-				logger.info("已将配置 {} 添加到提示词类型 [{}] 的映射中", config.getId(), config.getPromptType());
-			}
-		}
-		else {
-			removeFromPromptTypeMapping(config);
-		}
-	}
-
-	/**
-	 * Get custom prompt content, returns null if no custom configuration
-	 * @param promptType prompt type
-	 * @return custom prompt content
-	 */
-	private void removeFromPromptTypeMapping(UserPromptConfig config) {
-		List<String> configIds = promptTypeToConfigIds.get(config.getPromptType());
-		if (configIds != null) {
-			configIds.remove(config.getId());
-			if (configIds.isEmpty()) {
-				promptTypeToConfigIds.remove(config.getPromptType());
-			}
-			logger.info("已从提示词类型 [{}] 的映射中移除配置 {}", config.getPromptType(), config.getId());
-		}
-	}
-
-	/**
-	 * Check if there is custom configuration
-	 * @param promptType prompt type
-	 * @return whether there is custom configuration
+	 * @return optimization configuration list
 	 */
 	public List<UserPromptConfig> getOptimizationConfigs(String promptType) {
 		return getActiveConfigsByType(promptType);

@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS agent (
     tags TEXT COMMENT '标签，逗号分隔',
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    human_review_enabled TINYINT DEFAULT 0 COMMENT '是否启用计划人工复核：0-否，1-是',
     PRIMARY KEY (id),
     INDEX idx_name (name),
     INDEX idx_status (status),
@@ -182,3 +183,20 @@ CREATE TABLE IF NOT EXISTS chat_message (
   INDEX idx_create_time (create_time),
   FOREIGN KEY (session_id) REFERENCES chat_session(id) ON DELETE CASCADE
 ) ENGINE = InnoDB COMMENT = '聊天消息表';
+
+-- 用户Prompt配置表
+CREATE TABLE IF NOT EXISTS user_prompt_config (
+  id VARCHAR(36) NOT NULL COMMENT '配置ID（UUID）',
+  name VARCHAR(255) NOT NULL COMMENT '配置名称',
+  prompt_type VARCHAR(100) NOT NULL COMMENT 'Prompt类型（如report-generator, planner等）',
+  system_prompt TEXT NOT NULL COMMENT '用户自定义系统Prompt内容',
+  enabled TINYINT DEFAULT 1 COMMENT '是否启用该配置：0-禁用，1-启用',
+  description TEXT COMMENT '配置描述',
+  create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  creator VARCHAR(255) COMMENT '创建者',
+  PRIMARY KEY (id),
+  INDEX idx_prompt_type (prompt_type),
+  INDEX idx_enabled (enabled),
+  INDEX idx_create_time (create_time)
+) ENGINE = InnoDB COMMENT = '用户Prompt配置表';

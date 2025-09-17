@@ -36,26 +36,20 @@ import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.Serializer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.NotImplementedException;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
- * CustomDSLAdapter converts spring ai alibaba DSL to {@link App} and vice versa.
+ * CustomDSLAdapter converts spring ai alibaba DSL to App and vice versa.
  */
 @Component
 public class CustomDSLAdapter extends AbstractDSLAdapter {
 
-	private final Serializer serializer;
-
 	private final ObjectMapper objectMapper;
 
-	private final List<NodeDataConverter<?>> nodeDataConverters;
-
 	public CustomDSLAdapter(@Qualifier("yaml") Serializer serializer, List<NodeDataConverter<?>> nodeDataConverters) {
-		this.serializer = serializer;
-		this.nodeDataConverters = nodeDataConverters;
+		super(nodeDataConverters, serializer);
 		this.objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -124,18 +118,10 @@ public class CustomDSLAdapter extends AbstractDSLAdapter {
 	private Node constructNode(Map<String, Object> nodeMap) {
 		Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.remove("data");
 		Node node = objectMapper.convertValue(nodeMap, Node.class);
-		NodeType nodeType = NodeType.fromValue(node.getType())
-			.orElseThrow(() -> new NotImplementedException("Unsupported Node Type: " + node.getType()));
+		NodeType nodeType = node.getType();
 		NodeDataConverter<?> nodeDataConverter = getNodeDataConverter(nodeType);
 		node.setData(nodeDataConverter.parseMapData(nodeDataMap, DSLDialectType.CUSTOM));
 		return node;
-	}
-
-	private NodeDataConverter<?> getNodeDataConverter(NodeType nodeType) {
-		return nodeDataConverters.stream()
-			.filter(converter -> converter.supportNodeType(nodeType))
-			.findFirst()
-			.orElseThrow(() -> new IllegalArgumentException("invalid dify node type " + nodeType));
 	}
 
 	@Override

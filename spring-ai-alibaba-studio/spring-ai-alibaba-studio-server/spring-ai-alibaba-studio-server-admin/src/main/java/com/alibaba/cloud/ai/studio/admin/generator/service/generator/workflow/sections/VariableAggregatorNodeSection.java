@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.VariableAggregatorNodeData.Groups;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
 import org.springframework.stereotype.Component;
@@ -96,49 +97,15 @@ public class VariableAggregatorNodeSection implements NodeSection<VariableAggreg
 
 		sb.append("    .build();\n");
 
-		// 辅助节点，将节点输出转为Dify定义的格式
+		// 辅助节点，将节点输出转为定义的格式
 		String assistNodeCode;
 		if (hasGroup) {
-			assistNodeCode = String.format("""
-					(state) -> {
-						Map<String, Object> result = %s.apply(state);
-						String nodeName = "%s";
-						String key = nodeName + "_output";
-						Object object = result.get(key);
-						if ((object instanceof Map<?, ?> map)) {
-							return map.entrySet()
-								.stream()
-								.collect(Collectors.toMap(k -> nodeName + "_" + k.getKey().toString(), v -> {
-									if (v.getValue() instanceof List<?> list) {
-										return list.isEmpty() ? "unknown" : list.get(0);
-									}
-									else {
-										return v.getValue() == null ? "unknown" : v.getValue().toString();
-									}
-								}));
-						}
-						else if (object instanceof List<?> list) {
-							return Map.of(key, list.isEmpty() ? "unknown" : list.get(0));
-						}
-						else {
-							return Map.of(key, object == null ? "unknown" : object.toString());
-						}
-					}
-					""", varName, varName);
+			assistNodeCode = String.format("wrapperAggregatorNodeAction(%s, \"%s\", \"%s\", %s)", varName, varName,
+					varName + "_output", true);
 		}
 		else {
-			assistNodeCode = String.format("""
-					(state) -> {
-						Map<String, Object> result = %s.apply(state);
-						String key = "%s";
-						Object object = result.get(key);
-						if (object instanceof List<?> list) {
-							return Map.of(key, list.isEmpty() ? "unknown" : list.get(0));
-						} else {
-							return Map.of(key, object == null ? "unknown" : object.toString());
-						}
-					}
-					""", varName, data.getOutputKey());
+			assistNodeCode = String.format("wrapperAggregatorNodeAction(%s, \"%s\", \"%s\", %s)", varName, varName,
+					data.getOutputKey(), false);
 		}
 
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));\n\n", varName,
@@ -153,6 +120,57 @@ public class VariableAggregatorNodeSection implements NodeSection<VariableAggreg
 			.map(VariableSelector::getNameInCode)
 			.map(name -> String.format("List.of(\"%s\")", name))
 			.collect(Collectors.joining(", "));
+	}
+
+	@Override
+	public String assistMethodCode(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY ->
+				"""
+						private NodeAction wrapperAggregatorNodeAction(NodeAction nodeAction, String nodeName, String key, boolean hasGroup) {
+						    if (hasGroup) {
+						        return (state) -> {
+						            Map<String, Object> result = nodeAction.apply(state);
+						            Object object = result.get(key);
+						            if ((object instanceof Map<?, ?> map)) {
+						                return map.entrySet()
+						                        .stream()
+						                        .collect(Collectors.toMap(k -> nodeName + "_" + k.getKey().toString(), v -> {
+						                            if (v.getValue() instanceof List<?> list) {
+						                                return list.isEmpty() ? "unknown" : list.get(0);
+						                            }
+						                            else {
+						                                return v.getValue() == null ? "unknown" : v.getValue().toString();
+						                            }
+						                        }));
+						            }
+						            else if (object instanceof List<?> list) {
+						                return Map.of(key, list.isEmpty() ? "unknown" : list.get(0));
+						            }
+						            else {
+						                return Map.of(key, object == null ? "unknown" : object.toString());
+						            }
+						        };
+						    } else {
+						        return (state) -> {
+						            Map<String, Object> result = nodeAction.apply(state);
+						            Object object = result.get(key);
+						            if (object instanceof List<?> list) {
+						                return Map.of(key, list.isEmpty() ? "unknown" : list.get(0));
+						            } else {
+						                return Map.of(key, object == null ? "unknown" : object.toString());
+						            }
+						        };
+						    }
+						}
+						""";
+			default -> "";
+		};
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.VariableAggregatorNode", "java.util.stream.Collectors");
 	}
 
 }

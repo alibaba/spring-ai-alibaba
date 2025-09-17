@@ -18,32 +18,32 @@ package com.alibaba.cloud.ai.studio.admin.generator.model.workflow;
 
 public enum LogicalOperatorType {
 
-	AND("&&", "and"), OR("||", "or");
+	AND("and", "&&"), OR("or", "||");
 
 	private final String value;
 
-	private final String difyValue;
+	private final String codeValue;
 
-	LogicalOperatorType(String value, String difyValue) {
+	LogicalOperatorType(String value, String codeValue) {
 		this.value = value;
-		this.difyValue = difyValue;
+		this.codeValue = codeValue;
 	}
 
-	public static LogicalOperatorType fromDifyValue(String difyValue) {
+	public static LogicalOperatorType fromValue(String value) {
 		for (LogicalOperatorType logicalOperatorType : LogicalOperatorType.values()) {
-			if (logicalOperatorType.difyValue.equals(difyValue)) {
+			if (logicalOperatorType.value.equals(value)) {
 				return logicalOperatorType;
 			}
 		}
-		throw new IllegalArgumentException("Unsupported logical operator type: " + difyValue);
+		throw new IllegalArgumentException("Unsupported logical operator type: " + value);
 	}
 
 	public String getValue() {
 		return this.value;
 	}
 
-	public String getDifyValue() {
-		return this.difyValue;
+	public String getCodeValue() {
+		return this.codeValue;
 	}
 
 }

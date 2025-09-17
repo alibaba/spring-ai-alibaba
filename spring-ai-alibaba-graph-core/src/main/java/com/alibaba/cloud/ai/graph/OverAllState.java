@@ -15,22 +15,17 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.graph.store.Store;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.entryOf;
 import static java.util.Collections.unmodifiableMap;
@@ -112,6 +107,11 @@ public final class OverAllState implements Serializable {
 	private String interruptMessage;
 
 	/**
+	 * Store instance for long-term memory storage across different executions.
+	 */
+	private Store store;
+
+	/**
 	 * The default key used for standard input injection into the state. Typically used
 	 * when initializing the state with user or external input.
 	 */
@@ -129,7 +129,8 @@ public final class OverAllState implements Serializable {
 	 * @return the optional
 	 */
 	public Optional<OverAllState> snapShot() {
-		return Optional.of(new OverAllState(new HashMap<>(this.data), new HashMap<>(this.keyStrategies), this.resume));
+		return Optional
+			.of(new OverAllState(new HashMap<>(this.data), new HashMap<>(this.keyStrategies), this.resume, this.store));
 	}
 
 	/**
@@ -143,13 +144,37 @@ public final class OverAllState implements Serializable {
 	}
 
 	/**
+	 * Instantiates a new Over all state with Store.
+	 * @param resume the is resume
+	 * @param store the store instance
+	 */
+	public OverAllState(boolean resume, Store store) {
+		this.data = new HashMap<>();
+		this.keyStrategies = new HashMap<>();
+		this.resume = resume;
+		this.store = store;
+	}
+
+	/**
 	 * Instantiates a new Over all state.
 	 * @param data the data
 	 */
 	public OverAllState(Map<String, Object> data) {
-		this.data = new HashMap<>(data);
+		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
 		this.keyStrategies = new HashMap<>();
 		this.resume = false;
+	}
+
+	/**
+	 * Instantiates a new Over all state with Store.
+	 * @param data the data
+	 * @param store the store instance
+	 */
+	public OverAllState(Map<String, Object> data, Store store) {
+		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
+		this.keyStrategies = new HashMap<>();
+		this.resume = false;
+		this.store = store;
 	}
 
 	/**
@@ -163,16 +188,44 @@ public final class OverAllState implements Serializable {
 	}
 
 	/**
+	 * Instantiates a new Over all state with Store.
+	 * @param store the store instance
+	 */
+	public OverAllState(Store store) {
+		this.data = new HashMap<>();
+		this.keyStrategies = new HashMap<>();
+		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
+		this.resume = false;
+		this.store = store;
+	}
+
+	/**
 	 * Instantiates a new Over all state.
 	 * @param data the data
 	 * @param keyStrategies the key strategies
 	 * @param resume the resume
 	 */
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume) {
-		this.data = data;
+		this.data = data != null ? data : new HashMap<>();
 		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = resume;
+	}
+
+	/**
+	 * Instantiates a new Over all state with Store.
+	 * @param data the data
+	 * @param keyStrategies the key strategies
+	 * @param resume the resume
+	 * @param store the store instance
+	 */
+	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume,
+			Store store) {
+		this.data = data != null ? data : new HashMap<>();
+		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
+		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
+		this.resume = resume;
+		this.store = store;
 	}
 
 	/**
@@ -212,7 +265,7 @@ public final class OverAllState implements Serializable {
 	 * @return the over all state
 	 */
 	public OverAllState copyWithResume() {
-		return new OverAllState(this.data, this.keyStrategies, true);
+		return new OverAllState(this.data, this.keyStrategies, true, this.store);
 	}
 
 	/**
@@ -248,8 +301,8 @@ public final class OverAllState implements Serializable {
 	/**
 	 * Replaces the current state's contents with the provided state.
 	 * <p>
-	 * This method effectively copies all data, key strategies, resume flag, and human
-	 * feedback from the provided state to this state.
+	 * This method effectively copies all data, key strategies, resume flag, human
+	 * feedback, and Store from the provided state to this state.
 	 * @param overAllState the state to copy from
 	 */
 	public void cover(OverAllState overAllState) {
@@ -259,6 +312,7 @@ public final class OverAllState implements Serializable {
 		this.data.putAll(overAllState.data());
 		this.resume = overAllState.resume;
 		this.humanFeedback = overAllState.humanFeedback;
+		this.store = overAllState.store;
 	}
 
 	/**
@@ -488,7 +542,7 @@ public final class OverAllState implements Serializable {
 	 * @return the map
 	 */
 	public final Map<String, Object> data() {
-		return unmodifiableMap(data);
+		return data != null ? unmodifiableMap(data) : unmodifiableMap(new HashMap<>());
 	}
 
 	/**
@@ -549,6 +603,14 @@ public final class OverAllState implements Serializable {
 	 */
 	public final <T> T value(String key, T defaultValue) {
 		return (T) value(key).orElse(defaultValue);
+	}
+
+	/**
+	 * Gets the Store instance for long-term memory storage.
+	 * @return The Store instance, may be null
+	 */
+	public Store getStore() {
+		return store;
 	}
 
 	/**

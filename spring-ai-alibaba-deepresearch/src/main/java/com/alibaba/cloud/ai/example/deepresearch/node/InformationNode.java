@@ -51,7 +51,7 @@ public class InformationNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) {
 		String result = state.value("planner_content", "");
 		logger.info("planner_content: {}", result);
-		assert Strings.isBlank(result);
+		assert Strings.isNotBlank(result);
 
 		Plan curPlan = null;
 		String nextStep = "research_team";

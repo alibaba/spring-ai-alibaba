@@ -16,14 +16,12 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata;
 
-import java.util.List;
-
 import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 
-import org.springframework.util.StringUtils;
+import java.util.List;
 
 /**
  * @author vlsmb
@@ -31,137 +29,85 @@ import org.springframework.util.StringUtils;
  */
 public class IterationNodeData extends NodeData {
 
-	public static Variable getDefaultOutputSchema() {
-		return new Variable("output", VariableType.ARRAY_STRING.value());
+	public static List<Variable> getDefaultOutputSchemas() {
+		return List.of(new Variable("state", VariableType.ARRAY_NUMBER), // 剩余未处理的元素索引
+				new Variable("index", VariableType.NUMBER), // 迭代索引
+				new Variable("isFinished", VariableType.BOOLEAN) // 迭代是否结束
+		);
 	}
 
-	private String id;
+	// NodeData的来源节点名称
+	private final String sourceVarName;
 
-	private String inputType;
+	private int parallelCount = 1;
 
-	private String outputType;
+	private int maxIterationCount = Integer.MAX_VALUE;
 
+	// Dify的迭代索引从0开始，而Studio的从1开始，故需要设置这个值
+	private int indexOffset = 0;
+
+	// itemKey和outputKey的后缀在Dify中固定，但在Studio中用户可以自定义
+	private String itemKey = "item";
+
+	private String outputKey = "output";
+
+	// 迭代输入的Selector
 	private VariableSelector inputSelector;
 
-	private VariableSelector outputSelector;
+	// 迭代结果元素的Selector
+	private VariableSelector resultSelector;
 
-	private String startNodeId;
-
-	private String endNodeId;
-
-	private String outputKey;
-
-	private String inputKey;
-
-	private String startNodeName;
-
-	private String endNodeName;
-
-	// 内部临时变量名
-	private String innerArrayKey;
-
-	private String innerStartFlagKey;
-
-	private String innerEndFlagKey;
-
-	private String innerItemKey;
-
-	private String innerItemResultKey;
-
-	private String innerIndexKey;
-
-	private Variable output;
-
-	public IterationNodeData(String id, String inputType, String outputType, VariableSelector inputSelector,
-			VariableSelector outputSelector, String startNodeId, String endNodeId, String inputKey, String outputKey) {
-		this.id = id;
-		this.inputType = inputType;
-		this.outputType = outputType;
-		this.inputSelector = inputSelector;
-		this.outputSelector = outputSelector;
-		this.startNodeId = startNodeId;
-		this.endNodeId = endNodeId;
-		this.inputKey = inputKey;
-		this.outputKey = outputKey;
-		this.setVarName(id);
-		this.output = new Variable(outputKey, outputType);
-		this.setInputs(List.of(inputSelector));
-		this.setOutputs(List.of(output));
+	public IterationNodeData(IterationNodeData other) {
+		parallelCount = other.parallelCount;
+		maxIterationCount = other.maxIterationCount;
+		indexOffset = other.indexOffset;
+		itemKey = other.itemKey;
+		outputKey = other.outputKey;
+		inputSelector = other.inputSelector;
+		resultSelector = other.resultSelector;
+		sourceVarName = other.getVarName();
+		setVarName(other.getVarName());
 	}
 
-	@Override
-	public void setVarName(String varName) {
-		this.varName = varName;
-		this.innerArrayKey = this.varName + "_array";
-		this.innerStartFlagKey = this.varName + "_start_flag";
-		this.innerEndFlagKey = this.varName + "_end_flag";
-		this.innerItemKey = this.varName + "_item";
-		this.innerItemResultKey = this.varName + "_item_result";
-		this.innerIndexKey = this.varName + "_index";
+	public IterationNodeData() {
+		super();
+		sourceVarName = null;
 	}
 
-	public String getId() {
-		return id;
+	public String getSourceVarName() {
+		return sourceVarName;
 	}
 
-	public void setId(String id) {
-		this.id = id;
+	public int getParallelCount() {
+		return parallelCount;
 	}
 
-	public String getInputType() {
-		return inputType;
+	public void setParallelCount(int parallelCount) {
+		this.parallelCount = parallelCount;
 	}
 
-	public void setInputType(String inputType) {
-		this.inputType = inputType;
+	public int getMaxIterationCount() {
+		return maxIterationCount;
 	}
 
-	public String getOutputType() {
-		return outputType;
+	public void setMaxIterationCount(int maxIterationCount) {
+		this.maxIterationCount = maxIterationCount;
 	}
 
-	public void setOutputType(String outputType) {
-		this.outputType = outputType;
+	public int getIndexOffset() {
+		return indexOffset;
 	}
 
-	public VariableSelector getInputSelector() {
-		return inputSelector;
+	public void setIndexOffset(int indexOffset) {
+		this.indexOffset = indexOffset;
 	}
 
-	public void setInputSelector(VariableSelector inputSelector) {
-		this.inputSelector = inputSelector;
+	public String getItemKey() {
+		return itemKey;
 	}
 
-	public VariableSelector getOutputSelector() {
-		return outputSelector;
-	}
-
-	public void setOutputSelector(VariableSelector outputSelector) {
-		this.outputSelector = outputSelector;
-	}
-
-	public String getStartNodeId() {
-		return startNodeId;
-	}
-
-	public void setStartNodeId(String startNodeId) {
-		this.startNodeId = startNodeId;
-	}
-
-	public String getEndNodeId() {
-		return endNodeId;
-	}
-
-	public void setEndNodeId(String endNodeId) {
-		this.endNodeId = endNodeId;
-	}
-
-	public String getInputKey() {
-		return inputKey;
-	}
-
-	public void setInputKey(String inputKey) {
-		this.inputKey = inputKey;
+	public void setItemKey(String itemKey) {
+		this.itemKey = itemKey;
 	}
 
 	public String getOutputKey() {
@@ -172,175 +118,20 @@ public class IterationNodeData extends NodeData {
 		this.outputKey = outputKey;
 	}
 
-	public String getInnerArrayKey() {
-		return innerArrayKey;
+	public VariableSelector getInputSelector() {
+		return inputSelector;
 	}
 
-	public void setInnerArrayKey(String innerArrayKey) {
-		this.innerArrayKey = innerArrayKey;
+	public void setInputSelector(VariableSelector inputSelector) {
+		this.inputSelector = inputSelector;
 	}
 
-	public String getInnerStartFlagKey() {
-		return innerStartFlagKey;
+	public VariableSelector getResultSelector() {
+		return resultSelector;
 	}
 
-	public void setInnerStartFlagKey(String innerStartFlagKey) {
-		this.innerStartFlagKey = innerStartFlagKey;
-	}
-
-	public String getInnerEndFlagKey() {
-		return innerEndFlagKey;
-	}
-
-	public void setInnerEndFlagKey(String innerEndFlagKey) {
-		this.innerEndFlagKey = innerEndFlagKey;
-	}
-
-	public String getInnerItemKey() {
-		return innerItemKey;
-	}
-
-	public void setInnerItemKey(String innerItemKey) {
-		this.innerItemKey = innerItemKey;
-	}
-
-	public String getInnerItemResultKey() {
-		return innerItemResultKey;
-	}
-
-	public void setInnerItemResultKey(String innerItemResultKey) {
-		this.innerItemResultKey = innerItemResultKey;
-	}
-
-	public String getInnerIndexKey() {
-		return innerIndexKey;
-	}
-
-	public void setInnerIndexKey(String innerIndexKey) {
-		this.innerIndexKey = innerIndexKey;
-	}
-
-	public Variable getOutput() {
-		return output;
-	}
-
-	public void setOutput(Variable output) {
-		this.output = output;
-	}
-
-	public String getStartNodeName() {
-		return startNodeName;
-	}
-
-	public void setStartNodeName(String startNodeName) {
-		this.startNodeName = startNodeName;
-	}
-
-	public String getEndNodeName() {
-		return endNodeName;
-	}
-
-	public void setEndNodeName(String endNodeName) {
-		this.endNodeName = endNodeName;
-	}
-
-	public static class Builder {
-
-		private String id;
-
-		private String inputType;
-
-		private String outputType;
-
-		private VariableSelector inputSelector;
-
-		private VariableSelector outputSelector;
-
-		private String startNodeId;
-
-		private String endNodeId;
-
-		private String inputKey;
-
-		private String outputKey;
-
-		// 可以不设置，使用默认值"_item"
-		private String itemKey;
-
-		// 可以不设置，使用默认值"_index"
-		private String indexKey;
-
-		public Builder id(String id) {
-			this.id = id;
-			return this;
-		}
-
-		public Builder inputType(String inputType) {
-			this.inputType = inputType;
-			return this;
-		}
-
-		public Builder outputType(String outputType) {
-			this.outputType = outputType;
-			return this;
-		}
-
-		public Builder inputSelector(VariableSelector inputSelector) {
-			this.inputSelector = inputSelector;
-			return this;
-		}
-
-		public Builder outputSelector(VariableSelector outputSelector) {
-			this.outputSelector = outputSelector;
-			return this;
-		}
-
-		public Builder startNodeId(String startNodeId) {
-			this.startNodeId = startNodeId;
-			return this;
-		}
-
-		public Builder endNodeId(String endNodeId) {
-			this.endNodeId = endNodeId;
-			return this;
-		}
-
-		public Builder inputKey(String inputKey) {
-			this.inputKey = inputKey;
-			return this;
-		}
-
-		public Builder outputKey(String outputKey) {
-			this.outputKey = outputKey;
-			return this;
-		}
-
-		public Builder itemKey(String itemKey) {
-			this.itemKey = itemKey;
-			return this;
-		}
-
-		public Builder indexKey(String indexKey) {
-			this.indexKey = indexKey;
-			return this;
-		}
-
-		public IterationNodeData build() {
-			IterationNodeData data = new IterationNodeData(id, inputType, outputType, inputSelector, outputSelector,
-					startNodeId, endNodeId, inputKey, outputKey);
-			if (StringUtils.hasText(this.itemKey)) {
-				data.setInnerItemKey(this.itemKey);
-			}
-			if (StringUtils.hasText(this.indexKey)) {
-				data.setInnerIndexKey(this.indexKey);
-			}
-			return data;
-		}
-
-	}
-
-	public static Builder builder() {
-		return new Builder();
+	public void setResultSelector(VariableSelector resultSelector) {
+		this.resultSelector = resultSelector;
 	}
 
 }

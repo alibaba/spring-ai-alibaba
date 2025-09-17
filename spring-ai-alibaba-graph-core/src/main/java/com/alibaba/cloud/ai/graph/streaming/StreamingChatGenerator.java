@@ -39,6 +39,7 @@ import static java.util.Objects.requireNonNull;
  * fluent API to configure and build a streaming generator that processes chat responses
  * and produces output based on the streamed data.
  */
+@Deprecated
 public interface StreamingChatGenerator {
 
 	/**
@@ -149,18 +150,10 @@ public interface StreamingChatGenerator {
 			var processedFlux = flux
 				.filter(response -> response.getResult() != null && response.getResult().getOutput() != null)
 				.doOnNext(mergeMessage)
-				.map(outputMapper);
+				.map(next -> new StreamingOutput(next.getResult().getOutput().getText(), startingNode, startingState));
 
-			return FlowGenerator.fromPublisher(FlowAdapters.toFlowPublisher(processedFlux), () -> {
-				ChatResponse finalResult = result.get();
-				System.out.println("StreamingChatGenerator: mapResult called, finalResult: "
-						+ (finalResult != null ? "not null" : "null"));
-				if (finalResult == null) {
-					// 如果没有收到任何响应，返回空的结果
-					return Map.of();
-				}
-				return mapResult.apply(finalResult);
-			});
+			return FlowGenerator.fromPublisher(FlowAdapters.toFlowPublisher(processedFlux),
+					() -> mapResult.apply(result.get()));
 		}
 
 	}
