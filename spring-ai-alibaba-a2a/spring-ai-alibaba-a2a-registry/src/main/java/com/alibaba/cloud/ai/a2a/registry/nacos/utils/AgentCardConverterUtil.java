@@ -61,12 +61,18 @@ public class AgentCardConverterUtil {
 
 	private static Map<String, io.a2a.spec.SecurityScheme> convertToA2aAgentSecuritySchemes(
 			Map<String, SecurityScheme> securitySchemes) {
+		if (null == securitySchemes) {
+			return null;
+		}
 		String securitySchemesJson = JacksonUtils.toJson(securitySchemes);
 		return JacksonUtils.toObj(securitySchemesJson, new TypeReference<>() {
 		});
 	}
 
 	private static io.a2a.spec.AgentProvider convertToA2aAgentProvider(AgentProvider provider) {
+		if (null == provider) {
+			return null;
+		}
 		return new io.a2a.spec.AgentProvider(provider.getOrganization(), provider.getUrl());
 	}
 
@@ -80,6 +86,9 @@ public class AgentCardConverterUtil {
 	}
 
 	private static io.a2a.spec.AgentInterface transferAgentInterface(AgentInterface agentInterface) {
+		if (null == agentInterface) {
+			return null;
+		}
 		return new io.a2a.spec.AgentInterface(agentInterface.getTransport(), agentInterface.getUrl());
 	}
 
@@ -153,7 +162,6 @@ public class AgentCardConverterUtil {
 		skill.setExamples(agentSkill.examples());
 		skill.setInputModes(agentSkill.inputModes());
 		skill.setOutputModes(agentSkill.outputModes());
-
 		return skill;
 	}
 
@@ -175,6 +183,9 @@ public class AgentCardConverterUtil {
 	}
 
 	private static AgentProvider convertToNacosAgentProvider(io.a2a.spec.AgentProvider agentProvider) {
+		if (null == agentProvider) {
+			return null;
+		}
 		AgentProvider nacosAgentProvider = new AgentProvider();
 		nacosAgentProvider.setOrganization(agentProvider.organization());
 		nacosAgentProvider.setUrl(agentProvider.url());
