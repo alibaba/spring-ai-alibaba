@@ -279,10 +279,8 @@
         <poi.version>5.4.0</poi.version>
 
         <mcp.version>0.10.0</mcp.version>
-
-        <a2a-sdk.version>0.2.5</a2a-sdk.version>
-
         <opentelemetry.version>1.38.0</opentelemetry.version>
+        <a2a-sdk.version>0.2.5.Beta2</a2a-sdk.version>
 
         <!-- CheckStyle Plugin -->
         <disable.checks>false</disable.checks>
@@ -358,6 +356,23 @@
                 <version>${docker-java.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <!-- A2A SDK Dependencies -->
+            <dependency>
+                <groupId>io.github.a2asdk</groupId>
+                <artifactId>a2a-java-reference-server</artifactId>
+                <version>${a2a-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.a2asdk</groupId>
+                <artifactId>a2a-java-sdk-server-common</artifactId>
+                <version>${a2a-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.a2asdk</groupId>
+                <artifactId>a2a-java-sdk-client</artifactId>
+                <version>${a2a-sdk.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
