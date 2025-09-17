@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.a2a;
 
+import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -24,6 +25,7 @@ import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.graph.Graph;
 import io.a2a.spec.AgentCard;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -34,6 +36,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -43,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class A2aNode implements NodeAction {
@@ -72,8 +76,25 @@ public class A2aNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		if (streaming) {
 			AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state);
-			return Map.of(StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages",
-					generator);
+			// Convert AsyncGenerator to Flux using the new toFlux() method
+			Flux<GraphResponse<NodeOutput>> flux = toFlux(generator);
+			flux.doOnNext(res -> {
+				try {
+					System.out.println("a2a server response\n: ");
+					System.out.println(res.getOutput().get());
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+				catch (ExecutionException e) {
+					throw new RuntimeException(e);
+				}
+			}).doOnComplete(() -> {
+				System.out.println("a2a server done\n");
+			}).doOnError(err -> {
+				err.printStackTrace();
+			}).subscribe();
+			return Map.of(StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages", flux);
 		}
 		else {
 			String requestPayload = buildSendMessageRequest(state, this.inputKeyFromParent);
@@ -83,6 +104,50 @@ public class A2aNode implements NodeAction {
 			String responseText = extractResponseText(result);
 			return Map.of(this.outputKeyToParent, responseText);
 		}
+	}
+
+	/**
+	 * Converts this AsyncGenerator to a Project Reactor Flux. This method provides
+	 * forward compatibility for converting AsyncGenerator to reactive streams.
+	 * @return a Flux that emits the elements from this AsyncGenerator
+	 */
+	private <E> Flux<GraphResponse<E>> toFlux(AsyncGenerator generator) {
+		return Flux.create(sink -> {
+			try {
+				AsyncGenerator.Data<E> data;
+				while (!(data = generator.next()).isDone()) {
+					if (data.isError()) {
+						// Handle error case
+						try {
+							data.getData().join(); // This will throw the exception
+						}
+						catch (Exception e) {
+							sink.error(e);
+							return;
+						}
+					}
+					else {
+						// Emit the element
+						try {
+							E element = data.getData().join();
+							sink.next(GraphResponse.of(element));
+						}
+						catch (Exception e) {
+							sink.error(e);
+							return;
+						}
+					}
+				}
+				// 处理最终结果值（如果有的话）
+				if (data.resultValue() != null) {
+					sink.next(GraphResponse.done(data.resultValue()));
+				}
+				sink.complete();
+			}
+			catch (Exception e) {
+				sink.error(e);
+			}
+		});
 	}
 
 	/**
@@ -310,11 +375,23 @@ public class A2aNode implements NodeAction {
 	/**
 	 * Get the streaming generator (similar to LlmNode.stream).
 	 */
-	public AsyncGenerator<NodeOutput> stream(OverAllState state) throws Exception {
+	public Flux<NodeOutput> stream(OverAllState state) throws Exception {
 		if (!this.streaming) {
 			throw new IllegalStateException("Streaming is not enabled for this A2aNode");
 		}
-		return createStreamingGenerator(state);
+		AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state);
+		Flux<GraphResponse<NodeOutput>> graphResponseFlux = toFlux(generator);
+
+		// Convert Flux<GraphResponse<NodeOutput>> to Flux<NodeOutput>
+		return graphResponseFlux.filter(graphResponse -> !graphResponse.isDone()) // 过滤掉完成信号
+			.map(graphResponse -> {
+				try {
+					return graphResponse.getOutput().join(); // 提取实际的 NodeOutput
+				}
+				catch (Exception e) {
+					throw new RuntimeException("Error extracting output from GraphResponse", e);
+				}
+			});
 	}
 
 	/**

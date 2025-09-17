@@ -101,6 +101,10 @@ public abstract class BaseAgent {
 	}
 
 	public synchronized CompiledGraph getAndCompileGraph() throws GraphStateException {
+		if (compiledGraph != null) {
+			return compiledGraph;
+		}
+
 		if (this.graph == null) {
 			this.graph = initGraph();
 		}
