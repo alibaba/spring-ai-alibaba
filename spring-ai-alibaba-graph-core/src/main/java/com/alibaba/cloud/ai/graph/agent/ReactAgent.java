@@ -18,22 +18,21 @@ package com.alibaba.cloud.ai.graph.agent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.factory.DefaultAgentBuilderFactory;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
@@ -41,6 +40,7 @@ import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -56,8 +56,6 @@ public class ReactAgent extends BaseAgent {
 	private final LlmNode llmNode;
 
 	private final ToolNode toolNode;
-
-	private final StateGraph graph;
 
 	private CompiledGraph compiledGraph;
 
@@ -86,10 +84,8 @@ public class ReactAgent extends BaseAgent {
 	private String inputKey;
 
 	public ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
-		this.name = builder.name;
-		this.description = builder.description;
+		super(builder.name, builder.description, builder.outputKey);
 		this.instruction = builder.instruction;
-		this.outputKey = builder.outputKey;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
 		this.keyStrategyFactory = builder.keyStrategyFactory;
@@ -100,25 +96,6 @@ public class ReactAgent extends BaseAgent {
 		this.preToolHook = builder.preToolHook;
 		this.postToolHook = builder.postToolHook;
 		this.inputKey = builder.inputKey;
-
-		// 初始化graph
-		this.graph = initGraph();
-	}
-
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.invoke(input);
-	}
-
-	@Override
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
-			throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.stream(input);
 	}
 
 	@Override
@@ -133,27 +110,6 @@ public class ReactAgent extends BaseAgent {
 
 	public CompiledGraph getCompiledGraph() throws GraphStateException {
 		return compiledGraph;
-	}
-
-	public CompiledGraph getAndCompileGraph(CompileConfig compileConfig) throws GraphStateException {
-		if (this.compileConfig == null) {
-			this.compiledGraph = getStateGraph().compile();
-		}
-		else {
-			this.compiledGraph = getStateGraph().compile(compileConfig);
-		}
-		this.compiledGraph = getStateGraph().compile(compileConfig);
-		return this.compiledGraph;
-	}
-
-	public CompiledGraph getAndCompileGraph() throws GraphStateException {
-		if (this.compileConfig == null) {
-			this.compiledGraph = getStateGraph().compile();
-		}
-		else {
-			this.compiledGraph = getStateGraph().compile(this.compileConfig);
-		}
-		return this.compiledGraph;
 	}
 
 	public NodeAction asNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException {
@@ -171,7 +127,8 @@ public class ReactAgent extends BaseAgent {
 		return node_async(new SubGraphStreamingNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
 	}
 
-	private StateGraph initGraph() throws GraphStateException {
+	@Override
+	protected StateGraph initGraph() throws GraphStateException {
 		if (keyStrategyFactory == null) {
 			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
@@ -224,8 +181,8 @@ public class ReactAgent extends BaseAgent {
 
 		if (postLlmHook != null) {
 			graph.addEdge("llm", "postLlm")
-					.addConditionalEdges("postLlm", edge_async(this::think),
-							Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
+				.addConditionalEdges("postLlm", edge_async(this::think),
+						Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
 		}
 		else {
 			graph.addConditionalEdges("llm", edge_async(this::think),
@@ -363,7 +320,7 @@ public class ReactAgent extends BaseAgent {
 			List<Message> messages = List.of(message);
 
 			// invoke child graph
-			OverAllState childState = childGraph.invoke(Map.of("messages", messages)).get();
+			OverAllState childState = childGraph.call(Map.of("messages", messages)).get();
 
 			// extract output from child graph
 			List<Message> reactMessages = (List<Message>) childState.value("messages").orElseThrow();
@@ -397,52 +354,10 @@ public class ReactAgent extends BaseAgent {
 			Message message = new UserMessage(input);
 			List<Message> messages = List.of(message);
 
-			AsyncGenerator<NodeOutput> child = childGraph.stream(Map.of("messages", messages));
+			Flux<GraphResponse<NodeOutput>> subGraphFlux = childGraph.fluxDataStream(Map.of("messages", messages),
+					RunnableConfig.builder().build());
 
-			AsyncGenerator<NodeOutput> wrapped = new AsyncGenerator<NodeOutput>() {
-				private volatile Map<String, Object> lastStateData;
-
-				@Override
-				public Data<NodeOutput> next() {
-					Data<NodeOutput> data = child.next();
-					if (data.isDone()) {
-						String result = extractAssistantText(lastStateData);
-						return Data.done(Map.of(outputKeyToParent, result));
-					}
-					if (data.isError()) {
-						return data;
-					}
-					return Data.of(data.getData().thenApply(n -> {
-						try {
-							lastStateData = n.state().data();
-						}
-						catch (Exception ignored) {
-						}
-						return n;
-					}));
-				}
-			};
-
-			return Map.of(outputKeyToParent, wrapped);
-		}
-
-		private String extractAssistantText(Map<String, Object> stateData) {
-			if (stateData == null) {
-				return "";
-			}
-			Object msgs = stateData.get("messages");
-			if (!(msgs instanceof List)) {
-				return "";
-			}
-			List<?> list = (List<?>) msgs;
-			if (list.isEmpty()) {
-				return "";
-			}
-			Object last = list.get(list.size() - 1);
-			if (last instanceof AssistantMessage assistant) {
-				return assistant.getText();
-			}
-			return "";
+			return Map.of(outputKeyToParent, subGraphFlux);
 		}
 
 	}

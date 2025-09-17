@@ -19,6 +19,7 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 public abstract class Builder {
 
+
 	protected String name;
 
 	protected String description;
@@ -54,20 +55,6 @@ public abstract class Builder {
 	protected NodeAction postToolHook;
 
 	protected String inputKey = "messages";
-
-	protected ObservationRegistry observationRegistry;
-
-	protected ChatClientObservationConvention customObservationConvention;
-
-	public Builder observationRegistry(ObservationRegistry observationRegistry) {
-		this.observationRegistry = observationRegistry;
-		return this;
-	}
-
-	public Builder customObservationConvention(ChatClientObservationConvention customObservationConvention) {
-		this.customObservationConvention = customObservationConvention;
-		return this;
-	}
 
 	public Builder name(String name) {
 		this.name = name;
@@ -156,6 +143,20 @@ public abstract class Builder {
 
 	public Builder inputKey(String inputKey) {
 		this.inputKey = inputKey;
+		return this;
+	}
+
+	protected ObservationRegistry observationRegistry;
+
+	protected ChatClientObservationConvention customObservationConvention;
+
+	public Builder observationRegistry(ObservationRegistry observationRegistry) {
+		this.observationRegistry = observationRegistry;
+		return this;
+	}
+
+	public Builder customObservationConvention(ChatClientObservationConvention customObservationConvention) {
+		this.customObservationConvention = customObservationConvention;
 		return this;
 	}
 

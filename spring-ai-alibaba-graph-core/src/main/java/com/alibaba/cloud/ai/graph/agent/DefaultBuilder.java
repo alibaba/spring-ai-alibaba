@@ -11,6 +11,7 @@ public class DefaultBuilder extends Builder {
 
 	@Override
 	public ReactAgent build() throws GraphStateException {
+
 		if (chatClient == null) {
 			if (model == null) {
 				throw new IllegalArgumentException("Either chatClient or model must be provided");
@@ -29,9 +30,11 @@ public class DefaultBuilder extends Builder {
 				.stream(true)
 				.chatClient(chatClient)
 				.messagesKey(this.inputKey);
-		if (outputKey != null && !outputKey.isEmpty()) {
-			llmNodeBuilder.outputKey(outputKey);
-		}
+		// For graph built from ReactAgent, the only legal key used inside must be
+		// messages.
+		// if (outputKey != null && !outputKey.isEmpty()) {
+		// llmNodeBuilder.outputKey(outputKey);
+		// }
 		if (CollectionUtils.isNotEmpty(tools)) {
 			llmNodeBuilder.toolCallbacks(tools);
 		}
