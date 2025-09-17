@@ -55,7 +55,8 @@ public enum NodeType {
 
 	TOOL("tool", "tool", "UNSUPPORTED"),
 
-	MCP("mcp", "UNSUPPORTED", "UNSUPPORTED"),
+	// Dify的MCP使用ToolNode定义
+	MCP("mcp", "UNSUPPORTED", "MCP"),
 
 	TEMPLATE_TRANSFORM("template-transform", "template-transform", "UNSUPPORTED"),
 
