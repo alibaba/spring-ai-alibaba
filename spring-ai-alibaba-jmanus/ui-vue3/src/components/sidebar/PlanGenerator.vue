@@ -35,7 +35,8 @@
           readonly
           class="instruction-textarea"
           rows="2"
-        >Use dynamic agent planning, just input instructions directly without going through the generation process. Please build your plan directly in the dynamic agent planning section.</textarea>
+          :value="t('sidebar.dynamicAgentInstruction')"
+        ></textarea>
       </div>
       
       <!-- Simple Plan - Show editable prompt and actions -->

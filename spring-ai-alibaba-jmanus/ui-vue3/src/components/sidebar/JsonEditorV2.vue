@@ -19,19 +19,8 @@
       <Icon icon="carbon:code" width="16" />
       <span>{{ $t('sidebar.dynamicAgentPlan') }}</span>
     </div>
-    <!-- Error Display -->
-    <div v-if="planTypeError" class="error-section">
-      <div class="error-message">
-        <Icon icon="carbon:warning" width="16" />
-        <div class="error-content">
-          <div class="error-title">{{ $t('sidebar.planTypeError') }}</div>
-          <div class="error-description">{{ planTypeError }}</div>
-        </div>
-      </div>
-    </div>
-
     <!-- Visual JSON Editor -->
-    <div v-else class="visual-editor">
+    <div class="visual-editor">
       <!-- Plan Basic Info -->
       <div class="plan-basic-info">
         <div class="form-row">
@@ -40,8 +29,14 @@
             v-model="parsedData.title" 
             type="text" 
             class="form-input"
+            :class="{ 'error': titleError }"
             :placeholder="$t('sidebar.titlePlaceholder')"
           />
+          <!-- Inline validation message for title -->
+          <div v-if="titleError" class="field-error-message">
+            <Icon icon="carbon:warning" width="12" />
+            {{ titleError }}
+          </div>
         </div>
         
         <!-- Plan Template ID (Read-only) -->
@@ -320,6 +315,7 @@ const {
 
 // Error state
 const planTypeError = ref<string | null>(null)
+const titleError = ref<string>('')
 
 // Model selection state
 const availableModels = ref<ModelOption[]>([])
@@ -406,14 +402,18 @@ const initializeParsedData = () => {
 // Watch for parsedData changes to validate structure
 watch(() => parsedData, (newData) => {
   try {
-    // Validate required fields
-    if (!newData.title) {
-      planTypeError.value = 'Title is required field'
+    // Soft validation for title - show warning but don't block the form
+    if (!newData.title || !newData.title.trim()) {
+      titleError.value = 'Title is required field'
     } else {
-      planTypeError.value = null
+      titleError.value = ''
     }
+    
+    // Clear any structural errors
+    planTypeError.value = null
   } catch (error) {
     planTypeError.value = `Invalid data structure: ${error instanceof Error ? error.message : 'Unknown error'}`
+    titleError.value = ''
   }
 }, { immediate: true, deep: true })
 
@@ -552,6 +552,28 @@ const autoResizeTextarea = (event: Event) => {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+/* Error state for form inputs */
+.form-input.error,
+.form-select.error,
+.form-textarea.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+/* Field error message */
+.field-error-message {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #ef4444;
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .readonly-input {

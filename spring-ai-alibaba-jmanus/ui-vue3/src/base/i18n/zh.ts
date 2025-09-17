@@ -863,6 +863,7 @@ const words: I18nType = {
     simplePlan: '简单计划（逐步会废弃，请慎用）',
     advancedPlan: '高级计划（MapReduce）',
     dynamicAgentPlan: '动态智能体计划',
+    dynamicAgentInstruction: '使用动态智能体计划，直接输入指令而无需经过生成过程。请直接在动态智能体计划部分构建您的计划。',
     
     // Tool Selection
     selectedTools: '已选工具',
