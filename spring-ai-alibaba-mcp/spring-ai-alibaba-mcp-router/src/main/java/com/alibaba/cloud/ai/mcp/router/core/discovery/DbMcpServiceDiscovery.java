@@ -64,7 +64,7 @@ public class DbMcpServiceDiscovery implements McpServiceDiscovery {
 			}
 		}
 		catch (SQLException e) {
-			log.error("Failed to get service {} from MySQL database", serviceName, e);
+			log.error("Failed to get service {} from database", serviceName, e);
 		}
 		finally {
 			closeResources(resultSet, preparedStatement, connection);
