@@ -7,8 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import styles from './index.module.less';
 import { AgentSchemaService } from '@/services/agentSchema';
 import { ToolService } from '@/services/tool';
+import { listModels, getModelSelector } from '@/services/modelService';
 import { IAgentSchema, AgentType } from '@/types/agentSchema';
 import { ITool } from '@/types/tool';
+import { IModel } from '@/types/modelService';
 import { session } from '@/request/session';
 
 const { Title, Text } = Typography;
@@ -125,12 +127,14 @@ const AgentSchemaCreator: React.FC = () => {
   const [yamlContent, setYamlContent] = useState<string>('');
   const [savedAgents, setSavedAgents] = useState<IAgentSchema[]>([]);
   const [availableTools, setAvailableTools] = useState<ITool[]>([]);
+  const [availableModels, setAvailableModels] = useState<IModel[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(false);
   const [toolsLoading, setToolsLoading] = useState(false);
+  const [modelsLoading, setModelsLoading] = useState(false);
   const [subAgentsExpanded, setSubAgentsExpanded] = useState(false);
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
-  
+
   // 防抖的名称校验
   const nameCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -228,10 +232,40 @@ const AgentSchemaCreator: React.FC = () => {
     }
   };
 
+  // 获取可用模型列表
+  const fetchAvailableModels = async () => {
+    setModelsLoading(true);
+    try {
+      // 使用 getModelSelector 获取所有启用的提供商的模型
+      const modelSelectorData = await getModelSelector('llm');
+
+      console.log('Model selector data:', modelSelectorData);
+
+      // 提取所有模型
+      const allModels: IModel[] = [];
+      if (modelSelectorData.data) {
+        modelSelectorData.data.forEach(providerGroup => {
+          if (providerGroup.models) {
+            allModels.push(...providerGroup.models);
+          }
+        });
+      }
+
+      setAvailableModels(allModels);
+    } catch (error) {
+      message.error('获取模型列表失败');
+      console.error('Failed to fetch models:', error);
+      setAvailableModels([]);
+    } finally {
+      setModelsLoading(false);
+    }
+  };
+
   // 初始化加载数据
   useEffect(() => {
     fetchSavedAgents();
     fetchAvailableTools();
+    fetchAvailableModels();
   }, []);
 
   // Agent类型选项
@@ -241,15 +275,6 @@ const AgentSchemaCreator: React.FC = () => {
     { label: 'Sequential Agent', value: 'SequentialAgent' },
     { label: 'LLM Routing Agent', value: 'LLMRoutingAgent' },
     { label: 'Loop Agent', value: 'LoopAgent' },
-  ];
-
-  // 模型选项
-  const modelOptions = [
-    { label: 'Qwen2.5-72B-Instruct', value: 'qwen2.5-72b-instruct' },
-    { label: 'Qwen2.5-32B-Instruct', value: 'qwen2.5-32b-instruct' },
-    { label: 'Qwen2.5-14B-Instruct', value: 'qwen2.5-14b-instruct' },
-    { label: 'GPT-4', value: 'gpt-4' },
-    { label: 'GPT-3.5-turbo', value: 'gpt-3.5-turbo' },
   ];
 
   // State策略选项
@@ -289,12 +314,16 @@ const AgentSchemaCreator: React.FC = () => {
 
   // 生成 YAML 内容
   const generateYaml = async (values: AgentSchemaForm): Promise<string> => {
+    console.log('=== GENERATE YAML START ===');
+    console.log('Form values:', values);
+    console.log('Available models:', availableModels);
+
     const instruction = values.instruction || '';
     const inputKeys = values.inputKey ? [values.inputKey] : ['input'];
     const subAgents = values.subAgents || [];
 
     // 生成handle配置
-    const generateHandleYaml = (handle: HandleConfig): string => {
+    const generateHandleYaml = (handle: HandleConfig, formValues: AgentSchemaForm): string => {
       if (!handle) {
         return 'handle:\n  state:\n    strategies:\n      input: "replace"\n      output: "replace"\n';
       }
@@ -324,13 +353,53 @@ const AgentSchemaCreator: React.FC = () => {
         });
       }
 
-      // ReactAgent特有配置 - 优先使用form中的model值
-      const modelName = values.model || (handle.model ? handle.model.name : 'qwen2.5-72b-instruct');
-      if (modelName) {
+      // ReactAgent特有配置 - 优先使用form中的model值，回退到handle中的模型
+      const modelName = formValues.model || (handle.model ? handle.model.name : null);
+      console.log('=== Model Configuration Debug ===');
+      console.log('Form model value:', formValues.model);
+      console.log('Handle model data:', handle.model);
+      console.log('Final modelName:', modelName);
+      console.log('Available models count:', availableModels?.length || 0);
+
+      // 如果有model信息，生成model配置
+      if (modelName || handle.model) {
+        const finalModelName = modelName || handle.model?.name || 'qwen2.5-72b-instruct';
         yaml += `  model:\n`;
-        yaml += `    name: "${modelName}"\n`;
-        yaml += `    url: "${handle.model?.url || 'https://api.example.com/v1'}"\n`;
-        yaml += `    api-key: "${handle.model?.['api-key'] || 'your-api-key'}"\n`;
+        yaml += `    name: "${finalModelName}"\n`;
+
+        // 如果handle中有完整的模型配置，优先使用handle中的配置
+        if (handle.model && handle.model.url) {
+          console.log('Using complete handle model configuration');
+          yaml += `    url: "${handle.model.url}"\n`;
+          yaml += `    api-key: "${handle.model['api-key'] || 'your-api-key'}"\n`;
+        } else {
+          console.log('Using dynamic model lookup or defaults');
+          // 尝试从动态模型列表中查找选中的模型信息
+          const selectedModel = availableModels.find(m =>
+            m.model_id === finalModelName ||
+            m.name === finalModelName ||
+            m.model_id === formValues.model ||
+            m.name === formValues.model
+          );
+          if (selectedModel) {
+            console.log('Found model in available models:', selectedModel);
+            // 根据模型提供商设置不同的默认URL
+            const defaultUrl = selectedModel.provider === 'Tongyi'
+              ? 'https://dashscope.aliyuncs.com/api/v1'
+              : selectedModel.provider === 'OpenAI'
+              ? 'https://api.openai.com/v1'
+              : 'https://api.example.com/v1';
+            yaml += `    url: "${defaultUrl}"\n`;
+            yaml += `    api-key: "your-api-key"\n`;
+          } else {
+            console.log('Model not found in available models, using defaults from handle or fallback');
+            // 使用handle中的URL，或者默认值
+            const defaultUrl = handle.model?.url || 'https://api.example.com/v1';
+            const defaultApiKey = handle.model?.['api-key'] || 'your-api-key';
+            yaml += `    url: "${defaultUrl}"\n`;
+            yaml += `    api-key: "${defaultApiKey}"\n`;
+          }
+        }
       }
 
       if ('max_iterations' in handle && handle.max_iterations) {
@@ -338,7 +407,7 @@ const AgentSchemaCreator: React.FC = () => {
       }
 
       // 工具配置 - 优先使用form中的tools值
-      const toolsList = values.tools || handle.tools || [];
+      const toolsList = formValues.tools || handle.tools || [];
       if (toolsList.length > 0) {
         yaml += `  tools:\n`;
         toolsList.forEach(tool => {
@@ -384,18 +453,21 @@ const AgentSchemaCreator: React.FC = () => {
       if (subAgents.length === 0) return '';
 
       let yaml = 'sub_agents:\n';
-      
+
       subAgents.forEach(agentName => {
         // 直接使用名称，因为表单现在存储的是名称
         yaml += `  - agent: ${agentName}\n`;
       });
-      
+
       return yaml;
     };
 
-    const handleYaml = values.handle ? generateHandleYaml(values.handle) : 'handle:\n  state:\n    strategies:\n      input: "replace"\n      output: "replace"\n';
+    const handleYaml = values.handle ? generateHandleYaml(values.handle, values) : 'handle:\n  state:\n    strategies:\n      input: "replace"\n      output: "replace"\n';
     const subAgentsYaml = subAgents.length > 0 ? generateSubAgentsYaml(subAgents) : '';
     const yaml = `agent:\n  type: "${values.agentType || 'ReactAgent'}"\n  name: "${values.name || ''}"\n  description: "${values.description || ''}"\n  instruction: |\n    ${instruction.replace(/\n/g, '\n    ')}\n  input_keys:\n${inputKeys.length > 0 ? inputKeys.map(key => `    - "${key}"`).join('\n') : '    - "input"'}\n  output_key: "${values.outputKey || 'output'}"\n${handleYaml}${subAgentsYaml}`;
+
+    console.log('=== GENERATE YAML END ===');
+    console.log('Generated YAML:', yaml);
     return yaml;
   };
 
@@ -409,15 +481,15 @@ const AgentSchemaCreator: React.FC = () => {
       }
     };
     updateYaml();
-  }, [form, selectedAgentId]);
+  }, [form, selectedAgentId, availableModels]);
 
   // 选择智能体
   const handleSelectAgent = async (agent: IAgentSchema) => {
     setSelectedAgentId(agent.id || null);
-    
+
     // 将后端数据转换为前端表单格式
     let subAgentsNames: string[] = [];
-    
+
     // 如果后端存储的是ID格式的subAgents，转换为名称
     if (agent.subAgents) {
       try {
@@ -437,15 +509,27 @@ const AgentSchemaCreator: React.FC = () => {
         console.error('Failed to parse subAgents data:', error);
       }
     }
-    
+
     // 解析handle配置，提取模型信息
     let modelName = 'qwen2.5-72b-instruct'; // 默认模型
     let tools: string[] = [];
-    
+
     try {
       const handleData = JSON.parse(agent.handle || '{}');
       if (handleData.model && handleData.model.name) {
         modelName = handleData.model.name;
+        // 检查模型是否存在于当前的模型列表中，如果不存在，添加到列表中
+        const modelExists = availableModels.some(m => m.model_id === modelName || m.name === modelName);
+        if (!modelExists && modelName) {
+          // 如果模型不在当前列表中，添加一个临时模型项
+          const tempModel: IModel = {
+            model_id: modelName,
+            name: modelName,
+            provider: 'unknown',
+            type: 'llm'
+          };
+          setAvailableModels(prev => [...prev, tempModel]);
+        }
       }
       if (handleData.tools && Array.isArray(handleData.tools)) {
         tools = handleData.tools;
@@ -453,7 +537,7 @@ const AgentSchemaCreator: React.FC = () => {
     } catch (error) {
       console.error('Failed to parse handle data:', error);
     }
-    
+
     const formData = {
       name: agent.name,
       description: agent.description,
@@ -481,7 +565,7 @@ const AgentSchemaCreator: React.FC = () => {
   // 删除智能体
   const handleDeleteAgent = async (agent: IAgentSchema, e: React.MouseEvent) => {
     e.stopPropagation(); // 阻止事件冒泡，避免触发选择
-    
+
     if (!agent.id) {
       message.error('无法删除：智能体ID无效');
       return;
@@ -489,7 +573,7 @@ const AgentSchemaCreator: React.FC = () => {
 
     // 显示确认对话框
     const confirmed = window.confirm(`确定要删除智能体 "${agent.name}" 吗？此操作不可撤销。`);
-    
+
     if (!confirmed) {
       return;
     }
@@ -497,19 +581,19 @@ const AgentSchemaCreator: React.FC = () => {
     try {
       console.log('Deleting agent:', agent.id);
       await AgentSchemaService.deleteAgentSchema(agent.id);
-      
+
       message.success(`智能体 "${agent.name}" 删除成功`);
-      
+
       // 如果删除的是当前选中的智能体，清空表单
       if (selectedAgentId === agent.id) {
         setSelectedAgentId(null);
         form.resetFields();
         setYamlContent('');
       }
-      
+
       // 重新加载智能体列表
       await fetchSavedAgents();
-      
+
     } catch (error) {
       console.error('Delete agent failed:', error);
       message.error(`删除智能体 "${agent.name}" 失败`);
@@ -559,25 +643,25 @@ const AgentSchemaCreator: React.FC = () => {
 
       // 校验agentName重复
       console.log('4. Checking agent name duplication...');
-      
+
       // 使用已加载的savedAgents进行校验，避免重复API调用
       if (savedAgents.length > 0) {
         console.log('Existing agents:', savedAgents.map(a => ({ id: a.id, name: a.name })));
         console.log('Current agent name:', values.name);
         console.log('Selected agent ID:', selectedAgentId);
-        
+
         const isDuplicate = savedAgents.some(agent => {
           // 确保类型匹配：将ID都转换为字符串比较
           const currentAgentId = selectedAgentId?.toString();
           const existingAgentId = agent.id?.toString();
-          
+
           console.log(`Comparing: "${agent.name}" === "${values.name}" and ${existingAgentId} !== ${currentAgentId}`);
-          
+
           return agent.name === values.name && existingAgentId !== currentAgentId;
         });
-        
+
         console.log('Is duplicate:', isDuplicate);
-        
+
         if (isDuplicate) {
           message.error('智能体名称已存在，请使用其他名称');
           setLoading(false); // 重置loading状态
@@ -656,10 +740,10 @@ const AgentSchemaCreator: React.FC = () => {
         subAgents: values.subAgents ? JSON.stringify(values.subAgents.map((agentName: string) => {
           // 根据名称查找对应的ID
           const agent = savedAgents.find(sa => sa.name === agentName);
-          return { 
-            agent: { 
+          return {
+            agent: {
               id: agent ? agent.id : agentName // 如果找不到对应的ID，使用名称作为后备
-            } 
+            }
           };
         })) : undefined,
         yamlSchema: yaml,
@@ -916,7 +1000,7 @@ const AgentSchemaCreator: React.FC = () => {
                           }
                         };
                         form.setFieldsValue({ handle: updatedHandle });
-                        
+
                         // 使用更新后的handle生成YAML
                         generateYaml({ ...allValues, handle: updatedHandle } as AgentSchemaForm).then(yaml => {
                           setYamlContent(yaml);
@@ -949,22 +1033,22 @@ const AgentSchemaCreator: React.FC = () => {
                     {
                       validator: (_, value) => {
                         if (!value) return Promise.resolve();
-                        
+
                         // 基本格式校验：只允许字母、数字、下划线和连字符
                         if (!/^[a-zA-Z0-9_\-\s\u4e00-\u9fa5]+$/.test(value)) {
                           return Promise.reject('智能体名称只能包含字母、数字、下划线、连字符和空格');
                         }
-                        
+
                         // 长度校验
                         if (value.length < 2 || value.length > 50) {
                           return Promise.reject('智能体名称长度应在2-50个字符之间');
                         }
-                        
+
                         // 检查重复性错误
                         if (nameError && value === form.getFieldValue('name')) {
                           return Promise.reject(nameError);
                         }
-                        
+
                         return Promise.resolve();
                       }
                     }
@@ -972,8 +1056,8 @@ const AgentSchemaCreator: React.FC = () => {
                   help={nameError || undefined}
                   validateStatus={nameError ? 'error' : undefined}
                 >
-                  <Input 
-                    placeholder="Enter agent name" 
+                  <Input
+                    placeholder="Enter agent name"
                     onChange={(e) => checkNameDuplicate(e.target.value)}
                   />
                 </Form.Item>
@@ -991,10 +1075,14 @@ const AgentSchemaCreator: React.FC = () => {
                   name="model"
                   rules={[{ required: true, message: '请选择模型' }]}
                 >
-                  <Select placeholder="Select model">
-                    {modelOptions.map(option => (
-                      <Option key={option.value} value={option.value}>
-                        {option.label}
+                  <Select
+                    placeholder="Select model"
+                    loading={modelsLoading}
+                    disabled={modelsLoading}
+                  >
+                    {availableModels.map(model => (
+                      <Option key={model.model_id} value={model.model_id}>
+                        {model.name}
                       </Option>
                     ))}
                   </Select>
@@ -1102,18 +1190,18 @@ const AgentSchemaCreator: React.FC = () => {
                         if (!value || !Array.isArray(value) || value.length === 0) {
                           return Promise.resolve();
                         }
-                        
+
                         // 获取当前选中的agent名称
                         const currentAgentName = form.getFieldValue('name');
                         if (!currentAgentName) {
                           return Promise.resolve();
                         }
-                        
+
                         // 检查是否选择了当前agent自身
                         if (value.includes(currentAgentName)) {
                           return Promise.reject('不能将当前智能体设置为自身的子智能体');
                         }
-                        
+
                         return Promise.resolve();
                       }
                     }
