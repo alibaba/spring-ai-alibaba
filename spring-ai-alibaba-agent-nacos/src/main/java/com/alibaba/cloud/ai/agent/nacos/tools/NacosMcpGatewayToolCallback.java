@@ -497,13 +497,13 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				StringBuilder sseEndpoint = new StringBuilder("/sse");
 				if (exportPath != null && !exportPath.isEmpty()) {
 					sseEndpoint = new StringBuilder(exportPath);
-					if (mcpServerVO.getPassQueryParams() != null) {
+					if (mcpServerVO.getQueryParams() != null) {
 
 
 						if (!sseEndpoint.toString().contains("?")) {
 							sseEndpoint.append("?");
 						}
-						Iterator<Map.Entry<String, String>> iterator = mcpServerVO.getPassQueryParams().entrySet()
+						Iterator<Map.Entry<String, String>> iterator = mcpServerVO.getQueryParams().entrySet()
 								.iterator();
 						while (iterator.hasNext()) {
 							Map.Entry<String, String> next = iterator.next();
@@ -516,13 +516,13 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl.toString())
 						.sseEndpoint(sseEndpoint.toString());
 
+
 				// 添加自定义请求头（如果需要）
 				// 这里可以根据需要添加认证头等
 				HttpClientSseClientTransport transport = transportBuilder.build();
 
 				// 创建MCP同步客户端
 				McpSyncClient client = McpClient.sync(transport).build();
-
 				try {
 					// 初始化客户端
 					InitializeResult initializeResult = client.initialize();
