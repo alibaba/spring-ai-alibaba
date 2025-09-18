@@ -30,6 +30,61 @@ public class Mem0Client {
 
 	private int maxRetryAttempts = 3;
 
+	// 私有构造函数，防止直接实例化
+	private Mem0Client() {
+	}
+
+	// 私有构造函数，用于从 Builder 创建实例
+	private Mem0Client(Builder builder) {
+		this.baseUrl = builder.baseUrl;
+		this.enableCache = builder.enableCache;
+		this.timeoutSeconds = builder.timeoutSeconds;
+		this.maxRetryAttempts = builder.maxRetryAttempts;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private String baseUrl = "http://localhost:8888";
+
+		private boolean enableCache = true;
+
+		private int timeoutSeconds = 30;
+
+		private int maxRetryAttempts = 3;
+
+		private Builder() {
+		}
+
+		public Builder baseUrl(String baseUrl) {
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder enableCache(boolean enableCache) {
+			this.enableCache = enableCache;
+			return this;
+		}
+
+		public Builder timeoutSeconds(int timeoutSeconds) {
+			this.timeoutSeconds = timeoutSeconds;
+			return this;
+		}
+
+		public Builder maxRetryAttempts(int maxRetryAttempts) {
+			this.maxRetryAttempts = maxRetryAttempts;
+			return this;
+		}
+
+		public Mem0Client build() {
+			return new Mem0Client(this);
+		}
+
+	}
+
 	public String getBaseUrl() {
 		return baseUrl;
 	}

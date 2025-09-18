@@ -77,11 +77,6 @@
             <version>${revision}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-memory-mem0</artifactId>
-            <version>${revision}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

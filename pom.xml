@@ -190,6 +190,8 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory-long</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory-long</module>
 
     </modules>
 

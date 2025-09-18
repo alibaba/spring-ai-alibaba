@@ -49,13 +49,11 @@ class Mem0ServiceClientTest {
 
 	@BeforeEach
 	void setUp() {
-		Mem0Client mem0Client = new Mem0Client();
-		mem0Client.setBaseUrl("http://localhost:8888");
-		mem0Client.setEnableCache(true);
+		Mem0Client mem0Client = Mem0Client.builder().baseUrl("http://localhost:8888").enableCache(true).build();
 		this.mem0Client = mem0Client;
 
-		Mem0Server mem0Server = new Mem0Server();
-		mem0Server.setVersion("v1.1");
+		Mem0Server mem0Server = Mem0Server.builder().version("v1.1").build();
+		;
 		this.mem0Server = mem0Server;
 
 		client = new Mem0ServiceClient(mem0Client, mem0Server, resourceLoader);

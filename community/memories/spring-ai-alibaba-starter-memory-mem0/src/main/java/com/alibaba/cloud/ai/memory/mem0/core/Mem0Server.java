@@ -43,11 +43,126 @@ public class Mem0Server {
 
 	private String customUpdateMemoryPrompt;
 
+	// 私有构造函数，防止直接实例化
+	private Mem0Server() {
+	}
+
+	private Mem0Server(Mem0Server server) {
+		this.version = server.version;
+		this.vectorStore = server.vectorStore;
+		this.graphStore = server.graphStore;
+		this.llm = server.llm;
+		this.embedder = server.embedder;
+		this.historyDbPath = server.historyDbPath;
+		this.project = server.project;
+		this.customFactExtractionPrompt = server.customFactExtractionPrompt;
+		this.customUpdateMemoryPrompt = server.customUpdateMemoryPrompt;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private final Mem0Server server = new Mem0Server();
+
+		private Builder() {
+		}
+
+		public Builder version(String version) {
+			server.version = version;
+			return this;
+		}
+
+		public Builder vectorStore(VectorStore vectorStore) {
+			server.vectorStore = vectorStore;
+			return this;
+		}
+
+		public Builder graphStore(GraphStore graphStore) {
+			server.graphStore = graphStore;
+			return this;
+		}
+
+		public Builder llm(Llm llm) {
+			server.llm = llm;
+			return this;
+		}
+
+		public Builder embedder(Embedder embedder) {
+			server.embedder = embedder;
+			return this;
+		}
+
+		public Builder historyDbPath(String historyDbPath) {
+			server.historyDbPath = historyDbPath;
+			return this;
+		}
+
+		public Builder project(Project project) {
+			server.project = project;
+			return this;
+		}
+
+		public Builder customFactExtractionPrompt(String customFactExtractionPrompt) {
+			server.customFactExtractionPrompt = customFactExtractionPrompt;
+			return this;
+		}
+
+		public Builder customUpdateMemoryPrompt(String customUpdateMemoryPrompt) {
+			server.customUpdateMemoryPrompt = customUpdateMemoryPrompt;
+			return this;
+		}
+
+		public Mem0Server build() {
+			return new Mem0Server(server);
+		}
+
+	}
+
 	public static class Project {
 
 		private String customCategories;
 
 		private String customInstructions;
+
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		public static class Builder {
+
+			private final Project project = new Project();
+
+			private Builder() {
+			}
+
+			public Builder customCategories(String customCategories) {
+				project.customCategories = customCategories;
+				return this;
+			}
+
+			public Builder customInstructions(String customInstructions) {
+				project.customInstructions = customInstructions;
+				return this;
+			}
+
+			public Project build() {
+				return new Project(project);
+			}
+
+		}
+
+		// 私有构造函数，防止直接实例化
+		private Project() {
+		}
+
+		// 私有构造函数，用于复制现有实例
+		private Project(Project project) {
+			this.customCategories = project.customCategories;
+			this.customInstructions = project.customInstructions;
+		}
 
 		public String getCustomCategories() {
 			return customCategories;
@@ -85,6 +200,43 @@ public class Mem0Server {
 		 */
 		private Map<String, String> config;
 
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		public static class Builder {
+
+			private final VectorStore vectorStore = new VectorStore();
+
+			private Builder() {
+			}
+
+			public Builder provider(String provider) {
+				vectorStore.provider = provider;
+				return this;
+			}
+
+			public Builder config(Map<String, String> config) {
+				vectorStore.config = config;
+				return this;
+			}
+
+			public VectorStore build() {
+				return new VectorStore(vectorStore);
+			}
+
+		}
+
+		// 私有构造函数，防止直接实例化
+		private VectorStore() {
+		}
+
+		// 私有构造函数，用于复制现有实例
+		private VectorStore(VectorStore vectorStore) {
+			this.provider = vectorStore.provider;
+			this.config = vectorStore.config;
+		}
+
 		public String getProvider() {
 			return provider;
 		}
@@ -120,6 +272,55 @@ public class Mem0Server {
 		 * customPrompt: classpath:/prompts/system-message.st
 		 */
 		private String customPrompt;
+
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		public static class Builder {
+
+			private final GraphStore graphStore = new GraphStore();
+
+			private Builder() {
+			}
+
+			public Builder provider(String provider) {
+				graphStore.provider = provider;
+				return this;
+			}
+
+			public Builder config(GraphStoreConfig config) {
+				graphStore.config = config;
+				return this;
+			}
+
+			public Builder llm(Llm llm) {
+				graphStore.llm = llm;
+				return this;
+			}
+
+			public Builder customPrompt(String customPrompt) {
+				graphStore.customPrompt = customPrompt;
+				return this;
+			}
+
+			public GraphStore build() {
+				return new GraphStore(graphStore);
+			}
+
+		}
+
+		// 私有构造函数，防止直接实例化
+		private GraphStore() {
+		}
+
+		// 私有构造函数，用于复制现有实例
+		private GraphStore(GraphStore graphStore) {
+			this.provider = graphStore.provider;
+			this.config = graphStore.config;
+			this.llm = graphStore.llm;
+			this.customPrompt = graphStore.customPrompt;
+		}
 
 		public String getProvider() {
 			return provider;
@@ -166,6 +367,61 @@ public class Mem0Server {
 
 			private Boolean baseLabel;
 
+			public static Builder builder() {
+				return new Builder();
+			}
+
+			public static class Builder {
+
+				private final GraphStoreConfig config = new GraphStoreConfig();
+
+				private Builder() {
+				}
+
+				public Builder url(String url) {
+					config.url = url;
+					return this;
+				}
+
+				public Builder username(String username) {
+					config.username = username;
+					return this;
+				}
+
+				public Builder password(String password) {
+					config.password = password;
+					return this;
+				}
+
+				public Builder database(String database) {
+					config.database = database;
+					return this;
+				}
+
+				public Builder baseLabel(Boolean baseLabel) {
+					config.baseLabel = baseLabel;
+					return this;
+				}
+
+				public GraphStoreConfig build() {
+					return new GraphStoreConfig(config);
+				}
+
+			}
+
+			// 私有构造函数，防止直接实例化
+			private GraphStoreConfig() {
+			}
+
+			// 私有构造函数，用于复制现有实例
+			private GraphStoreConfig(GraphStoreConfig config) {
+				this.url = config.url;
+				this.username = config.username;
+				this.password = config.password;
+				this.database = config.database;
+				this.baseLabel = config.baseLabel;
+			}
+
 			public String getUrl() {
 				return url;
 			}
@@ -190,6 +446,22 @@ public class Mem0Server {
 				this.password = password;
 			}
 
+			public String getDatabase() {
+				return database;
+			}
+
+			public void setDatabase(String database) {
+				this.database = database;
+			}
+
+			public Boolean getBaseLabel() {
+				return baseLabel;
+			}
+
+			public void setBaseLabel(Boolean baseLabel) {
+				this.baseLabel = baseLabel;
+			}
+
 		}
 
 	}
@@ -199,6 +471,43 @@ public class Mem0Server {
 		private String provider;
 
 		private LlmConfig config;
+
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		public static class Builder {
+
+			private Llm llm = new Llm();
+
+			private Builder() {
+			}
+
+			public Builder provider(String provider) {
+				llm.provider = provider;
+				return this;
+			}
+
+			public Builder config(LlmConfig config) {
+				llm.config = config;
+				return this;
+			}
+
+			public Llm build() {
+				return new Llm(llm);
+			}
+
+		}
+
+		// 私有构造函数，防止直接实例化
+		private Llm() {
+		}
+
+		// 私有构造函数，用于复制现有实例
+		private Llm(Llm llm) {
+			this.provider = llm.provider;
+			this.config = llm.config;
+		}
 
 		public String getProvider() {
 			return provider;
@@ -225,6 +534,55 @@ public class Mem0Server {
 			private String model;
 
 			private String openaiBaseUrl;
+
+			public static Builder builder() {
+				return new Builder();
+			}
+
+			public static class Builder {
+
+				private final LlmConfig config = new LlmConfig();
+
+				private Builder() {
+				}
+
+				public Builder apiKey(String apiKey) {
+					config.apiKey = apiKey;
+					return this;
+				}
+
+				public Builder temperature(double temperature) {
+					config.temperature = temperature;
+					return this;
+				}
+
+				public Builder model(String model) {
+					config.model = model;
+					return this;
+				}
+
+				public Builder openaiBaseUrl(String openaiBaseUrl) {
+					config.openaiBaseUrl = openaiBaseUrl;
+					return this;
+				}
+
+				public LlmConfig build() {
+					return new LlmConfig(config);
+				}
+
+			}
+
+			// 私有构造函数，防止直接实例化
+			private LlmConfig() {
+			}
+
+			// 私有构造函数，用于复制现有实例
+			private LlmConfig(LlmConfig config) {
+				this.apiKey = config.apiKey;
+				this.temperature = config.temperature;
+				this.model = config.model;
+				this.openaiBaseUrl = config.openaiBaseUrl;
+			}
 
 			public String getApiKey() {
 				return apiKey;
@@ -268,6 +626,43 @@ public class Mem0Server {
 
 		private EmbedderConfig config;
 
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		public static class Builder {
+
+			private final Embedder embedder = new Embedder();
+
+			private Builder() {
+			}
+
+			public Builder provider(String provider) {
+				embedder.provider = provider;
+				return this;
+			}
+
+			public Builder config(EmbedderConfig config) {
+				embedder.config = config;
+				return this;
+			}
+
+			public Embedder build() {
+				return new Embedder(embedder);
+			}
+
+		}
+
+		// 私有构造函数，防止直接实例化
+		private Embedder() {
+		}
+
+		// 私有构造函数，用于复制现有实例
+		private Embedder(Embedder embedder) {
+			this.provider = embedder.provider;
+			this.config = embedder.config;
+		}
+
 		public String getProvider() {
 			return provider;
 		}
@@ -291,6 +686,49 @@ public class Mem0Server {
 			private String model;
 
 			private String openaiBaseUrl;
+
+			public static Builder builder() {
+				return new Builder();
+			}
+
+			public static class Builder {
+
+				private final EmbedderConfig config = new EmbedderConfig();
+
+				private Builder() {
+				}
+
+				public Builder apiKey(String apiKey) {
+					config.apiKey = apiKey;
+					return this;
+				}
+
+				public Builder model(String model) {
+					config.model = model;
+					return this;
+				}
+
+				public Builder openaiBaseUrl(String openaiBaseUrl) {
+					config.openaiBaseUrl = openaiBaseUrl;
+					return this;
+				}
+
+				public EmbedderConfig build() {
+					return new EmbedderConfig(config);
+				}
+
+			}
+
+			// 私有构造函数，防止直接实例化
+			private EmbedderConfig() {
+			}
+
+			// 私有构造函数，用于复制现有实例
+			private EmbedderConfig(EmbedderConfig config) {
+				this.apiKey = config.apiKey;
+				this.model = config.model;
+				this.openaiBaseUrl = config.openaiBaseUrl;
+			}
 
 			public String getApiKey() {
 				return apiKey;

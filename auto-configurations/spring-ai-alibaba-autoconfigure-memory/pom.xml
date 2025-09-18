@@ -157,13 +157,6 @@
             <optional>true</optional>
         </dependency>
 
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-memory-mem0</artifactId>
-            <version>${revision}</version>
-            <optional>true</optional>
-        </dependency>
-
     </dependencies>
 
 </project>

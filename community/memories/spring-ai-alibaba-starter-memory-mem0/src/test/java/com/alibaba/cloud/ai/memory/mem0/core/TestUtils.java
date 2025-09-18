@@ -36,15 +36,12 @@ import java.util.UUID;
 public class TestUtils {
 
 	public static Mem0Client createTestMem0Client() {
-		Mem0Client mem0Client = new Mem0Client();
-		mem0Client.setBaseUrl("http://localhost:8888");
-		mem0Client.setTimeoutSeconds(30);
+		Mem0Client mem0Client = Mem0Client.builder().baseUrl("http://localhost:8888").timeoutSeconds(30).build();
 		return mem0Client;
 	}
 
 	public static Mem0Server createTestMem0Server() {
-		Mem0Server mem0Server = new Mem0Server();
-		mem0Server.setVersion("v1.1");
+		Mem0Server mem0Server = Mem0Server.builder().version("v1.1").build();
 		return mem0Server;
 	}
 
