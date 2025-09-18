@@ -32,27 +32,13 @@ INSERT IGNORE INTO `agent_knowledge` (`id`, `agent_id`, `title`, `content`, `typ
 
 -- 数据源示例数据
 -- 示例数据源可以运行docker-compose-datasource.yml建立，或者手动修改为自己的数据源
-INSERT INTO `datasource` (`id`, `name`, `type`, `host`, `port`, `database_name`, `username`, `password`, `connection_url`, `status`, `test_status`, `description`, `creator_id`, `create_time`, `update_time`)
-SELECT * FROM (
-  SELECT 1 AS id, '生产环境MySQL数据库' AS name, 'mysql' AS type, 'mysql-data' AS host, 3306 AS port, 'product_db' AS database_name,
-         'root' AS username, 'root' AS password,
-         'jdbc:mysql://mysql-data:3306/product_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true' AS connection_url,
-         'active' AS status, 'success' AS test_status, '生产环境主数据库，包含核心业务数据' AS description, 2100246635 AS creator_id, NOW() AS create_time, NOW() AS update_time
-  UNION ALL
-  SELECT 2, '数据仓库PostgreSQL', 'postgresql', 'postgres-data', 5432, 'data_warehouse', 'postgres', 'postgres',
-         'jdbc:postgresql://postgres-data:5432/data_warehouse', 'active', 'success', '数据仓库，用于数据分析和报表生成', 2100246635, NOW(), NOW()
-) AS tmp
-WHERE NOT EXISTS (SELECT 1 FROM `datasource`);
+INSERT IGNORE INTO `datasource` (`id`, `name`, `type`, `host`, `port`, `database_name`, `username`, `password`, `connection_url`, `status`, `test_status`, `description`, `creator_id`, `create_time`, `update_time`) VALUES 
+(1, '生产环境MySQL数据库', 'mysql', 'mysql-data', 3306, 'product_db', 'root', 'root', 'jdbc:mysql://mysql-data:3306/product_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true', 'active', 'success', '生产环境主数据库，包含核心业务数据', 2100246635, NOW(), NOW()),
+(2, '数据仓库PostgreSQL', 'postgresql', 'postgres-data', 5432, 'data_warehouse', 'postgres', 'postgres', 'jdbc:postgresql://postgres-data:5432/data_warehouse', 'active', 'success', '数据仓库，用于数据分析和报表生成', 2100246635, NOW(), NOW());
 
 -- 智能体数据源关联示例数据
-INSERT INTO `agent_datasource` (`id`, `agent_id`, `datasource_id`, `is_active`, `create_time`, `update_time`)
-SELECT * FROM (
-  SELECT 1 AS id, 1 AS agent_id, 2 AS datasource_id, 1 AS is_active, NOW() AS create_time, NOW() AS update_time
-  UNION ALL
-  SELECT 2, 2, 1, 1, NOW(), NOW()
-  UNION ALL
-  SELECT 3, 3, 1, 1, NOW(), NOW()
-  UNION ALL
-  SELECT 4, 4, 1, 1, NOW(), NOW()
-) AS tmp
-WHERE NOT EXISTS (SELECT 1 FROM `agent_datasource`);
+INSERT IGNORE INTO `agent_datasource` (`id`, `agent_id`, `datasource_id`, `is_active`, `create_time`, `update_time`) VALUES 
+(1, 1, 2, 1, NOW(), NOW()),  -- 中国人口GDP数据智能体使用数据仓库
+(2, 2, 1, 1, NOW(), NOW()),  -- 销售数据分析智能体使用生产环境数据库
+(3, 3, 1, 1, NOW(), NOW()),  -- 财务报表智能体使用生产环境数据库
+(4, 4, 1, 1, NOW(), NOW());  -- 库存管理智能体使用生产环境数据库
