@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.admin.generator.model.workflow;
 import java.util.Arrays;
 import java.util.Optional;
 
-// TODO: 将枚举类的DSL Value字段改为Function<DSLDialectType, String>
 public enum NodeType {
 
 	START("start", "start", "Start"),
@@ -39,23 +38,23 @@ public enum NodeType {
 
 	AGGREGATOR("aggregator", "variable-aggregator", "UNSUPPORTED"),
 
-	HUMAN("human", "UNSUPPORTED", "UNSUPPORTED"),
+	HUMAN("human", "unsupported", "UNSUPPORTED"),
 
-	BRANCH("branch", "if-else", "Judge"),
+	BRANCH("branch", "if-else", "UNSUPPORTED"),
 
 	DOC_EXTRACTOR("document-extractor", "document-extractor", "UNSUPPORTED"),
 
-	QUESTION_CLASSIFIER("question-classifier", "question-classifier", "Classifier"),
+	QUESTION_CLASSIFIER("question-classifier", "question-classifier", "UNSUPPORTED"),
 
 	HTTP("http", "http-request", "UNSUPPORTED"),
 
 	LIST_OPERATOR("list-operator", "list-operator", "UNSUPPORTED"),
 
-	PARAMETER_PARSING("parameter-parsing", "parameter-extractor", "ParameterExtractor"),
+	PARAMETER_PARSING("parameter-parsing", "parameter-extractor", "UNSUPPORTED"),
 
 	TOOL("tool", "tool", "UNSUPPORTED"),
 
-	MCP("mcp", "UNSUPPORTED", "UNSUPPORTED"),
+	MCP("mcp", "unsupported", "UNSUPPORTED"),
 
 	TEMPLATE_TRANSFORM("template-transform", "template-transform", "UNSUPPORTED"),
 

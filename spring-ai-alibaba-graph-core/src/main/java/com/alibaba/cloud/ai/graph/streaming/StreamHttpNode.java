@@ -71,8 +71,9 @@ public class StreamHttpNode implements StreamingGraphNode {
 
 			UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(finalUrl);
 			finalQueryParams.forEach(uriBuilder::queryParam);
-			URI finalUri = uriBuilder.encode().build().toUri(); // 使用encode()进行URL编码
-			validateUrl(finalUri.toString()); // 在编码后进行URL安全验证
+			URI finalUri = uriBuilder.build().toUri();
+
+			validateUrl(finalUri.toString()); // 添加URL安全验证，在URI构建之后
 
 			WebClient.RequestBodySpec requestSpec = param.getWebClient()
 				.method(param.getMethod())
@@ -133,7 +134,12 @@ public class StreamHttpNode implements StreamingGraphNode {
 			.buffer(param.getBufferTimeout()) // 使用配置的缓冲超时时间避免内存累积
 			.map(chunks -> String.join("", chunks))
 			.flatMap(this::parseStreamChunk)
-			.filter(data -> !data.isEmpty())
+			.filter(data -> {
+				if (data instanceof String) {
+					return !((String) data).isEmpty();
+				}
+				return data != null; // 对于Map对象，只要不为null就保留
+			})
 			.map(this::wrapOutput)
 			.transform(flux -> {
 				if (param.getStreamMode() == StreamMode.AGGREGATE) {
@@ -151,11 +157,11 @@ public class StreamHttpNode implements StreamingGraphNode {
 	/**
 	 * 解析流数据块
 	 */
-	private Flux<String> parseStreamChunk(String chunk) {
+	private Flux<Object> parseStreamChunk(String chunk) {
 		return switch (param.getStreamFormat()) {
-			case SSE -> parseSSEChunk(chunk);
+			case SSE -> parseSSEChunk(chunk).cast(Object.class);
 			case JSON_LINES -> parseJsonLinesChunk(chunk);
-			case TEXT_STREAM -> parseTextStreamChunk(chunk);
+			case TEXT_STREAM -> parseTextStreamChunk(chunk).cast(Object.class);
 		};
 	}
 
@@ -179,9 +185,9 @@ public class StreamHttpNode implements StreamingGraphNode {
 	/**
 	 * 解析JSON Lines格式数据
 	 */
-	private Flux<String> parseJsonLinesChunk(String chunk) {
+	private Flux<Object> parseJsonLinesChunk(String chunk) {
 		String[] lines = chunk.split("\n");
-		List<String> results = new ArrayList<>();
+		List<Object> results = new ArrayList<>();
 
 		for (String line : lines) {
 			line = line.trim();
@@ -192,21 +198,11 @@ public class StreamHttpNode implements StreamingGraphNode {
 				}
 				catch (JsonProcessingException e) {
 					logger.warn("Invalid JSON line: {}, error: {}", line, e.getMessage());
-					// 返回包含错误信息的特殊标记，保留原始数据用于调试
-					try {
-						Map<String, String> errorMap = new HashMap<>();
-						errorMap.put("_parsing_error", e.getMessage());
-						errorMap.put("_raw_data", line);
-						String errorJson = objectMapper.writeValueAsString(errorMap);
-						results.add(errorJson);
-					}
-					catch (JsonProcessingException jsonError) {
-						// 如果连错误JSON都无法生成，则使用简单的错误格式
-						String errorJson = String.format(
-								"{\"_parsing_error\": \"JSON processing failed\", \"_raw_data\": \"%s\"}",
-								line.replaceAll("\"", "\\\\\""));
-						results.add(errorJson);
-					}
+					// 返回包含错误信息的Map对象，用于直接处理
+					Map<String, Object> errorMap = new HashMap<>();
+					errorMap.put("_parsing_error", e.getMessage());
+					errorMap.put("_raw_data", line);
+					results.add(errorMap);
 				}
 			}
 		}
@@ -234,20 +230,31 @@ public class StreamHttpNode implements StreamingGraphNode {
 	/**
 	 * 包装输出数据
 	 */
-	private Map<String, Object> wrapOutput(String data) {
+	private Map<String, Object> wrapOutput(Object data) {
 		Map<String, Object> result = new HashMap<>();
 
-		try {
-			if (data.startsWith("{") || data.startsWith("[")) {
-				JsonNode jsonNode = objectMapper.readTree(data);
-				Object parsedData = objectMapper.convertValue(jsonNode, Object.class);
-				result.put("data", parsedData);
+		if (data instanceof Map) {
+			// 如果已经是Map对象（如错误处理的结果），直接使用
+			result.put("data", data);
+		}
+		else if (data instanceof String) {
+			String stringData = (String) data;
+			try {
+				if (stringData.startsWith("{") || stringData.startsWith("[")) {
+					JsonNode jsonNode = objectMapper.readTree(stringData);
+					Object parsedData = objectMapper.convertValue(jsonNode, Object.class);
+					result.put("data", parsedData);
+				}
+				else {
+					result.put("data", stringData);
+				}
 			}
-			else {
-				result.put("data", data);
+			catch (JsonProcessingException e) {
+				result.put("data", stringData);
 			}
 		}
-		catch (JsonProcessingException e) {
+		else {
+			// 对于其他类型的数据，直接使用
 			result.put("data", data);
 		}
 
@@ -327,6 +334,7 @@ public class StreamHttpNode implements StreamingGraphNode {
 			String key = matcher.group(1);
 			Object value = state.value(key).orElse("");
 			String replacement = value != null ? value.toString() : "";
+			// 不进行编码，让UriComponentsBuilder处理
 			matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
 		}
 
@@ -348,14 +356,12 @@ public class StreamHttpNode implements StreamingGraphNode {
 	 */
 	private void applyAuth(WebClient.RequestBodySpec requestSpec) {
 		if (param.getAuthConfig() != null) {
-			switch (param.getAuthConfig().getType()) {
-				case BASIC:
-					requestSpec.headers(headers -> headers.setBasicAuth(param.getAuthConfig().getUsername(),
-							param.getAuthConfig().getPassword()));
-					break;
-				case BEARER:
-					requestSpec.headers(headers -> headers.setBearerAuth(param.getAuthConfig().getToken()));
-					break;
+			if (param.getAuthConfig().isBasic()) {
+				requestSpec.headers(headers -> headers.setBasicAuth(param.getAuthConfig().getUsername(),
+						param.getAuthConfig().getPassword()));
+			}
+			else if (param.getAuthConfig().isBearer()) {
+				requestSpec.headers(headers -> headers.setBearerAuth(param.getAuthConfig().getToken()));
 			}
 		}
 	}
