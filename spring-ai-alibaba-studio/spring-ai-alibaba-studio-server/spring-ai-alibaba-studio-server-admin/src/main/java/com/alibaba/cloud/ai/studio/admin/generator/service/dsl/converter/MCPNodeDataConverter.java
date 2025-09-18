@@ -16,23 +16,22 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.MCPNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
-import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
 import org.springframework.stereotype.Component;
 
-/**
- * Convert the MCP node configuration in the Dify DSL to and from the MCPNodeData object.
- */
 @Component
 public class MCPNodeDataConverter extends AbstractNodeDataConverter<MCPNodeData> {
 
@@ -50,87 +49,60 @@ public class MCPNodeDataConverter extends AbstractNodeDataConverter<MCPNodeData>
 
 	private enum MCPNodeConverter {
 
-		DIFY(new DialectConverter<>() {
-			@SuppressWarnings("unchecked")
+		STUDIO(new DialectConverter<>() {
+			@Override
+			public Boolean supportDialect(DSLDialectType dialectType) {
+				return DSLDialectType.STUDIO.equals(dialectType);
+			}
+
 			@Override
 			public MCPNodeData parse(Map<String, Object> data) {
-				MCPNodeData nd = new MCPNodeData();
+				MCPNodeData nodeData = new MCPNodeData();
 
-				// url
-				nd.setUrl((String) data.get("url"));
+				// 获取基本信息
+				String toolName = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param", "tool_name");
+				String serverCode = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param",
+						"server_code");
+				String serverName = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param",
+						"server_name");
+				String inputJsonTemplate = MapReadUtil
+					.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "input_params"))
+					.stream()
+					.map(map -> {
+						String key = map.get("key").toString();
+						String value = map.get("value").toString();
+						VariableType type = VariableType.fromStudioValue(map.get("type").toString())
+							.orElse(VariableType.OBJECT);
 
-				// tool
-				nd.setTool((String) data.get("tool"));
+						if (VariableType.STRING.equals(type) && value != null) {
+							value = "\"" + value + "\"";
+						}
+						return String.format("\"%s\": %s", key, value);
+					})
+					.collect(Collectors.joining(",\n"));
+				inputJsonTemplate = "{" + inputJsonTemplate + "}";
+				String outputKey = MapReadUtil
+					.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "output_params"))
+					.get(0)
+					.get("key")
+					.toString();
 
-				// headers (Map<String, String>)
-				Map<String, String> hmap = (Map<String, String>) data.get("headers");
-				if (hmap != null) {
-					nd.setHeaders(new LinkedHashMap<>(hmap));
-				}
-
-				// params (Map<String, Object>)
-				Map<String, Object> pmap = (Map<String, Object>) data.get("params");
-				if (pmap != null) {
-					nd.setParams(new LinkedHashMap<>(pmap));
-				}
-
-				// output_key
-				nd.setOutputKey((String) data.get("output_key"));
-
-				// input_param_keys (List<String>)
-				List<String> ipk = (List<String>) data.get("input_param_keys");
-				if (ipk != null) {
-					nd.setInputParamKeys(ipk);
-				}
-				else {
-					nd.setInputParamKeys(Collections.emptyList());
-				}
-
-				return nd;
+				// 设置节点数据
+				nodeData.setToolName(toolName);
+				nodeData.setServerCode(serverCode);
+				nodeData.setServerName(serverName);
+				nodeData.setInputJsonTemplate(inputJsonTemplate);
+				nodeData.setOutputKey(outputKey);
+				return nodeData;
 			}
 
 			@Override
-			public Map<String, Object> dump(MCPNodeData nd) {
-				Map<String, Object> m = new LinkedHashMap<>();
-
-				// url
-				if (nd.getUrl() != null) {
-					m.put("url", nd.getUrl());
-				}
-
-				// tool
-				if (nd.getTool() != null) {
-					m.put("tool", nd.getTool());
-				}
-
-				// headers
-				if (nd.getHeaders() != null && !nd.getHeaders().isEmpty()) {
-					m.put("headers", nd.getHeaders());
-				}
-
-				// params
-				if (nd.getParams() != null && !nd.getParams().isEmpty()) {
-					m.put("params", nd.getParams());
-				}
-
-				// output_key
-				if (nd.getOutputKey() != null) {
-					m.put("output_key", nd.getOutputKey());
-				}
-
-				// input_param_keys
-				if (nd.getInputParamKeys() != null && !nd.getInputParamKeys().isEmpty()) {
-					m.put("input_param_keys", nd.getInputParamKeys());
-				}
-
-				return m;
+			public Map<String, Object> dump(MCPNodeData nodeData) {
+				throw new UnsupportedOperationException();
 			}
+		})
 
-			@Override
-			public Boolean supportDialect(DSLDialectType dialect) {
-				return DSLDialectType.DIFY.equals(dialect);
-			}
-		}), CUSTOM(defaultCustomDialectConverter(MCPNodeData.class));
+		, CUSTOM(defaultCustomDialectConverter(MCPNodeData.class));
 
 		private final DialectConverter<MCPNodeData> converter;
 
@@ -147,6 +119,21 @@ public class MCPNodeDataConverter extends AbstractNodeDataConverter<MCPNodeData>
 	@Override
 	public String generateVarName(int count) {
 		return "mcpNode" + count;
+	}
+
+	@Override
+	public BiConsumer<MCPNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case STUDIO -> emptyProcessConsumer().andThen((nodeData, idToVarName) -> {
+				nodeData.setOutputs(List.of(new Variable(nodeData.getOutputKey(), VariableType.STRING)));
+				nodeData.setInputJsonTemplate(
+						this.convertVarTemplate(dialectType, nodeData.getInputJsonTemplate(), idToVarName));
+				nodeData.setInputKeys(this.getVarTemplateKeys(nodeData.getInputJsonTemplate()));
+			})
+				.andThen(super.postProcessConsumer(dialectType))
+				.andThen((nodeData, idToVarName) -> nodeData.setOutputKey(nodeData.getOutputs().get(0).getName()));
+			default -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

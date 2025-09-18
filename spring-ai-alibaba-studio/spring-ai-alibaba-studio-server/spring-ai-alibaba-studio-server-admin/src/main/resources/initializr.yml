@@ -216,6 +216,12 @@ initializr:
           artifact-id: spring-ai-alibaba-starter-dashscope
           version: 1.0.0.4-SNAPSHOT
           description: DashScope Model adapted Starter
+        - name: Spring AI Starter MCP Client
+          id: spring-ai-starter-mcp-client
+          group-id: org.springframework.ai
+          artifact-id: spring-ai-starter-mcp-client
+          version: 1.0.0
+          description: Spring AI Starter MCP Client
     - name: Developer Tools
       content:
         - name: GraalVM Native Support

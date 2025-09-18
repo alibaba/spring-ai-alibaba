@@ -104,6 +104,9 @@ public class QuestionClassifierNode implements NodeAction {
 	}
 
 	private String renderTemplate(OverAllState state, String template) {
+		if (!StringUtils.hasText(template)) {
+			return template;
+		}
 		Map<String, Object> params = Stream.of(template)
 			.map(VAR_TEMPLATE_PATTERN::matcher)
 			.map(Matcher::results)

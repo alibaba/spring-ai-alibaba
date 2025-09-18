@@ -46,7 +46,7 @@ public enum NodeType {
 
 	QUESTION_CLASSIFIER("question-classifier", "question-classifier", "UNSUPPORTED"),
 
-	HTTP("http", "http-request", "UNSUPPORTED"),
+	HTTP("http", "http-request", "API"),
 
 	LIST_OPERATOR("list-operator", "list-operator", "UNSUPPORTED"),
 
@@ -54,7 +54,8 @@ public enum NodeType {
 
 	TOOL("tool", "tool", "UNSUPPORTED"),
 
-	MCP("mcp", "unsupported", "UNSUPPORTED"),
+	// Dify的MCP使用ToolNode定义
+	MCP("mcp", "UNSUPPORTED", "MCP"),
 
 	TEMPLATE_TRANSFORM("template-transform", "template-transform", "UNSUPPORTED"),
 
@@ -90,6 +91,11 @@ public enum NodeType {
 
 	public String studioValue() {
 		return this.studioValue;
+	}
+
+	public static boolean isEmpty(NodeType nodeType) {
+		return NodeType.EMPTY.equals(nodeType) || NodeType.ITERATION_START.equals(nodeType)
+				|| NodeType.ITERATION_END.equals(nodeType);
 	}
 
 	public static Optional<NodeType> fromValue(String value) {

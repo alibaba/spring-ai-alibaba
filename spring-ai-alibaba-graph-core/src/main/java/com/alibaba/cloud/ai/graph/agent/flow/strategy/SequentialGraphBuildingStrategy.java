@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
@@ -53,7 +54,11 @@ public class SequentialGraphBuildingStrategy implements FlowGraphBuildingStrateg
 		BaseAgent currentAgent = rootAgent;
 		for (BaseAgent subAgent : config.getSubAgents()) {
 			// Add the current sub-agent as a node
-			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(currentAgent.outputKey(), subAgent.outputKey()));
+			if (subAgent instanceof A2aRemoteAgent subA2aAgent) {
+				graph.addNode(subAgent.name(), subA2aAgent.asAsyncNodeAction(currentAgent.outputKey(), subAgent.outputKey()));
+			} else {
+				graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(currentAgent.outputKey(), subAgent.outputKey()));
+			}
 			graph.addEdge(currentAgent.name(), subAgent.name());
 			currentAgent = subAgent;
 		}

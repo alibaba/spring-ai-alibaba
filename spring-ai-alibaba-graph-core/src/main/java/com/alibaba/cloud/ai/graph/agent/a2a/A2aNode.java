@@ -15,12 +15,26 @@
  */
 package com.alibaba.cloud.ai.graph.agent.a2a;
 
+import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+
+import org.springframework.util.StringUtils;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,17 +47,8 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.springframework.util.StringUtils;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 public class A2aNode implements NodeAction {
 
@@ -72,8 +77,9 @@ public class A2aNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		if (streaming) {
 			AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state);
-			return Map.of(StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages",
-					generator);
+			// Convert AsyncGenerator to Flux using the new toFlux() method
+			Flux<GraphResponse<NodeOutput>> flux = toFlux(generator);
+			return Map.of(StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages", flux);
 		}
 		else {
 			String requestPayload = buildSendMessageRequest(state, this.inputKeyFromParent);
@@ -83,6 +89,52 @@ public class A2aNode implements NodeAction {
 			String responseText = extractResponseText(result);
 			return Map.of(this.outputKeyToParent, responseText);
 		}
+	}
+
+	/**
+	 * Converts this AsyncGenerator to a Project Reactor Flux. This method provides
+	 * forward compatibility for converting AsyncGenerator to reactive streams.
+	 * @return a Flux that emits the elements from this AsyncGenerator
+	 */
+	private <E> Flux<GraphResponse<E>> toFlux(AsyncGenerator generator) {
+		return Flux.create(sink -> {
+			Schedulers.boundedElastic().schedule(() -> {
+				try {
+					AsyncGenerator.Data<E> data;
+					while (!(data = generator.next()).isDone()) {
+						if (data.isError()) {
+							// Handle error case
+							try {
+								data.getData().join(); // This will throw the exception
+							}
+							catch (Exception e) {
+								sink.error(e);
+								return;
+							}
+						}
+						else {
+							// Emit the element
+							try {
+								E element = data.getData().join();
+								sink.next(GraphResponse.of(element));
+							}
+							catch (Exception e) {
+								sink.error(e);
+								return;
+							}
+						}
+					}
+
+					if (data.resultValue().isPresent()) {
+						sink.next(GraphResponse.done(data.resultValue().get()));
+					}
+					sink.complete();
+				}
+				catch (Exception e) {
+					sink.error(e);
+				}
+			});
+		});
 	}
 
 	/**
@@ -150,7 +202,7 @@ public class A2aNode implements NodeAction {
 										if (text != null && !text.isEmpty()) {
 											accumulated.append(text);
 											queue.add(AsyncGenerator.Data
-												.of(new StreamingOutput(text, "a2aNode", state)));
+													.of(new StreamingOutput(text, "a2aNode", state)));
 										}
 									}
 								}
@@ -175,7 +227,7 @@ public class A2aNode implements NodeAction {
 						}
 						catch (Exception ex) {
 							queue.add(AsyncGenerator.Data
-								.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", state)));
+									.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", state)));
 						}
 					}
 				}
@@ -225,7 +277,7 @@ public class A2aNode implements NodeAction {
 					if (line.startsWith("data: ")) {
 						try {
 							String jsonContent = line.substring(6); // remove "data: "
-																	// prefix
+							// prefix
 
 							// End marker
 							if ("[DONE]".equals(jsonContent)) {
@@ -310,11 +362,23 @@ public class A2aNode implements NodeAction {
 	/**
 	 * Get the streaming generator (similar to LlmNode.stream).
 	 */
-	public AsyncGenerator<NodeOutput> stream(OverAllState state) throws Exception {
+	public Flux<NodeOutput> stream(OverAllState state) throws Exception {
 		if (!this.streaming) {
 			throw new IllegalStateException("Streaming is not enabled for this A2aNode");
 		}
-		return createStreamingGenerator(state);
+		AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state);
+		Flux<GraphResponse<NodeOutput>> graphResponseFlux = toFlux(generator);
+
+		// Convert Flux<GraphResponse<NodeOutput>> to Flux<NodeOutput>
+		return graphResponseFlux.filter(graphResponse -> !graphResponse.isDone()) // 过滤掉完成信号
+				.map(graphResponse -> {
+					try {
+						return graphResponse.getOutput().join();
+					}
+					catch (Exception e) {
+						throw new RuntimeException("Error extracting output from GraphResponse", e);
+					}
+				});
 	}
 
 	/**
@@ -507,8 +571,8 @@ public class A2aNode implements NodeAction {
 	 */
 	private String buildSendMessageRequest(OverAllState state, String inputKey) {
 		Object textValue = state.value(inputKey)
-			.orElseThrow(
-					() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
+				.orElseThrow(
+						() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
 		String text = String.valueOf(textValue);
 
 		String id = UUID.randomUUID().toString();
@@ -546,8 +610,8 @@ public class A2aNode implements NodeAction {
 	 */
 	private String buildSendStreamingMessageRequest(OverAllState state, String inputKey) {
 		Object textValue = state.value(inputKey)
-			.orElseThrow(
-					() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
+				.orElseThrow(
+						() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
 		String text = String.valueOf(textValue);
 
 		String id = UUID.randomUUID().toString();
