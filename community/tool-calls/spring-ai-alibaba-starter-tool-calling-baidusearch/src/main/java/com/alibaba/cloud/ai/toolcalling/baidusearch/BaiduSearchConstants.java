@@ -24,6 +24,12 @@ public final class BaiduSearchConstants {
 
 	public static final String CONFIG_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".baidu.search";
 
+	public static final String CONFIG_PREFIX_AI = TOOL_CALLING_CONFIG_PREFIX + ".baidu.search.ai";
+
 	public static final String TOOL_NAME = "baiduSearch";
+
+	public static final String TOOL_NAME_AI = "baiduAiSearch";
+
+	public static final String API_KEY_ENV = "BAIDU_API_KEY";
 
 }

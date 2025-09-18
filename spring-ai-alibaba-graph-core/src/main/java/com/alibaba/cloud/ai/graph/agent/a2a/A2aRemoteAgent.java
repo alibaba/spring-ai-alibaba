@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.a2a;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
@@ -30,17 +31,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class A2aRemoteAgent extends BaseAgent {
 
-	private final AgentCard agentCard;
+	private final AgentCardWrapper agentCard;
 
 	private CompiledGraph compiledGraph;
 
 	private KeyStrategyFactory keyStrategyFactory;
 
-	private A2aNode a2aNode;
+	private A2aNodeWithConfig a2aNode;
 
 	private CompileConfig compileConfig;
 
@@ -51,7 +51,7 @@ public class A2aRemoteAgent extends BaseAgent {
 	Logger logger = Logger.getLogger(A2aRemoteAgent.class.getName());
 
 	// Private constructor for Builder pattern
-	private A2aRemoteAgent(A2aNode a2aNode, Builder builder) throws GraphStateException {
+	private A2aRemoteAgent(A2aNodeWithConfig a2aNode, Builder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.outputKey);
 		this.agentCard = builder.agentCard;
 		this.keyStrategyFactory = builder.keyStrategyFactory;
@@ -72,7 +72,7 @@ public class A2aRemoteAgent extends BaseAgent {
 		}
 
 		StateGraph graph = new StateGraph(name, this.keyStrategyFactory);
-		graph.addNode("A2aNode", node_async(a2aNode));
+		graph.addNode("A2aNode", AsyncNodeActionWithConfig.node_async(a2aNode));
 		graph.addEdge(StateGraph.START, "A2aNode");
 		graph.addEdge("A2aNode", StateGraph.END);
 		return graph;
@@ -80,7 +80,11 @@ public class A2aRemoteAgent extends BaseAgent {
 
 	@Override
 	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) {
-		return node_async(new A2aNode(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
+		return AsyncNodeAction.node_async(new A2aNode(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
+	}
+
+	public AsyncNodeActionWithConfig asAsyncNodeActionWithConfig(String inputKeyFromParent, String outputKeyToParent) {
+		return AsyncNodeActionWithConfig.node_async(new A2aNodeWithConfig(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
 	}
 
 	@Override
@@ -98,16 +102,6 @@ public class A2aRemoteAgent extends BaseAgent {
 
 	public CompiledGraph getAndCompileGraph(CompileConfig compileConfig) throws GraphStateException {
 		this.compiledGraph = getStateGraph().compile(compileConfig);
-		return this.compiledGraph;
-	}
-
-	public CompiledGraph getAndCompileGraph() throws GraphStateException {
-		if (this.compileConfig == null) {
-			this.compiledGraph = getStateGraph().compile();
-		}
-		else {
-			this.compiledGraph = getStateGraph().compile(this.compileConfig);
-		}
 		return this.compiledGraph;
 	}
 
@@ -132,7 +126,9 @@ public class A2aRemoteAgent extends BaseAgent {
 		private String outputKey = "output";
 
 		// A2aRemoteAgent specific properties
-		private AgentCard agentCard;
+		private AgentCardWrapper agentCard;
+
+		private AgentCardProvider agentCardProvider;
 
 		private String inputKey = "input";
 
@@ -158,7 +154,12 @@ public class A2aRemoteAgent extends BaseAgent {
 		}
 
 		public Builder agentCard(AgentCard agentCard) {
-			this.agentCard = agentCard;
+			this.agentCard = new AgentCardWrapper(agentCard);
+			return this;
+		}
+
+		public Builder agentCardProvider(AgentCardProvider agentCardProvider) {
+			this.agentCardProvider = agentCardProvider;
 			return this;
 		}
 
@@ -191,11 +192,19 @@ public class A2aRemoteAgent extends BaseAgent {
 				throw new IllegalArgumentException("Description must be provided");
 			}
 			if (agentCard == null) {
-				throw new IllegalArgumentException("AgentCard must be provided");
+				if (null == agentCardProvider) {
+					throw new IllegalArgumentException("AgentCard or AgentCardProvider must be provided");
+				}
+				if (agentCardProvider.supportGetAgentCardByName()) {
+					agentCard = agentCardProvider.getAgentCard(name);
+				}
+				else {
+					agentCard = agentCardProvider.getAgentCard();
+				}
 			}
 
 			this.streaming = agentCard.capabilities().streaming();
-			A2aNode a2aNode = new A2aNode(agentCard, inputKey, outputKey, streaming);
+			A2aNodeWithConfig a2aNode = new A2aNodeWithConfig(agentCard, inputKey, outputKey, streaming);
 
 			return new A2aRemoteAgent(a2aNode, this);
 		}

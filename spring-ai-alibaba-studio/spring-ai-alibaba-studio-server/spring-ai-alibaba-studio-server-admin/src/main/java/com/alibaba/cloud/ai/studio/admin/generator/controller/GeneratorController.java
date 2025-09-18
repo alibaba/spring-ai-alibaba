@@ -23,7 +23,9 @@ import io.spring.initializr.web.controller.ProjectGenerationController;
 import io.spring.initializr.web.project.ProjectGenerationInvoker;
 
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
+@CrossOrigin
 public class GeneratorController extends ProjectGenerationController<GraphProjectRequest> {
 
 	public GeneratorController(InitializrMetadataProvider metadataProvider,

@@ -70,7 +70,7 @@ public class PlannerNode implements NodeAction {
 		// 构建提示参数
 		String businessKnowledge = (String) state.value(BUSINESS_KNOWLEDGE).orElse("");
 		String semanticModel = (String) state.value(SEMANTIC_MODEL).orElse("");
-		SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
+		SchemaDTO schemaDTO = StateUtils.getObjectValue(state, TABLE_RELATION_OUTPUT, SchemaDTO.class);
 		String schemaStr = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
 
 		// 构建用户提示
