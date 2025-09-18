@@ -27,10 +27,13 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,6 +44,8 @@ import static com.alibaba.cloud.ai.memory.mem0.advisor.Mem0ChatMemoryAdvisor.*;
  * @since 2025/06/24 14:28
  */
 public class Mem0MemoryStore implements InitializingBean, VectorStore {
+
+	private static final Logger logger = LoggerFactory.getLogger(Mem0MemoryStore.class);
 
 	private final Mem0ServiceClient mem0Client;
 
@@ -79,6 +84,7 @@ public class Mem0MemoryStore implements InitializingBean, VectorStore {
 
 	@Override
 	public void add(List<Document> documents) {
+
 		// TODO 将role相同的message合并
 		List<Mem0ServerRequest.MemoryCreate> messages = documents.stream()
 			.map(doc -> Mem0ServerRequest.MemoryCreate.builder()
@@ -90,8 +96,20 @@ public class Mem0MemoryStore implements InitializingBean, VectorStore {
 				.userId(doc.getMetadata().containsKey(USER_ID) ? doc.getMetadata().get(USER_ID).toString() : null)
 				.build())
 			.toList();
-		// TODO 增加异步方式
-		messages.forEach(mem0Client::addMemory);
+		// 异步处理记忆添加
+		CompletableFuture.runAsync(() -> {
+			messages.forEach(message -> {
+				try {
+					mem0Client.addMemory(message);
+				} catch (Exception e) {
+					throw new RuntimeException("Failed to add memory for user: " + message.getUserId() +
+							", agent: " + message.getAgentId() + ", error: " + e.getMessage(), e);
+				}
+			});
+		}).exceptionally(throwable -> {
+			logger.error("Async memory addition failed", throwable);
+			return null;
+		});
 	}
 
 	@Override
