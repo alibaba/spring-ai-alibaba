@@ -303,8 +303,8 @@ class SimpleVectorStoreServiceTest {
 	@Test
 	void testDeleteDocumentsWithInvalidRequest() {
 		// Prepare test data
-		DeleteRequest deleteRequest = new DeleteRequest();
 		// Don't set any parameters
+		DeleteRequest deleteRequest = new DeleteRequest();
 
 		// Verify exception
 		Exception exception = assertThrows(Exception.class, () -> {
