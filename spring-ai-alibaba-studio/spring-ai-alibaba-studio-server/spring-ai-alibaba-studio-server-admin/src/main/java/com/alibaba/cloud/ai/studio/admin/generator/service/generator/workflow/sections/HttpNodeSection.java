@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
+// TODO: 支持失败时默认值以及异常分支、支持Studio的多字段输出模式
 @Component
 public class HttpNodeSection implements NodeSection<HttpNodeData> {
 
@@ -78,11 +79,11 @@ public class HttpNodeSection implements NodeSection<HttpNodeData> {
 		HttpNode.AuthConfig ac = d.getAuthConfig();
 		if (ac != null) {
 			if (ac.isBasic()) {
-				sb.append(String.format(".auth(AuthConfig.basic(\"%s\", \"%s\"))%n", escape(ac.getUsername()),
+				sb.append(String.format(".auth(HttpNode.AuthConfig.basic(\"%s\", \"%s\"))%n", escape(ac.getUsername()),
 						escape(ac.getPassword())));
 			}
 			else if (ac.isBearer()) {
-				sb.append(String.format(".auth(AuthConfig.bearer(\"%s\"))%n", escape(ac.getToken())));
+				sb.append(String.format(".auth(HttpNode.AuthConfig.bearer(\"%s\"))%n", escape(ac.getToken())));
 			}
 		}
 
@@ -120,6 +121,19 @@ public class HttpNodeSection implements NodeSection<HttpNodeData> {
 					         }
 					         return Map.of(varName + "_headers", map.get("headers"), key, map.get("body"),
 					                 varName + "_status_code", map.get("status"));
+					     };
+					 }
+					""";
+			case STUDIO -> """
+					 private NodeAction wrapperHttpNodeAction(NodeAction httpNodeAction, String varName) {
+					     return state -> {
+					         String key = varName + "_output";
+					         Map<String, Object> result = httpNodeAction.apply(state);
+					         Object object = result.get(key);
+					         if(!(object instanceof Map<?, ?> map)) {
+					             return Map.of();
+					         }
+					         return Map.of(key, map.get("body"));
 					     };
 					 }
 					""";

@@ -82,7 +82,7 @@ public class PromptConfigController {
 	 * @return configuration information
 	 */
 	@GetMapping("/{id}")
-	public ResponseEntity<Map<String, Object>> getConfig(@PathVariable String id) {
+	public ResponseEntity<Map<String, Object>> getConfig(@PathVariable(value = "id") String id) {
 		try {
 			UserPromptConfig config = promptConfigService.getConfigById(id);
 
@@ -142,7 +142,7 @@ public class PromptConfigController {
 	 * @return configuration list
 	 */
 	@GetMapping("/list-by-type/{promptType}")
-	public ResponseEntity<Map<String, Object>> getConfigsByType(@PathVariable String promptType) {
+	public ResponseEntity<Map<String, Object>> getConfigsByType(@PathVariable(value = "promptType") String promptType) {
 		try {
 			List<UserPromptConfig> configs = promptConfigService.getConfigsByType(promptType);
 
@@ -170,7 +170,7 @@ public class PromptConfigController {
 	 * @return currently enabled configuration
 	 */
 	@GetMapping("/active/{promptType}")
-	public ResponseEntity<Map<String, Object>> getActiveConfig(@PathVariable String promptType) {
+	public ResponseEntity<Map<String, Object>> getActiveConfig(@PathVariable(value = "promptType") String promptType) {
 		try {
 			UserPromptConfig config = promptConfigService.getActiveConfigByType(promptType);
 
@@ -198,7 +198,7 @@ public class PromptConfigController {
 	 * @return 启用的优化配置列表
 	 */
 	@GetMapping("/active-all/{promptType}")
-	public ResponseEntity<Map<String, Object>> getActiveConfigs(@PathVariable String promptType) {
+	public ResponseEntity<Map<String, Object>> getActiveConfigs(@PathVariable(value = "promptType") String promptType) {
 		try {
 			List<UserPromptConfig> configs = promptConfigService.getActiveConfigsByType(promptType);
 
@@ -227,7 +227,7 @@ public class PromptConfigController {
 	 * @return operation result
 	 */
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Map<String, Object>> deleteConfig(@PathVariable String id) {
+	public ResponseEntity<Map<String, Object>> deleteConfig(@PathVariable(value = "id") String id) {
 		try {
 			boolean deleted = promptConfigService.deleteConfig(id);
 
@@ -260,7 +260,7 @@ public class PromptConfigController {
 	 * @return operation result
 	 */
 	@PostMapping("/{id}/enable")
-	public ResponseEntity<Map<String, Object>> enableConfig(@PathVariable String id) {
+	public ResponseEntity<Map<String, Object>> enableConfig(@PathVariable(value = "id") String id) {
 		try {
 			boolean enabled = promptConfigService.enableConfig(id);
 
@@ -293,7 +293,7 @@ public class PromptConfigController {
 	 * @return operation result
 	 */
 	@PostMapping("/{id}/disable")
-	public ResponseEntity<Map<String, Object>> disableConfig(@PathVariable String id) {
+	public ResponseEntity<Map<String, Object>> disableConfig(@PathVariable(value = "id") String id) {
 		try {
 			boolean disabled = promptConfigService.disableConfig(id);
 

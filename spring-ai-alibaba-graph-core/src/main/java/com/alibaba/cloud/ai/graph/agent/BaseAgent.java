@@ -18,14 +18,17 @@ package com.alibaba.cloud.ai.graph.agent;
 import java.util.Map;
 import java.util.Optional;
 
+import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
+import reactor.core.publisher.Flux;
 
 import org.springframework.scheduling.Trigger;
 
@@ -47,13 +50,19 @@ public abstract class BaseAgent {
 	/** The output key for the agent's result */
 	protected String outputKey;
 
+	protected CompileConfig compileConfig;
+
+	protected volatile CompiledGraph compiledGraph;
+
+	protected volatile StateGraph graph;
+
 	/**
 	 * Protected constructor for initializing all base agent properties.
 	 * @param name the unique name of the agent
 	 * @param description the description of the agent's capability
 	 * @param outputKey the output key for the agent's result
 	 */
-	protected BaseAgent(String name, String description, String outputKey) {
+	protected BaseAgent(String name, String description, String outputKey) throws GraphStateException {
 		this.name = name;
 		this.description = description;
 		this.outputKey = outputKey;
@@ -91,15 +100,39 @@ public abstract class BaseAgent {
 		return outputKey;
 	}
 
+	public synchronized CompiledGraph getAndCompileGraph() throws GraphStateException {
+		if (compiledGraph != null) {
+			return compiledGraph;
+		}
+
+		if (this.graph == null) {
+			this.graph = initGraph();
+		}
+		if (this.compileConfig == null) {
+			this.compiledGraph = graph.compile();
+		}
+		else {
+			this.compiledGraph = graph.compile(this.compileConfig);
+		}
+		return this.compiledGraph;
+	}
+
+	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.call(input);
+	}
+
+	public Flux<NodeOutput> stream(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.fluxStream(input);
+	}
+
 	/**
 	 * Abstract a complex agent into a simple node in the graph.
 	 * @return the list of sub-agents.
 	 */
 	public abstract AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
 			throws GraphStateException;
-
-	public abstract Optional<OverAllState> invoke(Map<String, Object> input)
-			throws GraphStateException, GraphRunnerException;
 
 	/**
 	 * Schedule the agent task with trigger.
@@ -121,7 +154,6 @@ public abstract class BaseAgent {
 	public abstract ScheduledAgentTask schedule(ScheduleConfig scheduleConfig)
 			throws GraphStateException, GraphRunnerException;
 
-	public abstract AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
-			throws GraphStateException, GraphRunnerException;
+	protected abstract StateGraph initGraph() throws GraphStateException;
 
 }

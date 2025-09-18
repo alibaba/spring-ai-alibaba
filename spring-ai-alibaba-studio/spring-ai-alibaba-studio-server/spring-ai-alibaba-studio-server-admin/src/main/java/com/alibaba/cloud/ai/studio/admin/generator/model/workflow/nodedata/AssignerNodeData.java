@@ -13,117 +13,84 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata;
 
-import java.util.List;
+package com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
+
+import java.util.List;
+import java.util.function.Function;
 
 public class AssignerNodeData extends NodeData {
 
-	private List<AssignerItem> items;
+	private List<AssignItem> items;
 
-	private String outputKey;
-
-	private String title;
-
-	private String desc;
-
-	private String version;
-
-	public static class AssignerItem {
-
-		private String inputType;
-
-		private String operation;
-
-		private VariableSelector value;
-
-		private VariableSelector variableSelector;
-
-		private String writeMode;
-
-		public String getInputType() {
-			return inputType;
-		}
-
-		public void setInputType(String inputType) {
-			this.inputType = inputType;
-		}
-
-		public String getOperation() {
-			return operation;
-		}
-
-		public void setOperation(String operation) {
-			this.operation = operation;
-		}
-
-		public VariableSelector getValue() {
-			return value;
-		}
-
-		public void setValue(VariableSelector value) {
-			this.value = value;
-		}
-
-		public VariableSelector getVariableSelector() {
-			return variableSelector;
-		}
-
-		public void setVariableSelector(VariableSelector variableSelector) {
-			this.variableSelector = variableSelector;
-		}
-
-		public String getWriteMode() {
-			return writeMode;
-		}
-
-		public void setWriteMode(String writeMode) {
-			this.writeMode = writeMode;
-		}
-
-	}
-
-	public List<AssignerItem> getItems() {
+	public List<AssignItem> getItems() {
 		return items;
 	}
 
-	public void setItems(List<AssignerItem> items) {
+	public void setItems(List<AssignItem> items) {
 		this.items = items;
 	}
 
-	public String getOutputKey() {
-		return outputKey;
+	public record AssignItem(VariableSelector targetSelector, VariableSelector inputSelector, WriteMode writeMode,
+			String inputConst) {
+		@Override
+		public String toString() {
+			return String.format("new AssignerNode.AssignItem(%s, %s, %s, %s)",
+					ObjectToCodeUtil
+						.toCode(this.targetSelector() != null ? this.targetSelector().getNameInCode() : null),
+					ObjectToCodeUtil.toCode(this.inputSelector() != null ? this.inputSelector().getNameInCode() : null),
+					ObjectToCodeUtil.toCode(this.writeMode()), ObjectToCodeUtil.toCode(this.inputConst()));
+		}
 	}
 
-	public void setOutputKey(String outputKey) {
-		this.outputKey = outputKey;
-	}
+	private static final String UNSUPPORTED = "UNSUPPORTED";
 
-	public String getTitle() {
-		return title;
-	}
+	public enum WriteMode {
 
-	public void setTitle(String title) {
-		this.title = title;
-	}
+		OVER_WRITE(type -> switch (type) {
+			case DIFY -> "over-write";
+			case STUDIO -> "refer";
+			default -> UNSUPPORTED;
+		}),
 
-	public String getDesc() {
-		return desc;
-	}
+		APPEND(type -> UNSUPPORTED),
 
-	public void setDesc(String desc) {
-		this.desc = desc;
-	}
+		CLEAR(type -> switch (type) {
+			case DIFY, STUDIO -> "clear";
+			default -> UNSUPPORTED;
+		}),
 
-	public String getVersion() {
-		return version;
-	}
+		INPUT_CONSTANT(type -> switch (type) {
+			case DIFY -> "set";
+			case STUDIO -> "input";
+			default -> UNSUPPORTED;
+		});
 
-	public void setVersion(String version) {
-		this.version = version;
+		private final Function<DSLDialectType, String> dslValue;
+
+		WriteMode(Function<DSLDialectType, String> dslValue) {
+			this.dslValue = dslValue;
+		}
+
+		public static WriteMode fromDslValue(DSLDialectType dialectType, String dslValue) {
+			for (WriteMode mode : WriteMode.values()) {
+				if (mode.dslValue.apply(dialectType).equals(dslValue)) {
+					return mode;
+				}
+			}
+			throw new IllegalArgumentException("Invalid write mode: " + dslValue);
+		}
+
+		@Override
+		public String toString() {
+			return "AssignerNode.WriteMode." + this.name();
+		}
+
 	}
 
 }

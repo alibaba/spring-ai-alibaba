@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +34,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.HttpNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -177,64 +177,79 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 
 			@Override
 			public Map<String, Object> dump(HttpNodeData nd) {
-				Map<String, Object> m = new LinkedHashMap<>();
-
-				// variable_selector
-				if (!nd.getInputs().isEmpty()) {
-					VariableSelector sel = nd.getInputs().get(0);
-					m.put("variable_selector", List.of(sel.getNamespace(), sel.getName()));
-				}
-				// method
-				if (nd.getMethod() != HttpMethod.GET) {
-					m.put("method", nd.getMethod().name().toLowerCase());
-				}
-				// url
-				if (nd.getUrl() != null) {
-					m.put("url", nd.getUrl());
-				}
-				// headers
-				if (!nd.getHeaders().isEmpty()) {
-					m.put("headers", nd.getHeaders());
-				}
-				// query_params
-				if (!nd.getQueryParams().isEmpty()) {
-					m.put("query_params", nd.getQueryParams());
-				}
-				// body
-				HttpRequestNodeBody body = nd.getBody();
-				if (body != null && body.getType() != null) {
-					m.put("body", body);
-				}
-				// auth
-				AuthConfig ac = nd.getAuthConfig();
-				if (ac != null) {
-					Map<String, Object> am = new LinkedHashMap<>();
-					am.put("type", ac.getTypeName());
-					if (ac.isBasic()) {
-						am.put("username", ac.getUsername());
-						am.put("password", ac.getPassword());
-					}
-					else if (ac.isBearer()) {
-						am.put("token", ac.getToken());
-					}
-					m.put("auth", am);
-				}
-				// retry_config
-				RetryConfig rc = nd.getRetryConfig();
-				if (rc != null) {
-					Map<String, Object> rm = new LinkedHashMap<>();
-					rm.put("max_retries", rc.getMaxRetries());
-					rm.put("max_retry_interval", rc.getMaxRetryInterval());
-					rm.put("enable", rc.isEnable());
-					m.put("retry_config", rm);
-				}
-				// output_key
-				if (nd.getOutputKey() != null) {
-					m.put("output_key", nd.getOutputKey());
-				}
-				return m;
+				throw new UnsupportedOperationException();
 			}
-		}), CUSTOM(defaultCustomDialectConverter(HttpNodeData.class));
+		}), STUDIO(new DialectConverter<>() {
+			@Override
+			public Boolean supportDialect(DSLDialectType dialectType) {
+				return DSLDialectType.STUDIO.equals(dialectType);
+			}
+
+			@Override
+			public HttpNodeData parse(Map<String, Object> data) throws JsonProcessingException {
+				// 获取必要信息
+				HttpMethod httpMethod = HttpMethod.valueOf(Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param", "method"))
+					.orElse("GET")
+					.toString()
+					.toUpperCase());
+				String url = MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param", "url");
+
+				Map<String, String> headers = Optional
+					.ofNullable(MapReadUtil.safeCastToListWithMap(
+							MapReadUtil.getMapDeepValue(data, Object.class, "config", "node_param", "headers")))
+					.orElse(List.of())
+					.stream()
+					.filter(map -> map.containsKey("key") && map.containsKey("value"))
+					.collect(Collectors.toUnmodifiableMap(map -> map.get("key").toString(),
+							map -> map.get("value").toString()));
+				Map<String, String> queryParams = Optional
+					.ofNullable(MapReadUtil.safeCastToListWithMap(
+							MapReadUtil.getMapDeepValue(data, Object.class, "config", "node_param", "params")))
+					.orElse(List.of())
+					.stream()
+					.filter(map -> map.containsKey("key") && map.containsKey("value"))
+					.collect(Collectors.toUnmodifiableMap(map -> map.get("key").toString(),
+							map -> map.get("value").toString()));
+
+				Object rawBody = MapReadUtil.getMapDeepValue(data, Object.class, "config", "node_param", "body");
+				HttpRequestNodeBody body = HttpRequestNodeBody.from(rawBody);
+				AuthConfig auth = Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param", "authorization",
+							"auth_config", "value"))
+					.stream()
+					.map(AuthConfig::bearer)
+					.findFirst()
+					.orElse(null);
+
+				int maxRetries = Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param", "retry_config",
+							"max_retries"))
+					.map(Integer::parseInt)
+					.orElse(1);
+				long maxRetryInterval = Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param", "retry_config",
+							"retry_interval"))
+					.map(Long::parseLong)
+					.orElse(1000L);
+				boolean enable = Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param", "retry_config",
+							"retry_enabled"))
+					.map(Boolean::parseBoolean)
+					.orElse(false);
+				RetryConfig retryConfig = new RetryConfig(maxRetries, maxRetryInterval, enable);
+				String outputKey = "output";
+				return new HttpNodeData(List.of(), List.of(), httpMethod, url, headers, queryParams, body, auth,
+						retryConfig, new TimeoutConfig(10, 60, 20, 300, 600, 6000), outputKey);
+			}
+
+			@Override
+			public Map<String, Object> dump(HttpNodeData nodeData) {
+				throw new UnsupportedOperationException();
+			}
+		})
+
+		, CUSTOM(defaultCustomDialectConverter(HttpNodeData.class));
 
 		private final DialectConverter<HttpNodeData> converter;
 
@@ -258,9 +273,9 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 		return switch (dialectType) {
 			case DIFY -> emptyProcessConsumer().andThen((httpNodeData, idToVarName) -> {
 				// 设置输出键
-				httpNodeData.setOutputKey(
-						httpNodeData.getVarName() + "_" + HttpNodeData.getDefaultOutputSchemas().get(0).getName());
-				httpNodeData.setOutputs(HttpNodeData.getDefaultOutputSchemas());
+				httpNodeData.setOutputKey(httpNodeData.getVarName() + "_"
+						+ HttpNodeData.getDefaultOutputSchemas(dialectType).get(0).getName());
+				httpNodeData.setOutputs(HttpNodeData.getDefaultOutputSchemas(dialectType));
 			}).andThen(super.postProcessConsumer(dialectType)).andThen((httpNodeData, idToVarName) -> {
 				// 将headers，params，body的Dify参数占位符转化为SAA中间变量
 				httpNodeData.setHeaders(httpNodeData.getHeaders()
@@ -303,6 +318,12 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 					}
 				}
 			});
+			case STUDIO -> emptyProcessConsumer().andThen((httpNodeData, idToVarName) -> {
+				// 设置输出键
+				httpNodeData.setOutputKey(httpNodeData.getVarName() + "_"
+						+ HttpNodeData.getDefaultOutputSchemas(dialectType).get(0).getName());
+				httpNodeData.setOutputs(HttpNodeData.getDefaultOutputSchemas(dialectType));
+			}).andThen(super.postProcessConsumer(dialectType));
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}

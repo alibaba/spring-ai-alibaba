@@ -28,6 +28,7 @@ import java.util.function.Supplier;
  *
  * @since 3.0.0
  */
+@Deprecated
 public interface FlowGenerator {
 
 	/**

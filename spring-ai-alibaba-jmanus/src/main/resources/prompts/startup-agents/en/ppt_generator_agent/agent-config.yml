@@ -4,7 +4,7 @@ agentDescription: A professional PowerPoint presentation generation agent capabl
 builtIn: false  # PPT generator agent can be deleted if not needed
 availableToolKeys:
   - ppt_generator_operator
-  - inner_storage_content_tool
+  - extract_relevant_content
   - text_file_operator
   - terminate
 
@@ -31,7 +31,7 @@ nextStepPrompt: |
     - Text content
   - Creating PPTs using templates
 
-  To extract content from existing text or documents, please use text_file_operator or inner_storage_content_tool.
+  To extract content from existing text or documents, please use text_file_operator or extract_relevant_content.
 
   Notes:
   - Generated PPT files will be automatically saved in the extensions/pptGenerator/ directory

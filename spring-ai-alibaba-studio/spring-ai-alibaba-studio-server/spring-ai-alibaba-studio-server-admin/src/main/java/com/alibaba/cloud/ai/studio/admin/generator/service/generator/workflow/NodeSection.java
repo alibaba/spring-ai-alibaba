@@ -36,6 +36,7 @@ public interface NodeSection<T extends NodeData> {
 
 	boolean support(NodeType nodeType);
 
+	// TODO: NodeData里有varName字段，去掉varName参数
 	String render(Node node, String varName);
 
 	/**
