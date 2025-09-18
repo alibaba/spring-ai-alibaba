@@ -113,7 +113,7 @@ public class A2aServerAgentCardAutoConfiguration {
 		if (null != a2AServerAgentCardProperties.getAdditionalInterfaces()) {
 			return a2AServerAgentCardProperties.getAdditionalInterfaces();
 		}
-		return List.of(new AgentInterface(a2aServerProperties.getType(), buildUrl(a2aServerProperties)));
+		return List.of(new AgentInterface(a2aServerProperties.getType(), getUrl(a2aServerProperties, a2AServerAgentCardProperties)));
 	}
 
 	private String buildUrl(A2aServerProperties a2aServerProperties) {

@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.autoconfigure.a2a.client;
 import com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties;
 import com.alibaba.cloud.ai.autoconfigure.a2a.client.condition.A2aClientAgentCardWellKnownCondition;
 import com.alibaba.cloud.ai.graph.agent.a2a.AgentCardProvider;
+import com.alibaba.cloud.ai.graph.agent.a2a.AgentCardWrapper;
 import com.alibaba.cloud.ai.graph.agent.a2a.RemoteAgentCardProvider;
 import io.a2a.spec.AgentCard;
 
@@ -67,7 +68,7 @@ public class A2aClientAgentCardProviderAutoConfiguration {
 			.protocolVersion(a2aClientAgentCardProperties.getProtocolVersion())
 			.preferredTransport(a2aClientAgentCardProperties.getPreferredTransport())
 			.build();
-		return () -> agentCard;
+		return () -> new AgentCardWrapper(agentCard);
 	}
 
 }
