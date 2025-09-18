@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.executor;
 
-import com.alibaba.cloud.ai.graph.GraphRunnerContext;
 import com.alibaba.cloud.ai.graph.GraphResponse;
+import com.alibaba.cloud.ai.graph.GraphRunnerContext;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
@@ -26,8 +26,6 @@ import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -35,6 +33,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import static com.alibaba.cloud.ai.graph.GraphRunnerContext.INTERRUPT_AFTER;
 import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
@@ -174,7 +175,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 					org.springframework.ai.chat.model.ChatResponse lastResponse = lastChatResponseRef.get();
 					if (lastResponse == null) {
 						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-							.of(new StreamingOutput(response, context.getCurrentNodeId(), context.getOverallState()));
+							.of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(), context.getOverallState()));
 						lastChatResponseRef.set(response);
 						lastGraphResponseRef.set(lastGraphResponse);
 						return lastGraphResponse;
@@ -205,9 +206,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 							List.of(newGeneration), response.getMetadata());
 					lastChatResponseRef.set(newResponse);
 					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-						.of(new StreamingOutput(newResponse.getResult().getOutput().getText(),
-								context.getCurrentNodeId(), context.getOverallState()));
-					lastGraphResponseRef.set(lastGraphResponse);
+						.of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(),
+								context.getOverallState()));
+					// lastGraphResponseRef.set(lastGraphResponse);
 					return lastGraphResponse;
 				}
 				else if (element instanceof GraphResponse) {

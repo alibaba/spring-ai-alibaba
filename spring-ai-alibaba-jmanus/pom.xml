@@ -7,7 +7,7 @@
     <groupId>com.alibaba.cloud.ai</groupId>
     <name>Spring AI Alibaba JManus</name>
     <artifactId>spring-ai-alibaba-jmanus</artifactId>
-    <version>3.0.6-SNAPSHOT</version>
+    <version>4.0.0-SNAPSHOT</version>
 
     <!-- The required dependencies are maintained separately by the JManus module -->
     <properties>
@@ -125,6 +125,30 @@
             <groupId>io.modelcontextprotocol.sdk</groupId>
             <artifactId>mcp-spring-webflux</artifactId>
             <version>0.11.2</version>
+        </dependency>
+        <!-- Reactor Netty for WebFlux -->
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty-http</artifactId>
+        </dependency>
+        
+        <!-- Reactor Netty core for additional netty functionality -->
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty</artifactId>
+        </dependency>
+        
+        <!-- MacOS DNS resolver for better DNS resolution on MacOS -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver-dns-native-macos</artifactId>
+            <classifier>osx-x86_64</classifier>
+        </dependency>
+        
+        <!-- Spring WebFlux -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
         <!--
@@ -412,7 +436,7 @@
                     <addResources>false</addResources>
                     <executable>false</executable>
                     <layout>ZIP</layout>
-                    <mainClass>com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication</mainClass>
+                    <mainClass>com.alibaba.cloud.ai.manus.OpenManusSpringBootApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>

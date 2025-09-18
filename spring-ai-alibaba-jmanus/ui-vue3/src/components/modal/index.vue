@@ -19,7 +19,14 @@
       <div v-if="modelValue" class="modal-overlay" @click="handleOverlayClick">
         <div class="modal-container" @click.stop>
           <div class="modal-header">
-            <h3>{{ title }}</h3>
+            <div class="header-content">
+              <h3>{{ title }}</h3>
+              <!-- Status Icon -->
+              <div v-if="statusIcon" class="status-icon" :class="statusIconClass" :title="statusIconTitle">
+                <Icon :icon="statusIcon" width="16" />
+              </div>
+
+            </div>
             <button class="close-btn" @click="$emit('update:modelValue', false)">
               <Icon icon="carbon:close" />
             </button>
@@ -41,8 +48,9 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { onMounted, onUnmounted } from 'vue'
 
-defineProps({
+const props = defineProps({
   modelValue: {
     type: Boolean,
     required: true,
@@ -51,9 +59,22 @@ defineProps({
     type: String,
     default: '',
   },
+  statusIcon: {
+    type: String,
+    default: '',
+  },
+  statusIconClass: {
+    type: String,
+    default: '',
+  },
+  statusIconTitle: {
+    type: String,
+    default: '',
+  },
+
 })
 
-defineEmits(['update:modelValue', 'confirm'])
+const emit = defineEmits(['update:modelValue', 'confirm'])
 
 const handleOverlayClick = (e: MouseEvent) => {
   if (e.target === e.currentTarget) {
@@ -61,6 +82,22 @@ const handleOverlayClick = (e: MouseEvent) => {
     e.preventDefault()
   }
 }
+
+const handleEscKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && props.modelValue) {
+    emit('update:modelValue', false)
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', handleEscKey)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscKey)
+})
+
+
 </script>
 
 <style scoped>
@@ -83,7 +120,7 @@ const handleOverlayClick = (e: MouseEvent) => {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   width: 90%;
-  max-width: 600px;
+  max-width: 900px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -97,12 +134,41 @@ const handleOverlayClick = (e: MouseEvent) => {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
 .modal-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
 }
+
+.status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.status-icon.published {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.status-icon.pending {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+}
+
+
 
 .close-btn {
   background: none;
