@@ -40,11 +40,11 @@ public class RemoteAgentCardProvider implements AgentCardProvider {
 	}
 
 	@Override
-	public AgentCard getAgentCard() {
+	public AgentCardWrapper getAgentCard() {
 		if (null == agentCard) {
 			agentCard = getAgentCardFromUrl();
 		}
-		return agentCard;
+		return new AgentCardWrapper(agentCard);
 	}
 
 	private AgentCard getAgentCardFromUrl() {

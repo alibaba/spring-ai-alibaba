@@ -38,7 +38,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.a2a.spec.AgentCard;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -52,7 +51,7 @@ import reactor.core.scheduler.Schedulers;
 
 public class A2aNode implements NodeAction {
 
-	private final AgentCard agentCard;
+	private final AgentCardWrapper agentCard;
 
 	private final String inputKeyFromParent;
 
@@ -62,11 +61,11 @@ public class A2aNode implements NodeAction {
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
-	public A2aNode(AgentCard agentCard, String inputKeyFromParent, String outputKeyToParent) {
+	public A2aNode(AgentCardWrapper agentCard, String inputKeyFromParent, String outputKeyToParent) {
 		this(agentCard, inputKeyFromParent, outputKeyToParent, false);
 	}
 
-	public A2aNode(AgentCard agentCard, String inputKeyFromParent, String outputKeyToParent, boolean streaming) {
+	public A2aNode(AgentCardWrapper agentCard, String inputKeyFromParent, String outputKeyToParent, boolean streaming) {
 		this.agentCard = agentCard;
 		this.inputKeyFromParent = inputKeyFromParent;
 		this.outputKeyToParent = outputKeyToParent;
@@ -647,7 +646,7 @@ public class A2aNode implements NodeAction {
 	 * @param requestPayload JSON string payload built by buildSendMessageRequest
 	 * @return Response body as string
 	 */
-	private String sendMessageToServer(AgentCard agentCard, String requestPayload) throws Exception {
+	private String sendMessageToServer(AgentCardWrapper agentCard, String requestPayload) throws Exception {
 		String baseUrl = resolveAgentBaseUrl(agentCard);
 		System.out.println(baseUrl);
 		System.out.println(requestPayload);
@@ -677,7 +676,7 @@ public class A2aNode implements NodeAction {
 	/**
 	 * Resolve base URL from the AgentCard.
 	 */
-	private String resolveAgentBaseUrl(AgentCard agentCard) {
+	private String resolveAgentBaseUrl(AgentCardWrapper agentCard) {
 		return agentCard.url();
 	}
 

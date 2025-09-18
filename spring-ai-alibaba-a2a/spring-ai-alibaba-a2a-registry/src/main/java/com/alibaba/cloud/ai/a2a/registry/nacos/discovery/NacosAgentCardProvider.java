@@ -18,10 +18,16 @@ package com.alibaba.cloud.ai.a2a.registry.nacos.discovery;
 
 import com.alibaba.cloud.ai.a2a.registry.nacos.utils.AgentCardConverterUtil;
 import com.alibaba.cloud.ai.graph.agent.a2a.AgentCardProvider;
+import com.alibaba.cloud.ai.graph.agent.a2a.AgentCardWrapper;
 import com.alibaba.nacos.api.ai.A2aService;
+import com.alibaba.nacos.api.ai.listener.AbstractNacosAgentCardListener;
+import com.alibaba.nacos.api.ai.listener.NacosAgentCardEvent;
+import com.alibaba.nacos.api.ai.model.a2a.AgentCard;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.exception.runtime.NacosRuntimeException;
-import io.a2a.spec.AgentCard;
+import com.alibaba.nacos.common.utils.JacksonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of {@link AgentCardProvider} for getting agent card from nacos a2a
@@ -31,27 +37,40 @@ import io.a2a.spec.AgentCard;
  */
 public class NacosAgentCardProvider implements AgentCardProvider {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(NacosAgentCardProvider.class);
+
 	private final A2aService a2aService;
 
-	private com.alibaba.nacos.api.ai.model.a2a.AgentCard nacosAgentCard;
+	private AgentCardWrapper agentCard;
 
 	public NacosAgentCardProvider(A2aService a2aService) {
 		this.a2aService = a2aService;
 	}
 
 	@Override
-	public AgentCard getAgentCard() {
-		if (null == nacosAgentCard) {
-			throw new IllegalStateException("Please use getAgentCard(agentName) first");
+	public AgentCardWrapper getAgentCard() {
+		if (null == agentCard) {
+			throw new IllegalStateException("Please use getAgentCard(agentName) first.");
 		}
-		return AgentCardConverterUtil.convertToA2aAgentCard(nacosAgentCard);
+		return agentCard;
 	}
 
 	@Override
-	public AgentCard getAgentCard(String agentName) {
+	public AgentCardWrapper getAgentCard(String agentName) {
 		try {
-			nacosAgentCard = a2aService.getAgentCard(agentName);
-			return AgentCardConverterUtil.convertToA2aAgentCard(nacosAgentCard);
+			AgentCard nacosAgentCard = a2aService.getAgentCard(agentName);
+			agentCard = new NacosAgentCardWrapper(AgentCardConverterUtil.convertToA2aAgentCard(nacosAgentCard));
+			a2aService.subscribeAgentCard(agentName, new AbstractNacosAgentCardListener() {
+				@Override
+				public void onEvent(NacosAgentCardEvent event) {
+					AgentCard newAgentCard = event.getAgentCard();
+					if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug("Received new Agent Card: {}", JacksonUtils.toJson(newAgentCard));
+					}
+					agentCard.setAgentCard(AgentCardConverterUtil.convertToA2aAgentCard(newAgentCard));
+				}
+			});
+			return agentCard;
 		}
 		catch (NacosException e) {
 			throw new NacosRuntimeException(e.getErrCode(), e.getErrMsg());

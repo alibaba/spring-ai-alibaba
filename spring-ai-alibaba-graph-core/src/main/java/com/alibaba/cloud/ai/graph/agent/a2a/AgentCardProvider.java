@@ -16,8 +16,6 @@
 
 package com.alibaba.cloud.ai.graph.agent.a2a;
 
-import io.a2a.spec.AgentCard;
-
 /**
  * A2A Agent Card Provider.
  *
@@ -29,7 +27,7 @@ public interface AgentCardProvider {
 	 * Get agent card.
 	 * @return agent card
 	 */
-	AgentCard getAgentCard();
+	AgentCardWrapper getAgentCard();
 
 	/**
 	 * Get agent card by agent name.
@@ -41,7 +39,7 @@ public interface AgentCardProvider {
 	 * @param agentName agent name
 	 * @return agent card
 	 */
-	default AgentCard getAgentCard(String agentName) {
+	default AgentCardWrapper getAgentCard(String agentName) {
 		throw new UnsupportedOperationException();
 	}
 

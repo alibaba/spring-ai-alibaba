@@ -34,7 +34,7 @@ import java.util.logging.Logger;
 
 public class A2aRemoteAgent extends BaseAgent {
 
-	private final AgentCard agentCard;
+	private final AgentCardWrapper agentCard;
 
 	private CompiledGraph compiledGraph;
 
@@ -126,7 +126,7 @@ public class A2aRemoteAgent extends BaseAgent {
 		private String outputKey = "output";
 
 		// A2aRemoteAgent specific properties
-		private AgentCard agentCard;
+		private AgentCardWrapper agentCard;
 
 		private AgentCardProvider agentCardProvider;
 
@@ -154,7 +154,7 @@ public class A2aRemoteAgent extends BaseAgent {
 		}
 
 		public Builder agentCard(AgentCard agentCard) {
-			this.agentCard = agentCard;
+			this.agentCard = new AgentCardWrapper(agentCard);
 			return this;
 		}
 
