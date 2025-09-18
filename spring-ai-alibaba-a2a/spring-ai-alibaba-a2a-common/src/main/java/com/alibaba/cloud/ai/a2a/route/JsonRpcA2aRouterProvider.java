@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 
 import com.alibaba.cloud.ai.a2a.server.JsonRpcA2aRequestHandler;
 import io.a2a.spec.JSONRPCResponse;
+import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,9 +62,9 @@ public class JsonRpcA2aRouterProvider implements A2aRouterProvider<JsonRpcA2aReq
 	@Override
 	public RouterFunction<ServerResponse> getRouter(JsonRpcA2aRequestHandler a2aRequestHandler) {
 		return RouterFunctions.route()
-			.GET(this.wellKnownUrl, new AgentCardHandler(a2aRequestHandler))
-			.POST(this.messageUrl, new MessageHandler(a2aRequestHandler))
-			.build();
+				.GET(this.wellKnownUrl, new AgentCardHandler(a2aRequestHandler))
+				.POST(this.messageUrl, new MessageHandler(a2aRequestHandler))
+				.build();
 	}
 
 	private class AgentCardHandler implements HandlerFunction<ServerResponse> {
@@ -133,6 +134,12 @@ public class JsonRpcA2aRouterProvider implements A2aRouterProvider<JsonRpcA2aReq
 								log.debug("send sse body to agent: {}", sseBody);
 							}
 							sseBuilder.data(sseBody);
+							if (((JSONRPCResponse<?>) o).getResult() instanceof TaskStatusUpdateEvent) {
+								TaskStatusUpdateEvent event = (TaskStatusUpdateEvent) ((JSONRPCResponse<?>) o).getResult();
+								if (event.isFinal()) {
+									sseBuilder.complete();
+								}
+							}
 						}
 						catch (IOException e) {
 							sseBuilder.error(e);
