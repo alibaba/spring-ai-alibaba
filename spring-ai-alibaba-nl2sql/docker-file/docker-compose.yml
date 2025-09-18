@@ -36,11 +36,13 @@ services:
     build:
       context: ..
       dockerfile: ./docker-file/Dockerfile-backend
+      tags:
+        - saa-nl2sql-backend:1.0.0.4-SNAPSHOT
     container_name: nl2sql-backend
     environment:
       - NL2SQL_DATASOURCE_URL=jdbc:mysql://mysql:3306/nl2sql_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - NL2SQL_DATASOURCE_USERNAME=root
-      - NL2SQL_DATASOURCE_USERNAME=root
+      - NL2SQL_DATASOURCE_PASSWORD=root
       - AI_DASHSCOPE_API_KEY=${AI_DASHSCOPE_API_KEY}
     ports:
       - "8065:8065"
@@ -60,6 +62,8 @@ services:
     build:
       context: ..
       dockerfile: ./docker-file/Dockerfile-frontend
+      tags:
+        - saa-nl2sql-frontend:1.0.0.4-SNAPSHOT
     container_name: nl2sql-frontend
     ports:
       - "3000:3000"  # 只暴露前端端口
