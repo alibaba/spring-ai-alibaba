@@ -36,9 +36,9 @@ public class McpServersVO {
 
 		Set<String> whiteTools;
 
-		Map<String, String> passHeaders;
+		Map<String, String> headers;
 
-		Map<String, String> passQueryParams;
+		Map<String, String> queryParams;
 
 	}
 
