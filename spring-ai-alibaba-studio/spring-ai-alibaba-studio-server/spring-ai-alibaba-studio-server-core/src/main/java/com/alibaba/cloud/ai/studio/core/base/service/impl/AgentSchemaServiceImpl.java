@@ -45,18 +45,27 @@ public class AgentSchemaServiceImpl extends ServiceImpl<AgentSchemaMapper, Agent
 	public AgentSchemaEntity createAgentSchema(AgentSchemaEntity agentSchemaEntity) {
 		RequestContext requestContext = RequestContextHolder.getRequestContext();
 		
+		// Check for duplicate name in the same workspace
+		String workspaceId = requestContext != null ? requestContext.getWorkspaceId() : null;
+		if (StringUtils.isBlank(workspaceId)) {
+			workspaceId = "1"; // Use default workspace ID that matches database
+		}
+		
+		LambdaQueryWrapper<AgentSchemaEntity> duplicateCheck = new LambdaQueryWrapper<>();
+		duplicateCheck.eq(AgentSchemaEntity::getWorkspaceId, workspaceId);
+		duplicateCheck.eq(AgentSchemaEntity::getName, agentSchemaEntity.getName());
+		List<AgentSchemaEntity> existingAgents = list(duplicateCheck);
+		
+		if (!existingAgents.isEmpty()) {
+			throw new IllegalArgumentException("智能体名称已存在，请使用其他名称: " + agentSchemaEntity.getName());
+		}
+		
 		// Set default values
 		if (StringUtils.isBlank(agentSchemaEntity.getAgentId())) {
 			agentSchemaEntity.setAgentId(IdGenerator.generateAgentId());
 		}
 		
-		// Use default workspace ID if not available from context
-		String workspaceId = requestContext != null ? requestContext.getWorkspaceId() : null;
-		if (StringUtils.isBlank(workspaceId)) {
-			workspaceId = "1"; // Use default workspace ID that matches database
-		}
 		agentSchemaEntity.setWorkspaceId(workspaceId);
-		
 		agentSchemaEntity.setStatus(AgentStatus.ACTIVE);
 		agentSchemaEntity.setEnabled(true);
 		agentSchemaEntity.setGmtCreate(new Date());
@@ -77,6 +86,22 @@ public class AgentSchemaServiceImpl extends ServiceImpl<AgentSchemaMapper, Agent
 		AgentSchemaEntity existing = getById(agentSchemaEntity.getId());
 		if (existing == null) {
 			throw new IllegalArgumentException("Agent schema not found with id: " + agentSchemaEntity.getId());
+		}
+		
+		// Check for duplicate name in the same workspace (excluding current agent)
+		String workspaceId = requestContext != null ? requestContext.getWorkspaceId() : null;
+		if (StringUtils.isBlank(workspaceId)) {
+			workspaceId = "1"; // Use default workspace ID that matches database
+		}
+		
+		LambdaQueryWrapper<AgentSchemaEntity> duplicateCheck = new LambdaQueryWrapper<>();
+		duplicateCheck.eq(AgentSchemaEntity::getWorkspaceId, workspaceId);
+		duplicateCheck.eq(AgentSchemaEntity::getName, agentSchemaEntity.getName());
+		duplicateCheck.ne(AgentSchemaEntity::getId, agentSchemaEntity.getId()); // Exclude current agent
+		List<AgentSchemaEntity> existingAgents = list(duplicateCheck);
+		
+		if (!existingAgents.isEmpty()) {
+			throw new IllegalArgumentException("智能体名称已存在，请使用其他名称: " + agentSchemaEntity.getName());
 		}
 		
 		// Update fields

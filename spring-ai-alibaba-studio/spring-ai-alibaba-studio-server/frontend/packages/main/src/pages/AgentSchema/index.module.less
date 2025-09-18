@@ -275,11 +275,36 @@
   &:hover {
     background: #f3f4f6;
     border-color: #d1d5db;
+
+    .deleteButton {
+      opacity: 1;
+    }
   }
 
   &.selectedAgent {
     background: #eff6ff;
     border-color: #3b82f6;
+
+    .deleteButton {
+      opacity: 1;
+    }
+  }
+
+  // 删除按钮样式
+  .deleteButton {
+    opacity: 0.6;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    
+    &:hover {
+      opacity: 1;
+      background: rgba(255, 77, 79, 0.1);
+      transform: scale(1.1);
+    }
+    
+    &:active {
+      transform: scale(0.95);
+    }
   }
 }
 
@@ -565,7 +590,7 @@
   scrollbar-color: #6c757d #f8f9fa;
 }
 
-// 独立滚动条容器类
+// 独立滚动条容器类 - 与左侧面板保持一致的显眼样式
 .independentScrollContainer {
   height: 100%;
   overflow-y: auto;
@@ -574,42 +599,45 @@
   position: relative;
   background: #ffffff; /* 确保容器背景是白色 */
 
-  // 自定义滚动条样式
+  // 自定义滚动条样式 - 与左侧面板一致
   &::-webkit-scrollbar {
-    width: 12px;
+    width: 10px !important;
+    background: rgba(0, 0, 0, 0.1);
   }
 
   &::-webkit-scrollbar-track {
-    background: #f1f3f4;
-    border-radius: 6px;
-    margin: 4px 0;
+    background: #f8f9fa !important;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #5f6368;
-    border-radius: 6px;
-    min-height: 40px;
+    background: linear-gradient(180deg, #adb5bd 0%, #6c757d 100%) !important;
+    border-radius: 5px;
+    border: 2px solid #f8f9fa;
+    min-height: 30px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
     transition: all 0.2s ease;
 
     &:hover {
-      background: #3c4043;
+      background: linear-gradient(180deg, #6c757d 0%, #495057 100%) !important;
     }
 
     &:active {
-      background: #202124;
+      background: linear-gradient(180deg, #495057 0%, #343a40 100%) !important;
     }
   }
 
-  &::-webkit-scrollbar-corner {
-    background: transparent;
+  &::-webkit-scrollbar-button {
+    display: none;
   }
 
-  // Firefox 支持
-  scrollbar-width: thin;
-  scrollbar-color: #5f6368 #f1f3f4;
+  // Firefox 支持 - 与左侧面板一致
+  scrollbar-width: thin !important;
+  scrollbar-color: #6c757d #f8f9fa !important;
 }
 
-// 为表单部分添加滚动条
+// 为表单部分添加滚动条 - 与左侧面板保持一致的显眼样式
 .formScrollContainer {
   max-height: 60vh;
   overflow-y: auto;
@@ -619,29 +647,42 @@
   border-radius: 8px;
   background: #ffffff; /* 确保容器背景是白色 */
 
-  // 自定义滚动条样式
+  // 自定义滚动条样式 - 与左侧面板一致
   &::-webkit-scrollbar {
-    width: 8px;
+    width: 10px !important;
+    background: rgba(0, 0, 0, 0.1);
   }
 
   &::-webkit-scrollbar-track {
-    background: #f8f9fa;
-    border-radius: 4px;
+    background: #f8f9fa !important;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #adb5bd;
-    border-radius: 4px;
+    background: linear-gradient(180deg, #adb5bd 0%, #6c757d 100%) !important;
+    border-radius: 5px;
+    border: 2px solid #f8f9fa;
+    min-height: 30px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
     transition: all 0.2s ease;
 
     &:hover {
-      background: #6c757d;
+      background: linear-gradient(180deg, #6c757d 0%, #495057 100%) !important;
+    }
+
+    &:active {
+      background: linear-gradient(180deg, #495057 0%, #343a40 100%) !important;
     }
   }
 
-  // Firefox 支持
-  scrollbar-width: thin;
-  scrollbar-color: #adb5bd #f8f9fa;
+  &::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  // Firefox 支持 - 与左侧面板一致
+  scrollbar-width: thin !important;
+  scrollbar-color: #6c757d #f8f9fa !important;
 }
 
 .form {
@@ -783,10 +824,24 @@
   .agentItem {
     &:hover {
       background: #374151;
+
+      .deleteButton {
+        opacity: 1;
+      }
     }
 
     &.selectedAgent {
       background: #1e40af;
+
+      .deleteButton {
+        opacity: 1;
+      }
+    }
+
+    .deleteButton {
+      &:hover {
+        background: rgba(255, 77, 79, 0.2);
+      }
     }
   }
 
@@ -846,43 +901,48 @@
     border-right-color: #374151;
 
     &::-webkit-scrollbar-track {
-      background: #1f2937;
+      background: #374151 !important;
+      border-color: #4b5563;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: #9ca3af;
-      border-color: #1f2937;
+      background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%) !important;
+      border-color: #374151;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
 
       &:hover {
-        background: #d1d5db;
+        background: linear-gradient(180deg, #d1d5db 0%, #9ca3af 100%) !important;
       }
 
       &:active {
-        background: #f3f4f6;
+        background: linear-gradient(180deg, #f3f4f6 0%, #d1d5db 100%) !important;
       }
     }
 
-    scrollbar-color: #9ca3af #1f2937;
+    scrollbar-color: #9ca3af #374151 !important;
   }
 
   .formScrollContainer {
     &::-webkit-scrollbar-track {
-      background: #374151;
+      background: #374151 !important;
+      border-color: #4b5563;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: #6b7280;
+      background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%) !important;
+      border-color: #374151;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
 
       &:hover {
-        background: #9ca3af;
+        background: linear-gradient(180deg, #d1d5db 0%, #9ca3af 100%) !important;
       }
 
       &:active {
-        background: #d1d5db;
+        background: linear-gradient(180deg, #f3f4f6 0%, #d1d5db 100%) !important;
       }
     }
 
-    scrollbar-color: #6b7280 #374151;
+    scrollbar-color: #9ca3af #374151 !important;
   }
 
   // 深色模式下的选择器样式

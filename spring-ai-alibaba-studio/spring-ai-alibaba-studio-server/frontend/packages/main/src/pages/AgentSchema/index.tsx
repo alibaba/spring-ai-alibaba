@@ -1,8 +1,8 @@
 import InnerLayout from '@/components/InnerLayout';
 import $i18n from '@/i18n';
 import { Button, Form, Input, Select, Card, message, Space, Typography, List, Checkbox, Tooltip, Divider } from 'antd';
-import { PlusOutlined, CopyOutlined, SaveOutlined, CloseOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
-import React, { useState, useEffect } from 'react';
+import { PlusOutlined, CopyOutlined, SaveOutlined, CloseOutlined, DownOutlined, UpOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './index.module.less';
 import { AgentSchemaService } from '@/services/agentSchema';
@@ -129,6 +129,38 @@ const AgentSchemaCreator: React.FC = () => {
   const [toolsLoading, setToolsLoading] = useState(false);
   const [subAgentsExpanded, setSubAgentsExpanded] = useState(false);
   const [toolsExpanded, setToolsExpanded] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  
+  // 防抖的名称校验
+  const nameCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 防抖检查名称重复
+  const checkNameDuplicate = useCallback((name: string) => {
+    if (!name || savedAgents.length === 0) {
+      setNameError(null);
+      return;
+    }
+
+    // 清除之前的定时器
+    if (nameCheckTimeoutRef.current) {
+      clearTimeout(nameCheckTimeoutRef.current);
+    }
+
+    // 设置新的定时器（500ms防抖）
+    nameCheckTimeoutRef.current = setTimeout(() => {
+      const isDuplicate = savedAgents.some(agent => {
+        const currentAgentId = selectedAgentId?.toString();
+        const existingAgentId = agent.id?.toString();
+        return agent.name === name && existingAgentId !== currentAgentId;
+      });
+
+      if (isDuplicate) {
+        setNameError('智能体名称已存在，请使用其他名称');
+      } else {
+        setNameError(null);
+      }
+    }, 500);
+  }, [savedAgents, selectedAgentId]);
 
   // 获取已保存的智能体列表
   const fetchSavedAgents = async () => {
@@ -245,14 +277,18 @@ const AgentSchemaCreator: React.FC = () => {
     value: tool.toolId || tool.id?.toString() || tool.name,
   })) : [];
 
-  // 子代理选项 - 从已保存的智能体获取
-  const subAgentOptions = Array.isArray(savedAgents) ? savedAgents.map(agent => ({
+  // 子代理选项 - 从已保存的智能体获取，过滤掉当前选中的agent
+  const subAgentOptions = Array.isArray(savedAgents) ? savedAgents.filter(agent => {
+    // 过滤掉当前选中的agent，防止自引用
+    return agent.id !== selectedAgentId;
+  }).map(agent => ({
     label: agent.name,
-    value: agent.id?.toString() || agent.name,
+    value: agent.name, // 使用名称作为值
+    id: agent.id?.toString() // 保存ID以备后用
   })) : [];
 
   // 生成 YAML 内容
-  const generateYaml = (values: AgentSchemaForm) => {
+  const generateYaml = async (values: AgentSchemaForm): Promise<string> => {
     const instruction = values.instruction || '';
     const inputKeys = values.inputKey ? [values.inputKey] : ['input'];
     const subAgents = values.subAgents || [];
@@ -288,21 +324,24 @@ const AgentSchemaCreator: React.FC = () => {
         });
       }
 
-      // ReactAgent特有配置
-      if ('model' in handle && handle.model) {
+      // ReactAgent特有配置 - 优先使用form中的model值
+      const modelName = values.model || (handle.model ? handle.model.name : 'qwen2.5-72b-instruct');
+      if (modelName) {
         yaml += `  model:\n`;
-        yaml += `    name: "${handle.model.name}"\n`;
-        yaml += `    url: "${handle.model.url}"\n`;
-        yaml += `    api-key: "${handle.model['api-key']}"\n`;
+        yaml += `    name: "${modelName}"\n`;
+        yaml += `    url: "${handle.model?.url || 'https://api.example.com/v1'}"\n`;
+        yaml += `    api-key: "${handle.model?.['api-key'] || 'your-api-key'}"\n`;
       }
 
       if ('max_iterations' in handle && handle.max_iterations) {
         yaml += `  max_iterations: ${handle.max_iterations}\n`;
       }
 
-      if ('tools' in handle && handle.tools && handle.tools.length > 0) {
+      // 工具配置 - 优先使用form中的tools值
+      const toolsList = values.tools || handle.tools || [];
+      if (toolsList.length > 0) {
         yaml += `  tools:\n`;
-        handle.tools.forEach(tool => {
+        toolsList.forEach(tool => {
           yaml += `    - "${tool}"\n`;
         });
       }
@@ -345,43 +384,90 @@ const AgentSchemaCreator: React.FC = () => {
       if (subAgents.length === 0) return '';
 
       let yaml = 'sub_agents:\n';
-      subAgents.forEach(subAgentId => {
-        // 简化处理，直接使用ID引用
-        yaml += `  - agent: ${subAgentId}\n`;
+      
+      subAgents.forEach(agentName => {
+        // 直接使用名称，因为表单现在存储的是名称
+        yaml += `  - agent: ${agentName}\n`;
       });
+      
       return yaml;
     };
 
     const handleYaml = values.handle ? generateHandleYaml(values.handle) : 'handle:\n  state:\n    strategies:\n      input: "replace"\n      output: "replace"\n';
-    const yaml = `agent:\n  type: "${values.agentType || 'ReactAgent'}"\n  name: "${values.name || ''}"\n  description: "${values.description || ''}"\n  instruction: |\n    ${instruction.replace(/\n/g, '\n    ')}\n  input_keys:\n${inputKeys.length > 0 ? inputKeys.map(key => `    - "${key}"`).join('\n') : '    - "input"'}\n  output_key: "${values.outputKey || 'output'}"\n${handleYaml}${subAgents.length > 0 ? generateSubAgentsYaml(subAgents) : ''}`;
+    const subAgentsYaml = subAgents.length > 0 ? generateSubAgentsYaml(subAgents) : '';
+    const yaml = `agent:\n  type: "${values.agentType || 'ReactAgent'}"\n  name: "${values.name || ''}"\n  description: "${values.description || ''}"\n  instruction: |\n    ${instruction.replace(/\n/g, '\n    ')}\n  input_keys:\n${inputKeys.length > 0 ? inputKeys.map(key => `    - "${key}"`).join('\n') : '    - "input"'}\n  output_key: "${values.outputKey || 'output'}"\n${handleYaml}${subAgentsYaml}`;
     return yaml;
   };
 
   // 监听表单变化，实时更新 YAML
   useEffect(() => {
-    const subscription = form.getFieldsValue() as AgentSchemaForm;
-    if (subscription.name) {
-      const yaml = generateYaml(subscription);
-      setYamlContent(yaml);
-    }
+    const updateYaml = async () => {
+      const subscription = form.getFieldsValue() as AgentSchemaForm;
+      if (subscription.name) {
+        const yaml = await generateYaml(subscription);
+        setYamlContent(yaml);
+      }
+    };
+    updateYaml();
   }, [form, selectedAgentId]);
 
   // 选择智能体
-  const handleSelectAgent = (agent: IAgentSchema) => {
+  const handleSelectAgent = async (agent: IAgentSchema) => {
     setSelectedAgentId(agent.id || null);
+    
     // 将后端数据转换为前端表单格式
+    let subAgentsNames: string[] = [];
+    
+    // 如果后端存储的是ID格式的subAgents，转换为名称
+    if (agent.subAgents) {
+      try {
+        const subAgentsData = JSON.parse(agent.subAgents);
+        if (Array.isArray(subAgentsData)) {
+          subAgentsNames = subAgentsData.map(subAgent => {
+            // 如果是 { agent: { id } } 格式，查找对应的名称
+            if (subAgent.agent && subAgent.agent.id) {
+              const foundAgent = savedAgents.find(sa => sa.id === subAgent.agent.id);
+              return foundAgent ? foundAgent.name : subAgent.agent.id.toString();
+            }
+            // 如果直接是名称，直接返回
+            return subAgent.toString();
+          });
+        }
+      } catch (error) {
+        console.error('Failed to parse subAgents data:', error);
+      }
+    }
+    
+    // 解析handle配置，提取模型信息
+    let modelName = 'qwen2.5-72b-instruct'; // 默认模型
+    let tools: string[] = [];
+    
+    try {
+      const handleData = JSON.parse(agent.handle || '{}');
+      if (handleData.model && handleData.model.name) {
+        modelName = handleData.model.name;
+      }
+      if (handleData.tools && Array.isArray(handleData.tools)) {
+        tools = handleData.tools;
+      }
+    } catch (error) {
+      console.error('Failed to parse handle data:', error);
+    }
+    
     const formData = {
       name: agent.name,
       description: agent.description,
-      type: agent.type,
+      agentType: agent.type,
       instruction: agent.instruction,
-      input_keys: agent.inputKeys,
-      output_key: agent.outputKey,
+      inputKey: agent.inputKeys && agent.inputKeys.length > 0 ? agent.inputKeys[0] : 'input',
+      outputKey: agent.outputKey || 'output',
+      model: modelName,
       handle: JSON.parse(agent.handle || '{}'),
-      sub_agents: agent.subAgents ? JSON.parse(agent.subAgents) : [],
+      subAgents: subAgentsNames,
+      tools: tools,
     };
     form.setFieldsValue(formData);
-    const yaml = generateYaml(formData);
+    const yaml = await generateYaml(formData);
     setYamlContent(yaml);
   };
 
@@ -390,6 +476,44 @@ const AgentSchemaCreator: React.FC = () => {
     setSelectedAgentId(null);
     form.resetFields();
     setYamlContent('');
+  };
+
+  // 删除智能体
+  const handleDeleteAgent = async (agent: IAgentSchema, e: React.MouseEvent) => {
+    e.stopPropagation(); // 阻止事件冒泡，避免触发选择
+    
+    if (!agent.id) {
+      message.error('无法删除：智能体ID无效');
+      return;
+    }
+
+    // 显示确认对话框
+    const confirmed = window.confirm(`确定要删除智能体 "${agent.name}" 吗？此操作不可撤销。`);
+    
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      console.log('Deleting agent:', agent.id);
+      await AgentSchemaService.deleteAgentSchema(agent.id);
+      
+      message.success(`智能体 "${agent.name}" 删除成功`);
+      
+      // 如果删除的是当前选中的智能体，清空表单
+      if (selectedAgentId === agent.id) {
+        setSelectedAgentId(null);
+        form.resetFields();
+        setYamlContent('');
+      }
+      
+      // 重新加载智能体列表
+      await fetchSavedAgents();
+      
+    } catch (error) {
+      console.error('Delete agent failed:', error);
+      message.error(`删除智能体 "${agent.name}" 失败`);
+    }
   };
 
   // 保存智能体
@@ -433,20 +557,94 @@ const AgentSchemaCreator: React.FC = () => {
         return;
       }
 
-      console.log('3. Form validation passed manually');
+      // 校验agentName重复
+      console.log('4. Checking agent name duplication...');
+      
+      // 使用已加载的savedAgents进行校验，避免重复API调用
+      if (savedAgents.length > 0) {
+        console.log('Existing agents:', savedAgents.map(a => ({ id: a.id, name: a.name })));
+        console.log('Current agent name:', values.name);
+        console.log('Selected agent ID:', selectedAgentId);
+        
+        const isDuplicate = savedAgents.some(agent => {
+          // 确保类型匹配：将ID都转换为字符串比较
+          const currentAgentId = selectedAgentId?.toString();
+          const existingAgentId = agent.id?.toString();
+          
+          console.log(`Comparing: "${agent.name}" === "${values.name}" and ${existingAgentId} !== ${currentAgentId}`);
+          
+          return agent.name === values.name && existingAgentId !== currentAgentId;
+        });
+        
+        console.log('Is duplicate:', isDuplicate);
+        
+        if (isDuplicate) {
+          message.error('智能体名称已存在，请使用其他名称');
+          setLoading(false); // 重置loading状态
+          return;
+        }
+        console.log('5. Agent name duplication check passed');
+      } else {
+        console.warn('No saved agents available for duplicate check');
+        // 如果没有加载到智能体列表，暂时跳过前端校验，依赖后端校验
+      }
+
+      // 检查自引用
+      console.log('6. Checking self-reference...');
+      if (values.subAgents && values.subAgents.length > 0) {
+        const currentAgentName = values.name;
+        if (values.subAgents.includes(currentAgentName)) {
+          message.error('不能将当前智能体设置为自身的子智能体');
+          setLoading(false);
+          return;
+        }
+      }
+      console.log('6. Self-reference check passed');
+
+      console.log('7. Form validation passed manually');
 
       let yaml: string;
       try {
-        console.log('4. Generating YAML...');
-        yaml = generateYaml(values);
-        console.log('5. YAML generated:', yaml);
+        console.log('8. Generating YAML...');
+        yaml = await generateYaml(values);
+        console.log('9. YAML generated:', yaml);
       } catch (yamlError) {
         console.error('YAML generation failed:', yamlError);
         message.error('YAML生成失败');
         return;
       }
 
-      // 构建保存到后端的数据格式
+      // 构建保存到后端的数据格式 - 保留现有handle配置
+      let existingHandle = {};
+      try {
+        // 尝试获取当前选中的agent的现有handle配置
+        if (selectedAgentId) {
+          const selectedAgent = savedAgents.find(agent => agent.id === selectedAgentId);
+          if (selectedAgent && selectedAgent.handle) {
+            existingHandle = JSON.parse(selectedAgent.handle);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to parse existing handle:', error);
+      }
+
+      // 合并配置：保留现有配置，更新模型和工具
+      const updatedHandle = {
+        ...existingHandle,
+        state: existingHandle.state || {
+          strategies: {
+            input: 'replace',
+            output: 'replace'
+          }
+        },
+        model: {
+          name: values.model,
+          url: existingHandle.model?.url || 'https://api.example.com/v1',
+          'api-key': existingHandle.model?.['api-key'] || 'your-api-key'
+        },
+        tools: values.tools || []
+      };
+
       const agentData: any = {
         name: values.name,
         description: values.description,
@@ -454,26 +652,21 @@ const AgentSchemaCreator: React.FC = () => {
         instruction: values.instruction,
         inputKeys: values.inputKey ? [values.inputKey] : ['input'],
         outputKey: values.outputKey || 'output',
-        handle: JSON.stringify({
-          state: {
-            strategies: {
-              input: 'replace',
-              output: 'replace'
-            }
-          },
-          model: {
-            name: values.model,
-            url: 'https://api.example.com/v1',
-            'api-key': 'your-api-key'
-          },
-          tools: values.tools || []
-        }),
-        subAgents: values.subAgents ? JSON.stringify(values.subAgents.map((id: string) => ({ agent: { id } }))) : undefined,
+        handle: JSON.stringify(updatedHandle),
+        subAgents: values.subAgents ? JSON.stringify(values.subAgents.map((agentName: string) => {
+          // 根据名称查找对应的ID
+          const agent = savedAgents.find(sa => sa.name === agentName);
+          return { 
+            agent: { 
+              id: agent ? agent.id : agentName // 如果找不到对应的ID，使用名称作为后备
+            } 
+          };
+        })) : undefined,
         yamlSchema: yaml,
       };
 
-      console.log('6. Agent data prepared:', agentData);
-      console.log('7. About to call API...');
+      console.log('10. Agent data prepared:', agentData);
+      console.log('11. About to call API...');
       console.log('Base URL:', process.env.WEB_SERVER);
       console.log('Full API URL:', `${process.env.WEB_SERVER}/console/v1/agent-schemas`);
 
@@ -482,15 +675,15 @@ const AgentSchemaCreator: React.FC = () => {
       console.log('Current token:', token ? 'Token exists' : 'No token found');
 
       if (selectedAgentId) {
-        console.log('6. Updating existing agent, ID:', selectedAgentId);
+        console.log('12. Updating existing agent, ID:', selectedAgentId);
         const updatedAgent = await AgentSchemaService.updateAgentSchema(selectedAgentId, agentData);
-        console.log('7. Agent updated successfully:', updatedAgent);
+        console.log('13. Agent updated successfully:', updatedAgent);
         message.success('Agent Schema 更新成功！');
       } else {
-        console.log('6. Creating new agent...');
+        console.log('12. Creating new agent...');
         try {
           const createdAgent = await AgentSchemaService.createAgentSchema(agentData);
-          console.log('7. Agent created successfully:', createdAgent);
+          console.log('13. Agent created successfully:', createdAgent);
           message.success('Agent Schema 创建成功！');
         } catch (apiError) {
           console.error('API call failed:', apiError);
@@ -499,12 +692,12 @@ const AgentSchemaCreator: React.FC = () => {
         }
       }
 
-      console.log('8. Refreshing agent list...');
+      console.log('14. Refreshing agent list...');
       await fetchSavedAgents();
-      console.log('9. Agent list refreshed');
+      console.log('15. Agent list refreshed');
 
       setTimeout(() => {
-        console.log('10. Saved agents after timeout:', savedAgents);
+        console.log('16. Saved agents after timeout:', savedAgents);
       }, 100);
 
     } catch (error) {
@@ -523,9 +716,9 @@ const AgentSchemaCreator: React.FC = () => {
   };
 
   // 下载 YAML
-  const handleDownloadYaml = () => {
+  const handleDownloadYaml = async () => {
     const values = form.getFieldsValue();
-    const yaml = generateYaml(values);
+    const yaml = await generateYaml(values);
     const blob = new Blob([yaml], { type: 'text/yaml' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -647,6 +840,18 @@ const AgentSchemaCreator: React.FC = () => {
                   <List.Item
                     className={`${styles.agentItem} ${selectedAgentId === agent.id ? styles.selectedAgent : ''}`}
                     onClick={() => handleSelectAgent(agent)}
+                    actions={[
+                      <Tooltip title="删除智能体" key="delete">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          onClick={(e) => handleDeleteAgent(agent, e)}
+                          className={styles.deleteButton}
+                          style={{ color: '#ff4d4f' }}
+                        />
+                      </Tooltip>
+                    ]}
                   >
                     <div className={styles.agentInfo}>
                       <Text strong className={styles.agentName}>{agent.name}</Text>
@@ -699,8 +904,33 @@ const AgentSchemaCreator: React.FC = () => {
                   }}
                   onValuesChange={(changedValues, allValues) => {
                     if (allValues.name) {
-                      const yaml = generateYaml(allValues as AgentSchemaForm);
-                      setYamlContent(yaml);
+                      // 同步模型选择到handle配置
+                      if (changedValues.model) {
+                        const currentHandle = allValues.handle || {};
+                        const updatedHandle = {
+                          ...currentHandle,
+                          model: {
+                            name: changedValues.model,
+                            url: currentHandle.model?.url || 'https://api.example.com/v1',
+                            'api-key': currentHandle.model?.['api-key'] || 'your-api-key'
+                          }
+                        };
+                        form.setFieldsValue({ handle: updatedHandle });
+                        
+                        // 使用更新后的handle生成YAML
+                        generateYaml({ ...allValues, handle: updatedHandle } as AgentSchemaForm).then(yaml => {
+                          setYamlContent(yaml);
+                        }).catch(error => {
+                          console.error('Failed to generate YAML on form change:', error);
+                        });
+                      } else {
+                        // 异步更新YAML，不阻塞表单交互
+                        generateYaml(allValues as AgentSchemaForm).then(yaml => {
+                          setYamlContent(yaml);
+                        }).catch(error => {
+                          console.error('Failed to generate YAML on form change:', error);
+                        });
+                      }
                     }
                   }}
                 >
@@ -714,9 +944,38 @@ const AgentSchemaCreator: React.FC = () => {
                     </span>
                   }
                   name="name"
-                  rules={[{ required: true, message: '请输入智能体名称' }]}
+                  rules={[
+                    { required: true, message: '请输入智能体名称' },
+                    {
+                      validator: (_, value) => {
+                        if (!value) return Promise.resolve();
+                        
+                        // 基本格式校验：只允许字母、数字、下划线和连字符
+                        if (!/^[a-zA-Z0-9_\-\s\u4e00-\u9fa5]+$/.test(value)) {
+                          return Promise.reject('智能体名称只能包含字母、数字、下划线、连字符和空格');
+                        }
+                        
+                        // 长度校验
+                        if (value.length < 2 || value.length > 50) {
+                          return Promise.reject('智能体名称长度应在2-50个字符之间');
+                        }
+                        
+                        // 检查重复性错误
+                        if (nameError && value === form.getFieldValue('name')) {
+                          return Promise.reject(nameError);
+                        }
+                        
+                        return Promise.resolve();
+                      }
+                    }
+                  ]}
+                  help={nameError || undefined}
+                  validateStatus={nameError ? 'error' : undefined}
                 >
-                  <Input placeholder="Enter agent name" />
+                  <Input 
+                    placeholder="Enter agent name" 
+                    onChange={(e) => checkNameDuplicate(e.target.value)}
+                  />
                 </Form.Item>
 
 
@@ -837,13 +1096,38 @@ const AgentSchemaCreator: React.FC = () => {
                     </span>
                   }
                   name="subAgents"
+                  rules={[
+                    {
+                      validator: (_, value) => {
+                        if (!value || !Array.isArray(value) || value.length === 0) {
+                          return Promise.resolve();
+                        }
+                        
+                        // 获取当前选中的agent名称
+                        const currentAgentName = form.getFieldValue('name');
+                        if (!currentAgentName) {
+                          return Promise.resolve();
+                        }
+                        
+                        // 检查是否选择了当前agent自身
+                        if (value.includes(currentAgentName)) {
+                          return Promise.reject('不能将当前智能体设置为自身的子智能体');
+                        }
+                        
+                        return Promise.resolve();
+                      }
+                    }
+                  ]}
                 >
                   <CustomSelector
-                    options={subAgentOptions.map(option => ({
-                      value: option.value,
-                      label: option.label,
-                      description: `Agent type: ${option.value}`
-                    }))}
+                    options={subAgentOptions.map(option => {
+                      const agent = savedAgents.find(sa => sa.name === option.value);
+                      return {
+                        value: option.value,
+                        label: option.label,
+                        description: `Type: ${agent?.type || 'Unknown'}`
+                      };
+                    })}
                     expanded={subAgentsExpanded}
                     onExpandChange={setSubAgentsExpanded}
                     maxVisible={3}
