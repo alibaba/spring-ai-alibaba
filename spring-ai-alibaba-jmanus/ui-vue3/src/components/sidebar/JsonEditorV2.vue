@@ -117,7 +117,7 @@
                 ></textarea>
               </div>
               
-               <!-- Terminate Columns -->
+               <!-- Task Output Requirements Description -->
                <div class="form-row">
                  <label class="form-label">{{ $t('sidebar.terminateColumns') }}</label>
                  <input 
