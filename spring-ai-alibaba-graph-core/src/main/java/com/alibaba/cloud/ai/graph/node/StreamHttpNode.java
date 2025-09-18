@@ -366,7 +366,7 @@ public class StreamHttpNode implements StreamingGraphNode {
 				}
 				String jsonTemplate = replaceVariables(param.getBody().getData().get(0).getValue(), state);
 				try {
-					Object jsonObject = HttpNode.parseNestedJson(jsonTemplate);
+					Object jsonObject = objectMapper.readValue(jsonTemplate, Object.class);
 					requestSpec.headers(h -> h.setContentType(MediaType.APPLICATION_JSON));
 					requestSpec.bodyValue(jsonObject);
 				}
