@@ -31,8 +31,9 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * baidu AI Search https://cloud.baidu.com/doc/AppBuilder/s/pmaxd1hvy
- * 该版本相对稳定，但需要配置apiKey，每天有100次免费查询次数
+ * baidu AI Search
+ * <a href="https://cloud.baidu.com/doc/AppBuilder/s/pmaxd1hvy">qianfan</a> This version
+ * is relatively stable, but requires apiKey configuration, with 100 free queries per day
  *
  * @author HunterPorter
  * @author <a href="mailto:zongpeng_hzp@163.com">HunterPorter</a>
@@ -76,35 +77,37 @@ public class BaiduAiSearchService
 		}
 	}
 
-	@JsonClassDescription("根据问题或者关键词，返回网页等数据源的实时搜索结果")
+	@JsonClassDescription("Return real-time search results from web and other data sources based on questions or keywords")
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record Request(
-			@JsonProperty(required = true,
-					value = "messages") @JsonPropertyDescription("搜索输入，包含用户查询内容") List<Message> messages,
-			@JsonProperty(value = "edition", defaultValue = "standard") @JsonPropertyDescription("""
-					搜索版本。默认为standard。
-					可选值：
-					standard：完整版本。
-					lite：标准版本，对召回规模和精排条数简化后的版本，时延表现更好，效果略弱于完整版。""") String edition,
+	public record Request(@JsonProperty(required = true,
+			value = "messages") @JsonPropertyDescription("Search input, including user query content") List<Message> messages,
+			@JsonProperty(value = "edition",
+					defaultValue = "standard") @JsonPropertyDescription("""
+							Search version. Default is standard.
+							Optional values:
+							standard: Full version.
+							lite: Standard version, a simplified version of the full version with better latency performance, but slightly weaker effect.""") String edition,
 			@JsonProperty(value = "search_source",
-					defaultValue = "baidu_search_v2") @JsonPropertyDescription("使用的搜索引擎版本；固定值：baidu_search_v2") String searchSource,
+					defaultValue = "baidu_search_v2") @JsonPropertyDescription("Search engine version used; fixed value: baidu_search_v2") String searchSource,
 			@JsonProperty(
 					value = "resource_type_filter") @JsonPropertyDescription("""
-							支持设置网页、视频、图片、阿拉丁搜索模态，网页top_k最大取值为50，视频top_k最大为10，图片top_k最大为30，阿拉丁top_k最大为5，默认值为：
+							Support setting web, video, image, and Aladdin search modalities. The maximum value of top_k for web is 50, for video is 10, for image is 30, and for Aladdin is 5. The default value is:
 							[{"type": "web","top_k": 20},{"type": "video","top_k": 0},{"type": "image","top_k": 0},{"type": "aladdin","top_k": 0}]
-							使用阿拉丁时注意：
-							1. 阿拉丁不支持站点、时效过滤。
-							2. 建议搭配网页模态使用，增加搜索返回数量。
-							3. 阿拉丁的返回参数为beta版本，后续可能变更。""") List<SearchResource> resourceTypeFilter,
-			@JsonProperty(value = "search_filter") @JsonPropertyDescription("根据条件做检索过滤") SearchFilter searchFilter,
-			@JsonProperty(value = "block_websites") @JsonPropertyDescription("需要屏蔽的站点列表") List<String> blockWebsites,
+							Notes when using Aladdin:
+							1. Aladdin does not support site and timeliness filtering.
+							2. It is recommended to use it with web modality to increase the number of search returns.
+							3. Aladdin's return parameters are in beta version and may change in the future.""") List<SearchResource> resourceTypeFilter,
+			@JsonProperty(
+					value = "search_filter") @JsonPropertyDescription("Filter retrieval based on conditions") SearchFilter searchFilter,
+			@JsonProperty(
+					value = "block_websites") @JsonPropertyDescription("List of sites to be blocked") List<String> blockWebsites,
 			@JsonProperty(value = "search_recency_filter") @JsonPropertyDescription("""
-					根据网页发布时间进行筛选。
-					枚举值:
-					week:最近7天
-					month：最近30天
-					semiyear：最近180天
-					year：最近365天""") String searchRecencyFilter) implements SearchService.Request {
+					Filter by web page publication time.
+					Enumeration values:
+					week: Last 7 days
+					month: Last 30 days
+					semiyear: Last 180 days
+					year: Last 365 days""") String searchRecencyFilter) implements SearchService.Request {
 
 		@Override
 		public String getQuery() {
@@ -123,45 +126,47 @@ public class BaiduAiSearchService
 		}
 	}
 
-	public record Message(@JsonProperty("role") @JsonPropertyDescription("角色设定，可选值：user：用户;assistant：模型") String role,
+	public record Message(
+			@JsonProperty("role") @JsonPropertyDescription("Role setting, optional values: user: user; assistant: model") String role,
 			@JsonProperty("content") @JsonPropertyDescription("""
-					content为文本时, 对应对话内容，即用户的query问题。说明：
-					1.不能为空。
-					2.多轮对话中，用户最后一次输入content不能为空字符，如空格、\"\\n\"、“\\r”、“\\f”等。""") String content) {
+					When content is text, it corresponds to the dialog content, that is, the user's query question. Notes:
+					1. Cannot be empty.
+					2. In multi-round conversations, the last user input content cannot be empty characters, such as spaces, "\\n", "\\r", "\\f", etc.""") String content) {
 	}
 
 	public record SearchResource(@JsonProperty("type") @JsonPropertyDescription("""
-			搜索资源类型。可选值：
-			web：网页
-			video：视频
-			image：图片
-			aladdin：阿拉丁""") String type, @JsonProperty("top_k") @JsonPropertyDescription("指定模态最大返回个数。") Integer topK) {
+			Search resource type. Optional values:
+			web: Web page
+			video: Video
+			image: Image
+			aladdin: Aladdin""") String type,
+			@JsonProperty("top_k") @JsonPropertyDescription("Specify the maximum number of returns for the modality.") Integer topK) {
 	}
 
-	public record SearchFilter(@JsonProperty("match") @JsonPropertyDescription("站点条件查询") Match match,
-			@JsonProperty("range") @JsonPropertyDescription("时间范围查询") Range range) {
+	public record SearchFilter(@JsonProperty("match") @JsonPropertyDescription("Site condition query") Match match,
+			@JsonProperty("range") @JsonPropertyDescription("Time range query") Range range) {
 	}
 
 	public record Match(
-			@JsonProperty("site") @JsonPropertyDescription("支持设置指定站点的搜索条件，即仅在设置的站点中进行内容搜索。目前支持设置20个站点。示例：[\"tieba.baidu.com\"]") List<String> site) {
+			@JsonProperty("site") @JsonPropertyDescription("Support setting search conditions for specified sites, that is, content search only in the set sites. Currently supports setting 20 sites. Example: [\"tieba.baidu.com\"]") List<String> site) {
 	}
 
 	public record Range(@JsonProperty("page_time") PageTime pageTime) {
 	}
 
 	public record PageTime(
-			@JsonProperty("gte") @JsonPropertyDescription("时间查询参数，大于或等于。支持的时间单位：y（年）、M（月）、w（周）、d（日）,例如\"now-1w/d\"，前一周、向下做舍入") String gte,
-			@JsonProperty("gt") @JsonPropertyDescription("时间查询参数，大于。支持的时间单位：y（年）、M（月）、w（周）、d（日）,例如\"now-1w/d\"，前一周、向上做舍入") String gt,
-			@JsonProperty("lte") @JsonPropertyDescription("时间查询参数，小于或等于。支持的时间单位：y（年）、M（月）、w（周）、d（日）,例如\"now-1w/d\"，前一周、向上做舍入") String lte,
-			@JsonProperty("lt") @JsonPropertyDescription("时间查询参数，小于。支持的时间单位：y（年）、M（月）、w（周）、d（日）,例如\"now-1w/d\"，前一周、向下做舍入") String lt) {
+			@JsonProperty("gte") @JsonPropertyDescription("Time query parameter, greater than or equal to. Supported time units: y (year), M (month), w (week), d (day), for example \"now-1w/d\", one week ago, rounded down") String gte,
+			@JsonProperty("gt") @JsonPropertyDescription("Time query parameter, greater than. Supported time units: y (year), M (month), w (week), d (day), for example \"now-1w/d\", one week ago, rounded up") String gt,
+			@JsonProperty("lte") @JsonPropertyDescription("Time query parameter, less than or equal to. Supported time units: y (year), M (month), w (week), d (day), for example \"now-1w/d\", one week ago, rounded up") String lte,
+			@JsonProperty("lt") @JsonPropertyDescription("Time query parameter, less than. Supported time units: y (year), M (month), w (week), d (day), for example \"now-1w/d\", one week ago, rounded down") String lt) {
 	}
 
 	@JsonClassDescription("Baidu AI Search Response")
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	public record Response(@JsonProperty("requestId") @JsonPropertyDescription("请求ID") String requestId,
-			@JsonProperty("code") @JsonPropertyDescription("错误码，当发生异常时返回") String code,
-			@JsonProperty("message") @JsonPropertyDescription("错误信息，当发生异常时返回") String message,
-			@JsonProperty("references") @JsonPropertyDescription("搜索结果列表") List<Reference> references)
+	public record Response(@JsonProperty("requestId") @JsonPropertyDescription("Request ID") String requestId,
+			@JsonProperty("code") @JsonPropertyDescription("Error code, returned when an exception occurs") String code,
+			@JsonProperty("message") @JsonPropertyDescription("Error message, returned when an exception occurs") String message,
+			@JsonProperty("references") @JsonPropertyDescription("Search result list") List<Reference> references)
 			implements
 				SearchService.Response {
 
@@ -177,24 +182,24 @@ public class BaiduAiSearchService
 				.toList());
 		}
 
-		public record Reference(@JsonProperty("icon") @JsonPropertyDescription("网站图标地址") String icon,
-				@JsonProperty("id") @JsonPropertyDescription("引用编号") Integer id,
-				@JsonProperty("title") @JsonPropertyDescription("标题") String title,
-				@JsonProperty("url") @JsonPropertyDescription("网址") String url,
-				@JsonProperty("web_anchor") @JsonPropertyDescription("锚点") String webAnchor,
-				@JsonProperty("website") @JsonPropertyDescription("网站名称") String website,
-				@JsonProperty("content") @JsonPropertyDescription("内容") String content,
-				@JsonProperty("date") @JsonPropertyDescription("日期") String date,
+		public record Reference(@JsonProperty("icon") @JsonPropertyDescription("Website icon address") String icon,
+				@JsonProperty("id") @JsonPropertyDescription("Reference number") Integer id,
+				@JsonProperty("title") @JsonPropertyDescription("Title") String title,
+				@JsonProperty("url") @JsonPropertyDescription("URL") String url,
+				@JsonProperty("web_anchor") @JsonPropertyDescription("Anchor") String webAnchor,
+				@JsonProperty("website") @JsonPropertyDescription("Website name") String website,
+				@JsonProperty("content") @JsonPropertyDescription("Content") String content,
+				@JsonProperty("date") @JsonPropertyDescription("Date") String date,
 				@JsonProperty("type") @JsonPropertyDescription("""
-						检索资源类型。返回值：
-						web:网页
-						video:视频内容
-						image：图片
-						aladdin：阿拉丁""") String type,
-				@JsonProperty("image") @JsonPropertyDescription("图片信息") ImageDetail image,
-				@JsonProperty("video") @JsonPropertyDescription("视频信息") VideoDetail video,
-				@JsonProperty("is_aladdin") @JsonPropertyDescription("是否是阿拉丁内容") Boolean isAladdin,
-				@JsonProperty("aladdin") @JsonPropertyDescription("阿拉丁内容") Object aladdin) {
+						Retrieval resource type. Return values:
+						web: Web page
+						video: Video content
+						image: Image
+						aladdin: Aladdin""") String type,
+				@JsonProperty("image") @JsonPropertyDescription("Image information") ImageDetail image,
+				@JsonProperty("video") @JsonPropertyDescription("Video information") VideoDetail video,
+				@JsonProperty("is_aladdin") @JsonPropertyDescription("Whether it is Aladdin content") Boolean isAladdin,
+				@JsonProperty("aladdin") @JsonPropertyDescription("Aladdin content") Object aladdin) {
 		}
 
 		public record ImageDetail(String url, String height, String width) {

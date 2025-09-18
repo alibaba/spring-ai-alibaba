@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * @author vlsmb
+ * @author HunterPorter
  */
 @ConfigurationProperties(prefix = BaiduSearchConstants.CONFIG_PREFIX_AI)
 public class BaiduAiSearchProperties extends CommonToolCallProperties {
