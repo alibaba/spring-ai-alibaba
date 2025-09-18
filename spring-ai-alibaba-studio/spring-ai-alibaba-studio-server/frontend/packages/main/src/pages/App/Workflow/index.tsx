@@ -292,7 +292,7 @@ export const FlowEditor = memo((props: IProps) => {
     try {
       // 准备请求参数
       const params = {
-        dependencies: 'spring-ai-alibaba-graph,web,spring-ai-alibaba-starter-dashscope',
+        dependencies: 'spring-ai-alibaba-graph,web,spring-ai-alibaba-starter-dashscope,spring-ai-starter-mcp-client',
         appMode: 'workflow',
         dslDialectType: 'studio',
         type: 'maven-project',

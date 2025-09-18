@@ -50,7 +50,7 @@ public class EndNodeSection implements NodeSection<EndNodeData> {
 		if ("text".equalsIgnoreCase(data.getOutputType())) {
 			// 如果输出类型为text，则使用对应的输出模板输出最终结果
 			if (data.getTextTemplateVars().isEmpty()) {
-				codeStr = String.format("state -> Map.of(\"output\", %s)",
+				codeStr = String.format("state -> Map.of(\"%s\", %s)", data.getOutputKey(),
 						ObjectToCodeUtil.toCode(data.getTextTemplate()));
 			}
 			else {
@@ -63,11 +63,11 @@ public class EndNodeSection implements NodeSection<EndNodeData> {
 						                    key -> state.value(key).orElse(""),
 						                    (o1, o2) -> o2));
 						    template = new PromptTemplate(template).render(params);
-						    return Map.of("output", template);
+						    return Map.of("%s", template);
 						}
 
 						""", ObjectToCodeUtil.toCode(data.getTextTemplate()),
-						ObjectToCodeUtil.toCode(data.getTextTemplateVars()));
+						ObjectToCodeUtil.toCode(data.getTextTemplateVars()), data.getOutputKey());
 			}
 		}
 		else {

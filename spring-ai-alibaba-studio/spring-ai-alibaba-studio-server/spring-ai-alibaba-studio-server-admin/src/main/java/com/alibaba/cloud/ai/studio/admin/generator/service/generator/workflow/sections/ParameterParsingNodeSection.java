@@ -97,6 +97,7 @@ public class ParameterParsingNodeSection implements NodeSection<ParameterParsing
 						                          Map<String, Object> data = (Map<String, Object>) finalRes.remove(dataKey);
 						                          finalRes.putAll(data.entrySet()
 						                                    .stream()
+						                                    .filter(e -> e.getValue() != null)
 						                                    .map(e ->
 						                                            Map.entry(outputKeyPrefix + "_" + e.getKey(), e.getValue()))
 						                                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
