@@ -16,6 +16,9 @@
 
 package com.alibaba.cloud.ai.studio.runtime.enums.agent;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /**
  * Enumeration of agent types supported by the system.
  *
@@ -44,10 +47,12 @@ public enum AgentType {
 		this.code = code;
 	}
 
+	@JsonValue
 	public String getCode() {
 		return code;
 	}
 
+	@JsonCreator
 	public static AgentType fromCode(String code) {
 		for (AgentType type : values()) {
 			if (type.getCode().equals(code)) {

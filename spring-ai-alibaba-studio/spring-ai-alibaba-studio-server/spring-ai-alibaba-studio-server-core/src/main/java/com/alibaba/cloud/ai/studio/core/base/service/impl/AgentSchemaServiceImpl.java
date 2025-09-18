@@ -49,13 +49,22 @@ public class AgentSchemaServiceImpl extends ServiceImpl<AgentSchemaMapper, Agent
 		if (StringUtils.isBlank(agentSchemaEntity.getAgentId())) {
 			agentSchemaEntity.setAgentId(IdGenerator.generateAgentId());
 		}
-		agentSchemaEntity.setWorkspaceId(requestContext.getWorkspaceId());
+		
+		// Use default workspace ID if not available from context
+		String workspaceId = requestContext != null ? requestContext.getWorkspaceId() : null;
+		if (StringUtils.isBlank(workspaceId)) {
+			workspaceId = "1"; // Use default workspace ID that matches database
+		}
+		agentSchemaEntity.setWorkspaceId(workspaceId);
+		
 		agentSchemaEntity.setStatus(AgentStatus.ACTIVE);
 		agentSchemaEntity.setEnabled(true);
 		agentSchemaEntity.setGmtCreate(new Date());
 		agentSchemaEntity.setGmtModified(new Date());
-		agentSchemaEntity.setCreator(requestContext.getAccountId());
-		agentSchemaEntity.setModifier(requestContext.getAccountId());
+		
+		String accountId = requestContext != null ? requestContext.getAccountId() : "10000";
+		agentSchemaEntity.setCreator(accountId);
+		agentSchemaEntity.setModifier(accountId);
 		
 		save(agentSchemaEntity);
 		return agentSchemaEntity;

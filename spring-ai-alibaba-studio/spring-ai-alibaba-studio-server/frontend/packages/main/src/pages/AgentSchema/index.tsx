@@ -1,7 +1,7 @@
 import InnerLayout from '@/components/InnerLayout';
 import $i18n from '@/i18n';
 import { Button, Form, Input, Select, Card, message, Space, Typography, List, Checkbox, Tooltip, Divider } from 'antd';
-import { PlusOutlined, CopyOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import { PlusOutlined, CopyOutlined, SaveOutlined, CloseOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './index.module.less';
@@ -9,6 +9,7 @@ import { AgentSchemaService } from '@/services/agentSchema';
 import { ToolService } from '@/services/tool';
 import { IAgentSchema, AgentType } from '@/types/agentSchema';
 import { ITool } from '@/types/tool';
+import { session } from '@/request/session';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -63,10 +64,10 @@ interface LoopAgentHandleConfig extends CommonHandleConfig {
 }
 
 // Handle配置联合类型
-type HandleConfig = 
-  | ReactAgentHandleConfig 
-  | ParallelAgentHandleConfig 
-  | LoopAgentHandleConfig 
+type HandleConfig =
+  | ReactAgentHandleConfig
+  | ParallelAgentHandleConfig
+  | LoopAgentHandleConfig
   | CommonHandleConfig;
 
 // 子代理引用方式
@@ -98,14 +99,16 @@ interface AgentSchema {
 
 // 表单数据接口
 interface AgentSchemaForm {
-  type: AgentType;
+  agentType: AgentType;
   name: string;
   description: string;
   instruction: string;
-  input_keys: string[];
-  output_key: string;
+  inputKey: string;
+  outputKey: string;
+  model: string;
   handle: HandleConfig;
-  sub_agents?: SubAgentRef[];
+  subAgents?: string[];
+  tools?: string[];
 }
 
 // 保存的Agent数据接口
@@ -124,6 +127,8 @@ const AgentSchemaCreator: React.FC = () => {
   const [availableTools, setAvailableTools] = useState<ITool[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(false);
   const [toolsLoading, setToolsLoading] = useState(false);
+  const [subAgentsExpanded, setSubAgentsExpanded] = useState(false);
+  const [toolsExpanded, setToolsExpanded] = useState(false);
 
   // 获取已保存的智能体列表
   const fetchSavedAgents = async () => {
@@ -133,9 +138,9 @@ const AgentSchemaCreator: React.FC = () => {
       console.log('Fetched agents response:', response); // 调试信息
       console.log('Response type:', typeof response); // 调试信息
       console.log('Is Array.isArray(response):', Array.isArray(response)); // 调试信息
-      
+
       let agents: any[] = [];
-      
+
       // 检查响应格式 - 后端返回 Result<List<AgentSchemaEntity>>
       if (Array.isArray(response)) {
         // 如果直接是数组，直接使用
@@ -157,7 +162,7 @@ const AgentSchemaCreator: React.FC = () => {
       } else {
         console.warn('Unexpected response format:', response);
       }
-      
+
       console.log('Final agents array to set:', agents);
       setSavedAgents(agents);
     } catch (error) {
@@ -249,17 +254,17 @@ const AgentSchemaCreator: React.FC = () => {
   // 生成 YAML 内容
   const generateYaml = (values: AgentSchemaForm) => {
     const instruction = values.instruction || '';
-    const inputKeys = values.input_keys || [];
-    const subAgents = values.sub_agents || [];
+    const inputKeys = values.inputKey ? [values.inputKey] : ['input'];
+    const subAgents = values.subAgents || [];
 
     // 生成handle配置
     const generateHandleYaml = (handle: HandleConfig): string => {
       if (!handle) {
         return 'handle:\n  state:\n    strategies:\n      input: "replace"\n      output: "replace"\n';
       }
-      
+
       let yaml = 'handle:\n';
-      
+
       // 通用配置
       if (handle.chat_options && Object.keys(handle.chat_options).length > 0) {
         yaml += `  chat_options:\n`;
@@ -336,37 +341,25 @@ const AgentSchemaCreator: React.FC = () => {
     };
 
     // 生成子代理配置
-    const generateSubAgentsYaml = (subAgents: SubAgentRef[]): string => {
+    const generateSubAgentsYaml = (subAgents: string[]): string => {
       if (subAgents.length === 0) return '';
-      
+
       let yaml = 'sub_agents:\n';
-      subAgents.forEach(subAgent => {
-        if ('agent' in subAgent) {
-          yaml += `  - agent:\n`;
-          yaml += `      type: "${subAgent.agent.type}"\n`;
-          yaml += `      name: "${subAgent.agent.name}"\n`;
-          yaml += `      description: "${subAgent.agent.description}"\n`;
-          yaml += `      instruction: "${subAgent.agent.instruction}"\n`;
-          yaml += `      input_keys: [${subAgent.agent.input_keys.map(key => `"${key}"`).join(', ')}]\n`;
-          yaml += `      output_key: "${subAgent.agent.output_key}"\n`;
-          yaml += `      # handle配置...\n`;
-        } else if ('config_path' in subAgent) {
-          yaml += `  - config_path: "${subAgent.config_path}"\n`;
-        } else if ('code' in subAgent) {
-          yaml += `  - code: "${subAgent.code}"\n`;
-        }
+      subAgents.forEach(subAgentId => {
+        // 简化处理，直接使用ID引用
+        yaml += `  - agent: ${subAgentId}\n`;
       });
       return yaml;
     };
 
     const handleYaml = values.handle ? generateHandleYaml(values.handle) : 'handle:\n  state:\n    strategies:\n      input: "replace"\n      output: "replace"\n';
-    const yaml = `agent:\n  type: "${values.type || 'ReactAgent'}"\n  name: "${values.name || ''}"\n  description: "${values.description || ''}"\n  instruction: |\n    ${instruction.replace(/\n/g, '\n    ')}\n  input_keys:\n${inputKeys.length > 0 ? inputKeys.map(key => `    - "${key}"`).join('\n') : '    - "input"'}\n  output_key: "${values.output_key || 'output'}"\n${handleYaml}${subAgents.length > 0 ? generateSubAgentsYaml(subAgents) : ''}`;
+    const yaml = `agent:\n  type: "${values.agentType || 'ReactAgent'}"\n  name: "${values.name || ''}"\n  description: "${values.description || ''}"\n  instruction: |\n    ${instruction.replace(/\n/g, '\n    ')}\n  input_keys:\n${inputKeys.length > 0 ? inputKeys.map(key => `    - "${key}"`).join('\n') : '    - "input"'}\n  output_key: "${values.outputKey || 'output'}"\n${handleYaml}${subAgents.length > 0 ? generateSubAgentsYaml(subAgents) : ''}`;
     return yaml;
   };
 
   // 监听表单变化，实时更新 YAML
   useEffect(() => {
-    const subscription = form.getFieldsValue();
+    const subscription = form.getFieldsValue() as AgentSchemaForm;
     if (subscription.name) {
       const yaml = generateYaml(subscription);
       setYamlContent(yaml);
@@ -401,50 +394,124 @@ const AgentSchemaCreator: React.FC = () => {
 
   // 保存智能体
   const handleSaveAgent = async () => {
+    console.log('=== HANDLE SAVE AGENT START ===');
     setLoading(true);
     try {
-      const values = await form.validateFields();
-      const yaml = generateYaml(values);
+      console.log('1. Getting form fields directly...');
+      const rawValues = form.getFieldsValue();
+      console.log('2. Raw form fields retrieved:', rawValues);
+
+      // 确保所有必需字段都有值
+      const values: AgentSchemaForm = {
+        agentType: rawValues.agentType || 'ReactAgent',
+        name: rawValues.name || '',
+        description: rawValues.description || '',
+        instruction: rawValues.instruction || '',
+        inputKey: rawValues.inputKey || 'input',
+        outputKey: rawValues.outputKey || 'output',
+        model: rawValues.model || 'qwen2.5-72b-instruct',
+        handle: rawValues.handle || {
+          state: {
+            strategies: {
+              input: 'replace',
+              output: 'replace'
+            }
+          }
+        },
+        subAgents: rawValues.subAgents || [],
+        tools: rawValues.tools || []
+      };
+      console.log('3. Processed form values:', values);
+
+      // 手动验证必填字段
+      if (!values.name) {
+        message.error('请输入智能体名称');
+        return;
+      }
+      if (!values.instruction) {
+        message.error('请输入系统提示词');
+        return;
+      }
+
+      console.log('3. Form validation passed manually');
+
+      let yaml: string;
+      try {
+        console.log('4. Generating YAML...');
+        yaml = generateYaml(values);
+        console.log('5. YAML generated:', yaml);
+      } catch (yamlError) {
+        console.error('YAML generation failed:', yamlError);
+        message.error('YAML生成失败');
+        return;
+      }
 
       // 构建保存到后端的数据格式
       const agentData: any = {
         name: values.name,
         description: values.description,
-        type: values.type,
+        type: values.agentType || 'ReactAgent',
         instruction: values.instruction,
-        inputKeys: values.input_keys,
-        outputKey: values.output_key,
-        handle: JSON.stringify(values.handle),
-        subAgents: values.sub_agents ? JSON.stringify(values.sub_agents) : undefined,
+        inputKeys: values.inputKey ? [values.inputKey] : ['input'],
+        outputKey: values.outputKey || 'output',
+        handle: JSON.stringify({
+          state: {
+            strategies: {
+              input: 'replace',
+              output: 'replace'
+            }
+          },
+          model: {
+            name: values.model,
+            url: 'https://api.example.com/v1',
+            'api-key': 'your-api-key'
+          },
+          tools: values.tools || []
+        }),
+        subAgents: values.subAgents ? JSON.stringify(values.subAgents.map((id: string) => ({ agent: { id } }))) : undefined,
         yamlSchema: yaml,
       };
 
-      console.log('Saving agent data:', agentData); // 调试信息
+      console.log('6. Agent data prepared:', agentData);
+      console.log('7. About to call API...');
+      console.log('Base URL:', process.env.WEB_SERVER);
+      console.log('Full API URL:', `${process.env.WEB_SERVER}/console/v1/agent-schemas`);
+
+      // 检查认证状态
+      const token = await session.asyncGet();
+      console.log('Current token:', token ? 'Token exists' : 'No token found');
 
       if (selectedAgentId) {
-        // 更新现有智能体
+        console.log('6. Updating existing agent, ID:', selectedAgentId);
         const updatedAgent = await AgentSchemaService.updateAgentSchema(selectedAgentId, agentData);
-        console.log('Updated agent:', updatedAgent); // 调试信息
+        console.log('7. Agent updated successfully:', updatedAgent);
         message.success('Agent Schema 更新成功！');
       } else {
-        // 创建新智能体
-        const createdAgent = await AgentSchemaService.createAgentSchema(agentData);
-        console.log('Created agent:', createdAgent); // 调试信息
-        message.success('Agent Schema 创建成功！');
+        console.log('6. Creating new agent...');
+        try {
+          const createdAgent = await AgentSchemaService.createAgentSchema(agentData);
+          console.log('7. Agent created successfully:', createdAgent);
+          message.success('Agent Schema 创建成功！');
+        } catch (apiError) {
+          console.error('API call failed:', apiError);
+          // 不要在这里重新抛出错误，让外层的catch处理
+          throw apiError;
+        }
       }
 
-      // 刷新列表
-      console.log('Refreshing agent list after save...'); // 调试信息
+      console.log('8. Refreshing agent list...');
       await fetchSavedAgents();
-      // 添加延迟以确保状态更新完成
+      console.log('9. Agent list refreshed');
+
       setTimeout(() => {
-        console.log('savedAgents after timeout (should be updated):', savedAgents);
+        console.log('10. Saved agents after timeout:', savedAgents);
       }, 100);
-      console.log('fetchSavedAgents completed, but savedAgents state may not be updated yet due to React async state updates'); // 调试信息
+
     } catch (error) {
+      console.error('=== SAVE FAILED ===', error);
       message.error('保存失败，请重试');
-      console.error('Save failed:', error);
     } finally {
+      console.log('=== HANDLE SAVE AGENT END ===');
       setLoading(false);
     }
   };
@@ -474,6 +541,73 @@ const AgentSchemaCreator: React.FC = () => {
     navigate('/');
   };
 
+  // 自定义选择器组件
+  const CustomSelector: React.FC<{
+    options: Array<{ value: string; label: string; description?: string }>;
+    value?: string[];
+    onChange?: (value: string[]) => void;
+    expanded: boolean;
+    onExpandChange: (expanded: boolean) => void;
+    maxVisible?: number;
+    icon?: string;
+  }> = ({
+    options,
+    value = [],
+    onChange,
+    expanded,
+    onExpandChange,
+    maxVisible = 3,
+    icon = 'F'
+  }) => {
+    const visibleOptions = expanded ? options : options.slice(0, maxVisible);
+    const hasMore = options.length > maxVisible;
+
+    const handleItemClick = (optionValue: string) => {
+      const newValue = value.includes(optionValue)
+        ? value.filter(v => v !== optionValue)
+        : [...value, optionValue];
+      onChange?.(newValue);
+    };
+
+    return (
+      <div className={styles.selectorGroup}>
+        {visibleOptions.map((option) => {
+          const isSelected = value.includes(option.value);
+          return (
+            <div
+              key={option.value}
+              className={`${styles.selectorItem} ${isSelected ? styles.selected : ''}`}
+              onClick={() => handleItemClick(option.value)}
+            >
+              <div className={styles.selectorItemIcon}>
+                {icon}
+              </div>
+              <div className={styles.selectorItemContent}>
+                <div className={styles.selectorItemTitle}>{option.label}</div>
+                {option.description && (
+                  <div className={styles.selectorItemDescription}>{option.description}</div>
+                )}
+              </div>
+              <div className={styles.selectorCheckbox}>
+                <Checkbox checked={isSelected} />
+              </div>
+            </div>
+          );
+        })}
+
+        {hasMore && (
+          <div
+            className={styles.expandButton}
+            onClick={() => onExpandChange(!expanded)}
+          >
+            {expanded ? <UpOutlined /> : <DownOutlined />}
+            {expanded ? `Show less` : `${options.length - maxVisible} more`}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <InnerLayout
       breadcrumbLinks={[
@@ -495,10 +629,21 @@ const AgentSchemaCreator: React.FC = () => {
           {/* 左侧：已保存的智能体 */}
           <div className={styles.leftPanel}>
             <Card title="Saved Agents" className={styles.savedAgentsCard}>
-              <List
-                loading={agentsLoading}
-                dataSource={savedAgents}
-                renderItem={(agent) => (
+              <div
+                className={styles.listContainer}
+                style={{
+                  height: '320px', // 减少高度，更紧凑
+                  overflowY: 'scroll',
+                  overflowX: 'hidden',
+                  padding: '0 4px',
+                  // 强制显示滚动条的CSS技巧
+                  scrollbarGutter: 'stable'
+                }}
+              >
+                <List
+                  loading={agentsLoading}
+                  dataSource={savedAgents}
+                  renderItem={(agent) => (
                   <List.Item
                     className={`${styles.agentItem} ${selectedAgentId === agent.id ? styles.selectedAgent : ''}`}
                     onClick={() => handleSelectAgent(agent)}
@@ -512,7 +657,8 @@ const AgentSchemaCreator: React.FC = () => {
                     </div>
                   </List.Item>
                 )}
-              />
+                />
+              </div>
               <Divider />
               <Button
                 type="dashed"
@@ -536,9 +682,10 @@ const AgentSchemaCreator: React.FC = () => {
                     layout="vertical"
                     className={styles.form}
                   initialValues={{
-                    type: 'ReactAgent',
-                    input_keys: ['input'],
-                    output_key: 'output',
+                    agentType: 'ReactAgent',
+                    inputKey: 'input',
+                    outputKey: 'output',
+                    model: 'qwen2.5-72b-instruct',
                     handle: {
                       state: {
                         strategies: {
@@ -547,11 +694,12 @@ const AgentSchemaCreator: React.FC = () => {
                         }
                       }
                     },
-                    sub_agents: []
+                    subAgents: [],
+                    tools: []
                   }}
                   onValuesChange={(changedValues, allValues) => {
                     if (allValues.name) {
-                      const yaml = generateYaml(allValues);
+                      const yaml = generateYaml(allValues as AgentSchemaForm);
                       setYamlContent(yaml);
                     }
                   }}
@@ -571,7 +719,7 @@ const AgentSchemaCreator: React.FC = () => {
                   <Input placeholder="Enter agent name" />
                 </Form.Item>
 
-  
+
                 <Form.Item
                   label={
                     <span>
@@ -690,13 +838,17 @@ const AgentSchemaCreator: React.FC = () => {
                   }
                   name="subAgents"
                 >
-                  <Checkbox.Group className={styles.checkboxGroup}>
-                    {subAgentOptions.map(option => (
-                      <Checkbox key={option.value} value={option.value}>
-                        {option.label}
-                      </Checkbox>
-                    ))}
-                  </Checkbox.Group>
+                  <CustomSelector
+                    options={subAgentOptions.map(option => ({
+                      value: option.value,
+                      label: option.label,
+                      description: `Agent type: ${option.value}`
+                    }))}
+                    expanded={subAgentsExpanded}
+                    onExpandChange={setSubAgentsExpanded}
+                    maxVisible={3}
+                    icon="A"
+                  />
                 </Form.Item>
 
                 <Form.Item
@@ -710,17 +862,21 @@ const AgentSchemaCreator: React.FC = () => {
                   }
                   name="tools"
                 >
-                  <Checkbox.Group className={styles.checkboxGroup}>
-                    {toolsLoading ? (
-                      <div>加载工具中...</div>
-                    ) : (
-                      toolOptions.map(option => (
-                        <Checkbox key={option.value} value={option.value}>
-                          {option.label}
-                        </Checkbox>
-                      ))
-                    )}
-                  </Checkbox.Group>
+                  {toolsLoading ? (
+                    <div>加载工具中...</div>
+                  ) : (
+                    <CustomSelector
+                      options={toolOptions.map(option => ({
+                        value: option.value,
+                        label: option.label,
+                        description: `Tool: ${option.value}`
+                      }))}
+                      expanded={toolsExpanded}
+                      onExpandChange={setToolsExpanded}
+                      maxVisible={8}
+                      icon="F"
+                    />
+                  )}
                 </Form.Item>
                 </Form>
                 </div>

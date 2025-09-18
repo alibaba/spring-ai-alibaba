@@ -84,7 +84,7 @@ public class AgentSchemaController {
 	 */
 	@GetMapping
 	public Result<List<AgentSchemaEntity>> getAgentSchemas() {
-		String workspaceId = "default"; // TODO: Get from context
+		String workspaceId = "1"; // Use default workspace ID that matches database
 		List<AgentSchemaEntity> agentSchemas = agentSchemaService.getAgentSchemasByWorkspaceId(workspaceId);
 		return Result.success(agentSchemas);
 	}
@@ -96,7 +96,7 @@ public class AgentSchemaController {
 	public Result<PagingList<AgentSchemaEntity>> getAgentSchemasByPage(
 			@RequestParam(defaultValue = "1") long current,
 			@RequestParam(defaultValue = "10") long size) {
-		String workspaceId = "default"; // TODO: Get from context
+		String workspaceId = "1"; // Use default workspace ID that matches database
 		Page<AgentSchemaEntity> page = new Page<>(current, size);
 		PagingList<AgentSchemaEntity> result = agentSchemaService.getAgentSchemasByWorkspaceId(workspaceId, page);
 		return Result.success(result);
@@ -108,7 +108,7 @@ public class AgentSchemaController {
 	@GetMapping("/search")
 	public Result<List<AgentSchemaEntity>> searchAgentSchemas(
 			@RequestParam String name) {
-		String workspaceId = "default"; // TODO: Get from context
+		String workspaceId = "1"; // Use default workspace ID that matches database
 		List<AgentSchemaEntity> agentSchemas = agentSchemaService.getAgentSchemasByName(name, workspaceId);
 		return Result.success(agentSchemas);
 	}
