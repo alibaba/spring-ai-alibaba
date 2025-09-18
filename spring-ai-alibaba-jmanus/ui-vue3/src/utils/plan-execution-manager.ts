@@ -361,11 +361,12 @@ export class PlanExecutionManager {
       const details = await this.getPlanDetails(this.state.activePlanId)
 
       if (!details) {
-        console.warn('[PlanExecutionManager] No details received from API')
+        console.warn('[PlanExecutionManager] No details received from API - this might be a temporary network issue')
         return
       }
 
-      if(details.status && details.status === 'failed'){
+      // Only handle actual plan execution failures, not network errors
+      if(details.status && details.status === 'failed' && details.message && !details.message.includes('Failed to get detailed information')){
         this.handlePlanError(details)
         return;
       }
@@ -375,13 +376,7 @@ export class PlanExecutionManager {
         this.setCachedPlanRecord(details.rootPlanId, details)
       }
 
-      if (!details.steps || details.steps.length === 0) {
-        console.log('[PlanExecutionManager] Simple response without steps detected, handling as completed')
-        // For simple responses, emit completion directly
-        this.emitPlanUpdate(details.rootPlanId ?? "");
-        this.handlePlanCompletion(details)
-        return;
-      }
+
 
       this.emitPlanUpdate(details.rootPlanId ?? "");
 

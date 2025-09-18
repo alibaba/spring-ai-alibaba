@@ -105,6 +105,7 @@ public class A2aNode implements NodeAction {
 			try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 				HttpPost post = new HttpPost(baseUrl);
 				post.setHeader("Content-Type", "application/json");
+				post.setHeader("Accept", "text/event-stream");
 				post.setEntity(new StringEntity(requestPayload, ContentType.APPLICATION_JSON));
 
 				try (CloseableHttpResponse response = httpClient.execute(post)) {

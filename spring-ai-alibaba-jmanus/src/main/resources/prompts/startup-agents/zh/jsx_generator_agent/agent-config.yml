@@ -4,7 +4,7 @@ agentDescription: 专业的JSX Vue组件生成代理，可以自动创建Vue单�
 builtIn: false
 availableToolKeys:
   - jsx_generator_operator
-  - inner_storage_content_tool
+  - extract_relevant_content
   - text_file_operator
   - terminate
 
@@ -154,4 +154,4 @@ nextStepPrompt: |
   - 使用有意义的组件名称路径
   - methods字段中的函数应使用完整的JavaScript语法
 
-  如需从已有文本或文档中提取内容，请使用 text_file_operator 或 inner_storage_content_tool。
+  如需从已有文本或文档中提取内容，请使用 text_file_operator 或 extract_relevant_content。

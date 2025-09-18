@@ -68,7 +68,7 @@ import AgentConfig from './agentConfig.vue'
 import ModelConfig from './modelConfig.vue'
 import McpConfig from './mcpConfig.vue'
 import DynamicPromptConfig from './dynamicPromptConfig.vue'
-import LanguageSwitcher from '@/components/language-switcher/index.vue'
+import LanguageSwitcher from '@/components/language-switcher/LanguageSwitcher.vue'
 import NamespaceConfig from './namespaceConfig.vue'
 import NamespaceSwitch from './components/namespaceSwitch.vue'
 
