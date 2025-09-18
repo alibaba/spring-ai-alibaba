@@ -61,6 +61,9 @@
         <module>spring-ai-alibaba-deepresearch</module>
         <module>spring-ai-alibaba-agent-nacos</module>
 
+        <!-- Spring AI Alibaba Extension Modules -->
+        <module>spring-ai-alibaba-observation-extension</module>
+
         <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
