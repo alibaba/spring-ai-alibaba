@@ -66,13 +66,13 @@ public class StreamHttpNode implements StreamingGraphNode {
 	public Flux<Map<String, Object>> executeStreaming(OverAllState state) throws Exception {
 		try {
 			String finalUrl = replaceVariables(param.getUrl(), state);
-			validateUrl(finalUrl); // 添加URL安全验证
 			Map<String, String> finalHeaders = replaceVariables(param.getHeaders(), state);
 			Map<String, String> finalQueryParams = replaceVariables(param.getQueryParams(), state);
 
 			UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(finalUrl);
 			finalQueryParams.forEach(uriBuilder::queryParam);
-			URI finalUri = uriBuilder.build().toUri();
+			URI finalUri = uriBuilder.encode().build().toUri(); // 使用encode()进行URL编码
+			validateUrl(finalUri.toString()); // 在编码后进行URL安全验证
 
 			WebClient.RequestBodySpec requestSpec = param.getWebClient()
 				.method(param.getMethod())
@@ -193,9 +193,20 @@ public class StreamHttpNode implements StreamingGraphNode {
 				catch (JsonProcessingException e) {
 					logger.warn("Invalid JSON line: {}, error: {}", line, e.getMessage());
 					// 返回包含错误信息的特殊标记，保留原始数据用于调试
-					String errorJson = String.format("{\"_parsing_error\": \"%s\", \"_raw_data\": \"%s\"}",
-							e.getMessage().replaceAll("\"", "\\\\\""), line.replaceAll("\"", "\\\\\""));
-					results.add(errorJson);
+					try {
+						Map<String, String> errorMap = new HashMap<>();
+						errorMap.put("_parsing_error", e.getMessage());
+						errorMap.put("_raw_data", line);
+						String errorJson = objectMapper.writeValueAsString(errorMap);
+						results.add(errorJson);
+					}
+					catch (JsonProcessingException jsonError) {
+						// 如果连错误JSON都无法生成，则使用简单的错误格式
+						String errorJson = String.format(
+								"{\"_parsing_error\": \"JSON processing failed\", \"_raw_data\": \"%s\"}",
+								line.replaceAll("\"", "\\\\\""));
+						results.add(errorJson);
+					}
 				}
 			}
 		}
