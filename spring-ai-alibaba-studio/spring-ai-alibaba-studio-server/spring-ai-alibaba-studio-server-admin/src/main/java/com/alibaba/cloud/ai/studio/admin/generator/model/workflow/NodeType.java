@@ -94,6 +94,11 @@ public enum NodeType {
 		return this.studioValue;
 	}
 
+	public static boolean isEmpty(NodeType nodeType) {
+		return NodeType.EMPTY.equals(nodeType) || NodeType.ITERATION_START.equals(nodeType)
+				|| NodeType.ITERATION_END.equals(nodeType);
+	}
+
 	public static Optional<NodeType> fromValue(String value) {
 		return Arrays.stream(NodeType.values()).filter(nodeType -> nodeType.value.equals(value)).findFirst();
 	}

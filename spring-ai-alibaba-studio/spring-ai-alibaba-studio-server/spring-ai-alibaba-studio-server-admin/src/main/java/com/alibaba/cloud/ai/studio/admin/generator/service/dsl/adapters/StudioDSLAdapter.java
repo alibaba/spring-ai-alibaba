@@ -242,7 +242,7 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 			NodeData data = converter.parseMapData(nodeMap, DSLDialectType.STUDIO);
 
 			// Generate a readable varName and inject it into NodeData
-			int count = counters.merge(nodeType, 1, Integer::sum);
+			int count = counters.merge(NodeType.isEmpty(nodeType) ? NodeType.EMPTY : nodeType, 1, Integer::sum);
 			String varName = converter.generateVarName(count);
 
 			data.setVarName(varName);
