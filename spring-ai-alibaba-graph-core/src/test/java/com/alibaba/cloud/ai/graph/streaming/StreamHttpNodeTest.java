@@ -95,6 +95,7 @@ class StreamHttpNodeTest {
 			.streamFormat(StreamFormat.SSE)
 			.streamMode(StreamMode.DISTRIBUTE)
 			.outputKey("sse_output")
+			.allowInternalAddress(true) // 允许访问localhost
 			.build();
 
 		streamHttpNode = new StreamHttpNode(param);
@@ -139,6 +140,7 @@ class StreamHttpNodeTest {
 			.streamMode(StreamMode.DISTRIBUTE)
 			.outputKey("jsonlines_output")
 			.readTimeout(Duration.ofSeconds(10))
+			.allowInternalAddress(true) // 允许访问localhost
 			.build();
 
 		streamHttpNode = new StreamHttpNode(param);
@@ -179,6 +181,7 @@ class StreamHttpNodeTest {
 			.streamMode(StreamMode.DISTRIBUTE)
 			.delimiter("\n")
 			.outputKey("text_output")
+			.allowInternalAddress(true) // 允许访问localhost
 			.build();
 
 		streamHttpNode = new StreamHttpNode(param);
@@ -220,6 +223,7 @@ class StreamHttpNodeTest {
 			.streamFormat(StreamFormat.JSON_LINES)
 			.streamMode(StreamMode.AGGREGATE)
 			.outputKey("aggregated_output")
+			.allowInternalAddress(true) // 允许访问localhost
 			.build();
 
 		streamHttpNode = new StreamHttpNode(param);
@@ -262,6 +266,7 @@ class StreamHttpNodeTest {
 			.streamFormat(StreamFormat.JSON_LINES)
 			.streamMode(StreamMode.DISTRIBUTE)
 			.outputKey("variable_output")
+			.allowInternalAddress(true) // 允许访问localhost
 			.build();
 
 		streamHttpNode = new StreamHttpNode(param);
@@ -295,6 +300,7 @@ class StreamHttpNodeTest {
 			.streamMode(StreamMode.DISTRIBUTE)
 			.outputKey("error_output")
 			.readTimeout(Duration.ofSeconds(2)) // 短超时
+			.allowInternalAddress(true) // 允许访问localhost
 			.build();
 
 		streamHttpNode = new StreamHttpNode(param);
@@ -340,6 +346,7 @@ class StreamHttpNodeTest {
 			.url(mockWebServer.url("/no-key").toString())
 			.streamFormat(StreamFormat.SSE)
 			.streamMode(StreamMode.DISTRIBUTE)
+			.allowInternalAddress(true) // 允许访问localhost
 			// 不设置outputKey
 			.build();
 
@@ -379,6 +386,7 @@ class StreamHttpNodeTest {
 			.streamMode(StreamMode.DISTRIBUTE)
 			.outputKey("chat_response")
 			.header("Content-Type", "application/json")
+			.allowInternalAddress(true) // 允许访问localhost
 			.build();
 
 		streamHttpNode = new StreamHttpNode(param);
@@ -437,6 +445,7 @@ class StreamHttpNodeTest {
 			.header("Authorization", "Bearer ${test_key}")
 			.header("X-User-Agent", "StreamHttpNode/1.0")
 			.readTimeout(Duration.ofSeconds(30))
+			.allowInternalAddress(true) // 允许访问localhost
 			.build();
 
 		streamHttpNode = new StreamHttpNode(param);
@@ -516,6 +525,7 @@ class StreamHttpNodeTest {
 			.streamMode(StreamMode.AGGREGATE)
 			.outputKey("simple_output")
 			.readTimeout(Duration.ofSeconds(5)) // 短超时
+			.allowInternalAddress(true) // 允许访问localhost
 			.build();
 
 		streamHttpNode = new StreamHttpNode(param);
@@ -602,6 +612,7 @@ class StreamHttpNodeTest {
 			.url(mockWebServer.url("/jsonlines-error").toString())
 			.streamFormat(StreamFormat.JSON_LINES)
 			.streamMode(StreamMode.DISTRIBUTE)
+			.allowInternalAddress(true) // 允许访问localhost
 			.build();
 
 		streamHttpNode = new StreamHttpNode(param);
@@ -648,6 +659,7 @@ class StreamHttpNodeTest {
 			.streamFormat(StreamFormat.JSON_LINES)
 			.streamMode(StreamMode.DISTRIBUTE)
 			.bufferTimeout(Duration.ofMillis(50)) // 自定义缓冲超时
+			.allowInternalAddress(true) // 允许访问localhost
 			.build();
 
 		streamHttpNode = new StreamHttpNode(param);
@@ -699,6 +711,7 @@ class StreamHttpNodeTest {
 			.url(mockWebServer.url("/error").toString())
 			.streamFormat(StreamFormat.JSON_LINES)
 			.streamMode(StreamMode.DISTRIBUTE)
+			.allowInternalAddress(true) // 允许访问localhost
 			.build();
 
 		streamHttpNode = new StreamHttpNode(param);
