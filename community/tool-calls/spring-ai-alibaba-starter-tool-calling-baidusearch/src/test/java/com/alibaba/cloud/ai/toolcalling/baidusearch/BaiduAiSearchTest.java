@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.toolcalling.baidusearch;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 import com.alibaba.cloud.ai.toolcalling.common.interfaces.SearchService;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -31,7 +30,8 @@ import java.util.logging.Logger;
 @SpringBootTest(classes = { CommonToolCallAutoConfiguration.class, BaiduSearchAutoConfiguration.class },
 		properties = "spring.ai.alibaba.toolcalling.baidu.search.ai.enabled=true")
 @DisplayName("Baidu AI Search Test")
-@Disabled("This service for directly scraping search web pages has been temporarily disabled due to intermittent parsing success rates; future implementation may transition to an API-based solution.")
+@EnabledIfEnvironmentVariable(named = BaiduSearchConstants.API_KEY_ENV,
+		matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 public class BaiduAiSearchTest {
 
 	@Autowired
@@ -41,8 +41,6 @@ public class BaiduAiSearchTest {
 
 	@Test
 	@DisplayName("Tool-Calling Test")
-	@EnabledIfEnvironmentVariable(named = BaiduSearchConstants.API_KEY_ENV,
-			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	public void testBaiduSearch() {
 		BaiduAiSearchService.Request request = BaiduAiSearchService.Request.simplyQuery("Spring AI Alibaba");
 		var resp = baiduAiSearchService.apply(request);
@@ -56,8 +54,6 @@ public class BaiduAiSearchTest {
 
 	@Test
 	@DisplayName("Abstract Search Service Test")
-	@EnabledIfEnvironmentVariable(named = BaiduSearchConstants.API_KEY_ENV,
-			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	public void testAbstractSearch() {
 		var resp = searchService.query("Spring AI Alibaba");
 		assert resp != null && resp.getSearchResult() != null && resp.getSearchResult().results() != null
