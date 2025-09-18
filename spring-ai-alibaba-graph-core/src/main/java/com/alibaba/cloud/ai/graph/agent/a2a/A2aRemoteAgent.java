@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class A2aRemoteAgent extends BaseAgent {
 
