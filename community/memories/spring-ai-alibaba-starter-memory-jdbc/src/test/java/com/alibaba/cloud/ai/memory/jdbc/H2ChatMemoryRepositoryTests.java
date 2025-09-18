@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.MSSQLServerContainer;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -39,21 +39,32 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = SqlServerChatMemoryRepositoryIT.TestConfiguration.class)
+/**
+ * Integration test using Testcontainers to automatically manage H2 test environment
+ */
+@SpringBootTest(classes = H2ChatMemoryRepositoryTests.TestConfiguration.class)
 @Testcontainers
-class SqlServerChatMemoryRepositoryIT {
+class H2ChatMemoryRepositoryTests {
 
+	// Define and start H2 container
 	@Container
-	private static final MSSQLServerContainer<?> sqlServerContainer = new MSSQLServerContainer<>(
-			"mcr.microsoft.com/mssql/server:2019-latest")
-		.acceptLicense();
+	private static final GenericContainer<?> h2Container = new GenericContainer<>("oscarfonts/h2")
+		.withExposedPorts(1521)
+		.withEnv("H2_OPTIONS", "-tcpAllowOthers -ifNotExists")
+		.withEnv("USER", "sa")
+		.withEnv("PASSWORD", "");
 
+	/**
+	 * Dynamically configure datasource properties
+	 */
 	@DynamicPropertySource
 	static void registerProperties(DynamicPropertyRegistry registry) {
-		registry.add("spring.datasource.url", sqlServerContainer::getJdbcUrl);
-		registry.add("spring.datasource.username", sqlServerContainer::getUsername);
-		registry.add("spring.datasource.password", sqlServerContainer::getPassword);
-		registry.add("spring.datasource.driver-class-name", () -> "com.microsoft.sqlserver.jdbc.SQLServerDriver");
+		String jdbcUrl = String.format("jdbc:h2:tcp://%s:%d/test;DB_CLOSE_DELAY=-1", h2Container.getHost(),
+				h2Container.getMappedPort(1521));
+		registry.add("spring.datasource.url", () -> jdbcUrl);
+		registry.add("spring.datasource.username", () -> "sa");
+		registry.add("spring.datasource.password", () -> "");
+		registry.add("spring.datasource.driver-class-name", () -> "org.h2.Driver");
 	}
 
 	@Autowired
@@ -161,29 +172,9 @@ class SqlServerChatMemoryRepositoryIT {
 	@ImportAutoConfiguration({ DataSourceAutoConfiguration.class, JdbcTemplateAutoConfiguration.class })
 	static class TestConfiguration {
 
-		@Autowired
-		private JdbcTemplate jdbcTemplate;
-
-		public void initializeDatabase() {
-			try {
-				jdbcTemplate.execute("IF OBJECT_ID('ai_chat_memory', 'U') IS NOT NULL DROP TABLE ai_chat_memory");
-			}
-			catch (Exception e) {
-				// Ignore errors during deletion
-			}
-
-			jdbcTemplate.execute("CREATE TABLE ai_chat_memory ("
-					+ "id INT IDENTITY(1,1) PRIMARY KEY, conversation_id NVARCHAR(256) NOT NULL, "
-					+ "content NVARCHAR(MAX) NOT NULL, type VARCHAR(100) NOT NULL, timestamp DATETIME2 NOT NULL, "
-					+ "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))");
-
-			jdbcTemplate.execute("CREATE INDEX idx_conversation_id ON ai_chat_memory (conversation_id)");
-		}
-
 		@Bean
 		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
-			this.initializeDatabase();
-			return SqlServerChatMemoryRepository.sqlServerBuilder().jdbcTemplate(jdbcTemplate).build();
+			return H2ChatMemoryRepository.h2Builder().jdbcTemplate(jdbcTemplate).build();
 		}
 
 	}

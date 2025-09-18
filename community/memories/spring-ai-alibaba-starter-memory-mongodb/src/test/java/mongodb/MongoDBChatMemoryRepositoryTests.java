@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.memory.jdbc;
+package mongodb;
 
+import com.alibaba.cloud.ai.memory.mongodb.MongoDBChatMemoryRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -22,17 +23,14 @@ import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.util.List;
 import java.util.UUID;
@@ -40,42 +38,34 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration test using Testcontainers to automatically manage H2 test environment
+ * Integration test using Testcontainers to automatically manage MongoDB test environment
  */
-@SpringBootTest(classes = H2ChatMemoryRepositoryIT.TestConfiguration.class)
+@SpringBootTest(classes = MongoDBChatMemoryRepositoryTests.TestConfiguration.class)
 @Testcontainers
-class H2ChatMemoryRepositoryIT {
+class MongoDBChatMemoryRepositoryTests {
 
-	// Define and start H2 container
+	private static final int MongoDB_PORT = 27017;
+
+	// Define and start MongoDB container
 	@Container
-	private static final GenericContainer<?> h2Container = new GenericContainer<>("oscarfonts/h2")
-		.withExposedPorts(1521)
-		.withEnv("H2_OPTIONS", "-tcpAllowOthers -ifNotExists")
-		.withEnv("USER", "sa")
-		.withEnv("PASSWORD", "");
-
-	/**
-	 * Dynamically configure datasource properties
-	 */
-	@DynamicPropertySource
-	static void registerProperties(DynamicPropertyRegistry registry) {
-		String jdbcUrl = String.format("jdbc:h2:tcp://%s:%d/test;DB_CLOSE_DELAY=-1", h2Container.getHost(),
-				h2Container.getMappedPort(1521));
-		registry.add("spring.datasource.url", () -> jdbcUrl);
-		registry.add("spring.datasource.username", () -> "sa");
-		registry.add("spring.datasource.password", () -> "");
-		registry.add("spring.datasource.driver-class-name", () -> "org.h2.Driver");
-	}
+	private static final MongoDBContainer mongoDBContainer = new MongoDBContainer(DockerImageName.parse("mongo:6.0.24"))
+		.withExposedPorts(MongoDB_PORT);
 
 	@Autowired
 	private ChatMemoryRepository chatMemoryRepository;
 
-	@Autowired
-	private JdbcTemplate jdbcTemplate;
+	/**
+	 * Dynamically configure mongodb properties
+	 */
+	@DynamicPropertySource
+	static void registerProperties(DynamicPropertyRegistry registry) {
+		registry.add("spring.mongodb.host", mongoDBContainer::getHost);
+		registry.add("spring.mongodb.port", () -> mongoDBContainer.getMappedPort(MongoDB_PORT));
+	}
 
 	@Test
 	void correctChatMemoryRepositoryInstance() {
-		assertThat(chatMemoryRepository).isInstanceOf(ChatMemoryRepository.class);
+		assertThat(chatMemoryRepository).isInstanceOf(MongoDBChatMemoryRepository.class);
 	}
 
 	@ParameterizedTest
@@ -91,14 +81,12 @@ class H2ChatMemoryRepositoryIT {
 
 		chatMemoryRepository.saveAll(conversationId, List.of(message));
 
-		var query = "SELECT conversation_id, content, type, timestamp FROM ai_chat_memory WHERE conversation_id = ?";
-		var result = jdbcTemplate.queryForMap(query, conversationId);
+		var messages = chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(messages).hasSize(1);
 
-		assertThat(result.size()).isEqualTo(4);
-		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
-		assertThat(result.get("content")).isEqualTo(message.getText());
-		assertThat(result.get("type")).isEqualTo(messageType.name());
-		assertThat(result.get("timestamp")).isNotNull();
+		var savedMessage = messages.get(0);
+		assertThat(savedMessage.getText()).isEqualTo(message.getText());
+		assertThat(savedMessage.getMessageType()).isEqualTo(messageType);
 	}
 
 	@Test
@@ -110,20 +98,15 @@ class H2ChatMemoryRepositoryIT {
 
 		chatMemoryRepository.saveAll(conversationId, messages);
 
-		var query = "SELECT conversation_id, content, type, timestamp FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";
-		var results = jdbcTemplate.queryForList(query, conversationId);
-
-		assertThat(results.size()).isEqualTo(messages.size());
+		var savedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(savedMessages.size()).isEqualTo(messages.size());
 
 		for (var i = 0; i < messages.size(); i++) {
 			var message = messages.get(i);
-			var result = results.get(i);
+			var savedMessage = savedMessages.get(i);
 
-			assertThat(result.get("conversation_id")).isNotNull();
-			assertThat(result.get("conversation_id")).isEqualTo(conversationId);
-			assertThat(result.get("content")).isEqualTo(message.getText());
-			assertThat(result.get("type")).isEqualTo(message.getMessageType().name());
-			assertThat(result.get("timestamp")).isNotNull();
+			assertThat(savedMessage.getText()).isEqualTo(message.getText());
+			assertThat(savedMessage.getMessageType()).isEqualTo(message.getMessageType());
 		}
 
 		var count = chatMemoryRepository.findByConversationId(conversationId).size();
@@ -162,19 +145,46 @@ class H2ChatMemoryRepositoryIT {
 
 		chatMemoryRepository.deleteByConversationId(conversationId);
 
-		var count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM ai_chat_memory WHERE conversation_id = ?",
-				Integer.class, conversationId);
+		var results = chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(results).isEmpty();
+	}
 
-		assertThat(count).isZero();
+	@Test
+	void clearOverLimit() {
+		var conversationId = UUID.randomUUID().toString();
+		var messages = List.<Message>of(new UserMessage("Message 1 from user - " + conversationId),
+				new AssistantMessage("Message 1 from assistant - " + conversationId),
+				new UserMessage("Message 2 from user - " + conversationId),
+				new AssistantMessage("Message 2 from assistant - " + conversationId),
+				new UserMessage("Message 3 from user - " + conversationId));
+
+		chatMemoryRepository.saveAll(conversationId, messages);
+
+		// Verify all messages have been saved
+		var savedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(savedMessages.size()).isEqualTo(messages.size());
+
+		// Perform cleanup operation, set max limit to 3, delete count to 2
+		MongoDBChatMemoryRepository mongoDBChatMemoryRepository = (MongoDBChatMemoryRepository) chatMemoryRepository;
+		mongoDBChatMemoryRepository.clearOverLimit(conversationId, 3, 2);
+
+		// Verify only the last 3 messages are retained
+		savedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(savedMessages.size()).isEqualTo(3);
+		assertThat(savedMessages.get(0).getText()).isEqualTo(messages.get(2).getText());
+		assertThat(savedMessages.get(1).getText()).isEqualTo(messages.get(3).getText());
+		assertThat(savedMessages.get(2).getText()).isEqualTo(messages.get(4).getText());
 	}
 
 	@SpringBootConfiguration
-	@ImportAutoConfiguration({ DataSourceAutoConfiguration.class, JdbcTemplateAutoConfiguration.class })
 	static class TestConfiguration {
 
 		@Bean
-		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
-			return H2ChatMemoryRepository.h2Builder().jdbcTemplate(jdbcTemplate).build();
+		ChatMemoryRepository chatMemoryRepository() {
+			return MongoDBChatMemoryRepository.builder()
+				.host(mongoDBContainer.getHost())
+				.port(mongoDBContainer.getMappedPort(MongoDB_PORT))
+				.build();
 		}
 
 	}

@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Tag("integration")
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
-class DashScopeChatIT {
+class DashScopeChatTests {
 
 	// Test constants
 	private static final String TEST_MODEL = "qwen-turbo";

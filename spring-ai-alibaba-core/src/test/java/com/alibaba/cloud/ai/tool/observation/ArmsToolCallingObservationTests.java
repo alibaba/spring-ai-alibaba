@@ -68,9 +68,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 1.0.0-M6.1
  */
 @Tag("integration")
-@SpringBootTest(classes = ArmsToolCallingObservationIT.Config.class)
+@SpringBootTest(classes = ArmsToolCallingObservationTests.Config.class)
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
-public class ArmsToolCallingObservationIT {
+public class ArmsToolCallingObservationTests {
 
 	// Test constants
 	private static final String BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode";
@@ -79,7 +79,7 @@ public class ArmsToolCallingObservationIT {
 
 	private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
 
-	private static final Logger logger = LoggerFactory.getLogger(ArmsToolCallingObservationIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(ArmsToolCallingObservationTests.class);
 
 	@Autowired
 	TestObservationRegistry observationRegistry;

@@ -36,7 +36,7 @@ import org.springframework.data.mongodb.core.query.Query;
  * @version 1.0.0
  */
 @EnabledIfSystemProperty(named = "mongodb.uri", matches = ".+")
-public class MongodbDocumentReaderIT {
+public class MongodbDocumentReaderTests {
 
 	private static MongodbResource resource;
 

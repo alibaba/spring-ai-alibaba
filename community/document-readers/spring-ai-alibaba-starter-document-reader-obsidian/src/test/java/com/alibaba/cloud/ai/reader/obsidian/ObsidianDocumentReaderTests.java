@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 2024-01-06
  */
 @EnabledIfEnvironmentVariable(named = "OBSIDIAN_VAULT_PATH", matches = ".+")
-class ObsidianDocumentReaderIT {
+class ObsidianDocumentReaderTests {
 
 	private static final String VAULT_PATH = System.getenv("OBSIDIAN_VAULT_PATH");
 

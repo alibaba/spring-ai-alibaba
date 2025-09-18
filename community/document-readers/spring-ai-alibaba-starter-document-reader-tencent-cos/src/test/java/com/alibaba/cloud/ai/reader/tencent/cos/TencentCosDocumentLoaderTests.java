@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @EnabledIfEnvironmentVariable(named = "TENCENT_SECRET_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "TENCENT_SECRET_ID", matches = ".+")
-class TencentCosDocumentLoaderIT {
+class TencentCosDocumentLoaderTests {
 
 	private static final String TEST_BUCKET = "test-buket";
 

@@ -50,9 +50,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".*")
-public class DashScopeAutoConfigurationIT {
+public class DashScopeAutoConfigurationTests {
 
-	private static final Log logger = LogFactory.getLog(DashScopeAutoConfigurationIT.class);
+	private static final Log logger = LogFactory.getLog(DashScopeAutoConfigurationTests.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,16 +28,32 @@ import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.OracleContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = SQLiteChatMemoryRepositorySQLiteIT.TestConfiguration.class)
-@TestPropertySource(properties = "spring.datasource.url=jdbc:sqlite::memory:")
-class SQLiteChatMemoryRepositorySQLiteIT {
+@SpringBootTest(classes = OracleChatMemoryRepositoryTests.TestConfiguration.class)
+@Testcontainers
+class OracleChatMemoryRepositoryTests {
+
+	@Container
+	private static final OracleContainer oracleContainer = new OracleContainer("gvenzl/oracle-xe:21-slim")
+		.withSharedMemorySize(1024L * 1024L * 1024L); // 1GB shared memory
+
+	@DynamicPropertySource
+	static void registerProperties(DynamicPropertyRegistry registry) {
+		registry.add("spring.datasource.url", oracleContainer::getJdbcUrl);
+		registry.add("spring.datasource.username", oracleContainer::getUsername);
+		registry.add("spring.datasource.password", oracleContainer::getPassword);
+		registry.add("spring.datasource.driver-class-name", () -> "oracle.jdbc.OracleDriver");
+	}
 
 	@Autowired
 	private ChatMemoryRepository chatMemoryRepository;
@@ -67,10 +83,10 @@ class SQLiteChatMemoryRepositorySQLiteIT {
 		var result = jdbcTemplate.queryForMap(query, conversationId);
 
 		assertThat(result.size()).isEqualTo(4);
-		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
-		assertThat(result.get("content")).isEqualTo(message.getText());
-		assertThat(result.get("type")).isEqualTo(messageType.name());
-		assertThat(result.get("timestamp")).isInstanceOf(Long.class);
+		assertThat(result.get("CONVERSATION_ID")).isEqualTo(conversationId);
+		assertThat(result.get("CONTENT")).isEqualTo(message.getText());
+		assertThat(result.get("TYPE")).isEqualTo(messageType.name());
+		assertThat(result.get("TIMESTAMP")).isNotNull();
 	}
 
 	@Test
@@ -82,7 +98,7 @@ class SQLiteChatMemoryRepositorySQLiteIT {
 
 		chatMemoryRepository.saveAll(conversationId, messages);
 
-		var query = "SELECT conversation_id, content, type, timestamp FROM ai_chat_memory WHERE conversation_id = ?";
+		var query = "SELECT conversation_id, content, type, timestamp FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";
 		var results = jdbcTemplate.queryForList(query, conversationId);
 
 		assertThat(results.size()).isEqualTo(messages.size());
@@ -91,11 +107,11 @@ class SQLiteChatMemoryRepositorySQLiteIT {
 			var message = messages.get(i);
 			var result = results.get(i);
 
-			assertThat(result.get("conversation_id")).isNotNull();
-			assertThat(result.get("conversation_id")).isEqualTo(conversationId);
-			assertThat(result.get("content")).isEqualTo(message.getText());
-			assertThat(result.get("type")).isEqualTo(message.getMessageType().name());
-			assertThat(result.get("timestamp")).isInstanceOf(Long.class);
+			assertThat(result.get("CONVERSATION_ID")).isNotNull();
+			assertThat(result.get("CONVERSATION_ID")).isEqualTo(conversationId);
+			assertThat(result.get("CONTENT")).isEqualTo(message.getText());
+			assertThat(result.get("TYPE")).isEqualTo(message.getMessageType().name());
+			assertThat(result.get("TIMESTAMP")).isNotNull();
 		}
 
 		var count = chatMemoryRepository.findByConversationId(conversationId).size();
@@ -148,19 +164,28 @@ class SQLiteChatMemoryRepositorySQLiteIT {
 		private JdbcTemplate jdbcTemplate;
 
 		public void initializeDatabase() {
-			jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS ai_chat_memory ("
-					+ "id INTEGER PRIMARY KEY AUTOINCREMENT, conversation_id VARCHAR(255) NOT NULL, "
-					+ "content TEXT NOT NULL, type VARCHAR(255) NOT NULL, timestamp TIMESTAMP NOT NULL)");
 
-			jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_conversation_id ON ai_chat_memory (conversation_id)");
+			try {
+				jdbcTemplate.execute(
+						"BEGIN EXECUTE IMMEDIATE 'DROP TABLE ai_chat_memory'; EXCEPTION WHEN OTHERS THEN NULL; END;");
+			}
+			catch (Exception e) {
+				// Ignore errors during deletion
+			}
+
+			jdbcTemplate
+				.execute("CREATE TABLE ai_chat_memory (" + "id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY, "
+						+ "conversation_id VARCHAR2(256) NOT NULL, " + "content CLOB NOT NULL, "
+						+ "type VARCHAR2(100) NOT NULL, " + "timestamp TIMESTAMP NOT NULL, "
+						+ "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))");
+
+			jdbcTemplate.execute("CREATE INDEX idx_conversation_id ON ai_chat_memory (conversation_id)");
 		}
 
 		@Bean
 		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
 			this.initializeDatabase();
-			return com.alibaba.cloud.ai.memory.jdbc.SQLiteChatMemoryRepository.sqliteBuilder()
-				.jdbcTemplate(jdbcTemplate)
-				.build();
+			return OracleChatMemoryRepository.oracleBuilder().jdbcTemplate(jdbcTemplate).build();
 		}
 
 	}

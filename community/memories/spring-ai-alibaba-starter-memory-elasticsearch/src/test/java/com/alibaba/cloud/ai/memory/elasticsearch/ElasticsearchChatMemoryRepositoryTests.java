@@ -51,9 +51,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration test using Testcontainers to automatically manage Elasticsearch test
  * environment
  */
-@SpringBootTest(classes = ElasticsearchChatMemoryRepositoryIT.TestConfiguration.class)
+@SpringBootTest(classes = ElasticsearchChatMemoryRepositoryTests.TestConfiguration.class)
 @Testcontainers
-class ElasticsearchChatMemoryRepositoryIT {
+class ElasticsearchChatMemoryRepositoryTests {
 
 	// Use a more stable version
 	private static final DockerImageName ELASTICSEARCH_IMAGE = DockerImageName

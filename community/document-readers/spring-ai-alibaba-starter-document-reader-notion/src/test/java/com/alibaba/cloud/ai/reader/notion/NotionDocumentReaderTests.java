@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 2024-01-06
  */
 @EnabledIfEnvironmentVariable(named = "NOTION_TOKEN", matches = ".+")
-class NotionDocumentReaderIT {
+class NotionDocumentReaderTests {
 
 	private static final String NOTION_TOKEN = System.getenv("NOTION_TOKEN");
 

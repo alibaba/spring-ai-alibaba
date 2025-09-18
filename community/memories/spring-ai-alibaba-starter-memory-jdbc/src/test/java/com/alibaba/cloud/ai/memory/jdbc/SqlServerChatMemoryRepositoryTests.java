@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.OracleContainer;
+import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -39,20 +39,21 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = OracleChatMemoryRepositoryIT.TestConfiguration.class)
+@SpringBootTest(classes = SqlServerChatMemoryRepositoryTests.TestConfiguration.class)
 @Testcontainers
-class OracleChatMemoryRepositoryIT {
+class SqlServerChatMemoryRepositoryTests {
 
 	@Container
-	private static final OracleContainer oracleContainer = new OracleContainer("gvenzl/oracle-xe:21-slim")
-		.withSharedMemorySize(1024L * 1024L * 1024L); // 1GB shared memory
+	private static final MSSQLServerContainer<?> sqlServerContainer = new MSSQLServerContainer<>(
+			"mcr.microsoft.com/mssql/server:2019-latest")
+		.acceptLicense();
 
 	@DynamicPropertySource
 	static void registerProperties(DynamicPropertyRegistry registry) {
-		registry.add("spring.datasource.url", oracleContainer::getJdbcUrl);
-		registry.add("spring.datasource.username", oracleContainer::getUsername);
-		registry.add("spring.datasource.password", oracleContainer::getPassword);
-		registry.add("spring.datasource.driver-class-name", () -> "oracle.jdbc.OracleDriver");
+		registry.add("spring.datasource.url", sqlServerContainer::getJdbcUrl);
+		registry.add("spring.datasource.username", sqlServerContainer::getUsername);
+		registry.add("spring.datasource.password", sqlServerContainer::getPassword);
+		registry.add("spring.datasource.driver-class-name", () -> "com.microsoft.sqlserver.jdbc.SQLServerDriver");
 	}
 
 	@Autowired
@@ -83,10 +84,10 @@ class OracleChatMemoryRepositoryIT {
 		var result = jdbcTemplate.queryForMap(query, conversationId);
 
 		assertThat(result.size()).isEqualTo(4);
-		assertThat(result.get("CONVERSATION_ID")).isEqualTo(conversationId);
-		assertThat(result.get("CONTENT")).isEqualTo(message.getText());
-		assertThat(result.get("TYPE")).isEqualTo(messageType.name());
-		assertThat(result.get("TIMESTAMP")).isNotNull();
+		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
+		assertThat(result.get("content")).isEqualTo(message.getText());
+		assertThat(result.get("type")).isEqualTo(messageType.name());
+		assertThat(result.get("timestamp")).isNotNull();
 	}
 
 	@Test
@@ -107,11 +108,11 @@ class OracleChatMemoryRepositoryIT {
 			var message = messages.get(i);
 			var result = results.get(i);
 
-			assertThat(result.get("CONVERSATION_ID")).isNotNull();
-			assertThat(result.get("CONVERSATION_ID")).isEqualTo(conversationId);
-			assertThat(result.get("CONTENT")).isEqualTo(message.getText());
-			assertThat(result.get("TYPE")).isEqualTo(message.getMessageType().name());
-			assertThat(result.get("TIMESTAMP")).isNotNull();
+			assertThat(result.get("conversation_id")).isNotNull();
+			assertThat(result.get("conversation_id")).isEqualTo(conversationId);
+			assertThat(result.get("content")).isEqualTo(message.getText());
+			assertThat(result.get("type")).isEqualTo(message.getMessageType().name());
+			assertThat(result.get("timestamp")).isNotNull();
 		}
 
 		var count = chatMemoryRepository.findByConversationId(conversationId).size();
@@ -164,20 +165,17 @@ class OracleChatMemoryRepositoryIT {
 		private JdbcTemplate jdbcTemplate;
 
 		public void initializeDatabase() {
-
 			try {
-				jdbcTemplate.execute(
-						"BEGIN EXECUTE IMMEDIATE 'DROP TABLE ai_chat_memory'; EXCEPTION WHEN OTHERS THEN NULL; END;");
+				jdbcTemplate.execute("IF OBJECT_ID('ai_chat_memory', 'U') IS NOT NULL DROP TABLE ai_chat_memory");
 			}
 			catch (Exception e) {
 				// Ignore errors during deletion
 			}
 
-			jdbcTemplate
-				.execute("CREATE TABLE ai_chat_memory (" + "id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY, "
-						+ "conversation_id VARCHAR2(256) NOT NULL, " + "content CLOB NOT NULL, "
-						+ "type VARCHAR2(100) NOT NULL, " + "timestamp TIMESTAMP NOT NULL, "
-						+ "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))");
+			jdbcTemplate.execute("CREATE TABLE ai_chat_memory ("
+					+ "id INT IDENTITY(1,1) PRIMARY KEY, conversation_id NVARCHAR(256) NOT NULL, "
+					+ "content NVARCHAR(MAX) NOT NULL, type VARCHAR(100) NOT NULL, timestamp DATETIME2 NOT NULL, "
+					+ "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))");
 
 			jdbcTemplate.execute("CREATE INDEX idx_conversation_id ON ai_chat_memory (conversation_id)");
 		}
@@ -185,7 +183,7 @@ class OracleChatMemoryRepositoryIT {
 		@Bean
 		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
 			this.initializeDatabase();
-			return OracleChatMemoryRepository.oracleBuilder().jdbcTemplate(jdbcTemplate).build();
+			return SqlServerChatMemoryRepository.sqlServerBuilder().jdbcTemplate(jdbcTemplate).build();
 		}
 
 	}

@@ -30,7 +30,7 @@ import java.util.List;
  */
 @EnabledIfEnvironmentVariable(named = "YUQUE_TOKEN", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "YUQUE_RESOURCE_PATH", matches = ".+")
-class YuQueDocumentLoaderIT {
+class YuQueDocumentLoaderTests {
 
 	private static final String YU_QUE_TOKEN = System.getenv("YUQUE_TOKEN");
 

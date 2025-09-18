@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,38 +28,16 @@ import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Integration test using Testcontainers to automatically manage MySQL test environment
- */
-@SpringBootTest(classes = MysqlChatMemoryRepositoryIT.TestConfiguration.class)
-@Testcontainers
-class MysqlChatMemoryRepositoryIT {
-
-	// Define and start MySQL container
-	@Container
-	private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.0");
-
-	/**
-	 * Dynamically configure datasource properties
-	 */
-	@DynamicPropertySource
-	static void registerProperties(DynamicPropertyRegistry registry) {
-		registry.add("spring.datasource.url", mysqlContainer::getJdbcUrl);
-		registry.add("spring.datasource.username", mysqlContainer::getUsername);
-		registry.add("spring.datasource.password", mysqlContainer::getPassword);
-		registry.add("spring.datasource.driver-class-name", () -> "com.mysql.cj.jdbc.Driver");
-	}
+@SpringBootTest(classes = SQLiteChatMemoryRepositorySQLiteTests.TestConfiguration.class)
+@TestPropertySource(properties = "spring.datasource.url=jdbc:sqlite::memory:")
+class SQLiteChatMemoryRepositorySQLiteTests {
 
 	@Autowired
 	private ChatMemoryRepository chatMemoryRepository;
@@ -92,7 +70,7 @@ class MysqlChatMemoryRepositoryIT {
 		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 		assertThat(result.get("content")).isEqualTo(message.getText());
 		assertThat(result.get("type")).isEqualTo(messageType.name());
-		assertThat(result.get("timestamp")).isNotNull();
+		assertThat(result.get("timestamp")).isInstanceOf(Long.class);
 	}
 
 	@Test
@@ -104,7 +82,7 @@ class MysqlChatMemoryRepositoryIT {
 
 		chatMemoryRepository.saveAll(conversationId, messages);
 
-		var query = "SELECT conversation_id, content, type, timestamp FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";
+		var query = "SELECT conversation_id, content, type, timestamp FROM ai_chat_memory WHERE conversation_id = ?";
 		var results = jdbcTemplate.queryForList(query, conversationId);
 
 		assertThat(results.size()).isEqualTo(messages.size());
@@ -117,7 +95,7 @@ class MysqlChatMemoryRepositoryIT {
 			assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 			assertThat(result.get("content")).isEqualTo(message.getText());
 			assertThat(result.get("type")).isEqualTo(message.getMessageType().name());
-			assertThat(result.get("timestamp")).isNotNull();
+			assertThat(result.get("timestamp")).isInstanceOf(Long.class);
 		}
 
 		var count = chatMemoryRepository.findByConversationId(conversationId).size();
@@ -170,28 +148,19 @@ class MysqlChatMemoryRepositoryIT {
 		private JdbcTemplate jdbcTemplate;
 
 		public void initializeDatabase() {
-			// Drop table if exists
-			try {
-				jdbcTemplate.execute("DROP TABLE IF EXISTS ai_chat_memory");
-			}
-			catch (Exception e) {
-				// Ignore errors during deletion
-			}
+			jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS ai_chat_memory ("
+					+ "id INTEGER PRIMARY KEY AUTOINCREMENT, conversation_id VARCHAR(255) NOT NULL, "
+					+ "content TEXT NOT NULL, type VARCHAR(255) NOT NULL, timestamp TIMESTAMP NOT NULL)");
 
-			// Create table
-			jdbcTemplate.execute("CREATE TABLE ai_chat_memory (" + "id BIGINT AUTO_INCREMENT PRIMARY KEY, "
-					+ "conversation_id VARCHAR(256) NOT NULL, " + "content LONGTEXT NOT NULL, "
-					+ "type VARCHAR(100) NOT NULL, " + "timestamp TIMESTAMP NOT NULL, "
-					+ "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))");
-
-			// Create index
-			jdbcTemplate.execute("CREATE INDEX idx_conversation_id ON ai_chat_memory (conversation_id)");
+			jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_conversation_id ON ai_chat_memory (conversation_id)");
 		}
 
 		@Bean
 		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
 			this.initializeDatabase();
-			return MysqlChatMemoryRepository.mysqlBuilder().jdbcTemplate(jdbcTemplate).build();
+			return com.alibaba.cloud.ai.memory.jdbc.SQLiteChatMemoryRepository.sqliteBuilder()
+				.jdbcTemplate(jdbcTemplate)
+				.build();
 		}
 
 	}

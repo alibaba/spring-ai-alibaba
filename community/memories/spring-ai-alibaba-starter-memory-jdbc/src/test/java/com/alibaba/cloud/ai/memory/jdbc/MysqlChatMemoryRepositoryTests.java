@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -39,19 +39,26 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = PostgresChatMemoryRepositoryIT.TestConfiguration.class)
+/**
+ * Integration test using Testcontainers to automatically manage MySQL test environment
+ */
+@SpringBootTest(classes = MysqlChatMemoryRepositoryTests.TestConfiguration.class)
 @Testcontainers
-class PostgresChatMemoryRepositoryIT {
+class MysqlChatMemoryRepositoryTests {
 
+	// Define and start MySQL container
 	@Container
-	private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:14-alpine");
+	private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.0");
 
+	/**
+	 * Dynamically configure datasource properties
+	 */
 	@DynamicPropertySource
 	static void registerProperties(DynamicPropertyRegistry registry) {
-		registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-		registry.add("spring.datasource.username", postgresContainer::getUsername);
-		registry.add("spring.datasource.password", postgresContainer::getPassword);
-		registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+		registry.add("spring.datasource.url", mysqlContainer::getJdbcUrl);
+		registry.add("spring.datasource.username", mysqlContainer::getUsername);
+		registry.add("spring.datasource.password", mysqlContainer::getPassword);
+		registry.add("spring.datasource.driver-class-name", () -> "com.mysql.cj.jdbc.Driver");
 	}
 
 	@Autowired
@@ -163,25 +170,28 @@ class PostgresChatMemoryRepositoryIT {
 		private JdbcTemplate jdbcTemplate;
 
 		public void initializeDatabase() {
+			// Drop table if exists
 			try {
 				jdbcTemplate.execute("DROP TABLE IF EXISTS ai_chat_memory");
 			}
 			catch (Exception e) {
-				// Ignore errors
+				// Ignore errors during deletion
 			}
 
-			jdbcTemplate.execute("CREATE TABLE ai_chat_memory (" + "id BIGSERIAL PRIMARY KEY, "
-					+ "conversation_id VARCHAR(256) NOT NULL, " + "content TEXT NOT NULL, "
+			// Create table
+			jdbcTemplate.execute("CREATE TABLE ai_chat_memory (" + "id BIGINT AUTO_INCREMENT PRIMARY KEY, "
+					+ "conversation_id VARCHAR(256) NOT NULL, " + "content LONGTEXT NOT NULL, "
 					+ "type VARCHAR(100) NOT NULL, " + "timestamp TIMESTAMP NOT NULL, "
 					+ "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))");
 
+			// Create index
 			jdbcTemplate.execute("CREATE INDEX idx_conversation_id ON ai_chat_memory (conversation_id)");
 		}
 
 		@Bean
 		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
 			this.initializeDatabase();
-			return PostgresChatMemoryRepository.postgresBuilder().jdbcTemplate(jdbcTemplate).build();
+			return MysqlChatMemoryRepository.mysqlBuilder().jdbcTemplate(jdbcTemplate).build();
 		}
 
 	}

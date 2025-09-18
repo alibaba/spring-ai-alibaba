@@ -29,7 +29,7 @@ import java.util.List;
  * environment variable is set.
  */
 @EnabledIfEnvironmentVariable(named = "GITHUB_TOKEN", matches = ".+")
-class GitHubDocumentLoaderIT {
+class GitHubDocumentLoaderTests {
 
 	private static final String TEST_OWNER = "sincerity-being";
 
