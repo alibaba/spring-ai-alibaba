@@ -124,7 +124,6 @@ public class DbMcpServiceDiscovery implements McpServiceDiscovery {
 	private void closeQuietly(AutoCloseable resource, String name) {
 		if (resource != null) {
 			try {
-				// 对于 Connection 需要判断是否已关闭
 				if (resource instanceof Connection conn) {
 					if (!conn.isClosed()) {
 						conn.close();

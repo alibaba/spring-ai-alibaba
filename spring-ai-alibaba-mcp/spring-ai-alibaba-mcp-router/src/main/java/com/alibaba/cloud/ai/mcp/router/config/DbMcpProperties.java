@@ -23,6 +23,8 @@ public class DbMcpProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.router.database";
 
+	private boolean enabled = false;
+
 	private String url;
 
 	private String username;
@@ -111,6 +113,14 @@ public class DbMcpProperties {
 
 	public void setConnectionTimeout(long connectionTimeout) {
 		this.connectionTimeout = connectionTimeout;
+	}
+
+	public boolean isEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

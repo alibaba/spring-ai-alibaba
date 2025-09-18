@@ -65,16 +65,17 @@ public class McpRouterProperties {
 	}
 
 	/**
-	 * MCP router service discovery type (nacos, file, database)
+	 * MCP router service discovery search order 支持多种发现方式同时使用，按顺序查找服务 例如: ["file",
+	 * "database", "nacos"]
 	 */
-	private String discoveryType = "nacos"; // Nacos for default
+	private List<String> discoveryOrder = List.of("nacos");
 
-	public String getDiscoveryType() {
-		return discoveryType;
+	public List<String> getDiscoveryOrder() {
+		return discoveryOrder;
 	}
 
-	public void setDiscoveryType(String discoveryType) {
-		this.discoveryType = discoveryType;
+	public void setDiscoveryOrder(List<String> discoveryOrder) {
+		this.discoveryOrder = discoveryOrder;
 	}
 
 }

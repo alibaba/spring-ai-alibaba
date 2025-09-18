@@ -20,28 +20,61 @@ import com.alibaba.cloud.ai.mcp.router.config.McpRouterProperties;
 import com.alibaba.cloud.ai.mcp.router.config.DbMcpProperties;
 import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscovery;
 import com.alibaba.cloud.ai.mcp.router.core.discovery.DbMcpServiceDiscovery;
+import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscoveryFactory;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /**
+ * Register DbMcpServiceDiscovery to McpServiceDiscoveryFactory.
+ *
  * @author digitzh
  */
 @AutoConfiguration
-@EnableConfigurationProperties({ McpRouterProperties.class, DbMcpProperties.class })
-@ConditionalOnExpression("$" + "{" + McpRouterProperties.CONFIG_PREFIX + ".enabled:true} == true " + "and '$" + "{"
-		+ McpRouterProperties.CONFIG_PREFIX + ".discovery-type}' == 'database'")
+@AutoConfigureAfter(McpServiceDiscoveryAutoConfiguration.class)
+@EnableConfigurationProperties({ McpRouterProperties.class, DbMcpProperties.class, McpServerProperties.class })
+@ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class DbMcpRouterAutoConfiguration {
 
 	private static final Logger log = LoggerFactory.getLogger(DbMcpRouterAutoConfiguration.class);
 
 	@Bean
-	public McpServiceDiscovery dbMcpServiceDiscovery(DbMcpProperties dbMcpProperties) {
-		log.info("Creating DB MCP service discovery with configuration: {}", dbMcpProperties);
-		return new DbMcpServiceDiscovery(dbMcpProperties);
+	@ConditionalOnProperty(prefix = DbMcpProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
+	public DbMcpServiceDiscoveryRegistrar dbMcpServiceDiscoveryRegistrar(McpServiceDiscoveryFactory discoveryFactory,
+			DbMcpProperties dbMcpProperties) {
+		log.info("Creating database MCP service discovery registrar with properties: {}", dbMcpProperties);
+		return new DbMcpServiceDiscoveryRegistrar(discoveryFactory, dbMcpProperties);
+	}
+
+	public static class DbMcpServiceDiscoveryRegistrar {
+
+		private final McpServiceDiscoveryFactory discoveryFactory;
+
+		private final DbMcpProperties dbMcpProperties;
+
+		public DbMcpServiceDiscoveryRegistrar(McpServiceDiscoveryFactory discoveryFactory,
+				DbMcpProperties dbMcpProperties) {
+			this.discoveryFactory = discoveryFactory;
+			this.dbMcpProperties = dbMcpProperties;
+			log.info("Database MCP service discovery registrar constructor called with properties: {}",
+					dbMcpProperties);
+		}
+
+		@PostConstruct
+		public void init() {
+			log.info("Database MCP service discovery registrar initialized with properties: {}", dbMcpProperties);
+			log.info("Registering DB MCP service discovery with configuration: {}", dbMcpProperties);
+			McpServiceDiscovery dbDiscovery = new DbMcpServiceDiscovery(dbMcpProperties);
+			discoveryFactory.registerDiscovery("database", dbDiscovery);
+		}
+
 	}
 
 }

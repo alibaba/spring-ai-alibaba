@@ -19,6 +19,8 @@ package com.alibaba.cloud.ai.mcp.router.core.discovery;
 import com.alibaba.cloud.ai.mcp.router.config.McpRouterProperties;
 import com.alibaba.cloud.ai.mcp.router.model.McpServerInfo;
 
+import java.util.Objects;
+
 public class FileConfigMcpServiceDiscovery implements McpServiceDiscovery {
 
 	private final McpRouterProperties properties;
@@ -31,7 +33,7 @@ public class FileConfigMcpServiceDiscovery implements McpServiceDiscovery {
 	public McpServerInfo getService(String serviceName) {
 		return properties.getServices()
 			.stream()
-			.filter(config -> config.getName().equals(serviceName))
+			.filter(config -> Objects.equals(serviceName, config.getName()))
 			.findFirst()
 			.orElse(null);
 	}
