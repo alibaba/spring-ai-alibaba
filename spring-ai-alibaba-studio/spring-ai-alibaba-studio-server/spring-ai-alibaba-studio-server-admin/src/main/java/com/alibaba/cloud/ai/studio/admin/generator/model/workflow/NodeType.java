@@ -67,7 +67,9 @@ public enum NodeType {
 
 	ITERATION_END("iteration-end", "iteration-end", "ParallelEnd"),
 
-	ASSIGNER("assigner", "assigner", "VariableAssign");
+	ASSIGNER("assigner", "assigner", "UNSUPPORTED"),
+
+	STREAM_HTTP("stream-http", "stream-http", "StreamHttp");
 
 	private final String value;
 

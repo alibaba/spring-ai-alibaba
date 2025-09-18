@@ -1,0 +1,389 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.alibaba.cloud.ai.graph.node;
+
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.action.StreamingGraphNode;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
+import com.alibaba.cloud.ai.graph.node.StreamHttpNodeParam.StreamMode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Flux;
+import reactor.util.retry.Retry;
+
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static com.alibaba.cloud.ai.graph.node.StreamHttpNodeParam.StreamFormat.*;
+
+public class StreamHttpNode implements StreamingGraphNode {
+
+	private static final Logger logger = LoggerFactory.getLogger(StreamHttpNode.class);
+
+	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{(.+?)\\}");
+
+	private static final Pattern SSE_DATA_PATTERN = Pattern.compile("^data: (.*)$", Pattern.MULTILINE);
+
+	private static final ObjectMapper objectMapper = new ObjectMapper();
+
+	private final StreamHttpNodeParam param;
+
+	public StreamHttpNode(StreamHttpNodeParam param) {
+		this.param = param;
+	}
+
+	@Override
+	public Flux<Map<String, Object>> executeStreaming(OverAllState state) throws Exception {
+		try {
+			String finalUrl = replaceVariables(param.getUrl(), state);
+			Map<String, String> finalHeaders = replaceVariables(param.getHeaders(), state);
+			Map<String, String> finalQueryParams = replaceVariables(param.getQueryParams(), state);
+
+			UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(finalUrl);
+			finalQueryParams.forEach(uriBuilder::queryParam);
+			URI finalUri = uriBuilder.build().toUri();
+
+			WebClient.RequestBodySpec requestSpec = param.getWebClient()
+				.method(param.getMethod())
+				.uri(finalUri)
+				.headers(headers -> headers.setAll(finalHeaders));
+
+			applyAuth(requestSpec);
+			initBody(requestSpec, state);
+
+			// 直接返回处理后的结果，将HTTP错误转换为错误数据项
+			return requestSpec.exchangeToFlux(response -> {
+				if (!response.statusCode().is2xxSuccessful()) {
+					// 处理HTTP错误：将错误转换为包含错误信息的Map，作为数据项发射出去
+					return response.bodyToMono(String.class)
+						.defaultIfEmpty("HTTP Error") // 如果响应体为空，使用默认错误信息
+						.map(errorBody -> {
+							// 创建错误信息Map
+							WebClientResponseException exception = new WebClientResponseException(
+									response.statusCode().value(), "HTTP " + response.statusCode() + ": " + errorBody,
+									null, null, null);
+							return createErrorOutput(exception);
+						})
+						.flux(); // 转换为Flux
+				}
+
+				// 处理成功响应
+				Flux<DataBuffer> dataBufferFlux = response.bodyToFlux(DataBuffer.class);
+				return processStreamResponse(dataBufferFlux, state);
+			})
+				.retryWhen(Retry.backoff(param.getRetryConfig().getMaxRetries(),
+						Duration.ofMillis(param.getRetryConfig().getMaxRetryInterval())))
+				.timeout(param.getReadTimeout())
+				// 处理网络超时、连接错误等其他异常
+				.onErrorResume(throwable -> {
+					logger.error("Stream processing failed", throwable);
+					return Flux.just(createErrorOutput(throwable));
+				});
+
+		}
+		catch (Exception e) {
+			logger.error("StreamHttpNode execution failed", e);
+			// 返回错误输出而不是抛出异常
+			return Flux.just(createErrorOutput(e));
+		}
+	}
+
+	/**
+	 * 处理流式响应数据
+	 */
+	private Flux<Map<String, Object>> processStreamResponse(Flux<DataBuffer> responseFlux, OverAllState state) {
+		return responseFlux.map(dataBuffer -> {
+			byte[] bytes = new byte[dataBuffer.readableByteCount()];
+			dataBuffer.read(bytes);
+			return new String(bytes, StandardCharsets.UTF_8);
+		})
+			.scan("", (accumulated, chunk) -> accumulated + chunk)
+			.flatMap(this::parseStreamChunk)
+			.filter(data -> !data.isEmpty())
+			.map(this::wrapOutput)
+			.transform(flux -> {
+				if (param.getStreamMode() == StreamMode.AGGREGATE) {
+					return flux.collectList().map(this::aggregateResults).flux();
+				}
+				return flux;
+			})
+			.onErrorResume(error -> {
+				// 处理数据处理层面的错误
+				logger.error("Error processing stream response", error);
+				return Flux.just(createErrorOutput(error));
+			});
+	}
+
+	/**
+	 * 解析流数据块
+	 */
+	private Flux<String> parseStreamChunk(String chunk) {
+		return switch (param.getStreamFormat()) {
+			case SSE -> parseSSEChunk(chunk);
+			case JSON_LINES -> parseJsonLinesChunk(chunk);
+			case TEXT_STREAM -> parseTextStreamChunk(chunk);
+		};
+	}
+
+	/**
+	 * 解析SSE格式数据
+	 */
+	private Flux<String> parseSSEChunk(String chunk) {
+		List<String> results = new ArrayList<>();
+		Matcher matcher = SSE_DATA_PATTERN.matcher(chunk);
+
+		while (matcher.find()) {
+			String data = matcher.group(1).trim();
+			if (!data.isEmpty() && !"[DONE]".equals(data)) {
+				results.add(data);
+			}
+		}
+
+		return Flux.fromIterable(results);
+	}
+
+	/**
+	 * 解析JSON Lines格式数据
+	 */
+	private Flux<String> parseJsonLinesChunk(String chunk) {
+		String[] lines = chunk.split("\n");
+		List<String> results = new ArrayList<>();
+
+		for (String line : lines) {
+			line = line.trim();
+			if (!line.isEmpty()) {
+				try {
+					objectMapper.readTree(line);
+					results.add(line);
+				}
+				catch (JsonProcessingException e) {
+					logger.debug("Skipping invalid JSON line: {}", line);
+				}
+			}
+		}
+
+		return Flux.fromIterable(results);
+	}
+
+	/**
+	 * 解析文本流数据
+	 */
+	private Flux<String> parseTextStreamChunk(String chunk) {
+		String[] parts = chunk.split(Pattern.quote(param.getDelimiter()));
+		List<String> results = new ArrayList<>();
+
+		for (String part : parts) {
+			part = part.trim();
+			if (!part.isEmpty()) {
+				results.add(part);
+			}
+		}
+
+		return Flux.fromIterable(results);
+	}
+
+	/**
+	 * 包装输出数据
+	 */
+	private Map<String, Object> wrapOutput(String data) {
+		Map<String, Object> result = new HashMap<>();
+
+		try {
+			if (data.startsWith("{") || data.startsWith("[")) {
+				JsonNode jsonNode = objectMapper.readTree(data);
+				Object parsedData = objectMapper.convertValue(jsonNode, Object.class);
+				result.put("data", parsedData);
+			}
+			else {
+				result.put("data", data);
+			}
+		}
+		catch (JsonProcessingException e) {
+			result.put("data", data);
+		}
+
+		result.put("timestamp", System.currentTimeMillis());
+		result.put("streaming", true);
+
+		if (StringUtils.hasLength(param.getOutputKey())) {
+			Map<String, Object> keyedResult = new HashMap<>();
+			keyedResult.put(param.getOutputKey(), result);
+			return keyedResult;
+		}
+
+		return result;
+	}
+
+	/**
+	 * 聚合模式下的结果汇总
+	 */
+	private Map<String, Object> aggregateResults(List<Map<String, Object>> results) {
+		Map<String, Object> aggregated = new HashMap<>();
+		List<Object> dataList = new ArrayList<>();
+
+		for (Map<String, Object> result : results) {
+			if (param.getOutputKey() != null && result.containsKey(param.getOutputKey())) {
+				Map<String, Object> keyedData = (Map<String, Object>) result.get(param.getOutputKey());
+				dataList.add(keyedData.get("data"));
+			}
+			else {
+				dataList.add(result.get("data"));
+			}
+		}
+
+		aggregated.put("data", dataList);
+		aggregated.put("count", results.size());
+		aggregated.put("streaming", false);
+		aggregated.put("aggregated", true);
+		aggregated.put("timestamp", System.currentTimeMillis());
+
+		if (StringUtils.hasLength(param.getOutputKey())) {
+			Map<String, Object> keyedResult = new HashMap<>();
+			keyedResult.put(param.getOutputKey(), aggregated);
+			return keyedResult;
+		}
+
+		return aggregated;
+	}
+
+	/**
+	 * 创建错误输出
+	 */
+	private Map<String, Object> createErrorOutput(Throwable error) {
+		Map<String, Object> errorResult = new HashMap<>();
+		errorResult.put("error", error.getMessage());
+		errorResult.put("timestamp", System.currentTimeMillis());
+		errorResult.put("streaming", false);
+
+		if (StringUtils.hasLength(param.getOutputKey())) {
+			Map<String, Object> keyedResult = new HashMap<>();
+			keyedResult.put(param.getOutputKey(), errorResult);
+			return keyedResult;
+		}
+
+		return errorResult;
+	}
+
+	/**
+	 * 替换变量占位符
+	 */
+	private String replaceVariables(String template, OverAllState state) {
+		if (template == null)
+			return null;
+
+		Matcher matcher = VARIABLE_PATTERN.matcher(template);
+		StringBuilder result = new StringBuilder();
+
+		while (matcher.find()) {
+			String key = matcher.group(1);
+			Object value = state.value(key).orElse("");
+			String replacement = value != null ? value.toString() : "";
+			matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
+		}
+
+		matcher.appendTail(result);
+		return result.toString();
+	}
+
+	/**
+	 * 替换Map中的变量占位符
+	 */
+	private Map<String, String> replaceVariables(Map<String, String> map, OverAllState state) {
+		Map<String, String> result = new HashMap<>();
+		map.forEach((k, v) -> result.put(k, replaceVariables(v, state)));
+		return result;
+	}
+
+	/**
+	 * 应用认证配置
+	 */
+	private void applyAuth(WebClient.RequestBodySpec requestSpec) {
+		if (param.getAuthConfig() != null) {
+			switch (param.getAuthConfig().getType()) {
+				case BASIC:
+					requestSpec.headers(headers -> headers.setBasicAuth(param.getAuthConfig().getUsername(),
+							param.getAuthConfig().getPassword()));
+					break;
+				case BEARER:
+					requestSpec.headers(headers -> headers.setBearerAuth(param.getAuthConfig().getToken()));
+					break;
+			}
+		}
+	}
+
+	/**
+	 * 初始化请求体
+	 */
+	private void initBody(WebClient.RequestBodySpec requestSpec, OverAllState state) throws GraphRunnerException {
+		if (param.getBody() == null || !param.getBody().hasContent()) {
+			return;
+		}
+
+		switch (param.getBody().getType()) {
+			case NONE:
+				break;
+			case RAW_TEXT:
+				if (param.getBody().getData().size() != 1) {
+					throw RunnableErrors.nodeInterrupt.exception("RAW_TEXT body must contain exactly one item");
+				}
+				String rawText = replaceVariables(param.getBody().getData().get(0).getValue(), state);
+				requestSpec.headers(h -> h.setContentType(MediaType.TEXT_PLAIN));
+				requestSpec.bodyValue(rawText);
+				break;
+			case JSON:
+				if (param.getBody().getData().size() != 1) {
+					throw RunnableErrors.nodeInterrupt.exception("JSON body must contain exactly one item");
+				}
+				String jsonTemplate = replaceVariables(param.getBody().getData().get(0).getValue(), state);
+				try {
+					Object jsonObject = HttpNode.parseNestedJson(jsonTemplate);
+					requestSpec.headers(h -> h.setContentType(MediaType.APPLICATION_JSON));
+					requestSpec.bodyValue(jsonObject);
+				}
+				catch (JsonProcessingException e) {
+					throw RunnableErrors.nodeInterrupt.exception("Failed to parse JSON body: " + e.getMessage());
+				}
+				break;
+			default:
+				logger.warn("Body type {} not fully supported in streaming mode", param.getBody().getType());
+		}
+	}
+
+	/**
+	 * 构建器模式的工厂方法
+	 */
+	public static StreamHttpNode create(StreamHttpNodeParam param) {
+		return new StreamHttpNode(param);
+	}
+
+}
