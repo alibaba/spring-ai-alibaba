@@ -515,7 +515,12 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 
 				HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl.toString())
 						.sseEndpoint(sseEndpoint.toString());
-
+				if (mcpServerVO.getHeaders()!=null){
+					transportBuilder.customizeRequest(requestBuilder -> {
+						for (Map.Entry<String, String> headerName : mcpServerVO.getHeaders().entrySet())
+							requestBuilder.header(headerName.getKey(), headerName.getValue());
+					});
+				}
 
 				// 添加自定义请求头（如果需要）
 				// 这里可以根据需要添加认证头等
