@@ -32,8 +32,8 @@ import org.springframework.context.annotation.Conditional;
  */
 
 @AutoConfiguration
-@Conditional(PromptTmplNacosConfigCondition.class)
-@EnableConfigurationProperties(NacosPromptTmplProperties.class)
+@Conditional(PromptTemplateConfigCondition.class)
+@EnableConfigurationProperties(PromptTemplateProperties.class)
 public class PromptTemplateAutoConfiguration {
 
 	@Bean

@@ -29,18 +29,18 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  * of Nacos log error during startup.
  */
 
-public class PromptTmplNacosConfigCondition implements Condition {
+public class PromptTemplateConfigCondition implements Condition {
 
-	private final Logger logger = LoggerFactory.getLogger(PromptTmplNacosConfigCondition.class);
+	private final Logger logger = LoggerFactory.getLogger(PromptTemplateConfigCondition.class);
 
-	public PromptTmplNacosConfigCondition() {
+	public PromptTemplateConfigCondition() {
 	}
 
 	@Override
 	public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
 
 		// @formatter:off
-		String tmplPrefix = NacosPromptTmplProperties.TEMPLATE_PREFIX + ".enabled";
+		String tmplPrefix = PromptTemplateProperties.TEMPLATE_PREFIX + ".enabled";
 
 		// The default value is false, means that the nacos prompt template is not enabled.
 		Boolean enabled = context.getEnvironment().getProperty(tmplPrefix, Boolean.class, false);
@@ -50,7 +50,7 @@ public class PromptTmplNacosConfigCondition implements Condition {
 		if (!enabled) {
 			System.setProperty("spring.nacos.config.enabled", "false");
 		}
-		logger.debug("PromptTmplNacosConfigCondition matches enabled: {}",enabled);
+		logger.debug("PromptTemplateConfigCondition matches enabled: {}",enabled);
 		// @formatter:on
 
 		return enabled;

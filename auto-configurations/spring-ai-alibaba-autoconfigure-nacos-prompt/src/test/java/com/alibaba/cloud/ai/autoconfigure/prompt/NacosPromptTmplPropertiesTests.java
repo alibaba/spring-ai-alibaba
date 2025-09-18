@@ -26,10 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
-class NacosPromptTmplPropertiesTests {
+class PromptTemplatePropertiesTests {
 
 	@Autowired
-	private NacosPromptTmplProperties properties;
+	private PromptTemplateProperties properties;
 
 	@Test
 	void testDefaultEnabled() {
@@ -43,7 +43,7 @@ class NacosPromptTmplPropertiesTests {
 	}
 
 	@Configuration
-	@EnableConfigurationProperties(NacosPromptTmplProperties.class)
+	@EnableConfigurationProperties(PromptTemplateProperties.class)
 	static class TestConfig {
 
 	}

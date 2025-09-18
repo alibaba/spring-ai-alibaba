@@ -20,8 +20,8 @@
     },
     {
       "name": "spring.ai.nacos.prompt.template",
-      "type": "com.alibaba.cloud.ai.autoconfigure.prompt.NacosPromptTmplProperties",
-      "sourceType": "com.alibaba.cloud.ai.autoconfigure.prompt.NacosPromptTmplProperties",
+      "type": "com.alibaba.cloud.ai.autoconfigure.prompt.PromptTemplateProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.prompt.PromptTemplateProperties",
       "description": "Configuration properties for Nacos prompt template integration."
     }
   ],
@@ -161,7 +161,7 @@
       "name": "spring.ai.nacos.prompt.template.enabled",
       "type": "java.lang.Boolean",
       "description": "Whether to enable Nacos prompt template support.",
-      "sourceType": "com.alibaba.cloud.ai.autoconfigure.prompt.NacosPromptTmplProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.prompt.PromptTemplateProperties",
       "defaultValue": false
     }
   ],
