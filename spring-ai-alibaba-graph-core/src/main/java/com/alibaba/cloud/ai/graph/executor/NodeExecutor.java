@@ -175,7 +175,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 					org.springframework.ai.chat.model.ChatResponse lastResponse = lastChatResponseRef.get();
 					if (lastResponse == null) {
 						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-							.of(new StreamingOutput(response, context.getCurrentNodeId(), context.getOverallState()));
+							.of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(), context.getOverallState()));
 						lastChatResponseRef.set(response);
 						lastGraphResponseRef.set(lastGraphResponse);
 						return lastGraphResponse;
