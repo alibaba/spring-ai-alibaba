@@ -104,6 +104,17 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		this.exceptionCache = CacheBuilder.newBuilder().expireAfterWrite(10, TimeUnit.MINUTES).build();
 	}
 
+	private boolean isVue(Map<String, Object> request) {
+
+		// Check if request is from Vue frontend
+		Boolean isVueRequest = (Boolean) request.get("isVueRequest");
+		if (isVueRequest == null) {
+			isVueRequest = false;
+		}
+		
+		return isVueRequest == null? false: isVueRequest;
+		
+	}
 	/**
 	 * Asynchronous execution of Manus request using PlanningCoordinator
 	 * @param request Request containing user query
@@ -115,6 +126,16 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Query content cannot be empty"));
 		}
+		boolean isVueRequest = isVue(request);
+
+
+		// Log request source
+		if (isVueRequest) {
+			logger.info("🌐 [VUE] Received query request from Vue frontend: ");
+		} else {
+			logger.info("🔗 [HTTP] Received query request from HTTP client: ");
+		}
+		
 		String planId = null;
 		try {
 			// Use sessionPlanId from frontend if available, otherwise generate new one
@@ -199,6 +220,14 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		String toolName = (String) request.get("toolName");
 		if (toolName == null || toolName.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Tool name cannot be empty"));
+		}
+		boolean isVueRequest = isVue(request);
+
+		// Log request source
+		if (isVueRequest) {
+			logger.info("🌐 [VUE] Received query request from Vue frontend: ");
+		} else {
+			logger.info("🔗 [HTTP] Received query request from HTTP client: ");
 		}
 
 		String planTemplateId = null;
@@ -285,6 +314,15 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		String toolName = (String) request.get("toolName");
 		if (toolName == null || toolName.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "Tool name cannot be empty"));
+		}
+
+		boolean isVueRequest = isVue(request);
+
+		// Log request source
+		if (isVueRequest) {
+			logger.info("🌐 [VUE] Received query request from Vue frontend: ");
+		} else {
+			logger.info("🔗 [HTTP] Received query request from HTTP client: ");
 		}
 
 		// Get plan template ID from coordinator tool

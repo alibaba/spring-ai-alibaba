@@ -23,10 +23,16 @@ export class DirectApiService {
   // Send task directly (direct execution mode)
   public static async sendMessage(query: InputMessage): Promise<any> {
     return LlmCheckService.withLlmCheck(async () => {
+      // Add Vue identification flag to distinguish from HTTP requests
+      const requestBody = {
+        ...query,
+        isVueRequest: true
+      }
+      
       const response = await fetch(`${this.BASE_URL}/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(query)
+        body: JSON.stringify(requestBody)
       })
       if (!response.ok) throw new Error(`API request failed: ${response.status}`)
       return await response.json()
