@@ -30,9 +30,9 @@ spring-ai-alibaba-nl2sql/
 
 ### 2. 配置management数据库
 
-在`spring-ai-alibaba-nl2sql-management/src/main/resources/application.yml`中配置你的MySQL数据库连接信息
+在`spring-ai-alibaba-nl2sql-management/src/main/resources/application.yml`中配置你的MySQL数据库连接信息。
 
-> 目前程序会自动创建表和数据，所以不需要手动创建。
+> 初始化行为说明：默认开启自动创建表并插入示例数据（`spring.sql.init.mode: always`）。生产环境建议关闭，避免示例数据回填覆盖你的业务数据。
 
 ```yaml
 spring:
@@ -43,6 +43,35 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.alibaba.druid.pool.DruidDataSource
 ```
+
+### 2.1 可选：启用/关闭自动初始化（schema.sql + data.sql）
+
+- 默认配置：`application.yml` 中已设置为开启
+
+```yaml
+spring:
+  sql:
+    init:
+      mode: always           # 默认：每次启动执行 schema.sql 与 data.sql
+      schema-locations: classpath:sql/schema.sql
+      data-locations: classpath:sql/data.sql
+```
+
+- 若不希望每次启动回填示例数据，可将 `mode` 改为 `never` 关闭：
+
+```yaml
+spring:
+  sql:
+    init:
+      mode: never            # 关闭自动初始化
+      schema-locations: classpath:sql/schema.sql
+      data-locations: classpath:sql/data.sql
+```
+
+注意：默认开启时（`mode: always`），`data.sql` 会在每次启动回填示例数据（即使你手动删除了数据）。生产环境请改为 `mode: never`，避免覆盖/复原业务数据。
+
+![Snipaste_2025-09-18_14-35-29.jpg](img/Snipaste_2025-09-18_14-35-29.jpg)
+
 
 ### 3. 配置 API Key
 
