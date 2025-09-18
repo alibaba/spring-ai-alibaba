@@ -20,6 +20,7 @@ import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
@@ -57,7 +58,11 @@ public class RoutingGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 		Map<String, String> edgeRoutingMap = new HashMap<>();
 		for (BaseAgent subAgent : config.getSubAgents()) {
 			// Add the current sub-agent as a node
-			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(rootAgent.outputKey(), subAgent.outputKey()));
+			if (subAgent instanceof A2aRemoteAgent subA2aAgent) {
+				graph.addNode(subAgent.name(), subA2aAgent.asAsyncNodeActionWithConfig(rootAgent.outputKey(), subAgent.outputKey()));
+			} else {
+				graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(rootAgent.outputKey(), subAgent.outputKey()));
+			}
 			edgeRoutingMap.put(subAgent.name(), subAgent.name());
 
 			// Connect sub-agents to END (unless they are FlowAgents with their own

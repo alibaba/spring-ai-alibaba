@@ -18,7 +18,8 @@ package com.alibaba.cloud.ai.graph.agent.a2a;
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -50,7 +51,7 @@ import org.apache.http.util.EntityUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
-public class A2aNode implements NodeAction {
+public class A2aNodeWithConfig implements NodeActionWithConfig {
 
 	private final AgentCard agentCard;
 
@@ -62,11 +63,11 @@ public class A2aNode implements NodeAction {
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
-	public A2aNode(AgentCard agentCard, String inputKeyFromParent, String outputKeyToParent) {
+	public A2aNodeWithConfig(AgentCard agentCard, String inputKeyFromParent, String outputKeyToParent) {
 		this(agentCard, inputKeyFromParent, outputKeyToParent, false);
 	}
 
-	public A2aNode(AgentCard agentCard, String inputKeyFromParent, String outputKeyToParent, boolean streaming) {
+	public A2aNodeWithConfig(AgentCard agentCard, String inputKeyFromParent, String outputKeyToParent, boolean streaming) {
 		this.agentCard = agentCard;
 		this.inputKeyFromParent = inputKeyFromParent;
 		this.outputKeyToParent = outputKeyToParent;
@@ -74,15 +75,15 @@ public class A2aNode implements NodeAction {
 	}
 
 	@Override
-	public Map<String, Object> apply(OverAllState state) throws Exception {
+	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
 		if (streaming) {
-			AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state);
+			AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state, config);
 			// Convert AsyncGenerator to Flux using the new toFlux() method
 			Flux<GraphResponse<NodeOutput>> flux = toFlux(generator);
 			return Map.of(StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages", flux);
 		}
 		else {
-			String requestPayload = buildSendMessageRequest(state, this.inputKeyFromParent);
+			String requestPayload = buildSendMessageRequest(state, this.inputKeyFromParent, config);
 			String resultText = sendMessageToServer(this.agentCard, requestPayload);
 			Map<String, Object> resultMap = autoDetectAndParseResponse(resultText);
 			Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
@@ -140,8 +141,8 @@ public class A2aNode implements NodeAction {
 	/**
 	 * Create a streaming generator.
 	 */
-	private AsyncGenerator<NodeOutput> createStreamingGenerator(OverAllState state) throws Exception {
-		final String requestPayload = buildSendStreamingMessageRequest(state, this.inputKeyFromParent);
+	private AsyncGenerator<NodeOutput> createStreamingGenerator(OverAllState state, RunnableConfig config) throws Exception {
+		final String requestPayload = buildSendStreamingMessageRequest(state, this.inputKeyFromParent, config);
 		final BlockingQueue<AsyncGenerator.Data<NodeOutput>> queue = new LinkedBlockingQueue<>(1000);
 		final String outputKey = StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages";
 		final StringBuilder accumulated = new StringBuilder();
@@ -202,7 +203,7 @@ public class A2aNode implements NodeAction {
 										if (text != null && !text.isEmpty()) {
 											accumulated.append(text);
 											queue.add(AsyncGenerator.Data
-													.of(new StreamingOutput(text, "a2aNode", state)));
+												.of(new StreamingOutput(text, "a2aNode", state)));
 										}
 									}
 								}
@@ -227,7 +228,7 @@ public class A2aNode implements NodeAction {
 						}
 						catch (Exception ex) {
 							queue.add(AsyncGenerator.Data
-									.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", state)));
+								.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", state)));
 						}
 					}
 				}
@@ -359,38 +360,38 @@ public class A2aNode implements NodeAction {
 		return null;
 	}
 
-	/**
-	 * Get the streaming generator (similar to LlmNode.stream).
-	 */
-	public Flux<NodeOutput> stream(OverAllState state) throws Exception {
-		if (!this.streaming) {
-			throw new IllegalStateException("Streaming is not enabled for this A2aNode");
-		}
-		AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state);
-		Flux<GraphResponse<NodeOutput>> graphResponseFlux = toFlux(generator);
+//	/**
+//	 * Get the streaming generator (similar to LlmNode.stream).
+//	 */
+//	public Flux<NodeOutput> stream(OverAllState state) throws Exception {
+//		if (!this.streaming) {
+//			throw new IllegalStateException("Streaming is not enabled for this A2aNode");
+//		}
+//		AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state);
+//		Flux<GraphResponse<NodeOutput>> graphResponseFlux = toFlux(generator);
+//
+//		// Convert Flux<GraphResponse<NodeOutput>> to Flux<NodeOutput>
+//		return graphResponseFlux.filter(graphResponse -> !graphResponse.isDone()) // 过滤掉完成信号
+//			.map(graphResponse -> {
+//				try {
+//					return graphResponse.getOutput().join();
+//				}
+//				catch (Exception e) {
+//					throw new RuntimeException("Error extracting output from GraphResponse", e);
+//				}
+//			});
+//	}
 
-		// Convert Flux<GraphResponse<NodeOutput>> to Flux<NodeOutput>
-		return graphResponseFlux.filter(graphResponse -> !graphResponse.isDone()) // 过滤掉完成信号
-				.map(graphResponse -> {
-					try {
-						return graphResponse.getOutput().join();
-					}
-					catch (Exception e) {
-						throw new RuntimeException("Error extracting output from GraphResponse", e);
-					}
-				});
-	}
-
-	/**
-	 * Get the non-streaming result (similar to LlmNode.call).
-	 */
-	public String call(OverAllState state) throws Exception {
-		String requestPayload = buildSendMessageRequest(state, this.inputKeyFromParent);
-		String resultText = sendMessageToServer(this.agentCard, requestPayload);
-		Map<String, Object> resultMap = autoDetectAndParseResponse(resultText);
-		Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
-		return extractResponseText(result);
-	}
+//	/**
+//	 * Get the non-streaming result (similar to LlmNode.call).
+//	 */
+//	public String call(OverAllState state) throws Exception {
+//		String requestPayload = buildSendMessageRequest(state, this.inputKeyFromParent);
+//		String resultText = sendMessageToServer(this.agentCard, requestPayload);
+//		Map<String, Object> resultMap = autoDetectAndParseResponse(resultText);
+//		Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
+//		return extractResponseText(result);
+//	}
 
 	/**
 	 * Auto-detect response format and parse accordingly.
@@ -569,10 +570,10 @@ public class A2aNode implements NodeAction {
 	 * @param inputKey Input key to retrieve user input from the state
 	 * @return JSON string payload (e.g., JSON-RPC params)
 	 */
-	private String buildSendMessageRequest(OverAllState state, String inputKey) {
+	private String buildSendMessageRequest(OverAllState state, String inputKey, RunnableConfig config) {
 		Object textValue = state.value(inputKey)
-				.orElseThrow(
-						() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
+			.orElseThrow(
+					() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
 		String text = String.valueOf(textValue);
 
 		String id = UUID.randomUUID().toString();
@@ -586,7 +587,11 @@ public class A2aNode implements NodeAction {
 		message.put("parts", List.of(part));
 		message.put("role", "user");
 
-		Map<String, Object> params = Map.of("message", message);
+		Map<String, Object> params = new HashMap<>();
+		params.put("message", message);
+		params.put("threadId", config.threadId());
+		// FIXME, the key 'userId' should be configurable
+		params.put("userId", config.metadata("userId"));
 
 		Map<String, Object> root = new HashMap<>();
 		root.put("id", id);
@@ -608,10 +613,10 @@ public class A2aNode implements NodeAction {
 	 * @param inputKey Input key to retrieve user input from the state
 	 * @return JSON string payload for streaming
 	 */
-	private String buildSendStreamingMessageRequest(OverAllState state, String inputKey) {
+	private String buildSendStreamingMessageRequest(OverAllState state, String inputKey, RunnableConfig config) {
 		Object textValue = state.value(inputKey)
-				.orElseThrow(
-						() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
+			.orElseThrow(
+					() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
 		String text = String.valueOf(textValue);
 
 		String id = UUID.randomUUID().toString();
@@ -625,7 +630,11 @@ public class A2aNode implements NodeAction {
 		message.put("parts", List.of(part));
 		message.put("role", "user");
 
-		Map<String, Object> params = Map.of("message", message);
+		Map<String, Object> params = new HashMap<>();
+		params.put("message", message);
+		params.put("threadId", config.threadId());
+		// FIXME, the key 'userId' should be configurable
+		params.put("userId", config.metadata("userId"));
 
 		Map<String, Object> root = new HashMap<>();
 		root.put("id", id);
