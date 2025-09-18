@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.node;
+package com.alibaba.cloud.ai.graph.streaming;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.StreamingGraphNode;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
-import com.alibaba.cloud.ai.graph.node.StreamHttpNodeParam.StreamMode;
+import com.alibaba.cloud.ai.graph.streaming.StreamHttpNodeParam.StreamMode;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.alibaba.cloud.ai.graph.node.StreamHttpNodeParam.StreamFormat.*;
+import static com.alibaba.cloud.ai.graph.streaming.StreamHttpNodeParam.StreamFormat.*;
 
 public class StreamHttpNode implements StreamingGraphNode {
 
@@ -66,6 +66,7 @@ public class StreamHttpNode implements StreamingGraphNode {
 	public Flux<Map<String, Object>> executeStreaming(OverAllState state) throws Exception {
 		try {
 			String finalUrl = replaceVariables(param.getUrl(), state);
+			validateUrl(finalUrl); // 添加URL安全验证
 			Map<String, String> finalHeaders = replaceVariables(param.getHeaders(), state);
 			Map<String, String> finalQueryParams = replaceVariables(param.getQueryParams(), state);
 
@@ -106,13 +107,15 @@ public class StreamHttpNode implements StreamingGraphNode {
 				.timeout(param.getReadTimeout())
 				// 处理网络超时、连接错误等其他异常
 				.onErrorResume(throwable -> {
-					logger.error("Stream processing failed", throwable);
+					logger.error("StreamHttpNode execution failed: url={}, method={}, error={}", finalUrl,
+							param.getMethod(), throwable.getMessage(), throwable);
 					return Flux.just(createErrorOutput(throwable));
 				});
 
 		}
 		catch (Exception e) {
-			logger.error("StreamHttpNode execution failed", e);
+			logger.error("StreamHttpNode initialization failed: url={}, method={}, error={}", param.getUrl(),
+					param.getMethod(), e.getMessage(), e);
 			// 返回错误输出而不是抛出异常
 			return Flux.just(createErrorOutput(e));
 		}
@@ -127,7 +130,8 @@ public class StreamHttpNode implements StreamingGraphNode {
 			dataBuffer.read(bytes);
 			return new String(bytes, StandardCharsets.UTF_8);
 		})
-			.scan("", (accumulated, chunk) -> accumulated + chunk)
+			.buffer(param.getBufferTimeout()) // 使用配置的缓冲超时时间避免内存累积
+			.map(chunks -> String.join("", chunks))
 			.flatMap(this::parseStreamChunk)
 			.filter(data -> !data.isEmpty())
 			.map(this::wrapOutput)
@@ -187,7 +191,11 @@ public class StreamHttpNode implements StreamingGraphNode {
 					results.add(line);
 				}
 				catch (JsonProcessingException e) {
-					logger.debug("Skipping invalid JSON line: {}", line);
+					logger.warn("Invalid JSON line: {}, error: {}", line, e.getMessage());
+					// 返回包含错误信息的特殊标记，保留原始数据用于调试
+					String errorJson = String.format("{\"_parsing_error\": \"%s\", \"_raw_data\": \"%s\"}",
+							e.getMessage().replaceAll("\"", "\\\\\""), line.replaceAll("\"", "\\\\\""));
+					results.add(errorJson);
 				}
 			}
 		}
@@ -377,6 +385,45 @@ public class StreamHttpNode implements StreamingGraphNode {
 			default:
 				logger.warn("Body type {} not fully supported in streaming mode", param.getBody().getType());
 		}
+	}
+
+	/**
+	 * URL安全验证
+	 */
+	private void validateUrl(String url) {
+		try {
+			URI uri = URI.create(url);
+			String host = uri.getHost();
+
+			if (host == null) {
+				throw new IllegalArgumentException("Invalid URL: missing host");
+			}
+
+			// 检查内网地址访问权限
+			if (isInternalAddress(host) && !param.isAllowInternalAddress()) {
+				throw new SecurityException(
+						"Internal network access not allowed: " + host + ". Set allowInternalAddress=true to enable.");
+			}
+
+			// 验证协议
+			String scheme = uri.getScheme();
+			if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+				throw new IllegalArgumentException("Only HTTP/HTTPS protocols are supported: " + scheme);
+			}
+
+		}
+		catch (IllegalArgumentException | SecurityException e) {
+			throw new StreamHttpException("stream-http", url, "URL validation failed: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * 检查是否为内网地址
+	 */
+	private boolean isInternalAddress(String host) {
+		// 简单的内网地址检查
+		return host.startsWith("127.") || host.startsWith("10.") || host.startsWith("192.168.")
+				|| host.matches("172\\.(1[6-9]|2[0-9]|3[0-1])\\..*") || "localhost".equalsIgnoreCase(host);
 	}
 
 	/**

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.node;
+package com.alibaba.cloud.ai.graph.streaming;
 
 import com.alibaba.cloud.ai.graph.node.HttpNode.AuthConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.HttpRequestNodeBody;
@@ -47,6 +47,15 @@ public class StreamHttpNodeParam {
 
 	// 流式处理特有的配置
 	private StreamFormat streamFormat = StreamFormat.SSE;
+
+	// 性能和安全配置
+	private long maxResponseSize = 50 * 1024 * 1024; // 50MB限制
+
+	private int maxRedirects = 5; // 重定向次数限制
+
+	private boolean allowInternalAddress = false; // 是否允许访问内网地址
+
+	private Duration bufferTimeout = Duration.ofMillis(100); // 缓冲超时时间
 
 	private StreamMode streamMode = StreamMode.DISTRIBUTE;
 
@@ -181,6 +190,26 @@ public class StreamHttpNodeParam {
 			return this;
 		}
 
+		public Builder allowInternalAddress(boolean allowInternalAddress) {
+			param.allowInternalAddress = allowInternalAddress;
+			return this;
+		}
+
+		public Builder bufferTimeout(Duration bufferTimeout) {
+			param.bufferTimeout = bufferTimeout;
+			return this;
+		}
+
+		public Builder maxResponseSize(long maxResponseSize) {
+			param.maxResponseSize = maxResponseSize;
+			return this;
+		}
+
+		public Builder maxRedirects(int maxRedirects) {
+			param.maxRedirects = maxRedirects;
+			return this;
+		}
+
 		public StreamHttpNodeParam build() {
 			if (param.url == null || param.url.trim().isEmpty()) {
 				throw new IllegalArgumentException("URL cannot be null or empty");
@@ -245,6 +274,38 @@ public class StreamHttpNodeParam {
 
 	public String getDelimiter() {
 		return delimiter;
+	}
+
+	public long getMaxResponseSize() {
+		return maxResponseSize;
+	}
+
+	public void setMaxResponseSize(long maxResponseSize) {
+		this.maxResponseSize = maxResponseSize;
+	}
+
+	public int getMaxRedirects() {
+		return maxRedirects;
+	}
+
+	public void setMaxRedirects(int maxRedirects) {
+		this.maxRedirects = maxRedirects;
+	}
+
+	public boolean isAllowInternalAddress() {
+		return allowInternalAddress;
+	}
+
+	public void setAllowInternalAddress(boolean allowInternalAddress) {
+		this.allowInternalAddress = allowInternalAddress;
+	}
+
+	public Duration getBufferTimeout() {
+		return bufferTimeout;
+	}
+
+	public void setBufferTimeout(Duration bufferTimeout) {
+		this.bufferTimeout = bufferTimeout;
 	}
 
 }

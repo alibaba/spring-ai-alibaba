@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.node;
+package com.alibaba.cloud.ai.graph.streaming;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.OverAllStateBuilder;
-import com.alibaba.cloud.ai.graph.node.StreamHttpNodeParam.StreamFormat;
-import com.alibaba.cloud.ai.graph.node.StreamHttpNodeParam.StreamMode;
+import com.alibaba.cloud.ai.graph.streaming.StreamHttpNodeParam.StreamFormat;
+import com.alibaba.cloud.ai.graph.streaming.StreamHttpNodeParam.StreamMode;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
@@ -525,6 +525,191 @@ class StreamHttpNodeTest {
 		// 使用timeout()确保不会无限等待
 		StepVerifier.create(result.timeout(Duration.ofSeconds(10))).assertNext(output -> {
 			assertThat(output).containsKey("simple_output");
+		}).verifyComplete();
+	}
+
+	// ==================== 新增的改进功能测试 ====================
+
+	@Test
+	@Timeout(value = 15, unit = TimeUnit.SECONDS)
+	void testUrlValidation_ShouldRejectInternalAddress() throws Exception {
+		// 测试URL安全验证 - 拒绝内网地址
+		StreamHttpNodeParam param = StreamHttpNodeParam.builder()
+			.webClient(WebClient.create())
+			.method(HttpMethod.GET)
+			.url("http://192.168.1.1/test") // 内网地址
+			.streamFormat(StreamFormat.JSON_LINES)
+			.streamMode(StreamMode.DISTRIBUTE)
+			.allowInternalAddress(false) // 禁止内网访问
+			.build();
+
+		streamHttpNode = new StreamHttpNode(param);
+
+		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+
+		StepVerifier.create(result.timeout(Duration.ofSeconds(5))).assertNext(output -> {
+			// 验证返回错误信息
+			assertThat(output).containsKey("error");
+			assertThat(output.get("error").toString()).contains("Internal network access not allowed");
+		}).verifyComplete();
+	}
+
+	@Test
+	@Timeout(value = 15, unit = TimeUnit.SECONDS)
+	void testUrlValidation_ShouldAllowInternalAddressWhenConfigured() throws Exception {
+		// 测试URL安全验证 - 配置允许时可以访问内网地址
+		mockWebServer.enqueue(new MockResponse().setBody("{\"internal\": \"success\"}")
+			.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+			.setResponseCode(200));
+
+		StreamHttpNodeParam param = StreamHttpNodeParam.builder()
+			.webClient(WebClient.create())
+			.method(HttpMethod.GET)
+			.url(mockWebServer.url("/internal").toString()) // 本地mock服务器
+			.streamFormat(StreamFormat.JSON_LINES)
+			.streamMode(StreamMode.DISTRIBUTE)
+			.allowInternalAddress(true) // 允许内网访问
+			.build();
+
+		streamHttpNode = new StreamHttpNode(param);
+
+		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+
+		StepVerifier.create(result.timeout(Duration.ofSeconds(5))).assertNext(output -> {
+			// 验证正常处理
+			assertThat(output).containsKey("data");
+			assertThat(output.get("streaming")).isEqualTo(true);
+		}).verifyComplete();
+	}
+
+	@Test
+	@Timeout(value = 15, unit = TimeUnit.SECONDS)
+	void testJsonLinesWithErrorHandling() throws Exception {
+		// 测试改进的JSON解析错误处理
+		String jsonLinesWithError = """
+				{"valid": "json"}
+				{invalid json line
+				{"another": "valid"}
+				""";
+
+		mockWebServer.enqueue(new MockResponse().setBody(jsonLinesWithError)
+			.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+			.setResponseCode(200));
+
+		StreamHttpNodeParam param = StreamHttpNodeParam.builder()
+			.webClient(WebClient.create())
+			.method(HttpMethod.GET)
+			.url(mockWebServer.url("/jsonlines-error").toString())
+			.streamFormat(StreamFormat.JSON_LINES)
+			.streamMode(StreamMode.DISTRIBUTE)
+			.build();
+
+		streamHttpNode = new StreamHttpNode(param);
+
+		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+
+		StepVerifier.create(result.timeout(Duration.ofSeconds(5))).assertNext(output -> {
+			// 第一个有效JSON
+			assertThat(output).containsKey("data");
+			Map<String, Object> data = (Map<String, Object>) output.get("data");
+			assertThat(data).containsKey("valid");
+		}).assertNext(output -> {
+			// 解析错误的JSON，应该包含错误信息
+			assertThat(output).containsKey("data");
+			Map<String, Object> data = (Map<String, Object>) output.get("data");
+			assertThat(data).containsKey("_parsing_error");
+			assertThat(data).containsKey("_raw_data");
+		}).assertNext(output -> {
+			// 第三个有效JSON
+			assertThat(output).containsKey("data");
+			Map<String, Object> data = (Map<String, Object>) output.get("data");
+			assertThat(data).containsKey("another");
+		}).verifyComplete();
+	}
+
+	@Test
+	@Timeout(value = 15, unit = TimeUnit.SECONDS)
+	void testCustomBufferTimeout() throws Exception {
+		// 测试自定义缓冲超时配置
+		String streamResponse = """
+				{"chunk": 1}
+				{"chunk": 2}
+				{"chunk": 3}
+				""";
+
+		mockWebServer.enqueue(new MockResponse().setBody(streamResponse)
+			.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+			.setResponseCode(200));
+
+		StreamHttpNodeParam param = StreamHttpNodeParam.builder()
+			.webClient(WebClient.create())
+			.method(HttpMethod.GET)
+			.url(mockWebServer.url("/buffer-test").toString())
+			.streamFormat(StreamFormat.JSON_LINES)
+			.streamMode(StreamMode.DISTRIBUTE)
+			.bufferTimeout(Duration.ofMillis(50)) // 自定义缓冲超时
+			.build();
+
+		streamHttpNode = new StreamHttpNode(param);
+
+		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+
+		StepVerifier.create(result.timeout(Duration.ofSeconds(5))).assertNext(output -> {
+			assertThat(output).containsKey("data");
+			assertThat(output.get("streaming")).isEqualTo(true);
+		}).assertNext(output -> {
+			assertThat(output).containsKey("data");
+		}).assertNext(output -> {
+			assertThat(output).containsKey("data");
+		}).verifyComplete();
+	}
+
+	@Test
+	@Timeout(value = 15, unit = TimeUnit.SECONDS)
+	void testInvalidProtocolValidation() throws Exception {
+		// 测试协议验证 - 拒绝非HTTP/HTTPS协议
+		StreamHttpNodeParam param = StreamHttpNodeParam.builder()
+			.webClient(WebClient.create())
+			.method(HttpMethod.GET)
+			.url("ftp://example.com/test") // 不支持的协议
+			.streamFormat(StreamFormat.JSON_LINES)
+			.streamMode(StreamMode.DISTRIBUTE)
+			.build();
+
+		streamHttpNode = new StreamHttpNode(param);
+
+		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+
+		StepVerifier.create(result.timeout(Duration.ofSeconds(5))).assertNext(output -> {
+			// 验证返回错误信息
+			assertThat(output).containsKey("error");
+			assertThat(output.get("error").toString()).contains("Only HTTP/HTTPS protocols are supported");
+		}).verifyComplete();
+	}
+
+	@Test
+	@Timeout(value = 15, unit = TimeUnit.SECONDS)
+	void testStructuredErrorLogging() throws Exception {
+		// 测试结构化错误日志记录
+		mockWebServer.enqueue(new MockResponse().setResponseCode(500).setBody("Internal Server Error"));
+
+		StreamHttpNodeParam param = StreamHttpNodeParam.builder()
+			.webClient(WebClient.create())
+			.method(HttpMethod.GET)
+			.url(mockWebServer.url("/error").toString())
+			.streamFormat(StreamFormat.JSON_LINES)
+			.streamMode(StreamMode.DISTRIBUTE)
+			.build();
+
+		streamHttpNode = new StreamHttpNode(param);
+
+		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+
+		StepVerifier.create(result.timeout(Duration.ofSeconds(5))).assertNext(output -> {
+			// 验证错误输出格式
+			assertThat(output).containsKey("error");
+			assertThat(output.get("streaming")).isEqualTo(false);
+			assertThat(output).containsKey("timestamp");
 		}).verifyComplete();
 	}
 

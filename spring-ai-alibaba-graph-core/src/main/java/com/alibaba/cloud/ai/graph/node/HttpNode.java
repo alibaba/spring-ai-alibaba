@@ -724,7 +724,7 @@ public class HttpNode implements NodeAction {
 
 	public static class AuthConfig {
 
-		enum AuthType {
+		public enum AuthType {
 
 			BASIC, BEARER
 
