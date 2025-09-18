@@ -43,15 +43,21 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 				+ "Provide data in JSON format with 'message' field and optional 'fileList' array containing file information.";
 	}
 
+	private static String generateMessageField(String expectedReturnInfo) {
+		return """
+				"message": {
+				  "type": "string",
+				  "description": "Comprehensive termination message that should include all relevant facts, viewpoints, details, and conclusions from the execution step. This message should provide a complete summary of what was accomplished, any important observations, key findings, and final outcomes. The message must explicitly mention and describe the data corresponding to the expected return information: %s"
+				}""".formatted(expectedReturnInfo != null ? expectedReturnInfo : "N/A");
+	}
+
 	private static String generateParametersJson(String expectedReturnInfo) {
+		String messageField = generateMessageField(expectedReturnInfo);
 		String template = """
 				{
 				  "type": "object",
 				  "properties": {
-				    "message": {
-				      "type": "string",
-				      "description": "Comprehensive termination message that should include all relevant facts, viewpoints, details, and conclusions from the execution step. This message should provide a complete summary of what was accomplished, any important observations, key findings, and final outcomes. The message must explicitly mention and describe the data corresponding to the expected return information: %s"
-				    },
+				    %s,
 				    "fileList": {
 				      "type": "array",
 				      "items": {
@@ -93,7 +99,7 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 				}
 				""";
 
-		return String.format(template, expectedReturnInfo != null ? expectedReturnInfo : "N/A");
+		return String.format(template, messageField);
 	}
 
 	@Override
