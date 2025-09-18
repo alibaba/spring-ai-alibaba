@@ -15,7 +15,6 @@ import java.util.Map;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.lang.NonNull;
 
 public class PromptMetadataAwareChatModelObservationConvention extends DefaultChatModelObservationConvention {
@@ -99,11 +98,10 @@ public class PromptMetadataAwareChatModelObservationConvention extends DefaultCh
 		return keyValues;
 	}
 
-	// FIXME remove openai assert
 	private Map<String, String> getMetadata(ChatModelObservationContext context) {
 		ChatOptions options = context.getRequest().getOptions();
-		if (options instanceof OpenAiChatOptions) {
-			Map<String, String> metadata = ((OpenAiChatOptions) options).getMetadata();
+		if (options instanceof ObservationMetadataAwareOptions) {
+			Map<String, String> metadata = ((ObservationMetadataAwareOptions) options).getObservationMetadata();
 			if (metadata != null) {
 				return metadata;
 			}

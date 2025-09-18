@@ -8,6 +8,7 @@ import static com.alibaba.cloud.ai.observation.constants.MetadataAttributes.PROM
 import static com.alibaba.cloud.ai.observation.constants.MetadataAttributes.PROMPT_VERSION;
 import static com.alibaba.cloud.ai.observation.constants.MetadataAttributes.STUDIO_SOURCE;
 
+import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import java.util.Collections;
@@ -15,7 +16,6 @@ import java.util.Map;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.DefaultChatClientObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.lang.NonNull;
 
 public class PromptMetadataAwareChatClientObservationConvention extends DefaultChatClientObservationConvention {
@@ -99,11 +99,10 @@ public class PromptMetadataAwareChatClientObservationConvention extends DefaultC
 		return keyValues;
 	}
 
-	// FIXME remove openai assert
 	private Map<String, String> getMetadata(ChatClientObservationContext context) {
 		ChatOptions options = context.getRequest().prompt().getOptions();
-		if (options instanceof OpenAiChatOptions) {
-			Map<String, String> metadata = ((OpenAiChatOptions) options).getMetadata();
+		if (options instanceof ObservationMetadataAwareOptions) {
+			Map<String, String> metadata = ((ObservationMetadataAwareOptions) options).getObservationMetadata();
 			if (metadata != null) {
 				return metadata;
 			}
