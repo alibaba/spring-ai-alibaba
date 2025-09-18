@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.a2a;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
@@ -40,7 +41,7 @@ public class A2aRemoteAgent extends BaseAgent {
 
 	private KeyStrategyFactory keyStrategyFactory;
 
-	private A2aNode a2aNode;
+	private A2aNodeWithConfig a2aNode;
 
 	private CompileConfig compileConfig;
 
@@ -51,7 +52,7 @@ public class A2aRemoteAgent extends BaseAgent {
 	Logger logger = Logger.getLogger(A2aRemoteAgent.class.getName());
 
 	// Private constructor for Builder pattern
-	private A2aRemoteAgent(A2aNode a2aNode, Builder builder) throws GraphStateException {
+	private A2aRemoteAgent(A2aNodeWithConfig a2aNode, Builder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.outputKey);
 		this.agentCard = builder.agentCard;
 		this.keyStrategyFactory = builder.keyStrategyFactory;
@@ -72,7 +73,7 @@ public class A2aRemoteAgent extends BaseAgent {
 		}
 
 		StateGraph graph = new StateGraph(name, this.keyStrategyFactory);
-		graph.addNode("A2aNode", node_async(a2aNode));
+		graph.addNode("A2aNode", AsyncNodeActionWithConfig.node_async(a2aNode));
 		graph.addEdge(StateGraph.START, "A2aNode");
 		graph.addEdge("A2aNode", StateGraph.END);
 		return graph;
@@ -80,7 +81,11 @@ public class A2aRemoteAgent extends BaseAgent {
 
 	@Override
 	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) {
-		return node_async(new A2aNode(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
+		return AsyncNodeAction.node_async(new A2aNode(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
+	}
+
+	public AsyncNodeActionWithConfig asAsyncNodeActionWithConfig(String inputKeyFromParent, String outputKeyToParent) {
+		return AsyncNodeActionWithConfig.node_async(new A2aNodeWithConfig(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
 	}
 
 	@Override
@@ -210,7 +215,7 @@ public class A2aRemoteAgent extends BaseAgent {
 			}
 
 			this.streaming = agentCard.capabilities().streaming();
-			A2aNode a2aNode = new A2aNode(agentCard, inputKey, outputKey, streaming);
+			A2aNodeWithConfig a2aNode = new A2aNodeWithConfig(agentCard, inputKey, outputKey, streaming);
 
 			return new A2aRemoteAgent(a2aNode, this);
 		}
