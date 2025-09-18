@@ -106,16 +106,6 @@ public class A2aRemoteAgent extends BaseAgent {
 		return this.compiledGraph;
 	}
 
-	public CompiledGraph getAndCompileGraph() throws GraphStateException {
-		if (this.compileConfig == null) {
-			this.compiledGraph = getStateGraph().compile();
-		}
-		else {
-			this.compiledGraph = getStateGraph().compile(this.compileConfig);
-		}
-		return this.compiledGraph;
-	}
-
 	public NodeAction asNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
