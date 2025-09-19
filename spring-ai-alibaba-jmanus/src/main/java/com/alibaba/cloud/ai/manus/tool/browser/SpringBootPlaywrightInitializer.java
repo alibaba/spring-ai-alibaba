@@ -170,6 +170,9 @@ public class SpringBootPlaywrightInitializer {
 			}
 		}
 
+		// Set Playwright driver, by default only download chromium
+		System.setProperty("playwright.driver.impl", "com.alibaba.cloud.ai.manus.playwright.ManusDriverJar");
+
 		log.info("==========================================");
 	}
 
