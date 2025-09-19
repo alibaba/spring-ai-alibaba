@@ -385,6 +385,10 @@ public class Mem0ChatMemoryProperties {
 				return customPrompt;
 			}
 
+			public void setCustomPrompt(String customPrompt) {
+				this.customPrompt = customPrompt;
+			}
+
 			public static class Builder {
 				private String provider;
 				private GraphStoreConfig config;
