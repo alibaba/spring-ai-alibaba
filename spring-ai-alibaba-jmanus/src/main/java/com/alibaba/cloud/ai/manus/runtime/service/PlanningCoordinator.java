@@ -166,11 +166,11 @@ public class PlanningCoordinator {
 			context.setCurrentPlanId(currentPlanId);
 			context.setRootPlanId(rootPlanId);
 			context.setPlan(plan);
-			if (toolcallId == null) {
+			if (toolcallId == null && isVueRequest) {
 				context.setNeedSummary(true);
 			}
 			else {
-				// in sub plan, we don't need to generate summary
+				// in sub plan or non-Vue request, we don't need to generate summary
 				context.setNeedSummary(false);
 			}
 			// Generate a memory ID if none exists, since we're using memory
@@ -181,7 +181,6 @@ public class PlanningCoordinator {
 			context.setUseMemory(true);
 			context.setParentPlanId(parentPlanId);
 			context.setToolCallId(toolcallId);
-			context.setVueRequest(isVueRequest);
 
 			// Log toolcallId if provided
 			if (toolcallId != null) {
