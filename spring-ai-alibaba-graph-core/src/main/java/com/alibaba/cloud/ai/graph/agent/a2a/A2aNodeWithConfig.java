@@ -588,9 +588,12 @@ public class A2aNodeWithConfig implements NodeActionWithConfig {
 
 		Map<String, Object> params = new HashMap<>();
 		params.put("message", message);
-		config.threadId().ifPresent(threadId -> params.put("threadId", threadId));
+
+		Map<String, Object> metadata = new HashMap<>();
+		config.threadId().ifPresent(threadId -> metadata.put("threadId", threadId));
 		// FIXME, the key 'userId' should be configurable
-		config.metadata("userId").ifPresent(userId -> params.put("userId", userId));
+		config.metadata("userId").ifPresent(userId -> metadata.put("userId", userId));
+		params.put("metadata", metadata);
 
 		Map<String, Object> root = new HashMap<>();
 		root.put("id", id);
@@ -631,9 +634,12 @@ public class A2aNodeWithConfig implements NodeActionWithConfig {
 
 		Map<String, Object> params = new HashMap<>();
 		params.put("message", message);
-		config.threadId().ifPresent(threadId -> params.put("threadId", threadId));
+
+		Map<String, Object> metadata = new HashMap<>();
+		config.threadId().ifPresent(threadId -> metadata.put("threadId", threadId));
 		// FIXME, the key 'userId' should be configurable
-		config.metadata("userId").ifPresent(userId -> params.put("userId", userId));
+		config.metadata("userId").ifPresent(userId -> metadata.put("userId", userId));
+		params.put("metadata", metadata);
 
 		Map<String, Object> root = new HashMap<>();
 		root.put("id", id);

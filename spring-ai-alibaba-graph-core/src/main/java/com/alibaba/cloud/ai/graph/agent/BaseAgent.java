@@ -18,11 +18,7 @@ package com.alibaba.cloud.ai.graph.agent;
 import java.util.Map;
 import java.util.Optional;
 
-import com.alibaba.cloud.ai.graph.CompileConfig;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -122,9 +118,19 @@ public abstract class BaseAgent {
 		return compiledGraph.call(input);
 	}
 
+	public Optional<OverAllState> invoke(Map<String, Object> input, RunnableConfig runnableConfig) throws GraphStateException, GraphRunnerException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.call(input, runnableConfig);
+	}
+
 	public Flux<NodeOutput> stream(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
 		CompiledGraph compiledGraph = getAndCompileGraph();
 		return compiledGraph.fluxStream(input);
+	}
+
+	public Flux<NodeOutput> stream(Map<String, Object> input, RunnableConfig runnableConfig) throws GraphStateException, GraphRunnerException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.fluxStream(input, runnableConfig);
 	}
 
 	/**
