@@ -16,7 +16,8 @@
 package com.alibaba.cloud.ai.graph.streaming;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.StreamingGraphNode;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.StreamHttpNodeParam.StreamMode;
@@ -41,12 +42,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.alibaba.cloud.ai.graph.streaming.StreamHttpNodeParam.StreamFormat.*;
 
-public class StreamHttpNode implements StreamingGraphNode {
+public class StreamHttpNode implements AsyncNodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(StreamHttpNode.class);
 
@@ -63,63 +65,114 @@ public class StreamHttpNode implements StreamingGraphNode {
 	}
 
 	@Override
-	public Flux<Map<String, Object>> executeStreaming(OverAllState state) throws Exception {
+	public CompletableFuture<Map<String, Object>> apply(OverAllState state) {
 		try {
-			String finalUrl = replaceVariables(param.getUrl(), state);
-			Map<String, String> finalHeaders = replaceVariables(param.getHeaders(), state);
-			Map<String, String> finalQueryParams = replaceVariables(param.getQueryParams(), state);
-
-			UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(finalUrl);
-			finalQueryParams.forEach(uriBuilder::queryParam);
-			URI finalUri = uriBuilder.build().toUri();
-
-			validateUrl(finalUri.toString()); // 添加URL安全验证，在URI构建之后
-
-			WebClient.RequestBodySpec requestSpec = param.getWebClient()
-				.method(param.getMethod())
-				.uri(finalUri)
-				.headers(headers -> headers.setAll(finalHeaders));
-
-			applyAuth(requestSpec);
-			initBody(requestSpec, state);
-
-			// 直接返回处理后的结果，将HTTP错误转换为错误数据项
-			return requestSpec.exchangeToFlux(response -> {
-				if (!response.statusCode().is2xxSuccessful()) {
-					// 处理HTTP错误：将错误转换为包含错误信息的Map，作为数据项发射出去
-					return response.bodyToMono(String.class)
-						.defaultIfEmpty("HTTP Error") // 如果响应体为空，使用默认错误信息
-						.map(errorBody -> {
-							// 创建错误信息Map
-							WebClientResponseException exception = new WebClientResponseException(
-									response.statusCode().value(), "HTTP " + response.statusCode() + ": " + errorBody,
-									null, null, null);
-							return createErrorOutput(exception);
-						})
-						.flux(); // 转换为Flux
-				}
-
-				// 处理成功响应
-				Flux<DataBuffer> dataBufferFlux = response.bodyToFlux(DataBuffer.class);
-				return processStreamResponse(dataBufferFlux, state);
-			})
-				.retryWhen(Retry.backoff(param.getRetryConfig().getMaxRetries(),
-						Duration.ofMillis(param.getRetryConfig().getMaxRetryInterval())))
-				.timeout(param.getReadTimeout())
-				// 处理网络超时、连接错误等其他异常
-				.onErrorResume(throwable -> {
-					logger.error("StreamHttpNode execution failed: url={}, method={}, error={}", finalUrl,
-							param.getMethod(), throwable.getMessage(), throwable);
-					return Flux.just(createErrorOutput(throwable));
-				});
-
+			// 获取流式数据并转换为AsyncGenerator
+			Flux<Map<String, Object>> streamFlux = executeStreaming(state);
+			
+			// 将Flux转换为AsyncGenerator，供图框架处理流式数据
+			AsyncGenerator<Map<String, Object>> generator = createAsyncGenerator(streamFlux);
+			
+			// 返回包含AsyncGenerator的结果Map
+			String outputKey = param.getOutputKey() != null ? param.getOutputKey() : "stream_output";
+			return CompletableFuture.completedFuture(Map.of(outputKey, generator));
 		}
 		catch (Exception e) {
 			logger.error("StreamHttpNode initialization failed: url={}, method={}, error={}", param.getUrl(),
 					param.getMethod(), e.getMessage(), e);
-			// 返回错误输出而不是抛出异常
-			return Flux.just(createErrorOutput(e));
+			// 返回包含错误信息的AsyncGenerator而不是直接返回Map
+			String outputKey = param.getOutputKey() != null ? param.getOutputKey() : "stream_output";
+			Flux<Map<String, Object>> errorFlux = Flux.just(createErrorOutput(e));
+			AsyncGenerator<Map<String, Object>> errorGenerator = createAsyncGenerator(errorFlux);
+			return CompletableFuture.completedFuture(Map.of(outputKey, errorGenerator));
 		}
+	}
+
+	/**
+	 * 执行流式HTTP请求 - 保持原有的流式逻辑
+	 * Package-private for testing
+	 */
+	Flux<Map<String, Object>> executeStreaming(OverAllState state) throws Exception {
+		String finalUrl = replaceVariables(param.getUrl(), state);
+		Map<String, String> finalHeaders = replaceVariables(param.getHeaders(), state);
+		Map<String, String> finalQueryParams = replaceVariables(param.getQueryParams(), state);
+
+		UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(finalUrl);
+		finalQueryParams.forEach(uriBuilder::queryParam);
+		URI finalUri = uriBuilder.build().toUri();
+
+		validateUrl(finalUri.toString()); // 添加URL安全验证，在URI构建之后
+
+		WebClient.RequestBodySpec requestSpec = param.getWebClient()
+			.method(param.getMethod())
+			.uri(finalUri)
+			.headers(headers -> headers.setAll(finalHeaders));
+
+		applyAuth(requestSpec);
+		initBody(requestSpec, state);
+
+		// 直接返回处理后的结果，将HTTP错误转换为错误数据项
+		return requestSpec.exchangeToFlux(response -> {
+			if (!response.statusCode().is2xxSuccessful()) {
+				// 处理HTTP错误：将错误转换为包含错误信息的Map，作为数据项发射出去
+				return response.bodyToMono(String.class)
+					.defaultIfEmpty("HTTP Error") // 如果响应体为空，使用默认错误信息
+					.map(errorBody -> {
+						// 创建错误信息Map
+						WebClientResponseException exception = new WebClientResponseException(
+								response.statusCode().value(), "HTTP " + response.statusCode() + ": " + errorBody,
+								null, null, null);
+						return createErrorOutput(exception);
+					})
+					.flux(); // 转换为Flux
+			}
+
+			// 处理成功响应
+			Flux<DataBuffer> dataBufferFlux = response.bodyToFlux(DataBuffer.class);
+			return processStreamResponse(dataBufferFlux, state);
+		})
+			.retryWhen(Retry.backoff(param.getRetryConfig().getMaxRetries(),
+					Duration.ofMillis(param.getRetryConfig().getMaxRetryInterval())))
+			.timeout(param.getReadTimeout())
+			// 处理网络超时、连接错误等其他异常
+			.onErrorResume(throwable -> {
+				logger.error("StreamHttpNode execution failed: url={}, method={}, error={}", finalUrl,
+						param.getMethod(), throwable.getMessage(), throwable);
+				return Flux.just(createErrorOutput(throwable));
+			});
+	}
+
+	/**
+	 * 将Flux转换为AsyncGenerator，供图框架处理流式数据
+	 */
+	private AsyncGenerator<Map<String, Object>> createAsyncGenerator(Flux<Map<String, Object>> flux) {
+		return new AsyncGenerator<Map<String, Object>>() {
+			private boolean completed = false;
+			private final java.util.concurrent.BlockingQueue<AsyncGenerator.Data<Map<String, Object>>> queue = 
+				new java.util.concurrent.LinkedBlockingQueue<>();
+			
+			{
+				// 异步处理Flux数据
+				flux.subscribe(
+					data -> queue.offer(AsyncGenerator.Data.of(CompletableFuture.completedFuture(data))),
+					error -> queue.offer(AsyncGenerator.Data.error(error)),
+					() -> {
+						completed = true;
+						queue.offer(AsyncGenerator.Data.done());
+					}
+				);
+			}
+			
+			@Override
+			public AsyncGenerator.Data<Map<String, Object>> next() {
+				try {
+					return queue.take();
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return AsyncGenerator.Data.error(e);
+				}
+			}
+		};
 	}
 
 	/**

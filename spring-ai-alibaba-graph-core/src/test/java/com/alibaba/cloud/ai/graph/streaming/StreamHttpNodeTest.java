@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.streaming;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.OverAllStateBuilder;
+import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.streaming.StreamHttpNodeParam.StreamFormat;
 import com.alibaba.cloud.ai.graph.streaming.StreamHttpNodeParam.StreamMode;
 import okhttp3.mockwebserver.MockResponse;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -100,7 +102,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("sse_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result).assertNext(output -> {
 			assertThat(output).containsKey("sse_output");
@@ -145,7 +150,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("jsonlines_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result).assertNext(output -> {
 			assertThat(output).containsKey("jsonlines_output");
@@ -186,7 +194,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("text_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result).assertNext(output -> {
 			assertThat(output).containsKey("text_output");
@@ -228,7 +239,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("aggregated_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result).assertNext(output -> {
 			assertThat(output).containsKey("aggregated_output");
@@ -271,7 +285,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("variable_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result).assertNext(output -> {
 			assertThat(output).containsKey("variable_output");
@@ -305,7 +322,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("error_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		// 期望收到包含错误信息的输出
 		StepVerifier.create(result).assertNext(output -> {
@@ -352,7 +372,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("stream_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result).assertNext(output -> {
 			// 没有outputKey时，直接返回数据
@@ -392,7 +415,10 @@ class StreamHttpNodeTest {
 		streamHttpNode = new StreamHttpNode(param);
 
 		// 测试流式执行
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("chat_response");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result).assertNext(output -> {
 			assertThat(output).containsKey("chat_response");
@@ -450,7 +476,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("stream_data");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result).assertNext(output -> {
 			assertThat(output).containsKey("stream_data");
@@ -530,7 +559,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("simple_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		// 使用timeout()确保不会无限等待
 		StepVerifier.create(result.timeout(Duration.ofSeconds(10))).assertNext(output -> {
@@ -555,7 +587,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("stream_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result.timeout(Duration.ofSeconds(5))).assertNext(output -> {
 			// 验证返回错误信息
@@ -583,7 +618,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("stream_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result.timeout(Duration.ofSeconds(5))).assertNext(output -> {
 			// 验证正常处理
@@ -617,7 +655,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("stream_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result.timeout(Duration.ofSeconds(5))).assertNext(output -> {
 			// 第一个有效JSON
@@ -664,7 +705,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("stream_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result.timeout(Duration.ofSeconds(5))).assertNext(output -> {
 			assertThat(output).containsKey("data");
@@ -690,7 +734,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("stream_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result.timeout(Duration.ofSeconds(5))).assertNext(output -> {
 			// 验证返回错误信息
@@ -716,7 +763,10 @@ class StreamHttpNodeTest {
 
 		streamHttpNode = new StreamHttpNode(param);
 
-		Flux<Map<String, Object>> result = streamHttpNode.executeStreaming(testState);
+		CompletableFuture<Map<String, Object>> future = streamHttpNode.apply(testState);
+		Map<String, Object> asyncResult = future.get(10, TimeUnit.SECONDS);
+		AsyncGenerator generator = (AsyncGenerator) asyncResult.get("stream_output");
+		Flux<Map<String, Object>> result = Flux.fromStream(generator.stream());
 
 		StepVerifier.create(result.timeout(Duration.ofSeconds(5))).assertNext(output -> {
 			// 验证错误输出格式
