@@ -31,6 +31,7 @@ import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptions;
 
 public class NacosAgentPromptBuilder extends DefaultBuilder {
 
@@ -80,11 +81,26 @@ public class NacosAgentPromptBuilder extends DefaultBuilder {
 		if (nacosOptions.getPromptKey() != null) {
 			promptVO = NacosPromptInjector.getPromptByKey(nacosOptions);
 			if (promptVO != null) {
-				this.instruction = promptVO.getPromptKey();
-				this.chatOptions = (ChatOptions) CglibProxyFactory.createProxy(this.chatOptions, getMetadata(promptVO));
+				this.instruction = promptVO.getTemplate();
+				if (this.chatOptions == null) {
+					this.chatOptions = new OpenAiChatOptions();
+				}
+				if (!(this.chatOptions instanceof ObservationMetadataAwareOptions)) {
+					this.chatOptions = (ChatOptions) CglibProxyFactory.createProxy(this.chatOptions, getMetadata(promptVO));
+				}
+
 				observationMetadataAwareOptions = (ObservationMetadataAwareOptions) this.chatOptions;
+				observationMetadataAwareOptions.getObservationMetadata().putAll(getMetadata(promptVO));
 			}
 		}
+		if (this.observationRegistry == null && nacosOptions.getObservationConfigration() != null) {
+			this.observationRegistry = nacosOptions.getObservationConfigration().getObservationRegistry();
+		}
+		if (this.customObservationConvention == null && nacosOptions.getObservationConfigration() != null) {
+			this.customObservationConvention = nacosOptions.getObservationConfigration()
+					.getChatClientObservationConvention();
+		}
+
 		ReactAgent reactAgent = super.build();
 		if (promptVO != null && observationMetadataAwareOptions != null) {
 			registryPrompt(nacosOptions, reactAgent, observationMetadataAwareOptions, promptVO.getPromptKey());

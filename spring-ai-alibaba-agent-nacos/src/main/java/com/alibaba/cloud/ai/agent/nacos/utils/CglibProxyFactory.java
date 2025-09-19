@@ -141,7 +141,7 @@ public class CglibProxyFactory {
 		private Object handleObservationMethod(String methodName, Object[] args) {
 			switch (methodName) {
 			case "getObservationMetadata":
-				return new HashMap<>(observationMetadata);
+				return observationMetadata;
 
 			case "setObservationMetadata":
 				if (args != null && args.length > 0 && args[0] instanceof Map) {
