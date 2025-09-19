@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
-import com.alibaba.cloud.ai.graph.action.StreamingGraphNode;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -92,11 +91,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 					resultValue.set(interruptMetadata.get());
 					return Flux.just(GraphResponse.done(interruptMetadata.get()));
 				}
-			}
-
-			// 检查是否为流式节点
-			if (action instanceof StreamingGraphNode) {
-				return executeStreamingNode((StreamingGraphNode) action, context, resultValue);
 			}
 
 			context.doListeners(NODE_BEFORE, null);
@@ -410,55 +404,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 		}));
 	}
 
-	/**
-	 * 执行流式节点，处理响应式数据流。
-	 * @param streamingNode 流式节点实例
-	 * @param context 图运行上下文
-	 * @param resultValue 结果值的原子引用
-	 * @return 流式图响应的Flux
-	 */
-	private Flux<GraphResponse<NodeOutput>> executeStreamingNode(StreamingGraphNode streamingNode,
-			GraphRunnerContext context, AtomicReference<Object> resultValue) {
-		try {
-			context.doListeners(NODE_BEFORE, null);
 
-			// 执行流式节点
-			Flux<Map<String, Object>> streamingFlux = streamingNode.executeStreaming(context.getOverallState());
-
-			return streamingFlux.map(output -> {
-				try {
-					// 为每个流元素创建NodeOutput
-					NodeOutput nodeOutput = context.buildNodeOutput(context.getCurrentNodeId());
-					return GraphResponse.of(nodeOutput);
-				}
-				catch (Exception e) {
-					return GraphResponse.<NodeOutput>error(e);
-				}
-			}).concatWith(Flux.defer(() -> {
-				// 流结束后处理下一步
-				context.doListeners(NODE_AFTER, null);
-
-				try {
-					// 获取流的最后一个结果作为节点的最终输出
-					// 注意：这里的逻辑假设流式节点会在最后一个元素中包含完整的状态更新
-					Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
-					context.setNextNodeId(nextCommand.gotoNode());
-					context.updateCurrentState(nextCommand.update());
-
-					return mainGraphExecutor.execute(context, resultValue);
-				}
-				catch (Exception e) {
-					return Flux.just(GraphResponse.<NodeOutput>error(e));
-				}
-			})).onErrorResume(error -> {
-				context.doListeners(NODE_AFTER, null);
-				return Flux.just(GraphResponse.<NodeOutput>error(error));
-			});
-
-		}
-		catch (Exception e) {
-			return Flux.just(GraphResponse.<NodeOutput>error(e));
-		}
-	}
 
 }
