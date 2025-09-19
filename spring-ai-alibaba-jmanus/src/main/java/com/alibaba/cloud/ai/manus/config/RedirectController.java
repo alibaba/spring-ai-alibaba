@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.manus.config;
 
-import com.alibaba.cloud.ai.manus.config.startUp.AppStartupListener;
+import com.alibaba.cloud.ai.manus.config.startup.AppStartupListener;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 

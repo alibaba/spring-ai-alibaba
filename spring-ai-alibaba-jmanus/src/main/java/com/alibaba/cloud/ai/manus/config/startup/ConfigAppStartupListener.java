@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.manus.config.startUp;
+package com.alibaba.cloud.ai.manus.config.startup;
 
 import java.util.List;
 import java.util.Map;
