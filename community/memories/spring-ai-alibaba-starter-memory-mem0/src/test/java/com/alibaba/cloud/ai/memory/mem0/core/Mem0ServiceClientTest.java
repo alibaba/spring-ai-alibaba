@@ -49,11 +49,9 @@ class Mem0ServiceClientTest {
 
 	@BeforeEach
 	void setUp() {
-		properties = new Mem0ChatMemoryProperties();
-		Mem0ChatMemoryProperties.Client clientConfig = new Mem0ChatMemoryProperties.Client();
-		clientConfig.setBaseUrl("http://localhost:8888");
-		clientConfig.setTimeoutSeconds(30);
-		properties.setClient(clientConfig);
+		Mem0ChatMemoryProperties.Client clientConfig = new Mem0ChatMemoryProperties.Client.Builder()
+				.baseUrl("http://localhost:8888").timeoutSeconds(30).build();
+		properties = new Mem0ChatMemoryProperties.Builder().client(clientConfig).build();
 
 		client = new Mem0ServiceClient(properties, resourceLoader);
 	}
@@ -127,8 +125,8 @@ class Mem0ServiceClientTest {
 	@Test
 	void testConfigure() {
 		// Given
-		Mem0ChatMemoryProperties.Server serverConfig = new Mem0ChatMemoryProperties.Server();
-		serverConfig.setVersion("v1.1");
+		Mem0ChatMemoryProperties.Server serverConfig = new Mem0ChatMemoryProperties.Server.Builder()
+				.version("v1.1").build();
 
 		// When & Then - Verify that the configuration object is created correctly
 		assertThat(serverConfig.getVersion()).isEqualTo("v1.1");
