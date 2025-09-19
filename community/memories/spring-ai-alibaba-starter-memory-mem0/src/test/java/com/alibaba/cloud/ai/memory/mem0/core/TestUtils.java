@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.memory.mem0.core;
 
 import com.alibaba.cloud.ai.memory.mem0.advisor.Mem0ChatMemoryAdvisor;
-import com.alibaba.cloud.ai.memory.mem0.config.Mem0ChatMemoryProperties;
 import com.alibaba.cloud.ai.memory.mem0.model.Mem0ServerRequest;
 import com.alibaba.cloud.ai.memory.mem0.model.Mem0ServerResp;
 import org.springframework.ai.chat.messages.Message;
@@ -36,24 +35,14 @@ import java.util.UUID;
  */
 public class TestUtils {
 
-	/**
-	 * Creates test Mem0ChatMemoryProperties for testing
-	 */
-	public static Mem0ChatMemoryProperties createTestProperties() {
-		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties();
+	public static Mem0Client createTestMem0Client() {
+		Mem0Client mem0Client = Mem0Client.builder().baseUrl("http://localhost:8888").timeoutSeconds(30).build();
+		return mem0Client;
+	}
 
-		// Configure client
-		Mem0ChatMemoryProperties.Client client = new Mem0ChatMemoryProperties.Client();
-		client.setBaseUrl("http://localhost:8888");
-		client.setTimeoutSeconds(30);
-		properties.setClient(client);
-
-		// Configure server
-		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server();
-		server.setVersion("v1.1");
-		properties.setServer(server);
-
-		return properties;
+	public static Mem0Server createTestMem0Server() {
+		Mem0Server mem0Server = Mem0Server.builder().version("v1.1").build();
+		return mem0Server;
 	}
 
 	/**
