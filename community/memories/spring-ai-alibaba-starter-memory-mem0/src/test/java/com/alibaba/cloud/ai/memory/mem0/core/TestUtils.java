@@ -40,19 +40,15 @@ public class TestUtils {
 	 * Creates test Mem0ChatMemoryProperties for testing
 	 */
 	public static Mem0ChatMemoryProperties createTestProperties() {
-		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties();
-
 		// Configure client
-		Mem0ChatMemoryProperties.Client client = new Mem0ChatMemoryProperties.Client();
-		client.setBaseUrl("http://localhost:8888");
-		client.setTimeoutSeconds(30);
-		properties.setClient(client);
+		Mem0ChatMemoryProperties.Client client = new Mem0ChatMemoryProperties.Client.Builder().baseUrl("http://localhost:8888")
+		.timeoutSeconds(30).build();
 
 		// Configure server
-		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server();
-		server.setVersion("v1.1");
-		properties.setServer(server);
+		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server.Builder()
+		.version("v1.1").build();
 
+		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties.Builder().client(client).server(server).build();
 		return properties;
 	}
 
