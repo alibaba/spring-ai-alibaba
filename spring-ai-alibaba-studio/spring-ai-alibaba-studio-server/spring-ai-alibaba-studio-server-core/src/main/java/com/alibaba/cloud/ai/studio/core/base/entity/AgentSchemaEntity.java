@@ -22,6 +22,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.Date;
@@ -62,10 +63,12 @@ public class AgentSchemaEntity {
 
 	/** Input keys for the agent */
 	@TableField("input_keys")
+	@JsonProperty("inputKeys")
 	private String inputKeys;
 
 	/** Output key for the agent */
 	@TableField("output_key")
+	@JsonProperty("outputKey")
 	private String outputKey;
 
 	/** Handle configuration in JSON format */
@@ -73,10 +76,12 @@ public class AgentSchemaEntity {
 
 	/** Sub-agents configuration in JSON format */
 	@TableField("sub_agents")
+	@JsonProperty("subAgents")
 	private String subAgents;
 
 	/** Generated YAML schema */
 	@TableField("yaml_schema")
+	@JsonProperty("yamlSchema")
 	private String yamlSchema;
 
 	/** Current status of the agent */

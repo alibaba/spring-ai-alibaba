@@ -171,9 +171,22 @@ const AgentSchemaCreator: React.FC = () => {
     setAgentsLoading(true);
     try {
       const response = await AgentSchemaService.getAgentSchemas();
-      console.log('Fetched agents response:', response); // 调试信息
-      console.log('Response type:', typeof response); // 调试信息
-      console.log('Is Array.isArray(response):', Array.isArray(response)); // 调试信息
+      console.log('=== FETCH SAVED AGENTS DEBUG ===');
+      console.log('Fetched agents response:', response);
+      console.log('Response type:', typeof response);
+      console.log('Is Array.isArray(response):', Array.isArray(response));
+
+      // 调试：检查每个agent的subAgents字段
+      if (Array.isArray(response)) {
+        response.forEach((agent, index) => {
+          console.log(`Agent ${index}:`, {
+            id: agent.id,
+            name: agent.name,
+            subAgents: agent.subAgents,
+            subAgentsType: typeof agent.subAgents
+          });
+        });
+      }
 
       let agents: any[] = [];
 
@@ -184,13 +197,13 @@ const AgentSchemaCreator: React.FC = () => {
         console.log('Response is already an array, length:', agents.length);
       } else if (response && typeof response === 'object') {
         // 检查是否是包装的响应对象
-        if (response.data && Array.isArray(response.data)) {
+        if ((response as any).data && Array.isArray((response as any).data)) {
           // 标准的 Result<T> 格式
-          agents = response.data;
+          agents = (response as any).data;
           console.log('Found data array in Result wrapper, length:', agents.length);
-        } else if (response.records && Array.isArray(response.records)) {
+        } else if ((response as any).records && Array.isArray((response as any).records)) {
           // 分页响应格式
-          agents = response.records;
+          agents = (response as any).records;
           console.log('Found records array in paging response, length:', agents.length);
         } else {
           console.warn('Response is object but no array found in expected fields:', response);
@@ -200,6 +213,19 @@ const AgentSchemaCreator: React.FC = () => {
       }
 
       console.log('Final agents array to set:', agents);
+
+      // 调试：再次检查最终设置的agents
+      agents.forEach((agent, index) => {
+        console.log(`Final Agent ${index}:`, {
+          id: agent.id,
+          name: agent.name,
+          subAgents: agent.subAgents,
+          subAgentsType: typeof agent.subAgents,
+          subAgentsLength: agent.subAgents ? agent.subAgents.length : 0,
+          handle: agent.handle ? agent.handle.substring(0, 100) + '...' : null
+        });
+      });
+
       setSavedAgents(agents);
     } catch (error) {
       message.error('获取智能体列表失败');
@@ -530,9 +556,6 @@ const AgentSchemaCreator: React.FC = () => {
   // 监听表单变化，实时更新 YAML
   useEffect(() => {
     const updateYaml = async () => {
-      // 避免在选择Agent时重复生成YAML，因为handleSelectAgent已经生成过了
-      if (selectedAgentId) return;
-
       const subscription = form.getFieldsValue() as AgentSchemaForm;
       if (subscription.name) {
         const yaml = await generateYaml(subscription);
@@ -544,6 +567,11 @@ const AgentSchemaCreator: React.FC = () => {
 
   // 选择智能体
   const handleSelectAgent = async (agent: IAgentSchema) => {
+    console.log('=== HANDLE SELECT AGENT DEBUG ===');
+    console.log('Selected agent:', agent);
+    console.log('Agent subAgents field:', agent.subAgents);
+    console.log('Agent subAgents type:', typeof agent.subAgents);
+
     setSelectedAgentId(agent.id || null);
 
     // 将后端数据转换为前端表单格式
@@ -551,10 +579,29 @@ const AgentSchemaCreator: React.FC = () => {
 
     // 同步处理subAgents，确保在设置表单值时已经完成转换
     if (agent.subAgents) {
+      console.log('Processing subAgents:', agent.subAgents);
+      console.log('subAgents type:', typeof agent.subAgents);
+
       try {
-        const subAgentsData = JSON.parse(agent.subAgents);
+        let subAgentsData;
+
+        // 检查subAgents是否已经是对象或数组
+        if (typeof agent.subAgents === 'string') {
+          // 如果是JSON字符串，解析它
+          subAgentsData = JSON.parse(agent.subAgents);
+        } else if (Array.isArray(agent.subAgents)) {
+          // 如果已经是数组，直接使用
+          subAgentsData = agent.subAgents;
+        } else {
+          console.warn('Unexpected subAgents format:', agent.subAgents);
+          subAgentsData = [];
+        }
+
+        console.log('Parsed subAgentsData:', subAgentsData);
+
         if (Array.isArray(subAgentsData)) {
           subAgentsNames = subAgentsData.map(subAgent => {
+            console.log('Processing subAgent:', subAgent);
             // 如果是 { agent: { id, name } } 格式，优先使用名称
             if (subAgent.agent) {
               if (subAgent.agent.name) {
@@ -569,9 +616,14 @@ const AgentSchemaCreator: React.FC = () => {
             return subAgent.toString();
           }).filter(name => name && name !== 'undefined' && name !== 'null');
         }
+
+        console.log('Final subAgentsNames:', subAgentsNames);
       } catch (error) {
         console.error('Failed to parse subAgents data:', error);
+        console.error('Raw subAgents value:', agent.subAgents);
       }
+    } else {
+      console.log('No subAgents field in agent data');
     }
 
     // 确保subAgents名称数组有效
@@ -621,15 +673,52 @@ const AgentSchemaCreator: React.FC = () => {
       console.error('Failed to parse handle data:', error);
     }
 
+    // 构建完整的handle配置，确保包含model信息
+    let parsedHandle: any = {};
+    try {
+      parsedHandle = JSON.parse(agent.handle || '{}');
+    } catch (error) {
+      console.error('Failed to parse handle:', error);
+    }
+
+    const completeHandle = {
+      ...parsedHandle,
+      state: parsedHandle.state || {
+        strategies: {
+          input: 'replace',
+          output: 'replace'
+        }
+      },
+      model: {
+        name: modelName,
+        url: parsedHandle.model?.url || 'https://api.example.com/v1',
+        'api-key': parsedHandle.model?.['api-key'] || 'your-api-key'
+      },
+      tools: tools || []
+    };
+
+    // 解析inputKeys字符串
+    let inputKey = 'input';
+    if (agent.inputKeys) {
+      try {
+        const inputKeysArray = JSON.parse(agent.inputKeys);
+        if (Array.isArray(inputKeysArray) && inputKeysArray.length > 0) {
+          inputKey = inputKeysArray[0];
+        }
+      } catch (error) {
+        console.error('Failed to parse inputKeys:', error);
+      }
+    }
+
     const formData = {
       name: agent.name,
       description: agent.description || '',
       agentType: agent.type,
       instruction: agent.instruction,
-      inputKey: agent.inputKeys && agent.inputKeys.length > 0 ? agent.inputKeys[0] : 'input',
+      inputKey: inputKey,
       outputKey: agent.outputKey || 'output',
       model: modelName,
-      handle: JSON.parse(agent.handle || '{}'),
+      handle: completeHandle,
       subAgents: subAgentsNames,
       tools: tools,
     };
@@ -646,11 +735,30 @@ const AgentSchemaCreator: React.FC = () => {
     // 等待表单更新完成后生成YAML，确保subAgents值已正确设置
     setTimeout(async () => {
       try {
-        // 重新获取表单值，确保包含最新的subAgents
+        // 重新获取表单值，确保包含最新的subAgents和完整的handle
         const updatedFormValues = form.getFieldsValue();
         console.log('=== Updated Form Values for YAML ===');
         console.log('Updated form values:', updatedFormValues);
         console.log('Updated subAgents:', updatedFormValues.subAgents);
+        console.log('Updated handle:', updatedFormValues.handle);
+
+        // 确保handle包含完整的model信息
+        if (updatedFormValues.handle && !updatedFormValues.handle.model) {
+          updatedFormValues.handle.model = {
+            name: updatedFormValues.model || modelName,
+            url: 'https://api.example.com/v1',
+            'api-key': 'your-api-key'
+          };
+        }
+
+        // 确保 subAgents 数据存在
+        if (!updatedFormValues.subAgents || updatedFormValues.subAgents.length === 0) {
+          // 如果表单中没有subAgents，但原始数据中有，尝试恢复
+          if (subAgentsNames && subAgentsNames.length > 0) {
+            console.log('Restoring subAgents from parsed data:', subAgentsNames);
+            updatedFormValues.subAgents = subAgentsNames;
+          }
+        }
 
         const yaml = await generateYaml(updatedFormValues as AgentSchemaForm);
         console.log('=== Generated YAML ===');
@@ -841,10 +949,10 @@ const AgentSchemaCreator: React.FC = () => {
         description: values.description,
         type: values.agentType || 'ReactAgent',
         instruction: values.instruction,
-        inputKeys: values.inputKey ? [values.inputKey] : ['input'],
+        inputKeys: JSON.stringify(values.inputKey ? [values.inputKey] : ['input']), // 转换为JSON字符串
         outputKey: values.outputKey || 'output',
         handle: JSON.stringify(updatedHandle),
-        subAgents: values.subAgents ? JSON.stringify(values.subAgents.map((agentName: string) => {
+        subAgents: (values.subAgents && values.subAgents.length > 0) ? JSON.stringify(values.subAgents.map((agentName: string) => {
           // 根据名称查找对应的ID
           const agent = savedAgents.find(sa => sa.name === agentName);
           if (agent && agent.id) {
@@ -863,11 +971,15 @@ const AgentSchemaCreator: React.FC = () => {
               }
             };
           }
-        })) : undefined,
+        })) : null,
         yamlSchema: yaml,
       };
 
       console.log('10. Agent data prepared:', agentData);
+      console.log('10.1. SubAgents check:');
+      console.log('  - values.subAgents:', values.subAgents);
+      console.log('  - values.subAgents length:', values.subAgents ? values.subAgents.length : 'N/A');
+      console.log('  - agentData.subAgents:', agentData.subAgents);
       console.log('11. About to call API...');
       console.log('Base URL:', process.env.WEB_SERVER);
       console.log('Full API URL:', `${process.env.WEB_SERVER}/console/v1/agent-schemas`);
@@ -878,6 +990,7 @@ const AgentSchemaCreator: React.FC = () => {
 
       if (selectedAgentId) {
         console.log('12. Updating existing agent, ID:', selectedAgentId);
+        console.log('12.1. Agent data:', agentData);
         const updatedAgent = await AgentSchemaService.updateAgentSchema(selectedAgentId, agentData);
         console.log('13. Agent updated successfully:', updatedAgent);
         message.success('Agent Schema 更新成功！');

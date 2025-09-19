@@ -45,7 +45,18 @@ public class AgentSchemaController {
 	 */
 	@PostMapping
 	public Result<AgentSchemaEntity> createAgentSchema(@RequestBody AgentSchemaEntity agentSchemaEntity) {
+		// 调试日志：检查接收到的数据
+		System.out.println("=== CREATE AGENT SCHEMA DEBUG ===");
+		System.out.println("Received agent name: " + agentSchemaEntity.getName());
+		System.out.println("Received subAgents: " + agentSchemaEntity.getSubAgents());
+		System.out.println("Received handle: " + agentSchemaEntity.getHandle());
+		
 		AgentSchemaEntity created = agentSchemaService.createAgentSchema(agentSchemaEntity);
+		
+		// 调试日志：检查创建后的数据
+		System.out.println("Created subAgents: " + created.getSubAgents());
+		System.out.println("=== CREATE AGENT SCHEMA END ===");
+		
 		return Result.success(created);
 	}
 
@@ -56,8 +67,20 @@ public class AgentSchemaController {
 	public Result<AgentSchemaEntity> updateAgentSchema(
 			@PathVariable Long id,
 			@RequestBody AgentSchemaEntity agentSchemaEntity) {
+		// 调试日志：检查接收到的数据
+		System.out.println("=== UPDATE AGENT SCHEMA DEBUG ===");
+		System.out.println("Received agent ID: " + id);
+		System.out.println("Received agent name: " + agentSchemaEntity.getName());
+		System.out.println("Received subAgents: " + agentSchemaEntity.getSubAgents());
+		System.out.println("Received handle: " + agentSchemaEntity.getHandle());
+		
 		agentSchemaEntity.setId(id);
 		AgentSchemaEntity updated = agentSchemaService.updateAgentSchema(agentSchemaEntity);
+		
+		// 调试日志：检查更新后的数据
+		System.out.println("Updated subAgents: " + updated.getSubAgents());
+		System.out.println("=== UPDATE AGENT SCHEMA END ===");
+		
 		return Result.success(updated);
 	}
 
