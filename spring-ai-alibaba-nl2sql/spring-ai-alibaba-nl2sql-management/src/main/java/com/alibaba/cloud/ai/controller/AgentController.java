@@ -72,7 +72,7 @@ public class AgentController {
 	/**
 	 * Create agent
 	 */
-	@PostMapping("/create")
+	@PostMapping
 	public ResponseEntity<Agent> create(@RequestBody Agent agent) {
 		// Set default status
 		if (agent.getStatus() == null || agent.getStatus().trim().isEmpty()) {
