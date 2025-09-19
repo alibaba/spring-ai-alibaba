@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -50,7 +51,7 @@ public class FileUploadController {
     /**
      * 上传头像图片
      */
-    @PostMapping("/avatar")
+    @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadResponse> uploadAvatar(@RequestParam("file") MultipartFile file) {
         try {
 
@@ -63,6 +64,12 @@ public class FileUploadController {
             Path uploadDir = Paths.get(fileUploadProperties.getPath(), "avatars");
             if (!Files.exists(uploadDir)) {
                 Files.createDirectories(uploadDir);
+            }
+
+            // 校验文件大小
+            long maxImageSize = fileUploadProperties.getImageSize();
+            if (file.getSize() > maxImageSize) {
+                return ResponseEntity.badRequest().body(UploadResponse.error("图片大小超限，最大允许：" + maxImageSize + " 字节"));
             }
 
             String originalFilename = file.getOriginalFilename();

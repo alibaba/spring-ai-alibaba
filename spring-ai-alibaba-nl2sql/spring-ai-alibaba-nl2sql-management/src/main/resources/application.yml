@@ -54,6 +54,11 @@ spring:
         code-executor:
           # 运行Python代码的环境（生产环境建议使用docker，不建议使用local）
           code-pool-executor: local
+        file:
+          upload:
+            path: ./uploads
+            url-prefix: /uploads
+            imageSize: 2097152
   servlet:
     multipart:
       max-file-size: 10MB
@@ -100,12 +105,6 @@ mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   # 实体扫描，多个package用逗号或者分号分隔
   type-aliases-package: com.alibaba.cloud.ai.entity
-
-# 文件上传配置
-file:
-  upload:
-    path: ./uploads
-    url-prefix: /uploads
 
 # 日志配置
 logging:

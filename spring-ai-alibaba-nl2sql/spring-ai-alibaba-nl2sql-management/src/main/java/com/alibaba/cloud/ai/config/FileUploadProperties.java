@@ -20,7 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * 文件上传相关配置属性。
  */
-@ConfigurationProperties(prefix = "file.upload")
+@ConfigurationProperties(prefix = "spring.ai.alibaba.nl2sql.file.upload")
 public class FileUploadProperties {
 
     /**
@@ -32,6 +32,11 @@ public class FileUploadProperties {
      * 对外暴露的访问前缀。
      */
     private String urlPrefix = "/uploads";
+
+    /**
+     * 头像图片大小上限（字节）。默认 2MB。
+     */
+    private long imageSize = 2L * 1024 * 1024;
 
     public String getPath() {
         return path;
@@ -47,6 +52,14 @@ public class FileUploadProperties {
 
     public void setUrlPrefix(String urlPrefix) {
         this.urlPrefix = urlPrefix;
+    }
+
+    public long getImageSize() {
+        return imageSize;
+    }
+
+    public void setImageSize(long imageSize) {
+        this.imageSize = imageSize;
     }
 }
 
