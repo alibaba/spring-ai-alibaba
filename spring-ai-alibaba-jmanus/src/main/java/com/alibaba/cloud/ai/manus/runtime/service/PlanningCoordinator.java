@@ -148,10 +148,11 @@ public class PlanningCoordinator {
 	 * @param parentPlanId The ID of the parent plan (can be null for root plans)
 	 * @param currentPlanId The current plan ID for execution
 	 * @param toolcallId The ID of the tool call that triggered this plan execution
+	 * @param isVueRequest Flag indicating whether this is a Vue frontend request
 	 * @return A CompletableFuture that completes with the execution result
 	 */
 	public CompletableFuture<PlanExecutionResult> executeByPlan(PlanInterface plan, String rootPlanId,
-			String parentPlanId, String currentPlanId, String toolcallId) {
+			String parentPlanId, String currentPlanId, String toolcallId, boolean isVueRequest) {
 		try {
 			log.info("Starting direct plan execution for plan: {}", plan.getCurrentPlanId());
 
@@ -180,6 +181,7 @@ public class PlanningCoordinator {
 			context.setUseMemory(true);
 			context.setParentPlanId(parentPlanId);
 			context.setToolCallId(toolcallId);
+			context.setVueRequest(isVueRequest);
 
 			// Log toolcallId if provided
 			if (toolcallId != null) {

@@ -206,7 +206,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		logger.info("Execute tool '{}' synchronously with plan template ID '{}', parameters: {}", toolName,
 				planTemplateId, allParams);
 		// Execute synchronously and return result directly
-		return executePlanSyncAndBuildResponse(planTemplateId, null);
+		return executePlanSyncAndBuildResponse(planTemplateId, null, null, false);
 	}
 
 	/**
@@ -261,7 +261,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 			// Execute the plan template using the new unified method
 			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, uploadedFiles, memoryId,
-					replacementParams);
+					replacementParams, isVueRequest);
 
 			// Start the async execution (fire and forget)
 			wrapper.getResult().whenComplete((result, throwable) -> {
@@ -348,7 +348,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 				toolName, planTemplateId, uploadedFiles != null ? uploadedFiles.size() : "null",
 				replacementParams != null ? replacementParams.size() : "null");
 
-		return executePlanSyncAndBuildResponse(planTemplateId, uploadedFiles, replacementParams);
+		return executePlanSyncAndBuildResponse(planTemplateId, uploadedFiles, replacementParams, isVueRequest);
 	}
 
 	/**
@@ -467,7 +467,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	 */
 	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId,
 			List<Map<String, Object>> uploadedFiles) {
-		return executePlanSyncAndBuildResponse(planTemplateId, uploadedFiles, null);
+		return executePlanSyncAndBuildResponse(planTemplateId, uploadedFiles, null, false);
 	}
 
 	/**
@@ -475,13 +475,14 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	 * @param planTemplateId The plan template ID to execute
 	 * @param uploadedFiles List of uploaded files (can be null)
 	 * @param replacementParams Parameters for <<>> replacement (can be null)
+	 * @param isVueRequest Flag indicating whether this is a Vue frontend request
 	 * @return ResponseEntity with execution result
 	 */
 	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId,
-			List<Map<String, Object>> uploadedFiles, Map<String, Object> replacementParams) {
+			List<Map<String, Object>> uploadedFiles, Map<String, Object> replacementParams, boolean isVueRequest) {
 		try {
 			// Execute the plan template using the new unified method
-			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, uploadedFiles, null, replacementParams);
+			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, uploadedFiles, null, replacementParams, isVueRequest);
 			PlanExecutionResult planExecutionResult = wrapper.getResult().get();
 
 			// Return success with execution result
@@ -507,10 +508,11 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 	 * @param uploadedFiles List of uploaded files (can be null)
 	 * @param memoryId Memory ID for the execution (can be null)
 	 * @param replacementParams Parameters for <<>> replacement (can be null)
+	 * @param isVueRequest Flag indicating whether this is a Vue frontend request
 	 * @return PlanExecutionWrapper containing both PlanExecutionResult and rootPlanId
 	 */
 	private PlanExecutionWrapper executePlanTemplate(String planTemplateId, List<Map<String, Object>> uploadedFiles,
-			String memoryId, Map<String, Object> replacementParams) {
+			String memoryId, Map<String, Object> replacementParams, boolean isVueRequest) {
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			logger.error("Plan template ID is null or empty");
 			throw new IllegalArgumentException("Plan template ID cannot be null or empty");
@@ -572,7 +574,7 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 
 			// Execute using the PlanningCoordinator
 			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByPlan(plan, rootPlanId, null,
-					currentPlanId, null);
+					currentPlanId, null, isVueRequest);
 
 			// Return the wrapper containing both the future and rootPlanId
 			return new PlanExecutionWrapper(future, rootPlanId);

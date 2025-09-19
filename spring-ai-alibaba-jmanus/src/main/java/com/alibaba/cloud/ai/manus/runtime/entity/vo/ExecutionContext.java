@@ -83,6 +83,11 @@ public class ExecutionContext {
 	private String memoryId;
 
 	/**
+	 * Flag indicating whether this is a Vue frontend request
+	 */
+	private boolean isVueRequest = false;
+
+	/**
 	 * Get plan ID
 	 * @return Unique identifier of the plan
 	 */
@@ -265,6 +270,22 @@ public class ExecutionContext {
 
 	public void setPlanDepth(int planDepth) {
 		this.planDepth = planDepth;
+	}
+
+	/**
+	 * Check if this is a Vue frontend request
+	 * @return Returns true if this is a Vue request, otherwise false
+	 */
+	public boolean isVueRequest() {
+		return isVueRequest;
+	}
+
+	/**
+	 * Set whether this is a Vue frontend request
+	 * @param isVueRequest Flag indicating whether this is a Vue request
+	 */
+	public void setVueRequest(boolean isVueRequest) {
+		this.isVueRequest = isVueRequest;
 	}
 
 }
