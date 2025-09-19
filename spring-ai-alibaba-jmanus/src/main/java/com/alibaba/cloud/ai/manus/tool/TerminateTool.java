@@ -44,11 +44,73 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 	}
 
 	private static String generateMessageField(String expectedReturnInfo) {
-		return """
-				"message": {
-				  "type": "string",
-				  "description": "Comprehensive termination message that should include all relevant facts, viewpoints, details, and conclusions from the execution step. This message should provide a complete summary of what was accomplished, any important observations, key findings, and final outcomes. The message must explicitly mention and describe the data corresponding to the expected return information: %s"
-				}""".formatted(expectedReturnInfo != null ? expectedReturnInfo : "N/A");
+		// Check if expectedReturnInfo is not null and not empty
+		if (expectedReturnInfo != null && !expectedReturnInfo.trim().isEmpty()) {
+			// Generate JSON list structure for specific return info
+			// Support both English comma (,) and Chinese comma (，) as separators
+			String[] columns = expectedReturnInfo.split("[,，]");
+			String exampleJson = generateExampleJson(columns);
+			
+			return String.format("""
+					"message": {
+					  "type": "array",
+					  "items": {
+					    "type": "object",
+					    "properties": {
+					      %s
+					    }
+					  },
+					  "description": "Comprehensive termination message that should include all relevant facts, viewpoints, details, and conclusions from the execution step. This message should provide a complete summary of what was accomplished, any important observations, key findings, and final outcomes. The message must be returned as a JSON array containing objects with the following columns: %s. Example format: %s"
+					}""", 
+					generateColumnProperties(columns),
+					expectedReturnInfo,
+					exampleJson);
+		} else {
+			// Default string type for empty or null expectedReturnInfo
+			return """
+					"message": {
+					  "type": "string",
+					  "description": "Comprehensive termination message that should include all relevant facts, viewpoints, details, and conclusions from the execution step. This message should provide a complete summary of what was accomplished, any important observations, key findings, and final outcomes."
+					}""";
+		}
+	}
+	
+	private static String generateExampleJson(String[] columns) {
+		StringBuilder exampleJson = new StringBuilder();
+		exampleJson.append("[");
+		
+		// Generate example structure with sample data
+		for (int i = 0; i < 2; i++) {
+			exampleJson.append("{");
+			for (int j = 0; j < columns.length; j++) {
+				String column = columns[j].trim();
+				exampleJson.append("\\\"").append(column).append("\\\":\\\"sample_row").append(i + 1).append("_").append(column).append("\\\"");
+				if (j < columns.length - 1) {
+					exampleJson.append(",");
+				}
+			}
+			exampleJson.append("}");
+			if (i < 1) {
+				exampleJson.append(",");
+			}
+		}
+		exampleJson.append("]");
+		return exampleJson.toString();
+	}
+	
+	private static String generateColumnProperties(String[] columns) {
+		StringBuilder properties = new StringBuilder();
+		for (int i = 0; i < columns.length; i++) {
+			String column = columns[i].trim();
+			properties.append("\"").append(column).append("\":{");
+			properties.append("\"type\":\"string\",");
+			properties.append("\"description\":\"Value for column ").append(column).append("\"");
+			properties.append("}");
+			if (i < columns.length - 1) {
+				properties.append(",");
+			}
+		}
+		return properties.toString();
 	}
 
 	private static String generateParametersJson(String expectedReturnInfo) {
@@ -102,6 +164,7 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 		return String.format(template, messageField);
 	}
 
+
 	@Override
 	public String getCurrentToolStateString() {
 		return String.format("""
@@ -122,8 +185,7 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 	public TerminateTool(String planId, String expectedReturnInfo) {
 		this.currentPlanId = planId;
 		// If expectedReturnInfo is null or empty, use "message" as default
-		this.expectedReturnInfo = (expectedReturnInfo == null || expectedReturnInfo.isEmpty()) ? "message"
-				: expectedReturnInfo;
+		this.expectedReturnInfo = expectedReturnInfo;
 	}
 
 	@Override

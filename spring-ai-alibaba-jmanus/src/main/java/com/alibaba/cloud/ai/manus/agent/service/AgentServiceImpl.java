@@ -229,7 +229,7 @@ public class AgentServiceImpl implements AgentService {
 	public List<Tool> getAvailableTools() {
 
 		String uuid = UUID.randomUUID().toString();
-		String expectedReturnInfo = "dummyColumn1, dummyColumn2";
+		String expectedReturnInfo = null;
 		try {
 			Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(uuid, uuid,
 					expectedReturnInfo);
