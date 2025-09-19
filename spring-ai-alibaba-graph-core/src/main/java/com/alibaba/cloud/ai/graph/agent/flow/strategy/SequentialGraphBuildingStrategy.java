@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
@@ -44,8 +45,7 @@ public class SequentialGraphBuildingStrategy implements FlowGraphBuildingStrateg
 		BaseAgent rootAgent = config.getRootAgent();
 
 		// Add root transparent node
-		graph.addNode(rootAgent.name(),
-				node_async(new TransparentNode(rootAgent.outputKey(), ((FlowAgent) rootAgent).inputKeys())));
+		graph.addNode(rootAgent.name(), node_async(new TransparentNode()));
 
 		// Add starting edge
 		graph.addEdge(START, rootAgent.name());
@@ -58,9 +58,9 @@ public class SequentialGraphBuildingStrategy implements FlowGraphBuildingStrateg
 				graph.addNode(subAgent.name(), subAgent.asStateGraph());
 			} else {
 				if (subAgent instanceof ReactAgent subReactAgent) {
-					graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(subReactAgent.isIncludeContents(), subAgent.outputKey()));
-				} else { // a2a remote agent
-					graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(true, subAgent.outputKey()));
+					graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(subReactAgent.isIncludeContents(), subReactAgent.getOutputKey()));
+				} else if (subAgent instanceof A2aRemoteAgent remoteAgent) { // a2a remote agent
+					graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(true, remoteAgent.getOutputKey()));
 				}
 			}
 			graph.addEdge(currentAgent.name(), subAgent.name());

@@ -20,6 +20,8 @@ import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
@@ -47,8 +49,7 @@ public class RoutingGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 		BaseAgent rootAgent = config.getRootAgent();
 
 		// Add root transparent node
-		graph.addNode(rootAgent.name(),
-				node_async(new TransparentNode(rootAgent.outputKey(), ((FlowAgent) rootAgent).inputKeys())));
+		graph.addNode(rootAgent.name(), node_async(new TransparentNode()));
 
 		// Add starting edge
 		graph.addEdge(START, rootAgent.name());
@@ -57,7 +58,11 @@ public class RoutingGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 		Map<String, String> edgeRoutingMap = new HashMap<>();
 		for (BaseAgent subAgent : config.getSubAgents()) {
 			// Add the current sub-agent as a node
-			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(true, subAgent.outputKey()));
+			if (subAgent instanceof ReactAgent subReactAgent) {
+				graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(true, subReactAgent.getOutputKey()));
+			} else if (subAgent instanceof A2aRemoteAgent remoteAgent) {
+				graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(true, remoteAgent.getOutputKey()));
+			}
 			edgeRoutingMap.put(subAgent.name(), subAgent.name());
 
 			// Connect sub-agents to END (unless they are FlowAgents with their own

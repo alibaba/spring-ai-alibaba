@@ -38,7 +38,7 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 		sb.append("You are responsible for task routing in a graph-based AI system.\n");
 
 		if (current instanceof ReactAgent reactAgent) {
-			sb.append("The instruction that you should follow is to finish this task is: ");
+			sb.append("The instruction that you should follow to finish this task is: ");
 			sb.append(StringUtils.isEmpty(reactAgent.instruction()) ? reactAgent.description()
 					: reactAgent.instruction());
 		}
@@ -64,7 +64,7 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 				"For example, if you want to delegate the task to the agent named 'agent1', you should return 'agent1'.");
 
 		this.chatClient = ChatClient.builder(chatModel).defaultSystem(sb.toString()).build();
-		this.taskKey = current.outputKey();
+		this.taskKey = "FIXME";
 	}
 
 	@Override

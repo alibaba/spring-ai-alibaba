@@ -48,15 +48,21 @@ public class A2aRemoteAgent extends BaseAgent {
 
 	private boolean streaming;
 
+	protected String outputKey;
+
+	protected KeyStrategy outputKeyStrategy;
+
 	Logger logger = Logger.getLogger(A2aRemoteAgent.class.getName());
 
 	// Private constructor for Builder pattern
 	private A2aRemoteAgent(A2aNode a2aNode, Builder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.outputKey);
+		super(builder.name, builder.description);
 		this.agentCard = builder.agentCard;
 		this.keyStrategyFactory = builder.keyStrategyFactory;
 		this.compileConfig = builder.compileConfig;
 		this.inputKey = builder.inputKey;
+		this.outputKey = builder.outputKey;
+		this.outputKeyStrategy = builder.outputKeyStrategy;
 		this.streaming = builder.streaming;
 		this.a2aNode = a2aNode;
 	}
@@ -101,21 +107,27 @@ public class A2aRemoteAgent extends BaseAgent {
 		return this.compiledGraph;
 	}
 
-	public CompiledGraph getAndCompileGraph() throws GraphStateException {
-		if (this.compileConfig == null) {
-			this.compiledGraph = getStateGraph().compile();
-		}
-		else {
-			this.compiledGraph = getStateGraph().compile(this.compileConfig);
-		}
-		return this.compiledGraph;
-	}
-
 	public NodeAction asNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
 		return new SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph);
+	}
+
+	public String getOutputKey() {
+		return outputKey;
+	}
+
+	public void setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
+	}
+
+	public KeyStrategy getOutputKeyStrategy() {
+		return outputKeyStrategy;
+	}
+
+	public void setOutputKeyStrategy(KeyStrategy outputKeyStrategy) {
+		this.outputKeyStrategy = outputKeyStrategy;
 	}
 
 	public static Builder builder() {
@@ -130,6 +142,8 @@ public class A2aRemoteAgent extends BaseAgent {
 		private String description;
 
 		private String outputKey = "output";
+
+		private KeyStrategy outputKeyStrategy;
 
 		// A2aRemoteAgent specific properties
 		private AgentCard agentCard;
@@ -154,6 +168,11 @@ public class A2aRemoteAgent extends BaseAgent {
 
 		public Builder outputKey(String outputKey) {
 			this.outputKey = outputKey;
+			return this;
+		}
+
+		public Builder outputKeyStrategy(KeyStrategy outputKeyStrategy) {
+			this.outputKeyStrategy = outputKeyStrategy;
 			return this;
 		}
 

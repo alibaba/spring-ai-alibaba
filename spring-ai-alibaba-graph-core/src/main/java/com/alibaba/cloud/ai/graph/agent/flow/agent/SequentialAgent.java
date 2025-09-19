@@ -24,9 +24,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 public class SequentialAgent extends FlowAgent {
 
 	protected SequentialAgent(SequentialAgentBuilder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.outputKey, builder.inputKeys,
-			  builder.inputKeysWithStrategy, builder.outputKeyWithStrategy,
-			  builder.keyStrategyFactory, builder.compileConfig, builder.subAgents);
+		super(builder.name, builder.description, builder.keyStrategyFactory, builder.compileConfig, builder.subAgents);
 	}
 
 	public static SequentialAgentBuilder builder() {

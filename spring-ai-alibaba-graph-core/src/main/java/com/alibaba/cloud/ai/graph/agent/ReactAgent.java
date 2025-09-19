@@ -17,10 +17,12 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -84,10 +86,15 @@ public class ReactAgent extends BaseAgent {
 
 	protected boolean includeContents;
 
+	/** The output key for the agent's result */
+	protected String outputKey;
+
+	protected KeyStrategy outputKeyStrategy;
+
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
 	protected ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.outputKey);
+		super(builder.name, builder.description);
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
@@ -98,7 +105,8 @@ public class ReactAgent extends BaseAgent {
 		this.postLlmHook = builder.postLlmHook;
 		this.preToolHook = builder.preToolHook;
 		this.postToolHook = builder.postToolHook;
-		this.outputKeyWithStrategy = builder.outputKeyWithStrategy;
+		this.outputKey = builder.outputKey;
+		this.outputKeyStrategy = builder.outputKeyStrategy;
 		this.includeContents = builder.includeContents;
 	}
 
@@ -160,7 +168,7 @@ public class ReactAgent extends BaseAgent {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return node_async(new SubAgentGraphNodeAdapter(includeContents, outputKeyToParent, this.compiledGraph));
+		return node_async(new SubGraphNodeAdapter(includeContents, outputKeyToParent, this.compiledGraph));
 	}
 
 	@Override
@@ -330,6 +338,22 @@ public class ReactAgent extends BaseAgent {
 		this.includeContents = includeContents;
 	}
 
+	public String getOutputKey() {
+		return outputKey;
+	}
+
+	public void setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
+	}
+
+	public KeyStrategy getOutputKeyStrategy() {
+		return outputKeyStrategy;
+	}
+
+	public void setOutputKeyStrategy(KeyStrategy outputKeyStrategy) {
+		this.outputKeyStrategy = outputKeyStrategy;
+	}
+
 	public static class Builder {
 
 		private String name;
@@ -337,10 +361,6 @@ public class ReactAgent extends BaseAgent {
 		private String description;
 
 		private String instruction;
-
-		private String outputKey;
-
-		private KeyStrategyFactory outputKeyWithStrategy;
 
 		private ChatModel model;
 
@@ -369,6 +389,10 @@ public class ReactAgent extends BaseAgent {
 		private NodeAction postToolHook;
 
 		private boolean includeContents = true;
+
+		protected String outputKey;
+
+		protected KeyStrategy outputKeyStrategy;
 
 		private String inputKey = "messages";
 
@@ -437,8 +461,8 @@ public class ReactAgent extends BaseAgent {
 			return this;
 		}
 
-		public Builder outputKeyWithStrategy(KeyStrategyFactory outputKeyWithStrategy) {
-			this.outputKeyWithStrategy = outputKeyWithStrategy;
+		public Builder outputKeyStrategy(KeyStrategy outputKeyStrategy) {
+			this.outputKeyStrategy = outputKeyStrategy;
 			return this;
 		}
 
@@ -509,4 +533,42 @@ public class ReactAgent extends BaseAgent {
 
 	}
 
+	public static class SubGraphNodeAdapter implements NodeAction {
+
+		private boolean includeContents;
+
+		private String outputKeyToParent;
+
+		private CompiledGraph childGraph;
+
+		public SubGraphNodeAdapter(boolean includeContents, String outputKeyToParent,
+				CompiledGraph childGraph) {
+			this.includeContents = includeContents;
+			this.outputKeyToParent = outputKeyToParent;
+			this.childGraph = childGraph;
+		}
+
+		@Override
+		public Map<String, Object> apply(OverAllState parentState) throws Exception {
+			Flux<GraphResponse<NodeOutput>> subGraphFlux;
+			Object parentMessages = null;
+			if (includeContents) {
+				// by default, includeContents is true, we pass down the messages from the parent state
+				subGraphFlux = childGraph.fluxDataStream(parentState, RunnableConfig.builder().build());
+			} else {
+				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
+				parentMessages = stateForChild.remove("messages");
+				// use the instruction directly, without any user message or parent messages.
+				subGraphFlux = childGraph.fluxDataStream(stateForChild, RunnableConfig.builder().build());
+			}
+
+			Map<String, Object> result = new HashMap<>();
+			result.put(outputKeyToParent, subGraphFlux);
+			if (parentMessages != null) {
+				result.put("messages", parentMessages);
+			}
+			return result;
+		}
+
+	}
 }

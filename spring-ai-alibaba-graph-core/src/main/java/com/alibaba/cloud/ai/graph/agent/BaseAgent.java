@@ -21,6 +21,7 @@ import java.util.Optional;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -50,11 +51,6 @@ public abstract class BaseAgent {
 	 */
 	protected String description;
 
-	/** The output key for the agent's result */
-	protected String outputKey;
-
-	protected KeyStrategyFactory outputKeyWithStrategy;
-
 	protected CompileConfig compileConfig;
 
 	protected volatile CompiledGraph compiledGraph;
@@ -65,12 +61,10 @@ public abstract class BaseAgent {
 	 * Protected constructor for initializing all base agent properties.
 	 * @param name the unique name of the agent
 	 * @param description the description of the agent's capability
-	 * @param outputKey the output key for the agent's result
 	 */
-	protected BaseAgent(String name, String description, String outputKey) throws GraphStateException {
+	protected BaseAgent(String name, String description) throws GraphStateException {
 		this.name = name;
 		this.description = description;
-		this.outputKey = outputKey;
 	}
 
 	/**
@@ -95,22 +89,6 @@ public abstract class BaseAgent {
 	 */
 	public String description() {
 		return description;
-	}
-
-	/**
-	 * Gets the output key for the agent's result.
-	 * @return the output key.
-	 */
-	public String outputKey() {
-		return outputKey;
-	}
-
-	/**
-	 * Gets the output key with strategy factory for the agent's result.
-	 * @return the output key with strategy factory.
-	 */
-	public KeyStrategyFactory outputKeyWithStrategy() {
-		return outputKeyWithStrategy;
 	}
 
 	public StateGraph getGraph() {

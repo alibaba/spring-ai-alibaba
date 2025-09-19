@@ -26,44 +26,11 @@ import org.springframework.util.StringUtils;
 
 public class TransparentNode implements NodeAction {
 
-	private final List<String> inputKeys;
-
-	private final String outputKey;
-
-	public TransparentNode(String outputKey, List<String> inputKeys) {
-		this.inputKeys = inputKeys;
-		this.outputKey = outputKey;
+	public TransparentNode() {
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		return Map.of();
 	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
-
-		private String outputKey;
-
-		private List<String> inputKeys;
-
-		public TransparentNode build() {
-			return new TransparentNode(outputKey, inputKeys);
-		}
-
-		public Builder outputKey(String outputKey) {
-			this.outputKey = outputKey;
-			return this;
-		}
-
-		public Builder inputKey(List<String> inputKeys) {
-			this.inputKeys = inputKeys;
-			return this;
-		}
-
-	}
-
 }

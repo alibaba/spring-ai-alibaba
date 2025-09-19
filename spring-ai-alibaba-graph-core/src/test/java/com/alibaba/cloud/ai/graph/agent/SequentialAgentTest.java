@@ -157,7 +157,7 @@ class SequentialAgentTest {
 
 //			blogAgent_child1.invoke(Map.of("input", "帮我写一个100字左右的散文"));
 
-			Optional<OverAllState> result = blogAgentParent.invoke(Map.of("input", "帮我写一个100字左右的散文"));
+			Optional<OverAllState> result = blogAgentParent.invoke(Map.of("messages", "帮我写一个100字左右的散文"));
 			System.out.println(result.get());
 		}
 		catch (java.util.concurrent.CompletionException e) {
@@ -215,7 +215,7 @@ class SequentialAgentTest {
 				.includeContents(false) // 不包含上下文内容，专注于当前文章的审核
 				.instruction("")
 				.instruction("""
-					你是一个排版专家，负责检查错别字、语法等问题。
+					你是一个排版专家，负责检查错别字、语法等问题，最终输出修改后的文档原文，输出不要包含无关信息。
 			
 					以下是文档原文：
 					{reviewed_article}
@@ -229,7 +229,7 @@ class SequentialAgentTest {
 				.description("可以对文章内容进行合规性审查。")
 				.includeContents(false) // 不包含上下文内容，专注于当前文章的审核
 				.instruction("""
-					你是一个合规审查专员，审查文章中是否有违法或者不合规的内容，如果有的话需要进行改进。
+					你是一个合规审查专员，审查文章中是否有违法或者不合规的内容，如果有的话需要进行改进。最终输出修改后的文档原文，输出不要包含无关信息。
 			
 					以下是文档原文：
 					{reviewed_article}

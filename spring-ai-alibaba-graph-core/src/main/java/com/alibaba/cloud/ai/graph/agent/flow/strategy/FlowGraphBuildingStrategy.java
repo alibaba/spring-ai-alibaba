@@ -86,95 +86,56 @@ public interface FlowGraphBuildingStrategy {
 	default KeyStrategyFactory generateKeyStrategyFactory(FlowGraphBuilder.FlowGraphConfig config) {
 		return () -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-
 			KeyStrategy defaultStrategy = new ReplaceStrategy();
-			// Process root agent
-			BaseAgent rootAgent = config.getRootAgent();
-			if (rootAgent != null) {
-				// Add root agent's inputKeys if it's a FlowAgent
-				if (rootAgent instanceof FlowAgent flowAgent) {
-					if (flowAgent.inputKeys() != null) {
-						for (String inputKey : flowAgent.inputKeys()) {
-							if (inputKey != null) {
-								keyStrategyMap.put(inputKey, defaultStrategy);
-							}
-						}
-					}
-
-					// Merge inputKeysWithStrategy if present
-					if (flowAgent.inputKeysWithStrategy() != null) {
-						Map<String, KeyStrategy> inputKeyStrategies = flowAgent.inputKeysWithStrategy().apply();
-						if (inputKeyStrategies != null) {
-							keyStrategyMap.putAll(inputKeyStrategies);
-						}
-					}
-				}
-
-				// Add root agent's outputKey
-				if (rootAgent.outputKey() != null) {
-					keyStrategyMap.put(rootAgent.outputKey(), defaultStrategy);
-				}
-
-				// Merge outputKeyWithStrategy if present
-				if (rootAgent.outputKeyWithStrategy() != null) {
-					Map<String, KeyStrategy> outputKeyStrategies = rootAgent.outputKeyWithStrategy().apply();
-					if (outputKeyStrategies != null) {
-						keyStrategyMap.putAll(outputKeyStrategies);
-					}
-				}
-			}
 
 			// Process sub-agents
 			if (config.getSubAgents() != null) {
 				for (BaseAgent subAgent : config.getSubAgents()) {
-					if (subAgent instanceof ReactAgent) {
-						// ReactAgent: only handle outputKey
-						if (subAgent.outputKey() != null) {
-							keyStrategyMap.put(subAgent.outputKey(), defaultStrategy);
-						}
-
-						// Merge outputKeyWithStrategy if present
-						if (subAgent.outputKeyWithStrategy() != null) {
-							Map<String, KeyStrategy> outputKeyStrategies = subAgent.outputKeyWithStrategy().apply();
-							if (outputKeyStrategies != null) {
-								keyStrategyMap.putAll(outputKeyStrategies);
-							}
-						}
-					} else if (subAgent instanceof FlowAgent flowAgent) {
-						// FlowAgent: handle both inputKeys and outputKey
-						if (flowAgent.inputKeys() != null) {
-							for (String inputKey : flowAgent.inputKeys()) {
-								if (inputKey != null) {
-									keyStrategyMap.put(inputKey, defaultStrategy);
-								}
-							}
-						}
-
-						// Merge inputKeysWithStrategy if present
-						if (flowAgent.inputKeysWithStrategy() != null) {
-							Map<String, KeyStrategy> inputKeyStrategies = flowAgent.inputKeysWithStrategy().apply();
-							if (inputKeyStrategies != null) {
-								keyStrategyMap.putAll(inputKeyStrategies);
-							}
-						}
-
-						if (flowAgent.outputKey() != null) {
-							keyStrategyMap.put(flowAgent.outputKey(), defaultStrategy);
-						}
-
-						// Merge outputKeyWithStrategy if present
-						if (flowAgent.outputKeyWithStrategy() != null) {
-							Map<String, KeyStrategy> outputKeyStrategies = flowAgent.outputKeyWithStrategy().apply();
-							if (outputKeyStrategies != null) {
-								keyStrategyMap.putAll(outputKeyStrategies);
-							}
-						}
-					}
+					processAgentKeyStrategies(subAgent, keyStrategyMap, defaultStrategy);
 				}
 			}
 
+			keyStrategyMap.put("messages", new AppendStrategy());
+
 			return keyStrategyMap;
 		};
+	}
+
+	/**
+	 * Recursively processes key strategies for an agent and its sub-agents.
+	 * @param agent the agent to process
+	 * @param keyStrategyMap the map to populate with key strategies
+	 * @param defaultStrategy the default strategy to use when none is specified
+	 */
+	default void processAgentKeyStrategies(BaseAgent agent, Map<String, KeyStrategy> keyStrategyMap, KeyStrategy defaultStrategy) {
+		if (agent instanceof ReactAgent reactAgent) {
+			// ReactAgent: only handle outputKey
+			processOutputKey(reactAgent.getOutputKey(), reactAgent.getOutputKeyStrategy(), keyStrategyMap, defaultStrategy);
+		} else if (agent instanceof FlowAgent flowAgent) {
+			// FlowAgent: recursively process sub-agents
+			if (flowAgent.subAgents() != null) {
+				for (BaseAgent subAgent : flowAgent.subAgents()) {
+					processAgentKeyStrategies(subAgent, keyStrategyMap, defaultStrategy);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Processes output key and strategy for an agent.
+	 * @param outputKey the output key to process
+	 * @param outputKeyStrategy the strategy for the output key
+	 * @param keyStrategyMap the map to populate
+	 * @param defaultStrategy the default strategy to use when none is specified
+	 */
+	default void processOutputKey(String outputKey, KeyStrategy outputKeyStrategy, Map<String, KeyStrategy> keyStrategyMap, KeyStrategy defaultStrategy) {
+		if (outputKey != null) {
+			if (outputKeyStrategy != null) {
+				keyStrategyMap.put(outputKey, outputKeyStrategy);
+			} else {
+				keyStrategyMap.put(outputKey, defaultStrategy);
+			}
+		}
 	}
 
 }

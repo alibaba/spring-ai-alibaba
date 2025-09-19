@@ -24,6 +24,8 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +64,12 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 
 		// Collect results from all sub-agents
 		for (BaseAgent subAgent : subAgents) {
-			String subAgentOutputKey = subAgent.outputKey();
+			String subAgentOutputKey = null;
+			if (subAgent instanceof ReactAgent subReactAgent) {
+				subAgentOutputKey = subReactAgent.getOutputKey();
+			} else if (subAgent instanceof A2aRemoteAgent remoteAgent) { // a2a remote agent
+				subAgentOutputKey = remoteAgent.getOutputKey();
+			}
 			if (subAgentOutputKey != null) {
 				Optional<Object> agentResult = state.value(subAgentOutputKey);
 				if (agentResult.isPresent()) {

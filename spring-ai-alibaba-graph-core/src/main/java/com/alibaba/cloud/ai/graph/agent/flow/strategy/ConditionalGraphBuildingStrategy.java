@@ -20,6 +20,8 @@ import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
@@ -49,7 +51,7 @@ public class ConditionalGraphBuildingStrategy implements FlowGraphBuildingStrate
 
 		// Add root transparent node
 		graph.addNode(rootAgent.name(),
-				node_async(new TransparentNode(rootAgent.outputKey(), ((FlowAgent) rootAgent).inputKeys())));
+				node_async(new TransparentNode()));
 
 		// Add starting edge
 		graph.addEdge(START, rootAgent.name());
@@ -66,7 +68,11 @@ public class ConditionalGraphBuildingStrategy implements FlowGraphBuildingStrate
 			BaseAgent agent = entry.getValue();
 
 			// Add the conditional agent as a node
-			graph.addNode(agent.name(), agent.asAsyncNodeAction(true, agent.outputKey()));
+			if (agent instanceof ReactAgent subReactAgent) {
+				graph.addNode(agent.name(), agent.asAsyncNodeAction(true, subReactAgent.getOutputKey()));
+			} else if (agent instanceof A2aRemoteAgent remoteAgent) { // a2a remote agent
+				graph.addNode(agent.name(), agent.asAsyncNodeAction(true, remoteAgent.getOutputKey()));
+			}
 			conditionRoutingMap.put(condition, agent.name());
 
 			// Connect agent to END

@@ -17,7 +17,10 @@ package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.EnhancedParallelResultAggregator;
@@ -41,11 +44,11 @@ public class ParallelGraphBuildingStrategy implements FlowGraphBuildingStrategy 
 		validateParallelConfig(config);
 
 		StateGraph graph = new StateGraph(config.getName(), config.getKeyStrategyFactory());
-		BaseAgent rootAgent = config.getRootAgent();
+		ParallelAgent rootAgent = (ParallelAgent) config.getRootAgent();
 
 		// Add root transparent node
 		graph.addNode(rootAgent.name(),
-				node_async(new TransparentNode(rootAgent.outputKey(), ((FlowAgent) rootAgent).inputKeys())));
+				node_async(new TransparentNode()));
 
 		// Add starting edge
 		graph.addEdge(START, rootAgent.name());
@@ -60,18 +63,22 @@ public class ParallelGraphBuildingStrategy implements FlowGraphBuildingStrategy 
 
 		if (mergeStrategy != null || maxConcurrency != null) {
 			// Use enhanced aggregator with custom merge strategy and concurrency control
-			graph.addNode(aggregatorNodeName, node_async(new EnhancedParallelResultAggregator(rootAgent.outputKey(),
+			graph.addNode(aggregatorNodeName, node_async(new EnhancedParallelResultAggregator(rootAgent.mergeOutputKey(),
 					config.getSubAgents(), mergeStrategy, maxConcurrency)));
 		}
 		else {
 			// Use basic aggregator
-			graph.addNode(aggregatorNodeName, node_async(new ParallelResultAggregator(rootAgent.outputKey())));
+			graph.addNode(aggregatorNodeName, node_async(new ParallelResultAggregator(rootAgent.mergeOutputKey())));
 		}
 
 		// Process sub-agents for parallel execution
 		for (BaseAgent subAgent : config.getSubAgents()) {
 			// Add the current sub-agent as a node
-			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(true, subAgent.outputKey()));
+			if (subAgent instanceof ReactAgent subReactAgent) {
+				graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(true, subReactAgent.getOutputKey()));
+			} else if (subAgent instanceof A2aRemoteAgent remoteAgent) { // a2a remote agent
+				graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(true, remoteAgent.getOutputKey()));
+			}
 			// Connect root to each sub-agent (fan-out)
 			graph.addEdge(rootAgent.name(), subAgent.name());
 			// Connect each sub-agent to aggregator (gather)
