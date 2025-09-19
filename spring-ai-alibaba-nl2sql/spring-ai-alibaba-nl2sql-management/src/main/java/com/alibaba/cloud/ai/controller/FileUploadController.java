@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,9 +26,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
+
+import com.alibaba.cloud.ai.config.FileUploadProperties;
+import com.alibaba.cloud.ai.controller.dto.UploadResponse;
 
 /**
  * 文件上传控制器
@@ -43,30 +44,23 @@ public class FileUploadController {
 
     private static final Logger log = LoggerFactory.getLogger(FileUploadController.class);
 
-    @Value("${file.upload.path:./uploads}")
-    private String uploadPath;
-
-    @Value("${file.upload.url-prefix:/uploads}")
-    private String urlPrefix;
+    @Autowired
+    private FileUploadProperties fileUploadProperties;
 
     /**
      * 上传头像图片
      */
     @PostMapping("/avatar")
-    public ResponseEntity<Map<String, Object>> uploadAvatar(@RequestParam("file") MultipartFile file) {
-        Map<String, Object> response = new HashMap<>();
-        
+    public ResponseEntity<UploadResponse> uploadAvatar(@RequestParam("file") MultipartFile file) {
         try {
 
             // 验证文件类型
             String contentType = file.getContentType();
             if (contentType == null || !contentType.startsWith("image/")) {
-                response.put("success", false);
-                response.put("message", "只支持图片文件");
-                return ResponseEntity.badRequest().body(response);
+                return ResponseEntity.badRequest().body(UploadResponse.error("只支持图片文件"));
             }
             // 创建上传目录
-            Path uploadDir = Paths.get(uploadPath, "avatars");
+            Path uploadDir = Paths.get(fileUploadProperties.getPath(), "avatars");
             if (!Files.exists(uploadDir)) {
                 Files.createDirectories(uploadDir);
             }
@@ -82,20 +76,13 @@ public class FileUploadController {
             Files.copy(file.getInputStream(), filePath);
 
             // 生成访问URL
-            String fileUrl = "http://localhost:8065" + urlPrefix + "/avatars/" + filename;
+            String fileUrl = "http://localhost:8065" + fileUploadProperties.getUrlPrefix() + "/avatars/" + filename;
 
-            response.put("success", true);
-            response.put("message", "上传成功");
-            response.put("url", fileUrl);
-            response.put("filename", filename);
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(UploadResponse.ok("上传成功", fileUrl, filename));
 
         } catch (IOException e) {
             log.error("头像上传失败", e);
-            response.put("success", false);
-            response.put("message", "上传失败: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(response);
+            return ResponseEntity.internalServerError().body(UploadResponse.error("上传失败: " + e.getMessage()));
         }
     }
 
