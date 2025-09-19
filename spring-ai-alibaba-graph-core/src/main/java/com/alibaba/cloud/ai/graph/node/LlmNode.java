@@ -161,6 +161,10 @@ public class LlmNode implements NodeAction {
 		this.toolCallbacks = toolCallbacks;
 	}
 
+	public void setSystemPrompt(String systemPrompt) {
+		this.systemPrompt = systemPrompt;
+	}
+
 	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
 		PromptTemplate promptTemplate = new PromptTemplate(prompt);
 		return promptTemplate.render(params);
