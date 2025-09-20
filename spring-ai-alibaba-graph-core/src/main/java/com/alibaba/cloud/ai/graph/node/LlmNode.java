@@ -46,6 +46,8 @@ public class LlmNode implements NodeAction {
 
 	private String systemPrompt;
 
+	private String userPromptTemplate;
+
 	private String userPrompt;
 
 	private Map<String, Object> params = new HashMap<>();
@@ -73,9 +75,11 @@ public class LlmNode implements NodeAction {
 	public LlmNode() {
 	}
 
-	public LlmNode(String systemPrompt, String prompt, Map<String, Object> params, List<Message> messages,
-			List<Advisor> advisors, List<ToolCallback> toolCallbacks, ChatClient chatClient, boolean stream) {
+	public LlmNode(String systemPrompt, String prompt, String userPromptTemplate, Map<String, Object> params,
+			List<Message> messages, List<Advisor> advisors, List<ToolCallback> toolCallbacks, ChatClient chatClient,
+			boolean stream) {
 		this.systemPrompt = systemPrompt;
+		this.userPromptTemplate = userPromptTemplate;
 		this.userPrompt = prompt;
 		this.params = params;
 		this.messages = messages;
@@ -150,8 +154,8 @@ public class LlmNode implements NodeAction {
 				this.messages = convertedMessages.isEmpty() ? this.messages : convertedMessages;
 			}
 		}
-		if (StringUtils.hasLength(userPrompt) && !params.isEmpty()) {
-			this.userPrompt = renderPromptTemplate(userPrompt, params);
+		if (StringUtils.hasLength(userPromptTemplate) && !params.isEmpty()) {
+			this.userPrompt = renderPromptTemplate(userPromptTemplate, params);
 		}
 	}
 
@@ -429,7 +433,7 @@ public class LlmNode implements NodeAction {
 		public LlmNode build() {
 			LlmNode llmNode = new LlmNode();
 			llmNode.systemPrompt = this.systemPromptTemplate;
-			llmNode.userPrompt = this.userPromptTemplate;
+			llmNode.userPromptTemplate = this.userPromptTemplate;
 			llmNode.systemPromptKey = this.systemPromptTemplateKey;
 			llmNode.userPromptKey = this.userPromptTemplateKey;
 			llmNode.paramsKey = this.paramsKey;
