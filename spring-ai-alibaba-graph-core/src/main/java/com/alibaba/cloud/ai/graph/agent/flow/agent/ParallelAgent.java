@@ -17,7 +17,8 @@ package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
@@ -55,13 +56,16 @@ public class ParallelAgent extends FlowAgent {
 
 	private final MergeStrategy mergeStrategy;
 
+	private String mergeOutputKey;
+
 	private final Integer maxConcurrency;
 
 	protected ParallelAgent(ParallelAgentBuilder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory,
-				builder.compileConfig, builder.subAgents);
+		super(builder.name, builder.description,
+			  builder.keyStrategyFactory, builder.compileConfig, builder.subAgents);
 		this.mergeStrategy = builder.mergeStrategy != null ? builder.mergeStrategy : new DefaultMergeStrategy();
 		this.maxConcurrency = builder.maxConcurrency;
+		this.mergeOutputKey = builder.mergeOutputKey;
 	}
 
 	public static ParallelAgentBuilder builder() {
@@ -83,6 +87,10 @@ public class ParallelAgent extends FlowAgent {
 	 */
 	public MergeStrategy mergeStrategy() {
 		return mergeStrategy;
+	}
+
+	public String mergeOutputKey() {
+		return mergeOutputKey;
 	}
 
 	/**
@@ -134,6 +142,8 @@ public class ParallelAgent extends FlowAgent {
 
 		private Integer maxConcurrency;
 
+		private String mergeOutputKey;
+
 		/**
 		 * Sets the merge strategy for combining parallel execution results.
 		 * @param mergeStrategy the strategy to use for merging results
@@ -141,6 +151,11 @@ public class ParallelAgent extends FlowAgent {
 		 */
 		public ParallelAgentBuilder mergeStrategy(MergeStrategy mergeStrategy) {
 			this.mergeStrategy = mergeStrategy;
+			return this;
+		}
+
+		public ParallelAgentBuilder mergeOutputKey(String mergeOutputKey) {
+			this.mergeOutputKey = mergeOutputKey;
 			return this;
 		}
 
@@ -212,12 +227,14 @@ public class ParallelAgent extends FlowAgent {
 			Set<String> outputKeys = new HashSet<>();
 			Set<String> duplicateKeys = new HashSet<>();
 
-			for (BaseAgent subAgent : subAgents) {
-				String outputKey = subAgent.outputKey();
-				if (outputKey != null) {
-					if (!outputKeys.add(outputKey)) {
-						// This key was already seen, it's a duplicate
-						duplicateKeys.add(outputKey);
+			for (Agent subAgent : subAgents) {
+				if (subAgent instanceof ReactAgent subReactAgent) {
+					String outputKey = subReactAgent.getOutputKey();
+					if (outputKey != null) {
+						if (!outputKeys.add(outputKey)) {
+							// This key was already seen, it's a duplicate
+							duplicateKeys.add(outputKey);
+						}
 					}
 				}
 			}
@@ -247,16 +264,13 @@ public class ParallelAgent extends FlowAgent {
 		 * </p>
 		 */
 		private void validateInputKeyCompatibility() {
-			String parentOutputKey = this.outputKey;
-			if (parentOutputKey == null) {
-				logger.warn("Parent agent '{}' has no outputKey defined. This may cause data flow issues "
-						+ "as sub-agents won't receive input data.", this.name);
-			}
-
 			// Check if sub-agents have outputKeys defined (they will be used as input
 			// keys for downstream agents)
-			for (BaseAgent subAgent : subAgents) {
-				String subAgentOutputKey = subAgent.outputKey();
+			for (Agent subAgent : subAgents) {
+				if (!(subAgent instanceof ReactAgent)) {
+					continue;
+				}
+				String subAgentOutputKey = ((ReactAgent)subAgent).getOutputKey();
 				if (subAgentOutputKey == null) {
 					logger.warn("Sub-agent '{}' has no outputKey defined. This may cause data flow issues "
 							+ "as downstream agents won't receive data from this agent.", subAgent.name());

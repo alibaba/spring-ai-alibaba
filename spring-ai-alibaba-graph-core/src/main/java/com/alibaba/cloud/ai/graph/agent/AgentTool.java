@@ -53,7 +53,7 @@ public class AgentTool implements BiFunction<String, ToolContext, String> {
 				toolResult = toolResponseMessage.getText();
 			}
 		}
-		catch (GraphStateException e) {
+		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		return toolResult;

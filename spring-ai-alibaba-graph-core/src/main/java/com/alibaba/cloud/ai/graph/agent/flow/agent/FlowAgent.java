@@ -21,30 +21,23 @@ import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
-
-public abstract class FlowAgent extends BaseAgent {
-
-	protected String inputKey;
+public abstract class FlowAgent extends Agent {
 
 	protected KeyStrategyFactory keyStrategyFactory;
 
-	protected List<BaseAgent> subAgents;
+	protected List<Agent> subAgents;
 
-	protected FlowAgent(String name, String description, String outputKey, String inputKey,
-			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig, List<BaseAgent> subAgents)
+	protected FlowAgent(String name, String description,
+			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig, List<Agent> subAgents)
 			throws GraphStateException {
-		super(name, description, outputKey);
+		super(name, description);
 		this.compileConfig = compileConfig;
-		this.inputKey = inputKey;
 		this.keyStrategyFactory = keyStrategyFactory;
 		this.subAgents = subAgents;
 	}
@@ -62,6 +55,16 @@ public abstract class FlowAgent extends BaseAgent {
 		return buildSpecificGraph(config);
 	}
 
+	@Override
+	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.schedule(scheduleConfig);
+	}
+
+	public StateGraph asStateGraph(){
+		return getGraph();
+	}
+
 	/**
 	 * Abstract method for subclasses to specify their graph building strategy. This
 	 * method should be implemented by concrete FlowAgent subclasses to define how their
@@ -73,35 +76,20 @@ public abstract class FlowAgent extends BaseAgent {
 	protected abstract StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config)
 			throws GraphStateException;
 
-	@Override
-	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
-			throws GraphStateException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return node_async(
-				new ReactAgent.SubGraphStreamingNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
-	}
-
-	@Override
-	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
-		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.schedule(scheduleConfig);
-	}
-
 	public CompileConfig compileConfig() {
 		return compileConfig;
 	}
 
-	public String inputKey() {
-		return inputKey;
-	}
+	/**
+	 * Gets the input keys with strategy factory for the agent.
+	 * @return the input keys with strategy factory.
+	 */
 
 	public KeyStrategyFactory keyStrategyFactory() {
 		return keyStrategyFactory;
 	}
 
-	public List<BaseAgent> subAgents() {
+	public List<Agent> subAgents() {
 		return this.subAgents;
 	}
 

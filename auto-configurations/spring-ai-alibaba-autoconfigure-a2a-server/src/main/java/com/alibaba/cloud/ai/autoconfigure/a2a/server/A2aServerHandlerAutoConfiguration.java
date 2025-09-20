@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.a2a.server.DefaultA2aServerExecutorProvider;
 import com.alibaba.cloud.ai.a2a.server.GraphAgentExecutor;
 import com.alibaba.cloud.ai.a2a.server.JsonRpcA2aRequestHandler;
 import com.alibaba.cloud.ai.a2a.server.ServerTypeEnum;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.events.InMemoryQueueManager;
 import io.a2a.server.events.QueueManager;
@@ -51,7 +51,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration(after = A2aServerAgentCardAutoConfiguration.class)
 @EnableConfigurationProperties({ A2aServerProperties.class })
-@ConditionalOnBean({ AgentCard.class, BaseAgent.class })
+@ConditionalOnBean({ AgentCard.class, Agent.class })
 public class A2aServerHandlerAutoConfiguration {
 
 	@Bean
@@ -62,7 +62,7 @@ public class A2aServerHandlerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AgentExecutor agentExecutor(BaseAgent rootAgent) {
+	public AgentExecutor agentExecutor(Agent rootAgent) {
 		return new GraphAgentExecutor(rootAgent);
 	}
 

@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.flow.builder;
 
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategyRegistry;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategy;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -56,11 +56,11 @@ public class FlowGraphBuilder {
 
 		private KeyStrategyFactory keyStrategyFactory;
 
-		private BaseAgent rootAgent;
+		private Agent rootAgent;
 
-		private List<BaseAgent> subAgents;
+		private List<Agent> subAgents;
 
-		private Map<String, BaseAgent> conditionalAgents;
+		private Map<String, Agent> conditionalAgents;
 
 		private ChatModel chatModel;
 
@@ -83,27 +83,27 @@ public class FlowGraphBuilder {
 			this.keyStrategyFactory = keyStrategyFactory;
 		}
 
-		public BaseAgent getRootAgent() {
+		public Agent getRootAgent() {
 			return rootAgent;
 		}
 
-		public void setRootAgent(BaseAgent rootAgent) {
+		public void setRootAgent(Agent rootAgent) {
 			this.rootAgent = rootAgent;
 		}
 
-		public List<BaseAgent> getSubAgents() {
+		public List<Agent> getSubAgents() {
 			return subAgents;
 		}
 
-		public void setSubAgents(List<BaseAgent> subAgents) {
+		public void setSubAgents(List<Agent> subAgents) {
 			this.subAgents = subAgents;
 		}
 
-		public Map<String, BaseAgent> getConditionalAgents() {
+		public Map<String, Agent> getConditionalAgents() {
 			return conditionalAgents;
 		}
 
-		public void setConditionalAgents(Map<String, BaseAgent> conditionalAgents) {
+		public void setConditionalAgents(Map<String, Agent> conditionalAgents) {
 			this.conditionalAgents = conditionalAgents;
 		}
 
@@ -130,17 +130,17 @@ public class FlowGraphBuilder {
 			return this;
 		}
 
-		public FlowGraphConfig rootAgent(BaseAgent agent) {
+		public FlowGraphConfig rootAgent(Agent agent) {
 			this.rootAgent = agent;
 			return this;
 		}
 
-		public FlowGraphConfig subAgents(List<BaseAgent> agents) {
+		public FlowGraphConfig subAgents(List<Agent> agents) {
 			this.subAgents = agents;
 			return this;
 		}
 
-		public FlowGraphConfig conditionalAgents(Map<String, BaseAgent> agents) {
+		public FlowGraphConfig conditionalAgents(Map<String, Agent> agents) {
 			this.conditionalAgents = agents;
 			return this;
 		}

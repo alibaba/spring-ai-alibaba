@@ -19,12 +19,12 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
-import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
-import java.util.HashMap;
+import org.springframework.util.CollectionUtils;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,25 +33,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.*;
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 
 /**
- * Context class to manage the state during graph execution.
+ * Context class to manage the state during graph execution
  */
 public class GraphRunnerContext {
 
 	public static final String INTERRUPT_AFTER = "__INTERRUPTED__";
 
-	private static final Logger log = LoggerFactory.getLogger(GraphRunnerContext.class);
+	private static final Logger log = LoggerFactory.getLogger(GraphRunner.class);
 
-	// Core execution state
 	final CompiledGraph compiledGraph;
 
 	final AtomicInteger iteration = new AtomicInteger(0);
 
-	// Execution context
 	OverAllState overallState;
 
 	RunnableConfig config;
@@ -60,7 +62,7 @@ public class GraphRunnerContext {
 
 	String nextNodeId;
 
-	Map<String, Object> currentState;
+	Map<String, Object> currentStateData;
 
 	String resumeFrom;
 
@@ -79,11 +81,7 @@ public class GraphRunnerContext {
 		}
 	}
 
-	// ================================================================================================================
-	// Initialization Methods
-	// ================================================================================================================
-
-	private void initializeFromResume(OverAllState initialState, RunnableConfig config) throws Exception {
+	private void initializeFromResume(OverAllState initialState, RunnableConfig config) {
 		log.trace("RESUME REQUEST");
 
 		var saver = compiledGraph.compileConfig.checkpointSaver()
@@ -105,33 +103,44 @@ public class GraphRunnerContext {
 			this.config = config.withCheckPointId(null);
 		}
 
-		setCurrentState(checkpoint.getState());
-		setCurrentNodeId(null);
-		setNextNodeId(checkpoint.getNextNodeId());
-		setOverallState(initialState.input(getCurrentState()));
-		setResumeFrom(checkpoint.getNodeId());
+		this.currentStateData = checkpoint.getState();
+		this.currentNodeId = null;
+		this.nextNodeId = checkpoint.getNextNodeId();
+		this.overallState = initialState.input(this.currentStateData);
+		this.resumeFrom = checkpoint.getNodeId();
 
 		log.trace("RESUME FROM {}", checkpoint.getNodeId());
 	}
 
-	private void initializeFromStart(OverAllState initialState, RunnableConfig config) throws Exception {
+	private void initializeFromStart(OverAllState initialState, RunnableConfig config) {
 		log.trace("START");
 
-		org.springframework.util.CollectionUtils.isEmpty(initialState.data()); // Simple
-																				// validation
+		Map<String, Object> inputs = initialState.data();
+		if (!CollectionUtils.isEmpty(inputs)) {
+			// Simple validation without accessing protected method
+			log.debug("Initializing with inputs: {}", inputs.keySet());
+		}
 
 		// Use CompiledGraph's getInitialState method
-		Map<String, Object> inputs = initialState.data();
-		setCurrentState(compiledGraph.getInitialState(inputs != null ? inputs : new HashMap<>(), config));
-		setOverallState(initialState.input(getCurrentState()));
-		setCurrentNodeId(START);
-		setNextNodeId(null);
+		this.currentStateData = compiledGraph.getInitialState(inputs, config);
+		// fixme
+		this.overallState = stateCreate(currentStateData, initialState);
+		this.currentNodeId = START;
+		this.nextNodeId = null;
 	}
 
-	// ================================================================================================================
-	// Execution Control Methods
-	// ================================================================================================================
+	// FIXME, duplicated method with CompiledGraph.stateCreate, need to have a unified way of when and how to do OverallState creation.
+	// This temporary fix is to make sure the message provided by user is always the last element in the messages list.
+	private OverAllState stateCreate(Map<String, Object> inputs, OverAllState initialState) {
+		// Creates a new OverAllState instance using key strategies from the graph and provided input data.
+		return OverAllStateBuilder.builder()
+				.withKeyStrategies(initialState.keyStrategies())
+				.withData(inputs)
+				.withStore(initialState.getStore())
+				.build();
+	}
 
+	// Helper methods
 	public boolean shouldStop() {
 		return nextNodeId == null && currentNodeId == null;
 	}
@@ -149,8 +158,7 @@ public class GraphRunnerContext {
 	}
 
 	public boolean shouldInterrupt() {
-		return shouldInterruptBefore(getNextNodeId(), getCurrentNodeId())
-				|| shouldInterruptAfter(getCurrentNodeId(), getNextNodeId());
+		return shouldInterruptBefore(nextNodeId, currentNodeId) || shouldInterruptAfter(currentNodeId, nextNodeId);
 	}
 
 	private boolean shouldInterruptBefore(String nodeId, String previousNodeId) {
@@ -176,14 +184,15 @@ public class GraphRunnerContext {
 
 	public Command getEntryPoint() throws Exception {
 		var entryPoint = compiledGraph.getEdge(START);
-		return nextNodeId(entryPoint, getCurrentState(), "entryPoint");
+		return nextNodeId(entryPoint, currentStateData, "entryPoint");
 	}
 
 	public Command nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
 		return nextNodeId(compiledGraph.getEdge(nodeId), state, nodeId);
 	}
 
-	private Command nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId) throws Exception {
+	private Command nextNodeId(com.alibaba.cloud.ai.graph.internal.edge.EdgeValue route, Map<String, Object> state,
+			String nodeId) throws Exception {
 		if (route == null) {
 			throw RunnableErrors.missingEdge.exception(nodeId);
 		}
@@ -191,14 +200,14 @@ public class GraphRunnerContext {
 			return new Command(route.id(), state);
 		}
 		if (route.value() != null) {
-			var command = route.value().action().apply(getOverallState(), getConfig()).get();
+			var command = route.value().action().apply(this.overallState, config).get();
 			var newRoute = command.gotoNode();
 			String result = route.value().mappings().get(newRoute);
 			if (result == null) {
 				throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
 			}
 			var updatedState = OverAllState.updateState(state, command.update(), getKeyStrategyMap());
-			getOverallState().updateState(command.update());
+			this.overallState.updateState(command.update());
 			return new Command(result, updatedState);
 		}
 		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
@@ -210,11 +219,7 @@ public class GraphRunnerContext {
 
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
 		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
-			var cp = Checkpoint.builder()
-				.nodeId(nodeId)
-				.state(cloneState(getCurrentState()))
-				.nextNodeId(nextNodeId)
-				.build();
+			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(currentStateData)).nextNodeId(nextNodeId).build();
 			compiledGraph.compileConfig.checkpointSaver().get().put(config, cp);
 			return Optional.of(cp);
 		}
@@ -239,7 +244,7 @@ public class GraphRunnerContext {
 	}
 
 	public NodeOutput buildNodeOutput(String nodeId) throws Exception {
-		return NodeOutput.of(nodeId, cloneState(getCurrentState()));
+		return NodeOutput.of(nodeId, cloneState(currentStateData));
 	}
 
 	public OverAllState cloneState(Map<String, Object> data) throws Exception {
@@ -255,19 +260,19 @@ public class GraphRunnerContext {
 			try {
 				switch (scene) {
 					case START:
-						listener.onStart(getCurrentNodeId(), getCurrentState(), config);
+						listener.onStart(getCurrentNodeId(), getCurrentStateData(), config);
 						break;
 					case END:
-						listener.onComplete(getCurrentNodeId(), getCurrentState(), config);
+						listener.onComplete(getCurrentNodeId(), getCurrentStateData(), config);
 						break;
 					case NODE_BEFORE:
-						listener.onStart(getCurrentNodeId(), getCurrentState(), config);
+						listener.onStart(getCurrentNodeId(), getCurrentStateData(), config);
 						break;
 					case NODE_AFTER:
-						listener.onComplete(getCurrentNodeId(), getCurrentState(), config);
+						listener.onComplete(getCurrentNodeId(), getCurrentStateData(), config);
 						break;
 					case ERROR:
-						listener.onError(getCurrentNodeId(), getCurrentState(), e, config);
+						listener.onError(getCurrentNodeId(), getCurrentStateData(), e, config);
 						break;
 				}
 			}
@@ -282,7 +287,7 @@ public class GraphRunnerContext {
 	// ================================================================================================================
 
 	public void updateCurrentState(Map<String, Object> state) {
-		this.currentState = OverAllState.updateState(this.currentState, state, getKeyStrategyMap());
+		this.currentStateData = OverAllState.updateState(this.currentStateData, state, getKeyStrategyMap());
 	}
 
 	// ================================================================================================================
@@ -305,12 +310,8 @@ public class GraphRunnerContext {
 		this.nextNodeId = nodeId;
 	}
 
-	public Map<String, Object> getCurrentState() {
-		return currentState;
-	}
-
-	public void setCurrentState(Map<String, Object> state) {
-		this.currentState = state;
+	public Map<String, Object> getCurrentStateData() {
+		return currentStateData;
 	}
 
 	public OverAllState getOverallState() {
