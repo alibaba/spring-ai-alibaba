@@ -510,8 +510,8 @@ public class Nl2sqlController {
                 .setTables(Arrays.asList("categories", "order_items", "orders", "products", "users", "product_categories"));
         simpleVectorStoreService.schema(schemaInitRequest);
 
-        Optional<OverAllState> invoke = compiledGraph.invoke(Map.of(INPUT_KEY, query));
-        OverAllState overAllState = invoke.get();
+        Optional<OverAllState> call = compiledGraph.call(Map.of(INPUT_KEY, query));
+        OverAllState overAllState = call.get();
         return overAllState.value(RESULT).get().toString();
     }
 

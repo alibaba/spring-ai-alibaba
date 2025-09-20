@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactoryBuilder;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LoopAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
@@ -89,8 +90,14 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 				node_async(new TransparentNode(lastOutput, LoopAgent.LoopMode.iteratorItemKey(agentName))));
 		for (int i = 0; i < config.getSubAgents().size(); i++) {
 			String thisOutput = generateTempOutput(config.getSubAgents().get(i));
-			stateGraph.addNode(generateBodyName(agentName, i),
-					config.getSubAgents().get(i).asAsyncNodeAction(lastOutput, thisOutput));
+			BaseAgent subAgent = config.getSubAgents().get(i);
+			if (subAgent instanceof A2aRemoteAgent subA2aAgent) {
+				stateGraph.addNode(generateBodyName(agentName, i),
+						subA2aAgent.asAsyncNodeActionWithConfig(lastOutput, thisOutput));
+			} else {
+				stateGraph.addNode(generateBodyName(agentName, i),
+						subAgent.asAsyncNodeAction(lastOutput, thisOutput));
+			}
 			lastOutput = thisOutput;
 		}
 		stateGraph.addNode(bodyEndNodeName,

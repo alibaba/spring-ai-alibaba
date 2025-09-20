@@ -29,31 +29,6 @@
     <div class="section-header">
       <Icon icon="carbon:code" width="16" />
       <span>{{ $t('sidebar.jsonTemplate') }}</span>
-      <div class="section-actions">
-        <button
-          class="btn btn-sm"
-          @click="handleRollback"
-          :disabled="!canRollback"
-          :title="$t('sidebar.rollback')"
-        >
-          <Icon icon="carbon:undo" width="14" />
-        </button>
-        <button
-          class="btn btn-sm"
-          @click="handleRestore"
-          :disabled="!canRestore"
-          :title="$t('sidebar.restore')"
-        >
-          <Icon icon="carbon:redo" width="14" />
-        </button>
-        <button
-          class="btn btn-primary btn-sm"
-          @click="handleSave"
-          :disabled="isGenerating || isExecuting"
-        >
-          <Icon icon="carbon:save" width="14" />
-        </button>
-      </div>
     </div>
     <!-- Visual JSON Editor -->
     <div class="visual-editor">
@@ -74,25 +49,6 @@
       <div class="steps-section">
         <div class="steps-header">
           <label class="form-label">{{ $t('sidebar.tasks') }}</label>
-          <div class="steps-actions">
-            <button 
-              @click="loadAvailableAgents" 
-              class="btn btn-xs"
-              :disabled="isLoadingAgents"
-              :title="$t('sidebar.refreshAgents')"
-            >
-              <Icon icon="carbon:reset" width="12" />
-            </button>
-            <!-- Agent count badge -->
-            <span class="agent-count-badge" v-if="hasLoadedAgents && availableAgents.length > 0">
-              {{ availableAgents.length }} agents
-            </span>
-            <!-- Error indicator -->
-            <span class="error-badge" v-if="shouldShowError">
-              <Icon icon="carbon:warning" width="12" />
-              Error
-            </span>
-          </div>
         </div>
         
         <div class="steps-container">
@@ -135,52 +91,23 @@
               <div class="form-row">
                 <label class="form-label">{{ $t('sidebar.agent') }}</label>
                 <div class="agent-selector">
-                  <select v-model="step.agentType" class="form-select agent-select" :disabled="isLoadingAgents || shouldShowError">
-                    <!-- Loading state -->
-                    <option v-if="isLoadingAgents" disabled>{{ $t('sidebar.loading') }}</option>
-                    
-                    <!-- Error state -->
-                    <option v-else-if="shouldShowError" disabled>{{ $t('sidebar.agentLoadError') }}</option>
-                    
-                    <!-- Normal state -->
-                    <template v-else>
-                      <option 
-                        v-for="agent in agentOptions" 
-                        :key="agent.id"
-                        :value="agent.id"
-                        :title="generateAgentTooltip(agent)"
-                      >
-                        {{ formatAgentDisplayText(agent) }}
-                      </option>
-                    </template>
+                  <select v-model="step.agentName" class="form-select agent-select">
+                    <option value="">{{ $t('sidebar.selectAgent') }}</option>
+                    <option value="DEFAULT_AGENT">DEFAULT_AGENT</option>
+                    <option value="BROWSER_AGENT">BROWSER_AGENT</option>
+                    <option value="TEXT_FILE_AGENT">TEXT_FILE_AGENT</option>
+                    <option value="JSX_GENERATOR_AGENT">JSX_GENERATOR_AGENT</option>
+                    <option value="FILE_MANAGER_AGENT">FILE_MANAGER_AGENT</option>
                   </select>
                   
-                  <!-- Error refresh button -->
+                  <!-- Add step button -->
                   <button 
-                    v-if="shouldShowError"
-                    @click="loadAvailableAgents" 
-                    class="btn btn-sm btn-danger"
-                    :title="$t('sidebar.retryLoadAgents')"
-                  >
-                    <Icon icon="carbon:warning" width="14" />
-                    {{ $t('sidebar.retry') }}
-                  </button>
-                  
-                  <!-- Normal add step button -->
-                  <button 
-                    v-else
                     @click="addStep" 
                     class="btn btn-sm btn-add-step"
                     :title="$t('sidebar.addStep')"
                   >
                     <Icon icon="carbon:add" width="14" />
                   </button>
-                </div>
-                
-                <!-- Error message -->
-                <div v-if="shouldShowError && agentsLoadError" class="error-message">
-                  <Icon icon="carbon:warning" width="12" />
-                  {{ agentsLoadError }}
                 </div>
               </div>
               
@@ -226,7 +153,7 @@
         <div class="form-row">
           <label class="form-label">{{ $t('sidebar.planId') }}</label>
           <input 
-            v-model="parsedData.planId" 
+            v-model="parsedData.planTemplateId" 
             type="text" 
             class="form-input"
             placeholder="planTemplate-1756109892045"
@@ -257,6 +184,32 @@
           <Icon icon="carbon:code" width="14" />
           {{ showJsonPreview ? $t('sidebar.hideJson') : $t('sidebar.showJson') }}
         </button>
+        <div class="section-actions">
+          <button
+            class="btn btn-sm"
+            @click="handleRollback"
+            :disabled="!(canRollback ?? false)"
+            :title="$t('sidebar.rollback')"
+          >
+            <Icon icon="carbon:undo" width="14" />
+          </button>
+          <button
+            class="btn btn-sm"
+            @click="handleRestore"
+            :disabled="!(canRestore ?? false)"
+            :title="$t('sidebar.restore')"
+          >
+            <Icon icon="carbon:redo" width="14" />
+          </button>
+          <button
+            class="btn btn-primary"
+            @click="handleSave"
+            :disabled="isGenerating || isExecuting"
+          >
+            <Icon icon="carbon:save" width="14" />
+                Save
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -282,16 +235,7 @@ const emit = defineEmits<{
 const {
   showJsonPreview,
   parsedData,
-  availableAgents,
-  isLoadingAgents,
-  agentsLoadError,
-  hasLoadedAgents,
   formattedJsonOutput,
-  agentOptions,
-  shouldShowError,
-  loadAvailableAgents,
-  formatAgentDisplayText,
-  generateAgentTooltip,
   addStep,
   removeStep,
   moveStepUp,
@@ -585,7 +529,9 @@ const autoResizeTextarea = (event: Event) => {
 }
 
 .editor-footer {
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }

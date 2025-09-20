@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.studio.admin.generator.model.workflow;
 import java.util.List;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 
 public class Case {
 
@@ -56,29 +57,71 @@ public class Case {
 
 	public static class Condition {
 
-		private String value;
+		// 左值数据类型
+		private VariableType varType;
 
-		private String varType;
+		// 右值数据类型
+		private VariableType referenceType;
 
 		private ComparisonOperatorType comparisonOperator;
 
-		private VariableSelector variableSelector;
+		// 左值
+		private VariableSelector targetSelector;
 
+		// 右值
+		private String referenceValue;
+
+		private VariableSelector referenceSelector;
+
+		// 参考值可能来自stateKey，也有可能直接是常量值，也有可能没有参考值
 		public String getValue() {
-			return value;
+			if (referenceValue != null) {
+				return referenceValue;
+			}
+			else if (referenceSelector != null) {
+				if (VariableType.NUMBER.equals(referenceType)) {
+					return String.format("((%s) state.value(\"%s\").orElse(null)).doubleValue()", referenceType.value(),
+							referenceSelector.getNameInCode());
+				}
+				return String.format("((%s) state.value(\"%s\").orElse(null))", referenceType.value(),
+						referenceSelector.getNameInCode());
+			}
+			return null;
 		}
 
-		public Condition setValue(String value) {
-			this.value = value;
+		public String getReferenceValue() {
+			return referenceValue;
+		}
+
+		public Condition setReferenceValue(String referenceValue) {
+			this.referenceValue = referenceValue;
 			return this;
 		}
 
-		public String getVarType() {
+		public VariableSelector getReferenceSelector() {
+			return referenceSelector;
+		}
+
+		public Condition setReferenceSelector(VariableSelector referenceSelector) {
+			this.referenceSelector = referenceSelector;
+			return this;
+		}
+
+		public VariableType getVarType() {
 			return varType;
 		}
 
-		public Condition setVarType(String varType) {
+		public Condition setVarType(VariableType varType) {
 			this.varType = varType;
+			return this;
+		}
+
+		public VariableType getReferenceType() {
+			return referenceType;
+		}
+
+		public Condition setReferenceType(VariableType referenceType) {
+			this.referenceType = referenceType;
 			return this;
 		}
 
@@ -91,12 +134,12 @@ public class Case {
 			return this;
 		}
 
-		public VariableSelector getVariableSelector() {
-			return variableSelector;
+		public VariableSelector getTargetSelector() {
+			return targetSelector;
 		}
 
-		public Condition setVariableSelector(VariableSelector variableSelector) {
-			this.variableSelector = variableSelector;
+		public Condition setTargetSelector(VariableSelector targetSelector) {
+			this.targetSelector = targetSelector;
 			return this;
 		}
 

@@ -110,16 +110,6 @@
           </div>
         </div>
 
-        <div class="form-item">
-          <label>{{ t('config.modelConfig.type') }} <span class="required">*</span></label>
-          <CustomSelect
-            v-model="selectedModel.type"
-            :options="modelTypes.map(type => ({ id: type, name: type }))"
-            :placeholder="t('config.modelConfig.typePlaceholder')"
-            :dropdown-title="t('config.modelConfig.typePlaceholder')"
-            icon="carbon:types"
-          />
-        </div>
 
         <div class="form-item">
           <label>{{ t('config.modelConfig.baseUrl') }} <span class="required">*</span></label>
@@ -172,7 +162,7 @@
         </div>
 
                 <div class="form-item">
-          <label>{{ t('config.modelConfig.modelName') }} <span class="required">*</span></label>
+          <label>Fallback Model <span class="required">*</span></label>
           <GroupedSelect
             v-if="getCurrentAvailableModels().length > 0"
             v-model="selectedModel.modelName"
@@ -306,7 +296,7 @@
           </div>
         </div>
         <div class="form-item">
-          <label>{{ t('config.modelConfig.modelName') }} <span class="required">*</span></label>
+          <label>Fallback Model <span class="required">*</span></label>
           <GroupedSelect
             v-if="newModelAvailableModels.length > 0"
             v-model="newModel.modelName"
@@ -390,6 +380,7 @@
       </template>
     </Modal>
 
+
     <!-- Error toast -->
     <div v-if="error" class="error-toast" @click="error = ''">
       <Icon icon="carbon:error" />
@@ -439,6 +430,7 @@ const newModelAvailableModels = ref<Model[]>([])
 const showSelectedApiKey = ref(false)
 const showNewApiKey = ref(false)
 
+
 const selectedHeadersJson = computed({
   get() {
     if (!selectedModel.value?.headers) return ''
@@ -459,6 +451,8 @@ const newHeadersJson = computed({
       newModel.headers = val.trim() ? JSON.parse(val) : null
     }
 })
+
+
 
 // New Model form data
 const newModel = reactive<Omit<Model, 'id'>>({
@@ -574,10 +568,10 @@ const handleValidateConfig = async () => {
     })
 
     if (result.valid) {
-      showMessage(t('config.modelConfig.validationSuccess') + ` - ${t('config.modelConfig.getModelsCount', { count: result.availableModels?.length || 0 })}`, 'success')
+      showMessage(t('config.modelConfig.validationSuccess') + ` - ${t('config.modelConfig.getModelsCount', { count: result.availableModels?.length ?? 0 })}`, 'success')
       // Save independent available model list for currently selected model
-      if (selectedModel.value?.id) {
-        modelAvailableModels.value.set(selectedModel.value.id, result.availableModels || [])
+      if (selectedModel.value.id) {
+        modelAvailableModels.value.set(selectedModel.value.id, result.availableModels ?? [])
       }
       // If available models exist, auto-select first one and fill description
       if (result.availableModels && result.availableModels.length > 0) {
@@ -625,7 +619,7 @@ const getCurrentAvailableModels = (): Model[] => {
   if (!selectedModel.value?.id) {
     return []
   }
-  return modelAvailableModels.value.get(selectedModel.value.id) || []
+  return modelAvailableModels.value.get(selectedModel.value.id) ?? []
 }
 
 // Handle model selection
@@ -655,9 +649,9 @@ const handleNewModelValidateConfig = async () => {
     })
 
     if (result.valid) {
-      showMessage(t('config.modelConfig.validationSuccess') + ` - ${t('config.modelConfig.getModelsCount', { count: result.availableModels?.length || 0 })}`, 'success')
+      showMessage(t('config.modelConfig.validationSuccess') + ` - ${t('config.modelConfig.getModelsCount', { count: result.availableModels?.length ?? 0 })}`, 'success')
       // Save available model list
-      newModelAvailableModels.value = result.availableModels || []
+      newModelAvailableModels.value = result.availableModels ?? []
       // If available models exist, auto-select first one and fill description
       if (result.availableModels && result.availableModels.length > 0) {
         newModel.modelName = result.availableModels[0].modelName
@@ -772,7 +766,7 @@ const handleSave = async () => {
       }
 
       // Validation successful, update available model list
-      modelAvailableModels.value.set(selectedModel.value.id, validationResult.availableModels || [])
+      modelAvailableModels.value.set(selectedModel.value.id, validationResult.availableModels ?? [])
     } catch (err: any) {
       showMessage(t('config.modelConfig.validationFailedCannotSave') + ': ' + err.message, 'error')
       return
@@ -854,6 +848,7 @@ const handleDelete = async () => {
     showMessage(t('config.modelConfig.deleteFailed') + ': ' + err.message, 'error')
   }
 }
+
 
 // Import Model
 const handleImport = () => {
@@ -1467,4 +1462,5 @@ onMounted(() => {
 .description-field::placeholder {
   color: rgba(255, 255, 255, 0.4);
 }
+
 </style>

@@ -22,6 +22,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.util.StringUtils;
 
@@ -29,6 +30,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class QuestionClassifierNode implements NodeAction {
 
@@ -69,21 +75,25 @@ public class QuestionClassifierNode implements NodeAction {
 				```
 			""";
 
-	private SystemPromptTemplate systemPromptTemplate;
+	private static final Pattern VAR_TEMPLATE_PATTERN = Pattern.compile("\\{(\\w+)}");
 
-	private ChatClient chatClient;
+	private final SystemPromptTemplate systemPromptTemplate;
+
+	private final ChatClient chatClient;
 
 	private String inputText;
 
-	private List<String> categories;
+	// 类别里可能存在{}这样的占位变量需要处理
+	private final Map<String, String> categories;
 
-	private List<String> classificationInstructions;
+	// 分类指导里可能存在{}这样的占位变量需要处理
+	private final List<String> classificationInstructions;
 
-	private String inputTextKey;
+	private final String inputTextKey;
 
-	private String outputKey;
+	private final String outputKey;
 
-	public QuestionClassifierNode(ChatClient chatClient, String inputTextKey, List<String> categories,
+	public QuestionClassifierNode(ChatClient chatClient, String inputTextKey, Map<String, String> categories,
 			List<String> classificationInstructions, String outputKey) {
 		this.chatClient = chatClient;
 		this.inputTextKey = inputTextKey;
@@ -91,6 +101,24 @@ public class QuestionClassifierNode implements NodeAction {
 		this.classificationInstructions = classificationInstructions;
 		this.systemPromptTemplate = new SystemPromptTemplate(CLASSIFIER_PROMPT_TEMPLATE);
 		this.outputKey = outputKey;
+	}
+
+	private String renderTemplate(OverAllState state, String template) {
+		if (!StringUtils.hasText(template)) {
+			return template;
+		}
+		Map<String, Object> params = Stream.of(template)
+			.map(VAR_TEMPLATE_PATTERN::matcher)
+			.map(Matcher::results)
+			.map(results -> results.collect(Collectors.toUnmodifiableMap(r -> r.group(1),
+					r -> state.value(r.group(1)).orElse(""), (a, b) -> b)))
+			.findFirst()
+			.orElseThrow();
+		return new PromptTemplate(template).render(params);
+	}
+
+	private List<String> renderTemplates(OverAllState state, List<String> templates) {
+		return templates.stream().map(template -> renderTemplate(state, template)).toList();
 	}
 
 	@Override
@@ -109,16 +137,38 @@ public class QuestionClassifierNode implements NodeAction {
 		messages.add(userMessage2);
 		messages.add(assistantMessage2);
 
+		Map<String, String> renderedCategories = categories.entrySet()
+			.stream()
+			.map(e -> Map.entry(e.getKey(), renderTemplate(state, e.getValue())))
+			.collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+		List<String> categoriesList = renderedCategories.values().stream().toList();
+
 		ChatResponse response = chatClient.prompt()
-			.system(systemPromptTemplate.render(Map.of("inputText", inputText, "categories", categories,
-					"classificationInstructions", classificationInstructions)))
+			.system(systemPromptTemplate.render(Map.of("inputText", inputText, "categories", categoriesList,
+					"classificationInstructions", renderTemplates(state, classificationInstructions))))
 			.user(inputText)
 			.messages(messages)
 			.call()
 			.chatResponse();
 
 		Map<String, Object> updatedState = new HashMap<>();
-		updatedState.put(outputKey, response.getResult().getOutput().getText());
+		String output = Optional
+			.ofNullable(Optional.ofNullable(response)
+				.orElseThrow(() -> new RuntimeException("chat response is null"))
+				.getResult()
+				.getOutput()
+				.getText())
+			.orElseThrow(() -> new RuntimeException("chat response text is null"));
+		String result = renderedCategories.entrySet()
+			.stream()
+			.filter(entry -> output.contains(entry.getValue()))
+			.map(Map.Entry::getKey)
+			.findFirst()
+			.orElseThrow(() -> new RuntimeException(
+					"chatClient returns [" + output + "], but it does not belong to the given category."));
+
+		updatedState.put(outputKey, result);
 		if (state.value("messages").isPresent()) {
 			updatedState.put("messages", response.getResult().getOutput());
 		}
@@ -136,7 +186,7 @@ public class QuestionClassifierNode implements NodeAction {
 
 		private ChatClient chatClient;
 
-		private List<String> categories;
+		private Map<String, String> categories;
 
 		private List<String> classificationInstructions;
 
@@ -152,11 +202,25 @@ public class QuestionClassifierNode implements NodeAction {
 			return this;
 		}
 
-		public Builder categories(List<String> categories) {
+		/**
+		 * 需要一个Map对象，key为类别ID，value为具体的类别名称。
+		 * 类别名称里可以存在{@code {var_name}}这样的变量占位符，节点将从{@code OverAllState}里获取变量值进行替换。
+		 */
+		public Builder categories(Map<String, String> categories) {
 			this.categories = categories;
 			return this;
 		}
 
+		// 兼容旧版本
+		@Deprecated
+		public Builder categories(List<String> categories) {
+			this.categories = categories.stream().collect(Collectors.toMap(k -> k, k -> k, (a, b) -> b));
+			return this;
+		}
+
+		/**
+		 * 指导说明列表。 指导说明里可以存在{@code {var_name}}这样的变量占位符，节点将从{@code OverAllState}里获取变量值进行替换。
+		 */
 		public Builder classificationInstructions(List<String> classificationInstructions) {
 			this.classificationInstructions = classificationInstructions;
 			return this;

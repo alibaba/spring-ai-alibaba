@@ -16,48 +16,83 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata;
 
+import com.alibaba.cloud.ai.studio.admin.generator.model.Variable;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
+import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
+import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
+
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
-import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
-
-/**
- * NodeData for ParameterParsingNode, which contains three fields: inputTextKey,
- * parameters, and outputKey.
- */
 public class ParameterParsingNodeData extends NodeData {
 
-	private String inputTextKey;
+	public static List<Variable> getDefaultOutputSchema(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> List.of(new Variable("__is_success", VariableType.BOOLEAN),
+					new Variable("__reason", VariableType.STRING));
+			case STUDIO -> List.of(new Variable("_is_completed", VariableType.BOOLEAN),
+					new Variable("_reason", VariableType.STRING));
+			default -> List.of();
+		};
+	}
 
-	private List<Map<String, Object>> parameters;
+	private VariableSelector inputSelector;
+
+	private String chatModeName;
+
+	private Map<String, Object> modeParams;
+
+	private List<Param> parameters;
 
 	private String instruction;
 
-	private String outputKey;
+	private String successKey = "success";
 
-	public ParameterParsingNodeData(String inputTextKey, List<Map<String, Object>> parameters, String instruction,
-			String outputKey, VariableSelector input) {
-		super(List.of(input), List.of());
-		this.inputTextKey = inputTextKey;
-		this.parameters = parameters;
-		this.instruction = instruction;
-		this.outputKey = outputKey;
+	private String dataKey = "data";
+
+	private String reasonKey = "reason";
+
+	public record Param(String name, VariableType type, String description) {
+		@Override
+		public String toString() {
+			return String.format("ParameterParsingNode.param(%s, %s, %s)", ObjectToCodeUtil.toCode(name()),
+					ObjectToCodeUtil.toCode(Optional.ofNullable(type()).orElse(VariableType.STRING).value()),
+					ObjectToCodeUtil.toCode(description()));
+		}
 	}
 
-	public String getInputTextKey() {
-		return inputTextKey;
+	public VariableSelector getInputSelector() {
+		return inputSelector;
 	}
 
-	public void setInputTextKey(String inputTextKey) {
-		this.inputTextKey = inputTextKey;
+	public void setInputSelector(VariableSelector inputSelector) {
+		this.inputSelector = inputSelector;
 	}
 
-	public List<Map<String, Object>> getParameters() {
+	public String getChatModeName() {
+		return chatModeName;
+	}
+
+	public void setChatModeName(String chatModeName) {
+		this.chatModeName = chatModeName;
+	}
+
+	public Map<String, Object> getModeParams() {
+		return modeParams;
+	}
+
+	public void setModeParams(Map<String, Object> modeParams) {
+		this.modeParams = modeParams;
+	}
+
+	public List<Param> getParameters() {
 		return parameters;
 	}
 
-	public void setParameters(List<Map<String, Object>> parameters) {
+	public void setParameters(List<Param> parameters) {
 		this.parameters = parameters;
 	}
 
@@ -69,12 +104,28 @@ public class ParameterParsingNodeData extends NodeData {
 		this.instruction = instruction;
 	}
 
-	public String getOutputKey() {
-		return outputKey;
+	public String getSuccessKey() {
+		return successKey;
 	}
 
-	public void setOutputKey(String outputKey) {
-		this.outputKey = outputKey;
+	public void setSuccessKey(String successKey) {
+		this.successKey = successKey;
+	}
+
+	public String getDataKey() {
+		return dataKey;
+	}
+
+	public void setDataKey(String dataKey) {
+		this.dataKey = dataKey;
+	}
+
+	public String getReasonKey() {
+		return reasonKey;
+	}
+
+	public void setReasonKey(String reasonKey) {
+		this.reasonKey = reasonKey;
 	}
 
 }

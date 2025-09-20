@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.mcp.gateway.nacos.callback;
 import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolDefinition;
 import com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate.RequestTemplateInfo;
 import com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate.RequestTemplateParser;
-import com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate.ResponseTemplateParser;
 import com.alibaba.cloud.ai.mcp.gateway.core.utils.SpringBeanUtils;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.definition.NacosMcpGatewayToolDefinition;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
@@ -27,6 +26,7 @@ import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
 import com.alibaba.nacos.api.ai.model.mcp.McpServiceRef;
 import com.alibaba.nacos.api.ai.model.mcp.McpToolMeta;
+import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.alibaba.nacos.shaded.com.google.common.collect.Maps;
@@ -37,9 +37,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
-//import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
-//import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
-
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -53,6 +50,8 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.http.HttpMethod;
 import org.springframework.lang.NonNull;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -62,18 +61,22 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * The type Nacos mcp gateway tool callback.
+ */
 public class NacosMcpGatewayToolCallback implements ToolCallback {
 
 	private static final Logger logger = LoggerFactory.getLogger(NacosMcpGatewayToolCallback.class);
 
-	private final NacosMcpGatewayToolDefinition toolDefinition;
+	private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*(\\.[\\w]+(?:\\.[\\w]+)*)\\s*\\}\\}");
 
-	private final NacosMcpOperationService nacosMcpOperationService;
+	// 匹配 {{ ${nacos.dataId/group} }} 或 {{ ${nacos.dataId/group}.key1.key2 }}
+	private static final Pattern NACOS_TEMPLATE_PATTERN = Pattern
+		.compile("\\{\\{\\s*\\$\\{nacos\\.([^}]+)\\}(\\.[\\w]+(?:\\.[\\w]+)*)?\\s*}}");
 
-	private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*\\.([\\w]*)\\s*\\}\\}");
-
-	private final WebClient.Builder webClientBuilder;
-
+	/**
+	 * The Object mapper.
+	 */
 	static ObjectMapper objectMapper = new ObjectMapper();
 
 	static {
@@ -81,6 +84,20 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 		objectMapper.setSerializationInclusion(Include.NON_NULL);
 	}
 
+	private final NacosMcpGatewayToolDefinition toolDefinition;
+
+	private final NacosMcpOperationService nacosMcpOperationService;
+
+	private final HashMap<String, AbstractListener> nacosConfigListeners = new HashMap<>();
+
+	private final HashMap<String, String> nacosConfigContent = new HashMap<>();
+
+	private final WebClient.Builder webClientBuilder;
+
+	/**
+	 * Instantiates a new Nacos mcp gateway tool callback.
+	 * @param toolDefinition the tool definition
+	 */
 	public NacosMcpGatewayToolCallback(final McpGatewayToolDefinition toolDefinition) {
 		this.webClientBuilder = SpringBeanUtils.getInstance().getBean(WebClient.Builder.class);
 		this.toolDefinition = (NacosMcpGatewayToolDefinition) toolDefinition;
@@ -115,36 +132,10 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				return Mono.error(new IllegalArgumentException("Tool configuration is empty or invalid"));
 			}
 
-			JsonNode argsNode = toolConfig.path("args");
-			Map<String, Object> processedArgs;
-			if (!argsNode.isMissingNode() && argsNode.isArray() && argsNode.size() > 0) {
-				processedArgs = processArguments(argsNode, args);
-				logger.info("[processToolRequest] processedArgs from args: {}", processedArgs);
-			}
-			else if (!toolConfig.path("inputSchema").isMissingNode() && toolConfig.path("inputSchema").isObject()) {
-				// 从 inputSchema.properties 解析参数
-				JsonNode properties = toolConfig.path("inputSchema").path("properties");
-				if (properties.isObject()) {
-					processedArgs = new HashMap<>();
-					properties.fieldNames().forEachRemaining(field -> {
-						if (args.containsKey(field)) {
-							processedArgs.put(field, args.get(field));
-						}
-					});
-					logger.info("[processToolRequest] processedArgs from inputSchema: {}", processedArgs);
-				}
-				else {
-					processedArgs = args;
-					logger.info("[processToolRequest] inputSchema.properties missing, use original args: {}",
-							processedArgs);
-				}
-			}
-			else {
-				processedArgs = args;
-				logger.info("[processToolRequest] no args or inputSchema, use original args: {}", processedArgs);
-			}
+			Map<String, Object> processedArgs = args;
 
 			JsonNode requestTemplate = toolConfig.path("requestTemplate");
+			JsonNode argsPosition = requestTemplate.path("argsPosition");
 			String url = requestTemplate.path("url").asText();
 			String method = requestTemplate.path("method").asText();
 			logger.info("[processToolRequest] requestTemplate: {} url: {} method: {}", requestTemplate, url, method);
@@ -167,8 +158,8 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			WebClient client = webClientBuilder.baseUrl(baseUrl).build();
 
 			// 构建并执行请求
-			return buildAndExecuteRequest(client, requestTemplate, toolConfig.path("responseTemplate"), processedArgs,
-					baseUrl)
+			return buildAndExecuteRequest(client, requestTemplate, argsPosition, toolConfig.path("responseTemplate"),
+					processedArgs, baseUrl)
 				.onErrorResume(e -> {
 					logger.error("Failed to execute tool request: {}", e.getMessage(), e);
 					return Mono.error(new RuntimeException("Tool execution failed: " + e.getMessage(), e));
@@ -181,63 +172,45 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	}
 
 	/**
-	 * 处理参数定义和值
-	 */
-	private Map<String, Object> processArguments(JsonNode argsDefinition, Map<String, Object> providedArgs) {
-		Map<String, Object> processedArgs = new HashMap<>();
-
-		if (argsDefinition.isArray()) {
-			for (JsonNode argDef : argsDefinition) {
-				String name = argDef.path("name").asText();
-				boolean required = argDef.path("required").asBoolean(false);
-				Object defaultValue = argDef.has("default")
-						? objectMapper.convertValue(argDef.path("default"), Object.class) : null;
-
-				// 检查参数
-				if (providedArgs.containsKey(name)) {
-					processedArgs.put(name, providedArgs.get(name));
-				}
-				else if (defaultValue != null) {
-					processedArgs.put(name, defaultValue);
-				}
-				else if (required) {
-					throw new IllegalArgumentException("Required argument missing: " + name);
-				}
-			}
-		}
-
-		return processedArgs;
-	}
-
-	/**
 	 * 构建并执行WebClient请求
 	 */
-	private Mono<String> buildAndExecuteRequest(WebClient client, JsonNode requestTemplate, JsonNode responseTemplate,
-			Map<String, Object> args, String baseUrl) {
+	private Mono<String> buildAndExecuteRequest(WebClient client, JsonNode requestTemplate, JsonNode argsPosition,
+			JsonNode responseTemplate, Map<String, Object> args, String baseUrl) {
 
-		RequestTemplateInfo info = RequestTemplateParser.parseRequestTemplate(requestTemplate);
+		RequestTemplateInfo info = RequestTemplateParser.parseRequestTemplate(requestTemplate, argsPosition);
 		String url = info.url;
 		String method = info.method;
 		HttpMethod httpMethod = HttpMethod.valueOf(method.toUpperCase());
 
 		// 处理URL中的路径参数
-		String processedUrl = processTemplateString(url, args);
+		String processingUrl = RequestTemplateParser.addPathVariables(url, info, args);
+		Map<String, Object> params = new HashMap<>();
+		params.put("args", args);
+		params.put("extendedData", "");
+		String processedUrl = processTemplateString(processingUrl, params);
 		logger.info("[buildAndExecuteRequest] original url template: {} processed url: {}", url, processedUrl);
 
+		String hostFromUrl = extractHostFromUrl(processedUrl);
+		String pathOnlyUrl = extractPathFromUrl(processedUrl);
 		// 构建请求
 		WebClient.RequestBodySpec requestBodySpec = client.method(httpMethod)
-			.uri(builder -> RequestTemplateParser.buildUri(builder, processedUrl, info, args));
+			.uri(builder -> RequestTemplateParser.buildUri(builder, pathOnlyUrl, info, args));
 
 		// 添加请求头
-		RequestTemplateParser.addHeaders(requestBodySpec, info.headers, args, this::processTemplateString);
+		MultiValueMap<String, String> headers = RequestTemplateParser.addHeaders(requestBodySpec, info, args,
+				this::processTemplateString);
 
+		if (hostFromUrl != null && !hostFromUrl.isEmpty()) {
+			requestBodySpec.header("Host", hostFromUrl);
+			headers.add("Host", hostFromUrl);
+		}
 		// 处理请求体
-		WebClient.RequestHeadersSpec<?> headersSpec = RequestTemplateParser.addRequestBody(requestBodySpec, info, args,
-				this::processTemplateString, objectMapper, logger);
+		WebClient.RequestHeadersSpec<?> headersSpec = RequestTemplateParser.addRequestBody(requestBodySpec, headers,
+				info, args, this::processTemplateString, objectMapper, logger);
 
 		// 输出最终请求信息
-		String fullUrl = baseUrl.endsWith("/") && processedUrl.startsWith("/") ? baseUrl + processedUrl.substring(1)
-				: baseUrl + processedUrl;
+		String fullUrl = baseUrl.endsWith("/") && pathOnlyUrl.startsWith("/") ? baseUrl + pathOnlyUrl.substring(1)
+				: baseUrl + pathOnlyUrl;
 		logger.info("[buildAndExecuteRequest] final request: method={} url={} args={}", method, fullUrl, args);
 
 		return headersSpec.retrieve()
@@ -256,24 +229,88 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	}
 
 	/**
+	 * 从完整URL中提取路径部分
+	 * @param url 完整的URL
+	 * @return 路径部分，如果解析失败则返回原URL
+	 */
+	private String extractPathFromUrl(String url) {
+		if (url == null || url.isEmpty()) {
+			return url;
+		}
+
+		try {
+			java.net.URI uri = java.net.URI.create(url);
+			String path = uri.getPath();
+			String query = uri.getQuery();
+
+			if (path == null) {
+				path = "";
+			}
+
+			if (query != null && !query.isEmpty()) {
+				return path + "?" + query;
+			}
+
+			return path;
+		}
+		catch (Exception e) {
+			logger.warn("[extractPathFromUrl] Failed to parse URL: {}", e.getMessage());
+			return url; // 解析失败时返回原URL
+		}
+	}
+
+	/**
+	 * 从URL中提取主机信息
+	 * @param url 完整的URL
+	 * @return 主机信息（host:port格式），如果没有则返回null
+	 */
+	private String extractHostFromUrl(String url) {
+		if (url == null || url.isEmpty()) {
+			return null;
+		}
+
+		try {
+			// 使用URI类解析URL
+			java.net.URI uri = java.net.URI.create(url);
+			String host = uri.getHost();
+			int port = uri.getPort();
+
+			if (host != null && !host.isEmpty()) {
+				if (port != -1) {
+					return host + ":" + port;
+				}
+				return host;
+			}
+		}
+		catch (Exception e) {
+			logger.warn("[extractHostFromUrl] Failed to parse URL: {}", e.getMessage());
+		}
+
+		return null;
+	}
+
+	/**
 	 * 处理响应
 	 */
 	private String processResponse(String responseBody, JsonNode responseTemplate, Map<String, Object> args) {
 		logger.info("[processResponse] received responseBody: {}", responseBody);
 		String result = null;
+		Map<String, Object> params = new HashMap<>();
+		params.put("args", args);
+		params.put("extendedData", responseBody);
 		if (!responseTemplate.isEmpty()) {
 			if (responseTemplate.has("body") && !responseTemplate.path("body").asText().isEmpty()) {
 				String bodyTemplate = responseTemplate.path("body").asText();
 				// 统一交给 ResponseTemplateParser 处理
-				result = ResponseTemplateParser.parse(responseBody, bodyTemplate);
+				result = processTemplateString(bodyTemplate, params);
 				logger.info("[processResponse] ResponseTemplateParser result: {}", result);
 				return result;
 			}
 			else if (responseTemplate.has("prependBody") || responseTemplate.has("appendBody")) {
 				String prependText = responseTemplate.path("prependBody").asText("");
 				String appendText = responseTemplate.path("appendBody").asText("");
-				result = processTemplateString(prependText, args) + responseBody
-						+ processTemplateString(appendText, args);
+				result = processTemplateString(prependText, params) + responseBody
+						+ processTemplateString(appendText, params);
 				logger.info("[processResponse] prepend/append result: {}", result);
 				return result;
 			}
@@ -284,54 +321,278 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	}
 
 	/**
-	 * 处理模板字符串中的变量
+	 * Process nacos config ref template string.
+	 * @param template the template
+	 * @return the string
 	 */
-	private String processTemplateString(String template, Map<String, Object> data) {
-		logger.debug("[processTemplateString] template: {} data: {}", template, data);
+	public String processNacosConfigRefTemplate(String template) {
+		if (!StringUtils.hasText(template)) {
+			return template;
+		}
+
+		StringBuffer result = new StringBuffer();
+		Matcher matcher = NACOS_TEMPLATE_PATTERN.matcher(template);
+
+		while (matcher.find()) {
+			String nacosRef = matcher.group(1);
+			String dotNotation = matcher.group(2);
+			String replacement = resolveNacosReference(nacosRef, dotNotation);
+			matcher.appendReplacement(result, Matcher.quoteReplacement(replacement != null ? replacement : ""));
+		}
+		matcher.appendTail(result);
+
+		return result.toString();
+	}
+
+	/**
+	 * 解析Nacos引用
+	 * @param nacosRef 引用字符串，格式为 dataId/group
+	 * @param dotNotation 点语法部分，格式为 .key1.key2（可能为null）
+	 * @return 解析后的值
+	 */
+	private String resolveNacosReference(String nacosRef, String dotNotation) {
+		if (!StringUtils.hasText(nacosRef)) {
+			return null;
+		}
+
+		try {
+			// 解析dataId和group
+			String[] configParts = nacosRef.split("/");
+			if (configParts.length != 2) {
+				throw new IllegalArgumentException(
+						"Invalid Nacos config reference format: " + nacosRef + ". Expected format: dataId/group");
+			}
+
+			String dataId = configParts[0];
+			String group = configParts[1];
+
+			// 获取配置内容
+			String configContent = getConfigContent(dataId, group);
+			if (!StringUtils.hasText(configContent)) {
+				logger.warn("[resolveNacosReference] No content found for dataId: {}, group: {}", dataId, group);
+				return null;
+			}
+
+			// 如果没有点语法，直接返回配置内容
+			if (!StringUtils.hasText(dotNotation)) {
+				return configContent;
+			}
+
+			// 如果有点语法，去掉开头的点号，然后解析JSON并提取指定字段
+			String jsonPath = dotNotation.startsWith(".") ? dotNotation.substring(1) : dotNotation;
+			return extractJsonValueFromNacos(configContent, jsonPath);
+
+		}
+		catch (Exception e) {
+			// 记录日志但不中断处理
+			logger.error("[resolveNacosReference] Failed to resolve Nacos reference: {}", e.getMessage(), e);
+			throw new RuntimeException("Failed to resolve Nacos reference: " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * 获取Nacos配置内容
+	 * @param dataId 配置ID
+	 * @param group 分组
+	 * @return 配置内容
+	 * @throws NacosException Nacos异常
+	 */
+	private String getConfigContent(String dataId, String group) throws NacosException {
+		String cacheKey = dataId + "@@" + group;
+		if (nacosConfigContent.containsKey(cacheKey)) {
+			return nacosConfigContent.get(cacheKey);
+		}
+		else {
+			AbstractListener listener = new AbstractListener() {
+				@Override
+				public void receiveConfigInfo(String configInfo) {
+					nacosConfigContent.put(cacheKey, configInfo);
+				}
+			};
+			AbstractListener oldListener = nacosConfigListeners.putIfAbsent(cacheKey, listener);
+			if (oldListener == null) {
+				try {
+					nacosMcpOperationService.getConfigService().addListener(dataId, group, listener);
+				}
+				catch (Exception e) {
+					nacosConfigListeners.remove(cacheKey);
+					logger.error("Failed to add listener for Nacos config: {}", e.getMessage(), e);
+				}
+			}
+			return nacosMcpOperationService.getConfigService().getConfig(dataId, group, 3000);
+		}
+	}
+
+	/**
+	 * 从JSON字符串中提取指定路径的值
+	 * @param jsonString JSON字符串
+	 * @param jsonPath JSON路径，如 key1.key2
+	 * @return 提取的值
+	 */
+	private String extractJsonValueFromNacos(String jsonString, String jsonPath) throws JsonProcessingException {
+
+		try {
+			JsonNode rootNode = objectMapper.readTree(jsonString);
+			String[] pathParts = jsonPath.split("\\.");
+
+			JsonNode currentNode = rootNode;
+			for (String part : pathParts) {
+				if (currentNode == null || currentNode.isMissingNode()) {
+					logger.warn("[extractJsonValueFromNacos] Path '{}' not found in JSON", jsonPath);
+					return null;
+				}
+				currentNode = currentNode.get(part);
+			}
+
+			if (currentNode == null || currentNode.isMissingNode()) {
+				logger.warn("[extractJsonValueFromNacos] Final path '{}' not found in JSON", jsonPath);
+				return null;
+			}
+
+			// 根据节点类型返回合适的值
+			if (currentNode.isTextual()) {
+				return currentNode.asText();
+			}
+			else if (currentNode.isNumber()) {
+				return currentNode.asText();
+			}
+			else if (currentNode.isBoolean()) {
+				return String.valueOf(currentNode.asBoolean());
+			}
+			else {
+				// 对于复杂对象，返回JSON字符串
+				return currentNode.toString();
+			}
+		}
+		catch (JsonProcessingException e) {
+			logger.error("[extractJsonValueFromNacos] Failed to parse JSON from Nacos config. Content: {}, Error: {}",
+					jsonString, e.getMessage());
+			throw new RuntimeException(
+					"Nacos config content is not valid JSON, but dot notation was used. Please ensure the config is in JSON format or remove the dot notation. Content: "
+							+ jsonString,
+					e);
+		}
+		catch (Exception e) {
+			logger.error("[extractJsonValueFromNacos] Failed to extract JSON value from Nacos config: {}",
+					e.getMessage(), e);
+			throw e;
+		}
+	}
+
+	private String processTemplateString(String template, Map<String, Object> params) {
+		Map<String, Object> args = (Map<String, Object>) params.get("args");
+		String extendedData = (String) params.get("extendedData");
+		logger.debug("[processTemplateString] template: {} args: {} extendedData: {}", template, args, extendedData);
 		if (template == null || template.isEmpty()) {
 			return "";
 		}
-
 		Matcher matcher = TEMPLATE_PATTERN.matcher(template);
 		StringBuilder result = new StringBuilder();
 		while (matcher.find()) {
-			String variable = matcher.group(1);
-			String replacement;
-			if ("".equals(variable) || ".".equals(variable)) {
-				// 特殊处理{{.}}，输出data唯一值或整个data
-				if (data != null && data.size() == 1) {
-					replacement = String.valueOf(data.values().iterator().next());
-				}
-				else if (data != null && !data.isEmpty()) {
-					replacement = data.toString();
-				}
-				else {
-					replacement = "";
-				}
-			}
-			else {
-				Object value = data != null ? data.get(variable) : null;
-				if (value == null) {
-					logger.warn("[processTemplateString] Variable '{}' not found in data, using empty string",
-							variable);
-					replacement = "";
-				}
-				else {
-					replacement = value.toString();
-				}
-			}
+			// 获取完整路径，如 .args.name 或 .data.key1.key2
+			String fullPath = matcher.group(1);
+			String replacement = resolvePathValue(fullPath, args, extendedData);
 			matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
 		}
 		matcher.appendTail(result);
 		String finalResult = result.toString();
+		finalResult = processNacosConfigRefTemplate(finalResult);
 		logger.debug("[processTemplateString] final result: {}", finalResult);
 
-		// 验证是否还存在未被替换的{{.}}，如有则输出警告
-		if (finalResult.contains("{{.}}")) {
-			logger.warn("[processTemplateString] WARNING: {{.}} was not replaced in result: {}", finalResult);
+		return finalResult;
+	}
+
+	/**
+	 * 根据路径解析值
+	 * @param fullPath 完整路径，如 .args.name 或 .data.key1.key2
+	 * @param args 参数数据映射
+	 * @param extendedData 扩展数据（JSON字符串）
+	 * @return 解析后的值
+	 */
+	private String resolvePathValue(String fullPath, Map<String, Object> args, String extendedData) {
+		if (fullPath == null || fullPath.isEmpty()) {
+			return "";
+		}
+		// 移除开头的点号
+		if (fullPath.startsWith(".")) {
+			fullPath = fullPath.substring(1);
 		}
 
-		return finalResult;
+		String[] pathParts = fullPath.split("\\.");
+		if (pathParts.length == 0) {
+			return "";
+		}
+
+		// 确定数据源
+		Object dataSource;
+		if (pathParts[0].equals("args")) {
+			// 从args中取值
+			dataSource = args;
+			// 如果只有args，没有具体字段名
+			if (pathParts.length == 1) {
+				if (args != null && args.size() == 1) {
+					return String.valueOf(args.values().iterator().next());
+				}
+				else if (args != null && !args.isEmpty()) {
+					return args.toString();
+				}
+				else {
+					return "";
+				}
+			}
+		}
+		else {
+			// 从extendedData中取值
+			// 首先将extendedData字符串解析为JSON对象
+			try {
+				if (StringUtils.hasText(extendedData)) {
+					dataSource = objectMapper.readValue(extendedData, Map.class);
+				}
+				else {
+					dataSource = null;
+				}
+			}
+			catch (Exception e) {
+				logger.warn("[resolvePathValue] Failed to parse extendedData as JSON: {}", e.getMessage());
+				// 如果解析失败，将extendedData作为普通字符串处理
+				if (pathParts.length == 1 && fullPath.equals("extendedData")) {
+					return extendedData != null ? extendedData : "";
+				}
+				return "";
+			}
+
+			// 特殊处理直接访问extendedData的情况
+			if (pathParts.length == 1 && fullPath.equals("extendedData")) {
+				return extendedData != null ? extendedData : "";
+			}
+		}
+
+		// 如果数据源为空
+		if (dataSource == null) {
+			return "";
+		}
+		// 处理嵌套路径
+		Object currentValue = dataSource;
+		int startIndex = pathParts[0].equals("args") ? 1 : 0;
+		// 如果是args，从索引1开始；否则从索引0开始
+
+		for (int i = startIndex; i < pathParts.length; i++) {
+			String key = pathParts[i];
+			if (currentValue instanceof Map) {
+				Map<String, Object> currentMap = (Map<String, Object>) currentValue;
+				currentValue = currentMap.get(key);
+			}
+			else {
+				logger.warn("[resolvePathValue] Cannot access key '{}' from non-map value", key);
+				return "";
+			}
+
+			if (currentValue == null) {
+				logger.warn("[resolvePathValue] Key '{}' not found in nested path", key);
+				return "";
+			}
+		}
+		return currentValue.toString();
 	}
 
 	@Override
@@ -711,6 +972,19 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	private java.time.Duration getTimeoutDuration() {
 
 		return java.time.Duration.ofSeconds(30); // 默认超时时间
+	}
+
+	/**
+	 * Close.
+	 */
+	public void close() {
+
+		for (Map.Entry<String, AbstractListener> entry : nacosConfigListeners.entrySet()) {
+			String cacheKey = entry.getKey();
+			String dataId = cacheKey.split("@@")[0];
+			String group = cacheKey.split("@@")[1];
+			nacosMcpOperationService.getConfigService().removeListener(dataId, group, entry.getValue());
+		}
 	}
 
 }

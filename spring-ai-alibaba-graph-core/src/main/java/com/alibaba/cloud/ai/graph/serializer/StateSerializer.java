@@ -15,29 +15,74 @@
  */
 package com.alibaba.cloud.ai.graph.serializer;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.util.Map;
+import java.util.Objects;
 
-public abstract class StateSerializer<T> implements Serializer<T> {
+public abstract class StateSerializer implements Serializer<OverAllState> {
 
-	private final AgentStateFactory<T> stateFactory;
+	private final AgentStateFactory<OverAllState> stateFactory;
 
-	protected StateSerializer(AgentStateFactory<T> stateFactory) {
-		this.stateFactory = stateFactory;
+	protected StateSerializer(AgentStateFactory<OverAllState> stateFactory) {
+		this.stateFactory = Objects.requireNonNull(stateFactory, "stateFactory cannot be null");
 	}
 
-	public final AgentStateFactory<T> stateFactory() {
+	public final AgentStateFactory<OverAllState> stateFactory() {
 		return stateFactory;
 	}
 
-	public final T stateOf(Map<String, Object> data) {
+	public final OverAllState stateOf(Map<String, Object> data) {
+		Objects.requireNonNull(data, "data cannot be null");
 		return stateFactory.apply(data);
 	}
 
-	public final T cloneObject(Map<String, Object> data) throws IOException, ClassNotFoundException {
+	public final OverAllState cloneObject(Map<String, Object> data) throws IOException, ClassNotFoundException {
+		Objects.requireNonNull(data, "data cannot be null");
 		return cloneObject(stateFactory().apply(data));
+	}
+
+	@Override
+	public final void write(OverAllState object, ObjectOutput out) throws IOException {
+		writeData(object.data(), out);
+	}
+
+	@Override
+	public final OverAllState read(ObjectInput in) throws IOException, ClassNotFoundException {
+		return stateFactory().apply(readData(in));
+	}
+
+	public abstract void writeData(Map<String, Object> data, ObjectOutput out) throws IOException;
+
+	public abstract Map<String, Object> readData(ObjectInput in) throws IOException, ClassNotFoundException;
+
+	public final byte[] dataToBytes(Map<String, Object> data) throws IOException {
+		Objects.requireNonNull(data, "object cannot be null");
+		try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
+			ObjectOutputStream oas = new ObjectOutputStream(stream);
+			writeData(data, oas);
+			oas.flush();
+			return stream.toByteArray();
+		}
+	}
+
+	public final Map<String, Object> dataFromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
+		Objects.requireNonNull(bytes, "bytes cannot be null");
+		if (bytes.length == 0) {
+			throw new IllegalArgumentException("bytes cannot be empty");
+		}
+		try (ByteArrayInputStream stream = new ByteArrayInputStream(bytes)) {
+			ObjectInputStream ois = new ObjectInputStream(stream);
+			return readData(ois);
+		}
 	}
 
 }

@@ -244,8 +244,8 @@ class DateTimeUtilTest {
 		assertEquals("2023年12月", lastMonth);
 
 		// Test leap year case
-		LocalDate intercalarYear = LocalDate.of(2024, 2, 29);
-		String today = DateTimeUtil.getDayEx(intercalarYear, "今天");
+		LocalDate intercalaryYear = LocalDate.of(2024, 2, 29);
+		String today = DateTimeUtil.getDayEx(intercalaryYear, "今天");
 		assertEquals("2024年02月29日", today);
 	}
 

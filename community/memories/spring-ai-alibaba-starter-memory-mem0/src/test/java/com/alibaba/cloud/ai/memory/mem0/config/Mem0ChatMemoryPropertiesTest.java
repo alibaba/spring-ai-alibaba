@@ -30,7 +30,7 @@ class Mem0ChatMemoryPropertiesTest {
 	@Test
 	void testDefaultConstructor() {
 		// When
-		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties();
+		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties.Builder().build();
 
 		// Then
 		assertThat(properties).isNotNull();
@@ -43,13 +43,8 @@ class Mem0ChatMemoryPropertiesTest {
 	@Test
 	void testClientProperties() {
 		// Given
-		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties();
-		Mem0ChatMemoryProperties.Client client = new Mem0ChatMemoryProperties.Client();
-
-		// When
-		client.setBaseUrl("http://localhost:8888");
-		client.setTimeoutSeconds(30);
-		properties.setClient(client);
+		Mem0ChatMemoryProperties.Client client = new Mem0ChatMemoryProperties.Client.Builder().baseUrl("http://localhost:8888").timeoutSeconds(30).build();
+		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties.Builder().client(client).build();
 
 		// Then
 		assertThat(properties.getClient().getBaseUrl()).isEqualTo("http://localhost:8888");
@@ -59,12 +54,8 @@ class Mem0ChatMemoryPropertiesTest {
 	@Test
 	void testServerProperties() {
 		// Given
-		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties();
-		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server();
-
-		// When
-		server.setVersion("v1.1");
-		properties.setServer(server);
+		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server.Builder().version("v1.1").build();
+		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties.Builder().server(server).build();
 
 		// Then
 		assertThat(properties.getServer().getVersion()).isEqualTo("v1.1");
@@ -73,11 +64,9 @@ class Mem0ChatMemoryPropertiesTest {
 	@Test
 	void testServerCustomPrompts() {
 		// Given
-		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server();
-
-		// When
-		server.setCustomFactExtractionPrompt("fact extraction prompt");
-		server.setCustomUpdateMemoryPrompt("update memory prompt");
+		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server.Builder()
+				.customFactExtractionPrompt("fact extraction prompt")
+				.customUpdateMemoryPrompt("update memory prompt").build();
 
 		// Then
 		assertThat(server.getCustomFactExtractionPrompt()).isEqualTo("fact extraction prompt");
@@ -87,7 +76,7 @@ class Mem0ChatMemoryPropertiesTest {
 	@Test
 	void testClientDefaultValues() {
 		// Given
-		Mem0ChatMemoryProperties.Client client = new Mem0ChatMemoryProperties.Client();
+		Mem0ChatMemoryProperties.Client client = new Mem0ChatMemoryProperties.Client.Builder().build();
 
 		// Then - Verify default values
 		assertThat(client.getBaseUrl()).isEqualTo("http://localhost:8888");
@@ -97,7 +86,7 @@ class Mem0ChatMemoryPropertiesTest {
 	@Test
 	void testServerDefaultValues() {
 		// Given
-		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server();
+		Mem0ChatMemoryProperties.Server server = new Mem0ChatMemoryProperties.Server.Builder().build();
 
 		// Then - Verify default values
 		assertThat(server.getVersion()).isNull();
@@ -110,17 +99,13 @@ class Mem0ChatMemoryPropertiesTest {
 
 	@Test
 	void testPropertiesEquality() {
-		// Given
-		Mem0ChatMemoryProperties properties1 = new Mem0ChatMemoryProperties();
-		Mem0ChatMemoryProperties properties2 = new Mem0ChatMemoryProperties();
-
 		// When - The client object needs to be initialized first
-		Mem0ChatMemoryProperties.Client client1 = new Mem0ChatMemoryProperties.Client();
-		Mem0ChatMemoryProperties.Client client2 = new Mem0ChatMemoryProperties.Client();
-		client1.setBaseUrl("http://localhost:8888");
-		client2.setBaseUrl("http://localhost:8888");
-		properties1.setClient(client1);
-		properties2.setClient(client2);
+		Mem0ChatMemoryProperties.Client client1 = new Mem0ChatMemoryProperties.Client.Builder()
+		.baseUrl("http://localhost:8888").build();
+		Mem0ChatMemoryProperties.Client client2 = new Mem0ChatMemoryProperties.Client.Builder()
+		.baseUrl("http://localhost:8888").build();
+		Mem0ChatMemoryProperties properties1 = new Mem0ChatMemoryProperties.Builder().client(client1).build();
+		Mem0ChatMemoryProperties properties2 = new Mem0ChatMemoryProperties.Builder().client(client2).build();
 
 		// Then
 		assertThat(properties1.getClient().getBaseUrl()).isEqualTo(properties2.getClient().getBaseUrl());
@@ -129,7 +114,7 @@ class Mem0ChatMemoryPropertiesTest {
 	@Test
 	void testPropertiesToString() {
 		// Given
-		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties();
+		Mem0ChatMemoryProperties properties = new Mem0ChatMemoryProperties.Builder().build();
 
 		// When
 		String toString = properties.toString();

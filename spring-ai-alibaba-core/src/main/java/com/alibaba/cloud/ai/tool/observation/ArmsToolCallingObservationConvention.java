@@ -105,7 +105,8 @@ public class ArmsToolCallingObservationConvention implements ObservationConventi
 
 	protected KeyValues toolParameters(KeyValues keyValues, ArmsToolCallingObservationContext context) {
 		if (context.getToolCall().arguments() != null) {
-			return keyValues.and(HighCardinalityKeyNames.TOOL_PARAMETERS.asString(), context.getToolCall().arguments());
+			return keyValues.and(HighCardinalityKeyNames.TOOL_PARAMETERS.asString(), context.getToolCall().arguments())
+				.and(HighCardinalityKeyNames.INPUT_VALUE.asString(), context.getToolCall().arguments());
 		}
 		return keyValues;
 	}
