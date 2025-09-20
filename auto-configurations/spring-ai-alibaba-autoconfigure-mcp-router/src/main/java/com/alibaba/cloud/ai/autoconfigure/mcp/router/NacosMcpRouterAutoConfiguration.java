@@ -24,12 +24,14 @@ import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.cloud.ai.mcp.router.config.McpRouterProperties;
 import com.alibaba.cloud.ai.mcp.router.core.McpRouterWatcher;
 import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscovery;
+import com.alibaba.cloud.ai.mcp.router.core.discovery.McpServiceDiscoveryFactory;
 import com.alibaba.cloud.ai.mcp.router.core.vectorstore.McpServerVectorStore;
 import com.alibaba.cloud.ai.mcp.router.core.vectorstore.SimpleMcpServerVectorStore;
 import com.alibaba.cloud.ai.mcp.router.nacos.NacosMcpServiceDiscovery;
 import com.alibaba.cloud.ai.mcp.router.service.McpProxyService;
 import com.alibaba.cloud.ai.mcp.router.service.McpRouterService;
 import com.alibaba.nacos.api.exception.NacosException;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.MetadataMode;
@@ -38,6 +40,8 @@ import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -46,11 +50,15 @@ import org.springframework.context.annotation.Bean;
 import java.util.Properties;
 
 /**
+ * Register NacosMcpServiceDiscovery to McpServiceDiscoveryFactory.
+ *
  * @author aias00
  */
+@AutoConfiguration
+@AutoConfigureAfter(McpServiceDiscoveryAutoConfiguration.class)
 @EnableConfigurationProperties({ McpRouterProperties.class, NacosMcpProperties.class, McpServerProperties.class })
 @ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = false)
+		matchIfMissing = true)
 public class NacosMcpRouterAutoConfiguration {
 
 	private static final Logger log = LoggerFactory.getLogger(NacosMcpRouterAutoConfiguration.class);
@@ -62,7 +70,7 @@ public class NacosMcpRouterAutoConfiguration {
 	@ConditionalOnMissingBean
 	public EmbeddingModel embeddingModel() {
 		if (apiKey == null || apiKey.isEmpty() || "default_api_key".equals(apiKey)) {
-			throw new IllegalArgumentException("Environment variable DASHSCOPE_API_KEY is not set.");
+			throw new IllegalArgumentException("Environment variable AI_DASHSCOPE_API_KEY is not set.");
 		}
 		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(apiKey).build();
 
@@ -82,13 +90,11 @@ public class NacosMcpRouterAutoConfiguration {
 		}
 	}
 
-	/**
-	 * 配置 MCP 服务发现
-	 */
 	@Bean
-	@ConditionalOnMissingBean
-	public McpServiceDiscovery mcpServiceDiscovery(NacosMcpOperationService nacosMcpOperationService) {
-		return new NacosMcpServiceDiscovery(nacosMcpOperationService);
+	public NacosMcpServiceDiscoveryRegistrar nacosMcpServiceDiscoveryRegistrar(
+			McpServiceDiscoveryFactory discoveryFactory, NacosMcpOperationService nacosMcpOperationService) {
+		log.info("Creating Nacos MCP service discovery registrar");
+		return new NacosMcpServiceDiscoveryRegistrar(discoveryFactory, nacosMcpOperationService);
 	}
 
 	/**
@@ -136,6 +142,32 @@ public class NacosMcpRouterAutoConfiguration {
 	public McpRouterWatcher mcpRouterWatcher(McpServiceDiscovery mcpServiceDiscovery,
 			McpServerVectorStore mcpServerVectorStore, McpRouterProperties mcpRouterProperties) {
 		return new McpRouterWatcher(mcpServiceDiscovery, mcpServerVectorStore, mcpRouterProperties.getServiceNames());
+	}
+
+	/**
+	 * Nacos MCP服务发现注册器
+	 */
+	public static class NacosMcpServiceDiscoveryRegistrar {
+
+		private final McpServiceDiscoveryFactory discoveryFactory;
+
+		private final NacosMcpOperationService nacosMcpOperationService;
+
+		public NacosMcpServiceDiscoveryRegistrar(McpServiceDiscoveryFactory discoveryFactory,
+				NacosMcpOperationService nacosMcpOperationService) {
+			this.discoveryFactory = discoveryFactory;
+			this.nacosMcpOperationService = nacosMcpOperationService;
+			log.info("Nacos MCP service discovery registrar constructor called");
+		}
+
+		@PostConstruct
+		public void init() {
+			log.info("Nacos MCP service discovery registrar initialized");
+			log.info("Registering Nacos MCP service discovery");
+			McpServiceDiscovery nacosDiscovery = new NacosMcpServiceDiscovery(nacosMcpOperationService);
+			discoveryFactory.registerDiscovery("nacos", nacosDiscovery);
+		}
+
 	}
 
 }
