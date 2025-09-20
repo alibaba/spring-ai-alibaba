@@ -16,28 +16,19 @@
 
 package com.alibaba.cloud.ai.agent.nacos;
 
-import com.alibaba.cloud.ai.agent.nacos.vo.AgentVO;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.nacos.api.exception.NacosException;
+import com.alibaba.cloud.ai.graph.agent.Builder;
+import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
 
-public class NacosAgentInjector {
+public class NacosAgentPromptBuilderFactory implements AgentBuilderFactory {
 
-	/**
-	 * load prompt by agent id.
-	 *
-	 * @param nacosOptions
-	 * @return
-	 */
-	public static AgentVO loadAgentVO(NacosOptions nacosOptions) {
-		try {
-			String config = nacosOptions.getNacosConfigService()
-					.getConfig("agent-base.json", "ai-agent-" + nacosOptions.getAgentName(),
-							3000L);
-			return JSON.parseObject(config, AgentVO.class);
-		}
-		catch (NacosException e) {
-			throw new RuntimeException(e);
-		}
+	private NacosOptions nacosOptions;
+
+	public NacosAgentPromptBuilderFactory(NacosOptions nacosOptions) {
+		this.nacosOptions = nacosOptions;
 	}
 
+	@Override
+	public Builder builder() {
+		return new NacosAgentPromptBuilder().nacosOptions(this.nacosOptions);
+	}
 }
