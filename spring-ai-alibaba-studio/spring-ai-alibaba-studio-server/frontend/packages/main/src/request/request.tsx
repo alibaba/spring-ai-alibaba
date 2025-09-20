@@ -88,6 +88,7 @@ export default async function fetch(
   }
 
   return await request().catch((error) => {
+    console.error('Request failed:', error);
     autoMsg && notificationError(error);
     throw error;
   });
