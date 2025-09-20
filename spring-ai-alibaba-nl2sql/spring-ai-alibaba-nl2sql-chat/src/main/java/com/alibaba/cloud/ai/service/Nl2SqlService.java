@@ -132,7 +132,7 @@ public class Nl2SqlService {
 	}
 
 	/**
-	 * 将NodeOutput转为NlSqlProcess实体类（用于nl2sqlWithProcess的consumer中记录转化过程）
+	 * 将NodeOutput转为Nl2SqlProcess实体类（用于nl2sqlWithProcess的consumer中记录转化过程）
 	 * @param output NodeOutput
 	 * @return NlSqlProcess
 	 */

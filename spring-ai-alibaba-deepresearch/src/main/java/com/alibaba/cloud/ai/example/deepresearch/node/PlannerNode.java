@@ -78,9 +78,9 @@ public class PlannerNode implements NodeAction {
 			}
 		}
 		// 1.4 添加用户反馈消息
-		String feedBackContent = state.value("feed_back_content", "").toString();
-		if (StringUtils.hasText(feedBackContent)) {
-			messages.add(new UserMessage(feedBackContent));
+		String feedbackContent = state.value("feedback_content", "").toString();
+		if (StringUtils.hasText(feedbackContent)) {
+			messages.add(new UserMessage(feedbackContent));
 		}
 		// 1.5 添加用户上传的RAG查询结果
 		String ragContent = StateUtil.getRagContent(state);
