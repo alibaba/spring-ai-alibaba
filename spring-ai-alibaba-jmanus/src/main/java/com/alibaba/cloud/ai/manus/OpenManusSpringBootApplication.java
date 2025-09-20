@@ -35,6 +35,12 @@ public class OpenManusSpringBootApplication {
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		if (args != null && args.length >= 1 && args[0].equals("playwright-init")) {
+			System.setProperty("playwright.driver.impl", "com.alibaba.cloud.ai.manus.playwright.ManusDriverJar");
+			if (args.length >= 2) {
+				String browser = args[1];
+				System.setProperty("playwright.browser", browser);
+			}
+
 			Playwright.create();
 			System.out.println("Playwright init finished");
 			System.exit(0);
