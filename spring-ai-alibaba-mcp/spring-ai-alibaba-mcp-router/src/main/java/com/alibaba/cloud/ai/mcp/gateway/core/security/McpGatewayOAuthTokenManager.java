@@ -46,6 +46,8 @@ public class McpGatewayOAuthTokenManager {
 
 	private volatile CachedToken cachedToken;
 
+	private final static Integer DEFAULT_EXPIRED_TIME = 3600;
+
 	public McpGatewayOAuthTokenManager(WebClient.Builder webClientBuilder, McpGatewayOAuthProperties oauthProperties) {
 		this.webClient = webClientBuilder.build();
 		this.oauthProperties = oauthProperties;
@@ -70,10 +72,10 @@ public class McpGatewayOAuthTokenManager {
 				}
 			}
 			return null;
-		}).switchIfEmpty(fetchNewToken()).onErrorResume(throwable -> {
+		}).onErrorResume(throwable -> {
 			logger.error("获取访问token失败", throwable);
 			return Mono.empty();
-		});
+		}).switchIfEmpty(fetchNewToken());
 	}
 
 	/**
@@ -104,7 +106,7 @@ public class McpGatewayOAuthTokenManager {
 			.bodyToMono(String.class)
 			.map(responseBody -> parseTokenResponse(responseBody))
 			.doOnNext(token -> logger.info("成功获取访问token"))
-			.retry(oauthProperties.getRetry().getMaxAttempts())
+			.retry(oauthProperties.getRetry().getMaxAttempts() - 1)
 			.onErrorMap(throwable -> {
 				logger.error("获取访问token失败", throwable);
 				return new RuntimeException("OAuth token获取失败", throwable);
@@ -126,7 +128,7 @@ public class McpGatewayOAuthTokenManager {
 			if (oauthProperties.getTokenCache().isEnabled()) {
 				cachedToken = new CachedToken(tokenResponse.getAccessToken(), tokenResponse.getRefreshToken(),
 						Instant.now()
-							.plusSeconds(tokenResponse.getExpiresIn() != null ? tokenResponse.getExpiresIn() : 3600),
+							.plusSeconds(tokenResponse.getExpiresIn() != null ? tokenResponse.getExpiresIn() : DEFAULT_EXPIRED_TIME),
 						tokenResponse.getTokenType());
 				logger.debug("缓存访问token");
 			}
