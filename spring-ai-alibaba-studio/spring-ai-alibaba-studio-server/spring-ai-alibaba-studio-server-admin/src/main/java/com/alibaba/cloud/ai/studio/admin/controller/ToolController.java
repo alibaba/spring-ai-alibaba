@@ -53,9 +53,7 @@ public class ToolController {
 	 * Update an existing tool
 	 */
 	@PutMapping("/{id}")
-	public Result<ToolEntity> updateTool(
-			@PathVariable Long id,
-			@RequestBody ToolEntity toolEntity) {
+	public Result<ToolEntity> updateTool(@PathVariable Long id, @RequestBody ToolEntity toolEntity) {
 		toolEntity.setId(id);
 		ToolEntity updated = toolService.updateTool(toolEntity);
 		return Result.success(updated);
@@ -93,8 +91,7 @@ public class ToolController {
 	 * Get tools with pagination
 	 */
 	@GetMapping("/page")
-	public Result<PagingList<ToolEntity>> getToolsByPage(
-			@RequestParam(defaultValue = "1") long current,
+	public Result<PagingList<ToolEntity>> getToolsByPage(@RequestParam(defaultValue = "1") long current,
 			@RequestParam(defaultValue = "10") long size) {
 		String workspaceId = "default"; // TODO: Get from context
 		Page<ToolEntity> page = new Page<>(current, size);
@@ -106,8 +103,7 @@ public class ToolController {
 	 * Search tools by name
 	 */
 	@GetMapping("/search")
-	public Result<List<ToolEntity>> searchTools(
-			@RequestParam String name) {
+	public Result<List<ToolEntity>> searchTools(@RequestParam String name) {
 		String workspaceId = "default"; // TODO: Get from context
 		List<ToolEntity> tools = toolService.getToolsByName(name, workspaceId);
 		return Result.success(tools);
@@ -117,8 +113,7 @@ public class ToolController {
 	 * Get tools by plugin ID
 	 */
 	@GetMapping("/plugin/{pluginId}")
-	public Result<List<ToolEntity>> getToolsByPlugin(
-			@PathVariable String pluginId) {
+	public Result<List<ToolEntity>> getToolsByPlugin(@PathVariable String pluginId) {
 		String workspaceId = "default"; // TODO: Get from context
 		List<ToolEntity> tools = toolService.getToolsByPluginId(pluginId, workspaceId);
 		return Result.success(tools);
@@ -128,9 +123,7 @@ public class ToolController {
 	 * Enable or disable a tool
 	 */
 	@PatchMapping("/{id}/enabled")
-	public Result<Void> setToolEnabled(
-			@PathVariable Long id,
-			@RequestParam Boolean enabled) {
+	public Result<Void> setToolEnabled(@PathVariable Long id, @RequestParam Boolean enabled) {
 		toolService.setToolEnabled(id, enabled);
 		return Result.success(null);
 	}

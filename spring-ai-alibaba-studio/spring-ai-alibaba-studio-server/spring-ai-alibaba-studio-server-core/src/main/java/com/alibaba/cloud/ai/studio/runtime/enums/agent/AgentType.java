@@ -35,7 +35,9 @@ public enum AgentType {
 	/** Sequential agent that executes agents in a specific order */
 	SEQUENTIAL_AGENT("SequentialAgent"),
 
-	/** LLM routing agent that routes requests to different agents based on LLM decisions */
+	/**
+	 * LLM routing agent that routes requests to different agents based on LLM decisions
+	 */
 	LLM_ROUTING_AGENT("LLMRoutingAgent"),
 
 	/** Loop agent that repeatedly executes agents based on conditions */

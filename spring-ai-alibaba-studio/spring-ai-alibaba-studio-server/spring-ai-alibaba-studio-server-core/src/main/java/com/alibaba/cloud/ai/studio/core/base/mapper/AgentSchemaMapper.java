@@ -20,7 +20,8 @@ import com.alibaba.cloud.ai.studio.core.base.entity.AgentSchemaEntity;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
- * Mapper interface for AgentSchema entity. Provides database operations for agent schema data.
+ * Mapper interface for AgentSchema entity. Provides database operations for agent schema
+ * data.
  *
  * @since 1.0.0.3
  */

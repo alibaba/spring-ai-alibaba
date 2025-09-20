@@ -39,42 +39,43 @@ import java.util.List;
  * @since 1.0.0.3
  */
 @Service
-public class AgentSchemaServiceImpl extends ServiceImpl<AgentSchemaMapper, AgentSchemaEntity> implements AgentSchemaService {
+public class AgentSchemaServiceImpl extends ServiceImpl<AgentSchemaMapper, AgentSchemaEntity>
+		implements AgentSchemaService {
 
 	@Override
 	public AgentSchemaEntity createAgentSchema(AgentSchemaEntity agentSchemaEntity) {
 		RequestContext requestContext = RequestContextHolder.getRequestContext();
-		
+
 		// Check for duplicate name in the same workspace
 		String workspaceId = requestContext != null ? requestContext.getWorkspaceId() : null;
 		if (StringUtils.isBlank(workspaceId)) {
 			workspaceId = "1"; // Use default workspace ID that matches database
 		}
-		
+
 		LambdaQueryWrapper<AgentSchemaEntity> duplicateCheck = new LambdaQueryWrapper<>();
 		duplicateCheck.eq(AgentSchemaEntity::getWorkspaceId, workspaceId);
 		duplicateCheck.eq(AgentSchemaEntity::getName, agentSchemaEntity.getName());
 		List<AgentSchemaEntity> existingAgents = list(duplicateCheck);
-		
+
 		if (!existingAgents.isEmpty()) {
 			throw new IllegalArgumentException("智能体名称已存在，请使用其他名称: " + agentSchemaEntity.getName());
 		}
-		
+
 		// Set default values
 		if (StringUtils.isBlank(agentSchemaEntity.getAgentId())) {
 			agentSchemaEntity.setAgentId(IdGenerator.generateAgentId());
 		}
-		
+
 		agentSchemaEntity.setWorkspaceId(workspaceId);
 		agentSchemaEntity.setStatus(AgentStatus.ACTIVE);
 		agentSchemaEntity.setEnabled(true);
 		agentSchemaEntity.setGmtCreate(new Date());
 		agentSchemaEntity.setGmtModified(new Date());
-		
+
 		String accountId = requestContext != null ? requestContext.getAccountId() : "10000";
 		agentSchemaEntity.setCreator(accountId);
 		agentSchemaEntity.setModifier(accountId);
-		
+
 		save(agentSchemaEntity);
 		return agentSchemaEntity;
 	}
@@ -82,32 +83,34 @@ public class AgentSchemaServiceImpl extends ServiceImpl<AgentSchemaMapper, Agent
 	@Override
 	public AgentSchemaEntity updateAgentSchema(AgentSchemaEntity agentSchemaEntity) {
 		RequestContext requestContext = RequestContextHolder.getRequestContext();
-		
+
 		AgentSchemaEntity existing = getById(agentSchemaEntity.getId());
 		if (existing == null) {
 			throw new IllegalArgumentException("Agent schema not found with id: " + agentSchemaEntity.getId());
 		}
-		
+
 		// Check for duplicate name in the same workspace (excluding current agent)
 		String workspaceId = requestContext != null ? requestContext.getWorkspaceId() : null;
 		if (StringUtils.isBlank(workspaceId)) {
 			workspaceId = "1"; // Use default workspace ID that matches database
 		}
-		
+
 		LambdaQueryWrapper<AgentSchemaEntity> duplicateCheck = new LambdaQueryWrapper<>();
 		duplicateCheck.eq(AgentSchemaEntity::getWorkspaceId, workspaceId);
 		duplicateCheck.eq(AgentSchemaEntity::getName, agentSchemaEntity.getName());
-		duplicateCheck.ne(AgentSchemaEntity::getId, agentSchemaEntity.getId()); // Exclude current agent
+		duplicateCheck.ne(AgentSchemaEntity::getId, agentSchemaEntity.getId()); // Exclude
+																				// current
+																				// agent
 		List<AgentSchemaEntity> existingAgents = list(duplicateCheck);
-		
+
 		if (!existingAgents.isEmpty()) {
 			throw new IllegalArgumentException("智能体名称已存在，请使用其他名称: " + agentSchemaEntity.getName());
 		}
-		
+
 		// Update fields
 		agentSchemaEntity.setGmtModified(new Date());
 		agentSchemaEntity.setModifier(requestContext.getAccountId());
-		
+
 		updateById(agentSchemaEntity);
 		return agentSchemaEntity;
 	}
@@ -131,11 +134,12 @@ public class AgentSchemaServiceImpl extends ServiceImpl<AgentSchemaMapper, Agent
 	}
 
 	@Override
-	public PagingList<AgentSchemaEntity> getAgentSchemasByWorkspaceId(String workspaceId, Page<AgentSchemaEntity> page) {
+	public PagingList<AgentSchemaEntity> getAgentSchemasByWorkspaceId(String workspaceId,
+			Page<AgentSchemaEntity> page) {
 		LambdaQueryWrapper<AgentSchemaEntity> queryWrapper = new LambdaQueryWrapper<>();
 		queryWrapper.eq(AgentSchemaEntity::getWorkspaceId, workspaceId);
 		queryWrapper.orderByDesc(AgentSchemaEntity::getGmtModified);
-		
+
 		Page<AgentSchemaEntity> result = page(page, queryWrapper);
 		return PagingList.<AgentSchemaEntity>builder()
 			.current((int) result.getCurrent())
@@ -160,11 +164,11 @@ public class AgentSchemaServiceImpl extends ServiceImpl<AgentSchemaMapper, Agent
 		if (agent == null) {
 			throw new IllegalArgumentException("Agent schema not found with id: " + id);
 		}
-		
+
 		agent.setEnabled(enabled);
 		agent.setGmtModified(new Date());
 		agent.setModifier(RequestContextHolder.getRequestContext().getAccountId());
-		
+
 		updateById(agent);
 	}
 

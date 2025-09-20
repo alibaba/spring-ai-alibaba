@@ -44,7 +44,7 @@ public class ToolServiceImpl extends ServiceImpl<ToolMapper, ToolEntity> impleme
 	@Override
 	public ToolEntity createTool(ToolEntity toolEntity) {
 		RequestContext requestContext = RequestContextHolder.getRequestContext();
-		
+
 		// Set default values
 		if (StringUtils.isBlank(toolEntity.getToolId())) {
 			toolEntity.setToolId(IdGenerator.generateToolId());
@@ -56,7 +56,7 @@ public class ToolServiceImpl extends ServiceImpl<ToolMapper, ToolEntity> impleme
 		toolEntity.setGmtModified(new Date());
 		toolEntity.setCreator(requestContext.getAccountId());
 		toolEntity.setModifier(requestContext.getAccountId());
-		
+
 		save(toolEntity);
 		return toolEntity;
 	}
@@ -64,16 +64,16 @@ public class ToolServiceImpl extends ServiceImpl<ToolMapper, ToolEntity> impleme
 	@Override
 	public ToolEntity updateTool(ToolEntity toolEntity) {
 		RequestContext requestContext = RequestContextHolder.getRequestContext();
-		
+
 		ToolEntity existing = getById(toolEntity.getId());
 		if (existing == null) {
 			throw new IllegalArgumentException("Tool not found with id: " + toolEntity.getId());
 		}
-		
+
 		// Update fields
 		toolEntity.setGmtModified(new Date());
 		toolEntity.setModifier(requestContext.getAccountId());
-		
+
 		updateById(toolEntity);
 		return toolEntity;
 	}
@@ -101,7 +101,7 @@ public class ToolServiceImpl extends ServiceImpl<ToolMapper, ToolEntity> impleme
 		LambdaQueryWrapper<ToolEntity> queryWrapper = new LambdaQueryWrapper<>();
 		queryWrapper.eq(ToolEntity::getWorkspaceId, workspaceId);
 		queryWrapper.orderByDesc(ToolEntity::getGmtModified);
-		
+
 		Page<ToolEntity> result = page(page, queryWrapper);
 		return PagingList.<ToolEntity>builder()
 			.current((int) result.getCurrent())
@@ -126,11 +126,11 @@ public class ToolServiceImpl extends ServiceImpl<ToolMapper, ToolEntity> impleme
 		if (tool == null) {
 			throw new IllegalArgumentException("Tool not found with id: " + id);
 		}
-		
+
 		tool.setEnabled(enabled);
 		tool.setGmtModified(new Date());
 		tool.setModifier(RequestContextHolder.getRequestContext().getAccountId());
-		
+
 		updateById(tool);
 	}
 

@@ -26,7 +26,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * REST controller for managing agent schemas. Handles CRUD operations for agent configurations.
+ * REST controller for managing agent schemas. Handles CRUD operations for agent
+ * configurations.
  *
  * @since 1.0.0.3
  */
@@ -45,18 +46,7 @@ public class AgentSchemaController {
 	 */
 	@PostMapping
 	public Result<AgentSchemaEntity> createAgentSchema(@RequestBody AgentSchemaEntity agentSchemaEntity) {
-		// 调试日志：检查接收到的数据
-		System.out.println("=== CREATE AGENT SCHEMA DEBUG ===");
-		System.out.println("Received agent name: " + agentSchemaEntity.getName());
-		System.out.println("Received subAgents: " + agentSchemaEntity.getSubAgents());
-		System.out.println("Received handle: " + agentSchemaEntity.getHandle());
-		
 		AgentSchemaEntity created = agentSchemaService.createAgentSchema(agentSchemaEntity);
-		
-		// 调试日志：检查创建后的数据
-		System.out.println("Created subAgents: " + created.getSubAgents());
-		System.out.println("=== CREATE AGENT SCHEMA END ===");
-		
 		return Result.success(created);
 	}
 
@@ -64,23 +54,10 @@ public class AgentSchemaController {
 	 * Update an existing agent schema
 	 */
 	@PutMapping("/{id}")
-	public Result<AgentSchemaEntity> updateAgentSchema(
-			@PathVariable Long id,
+	public Result<AgentSchemaEntity> updateAgentSchema(@PathVariable Long id,
 			@RequestBody AgentSchemaEntity agentSchemaEntity) {
-		// 调试日志：检查接收到的数据
-		System.out.println("=== UPDATE AGENT SCHEMA DEBUG ===");
-		System.out.println("Received agent ID: " + id);
-		System.out.println("Received agent name: " + agentSchemaEntity.getName());
-		System.out.println("Received subAgents: " + agentSchemaEntity.getSubAgents());
-		System.out.println("Received handle: " + agentSchemaEntity.getHandle());
-		
 		agentSchemaEntity.setId(id);
 		AgentSchemaEntity updated = agentSchemaService.updateAgentSchema(agentSchemaEntity);
-		
-		// 调试日志：检查更新后的数据
-		System.out.println("Updated subAgents: " + updated.getSubAgents());
-		System.out.println("=== UPDATE AGENT SCHEMA END ===");
-		
 		return Result.success(updated);
 	}
 
@@ -116,8 +93,7 @@ public class AgentSchemaController {
 	 * Get agent schemas with pagination
 	 */
 	@GetMapping("/page")
-	public Result<PagingList<AgentSchemaEntity>> getAgentSchemasByPage(
-			@RequestParam(defaultValue = "1") long current,
+	public Result<PagingList<AgentSchemaEntity>> getAgentSchemasByPage(@RequestParam(defaultValue = "1") long current,
 			@RequestParam(defaultValue = "10") long size) {
 		String workspaceId = "1"; // Use default workspace ID that matches database
 		Page<AgentSchemaEntity> page = new Page<>(current, size);
@@ -129,8 +105,7 @@ public class AgentSchemaController {
 	 * Search agent schemas by name
 	 */
 	@GetMapping("/search")
-	public Result<List<AgentSchemaEntity>> searchAgentSchemas(
-			@RequestParam String name) {
+	public Result<List<AgentSchemaEntity>> searchAgentSchemas(@RequestParam String name) {
 		String workspaceId = "1"; // Use default workspace ID that matches database
 		List<AgentSchemaEntity> agentSchemas = agentSchemaService.getAgentSchemasByName(name, workspaceId);
 		return Result.success(agentSchemas);
@@ -140,9 +115,7 @@ public class AgentSchemaController {
 	 * Enable or disable an agent schema
 	 */
 	@PatchMapping("/{id}/enabled")
-	public Result<Void> setAgentSchemaEnabled(
-			@PathVariable Long id,
-			@RequestParam Boolean enabled) {
+	public Result<Void> setAgentSchemaEnabled(@PathVariable Long id, @RequestParam Boolean enabled) {
 		agentSchemaService.setAgentSchemaEnabled(id, enabled);
 		return Result.success(null);
 	}
