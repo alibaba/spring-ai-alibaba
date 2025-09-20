@@ -31,7 +31,7 @@ public class SimpleNl2SqlService extends BaseNl2SqlService {
 	@Autowired
 	public SimpleNl2SqlService(@Qualifier("simpleVectorStoreService") BaseVectorStoreService vectorStoreService,
 			@Qualifier("simpleSchemaService") BaseSchemaService schemaService, LlmService aiService,
-			@Qualifier("mysqlAccessor") Accessor accessor, DbConfig dbConfig) {
+			@Qualifier("dbAccessor") Accessor accessor, DbConfig dbConfig) {
 
 		super(vectorStoreService, schemaService, aiService, accessor, dbConfig);
 	}

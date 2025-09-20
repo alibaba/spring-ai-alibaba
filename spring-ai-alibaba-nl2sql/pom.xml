@@ -36,6 +36,7 @@
         <netty-resolver-dns-native-macos.version>4.1.114.Final</netty-resolver-dns-native-macos.version>
         <netty-transport-native-epoll.version>4.1.114.Final</netty-transport-native-epoll.version>
         <jsonschema.version>4.37.0</jsonschema.version>
+        <h2.version>2.3.232</h2.version>
     </properties>
 
     <dependencyManagement>
@@ -59,6 +60,12 @@
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${postgresql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.version}</version>
+                <scope>runtime</scope>
             </dependency>
             <dependency>
                 <groupId>commons-collections</groupId>
