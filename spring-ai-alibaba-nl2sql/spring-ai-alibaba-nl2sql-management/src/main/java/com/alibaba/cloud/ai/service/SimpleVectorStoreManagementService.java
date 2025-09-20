@@ -217,8 +217,12 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 			else if (deleteRequest.getVectorType() != null && !deleteRequest.getVectorType().isEmpty()) {
 				FilterExpressionBuilder b = new FilterExpressionBuilder();
 				Filter.Expression expression = b.eq("vectorType", "column").build();
-				List<Document> documents = vectorStore.similaritySearch(
-						SearchRequest.builder().topK(Integer.MAX_VALUE).filterExpression(expression).build());
+				List<Document> documents = vectorStore.similaritySearch(SearchRequest.builder()
+					.query("*") // 使用通配符查询来获取所有匹配的文档
+					.topK(Integer.MAX_VALUE)
+					.similarityThreshold(0.0) // 设置为0.0以接受所有结果
+					.filterExpression(expression)
+					.build());
 				vectorStore.delete(documents.stream().map(Document::getId).toList());
 			}
 			else {
