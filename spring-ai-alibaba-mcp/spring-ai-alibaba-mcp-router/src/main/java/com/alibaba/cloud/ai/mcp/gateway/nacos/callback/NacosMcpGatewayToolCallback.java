@@ -20,6 +20,9 @@ import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolDefinition;
 import com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate.RequestTemplateInfo;
 import com.alibaba.cloud.ai.mcp.gateway.core.jsontemplate.RequestTemplateParser;
 import com.alibaba.cloud.ai.mcp.gateway.core.utils.SpringBeanUtils;
+import com.alibaba.cloud.ai.mcp.gateway.core.security.McpGatewayOAuthInterceptor;
+import com.alibaba.cloud.ai.mcp.gateway.core.security.McpGatewayOAuthTokenManager;
+import com.alibaba.cloud.ai.mcp.gateway.core.security.McpGatewayOAuthProperties;
 import com.alibaba.cloud.ai.mcp.gateway.nacos.definition.NacosMcpGatewayToolDefinition;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
@@ -99,10 +102,9 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	 * @param toolDefinition the tool definition
 	 */
 	public NacosMcpGatewayToolCallback(final McpGatewayToolDefinition toolDefinition) {
-		this.webClientBuilder = SpringBeanUtils.getInstance().getBean(WebClient.Builder.class);
 		this.toolDefinition = (NacosMcpGatewayToolDefinition) toolDefinition;
 		this.nacosMcpOperationService = SpringBeanUtils.getInstance().getBean(NacosMcpOperationService.class);
-
+		this.webClientBuilder = initializeWebClientBuilder(toolDefinition.name());
 		// 尝试获取配置属性
 		// try {
 		// NacosMcpGatewayProperties properties = SpringBeanUtils.getInstance()
@@ -117,6 +119,33 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 		// catch (Exception e) {
 		// logger.debug("Failed to load gateway properties, using defaults", e);
 		// }
+	}
+
+	private WebClient.Builder initializeWebClientBuilder(String toolName) {
+		WebClient.Builder baseBuilder = SpringBeanUtils.getInstance().getBean(WebClient.Builder.class);
+
+		try {
+			McpGatewayOAuthProperties oauthProperties = SpringBeanUtils.getInstance()
+				.getBean(McpGatewayOAuthProperties.class);
+			McpGatewayOAuthTokenManager tokenManager = SpringBeanUtils.getInstance()
+				.getBean(McpGatewayOAuthTokenManager.class);
+
+			if (oauthProperties.isEnabled()) {
+				McpGatewayOAuthInterceptor oauthInterceptor = new McpGatewayOAuthInterceptor(tokenManager,
+						oauthProperties);
+				logger.info("MCP Gateway 已开启 OAuth 认证 tool: {}", toolName);
+				return baseBuilder.filter(oauthInterceptor);
+			}
+			else {
+				logger.debug("OAuth 认证暂未开启 tool: {}", toolName);
+				return baseBuilder;
+			}
+		}
+		catch (Exception e) {
+			logger.debug("OAuth未生效，使用默认 WebClient tool: {}", toolName);
+			return baseBuilder;
+		}
+
 	}
 
 	/**
