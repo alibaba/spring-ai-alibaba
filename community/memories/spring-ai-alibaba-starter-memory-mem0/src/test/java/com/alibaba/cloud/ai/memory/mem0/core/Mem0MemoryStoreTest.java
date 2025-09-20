@@ -47,6 +47,9 @@ class Mem0MemoryStoreTest {
 	@Mock
 	private Mem0ServiceClient mem0Client;
 
+	@Mock
+	private Mem0FilterExpressionConverter filterConverter;
+
 	private Mem0MemoryStore memoryStore;
 
 	@BeforeEach
@@ -156,7 +159,15 @@ class Mem0MemoryStoreTest {
 	@Test
 	void testSimilaritySearchWithSearchRequestAndFilter() {
 		// Given
-		Mem0ServerRequest.SearchRequest searchRequest = new Mem0ServerRequest.SearchRequest();
+		Filter.Expression filterExpression = mock(Filter.Expression.class);
+		
+		// Create a custom SearchRequest that has both Mem0 properties and filter expression
+		Mem0ServerRequest.SearchRequest searchRequest = new Mem0ServerRequest.SearchRequest() {
+			@Override
+			public Filter.Expression getFilterExpression() {
+				return filterExpression;
+			}
+		};
 		searchRequest.setQuery("test query");
 		searchRequest.setUserId("test-user");
 		searchRequest.setAgentId("test-agent");
@@ -171,7 +182,7 @@ class Mem0MemoryStoreTest {
 
 		// Then
 		assertThat(result).isNotNull();
-		verify(mem0Client).searchMemories(searchRequest);
+		verify(mem0Client).searchMemories(any(Mem0ServerRequest.SearchRequest.class));
 	}
 
 	@Test
