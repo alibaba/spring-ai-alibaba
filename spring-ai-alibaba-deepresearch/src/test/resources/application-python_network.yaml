@@ -1,6 +1,0 @@
-spring:
-  ai:
-    alibaba:
-      deepresearch:
-        python-coder:
-          enable-network: true

@@ -1,3 +1,0 @@
-- Current step environment information:
-
-{current_step_env_data}
